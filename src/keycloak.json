@@ -1,0 +1,8 @@
+{
+  "url": "https://login-int.yogym.co",
+  "resource": "front-app",
+  "realm": "empire",
+  "ssl-required": "external",
+  "public-client": true,
+  "confidential-port": 0
+}

@@ -1,0 +1,129 @@
+<section class="main-content">
+  <ul class="breadcrumb breadcrumb-style ">
+    <li class="breadcrumb-item">
+      <h5 class="page-title m-b-0">Calendar</h5>
+    </li>
+    <li class="breadcrumb-item bcrumb-1">
+      <a routerLink="/dashboard/main">
+        <i class="fas fa-home font-17"></i></a>
+      </li>
+      <li class="breadcrumb-item">Calendar</li>
+    </ul>
+    <div class="section-body">
+      <div class="row">
+        <div class="col-md-12 col-sm-12">
+          <div class="card">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-2 col-sm-12 p-l-30">
+                  <div class="m-b-25">
+                    <button class="btn btn-icon icon-left btn-primary" (click)="eventWindowCall($event, 'addEvent')"> Add
+                    Event</button>
+                  </div>
+                  <p>My Calendars</p>
+                  <div class="filter-container">
+                    <ul class="filterCheck">
+                      @for (filter of filters; track filter; let i = $index) {
+                        <li>
+                          <input type="checkbox" name="filter{{i}}" [name]="calCheck" [value]="filter.value"
+                            [checked]="filter.checked === true" (change)="changeCategory($event, filter)" />
+                            {{filter.value}}
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-md-10 col-sm-12">
+                    <div class="panel-body">
+                      <full-calendar [options]='calendarOptions'>
+                      </full-calendar>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Add record modal -->
+        <ng-template #eventWindow let-modal>
+          <div class="modal-header editRowModal">
+            <h4 class="modal-title" id="modal-basic-title">
+              <div class="table-modal-header">
+                <div class="modal-about">
+                  <div class="fw-bold p-t-10 font-17">
+                  {{dialogTitle}}</div>
+                </div>
+              </div>
+            </h4>
+            <button type="button" class="close" aria-label="Close" (click)="modal.dismiss()">
+              <span aria-hidden="true"><i class="material-icons">close</i></span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form class="register-form" [formGroup]="calendarForm">
+              <div class="input-field col s12 d-none">
+                <input formControlName="id" class="form-control" type="hidden">
+                </div>
+                <div class="row">
+                  <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-4">
+                    <label>Title<span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" placeholder="Title" formControlName="title" required>
+                      @if (!calendarForm.get('title')?.valid && calendarForm.get('title')?.touched) {
+                        <small class="form-text text-danger"> Title is
+                        required</small>
+                      }
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-4">
+                      <label>Category <span class="text-danger">*</span></label>
+                      <select class="form-select form-control" formControlName="category" required>
+                        <option value="" selected disabled>Please select</option>
+                        <option id="work" value="work">Work</option>
+                        <option id="personal" value="personal">Personal</option>
+                        <option id="important" value="important">Important</option>
+                        <option id="travel" value="travel">Travel</option>
+                        <option id="friends" value="friends">Friends</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-4">
+                      <label>Start Date<span class="text-danger">*</span></label>
+                      <input type="date" class="form-control" placeholder="Start Date" formControlName="startDate" required>
+                        @if (!calendarForm.get('startDate')?.valid && calendarForm.get('startDate')?.touched) {
+                          <small class="form-text text-danger"> Start Date is
+                          required</small>
+                        }
+                      </div>
+                      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-4">
+                        <label>End Date<span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" placeholder="Start Date" formControlName="endDate" required>
+                          @if (!calendarForm.get('endDate')?.valid && calendarForm.get('endDate')?.touched) {
+                            <small class="form-text text-danger"> End Date is
+                            required</small>
+                          }
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-4">
+                          <label>Details<span class="text-danger">*</span></label>
+                          <textarea type="textarea" class="form-control" placeholder="Details" formControlName="details"></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        @if (!isEditClick) {
+                          <button type="button" class="btn btn-primary" (click)="saveEvent(calendarForm)"
+                          [disabled]="!calendarForm.valid">Add Event</button>
+                        }
+                        @if (isEditClick) {
+                          <button type="button" class="btn btn-primary" (click)="eventClick(calendarForm)"
+                          [disabled]="!calendarForm.valid">Save Event</button>
+                        }
+                        <button type="button" class="btn btn-light" (click)="modal.close('Close click')">Close</button>
+                      </div>
+                    </form>
+                  </div>
+                </ng-template>
+              </div>
+            </section>

@@ -1,0 +1,100 @@
+<nav class="navbar navbar-expand-lg navbar-light shadow-sm py-2" style="z-index: 52">
+  <div class="container-fluid justify-content-end">
+    <li class="dropdown dropdown-list-toggle list-unstyled me-3" ngbDropdown>
+      <a class="nav-link nav-link-lg lang-toggle remove-caret d-flex align-items-center" ngbDropdownToggle>
+        @if(flagvalue)
+        {
+          <img src="{{flagvalue}}" alt="Header Language" class="lang-flag me-2">
+        }
+        @else {
+          <img src="{{defaultFlag}}" alt="Header Language" class="lang-flag me-2">
+        }
+        <span class="lang-text">{{ 'lang' | translate }}</span>
+      </a>
+      <div class="dropdown-menu header-dropdown dropdown-menu-end lang-dropdown-list pullDown" ngbDropdownMenu>
+        @for(item of listLang; track item) {
+          <a class="dropdown-item lang-item-list"
+             (click)="setLanguage(item.text, item.lang, item.flag)"
+             [ngClass]="{'active': langStoreValue === item.lang}">
+            <img src="{{item.flag}}" alt="user-image" class="lang-flag me-2">
+            <span class="align-middle">{{ item.text }}</span>
+          </a>
+        }
+      </div>
+    </li>
+
+    <div class="dropdown me-3">
+      <a class="nav-link position-relative" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <i-feather name="bell" class="bell"></i-feather>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationsDropdown">
+        <div class="notification-header">All Notifications</div>
+        <div class="dropdown-footer text-center">
+          <a href="#" >Voir plus <i class="fas fa-chevron-right"></i></a>
+        </div>
+      </ul>
+    </div>
+
+    <div class="dropdown">
+      <a class="nav-link user-profile dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <img
+          [src]="urlPhoto"
+          alt="{{ 'PROFILE_IMAGE' | translate }}"
+          class="profile-photo"
+          (error)="onImageError($event)"
+        />
+        <span class="d-none d-md-inline">{{userName}}</span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+        <li><a class="dropdown-item" [routerLink]="'/edit-profile/'">My Profile</a></li>
+        <li><a class="dropdown-item" href="#">Settings</a></li>
+        <li><a class="dropdown-item" href="#">Messages</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><button class="dropdown-item text-danger" (click)="logout()">Log Out</button></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Error Modal -->
+<div class="modal-overlay" [class.show]="showErrorModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Error</h5>
+      <button type="button" class="btn-close" aria-label="Close" (click)="handleErrorModalClose()"></button>
+    </div>
+    <div class="modal-body">
+      <p>{{ errorMessage }}</p>
+      <div *ngIf="true">
+        <label for="pinInput" class="form-label">Enter PIN sent to the admin:</label>
+        <input type="text" id="pinInput" class="form-control" [(ngModel)]="adminPin" placeholder="Enter PIN">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="handleErrorModalClose()">Cancel</button>
+      <button
+        *ngIf="true"
+        class="btn btn-primary"
+        (click)="toggleAgentSession({ target: { checked: true }})">Submit PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" [class.show]="showSucessModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="successModalLabel">Success</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Your session started successfully.
+      </div>
+      <div class="modal-footer">
+        <button type="button" (click)="showSucessModal=false" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+

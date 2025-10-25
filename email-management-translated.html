@@ -1,0 +1,122 @@
+<section class="main-content">
+  <div class="section-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 responsive-header">
+      <h4 class="page-title">{{ 'EMAIL_MANAGEMENT.TITLE' | translate }}</h4>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-dark rounded d-flex align-items-center px-3 py-2 btn-orange-hover" (click)="openAddModal()">
+          <i class="fas fa-plus me-2"></i>
+          <span>{{ 'EMAIL_MANAGEMENT.ADD_EMAIL' | translate }}</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary rounded d-flex align-items-center px-3 py-2">
+          <i class="fas fa-paper-plane me-2"></i>
+          <span>{{ 'EMAIL_MANAGEMENT.SEND' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card data-table-card">
+      <div class="card-body">
+        <ngx-datatable #table class="material" [rows]="emails" [loadingIndicator]="loading"
+          columnMode="force" [headerHeight]="50" [footerHeight]="50" [rowHeight]="'auto'" [limit]="10"
+          [scrollbarH]="false" [reorderable]="false">
+
+          <!-- ID Column -->
+          <ngx-datatable-column [width]="70" [name]="'EMAIL_MANAGEMENT.ID' | translate">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              {{ row.id }}
+            </ng-template>
+          </ngx-datatable-column>
+
+          <!-- Subject Column -->
+          <ngx-datatable-column [width]="250" [name]="'EMAIL_MANAGEMENT.SUBJECT' | translate">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              <strong>{{ row.objet }}</strong>
+            </ng-template>
+          </ngx-datatable-column>
+
+          <!-- Type Column -->
+          <ngx-datatable-column [width]="150" [name]="'EMAIL_MANAGEMENT.TYPE' | translate">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              {{ row.type }}
+            </ng-template>
+          </ngx-datatable-column>
+
+          <!-- Description Column -->
+          <ngx-datatable-column [width]="300" [name]="'EMAIL_MANAGEMENT.DESCRIPTION' | translate">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              {{ row.description }}
+            </ng-template>
+          </ngx-datatable-column>
+
+          <!-- Default Column -->
+          <ngx-datatable-column [width]="100" [name]="'EMAIL_MANAGEMENT.DEFAULT' | translate">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              <span class="badge" [ngClass]="row.pardefaut ? 'bg-success' : 'bg-secondary'">
+                {{ row.pardefaut ? ('EMAIL_MANAGEMENT.YES' | translate) : ('EMAIL_MANAGEMENT.NO' | translate) }}
+              </span>
+            </ng-template>
+          </ngx-datatable-column>
+
+          <!-- Active Status Column -->
+          <ngx-datatable-column [width]="100" [name]="'EMAIL_MANAGEMENT.STATUS' | translate">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              <span class="badge" [ngClass]="row.active === 'oui' ? 'bg-success' : 'bg-secondary'">
+                {{ row.active === 'oui' ? ('EMAIL_MANAGEMENT.ACTIVE' | translate) : ('EMAIL_MANAGEMENT.INACTIVE' | translate) }}
+              </span>
+            </ng-template>
+          </ngx-datatable-column>
+
+          <!-- Actions Column -->
+          <ngx-datatable-column [name]="'EMAIL_MANAGEMENT.ACTIONS' | translate" [sortable]="false" [width]="150">
+            <ng-template let-row="row" ngx-datatable-cell-template>
+              <div class="table-actions">
+                <i class="fas fa-paper-plane action-icon action-icon-gray" (click)="sendEmail(row); $event.stopPropagation()" title="{{ 'EMAIL_MANAGEMENT.SEND' | translate }}"></i>
+                <i class="fas fa-pen action-icon action-icon-gray" (click)="openEditModal(row); $event.stopPropagation()"></i>
+                <i class="fas fa-trash-alt action-icon action-icon-gray" (click)="openDeleteModal(row); $event.stopPropagation()"></i>
+              </div>
+            </ng-template>
+          </ngx-datatable-column>
+        </ngx-datatable>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Add/Edit Modal -->
+<app-common-side-modal
+  *ngIf="showAddEditModal"
+  [isOpen]="showAddEditModal"
+  [componentType]="getEmailAddEditComponent()"
+  [modalTitle]="isEditMode ? ('EMAIL_MANAGEMENT.EDIT_EMAIL' | translate) : ('EMAIL_MANAGEMENT.ADD_EMAIL_MODAL' | translate)"
+  [componentInputs]="{ email: selectedEmail, isEditMode: isEditMode }"
+  (modalClose)="closeAddEditModal()">
+</app-common-side-modal>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" tabindex="-1" role="dialog" [ngStyle]="{'display': deleteModalDisplay}">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">
+          <i class="fas fa-exclamation-triangle warning-icon"></i>
+          {{ 'EMAIL_MANAGEMENT.DELETE_CONFIRMATION' | translate }}
+        </h4>
+      </div>
+      <div class="modal-body text-center">
+        <div class="confirmation-icon">
+          <i class="far fa-trash-alt"></i>
+        </div>
+        <p class="confirmation-message">{{ 'EMAIL_MANAGEMENT.DELETE_EMAIL_CONFIRM' | translate }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()">
+          <i class="far fa-trash-alt me-2"></i>
+          {{ 'EMAIL_MANAGEMENT.DELETE' | translate }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">
+          {{ 'CLOSE' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

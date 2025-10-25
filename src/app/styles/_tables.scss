@@ -1,0 +1,236 @@
+@import 'variables';
+
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: $spacing-6;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-sm;
+}
+
+.table {
+  width: 100%;
+  margin-bottom: 0;
+  color: $gray-700;
+  vertical-align: top;
+  border-color: $table-border-color;
+  border-collapse: collapse;
+
+  // Table Header
+  thead {
+    background-color: $gray-50;
+    border-bottom: 2px solid $table-border-color;
+
+    th {
+      padding: $table-cell-padding-y $table-cell-padding-x;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $gray-600;
+      white-space: nowrap;
+      
+      &:first-child {
+        padding-left: $spacing-6;
+      }
+      
+      &:last-child {
+        padding-right: $spacing-6;
+      }
+    }
+  }
+
+  // Table Body
+  tbody {
+    tr {
+      border-bottom: 1px solid $table-border-color;
+      transition: $transition-base;
+
+      &:hover {
+        background-color: $table-hover-bg;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: $table-cell-padding-y $table-cell-padding-x;
+      vertical-align: middle;
+      
+      &:first-child {
+        padding-left: $spacing-6;
+      }
+      
+      &:last-child {
+        padding-right: $spacing-6;
+      }
+    }
+  }
+
+  // Striped Rows
+  &.table-striped {
+    tbody tr:nth-of-type(odd) {
+      background-color: $table-striped-bg;
+    }
+  }
+
+  // Bordered
+  &.table-bordered {
+    border: 1px solid $table-border-color;
+
+    th,
+    td {
+      border: 1px solid $table-border-color;
+    }
+  }
+
+  // Compact
+  &.table-sm {
+    th,
+    td {
+      padding: $spacing-2 $spacing-3;
+    }
+  }
+}
+
+// Table Variants
+.table-primary {
+  --bs-table-bg: #{rgba($primary, 0.1)};
+  --bs-table-striped-bg: #{rgba($primary, 0.15)};
+  --bs-table-hover-bg: #{rgba($primary, 0.2)};
+  --bs-table-color: #{$primary-900};
+  --bs-table-border-color: #{rgba($primary, 0.2)};
+}
+
+.table-success {
+  --bs-table-bg: #{rgba($success, 0.1)};
+  --bs-table-striped-bg: #{rgba($success, 0.15)};
+  --bs-table-hover-bg: #{rgba($success, 0.2)};
+  --bs-table-color: #{$success-dark};
+  --bs-table-border-color: #{rgba($success, 0.2)};
+}
+
+.table-danger {
+  --bs-table-bg: #{rgba($danger, 0.1)};
+  --bs-table-striped-bg: #{rgba($danger, 0.15)};
+  --bs-table-hover-bg: #{rgba($danger, 0.2)};
+  --bs-table-color: #{$danger-dark};
+  --bs-table-border-color: #{rgba($danger, 0.2)};
+}
+
+// Status Badge in Table
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacing-1 $spacing-2;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  line-height: 1;
+  border-radius: $border-radius-full;
+  
+  &::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: $spacing-2;
+  }
+  
+  &.status-active {
+    color: $success-dark;
+    background: rgba($success, 0.1);
+    
+    &::before {
+      background-color: $success;
+    }
+  }
+  
+  &.status-pending {
+    color: $warning-dark;
+    background: rgba($warning, 0.1);
+    
+    &::before {
+      background-color: $warning;
+    }
+  }
+  
+  &.status-inactive {
+    color: $danger-dark;
+    background: rgba($danger, 0.1);
+    
+    &::before {
+      background-color: $danger;
+    }
+  }
+}
+
+// Table Actions
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: $gray-600;
+    background: transparent;
+    border: none;
+    border-radius: $border-radius-full;
+    transition: $transition-base;
+    
+    &:hover {
+      color: $gray-900;
+      background: $gray-100;
+    }
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// Responsive Tables
+@media (max-width: $breakpoint-md) {
+  .table-responsive-card {
+    thead {
+      display: none;
+    }
+
+    tbody {
+      tr {
+        display: block;
+        padding: $spacing-4;
+        border: 1px solid $table-border-color;
+        border-radius: $border-radius;
+        margin-bottom: $spacing-3;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: $spacing-2 0;
+        border: none;
+
+        &::before {
+          content: attr(data-label);
+          font-weight: $font-weight-semibold;
+          margin-right: $spacing-4;
+        }
+      }
+    }
+  }
+}

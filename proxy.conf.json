@@ -1,0 +1,13 @@
+{
+  "/api": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/auth": {
+    "target": "https://login-int.yogym.co",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {"^/auth" : ""}
+  }
+}

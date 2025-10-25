@@ -1,0 +1,139 @@
+<!-- Toggle Button -->
+<button class="toggle-sidebar" (click)="toggleSidebar()">
+  <i-feather name="menu"></i-feather>
+</button>
+
+<!-- Sidebar -->
+<aside class="sidebar" [class.expanded]="isExpanded">
+  <!-- Logo -->
+  <div class="sidebar-header">
+    <img src="assets/yocoachlogo.png" class="logo" alt="yocoach Logo">
+  </div>
+
+  <!-- Navigation -->
+  <br> <br>
+  <div class="sidebar-nav">
+    <ng-scrollbar [style.height]="listMaxHeight" visibility="hover">
+      <ul class="nav-list">
+        <ng-container *ngFor="let item of sidebarItems; trackBy: trackByItem">
+          <li class="nav-item" [class.active]="item.isActive">
+            <!-- Group Title -->
+            <ng-container *ngIf="item.groupTitle">
+              <div class="nav-group-title">
+                {{ item.title | translate }}
+              </div>
+            </ng-container>
+
+            <!-- Menu Item -->
+            <ng-container *ngIf="!item.groupTitle">
+              <a *ngIf= "!item.submenu?.length"
+                [routerLink]="item.path"
+                [class.has-submenu]="item.submenu?.length"
+                (click)="toggleSubmenu($event, item)"
+                class="nav-link"
+                [class.active]="item.isActive">
+                <i-feather [name]="item.icon" class="nav-icon"></i-feather>
+                <span class="nav-label">{{ item.title | translate }}</span>
+
+                <ng-container *ngIf="item.badge">
+                  <span class="nav-badge">
+                    {{ item.badge }}
+                  </span>
+                </ng-container>
+              </a>
+              <a *ngIf= "item.submenu?.length"
+                href="javascript:void(0)"
+                [class.has-submenu]="item.submenu?.length"
+                (click)="toggleSubmenu($event, item)"
+                class="nav-link"
+                [class.active]="item.isActive">
+                <i-feather [name]="item.icon" class="nav-icon"></i-feather>
+                <span class="nav-label">{{ item.title | translate }}</span>
+
+                <ng-container *ngIf="item.badge">
+                  <span class="nav-badge">
+                    {{ item.badge }}
+                  </span>
+                </ng-container>
+
+                <ng-container *ngIf="item.submenu?.length">
+                  <i-feather
+                    name="chevron-down"
+                    class="submenu-arrow"
+                    [class.expanded]="item.isExpanded">
+                  </i-feather>
+                </ng-container>
+              </a>
+
+              <!-- Submenu -->
+              <ng-container *ngIf="item.submenu?.length">
+                <ul class="submenu" [class.expanded]="item.isExpanded">
+                  <li *ngFor="let subItem of item.submenu; trackBy: trackByItem" class="submenu-item" [class.active]="subItem.isActive">
+                    <a
+                      [routerLink]="subItem.path"
+                      class="submenu-link"
+                      (click)="activateSubmenu(item, subItem)">
+                      <i-feather [name]="subItem.icon" class="submenu-icon"></i-feather>
+                      <span class="submenu-label">{{ subItem.title | translate }}</span>
+                    </a>
+                  </li>
+                </ul>
+              </ng-container>
+            </ng-container>
+          </li>
+        </ng-container>
+      </ul>
+    </ng-scrollbar>
+  </div>
+</aside>
+
+
+<style>
+.sidebar {
+  @apply fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-300 flex flex-col transition-all duration-300;
+}
+.sidebar.collapsed {
+  @apply w-16;
+}
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .nav-badge,
+.sidebar.collapsed .submenu-arrow {
+  @apply hidden;
+}
+.sidebar.collapsed .nav-icon {
+  @apply mr-0;
+}
+.sidebar-header {
+  @apply h-16 flex items-center justify-center border-b border-gray-300;
+}
+.logo {
+  @apply h-8;
+}
+.sidebar-nav {
+  @apply flex-1 overflow-y-auto p-4;
+}
+.nav-link.active {
+  @apply bg-blue-100 text-blue-700;
+}
+.submenu {
+  @apply hidden;
+}
+.submenu.expanded {
+  @apply block;
+}
+.toggle-sidebar {
+  @apply fixed top-4 left-4 w-10 h-10 bg-white shadow-md rounded-full flex items-center justify-center cursor-pointer;
+}
+@media (max-width: 1024px) {
+
+}
+.sidebar {
+  @apply -translate-x-full;
+}
+.toggle-sidebar {
+  @apply flex;
+}
+.sidebar.expanded {
+  @apply translate-x-0;
+}
+</style>

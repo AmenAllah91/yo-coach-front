@@ -1,0 +1,213 @@
+// Variables
+$primary-color: #6366f1;
+$primary-hover: #4f46e5;
+$error-color: #ef4444;
+$border-color: #e2e8f0;
+$text-color: #1e293b;
+$text-muted: #64748b;
+$backdrop-color: rgba(0, 0, 0, 0.5);
+$white: #ffffff;
+$radius: 8px;
+$transition: all 0.2s ease;
+
+// Modal backdrop
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: $backdrop-color;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+}
+
+// Modal container
+.modal-container {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: $white;
+  border-radius: $radius;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+// Modal header
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $border-color;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: $text-color;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: $transition;
+  
+  &:hover {
+    color: $text-color;
+  }
+}
+
+// Modal body
+.modal-body {
+  padding: 1.5rem;
+}
+
+// Form styles
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .form-group {
+    flex: 1;
+  }
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: $text-color;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid $border-color;
+  border-radius: $radius;
+  font-size: 1rem;
+  transition: $transition;
+  color: $text-color;
+  
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+  
+  &.is-invalid {
+    border-color: $error-color;
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba($error-color, 0.1);
+    }
+  }
+  
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px;
+  padding-right: 2.5rem;
+}
+
+.error-message {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  color: $error-color;
+}
+
+.form-text {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  color: $text-muted;
+}
+
+// Modal footer
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid $border-color;
+}
+
+// Button styles
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: $radius;
+  cursor: pointer;
+  transition: $transition;
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background-color: $primary-color;
+  color: $white;
+  border: none;
+  
+  &:hover:not(:disabled) {
+    background-color: $primary-hover;
+  }
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: $text-color;
+  border: 1px solid $border-color;
+  
+  &:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+// Loading spinner
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: $white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

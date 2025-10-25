@@ -1,0 +1,200 @@
+<div class="top-bar d-flex align-items-center justify-content-between px-4 py-3">
+  <!-- Titre de la page -->
+  <div class="page-title d-flex align-items-center">
+    <h4 class="mb-0 title-size">All Customers</h4>
+    <i class="fas fa-chevron-down ms-2"></i>
+  </div>
+
+  <!-- Boutons et actions -->
+  <div class="actions d-flex align-items-center gap-3">
+    <button class="btn btn-outline-primary d-flex align-items-center">
+      <i class="fas fa-plus me-2"></i> New
+    </button>
+    <button class="btn btn-primary d-flex align-items-center">
+      <i class="fas fa-user-plus me-2"></i> Save
+    </button>
+  </div>
+</div>
+
+<div class="main-content">
+
+  <form >
+
+<div class="datepicker-size">
+  <label for="planName">Date<span class="text-danger">*</span></label>
+  <div class="col-12">
+    <div class="input-group-date">
+      <input
+        class="form-control"
+        placeholder="yyyy-mm-dd"
+        name="dp"
+        ngbDatepicker
+        #d="ngbDatepicker"/>
+      <button class="btn btn-outline-secondary bi bi-calendar3" (click)="d.toggle()" type="button">
+        <i class="fa fa-calendar" ></i></button>
+            </div>
+  </div>
+</div>
+
+    <div class="form-group position-relative">
+      <div style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
+        <input type="password" class="form-control" placeholder="Research" name="password"
+               style="padding-left: 35px;" required>
+      </div>
+    </div>
+
+  <div class="form-group position-relative">
+    <label>Your Email <span class="text-danger">*</span></label>
+    <div style="position: relative;">
+      <i class="fas fa-user" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
+      <input type="email" class="form-control" placeholder="Email" name="email" style="padding-left: 35px;" required>
+    </div>
+  </div>
+
+  <div class="form-group position-relative">
+    <label>Password <span class="text-danger">*</span></label>
+    <div style="position: relative;">
+      <i class="fas fa-key" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
+      <input type="password" class="form-control" placeholder="Password" name="password"
+             style="padding-left: 35px;" required>
+    </div>
+  </div>
+
+          <!-- Plan Name -->
+  <div class="form-group " >
+    <label for="planName">Plan Name<span class="required">*</span></label>
+    <input type="text" id="planName" placeholder="Coaching Basic (0-5 clients)" class="form-control hauteur-input" required>
+  </div>
+
+  <!-- Plan Code -->
+  <div class="form-group">
+    <label for="planCode">Plan Code<span class="required">*</span></label>
+    <input type="text" class="form-control hauteur-input" id="planCode" placeholder="COACH_BEG" required>
+    <small class="form-text">A unique code to refer to this plan.</small>
+  </div>
+
+
+  <div class="form-group">
+    <label > 1 choice no search </label>
+
+    <ng-select [items]="items"
+               [multiple]="false"
+               [closeOnSelect]="true"
+               [clearable]="false"
+               [searchable]="false"
+               class="select-item hauteur-input"
+               bindLabel="name"
+               placeholder="Select Your Product">
+    </ng-select>
+    <small class="form-text">Add tax to your Plan or Addon. Use tax group for more than one tax.</small>
+  </div>
+
+  <div class="form-group">
+    <label >1 choice with search</label>
+
+    <ng-select [items]="items"
+               [multiple]="false"
+               [closeOnSelect]="true"
+               [clearable]="false"
+               [searchable]="true"
+               class="select-item hauteur-input"
+               bindLabel="name"
+               >
+    </ng-select>
+    <small class="form-text">Add tax to your Plan or Addon. Use tax group for more than one tax.</small>
+  </div>
+
+  <div class="form-group">
+    <label >Multi Item searchable</label>
+
+    <ng-select [items]="items"
+               [multiple]="true"
+               [closeOnSelect]="true"
+               [clearable]="false"
+               [searchable]="true"
+               class="select-item hauteur-input"
+               bindLabel="name"
+               placeholder="Select Your Product">
+    </ng-select>
+    <small class="form-text">Add tax to your Plan or Addon. Use tax group for more than one tax.</small>
+  </div>
+  <!-- Price -->
+  <div class="form-group ">
+    <label for="price">Price<span class="required">*</span></label>
+    <div class="input-group">
+      <span class="input-group-text">TND</span>
+      <input type="text" class="form-control hauteur-input" id="price" placeholder="39.99" required >
+    </div>
+  </div>
+
+  <!-- Bill Every -->
+  <div class="form-group bill-group">
+    <label>Bill Every<span class="required">*</span></label>
+    <div class="flex-input">
+      <input type="number" class="form-control hauteur-input" value="1" >
+      <select >
+        <option>Month(s)</option>
+        <option>Year(s)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Billing Cycles -->
+  <div class="form-group">
+    <label>Billing Cycles<span class="required">*</span></label>
+    <div class="radio-group">
+      <label><input type="radio" name="billingCycle" checked> Auto-renews until canceled</label>
+      <label><input type="radio" name="billingCycle"> Expires after a specified </label>
+    </div>
+  </div>
+
+  <!-- Free Trial -->
+  <div class="form-group">
+    <label for="freeTrial">Free Trial</label>
+    <input type="number" class="form-control hauteur-input" id="freeTrial" placeholder="30" >
+    <small class="form-text">in days</small>
+  </div>
+
+  <!-- Setup Fee -->
+  <div class="form-group">
+    <label for="setupFee">Setup Fee</label>
+    <input type="text" class="form-control hauteur-input" id="setupFee" >
+  </div>
+
+  <!-- Type -->
+  <div class="form-group">
+    <label>Type<span class="required">*</span></label>
+    <div class="radio-group">
+      <label><input type="radio" name="type"> Goods</label>
+      <label><input type="radio" name="type" checked> Service</label>
+    </div>
+  </div>
+
+<div class="flex-input">
+  <small class="form-text">Are you a trainer?</small>
+
+  <div class="form-switch me-3 flex-input" style="display: flex; align-items: center; gap: 8px;">
+
+    <input type="checkbox" id="agentSessionToggle">
+    <label class="form-switch-label" for="agentSessionToggle" style="margin: 0;"></label>
+  </div>
+
+</div>
+
+
+  <br>
+<br>
+
+  <div class="form-buttons">
+    <button type="submit" class="btn btn-save">Save</button>
+    <button type="button" class="btn btn-cancel">Cancel</button>
+    <button class="btn btn-outline-primary d-flex align-items-center btn-new">
+      <i class="fas fa-plus me-2"></i> New
+    </button>
+  </div>
+  <br>
+
+
+  </form>
+</div>

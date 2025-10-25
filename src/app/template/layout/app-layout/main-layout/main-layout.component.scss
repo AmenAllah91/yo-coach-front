@@ -1,0 +1,55 @@
+.pointage-sidebar {
+  position: fixed;
+  top: 0;
+  width: 300px;
+  background-color: #f8f9fa;
+  z-index: 1050;
+  transition: all 1s ease;
+  overflow: hidden;
+}
+
+
+.pointage-sidebar {
+  right: 300px;
+}
+
+
+.pointage-sidebar:not(.open) {
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.toggle-btn {
+  position: absolute;
+  top: 10px;
+  left: -50px;
+  z-index: 1100;
+  transform: rotate(-90deg);
+}
+
+
+@media(max-width: 326px) {
+  .content{
+    margin-top: 5rem;
+  }
+}
+.content {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+.content.sidebar-open {
+  width: calc(100% - 20rem);
+  margin-left: 20rem;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+@media (max-width: 326px) {
+  .content.sidebar-open{
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
