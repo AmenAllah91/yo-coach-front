@@ -1,13 +1,45 @@
 /* Modern Header Styles */
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.hamburger-menu {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  .hamburger-icon {
+    width: 20px;
+    height: 20px;
+    stroke: #333;
+  }
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  
+  .header-logo {
+    height: 40px;
+    width: auto;
+  }
+}
+
 .navbar {
   background-color: white;
   display: flex;
-  padding: 1rem 2rem;
   border-bottom: none;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-  min-height: 80px; // Increased height
-  padding: 0.5rem 1rem;    // avant : 1rem 2rem
-  min-height: 60px;        // avant : 80px
+  min-height: 40px;
+  padding: 0.1rem 1rem;
   .container-fluid {
     //max-width: 1400px;
     margin: 0 auto;

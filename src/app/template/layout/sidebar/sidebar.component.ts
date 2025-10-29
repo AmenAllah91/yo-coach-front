@@ -7,6 +7,7 @@ import { FeatherModule } from 'angular-feather';
 import { NgScrollbar } from 'ngx-scrollbar';
 import { AuthService } from "@config/auth.service";
 import { RouteInfo } from './sidebar.metadata';
+import { ROUTES } from './sidebar-items';
 
 @Component({
   selector: 'app-sidebar',
@@ -39,7 +40,7 @@ export class SidebarComponent implements OnInit {
   }
 
   async initializeSidebar() {
-
+    this.sidebarItems = ROUTES;
   }
 
   filterSidebarItemsByRoles(items: RouteInfo[], userRoles: string[]): RouteInfo[] {

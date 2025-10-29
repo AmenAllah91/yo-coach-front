@@ -22,6 +22,7 @@
     "@angular/platform-browser": "^17.0.4",
     "@angular/platform-browser-dynamic": "^17.0.4",
     "@angular/router": "^17.0.4",
+    "@angular/youtube-player": "^20.2.10",
     "@asymmetrik/ngx-leaflet": "^18.0.1",
     "@ckeditor/ckeditor5-angular": "^7.0.1",
     "@ckeditor/ckeditor5-build-classic": "^40.1.0",

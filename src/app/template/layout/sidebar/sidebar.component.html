@@ -7,11 +7,10 @@
 <aside class="sidebar" [class.expanded]="isExpanded">
   <!-- Logo -->
   <div class="sidebar-header">
-    <img src="assets/yocoachlogo.png" class="logo" alt="yocoach Logo">
+    <img src="assets/yocoachlogo.png" class="logo" alt="Yo Coach Logo">
   </div>
 
   <!-- Navigation -->
-  <br> <br>
   <div class="sidebar-nav">
     <ng-scrollbar [style.height]="listMaxHeight" visibility="hover">
       <ul class="nav-list">
@@ -104,13 +103,18 @@
   @apply mr-0;
 }
 .sidebar-header {
-  @apply h-16 flex items-center justify-center border-b border-gray-300;
+  @apply h-8 flex items-center justify-start border-b border-gray-300;
+  padding: 0.1rem;
 }
 .logo {
-  @apply h-8;
+  width: 118px;
+  padding-top: 0px;
+  padding-left: 3px;
+  margin: 0;
 }
 .sidebar-nav {
-  @apply flex-1 overflow-y-auto p-4;
+  @apply flex-1 overflow-y-auto;
+  padding: 0.5rem;
 }
 .nav-link.active {
   @apply bg-blue-100 text-blue-700;

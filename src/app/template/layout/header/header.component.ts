@@ -42,6 +42,7 @@ export class HeaderComponent implements OnInit,AfterViewInit {
   urlPhoto: string;
   gender: string;
   @Output() toggleSideBar = new EventEmitter<void>();
+  @Output() sidebarToggle = new EventEmitter<void>();
 
   constructor(
     private cdRef: ChangeDetectorRef,
@@ -107,6 +108,10 @@ this.translate.use(lang);}
 
   toggleRightSidebar(){
     this.toggleSideBar.emit();
+  }
+
+  toggleSidebar() {
+    this.sidebarToggle.emit();
   }
 
   onImageError(event: Event): void {

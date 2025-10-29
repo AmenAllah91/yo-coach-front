@@ -3,6 +3,7 @@ import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest} from '@angular/co
 import {ToastrService} from 'ngx-toastr';
 import {LoaderService} from '../service/loader.service';
 import {Observable} from 'rxjs';
+import { AuthService } from '../template/core/service/auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -27,13 +28,18 @@ export class AuthInterceptor implements HttpInterceptor {
 
   constructor(
     private toastr: ToastrService,
-    private loaderService: LoaderService
+    private loaderService: LoaderService,
+    private authService: AuthService
   ) {
   }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        throw new Error('Method not implemented.');
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser && currentUser.token) {
+      req = this.setAuthHeader(req, currentUser.token);
     }
+    return next.handle(req);
+  }
 
 
   private setAuthHeader(request: HttpRequest<any>, token: string): HttpRequest<any> {

@@ -1,0 +1,45 @@
+// Centralized Video Player Styles
+.video-container {
+  flex: 1;
+  background: #f3f4f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  position: relative;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    min-height: 200px;
+    border-radius: 6px;
+    margin: 0 1rem;
+  }
+
+  .video-placeholder {
+    text-align: center;
+    color: #9ca3af;
+  }
+
+  youtube-player {
+    width: 560px;
+    height: 315px;
+    border-radius: 8px;
+    flex-shrink: 0;
+
+    @media (max-width: 768px) {
+      width: calc(100% - 2rem);
+      height: calc((100% - 2rem) * 9 / 16);
+      max-width: 300px;
+      max-height: 169px;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 480px) {
+      width: calc(100% - 1rem);
+      height: calc((100% - 1rem) * 9 / 16);
+      max-width: 280px;
+      max-height: 157px;
+    }
+  }
+}
