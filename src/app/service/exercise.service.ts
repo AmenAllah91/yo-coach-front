@@ -44,12 +44,14 @@ export class ExerciseService {
     size: number = 10, 
     equipment?: string, 
     muscle?: string, 
-    type?: string
+    type?: string,
+    search?: string
   ): Observable<PageResponse<Exercise>> {
     let params = `page=${page}&size=${size}`;
     if (equipment) params += `&equipment=${equipment}`;
     if (muscle) params += `&muscle=${muscle}`;
     if (type) params += `&type=${type}`;
+    if (search) params += `&search=${search}`;
     return this.http.get<PageResponse<Exercise>>(`${this.apiUrl}/?${params}`);
   }
 

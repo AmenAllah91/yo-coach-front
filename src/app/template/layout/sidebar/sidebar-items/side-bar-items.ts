@@ -13,7 +13,7 @@ export const items: RouteInfo[] = [
     submenu: []
   },
   {
-    path: '',
+    path: '/clients',
     title: 'Clients',
     iconType: 'feather',
     icon: 'users',
@@ -21,30 +21,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: [
-      {
-        path: '/clients/individual',
-        title: 'Individual',
-        iconType: 'feather',
-        icon: 'user',
-        class: '',
-        groupTitle: false,
-        badge: '',
-        badgeClass: '',
-        submenu: []
-      },
-      {
-        path: '/clients/groups',
-        title: 'Groups',
-        iconType: 'feather',
-        icon: 'users',
-        class: '',
-        groupTitle: false,
-        badge: '',
-        badgeClass: '',
-        submenu: []
-      }
-    ]
+    submenu: []
   },
   {
     path: '',

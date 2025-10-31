@@ -1,0 +1,77 @@
+[
+  {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "login": "john.doe@example.com",
+    "gender": "MALE",
+    "activated": true,
+    "coachId": "22256feb-e197-4553-8bb4-76006ba22642",
+    "coachingSpecialities": [],
+    "authorities": [
+      {
+        "name": "ROLE_CLIENT"
+      }
+    ]
+  },
+  {
+    "firstName": "Sarah",
+    "lastName": "Smith",
+    "email": "sarah.smith@example.com",
+    "login": "sarah.smith@example.com",
+    "gender": "FEMALE",
+    "activated": true,
+    "coachId": "22256feb-e197-4553-8bb4-76006ba22642",
+    "coachingSpecialities": [],
+    "authorities": [
+      {
+        "name": "ROLE_CLIENT"
+      }
+    ]
+  },
+  {
+    "firstName": "Michael",
+    "lastName": "Johnson",
+    "email": "michael.johnson@example.com",
+    "login": "michael.johnson@example.com",
+    "gender": "MALE",
+    "activated": true,
+    "coachId": "22256feb-e197-4553-8bb4-76006ba22642",
+    "coachingSpecialities": [],
+    "authorities": [
+      {
+        "name": "ROLE_CLIENT"
+      }
+    ]
+  },
+  {
+    "firstName": "Emma",
+    "lastName": "Wilson",
+    "email": "emma.wilson@example.com",
+    "login": "emma.wilson@example.com",
+    "gender": "FEMALE",
+    "activated": true,
+    "coachId": "22256feb-e197-4553-8bb4-76006ba22642",
+    "coachingSpecialities": [],
+    "authorities": [
+      {
+        "name": "ROLE_CLIENT"
+      }
+    ]
+  },
+  {
+    "firstName": "David",
+    "lastName": "Brown",
+    "email": "david.brown@example.com",
+    "login": "david.brown@example.com",
+    "gender": "MALE",
+    "activated": true,
+    "coachId": "22256feb-e197-4553-8bb4-76006ba22642",
+    "coachingSpecialities": [],
+    "authorities": [
+      {
+        "name": "ROLE_CLIENT"
+      }
+    ]
+  }
+]

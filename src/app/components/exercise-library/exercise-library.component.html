@@ -94,10 +94,7 @@
             <youtube-player 
               *ngIf="getSelectedExercise()?.videoLink && getYouTubeVideoId(getSelectedExercise()!.videoLink!); else placeholder"
               [videoId]="getYouTubeVideoId(getSelectedExercise()!.videoLink!)"
-              class="video-player"
-              [width]="null"
-              [height]="null"
-              style="width: 100%; height: 100%;">
+              class="video-player">
             </youtube-player>
             <ng-template #placeholder>
               <div class="video-placeholder" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
@@ -186,7 +183,7 @@
 
   <!-- Delete Exercise Modal -->
   <div class="modal-overlay" [class.show]="showDeleteModal" (click)="closeDeleteModal()">
-    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-content delete" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Delete Exercise</h2>
         <button class="close-btn" (click)="closeDeleteModal()">
