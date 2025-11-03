@@ -36,16 +36,24 @@ export function HttpLoaderFactory(http: HttpClient) {
 
 function initializeKeycloak(keycloak: KeycloakService) {
   return () => {
+    console.log('Initializing Keycloak...');
     return keycloak.init({
       config: {
-        url: environment.keycloakUrl,
-        realm: 'yo-coach',
+        url: 'http://54.38.35.221:9081',
+        realm: 'empire',
         clientId: 'front-app'
       },
       initOptions: {
         onLoad: 'check-sso',
-        checkLoginIframe: false
+        checkLoginIframe: false,
+        silentCheckSsoRedirectUri: window.location.origin + '/assets/silent-check-sso.html'
       }
+    }).then(authenticated => {
+      console.log('Keycloak initialized. Authenticated:', authenticated);
+      return authenticated;
+    }).catch(error => {
+      console.error('Keycloak initialization failed:', error);
+      return false;
     });
   };
 }

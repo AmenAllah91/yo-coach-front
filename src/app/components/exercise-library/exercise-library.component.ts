@@ -6,11 +6,13 @@ import { FeatherModule } from 'angular-feather';
 import { Location } from '@angular/common';
 import { YouTubePlayerModule } from '@angular/youtube-player';
 import { ExerciseService, Exercise, PageResponse, EnumResponse } from '../../service/exercise.service';
+import { AuthService } from '../../config/auth.service';
+import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
 
 @Component({
   selector: 'app-exercise-library',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule, FeatherModule, YouTubePlayerModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, FeatherModule, YouTubePlayerModule, ScrollLoaderComponent],
   templateUrl: './exercise-library.component.html',
   styleUrls: [
     './exercise-library.component.scss',
@@ -36,6 +38,10 @@ export class ExerciseLibraryComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
   editingExercise: Exercise | null = null;
+  activeTab = 'templates';
+  templatesCount = 0;
+  myExercisesCount = 0;
+  isTemplate = false;
   
   // Filters
   selectedEquipment = '';
@@ -44,12 +50,24 @@ export class ExerciseLibraryComponent implements OnInit {
 
   constructor(
     private location: Location,
-    private exerciseService: ExerciseService
+    private exerciseService: ExerciseService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
-    this.loadEnums();
-    this.loadAllExercises();
+    // Wait a bit for Keycloak to initialize
+    setTimeout(() => {
+      console.log('Exercise Library - Checking authentication status');
+      if (!this.authService.isLoggedIn()) {
+        console.log('Exercise Library - Not logged in, redirecting to login');
+        this.authService.login();
+        return;
+      }
+      console.log('Exercise Library - User is logged in, loading data');
+      this.loadEnums();
+      this.loadAllExercises();
+      this.loadAllCounts();
+    }, 1000);
   }
 
   selectExercise(exerciseId: string) {
@@ -102,20 +120,59 @@ export class ExerciseLibraryComponent implements OnInit {
 
   loadAllExercises() {
     this.isLoading = true;
-    this.exerciseService.getAllExercises(this.currentPage, this.pageSize).subscribe({
+    const startTime = Date.now();
+    const serviceCall = this.activeTab === 'templates' 
+      ? this.exerciseService.getTemplateExercises(this.currentPage, this.pageSize)
+      : this.exerciseService.getMyExercises(this.currentPage, this.pageSize);
+      
+    serviceCall.subscribe({
       next: (response: PageResponse<Exercise>) => {
-        this.allExercises = response.content;
-        this.filteredExercises = response.content;
-        this.totalPages = response.totalPages;
-        this.totalElements = response.totalElements;
-        this.isLoading = false;
-        this.applyFilters();
+        const elapsed = Date.now() - startTime;
+        const minDelay = 800; // Minimum 800ms loading time
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+        
+        setTimeout(() => {
+          this.allExercises = response.content;
+          this.filteredExercises = response.content;
+          this.totalPages = response.totalPages;
+          this.totalElements = response.totalElements;
+          this.isLoading = false;
+          this.applyFilters();
+        }, remainingDelay);
       },
       error: (error) => {
-        console.error('Error loading exercises:', error);
-        this.isLoading = false;
+        const elapsed = Date.now() - startTime;
+        const minDelay = 800;
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+        
+        setTimeout(() => {
+          console.error('Error loading exercises:', error);
+          this.isLoading = false;
+        }, remainingDelay);
       }
     });
+  }
+
+  loadAllCounts() {
+    this.exerciseService.getTemplateExercises(0, 1).subscribe({
+      next: (response: PageResponse<Exercise>) => {
+        this.templatesCount = response.totalElements || 0;
+      },
+      error: (error) => console.error('Error loading templates count:', error)
+    });
+    
+    this.exerciseService.getMyExercises(0, 1).subscribe({
+      next: (response: PageResponse<Exercise>) => {
+        this.myExercisesCount = response.totalElements || 0;
+      },
+      error: (error) => console.error('Error loading my exercises count:', error)
+    });
+  }
+
+  setActiveTab(tab: string) {
+    this.activeTab = tab;
+    this.currentPage = 0;
+    this.loadAllExercises();
   }
 
   createExercise() {
@@ -126,13 +183,15 @@ export class ExerciseLibraryComponent implements OnInit {
       type: this.exerciseType,
       equipment: this.equipment,
       muscle: this.muscle,
-      videoLink: this.videoLink
+      videoLink: this.videoLink,
+      isTemplate: this.isTemplate
     };
 
     if (this.editingExercise) {
       this.exerciseService.updateExercise(this.editingExercise.id!, exercise).subscribe({
         next: () => {
           this.loadAllExercises();
+          this.loadAllCounts(); // Refresh sidebar counts
           this.resetForm();
           this.closeCreateModal();
         },
@@ -142,6 +201,7 @@ export class ExerciseLibraryComponent implements OnInit {
       this.exerciseService.createExercise(exercise).subscribe({
         next: () => {
           this.loadAllExercises();
+          this.loadAllCounts(); // Refresh sidebar counts
           this.resetForm();
           this.closeCreateModal();
         },
@@ -156,6 +216,7 @@ export class ExerciseLibraryComponent implements OnInit {
     this.equipment = this.enums?.equipment[0] || '';
     this.muscle = this.enums?.muscleGroup[0] || '';
     this.videoLink = '';
+    this.isTemplate = false;
     this.editingExercise = null;
   }
 
@@ -166,6 +227,7 @@ export class ExerciseLibraryComponent implements OnInit {
     this.equipment = exercise.equipment;
     this.muscle = exercise.muscle;
     this.videoLink = exercise.videoLink || '';
+    this.isTemplate = exercise.isTemplate || false;
     this.openCreateModal();
   }
 
@@ -179,6 +241,7 @@ export class ExerciseLibraryComponent implements OnInit {
       this.exerciseService.deleteExercise(this.exerciseToDelete.id!).subscribe({
         next: () => {
           this.loadAllExercises();
+          this.loadAllCounts(); // Refresh sidebar counts
           this.closeDeleteModal();
         },
         error: (error) => console.error('Error deleting exercise:', error)

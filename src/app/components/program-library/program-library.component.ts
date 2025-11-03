@@ -2,15 +2,18 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
+import { Location } from '@angular/common';
 import { WorkoutService, Workout, PageResponse } from '../../service/workout.service';
 import { ExerciseService, Exercise, PageResponse as ExercisePageResponse, EnumResponse } from '../../service/exercise.service';
+import { AuthService } from '../../config/auth.service';
+import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
 
 
 
 @Component({
   selector: 'app-program-library',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, ScrollLoaderComponent],
   templateUrl: './program-library.component.html',
   styleUrls: [
     './program-library.component.scss',
@@ -25,6 +28,8 @@ export class ProgramLibraryComponent implements OnInit {
   pageSize = 12;
   totalPages = 0;
   totalElements = 0;
+  myLibraryCount = 0;
+  templatesCount = 0;
   isLoading = false;
   openDropdownId: string | null = null;
   activeTab = 'my-library';
@@ -53,44 +58,128 @@ export class ProgramLibraryComponent implements OnInit {
   exercisePageSize = 20;
   exerciseTotalPages = 0;
   isLoadingExercises = false;
+  exerciseActiveTab = 'templates';
+  exerciseTemplatesCount = 0;
+  exerciseMyExercisesCount = 0;
 
   constructor(
     private workoutService: WorkoutService,
-    private exerciseService: ExerciseService
+    private exerciseService: ExerciseService,
+    private location: Location,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
-    this.loadPrograms();
-    this.loadEnums();
+    // Wait a bit for Keycloak to initialize
+    setTimeout(() => {
+      console.log('Program Library - Checking authentication status');
+      if (!this.authService.isLoggedIn()) {
+        console.log('Program Library - Not logged in, redirecting to login');
+        this.authService.login();
+        return;
+      }
+      console.log('Program Library - User is logged in, loading data');
+      this.loadPrograms();
+      this.loadEnums();
+      this.loadAllCounts();
+    }, 1000);
+  }
+
+  loadAllCounts() {
+    // Load My Library count
+    this.workoutService.getMyLibrary(0, 1).subscribe({
+      next: (response: PageResponse<Workout>) => {
+        this.myLibraryCount = response.totalElements || 0;
+      },
+      error: (error) => console.error('Error loading my library count:', error)
+    });
+    
+    // Load Templates count
+    this.workoutService.getTemplates(0, 1).subscribe({
+      next: (response: PageResponse<Workout>) => {
+        this.templatesCount = response.totalElements || 0;
+      },
+      error: (error) => console.error('Error loading templates count:', error)
+    });
   }
 
   loadPrograms() {
     this.isLoading = true;
+    const startTime = Date.now();
     const serviceCall = this.activeTab === 'templates' 
       ? this.workoutService.getTemplates(this.currentPage, this.pageSize)
       : this.workoutService.getMyLibrary(this.currentPage, this.pageSize);
       
     serviceCall.subscribe({
       next: (response: PageResponse<Workout>) => {
-        this.programs = response.content || [];
-        this.totalPages = response.totalPages || 0;
-        this.totalElements = response.totalElements || 0;
-        this.isLoading = false;
+        const elapsed = Date.now() - startTime;
+        const minDelay = 800; // Minimum 800ms loading time
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+        
+        setTimeout(() => {
+          this.programs = response.content || [];
+          this.totalPages = response.totalPages || 0;
+          this.totalElements = response.totalElements || 0;
+          
+          // Update the appropriate count based on active tab
+          if (this.activeTab === 'templates') {
+            this.templatesCount = this.totalElements;
+          } else {
+            this.myLibraryCount = this.totalElements;
+          }
+          
+          this.isLoading = false;
+        }, remainingDelay);
       },
       error: (error) => {
-        console.error('Error loading programs:', error);
-        this.programs = [];
-        this.totalPages = 0;
-        this.totalElements = 0;
-        this.isLoading = false;
+        const elapsed = Date.now() - startTime;
+        const minDelay = 800;
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+        
+        setTimeout(() => {
+          console.error('Error loading programs:', error);
+          this.programs = [];
+          this.totalPages = 0;
+          this.totalElements = 0;
+          this.isLoading = false;
+        }, remainingDelay);
       }
     });
   }
 
 
 
-  toggleDropdown(programId: string | null) {
-    this.openDropdownId = this.openDropdownId === programId ? null : programId;
+  toggleDropdown(programId: string | null, event?: Event) {
+    if (this.openDropdownId === programId) {
+      this.openDropdownId = null;
+      return;
+    }
+    
+    this.openDropdownId = programId;
+    
+    if (event && programId) {
+      setTimeout(() => {
+        const button = event.target as HTMLElement;
+        const dropdown = button.closest('.dropdown')?.querySelector('.dropdown-menu') as HTMLElement;
+        
+        if (dropdown) {
+          const buttonRect = button.getBoundingClientRect();
+          const dropdownHeight = 200; // Approximate dropdown height
+          const viewportHeight = window.innerHeight;
+          
+          // Position dropdown
+          if (buttonRect.bottom + dropdownHeight > viewportHeight) {
+            // Show above if not enough space below
+            dropdown.style.top = `${buttonRect.top - dropdownHeight}px`;
+          } else {
+            // Show below
+            dropdown.style.top = `${buttonRect.bottom + 4}px`;
+          }
+          
+          dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
+        }
+      }, 0);
+    }
   }
 
   assignToClients(program: Workout) {
@@ -153,6 +242,7 @@ export class ProgramLibraryComponent implements OnInit {
     this.workoutService.duplicateWorkout(program.id!).subscribe({
       next: () => {
         this.loadPrograms();
+        this.loadAllCounts(); // Refresh sidebar counts
         this.openDropdownId = null;
       },
       error: (error) => console.error('Error duplicating program:', error)
@@ -175,6 +265,7 @@ export class ProgramLibraryComponent implements OnInit {
       this.workoutService.deleteWorkout(this.programToDelete.id!).subscribe({
         next: () => {
           this.loadPrograms();
+          this.loadAllCounts(); // Refresh sidebar counts
           this.closeDeleteModal();
         },
         error: (error) => console.error('Error deleting program:', error)
@@ -241,6 +332,7 @@ export class ProgramLibraryComponent implements OnInit {
       this.workoutService.updateWorkout(this.editingProgram.id!, program as any).subscribe({
         next: () => {
           this.loadPrograms();
+          this.loadAllCounts(); // Refresh sidebar counts
           this.closeCreateModal();
         },
         error: (error) => console.error('Error updating program:', error)
@@ -249,6 +341,7 @@ export class ProgramLibraryComponent implements OnInit {
       this.workoutService.createWorkout(program as any).subscribe({
         next: () => {
           this.loadPrograms();
+          this.loadAllCounts(); // Refresh sidebar counts
           this.closeCreateModal();
         },
         error: (error) => console.error('Error creating program:', error)
@@ -306,6 +399,7 @@ export class ProgramLibraryComponent implements OnInit {
 
   addExercise() {
     this.loadExercises();
+    this.loadExerciseCounts();
     this.showExerciseModal = true;
   }
 
@@ -315,6 +409,7 @@ export class ProgramLibraryComponent implements OnInit {
     this.selectedMuscle = '';
     this.selectedEquipment = '';
     this.selectedType = '';
+    this.exerciseActiveTab = 'templates';
   }
 
   selectExercise(exercise: Exercise) {
@@ -476,19 +571,17 @@ export class ProgramLibraryComponent implements OnInit {
 
   loadExercises() {
     this.isLoadingExercises = true;
-    this.exerciseService.getAllExercises(
-      this.exerciseCurrentPage, 
-      this.exercisePageSize,
-      this.selectedEquipment || undefined,
-      this.selectedMuscle || undefined,
-      undefined,
-      this.exerciseSearchTerm || undefined
-    ).subscribe({
+    const serviceCall = this.exerciseActiveTab === 'templates' 
+      ? this.exerciseService.getTemplateExercises(this.exerciseCurrentPage, this.exercisePageSize)
+      : this.exerciseService.getMyExercises(this.exerciseCurrentPage, this.exercisePageSize);
+      
+    serviceCall.subscribe({
       next: (response: ExercisePageResponse<Exercise>) => {
         this.exercises = response.content;
         this.filteredExercises = response.content;
         this.exerciseTotalPages = response.totalPages;
         this.isLoadingExercises = false;
+        this.applyExerciseFilters();
       },
       error: (error) => {
         console.error('Error loading exercises:', error);
@@ -497,14 +590,43 @@ export class ProgramLibraryComponent implements OnInit {
     });
   }
 
-  onExerciseSearchChange() {
+  loadExerciseCounts() {
+    this.exerciseService.getTemplateExercises(0, 1).subscribe({
+      next: (response: ExercisePageResponse<Exercise>) => {
+        this.exerciseTemplatesCount = response.totalElements || 0;
+      },
+      error: (error) => console.error('Error loading exercise templates count:', error)
+    });
+    
+    this.exerciseService.getMyExercises(0, 1).subscribe({
+      next: (response: ExercisePageResponse<Exercise>) => {
+        this.exerciseMyExercisesCount = response.totalElements || 0;
+      },
+      error: (error) => console.error('Error loading my exercises count:', error)
+    });
+  }
+
+  setExerciseActiveTab(tab: string) {
+    this.exerciseActiveTab = tab;
     this.exerciseCurrentPage = 0;
     this.loadExercises();
   }
 
+  applyExerciseFilters() {
+    this.filteredExercises = this.exercises.filter(exercise => {
+      return (!this.selectedEquipment || exercise.equipment === this.selectedEquipment) &&
+             (!this.selectedMuscle || exercise.muscle === this.selectedMuscle) &&
+             (!this.selectedType || exercise.type === this.selectedType) &&
+             (!this.exerciseSearchTerm || exercise.name.toLowerCase().includes(this.exerciseSearchTerm.toLowerCase()));
+    });
+  }
+
+  onExerciseSearchChange() {
+    this.applyExerciseFilters();
+  }
+
   onExerciseFilterChange() {
-    this.exerciseCurrentPage = 0;
-    this.loadExercises();
+    this.applyExerciseFilters();
   }
 
   nextExercisePage() {
@@ -541,5 +663,9 @@ export class ProgramLibraryComponent implements OnInit {
 
   trackByProgram(index: number, program: Workout): any {
     return program.id || index;
+  }
+
+  goBack() {
+    this.location.back();
   }
 }

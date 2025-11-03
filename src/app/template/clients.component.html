@@ -68,7 +68,7 @@
 
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === client.id">
-              <button class="action-btn" (click)="toggleDropdown(client.id)">
+              <button class="action-btn" (click)="toggleDropdown(client.id, $event)">
                 <i-feather name="more-horizontal"></i-feather>
               </button>
               <div class="dropdown-menu">
@@ -94,6 +94,8 @@
         </div>
       </div>
 
+      <app-scroll-loader [isLoading]="isLoading" loadingText="Loading clients..."></app-scroll-loader>
+
       <div class="pagination" *ngIf="totalPages > 1">
         <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
         <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
@@ -107,69 +109,21 @@
   </div>
 
   <!-- Add Client Modal -->
-  <div class="modal-overlay" [class.show]="showAddModal" (click)="closeAddModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Add New Client</h2>
-        <button class="close-btn" (click)="closeAddModal()">
-          <i-feather name="x"></i-feather>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label>First Name</label>
-          <input type="text" [(ngModel)]="firstName" placeholder="Enter first name">
-        </div>
-
-        <div class="form-group">
-          <label>Last Name</label>
-          <input type="text" [(ngModel)]="lastName" placeholder="Enter last name">
-        </div>
-
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" [(ngModel)]="email" placeholder="Enter email address">
-        </div>
-
-        <div class="form-group">
-          <label>Gender</label>
-          <select [(ngModel)]="gender">
-            <option value="MALE">Male</option>
-            <option value="FEMALE">Female</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeAddModal()">Cancel</button>
-        <button class="confirm-btn primary" (click)="createClient()">Add Client</button>
-      </div>
-    </div>
-  </div>
+  <app-add-client-modal
+    [isVisible]="showAddModal"
+    [firstName]="firstName"
+    [lastName]="lastName"
+    [email]="email"
+    [gender]="gender"
+    (onClose)="closeAddModal()"
+    (onCreate)="onCreateClient($event)">
+  </app-add-client-modal>
 
   <!-- Delete Client Modal -->
-  <div class="modal-overlay" [class.show]="showDeleteModal" (click)="closeDeleteModal()">
-    <div class="modal-content delete" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Delete Client</h2>
-        <button class="close-btn" (click)="closeDeleteModal()">
-          <i-feather name="x"></i-feather>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="delete-icon">
-          <i-feather name="trash-2" size="24"></i-feather>
-        </div>
-        <h3>Are you sure?</h3>
-        <p>This action cannot be undone. This will permanently delete the client "{{ clientToDelete?.firstName }} {{ clientToDelete?.lastName }}".</p>
-      </div>
-
-      <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeDeleteModal()">Cancel</button>
-        <button class="confirm-btn danger" (click)="confirmDelete()">Delete</button>
-      </div>
-    </div>
-  </div>
+  <app-delete-client-modal
+    [isVisible]="showDeleteModal"
+    [clientName]="clientToDelete?.firstName + ' ' + clientToDelete?.lastName"
+    (onClose)="closeDeleteModal()"
+    (onConfirm)="confirmDelete()">
+  </app-delete-client-modal>
 </div>

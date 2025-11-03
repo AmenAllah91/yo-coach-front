@@ -1,4 +1,4 @@
-@import './exercise-library/shared-styles.scss';
+@import '../components/shared-styles/shared-styles.scss';
 
 .content {
   padding: 24px;
@@ -204,9 +204,7 @@
     }
 
     .dropdown-menu {
-      position: absolute;
-      top: calc(100% + 4px);
-      right: 0;
+      position: fixed;
       background: white;
       border: 1px solid #e5e7eb;
       border-radius: 6px;

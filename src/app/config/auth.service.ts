@@ -51,11 +51,15 @@ export class AuthService {
   }
 
   getToken(){
-    return this.keycloak.getToken()
+    const token = this.keycloak.getToken();
+    console.log('AuthService - getToken called, token exists:', !!token);
+    return token;
   }
 
   isLoggedIn():  boolean {
-    return this.keycloak.isLoggedIn();
+    const loggedIn = this.keycloak.isLoggedIn();
+    console.log('AuthService - isLoggedIn:', loggedIn);
+    return loggedIn;
   }
 
   getUsername(): string {

@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest} from '@angular/common/http';
-import {ToastrService} from 'ngx-toastr';
 import {LoaderService} from '../service/loader.service';
-import {Observable} from 'rxjs';
-import { AuthService } from '../template/core/service/auth.service';
+import {ToastService} from '../service/toast.service';
+import {Observable, from, switchMap, tap, catchError, finalize} from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -27,18 +27,59 @@ export class AuthInterceptor implements HttpInterceptor {
   };
 
   constructor(
-    private toastr: ToastrService,
     private loaderService: LoaderService,
+    private toastService: ToastService,
     private authService: AuthService
   ) {
   }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const currentUser = this.authService.currentUserValue;
-    if (currentUser && currentUser.token) {
-      req = this.setAuthHeader(req, currentUser.token);
+    this.loaderService.show();
+    
+    if (this.authService.isLoggedIn()) {
+      return from(this.authService.getToken()).pipe(
+        switchMap(token => {
+          if (token) {
+            const authReq = req.clone({
+              setHeaders: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            return next.handle(authReq);
+          }
+          return next.handle(req);
+        }),
+        tap(() => {
+          const method = req.method;
+          if (['POST', 'PUT', 'DELETE'].includes(method)) {
+            this.showToast(method, 'success');
+          }
+        }),
+        catchError(error => {
+          this.showToast(req.method, 'error');
+          throw error;
+        }),
+        finalize(() => {
+          this.loaderService.hide();
+        })
+      );
     }
-    return next.handle(req);
+    
+    return next.handle(req).pipe(
+      tap(() => {
+        const method = req.method;
+        if (['POST', 'PUT', 'DELETE'].includes(method)) {
+          this.showToast(method, 'success');
+        }
+      }),
+      catchError(error => {
+        this.showToast(req.method, 'error');
+        throw error;
+      }),
+      finalize(() => {
+        this.loaderService.hide();
+      })
+    );
   }
 
 
@@ -54,18 +95,9 @@ export class AuthInterceptor implements HttpInterceptor {
     const messages = this.messageMapping[method];
     if (messages) {
       if (type === 'success') {
-        this.toastr.success(messages.success, 'Success', {
-          timeOut: 3000,
-          closeButton: true,
-          progressBar: true
-        });
+        this.toastService.success(messages.success);
       } else {
-        this.toastr.error(messages.error, 'Error', {
-          timeOut: 5000,
-          closeButton: true,
-          progressBar: true,
-          toastClass: 'toast toast-error'
-        });
+        this.toastService.error(messages.error);
       }
     }
   }

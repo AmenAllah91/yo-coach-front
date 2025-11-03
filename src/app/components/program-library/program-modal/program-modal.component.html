@@ -1,0 +1,288 @@
+<div class="create-program-overlay" [class.show]="show">
+  <div class="create-program-container">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Training Days</h3>
+      </div>
+      <div class="days-list">
+        <div 
+          class="day-item" 
+          [class.active]="selectedDayIndex === i"
+          *ngFor="let day of trainingDays; let i = index"
+          (click)="selectDay(i)">
+          <span class="day-name">{{ day.name || 'Day ' + (i + 1) }}</span>
+          <button class="remove-day-btn" (click)="removeTrainingDay(i); $event.stopPropagation()" *ngIf="trainingDays.length > 1">
+            <i-feather name="trash-2" size="16"></i-feather>
+          </button>
+        </div>
+        <button class="add-day-btn" (click)="addTrainingDay()">
+          <i-feather name="plus" size="16"></i-feather>
+          Add Day
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header-section">
+        <button class="back-btn" (click)="closeModal()">
+          <i-feather name="arrow-left" size="20"></i-feather>
+        </button>
+        <div class="header-title">
+          <h1>{{ editingProgram ? 'Edit' : 'Create' }} Program</h1>
+        </div>
+        <div class="header-spacer"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-container">
+          <!-- Program Title -->
+          <div class="form-group">
+            <label>Program Title <span class="required">*</span></label>
+            <input 
+              type="text" 
+              placeholder="Enter Program Title" 
+              [(ngModel)]="programName"
+              class="program-title-input">
+          </div>
+
+          <!-- Date Fields -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input 
+                type="date" 
+                [(ngModel)]="startDate"
+                class="date-input">
+            </div>
+            <div class="form-group">
+              <label>End Date</label>
+              <input 
+                type="date" 
+                [(ngModel)]="endDate"
+                class="date-input">
+            </div>
+          </div>
+
+          <!-- Workout Plan Type -->
+          <div class="form-group">
+            <label>Workout Plan Type</label>
+            <select [(ngModel)]="typeWorkoutPlan" class="select-input">
+              <option value="STRENGTH_TRAINING">Strength Training</option>
+              <option value="CARDIO">Cardio</option>
+              <option value="FLEXIBILITY">Flexibility</option>
+              <option value="MIXED">Mixed</option>
+            </select>
+          </div>
+
+          <!-- Template Checkbox -->
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="isWorkoutPlanTemplate"
+                class="checkbox-input">
+              <span class="checkbox-text">Save as Template</span>
+            </label>
+          </div>
+
+          <!-- Program Description -->
+          <div class="form-group" *ngIf="!showProgramDescription">
+            <button class="add-description-btn" (click)="toggleProgramDescription()">
+              <i-feather name="plus" size="16"></i-feather>
+              Add Program Description
+            </button>
+          </div>
+
+          <div class="form-group" *ngIf="showProgramDescription">
+            <label>Program Description
+              <button class="remove-description-btn" (click)="toggleProgramDescription()">
+                <i-feather name="x" size="16"></i-feather>
+              </button>
+            </label>
+            <textarea 
+              placeholder="Enter Program Description" 
+              [(ngModel)]="programDescription"
+              class="program-description-input"
+              rows="4"></textarea>
+          </div>
+
+          <!-- Selected Day Content -->
+          <div class="day-content" *ngIf="trainingDays[selectedDayIndex]">
+            <div class="day-header">
+              <h2>{{ trainingDays[selectedDayIndex].name }} 
+                <i-feather name="edit-2" size="16" class="edit-icon"></i-feather>
+              </h2>
+            
+            <!-- Day Description -->
+            <div *ngIf="!trainingDays[selectedDayIndex].showDescription">
+              <button class="add-description-btn" (click)="toggleDayDescription(selectedDayIndex)">
+                <i-feather name="plus" size="16"></i-feather>
+                Add Day Description
+              </button>
+            </div>
+
+            <div *ngIf="trainingDays[selectedDayIndex].showDescription" class="day-description-section">
+              <label>Day Description
+                <button class="remove-description-btn" (click)="toggleDayDescription(selectedDayIndex)">
+                  <i-feather name="x" size="16"></i-feather>
+                </button>
+              </label>
+              <textarea 
+                placeholder="Enter Day Description" 
+                [(ngModel)]="trainingDays[selectedDayIndex].description"
+                class="day-description-input"
+                rows="3"></textarea>
+            </div>
+          </div>
+
+          <!-- Exercises Section -->
+          <div class="exercises-section">
+            <h3>Exercises</h3>
+            <div class="exercises-content">
+              <div class="no-exercises" *ngIf="trainingDays[selectedDayIndex].exercises.length === 0">
+                <p>No exercises added yet</p>
+                <button class="add-exercise-btn" (click)="addExercise()">
+                  <i-feather name="plus" size="16"></i-feather>
+                  Add an Exercise
+                </button>
+              </div>
+
+              <div class="exercises-list" *ngIf="trainingDays[selectedDayIndex].exercises.length > 0">
+                <div *ngFor="let exercise of trainingDays[selectedDayIndex].exercises; let i = index">
+                  <div class="exercise-item">
+                    <div class="exercise-header">
+                      <div class="exercise-title">
+                        <div class="exercise-icon"></div>
+                        <span class="exercise-name">{{ exercise.name }}</span>
+                      </div>
+                      <div class="exercise-actions">
+                        <button class="action-btn delete" (click)="removeExercise(i)">
+                          <i-feather name="trash-2" size="16"></i-feather>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="sets-section">
+                      <div class="sets-header">
+                        <div class="set-col">Set</div>
+                        <div class="reps-col">Reps</div>
+                        <div class="rest-col">Rest Period</div>
+                        <div class="actions-col"></div>
+                      </div>
+
+                      <div class="set-row" *ngFor="let set of exercise.sets; let setIndex = index">
+                        <div class="set-number">{{ setIndex + 1 }}</div>
+                        <div class="reps-input">
+                          <input type="number" [(ngModel)]="set.reps" placeholder="8">
+                        </div>
+                        <div class="rest-inputs">
+                          <div class="rest-input-group">
+                            <label>Min:</label>
+                            <input type="number" [(ngModel)]="set.restMin" placeholder="1">
+                          </div>
+                          <div class="rest-input-group">
+                            <label>Sec:</label>
+                            <input type="number" [(ngModel)]="set.restSec" placeholder="0">
+                          </div>
+                        </div>
+                        <div class="set-actions">
+                          <button class="delete-set-btn" (click)="removeSet(i, setIndex)">
+                            <i-feather name="trash-2" size="14"></i-feather>
+                          </button>
+                        </div>
+                      </div>
+
+                      <button class="add-set-btn" (click)="addSet(i)">
+                        Add Set
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="add-exercise-btn" (click)="addExercise()">
+                  <i-feather name="plus" size="16"></i-feather>
+                  Add an Exercise
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-section">
+      <button class="save-program-btn" (click)="saveProgram()">
+        <i-feather name="save" size="20"></i-feather>
+        Save Program
+      </button>
+    </div>
+  </div>
+
+  <!-- Exercise Selection Modal -->
+  <div class="exercise-modal-overlay" [class.show]="showExerciseModal" (click)="closeExerciseModal()">
+    <div class="exercise-modal-content" (click)="$event.stopPropagation()">
+      <div class="exercise-modal-header">
+        <div class="header-spacer"></div>
+        <h2>Exercise</h2>
+        <button class="close-btn" (click)="closeExerciseModal()">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <div class="exercise-modal-body">
+        <div class="search-section">
+          <div class="search-box">
+            <i-feather name="search" class="search-icon"></i-feather>
+            <input type="text" placeholder="Search by name..." [(ngModel)]="exerciseSearchTerm" (keyup.enter)="onExerciseSearchChange()" (blur)="onExerciseSearchChange()">
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <select class="filter-select" [(ngModel)]="selectedMuscle" (change)="onExerciseFilterChange()">
+            <option value="">Muscles</option>
+            <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">{{ muscle }}</option>
+          </select>
+          <select class="filter-select" [(ngModel)]="selectedEquipment" (change)="onExerciseFilterChange()">
+            <option value="">Equipment</option>
+            <option *ngFor="let equipment of enums?.equipment" [value]="equipment">{{ equipment }}</option>
+          </select>
+        </div>
+
+        <div class="add-new-exercise">
+          <button class="add-new-btn" (click)="addNewExercise()">
+            Add new exercise +
+          </button>
+        </div>
+
+        <div class="exercises-list">
+          <div class="loading-state" *ngIf="isLoadingExercises">
+            <p>Loading exercises...</p>
+          </div>
+          <div class="exercise-row" *ngFor="let exercise of filteredExercises">
+            <div class="exercise-icon"></div>
+            <div class="exercise-details">
+              <div class="exercise-name">{{ exercise.name }}</div>
+              <div class="exercise-type">{{ exercise.type }}</div>
+            </div>
+            <button class="add-btn" (click)="selectExercise(exercise)">
+              <i-feather name="plus"></i-feather>
+            </button>
+          </div>
+          
+          <div class="exercise-pagination" *ngIf="exerciseTotalPages > 1">
+            <button (click)="previousExercisePage()" [disabled]="exerciseCurrentPage === 0">Previous</button>
+            <span>Page {{ exerciseCurrentPage + 1 }} of {{ exerciseTotalPages }}</span>
+            <button (click)="nextExercisePage()" [disabled]="exerciseCurrentPage === exerciseTotalPages - 1">Next</button>
+          </div>
+          
+          <div class="no-exercises" *ngIf="filteredExercises.length === 0 && !isLoadingExercises">
+            <p>No exercises found.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -10,6 +10,7 @@ export interface Exercise {
   equipment: string;
   muscle: string;
   videoLink?: string;
+  isTemplate?: boolean;
 }
 
 export interface PageResponse<T> {
@@ -30,7 +31,7 @@ export interface EnumResponse {
   providedIn: 'root'
 })
 export class ExerciseService {
-  private apiUrl = `${environment.baseApiUrl}/public/exercise-ref`;
+  private apiUrl = `${environment.baseApiUrl}/api/exercise-ref`;
   private enumUrl = `${environment.baseApiUrl}/public/enums`;
 
   constructor(private http: HttpClient) {}
@@ -45,13 +46,13 @@ export class ExerciseService {
     equipment?: string, 
     muscle?: string, 
     type?: string,
-    search?: string
+    name?: string
   ): Observable<PageResponse<Exercise>> {
     let params = `page=${page}&size=${size}`;
     if (equipment) params += `&equipment=${equipment}`;
     if (muscle) params += `&muscle=${muscle}`;
     if (type) params += `&type=${type}`;
-    if (search) params += `&search=${search}`;
+    if (name) params += `&name=${name}`;
     return this.http.get<PageResponse<Exercise>>(`${this.apiUrl}/?${params}`);
   }
 
@@ -69,5 +70,13 @@ export class ExerciseService {
 
   getEnums(): Observable<EnumResponse> {
     return this.http.get<EnumResponse>(`${this.enumUrl}/`);
+  }
+
+  getTemplateExercises(page: number = 0, size: number = 10): Observable<PageResponse<Exercise>> {
+    return this.http.get<PageResponse<Exercise>>(`${this.apiUrl}/templates?page=${page}&size=${size}`);
+  }
+
+  getMyExercises(page: number = 0, size: number = 10): Observable<PageResponse<Exercise>> {
+    return this.http.get<PageResponse<Exercise>>(`${this.apiUrl}/my-exercises?page=${page}&size=${size}`);
   }
 }

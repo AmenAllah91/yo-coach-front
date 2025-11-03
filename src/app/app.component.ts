@@ -1,6 +1,7 @@
 import {Component} from '@angular/core';
 import {Observable} from "rxjs";
 import {LoaderService} from "./service/loader.service";
+import {ToastService} from "./service/toast.service";
 
 
 @Component({
@@ -12,9 +13,20 @@ export class AppComponent {
   isLoading: Observable<boolean>;
 
   constructor(
-    private loaderService: LoaderService,
+    public loaderService: LoaderService,
+    public toastService: ToastService
   ) {
-    this.isLoading = this.loaderService.isLoading$;
+    this.isLoading = this.loaderService.loading$;
+  }
+
+  getToastIcon(type: string): string {
+    switch (type) {
+      case 'success': return 'fa-check-circle';
+      case 'error': return 'fa-times-circle';
+      case 'warning': return 'fa-exclamation-triangle';
+      case 'info': return 'fa-info-circle';
+      default: return 'fa-info-circle';
+    }
   }
 
 }

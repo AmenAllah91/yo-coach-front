@@ -6,6 +6,9 @@ import { ClientService, Client } from '../service/client.service';
 import { AuthService } from '../config/auth.service';
 import { environment } from '../../environments/environment';
 import { WorkoutPlanService, WorkoutPlan } from '../service/workout-plan.service';
+import { AddClientModalComponent } from '../components/clients/add-client-modal/add-client-modal.component';
+import { DeleteClientModalComponent } from '../components/clients/delete-client-modal/delete-client-modal.component';
+import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
 
 
 @Component({
@@ -16,7 +19,10 @@ import { WorkoutPlanService, WorkoutPlan } from '../service/workout-plan.service
   imports: [
     CommonModule,
     FormsModule,
-    FeatherModule
+    FeatherModule,
+    AddClientModalComponent,
+    DeleteClientModalComponent,
+    ScrollLoaderComponent
   ]
 })
 export class ClientsComponent implements OnInit {
@@ -54,6 +60,7 @@ export class ClientsComponent implements OnInit {
 
   async loadClients() {
     this.isLoading = true;
+    const startTime = Date.now();
     
     try {
       // Console log all user info from Keycloak
@@ -79,7 +86,12 @@ export class ClientsComponent implements OnInit {
       
       if (!coachId) {
         console.error('No coach ID found');
-        this.isLoading = false;
+        const elapsed = Date.now() - startTime;
+        const minDelay = 800;
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+        setTimeout(() => {
+          this.isLoading = false;
+        }, remainingDelay);
         return;
       }
       
@@ -88,34 +100,52 @@ export class ClientsComponent implements OnInit {
       
       this.clientService.getClientsByCoach(coachId, this.currentPage, this.pageSize).subscribe({
         next: (response) => {
-          // Handle both paginated and non-paginated responses
-          const clientsData = response.content || response;
-          this.clients = clientsData.map(client => ({
-            ...client,
-            workoutDates: this.generateRandomWorkoutDates(),
-            program: this.getRandomProgram()
-          }));
-          this.filteredClients = this.clients;
+          const elapsed = Date.now() - startTime;
+          const minDelay = 800; // Minimum 800ms loading time
+          const remainingDelay = Math.max(0, minDelay - elapsed);
           
-          if (response.totalPages) {
-            this.totalPages = response.totalPages;
-            this.totalElements = response.totalElements;
-            this.currentPage = response.number;
-          } else {
-            this.totalPages = 1;
-            this.totalElements = this.clients.length;
-            this.currentPage = 0;
-          }
-          this.isLoading = false;
+          setTimeout(() => {
+            // Handle both paginated and non-paginated responses
+            const clientsData = response.content || response;
+            this.clients = clientsData.map(client => ({
+              ...client,
+              workoutDates: this.generateRandomWorkoutDates(),
+              program: this.getRandomProgram()
+            }));
+            this.filteredClients = this.clients;
+            
+            if (response.totalPages) {
+              this.totalPages = response.totalPages;
+              this.totalElements = response.totalElements;
+              this.currentPage = response.number;
+            } else {
+              this.totalPages = 1;
+              this.totalElements = this.clients.length;
+              this.currentPage = 0;
+            }
+            this.isLoading = false;
+          }, remainingDelay);
         },
         error: (error) => {
-          console.error('Error loading clients:', error);
-          this.isLoading = false;
+          const elapsed = Date.now() - startTime;
+          const minDelay = 800;
+          const remainingDelay = Math.max(0, minDelay - elapsed);
+          
+          setTimeout(() => {
+            console.error('Error loading clients:', error);
+            this.isLoading = false;
+          }, remainingDelay);
         }
       });
     } catch (error) {
-      console.error('Error getting coach ID:', error);
-      this.isLoading = false;
+      const elapsed = Date.now() - startTime;
+      const minDelay = 800;
+      const remainingDelay = Math.max(0, minDelay - elapsed);
+      
+      setTimeout(() => {
+        console.error('Error getting coach ID:', error);
+        this.isLoading = false;
+      }, remainingDelay);
     }
   }
 
@@ -158,6 +188,14 @@ export class ClientsComponent implements OnInit {
   closeAddModal() {
     this.showAddModal = false;
     this.resetForm();
+  }
+
+  onCreateClient(clientData: {firstName: string, lastName: string, email: string, gender: string}) {
+    this.firstName = clientData.firstName;
+    this.lastName = clientData.lastName;
+    this.email = clientData.email;
+    this.gender = clientData.gender;
+    this.createClient();
   }
 
   async createClient() {
@@ -210,8 +248,37 @@ export class ClientsComponent implements OnInit {
     console.log('Edit client:', client);
   }
 
-  toggleDropdown(clientId: string | null) {
-    this.openDropdownId = this.openDropdownId === clientId ? null : clientId;
+  toggleDropdown(clientId: string | null, event?: Event) {
+    if (this.openDropdownId === clientId) {
+      this.openDropdownId = null;
+      return;
+    }
+    
+    this.openDropdownId = clientId;
+    
+    if (event && clientId) {
+      setTimeout(() => {
+        const button = event.target as HTMLElement;
+        const dropdown = button.closest('.dropdown')?.querySelector('.dropdown-menu') as HTMLElement;
+        
+        if (dropdown) {
+          const buttonRect = button.getBoundingClientRect();
+          const dropdownHeight = 200; // Approximate dropdown height
+          const viewportHeight = window.innerHeight;
+          
+          // Position dropdown
+          if (buttonRect.bottom + dropdownHeight > viewportHeight) {
+            // Show above if not enough space below
+            dropdown.style.top = `${buttonRect.top - dropdownHeight}px`;
+          } else {
+            // Show below
+            dropdown.style.top = `${buttonRect.bottom + 4}px`;
+          }
+          
+          dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
+        }
+      }, 0);
+    }
   }
 
   deleteClient(client: Client) {

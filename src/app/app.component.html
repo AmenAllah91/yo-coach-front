@@ -1,5 +1,25 @@
 <div class="loader-wrapper" *ngIf="isLoading | async">
   <div class="spinner"></div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container">
+  <div 
+    *ngFor="let toast of toastService.toasts$ | async" 
+    class="toast"
+    [class]="'toast-' + toast.type">
+    <div class="toast-icon">
+      <i class="fas" [class]="getToastIcon(toast.type)"></i>
+    </div>
+    <div class="toast-content">
+      <div class="toast-title">{{ toast.title }}</div>
+      <div class="toast-message" *ngIf="toast.message">{{ toast.message }}</div>
+    </div>
+    <button class="toast-close" (click)="toastService.remove(toast.id)">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+
 <router-outlet></router-outlet>
 

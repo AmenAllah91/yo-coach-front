@@ -1,43 +1,47 @@
-<div class="program-library-container">
-  <div class="header">
+<div class="page-container">
+  <div class="page-header">
+    <button class="back-btn" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
     <div class="header-content">
       <h1>Program Library</h1>
       <p>Create, organize and manage your workout programs</p>
     </div>
-    <button class="create-btn" (click)="createProgram()">
+    <button class="primary-btn" (click)="createProgram()">
       <i-feather name="plus"></i-feather>
       Create Program
     </button>
   </div>
 
-  <div class="tabs">
-    <button 
-      class="tab" 
-      [class.active]="activeTab === 'my-library'"
-      (click)="setActiveTab('my-library')">
-      My Library <span class="count">{{ totalElements }}</span>
-    </button>
-    <button 
-      class="tab" 
-      [class.active]="activeTab === 'templates'"
-      (click)="setActiveTab('templates')">
-      YoCoach Templates
-    </button>
-  </div>
-
-  <div class="search-section">
-    <div class="search-box">
-      <i-feather name="search" class="search-icon"></i-feather>
-      <input 
-        type="text" 
-        placeholder="Search programs..." 
-        [(ngModel)]="searchTerm"
-        (keyup.enter)="onSearchChange()"
-        (blur)="onSearchChange()">
+  <div class="content">
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'my-library'"
+        (click)="setActiveTab('my-library')">
+        My Library <span class="count">{{ myLibraryCount }}</span>
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'templates'"
+        (click)="setActiveTab('templates')">
+        YoCoach Templates <span class="count">{{ templatesCount }}</span>
+      </button>
     </div>
-  </div>
 
-  <div class="programs-table">
+    <div class="search-section">
+      <div class="search-box">
+        <i-feather name="search" class="search-icon"></i-feather>
+        <input 
+          type="text" 
+          placeholder="Search programs..." 
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearchChange()"
+          (blur)="onSearchChange()">
+      </div>
+    </div>
+
+    <div class="programs-table">
     <div class="table-header">
       <div class="col-program">PROGRAM</div>
       <div class="col-created">CREATED</div>
@@ -56,17 +60,17 @@
           </div>
         </div>
 
-        <div class="col-created">
+        <div class="col-created" data-label="Created">
           {{ program.startDate || 'N/A' }}
         </div>
 
-        <div class="col-modified">
+        <div class="col-modified" data-label="Modified">
           {{ program.endDate || 'N/A' }}
         </div>
 
         <div class="col-actions">
           <div class="dropdown" [class.open]="openDropdownId === program.id">
-            <button class="action-btn" (click)="toggleDropdown(program.id!); $event.stopPropagation()">
+            <button class="action-btn" (click)="toggleDropdown(program.id!, $event); $event.stopPropagation()">
               <i-feather name="more-horizontal"></i-feather>
             </button>
             <div class="dropdown-menu">
@@ -96,14 +100,17 @@
       </div>
     </div>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
-      <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-      <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next</button>
-    </div>
+      <app-scroll-loader [isLoading]="isLoading" loadingText="Loading programs..."></app-scroll-loader>
 
-    <div class="no-programs" *ngIf="programs.length === 0 && !isLoading">
-      <p>No programs found.</p>
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
+        <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+        <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next</button>
+      </div>
+
+      <div class="no-programs" *ngIf="programs.length === 0 && !isLoading">
+        <p>No programs found.</p>
+      </div>
     </div>
   </div>
 
@@ -367,21 +374,41 @@
       </div>
 
       <div class="exercise-modal-body">
+        <!-- Exercise Tabs -->
+        <div class="exercise-tabs">
+          <button 
+            class="exercise-tab" 
+            [class.active]="exerciseActiveTab === 'templates'"
+            (click)="setExerciseActiveTab('templates')">
+            Templates ({{ exerciseTemplatesCount }})
+          </button>
+          <button 
+            class="exercise-tab" 
+            [class.active]="exerciseActiveTab === 'my-exercises'"
+            (click)="setExerciseActiveTab('my-exercises')">
+            My Exercises ({{ exerciseMyExercisesCount }})
+          </button>
+        </div>
+
         <div class="search-section">
           <div class="search-box">
             <i-feather name="search" class="search-icon"></i-feather>
-            <input type="text" placeholder="Search by name..." [(ngModel)]="exerciseSearchTerm" (keyup.enter)="onExerciseSearchChange()" (blur)="onExerciseSearchChange()">
+            <input type="text" placeholder="Search by name..." [(ngModel)]="exerciseSearchTerm" (keyup)="onExerciseSearchChange()" (input)="onExerciseSearchChange()">
           </div>
         </div>
 
         <div class="filter-section">
+          <select class="filter-select" [(ngModel)]="selectedEquipment" (change)="onExerciseFilterChange()">
+            <option value="">All Equipment</option>
+            <option *ngFor="let equipment of enums?.equipment" [value]="equipment">{{ equipment }}</option>
+          </select>
           <select class="filter-select" [(ngModel)]="selectedMuscle" (change)="onExerciseFilterChange()">
-            <option value="">Muscles</option>
+            <option value="">All Muscles</option>
             <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">{{ muscle }}</option>
           </select>
-          <select class="filter-select" [(ngModel)]="selectedEquipment" (change)="onExerciseFilterChange()">
-            <option value="">Equipment</option>
-            <option *ngFor="let equipment of enums?.equipment" [value]="equipment">{{ equipment }}</option>
+          <select class="filter-select" [(ngModel)]="selectedType" (change)="onExerciseFilterChange()">
+            <option value="">All Types</option>
+            <option *ngFor="let type of enums?.typeExercise" [value]="type">{{ type }}</option>
           </select>
         </div>
 
