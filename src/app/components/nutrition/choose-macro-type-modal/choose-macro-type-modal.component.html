@@ -1,0 +1,30 @@
+<div class="modal-overlay" [class.show]="isVisible" (click)="closeModal()">
+  <div class="modal-content choose-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Choose how to set macros</h2>
+      <button class="close-btn" (click)="closeModal()">
+        <i-feather name="x"></i-feather>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="plan-options">
+        <div class="plan-option" (click)="selectTotalForDay()">
+          <h3>Total for day</h3>
+          <p>Set total macros for the entire day</p>
+          <button class="btn-primary" (click)="selectTotalForDay(); $event.stopPropagation()">Select Total for Day</button>
+        </div>
+
+        <div class="plan-option" (click)="selectEachMeal()">
+          <h3>Each meal</h3>
+          <p>Set macros for each individual meal</p>
+          <button class="btn-primary" (click)="selectEachMeal(); $event.stopPropagation()">Select Each Meal</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>

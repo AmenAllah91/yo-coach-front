@@ -1,0 +1,23 @@
+<div class="modal-overlay" [class.show]="isVisible" (click)="closeModal()">
+  <div class="modal-content delete" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Delete Food</h2>
+      <button class="close-btn" (click)="closeModal()">
+        <i-feather name="x"></i-feather>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="delete-icon">
+        <i-feather name="trash-2" size="24"></i-feather>
+      </div>
+      <h3>Are you sure?</h3>
+      <p>This action cannot be undone. This will permanently delete the food "{{ foodName }}".</p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeModal()">Cancel</button>
+      <button class="confirm-btn danger" (click)="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>

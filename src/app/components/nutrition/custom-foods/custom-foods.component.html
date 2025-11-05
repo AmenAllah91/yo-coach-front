@@ -1,0 +1,220 @@
+<div class="page-container">
+  <div class="page-header">
+    <button class="back-btn" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
+    <div class="header-content">
+      <h1>Custom Foods</h1>
+      <p>Manage your custom food items</p>
+    </div>
+    <button class="primary-btn" (click)="openAddModal()">
+      <i-feather name="plus"></i-feather>
+      Add Food
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="search-section">
+      <div class="search-box">
+        <i-feather name="search" class="search-icon"></i-feather>
+        <input 
+          type="text" 
+          placeholder="Search foods" 
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()">
+      </div>
+    </div>
+
+    <div class="foods-table">
+      <div class="table-header">
+        <div class="col-name">NAME</div>
+        <div class="col-weight">WEIGHT</div>
+        <div class="col-macros">MACRONUTRIENTS</div>
+        <div class="col-calories">CALORIES</div>
+        <div class="col-actions"></div>
+      </div>
+
+      <div class="table-body">
+        <div class="food-row" *ngFor="let food of filteredFoods">
+          <div class="col-name">
+            <div class="food-info">
+              <h4>{{ food.name }}</h4>
+            </div>
+          </div>
+          <div class="col-weight">
+            {{ food.servingSize }} {{ food.servingDescription }}
+          </div>
+          <div class="col-macros">
+            <div class="macro-info">
+              <span class="macro">{{ food.protein }}g Protein</span>
+              <span class="macro">{{ food.carbohydrates }}g Carbs</span>
+              <span class="macro">{{ food.fat }}g Fat</span>
+            </div>
+          </div>
+          <div class="col-calories">
+            {{ food.energy }}kcal
+          </div>
+          <div class="col-actions">
+            <div class="dropdown" [class.open]="openDropdownId === food.id">
+              <button class="action-btn" (click)="toggleDropdown(food.id!, $event)">
+                <i-feather name="more-horizontal"></i-feather>
+              </button>
+              <div class="dropdown-menu">
+                <ng-container *ngIf="!food.isGeneral">
+                  <button class="dropdown-item" (click)="editFood(food)">
+                    <i-feather name="edit"></i-feather>
+                    Edit
+                  </button>
+                  <button class="dropdown-item delete" (click)="deleteFood(food); $event.stopPropagation()">
+                    <i-feather name="trash-2"></i-feather>
+                    Delete
+                  </button>
+                </ng-container>
+                <ng-container *ngIf="food.isGeneral">
+                  <span class="dropdown-item disabled">
+                    <i-feather name="lock"></i-feather>
+                    General Food
+                  </span>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
+        <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+        <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next</button>
+      </div>
+
+      <div class="no-foods" *ngIf="filteredFoods.length === 0 && !loading">
+        <p>No foods found.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Food Modal -->
+  <div class="modal-overlay" [class.show]="showAddModal" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingFood ? 'Edit' : 'Add Own' }} Food item for your nutrition plan</h2>
+        <button class="close-btn" (click)="closeAddModal()">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Name:</label>
+          <input type="text" [(ngModel)]="foodName" placeholder="Enter food name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Calories (kcal):</label>
+            <input type="number" [(ngModel)]="calories" placeholder="Enter total calories">
+          </div>
+          <div class="form-group">
+            <label>Protein (g):</label>
+            <input type="number" [(ngModel)]="protein" placeholder="Enter total protein">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Carbs (g):</label>
+            <input type="number" [(ngModel)]="carbs" placeholder="Enter total carbs">
+          </div>
+          <div class="form-group">
+            <label>Fat (g):</label>
+            <input type="number" [(ngModel)]="fat" placeholder="Enter total fat">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fiber (g):</label>
+            <input type="number" [(ngModel)]="fiber" placeholder="Enter total fiber">
+          </div>
+          <div class="form-group">
+            <label>Sugar (g):</label>
+            <input type="number" [(ngModel)]="sugar" placeholder="Enter total sugar">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Polyols (g):</label>
+            <input type="number" [(ngModel)]="polyols" placeholder="Enter total polyols">
+          </div>
+          <div class="form-group">
+            <label>Saturated (g):</label>
+            <input type="number" [(ngModel)]="saturated" placeholder="Enter total saturated">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Polyunsaturated (g):</label>
+            <input type="number" [(ngModel)]="polyunsaturated" placeholder="Enter total polyunsaturated">
+          </div>
+          <div class="form-group">
+            <label>Monounsaturated (g):</label>
+            <input type="number" [(ngModel)]="monounsaturated" placeholder="Enter total monounsaturated">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Salt (g):</label>
+            <input type="number" [(ngModel)]="salt" placeholder="Enter total salt">
+          </div>
+          <div class="form-group">
+            <label>Serving Description:</label>
+            <select [(ngModel)]="servingDescription">
+              <option value="Grams">Grams</option>
+              <option value="Qty">Qty</option>
+              <option value="ml">ml</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Serving Size (Grams):</label>
+          <input type="number" [(ngModel)]="servingSize" placeholder="Enter serving size">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-btn" (click)="closeAddModal()">Cancel</button>
+        <button class="confirm-btn primary" (click)="saveFood()">{{ editingFood ? 'Update' : 'Add' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Food Modal -->
+  <div class="modal-overlay" [class.show]="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="modal-content delete" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Delete Food</h2>
+        <button class="close-btn" (click)="closeDeleteModal()">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="delete-icon">
+          <i-feather name="trash-2" size="24"></i-feather>
+        </div>
+        <h3>Are you sure?</h3>
+        <p>This action cannot be undone. This will permanently delete the food "{{ foodToDelete?.name }}".</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-btn" (click)="closeDeleteModal()">Cancel</button>
+        <button class="confirm-btn danger" (click)="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>

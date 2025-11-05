@@ -6,6 +6,11 @@ import {RegisterComponent} from "./template/layout/register/register.component";
 import { ExerciseLibraryComponent } from './components/exercise-library/exercise-library.component';
 import { ClientsComponent } from './template/clients.component';
 import { ProgramLibraryComponent } from './components/program-library/program-library.component';
+import { FoodsComponent } from './components/nutrition/foods/foods.component';
+import { CustomFoodsComponent } from './components/nutrition/custom-foods/custom-foods.component';
+import { NutritionPlansComponent } from './components/nutrition/nutrition-plans/nutrition-plans.component';
+import { CreateMacroPlanComponent } from './components/nutrition/create-macro-plan/create-macro-plan.component';
+import { CreateFullPlanComponent } from './components/nutrition/create-full-plan/create-full-plan.component';
 import {inject} from "@angular/core";
 import {AuthGuard} from "@config/guard/auth.guard";
 
@@ -29,6 +34,34 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'workout/program-library',
         component: ProgramLibraryComponent
+      },
+      {
+        path: 'nutrition/foods',
+        component: FoodsComponent
+      },
+      {
+        path: 'nutrition/custom-foods',
+        component: CustomFoodsComponent
+      },
+      {
+        path: 'nutrition/plans',
+        component: NutritionPlansComponent
+      },
+      {
+        path: 'nutrition/create-macro-plan',
+        component: CreateMacroPlanComponent
+      },
+      {
+        path: 'nutrition/create-macro-plan/:id',
+        component: CreateMacroPlanComponent
+      },
+      {
+        path: 'nutrition/create-full-plan',
+        component: CreateFullPlanComponent
+      },
+      {
+        path: 'nutrition/create-full-plan/:id',
+        component: CreateFullPlanComponent
       }
     ]
   },

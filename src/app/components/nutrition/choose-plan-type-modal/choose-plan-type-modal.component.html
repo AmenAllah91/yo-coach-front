@@ -1,0 +1,35 @@
+<div class="modal-overlay" [class.show]="isVisible" (click)="closeModal()">
+  <div class="modal-content choose-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Choose a nutrition plan type</h2>
+      <button class="close-btn" (click)="closeModal()">
+        <i-feather name="x"></i-feather>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="plan-options">
+        <div class="plan-option">
+          <h3>Full Meal Plan</h3>
+          <p>Create a complete meal plan with specific foods, meals, and days. Ideal for detailed nutrition planning.</p>
+          <button class="btn-primary" (click)="createFullMealPlan()">Create Full Meal Plan</button>
+        </div>
+
+        <div class="plan-option">
+          <h3>Macro Only Meal Plan</h3>
+          <p>Create a plan with just macronutrient targets without specific foods. Perfect for flexible dieting approaches.</p>
+          <button class="btn-primary" (click)="createMacroOnlyPlan()">Create Macro Only Plan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<app-choose-macro-type-modal 
+  [isVisible]="showMacroTypeModal" 
+  (close)="closeMacroTypeModal()">
+</app-choose-macro-type-modal>

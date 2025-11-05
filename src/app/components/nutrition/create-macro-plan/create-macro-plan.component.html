@@ -1,0 +1,303 @@
+
+
+<!-- Mode Selection Screen -->
+<div class="create-program-overlay show" *ngIf="showModeModal">
+  <div class="create-program-container">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Nutrition Days</h3>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header-section">
+        <button class="back-btn" (click)="goBack()">
+          <i-feather name="arrow-left" size="20"></i-feather>
+        </button>
+        <div class="header-title">
+          <h1>Choose how to set macros</h1>
+        </div>
+        <div class="header-spacer"></div>
+      </div>
+
+      <div class="mode-selection-content">
+        <div class="mode-options">
+          <div class="mode-option" (click)="selectMode('total')">
+            <div class="mode-icon">📊</div>
+            <h3>Total for day</h3>
+            <p>Set total macros for the entire day</p>
+          </div>
+          <div class="mode-option" (click)="selectMode('meals')">
+            <div class="mode-icon">🍽️</div>
+            <h3>Each meal</h3>
+            <p>Set macros for each individual meal</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="create-program-overlay show" *ngIf="!showModeModal">
+  <div class="create-program-container">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Days</h3>
+      </div>
+      <div class="days-list">
+        <div 
+          class="day-item" 
+          [class.active]="selectedDay?.id === day.id"
+          *ngFor="let day of days"
+          (click)="selectDay(day)">
+          <span class="day-name">{{ day.name }}</span>
+          <button class="delete-day-btn" (click)="deleteDay(day, $event)" title="Delete Day" *ngIf="days.length > 1">
+            <i-feather name="trash-2" size="16"></i-feather>
+          </button>
+        </div>
+        <button class="add-day-btn" (click)="addDay()">
+          <i-feather name="plus" size="16"></i-feather>
+          Add Day
+        </button>
+      </div>
+      <div class="sidebar-actions">
+        <button class="duplicate-day-action" (click)="duplicateSelectedDay()" *ngIf="selectedDay">
+          <i-feather name="copy" size="16"></i-feather>
+          Duplicate Day
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header-section">
+        <button class="back-btn" (click)="goBack()">
+          <i-feather name="arrow-left" size="20"></i-feather>
+        </button>
+        <div class="header-title">
+          <h1>{{ isEditMode ? 'Edit' : 'Create' }} Macro Only Plan</h1>
+        </div>
+        <div class="header-spacer"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-container">
+          <!-- Plan Title -->
+          <div class="form-group">
+            <label>Plan Title <span class="required">*</span></label>
+            <input 
+              type="text" 
+              placeholder="Enter Plan Title" 
+              [(ngModel)]="planName"
+              class="program-title-input">
+          </div>
+
+          <!-- Plan Description -->
+          <div class="form-group" *ngIf="!showPlanDescription">
+            <button class="add-description-btn" (click)="togglePlanDescription()">
+              <i-feather name="plus" size="16"></i-feather>
+              Add Plan Description
+            </button>
+          </div>
+
+          <div class="form-group" *ngIf="showPlanDescription">
+            <label>Plan Description
+              <button class="remove-description-btn" (click)="togglePlanDescription()">
+                <i-feather name="x" size="16"></i-feather>
+              </button>
+            </label>
+            <textarea 
+              placeholder="Enter Plan Description" 
+              [(ngModel)]="planDescription"
+              class="program-description-input"
+              rows="4"></textarea>
+          </div>
+
+          <!-- Selected Day Content -->
+          <div class="day-content" *ngIf="selectedDay">
+            <div class="day-header">
+              <h2>{{ selectedDay.name }} 
+                <i-feather name="edit-2" size="16" class="edit-icon"></i-feather>
+              </h2>
+            
+            <!-- Day Description -->
+            <div *ngIf="!selectedDay.showDescription">
+              <button class="add-description-btn" (click)="toggleDayDescription()">
+                <i-feather name="plus" size="16"></i-feather>
+                Add Day Description
+              </button>
+            </div>
+
+            <div *ngIf="selectedDay.showDescription" class="day-description-section">
+              <label>Day Description
+                <button class="remove-description-btn" (click)="toggleDayDescription()">
+                  <i-feather name="x" size="16"></i-feather>
+                </button>
+              </label>
+              <textarea 
+                placeholder="Enter Day Description" 
+                [(ngModel)]="selectedDay.description"
+                class="day-description-input"
+                rows="3"></textarea>
+            </div>
+          </div>
+
+      <!-- Total for Day Mode -->
+      <div class="macros-section" *ngIf="viewMode === 'total'">
+        <!-- Macro Totals Display -->
+        <div class="macro-totals">
+          <div class="macro-total-card">
+            <div class="macro-value">{{ selectedDay.protein }}</div>
+            <div class="macro-label">Total Protein (g)</div>
+          </div>
+          <div class="macro-total-card">
+            <div class="macro-value">{{ selectedDay.carbs }}</div>
+            <div class="macro-label">Total Carbs (g)</div>
+          </div>
+          <div class="macro-total-card">
+            <div class="macro-value">{{ selectedDay.fat }}</div>
+            <div class="macro-label">Total Fat (g)</div>
+          </div>
+          <div class="macro-total-card">
+            <div class="macro-value">{{ selectedDay.calories }}</div>
+            <div class="macro-label">Total Calories (kcal)</div>
+          </div>
+        </div>
+
+        <!-- Macro Input Fields -->
+        <div class="macro-inputs">
+          <div class="macro-input">
+            <label>Protein</label>
+            <input type="number" 
+                   [(ngModel)]="selectedDay.protein" 
+                   (ngModelChange)="calculateCalories(selectedDay)"
+                   class="macro-field">
+            <span class="unit">g</span>
+          </div>
+          <div class="macro-input">
+            <label>Carbs</label>
+            <input type="number" 
+                   [(ngModel)]="selectedDay.carbs" 
+                   (ngModelChange)="calculateCalories(selectedDay)"
+                   class="macro-field">
+            <span class="unit">g</span>
+          </div>
+          <div class="macro-input">
+            <label>Fat</label>
+            <input type="number" 
+                   [(ngModel)]="selectedDay.fat" 
+                   (ngModelChange)="calculateCalories(selectedDay)"
+                   class="macro-field">
+            <span class="unit">g</span>
+          </div>
+          <div class="macro-input">
+            <label>Calories</label>
+            <input type="number" 
+                   [value]="selectedDay.calories" 
+                   readonly
+                   class="macro-field readonly">
+            <span class="unit">Kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Each Meal Mode -->
+      <div class="meals-section" *ngIf="viewMode === 'meals' && selectedDay.mealMacros">
+        <h3>Meals</h3>
+        <div class="meal-inputs">
+          <div class="meal-row">
+            <span class="meal-name">Breakfast</span>
+            <div class="meal-macros">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.breakfast.protein" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.breakfast)"
+                     placeholder="Protein" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.breakfast.carbs" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.breakfast)"
+                     placeholder="Carbs" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.breakfast.fat" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.breakfast)"
+                     placeholder="Fat" class="macro-field">
+              <input type="number" 
+                     [value]="selectedDay.mealMacros.breakfast.calories" 
+                     readonly placeholder="Calories" class="macro-field readonly">
+            </div>
+          </div>
+          <div class="meal-row">
+            <span class="meal-name">Lunch</span>
+            <div class="meal-macros">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.lunch.protein" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.lunch)"
+                     placeholder="Protein" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.lunch.carbs" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.lunch)"
+                     placeholder="Carbs" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.lunch.fat" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.lunch)"
+                     placeholder="Fat" class="macro-field">
+              <input type="number" 
+                     [value]="selectedDay.mealMacros.lunch.calories" 
+                     readonly placeholder="Calories" class="macro-field readonly">
+            </div>
+          </div>
+          <div class="meal-row">
+            <span class="meal-name">Dinner</span>
+            <div class="meal-macros">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.dinner.protein" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.dinner)"
+                     placeholder="Protein" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.dinner.carbs" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.dinner)"
+                     placeholder="Carbs" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.dinner.fat" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.dinner)"
+                     placeholder="Fat" class="macro-field">
+              <input type="number" 
+                     [value]="selectedDay.mealMacros.dinner.calories" 
+                     readonly placeholder="Calories" class="macro-field readonly">
+            </div>
+          </div>
+          <div class="meal-row">
+            <span class="meal-name">Snack</span>
+            <div class="meal-macros">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.snack.protein" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.snack)"
+                     placeholder="Protein" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.snack.carbs" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.snack)"
+                     placeholder="Carbs" class="macro-field">
+              <input type="number" 
+                     [(ngModel)]="selectedDay.mealMacros.snack.fat" 
+                     (ngModelChange)="calculateMealCalories(selectedDay.mealMacros.snack)"
+                     placeholder="Fat" class="macro-field">
+              <input type="number" 
+                     [value]="selectedDay.mealMacros.snack.calories" 
+                     readonly placeholder="Calories" class="macro-field readonly">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-section">
+      <button class="save-program-btn" (click)="savePlan()">
+        <i-feather name="save" size="20"></i-feather>
+        Save Plan
+      </button>
+    </div>
+  </div>
+</div>

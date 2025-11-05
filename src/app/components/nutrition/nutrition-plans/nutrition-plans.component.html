@@ -1,0 +1,97 @@
+<div class="nutrition-plans-container">
+  <div class="page-header">
+    <h1>Nutrition Plans</h1>
+    <button class="btn-primary" (click)="openChooseModal()">
+      <i-feather name="plus"></i-feather>
+      Add New Plan
+    </button>
+  </div>
+
+  <div class="search-container">
+    <div class="search-box">
+      <i-feather name="search" class="search-icon"></i-feather>
+      <input 
+        type="text" 
+        placeholder="Search plans..." 
+        [(ngModel)]="searchTerm"
+        class="search-input">
+    </div>
+  </div>
+
+  <div class="plans-table">
+    <div class="table-header">
+      <div class="col-title">TITLE</div>
+      <div class="col-updated">LAST UPDATED ON</div>
+      <div class="col-macros">MACRONUTRIENTS</div>
+      <div class="col-calories">CALORIES</div>
+      <div class="col-actions">ACTIONS</div>
+    </div>
+
+    <div class="table-row" *ngFor="let plan of filteredPlans">
+      <div class="col-title">
+        <div class="plan-name">{{ plan.name }}</div>
+        <div class="plan-type">{{ plan.type === 'MACRO_ONLY' ? 'Macro Only' : 'Full Plan' }}</div>
+      </div>
+      
+      <div class="col-updated">
+        {{ formatDate(plan.lastModifiedDate) }}
+      </div>
+      
+      <div class="col-macros">
+        <div class="macro-item">{{ getTotalProtein(plan) }}</div>
+        <div class="macro-item">{{ getTotalCarbs(plan) }}</div>
+        <div class="macro-item">{{ getTotalFat(plan) }}</div>
+      </div>
+      
+      <div class="col-calories">
+        {{ getTotalCalories(plan) }}
+      </div>
+      
+      <div class="col-actions">
+        <div class="dropdown" [class.open]="openDropdownId === plan.id">
+          <button class="actions-btn" (click)="toggleDropdown(plan.id!, $event)">
+            Actions
+            <i-feather name="chevron-down"></i-feather>
+          </button>
+          
+          <div class="dropdown-menu" *ngIf="openDropdownId === plan.id">
+            <button class="dropdown-item" (click)="editPlan(plan); $event.stopPropagation()">
+              <i-feather name="edit"></i-feather>
+              Edit
+            </button>
+            <button class="dropdown-item" (click)="assignPlan(plan); $event.stopPropagation()">
+              <i-feather name="user-plus"></i-feather>
+              Assign to
+            </button>
+            <button class="dropdown-item" (click)="duplicatePlan(plan); $event.stopPropagation()">
+              <i-feather name="copy"></i-feather>
+              Duplicate
+            </button>
+            <button class="dropdown-item delete" (click)="openDeleteModal(plan); $event.stopPropagation()">
+              <i-feather name="trash-2"></i-feather>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Choose Plan Type Modal -->
+  <app-choose-plan-type-modal
+    [isVisible]="showChooseModal"
+    (onClose)="closeChooseModal()"
+    (onCreateFullMeal)="createFullMealPlan()"
+    (onCreateMacroOnly)="createMacroOnlyPlan()">
+  </app-choose-plan-type-modal>
+
+  <!-- Delete Plan Modal -->
+  <app-delete-nutrition-plan-modal
+    [isVisible]="showDeleteModal"
+    [planName]="selectedPlan?.name || ''"
+    (onClose)="closeDeleteModal()"
+    (onConfirm)="confirmDelete()">
+  </app-delete-nutrition-plan-modal>
+</div>

@@ -1,0 +1,300 @@
+<div class="create-program-overlay show">
+  <div class="create-program-container">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Days</h3>
+      </div>
+      <div class="days-list">
+        <div 
+          class="day-item" 
+          [class.active]="selectedDay?.id === day.id"
+          *ngFor="let day of days"
+          (click)="selectDay(day)">
+          <span class="day-name">{{ day.name }}</span>
+          <button class="remove-day-btn" (click)="duplicateDay(day, $event)">
+            <i-feather name="copy" size="16"></i-feather>
+          </button>
+        </div>
+        <button class="add-day-btn" (click)="addDay()">
+          <i-feather name="plus" size="16"></i-feather>
+          Add Day
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header-section">
+        <button class="back-btn" (click)="goBack()">
+          <i-feather name="arrow-left" size="20"></i-feather>
+        </button>
+        <div class="header-title">
+          <h1>{{ isEditMode ? 'Edit' : 'Create' }} Macro Nutrition Plan</h1>
+        </div>
+        <div class="header-spacer"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-container">
+          <!-- Plan Title -->
+          <div class="form-group">
+            <label>Plan Title <span class="required">*</span></label>
+            <input 
+              type="text" 
+              placeholder="Enter Plan Title" 
+              [(ngModel)]="planName"
+              class="program-title-input">
+          </div>
+
+          <!-- Plan Description -->
+          <div class="form-group" *ngIf="!showPlanDescription">
+            <button class="add-description-btn" (click)="togglePlanDescription()">
+              <i-feather name="plus" size="16"></i-feather>
+              Add Plan Description
+            </button>
+          </div>
+
+          <div class="form-group" *ngIf="showPlanDescription">
+            <label>Plan Description
+              <button class="remove-description-btn" (click)="togglePlanDescription()">
+                <i-feather name="x" size="16"></i-feather>
+              </button>
+            </label>
+            <textarea 
+              placeholder="Enter Plan Description" 
+              [(ngModel)]="planDescription"
+              class="program-description-input"
+              rows="4"></textarea>
+          </div>
+
+          <!-- Selected Day Content -->
+          <div class="day-content" *ngIf="selectedDay">
+            <div class="day-header">
+              <h2>{{ selectedDay.name }} 
+                <i-feather name="edit-2" size="16" class="edit-icon"></i-feather>
+              </h2>
+            
+            <!-- Day Description -->
+            <div *ngIf="!selectedDay.showDescription">
+              <button class="add-description-btn" (click)="toggleDayDescription()">
+                <i-feather name="plus" size="16"></i-feather>
+                Add Day Description
+              </button>
+            </div>
+
+            <div *ngIf="selectedDay.showDescription" class="day-description-section">
+              <label>Day Description
+                <button class="remove-description-btn" (click)="toggleDayDescription()">
+                  <i-feather name="x" size="16"></i-feather>
+                </button>
+              </label>
+              <textarea 
+                placeholder="Enter Day Description" 
+                [(ngModel)]="selectedDay.description"
+                class="day-description-input"
+                rows="3"></textarea>
+            </div>
+          </div>
+
+      <div class="meals-section">
+        <div class="meals-header">
+          <h3>Meals</h3>
+          <div class="meal-actions">
+            <button class="add-meal-btn" (click)="addMeal()">
+              <i-feather name="plus"></i-feather>
+              New Meal
+            </button>
+            <button class="template-btn" (click)="openMealTemplateModal()">
+              <i-feather name="bookmark"></i-feather>
+              Add meal from template
+            </button>
+          </div>
+        </div>
+
+        <div class="meal-card" *ngFor="let meal of selectedDay.meals">
+          <div class="meal-header">
+            <h4>{{ meal.name }}</h4>
+            <div class="meal-actions-dropdown" [class.open]="meal.id === openMealDropdown">
+              <button class="actions-btn" (click)="toggleMealDropdown(meal.id, $event)">
+                <i-feather name="more-horizontal"></i-feather>
+              </button>
+              <div class="dropdown-menu" *ngIf="meal.id === openMealDropdown">
+                <button (click)="duplicateMeal(meal); closeMealDropdown()">
+                  <i-feather name="copy"></i-feather>
+                  Duplicate meal
+                </button>
+                <button (click)="saveMealAsTemplate(meal); closeMealDropdown()">
+                  <i-feather name="bookmark"></i-feather>
+                  Save meal as template
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="meal-foods">
+            <div class="food-item" *ngFor="let mealFood of meal.foods; let i = index">
+              <div class="food-info">
+                <span class="food-name">{{ mealFood.food.name }}</span>
+                <span class="food-quantity">{{ mealFood.quantity }}{{ mealFood.food.servingUnit }}</span>
+              </div>
+              <div class="food-nutrition">
+                <span>P: {{ mealFood.protein }}g</span>
+                <span>C: {{ mealFood.carbs }}g</span>
+                <span>F: {{ mealFood.fat }}g</span>
+                <span>{{ mealFood.calories }}kcal</span>
+              </div>
+              <button class="remove-food-btn" (click)="removeFoodFromMeal(meal, i)">
+                <i-feather name="x"></i-feather>
+              </button>
+            </div>
+
+            <button class="add-food-btn" (click)="openAddFoodModal(meal)">
+              <i-feather name="plus"></i-feather>
+              Add Food
+            </button>
+          </div>
+
+          <div class="meal-totals">
+            <span>Total: P: {{ meal.totalProtein | number:'1.1-1' }}g | C: {{ meal.totalCarbs | number:'1.1-1' }}g | F: {{ meal.totalFat | number:'1.1-1' }}g | {{ meal.totalCalories | number:'1.0-0' }}kcal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Food Modal -->
+  <div class="modal-overlay" *ngIf="showAddFoodModal" (click)="closeAddFoodModal()">
+    <div class="modal-content add-food-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Food</h2>
+        <button class="close-btn" (click)="closeAddFoodModal()">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <!-- Food Type Selection Section -->
+      <div class="food-type-header">
+        <div class="food-type-selection">
+          <button class="type-btn" 
+                  [class.active]="foodSearchType === 'all'"
+                  (click)="foodSearchType = 'all'">
+            All Food
+          </button>
+          <button class="type-btn" 
+                  [class.active]="foodSearchType === 'own'"
+                  (click)="foodSearchType = 'own'">
+            Own Food
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Food Search -->
+        <div class="food-search" *ngIf="!selectedFood">
+          <input type="text" 
+                 [(ngModel)]="foodSearchTerm" 
+                 placeholder="Search foods..." 
+                 class="search-input">
+          
+          <div class="food-list">
+            <div class="food-item" 
+                 *ngFor="let food of filteredFoods"
+                 (click)="selectFood(food)">
+              <span class="food-name">{{ food.name }}</span>
+              <span class="food-serving">{{ food.servingSize }}{{ food.servingUnit }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Food Details -->
+        <div class="food-details" *ngIf="selectedFood">
+          <button class="back-to-search" (click)="selectedFood = null">
+            <i-feather name="arrow-left"></i-feather>
+            Back to search
+          </button>
+
+          <h3>{{ selectedFood.name }}</h3>
+          
+          <div class="quantity-section">
+            <label>Quantity</label>
+            <div class="quantity-input">
+              <input type="number" 
+                     [(ngModel)]="foodQuantity" 
+                     class="quantity-field">
+              <span class="unit">{{ selectedFood.servingUnit }}</span>
+            </div>
+            <span class="serving-info">Serving size: {{ selectedFood.servingSize }}{{ selectedFood.servingUnit }}</span>
+          </div>
+
+          <div class="nutrition-values">
+            <h4>Nutrition Values</h4>
+            <div class="nutrition-grid">
+              <div class="nutrition-item">
+                <span class="label">Protein</span>
+                <span class="value">{{ calculateNutrition().protein }}g</span>
+              </div>
+              <div class="nutrition-item">
+                <span class="label">Carbs</span>
+                <span class="value">{{ calculateNutrition().carbs }}g</span>
+              </div>
+              <div class="nutrition-item">
+                <span class="label">Fat</span>
+                <span class="value">{{ calculateNutrition().fat }}g</span>
+              </div>
+              <div class="nutrition-item">
+                <span class="label">Calories</span>
+                <span class="value">{{ calculateNutrition().calories }}kcal</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="add-btn" (click)="addFoodToMeal()">Add to Meal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meal Template Modal -->
+  <div class="modal-overlay" *ngIf="showMealTemplateModal" (click)="showMealTemplateModal = false">
+    <div class="modal-content template-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Choose a meal template</h2>
+        <button class="close-btn" (click)="showMealTemplateModal = false">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="template-search">
+          <input type="text" 
+                 [(ngModel)]="templateSearchTerm"
+                 placeholder="Search templates..." 
+                 class="search-input">
+        </div>
+
+        <div class="template-list">
+          <div class="template-item" 
+               *ngFor="let template of filteredTemplates"
+               (click)="addMealFromTemplate(template)">
+            <div class="template-info">
+              <span class="template-name">{{ template.name }}</span>
+              <span class="template-nutrition">
+                P: {{ template.totalProtein }}g | C: {{ template.totalCarbs }}g | F: {{ template.totalFat }}g | {{ template.totalCalories }}kcal
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-section">
+      <button class="save-program-btn" (click)="savePlan()">
+        <i-feather name="save" size="20"></i-feather>
+        Save Plan
+      </button>
+    </div>
+  </div>
+</div>
