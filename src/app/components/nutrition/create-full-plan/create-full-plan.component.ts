@@ -4,50 +4,46 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
 
-interface Food {
-  id: string;
-  name: string;
-  protein: number;
-  carbs: number;
-  fat: number;
-  calories: number;
-  servingSize: number;
-  servingUnit: string;
-  isOwn?: boolean;
-}
-
-interface MealFood {
-  food: Food;
-  quantity: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  calories: number;
-}
-
-interface Meal {
-  id: string;
-  name: string;
-  foods: MealFood[];
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  totalCalories: number;
-}
-
-interface FullDay {
+interface MacroDay {
   id: string;
   dayNumber: number;
   name: string;
   description?: string;
-  meals: Meal[];
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  calories: number;
   showDescription?: boolean;
+  mealMacros?: MealMacros;
+
+  // ➜ ajoute ceci :
+  meals?: MacroMeal[];
 }
 
+
+interface MacroMeal {
+  id: string;
+  name: string;
+  protein: number;
+  carbs: number;
+  fat: number;
+  calories: number;
+}
+
+interface MealMacros {
+  breakfast: { protein: number; carbs: number; fat: number; calories: number };
+  lunch: { protein: number; carbs: number; fat: number; calories: number };
+  dinner: { protein: number; carbs: number; fat: number; calories: number };
+  snack: { protein: number; carbs: number; fat: number; calories: number };
+}
+interface Food {
+  id: number | string;
+  name: string;
+  protein: number; // pour 100g
+  carbs: number;   // pour 100g
+  fat: number;     // pour 100g
+  calories: number; // pour 100g
+}
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
@@ -59,340 +55,120 @@ export class CreateFullPlanComponent implements OnInit {
   planName = '';
   planDescription = '';
   showPlanDescription = false;
-  days: FullDay[] = [];
-  selectedDay: FullDay | null = null;
-  showAddFoodModal = false;
-  showMealTemplateModal = false;
-  selectedMeal: Meal | null = null;
-  foodSearchTerm = '';
-  templateSearchTerm = '';
-  foodSearchType: 'all' | 'own' = 'all';
-  selectedFood: Food | null = null;
-  foodQuantity = 1;
-  openMealDropdown: string | null = null;
-  trackingMethod: 'total' | 'each' | null = null;
+  days: MacroDay[] = [];
+  selectedDay: MacroDay | null = null;
+  selectedMeal: MacroMeal | null = null;
+  showDayDescription = false;
+  viewMode: 'total' | 'meals' = 'total';
+  showModeModal = true;
+
   isEditMode = false;
-
-  allFoods: Food[] = [
-    {
-      id: '1',
-      name: 'Chicken Breast',
-      protein: 31,
-      carbs: 0,
-      fat: 3.6,
-      calories: 165,
-      servingSize: 100,
-      servingUnit: 'g'
-    },
-    {
-      id: '2',
-      name: 'Brown Rice',
-      protein: 2.6,
-      carbs: 23,
-      fat: 0.9,
-      calories: 111,
-      servingSize: 100,
-      servingUnit: 'g'
-    },
-    {
-      id: '3',
-      name: 'Banana',
-      protein: 1.1,
-      carbs: 23,
-      fat: 0.3,
-      calories: 89,
-      servingSize: 1,
-      servingUnit: 'pcs'
-    },
-    {
-      id: '5',
-      name: 'Milk',
-      protein: 3.4,
-      carbs: 5,
-      fat: 1,
-      calories: 42,
-      servingSize: 100,
-      servingUnit: 'ml'
-    },
-    {
-      id: '6',
-      name: 'Eggs',
-      protein: 13,
-      carbs: 1.1,
-      fat: 11,
-      calories: 155,
-      servingSize: 1,
-      servingUnit: 'pcs'
-    }
-  ];
-
-  ownFoods: Food[] = [
-    {
-      id: '4',
-      name: 'Protein Shake',
-      protein: 25,
-      carbs: 5,
-      fat: 2,
-      calories: 140,
-      servingSize: 250,
-      servingUnit: 'ml',
-      isOwn: true
-    }
-  ];
-
-  mealTemplates: Meal[] = [
-    {
-      id: 't1',
-      name: 'High Protein Breakfast',
-      foods: [],
-      totalProtein: 30,
-      totalCarbs: 15,
-      totalFat: 10,
-      totalCalories: 250
-    },
-    {
-      id: 't2',
-      name: 'Balanced Lunch',
-      foods: [],
-      totalProtein: 25,
-      totalCarbs: 40,
-      totalFat: 15,
-      totalCalories: 365
-    }
-  ];
-
+  trackByDay = (_: number, d: MacroDay) => d.id;
+  trackByMeal = (_: number, m: MacroMeal) => m.id;   // <-- NEW
   constructor(
     private router: Router,
-    public route: ActivatedRoute
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
     const planId = this.route.snapshot.paramMap.get('id');
+    const type = this.route.snapshot.queryParamMap.get('type');
     this.isEditMode = !!planId;
+
     if (planId) {
+      this.showModeModal = false;
+      this.viewMode = 'total';
       this.loadExistingPlan(planId);
-    } else {
+    } else if (type === 'total' || type === 'each') {
+      this.showModeModal = false;
+      this.viewMode = type === 'total' ? 'total' : 'meals';
       this.addDay();
-      const type = this.route.snapshot.queryParamMap.get('type');
-      if (type === 'total' || type === 'each') {
-        this.trackingMethod = type;
-      }
+    } else {
+      this.showModeModal = true;
+      this.addDay();
     }
+  }
+  private makeMeal(name = 'New Meal'): MacroMeal {
+    return { id: crypto.randomUUID?.() ?? Date.now().toString(), name, protein: 0, carbs: 0, fat: 0, calories: 0 };
   }
 
   loadExistingPlan(planId: string) {
-    const existingPlan = this.findPlanById(planId);
-    if (existingPlan) {
-      this.planName = existingPlan.name;
-      this.planDescription = existingPlan.description || '';
-      this.days = existingPlan.days?.map(day => ({
-        id: day.dayNumber.toString(),
-        dayNumber: day.dayNumber,
-        name: day.name,
-        description: day.description,
-        meals: [this.createMeal('Breakfast')],
-        totalProtein: day.totalProtein || 0,
-        totalCarbs: day.totalCarbs || 0,
-        totalFat: day.totalFat || 0,
-        totalCalories: day.totalCalories || 0
-      })) || [];
-      
-      if (this.days.length === 0) {
-        this.addDay();
-      } else {
-        this.selectedDay = this.days[0];
-      }
-    } else {
-      this.addDay();
-    }
+    // const existingPlan = this.findPlanById(planId);
+    // if (existingPlan) {
+    //   this.planName = existingPlan.name;
+    //   this.planDescription = existingPlan.description || '';
+    //
+    //   this.days = existingPlan.days?.map(day => ({
+    //     id: day.dayNumber.toString(),
+    //     dayNumber: day.dayNumber,
+    //     name: day.name,
+    //     description: day.description,
+    //     protein: day.totalProtein || 0,
+    //     carbs: day.totalCarbs || 0,
+    //     fat: day.totalFat || 0,
+    //     calories: day.totalCalories || 0,
+    //     mealMacros: {
+    //       breakfast: { protein: 0, carbs: 0, fat: 0, calories: 0 },
+    //       lunch: { protein: 0, carbs: 0, fat: 0, calories: 0 },
+    //       dinner: { protein: 0, carbs: 0, fat: 0, calories: 0 },
+    //       snack: { protein: 0, carbs: 0, fat: 0, calories: 0 }
+    //     }
+    //   })) || [];
+    //
+    //   if (this.days.length === 0) {
+    //     this.addDay();
+    //   } else {
+    //     this.selectedDay = this.days[0];
+    //   }
+    // } else {
+    //   this.addDay();
+    // }
   }
 
   findPlanById(id: string) {
     const plans = [
       {
-        id: '1',
-        name: 'meal1',
+        id: '2',
+        name: '2750kcal',
         description: 'Full Plan',
-        type: 'FULL_MEAL',
+        type: 'MACRO_ONLY',
         days: [{
           dayNumber: 1,
           name: 'Day 1',
           description: '',
-          totalProtein: 13,
-          totalCarbs: 1.1,
-          totalFat: 11,
-          totalCalories: 158
+          totalProtein: 230,
+          totalCarbs: 170,
+          totalFat: 123,
+          totalCalories: 2759
         }]
       }
     ];
     return plans.find(p => p.id === id);
   }
 
-  get filteredFoods(): Food[] {
-    const foods = this.foodSearchType === 'all' ? this.allFoods : this.ownFoods;
-    return foods.filter(food => 
-      food.name.toLowerCase().includes(this.foodSearchTerm.toLowerCase())
-    );
-  }
 
-  get filteredTemplates(): Meal[] {
-    return this.mealTemplates.filter(template => 
-      template.name.toLowerCase().includes(this.templateSearchTerm.toLowerCase())
-    );
-  }
 
-  addDay() {
-    const newDay: FullDay = {
-      id: Date.now().toString(),
-      dayNumber: this.days.length + 1,
-      name: `Day ${this.days.length + 1}`,
-      meals: [this.createMeal('Breakfast')],
-      totalProtein: 0,
-      totalCarbs: 0,
-      totalFat: 0,
-      totalCalories: 0
-    };
-    this.days.push(newDay);
-    this.selectedDay = newDay;
-  }
-
-  duplicateDay(day: FullDay, event: Event) {
+  deleteDay(day: MacroDay, event: Event) {
     event.stopPropagation();
-    const duplicated: FullDay = {
-      ...day,
-      id: Date.now().toString() + Math.random(),
-      dayNumber: this.days.length + 1,
-      name: `Day ${this.days.length + 1}`,
-      meals: day.meals.map(meal => ({
-        ...meal,
-        id: Date.now().toString() + Math.random(),
-        foods: meal.foods.map(food => ({ ...food }))
-      }))
-    };
-    this.days.push(duplicated);
-    this.selectedDay = duplicated;
+    if (this.days.length > 1) {
+      const index = this.days.findIndex(d => d.id === day.id);
+      this.days.splice(index, 1);
+
+      // Renumber remaining days
+      this.days.forEach((d, i) => {
+        d.dayNumber = i + 1;
+        d.name = `Day ${i + 1}`;
+      });
+
+      // Select another day if the deleted one was selected
+      if (this.selectedDay?.id === day.id) {
+        this.selectedDay = this.days[Math.max(0, index - 1)];
+      }
+    }
   }
 
-  selectDay(day: FullDay) {
+  selectDay(day: MacroDay) {
     this.selectedDay = day;
-  }
-
-  createMeal(name: string): Meal {
-    return {
-      id: Date.now().toString() + Math.random(),
-      name,
-      foods: [],
-      totalProtein: 0,
-      totalCarbs: 0,
-      totalFat: 0,
-      totalCalories: 0
-    };
-  }
-
-  addMeal() {
-    if (this.selectedDay) {
-      const mealNumber = this.selectedDay.meals.length + 1;
-      const mealName = mealNumber === 2 ? 'Lunch' : 
-                      mealNumber === 3 ? 'Dinner' : 
-                      mealNumber === 4 ? 'Snack' : `Meal ${mealNumber}`;
-      
-      this.selectedDay.meals.push(this.createMeal(mealName));
-    }
-  }
-
-  duplicateMeal(meal: Meal) {
-    if (this.selectedDay) {
-      const duplicated: Meal = {
-        ...meal,
-        id: Date.now().toString() + Math.random(),
-        name: `${meal.name} (Copy)`,
-        foods: [...meal.foods]
-      };
-      this.selectedDay.meals.push(duplicated);
-    }
-  }
-
-  saveMealAsTemplate(meal: Meal) {
-    const template: Meal = {
-      ...meal,
-      id: 't' + Date.now(),
-      foods: [...meal.foods]
-    };
-    this.mealTemplates.push(template);
-  }
-
-  openAddFoodModal(meal: Meal) {
-    this.selectedMeal = meal;
-    this.showAddFoodModal = true;
-    this.foodSearchTerm = '';
-    this.selectedFood = null;
-  }
-
-  selectFood(food: Food) {
-    this.selectedFood = food;
-    this.foodQuantity = food.servingSize;
-  }
-
-  calculateNutrition(): { protein: number, carbs: number, fat: number, calories: number } {
-    if (!this.selectedFood) return { protein: 0, carbs: 0, fat: 0, calories: 0 };
-    
-    const ratio = this.foodQuantity / this.selectedFood.servingSize;
-    return {
-      protein: Math.round(this.selectedFood.protein * ratio * 10) / 10,
-      carbs: Math.round(this.selectedFood.carbs * ratio * 10) / 10,
-      fat: Math.round(this.selectedFood.fat * ratio * 10) / 10,
-      calories: Math.round(this.selectedFood.calories * ratio)
-    };
-  }
-
-  addFoodToMeal() {
-    if (this.selectedFood && this.selectedMeal) {
-      const nutrition = this.calculateNutrition();
-      const mealFood: MealFood = {
-        food: this.selectedFood,
-        quantity: this.foodQuantity,
-        ...nutrition
-      };
-      
-      this.selectedMeal.foods.push(mealFood);
-      this.updateMealTotals(this.selectedMeal);
-      this.updateDayTotals();
-      this.closeAddFoodModal();
-    }
-  }
-
-  updateMealTotals(meal: Meal) {
-    meal.totalProtein = Math.round(meal.foods.reduce((sum, f) => sum + f.protein, 0) * 10) / 10;
-    meal.totalCarbs = Math.round(meal.foods.reduce((sum, f) => sum + f.carbs, 0) * 10) / 10;
-    meal.totalFat = Math.round(meal.foods.reduce((sum, f) => sum + f.fat, 0) * 10) / 10;
-    meal.totalCalories = Math.round(meal.foods.reduce((sum, f) => sum + f.calories, 0));
-  }
-
-  updateDayTotals() {
-    if (this.selectedDay) {
-      this.selectedDay.totalProtein = this.selectedDay.meals.reduce((sum, m) => sum + m.totalProtein, 0);
-      this.selectedDay.totalCarbs = this.selectedDay.meals.reduce((sum, m) => sum + m.totalCarbs, 0);
-      this.selectedDay.totalFat = this.selectedDay.meals.reduce((sum, m) => sum + m.totalFat, 0);
-      this.selectedDay.totalCalories = this.selectedDay.meals.reduce((sum, m) => sum + m.totalCalories, 0);
-    }
-  }
-
-  removeFoodFromMeal(meal: Meal, index: number) {
-    meal.foods.splice(index, 1);
-    this.updateMealTotals(meal);
-    this.updateDayTotals();
-  }
-
-  closeAddFoodModal() {
-    this.showAddFoodModal = false;
-    this.selectedMeal = null;
-    this.selectedFood = null;
-    this.foodQuantity = 1;
-    this.foodSearchTerm = '';
-  }
-
-  selectTrackingMethod(method: 'total' | 'each') {
-    this.trackingMethod = method;
   }
 
   togglePlanDescription() {
@@ -406,37 +182,224 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   savePlan() {
+    // TODO: Implement save functionality
+    console.log('Saving plan:', { name: this.planName, description: this.planDescription, days: this.days });
     this.router.navigate(['/nutrition/plans']);
   }
 
-  toggleMealDropdown(mealId: string, event: Event) {
-    event.stopPropagation();
-    this.openMealDropdown = this.openMealDropdown === mealId ? null : mealId;
+  selectMode(mode: 'total' | 'meals') {
+    this.viewMode = mode;
+    this.showModeModal = false;
   }
 
-  closeMealDropdown() {
-    this.openMealDropdown = null;
+  ngAfterViewInit() {
+    // Modal handling
   }
 
   goBack() {
     this.router.navigate(['/nutrition/plans']);
   }
 
-  addMealFromTemplate(template: Meal) {
-    if (this.selectedDay) {
-      const newMeal: Meal = {
-        ...template,
-        id: Date.now().toString() + Math.random(),
-        foods: [...template.foods]
-      };
-      this.selectedDay.meals.push(newMeal);
-      this.updateDayTotals();
-      this.showMealTemplateModal = false;
+  addDay() {
+    const newDay: MacroDay = {
+      id: Date.now().toString(),
+      dayNumber: this.days.length + 1,
+      name: `Day ${this.days.length + 1}`,
+      protein: 0, carbs: 0, fat: 0, calories: 0,
+      mealMacros: {
+        breakfast: { protein: 0, carbs: 0, fat: 0, calories: 0 },
+        lunch:     { protein: 0, carbs: 0, fat: 0, calories: 0 },
+        dinner:    { protein: 0, carbs: 0, fat: 0, calories: 0 },
+        snack:     { protein: 0, carbs: 0, fat: 0, calories: 0 }
+      },
+      // ➜ initialise la liste de repas
+      meals: [
+        { id: crypto.randomUUID?.() ?? String(Date.now()),
+          name: 'New Meal', protein: 0, carbs: 0, fat: 0, calories: 0 }
+      ]
+    };
+    this.days.push(newDay);
+    this.selectedDay = newDay;
+  }
+
+
+  // Deep copy pour duplicate (inclure les meals)
+  duplicateDay(day: MacroDay, event: Event) {
+    event.stopPropagation();
+    const duplicated: MacroDay = {
+      ...day,
+      id: Date.now().toString() + Math.random(),
+      dayNumber: this.days.length + 1,
+      name: `Day ${this.days.length + 1}`,
+      meals: day.meals.map(m => ({ ...m, id: Date.now().toString() + Math.random() }))
+    };
+    this.days.push(duplicated);
+    this.selectedDay = duplicated;
+  }
+  duplicateSelectedDay() {
+    if (!this.selectedDay) return;
+    const src = this.selectedDay;
+    const duplicated: MacroDay = {
+      ...src,
+      id: Date.now().toString() + Math.random(),
+      dayNumber: this.days.length + 1,
+      name: `Day ${this.days.length + 1}`,
+      meals: src.meals.map(m => ({ ...m, id: Date.now().toString() + Math.random() }))
+    };
+    this.days.push(duplicated);
+    this.selectedDay = duplicated;
+  }
+
+  // === Meals actions ===
+  addMeal() {
+    if (!this.selectedDay) return;
+    this.selectedDay.meals ??= [];
+    this.selectedDay.meals.push({
+      id: crypto.randomUUID?.() ?? String(Date.now()),
+      name: 'New Meal', protein: 0, carbs: 0, fat: 0, calories: 0
+    });
+  }
+
+
+  removeMeal(meal: MacroMeal, day?: MacroDay) {
+    const d = day ?? this.selectedDay;
+    if (!d) return;
+    d.meals = d.meals.filter(m => m.id !== meal.id);
+    this.calculateCalories(d);
+  }
+
+  renameMeal(meal: MacroMeal, name: string) {
+    meal.name = name?.trim() || meal.name;
+  }
+
+  // Recalcule les totals depuis les meals (pratique même en mode 'meals')
+  private recalcDayFromMeals(day: MacroDay) {
+    day.protein = day.meals.reduce((s,m)=>s+m.protein,0);
+    day.carbs   = day.meals.reduce((s,m)=>s+m.carbs,0);
+    day.fat     = day.meals.reduce((s,m)=>s+m.fat,0);
+    day.calories = (day.protein*4) + (day.carbs*4) + (day.fat*9);
+  }
+
+  calculateMealCalories(meal: MacroMeal) {
+    meal.calories = (meal.protein*4)+(meal.carbs*4)+(meal.fat*9);
+    if (this.selectedDay) this.recalcDayFromMeals(this.selectedDay);
+  }
+
+  calculateCalories(day: MacroDay) {
+    // si tu veux prioriser le mode 'meals'
+    if (day.meals?.length) {
+      this.recalcDayFromMeals(day);
+    } else {
+      day.calories = (day.protein * 4) + (day.carbs * 4) + (day.fat * 9);
     }
   }
 
-  openMealTemplateModal() {
-    this.showMealTemplateModal = true;
-    this.templateSearchTerm = '';
+  isFoodModalOpen = false;
+  mealForModal: MacroMeal | null = null;
+  foodSearch = '';
+  recentFoods = [
+    { id: 1, name: 'Chicken Breast', protein: 31, carbs: 0,  fat: 3.6, calories: 165 },
+    { id: 2, name: 'Brown Rice',     protein: 2.6, carbs: 23, fat: 0.9, calories: 112 },
+    { id: 3, name: 'Broccoli',       protein: 2.8, carbs: 6.6, fat: 0.4, calories: 34 },
+  ];
+  filteredFoods = [...this.recentFoods];
+
+  // openFoodModal(meal: MacroMeal){ this.mealForModal = meal; this.isFoodModalOpen = true; this.foodSearch=''; this.filteredFoods=[...this.recentFoods]; }
+  selectFood(f:any){ if(!this.mealForModal) return; this.mealForModal.protein+=f.protein; this.mealForModal.carbs+=f.carbs; this.mealForModal.fat+=f.fat; this.calculateMealCalories(this.mealForModal); this.closeFoodModal(); }
+
+
+// ======== MODAL STATE ========
+  foodStep: 'list' | 'detail' = 'list';
+
+// Étape détail
+  selectedFood: Food | null = null;
+  foodQty = 100;            // quantité saisie
+  foodUnit: 'g' | 'serving' = 'g';
+  servingGram = 100;        // 1 "serving" = 100g par défaut (change si tu as des vraies tailles)
+  adj = { calories: 0, protein: 0, carbs: 0, fat: 0 }; // valeurs ajustées affichées
+
+  openFoodModal(meal: MacroMeal) {
+    this.mealForModal = meal;
+    this.isFoodModalOpen = true;
+    this.foodStep = 'list';
+    this.foodSearch = '';
+    this.filteredFoods = [...this.recentFoods];
+    this.selectedFood = null;
   }
+
+  closeFoodModal() {
+    this.isFoodModalOpen = false;
+    this.mealForModal = null;
+    this.selectedFood = null;
+  }
+
+  filterFoods() {
+    const q = (this.foodSearch || '').toLowerCase();
+    this.filteredFoods = !q ? [...this.recentFoods] :
+      this.recentFoods.filter(f => f.name.toLowerCase().includes(q));
+  }
+
+  showFoodDetail(f: Food) {
+    this.selectedFood = f;
+    this.foodStep = 'detail';
+    this.foodQty = 100;
+    this.foodUnit = 'g';
+    this.servingGram = 100; // adapte ici si tu as des portions propres à chaque aliment
+    this.recomputeAdjusted();
+  }
+
+  backToList() {
+    this.foodStep = 'list';
+    this.selectedFood = null;
+  }
+
+  onUnitChange() {
+    // Quand on passe de g -> serving, on garde visuellement la même masse
+    // Ex: 100g -> 1 serving (si serving=100g), 150g -> 1.5 serving, etc.
+    if (!this.selectedFood) return;
+    if (this.foodUnit === 'serving') {
+      this.foodQty = +(this.foodQty / this.servingGram).toFixed(2);
+    } else {
+      this.foodQty = +(this.foodQty * this.servingGram).toFixed(0);
+    }
+    this.recomputeAdjusted();
+  }
+
+  recomputeAdjusted() {
+    if (!this.selectedFood) return;
+
+    // Base: valeurs pour 100g
+    const base = this.selectedFood;
+
+    // Masse sélectionnée en grammes
+    const grams = this.foodUnit === 'g'
+      ? this.foodQty
+      : this.foodQty * this.servingGram;
+
+    const factor = grams / 100;
+
+    this.adj = {
+      calories: base.calories * factor,
+      protein:  base.protein  * factor,
+      carbs:    base.carbs    * factor,
+      fat:      base.fat      * factor,
+    };
+  }
+
+// Ajoute l’aliment au repas courant
+  addFoodToMeal() {
+    if (!this.mealForModal || !this.selectedFood) return;
+
+    // Ajout des macros calculées au meal
+    this.mealForModal.protein += this.adj.protein;
+    this.mealForModal.carbs   += this.adj.carbs;
+    this.mealForModal.fat     += this.adj.fat;
+
+    // Recalcule calories du repas puis du day
+    this.calculateMealCalories(this.mealForModal);
+
+    // Ferme
+    this.closeFoodModal();
+  }
+
 }

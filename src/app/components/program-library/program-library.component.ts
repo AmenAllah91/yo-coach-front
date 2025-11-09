@@ -71,7 +71,7 @@ export class ProgramLibraryComponent implements OnInit {
 
   ngOnInit() {
     // Wait a bit for Keycloak to initialize
-    setTimeout(() => {
+
       console.log('Program Library - Checking authentication status');
       if (!this.authService.isLoggedIn()) {
         console.log('Program Library - Not logged in, redirecting to login');
@@ -82,7 +82,7 @@ export class ProgramLibraryComponent implements OnInit {
       this.loadPrograms();
       this.loadEnums();
       this.loadAllCounts();
-    }, 1000);
+
   }
 
   loadAllCounts() {
@@ -93,7 +93,7 @@ export class ProgramLibraryComponent implements OnInit {
       },
       error: (error) => console.error('Error loading my library count:', error)
     });
-    
+
     // Load Templates count
     this.workoutService.getTemplates(0, 1).subscribe({
       next: (response: PageResponse<Workout>) => {
@@ -106,36 +106,36 @@ export class ProgramLibraryComponent implements OnInit {
   loadPrograms() {
     this.isLoading = true;
     const startTime = Date.now();
-    const serviceCall = this.activeTab === 'templates' 
+    const serviceCall = this.activeTab === 'templates'
       ? this.workoutService.getTemplates(this.currentPage, this.pageSize)
       : this.workoutService.getMyLibrary(this.currentPage, this.pageSize);
-      
+
     serviceCall.subscribe({
       next: (response: PageResponse<Workout>) => {
         const elapsed = Date.now() - startTime;
         const minDelay = 800; // Minimum 800ms loading time
-        const remainingDelay = Math.max(0, minDelay - elapsed);
-        
-        setTimeout(() => {
+        // const remainingDelay = Math.max(0, minDelay - elapsed);
+
+
           this.programs = response.content || [];
           this.totalPages = response.totalPages || 0;
           this.totalElements = response.totalElements || 0;
-          
+
           // Update the appropriate count based on active tab
           if (this.activeTab === 'templates') {
             this.templatesCount = this.totalElements;
           } else {
             this.myLibraryCount = this.totalElements;
           }
-          
+
           this.isLoading = false;
-        }, remainingDelay);
+
       },
       error: (error) => {
         const elapsed = Date.now() - startTime;
         const minDelay = 800;
         const remainingDelay = Math.max(0, minDelay - elapsed);
-        
+
         setTimeout(() => {
           console.error('Error loading programs:', error);
           this.programs = [];
@@ -154,19 +154,18 @@ export class ProgramLibraryComponent implements OnInit {
       this.openDropdownId = null;
       return;
     }
-    
+
     this.openDropdownId = programId;
-    
+
     if (event && programId) {
-      setTimeout(() => {
         const button = event.target as HTMLElement;
         const dropdown = button.closest('.dropdown')?.querySelector('.dropdown-menu') as HTMLElement;
-        
+
         if (dropdown) {
           const buttonRect = button.getBoundingClientRect();
           const dropdownHeight = 200; // Approximate dropdown height
           const viewportHeight = window.innerHeight;
-          
+
           // Position dropdown
           if (buttonRect.bottom + dropdownHeight > viewportHeight) {
             // Show above if not enough space below
@@ -175,10 +174,9 @@ export class ProgramLibraryComponent implements OnInit {
             // Show below
             dropdown.style.top = `${buttonRect.bottom + 4}px`;
           }
-          
+
           dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
         }
-      }, 0);
     }
   }
 
@@ -203,7 +201,7 @@ export class ProgramLibraryComponent implements OnInit {
         exercises: (day.exercises || (day.workoutSessions && day.workoutSessions[0] && (day.workoutSessions[0] as any).exercises ? (day.workoutSessions[0] as any).exercises : []) || []).map((ex: any, index: number, exercises: any[]) => {
           const exerciseId = typeof ex.exerciseRef === 'object' ? ex.exerciseRef.id : ex.exerciseRef;
           this.loadExerciseDetails(exerciseId);
-          
+
           // Find superset partner if exists
           let supersetWith = null;
           let isSuperset = false;
@@ -214,7 +212,7 @@ export class ProgramLibraryComponent implements OnInit {
               isSuperset = true;
             }
           }
-          
+
           return {
             exerciseRef: exerciseId,
             name: '',
@@ -292,7 +290,7 @@ export class ProgramLibraryComponent implements OnInit {
 
   saveProgram() {
     if (!this.programName.trim()) return;
-    
+
     const program = {
       name: this.programName,
       details: this.programDescription || '',
@@ -324,7 +322,7 @@ export class ProgramLibraryComponent implements OnInit {
         }]
       }))
     };
-    
+
     console.log('Saving program:', JSON.stringify(program, null, 2));
     console.log('Training days:', this.trainingDays);
 
@@ -447,7 +445,7 @@ export class ProgramLibraryComponent implements OnInit {
   removeExercise(exerciseIndex: number) {
     const exercises = this.trainingDays[this.selectedDayIndex].exercises;
     const exerciseToRemove = exercises[exerciseIndex];
-    
+
     // If removing a superset exercise, clean up only its pair
     if (exerciseToRemove.supersetWith && exerciseToRemove.supersetGroupId) {
       // Find the paired exercise with the same supersetGroupId and clean it up
@@ -463,7 +461,7 @@ export class ProgramLibraryComponent implements OnInit {
         }
       });
     }
-    
+
     // Remove the exercise
     exercises.splice(exerciseIndex, 1);
   }
@@ -472,12 +470,12 @@ export class ProgramLibraryComponent implements OnInit {
     const exercises = this.trainingDays[this.selectedDayIndex].exercises;
     const currentExercise = exercises[exerciseIndex];
     const nextExercise = exercises[exerciseIndex + 1];
-    
+
     if (!nextExercise) return;
-    
+
     // Check if these two exercises are already paired
     const areAlreadyPaired = currentExercise.supersetWith === nextExercise.exerciseRef;
-    
+
     if (areAlreadyPaired) {
       // Remove superset
       currentExercise.isSuperset = false;
@@ -501,7 +499,7 @@ export class ProgramLibraryComponent implements OnInit {
           }
         }
       });
-      
+
       // Reset current and next exercises
       currentExercise.isSuperset = false;
       currentExercise.supersetWith = undefined;
@@ -509,7 +507,7 @@ export class ProgramLibraryComponent implements OnInit {
       nextExercise.isSuperset = false;
       nextExercise.supersetWith = undefined;
       nextExercise.supersetGroupId = undefined;
-      
+
       // Now create the new superset
       const supersetId = `superset_${exerciseIndex}_${exerciseIndex + 1}_${Date.now()}`;
       currentExercise.isSuperset = true;
@@ -571,10 +569,10 @@ export class ProgramLibraryComponent implements OnInit {
 
   loadExercises() {
     this.isLoadingExercises = true;
-    const serviceCall = this.exerciseActiveTab === 'templates' 
+    const serviceCall = this.exerciseActiveTab === 'templates'
       ? this.exerciseService.getTemplateExercises(this.exerciseCurrentPage, this.exercisePageSize)
       : this.exerciseService.getMyExercises(this.exerciseCurrentPage, this.exercisePageSize);
-      
+
     serviceCall.subscribe({
       next: (response: ExercisePageResponse<Exercise>) => {
         this.exercises = response.content;
@@ -597,7 +595,7 @@ export class ProgramLibraryComponent implements OnInit {
       },
       error: (error) => console.error('Error loading exercise templates count:', error)
     });
-    
+
     this.exerciseService.getMyExercises(0, 1).subscribe({
       next: (response: ExercisePageResponse<Exercise>) => {
         this.exerciseMyExercisesCount = response.totalElements || 0;

@@ -40,7 +40,7 @@ function initializeKeycloak(keycloak: KeycloakService) {
     return keycloak.init({
       config: {
         url: 'http://54.38.35.221:9081',
-        realm: 'empire',
+        realm: 'yo-coach',
         clientId: 'front-app'
       },
       initOptions: {

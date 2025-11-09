@@ -13,6 +13,9 @@ import { CreateMacroPlanComponent } from './components/nutrition/create-macro-pl
 import { CreateFullPlanComponent } from './components/nutrition/create-full-plan/create-full-plan.component';
 import {inject} from "@angular/core";
 import {AuthGuard} from "@config/guard/auth.guard";
+import {
+  CreateMacroPlanTotalDayComponent
+} from "./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -50,6 +53,9 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/create-macro-plan',
         component: CreateMacroPlanComponent
+      },{
+        path: 'nutrition/create-macro-plan-total-day',
+        component: CreateMacroPlanTotalDayComponent
       },
       {
         path: 'nutrition/create-macro-plan/:id',

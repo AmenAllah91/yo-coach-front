@@ -24,15 +24,15 @@ export class ChooseMacroTypeModalComponent {
     this.closeModal();
     // TODO: Implement total for day functionality
     console.log('Total for day selected - functionality not implemented yet');
-    // this.router.navigate(['/nutrition/create-macro-plan'], { 
-    //   queryParams: { type: 'total' } 
-    // });
+    this.router.navigate(['/nutrition/create-macro-plan-total-day'], {
+      queryParams: { type: 'total' }
+    });
   }
 
   selectEachMeal() {
     this.closeModal();
-    this.router.navigate(['/nutrition/create-macro-plan'], { 
-      queryParams: { type: 'each' } 
+    this.router.navigate(['/nutrition/create-macro-plan'], {
+      queryParams: { type: 'each' }
     });
   }
 }

@@ -1,6 +1,6 @@
 <div class="nutrition-plans-container">
   <div class="page-header">
-    <h1>Nutrition Plans</h1>
+    <h1>Nutrition Planss</h1>
     <button class="btn-primary" (click)="openChooseModal()">
       <i-feather name="plus"></i-feather>
       Add New Plan
@@ -10,9 +10,9 @@
   <div class="search-container">
     <div class="search-box">
       <i-feather name="search" class="search-icon"></i-feather>
-      <input 
-        type="text" 
-        placeholder="Search plans..." 
+      <input
+        type="text"
+        placeholder="Search plans..."
         [(ngModel)]="searchTerm"
         class="search-input">
     </div>
@@ -32,28 +32,28 @@
         <div class="plan-name">{{ plan.name }}</div>
         <div class="plan-type">{{ plan.type === 'MACRO_ONLY' ? 'Macro Only' : 'Full Plan' }}</div>
       </div>
-      
+
       <div class="col-updated">
         {{ formatDate(plan.lastModifiedDate) }}
       </div>
-      
+
       <div class="col-macros">
         <div class="macro-item">{{ getTotalProtein(plan) }}</div>
         <div class="macro-item">{{ getTotalCarbs(plan) }}</div>
         <div class="macro-item">{{ getTotalFat(plan) }}</div>
       </div>
-      
+
       <div class="col-calories">
         {{ getTotalCalories(plan) }}
       </div>
-      
+
       <div class="col-actions">
         <div class="dropdown" [class.open]="openDropdownId === plan.id">
           <button class="actions-btn" (click)="toggleDropdown(plan.id!, $event)">
             Actions
             <i-feather name="chevron-down"></i-feather>
           </button>
-          
+
           <div class="dropdown-menu" *ngIf="openDropdownId === plan.id">
             <button class="dropdown-item" (click)="editPlan(plan); $event.stopPropagation()">
               <i-feather name="edit"></i-feather>

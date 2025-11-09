@@ -18,7 +18,7 @@ import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-p
 })
 export class NutritionPlansComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  
+
   plans: NutritionPlan[] = [];
   searchTerm = '';
 
@@ -45,7 +45,7 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
       });
 
     this.loadPlans();
-    
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
@@ -62,12 +62,12 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   loadPlans() {
     this.nutritionBloc.setLoading(true);
-    
+
     // Template data with coach ID: 9247e8e1-0ce7-469e-9569-10ed490fb755
     const templatePlans: NutritionPlan[] = [
       {
         id: '1',
-        name: 'meal1',
+        name: 'meal999',
         description: 'Full Plan',
         type: 'FULL_MEAL',
         coachId: '9247e8e1-0ce7-469e-9569-10ed490fb755',
@@ -161,9 +161,9 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
         lastModifiedDate: '2025-08-16T05:11:00Z'
       }
     ];
-    
+
     this.nutritionBloc.setPlans(templatePlans);
-    
+
     // Uncomment when backend is ready
     // this.nutritionService.getNutritionPlans().subscribe({
     //   next: (plans) => {
