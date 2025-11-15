@@ -15,14 +15,14 @@
 
   <div class="content">
     <div class="tabs">
-      <button 
-        class="tab" 
+      <button
+        class="tab"
         [class.active]="activeTab === 'my-library'"
         (click)="setActiveTab('my-library')">
         My Library <span class="count">{{ myLibraryCount }}</span>
       </button>
-      <button 
-        class="tab" 
+      <button
+        class="tab"
         [class.active]="activeTab === 'templates'"
         (click)="setActiveTab('templates')">
         YoCoach Templates <span class="count">{{ templatesCount }}</span>
@@ -32,9 +32,9 @@
     <div class="search-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input 
-          type="text" 
-          placeholder="Search programs..." 
+        <input
+          type="text"
+          placeholder="Search programs..."
           [(ngModel)]="searchTerm"
           (keyup.enter)="onSearchChange()"
           (blur)="onSearchChange()">
@@ -120,11 +120,11 @@
       <!-- Left Sidebar -->
       <div class="sidebar">
         <div class="sidebar-header">
-          <h3>Training Days</h3>
+          <h3>Training Dayss</h3>
         </div>
         <div class="days-list">
-          <div 
-            class="day-item" 
+          <div
+            class="day-item"
             [class.active]="selectedDayIndex === i"
             *ngFor="let day of trainingDays; let i = index"
             (click)="selectDay(i)">
@@ -157,9 +157,9 @@
             <!-- Program Title -->
             <div class="form-group">
               <label>Program Title <span class="required">*</span></label>
-              <input 
-                type="text" 
-                placeholder="Enter Program Title" 
+              <input
+                type="text"
+                placeholder="Enter Program Title"
                 [(ngModel)]="programName"
                 class="program-title-input">
             </div>
@@ -168,15 +168,15 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Start Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   [(ngModel)]="startDate"
                   class="date-input">
               </div>
               <div class="form-group">
                 <label>End Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   [(ngModel)]="endDate"
                   class="date-input">
               </div>
@@ -196,8 +196,8 @@
             <!-- Template Checkbox -->
             <div class="form-group">
               <label class="checkbox-label">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   [(ngModel)]="isWorkoutPlanTemplate"
                   class="checkbox-input">
                 <span class="checkbox-text">Save as Template</span>
@@ -218,8 +218,8 @@
                 <i-feather name="x" size="16"></i-feather>
               </button>
             </label>
-            <textarea 
-              placeholder="Enter Program Description" 
+            <textarea
+              placeholder="Enter Program Description"
               [(ngModel)]="programDescription"
               class="program-description-input"
               rows="4"></textarea>
@@ -228,10 +228,10 @@
             <!-- Selected Day Content -->
             <div class="day-content" *ngIf="trainingDays[selectedDayIndex]">
               <div class="day-header">
-                <h2>{{ trainingDays[selectedDayIndex].name }} 
+                <h2>{{ trainingDays[selectedDayIndex].name }}
                   <i-feather name="edit-2" size="16" class="edit-icon"></i-feather>
                 </h2>
-              
+
               <!-- Day Description -->
               <div *ngIf="!trainingDays[selectedDayIndex].showDescription">
                 <button class="add-description-btn" (click)="toggleDayDescription(selectedDayIndex)">
@@ -246,8 +246,8 @@
                     <i-feather name="x" size="16"></i-feather>
                   </button>
                 </label>
-                <textarea 
-                  placeholder="Enter Day Description" 
+                <textarea
+                  placeholder="Enter Day Description"
                   [(ngModel)]="trainingDays[selectedDayIndex].description"
                   class="day-description-input"
                   rows="3"></textarea>
@@ -327,12 +327,12 @@
                     </div>
 
                     <!-- Superset Button -->
-                    <div class="superset-controls" 
+                    <div class="superset-controls"
                          *ngIf="i < trainingDays[selectedDayIndex].exercises.length - 1"
                          [class.show-connection]="exercise.supersetWith === trainingDays[selectedDayIndex].exercises[i + 1].exerciseRef"
                          [attr.data-superset-id]="exercise.supersetGroupId">
-                      <button 
-                        class="superset-btn" 
+                      <button
+                        class="superset-btn"
                         [class.active]="exercise.supersetWith === trainingDays[selectedDayIndex].exercises[i + 1].exerciseRef"
                         (click)="toggleSuperset(i)">
                         {{ exercise.supersetWith === trainingDays[selectedDayIndex].exercises[i + 1]?.exerciseRef ? '- Superset' : '+ Superset' }}
@@ -376,14 +376,14 @@
       <div class="exercise-modal-body">
         <!-- Exercise Tabs -->
         <div class="exercise-tabs">
-          <button 
-            class="exercise-tab" 
+          <button
+            class="exercise-tab"
             [class.active]="exerciseActiveTab === 'templates'"
             (click)="setExerciseActiveTab('templates')">
             Templates ({{ exerciseTemplatesCount }})
           </button>
-          <button 
-            class="exercise-tab" 
+          <button
+            class="exercise-tab"
             [class.active]="exerciseActiveTab === 'my-exercises'"
             (click)="setExerciseActiveTab('my-exercises')">
             My Exercises ({{ exerciseMyExercisesCount }})
@@ -432,13 +432,13 @@
               <i-feather name="plus"></i-feather>
             </button>
           </div>
-          
+
           <div class="exercise-pagination" *ngIf="exerciseTotalPages > 1">
             <button (click)="previousExercisePage()" [disabled]="exerciseCurrentPage === 0">Previous</button>
             <span>Page {{ exerciseCurrentPage + 1 }} of {{ exerciseTotalPages }}</span>
             <button (click)="nextExercisePage()" [disabled]="exerciseCurrentPage === exerciseTotalPages - 1">Next</button>
           </div>
-          
+
           <div class="no-exercises" *ngIf="filteredExercises.length === 0 && !isLoadingExercises">
             <p>No exercises found.</p>
           </div>

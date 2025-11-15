@@ -16,6 +16,8 @@ import {AuthGuard} from "@config/guard/auth.guard";
 import {
   CreateMacroPlanTotalDayComponent
 } from "./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component";
+import {CreateWorkoutComponent} from "./components/program-library/create-workout/create-workout.component";
+import {CreateFormComponent} from "./components/forms/create-form/create-form.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -37,6 +39,9 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'workout/program-library',
         component: ProgramLibraryComponent
+      },{
+        path: 'workout/create-workout',
+        component: CreateWorkoutComponent
       },
       {
         path: 'nutrition/foods',
@@ -68,6 +73,12 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/create-full-plan/:id',
         component: CreateFullPlanComponent
+      },{
+        path: 'nutrition/create-full-plan/:id',
+        component: CreateFullPlanComponent
+      },{
+        path: 'form/create-form',
+        component: CreateFormComponent
       }
     ]
   },
