@@ -1,0 +1,386 @@
+<!-- client-profile-static.component.html -->
+<section class="main-content">
+  <!-- Header profil -->
+  <div class="profile-header">
+    <img
+      [src]="client.photoUrl"
+      alt="Profile Photo"
+      class="profile-picture"
+    />
+
+    <div class="profile-info">
+      <h3 class="profile-name">{{ fullName }}</h3>
+      <p class="text-muted">
+        {{ client.email || 'Not provided' }}
+      </p>
+      <p class="text-muted">Last workout {{ client.lastWorkout }}</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-send-message">
+        <i class="far fa-comment"></i>
+        <span>Send Message</span>
+      </button>
+
+
+      <button class="btn-more">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Onglets horizontaux (comme le screen) -->
+  <nav class="profile-tabs">
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'dashboard'"
+      (click)="setTab('dashboard')"
+    >
+      Dashboard
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'workouts'"
+      (click)="setTab('workouts')"
+    >
+      Workouts
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'nutrition'"
+      (click)="setTab('nutrition')"
+    >
+      Nutrition
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'checkins'"
+      (click)="setTab('checkins')"
+    >
+      Check-ins
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'pictures'"
+      (click)="setTab('pictures')"
+    >
+      Progress Pictures
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'calendar'"
+      (click)="setTab('calendar')"
+    >
+      Calendar
+    </button>
+  </nav>
+
+  <!-- Contenu onglets -->
+  <div class="tab-content">
+    <!-- DASHBOARD -->
+    <div class="tab-pane" [class.active]="activeTab === 'dashboard'">
+      <div class="row">
+        <div class="col col-2">
+          <div class="card">
+            <div class="card-header">
+              <h4>Client Goal</h4>
+            </div>
+            <div class="card-body">
+              <p class="pre-line">
+                {{ clientGoal }}
+              </p>
+            </div>
+          </div>
+
+          <div class="card mt-20">
+            <div class="card-header">
+              <h4>Notes</h4>
+            </div>
+            <div class="card-body">
+              <p class="pre-line">
+                {{ clientNotes }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col col-2">
+          <div class="card">
+            <div class="card-header card-header-with-link">
+              <h4>Latest Subscriptions</h4>
+              <a href="javascript:void(0)">See all</a>
+            </div>
+            <div class="card-body">
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead>
+                  <tr>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr *ngFor="let sub of subscriptions">
+                    <td>{{ sub.startDate }}</td>
+                    <td>{{ sub.endDate }}</td>
+                    <td>
+                        <span
+                          class="badge"
+                          [class.badge-success]="sub.status === 'ACTIVE'"
+                          [class.badge-danger]="sub.status !== 'ACTIVE'"
+                        >
+                          {{ sub.status }}
+                        </span>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <button class="btn-primary affect-button mt-16">
+                <i class="fas fa-sync-alt"></i>
+                Renewal
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col col-3">
+          <div class="card">
+            <div class="card-header">
+              <h4>Bodyweight</h4>
+            </div>
+            <div class="card-body weight-card">
+              <div class="weight-main">
+                <span class="weight-value">{{ latestWeight }} kg</span>
+                <span class="weight-label">Last recorded</span>
+              </div>
+              <div class="weight-placeholder-chart">
+                <!-- Placeholder pour futur graphique -->
+                Weight chart will go here
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKOUTS -->
+    <!-- WORKOUTS -->
+    <div class="tab-pane" [class.active]="activeTab === 'workouts'">
+      <div class="tab-section-header">
+        <h2 class="section-title">Workout Programs</h2>
+        <button class="btn-assign-black">
+          Assign New Program
+        </button>
+      </div>
+
+      <div
+        *ngFor="let program of workoutPrograms"
+        class="program-card"
+      >
+        <div class="program-card-top">
+          <div class="program-main">
+            <div class="program-icon program-icon-blue">
+              <i class="fas fa-dumbbell"></i>
+            </div>
+
+            <div class="program-text">
+              <div class="program-title-row">
+                <h5 class="program-name">{{ program.name }}</h5>
+
+                <span
+                  class="status-pill"
+                  [ngClass]="{
+                'status-pill--active': program.status === 'active',
+                'status-pill--upcoming': program.status === 'upcoming',
+                'status-pill--completed': program.status === 'completed'
+              }"
+                >
+              {{ program.status | titlecase }}
+            </span>
+              </div>
+
+              <div class="program-meta">
+            <span>
+              <i class="far fa-calendar-alt me-1"></i>
+              {{ program.startDate | date:'MMM dd, y' }} -
+              {{ program.endDate   | date:'MMM dd, y' }}
+            </span>
+
+                <span>
+              <i class="fas fa-bolt me-1"></i>
+                  {{ program.daysPerWeek }} days/week
+            </span>
+
+                <span>
+              <i class="far fa-clock me-1"></i>
+                  {{ program.totalWeeks }} weeks
+            </span>
+
+                <span
+                  *ngIf="program.currentWeek"
+                  class="program-week text-primary"
+                >
+              <i class="fas fa-bullseye me-1"></i>
+              Week {{ program.currentWeek }}
+            </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="program-actions">
+            <button class="icon-btn">
+              <i class="far fa-eye"></i>
+            </button>
+            <button class="icon-btn">
+              <i class="far fa-edit"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- barre de progression uniquement pour le programme actif -->
+        <div
+          *ngIf="program.status === 'active' && program.currentWeek"
+          class="program-progress"
+        >
+          <div class="progress-bar-bg">
+            <div
+              class="progress-bar-fill"
+              [style.width.%]="(program.currentWeek / program.totalWeeks) * 100"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination figma-like -->
+      <div class="pagination-wrapper">
+        <button class="page-btn" disabled>&lt;</button>
+        <button class="page-btn page-btn--active">1</button>
+        <button class="page-btn" disabled>&gt;</button>
+      </div>
+    </div>
+
+
+    <!-- NUTRITION -->
+    <!-- NUTRITION -->
+    <div class="tab-pane" [class.active]="activeTab === 'nutrition'">
+
+      <div class="tab-section-header">
+        <h2 class="section-title">Nutrition Plans</h2>
+        <button class="btn-assign-black">
+          Assign New Plan
+        </button>
+      </div>
+
+      <div
+        *ngFor="let plan of nutritionPlans"
+        class="program-card"
+      >
+        <div class="program-card-top">
+          <div class="program-main">
+            <div class="program-icon program-icon-green">
+              <i class="fas fa-apple-alt"></i>
+            </div>
+
+            <div class="program-text">
+              <div class="program-title-row">
+                <h5 class="program-name">{{ plan.name }}</h5>
+
+                <span
+                  class="status-pill"
+                  [ngClass]="{
+                'status-pill--active': plan.status === 'active',
+                'status-pill--upcoming': plan.status === 'upcoming',
+                'status-pill--completed': plan.status === 'completed'
+              }"
+                >
+              {{ plan.status | titlecase }}
+            </span>
+              </div>
+
+              <div class="program-meta">
+            <span>
+              <i class="far fa-calendar-alt me-1"></i>
+              {{ plan.startDate | date:'MMM dd, y' }} -
+              {{ plan.endDate   | date:'MMM dd, y' }}
+            </span>
+
+                <span>
+              <i class="far fa-clock me-1"></i>
+                  {{ getDays(plan.startDate, plan.endDate) }} days
+            </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="program-actions">
+            <button class="icon-btn">
+              <i class="far fa-eye"></i>
+            </button>
+            <button class="icon-btn">
+              <i class="far fa-edit"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-wrapper">
+        <button class="page-btn" disabled>&lt;</button>
+        <button class="page-btn page-btn--active">1</button>
+        <button class="page-btn" disabled>&gt;</button>
+      </div>
+    </div>
+
+
+    <!-- CHECK-INS -->
+    <div *ngIf="activeTab === 'checkins'" class="tab-pane">
+      <h2>Weekly Check-ins</h2>
+      <p class="text-muted">
+        Here you can show forms, feedback, mood, sleep etc. For now it's static.
+      </p>
+
+      <div class="card mt-20">
+        <div class="card-header">
+          <h4>Last Check-in</h4>
+        </div>
+        <div class="card-body">
+          <p><strong>Date:</strong> 2024-09-15</p>
+          <p><strong>Energy:</strong> 7/10</p>
+          <p><strong>Notes:</strong> Feeling better, workouts are getting easier.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS PICTURES -->
+    <div *ngIf="activeTab === 'pictures'" class="tab-pane">
+      <h2>Progress Pictures</h2>
+      <p class="text-muted">
+        Static placeholders for photos (front / side / back).
+      </p>
+
+      <div class="picture-grid">
+        <div class="picture-placeholder">Front</div>
+        <div class="picture-placeholder">Side</div>
+        <div class="picture-placeholder">Back</div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div *ngIf="activeTab === 'calendar'" class="tab-pane">
+      <h2>Training Calendar</h2>
+      <p class="text-muted">
+        For le moment on affiche juste un bloc statique. Tu pourras brancher
+        FullCalendar ou autre plus tard.
+      </p>
+
+      <div class="calendar-placeholder">
+        Calendar component goes here
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,1261 @@
+/* ===== Theme ===== */
+:root{
+  --np-brand:#44b4df;
+  --np-brand-10: rgba(68,180,223,.10);
+  --np-brand-20: rgba(68,180,223,.20);
+  --np-text:#111827;         /* gray-900 */
+  --np-muted:#6b7280;        /* gray-500 */
+  --np-border:#e5e7eb;       /* gray-200 */
+  --np-border-300:#d1d5db;   /* gray-300 */
+  --np-bg:#f9fafb;           /* gray-50 */
+  --np-white:#fff;
+  --np-danger:#ef4444;
+  --np-card-shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06);
+}
+
+/* ===== Layout ===== */
+.np-root{background:var(--np-bg);min-height:100vh;color:var(--np-text);font:14px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif;}
+.np-shell{display:flex;min-height:100vh;max-width:1600px;margin-inline:auto}
+.np-aside{width:256px;background:var(--np-white);border-right:1px solid var(--np-border)}
+.np-main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* Page head */
+.np-pagehead{display:flex;align-items:center;gap:12px;padding:24px 24px 0 24px}
+.np-back{color:#6b7280;text-decoration:none}
+
+/* Card container */
+.np-card{background:var(--np-white);border:1px solid var(--np-border);border-radius:12px;box-shadow:var(--np-card-shadow);padding:16px;margin:16px 24px}
+@media (min-width:768px){.np-card{padding:24px}}
+
+/* Sidebar content */
+.np-aside__head{padding:16px;border-bottom:1px solid var(--np-border)}
+.np-aside__body{padding:16px}
+
+/* Day list */
+.np-dayrow{display:flex;gap:8px;align-items:center}
+.np-day{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px;border-radius:8px;border:none;background:#fff;color:#374151;cursor:pointer}
+.np-day:hover{background:#f9fafb}
+.np-day.is-active{background:var(--np-brand-10);color:var(--np-brand);font-weight:600}
+
+.np-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:12px 14px;border:1px solid transparent;background:#fff;cursor:pointer;font-weight:600}
+.np-btn--full{width:100%}
+.np-btn--ghost{color:#6b7280;border:1px dashed var(--np-border-300);background:transparent}
+.np-btn--dash{border-style:dashed}
+.np-btn--brandsoft{background:var(--np-brand-10);color:var(--np-brand);border:1px solid rgba(68,180,223,.35)}
+.np-btn--brandsoft:hover{background:var(--np-brand-20)}
+.np-btn--branddash{background:var(--np-brand-10);color:var(--np-brand);border:1px dashed rgba(68,180,223,.5)}
+.np-btn--save{background:#000;color:#fff}
+.np-btn--save:hover{background:var(--np-brand)}
+
+.np-iconbtn{width:32px;height:32px;border-radius:999px;border:1px solid var(--np-border);background:#fff;display:inline-flex;align-items:center;justify-content:center}
+.np-mini{width:28px;height:28px;border-radius:999px;border:1px solid var(--np-border);background:#fff;display:inline-flex;align-items:center;justify-content:center;margin-left:8px}
+.np-ico{width:18px;height:18px;color:#6b7280}
+
+/* Labels & inputs */
+.np-field{margin-bottom:24px}
+.np-label{display:block;font-size:14px;font-weight:600;margin-bottom:8px;color:#374151}
+.np-danger{color:var(--np-danger)}
+.np-input{width:100%;padding:10px 12px;border:1px solid var(--np-border-300);border-radius:8px;font:inherit;outline:none}
+.np-input:focus{border-color:var(--np-brand);box-shadow:0 0 0 3px var(--np-brand-10)}
+
+/* Link (blue + icon) */
+.np-link{display:inline-flex;align-items:center;gap:8px;color:var(--np-brand);background:none;border:none;padding:0;margin:0 0 24px 0;cursor:pointer;font-weight:600}
+
+/* Section separators */
+.np-sep{height:1px;background:var(--np-border);margin:8px 0 16px}
+
+/* Day head row */
+.np-dayhead{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.np-brand{color:var(--np-brand)}
+.np-subtle{color:#6b7280;margin:8px 0 12px}
+
+/* Meal card */
+.np-meal{border:1px solid var(--np-border);border-radius:12px;overflow:hidden;background:#fff;box-shadow:var(--np-card-shadow);margin:0 0 16px 0}
+.np-meal__head{display:flex;flex-direction:column;gap:12px;padding:16px;border-bottom:1px solid var(--np-border);background:#f9fafb}
+.np-meal__left{display:flex;align-items:center}
+.np-meal__right{display:flex;align-items:center;gap:12px;justify-content:space-between}
+@media (min-width:768px){.np-meal__head{flex-direction:row;align-items:center;justify-content:space-between}}
+.np-badges{display:grid;grid-template-columns:repeat(4,auto);gap:8px}
+.np-badge{background:#fff;border:1px solid var(--np-border);border-radius:8px;padding:8px 12px;text-align:center;min-width:96px}
+.np-badge__label{font-size:11px;color:#6b7280}
+.np-badge__val{font-weight:700}
+.np-meal__body{padding:24px}
+
+/* Empty state */
+.np-emptystate{border:1px solid var(--np-border);background:#f9fafb;border-radius:10px;text-align:center;padding:48px;margin-bottom:24px}
+.np-emptystate__title{color:#6b7280;margin-bottom:8px}
+.np-emptystate__hint{color:#9ca3af;font-size:14px}
+.np-center{text-align:center}
+
+/* Grid buttons */
+.np-grid-2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:8px}
+@media (min-width:900px){.np-grid-2{grid-template-columns:1fr 1fr}}
+
+/* Sidebar utilities */
+.np-stack{margin-top:24px}
+.np-rowbtn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;border:none;background:transparent;color:#374151;cursor:pointer}
+.np-rowbtn:hover{background:#f3f4f6}
+
+/* Sticky save */
+.np-sticky{position:sticky;bottom:0;left:0;right:0;padding:16px;background:#fff;border-top:1px solid var(--np-border);box-shadow:0 -6px 18px rgba(0,0,0,.06)}
+
+/* Headings */
+.np-h5{font-size:22px;font-weight:800;margin:0}
+.np-h6{font-size:16px;font-weight:800;margin:0}
+
+/* ===== Responsiveness ===== */
+/* Mobile: sidebar becomes top-row; card keeps margins; badges wrap 2x2 */
+@media (max-width: 767px){
+  .np-shell{flex-direction:column}
+  .np-aside{width:100%;border-right:none;border-bottom:1px solid var(--np-border)}
+  .np-card{margin:12px}
+  .np-pagehead{padding:16px 12px 0}
+  .np-badges{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .np-badge{min-width:0}
+}
+
+/* Large desktop: keep proportions close to screenshot */
+@media (min-width:1200px){
+  .np-card{max-width:1080px}
+}
+/* ====== PATCH COULEURS & CADRES ====== */
+
+/* Palette exacte */
+:root{
+  --np-brand:#44b4df;
+  --np-brand-08: rgba(68,180,223,.08);
+  --np-brand-12: rgba(68,180,223,.12);
+  --np-brand-18: rgba(68,180,223,.18);
+  --np-text:#0f172a;            /* gris très foncé */
+  --np-muted:#6b7280;
+  --np-border:#e6e9ee;          /* plus clair que #e5e7eb */
+  --np-border-strong:#d8dde6;   /* pour cadres intérieurs */
+  --np-bg:#f7f8fb;              /* fond app plus clair */
+  --np-white:#fff;
+}
+
+/* Fond page & cartes (lumière/relief comme la capture) */
+.np-root{ background:var(--np-bg); }
+.np-card{
+  border:1px solid var(--np-border);
+  border-radius:10px;           /* radius un peu plus petit */
+  box-shadow:0 1px 2px rgba(16,24,40,.03);
+}
+
+/* Sidebar list */
+.np-aside{ border-right:1px solid var(--np-border); }
+.np-day{
+  background:#fff;
+  border:1px solid transparent; /* pas de bord visible au repos */
+  color:#334155;
+}
+.np-day:hover{ background:#fafcff; }
+.np-day.is-active{
+  background:var(--np-brand-12);
+  color:var(--np-brand);
+  border-color:var(--np-brand-18);
+  font-weight:600;
+}
+
+/* Bouton "Add Day" dans la sidebar : pointillés bleus très subtils */
+.np-aside .np-btn--dash,
+.np-aside .np-btn--ghost{
+  border-color:rgba(68,180,223,.35) !important;
+  color:#697386;
+  background:transparent;
+}
+.np-aside .np-btn--dash:hover{ background:rgba(68,180,223,.06); }
+
+/* Inputs */
+.np-input{
+  border:1px solid var(--np-border-strong);
+  background:#fff;
+}
+.np-input:focus{
+  border-color:var(--np-brand);
+  box-shadow:0 0 0 3px var(--np-brand-12);
+}
+
+/* Séparateur sous "Add Plan Description" comme la capture */
+.np-sep{ background:var(--np-border); }
+
+/* Titre "Main Meal" bleu et header gris pâle */
+.np-meal{
+  border:1px solid var(--np-border);
+  border-radius:10px;
+}
+.np-meal__head{
+  background:#f8fbfd;                 /* gris-bleuté très léger */
+  border-bottom:1px solid var(--np-border);
+}
+.np-meal__left .np-h6{ color:var(--np-brand); }
+
+/* Pastilles macros (CALORIES/PROTEIN/CARBS/FAT) en "pill" */
+.np-badge{
+  background:#fff;
+  border:1px solid var(--np-border-strong);
+  border-radius:8px;
+  padding:8px 10px;
+  min-width:84px;
+}
+.np-badge__label{
+  font-size:11px;
+  letter-spacing:.02em;
+  color:#8a94a6;
+  margin-bottom:2px;
+  text-transform:uppercase;
+}
+.np-badge__val{ font-weight:700; color:#1f2937; }
+
+/* Bloc vide (empty state) : gris très clair + bord arrondi fin */
+.np-emptystate{
+  background:#f8fafc;
+  border:1px solid var(--np-border);
+  border-radius:10px;
+}
+.np-emptystate__title{ color:#6b7280; }
+.np-emptystate__hint{ color:#98a2b3; }
+
+/* Bouton "Add Food" bleu très doux */
+.np-btn--brandsoft{
+  background:var(--np-brand-08);
+  border:1px solid rgba(68,180,223,.35);
+  color:var(--np-brand);
+}
+.np-btn--brandsoft:hover{ background:var(--np-brand-12); }
+
+/* Bandes en pointillés bleus pour "Add Another Meal / From Template" */
+.np-btn--branddash{
+  border-color:rgba(68,180,223,.45) !important;
+  background:rgba(68,180,223,.06);
+  color:var(--np-brand);
+}
+.np-btn--branddash:hover{ background:rgba(68,180,223,.12); }
+
+/* Conteneur repas (cadres intérieurs très fins) */
+.np-meal__body{
+  background:#fff;
+}
+.np-meal__body > .np-center + .np-center{ border-top:1px solid var(--np-border); }
+
+/* Barre "Save Plan" noire, arrondie aux bords comme la capture */
+.np-sticky{
+  border-top:1px solid var(--np-border);
+  background:#fff;
+  box-shadow:0 -4px 12px rgba(16,24,40,.06);
+}
+.np-btn--save{
+  height:44px;
+  border-radius:8px;
+  background:#000;
+  color:#fff;
+}
+.np-btn--save:hover{ background:#111; }
+
+/* Petites icônes (kebab / trash) plus discrètes */
+.np-ico{ color:#94a3b8; }
+.np-iconbtn{ border:1px solid var(--np-border-strong); background:#fff; }
+.np-iconbtn:hover{ background:#f3f6fb; }
+
+/* Titres / couleurs comme la capture */
+.np-h5{ font-size:22px; font-weight:800; color:#0f172a; }
+.np-h6{ font-size:16px; font-weight:800; color:#0f172a; }
+
+/* Grille des deux gros boutons : bordures bleues en pointillés sur toute la largeur */
+.np-grid-2{
+  margin-top:8px;
+}
+/* -- Boutons dashed bleus (Add Another Meal / Add Meal From Template) -- */
+.np-grid-2 .np-btn {                 /* full width + centrage du contenu */
+  width: 100%;
+  justify-content: center;
+}
+
+.np-btn--branddash{
+  background: #EAF7FD;                           /* bleu très clair */
+  border: 1px dashed #9BD7EE;                     /* bord pointillé bien visible */
+  color: #1EA2D2;                                  /* texte bleu */
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.np-btn--branddash .np-ico{                       /* icône “+” bleu + taille */
+  width: 20px;
+  height: 20px;
+  color: #1EA2D2;
+}
+
+.np-btn--branddash:hover{
+  background: #DDF1FB;                            /* un poil plus soutenu au hover */
+  border-color: #6CC3E3;
+}
+
+.np-btn--branddash:active{
+  background: #D3ECF8;
+}
+
+.np-btn--branddash:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(68,180,223,.22);     /* halo d’accessibilité */
+  border-color: #6CC3E3;
+}
+.np-btn--brandsoft{
+  background: #EAF7FD;
+  border: 1px solid #CFEAF7;
+  color: #1EA2D2;
+  border-radius: 10px;
+}
+.np-btn--brandsoft:hover{ background: #DDF1FB; }
+.np-btn--brandsoft .np-ico{ color:#1EA2D2; }
+/* ===== SIDEBAR DAYS — rendu exact ===== */
+
+/* Bloc & espacements */
+.np-aside__head{
+  padding:14px 16px;
+  border-bottom:1px solid var(--np-border);
+}
+.np-aside__body{
+  display:flex;
+  flex-direction:column;
+  gap:16px;                     /* espace vertical constant entre lignes */
+}
+
+/* Lignes "Day X" */
+.np-dayrow{ display:flex; align-items:center; gap:10px; }
+.np-day{
+  flex:1;
+  display:flex; align-items:center; justify-content:flex-start;
+  padding:12px 14px;
+  border-radius:8px;
+  border:1px solid transparent;
+  background:#fff;
+  color:#334155;
+  font-weight:600;
+}
+.np-day:hover{
+  background:#f9fcff;
+  border-color:#e6f3fb;
+}
+
+/* État actif (fond bleu clair + bord fin) */
+.np-day.is-active{
+  background:#EAF7FD;           /* bleu très clair */
+  border-color:#9BD7EE;         /* liseré bleu */
+  color:#1EA2D2;                /* texte bleu */
+}
+
+/* Icône poubelle à droite des Days (sans pastille) */
+.np-aside .np-iconbtn{
+  width:auto; height:auto;
+  padding:0;
+  border:none;
+  background:transparent;
+  color:#9AA9B8;                /* gris bleuté comme la cap */
+}
+.np-aside .np-iconbtn:hover{ color:#6f8aa0; }
+
+/* Bouton "Add Day" : bloc plein largeur, bord dashed bleu, fond très clair */
+.np-aside .np-btn--dash,
+.np-aside .np-btn--ghost{
+  width:100%;
+  min-height:44px;
+  justify-content:center;
+  border-radius:8px;
+  border:1px dashed #9BD7EE !important;
+  background:#EAF7FD;           /* même fond que l’actif */
+  color:#1EA2D2;
+  font-weight:600;
+}
+.np-aside .np-btn--dash .np-ico,
+.np-aside .np-btn--ghost .np-ico{
+  width:18px; height:18px; color:#1EA2D2;
+}
+.np-aside .np-btn--dash:hover,
+.np-aside .np-btn--ghost:hover{
+  background:#DDF1FB;
+  border-color:#6CC3E3 !important;
+}
+
+/* Ligne "Duplicate Day" : texte à gauche + icône copier à droite */
+.np-rowbtn{
+  padding:0 2px;
+  border-radius:6px;
+  background:transparent;
+  color:#334155;
+  font-weight:600;
+}
+.np-rowbtn .np-ico{ width:18px; height:18px; color:#9AA9B8; }
+.np-rowbtn:hover{ background:transparent; } /* pas d’effet de fond */
+/* ===== TOP SECTION EXACT RENDER ===== */
+
+/* Plan Title label + input */
+.np-field{ margin-bottom:18px; }
+.np-label{
+  font-size:14px;
+  font-weight:700;
+  color:#0f172a;
+  margin-bottom:8px;
+}
+.np-label .np-danger{ color:#ef4444; }
+
+.np-input{
+  height:44px;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid #d8dde6;      /* bord clair comme la capture */
+  background:#fff;
+  font-size:15px;
+}
+.np-input:focus{
+  border-color:#44b4df;
+  box-shadow:0 0 0 3px rgba(68,180,223,.14);
+}
+
+/* Lien + icône (Add Plan/Day Description) */
+.np-link{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:8px 0 12px;
+  font-weight:600;
+  color:#1EA2D2;                  /* bleu identique */
+}
+.np-link .np-ico{
+  width:18px; height:18px;
+  color:#1EA2D2;
+}
+
+/* Séparateur fin */
+.np-sep{
+  height:1px;
+  background:#e6e9ee;
+  margin:16px 0;
+}
+
+/* Titre "Day 1" + petit crayon */
+.np-dayhead{ margin:12px 0 8px; gap:6px; }
+.np-dayhead .np-h6{
+  font-size:20px;                 /* taille comme la capture */
+  font-weight:800;
+  margin:0;
+}
+.np-dayhead .np-mini{
+  width:18px; height:18px;        /* tout petit crayon */
+  margin-left:6px;
+  border:none;                    /* pas de pastille */
+  background:transparent;
+  padding:0;
+}
+.np-dayhead .np-mini .np-ico{ color:#8aa0b2; }
+
+/* Sous-titre "Meals" aligné */
+.np-subtle{
+  margin:12px 0 10px;
+  color:#0f172a;
+  font-weight:700;
+}
+/* ===== MEALS SECTION EXACT LOOK ===== */
+
+/* Carte "Meal" : bord fin, angles doux, légère ombre */
+.np-meal{
+  border:1px solid #e6e9ee;
+  border-radius:10px;
+  box-shadow:0 1px 2px rgba(16,24,40,.03);
+  overflow:hidden;
+}
+
+/* Header de la carte : fond gris très clair + ligne de séparation */
+.np-meal__head{
+  background:#f7fafd;                 /* léger bleu-gris comme la capture */
+  border-bottom:1px solid #e6e9ee;
+  padding:14px 16px;
+}
+
+/* Titre "Main Meal" bleu + petit crayon gris à côté */
+.np-meal__left .np-h6{
+  color:#1EA2D2;
+  font-weight:800;
+}
+.np-meal__left .np-mini{
+  width:18px;height:18px;
+  margin-left:6px;
+  border:none;background:transparent;
+}
+.np-meal__left .np-mini .np-ico{ color:#8aa0b2; }
+
+/* Badges macros à droite (CALORIES/PROTEIN/CARBS/FAT) */
+.np-badges{ gap:10px; }
+.np-badge{
+  min-width:88px;
+  border:1px solid #e6e9ee;
+  border-radius:8px;
+  background:#fff;
+  padding:8px 10px;
+  text-align:center;
+}
+.np-badge__label{
+  text-transform:uppercase;
+  font-size:11px;
+  color:#8a94a6;
+  letter-spacing:.02em;
+  margin-bottom:2px;
+}
+.np-badge__val{
+  font-weight:800;
+  color:#111827;
+}
+
+/* Kebab / icon button discret */
+.np-iconbtn{
+  width:32px;height:32px;
+  border:1px solid #e6e9ee;
+  background:#fff;
+}
+.np-iconbtn .np-ico{ color:#94a3b8; }
+
+/* Corps de la carte */
+.np-meal__body{ padding:20px; }
+
+/* Bloc "empty state" : fond très clair + bord arrondi fin */
+.np-emptystate{
+  background:#f8fafc;
+  border:1px solid #e6e9ee;
+  border-radius:10px;
+  padding:40px 16px;
+  text-align:center;
+  margin-bottom:20px;
+}
+.np-emptystate__title{ color:#6b7280; }
+.np-emptystate__hint{ color:#98a2b3; }
+
+/* Bouton "Add Food" (soft filled bleu, avec +) */
+.np-center .np-btn--brandsoft{
+  display:inline-flex;
+  align-items:center;
+  height:44px;
+  padding:0 18px;
+  border-radius:8px;
+  background:#EAF7FD;
+  border:1px solid #CFEAF7;
+  color:#1EA2D2;
+  font-weight:700;
+  box-shadow:0 1px 0 rgba(16,24,40,.02);
+}
+.np-center .np-btn--brandsoft:hover{ background:#DDF1FB; }
+
+/* Le + dans un petit disque clair */
+.np-center .np-btn--brandsoft .np-ico{
+  width:18px;height:18px;
+  color:#1EA2D2;
+  background:#D7EEF9;
+  border-radius:999px;
+  padding:2px;
+}
+
+/* Gros boutons en bas (déjà stylés, on ajuste juste la hauteur/centrage) */
+.np-grid-2 .np-btn{
+  height:54px;               /* même gabarit que la capture */
+  justify-content:center;
+}
+/* textarea comme les inputs mais plus haut */
+.np-textarea { min-height: 120px; resize: vertical; }
+
+/* bouton X dans l’angle droit du textarea */
+.np-textareaWrap { position: relative; }
+.np-close{
+  position:absolute; top:8px; right:8px;
+  width:24px; height:24px;
+  border:1px solid var(--np-border);
+  border-radius:6px; background:#fff;
+  display:flex; align-items:center; justify-content:center;
+  color:#94a3b8; cursor:pointer;
+}
+.np-close:hover{ background:#f3f4f6; }
+/* ===== SEPARATEURS SIDEBAR & COLONNES ===== */
+
+/* Trait SOUS le titre "Nutrition Days" (plus visible) */
+.np-aside__head{
+  padding: 14px 16px;
+  border-bottom: 1.5px solid #d8dde6; /* plus marqué que var(--np-border) */
+}
+
+/* Trait VERTICAL entre la sidebar et le contenu */
+.np-aside{
+  position: relative;
+  background: #fff;
+  /* on garde la bordure, mais on la rend un poil plus visible */
+  border-right: 1px solid #dfe5ee;
+}
+
+/* Option: petit filet supplémentaire très léger (effet comme la capture) */
+.np-aside::after{
+  content: "";
+  position: absolute;
+  top: 0; right: -1px;
+  width: 1px; height: 100%;
+  background: #f1f4f8;            /* liseré clair */
+  pointer-events: none;
+}
+
+/* (facultatif) un léger padding côté contenu pour “décoller” du trait */
+.np-main{
+  padding-left: 16px;              /* donne l’espace vu sur la capture */
+}
+
+/* Si tu veux un trait horizontal très léger sous la barre de page à droite */
+.np-pagehead{
+  border-bottom: 1px solid #eef2f6;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+/* Séparateur vertical à droite de la sidebar */
+.np-main{
+  border-left: 1px solid #dfe5ee;   /* le trait de séparation */
+  padding-left: 16px;               /* espace visuel côté contenu */
+}
+
+/* Optionnel : renforcer très légèrement la couleur en hover/focus global si tu veux plus visible */
+@media (min-width: 768px){
+  .np-main{ border-left-color: #e6e9ee; }
+}
+/* Carte principale : bordure visible + arrondi doux */
+.np-card{
+  border: 1.5px solid #e2e8f0;   /* plus visible */
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16,24,40,.03);
+}
+/* Labels de formulaire (Plan Title, Plan Description, etc.) */
+.np-label{
+  font-size: 14px;        /* taille modérée (plus petite que 'Day') */
+  font-weight: 600;       /* semi-bold, pas trop gras */
+  color: #0f172a;         /* foncé propre */
+  margin-bottom: 8px;
+}
+
+/* Titre de section 'Day X' reste plus “fort” que les labels */
+.np-dayhead .np-h6{
+  font-size: 20px;        /* plus grand que 14px des labels */
+  font-weight: 800;
+}
+/* 1) La carte prend toute la largeur disponible du main */
+@media (min-width: 1200px){
+  .np-card{ max-width: none; }
+}
+
+/* 2) Gouttières cohérentes avec la barre sticky */
+.np-main{
+  padding-left: 16px;
+  padding-right: 16px;   /* ajouté */
+}
+.np-card{
+  margin:16px 0;         /* plus de marge droite/gauche : on utilise le padding du main */
+}
+/* ===== Modal shell ===== */
+.np-modal{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+.np-modal__backdrop{position:absolute;inset:0;background:rgba(17,24,39,.45);backdrop-filter:saturate(120%) blur(2px)}
+.np-modal__panel{
+  position:relative; z-index:1; width:100%; max-width:520px;
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12); display:flex; flex-direction:column;
+}
+/* Head */
+.np-modal__head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #eef2f6}
+.np-modal__title{margin:0;font-size:20px;font-weight:800;color:#0f172a}
+.np-modal__close{width:34px;height:34px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.np-modal__close:hover{background:#f8fafc}
+/* Body */
+.np-modal__body{padding:16px 18px 8px}
+.np-modal__foot{padding:14px 18px;border-top:1px solid #eef2f6}
+.np-modal__sectionTitle{font-weight:700;color:#0f172a;margin:6px 0 10px}
+/* Search */
+.np-searchwrap{position:relative}
+.np-searchwrap__ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#9aa3b2}
+.np-searchwrap__input{padding-left:38px}
+/* Food list */
+.np-foodlist{list-style:none;margin:0;padding:0;border:1px solid #eef2f6;border-radius:10px;overflow:hidden}
+.np-foodlist__item{padding:14px 14px;border-bottom:1px solid #eef2f6;cursor:pointer;background:#fff}
+.np-foodlist__item:last-child{border-bottom:none}
+.np-foodlist__item:hover{background:#f8fbfd}
+.np-foodlist__name{font-weight:700;color:#0f172a;margin-bottom:4px}
+.np-foodlist__meta{color:#6b7280;font-size:13px}
+/* Buttons reuse */
+.np-btn--ghost{color:#374151;border:1px solid #e5e7eb;background:#fff}
+.np-btn--ghost:hover{background:#f3f4f6}
+/* Small screens */
+@media (max-width:520px){
+  .np-modal{padding:10px}
+  .np-modal__panel{border-radius:10px}
+}
+/* ===== FIX STYLE : titre aliment et bouton Add Food ===== */
+
+/* 1️⃣ Nom de l’aliment : pas en gras */
+.np-modal--food .np-field > .np-label:first-child {
+  font-size: 16px;
+  font-weight: 600; /* plus léger que bold (700) */
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+/* 2️⃣ Bouton Add Food : noir plein + hover gris foncé */
+.np-modal--food .np-btn--brandsoft {
+  background: #0b0f19;
+  border: 1px solid #0b0f19;
+  color: #fff;
+}
+.np-modal--food .np-btn--brandsoft:hover {
+  background: #20242c; /* noir légèrement éclairci au hover */
+  border-color: #20242c;
+  color: #fff;
+}
+/* ======== FOOTER BUTTONS STYLE (exact look comme ta 2e capture) ======== */
+
+/* Conteneur footer */
+.np-modal--food .np-modal__foot {
+  border-top: 1px solid #eef2f6;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Grille à droite (Back | Add Food) */
+.np-modal--food .np-grid-2 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Boutons généraux */
+.np-modal--food .np-btn {
+  height: 44px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 110px;
+  transition: all 0.15s ease;
+}
+
+/* === Back gris clair === */
+.np-modal--food .np-btn--ghost {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+}
+.np-modal--food .np-btn--ghost:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+/* === Add Food bleu clair === */
+.np-modal--food .np-btn--brandsoft {
+  background: #44b4df;
+  border: 1px solid #44b4df;
+  color: #fff;
+}
+.np-modal--food .np-btn--brandsoft:hover {
+  background: #2aa9da; /* plus vif au hover */
+  border-color: #2aa9da;
+  color: #fff;
+}
+/* ✅ Rétablir la grille 2 colonnes pour la zone encadrée */
+.np-modal--food .np-grid-2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+
+/* ✅ Limiter le flex au footer uniquement (Back | Add Food) */
+.np-modal--food .np-modal__foot .np-grid-2{
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* (rappel) style du select "g" désactivé mais avec caret */
+.np-modal--food select.np-input[disabled]{
+  appearance: none;
+  pointer-events: none;
+  opacity: 1;
+  padding-right: 40px;
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    url('data:image/svg+xml;utf8,\
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>')
+    no-repeat right 12px center;
+}
+
+/* (optionnel) remettre le sous-titre et labels comme dans ta maquette */
+.np-modal--food .np-field > .np-label:first-child{
+  font-size:16px; font-weight:700; color:#0f172a; margin-bottom:12px;
+}
+.np-modal--food .np-label{
+  font-size:12px; font-weight:700; color:#6b7280; margin-bottom:6px;
+}
+/* === Add Food : noir par défaut, bleu ciel au hover === */
+.np-modal--food .np-btn--brandsoft{
+  background:#0b0f19 !important;
+  border:1px solid #0b0f19 !important;
+  color:#fff !important;
+  transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.np-modal--food .np-btn--brandsoft:hover,
+.np-modal--food .np-btn--brandsoft:focus{
+  background:#44b4df !important;   /* bleu ciel */
+  border-color:#44b4df !important;
+  color:#fff !important;
+  box-shadow:0 0 0 3px rgba(68,180,223,.20);
+}
+.np-main > .np-card:first-of-type{
+  border-top: 0 !important;
+}
+.np-main > .np-card:first-of-type{
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+/* simple switch (optionnel) */
+.switch{position:relative;display:inline-block;width:44px;height:24px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#e5e7eb;transition:.2s;border-radius:24px}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;top:3px;background:white;transition:.2s;border-radius:50%}
+input:checked + .slider{background:#44b4df}
+input:checked + .slider:before{transform:translateX(20px)}
+.slider.round{border-radius:24px}
+/* ===== Rest Day wrapper (cadre gris clair, bordure pointillée) ===== */
+.wk-rest{
+  padding: 16px;
+  background: #f9fafb; /* gray-50 */
+  border: 2px dashed #d1d5db; /* gray-300 */
+  border-radius: 10px;
+}
+
+.wk-rest__row{ display:flex; align-items:center; justify-content:space-between; }
+.wk-rest__left{ display:flex; align-items:center; gap:12px; }
+
+.wk-icon{
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(68,180,223,.10); /* brand/10 par défaut */
+}
+.wk-icon--on{ background: #e5e7eb; } /* gray-200 quand activé */
+.wk-icon__svg{ width: 24px; height: 24px; color: #44b4df; }
+.wk-icon--on .wk-icon__svg{ color:#4b5563; } /* gray-600 */
+
+.wk-rest__title{ margin:0; font-weight:600; color:#111827; }   /* gray-900 */
+.wk-rest__subtitle{ margin:0; font-size:13px; color:#6b7280; } /* gray-500 */
+
+/* ===== Switch ===== */
+.wk-switch{
+  position: relative;
+  width: 48px; height: 28px;
+  border: 0; border-radius: 999px;
+  background: #d1d5db;           /* gray-300 off */
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease;
+  outline: none;
+}
+.wk-switch.is-on{ background:#44b4df; } /* on */
+.wk-switch:focus{ box-shadow: 0 0 0 3px rgba(68,180,223,.35); }
+.wk-switch__knob{
+  position:absolute; top:50%; left:4px;
+  width: 20px; height: 20px; transform: translateY(-50%);
+  background:#fff; border-radius:999px; transition: transform .15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.wk-switch.is-on .wk-switch__knob{ transform: translate(20px,-50%); }
+
+/* ===== Rest-day empty state box ===== */
+.wk-restbox{
+  text-align:center;
+  padding: 40px 16px;
+  margin-top: 12px;
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  background: linear-gradient(135deg,#fafafa 0%,#f3f4f6 100%); /* gray-50→100 */
+}
+.wk-restbox__icon{
+  width:80px; height:80px; margin: 0 auto 12px;
+  border-radius:999px; background:#e5e7eb; display:flex; align-items:center; justify-content:center;
+}
+.wk-restbox__svg{ width: 40px; height: 40px; color:#6b7280; }
+.wk-restbox__title{ margin: 6px 0 4px; font-size:20px; font-weight:800; color:#374151; }
+.wk-restbox__text{ margin: 0 auto 8px; color:#4b5563; max-width: 640px; }
+
+/* Notes editor */
+.wk-notes{ margin: 16px auto 0; max-width: 640px; text-align:left; }
+.wk-notes__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.wk-notes__label{ font-size:12px; font-weight:700; color:#374151; }
+.wk-notes__close{
+  border:0; background:transparent; color:#6b7280; cursor:pointer;
+}
+.wk-notes__close:hover{ color:#111827; }
+
+.wk-notes__textarea{
+  width:100%; min-height: 100px; resize: vertical;
+  padding: 12px; border:1px solid #d1d5db; border-radius:8px;
+  font: inherit; outline: none;
+}
+.wk-notes__textarea:focus{
+  border-color:#44b4df; box-shadow:0 0 0 3px rgba(68,180,223,.18);
+}
+
+/* Add notes button */
+.wk-addnotes{
+  margin-top: 14px;
+  display:inline-flex; align-items:center;
+  gap:6px; color:#44b4df; background:transparent; border:0; cursor:pointer;
+  font-weight:600;
+}
+.wk-addnotes:hover{ text-decoration: underline; }
+.wk-plus{ display:inline-block; transform: translateY(-1px); }
+/* ===== heading ===== */
+.wkex__heading{ font-weight:600; font-size:18px; margin:0 0 16px; }
+
+/* ===== empty ===== */
+.wkex-empty{
+  text-align:center; padding:40px;
+  border:1px dashed #d1d5db; border-radius:10px; margin-bottom:16px; background:#fff;
+}
+.wkex-empty__text{ color:#6b7280; margin:0; }
+
+/* ===== list spacing ===== */
+.wkex__stack{ display:flex; flex-direction:column; gap:16px; }
+
+/* ===== card ===== */
+.wkex-card{ border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; background:#f9fafb; }
+.wkex-card__inner{ padding:16px; }
+.wkex-card__header{ display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+.wkex-card__media{ width:48px; height:48px; border-radius:8px; background:#e5e7eb; flex:0 0 auto; }
+.wkex-card__titlewrap{ flex:1 1 auto; min-width:220px; }
+.wkex-card__title{ margin:0; font-weight:600; font-size:18px; }
+.wkex-card__actions{ margin-left:auto; display:flex; gap:6px; }
+
+.wkex-action{ border:0; background:transparent; padding:6px; border-radius:6px; cursor:pointer; }
+.wkex-action--danger{ color:#dc2626; }
+.wkex-action--danger:hover{ background:#fef2f2; }
+
+/* ===== notes ===== */
+.wkex-addnote{
+  margin-top:6px; color:#44b4df; background:transparent; border:0; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; font-weight:600;
+}
+.wkex-plus{ display:inline-block; transform:translateY(-1px); }
+.wkex-noteview{ margin-top:8px; font-size:14px; color:#4b5563; background:#f3f4f6; padding:8px; border-radius:8px; }
+
+.wkex-notes{ margin-top:8px; }
+.wkex-notes__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.wkex-notes__label{ font-size:12px; font-weight:700; color:#374151; }
+.wkex-notes__close{ border:0; background:transparent; color:#6b7280; cursor:pointer; }
+.wkex-notes__close:hover{ color:#111827; }
+.wkex-notes__textarea{
+  width:100%; min-height:70px; resize:vertical; padding:8px 10px;
+  border:1px solid #d1d5db; border-radius:8px; outline:none; background:#fff;
+}
+.wkex-notes__textarea:focus{ border-color:#44b4df; box-shadow:0 0 0 3px rgba(68,180,223,.18); }
+
+/* ===== sets (grid) ===== */
+.wkex-sets{ margin-top:12px; overflow-x:auto; }
+.wkex-sets__head{
+  display:grid; grid-template-columns: 80px 1fr 420px 40px; gap:8px; margin-bottom:8px;
+}
+.wkex-sets__th{ font-size:13px; font-weight:600; color:#4b5563; }
+.wkex-sets__rows{ min-width:560px; }
+.wkex-sets__row{
+  display:grid; grid-template-columns: 80px 1fr 420px 40px; gap:8px; margin-bottom:8px;
+}
+.wkex-sets__cell--idx{ display:flex; align-items:center; }
+.wkex-sets__cell--rest{ display:flex; gap:6px; }
+
+.wkex-input{
+  width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; outline:none; background:#fff;
+}
+.wkex-input:focus{ border-color:#44b4df; box-shadow:0 0 0 2px rgba(68,180,223,.18); }
+
+/* rest mini inputs */
+.wkex-restbox{
+  display:flex; align-items:center; border:1px solid #d1d5db; border-radius:8px; overflow:hidden; background:#fff; flex:1;
+}
+.wkex-restbox__label{ padding-left:8px; font-size:12px; color:#6b7280; white-space:nowrap; }
+.wkex-restbox__input{ border:0; outline:none; padding:10px; flex:1; min-width:0; background:transparent; }
+
+/* buttons */
+.wkex-addset{
+  margin-top:6px; width:100%; padding:10px 12px;
+  border:1px solid #44b4df; color:#44b4df; background:#fff; border-radius:8px; cursor:pointer;
+}
+.wkex-addset:hover{ background:rgba(68,180,223,.08); }
+
+.wkex-addexercise{
+  width:100%; padding:12px; border-radius:10px; margin-top:12px;
+  background:rgba(68,180,223,.10); color:#44b4df; border:0; cursor:pointer;
+}
+.wkex-addexercise:hover{ background:rgba(68,180,223,.20); }
+
+/* helper */
+.mb-6{ margin-bottom:24px; }
+/* ===== Drawer base ===== */
+.wkdrawer__backdrop{
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(17,24,39,.45);
+  backdrop-filter: saturate(120%) blur(2px);
+}
+.wkdrawer{
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 61;
+  width: 360px; max-width: 100%;
+  background: #fff;
+  border-left: 1px solid #e5e7eb;
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 24px rgba(0,0,0,.08);
+}
+@media (max-width: 640px){
+  .wkdrawer{ width: 100%; }
+}
+
+/* Header */
+.wkdrawer__head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; border-bottom:1px solid #eef2f6; position:sticky; top:0; z-index:1; background:#fff;
+}
+.wkdrawer__title{ margin:0; font-weight:800; }
+.wkdrawer__close{
+  width:34px; height:34px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer;
+}
+.wkdrawer__close:hover{ background:#f8fafc; }
+
+/* Body */
+.wkdrawer__body{ padding:14px; overflow:auto; }
+
+/* Search */
+.wkdrawer__search{ position:relative; margin-bottom:12px; }
+.wkdrawer__searchico{ position:absolute; left:10px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:#9aa3b2; }
+.wkinput.wkinput--search{ width:100%; padding:10px 12px 10px 34px; border:1px solid #d1d5db; border-radius:8px; outline:none; }
+.wkinput--search:focus{ border-color:#44b4df; box-shadow:0 0 0 3px rgba(68,180,223,.18); }
+
+/* Filters */
+.wkdrawer__filters{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.wkselectwrap{ position:relative; }
+.wkselect{
+  width:100%; appearance:none; background:#fff;
+  border:1px solid #d1d5db; border-radius:8px; padding:10px 34px 10px 12px; outline:none; font-size:14px;
+}
+.wkselect:focus{ border-color:#44b4df; box-shadow:0 0 0 3px rgba(68,180,223,.18); }
+.wkselect__chev{ position:absolute; right:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:#9aa3b2; pointer-events:none; }
+
+/* Add new exercise strip */
+.wkdrawer__addnew{
+  border:1px solid rgba(68,180,223,.25);
+  background: rgba(68,180,223,.10);
+  border-radius:8px; padding:8px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;
+}
+.wkbtn-link{
+  border:0; background:transparent; color:#44b4df; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;
+}
+.wk-plus{ transform: translateY(-1px); }
+
+/* List */
+.wkdrawer__list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.wkdrawer__item{
+  display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer;
+}
+.wkdrawer__item:hover{ background:#f8fafc; }
+.wkdrawer__thumb{ width:48px; height:48px; border-radius:8px; background:#e5e7eb; flex:0 0 auto; }
+.wkdrawer__meta{ flex:1 1 auto; min-width:0; }
+.wkdrawer__name{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wkdrawer__sub{ font-size:12px; color:#6b7280; }
+
+.wkdrawer__add{
+  border:0; background:#44b4df; color:#fff; border-radius:8px; width:32px; height:32px; cursor:pointer; font-size:18px; line-height:1;
+}
+.wkdrawer__add:hover{ filter:brightness(0.95); }
+/* Rangée de filtres : 3 colonnes sur desktop, wrap en mobile */
+.wkdrawer__filters{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 520px){
+  .wkdrawer__filters{ grid-template-columns: 1fr; }
+}
+
+/* Sélecteurs (réutilise ton style existant) */
+.wkselectwrap{ position: relative; }
+.wkselect{
+  width: 100%;
+  appearance: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 36px 10px 12px;
+  font: inherit;
+}
+.wkselect:focus{
+  outline: 0;
+  border-color: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68,180,223,.14);
+}
+.wkselect__chev{
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  width: 18px; height: 18px; color: #9aa3b2; pointer-events: none;
+}
+/* === Couleurs === */
+:root{
+  --rail: #9BD7EE;   /* bleu ciel du trait/bordure */
+  --rail-bg: #EAF7FD;/* fond bleu très clair */
+  --rail-ring:#CFEAF7;
+}
+
+/* === la pile d'exos : on la rend "relative" pour positionner le rail === */
+.wkex__stack{ position: relative; }
+
+/* === Cartes en superset : cadre + fond bleu ciel === */
+.wkex-card.is-superset{
+  background: var(--rail-bg);
+  border-color: var(--rail) !important;                 /* cadre bleu */
+  box-shadow: 0 0 0 1.5px var(--rail) inset !important; /* renforce le cadre */
+  position: relative;
+}
+
+/* Petit rail à l'intérieur de CHAQUE carte (aligner X avec la barre) */
+.wkex-card.is-superset::before{
+  content:"";
+  position:absolute;
+  left: 18px;     /* <<< garder la même valeur dans les 3 règles (ici + la barre) */
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--rail);
+  pointer-events:none;
+}
+
+/* === Barre entre les deux cartes === */
+.wkex-supersetbar{
+  position: relative;
+  display:flex;
+  justify-content:center;
+  margin: 8px 0 12px;
+}
+
+/* Quand la paire est active, on PROLONGE le rail entre les cartes */
+.wkex-supersetbar.is-active::before{
+  content:"";
+  position:absolute;
+  left: 18px;    /* <<< même X que la carte */
+  top: -14px;    /* déborde pour toucher le haut de la carte du dessus */
+  bottom: -14px; /* déborde pour toucher le bas de la carte du dessous */
+  width: 3px;
+  border-radius: 2px;
+  background: var(--rail);
+  pointer-events:none;
+}
+
+/* === Pilule “± Superset” (noire comme ta 2e capture) === */
+.wkex-supersetbtn{
+  padding:.35rem .65rem;
+  font-size:.75rem;
+  font-weight:700;
+  border-radius:.375rem;
+  border:1px solid #0f172a;
+  background:#0f172a;
+  color:#fff;
+  cursor:pointer;
+}
+
+/* === Badge “Superset” bleu clair === */
+.wkex-badge{
+  margin-left:.5rem;
+  font-size:.72rem;
+  padding:.15rem .45rem;
+  border-radius:.375rem;
+  color:#1EA2D2;
+  background:#EAF7FD;
+  border:1px solid var(--rail-ring);
+}
+
+/* (optionnel) focus harmonisé dans cartes superset */
+.wkex-card.is-superset .wkex-input:focus,
+.wkex-card.is-superset .wkex-restbox__input:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(68,180,223,.18);
+  border-color: #44b4df;
+}
+/* ===================== SUPERCUSTOM SUPERSET STYLE ===================== */
+
+/* Quand deux exercices sont reliés en superset */
+.wkex-card.superset {
+  border: 2px solid #a7e0ff !important; /* contour bleu ciel */
+  background-color: #f9fdff !important;  /* fond légèrement bleuté */
+  position: relative;
+}
+
+/* Ajoute un trait vertical à gauche du bloc */
+.wkex-card.superset::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background-color: #4ac7ff; /* trait bleu ciel */
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+/* Le “second” exercice d’un superset hérite du même style */
+.wkex-card.is-second.superset {
+  border: 2px solid #a7e0ff !important;
+  background-color: #f9fdff !important;
+}
+
+/* Trait bleu ciel aussi pour le second */
+.wkex-card.is-second.superset::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background-color: #4ac7ff;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+/* Connecteur central entre les deux cartes */
+.superset-connector {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 12px;
+  position: relative;
+}
+
+.superset-btn {
+  font-size: 12px;
+  font-weight: 600;
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+  transition: all 0.15s ease;
+}
+
+.superset-btn:hover {
+  background: #4ac7ff;
+}
+
+/* Ajuste le badge Superset */
+.wkex-badge {
+  background-color: #d9f4ff;
+  color: #009be3;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
