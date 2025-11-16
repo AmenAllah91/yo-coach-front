@@ -81,88 +81,99 @@
   <!-- Contenu onglets -->
   <div class="tab-content">
     <!-- DASHBOARD -->
-    <div class="tab-pane" [class.active]="activeTab === 'dashboard'">
-      <div class="row">
-        <div class="col col-2">
-          <div class="card">
-            <div class="card-header">
-              <h4>Client Goal</h4>
+    <div class="tab-pane dashboard-pane" [class.active]="activeTab === 'dashboard'">
+      <div class="dashboard-main-grid">
+        <!-- Today's Workout -->
+        <div class="card dashboard-card today-card">
+          <div class="dashboard-card-header">
+            <div class="header-left">
+              <div class="header-icon header-icon-blue">
+                <i class="fas fa-dumbbell"></i>
+              </div>
+              <div>
+                <div class="header-title">Today's Workout</div>
+                <div class="header-subtitle">
+                  {{ todaysWorkout.programName }} - Week {{ todaysWorkout.currentWeek }}/{{ todaysWorkout.totalWeeks }}
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <p class="pre-line">
-                {{ clientGoal }}
-              </p>
-            </div>
+
+            <button class="link-button">View Full</button>
           </div>
 
-          <div class="card mt-20">
-            <div class="card-header">
-              <h4>Notes</h4>
-            </div>
-            <div class="card-body">
-              <p class="pre-line">
-                {{ clientNotes }}
-              </p>
-            </div>
-          </div>
-        </div>
+          <div class="dashboard-card-body">
+            <h4 class="workout-day-title">{{ todaysWorkout.name }}</h4>
 
-        <div class="col col-2">
-          <div class="card">
-            <div class="card-header card-header-with-link">
-              <h4>Latest Subscriptions</h4>
-              <a href="javascript:void(0)">See all</a>
-            </div>
-            <div class="card-body">
-              <div class="table-wrapper">
-                <table class="table">
-                  <thead>
-                  <tr>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Status</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <tr *ngFor="let sub of subscriptions">
-                    <td>{{ sub.startDate }}</td>
-                    <td>{{ sub.endDate }}</td>
-                    <td>
-                        <span
-                          class="badge"
-                          [class.badge-success]="sub.status === 'ACTIVE'"
-                          [class.badge-danger]="sub.status !== 'ACTIVE'"
-                        >
-                          {{ sub.status }}
-                        </span>
-                    </td>
-                  </tr>
-                  </tbody>
-                </table>
+            <div
+              class="exercise-row"
+              *ngFor="let exercise of todaysWorkout.exercises; let i = index"
+            >
+              <div class="exercise-letter">
+                {{ getLetter(i) }}
               </div>
 
-              <button class="btn-primary affect-button mt-16">
-                <i class="fas fa-sync-alt"></i>
-                Renewal
-              </button>
+              <div class="exercise-info">
+                <div class="exercise-name">
+                  {{ exercise.name }}
+                </div>
+                <div class="exercise-meta">
+                  {{ exercise.sets }} • Rest: {{ exercise.rest }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="col col-3">
-          <div class="card">
-            <div class="card-header">
-              <h4>Bodyweight</h4>
+        <!-- Active Nutrition Plan -->
+        <div class="card dashboard-card nutrition-card">
+          <div class="dashboard-card-header">
+            <div class="header-left">
+              <div class="header-icon header-icon-green">
+                <i class="fas fa-apple-alt"></i>
+              </div>
+              <div>
+                <div class="header-title">Active Nutrition Plan</div>
+                <div class="header-subtitle">
+                  {{ activeNutritionPlan.name }}
+                </div>
+              </div>
             </div>
-            <div class="card-body weight-card">
-              <div class="weight-main">
-                <span class="weight-value">{{ latestWeight }} kg</span>
-                <span class="weight-label">Last recorded</span>
+
+            <button class="link-button link-button-green">View Plan</button>
+          </div>
+
+          <div class="dashboard-card-body">
+            <div class="daily-target-row">
+              <div class="daily-target-label">Daily Target</div>
+              <div class="daily-target-value">
+                {{ activeNutritionPlan.dailyCalories }}
+                <span>calories per day</span>
               </div>
-              <div class="weight-placeholder-chart">
-                <!-- Placeholder pour futur graphique -->
-                Weight chart will go here
+            </div>
+
+            <div class="macro-grid">
+              <div class="macro-card macro-protein">
+                <div class="macro-label">Protein</div>
+                <div class="macro-value">{{ activeNutritionPlan.protein }}</div>
+                <div class="macro-unit">grams</div>
               </div>
+
+              <div class="macro-card macro-carbs">
+                <div class="macro-label">Carbs</div>
+                <div class="macro-value">{{ activeNutritionPlan.carbs }}</div>
+                <div class="macro-unit">grams</div>
+              </div>
+
+              <div class="macro-card macro-fat">
+                <div class="macro-label">Fat</div>
+                <div class="macro-value">{{ activeNutritionPlan.fat }}</div>
+                <div class="macro-unit">grams</div>
+              </div>
+            </div>
+
+            <div class="nutrition-status">
+              <i class="fas fa-chart-line"></i>
+              <span>4 meals</span>
             </div>
           </div>
         </div>
@@ -212,23 +223,7 @@
               {{ program.endDate   | date:'MMM dd, y' }}
             </span>
 
-                <span>
-              <i class="fas fa-bolt me-1"></i>
-                  {{ program.daysPerWeek }} days/week
-            </span>
 
-                <span>
-              <i class="far fa-clock me-1"></i>
-                  {{ program.totalWeeks }} weeks
-            </span>
-
-                <span
-                  *ngIf="program.currentWeek"
-                  class="program-week text-primary"
-                >
-              <i class="fas fa-bullseye me-1"></i>
-              Week {{ program.currentWeek }}
-            </span>
               </div>
             </div>
           </div>

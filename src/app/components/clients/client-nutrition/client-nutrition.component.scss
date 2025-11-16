@@ -1,0 +1,821 @@
+/* ===========================
+   NUTRITION – LAYOUT GLOBAL
+   =========================== */
+
+.cn-root,
+.cn-detail-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #ffffff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Même fond que la page Workouts */
+.client-page {
+  min-height: 100vh;
+  background-color: #f7f8fb;
+}
+
+.client-page-inner {
+  margin: 0 auto;
+  padding: 0 16px 20px;
+}
+
+/* Header (Good morning, Kolton...) */
+.client-header {
+  padding: 20px 16px 12px;
+  text-align: center;
+}
+
+.client-header-title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.client-header-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Onglets Upcoming / Past – EXACTEMENT comme Workouts */
+
+.client-tabs {
+  display: flex;
+  border-top: 1px solid #edf0f3;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.client-tab {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #6b7280;
+  position: relative;
+}
+
+.client-tab--active {
+  color: #44b4df;
+}
+
+.client-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-color: #44b4df;
+}
+
+/* Navigation mois – même barre que Workouts */
+
+.client-month-nav {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.month-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.month-nav-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.month-nav-btn:hover {
+  background-color: rgba(68, 180, 223, 0.08);
+}
+
+/* Petites flèches custom */
+
+.chevron {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #44b4df;
+  border-right: 2px solid #44b4df;
+}
+
+.chevron-left {
+  transform: rotate(-135deg);
+}
+
+.chevron-right {
+  transform: rotate(45deg);
+}
+
+/* Conteneur de liste – partagé Nutrition / Workouts */
+
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===========================
+   NUTRITION – LIST VIEW
+   =========================== */
+
+/* Card jour – même gabarit que .workout-card */
+
+.cn-day-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.05s ease, border-color 0.15s ease;
+}
+
+.cn-day-card:hover {
+  border-color: rgba(68, 180, 223, 0.45);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.cn-day-header {
+  padding: 12px 14px 10px;
+  background-color: #f9fcff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cn-day-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-day-chip-date {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: transparent;
+  color: #44b4df;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.cn-day-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cn-day-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* statut à droite (rond bleu/vert) */
+
+.cn-day-status-icon {
+  flex-shrink: 0;
+}
+
+.cn-status-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e5f0ff;
+  color: #44b4df;
+  font-size: 13px;
+}
+
+.cn-status-circle--completed {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.cn-status-circle--upcoming {
+  background-color: #e5f0ff;
+  color: #44b4df;
+}
+
+/* ligne "X meals" */
+
+.cn-day-meals-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px;
+}
+
+.cn-utensils-icon {
+  font-size: 14px;
+}
+
+.cn-day-meals-text {
+  font-size: 12px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* bloc macros en bas de la carte */
+
+.cn-day-macros {
+  padding: 8px 12px 12px;
+  background-color: #f3f4f6;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cn-macro-card {
+  text-align: center;
+  padding: 6px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.cn-macro-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-macro-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Empty state */
+
+.cn-empty {
+  margin-top: 16px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.cn-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background-color: rgba(68, 180, 223, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  font-size: 26px;
+}
+
+.cn-empty-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-empty-text {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* ===========================
+   NUTRITION – DETAIL VIEW
+   =========================== */
+
+.cn-detail-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* header détail proche de cw-detail-header */
+
+.cn-detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
+  background-color: #ffffff;
+}
+
+.cn-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  margin-right: 8px;
+  cursor: pointer;
+  background: transparent;
+  font-size: 1.2rem;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cn-back-btn:hover {
+  background-color: rgba(68, 180, 223, 0.1);
+}
+
+.cn-detail-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-detail-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-detail-program-line {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cn-calendar-icon {
+  font-size: 12px;
+}
+
+/* pill statut à droite */
+
+.cn-detail-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background-color: #eff6ff;
+}
+
+.cn-detail-status-pill--completed {
+  border-color: #bbf7d0;
+  background-color: #dcfce7;
+}
+
+.cn-detail-status-pill--upcoming {
+  border-color: #bfdbfe;
+  background-color: #eff6ff;
+}
+
+.cn-detail-status-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.cn-detail-status-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.cn-detail-status-pill--completed .cn-detail-status-text {
+  color: #15803d;
+}
+
+/* main body */
+
+.cn-detail-main {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 80px; /* pour laisser la place au footer */
+  background-color: #f9fafb;
+}
+
+/* carte des totaux */
+
+.cn-totals-card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  margin-bottom: 16px;
+}
+
+.cn-totals-card-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fcff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-totals-card-body {
+  padding: 14px 16px 16px;
+}
+
+.cn-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .cn-totals-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.cn-total-box {
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.cn-total-box--orange {
+  background-color: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.cn-total-box--red {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.cn-total-box--yellow {
+  background-color: #fffbeb;
+  border-color: #fef3c7;
+}
+
+.cn-total-box--green {
+  background-color: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.cn-total-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-total-label {
+  margin-top: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* section Meals */
+
+.cn-meals-section {
+  margin-top: 8px;
+}
+
+.cn-meals-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cn-meals-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* cartes repas */
+
+.cn-meal-card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.cn-meal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fcff;
+}
+
+.cn-meal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cn-meal-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: #44b4df;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.cn-meal-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-meal-macros-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cn-meal-macro-card {
+  text-align: center;
+  padding: 6px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.cn-meal-macro-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-meal-macro-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: lowercase;
+}
+
+/* liste des aliments */
+
+.cn-meal-foods {
+  padding: 8px 12px 10px;
+}
+
+.cn-food-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px;
+  border-radius: 10px;
+  transition: background-color 0.12s ease;
+}
+
+.cn-food-row--bordered {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cn-food-row:hover {
+  background-color: #f9fafb;
+}
+
+.cn-food-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-food-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cn-food-qty {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cn-food-macros {
+  display: flex;
+  gap: 8px;
+  margin-left: 10px;
+  font-size: 12px;
+}
+
+.cn-food-macro {
+  min-width: 40px;
+  text-align: center;
+}
+
+.cn-food-macro-value {
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-food-macro-label {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* footer sticky (boutons Completed / Missed) */
+
+.cn-detail-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 10px 16px 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.cn-footer-btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease,
+  border-color 0.15s ease;
+}
+
+.cn-footer-btn--green {
+  background-color: #ffffff;
+  border: 2px solid #16a34a;
+  color: #16a34a;
+}
+
+.cn-footer-btn--red {
+  background-color: #ffffff;
+  border: 2px solid #dc2626;
+  color: #dc2626;
+}
+
+.cn-footer-btn--green:hover {
+  background-color: #f0fdf4;
+}
+
+.cn-footer-btn--red:hover {
+  background-color: #fef2f2;
+}
+
+.cn-footer-btn--active.cn-footer-btn--green {
+  background-color: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35);
+}
+
+.cn-footer-btn--active.cn-footer-btn--red {
+  background-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.35);
+}
+
+/* responsive */
+
+@media (max-width: 640px) {
+  .cn-detail-main {
+    padding-inline: 12px;
+  }
+
+  .cn-detail-footer {
+    flex-direction: column;
+  }
+}
+/* --- STATUS ICONS (mêmes que workouts) --- */
+.cn-status-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--small {
+    width: 14px;
+    height: 14px;
+  }
+
+  &--completed {
+    background: #4caf50;
+  }
+
+  &--missed {
+    background: #e53935;
+  }
+
+  &--pending {
+    border: 2px solid #9e9e9e;
+  }
+}
+
+.cn-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9e9e9e;
+}
+/* --- TOP RIGHT STATUS BUTTONS --- */
+.cn-detail-status-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cn-detail-status-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid #ccc;
+  background: white;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &--completed {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: white;
+  }
+
+  &--missed {
+    border-color: #e53935;
+    background: #e53935;
+    color: white;
+  }
+
+  &:hover {
+    transform: scale(1.06);
+  }
+}
+/* --- STATUS PILL --- */
+.cn-detail-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f5f5f5;
+  font-weight: 500;
+}
+.cn-detail-status-text--completed {
+  color: #4caf50;
+}
+.cn-detail-status-text--missed {
+  color: #e53935;
+}
+.cn-detail-status-text--pending {
+  color: #9e9e9e;
+}

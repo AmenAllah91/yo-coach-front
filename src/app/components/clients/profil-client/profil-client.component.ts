@@ -11,6 +11,27 @@ type TabId =
 
 type WorkoutStatus = 'active' | 'upcoming' | 'completed';
 type PlanStatus = 'active' | 'upcoming' | 'completed';
+interface Exercise {
+  name: string;
+  sets: string;   // ex: "4 sets × 8–12 reps"
+  rest: string;   // ex: "90s"
+}
+
+interface TodaysWorkout {
+  programName: string;
+  currentWeek: number;
+  totalWeeks: number;
+  name: string; // "Full Body Day 1"
+  exercises: Exercise[];
+}
+
+interface ActiveNutritionPlan {
+  name: string;
+  dailyCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
 
 interface WorkoutProgram {
   id: number;
@@ -138,4 +159,58 @@ Motivated but needs accountability.`;
     const diff = e.getTime() - s.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
+  // Dashboard - Today's Workout
+  todaysWorkout: TodaysWorkout = {
+    programName: 'Full Body x3',
+    currentWeek: 3,
+    totalWeeks: 4,
+    name: 'Full Body Day 1',
+    exercises: [
+      {
+        name: 'Squat (Barbell)',
+        sets: '4 sets × 8–12 reps',
+        rest: '90s'
+      },
+      {
+        name: 'Bench Press (Barbell)',
+        sets: '4 sets × 8–12 reps',
+        rest: '90s'
+      },
+      {
+        name: 'Bent Over Row (Barbell)',
+        sets: '4 sets × 8–12 reps',
+        rest: '90s'
+      },
+      {
+        name: 'Overhead Press (Barbell)',
+        sets: '4 sets × 8–12 reps',
+        rest: '90s'
+      },
+      {
+        name: 'Lat Pulldown (Cable)',
+        sets: '3 sets × 10–15 reps',
+        rest: '60s'
+      },
+      {
+        name: 'Seated Leg Curl (Machine)',
+        sets: '3 sets × 12–15 reps',
+        rest: '60s'
+      }
+    ]
+  };
+
+  // Dashboard - Active Nutrition Plan
+  activeNutritionPlan: ActiveNutritionPlan = {
+    name: 'Weight Loss Plan - 2000kcal',
+    dailyCalories: 2000,
+    protein: 169,
+    carbs: 180,
+    fat: 60
+  };
+
+  // utilitaire pour la lettre A, B, C...
+  getLetter(index: number): string {
+    return String.fromCharCode(65 + index);
+  }
+
 }

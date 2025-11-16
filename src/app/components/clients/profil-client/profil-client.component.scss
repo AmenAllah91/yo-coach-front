@@ -935,3 +935,340 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* ===== Dashboard (Today's Workout + Active Nutrition Plan) ===== */
+
+.dashboard-pane {
+  margin-top: 16px;
+}
+
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+/* cartes dashboard un peu différentes des autres */
+.dashboard-card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  background-color: #ffffff;
+}
+
+/* header carte (icône + titres + bouton "View") */
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.header-icon-blue {
+  background-color: #22a8f5;
+}
+
+.header-icon-green {
+  background-color: #16a34a;
+}
+
+.header-title {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.header-subtitle {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+/* bouton View Full / View Plan */
+.link-button {
+  border: none;
+  background: transparent;
+  font-size: 0.82rem;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.link-button-green {
+  color: #22c55e;
+}
+
+.dashboard-card-body {
+  padding: 16px 18px 18px;
+}
+
+/* Today's workout */
+
+.workout-day-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: #f9fafb;
+  margin-bottom: 8px;
+}
+
+.exercise-letter {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background-color: #e0f2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #0284c7;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.exercise-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.exercise-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Nutrition card */
+
+.daily-target-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.daily-target-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.daily-target-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.daily-target-value span {
+  display: block;
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Macros 3 colonnes */
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.macro-card {
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+  border: 1px solid #f3f4f6;
+}
+
+.macro-protein {
+  background-color: #fef2f2;
+}
+
+.macro-carbs {
+  background-color: #fffbeb;
+}
+
+.macro-fat {
+  background-color: #ecfdf5;
+}
+
+.macro-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.macro-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.macro-unit {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.nutrition-status {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: #eff6ff;
+  font-size: 0.78rem;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Responsive : stack en mobile */
+@media (max-width: 992px) {
+  .dashboard-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* === FINE TUNING COULEURS DASHBOARD POUR MATCHER LA MAQUETTE === */
+
+/* fond global un peu plus clair */
+.main-content {
+  background-color: #f5f7fb;
+}
+
+/* cartes dashboard (grosse ombre très douce, bord bleu-gris clair) */
+.dashboard-card {
+  background-color: #ffffff;
+  border-color: #e3edf6;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.02),
+    0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+/* icônes header : bleu & vert comme sur la capture */
+.header-icon-blue {
+  background-color: #00a7ff;   /* bleu vif */
+}
+
+.header-icon-green {
+  background-color: #14c17a;   /* vert apple */
+}
+
+/* lien "View Full" / "View Plan" */
+.link-button {
+  color: #0b76ff;
+}
+
+.link-button-green {
+  color: #16a34a;
+}
+
+/* bloc d'exercice : fond très léger bleu-gris */
+.exercise-row {
+  background-color: #f9fbff;
+}
+
+.exercise-row:hover {
+  background-color: #f3f7ff;
+}
+
+/* badge lettre (A/B/C...) : rond bleu plein, texte blanc */
+.exercise-letter {
+  background-color: #00a7ff;
+  color: #ffffff;
+}
+
+/* Macros – couleurs pastels sans bord visible */
+.macro-card {
+  border-color: transparent;
+}
+
+.macro-protein {
+  background-color: #fff4f4;   /* rose pâle */
+}
+
+.macro-carbs {
+  background-color: #fffbe8;   /* jaune pâle */
+}
+
+.macro-fat {
+  background-color: #ebfff6;   /* vert pâle */
+}
+
+/* bandeau "Client is on track..." */
+.nutrition-status {
+  background-color: #f1f6ff;
+  color: #2563eb;
+}
+/* ================== WORKOUT PROGRAM CARD COLORS ================== */
+
+/* Fond de la carte + bordure */
+.program-card {
+  background-color: #fbfdff;   /* léger bleu très clair */
+  border-color: #e4edf5;       /* bordure bleu/gris très claire */
+}
+
+/* Icône haltère bleue dans un carré clair */
+.program-icon-blue {
+  background: #e6f5ff;         /* fond bleu très clair */
+  color: #0ba5ff;              /* icône bleu vif */
+}
+
+/* Titre et textes */
+.program-name {
+  color: #111827;              /* presque noir */
+}
+
+.program-meta {
+  color: #6b7280;              /* gris moyen pour le texte meta */
+}
+
+/* Badge ACTIVE vert */
+.status-pill--active {
+  background: #e3f9ea;         /* fond vert très clair */
+  color: #15803d;              /* texte vert */
+  border-color: #bbf7d0;       /* bordure vert pastel */
+}
+
+/* Barre de progression */
+.program-progress .progress-bar-bg {
+  background: #e5e7eb;         /* gris clair pour la piste */
+}
+
+.program-progress .progress-bar-fill {
+  background: #29b6f6;         /* bleu turquoise pour le remplissage */
+}
+
+/* Icônes œil / edit en gris neutre */
+.program-actions .icon-btn {
+  color: #9ca3af;
+}
+
+.program-actions .icon-btn:hover {
+  color: #4b5563;
+}

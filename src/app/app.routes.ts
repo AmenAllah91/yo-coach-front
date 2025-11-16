@@ -19,6 +19,8 @@ import {
 import {CreateWorkoutComponent} from "./components/program-library/create-workout/create-workout.component";
 import {CreateFormComponent} from "./components/forms/create-form/create-form.component";
 import {ProfilClientComponent} from "./components/clients/profil-client/profil-client.component";
+import {ClientWorkoutsComponent} from "./components/clients/client-workouts/client-workouts.component";
+import {ClientNutritionComponent} from "./components/clients/client-nutrition/client-nutrition.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -39,6 +41,12 @@ export const APP_ROUTE: Route[] = [
       },  {
         path: 'clients/profil-client',
         component: ProfilClientComponent
+      }, {
+        path: 'clients/client-workouts',
+        component: ClientWorkoutsComponent
+      }, {
+        path: 'clients/client-nutrition',
+        component: ClientNutritionComponent
       },
       {
         path: 'workout/program-library',
