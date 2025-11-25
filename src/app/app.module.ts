@@ -1,34 +1,34 @@
-import {APP_INITIALIZER, importProvidersFrom, NgModule} from '@angular/core';
-import {BrowserModule} from '@angular/platform-browser';
-import {AppRoutingModule} from './app-routing.module';
-import {AppComponent} from './app.component';
-import {BrowserAnimationsModule, provideAnimations} from '@angular/platform-browser/animations';
-import {KeycloakAngularModule, KeycloakService} from "keycloak-angular";
+import { CommonModule } from '@angular/common';
 import {
   HTTP_INTERCEPTORS,
   HttpClient,
   HttpClientModule,
   provideHttpClient,
-  withInterceptorsFromDi
-} from "@angular/common/http";
-import {CommonModule, HashLocationStrategy, LocationStrategy} from "@angular/common";
-import {provideRouter, RouterModule} from "@angular/router";
-import {PageLoaderComponent} from "./template/layout/page-loader/page-loader.component";
-import {APP_ROUTE} from "./app.routes";
-import {provideToastr, ToastrModule} from "ngx-toastr";
-import {AuthInterceptor} from "@config/AuthInterceptor";
-import {LanguageService} from "./template/core";
-import {TranslateLoader, TranslateModule} from "@ngx-translate/core";
-import {TranslateHttpLoader} from '@ngx-translate/http-loader';
-import {FeatherModule} from "angular-feather";
-import {allIcons} from "angular-feather/icons";
-import {createTranslateLoader} from "./app.config";
-import {InfiniteScrollModule} from "ngx-infinite-scroll";
-import {NgxSpinnerModule} from "ngx-spinner";
-import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {NgxDatatableModule} from '@swimlane/ngx-datatable';
-import {MatDialogModule} from '@angular/material/dialog'
-import { environment} from "@env/environment";
+  withInterceptorsFromDi,
+} from '@angular/common/http';
+import { APP_INITIALIZER, importProvidersFrom, NgModule } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule, provideAnimations } from '@angular/platform-browser/animations';
+import { provideRouter, RouterModule } from '@angular/router';
+import { AuthInterceptor } from '@config/AuthInterceptor';
+import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { NgxDatatableModule } from '@swimlane/ngx-datatable';
+import { FeatherModule } from 'angular-feather';
+import { allIcons } from 'angular-feather/icons';
+import { KeycloakAngularModule, KeycloakService } from 'keycloak-angular';
+import { InfiniteScrollModule } from 'ngx-infinite-scroll';
+import { NgxSpinnerModule } from 'ngx-spinner';
+import { provideToastr, ToastrModule } from 'ngx-toastr';
+
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { createTranslateLoader } from './app.config';
+import { APP_ROUTE } from './app.routes';
+import { LanguageService } from './template/core';
+import { PageLoaderComponent } from './template/layout/page-loader/page-loader.component';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');

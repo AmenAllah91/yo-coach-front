@@ -3,172 +3,138 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NutritionService } from 'app/service/nutrition.service';
+import { Food, FoodRef, Meal, MealDay, MealPlan } from 'app/models/MealPlan';
 
-interface MacroDay {
-  id: string;
-  dayNumber: number;
-  name: string;
-  description?: string;
-  protein: number;
-  carbs: number;
-  fat: number;
-  calories: number;
-  showDescription?: boolean;
-  mealMacros?: MealMacros;
-
-  // ➜ ajoute ceci :
-  meals?: MacroMeal[];
-}
-
-
-interface MacroMeal {
-  id: string;
-  name: string;
-  protein: number;
-  carbs: number;
-  fat: number;
-  calories: number;
-}
-
-interface MealMacros {
-  breakfast: { protein: number; carbs: number; fat: number; calories: number };
-  lunch: { protein: number; carbs: number; fat: number; calories: number };
-  dinner: { protein: number; carbs: number; fat: number; calories: number };
-  snack: { protein: number; carbs: number; fat: number; calories: number };
-}
-interface Food {
-  id: number | string;
-  name: string;
-  protein: number; // pour 100g
-  carbs: number;   // pour 100g
-  fat: number;     // pour 100g
-  calories: number; // pour 100g
-}
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
   imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './create-full-plan.component.html',
-  styleUrls: ['./create-full-plan.component.scss']
+  styleUrls: ['./create-full-plan.component.scss'],
 })
 export class CreateFullPlanComponent implements OnInit {
+
+  userId = sessionStorage.getItem('userId');   // ✔ COACH ID
+
+  mealPlan: MealPlan = {
+    id: undefined,
+    name: '',
+    details: '',
+    startDate: '',
+    endDate: '',
+    trackingMode: null,
+    mealDays: [],
+    coach: null,
+    client: null,
+  };
+
   planName = '';
   planDescription = '';
-  showPlanDescription = false;
-  days: MacroDay[] = [];
-  selectedDay: MacroDay | null = null;
-  selectedMeal: MacroMeal | null = null;
-  showDayDescription = false;
-  viewMode: 'total' | 'meals' = 'total';
-  showModeModal = true;
 
-  isEditMode = false;
-  trackByDay = (_: number, d: MacroDay) => d.id;
-  trackByMeal = (_: number, m: MacroMeal) => m.id;   // <-- NEW
+  days: MealDay[] = [];
+  selectedDay: MealDay | null = null;
+
+  showPlanDescription = false;
+
+  trackByDay = (_: number, d: MealDay) => d.id;
+  trackByMeal = (_: number, m: Meal) => m.id;
+
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private nutritionService: NutritionService
   ) {}
 
   ngOnInit() {
-    const planId = this.route.snapshot.paramMap.get('id');
-    const type = this.route.snapshot.queryParamMap.get('type');
-    this.isEditMode = !!planId;
-
-    if (planId) {
-      this.showModeModal = false;
-      this.viewMode = 'total';
-      this.loadExistingPlan(planId);
-    } else if (type === 'total' || type === 'each') {
-      this.showModeModal = false;
-      this.viewMode = type === 'total' ? 'total' : 'meals';
-      this.addDay();
-    } else {
-      this.showModeModal = true;
-      this.addDay();
-    }
-  }
-  private makeMeal(name = 'New Meal'): MacroMeal {
-    return { id: crypto.randomUUID?.() ?? Date.now().toString(), name, protein: 0, carbs: 0, fat: 0, calories: 0 };
+    this.addDay();
   }
 
-  loadExistingPlan(planId: string) {
-    // const existingPlan = this.findPlanById(planId);
-    // if (existingPlan) {
-    //   this.planName = existingPlan.name;
-    //   this.planDescription = existingPlan.description || '';
-    //
-    //   this.days = existingPlan.days?.map(day => ({
-    //     id: day.dayNumber.toString(),
-    //     dayNumber: day.dayNumber,
-    //     name: day.name,
-    //     description: day.description,
-    //     protein: day.totalProtein || 0,
-    //     carbs: day.totalCarbs || 0,
-    //     fat: day.totalFat || 0,
-    //     calories: day.totalCalories || 0,
-    //     mealMacros: {
-    //       breakfast: { protein: 0, carbs: 0, fat: 0, calories: 0 },
-    //       lunch: { protein: 0, carbs: 0, fat: 0, calories: 0 },
-    //       dinner: { protein: 0, carbs: 0, fat: 0, calories: 0 },
-    //       snack: { protein: 0, carbs: 0, fat: 0, calories: 0 }
-    //     }
-    //   })) || [];
-    //
-    //   if (this.days.length === 0) {
-    //     this.addDay();
-    //   } else {
-    //     this.selectedDay = this.days[0];
-    //   }
-    // } else {
-    //   this.addDay();
-    // }
+  /* ============================================
+            DAY HANDLING
+  ==============================================*/
+
+  getDayLabel(day: MealDay, index: number) {
+    return `Day ${index + 1}`;
   }
 
-  findPlanById(id: string) {
-    const plans = [
-      {
-        id: '2',
-        name: '2750kcal',
-        description: 'Full Plan',
-        type: 'MACRO_ONLY',
-        days: [{
-          dayNumber: 1,
-          name: 'Day 1',
-          description: '',
-          totalProtein: 230,
-          totalCarbs: 170,
-          totalFat: 123,
-          totalCalories: 2759
-        }]
-      }
-    ];
-    return plans.find(p => p.id === id);
+  getSelectedDayLabel() {
+    if (!this.selectedDay) return 'Day 1';
+    return this.getDayLabel(this.selectedDay, this.days.indexOf(this.selectedDay));
   }
 
-
-
-  deleteDay(day: MacroDay, event: Event) {
-    event.stopPropagation();
-    if (this.days.length > 1) {
-      const index = this.days.findIndex(d => d.id === day.id);
-      this.days.splice(index, 1);
-
-      // Renumber remaining days
-      this.days.forEach((d, i) => {
-        d.dayNumber = i + 1;
-        d.name = `Day ${i + 1}`;
-      });
-
-      // Select another day if the deleted one was selected
-      if (this.selectedDay?.id === day.id) {
-        this.selectedDay = this.days[Math.max(0, index - 1)];
-      }
-    }
+  private makeEmptyMeal(): Meal {
+    return {
+      id: crypto.randomUUID?.() ?? Date.now().toString(),
+      name: 'New Meal',
+      mealTargets: {
+        calories: 0,
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+      },
+      foods: [],
+    };
   }
 
-  selectDay(day: MacroDay) {
+  private makeEmptyDay(): MealDay {
+    return {
+      id: crypto.randomUUID?.() ?? Date.now().toString(),
+      date: '',
+      dayOfWeek: '',
+      cheatMeal: false,
+      refeedDay: false,
+      description: '',
+      showDescription: false,
+      dayTargets: {
+        calories: 0,
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+      },
+      meals: [this.makeEmptyMeal()],
+    };
+  }
+
+  addDay() {
+    const newDay = this.makeEmptyDay();
+    this.days.push(newDay);
+    this.selectedDay = newDay;
+    this.mealPlan.mealDays = this.days;
+  }
+
+  selectDay(day: MealDay) {
     this.selectedDay = day;
+  }
+
+  deleteDay(day: MealDay, e: Event) {
+    e.stopPropagation();
+    if (this.days.length <= 1) return;
+
+    const index = this.days.indexOf(day);
+    this.days.splice(index, 1);
+    this.selectedDay = this.days[Math.max(0, index - 1)];
+  }
+
+  duplicateSelectedDay() {
+    if (!this.selectedDay) return;
+
+    const clone: MealDay = {
+      ...this.selectedDay,
+      id: crypto.randomUUID?.() ?? Date.now().toString(),
+      meals: this.selectedDay.meals.map((m) => ({
+        ...m,
+        id: crypto.randomUUID?.() ?? Date.now().toString(),
+        foods: m.foods.map((f) => ({
+          ...f,
+          id: crypto.randomUUID?.() ?? Date.now().toString(),
+        })),
+      })),
+    };
+
+    this.days.push(clone);
+    this.selectedDay = clone;
+    this.recalcDayTargets(clone);
   }
 
   togglePlanDescription() {
@@ -176,155 +142,52 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   toggleDayDescription() {
-    if (this.selectedDay) {
-      this.selectedDay.showDescription = !this.selectedDay.showDescription;
-    }
-  }
-
-  savePlan() {
-    // TODO: Implement save functionality
-    console.log('Saving plan:', { name: this.planName, description: this.planDescription, days: this.days });
-    this.router.navigate(['/nutrition/plans']);
-  }
-
-  selectMode(mode: 'total' | 'meals') {
-    this.viewMode = mode;
-    this.showModeModal = false;
-  }
-
-  ngAfterViewInit() {
-    // Modal handling
-  }
-
-  goBack() {
-    this.router.navigate(['/nutrition/plans']);
-  }
-
-  addDay() {
-    const newDay: MacroDay = {
-      id: Date.now().toString(),
-      dayNumber: this.days.length + 1,
-      name: `Day ${this.days.length + 1}`,
-      protein: 0, carbs: 0, fat: 0, calories: 0,
-      mealMacros: {
-        breakfast: { protein: 0, carbs: 0, fat: 0, calories: 0 },
-        lunch:     { protein: 0, carbs: 0, fat: 0, calories: 0 },
-        dinner:    { protein: 0, carbs: 0, fat: 0, calories: 0 },
-        snack:     { protein: 0, carbs: 0, fat: 0, calories: 0 }
-      },
-      // ➜ initialise la liste de repas
-      meals: [
-        { id: crypto.randomUUID?.() ?? String(Date.now()),
-          name: 'New Meal', protein: 0, carbs: 0, fat: 0, calories: 0 }
-      ]
-    };
-    this.days.push(newDay);
-    this.selectedDay = newDay;
-  }
-
-
-  // Deep copy pour duplicate (inclure les meals)
-  duplicateDay(day: MacroDay, event: Event) {
-    event.stopPropagation();
-    const duplicated: MacroDay = {
-      ...day,
-      id: Date.now().toString() + Math.random(),
-      dayNumber: this.days.length + 1,
-      name: `Day ${this.days.length + 1}`,
-      meals: day.meals.map(m => ({ ...m, id: Date.now().toString() + Math.random() }))
-    };
-    this.days.push(duplicated);
-    this.selectedDay = duplicated;
-  }
-  duplicateSelectedDay() {
     if (!this.selectedDay) return;
-    const src = this.selectedDay;
-    const duplicated: MacroDay = {
-      ...src,
-      id: Date.now().toString() + Math.random(),
-      dayNumber: this.days.length + 1,
-      name: `Day ${this.days.length + 1}`,
-      meals: src.meals.map(m => ({ ...m, id: Date.now().toString() + Math.random() }))
-    };
-    this.days.push(duplicated);
-    this.selectedDay = duplicated;
+    this.selectedDay.showDescription = !this.selectedDay.showDescription;
   }
 
-  // === Meals actions ===
+  /* ============================================
+                MEALS
+  ==============================================*/
+
   addMeal() {
     if (!this.selectedDay) return;
-    this.selectedDay.meals ??= [];
-    this.selectedDay.meals.push({
-      id: crypto.randomUUID?.() ?? String(Date.now()),
-      name: 'New Meal', protein: 0, carbs: 0, fat: 0, calories: 0
-    });
+
+    this.selectedDay.meals.push(this.makeEmptyMeal());
+    this.recalcDayTargets(this.selectedDay);
   }
 
-
-  removeMeal(meal: MacroMeal, day?: MacroDay) {
-    const d = day ?? this.selectedDay;
-    if (!d) return;
-    d.meals = d.meals.filter(m => m.id !== meal.id);
-    this.calculateCalories(d);
+  removeMeal(meal: Meal) {
+    if (!this.selectedDay) return;
+    this.selectedDay.meals = this.selectedDay.meals.filter((m) => m.id !== meal.id);
+    this.recalcDayTargets(this.selectedDay);
   }
 
-  renameMeal(meal: MacroMeal, name: string) {
-    meal.name = name?.trim() || meal.name;
+  renameMeal(meal: Meal, newName: string) {
+    meal.name = newName.trim() || meal.name;
   }
 
-  // Recalcule les totals depuis les meals (pratique même en mode 'meals')
-  private recalcDayFromMeals(day: MacroDay) {
-    day.protein = day.meals.reduce((s,m)=>s+m.protein,0);
-    day.carbs   = day.meals.reduce((s,m)=>s+m.carbs,0);
-    day.fat     = day.meals.reduce((s,m)=>s+m.fat,0);
-    day.calories = (day.protein*4) + (day.carbs*4) + (day.fat*9);
-  }
-
-  calculateMealCalories(meal: MacroMeal) {
-    meal.calories = (meal.protein*4)+(meal.carbs*4)+(meal.fat*9);
-    if (this.selectedDay) this.recalcDayFromMeals(this.selectedDay);
-  }
-
-  calculateCalories(day: MacroDay) {
-    // si tu veux prioriser le mode 'meals'
-    if (day.meals?.length) {
-      this.recalcDayFromMeals(day);
-    } else {
-      day.calories = (day.protein * 4) + (day.carbs * 4) + (day.fat * 9);
-    }
-  }
+  /* ============================================
+                FOOD MODAL
+  ==============================================*/
 
   isFoodModalOpen = false;
-  mealForModal: MacroMeal | null = null;
+  mealForModal: Meal | null = null;
+
+  filteredFoods: FoodRef[] = [];
   foodSearch = '';
-  recentFoods = [
-    { id: 1, name: 'Chicken Breast', protein: 31, carbs: 0,  fat: 3.6, calories: 165 },
-    { id: 2, name: 'Brown Rice',     protein: 2.6, carbs: 23, fat: 0.9, calories: 112 },
-    { id: 3, name: 'Broccoli',       protein: 2.8, carbs: 6.6, fat: 0.4, calories: 34 },
-  ];
-  filteredFoods = [...this.recentFoods];
 
-  // openFoodModal(meal: MacroMeal){ this.mealForModal = meal; this.isFoodModalOpen = true; this.foodSearch=''; this.filteredFoods=[...this.recentFoods]; }
-  selectFood(f:any){ if(!this.mealForModal) return; this.mealForModal.protein+=f.protein; this.mealForModal.carbs+=f.carbs; this.mealForModal.fat+=f.fat; this.calculateMealCalories(this.mealForModal); this.closeFoodModal(); }
-
-
-// ======== MODAL STATE ========
   foodStep: 'list' | 'detail' = 'list';
+  selectedFood: FoodRef | null = null;
 
-// Étape détail
-  selectedFood: Food | null = null;
-  foodQty = 100;            // quantité saisie
-  foodUnit: 'g' | 'serving' = 'g';
-  servingGram = 100;        // 1 "serving" = 100g par défaut (change si tu as des vraies tailles)
-  adj = { calories: 0, protein: 0, carbs: 0, fat: 0 }; // valeurs ajustées affichées
+  foodQty = 100;
+  adj = { calories: 0, protein: 0, carbohydrates: 0, fat: 0 };
 
-  openFoodModal(meal: MacroMeal) {
+  openFoodModal(meal: Meal) {
     this.mealForModal = meal;
-    this.isFoodModalOpen = true;
     this.foodStep = 'list';
-    this.foodSearch = '';
-    this.filteredFoods = [...this.recentFoods];
-    this.selectedFood = null;
+    this.isFoodModalOpen = true;
+    this.filterFoods();
   }
 
   closeFoodModal() {
@@ -334,17 +197,15 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   filterFoods() {
-    const q = (this.foodSearch || '').toLowerCase();
-    this.filteredFoods = !q ? [...this.recentFoods] :
-      this.recentFoods.filter(f => f.name.toLowerCase().includes(q));
+    this.nutritionService.filteredFoods(0, 3, this.foodSearch || '').subscribe((res) => {
+      this.filteredFoods = res.content;
+    });
   }
 
-  showFoodDetail(f: Food) {
-    this.selectedFood = f;
+  showFoodDetail(food: FoodRef) {
+    this.selectedFood = food;
     this.foodStep = 'detail';
     this.foodQty = 100;
-    this.foodUnit = 'g';
-    this.servingGram = 100; // adapte ici si tu as des portions propres à chaque aliment
     this.recomputeAdjusted();
   }
 
@@ -353,54 +214,159 @@ export class CreateFullPlanComponent implements OnInit {
     this.selectedFood = null;
   }
 
-  onUnitChange() {
-    // Quand on passe de g -> serving, on garde visuellement la même masse
-    // Ex: 100g -> 1 serving (si serving=100g), 150g -> 1.5 serving, etc.
-    if (!this.selectedFood) return;
-    if (this.foodUnit === 'serving') {
-      this.foodQty = +(this.foodQty / this.servingGram).toFixed(2);
-    } else {
-      this.foodQty = +(this.foodQty * this.servingGram).toFixed(0);
-    }
-    this.recomputeAdjusted();
-  }
-
   recomputeAdjusted() {
     if (!this.selectedFood) return;
+    const factor = this.foodQty / 100;
 
-    // Base: valeurs pour 100g
-    const base = this.selectedFood;
-
-    // Masse sélectionnée en grammes
-    const grams = this.foodUnit === 'g'
-      ? this.foodQty
-      : this.foodQty * this.servingGram;
-
-    const factor = grams / 100;
+    const p = this.selectedFood.protein * factor;
+    const c = this.selectedFood.carbohydrates * factor;
+    const f = this.selectedFood.fat * factor;
 
     this.adj = {
-      calories: base.calories * factor,
-      protein:  base.protein  * factor,
-      carbs:    base.carbs    * factor,
-      fat:      base.fat      * factor,
+      protein: p,
+      carbohydrates: c,
+      fat: f,
+      calories: p * 4 + c * 4 + f * 9,
     };
   }
 
-// Ajoute l’aliment au repas courant
   addFoodToMeal() {
     if (!this.mealForModal || !this.selectedFood) return;
 
-    // Ajout des macros calculées au meal
-    this.mealForModal.protein += this.adj.protein;
-    this.mealForModal.carbs   += this.adj.carbs;
-    this.mealForModal.fat     += this.adj.fat;
+    const food: Food = {
+      id: crypto.randomUUID?.() ?? Date.now().toString(),
+      name: this.selectedFood.name,
+      quantity: this.foodQty,
+      unit: 'g',
+      foodRef: this.selectedFood,
+    };
 
-    // Recalcule calories du repas puis du day
-    this.calculateMealCalories(this.mealForModal);
+    this.mealForModal.foods.push(food);
+    this.recalcMealTargets(this.mealForModal);
 
-    // Ferme
+    if (this.selectedDay) {
+      this.recalcDayTargets(this.selectedDay);
+    }
+
     this.closeFoodModal();
   }
 
+  /* ============================================
+                MACRO CALCULATIONS
+  ==============================================*/
 
+  computeFoodMacros(food: Food) {
+    const factor = food.quantity / 100;
+
+    const p = food.foodRef.protein * factor;
+    const c = food.foodRef.carbohydrates * factor;
+    const f = food.foodRef.fat * factor;
+
+    return {
+      calories: p * 4 + c * 4 + f * 9,
+      protein: p,
+      carbs: c,
+      fat: f,
+    };
+  }
+
+  computeMealMacros(meal: Meal) {
+    return meal.foods.reduce(
+      (acc, food) => {
+        const m = this.computeFoodMacros(food);
+        return {
+          calories: acc.calories + m.calories,
+          protein: acc.protein + m.protein,
+          carbs: acc.carbs + m.carbs,
+          fat: acc.fat + m.fat,
+        };
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+  }
+
+  recalcMealTargets(meal: Meal) {
+    const m = this.computeMealMacros(meal);
+    meal.mealTargets = {
+      calories: Math.round(m.calories),
+      proteinG: +m.protein.toFixed(1),
+      carbsG: +m.carbs.toFixed(1),
+      fatG: +m.fat.toFixed(1),
+    };
+  }
+
+  recalcDayTargets(day: MealDay) {
+    const totals = day.meals.reduce(
+      (acc, meal) => {
+        const m = this.computeMealMacros(meal);
+        return {
+          calories: acc.calories + m.calories,
+          protein: acc.protein + m.protein,
+          carbs: acc.carbs + m.carbs,
+          fat: acc.fat + m.fat,
+        };
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    day.dayTargets = {
+      calories: Math.round(totals.calories),
+      proteinG: +totals.protein.toFixed(1),
+      carbsG: +totals.carbs.toFixed(1),
+      fatG: +totals.fat.toFixed(1),
+    };
+  }
+
+  /* ============================================
+                GETTERS
+  ==============================================*/
+
+  getMealCalories(m: Meal) {
+    return m.mealTargets.calories;
+  }
+
+  getMealProtein(m: Meal) {
+    return m.mealTargets.proteinG;
+  }
+
+  getMealCarbs(m: Meal) {
+    return m.mealTargets.carbsG;
+  }
+
+  getMealFat(m: Meal) {
+    return m.mealTargets.fatG;
+  }
+
+  getFoodCalories(food: Food) {
+    return Math.round(this.computeFoodMacros(food).calories);
+  }
+
+  getFoodProtein(food: Food) {
+    return +this.computeFoodMacros(food).protein.toFixed(1);
+  }
+
+  getFoodCarbs(food: Food) {
+    return +this.computeFoodMacros(food).carbs.toFixed(1);
+  }
+
+  getFoodFat(food: Food) {
+    return +this.computeFoodMacros(food).fat.toFixed(1);
+  }
+
+  /* ============================================
+                SAVE PLAN + COACH ID
+  ==============================================*/
+
+  savePlan() {
+    this.mealPlan.name = this.planName;
+    this.mealPlan.details = this.planDescription;
+    this.mealPlan.mealDays = this.days;
+
+    // ✔ ADD COACH
+    this.mealPlan.coach = { id: this.userId };
+
+    this.nutritionService.createNutritionPlan(this.mealPlan).subscribe(() => {
+      this.router.navigate(['/nutrition/plans']);
+    });
+  }
 }
