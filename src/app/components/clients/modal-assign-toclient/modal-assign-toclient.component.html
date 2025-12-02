@@ -1,0 +1,138 @@
+<div class="assign-backdrop">
+  <div class="assign-modal">
+    <!-- HEADER -->
+    <div class="assign-header">
+      <div>
+        <h2 class="assign-title">Assign Program</h2>
+        <p class="assign-subtitle">{{ programName }}</p>
+      </div>
+      <button class="assign-close" (click)="onCancel()">
+        ✕
+      </button>
+    </div>
+
+    <!-- START DATE -->
+    <div class="assign-section assign-section--grey">
+      <label class="assign-label">Start Date *</label>
+      <div class="date-wrapper">
+        <span class="input-icon-left calendar-icon"></span>
+
+        <input
+          type="date"
+          class="assign-input assign-input--date"
+          [(ngModel)]="startDate"
+        />
+
+        <span class="input-icon-right calendar-icon"></span>
+      </div>
+    </div>
+
+
+    <!-- SEARCH -->
+    <div class="assign-section">
+      <div class="input-wrapper input-wrapper--blue">
+        <span class="input-icon-left search-icon"></span>
+        <input
+          type="text"
+          class="assign-input assign-input--blue"
+          placeholder="Search clients..."
+          [(ngModel)]="searchTerm"
+        />
+      </div>
+    </div>
+
+    <!-- LISTE DES CLIENTS -->
+    <div class="assign-clients">
+      <div
+        class="client-card"
+        *ngFor="let c of filteredClients"
+        [class.selected]="c.selected"
+        (click)="onToggleClient(c)"
+      >
+        <div class="client-check" [class.client-check--checked]="c.selected">
+          <span *ngIf="c.selected" class="check-icon">✔</span>
+        </div>
+
+        <img class="client-avatar" [src]="c.image" [alt]="c.name" />
+
+        <div class="client-info">
+          <div class="client-name">{{ c.name }}</div>
+          <div class="client-email">{{ c.email }}</div>
+        </div>
+      </div>
+
+      <div *ngIf="filteredClients.length === 0" class="no-results">
+        No clients found
+      </div>
+    </div>
+
+    <!-- SELECTED RECIPIENTS -->
+    <div class="assign-summary">
+      <div class="summary-left">
+        <div class="summary-check">✔</div>
+      </div>
+
+      <div class="summary-right">
+        <div class="summary-title">Selected Recipients</div>
+
+        <div class="summary-chips">
+          <!-- John Doe "fixe" comme sur la maquette -->
+          <div class="chip">
+            <div class="chip-avatar chip-avatar--text">
+              {{ johnDoeChip.avatarText }}
+            </div>
+            <span class="chip-label">{{ johnDoeChip.name }}</span>
+            <button class="chip-remove">✕</button>
+          </div>
+
+          <!-- Chips dynamiques pour les clients sélectionnés -->
+          <div
+            class="chip"
+            *ngFor="let c of selectedClients"
+          >
+            <img
+              [src]="c.image"
+              [alt]="c.name"
+              class="chip-avatar"
+            />
+            <span class="chip-label">{{ c.name }}</span>
+            <button
+              class="chip-remove"
+              (click)="onRemoveClientFromChips(c.id); $event.stopPropagation()"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="assign-footer">
+      <div class="footer-count">
+        {{ selectedClients.length }} client{{ selectedClients.length > 1 ? 's' : '' }} selected
+      </div>
+
+      <div class="footer-actions">
+        <button
+          type="button"
+          class="btn-footer btn-footer--cancel"
+          (click)="onCancel()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="btn-footer btn-footer--assign"
+          [disabled]="assignDisabled"
+          (click)="onAssign()"
+        >
+          Assign Program
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+

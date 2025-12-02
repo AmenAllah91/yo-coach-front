@@ -21,6 +21,9 @@ import {CreateFormComponent} from "./components/forms/create-form/create-form.co
 import {ProfilClientComponent} from "./components/clients/profil-client/profil-client.component";
 import {ClientWorkoutsComponent} from "./components/clients/client-workouts/client-workouts.component";
 import {ClientNutritionComponent} from "./components/clients/client-nutrition/client-nutrition.component";
+import {CalendarClientsComponent} from "./components/calendar/calendar-clients/calendar-clients.component";
+import {LandingPageComponent} from "./components/website/landing-page/landing-page.component";
+import {YosoftLandingPageComponent} from "./components/website/yosoft-landing-page/yosoft-landing-page.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -54,6 +57,9 @@ export const APP_ROUTE: Route[] = [
       },{
         path: 'workout/create-workout',
         component: CreateWorkoutComponent
+      },{
+        path: 'calendar',
+        component: CalendarClientsComponent
       },
       {
         path: 'nutrition/foods',
@@ -97,5 +103,11 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'register',
     component: RegisterComponent
+  },{
+    path: 'landing-page',
+    component: LandingPageComponent
+  },{
+    path: 'yosoft-landing-page',
+    component: YosoftLandingPageComponent
   }
 ];

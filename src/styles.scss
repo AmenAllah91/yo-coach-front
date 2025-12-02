@@ -197,3 +197,27 @@
 .ng-select.ng-select-single .ng-select-container {
   height: 3rem;
 }
+@media (min-width:1024px){
+  .navbar{
+    padding-left:15rem;
+    width:auto
+  }
+}
+
+/* 2) Sidebar lui-même */
+.aside{
+  background-color:#1c1c1e;
+  height:100vh;
+  position:fixed;
+  top:0;
+  left:-15rem;
+  width:15rem;
+  z-index:40;
+  transition:all .15s cubic-bezier(.4,0,.2,1);
+}
+@media (min-width:1024px){.aside{left:0}}
+
+/* 3) Quand on ouvre le menu en mobile */
+.aside-mobile-expanded .aside{left:0}
+.aside-mobile-expanded .navbar{margin-left:15rem}
+.aside-mobile-expanded #app{margin-left:15rem}

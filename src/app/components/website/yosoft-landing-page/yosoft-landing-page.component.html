@@ -1,0 +1,206 @@
+<div class="page-root">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <span>Y</span>
+        </div>
+        <span class="logo-text">YoSoftware</span>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-link" (click)="scrollTo('about')">
+          À propos
+        </button>
+        <button class="nav-link" (click)="scrollTo('services')">
+          Solutions
+        </button>
+        <button class="nav-link" (click)="scrollTo('products')">
+          Produits
+        </button>
+        <button class="nav-link" (click)="scrollTo('contact')">
+          Contact
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO (exact même layout) -->
+
+  <section class="hero">
+    <!-- Cercles de fond -->
+    <div class="hero-bg hero-bg-1"></div>
+    <div class="hero-bg hero-bg-2"></div>
+    <div class="hero-bg hero-bg-3"></div>
+
+    <div class="hero-inner">
+      <!-- Colonne texte -->
+      <div class="hero-left">
+        <h1 class="hero-title">
+          LOGICIELS, PAIEMENTS & SOLUTIONS<br />
+          POUR AIDER LES ENTREPRISES À RÉUSSIR
+        </h1>
+        <p class="hero-subtitle">
+          Nous aidons les entreprises à se concentrer sur ce qu'elles aiment en
+          leur offrant la technologie dont elles ont besoin pour grandir.
+        </p>
+      </div>
+
+      <!-- Colonne image -->
+      <!-- Colonne carte -->
+      <div class="hero-right">
+        <div class="hero-card">
+          <div class="hero-card-bg hero-card-bg-1"></div>
+          <div class="hero-card-bg hero-card-bg-2"></div>
+          <div class="hero-card-bg hero-card-bg-3"></div>
+
+          <div class="hero-card-center">
+            <div class="hero-card-circle">
+              <span class="hero-card-icon">&lt;/&gt;</span>
+            </div>
+          </div>
+
+          <button class="hero-card-button" (click)="scrollTo('services')">
+            Découvrir nos solutions
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- À propos -->
+  <section id="about" class="section section-about">
+    <div class="section-about-card">
+      <h2 class="section-title">Qui sommes-nous ?</h2>
+      <p class="section-text">
+        YoSoftware est une suite de solutions SaaS qui accompagne les
+        entreprises dans leur croissance. Nous concevons des logiciels, des
+        systèmes de paiement et des outils métier pensés pour simplifier le
+        quotidien, améliorer l'organisation et soutenir le développement de nos
+        clients.
+      </p>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section id="services" class="section">
+    <div class="section-container">
+      <h2 class="section-title center">Ce que nous faisons</h2>
+
+      <div class="cards-grid">
+        <div class="service-card">
+          <div class="service-icon">
+            <span>💻</span>
+          </div>
+          <h3 class="card-title">Software</h3>
+          <p class="card-text">
+            Des applications SaaS simples et modernes pour piloter votre
+            activité.
+          </p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">
+            <span>💳</span>
+          </div>
+          <h3 class="card-title">Payments</h3>
+          <p class="card-text">
+            Des solutions de paiement intégrées pour soutenir votre modèle
+            économique.
+          </p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">
+            <span>💡</span>
+          </div>
+          <h3 class="card-title">Solutions</h3>
+          <p class="card-text">
+            Un accompagnement et des outils adaptés à votre secteur pour vous
+            aider à passer au niveau supérieur.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Produits -->
+  <section id="products" class="section section-products">
+    <div class="section-container">
+      <h2 class="section-title center light">Nos solutions</h2>
+      <p class="section-subtitle center">
+        Quelques solutions signées YoSoftware
+      </p>
+
+      <div class="cards-grid">
+        <div class="product-card">
+          <div class="product-icon">
+            <span>🏋️</span>
+          </div>
+          <h3 class="card-title light">YoGym</h3>
+          <p class="card-text muted">
+            Solution SaaS pour la gestion des salles de sport.
+          </p>
+        </div>
+
+        <div class="product-card">
+          <div class="product-icon">
+            <span>📈</span>
+          </div>
+          <h3 class="card-title light">YoSales</h3>
+          <p class="card-text muted">
+            Outil pour structurer et suivre l'activité commerciale.
+          </p>
+        </div>
+
+        <div class="product-card">
+          <div class="product-icon">
+            <span>👥</span>
+          </div>
+          <h3 class="card-title light">YoCoach</h3>
+          <p class="card-text muted">
+            Plateforme pour les coachs et indépendants.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="contact" class="section section-cta">
+    <div class="section-cta-inner">
+      <h2 class="section-title light">
+        Prêt à faire grandir votre entreprise ?
+      </h2>
+      <p class="section-text light">
+        Découvrez comment YoSoftware peut vous aider à atteindre vos objectifs.
+      </p>
+      <button class="cta-button">Nous contacter</button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <h3 class="footer-logo">YoSoftware</h3>
+        <p class="footer-text">La technologie au service de votre croissance</p>
+      </div>
+      <div class="footer-links">
+        <button class="footer-link" (click)="scrollTo('about')">
+          À propos
+        </button>
+        <button class="footer-link" (click)="scrollTo('services')">
+          Solutions
+        </button>
+        <button class="footer-link" (click)="scrollTo('contact')">
+          Contact
+        </button>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2024 YoSoftware. Tous droits réservés.
+    </div>
+  </footer>
+</div>
