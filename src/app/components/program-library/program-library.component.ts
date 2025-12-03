@@ -3,12 +3,20 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Location } from '@angular/common';
-import { WorkoutService, Workout, PageResponse } from '../../service/workout.service';
-import { ExerciseService, Exercise, PageResponse as ExercisePageResponse, EnumResponse } from '../../service/exercise.service';
+import {
+  WorkoutService,
+  Workout,
+  PageResponse,
+} from '../../service/workout.service';
+import {
+  ExerciseService,
+  Exercise,
+  PageResponse as ExercisePageResponse,
+  EnumResponse,
+} from '../../service/exercise.service';
 import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
-
-
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-program-library',
@@ -18,8 +26,8 @@ import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component'
   styleUrls: [
     './program-library.component.scss',
     './superset-styles.scss',
-    './exercise-modal-styles.scss'
-  ]
+    './exercise-modal-styles.scss',
+  ],
 })
 export class ProgramLibraryComponent implements OnInit {
   programs: Workout[] = [];
@@ -36,7 +44,7 @@ export class ProgramLibraryComponent implements OnInit {
   showCreateModal = false;
   showDeleteModal = false;
   programToDelete: Workout | null = null;
-  editingProgram: Workout | null = null;
+
   programName = '';
   programDescription = '';
   showProgramDescription = false;
@@ -44,7 +52,9 @@ export class ProgramLibraryComponent implements OnInit {
   endDate = '';
   isWorkoutPlanTemplate = false;
   typeWorkoutPlan = 'STRENGTH_TRAINING';
-  trainingDays: any[] = [{ name: 'Day 1', description: '', showDescription: false, exercises: [] }];
+  trainingDays: any[] = [
+    { name: 'Day 1', description: '', showDescription: false, exercises: [] },
+  ];
   selectedDayIndex = 0;
   showExerciseModal = false;
   exerciseSearchTerm = '';
@@ -66,23 +76,23 @@ export class ProgramLibraryComponent implements OnInit {
     private workoutService: WorkoutService,
     private exerciseService: ExerciseService,
     private location: Location,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit() {
     // Wait a bit for Keycloak to initialize
 
-      console.log('Program Library - Checking authentication status');
-      if (!this.authService.isLoggedIn()) {
-        console.log('Program Library - Not logged in, redirecting to login');
-        this.authService.login();
-        return;
-      }
-      console.log('Program Library - User is logged in, loading data');
-      this.loadPrograms();
-      this.loadEnums();
-      this.loadAllCounts();
-
+    console.log('Program Library - Checking authentication status');
+    if (!this.authService.isLoggedIn()) {
+      console.log('Program Library - Not logged in, redirecting to login');
+      this.authService.login();
+      return;
+    }
+    console.log('Program Library - User is logged in, loading data');
+    this.loadPrograms();
+    this.loadEnums();
+    this.loadAllCounts();
   }
 
   loadAllCounts() {
@@ -91,7 +101,7 @@ export class ProgramLibraryComponent implements OnInit {
       next: (response: PageResponse<Workout>) => {
         this.myLibraryCount = response.totalElements || 0;
       },
-      error: (error) => console.error('Error loading my library count:', error)
+      error: (error) => console.error('Error loading my library count:', error),
     });
 
     // Load Templates count
@@ -99,16 +109,17 @@ export class ProgramLibraryComponent implements OnInit {
       next: (response: PageResponse<Workout>) => {
         this.templatesCount = response.totalElements || 0;
       },
-      error: (error) => console.error('Error loading templates count:', error)
+      error: (error) => console.error('Error loading templates count:', error),
     });
   }
 
   loadPrograms() {
     this.isLoading = true;
     const startTime = Date.now();
-    const serviceCall = this.activeTab === 'templates'
-      ? this.workoutService.getTemplates(this.currentPage, this.pageSize)
-      : this.workoutService.getMyLibrary(this.currentPage, this.pageSize);
+    const serviceCall =
+      this.activeTab === 'templates'
+        ? this.workoutService.getTemplates(this.currentPage, this.pageSize)
+        : this.workoutService.getMyLibrary(this.currentPage, this.pageSize);
 
     serviceCall.subscribe({
       next: (response: PageResponse<Workout>) => {
@@ -116,20 +127,18 @@ export class ProgramLibraryComponent implements OnInit {
         const minDelay = 800; // Minimum 800ms loading time
         // const remainingDelay = Math.max(0, minDelay - elapsed);
 
+        this.programs = response.content || [];
+        this.totalPages = response.totalPages || 0;
+        this.totalElements = response.totalElements || 0;
 
-          this.programs = response.content || [];
-          this.totalPages = response.totalPages || 0;
-          this.totalElements = response.totalElements || 0;
+        // Update the appropriate count based on active tab
+        if (this.activeTab === 'templates') {
+          this.templatesCount = this.totalElements;
+        } else {
+          this.myLibraryCount = this.totalElements;
+        }
 
-          // Update the appropriate count based on active tab
-          if (this.activeTab === 'templates') {
-            this.templatesCount = this.totalElements;
-          } else {
-            this.myLibraryCount = this.totalElements;
-          }
-
-          this.isLoading = false;
-
+        this.isLoading = false;
       },
       error: (error) => {
         const elapsed = Date.now() - startTime;
@@ -143,11 +152,9 @@ export class ProgramLibraryComponent implements OnInit {
           this.totalElements = 0;
           this.isLoading = false;
         }, remainingDelay);
-      }
+      },
     });
   }
-
-
 
   toggleDropdown(programId: string | null, event?: Event) {
     if (this.openDropdownId === programId) {
@@ -158,25 +165,27 @@ export class ProgramLibraryComponent implements OnInit {
     this.openDropdownId = programId;
 
     if (event && programId) {
-        const button = event.target as HTMLElement;
-        const dropdown = button.closest('.dropdown')?.querySelector('.dropdown-menu') as HTMLElement;
+      const button = event.target as HTMLElement;
+      const dropdown = button
+        .closest('.dropdown')
+        ?.querySelector('.dropdown-menu') as HTMLElement;
 
-        if (dropdown) {
-          const buttonRect = button.getBoundingClientRect();
-          const dropdownHeight = 200; // Approximate dropdown height
-          const viewportHeight = window.innerHeight;
+      if (dropdown) {
+        const buttonRect = button.getBoundingClientRect();
+        const dropdownHeight = 200; // Approximate dropdown height
+        const viewportHeight = window.innerHeight;
 
-          // Position dropdown
-          if (buttonRect.bottom + dropdownHeight > viewportHeight) {
-            // Show above if not enough space below
-            dropdown.style.top = `${buttonRect.top - dropdownHeight}px`;
-          } else {
-            // Show below
-            dropdown.style.top = `${buttonRect.bottom + 4}px`;
-          }
-
-          dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
+        // Position dropdown
+        if (buttonRect.bottom + dropdownHeight > viewportHeight) {
+          // Show above if not enough space below
+          dropdown.style.top = `${buttonRect.top - dropdownHeight}px`;
+        } else {
+          // Show below
+          dropdown.style.top = `${buttonRect.bottom + 4}px`;
         }
+
+        dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
+      }
     }
   }
 
@@ -185,55 +194,9 @@ export class ProgramLibraryComponent implements OnInit {
     this.openDropdownId = null;
   }
 
-  editProgram(program: Workout) {
-    this.editingProgram = program;
-    this.programName = program.name;
-    this.programDescription = program.details || '';
-    this.startDate = program.startDate || '';
-    this.endDate = program.endDate || '';
-    this.isWorkoutPlanTemplate = program.isWorkoutPlanTemplate || false;
-    this.typeWorkoutPlan = program.typeWorkoutPlan || 'STRENGTH_TRAINING';
-    if (program.workoutDays && program.workoutDays.length > 0) {
-      this.trainingDays = program.workoutDays.map((day, index) => ({
-        name: day.name || `Day ${index + 1}`,
-        description: day.description || '',
-        showDescription: !!day.description,
-        exercises: (day.exercises || (day.workoutSessions && day.workoutSessions[0] && (day.workoutSessions[0] as any).exercises ? (day.workoutSessions[0] as any).exercises : []) || []).map((ex: any, index: number, exercises: any[]) => {
-          const exerciseId = typeof ex.exerciseRef === 'object' ? ex.exerciseRef.id : ex.exerciseRef;
-          this.loadExerciseDetails(exerciseId);
-
-          // Find superset partner if exists
-          let supersetWith = null;
-          let isSuperset = false;
-          if (ex.supersetGroupId) {
-            const partner = exercises.find((e, i) => i !== index && e.supersetGroupId === ex.supersetGroupId);
-            if (partner) {
-              supersetWith = typeof partner.exerciseRef === 'object' ? partner.exerciseRef.id : partner.exerciseRef;
-              isSuperset = true;
-            }
-          }
-
-          return {
-            exerciseRef: exerciseId,
-            name: '',
-            type: '',
-            muscle: '',
-            equipment: '',
-            sets: ex.sets ? ex.sets.map(set => ({
-              reps: set.reps,
-              restMin: set.restMin,
-              restSec: set.restSec
-            })) : [{ reps: 8, restMin: 1, restSec: 0 }],
-            isSuperset: isSuperset,
-            supersetWith: supersetWith,
-            supersetGroupId: ex.supersetGroupId || null,
-            notes: ex.notes || ''
-          };
-        })
-      }));
-    }
-    this.showCreateModal = true;
-    this.openDropdownId = null;
+  editProgram(id: string) {
+    const url = 'workout/edit-workout/' + id;
+    this.router.navigateByUrl(url);
   }
 
   duplicateProgram(program: Workout) {
@@ -243,7 +206,7 @@ export class ProgramLibraryComponent implements OnInit {
         this.loadAllCounts(); // Refresh sidebar counts
         this.openDropdownId = null;
       },
-      error: (error) => console.error('Error duplicating program:', error)
+      error: (error) => console.error('Error duplicating program:', error),
     });
   }
 
@@ -266,7 +229,7 @@ export class ProgramLibraryComponent implements OnInit {
           this.loadAllCounts(); // Refresh sidebar counts
           this.closeDeleteModal();
         },
-        error: (error) => console.error('Error deleting program:', error)
+        error: (error) => console.error('Error deleting program:', error),
       });
     }
   }
@@ -276,11 +239,8 @@ export class ProgramLibraryComponent implements OnInit {
     this.programToDelete = null;
   }
 
-
-
   createProgram() {
-    this.resetForm();
-    this.showCreateModal = true;
+    this.router.navigateByUrl('workout/create-workout');
   }
 
   closeCreateModal() {
@@ -288,64 +248,7 @@ export class ProgramLibraryComponent implements OnInit {
     this.resetForm();
   }
 
-  saveProgram() {
-    if (!this.programName.trim()) return;
-
-    const program = {
-      name: this.programName,
-      details: this.programDescription || '',
-      startDate: this.startDate || null,
-      endDate: this.endDate || null,
-      isWorkoutPlanTemplate: this.isWorkoutPlanTemplate,
-      typeWorkoutPlan: this.typeWorkoutPlan,
-      workoutDays: this.trainingDays.map((day, dayIndex) => ({
-        dayId: `day_${dayIndex + 1}`,
-        name: day.name,
-        description: day.description || '',
-        dayNumber: dayIndex + 1,
-        restDay: false,
-        workoutSessions: [{
-          name: day.name,
-          exercises: day.exercises.map((exercise: any) => ({
-            exerciseRef: { id: exercise.exerciseRef },
-            isSuperset: exercise.isSuperset || false,
-            supersetWith: exercise.supersetWith || null,
-            supersetGroupId: exercise.supersetGroupId || null,
-            notes: exercise.notes || '',
-            sets: exercise.sets.map((set: any, setIndex: number) => ({
-              setNumber: setIndex + 1,
-              reps: set.reps || 8,
-              restMin: set.restMin || 1,
-              restSec: set.restSec || 0
-            }))
-          }))
-        }]
-      }))
-    };
-
-    console.log('Saving program:', JSON.stringify(program, null, 2));
-    console.log('Training days:', this.trainingDays);
-
-    if (this.editingProgram) {
-      this.workoutService.updateWorkout(this.editingProgram.id!, program as any).subscribe({
-        next: () => {
-          this.loadPrograms();
-          this.loadAllCounts(); // Refresh sidebar counts
-          this.closeCreateModal();
-        },
-        error: (error) => console.error('Error updating program:', error)
-      });
-    } else {
-      this.workoutService.createWorkout(program as any).subscribe({
-        next: () => {
-          this.loadPrograms();
-          this.loadAllCounts(); // Refresh sidebar counts
-          this.closeCreateModal();
-        },
-        error: (error) => console.error('Error creating program:', error)
-      });
-    }
-  }
+  saveProgram() {}
 
   resetForm() {
     this.programName = '';
@@ -355,9 +258,10 @@ export class ProgramLibraryComponent implements OnInit {
     this.endDate = '';
     this.isWorkoutPlanTemplate = false;
     this.typeWorkoutPlan = 'STRENGTH_TRAINING';
-    this.trainingDays = [{ name: 'Day 1', description: '', showDescription: false, exercises: [] }];
+    this.trainingDays = [
+      { name: 'Day 1', description: '', showDescription: false, exercises: [] },
+    ];
     this.selectedDayIndex = 0;
-    this.editingProgram = null;
   }
 
   updateDayName(index: number, newName: string) {
@@ -370,7 +274,7 @@ export class ProgramLibraryComponent implements OnInit {
       name: `Day ${dayNumber}`,
       description: '',
       showDescription: false,
-      exercises: []
+      exercises: [],
     });
   }
 
@@ -392,7 +296,8 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   toggleDayDescription(dayIndex: number) {
-    this.trainingDays[dayIndex].showDescription = !this.trainingDays[dayIndex].showDescription;
+    this.trainingDays[dayIndex].showDescription =
+      !this.trainingDays[dayIndex].showDescription;
   }
 
   addExercise() {
@@ -421,22 +326,25 @@ export class ProgramLibraryComponent implements OnInit {
       isSuperset: false,
       supersetWith: undefined,
       supersetGroupId: undefined,
-      notes: ''
+      notes: '',
     };
     this.trainingDays[this.selectedDayIndex].exercises.push(newExercise);
     this.closeExerciseModal();
   }
 
   addSet(exerciseIndex: number) {
-    this.trainingDays[this.selectedDayIndex].exercises[exerciseIndex].sets.push({
-      reps: 8,
-      restMin: 1,
-      restSec: 0
-    });
+    this.trainingDays[this.selectedDayIndex].exercises[exerciseIndex].sets.push(
+      {
+        reps: 8,
+        restMin: 1,
+        restSec: 0,
+      }
+    );
   }
 
   removeSet(exerciseIndex: number, setIndex: number) {
-    const exercise = this.trainingDays[this.selectedDayIndex].exercises[exerciseIndex];
+    const exercise =
+      this.trainingDays[this.selectedDayIndex].exercises[exerciseIndex];
     if (exercise.sets.length > 1) {
       exercise.sets.splice(setIndex, 1);
     }
@@ -449,8 +357,11 @@ export class ProgramLibraryComponent implements OnInit {
     // If removing a superset exercise, clean up only its pair
     if (exerciseToRemove.supersetWith && exerciseToRemove.supersetGroupId) {
       // Find the paired exercise with the same supersetGroupId and clean it up
-      exercises.forEach(ex => {
-        if (ex.supersetGroupId === exerciseToRemove.supersetGroupId && ex.exerciseRef !== exerciseToRemove.exerciseRef) {
+      exercises.forEach((ex) => {
+        if (
+          ex.supersetGroupId === exerciseToRemove.supersetGroupId &&
+          ex.exerciseRef !== exerciseToRemove.exerciseRef
+        ) {
           ex.isSuperset = false;
           ex.supersetWith = undefined;
           ex.supersetGroupId = undefined;
@@ -474,7 +385,8 @@ export class ProgramLibraryComponent implements OnInit {
     if (!nextExercise) return;
 
     // Check if these two exercises are already paired
-    const areAlreadyPaired = currentExercise.supersetWith === nextExercise.exerciseRef;
+    const areAlreadyPaired =
+      currentExercise.supersetWith === nextExercise.exerciseRef;
 
     if (areAlreadyPaired) {
       // Remove superset
@@ -489,8 +401,11 @@ export class ProgramLibraryComponent implements OnInit {
       }
     } else {
       // First, break ALL existing superset connections
-      exercises.forEach(ex => {
-        if (ex.supersetWith === currentExercise.exerciseRef || ex.supersetWith === nextExercise.exerciseRef) {
+      exercises.forEach((ex) => {
+        if (
+          ex.supersetWith === currentExercise.exerciseRef ||
+          ex.supersetWith === nextExercise.exerciseRef
+        ) {
           ex.isSuperset = false;
           ex.supersetWith = undefined;
           ex.supersetGroupId = undefined;
@@ -509,7 +424,9 @@ export class ProgramLibraryComponent implements OnInit {
       nextExercise.supersetGroupId = undefined;
 
       // Now create the new superset
-      const supersetId = `superset_${exerciseIndex}_${exerciseIndex + 1}_${Date.now()}`;
+      const supersetId = `superset_${exerciseIndex}_${
+        exerciseIndex + 1
+      }_${Date.now()}`;
       currentExercise.isSuperset = true;
       currentExercise.supersetWith = nextExercise.exerciseRef;
       currentExercise.supersetGroupId = supersetId;
@@ -555,7 +472,11 @@ export class ProgramLibraryComponent implements OnInit {
 
   formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   loadEnums() {
@@ -563,15 +484,22 @@ export class ProgramLibraryComponent implements OnInit {
       next: (enums) => {
         this.enums = enums;
       },
-      error: (error) => console.error('Error loading enums:', error)
+      error: (error) => console.error('Error loading enums:', error),
     });
   }
 
   loadExercises() {
     this.isLoadingExercises = true;
-    const serviceCall = this.exerciseActiveTab === 'templates'
-      ? this.exerciseService.getTemplateExercises(this.exerciseCurrentPage, this.exercisePageSize)
-      : this.exerciseService.getMyExercises(this.exerciseCurrentPage, this.exercisePageSize);
+    const serviceCall =
+      this.exerciseActiveTab === 'templates'
+        ? this.exerciseService.getTemplateExercises(
+            this.exerciseCurrentPage,
+            this.exercisePageSize
+          )
+        : this.exerciseService.getMyExercises(
+            this.exerciseCurrentPage,
+            this.exercisePageSize
+          );
 
     serviceCall.subscribe({
       next: (response: ExercisePageResponse<Exercise>) => {
@@ -584,7 +512,7 @@ export class ProgramLibraryComponent implements OnInit {
       error: (error) => {
         console.error('Error loading exercises:', error);
         this.isLoadingExercises = false;
-      }
+      },
     });
   }
 
@@ -593,14 +521,16 @@ export class ProgramLibraryComponent implements OnInit {
       next: (response: ExercisePageResponse<Exercise>) => {
         this.exerciseTemplatesCount = response.totalElements || 0;
       },
-      error: (error) => console.error('Error loading exercise templates count:', error)
+      error: (error) =>
+        console.error('Error loading exercise templates count:', error),
     });
 
     this.exerciseService.getMyExercises(0, 1).subscribe({
       next: (response: ExercisePageResponse<Exercise>) => {
         this.exerciseMyExercisesCount = response.totalElements || 0;
       },
-      error: (error) => console.error('Error loading my exercises count:', error)
+      error: (error) =>
+        console.error('Error loading my exercises count:', error),
     });
   }
 
@@ -611,11 +541,17 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   applyExerciseFilters() {
-    this.filteredExercises = this.exercises.filter(exercise => {
-      return (!this.selectedEquipment || exercise.equipment === this.selectedEquipment) &&
-             (!this.selectedMuscle || exercise.muscle === this.selectedMuscle) &&
-             (!this.selectedType || exercise.type === this.selectedType) &&
-             (!this.exerciseSearchTerm || exercise.name.toLowerCase().includes(this.exerciseSearchTerm.toLowerCase()));
+    this.filteredExercises = this.exercises.filter((exercise) => {
+      return (
+        (!this.selectedEquipment ||
+          exercise.equipment === this.selectedEquipment) &&
+        (!this.selectedMuscle || exercise.muscle === this.selectedMuscle) &&
+        (!this.selectedType || exercise.type === this.selectedType) &&
+        (!this.exerciseSearchTerm ||
+          exercise.name
+            .toLowerCase()
+            .includes(this.exerciseSearchTerm.toLowerCase()))
+      );
     });
   }
 
@@ -644,8 +580,8 @@ export class ProgramLibraryComponent implements OnInit {
   loadExerciseDetails(exerciseId: string) {
     this.exerciseService.getExerciseById(exerciseId).subscribe({
       next: (exercise) => {
-        this.trainingDays.forEach(day => {
-          day.exercises.forEach(ex => {
+        this.trainingDays.forEach((day) => {
+          day.exercises.forEach((ex) => {
             if (ex.exerciseRef === exerciseId) {
               ex.name = exercise.name;
               ex.type = exercise.type;
@@ -655,7 +591,7 @@ export class ProgramLibraryComponent implements OnInit {
           });
         });
       },
-      error: (error) => console.error('Error loading exercise details:', error)
+      error: (error) => console.error('Error loading exercise details:', error),
     });
   }
 

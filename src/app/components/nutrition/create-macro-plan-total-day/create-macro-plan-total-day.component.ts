@@ -48,6 +48,19 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     this.isEditMode = !!planId;
 
     if (planId) {
+      this.nutritionService.getNutritionPlanById(planId).subscribe((plan) => {
+        this.planName = plan.name;
+        this.planDescription = plan.details;
+        this.days = plan.mealDays;
+
+        // Recalcul calories si nécessaire
+        this.days.forEach((d) => this.updateCaloriesForDay(d));
+
+        this.selectedDay = this.days[0] ?? null;
+      });
+    }
+
+    if (planId) {
       this.showModeModal = false;
       this.viewMode = 'total';
     } else if (type === 'total' || type === 'each') {
@@ -94,8 +107,13 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (newDay as any).name = `Day ${index}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (newDay as any).dayOfWeek = `Day ${index}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (newDay as any).showDescription = false;
+
 
     this.days.push(newDay);
     this.selectedDay = newDay;
@@ -120,7 +138,9 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       date: '',
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (duplicated as any).name = `Day ${index}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (duplicated as any).showDescription = false;
 
     this.updateCaloriesForDay(duplicated);
@@ -144,6 +164,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       const index = this.days.findIndex((d) => d.id === day.id);
       this.days.splice(index, 1);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.days.forEach((d, i) => ((d as any).name = `Day ${i + 1}`));
 
       if (this.selectedDay?.id === day.id) {
@@ -158,7 +179,9 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
 
   toggleDayDescription() {
     if (this.selectedDay) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (this.selectedDay as any).showDescription =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         !(this.selectedDay as any).showDescription;
     }
   }
@@ -180,6 +203,24 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
 
     this.nutritionService.createNutritionPlan(mealPlan).subscribe(() => {
       this.resetForm();
+    });
+  }
+
+  updatePlan() {
+    const mealPlan: MealPlan = {
+      id: this.route.snapshot.paramMap.get('id'),
+      name: this.planName,
+      details: this.planDescription,
+      mealDays: this.days,
+      trackingMode: 'TOTAL_FOR_DAY',
+      startDate: '',
+      endDate: '',
+      coach: { id: this.userid },
+      client: undefined,
+    };
+
+    this.nutritionService.updateNutritionPlan(mealPlan).subscribe(() => {
+      console.log('Plan updated');
     });
   }
 

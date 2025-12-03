@@ -14,8 +14,7 @@ import { Food, FoodRef, Meal, MealDay, MealPlan } from 'app/models/MealPlan';
   styleUrls: ['./create-full-plan.component.scss'],
 })
 export class CreateFullPlanComponent implements OnInit {
-
-  userId = sessionStorage.getItem('userId');   // ✔ COACH ID
+  userId = sessionStorage.getItem('userId'); // ✔ COACH ID
 
   mealPlan: MealPlan = {
     id: undefined,
@@ -39,7 +38,7 @@ export class CreateFullPlanComponent implements OnInit {
 
   trackByDay = (_: number, d: MealDay) => d.id;
   trackByMeal = (_: number, m: Meal) => m.id;
-
+  planId: string | null = null;
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -47,7 +46,28 @@ export class CreateFullPlanComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.addDay();
+    this.planId = this.route.snapshot.paramMap.get('id');
+
+    if (this.planId) {
+      this.loadPlanForEdit(this.planId);
+    } else {
+      this.addDay(); // mode création
+    }
+  }
+
+  loadPlanForEdit(id: string) {
+    this.nutritionService
+      .getNutritionPlanById(id)
+      .subscribe((plan: MealPlan) => {
+        this.mealPlan = plan;
+        this.planName = plan.name;
+        this.planDescription = plan.details;
+        this.days = plan.mealDays || [];
+        this.selectedDay = this.days[0];
+
+        // recalcul si les macros ne sont pas pré-calculées
+        this.days.forEach((d) => this.recalcDayTargets(d));
+      });
   }
 
   /* ============================================
@@ -60,7 +80,10 @@ export class CreateFullPlanComponent implements OnInit {
 
   getSelectedDayLabel() {
     if (!this.selectedDay) return 'Day 1';
-    return this.getDayLabel(this.selectedDay, this.days.indexOf(this.selectedDay));
+    return this.getDayLabel(
+      this.selectedDay,
+      this.days.indexOf(this.selectedDay)
+    );
   }
 
   private makeEmptyMeal(): Meal {
@@ -159,7 +182,9 @@ export class CreateFullPlanComponent implements OnInit {
 
   removeMeal(meal: Meal) {
     if (!this.selectedDay) return;
-    this.selectedDay.meals = this.selectedDay.meals.filter((m) => m.id !== meal.id);
+    this.selectedDay.meals = this.selectedDay.meals.filter(
+      (m) => m.id !== meal.id
+    );
     this.recalcDayTargets(this.selectedDay);
   }
 
@@ -197,9 +222,11 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   filterFoods() {
-    this.nutritionService.filteredFoods(0, 3, this.foodSearch || '').subscribe((res) => {
-      this.filteredFoods = res.content;
-    });
+    this.nutritionService
+      .filteredFoods(0, 3, this.foodSearch || '')
+      .subscribe((res) => {
+        this.filteredFoods = res.content;
+      });
   }
 
   showFoodDetail(food: FoodRef) {
@@ -361,12 +388,24 @@ export class CreateFullPlanComponent implements OnInit {
     this.mealPlan.name = this.planName;
     this.mealPlan.details = this.planDescription;
     this.mealPlan.mealDays = this.days;
-
-    // ✔ ADD COACH
     this.mealPlan.coach = { id: this.userId };
 
-    this.nutritionService.createNutritionPlan(this.mealPlan).subscribe(() => {
-      this.router.navigate(['/nutrition/plans']);
-    });
+    if (this.planId) {
+      // -----------------------------
+      // 🔵 MODE UPDATE
+      // -----------------------------
+      this.mealPlan.id = this.planId;
+
+      this.nutritionService.updateNutritionPlan(this.mealPlan).subscribe(() => {
+        this.router.navigate(['/nutrition/plans']);
+      });
+    } else {
+      // -----------------------------
+      // 🟢 MODE CREATE
+      // -----------------------------
+      this.nutritionService.createNutritionPlan(this.mealPlan).subscribe(() => {
+        this.router.navigate(['/nutrition/plans']);
+      });
+    }
   }
 }

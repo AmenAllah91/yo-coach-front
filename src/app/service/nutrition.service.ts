@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MealPlan } from 'app/models/MealPlan';
+import { Page } from 'app/models/Page.model';
 
 export interface Food {
   id?: string;
@@ -59,11 +60,19 @@ export interface NutritionPlan {
   id?: string;
   name: string;
   description?: string;
-  type: 'MACRO_ONLY' | 'FULL_MEAL';
-  days: NutritionDay[];
+  trackingMode: 'TOTAL_FOR_DAY' | 'EACH_MEAL' | null;
+  mealDays: NutritionDay[];
   coachId?: string;
   createdBy?: string;
   lastModifiedDate?: string;
+  updatedAt?: Date;
+  createdAt?: Date;
+}
+export interface DayTargets {
+  calories: number;
+  carbsG: number;
+  fatG: number;
+  proteinG: number;
 }
 
 export interface NutritionDay {
@@ -75,6 +84,7 @@ export interface NutritionDay {
   totalCarbs: number;
   totalFat: number;
   totalCalories: number;
+  dayTargets: DayTargets;
   meals?: Meal[];
 }
 
@@ -143,9 +153,6 @@ export class NutritionService {
     );
   }
 
-
-
-
   createFood(food: Food): Observable<Food> {
     return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref`, food);
   }
@@ -168,22 +175,22 @@ export class NutritionService {
   }
 
   // Nutrition plan management
-  getNutritionPlans(): Observable<NutritionPlan[]> {
-    return this.http.get<NutritionPlan[]>(`${this.baseUrl}/plans`);
+  getNutritionPlans(): Observable<Page<NutritionPlan>> {
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`);
+  }
+  getNutritionPlanById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.mealPlanUrl}${id}`);
   }
 
   createNutritionPlan(plan: MealPlan): Observable<MealPlan> {
     return this.http.post<MealPlan>(`${this.mealPlanUrl}`, plan);
   }
 
-  updateNutritionPlan(
-    id: string,
-    plan: NutritionPlan
-  ): Observable<NutritionPlan> {
-    return this.http.put<NutritionPlan>(`${this.baseUrl}/plans/${id}`, plan);
+  updateNutritionPlan(plan: any): Observable<NutritionPlan> {
+    return this.http.put<NutritionPlan>(`${this.mealPlanUrl}`, plan);
   }
 
   deleteNutritionPlan(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/plans/${id}`);
+    return this.http.delete<void>(`${this.mealPlanUrl}${id}`);
   }
 }

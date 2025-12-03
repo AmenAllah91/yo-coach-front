@@ -1,8 +1,8 @@
 // app.routes.ts
 
-import {CanActivateFn, Route} from '@angular/router';
+import { CanActivateFn, Route } from '@angular/router';
 import { MainLayoutComponent } from './template/layout/app-layout/main-layout/main-layout.component';
-import {RegisterComponent} from "./template/layout/register/register.component";
+import { RegisterComponent } from './template/layout/register/register.component';
 import { ExerciseLibraryComponent } from './components/exercise-library/exercise-library.component';
 import { ClientsComponent } from './template/clients.component';
 import { ProgramLibraryComponent } from './components/program-library/program-library.component';
@@ -11,14 +11,12 @@ import { CustomFoodsComponent } from './components/nutrition/custom-foods/custom
 import { NutritionPlansComponent } from './components/nutrition/nutrition-plans/nutrition-plans.component';
 import { CreateMacroPlanComponent } from './components/nutrition/create-macro-plan/create-macro-plan.component';
 import { CreateFullPlanComponent } from './components/nutrition/create-full-plan/create-full-plan.component';
-import {inject} from "@angular/core";
-import {AuthGuard} from "@config/guard/auth.guard";
-import {
-  CreateMacroPlanTotalDayComponent
-} from "./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component";
-import {CreateWorkoutComponent} from "./components/program-library/create-workout/create-workout.component";
-import {CreateFormComponent} from "./components/forms/create-form/create-form.component";
-import {ProfilClientComponent} from "./components/clients/profil-client/profil-client.component";
+import { inject } from '@angular/core';
+import { AuthGuard } from '@config/guard/auth.guard';
+import { CreateMacroPlanTotalDayComponent } from './components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component';
+import { CreateWorkoutComponent } from './components/program-library/create-workout/create-workout.component';
+import { CreateFormComponent } from './components/forms/create-form/create-form.component';
+import { ProfilClientComponent } from './components/clients/profil-client/profil-client.component';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -31,63 +29,72 @@ export const APP_ROUTE: Route[] = [
     children: [
       {
         path: 'workout/exercise-library',
-        component: ExerciseLibraryComponent
+        component: ExerciseLibraryComponent,
       },
       {
         path: 'clients',
-        component: ClientsComponent
-      },  {
+        component: ClientsComponent,
+      },
+      {
         path: 'clients/profil-client',
-        component: ProfilClientComponent
+        component: ProfilClientComponent,
       },
       {
         path: 'workout/program-library',
-        component: ProgramLibraryComponent
-      },{
+        component: ProgramLibraryComponent,
+      },
+      {
         path: 'workout/create-workout',
-        component: CreateWorkoutComponent
+        component: CreateWorkoutComponent,
+      },
+      {
+        path: 'workout/edit-workout/:id',
+        component: CreateWorkoutComponent,
       },
       {
         path: 'nutrition/foods',
-        component: FoodsComponent
+        component: FoodsComponent,
       },
       {
         path: 'nutrition/custom-foods',
-        component: CustomFoodsComponent
+        component: CustomFoodsComponent,
       },
       {
         path: 'nutrition/plans',
-        component: NutritionPlansComponent
+        component: NutritionPlansComponent,
       },
       {
         path: 'nutrition/create-macro-plan',
-        component: CreateMacroPlanComponent
-      },{
-        path: 'nutrition/create-macro-plan-total-day',
-        component: CreateMacroPlanTotalDayComponent
+        component: CreateMacroPlanComponent,
       },
       {
         path: 'nutrition/create-macro-plan/:id',
-        component: CreateMacroPlanComponent
+        component: CreateMacroPlanComponent,
+      },
+      {
+        path: 'nutrition/create-macro-plan-total-day',
+        component: CreateMacroPlanTotalDayComponent,
+      },
+      {
+        path: 'nutrition/create-macro-plan-total-day/:id',
+        component: CreateMacroPlanTotalDayComponent,
       },
       {
         path: 'nutrition/create-full-plan',
-        component: CreateFullPlanComponent
+        component: CreateFullPlanComponent,
       },
       {
         path: 'nutrition/create-full-plan/:id',
-        component: CreateFullPlanComponent
-      },{
-        path: 'nutrition/create-full-plan/:id',
-        component: CreateFullPlanComponent
-      },{
+        component: CreateFullPlanComponent,
+      },
+      {
         path: 'form/create-form',
-        component: CreateFormComponent
-      }
-    ]
+        component: CreateFormComponent,
+      },
+    ],
   },
   {
     path: 'register',
-    component: RegisterComponent
-  }
+    component: RegisterComponent,
+  },
 ];

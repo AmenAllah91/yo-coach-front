@@ -19,7 +19,7 @@
             [class.is-active]="selectedDay?.id === d.id"
             (click)="selectDay(d)"
           >
-            <span>{{ d.name }}</span>
+            <span>{{ d.dayOfWeek }}</span>
           </button>
 
           <!-- Day >= 2 avec icône trash -->
@@ -30,7 +30,7 @@
                 [class.is-active]="selectedDay?.id === d.id"
                 (click)="selectDay(d)"
               >
-                <span>{{ d.name }}</span>
+                <span>{{ d.dayOfWeek }}</span>
               </button>
               <button
                 class="np-iconbtn"
@@ -76,18 +76,18 @@
             />
           </svg>
         </a>
-        <h1 class="np-h5">Create Nutrition Plan</h1>
+        <h1 class="np-h5">
+          {{ isEditMode ? "Update Nutrition Plan" : "Create Nutrition Plan" }}
+        </h1>
       </div>
 
       <section class="np-card">
         <!-- Plan Title -->
         <div class="np-field">
-          <label class="np-label">Plan Title <span class="np-danger">*</span></label>
-          <input
-            class="np-input"
-            [(ngModel)]="planName"
-            type="text"
-          />
+          <label class="np-label"
+            >Plan Title <span class="np-danger">*</span></label
+          >
+          <input class="np-input" [(ngModel)]="planName" type="text" />
         </div>
 
         <!-- Add Plan Description -->
@@ -108,7 +108,11 @@
                 placeholder="Enter Plan Description"
                 [(ngModel)]="planDescription"
               ></textarea>
-              <button type="button" class="np-close" (click)="togglePlanDescription()">
+              <button
+                type="button"
+                class="np-close"
+                (click)="togglePlanDescription()"
+              >
                 <i-feather name="x" class="np-ico"></i-feather>
               </button>
             </div>
@@ -119,7 +123,7 @@
 
         <!-- Day Header -->
         <div class="np-dayhead">
-          <h3 class="np-h6">{{ selectedDay?.name }}</h3>
+          <h3 class="np-h6">{{ selectedDay?.dayOfWeek }}</h3>
           <button class="np-mini" (click)="toggleDayDescription()">
             <i-feather name="edit-2" class="np-ico"></i-feather>
           </button>
@@ -144,7 +148,11 @@
                   placeholder="Enter Day Description"
                   [(ngModel)]="selectedDay!.description"
                 ></textarea>
-                <button type="button" class="np-close" (click)="toggleDayDescription()">
+                <button
+                  type="button"
+                  class="np-close"
+                  (click)="toggleDayDescription()"
+                >
                   <i-feather name="x" class="np-ico"></i-feather>
                 </button>
               </div>
@@ -232,7 +240,10 @@
       </section>
 
       <div class="np-sticky">
-        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
+        <button
+          class="np-btn np-btn--save np-btn--full"
+          (click)="isEditMode ? updatePlan() : savePlan()"
+        >
           <svg viewBox="0 0 24 24" class="np-ico">
             <path
               d="M12 5v14m7-7H5"
@@ -242,7 +253,7 @@
               stroke-linecap="round"
             />
           </svg>
-          Save Plan
+          {{ isEditMode ? 'Update Plan' : 'Save Plan' }}
         </button>
       </div>
     </main>

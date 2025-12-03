@@ -30,11 +30,11 @@
     <div class="table-row" *ngFor="let plan of filteredPlans">
       <div class="col-title">
         <div class="plan-name">{{ plan.name }}</div>
-        <div class="plan-type">{{ plan.type === 'MACRO_ONLY' ? 'Macro Only' : 'Full Plan' }}</div>
+        <div class="plan-type">{{ plan.trackingMode === 'TOTAL_FOR_DAY' ? 'TOTAL FOR DAY' : plan.trackingMode === 'EACH_MEAL' ? 'EACH MEAL' : 'FULL MEAL PLAN' }}</div>
       </div>
 
       <div class="col-updated">
-        {{ formatDate(plan.lastModifiedDate) }}
+        {{ formatDate(plan.updatedAt) }}
       </div>
 
       <div class="col-macros">

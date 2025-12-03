@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { NutritionService, NutritionPlan } from '../../../service/nutrition.service';
+import {
+  NutritionService,
+  NutritionPlan,
+} from '../../../service/nutrition.service';
 import { NutritionBlocService } from '../../../service/nutrition-bloc.service';
 import { DeleteNutritionPlanModalComponent } from '../delete-nutrition-plan-modal/delete-nutrition-plan-modal.component';
 import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-plan-type-modal.component';
@@ -12,9 +15,15 @@ import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-p
 @Component({
   selector: 'app-nutrition-plans',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DeleteNutritionPlanModalComponent, ChoosePlanTypeModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    FeatherModule,
+    DeleteNutritionPlanModalComponent,
+    ChoosePlanTypeModalComponent,
+  ],
   templateUrl: './nutrition-plans.component.html',
-  styleUrls: ['./nutrition-plans.component.scss']
+  styleUrls: ['./nutrition-plans.component.scss'],
 })
 export class NutritionPlansComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
@@ -28,7 +37,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   openDropdownId: string | null = null;
   loading = false;
 
-
   constructor(
     private nutritionService: NutritionService,
     private nutritionBloc: NutritionBlocService,
@@ -39,7 +47,7 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     // Subscribe to nutrition state
     this.nutritionBloc.state$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(state => {
+      .subscribe((state) => {
         this.plans = state.plans;
         this.loading = state.loading;
       });
@@ -63,121 +71,21 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   loadPlans() {
     this.nutritionBloc.setLoading(true);
 
-    // Template data with coach ID: 9247e8e1-0ce7-469e-9569-10ed490fb755
-    const templatePlans: NutritionPlan[] = [
-      {
-        id: '1',
-        name: 'meal999',
-        description: 'Full Plan',
-        type: 'FULL_MEAL',
-        coachId: '9247e8e1-0ce7-469e-9569-10ed490fb755',
-        days: [
-          {
-            dayNumber: 1,
-            name: 'Day 1',
-            description: '',
-            totalProtein: 13,
-            totalCarbs: 1.1,
-            totalFat: 11,
-            totalCalories: 158
-          }
-        ],
-        lastModifiedDate: '2025-08-16T05:57:00Z'
-      },
-      {
-        id: '2',
-        name: '2750kcal',
-        description: 'Full Plan',
-        type: 'FULL_MEAL',
-        coachId: '9247e8e1-0ce7-469e-9569-10ed490fb755',
-        days: [
-          {
-            dayNumber: 1,
-            name: 'Day 1',
-            description: '',
-            totalProtein: 230,
-            totalCarbs: 170,
-            totalFat: 123,
-            totalCalories: 2759
-          }
-        ],
-        lastModifiedDate: '2025-08-16T05:11:00Z'
-      },
-      {
-        id: '3',
-        name: '2000kcal',
-        description: 'Full Plan',
-        type: 'MACRO_ONLY',
-        coachId: '9247e8e1-0ce7-469e-9569-10ed490fb755',
-        days: [
-          {
-            dayNumber: 1,
-            name: 'Day 1',
-            description: '',
-            totalProtein: 169,
-            totalCarbs: 180,
-            totalFat: 60,
-            totalCalories: 2020
-          }
-        ],
-        lastModifiedDate: '2025-08-16T05:11:00Z'
-      },
-      {
-        id: '4',
-        name: '2250kcal',
-        description: 'Full Plan',
-        type: 'MACRO_ONLY',
-        coachId: '9247e8e1-0ce7-469e-9569-10ed490fb755',
-        days: [
-          {
-            dayNumber: 1,
-            name: 'Day 1',
-            description: '',
-            totalProtein: 202,
-            totalCarbs: 171,
-            totalFat: 73,
-            totalCalories: 2241
-          }
-        ],
-        lastModifiedDate: '2025-08-16T05:11:00Z'
-      },
-      {
-        id: '5',
-        name: '1750kcal',
-        description: 'Full Plan',
-        type: 'MACRO_ONLY',
-        coachId: '9247e8e1-0ce7-469e-9569-10ed490fb755',
-        days: [
-          {
-            dayNumber: 1,
-            name: 'Day 1',
-            description: '',
-            totalProtein: 143,
-            totalCarbs: 148,
-            totalFat: 59,
-            totalCalories: 1753
-          }
-        ],
-        lastModifiedDate: '2025-08-16T05:11:00Z'
-      }
-    ];
-
-    this.nutritionBloc.setPlans(templatePlans);
-
     // Uncomment when backend is ready
-    // this.nutritionService.getNutritionPlans().subscribe({
-    //   next: (plans) => {
-    //     this.nutritionBloc.setPlans(plans);
-    //   },
-    //   error: (error) => {
-    //     console.error('Error loading plans:', error);
-    //     this.nutritionBloc.setError('Failed to load nutrition plans');
-    //   }
-    // });
+    this.nutritionService.getNutritionPlans().subscribe({
+      next: (plans) => {
+        this.plans = plans.content;
+        console.log(this.plans);
+      },
+      error: (error) => {
+        console.error('Error loading plans:', error);
+        this.nutritionBloc.setError('Failed to load nutrition plans');
+      },
+    });
   }
 
   get filteredPlans() {
-    return this.plans.filter(plan =>
+    return this.plans.filter((plan) =>
       plan.name.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
   }
@@ -201,11 +109,20 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   editPlan(plan: NutritionPlan) {
-    console.log('Edit plan:', plan.name);
-    this.openDropdownId = null;
+    if (plan.trackingMode === 'EACH_MEAL') {
+      const url = 'nutrition/create-macro-plan/' + plan.id;
+      this.router.navigateByUrl(url);
+    } else if (plan.trackingMode === 'TOTAL_FOR_DAY') {
+      const url = 'nutrition/create-macro-plan-total-day/' + plan.id;
+      this.router.navigateByUrl(url);
+    } else {
+      const url = 'nutrition/create-full-plan/' + plan.id;
+      this.router.navigateByUrl(url);
+    }
   }
 
-  openDeleteModal(plan: NutritionPlan) {
+  openDeleteModal(plan: any) {
+    console.log(plan);
     this.selectedPlan = plan;
     this.showDeleteModal = true;
     this.openDropdownId = null;
@@ -218,17 +135,21 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   confirmDelete() {
     if (this.selectedPlan) {
-      this.nutritionService.deleteNutritionPlan(this.selectedPlan.id!).subscribe({
-        next: () => {
-          this.nutritionBloc.removePlan(this.selectedPlan!.id!);
-          this.closeDeleteModal();
-        },
-        error: (error) => {
-          console.error('Error deleting plan:', error);
-          this.nutritionBloc.setError('Failed to delete nutrition plan');
-          this.closeDeleteModal();
-        }
-      });
+      this.nutritionService
+        .deleteNutritionPlan(this.selectedPlan.id!)
+        .subscribe({
+          next: () => {
+            this.closeDeleteModal();
+
+            // 🔥 Rafraîchir la liste après suppression
+            this.loadPlans();
+          },
+          error: (error) => {
+            console.error('Error deleting plan:', error);
+            this.nutritionBloc.setError('Failed to delete nutrition plan');
+            this.closeDeleteModal();
+          },
+        });
     }
   }
 
@@ -256,27 +177,44 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
   getTotalProtein(plan: NutritionPlan): string {
-    const total = plan.days?.reduce((sum, day) => sum + (day.totalProtein || 0), 0) || 0;
-    return `${Math.round(total)}g Protein`;
+    const total =
+      plan.mealDays?.reduce(
+        (sum, day) => sum + (day.dayTargets.proteinG || 0),
+        0
+      ) || 0;
+    return `${total}g Protein`;
   }
 
   getTotalCarbs(plan: NutritionPlan): string {
-    const total = plan.days?.reduce((sum, day) => sum + (day.totalCarbs || 0), 0) || 0;
-    return `${Math.round(total)}g Carbs`;
+    const total =
+      plan.mealDays?.reduce(
+        (sum, day) => sum + (day.dayTargets.carbsG || 0),
+        0
+      ) || 0;
+    return `${total}g Carbs`;
   }
 
   getTotalFat(plan: NutritionPlan): string {
-    const total = plan.days?.reduce((sum, day) => sum + (day.totalFat || 0), 0) || 0;
-    return `${Math.round(total)}g Fat`;
+    const total =
+      plan.mealDays?.reduce(
+        (sum, day) => sum + (day.dayTargets.fatG || 0),
+        0
+      ) || 0;
+    return `${total}g Fat`;
   }
 
   getTotalCalories(plan: NutritionPlan): string {
-    const total = plan.days?.reduce((sum, day) => sum + (day.totalCalories || 0), 0) || 0;
-    return `${Math.round(total)}Kcal`;
+    console.log(plan);
+    const total =
+      plan.mealDays?.reduce(
+        (sum, day) => sum + (day.dayTargets.calories || 0),
+        0
+      ) || 0;
+    return `${total} Kcal`;
   }
 }

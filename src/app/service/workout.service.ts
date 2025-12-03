@@ -60,7 +60,7 @@ export interface PageResponse<T> {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WorkoutService {
   private apiUrl = `${environment.baseApiUrl}/api/workout-plan/`;
@@ -68,8 +68,8 @@ export class WorkoutService {
   constructor(private http: HttpClient) {}
 
   getWorkouts(
-    page: number = 0, 
-    size: number = 12, 
+    page: number = 0,
+    size: number = 12,
     search?: string,
     isTemplate?: boolean
   ): Observable<PageResponse<Workout>> {
@@ -78,28 +78,42 @@ export class WorkoutService {
     if (isTemplate !== undefined) params += `&isTemplate=${isTemplate}`;
     return this.http.get<PageResponse<Workout>>(`${this.apiUrl}?${params}`);
   }
-  
-  getTemplates(page: number = 0, size: number = 12): Observable<PageResponse<Workout>> {
-    return this.http.get<PageResponse<Workout>>(`${this.apiUrl}templates?page=${page}&size=${size}`);
-  }
-  
-  getMyLibrary(page: number = 0, size: number = 12): Observable<PageResponse<Workout>> {
-    return this.http.get<PageResponse<Workout>>(`${this.apiUrl}my-library?page=${page}&size=${size}`);
+
+  getTemplates(
+    page: number = 0,
+    size: number = 12
+  ): Observable<PageResponse<Workout>> {
+    return this.http.get<PageResponse<Workout>>(
+      `${this.apiUrl}templates?page=${page}&size=${size}`
+    );
   }
 
-  createWorkout(workout: Workout): Observable<Workout> {
-    return this.http.post<Workout>(this.apiUrl, workout);
+  getMyLibrary(
+    page: number = 0,
+    size: number = 12
+  ): Observable<PageResponse<Workout>> {
+    return this.http.get<PageResponse<Workout>>(
+      `${this.apiUrl}my-library?page=${page}&size=${size}`
+    );
   }
 
-  updateWorkout(id: string, workout: Workout): Observable<Workout> {
+  createWorkout(workout: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, workout);
+  }
+
+  updateWorkout(id: string, workout: any): Observable<Workout> {
     return this.http.put<Workout>(`${this.apiUrl}${id}`, workout);
   }
 
   deleteWorkout(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}${id}`);
   }
 
   duplicateWorkout(id: string): Observable<Workout> {
-    return this.http.post<Workout>(`${this.apiUrl}/${id}/duplicate`, {});
+    return this.http.post<Workout>(`${this.apiUrl}${id}/duplicate`, {});
+  }
+
+  getWorkoutById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}${id}`);
   }
 }

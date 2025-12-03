@@ -1,183 +1,521 @@
-import { Component } from '@angular/core';
-import {CommonModule, DecimalPipe, NgForOf, NgIf} from "@angular/common";
-import {FeatherModule} from "angular-feather";
-import {FormsModule} from "@angular/forms";
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FeatherModule } from 'angular-feather';
+import { FormsModule } from '@angular/forms';
+import { ExerciseService } from 'app/service/exercise.service';
+import { WorkoutService } from 'app/service/workout.service';
+import { ActivatedRoute } from '@angular/router';
 
+/* =========================================================
+   MODELS / ENUMS
+   ========================================================= */
 
 export interface ExerciseSet {
-  reps: string;       // "8", "8-10", "AMRAP", etc.
-  restMinutes: number;
-  restSeconds: number;
+  reps?: string;
+  weight?: number;
+  restMin?: number;
+  restSec?: number;
+  setNumber?: number;
 }
 
+export enum TypeExercise {
+  SIMPLE = 'SIMPLE',
+  SUPERSET = 'SUPERSET',
+  WARMUP = 'WARMUP',
+  CARDIO = 'CARDIO',
+}
+
+export interface ExerciseRef {
+  id?: string;
+  name?: string;
+  videoUrl?: string;
+  description?: string;
+}
 
 export interface Exercise {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
+  dayOfWeek?: string;
+  restDay?: boolean;
+  exerciseRef?: ExerciseRef;
+  type?: TypeExercise;
+
+  supersetGroupId?: string | null;
+  sets?: ExerciseSet[];
+
   image?: string;
   videoUrl?: string;
   description?: string;
-  sets?: ExerciseSet[];
-  /** id du partenaire si en superset; null sinon */
-  supersetWith?: string | null;
 }
 
 export interface WorkoutSession {
-  name: string;
+  name?: string;
+  exercises: Exercise[];
   totalSets?: number;
   totalReps?: number;
   totalDurationMin?: number;
-  exercises: Exercise[];
 }
+
+export enum TypeWorkoutPlan {
+  STRENGTH_TRAINING = 'STRENGTH_TRAINING',
+  CARDIOVASCULAR_TRAINING = 'CARDIOVASCULAR_TRAINING',
+  FLEXIBILITY_MOBILITY = 'FLEXIBILITY_MOBILITY',
+  FUNCTIONAL_FITNESS = 'FUNCTIONAL_FITNESS',
+}
+
 export interface WorkoutDay {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
+  date?: string;
+  title?: string;
   description?: string;
-  showDescription?: boolean;
+  dayNumber?: number;
+  dayOfWeek?: string;
   isRestDay?: boolean;
-  session: WorkoutSession;
+  restDay?: boolean;
+
+  showDescription?: boolean;
+  workoutSessions?: WorkoutSession[];
+  session?: WorkoutSession;
 }
+
+export interface WorkoutPlan {
+  id?: string;
+  name: string;
+  details: string;
+  startDate?: string;
+  endDate?: string;
+  workoutDays: WorkoutDay[];
+  coach?: any;
+  client?: any;
+  isWorkoutPlanTemplate?: boolean;
+  typeWorkoutPlan?: TypeWorkoutPlan;
+  createdBy?: string;
+}
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
+
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-    imports: [
-      CommonModule, FormsModule, FeatherModule
-    ],
+  imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './create-workout.component.html',
-  styleUrl: './create-workout.component.scss'
+  styleUrls: ['./create-workout.component.scss'],
 })
-export class CreateWorkoutComponent {
-  days: WorkoutDay[] = [
-    {
-      id: crypto.randomUUID(),
-      name: 'Day 1',
-      isRestDay: false,
-      showDescription: false,
-      session: { name: 'Main Session', exercises: [] }
-    }
-  ];
-  selectedDay: WorkoutDay | null = this.days[0];
+export class CreateWorkoutComponent implements OnInit {
+  userid = sessionStorage.getItem('userId');
+  /* ===== PLAN ROOT OBJECT (DYNAMIQUE) ===== */
+  workoutPlan: WorkoutPlan = {
+    name: '',
+    details: '',
+    workoutDays: [],
+    typeWorkoutPlan: TypeWorkoutPlan.STRENGTH_TRAINING,
+    isWorkoutPlanTemplate: false,
+    coach: { id: this.userid },
+  };
 
-  planDescription = '';          // pour [(ngModel)] du textarea "Plan Description"
-  showPlanDescription = false;   // toggle du plan
-  showRestNotes = false;         // toggle "Rest Day Notes"
+  /* ===== Drawer state ===== */
+  showExerciseSelector = false;
+  hoveringExerciseId: string | null = null;
 
-  /* ---------- Exercices (catalogue simple pour sélection) ---------- */
+  /* ===== Filters ===== */
+  searchQuery = '';
+  muscleFilter = '';
+  equipmentFilter = '';
+  typeFilter = '';
+
+  /* ===== API data ===== */
+  exerciseDatabase: Exercise[] = [];
+  loading = false;
+
+  /* ===== Pagination ===== */
+  page = 0;
+  size = 10;
+  totalPages = 1;
+
+  /* ===== Days & selected day ===== */
+  days: WorkoutDay[] = [];
+  selectedDay: WorkoutDay | null = null;
+
+  /* ===== UI plan options ===== */
+  showPlanDescription = false;
+  showRestNotes = false;
+
+  /* ===== Local exercise catalog (default) ===== */
   exerciseCatalog: Exercise[] = [
-    { id: '1', name: 'Barbell Squat' },
-    { id: '2', name: 'Bench Press' },
-    { id: '3', name: 'Deadlift' },
-    { id: '4', name: 'Pull-ups' },
-    { id: '5', name: 'Plank' }
+    { id: '1', name: 'Barbell Squat', sets: [] },
+    { id: '2', name: 'Bench Press', sets: [] },
+    { id: '3', name: 'Deadlift', sets: [] },
+    { id: '4', name: 'Pull-ups', sets: [] },
+    { id: '5', name: 'Plank', sets: [] },
   ];
   filteredExercises: Exercise[] = [...this.exerciseCatalog];
 
-  // état modal (si tu utilises encore le sélecteur latéral)
+  /* ===== Modal state ===== */
   isExerciseModalOpen = false;
   exerciseStep: 'list' | 'detail' = 'list';
   exerciseSearch = '';
   selectedExercise: Exercise | null = null;
 
-  // édition des notes d’un exercice
+  /* ===== Editing exercise notes ===== */
   editingExerciseDescription: string | null = null;
 
-  /* ================== Days utils ================== */
-  trackByDay(index: number, d: WorkoutDay) { return d.id; }
+  isEditMode = false;
 
-  selectDay(d: WorkoutDay) { this.selectedDay = d; }
+  constructor(
+    private exerciseRefService: ExerciseService,
+    private workoutService: WorkoutService,
+    private route: ActivatedRoute
+  ) {}
+
+  /* =========================================================
+     LIFECYCLE
+     ========================================================= */
+
+  ngOnInit() {
+    const planId = this.route.snapshot.paramMap.get('id');
+    if (planId) {
+      this.isEditMode = true;
+      // MODE EDIT
+      this.loadPlanForEdit(planId);
+    } else {
+      // MODE CREATE
+      this.isEditMode = false;
+      this.initDefaultDay();
+    }
+    this.loadExercisesFromAPI();
+  }
+
+  loadPlanForEdit(id: string) {
+    this.workoutService.getWorkoutById(id).subscribe({
+      next: (plan: any) => {
+        console.log(plan);
+        this.workoutPlan = plan;
+
+        // Synchroniser les jours utilisés par l’UI
+        this.days = plan.workoutDays;
+        this.selectedDay = this.days[0] || null;
+        console.log(this.days);
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement du plan :', err);
+      },
+    });
+  }
+
+  private initDefaultDay() {
+    const firstDay: WorkoutDay = {
+      id: crypto.randomUUID(),
+      name: 'Day 1',
+      isRestDay: false,
+      showDescription: false,
+      title: 'Day 1',
+      dayNumber: 1,
+      restDay: false,
+      workoutSessions: [],
+      session: null,
+      description: '',
+    };
+
+    this.days.push(firstDay);
+    this.selectedDay = firstDay;
+
+    // 🔥 IMPORTANT : synchroniser avec le plan
+    this.workoutPlan.workoutDays = this.days;
+  }
+
+  /* =========================================================
+     API Loader
+     ========================================================= */
+
+  loadExercisesFromAPI() {
+    this.loading = true;
+
+    const filters = {
+      name: this.searchQuery,
+      muscle: this.muscleFilter,
+      equipment: this.equipmentFilter,
+      type: this.typeFilter,
+    };
+
+    this.exerciseRefService
+      .getExercises(this.page, this.size, filters)
+      .subscribe({
+        next: (res) => {
+          this.exerciseDatabase = res.content.map((e: any) => {
+            const ex: Exercise = {
+              id: e.id,
+              name: e.name,
+              type: e.type,
+              exerciseRef: e.exerciseRef,
+              videoUrl: e.exerciseRef?.videoUrl ?? e.videoLink,
+              sets: [{ reps: '8', restMin: 1, restSec: 0 }],
+            };
+            return ex;
+          });
+
+          this.totalPages = res.totalPages;
+          this.loading = false;
+        },
+        error: () => (this.loading = false),
+      });
+  }
+
+  /* =========================================================
+     Filters & Pagination
+     ========================================================= */
+
+  onFilterChange() {
+    this.page = 0;
+    this.loadExercisesFromAPI();
+  }
+
+  nextPage() {
+    if (this.page + 1 < this.totalPages) {
+      this.page++;
+      this.loadExercisesFromAPI();
+    }
+  }
+
+  prevPage() {
+    if (this.page > 0) {
+      this.page--;
+      this.loadExercisesFromAPI();
+    }
+  }
+
+  /* =========================================================
+     Drawer toggle
+     ========================================================= */
+
+  openExerciseSelector() {
+    this.showExerciseSelector = true;
+    this.loadExercisesFromAPI();
+  }
+
+  closeExerciseSelector() {
+    this.showExerciseSelector = false;
+  }
+
+  /* =========================================================
+     Days utils
+     ========================================================= */
+
+  trackByDay(index: number, d: WorkoutDay) {
+    return d.id;
+  }
+
+  selectDay(d: WorkoutDay) {
+    this.selectedDay = d;
+  }
 
   addDay() {
     const newIdx = this.days.length + 1;
+
+    const session: WorkoutSession = {
+      name: 'Main Session',
+      exercises: [],
+      totalSets: 0,
+      totalReps: 0,
+      totalDurationMin: 0,
+    };
+
     const newDay: WorkoutDay = {
       id: crypto.randomUUID(),
       name: `Day ${newIdx}`,
       isRestDay: false,
       showDescription: false,
-      session: { name: 'Main Session', exercises: [] }
+      title: `Day ${newIdx}`,
+      dayNumber: newIdx,
+      restDay: false,
+      workoutSessions: [session],
+      session: session,
     };
+
     this.days.push(newDay);
     this.selectedDay = newDay;
+
+    // 🔥 synchro avec plan
+    this.workoutPlan.workoutDays = this.days;
   }
 
   duplicateSelectedDay() {
     if (!this.selectedDay) return;
+
     const copy: WorkoutDay = JSON.parse(JSON.stringify(this.selectedDay));
     copy.id = crypto.randomUUID();
     copy.name = `Day ${this.days.length + 1}`;
+    copy.title = copy.name;
+    copy.dayNumber = this.days.length + 1;
+
+    if (!copy.workoutSessions || copy.workoutSessions.length === 0) {
+      copy.workoutSessions = [
+        {
+          name: 'Main Session',
+          exercises: [],
+          totalSets: 0,
+          totalReps: 0,
+          totalDurationMin: 0,
+        },
+      ];
+    }
+    copy.session = copy.workoutSessions[0];
+
     this.days.push(copy);
     this.selectedDay = copy;
+
+    // 🔥 synchro avec plan
+    this.workoutPlan.workoutDays = this.days;
   }
 
   deleteDay(d: WorkoutDay, ev?: Event) {
     ev?.stopPropagation();
     if (this.days.length <= 1) return;
+
     const idx = this.days.indexOf(d);
     this.days.splice(idx, 1);
+
     if (this.selectedDay === d) {
       this.selectedDay = this.days[Math.max(0, idx - 1)] || null;
     }
+
+    // 🔥 synchro avec plan
+    this.workoutPlan.workoutDays = this.days;
   }
 
-  togglePlanDescription() { this.showPlanDescription = !this.showPlanDescription; }
-  toggleDayDescription() { if (this.selectedDay) this.selectedDay.showDescription = !this.selectedDay.showDescription; }
-  toggleRestNotes() { this.showRestNotes = !this.showRestNotes; }
+  togglePlanDescription() {
+    this.showPlanDescription = !this.showPlanDescription;
+  }
 
-  /* ================== Exercises: search modal (optionnel) ================== */
+  toggleDayDescription() {
+    if (this.selectedDay) {
+      this.selectedDay.showDescription = !this.selectedDay.showDescription;
+    }
+  }
+
+  toggleRestNotes() {
+    this.showRestNotes = !this.showRestNotes;
+  }
+
+  /* =========================================================
+     Exercise selection modal
+     ========================================================= */
+
   filterExercises() {
     const q = (this.exerciseSearch || '').toLowerCase();
-    this.filteredExercises = this.exerciseCatalog.filter(e => e.name.toLowerCase().includes(q));
+    this.filteredExercises = this.exerciseCatalog.filter((e) =>
+      (e.name || '').toLowerCase().includes(q)
+    );
   }
+
   openExerciseModal() {
     this.isExerciseModalOpen = true;
     this.exerciseStep = 'list';
     this.exerciseSearch = '';
     this.filterExercises();
   }
+
   closeExerciseModal() {
     this.isExerciseModalOpen = false;
     this.selectedExercise = null;
   }
+
   showExerciseDetail(ex: Exercise) {
-    // si tu veux des infos détaillées avant d'ajouter; ici on ne modifie pas la structure (compatible avec Exercise)
     this.selectedExercise = { ...ex };
     this.exerciseStep = 'detail';
   }
 
-  /* ================== Exercises: actions (SECTION PRINCIPALE) ================== */
+  /* =========================================================
+     Getter filtré
+     ========================================================= */
+
+  get filteredDatabase(): Exercise[] {
+    const q = this.searchQuery.trim().toLowerCase();
+    return this.exerciseDatabase.filter((e) =>
+      (e.name || '').toLowerCase().includes(q)
+    );
+  }
+
+  /* =========================================================
+     Exercises: actions
+     ========================================================= */
+
+  private get currentSession(): WorkoutSession | null {
+    if (!this.selectedDay) return null;
+
+    if (
+      !this.selectedDay.workoutSessions ||
+      this.selectedDay.workoutSessions.length === 0
+    ) {
+      const newSession: WorkoutSession = {
+        name: 'Main Session',
+        exercises: [],
+        totalSets: 0,
+        totalReps: 0,
+        totalDurationMin: 0,
+      };
+      this.selectedDay.workoutSessions = [newSession];
+      this.selectedDay.session = newSession;
+    }
+
+    return this.selectedDay.workoutSessions[0];
+  }
+
+  handleSelectExercise(ex: Exercise) {
+    const session = this.currentSession;
+    if (!session) return;
+
+    const copy: Exercise = {
+      id: crypto.randomUUID(),
+      name: ex.name,
+      videoUrl: ex.videoUrl,
+      exerciseRef: ex.exerciseRef,
+      type: ex.type,
+      sets: [{ reps: '8', restMin: 1, restSec: 0 }],
+    };
+
+    session.exercises.push(copy);
+    this.recomputeSession(session);
+    this.closeExerciseSelector();
+  }
+
   handleAddExercise = () => {
-    if (!this.selectedDay) return;
+    const session = this.currentSession;
+    if (!session) return;
+
     const ex: Exercise = {
       id: crypto.randomUUID(),
       name: 'New Exercise',
-      image: '',
-      sets: [
-        { reps: '8', restMinutes: 1, restSeconds: 0 }
-      ]
+      sets: [{ reps: '8', restMin: 1, restSec: 0 }],
     };
-    this.selectedDay.session.exercises.push(ex);
-    this.recomputeSession(this.selectedDay.session);
+
+    session.exercises.push(ex);
+    this.recomputeSession(session);
   };
-
-
 
   setEditingExerciseDescription = (exerciseId: string | null) => {
     this.editingExerciseDescription = exerciseId;
   };
 
   handleExerciseDescriptionChange = (exerciseId: string, value: string) => {
-    if (!this.selectedDay) return;
-    const ex = this.selectedDay.session.exercises.find(e => e.id === exerciseId);
+    const session = this.currentSession;
+    if (!session) return;
+
+    const ex = session.exercises.find((e) => e.id === exerciseId);
     if (ex) ex.description = value;
   };
 
-
-
   handleRemoveSet = (exerciseId: string, setIndex: number) => {
-    if (!this.selectedDay) return;
-    const ex = this.selectedDay.session.exercises.find(e => e.id === exerciseId);
+    const session = this.currentSession;
+    if (!session) return;
+
+    const ex = session.exercises.find((e) => e.id === exerciseId);
     if (!ex?.sets) return;
+
     ex.sets.splice(setIndex, 1);
-    this.recomputeSession(this.selectedDay.session);
+    this.recomputeSession(session);
   };
 
   handleSetChange = (
@@ -186,196 +524,253 @@ export class CreateWorkoutComponent {
     field: 'reps' | 'restMinutes' | 'restSeconds',
     value: any
   ) => {
-    if (!this.selectedDay) return;
-    const ex = this.selectedDay.session.exercises.find(e => e.id === exerciseId);
+    const session = this.currentSession;
+    if (!session) return;
+
+    const ex = session.exercises.find((e) => e.id === exerciseId);
     if (!ex?.sets?.[setIndex]) return;
+
     const set = ex.sets[setIndex];
     if (field === 'reps') set.reps = value;
-    if (field === 'restMinutes') set.restMinutes = Number(value);
-    if (field === 'restSeconds') set.restSeconds = Number(value);
-    this.recomputeSession(this.selectedDay.session);
+    if (field === 'restMinutes') set.restMin = Number(value);
+    if (field === 'restSeconds') set.restSec = Number(value);
+    set.setNumber = setIndex;
+
+    this.recomputeSession(session);
   };
 
-  /* ================== Totaux (badges) ================== */
-  private parseFirstInt(s: string): number {
+  /* =========================================================
+     Totals (badges)
+     ========================================================= */
+
+  private parseFirstInt(s?: string): number {
     if (!s) return 0;
     const m = String(s).match(/\d+/);
     return m ? parseInt(m[0], 10) : 0;
   }
 
   recomputeSession(s: WorkoutSession) {
-    s.totalSets = s.exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
-    s.totalReps = s.exercises.reduce((acc, e) => {
-      const repsSum = (e.sets || []).reduce((rAcc, st) => rAcc + this.parseFirstInt(st.reps), 0);
+    const exercises = s.exercises || [];
+    s.totalSets = exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
+    s.totalReps = exercises.reduce((acc, e) => {
+      const repsSum = (e.sets || []).reduce(
+        (rAcc, st) => rAcc + this.parseFirstInt(st.reps),
+        0
+      );
       return acc + repsSum;
     }, 0);
-    // si tu veux gérer la durée, ajoute une propriété durationMin par set et somme ici.
     s.totalDurationMin = 0;
   }
 
-  /* ================== Ajouter depuis le modal (optionnel) ================== */
+  /* =========================================================
+     Modal add
+     ========================================================= */
+
   addExerciseToSession() {
-    if (!this.selectedDay || !this.selectedExercise) return;
-    // on crée une entrée avec un set par défaut
+    const session = this.currentSession;
+    if (!session || !this.selectedExercise) return;
+
     const ex: Exercise = {
       id: crypto.randomUUID(),
       name: this.selectedExercise.name,
       image: this.selectedExercise.image,
       videoUrl: this.selectedExercise.videoUrl,
-      sets: [{ reps: '8', restMinutes: 1, restSeconds: 0 }]
+      exerciseRef: this.selectedExercise.exerciseRef,
+      type: this.selectedExercise.type,
+      sets: [{ reps: '8', restMin: 1, restSec: 0 }],
     };
-    this.selectedDay.session.exercises.push(ex);
-    this.recomputeSession(this.selectedDay.session);
+
+    session.exercises.push(ex);
+    this.recomputeSession(session);
     this.closeExerciseModal();
   }
-  /* ====== Drawer (Exercise Selector) state ====== */
-  showExerciseSelector = false;
-  hoveringExerciseId: string | null = null;
 
-  searchQuery = '';
-  muscleFilter = '';
-  equipmentFilter = '';
-
-  /* Petit catalogue pour le sélecteur (image/vidéo factices) */
-  exerciseDatabase: Exercise[] = [
-    { id: 'db1', name: '3-4 Sit-up', image: '', videoUrl: '', sets: [{ reps: '8', restMinutes: 1, restSeconds: 0 }] },
-    { id: 'db2', name: '4 Corners Curtsy', image: '', videoUrl: '', sets: [{ reps: '10', restMinutes: 1, restSeconds: 0 }] },
-    { id: 'db3', name: '4 Punches Side Squat', image: '', videoUrl: '', sets: [{ reps: '12', restMinutes: 1, restSeconds: 0 }] },
-    { id: 'db4', name: 'Wide Grip Pull Ups', image: '', videoUrl: '', sets: [{ reps: 'AMRAP', restMinutes: 2, restSeconds: 0 }] },
-  ];
-
-  /* Getter filtré (recherche + filtres) */
-  get filteredDatabase(): Exercise[] {
-    const q = this.searchQuery.trim().toLowerCase();
-    // pour la démo on ignore réellement muscle/equipment: branche tes données si tu veux filtrer par attributs
-    return this.exerciseDatabase.filter(e =>
-      e.name.toLowerCase().includes(q)
-    );
-  }
-
-  /* Ouvrir/fermer */
-  openExerciseSelector() { this.showExerciseSelector = true; }
-  closeExerciseSelector() { this.showExerciseSelector = false; }
-
-  /* Clic sur + dans la liste */
-  handleSelectExercise(ex: Exercise) {
-    if (!this.selectedDay) return;
-    // on clone et on met un set par défaut si absent
-    const copy: Exercise = {
-      id: crypto.randomUUID(),
-      name: ex.name,
-      image: ex.image,
-      videoUrl: ex.videoUrl,
-      sets: ex.sets && ex.sets.length ? JSON.parse(JSON.stringify(ex.sets)) : [{ reps: '8', restMinutes: 1, restSeconds: 0 }]
-    };
-    this.selectedDay.session.exercises.push(copy);
-    this.recomputeSession(this.selectedDay.session);
-    this.closeExerciseSelector();
-  }
+  /* =========================================================
+     Superset helpers
+     ========================================================= */
 
   private get exList(): Exercise[] {
-    return this.selectedDay?.session.exercises ?? [];
+    return this.currentSession?.exercises ?? [];
   }
 
   trackByExercise = (_: number, ex: Exercise) => ex.id;
 
-  /** vrai si l'exercice i a un lien superset (peu importe s'il est 1er ou 2e) */
   isInSuperset(i: number): boolean {
     const ex = this.exList[i];
-    return !!ex?.supersetWith;
+    return !!ex?.supersetGroupId;
   }
 
-  /** vrai si (i, i+1) sont liés ensemble */
   isSupersetPair(i: number): boolean {
     if (i < 0 || i >= this.exList.length - 1) return false;
     const a = this.exList[i];
     const b = this.exList[i + 1];
-    return !!a?.supersetWith && a.supersetWith === b?.id && b?.supersetWith === a?.id;
+    return !!a?.supersetGroupId && a.supersetGroupId === b?.supersetGroupId;
   }
 
-  /** vrai si l'exercice i est le 2e du duo (celui du bas) */
   isSecondOfSuperset(i: number): boolean {
     if (i <= 0) return false;
     const up = this.exList[i - 1];
     const me = this.exList[i];
-    return !!up?.supersetWith && up.supersetWith === me?.id && me?.supersetWith === up?.id;
+    return !!up?.supersetGroupId && up.supersetGroupId === me?.supersetGroupId;
   }
 
-  /** lie i avec i+1 ou casse le lien s'il existe */
   toggleSuperset(i: number): void {
-    if (!this.selectedDay) return;
-    if (i < 0 || i >= this.exList.length - 1) return;
-    const a = this.exList[i];
-    const b = this.exList[i + 1];
+    const session = this.currentSession;
+    if (!session) return;
 
+    const list = session.exercises;
+    if (i < 0 || i >= list.length - 1) return;
+
+    const a = list[i];
+    const b = list[i + 1];
     if (!a || !b) return;
 
-    // si déjà pair → on casse
     if (this.isSupersetPair(i)) {
-      a.supersetWith = null;
-      b.supersetWith = null;
-      // si le 2e n'a aucun set (on l'avait vidé), on lui remet un set par défaut
+      a.supersetGroupId = null;
+      b.supersetGroupId = null;
+
       if (!b.sets || b.sets.length === 0) {
-        b.sets = [{ reps: '8', restMinutes: 1, restSeconds: 0 }];
+        b.sets = [{ reps: '8', restMin: 1, restSec: 0 }];
       }
     } else {
-      // créer la paire
-      a.supersetWith = b.id;
-      b.supersetWith = a.id;
-      // IMPORTANT: on vide les sets du 2e (l’UI les masque et on veut des totaux justes)
+      const groupId =
+        a.supersetGroupId || b.supersetGroupId || crypto.randomUUID();
+      a.supersetGroupId = groupId;
+      b.supersetGroupId = groupId;
+
       b.sets = [];
     }
-    this.recomputeSession(this.selectedDay.session);
+
+    this.recomputeSession(session);
   }
 
-  /** quand on supprime un exercice, nettoie l'autre du duo si besoin */
   handleRemoveExercise = (exerciseId: string) => {
-    if (!this.selectedDay) return;
-    const list = this.selectedDay.session.exercises;
-    const idx = list.findIndex(e => e.id === exerciseId);
+    const session = this.currentSession;
+    if (!session) return;
+
+    const list = session.exercises;
+    const idx = list.findIndex((e) => e.id === exerciseId);
     if (idx === -1) return;
 
     const ex = list[idx];
-    if (ex.supersetWith) {
-      const partnerIdx = list.findIndex(e => e.id === ex.supersetWith);
-      if (partnerIdx !== -1) {
-        list[partnerIdx].supersetWith = null;
-        // remet un set si son tableau était vide
-        if (!list[partnerIdx].sets || list[partnerIdx].sets!.length === 0) {
-          list[partnerIdx].sets = [{ reps: '8', restMinutes: 1, restSeconds: 0 }];
+    const groupId = ex.supersetGroupId;
+
+    if (groupId) {
+      list.forEach((e) => {
+        if (e !== ex && e.supersetGroupId === groupId) {
+          e.supersetGroupId = null;
+          if (!e.sets || e.sets.length === 0) {
+            e.sets = [{ reps: '8', restMin: 1, restSec: 0 }];
+          }
         }
-      }
+      });
     }
+
     list.splice(idx, 1);
-    this.recomputeSession(this.selectedDay.session);
+    this.recomputeSession(session);
   };
 
-  /** empêcher d’ajouter des sets sur le 2e du superset */
   handleAddSet = (exerciseId: string) => {
-    if (!this.selectedDay) return;
-    const list = this.selectedDay.session.exercises;
-    const idx = list.findIndex(e => e.id === exerciseId);
+    const session = this.currentSession;
+    if (!session) return;
+
+    const list = session.exercises;
+    const idx = list.findIndex((e) => e.id === exerciseId);
     if (idx === -1) return;
 
-    if (this.isSecondOfSuperset(idx)) return; // on bloque pour le second
+    if (this.isSecondOfSuperset(idx)) return;
 
     const ex = list[idx];
     if (!ex.sets) ex.sets = [];
-    ex.sets.push({ reps: '8', restMinutes: 1, restSeconds: 0 });
-    this.recomputeSession(this.selectedDay.session);
+    ex.sets.push({ reps: '8', restMin: 1, restSec: 0 });
+
+    this.recomputeSession(session);
   };
-// Already have isSupersetPair(i: number): boolean
 
   canShowSupersetButton(i: number): boolean {
-    const lastIdx = this.selectedDay!.session.exercises.length - 1;
-    if (i >= lastIdx) return false;                 // never after the last item
+    const session = this.currentSession;
+    if (!session) return false;
 
-    const isCurrentPair = this.isSupersetPair(i);   // boundary i (between i and i+1)
-    const isPrevPair    = i > 0 ? this.isSupersetPair(i - 1) : false; // boundary i-1 (between i-1 and i)
+    const lastIdx = session.exercises.length - 1;
+    if (i >= lastIdx) return false;
 
-    // Show if this boundary is an active pair (to display "− Superset"),
-    // otherwise only show if the *previous* boundary is NOT already a pair.
+    const isCurrentPair = this.isSupersetPair(i);
+    const isPrevPair = i > 0 ? this.isSupersetPair(i - 1) : false;
+
     return isCurrentPair || !isPrevPair;
   }
 
+  /* =========================================================
+     SAVE PLAN
+     ========================================================= */
+
+  savePlan() {
+    this.workoutPlan.workoutDays = this.days;
+    console.log(this.workoutPlan);
+    if (this.workoutPlan.id) {
+      // MODE EDIT
+      this.updatePlan();
+    } else {
+      // MODE CREATE
+      this.createPlan();
+    }
+  }
+
+  createPlan() {
+    this.workoutService.createWorkout(this.workoutPlan).subscribe({
+      next: (res) => {
+        console.log('Workout plan created:', res);
+        this.resetForm();
+      },
+      error: (err) => console.error('Error creating workout plan:', err),
+    });
+  }
+
+  updatePlan() {
+    this.workoutService
+      .updateWorkout(this.workoutPlan.id!, this.workoutPlan)
+      .subscribe({
+        next: (res) => {
+          console.log('Workout plan updated:', res);
+        },
+        error: (err) => console.error('Error updating workout plan:', err),
+      });
+  }
+
+  resetForm() {
+    /** Reset du plan */
+    this.workoutPlan = {
+      name: '',
+      details: '',
+      workoutDays: [],
+      typeWorkoutPlan: TypeWorkoutPlan.STRENGTH_TRAINING,
+      isWorkoutPlanTemplate: false,
+    };
+
+    /** Reset des days */
+    this.days = [];
+    this.selectedDay = null;
+
+    /** Réinitialiser l’UI des toggles */
+    this.showPlanDescription = false;
+    this.showRestNotes = false;
+
+    /** Réinitialiser les catalogues/modals */
+    this.isExerciseModalOpen = false;
+    this.showExerciseSelector = false;
+    this.exerciseSearch = '';
+    this.selectedExercise = null;
+
+    /** Et recréer le premier Day */
+    this.initDefaultDay();
+  }
+
+  toggleRestDay() {
+    if (!this.selectedDay) return;
+
+    this.selectedDay.isRestDay = !this.selectedDay.isRestDay;
+    this.selectedDay.restDay = this.selectedDay.isRestDay;
+    this.selectedDay.workoutSessions = [];
+    this.selectedDay.session = null;
+  }
 }

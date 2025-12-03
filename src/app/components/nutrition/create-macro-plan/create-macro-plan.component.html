@@ -1,16 +1,19 @@
 <!-- Root -->
 <div class="np-root">
   <div class="np-shell">
+
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Nutrition Days</h2>
+        <h2 class="np-h6">
+          {{ isEditMode ? 'Edit Days' : 'Nutrition Days' }}
+        </h2>
       </div>
 
       <div class="np-aside__body">
         <!-- List of Days -->
         <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
-          <!-- First day, no delete icon -->
+          <!-- First day without delete -->
           <button
             *ngIf="i === 0; else otherDay"
             class="np-day"
@@ -20,7 +23,7 @@
             <span>{{ d.dayOfWeek }}</span>
           </button>
 
-          <!-- Others -->
+          <!-- Other days -->
           <ng-template #otherDay>
             <div class="np-dayrow">
               <button
@@ -65,7 +68,11 @@
             <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" />
           </svg>
         </a>
-        <h1 class="np-h5">Create Nutrition Plan</h1>
+
+        <!-- Dynamic Title -->
+        <h1 class="np-h5">
+          {{ isEditMode ? 'Edit Nutrition Plan' : 'Create Nutrition Plan' }}
+        </h1>
       </div>
 
       <section class="np-card">
@@ -91,8 +98,10 @@
           </div>
         </ng-template>
 
-        <!-- Day Header -->
+        <!-- Separator -->
         <div class="np-sep"></div>
+
+        <!-- Day Header -->
         <div class="np-dayhead">
           <h3 class="np-h6">{{ selectedDay?.dayOfWeek }}</h3>
           <button class="np-mini" (click)="toggleDayDescription()">
@@ -224,11 +233,13 @@
         </div>
       </section>
 
-      <!-- Sticky Save -->
+      <!-- ===== Sticky Save ===== -->
       <div class="np-sticky">
         <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
           <i-feather name="save" class="np-ico"></i-feather>
-          Save Plan
+
+          <!-- Dynamic Button Text -->
+          {{ isEditMode ? 'Update Plan' : 'Save Plan' }}
         </button>
       </div>
     </main>

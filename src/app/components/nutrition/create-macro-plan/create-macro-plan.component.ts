@@ -26,8 +26,9 @@ export class CreateMacroPlanComponent implements OnInit {
   showModeModal = false;
 
   isEditMode = false;
+  planId: string | null = null;
 
-  userId = sessionStorage.getItem('userId'); // ✔ ajout userID
+  userId = sessionStorage.getItem('userId');
 
   trackByDay = (_: number, d: MealDay) => d.id;
   trackByMeal = (_: number, m: Meal) => m.id;
@@ -39,19 +40,44 @@ export class CreateMacroPlanComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.addDay();
+    this.planId = this.route.snapshot.paramMap.get('id');
+
+    if (this.planId) {
+      this.isEditMode = true;
+      this.loadPlanForEdit(this.planId);
+    } else {
+      this.addDay();
+    }
   }
 
   /* ===================================================
-      CREATE DAY — AVEC Day 1, Day 2, Day 3 ...
+        LOAD PLAN IN EDIT MODE
+  ======================================================*/
+  loadPlanForEdit(id: string) {
+    this.nutritionService.getNutritionPlanById(id).subscribe((plan) => {
+      this.planName = plan.name;
+      this.planDescription = plan.details;
+      this.days = plan.mealDays || [];
+
+      // Fix IDs if backend returns null
+      this.days.forEach((d) => {
+        d.id = d.id ?? crypto.randomUUID();
+        d.meals.forEach((m) => (m.id = m.id ?? crypto.randomUUID()));
+      });
+
+      this.selectedDay = this.days[0];
+    });
+  }
+
+  /* ===================================================
+      CREATE / EDIT DAY
   ======================================================*/
   addDay() {
     const dayNumber = this.days.length + 1;
-
     const newDay: MealDay = {
-      id: crypto.randomUUID?.() ?? String(Date.now()),
+      id: crypto.randomUUID(),
       date: '',
-      dayOfWeek: `Day ${dayNumber}`, // ✔ Day 1, Day 2...
+      dayOfWeek: `Day ${dayNumber}`,
       cheatMeal: false,
       refeedDay: false,
       description: '',
@@ -67,14 +93,9 @@ export class CreateMacroPlanComponent implements OnInit {
 
     this.days.push(newDay);
     this.selectedDay = newDay;
-
-    // Ajout d’un meal par défaut
     this.addMeal();
   }
 
-  /* ===================================================
-       DELETE DAY + RENUMÉRATION Day 1, Day 2...
-  ======================================================*/
   deleteDay(day: MealDay, event: Event) {
     event.stopPropagation();
     if (this.days.length <= 1) return;
@@ -82,9 +103,7 @@ export class CreateMacroPlanComponent implements OnInit {
     const i = this.days.findIndex((d) => d.id === day.id);
     this.days.splice(i, 1);
 
-    // ✔ Renommer les days
     this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
-
     this.selectedDay = this.days[Math.max(0, i - 1)];
   }
 
@@ -101,47 +120,34 @@ export class CreateMacroPlanComponent implements OnInit {
     this.selectedDay.showDescription = !this.selectedDay.showDescription;
   }
 
-  /* ===================================================
-      DUPLICATE DAY
-  ======================================================*/
   duplicateSelectedDay() {
     if (!this.selectedDay) return;
 
     const dup: MealDay = {
       ...this.selectedDay,
-      id: crypto.randomUUID?.() ?? String(Date.now()),
+      id: crypto.randomUUID(),
       meals: this.selectedDay.meals.map((m) => ({
         ...m,
-        id: crypto.randomUUID?.() ?? String(Date.now()),
+        id: crypto.randomUUID(),
       })),
     };
 
     this.days.push(dup);
-
-    // ✔ Renommer
     this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
-
     this.selectedDay = dup;
-
-    // Recalcule automatique
     this.updateDayTotals(dup);
   }
 
   /* ===================================================
-      ADD MEAL
+      MEALS
   ======================================================*/
   addMeal() {
     if (!this.selectedDay) return;
 
     const meal: Meal = {
-      id: crypto.randomUUID?.() ?? String(Date.now()),
+      id: crypto.randomUUID(),
       name: `Meal ${this.selectedDay.meals.length + 1}`,
-      mealTargets: {
-        calories: 0,
-        proteinG: 0,
-        carbsG: 0,
-        fatG: 0,
-      },
+      mealTargets: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 },
       foods: [],
     };
 
@@ -150,7 +156,9 @@ export class CreateMacroPlanComponent implements OnInit {
 
   removeMeal(meal: Meal) {
     if (!this.selectedDay) return;
-    this.selectedDay.meals = this.selectedDay.meals.filter((m) => m.id !== meal.id);
+    this.selectedDay.meals = this.selectedDay.meals.filter(
+      (m) => m.id !== meal.id
+    );
     this.updateDayTotals(this.selectedDay);
   }
 
@@ -158,22 +166,13 @@ export class CreateMacroPlanComponent implements OnInit {
     meal.name = name || meal.name;
   }
 
-  /* ===================================================
-      AUTO CALCUL — CALORIES MEAL = p4 + c4 + f9
-  ======================================================*/
   updateMealCalories(meal: Meal) {
-    const p = meal.mealTargets.proteinG || 0;
-    const c = meal.mealTargets.carbsG || 0;
-    const f = meal.mealTargets.fatG || 0;
-
-    meal.mealTargets.calories = p * 4 + c * 4 + f * 9;
+    const { proteinG = 0, carbsG = 0, fatG = 0 } = meal.mealTargets;
+    meal.mealTargets.calories = proteinG * 4 + carbsG * 4 + fatG * 9;
 
     if (this.selectedDay) this.updateDayTotals(this.selectedDay);
   }
 
-  /* ===================================================
-      AUTO CALCUL — TOTAL DAY (somme des meals)
-  ======================================================*/
   updateDayTotals(day: MealDay) {
     const totals = day.meals.reduce(
       (acc, m) => ({
@@ -189,24 +188,31 @@ export class CreateMacroPlanComponent implements OnInit {
   }
 
   /* ===================================================
-       SAVE PLAN — AVEC COACH ID
+      SAVE (CREATE OR UPDATE)
   ======================================================*/
   savePlan() {
     const plan: MealPlan = {
+      id: this.planId || undefined,
       name: this.planName,
       details: this.planDescription,
       trackingMode: 'EACH_MEAL',
       startDate: new Date().toISOString(),
       endDate: '',
       mealDays: this.days,
-      coach: { id: this.userId }, // ✔ ajout du coach
+      coach: { id: this.userId },
       client: null,
     };
 
-    this.nutritionService.createNutritionPlan(plan).subscribe(() => {
-      console.log('Plan saved');
-      this.resetForm();
-    });
+    if (this.isEditMode) {
+      this.nutritionService.updateNutritionPlan(plan).subscribe(() => {
+        console.log('Plan updated');
+      });
+    } else {
+      this.nutritionService.createNutritionPlan(plan).subscribe(() => {
+        console.log('Plan saved');
+        this.resetForm();
+      });
+    }
   }
 
   resetForm() {
@@ -214,7 +220,6 @@ export class CreateMacroPlanComponent implements OnInit {
     this.planDescription = '';
     this.days = [];
     this.selectedDay = null;
-
     this.addDay();
   }
 }
