@@ -1,10 +1,188 @@
-/* client-profile-static.component.scss */
+/*******************************************
+ * 1) GLOBAL / LAYOUT / UTILITIES
+ *******************************************/
 
 .main-content {
   padding: 20px;
   font-family: Arial, sans-serif;
-  background-color: #f7f7f7;
+  background-color: #f5f7fb; /* dernière version (plus clair) */
 }
+
+/* Grille générique */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.col {
+  flex: 1;
+  min-width: 260px;
+}
+
+.col-2 {
+  flex: 0 0 calc(50% - 10px);
+}
+
+.col-3 {
+  flex: 0 0 calc(33.333% - 13.5px);
+}
+
+/* Utilitaires */
+.pre-line {
+  white-space: pre-line;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+/* Table générique */
+.table-wrapper {
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th,
+.table td {
+  padding: 8px;
+  text-align: center;
+  border-top: 1px solid #eee;
+}
+
+.table th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+/* Badges génériques */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #fff;
+}
+
+.badge-success {
+  background-color: #28a745;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+}
+
+/* Boutons génériques */
+.btn-primary {
+  border: none;
+  padding: 6px 16px;
+  background-color: #6777ef;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-primary:hover {
+  background-color: #5768e9;
+}
+
+/* Placeholder poids (si tu l’utilises) */
+.weight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.weight-main {
+  text-align: center;
+}
+
+.weight-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.weight-label {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.weight-placeholder-chart {
+  height: 120px;
+  border-radius: 6px;
+  border: 1px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+/* Placeholder photos génériques */
+.picture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.picture-placeholder {
+  height: 180px;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Placeholder calendrier générique */
+.calendar-placeholder {
+  height: 260px;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Responsive global */
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .btn-calendar {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .col-2,
+  .col-3 {
+    flex: 1 1 100%;
+  }
+}
+
+/*******************************************
+ * 2) HEADER PROFIL + TABS PRINCIPAUX
+ *******************************************/
 
 /* Header profil */
 .profile-header {
@@ -41,249 +219,7 @@
   margin: 2px 0;
 }
 
-
-/* Tabs */
-.profile-tabs {
-  display: flex;
-  gap: 24px;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 16px;
-  overflow-x: auto;
-}
-
-.tab-link {
-  position: relative;
-  border: none;
-  background: none;
-  padding: 10px 0;
-  font-size: 0.95rem;
-  color: #555;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.tab-link.active {
-  color: #00a7ff;
-  font-weight: 600;
-}
-
-.tab-link.active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  height: 2px;
-  width: 100%;
-  background-color: #00a7ff;
-}
-
-.tab-content {
-  margin-top: 12px;
-}
-
-/* Layout grid simple */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.col {
-  flex: 1;
-  min-width: 260px;
-}
-
-.col-2 {
-  flex: 0 0 calc(50% - 10px);
-}
-
-.col-3 {
-  flex: 0 0 calc(33.333% - 13.5px);
-}
-
-/* Cards */
-.card {
-  background-color: #fff;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.card-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.card-header h4 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.card-header-with-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header-with-link a {
-  font-size: 0.85rem;
-  color: #007bff;
-}
-
-.card-body {
-  padding: 14px 16px 16px;
-}
-
-.pre-line {
-  white-space: pre-line;
-}
-
-.mt-20 {
-  margin-top: 20px;
-}
-
-.mt-16 {
-  margin-top: 16px;
-}
-
-/* Table */
-.table-wrapper {
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  overflow: hidden;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.table th,
-.table td {
-  padding: 8px;
-  text-align: center;
-  border-top: 1px solid #eee;
-}
-
-.table th {
-  background-color: #fafafa;
-  font-weight: 600;
-}
-
-/* Badges */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  color: #fff;
-}
-
-.badge-success {
-  background-color: #28a745;
-}
-
-.badge-danger {
-  background-color: #dc3545;
-}
-
-/* Buttons */
-.btn-primary {
-  border: none;
-  padding: 6px 16px;
-  background-color: #6777ef;
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.btn-primary:hover {
-  background-color: #5768e9;
-}
-
-/* Weight card placeholder */
-.weight-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.weight-main {
-  text-align: center;
-}
-
-.weight-value {
-  display: block;
-  font-size: 2rem;
-  font-weight: bold;
-}
-
-.weight-label {
-  font-size: 0.8rem;
-  color: #777;
-}
-
-.weight-placeholder-chart {
-  height: 120px;
-  border-radius: 6px;
-  border: 1px dashed #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  color: #999;
-}
-
-/* Pictures */
-.picture-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.picture-placeholder {
-  height: 180px;
-  border-radius: 8px;
-  border: 1px dashed #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 0.9rem;
-}
-
-/* Calendar placeholder */
-.calendar-placeholder {
-  height: 260px;
-  border-radius: 8px;
-  border: 1px dashed #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 0.9rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .profile-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .btn-calendar {
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .col-2,
-  .col-3 {
-    flex: 1 1 100%;
-  }
-}
+/* actions header */
 .header-actions {
   margin-left: auto;
   display: flex;
@@ -291,8 +227,33 @@
   gap: 8px;
 }
 
+/* bouton noir "Send Message" */
+.btn-send-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 18px;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  height: 36px;
+  line-height: 1;
+}
 
-/* Bouton carré blanc avec les 3 points verticaux */
+.btn-send-message i {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.btn-send-message:hover {
+  background-color: #111;
+}
+
+/* bouton 3 points (more) */
 .btn-more {
   width: 40px;
   height: 40px;
@@ -317,10 +278,12 @@
   background-color: #555;
   margin: 0 1px;
 }
+
+/* Tabs principaux du profil (Dashboard / Workouts / ...) */
 .profile-tabs {
   display: flex;
   gap: 24px;
-  border-bottom: 1px solid #e1e1e1;   /* fine ligne grise comme la capture */
+  border-bottom: 1px solid #e1e1e1;
   margin-top: 15px;
   padding-bottom: 2px;
   overflow-x: auto;
@@ -332,7 +295,7 @@
   background: none;
   padding: 8px 0;
   font-size: 0.9rem;
-  color: #777;                         /* texte gris par défaut */
+  color: #777;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -342,7 +305,7 @@
 }
 
 .tab-link.active {
-  color: #22a8f5;                      /* bleu de l’onglet actif */
+  color: #22a8f5;
   font-weight: 500;
 }
 
@@ -350,39 +313,260 @@
   content: '';
   position: absolute;
   left: 0;
-  bottom: -3px;                        /* juste au-dessus du border-bottom gris */
+  bottom: -3px;
   height: 2px;
   width: 100%;
-  background-color: #22a8f5;           /* même bleu que le texte */
+  background-color: #22a8f5;
   border-radius: 999px;
 }
-.btn-send-message {
-  display: inline-flex;
+
+/* Contenu d’onglet générique */
+.tab-content {
+  margin-top: 12px;
+}
+
+.tab-pane {
+  padding-top: 16px;
+}
+
+/*******************************************
+ * 3) DASHBOARD TAB
+ *    (Today's Workout + Active Nutrition Plan)
+ *******************************************/
+
+.dashboard-pane {
+  margin-top: 16px;
+}
+
+/* Grille principale dashboard */
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+/* Carte base dashboard */
+.dashboard-card {
+  border-radius: 12px;
+  border: 1px solid #e3edf6;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.02),
+    0 18px 40px rgba(15, 23, 42, 0.06);
+  background-color: #ffffff;
+}
+
+/* Header carte (icône + titre + bouton) */
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.header-icon-blue {
+  background-color: #00a7ff;
+}
+
+.header-icon-green {
+  background-color: #14c17a;
+}
+
+.header-title {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.header-subtitle {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+/* Boutons View */
+.link-button {
+  border: none;
+  background: transparent;
+  font-size: 0.82rem;
+  color: #0b76ff;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.link-button-green {
+  color: #16a34a;
+}
+
+/* Body dashboard */
+.dashboard-card-body {
+  padding: 16px 18px 18px;
+}
+
+/* Today's workout (liste exercices) */
+.workout-day-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: #f9fbff;
+  margin-bottom: 8px;
+  transition: background 0.12s ease;
+}
+
+.exercise-row:hover {
+  background-color: #f3f7ff;
+}
+
+.exercise-letter {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background-color: #00a7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.exercise-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.exercise-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Active Nutrition Plan */
+
+.daily-target-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.daily-target-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.daily-target-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.daily-target-value span {
+  display: block;
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Macros (3 colonnes) */
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.macro-card {
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.macro-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.macro-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.macro-unit {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+/* Pastels macros */
+.macro-protein {
+  background-color: #fff4f4;
+}
+
+.macro-carbs {
+  background-color: #fffbe8;
+}
+
+.macro-fat {
+  background-color: #ebfff6;
+}
+
+/* bandeau statut nutrition */
+.nutrition-status {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: #f1f6ff;
+  font-size: 0.78rem;
+  color: #2563eb;
+  display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 18px;
-  background-color: #000;
-  color: #fff;
-  border: none;
-  border-radius: 7px;         /* arrondi FULL pill */
-  font-size: 0.88rem;
-  font-weight: 500;
-  cursor: pointer;
-  height: 36px;                 /* hauteur identique à la capture */
-  line-height: 1;
 }
 
-.btn-send-message i {
-  font-size: 1rem;              /* icône fine */
-  color: #fff;                  /* icône blanche */
+/* Responsive Dashboard */
+@media (max-width: 992px) {
+  .dashboard-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-.btn-send-message:hover {
-  background-color: #111;
-}
-/* header bouton noir Send Message déjà géré, on garde tes classes */
+/*******************************************
+ * 4) WORKOUTS & NUTRITION TABS
+ *    (Program cards + pagination)
+ *******************************************/
 
-/* header section des onglets */
+/* Header des sections d’onglet (Workouts / Nutrition) */
 .tab-section-header {
   display: flex;
   align-items: center;
@@ -395,7 +579,7 @@
   font-weight: 700;
 }
 
-/* bouton noir type "Assign New Program/Plan" */
+/* bouton noir "Assign New Program/Plan" */
 .btn-assign-black {
   border: none;
   background: #000;
@@ -412,21 +596,22 @@
   background: #44b4df;
 }
 
-/* cartes programmes / plans */
+/* Cartes programmes / plans (Workouts & Nutrition) */
 .program-card {
-  background-color: #fff;
+  background-color: #fbfdff;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e4edf5;
   padding: 14px 16px;
   margin-bottom: 10px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  transition: box-shadow 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
 }
 
 .program-card:hover {
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
+/* top de la carte */
 .program-card-top {
   display: flex;
   align-items: flex-start;
@@ -450,11 +635,13 @@
   flex-shrink: 0;
 }
 
+/* icône workout */
 .program-icon-blue {
-  background: rgba(68, 180, 223, 0.12);
-  color: #44b4df;
+  background: #e6f5ff;
+  color: #0ba5ff;
 }
 
+/* icône nutrition */
 .program-icon-green {
   background: #e6f9ec;
   color: #16a34a;
@@ -476,6 +663,7 @@
   font-size: 0.98rem;
   font-weight: 700;
   margin: 0;
+  color: #111827;
 }
 
 .program-meta {
@@ -497,8 +685,9 @@
   border: 1px solid transparent;
 }
 
+/* réutilisé aussi ailleurs : reviewed, pending... */
 .status-pill--active {
-  background: #dcfce7;
+  background: #e3f9ea;
   color: #15803d;
   border-color: #bbf7d0;
 }
@@ -515,7 +704,7 @@
   border-color: #d1d5db;
 }
 
-/* actions (icônes œil / edit) */
+/* actions de carte (œil / edit) */
 .program-actions {
   display: flex;
   gap: 4px;
@@ -527,17 +716,17 @@
   background: transparent;
   padding: 6px;
   border-radius: 6px;
-  color: #6b7280;
+  color: #9ca3af;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .icon-btn:hover {
   background: rgba(68, 180, 223, 0.08);
-  color: #44b4df;
+  color: #4b5563;
 }
 
-/* barre de progression */
+/* Barre de progression (programme actif) */
 .program-progress {
   margin-top: 10px;
 }
@@ -552,10 +741,10 @@
 .progress-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: #44b4df;
+  background: #29b6f6;
 }
 
-/* pagination simple */
+/* Pagination figma-like */
 .pagination-wrapper {
   display: flex;
   justify-content: center;
@@ -585,353 +774,953 @@
   opacity: 0.6;
   cursor: default;
 }
-.tab-pane {
-  padding-top: 16px;
-}
-/* ========== DASHBOARD ========== */
 
-.dashboard-pane {
+/*******************************************
+ * 5) CHECK-INS TAB
+ *    (Subtabs, list submissions, assigned table, modals)
+ *******************************************/
+
+/* Conteneur onglet Check-ins */
+.checkins-tab {
+  margin-top: 16px;
+}
+
+/* Sous-onglets Check-ins */
+.checkins-header {
+  border-bottom: 1px solid #e5e7eb;
+  margin-top: 16px;
+}
+
+.checkins-subtabs {
+  display: flex;
+  gap: 32px;
+}
+
+/* On réutilise .tab-link pour les sous-onglets Check-ins, déjà stylé plus haut
+   Optionnel: ajuster un peu la hauteur */
+.checkins-subtabs .tab-link {
   padding-top: 12px;
+  padding-bottom: 12px;
 }
 
-/* Stat cards en haut */
-.dashboard-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.stat-card {
-  background: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.stat-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon-blue {
-  background: rgba(68, 180, 223, 0.12);
-  color: #44b4df;
-}
-
-.stat-icon-amber {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.stat-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-value {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-/* Grid principale */
-.dashboard-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.8fr);
-  gap: 20px;
-}
-
-/* ---------- Today's Workout ---------- */
-
-.today-card {
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-
-.today-card-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(
-      90deg,
-      rgba(68, 180, 223, 0.03),
-      rgba(68, 180, 223, 0)
-  );
+/* Toolbar (search + bouton Add Check-in) */
+.checkins-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.today-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.today-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #44b4df;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.today-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.today-subtitle {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.link-button {
-  border: none;
-  background: transparent;
-  font-size: 0.8rem;
-  color: #44b4df;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.today-card-body {
-  padding: 14px 16px 16px;
-}
-
-.today-workout-name {
-  margin: 0 0 10px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-/* lignes d'exercices */
-.exercise-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #f9fafb;
-  margin-bottom: 6px;
-  transition: background 0.12s ease;
-}
-
-.exercise-row:hover {
-  background: #f3f4f6;
-}
-
-.exercise-letter {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: #44b4df;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.exercise-text {
+.search-input-wrapper {
+  position: relative;
   flex: 1;
-  min-width: 0;
+  max-width: 420px;
 }
 
-.exercise-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #111827;
+.search-input-wrapper.full-width {
+  max-width: 100%;
 }
 
-.exercise-meta {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 2px;
+.search-input-wrapper i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 14px;
 }
 
-/* ---------- Active Nutrition Plan ---------- */
-
-.nutrition-card {
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+.search-input-wrapper input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
 }
 
-.nutrition-card-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(
-      90deg,
-      rgba(16, 185, 129, 0.05),
-      rgba(16, 185, 129, 0)
-  );
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.nutrition-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nutrition-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #22c55e;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nutrition-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.nutrition-subtitle {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.link-button-green {
-  color: #16a34a;
-}
-
-.nutrition-card-body {
-  padding: 16px;
-}
-
-.daily-target {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.daily-target-text span {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.daily-target-number {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #111827;
-  text-align: right;
-}
-
-.daily-target-number span {
-  display: block;
-  font-size: 0.7rem;
+.search-input-wrapper input::placeholder {
   color: #9ca3af;
 }
 
-/* macros */
-.macro-grid {
+.search-input-wrapper input:focus {
+  outline: none;
+  border-color: #44b4df;
+  box-shadow: 0 0 0 1px rgba(68, 180, 223, 0.2);
+}
+
+/* bouton Add Check-in */
+.btn-add-checkin {
+  margin-left: 16px;
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  background: #000;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-add-checkin i {
+  margin-right: 8px;
+}
+
+.btn-add-checkin:hover {
+  background: #44b4df;
+}
+
+/* Liste des submissions */
+.checkin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkin-row {
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease,
+  background-color 0.15s ease;
+}
+
+.checkin-row:hover {
+  border-color: #cbd5f5;
+  background: #f9fafb;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.checkin-title {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.checkin-date {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Statuts réutilisent .status-pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pill i {
+  margin-right: 4px;
+}
+
+.status-pill--reviewed {
+  background: #ecfdf3;
+  color: #16a34a;
+}
+
+.status-pill--pending-review,
+.status-pill--pending {
+  background: #fef9c3;
+  color: #d97706;
+}
+
+/* Table Assigned */
+.assigned-table {
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.assigned-header-row,
+.assigned-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+  grid-template-columns: 3fr 2fr 2fr 1.5fr 1.5fr;
+  align-items: center;
+  padding: 12px 16px;
+  font-size: 13px;
 }
 
-.macro-card {
-  border-radius: 10px;
-  padding: 10px 8px;
-  text-align: center;
-  border: 1px solid transparent;
+.assigned-header-row {
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.macro-label {
-  font-size: 0.75rem;
+.assigned-row {
+  font-size: 14px;
+  border-top: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+
+.assigned-row:first-of-type {
+  border-top: none;
+}
+
+.assigned-row:hover {
+  background: #f9fafb;
+}
+
+.assigned-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.assigned-date {
+  display: flex;
+  align-items: center;
+  color: #4b5563;
+}
+
+.assigned-date i {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.actions-cell {
+  text-align: right;
+}
+
+/* Bouton View dans la table Assigned */
+.link-view {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #00a3ff;
+  cursor: pointer;
+}
+
+.link-view i {
+  color: inherit;
+  font-size: 13px;
+}
+
+.link-view:hover {
+  text-decoration: underline;
+}
+
+/* Modals de Check-ins (Submission + Assigned + générique) */
+.checkin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.checkin-modal {
+  background: #ffffff;
+  border-radius: 6px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+}
+
+.submission-modal {
+  width: 520px;
+}
+
+.assigned-modal {
+  width: 720px;
+}
+
+.checkin-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.checkin-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-date {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.modal-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #4b5563;
+}
+
+.checkin-modal-body {
+  padding: 16px 20px 0;
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+}
+
+.checkin-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+}
+
+/* Modal Submission (Q/R) */
+.submission-question {
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.submission-question:last-of-type {
+  border-bottom: none;
+}
+
+.submission-question-text {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.submission-question-text .number {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.submission-answer {
+  font-size: 14px;
+  color: #111827;
+  white-space: pre-line;
+}
+
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scale-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.scale-fill {
+  height: 100%;
+  background: #44b4df;
+}
+
+.scale-value {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.rating-row {
+  color: #f59e0b;
+}
+
+.rating-row .fa-star {
+  margin-right: 2px;
+  color: #e5e7eb;
+}
+
+.rating-row .fa-star.filled {
+  color: #f59e0b;
+}
+
+.photo-thumbs {
+  display: flex;
+  gap: 8px;
+}
+
+.photo-thumb {
+  width: 72px;
+  height: 60px;
+  border-radius: 4px;
+  background: #e5e7eb;
+}
+
+.submission-status-banner {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+  font-size: 13px;
+  color: #166534;
+}
+
+.submission-status-banner .headline {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.submission-status-banner .headline i {
+  margin-right: 6px;
+}
+
+/* Modal Assigned (Form definition) */
+.assigned-summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.summary-label {
+  font-size: 12px;
   color: #6b7280;
   margin-bottom: 4px;
 }
 
-.macro-value {
-  font-size: 1.3rem;
-  font-weight: 700;
+.summary-value {
+  font-size: 14px;
+  font-weight: 500;
   color: #111827;
-}
-
-.macro-unit {
-  font-size: 0.7rem;
-  color: #9ca3af;
-}
-
-.macro-protein {
-  background: #fef2f2;
-  border-color: #fee2e2;
-}
-
-.macro-carbs {
-  background: #fffbeb;
-  border-color: #fef3c7;
-}
-
-.macro-fat {
-  background: #ecfdf5;
-  border-color: #bbf7d0;
-}
-
-/* bandeau en bas */
-.nutrition-footer-info {
-  margin-top: 4px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #ecf5fb;
-  color: #2563eb;
-  font-size: 0.78rem;
   display: flex;
   align-items: center;
+}
+
+.summary-value i {
+  margin-right: 6px;
+}
+
+.form-questions-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.form-question-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.form-question-row:first-of-type {
+  border-top: none;
+}
+
+.form-question-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  flex-shrink: 0;
+}
+
+.form-question-main {
+  flex: 1;
+}
+
+.form-question-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.question-tags {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.nutrition-footer-info i {
-  font-size: 0.85rem;
+.tag-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
-/* Responsive */
-@media (max-width: 960px) {
-  .dashboard-main-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.tag-pill.type-text {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
 
-  .dashboard-stats {
+.tag-pill.type-number {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.tag-pill.type-scale {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.tag-pill.required {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Alignement texte */
+.text-right {
+  text-align: right;
+}
+
+/*******************************************
+ * 6) PROGRESS PICTURES TAB
+ *******************************************/
+
+/* Pane tab */
+.progress-pictures-pane {
+  margin-top: 8px;
+}
+
+/* Header (titre + actions) */
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.progress-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Boutons header (Comparison, etc.) */
+.btn-progress-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-progress-secondary i {
+  font-size: 0.9rem;
+}
+
+.btn-progress-secondary:hover {
+  background-color: #f3f4f6;
+  border-color: #cbd5f5;
+}
+
+.btn-progress-primary {
+  padding: 8px 18px;
+  border-radius: 7px;
+  border: none;
+  background-color: #000000;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-progress-primary:hover {
+  background-color: #44b4df;
+}
+
+/* Grille des cartes de photos */
+.progress-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+/* >= 768px : 2 par ligne */
+@media (min-width: 768px) {
+  .progress-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 640px) {
-  .dashboard-stats {
-    grid-template-columns: minmax(0, 1fr);
+/* >= 1024px : 3 par ligne */
+@media (min-width: 1024px) {
+  .progress-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* >= 1280px : 4 par ligne */
+@media (min-width: 1280px) {
+  .progress-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Carte individuelle de photo */
+.progress-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.02),
+    0 12px 25px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+
+.progress-card:hover {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 18px 40px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Image ratio portrait */
+.progress-card-image {
+  position: relative;
+  padding-top: 133%;
+  background: #f3f4f6;
+}
+
+.progress-card-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Body de la carte */
+.progress-card-body {
+  padding: 10px 14px 12px;
+}
+
+.progress-date {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.progress-weight {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+/*******************************************
+ * 7) PROGRESS PICTURES - MODAL DE COMPARAISON
+ *    (Single / Comparison, thumbnails, panels)
+ *******************************************/
+
+/* Modal Progress Pictures */
+.checkin-modal.progress-pictures-modal {
+  max-width: 1200px;
+  width: calc(100vw - 80px);
+}
+
+.progress-modal-body {
+  background: #f7fafc;
+  padding: 16px 24px 24px;
+}
+
+/* Toggle Single / Comparison centré */
+.comparison-mode-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.comparison-mode-toggle {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: #e7f3fb;
+  border: 1px solid #c4e0f5;
+}
+
+.mode-pill {
+  border: none;
+  background: transparent;
+  padding: 6px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.mode-pill--active {
+  background: #44b4df;
+  color: #ffffff;
+}
+
+/* Layout principal du modal (liste gauche + panels) */
+.comparison-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+}
+
+/* Liste / thumbnails à gauche */
+.comparison-list {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e4edf7;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.list-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #edf2f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #44b4df;
+  color: #ffffff;
+}
+
+.thumbs-scroll {
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 460px;
+}
+
+.thumbnail-card {
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  padding: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.thumbnail-card:hover {
+  border-color: #cfe8f9;
+  box-shadow: 0 4px 10px rgba(148, 163, 184, 0.15);
+  transform: translateY(-1px);
+}
+
+/* état before / after visuel supplémentaire si tu veux */
+.thumbnail-card--before {
+  border-color: #34a853;
+}
+
+.thumbnail-card--after {
+  border-color: #44b4df;
+}
+
+.thumbnail-image-wrapper {
+  border-radius: 8px;
+  background: #edf2f7;
+  overflow: hidden;
+  height: 80px;
+}
+
+.thumbnail-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-meta {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #4b5563;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.thumb-date {
+  font-weight: 500;
+}
+
+.thumb-weight {
+  color: #6b7280;
+}
+
+/* badges BEFORE / AFTER */
+.thumbnail-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.thumbnail-badge--before {
+  background: #34a853;
+}
+
+.thumbnail-badge--after {
+  background: #44b4df;
+}
+
+/* Panels de comparaison à droite */
+.comparison-panels {
+  display: flex;
+  gap: 16px;
+}
+
+.comparison-panels--single {
+  justify-content: center;
+}
+
+.comparison-panel {
+  flex: 1;
+  background: #f5fbff;
+  border-radius: 14px;
+  border: 1px solid #cfe7fa;
+  min-height: 380px;
+  padding: 18px 18px 14px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.comparison-panel--single {
+  max-width: 520px;
+}
+
+.comparison-panel-label {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  padding: 4px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.comparison-panel-label--before {
+  background: #34a853;
+}
+
+.comparison-panel-label--after {
+  background: #44b4df;
+}
+
+.comparison-panel img {
+  max-width: 90%;
+  max-height: 75%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.panel-footer {
+  width: 90%;
+  max-width: 460px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  justify-content: space-between;
+}
+
+.panel-placeholder {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  max-width: 260px;
+}
+
+/* Responsive modal comparison */
+@media (max-width: 1024px) {
+  .comparison-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-list {
+    max-height: 260px;
+  }
+}
+
+/*******************************************
+ * 8) CALENDAR TAB
+ *******************************************/
+
+/* L’onglet Calendar réutilise .calendar-placeholder global,
+   donc rien de plus spécifique ici, mais tu peux ajouter : */
+
+.tab-pane[ng-reflect-ng-switch="calendar"],
+.tab-pane.calendar-pane {
+  /* si tu veux des styles spécifiques au tab calendrier */
 }

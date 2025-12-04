@@ -11,12 +11,18 @@ import { CustomFoodsComponent } from './components/nutrition/custom-foods/custom
 import { NutritionPlansComponent } from './components/nutrition/nutrition-plans/nutrition-plans.component';
 import { CreateMacroPlanComponent } from './components/nutrition/create-macro-plan/create-macro-plan.component';
 import { CreateFullPlanComponent } from './components/nutrition/create-full-plan/create-full-plan.component';
+
 import { inject } from '@angular/core';
 import { AuthGuard } from '@config/guard/auth.guard';
 import { CreateMacroPlanTotalDayComponent } from './components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component';
 import { CreateWorkoutComponent } from './components/program-library/create-workout/create-workout.component';
 import { CreateFormComponent } from './components/forms/create-form/create-form.component';
 import { ProfilClientComponent } from './components/clients/profil-client/profil-client.component';
+import { ClientWorkoutsComponent } from './components/clients/client-workouts/client-workouts.component';
+import { ClientNutritionComponent } from './components/clients/client-nutrition/client-nutrition.component';
+import { CalendarClientsComponent } from './components/calendar/calendar-clients/calendar-clients.component';
+import { LandingPageComponent } from './components/website/landing-page/landing-page.component';
+import { YosoftLandingPageComponent } from './components/website/yosoft-landing-page/yosoft-landing-page.component';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -40,6 +46,14 @@ export const APP_ROUTE: Route[] = [
         component: ProfilClientComponent,
       },
       {
+        path: 'clients/client-workouts',
+        component: ClientWorkoutsComponent,
+      },
+      {
+        path: 'clients/client-nutrition',
+        component: ClientNutritionComponent,
+      },
+      {
         path: 'workout/program-library',
         component: ProgramLibraryComponent,
       },
@@ -50,6 +64,10 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'workout/edit-workout/:id',
         component: CreateWorkoutComponent,
+      },
+      {
+        path: 'calendar',
+        component: CalendarClientsComponent,
       },
       {
         path: 'nutrition/foods',
@@ -96,5 +114,13 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'register',
     component: RegisterComponent,
+  },
+  {
+    path: 'landing-page',
+    component: LandingPageComponent,
+  },
+  {
+    path: 'yosoft-landing-page',
+    component: YosoftLandingPageComponent,
   },
 ];
