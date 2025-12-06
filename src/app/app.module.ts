@@ -39,7 +39,7 @@ function initializeKeycloak(keycloak: KeycloakService) {
     console.log('Initializing Keycloak...');
     return keycloak.init({
       config: {
-        url: 'http://54.38.35.221:9081',
+        url: 'https://login-int.yogym.co',
         realm: 'yo-coach',
         clientId: 'front-app'
       },

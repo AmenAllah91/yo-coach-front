@@ -2,7 +2,7 @@ export const environment = {
   production: false,
 
   baseApiUrl: 'http://localhost:8080',
-  keycloakUrl : 'http://54.38.35.221:9081',
+  keycloakUrl : 'https://login-int.yogym.co',
   apiUrl: 'http://localhost:4200',
 
 };
