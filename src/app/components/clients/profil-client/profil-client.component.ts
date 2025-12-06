@@ -1,11 +1,11 @@
-import { Component } from '@angular/core';
-import {CommonModule} from "@angular/common";
-import {FormsModule} from "@angular/forms";
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
 interface ProgressPicture {
   id: string;
-  date: string;   // ISO string
+  date: string; // ISO string
   weight: number;
   unit: 'kg' | 'lb';
   imageUrl: string;
@@ -113,7 +113,7 @@ interface AssignedCheckIn {
 })
 export class ProfilClientComponent {
   activeTab: TabId = 'dashboard';
-// ----- Progress pictures : état du modal -----
+  // ----- Progress pictures : état du modal -----
 
   selectedSinglePicture: ProgressPicture | null = null;
 
@@ -220,7 +220,11 @@ Motivated but needs accountability.`;
     name: 'Full Body Day 1',
     exercises: [
       { name: 'Squat (Barbell)', sets: '4 sets × 8–12 reps', rest: '90s' },
-      { name: 'Bench Press (Barbell)', sets: '4 sets × 8–12 reps', rest: '90s' },
+      {
+        name: 'Bench Press (Barbell)',
+        sets: '4 sets × 8–12 reps',
+        rest: '90s',
+      },
       {
         name: 'Bent Over Row (Barbell)',
         sets: '4 sets × 8–12 reps',
@@ -231,7 +235,11 @@ Motivated but needs accountability.`;
         sets: '4 sets × 8–12 reps',
         rest: '90s',
       },
-      { name: 'Lat Pulldown (Cable)', sets: '3 sets × 10–15 reps', rest: '60s' },
+      {
+        name: 'Lat Pulldown (Cable)',
+        sets: '3 sets × 10–15 reps',
+        rest: '60s',
+      },
       {
         name: 'Seated Leg Curl (Machine)',
         sets: '3 sets × 12–15 reps',
@@ -397,16 +405,14 @@ Motivated but needs accountability.`;
   get filteredSubmissions(): CheckInSubmission[] {
     const term = this.submissionSearch.trim().toLowerCase();
     if (!term) return this.submissions;
-    return this.submissions.filter((s) =>
-      s.title.toLowerCase().includes(term),
-    );
+    return this.submissions.filter((s) => s.title.toLowerCase().includes(term));
   }
 
   get filteredAssignedForms(): AssignedCheckIn[] {
     const term = this.assignedSearch.trim().toLowerCase();
     if (!term) return this.assignedForms;
     return this.assignedForms.filter((f) =>
-      f.name.toLowerCase().includes(term),
+      f.name.toLowerCase().includes(term)
     );
   }
 
@@ -440,21 +446,14 @@ Motivated but needs accountability.`;
 
   showPicturesComparison = false;
 
-
-
-// vue active dans le modal
+  // vue active dans le modal
   comparisonView: 'single' | 'comparison' = 'comparison';
 
-// images sélectionnées
+  // images sélectionnées
   selectedAfterPicture: ProgressPicture | null = null;
   selectedBeforePicture: ProgressPicture | null = null;
 
-
-
-
-
   comparisonMode: 'single' | 'comparison' = 'comparison';
-
 
   onOpenPicturesComparison(): void {
     this.showPicturesComparison = true;
@@ -532,8 +531,6 @@ Motivated but needs accountability.`;
     },
   ];
 
-
-
   onChangeComparisonMode(mode: 'single' | 'comparison'): void {
     this.comparisonMode = mode;
   }
@@ -545,7 +542,10 @@ Motivated but needs accountability.`;
     }
 
     // COMPARISON : 1er clic -> Before, 2e -> After, puis on écrase Before
-    if (!this.selectedBeforePicture || (this.selectedBeforePicture && this.selectedAfterPicture)) {
+    if (
+      !this.selectedBeforePicture ||
+      (this.selectedBeforePicture && this.selectedAfterPicture)
+    ) {
       this.selectedBeforePicture = picture;
       this.selectedAfterPicture =
         this.selectedAfterPicture && this.selectedAfterPicture.id === picture.id
@@ -564,4 +564,122 @@ Motivated but needs accountability.`;
     return this.selectedAfterPicture?.id === picture.id;
   }
 
+  @Input() isOpen = false;
+
+  showAssignModal = false;
+
+  openAssignProgramModal(): void {
+    this.showAssignModal = true;
+  }
+
+  closeAssignProgramModal(): void {
+    this.showAssignModal = false;
+  }
+
+  handleCreateNewProgram(): void {
+    this.showAssignModal = false;
+    // TODO : navigation ou logique de création
+    // ex :
+    // localStorage.setItem('assignToClientId', '1');
+    // this.router.navigate(['/create-workout-program']);
+  }
+  ////////////////2eme modal
+  showProgramSelectionModal = false;
+  programSearchTerm = '';
+  selectedProgramId: number | null = null;
+  programStartDate = '';
+
+  // liste statique pour le modal de sélection
+  programSelectionList: WorkoutProgram[] = [
+    {
+      id: 1,
+      name: 'Full Body x3',
+      status: 'active',
+      startDate: '2024-01-15',
+      endDate: '2024-04-15',
+      totalWeeks: 12,
+      currentWeek: 3,
+      daysPerWeek: 3,
+    },
+    {
+      id: 2,
+      name: 'Push / Pull / Legs',
+      status: 'upcoming',
+      startDate: '2024-04-16',
+      endDate: '2024-07-08',
+      totalWeeks: 12,
+      daysPerWeek: 6,
+    },
+    {
+      id: 3,
+      name: 'Beginner Strength',
+      status: 'completed',
+      startDate: '2023-10-01',
+      endDate: '2024-01-14',
+      totalWeeks: 8,
+      currentWeek: 8,
+      daysPerWeek: 3,
+    },
+  ];
+
+  handleExistingPrograms(): void {
+    this.showAssignModal = false;
+    this.showProgramSelectionModal = true;
+    this.programSearchTerm = '';
+    this.selectedProgramId = null;
+    this.programStartDate = '';
+  }
+
+  get filteredProgramsForSelection(): WorkoutProgram[] {
+    const term = this.programSearchTerm.trim().toLowerCase();
+    const list = this.programSelectionList;
+    if (!term) return list;
+
+    return list.filter((p) => p.name.toLowerCase().includes(term));
+  }
+
+  get selectedProgram(): WorkoutProgram | undefined {
+    if (this.selectedProgramId == null) return undefined;
+    return this.programSelectionList.find(
+      (p) => p.id === this.selectedProgramId
+    );
+  }
+
+  get calculatedProgramEndDate(): string | null {
+    if (!this.selectedProgram || !this.programStartDate) return null;
+
+    const start = new Date(this.programStartDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + this.selectedProgram.totalWeeks * 7);
+    return end.toISOString().slice(0, 10); // YYYY-MM-DD
+  }
+
+  closeProgramSelectionModal(): void {
+    this.showProgramSelectionModal = false;
+    this.programSearchTerm = '';
+    this.selectedProgramId = null;
+    this.programStartDate = '';
+  }
+
+  backToAssignModal(): void {
+    this.closeProgramSelectionModal();
+    this.showAssignModal = true;
+  }
+
+  assignSelectedProgram(): void {
+    if (!this.selectedProgramId || !this.programStartDate) return;
+
+    console.log(
+      'Assign program:',
+      this.selectedProgramId,
+      'to client',
+      this.fullName,
+      'Start:',
+      this.programStartDate,
+      'End:',
+      this.calculatedProgramEndDate
+    );
+
+    this.closeProgramSelectionModal();
+  }
 }

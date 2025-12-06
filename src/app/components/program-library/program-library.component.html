@@ -146,7 +146,13 @@
     </div>
   </div>
 
-
+  <app-modal-assign-toclient
+    *ngIf="showAssignModal"
+    [programName]="programToAssign?.name"
+    (closeModal)="closeAssignModal()"
+    (cancel)="closeAssignModal()"
+    (assignProgram)="onProgramAssigned($event)"
+  ></app-modal-assign-toclient>
 
   <!-- Exercise Selection Modal -->
   <div
@@ -316,10 +322,3 @@
     </div>
   </div>
 </div>
-
-
-
-
-
-
-

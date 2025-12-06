@@ -38,6 +38,8 @@ export class ProgramModalComponent implements OnInit, OnChanges {
   exerciseTotalPages = 0;
   isLoadingExercises = false;
 
+
+
   constructor(private exerciseService: ExerciseService) {}
 
   ngOnInit() {
@@ -59,7 +61,7 @@ export class ProgramModalComponent implements OnInit, OnChanges {
     this.endDate = this.editingProgram.endDate || '';
     this.isWorkoutPlanTemplate = this.editingProgram.isWorkoutPlanTemplate || false;
     this.typeWorkoutPlan = this.editingProgram.typeWorkoutPlan || 'STRENGTH_TRAINING';
-    
+
     if (this.editingProgram.workoutDays && this.editingProgram.workoutDays.length > 0) {
       this.trainingDays = this.editingProgram.workoutDays.map((day: any, index: number) => ({
         name: day.name || `Day ${index + 1}`,
@@ -88,7 +90,7 @@ export class ProgramModalComponent implements OnInit, OnChanges {
 
   saveProgram() {
     if (!this.programName.trim()) return;
-    
+
     const program = {
       name: this.programName,
       details: this.programDescription || '',
@@ -120,7 +122,7 @@ export class ProgramModalComponent implements OnInit, OnChanges {
         }]
       }))
     };
-    
+
     this.save.emit(program);
   }
 

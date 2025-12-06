@@ -1,4 +1,3 @@
-<!-- client-profile-static.component.html -->
 <section class="main-content">
   <!-- Header profil -->
   <div class="profile-header">
@@ -22,17 +21,15 @@
         <span>Send Message</span>
       </button>
 
-
       <button class="btn-more">
         <span class="dot"></span>
         <span class="dot"></span>
         <span class="dot"></span>
       </button>
     </div>
-
   </div>
 
-  <!-- Onglets horizontaux (comme le screen) -->
+  <!-- Onglets horizontaux -->
   <nav class="profile-tabs">
     <button
       class="tab-link"
@@ -81,7 +78,10 @@
   <!-- Contenu onglets -->
   <div class="tab-content">
     <!-- DASHBOARD -->
-    <div class="tab-pane dashboard-pane" [class.active]="activeTab === 'dashboard'">
+    <div
+      class="tab-pane dashboard-pane"
+      [class.active]="activeTab === 'dashboard'"
+    >
       <div class="dashboard-main-grid">
         <!-- Today's Workout -->
         <div class="card dashboard-card today-card">
@@ -93,7 +93,8 @@
               <div>
                 <div class="header-title">Today's Workout</div>
                 <div class="header-subtitle">
-                  {{ todaysWorkout.programName }} - Week {{ todaysWorkout.currentWeek }}/{{ todaysWorkout.totalWeeks }}
+                  {{ todaysWorkout.programName }} - Week
+                  {{ todaysWorkout.currentWeek }}/{{ todaysWorkout.totalWeeks }}
                 </div>
               </div>
             </div>
@@ -154,13 +155,17 @@
             <div class="macro-grid">
               <div class="macro-card macro-protein">
                 <div class="macro-label">Protein</div>
-                <div class="macro-value">{{ activeNutritionPlan.protein }}</div>
+                <div class="macro-value">
+                  {{ activeNutritionPlan.protein }}
+                </div>
                 <div class="macro-unit">grams</div>
               </div>
 
               <div class="macro-card macro-carbs">
                 <div class="macro-label">Carbs</div>
-                <div class="macro-value">{{ activeNutritionPlan.carbs }}</div>
+                <div class="macro-value">
+                  {{ activeNutritionPlan.carbs }}
+                </div>
                 <div class="macro-unit">grams</div>
               </div>
 
@@ -181,11 +186,13 @@
     </div>
 
     <!-- WORKOUTS -->
-    <!-- WORKOUTS -->
     <div class="tab-pane" [class.active]="activeTab === 'workouts'">
       <div class="tab-section-header">
         <h2 class="section-title">Workout Programs</h2>
-        <button class="btn-assign-black">
+        <button
+          class="btn-assign-black"
+          (click)="openAssignProgramModal()"
+        >
           Assign New Program
         </button>
       </div>
@@ -207,23 +214,21 @@
                 <span
                   class="status-pill"
                   [ngClass]="{
-                'status-pill--active': program.status === 'active',
-                'status-pill--upcoming': program.status === 'upcoming',
-                'status-pill--completed': program.status === 'completed'
-              }"
+                    'status-pill--active': program.status === 'active',
+                    'status-pill--upcoming': program.status === 'upcoming',
+                    'status-pill--completed': program.status === 'completed'
+                  }"
                 >
-              {{ program.status | titlecase }}
-            </span>
+                  {{ program.status | titlecase }}
+                </span>
               </div>
 
               <div class="program-meta">
-            <span>
-              <i class="far fa-calendar-alt me-1"></i>
-              {{ program.startDate | date:'MMM dd, y' }} -
-              {{ program.endDate   | date:'MMM dd, y' }}
-            </span>
-
-
+                <span>
+                  <i class="far fa-calendar-alt me-1"></i>
+                  {{ program.startDate | date: 'MMM dd, y' }} -
+                  {{ program.endDate | date: 'MMM dd, y' }}
+                </span>
               </div>
             </div>
           </div>
@@ -238,7 +243,6 @@
           </div>
         </div>
 
-        <!-- barre de progression uniquement pour le programme actif -->
         <div
           *ngIf="program.status === 'active' && program.currentWeek"
           class="program-progress"
@@ -252,7 +256,6 @@
         </div>
       </div>
 
-      <!-- Pagination figma-like -->
       <div class="pagination-wrapper">
         <button class="page-btn" disabled>&lt;</button>
         <button class="page-btn page-btn--active">1</button>
@@ -260,11 +263,8 @@
       </div>
     </div>
 
-
-    <!-- NUTRITION -->
     <!-- NUTRITION -->
     <div class="tab-pane" [class.active]="activeTab === 'nutrition'">
-
       <div class="tab-section-header">
         <h2 class="section-title">Nutrition Plans</h2>
         <button class="btn-assign-black">
@@ -289,26 +289,26 @@
                 <span
                   class="status-pill"
                   [ngClass]="{
-                'status-pill--active': plan.status === 'active',
-                'status-pill--upcoming': plan.status === 'upcoming',
-                'status-pill--completed': plan.status === 'completed'
-              }"
+                    'status-pill--active': plan.status === 'active',
+                    'status-pill--upcoming': plan.status === 'upcoming',
+                    'status-pill--completed': plan.status === 'completed'
+                  }"
                 >
-              {{ plan.status | titlecase }}
-            </span>
+                  {{ plan.status | titlecase }}
+                </span>
               </div>
 
               <div class="program-meta">
-            <span>
-              <i class="far fa-calendar-alt me-1"></i>
-              {{ plan.startDate | date:'MMM dd, y' }} -
-              {{ plan.endDate   | date:'MMM dd, y' }}
-            </span>
+                <span>
+                  <i class="far fa-calendar-alt me-1"></i>
+                  {{ plan.startDate | date: 'MMM dd, y' }} -
+                  {{ plan.endDate | date: 'MMM dd, y' }}
+                </span>
 
                 <span>
-              <i class="far fa-clock me-1"></i>
+                  <i class="far fa-clock me-1"></i>
                   {{ getDays(plan.startDate, plan.endDate) }} days
-            </span>
+                </span>
               </div>
             </div>
           </div>
@@ -331,12 +331,11 @@
       </div>
     </div>
 
-
     <!-- CHECK-INS -->
     <section
       class="checkins-tab tab-pane"
       [class.active]="activeTab === 'checkins'"
-    >      <!-- Sous-onglets -->
+    >
       <div class="checkins-header">
         <nav class="checkins-subtabs">
           <button
@@ -356,7 +355,6 @@
           </button>
         </nav>
       </div>
-
 
       <!-- SUBMISSIONS -->
       <div *ngIf="activeSubTab === 'submissions'">
@@ -385,21 +383,24 @@
             </div>
 
             <div class="checkin-status">
-          <span
-            class="status-pill"
-            [ngClass]="{
-              'status-pill--reviewed': submission.status === 'reviewed',
-              'status-pill--pending-review':
-                submission.status === 'pendingReview'
-            }"
-          >
-            <i
-              *ngIf="submission.status === 'reviewed'"
-              class="far fa-check-circle"
-            ></i>
-            {{ submission.status === 'reviewed' ? 'Reviewed' : 'Pending Review'
-            }}
-          </span>
+              <span
+                class="status-pill"
+                [ngClass]="{
+                  'status-pill--reviewed': submission.status === 'reviewed',
+                  'status-pill--pending-review':
+                    submission.status === 'pendingReview'
+                }"
+              >
+                <i
+                  *ngIf="submission.status === 'reviewed'"
+                  class="far fa-check-circle"
+                ></i>
+                {{
+                  submission.status === 'reviewed'
+                    ? 'Reviewed'
+                    : 'Pending Review'
+                }}
+              </span>
             </div>
           </div>
         </div>
@@ -450,9 +451,9 @@
             </div>
 
             <div>
-          <span class="status-pill status-pill--pending">
-            Pending
-          </span>
+              <span class="status-pill status-pill--pending">
+                Pending
+              </span>
             </div>
 
             <div class="actions-cell">
@@ -469,202 +470,12 @@
       </div>
     </section>
 
-    <!-- MODAL SUBMISSION (Q/R) -->
-    <div
-      class="checkin-modal-backdrop"
-      *ngIf="showSubmissionModal && selectedSubmission"
-    >
-      <div class="checkin-modal submission-modal">
-        <div class="checkin-modal-header">
-          <div>
-            <h2>{{ selectedSubmission?.title }}</h2>
-            <div class="modal-date">
-              {{ selectedSubmission?.date | date: 'MM/dd/yyyy' }}
-            </div>
-          </div>
-
-          <button class="close-btn" (click)="closeSubmissionModal()">
-            &times;
-          </button>
-        </div>
-
-        <div class="checkin-modal-body">
-          <div
-            class="submission-question"
-            *ngFor="let ans of selectedSubmission?.answers"
-          >
-            <div class="submission-question-text">
-              <span class="number">{{ ans.questionNumber }}.</span>
-              {{ ans.question }}
-            </div>
-
-            <div class="submission-answer">
-              <ng-container [ngSwitch]="ans.type">
-                <!-- texte -->
-                <span *ngSwitchCase="'text'">{{ ans.answer }}</span>
-
-                <!-- scale -->
-                <div *ngSwitchCase="'scale'" class="scale-row">
-                  <div class="scale-track">
-                    <div
-                      class="scale-fill"
-                      [style.width.%]="
-                    ((ans.scaleValue || 0) / (ans.scaleMax || 10)) * 100
-                  "
-                    ></div>
-                  </div>
-                  <div class="scale-value">
-                    {{ ans.scaleValue }}/{{ ans.scaleMax }}
-                  </div>
-                </div>
-
-                <!-- rating -->
-                <div *ngSwitchCase="'rating'" class="rating-row">
-                  <i
-                    *ngFor="let star of getStars(ans.ratingMax)"
-                    class="fas fa-star"
-                    [ngClass]="{
-                  filled: star <= (ans.ratingValue || 0)
-                }"
-                  ></i>
-                </div>
-
-                <!-- photos -->
-                <div *ngSwitchCase="'photos'" class="photo-thumbs">
-                  <div
-                    *ngFor="let p of ans.photos"
-                    class="photo-thumb"
-                  ></div>
-                </div>
-
-                <span *ngSwitchDefault>{{ ans.answer }}</span>
-              </ng-container>
-            </div>
-          </div>
-
-          <div
-            *ngIf="selectedSubmission?.status === 'reviewed'"
-            class="submission-status-banner"
-          >
-            <div class="headline">
-              <i class="far fa-check-circle"></i>
-              Reviewed
-            </div>
-            <div class="coach-note">
-              {{ selectedSubmission?.coachNote }}
-            </div>
-          </div>
-        </div>
-
-        <div class="checkin-modal-footer">
-          <button class="btn-secondary" (click)="closeSubmissionModal()">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL ASSIGNED (définition) -->
-    <div
-      class="checkin-modal-backdrop"
-      *ngIf="showAssignedModal && selectedAssigned"
-    >
-      <div class="checkin-modal assigned-modal">
-        <div class="checkin-modal-header">
-          <div>
-            <h2>{{ selectedAssigned?.name }}</h2>
-            <div class="modal-subtitle">
-              Weekly progress tracking form
-            </div>
-          </div>
-
-          <button class="close-btn" (click)="closeAssignedModal()">
-            &times;
-          </button>
-        </div>
-
-        <div class="checkin-modal-body">
-          <div class="assigned-summary-row">
-            <div class="summary-card">
-              <div class="summary-label">Assigned Date</div>
-              <div class="summary-value">
-                <i class="far fa-calendar-alt"></i>
-                {{ selectedAssigned?.assignedDate | date: 'MM/dd/yyyy' }}
-              </div>
-            </div>
-
-            <div class="summary-card">
-              <div class="summary-label">Due Date</div>
-              <div class="summary-value">
-                <i class="far fa-calendar-alt"></i>
-                {{ selectedAssigned?.dueDate | date: 'MM/dd/yyyy' }}
-              </div>
-            </div>
-
-            <div class="summary-card">
-              <div class="summary-label">Status</div>
-              <div class="summary-value">
-            <span class="status-pill status-pill--pending">
-              Pending
-            </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-questions-title">Form Questions</div>
-
-          <div
-            class="form-question-row"
-            *ngFor="let q of selectedAssigned?.questions"
-          >
-            <div class="form-question-number">
-              {{ q.order }}
-            </div>
-
-            <div class="form-question-main">
-              <div class="form-question-label">
-                {{ q.label }}
-              </div>
-
-              <div class="question-tags">
-            <span
-              class="tag-pill"
-              [ngClass]="{
-                'type-text': q.type === 'Text',
-                'type-number': q.type === 'Number',
-                'type-scale': q.type === 'Scale'
-              }"
-            >
-              {{ q.type }}
-            </span>
-
-                <span
-                  *ngIf="q.required"
-                  class="tag-pill required"
-                >
-              Required
-            </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="checkin-modal-footer">
-          <button class="btn-secondary" (click)="closeAssignedModal()">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-
-
-
-    <!-- PROGRESS PICTURES -->
     <!-- PROGRESS PICTURES -->
     <div
       class="tab-pane progress-pictures-pane"
       [class.active]="activeTab === 'pictures'"
-    >      <div class="progress-header">
+    >
+      <div class="progress-header">
         <h2 class="section-title">Progress Pictures</h2>
 
         <div class="progress-actions">
@@ -676,8 +487,6 @@
             <i class="far fa-images"></i>
             <span>Comparison</span>
           </button>
-
-
         </div>
       </div>
 
@@ -703,42 +512,14 @@
           </div>
         </div>
       </div>
-
-      <!-- Modal de comparaison (simple placeholder pour l’instant) -->
-      <div
-        class="checkin-modal-backdrop"
-        *ngIf="showPicturesComparison"
-      >
-        <div class="checkin-modal submission-modal">
-          <div class="checkin-modal-header">
-            <h2>Progress Pictures Comparison</h2>
-            <button class="close-btn" (click)="onClosePicturesComparison()">
-              &times;
-            </button>
-          </div>
-
-          <div class="checkin-modal-body">
-            <p class="text-muted">
-              Ici tu pourras plus tard afficher la comparaison de 2 dates (pour
-              l’instant c’est juste un placeholder).
-            </p>
-          </div>
-
-          <div class="checkin-modal-footer">
-            <button class="btn-secondary" (click)="onClosePicturesComparison()">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
-
 
     <!-- CALENDAR -->
     <div
       class="tab-pane"
       [class.active]="activeTab === 'calendar'"
-    >      <h2>Training Calendar</h2>
+    >
+      <h2>Training Calendar</h2>
       <p class="text-muted">
         For le moment on affiche juste un bloc statique. Tu pourras brancher
         FullCalendar ou autre plus tard.
@@ -750,8 +531,192 @@
     </div>
   </div>
 </section>
-<!-- MODAL COMPARAISON PROGRESS PICTURES -->
-<!-- MODAL PROGRESS PICTURES -->
+
+<!-- MODAL SUBMISSION (Q/R) -->
+<div
+  class="checkin-modal-backdrop"
+  *ngIf="showSubmissionModal && selectedSubmission"
+>
+  <div class="checkin-modal submission-modal">
+    <div class="checkin-modal-header">
+      <div>
+        <h2>{{ selectedSubmission?.title }}</h2>
+        <div class="modal-date">
+          {{ selectedSubmission?.date | date: 'MM/dd/yyyy' }}
+        </div>
+      </div>
+
+      <button class="close-btn" (click)="closeSubmissionModal()">
+        &times;
+      </button>
+    </div>
+
+    <div class="checkin-modal-body">
+      <div
+        class="submission-question"
+        *ngFor="let ans of selectedSubmission?.answers"
+      >
+        <div class="submission-question-text">
+          <span class="number">{{ ans.questionNumber }}.</span>
+          {{ ans.question }}
+        </div>
+
+        <div class="submission-answer">
+          <ng-container [ngSwitch]="ans.type">
+            <span *ngSwitchCase="'text'">{{ ans.answer }}</span>
+
+            <div *ngSwitchCase="'scale'" class="scale-row">
+              <div class="scale-track">
+                <div
+                  class="scale-fill"
+                  [style.width.%]="
+                    ((ans.scaleValue || 0) / (ans.scaleMax || 10)) * 100
+                  "
+                ></div>
+              </div>
+              <div class="scale-value">
+                {{ ans.scaleValue }}/{{ ans.scaleMax }}
+              </div>
+            </div>
+
+            <div *ngSwitchCase="'rating'" class="rating-row">
+              <i
+                *ngFor="let star of getStars(ans.ratingMax)"
+                class="fas fa-star"
+                [ngClass]="{
+                  filled: star <= (ans.ratingValue || 0)
+                }"
+              ></i>
+            </div>
+
+            <div *ngSwitchCase="'photos'" class="photo-thumbs">
+              <div
+                *ngFor="let p of ans.photos"
+                class="photo-thumb"
+              ></div>
+            </div>
+
+            <span *ngSwitchDefault>{{ ans.answer }}</span>
+          </ng-container>
+        </div>
+      </div>
+
+      <div
+        *ngIf="selectedSubmission?.status === 'reviewed'"
+        class="submission-status-banner"
+      >
+        <div class="headline">
+          <i class="far fa-check-circle"></i>
+          Reviewed
+        </div>
+        <div class="coach-note">
+          {{ selectedSubmission?.coachNote }}
+        </div>
+      </div>
+    </div>
+
+    <div class="checkin-modal-footer">
+      <button class="btn-secondary" (click)="closeSubmissionModal()">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASSIGNED (définition) -->
+<div
+  class="checkin-modal-backdrop"
+  *ngIf="showAssignedModal && selectedAssigned"
+>
+  <div class="checkin-modal assigned-modal">
+    <div class="checkin-modal-header">
+      <div>
+        <h2>{{ selectedAssigned?.name }}</h2>
+        <div class="modal-subtitle">
+          Weekly progress tracking form
+        </div>
+      </div>
+
+      <button class="close-btn" (click)="closeAssignedModal()">
+        &times;
+      </button>
+    </div>
+
+    <div class="checkin-modal-body">
+      <div class="assigned-summary-row">
+        <div class="summary-card">
+          <div class="summary-label">Assigned Date</div>
+          <div class="summary-value">
+            <i class="far fa-calendar-alt"></i>
+            {{ selectedAssigned?.assignedDate | date: 'MM/dd/yyyy' }}
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-label">Due Date</div>
+          <div class="summary-value">
+            <i class="far fa-calendar-alt"></i>
+            {{ selectedAssigned?.dueDate | date: 'MM/dd/yyyy' }}
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-label">Status</div>
+          <div class="summary-value">
+            <span class="status-pill status-pill--pending">
+              Pending
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-questions-title">Form Questions</div>
+
+      <div
+        class="form-question-row"
+        *ngFor="let q of selectedAssigned?.questions"
+      >
+        <div class="form-question-number">
+          {{ q.order }}
+        </div>
+
+        <div class="form-question-main">
+          <div class="form-question-label">
+            {{ q.label }}
+          </div>
+
+          <div class="question-tags">
+            <span
+              class="tag-pill"
+              [ngClass]="{
+                'type-text': q.type === 'Text',
+                'type-number': q.type === 'Number',
+                'type-scale': q.type === 'Scale'
+              }"
+            >
+              {{ q.type }}
+            </span>
+
+            <span
+              *ngIf="q.required"
+              class="tag-pill required"
+            >
+              Required
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="checkin-modal-footer">
+      <button class="btn-secondary" (click)="closeAssignedModal()">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROGRESS PICTURES (comparaison avancée) -->
 <div
   class="checkin-modal-backdrop"
   *ngIf="showPicturesComparison"
@@ -767,7 +732,7 @@
 
     <!-- BODY -->
     <div class="checkin-modal-body progress-modal-body">
-      <!-- TOGGLE centered -->
+      <!-- TOGGLE -->
       <div class="comparison-mode-wrapper">
         <div class="comparison-mode-toggle">
           <button
@@ -800,15 +765,14 @@
           <div class="thumbs-scroll">
             <div
               class="thumbnail-card"
-              [ngClass]="{
-    'thumbnail-card--before': isSelectedAsBefore(picture),
-    'thumbnail-card--after': isSelectedAsAfter(picture)
-  }"
               *ngFor="let picture of progressPictures"
+              [ngClass]="{
+                'thumbnail-card--before': isSelectedAsBefore(picture),
+                'thumbnail-card--after': isSelectedAsAfter(picture)
+              }"
               (click)="onSelectComparisonPicture(picture)"
             >
-
-            <div class="thumbnail-image-wrapper">
+              <div class="thumbnail-image-wrapper">
                 <img
                   [src]="picture.imageUrl"
                   alt="Progress thumbnail"
@@ -912,7 +876,9 @@
               Picture
             </div>
 
-            <ng-container *ngIf="selectedSinglePicture; else singlePlaceholder">
+            <ng-container
+              *ngIf="selectedSinglePicture; else singlePlaceholder"
+            >
               <img
                 [src]="selectedSinglePicture.imageUrl"
                 alt="Selected picture"
@@ -939,4 +905,287 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL 1 : Assign Workout Program -->
+<div
+  *ngIf="showAssignModal"
+  class="assign-modal-overlay"
+>
+  <div class="assign-modal">
+    <div class="assign-modal-header">
+      <h3 class="assign-modal-title">
+        Assign Workout Program
+      </h3>
+
+      <button
+        type="button"
+        (click)="closeAssignProgramModal()"
+        class="assign-modal-close"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="assign-modal-body">
+      <button
+        type="button"
+        class="assign-option"
+        (click)="handleExistingPrograms()"
+      >
+        <div class="assign-option-left">
+          <div class="assign-option-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3" y2="6"></line>
+              <line x1="3" y1="12" x2="3" y2="12"></line>
+              <line x1="3" y1="18" x2="3" y2="18"></line>
+            </svg>
+          </div>
+
+          <div class="assign-option-text">
+            <div class="assign-option-title">Existing Programs</div>
+            <div class="assign-option-subtitle">
+              Choose from your program library
+            </div>
+          </div>
+        </div>
+
+        <svg
+          class="assign-option-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="assign-option"
+        (click)="handleCreateNewProgram()"
+      >
+        <div class="assign-option-left">
+          <div class="assign-option-icon assign-option-icon--green">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+
+          <div class="assign-option-text">
+            <div class="assign-option-title">Create New Program</div>
+            <div class="assign-option-subtitle">
+              Build a custom program
+            </div>
+          </div>
+        </div>
+
+        <svg
+          class="assign-option-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 2 : Select Program -->
+<div
+  *ngIf="showProgramSelectionModal"
+  class="assign-modal-overlay"
+>
+  <div class="assign-modal select-program-modal">
+    <!-- Header -->
+    <div class="assign-modal-header">
+      <div>
+        <h3 class="assign-modal-title">Select Program</h3>
+        <p class="assign-modal-subtitle">
+          Choose a program to assign to {{ fullName }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        (click)="closeProgramSelectionModal()"
+        class="assign-modal-close"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="select-program-search">
+      <div class="select-search-input">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          placeholder="Search workout programs..."
+          [(ngModel)]="programSearchTerm"
+        />
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="select-program-body">
+      <ng-container *ngIf="filteredProgramsForSelection.length; else noPrograms">
+        <div
+          class="select-program-card"
+          *ngFor="let program of filteredProgramsForSelection"
+          [class.select-program-card--selected]="program.id === selectedProgramId"
+          (click)="selectedProgramId = program.id"
+        >
+          <div class="select-program-main">
+            <div class="select-radio">
+              <span
+                class="select-radio-inner"
+                *ngIf="program.id === selectedProgramId"
+              ></span>
+            </div>
+
+            <div class="select-program-text">
+              <div class="select-program-title-row">
+                <span class="select-program-name">
+                  {{ program.name }}
+                </span>
+
+                <span
+                  class="status-pill"
+                  [ngClass]="{
+                    'status-pill--active': program.status === 'active',
+                    'status-pill--upcoming': program.status === 'upcoming',
+                    'status-pill--completed': program.status === 'completed'
+                  }"
+                >
+                  {{ program.status | titlecase }}
+                </span>
+              </div>
+
+              <div class="select-program-meta">
+                <span>
+                  <i class="far fa-clock"></i>
+                  {{ program.totalWeeks }} weeks
+                </span>
+                <span>
+                  <i class="fas fa-dumbbell"></i>
+                  {{ program.daysPerWeek }} days/week
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noPrograms>
+        <div class="select-program-empty">
+          No workout programs found
+        </div>
+      </ng-template>
+
+      <!-- Schedule -->
+      <div *ngIf="selectedProgram" class="select-program-schedule">
+        <h4>Program Schedule</h4>
+
+        <div class="schedule-grid">
+          <div class="schedule-field">
+            <label>Start Date *</label>
+            <div class="schedule-input">
+              <input
+                type="date"
+                [(ngModel)]="programStartDate"
+              />
+            </div>
+          </div>
+
+          <div class="schedule-field">
+            <label>End Date</label>
+            <div class="schedule-input schedule-input--readonly">
+              <input
+                type="date"
+                [value]="calculatedProgramEndDate || ''"
+                disabled
+              />
+            </div>
+            <div
+              class="schedule-help"
+              *ngIf="calculatedProgramEndDate"
+            >
+              Automatically calculated based on program duration
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="select-program-footer">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="backToAssignModal()"
+      >
+        Back
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [class.btn-primary--disabled]="!selectedProgramId || !programStartDate"
+        [disabled]="!selectedProgramId || !programStartDate"
+        (click)="assignSelectedProgram()"
+      >
+        Assign Program
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
 

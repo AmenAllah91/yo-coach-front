@@ -6,9 +6,8 @@
         <h2 class="assign-title">Assign Program</h2>
         <p class="assign-subtitle">{{ programName }}</p>
       </div>
-      <button class="assign-close" (click)="onCancel()">
-        ✕
-      </button>
+
+      <button class="assign-close" type="button" (click)="close()">✕</button>
     </div>
 
     <!-- START DATE -->
@@ -26,7 +25,6 @@
         <span class="input-icon-right calendar-icon"></span>
       </div>
     </div>
-
 
     <!-- SEARCH -->
     <div class="assign-section">
@@ -49,7 +47,10 @@
         [class.selected]="c.selected"
         (click)="onToggleClient(c)"
       >
-        <div class="client-check" [class.client-check--checked]="c.selected">
+        <div
+          class="client-check"
+          [class.client-check--checked]="c.selected"
+        >
           <span *ngIf="c.selected" class="check-icon">✔</span>
         </div>
 
@@ -76,20 +77,17 @@
         <div class="summary-title">Selected Recipients</div>
 
         <div class="summary-chips">
-          <!-- John Doe "fixe" comme sur la maquette -->
+          <!-- Chip "John Doe" fixe -->
           <div class="chip">
             <div class="chip-avatar chip-avatar--text">
               {{ johnDoeChip.avatarText }}
             </div>
             <span class="chip-label">{{ johnDoeChip.name }}</span>
-            <button class="chip-remove">✕</button>
+            <button class="chip-remove" type="button">✕</button>
           </div>
 
-          <!-- Chips dynamiques pour les clients sélectionnés -->
-          <div
-            class="chip"
-            *ngFor="let c of selectedClients"
-          >
+          <!-- Chips dynamiques -->
+          <div class="chip" *ngFor="let c of selectedClients">
             <img
               [src]="c.image"
               [alt]="c.name"
@@ -98,6 +96,7 @@
             <span class="chip-label">{{ c.name }}</span>
             <button
               class="chip-remove"
+              type="button"
               (click)="onRemoveClientFromChips(c.id); $event.stopPropagation()"
             >
               ✕
@@ -110,7 +109,8 @@
     <!-- FOOTER -->
     <div class="assign-footer">
       <div class="footer-count">
-        {{ selectedClients.length }} client{{ selectedClients.length > 1 ? 's' : '' }} selected
+        {{ selectedCount }}
+        client{{ selectedCount > 1 ? 's' : '' }} selected
       </div>
 
       <div class="footer-actions">
@@ -126,13 +126,12 @@
           type="button"
           class="btn-footer btn-footer--assign"
           [disabled]="assignDisabled"
-          (click)="onAssign()"
+          (click)="onAssign()
+          "
         >
           Assign Program
         </button>
       </div>
     </div>
-
   </div>
 </div>
-
