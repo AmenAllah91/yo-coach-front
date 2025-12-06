@@ -1,107 +1,9 @@
-$primary: #00aef0; // bleu accent proche du screen
+$primary: #00aef0; // bleu accent
 $primary-soft: #f3fbff;
 $border-soft: #d1e9ff;
 $text-main: #111827;
 $text-muted: #6b7280;
 $bg-grey: #f5f5f7;
-
-
-/* MODAL */
-.assign-modal {
-  width: 860px;
-  max-width: 100%;
-  max-height: 92vh;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-
-
-/* TABS */
-.assign-tabs {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.assign-tab {
-  flex: 1;
-  padding: 12px 24px 10px 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  background: #f9fafb;
-  border: none;
-  cursor: pointer;
-  color: #4b5563;
-  position: relative;
-}
-
-.assign-tab.active {
-  background: #ffffff;
-  color: $primary;
-}
-
-.assign-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: $primary;
-}
-
-.tab-icon {
-  font-size: 18px;
-}
-
-.tab-count {
-  background: $primary;
-  color: #ffffff;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-}
-
-
-.btn {
-  min-width: 90px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 7px 18px;
-  border: none;
-  cursor: default; // statique
-}
-
-.btn-secondary {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  color: #111827;
-}
-
-.btn-primary {
-  background: $primary;
-  color: #ffffff;
-}
-
-.btn-primary--disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
-}
-$primary: #00aef0;
-$primary-soft: #f3fbff;
-$border-soft: #d1e9ff;
-$text-main: #111827;
-$text-muted: #6b7280;
 
 /* BACKDROP */
 .assign-backdrop {
@@ -176,8 +78,48 @@ $text-muted: #6b7280;
   margin-bottom: 6px;
 }
 
+/* INPUTS / ICONS */
 
-/* Tu peux remplacer par des background-image svg si tu veux */
+.assign-input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 2.5rem;
+  font-size: 0.875rem;
+  outline: none;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.assign-input:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #44b4df;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon-left,
+.input-icon-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.input-icon-left {
+  left: 0.75rem;
+}
+
+.input-icon-right {
+  right: 0.75rem;
+}
+
+/* Search & calendar icon style (cercle) */
 .search-icon::before,
 .calendar-icon::before {
   content: '';
@@ -185,7 +127,32 @@ $text-muted: #6b7280;
   width: 100%;
   height: 100%;
   border-radius: 999px;
-  border: 2px solid #9ca3af;
+  border: 2px solid #d1d5db;
+}
+
+/* Date wrapper */
+.date-wrapper {
+  position: relative;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+}
+
+.assign-input--date {
+  width: 100%;
+  border: none;
+  outline: none;
+  border-radius: 0.5rem;
+  padding: 0.55rem 2.75rem;
+  font-size: 0.875rem;
+  color: #111827;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.assign-input--date:focus {
+  box-shadow: 0 0 0 2px #44b4df;
+  border-radius: 0.5rem;
 }
 
 /* LISTE CLIENTS */
@@ -344,7 +311,7 @@ $text-muted: #6b7280;
   cursor: pointer;
 }
 
-
+/* FOOTER */
 .assign-footer {
   padding: 12px 24px 16px 24px;
   display: flex;
@@ -364,19 +331,20 @@ $text-muted: #6b7280;
   gap: 8px;
 }
 
-/* base */
+/* BUTTONS FOOTER */
 .btn-footer {
-  border-radius: 0.5rem; /* rounded-lg */
-  padding: 0.5rem 1rem;  /* py-2 px-4 */
-  font-size: 0.75rem;    /* text-xs */
-  font-weight: 600;      /* font-medium */
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease,
-  color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-/* Cancel = bg-white, border, hover gris clair */
 .btn-footer--cancel {
   background: #ffffff;
   border-color: #d1d5db;
@@ -387,7 +355,6 @@ $text-muted: #6b7280;
   background: #f9fafb;
 }
 
-/* Assign = bg-black → hover bleu, disabled gris */
 .btn-footer--assign {
   background: #000000;
   color: #ffffff;
@@ -399,146 +366,7 @@ $text-muted: #6b7280;
 }
 
 .btn-footer--assign:disabled {
-  background: #d1d5db;   /* disabled:bg-gray-300 */
+  background: #d1d5db;
   color: #9ca3af;
   cursor: not-allowed;
-}
-/* base input (déjà proche de Tailwind) */
-.assign-input {
-  width: 100%;
-  border-radius: 0.5rem;           /* rounded-lg */
-  border: 1px solid #d1d5db;       /* border-gray-300 */
-  padding: 0.5rem 2.5rem;          /* py-2 px-10 (pour laisser la place aux icônes) */
-  font-size: 0.875rem;             /* text-sm */
-  outline: none;
-  background-color: #ffffff;
-  color: #111827;
-}
-
-/* focus identique à Tailwind: focus:ring-2 focus:ring-[#44b4df] */
-.assign-input:focus {
-  border-color: transparent;
-  box-shadow: 0 0 0 2px #44b4df;
-}
-
-/* icônes gauche/droite déjà utilisées */
-.input-wrapper {
-  position: relative;
-}
-
-.input-icon-left,
-.input-icon-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  opacity: 0.5;
-}
-
-/* alignement des icônes */
-.input-icon-left {
-  left: 0.75rem;  /* 12px */
-}
-
-.input-icon-right {
-  right: 0.75rem;
-}
-
-/* petit cercle façon "calendar" pour tes spans .calendar-icon */
-.calendar-icon::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  border: 2px solid #9ca3af;
-}
-/* conteneur de l'input date */
-.date-wrapper {
-  position: relative;
-  border-radius: 0.5rem;           /* rounded-lg */
-  border: 1px solid #d1d5db;       /* border-gray-300 */
-  background-color: #ffffff;
-}
-
-
-/* icônes */
-.input-icon-left,
-.input-icon-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  opacity: 0.6;
-  pointer-events: none;   /* TRÈS IMPORTANT : pour ne pas bloquer le clic sur l'input */
-}
-
-.input-icon-left {
-  left: 0.75rem;
-}
-
-.input-icon-right {
-  right: 0.75rem;
-}
-
-/* petit rond façon "calendar" */
-.calendar-icon::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  border: 2px solid #d1d5db;
-}
-/* conteneur de l'input date */
-.date-wrapper {
-  position: relative;
-  border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-}
-
-/* input date lui-même */
-.assign-input--date {
-  width: 100%;
-  border: none;
-  outline: none;
-  border-radius: 0.5rem;
-  padding: 0.55rem 2.75rem;
-  font-size: 0.875rem;
-  color: #111827;
-  background: transparent;
-  box-sizing: border-box;
-}
-
-/* focus */
-.assign-input--date:focus {
-  box-shadow: 0 0 0 2px #44b4df;
-  border-radius: 0.5rem;
-}
-
-/* icônes */
-.input-icon-left,
-.input-icon-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.input-icon-left { left: 0.75rem; }
-.input-icon-right { right: 0.75rem; }
-
-.calendar-icon::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  border: 2px solid #d1d5db;
 }

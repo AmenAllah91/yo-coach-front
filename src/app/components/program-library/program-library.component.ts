@@ -17,11 +17,19 @@ import {
 import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
 import { Router } from '@angular/router';
+import { ModalAssignToclientComponent } from '../clients/modal-assign-toclient/modal-assign-toclient.component';
+import { ClientService } from 'app/service/client.service';
 
 @Component({
   selector: 'app-program-library',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, ScrollLoaderComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    FeatherModule,
+    ScrollLoaderComponent,
+    ModalAssignToclientComponent,
+  ],
   templateUrl: './program-library.component.html',
   styleUrls: [
     './program-library.component.scss',
@@ -52,6 +60,7 @@ export class ProgramLibraryComponent implements OnInit {
   endDate = '';
   isWorkoutPlanTemplate = false;
   typeWorkoutPlan = 'STRENGTH_TRAINING';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   trainingDays: any[] = [
     { name: 'Day 1', description: '', showDescription: false, exercises: [] },
   ];
@@ -72,12 +81,17 @@ export class ProgramLibraryComponent implements OnInit {
   exerciseTemplatesCount = 0;
   exerciseMyExercisesCount = 0;
 
+  showAssignModal = false;
+  programToAssign: Workout | null = null;
+
+  userid = sessionStorage.getItem('userId');
   constructor(
     private workoutService: WorkoutService,
     private exerciseService: ExerciseService,
     private location: Location,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private clientService: ClientService
   ) {}
 
   ngOnInit() {
@@ -93,6 +107,13 @@ export class ProgramLibraryComponent implements OnInit {
     this.loadPrograms();
     this.loadEnums();
     this.loadAllCounts();
+    this.loadClient()
+  }
+
+  loadClient(){
+    this.clientService.getClientsByCoach(this.userid).subscribe(res=>{
+      console.log(res)
+    })
   }
 
   loadAllCounts() {
@@ -123,8 +144,9 @@ export class ProgramLibraryComponent implements OnInit {
 
     serviceCall.subscribe({
       next: (response: PageResponse<Workout>) => {
-        const elapsed = Date.now() - startTime;
-        const minDelay = 800; // Minimum 800ms loading time
+        // const elapsed = Date.now() - startTime;
+        // const minDelay = 800;
+        // Minimum 800ms loading time
         // const remainingDelay = Math.max(0, minDelay - elapsed);
 
         this.programs = response.content || [];
@@ -191,7 +213,23 @@ export class ProgramLibraryComponent implements OnInit {
 
   assignToClients(program: Workout) {
     console.log('Assign to clients:', program);
+    this.programToAssign = program;
+    this.showAssignModal = true;
     this.openDropdownId = null;
+  }
+
+  closeAssignModal() {
+    this.showAssignModal = false;
+    this.programToAssign = null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onProgramAssigned(event: any) {
+    console.log('Assigned:', event);
+
+    /** event = { date: string, clients: Client[] } */
+
+    this.showAssignModal = false;
   }
 
   editProgram(id: string) {
@@ -595,6 +633,7 @@ export class ProgramLibraryComponent implements OnInit {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   trackByProgram(index: number, program: Workout): any {
     return program.id || index;
   }

@@ -5,7 +5,7 @@ import { FeatherModule } from 'angular-feather';
 import { ClientService, Client } from '../service/client.service';
 import { AuthService } from '../config/auth.service';
 import { environment } from '../../environments/environment';
-import { WorkoutPlanService, WorkoutPlan } from '../service/workout-plan.service';
+import { WorkoutPlanService } from '../service/workout-plan.service';
 import { AddClientModalComponent } from '../components/clients/add-client-modal/add-client-modal.component';
 import { DeleteClientModalComponent } from '../components/clients/delete-client-modal/delete-client-modal.component';
 import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
@@ -36,13 +36,13 @@ export class ClientsComponent implements OnInit {
   isLoading = false;
   openDropdownId: string | null = null;
 
-  
+
   // Pagination
   currentPage = 0;
   pageSize = 10;
   totalPages = 0;
   totalElements = 0;
-  
+
   firstName = '';
   lastName = '';
   email = '';
@@ -61,29 +61,29 @@ export class ClientsComponent implements OnInit {
   async loadClients() {
     this.isLoading = true;
     const startTime = Date.now();
-    
+
     try {
       // Console log all user info from Keycloak
       console.log('=== KEYCLOAK USER INFO ===');
       console.log('Is logged in:', this.authService.isLoggedIn());
       console.log('Username:', this.authService.getUsername());
       console.log('User ID:', this.authService.getId());
-      
+
       const token = await this.authService.getToken();
       console.log('Token:', token);
-      
+
       const userId = await this.authService.extractUserId();
       console.log('Extracted User ID:', userId);
-      
+
       const username = await this.authService.extractUserName();
       console.log('Extracted Username:', username);
-      
+
       const roles = await this.authService.extractRoles();
       console.log('User Roles:', roles);
       console.log('========================');
-      
+
       const coachId = userId;
-      
+
       if (!coachId) {
         console.error('No coach ID found');
         const elapsed = Date.now() - startTime;
@@ -94,16 +94,16 @@ export class ClientsComponent implements OnInit {
         }, remainingDelay);
         return;
       }
-      
+
       console.log('Making API call to get clients for coachId:', coachId);
       console.log('API URL will be:', `${environment.baseApiUrl}/gym_coaching/clients/coach/${coachId}`);
-      
+
       this.clientService.getClientsByCoach(coachId, this.currentPage, this.pageSize).subscribe({
         next: (response) => {
           const elapsed = Date.now() - startTime;
           const minDelay = 800; // Minimum 800ms loading time
           const remainingDelay = Math.max(0, minDelay - elapsed);
-          
+
           setTimeout(() => {
             // Handle both paginated and non-paginated responses
             const clientsData = response.content || response;
@@ -113,7 +113,7 @@ export class ClientsComponent implements OnInit {
               program: this.getRandomProgram()
             }));
             this.filteredClients = this.clients;
-            
+
             if (response.totalPages) {
               this.totalPages = response.totalPages;
               this.totalElements = response.totalElements;
@@ -130,7 +130,7 @@ export class ClientsComponent implements OnInit {
           const elapsed = Date.now() - startTime;
           const minDelay = 800;
           const remainingDelay = Math.max(0, minDelay - elapsed);
-          
+
           setTimeout(() => {
             console.error('Error loading clients:', error);
             this.isLoading = false;
@@ -141,7 +141,7 @@ export class ClientsComponent implements OnInit {
       const elapsed = Date.now() - startTime;
       const minDelay = 800;
       const remainingDelay = Math.max(0, minDelay - elapsed);
-      
+
       setTimeout(() => {
         console.error('Error getting coach ID:', error);
         this.isLoading = false;
@@ -154,7 +154,7 @@ export class ClientsComponent implements OnInit {
       this.filteredClients = this.clients;
       return;
     }
-    
+
     this.filteredClients = this.clients.filter(client =>
       client.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
       client.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
@@ -201,12 +201,12 @@ export class ClientsComponent implements OnInit {
   async createClient() {
     try {
       const coachId = await this.authService.extractUserId();
-      
+
       if (!coachId) {
         console.error('No coach ID found');
         return;
       }
-      
+
       const client: Client = {
         firstName: this.firstName,
         lastName: this.lastName,
@@ -253,19 +253,19 @@ export class ClientsComponent implements OnInit {
       this.openDropdownId = null;
       return;
     }
-    
+
     this.openDropdownId = clientId;
-    
+
     if (event && clientId) {
       setTimeout(() => {
         const button = event.target as HTMLElement;
         const dropdown = button.closest('.dropdown')?.querySelector('.dropdown-menu') as HTMLElement;
-        
+
         if (dropdown) {
           const buttonRect = button.getBoundingClientRect();
           const dropdownHeight = 200; // Approximate dropdown height
           const viewportHeight = window.innerHeight;
-          
+
           // Position dropdown
           if (buttonRect.bottom + dropdownHeight > viewportHeight) {
             // Show above if not enough space below
@@ -274,7 +274,7 @@ export class ClientsComponent implements OnInit {
             // Show below
             dropdown.style.top = `${buttonRect.bottom + 4}px`;
           }
-          
+
           dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
         }
       }, 0);
@@ -307,7 +307,7 @@ export class ClientsComponent implements OnInit {
 
   createWorkoutPlan(client: Client) {
     const targetClients = ['69034e9003d1617157ea2826', '69034e9003d1617157ea2825', '69034b0987c1e9bb68532663', '69034b0987c1e9bb68532662'];
-    
+
     if (!targetClients.includes(client.id!)) {
       console.log('Workout plan not available for this client');
       return;
@@ -326,7 +326,7 @@ export class ClientsComponent implements OnInit {
           restTime: 60
         },
         {
-          exerciseId: '2', 
+          exerciseId: '2',
           exerciseName: 'Squats',
           sets: 3,
           reps: 12,
@@ -366,16 +366,16 @@ export class ClientsComponent implements OnInit {
   generateRandomWorkoutDates(): string[] {
     const dates = [];
     const today = new Date();
-    
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() - (6 - i));
-      
+
       if (Math.random() > 0.4) {
         dates.push(date.toISOString().split('T')[0]);
       }
     }
-    
+
     return dates;
   }
 
@@ -383,7 +383,7 @@ export class ClientsComponent implements OnInit {
     const date = new Date();
     date.setDate(date.getDate() - (6 - dayOffset));
     const dateStr = date.toISOString().split('T')[0];
-    
+
     return client.workoutDates?.includes(dateStr) || false;
   }
 
@@ -405,7 +405,7 @@ export class ClientsComponent implements OnInit {
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
       return workoutDate >= threeDaysAgo;
     });
-    
+
     return recentWorkouts && recentWorkouts.length > 0 ? 'Active' : 'Inactive';
   }
 
@@ -414,6 +414,7 @@ export class ClientsComponent implements OnInit {
     return programs[Math.floor(Math.random() * programs.length)];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getClientProgram(client: any): string {
     return client.program || '';
   }
