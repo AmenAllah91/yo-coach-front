@@ -65,6 +65,7 @@ export interface MealDay {
   dayOfWeek: string;
   cheatMeal: boolean;
   refeedDay: boolean;
+  title?: string;
   dayTargets?: MacroTargets | null;
   meals: Meal[];
   description?: string;
@@ -89,4 +90,6 @@ export interface MealPlan {
   coach: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any;
+  date?: string;
+  title?: string;
 }

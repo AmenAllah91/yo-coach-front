@@ -1,14 +1,9 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Client, ClientService } from 'app/service/client.service';
 
-interface Client {
-  id: number;
-  name: string;
-  email: string;
-  image: string;
-  selected: boolean;
-}
+
 
 @Component({
   selector: 'app-modal-assign-toclient',
@@ -17,7 +12,12 @@ interface Client {
   templateUrl: './modal-assign-toclient.component.html',
   styleUrls: ['./modal-assign-toclient.component.scss'],
 })
-export class ModalAssignToclientComponent {
+export class ModalAssignToclientComponent implements OnInit {
+  ngOnInit(): void {
+    this.loadClient();
+  }
+
+  constructor(private clientService: ClientService) {}
   // Nom du programme affiché sous le titre
   @Input() programName = '';
 
@@ -33,23 +33,25 @@ export class ModalAssignToclientComponent {
   selectedClients: Client[] = [];
   searchTerm = '';
 
+  userid = sessionStorage.getItem('userId');
+
   clients: Client[] = [
-    {
-      id: 1,
-      name: 'Sarah Smith',
-      email: 'sarah.smith@example.com',
-      image:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80',
-      selected: false,
-    },
-    {
-      id: 2,
-      name: 'Michael Johnson',
-      email: 'michael.j@example.com',
-      image:
-        'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80',
-      selected: false,
-    },
+    // {
+    //   id: 1,
+    //   name: 'Sarah Smith',
+    //   email: 'sarah.smith@example.com',
+    //   image:
+    //     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80',
+    //   selected: false,
+    // },
+    // {
+    //   id: 2,
+    //   name: 'Michael Johnson',
+    //   email: 'michael.j@example.com',
+    //   image:
+    //     'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80',
+    //   selected: false,
+    // },
   ];
 
   johnDoeChip = {
@@ -66,9 +68,16 @@ export class ModalAssignToclientComponent {
     }
     return this.clients.filter(
       (c) =>
-        c.name.toLowerCase().includes(term) ||
+        c.firstName.toLowerCase().includes(term) ||
+        c.lastName.toLowerCase().includes(term) ||
         c.email.toLowerCase().includes(term)
     );
+  }
+
+  loadClient() {
+    this.clientService.getClientsByCoach(this.userid).subscribe((res) => {
+      this.clients = res.content;
+    });
   }
 
   // ---------- SÉLECTION CLIENTS ----------
@@ -86,7 +95,7 @@ export class ModalAssignToclientComponent {
     }
   }
 
-  onRemoveClientFromChips(clientId: number): void {
+  onRemoveClientFromChips(clientId: any): void {
     const client = this.clients.find((c) => c.id === clientId);
     if (client) {
       client.selected = false;

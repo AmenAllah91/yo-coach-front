@@ -9,7 +9,7 @@ import { WorkoutPlanService } from '../service/workout-plan.service';
 import { AddClientModalComponent } from '../components/clients/add-client-modal/add-client-modal.component';
 import { DeleteClientModalComponent } from '../components/clients/delete-client-modal/delete-client-modal.component';
 import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
-
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-clients',
@@ -22,8 +22,8 @@ import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader
     FeatherModule,
     AddClientModalComponent,
     DeleteClientModalComponent,
-    ScrollLoaderComponent
-  ]
+    ScrollLoaderComponent,
+  ],
 })
 export class ClientsComponent implements OnInit {
   clients: Client[] = [];
@@ -35,7 +35,6 @@ export class ClientsComponent implements OnInit {
   clientToDelete: Client | null = null;
   isLoading = false;
   openDropdownId: string | null = null;
-
 
   // Pagination
   currentPage = 0;
@@ -51,7 +50,8 @@ export class ClientsComponent implements OnInit {
   constructor(
     private clientService: ClientService,
     private authService: AuthService,
-    private workoutPlanService: WorkoutPlanService
+    private workoutPlanService: WorkoutPlanService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -96,47 +96,52 @@ export class ClientsComponent implements OnInit {
       }
 
       console.log('Making API call to get clients for coachId:', coachId);
-      console.log('API URL will be:', `${environment.baseApiUrl}/gym_coaching/clients/coach/${coachId}`);
+      console.log(
+        'API URL will be:',
+        `${environment.baseApiUrl}/gym_coaching/clients/coach/${coachId}`
+      );
 
-      this.clientService.getClientsByCoach(coachId, this.currentPage, this.pageSize).subscribe({
-        next: (response) => {
-          const elapsed = Date.now() - startTime;
-          const minDelay = 800; // Minimum 800ms loading time
-          const remainingDelay = Math.max(0, minDelay - elapsed);
+      this.clientService
+        .getClientsByCoach(coachId, this.currentPage, this.pageSize)
+        .subscribe({
+          next: (response) => {
+            const elapsed = Date.now() - startTime;
+            const minDelay = 800; // Minimum 800ms loading time
+            const remainingDelay = Math.max(0, minDelay - elapsed);
 
-          setTimeout(() => {
-            // Handle both paginated and non-paginated responses
-            const clientsData = response.content || response;
-            this.clients = clientsData.map(client => ({
-              ...client,
-              workoutDates: this.generateRandomWorkoutDates(),
-              program: this.getRandomProgram()
-            }));
-            this.filteredClients = this.clients;
+            setTimeout(() => {
+              // Handle both paginated and non-paginated responses
+              const clientsData = response.content || response;
+              this.clients = clientsData.map((client) => ({
+                ...client,
+                workoutDates: this.generateRandomWorkoutDates(),
+                program: this.getRandomProgram(),
+              }));
+              this.filteredClients = this.clients;
 
-            if (response.totalPages) {
-              this.totalPages = response.totalPages;
-              this.totalElements = response.totalElements;
-              this.currentPage = response.number;
-            } else {
-              this.totalPages = 1;
-              this.totalElements = this.clients.length;
-              this.currentPage = 0;
-            }
-            this.isLoading = false;
-          }, remainingDelay);
-        },
-        error: (error) => {
-          const elapsed = Date.now() - startTime;
-          const minDelay = 800;
-          const remainingDelay = Math.max(0, minDelay - elapsed);
+              if (response.totalPages) {
+                this.totalPages = response.totalPages;
+                this.totalElements = response.totalElements;
+                this.currentPage = response.number;
+              } else {
+                this.totalPages = 1;
+                this.totalElements = this.clients.length;
+                this.currentPage = 0;
+              }
+              this.isLoading = false;
+            }, remainingDelay);
+          },
+          error: (error) => {
+            const elapsed = Date.now() - startTime;
+            const minDelay = 800;
+            const remainingDelay = Math.max(0, minDelay - elapsed);
 
-          setTimeout(() => {
-            console.error('Error loading clients:', error);
-            this.isLoading = false;
-          }, remainingDelay);
-        }
-      });
+            setTimeout(() => {
+              console.error('Error loading clients:', error);
+              this.isLoading = false;
+            }, remainingDelay);
+          },
+        });
     } catch (error) {
       const elapsed = Date.now() - startTime;
       const minDelay = 800;
@@ -155,10 +160,13 @@ export class ClientsComponent implements OnInit {
       return;
     }
 
-    this.filteredClients = this.clients.filter(client =>
-      client.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-      client.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(this.searchTerm.toLowerCase())
+    this.filteredClients = this.clients.filter(
+      (client) =>
+        client.firstName
+          .toLowerCase()
+          .includes(this.searchTerm.toLowerCase()) ||
+        client.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        client.email.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
   }
 
@@ -190,7 +198,12 @@ export class ClientsComponent implements OnInit {
     this.resetForm();
   }
 
-  onCreateClient(clientData: {firstName: string, lastName: string, email: string, gender: string}) {
+  onCreateClient(clientData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    gender: string;
+  }) {
     this.firstName = clientData.firstName;
     this.lastName = clientData.lastName;
     this.email = clientData.email;
@@ -217,7 +230,8 @@ export class ClientsComponent implements OnInit {
         coachId: coachId,
         workoutDates: [],
         coachingSpecialities: [],
-        authorities: []
+        authorities: [],
+        selected: false,
       };
 
       this.clientService.createClient(client).subscribe({
@@ -227,17 +241,17 @@ export class ClientsComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error creating client:', error);
-        }
+        },
       });
     } catch (error) {
       console.error('Error getting coach ID:', error);
     }
   }
 
-
-
   viewProfile(client: Client) {
     console.log('View profile:', client);
+    const url = 'clients/profil-client/' + client.id;
+    this.router.navigateByUrl(url);
   }
 
   sendMessage(client: Client) {
@@ -259,7 +273,9 @@ export class ClientsComponent implements OnInit {
     if (event && clientId) {
       setTimeout(() => {
         const button = event.target as HTMLElement;
-        const dropdown = button.closest('.dropdown')?.querySelector('.dropdown-menu') as HTMLElement;
+        const dropdown = button
+          .closest('.dropdown')
+          ?.querySelector('.dropdown-menu') as HTMLElement;
 
         if (dropdown) {
           const buttonRect = button.getBoundingClientRect();
@@ -295,7 +311,7 @@ export class ClientsComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting client:', error);
-        }
+        },
       });
     }
   }
@@ -306,7 +322,12 @@ export class ClientsComponent implements OnInit {
   }
 
   createWorkoutPlan(client: Client) {
-    const targetClients = ['69034e9003d1617157ea2826', '69034e9003d1617157ea2825', '69034b0987c1e9bb68532663', '69034b0987c1e9bb68532662'];
+    const targetClients = [
+      '69034e9003d1617157ea2826',
+      '69034e9003d1617157ea2825',
+      '69034b0987c1e9bb68532663',
+      '69034b0987c1e9bb68532662',
+    ];
 
     if (!targetClients.includes(client.id!)) {
       console.log('Workout plan not available for this client');
@@ -323,14 +344,14 @@ export class ClientsComponent implements OnInit {
           exerciseName: 'Push-ups',
           sets: 3,
           reps: 15,
-          restTime: 60
+          restTime: 60,
         },
         {
           exerciseId: '2',
           exerciseName: 'Squats',
           sets: 3,
           reps: 12,
-          restTime: 90
+          restTime: 90,
         },
         {
           exerciseId: '3',
@@ -338,21 +359,23 @@ export class ClientsComponent implements OnInit {
           sets: 3,
           reps: 1,
           restTime: 60,
-          notes: 'Hold for 30 seconds'
-        }
+          notes: 'Hold for 30 seconds',
+        },
       ],
-      isActive: true
+      isActive: true,
     };
 
     this.workoutPlanService.createWorkoutPlan(workoutPlan).subscribe({
       next: (plan) => {
         console.log('Workout plan created:', plan);
-        alert(`Workout plan created for ${client.firstName} ${client.lastName}`);
+        alert(
+          `Workout plan created for ${client.firstName} ${client.lastName}`
+        );
       },
       error: (error) => {
         console.error('Error creating workout plan:', error);
         alert('Error creating workout plan');
-      }
+      },
     });
   }
 
@@ -399,7 +422,7 @@ export class ClientsComponent implements OnInit {
   }
 
   getClientStatus(client: Client): string {
-    const recentWorkouts = client.workoutDates?.filter(date => {
+    const recentWorkouts = client.workoutDates?.filter((date) => {
       const workoutDate = new Date(date);
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);

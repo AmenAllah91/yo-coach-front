@@ -47,17 +47,18 @@
         [class.selected]="c.selected"
         (click)="onToggleClient(c)"
       >
-        <div
-          class="client-check"
-          [class.client-check--checked]="c.selected"
-        >
+        <div class="client-check" [class.client-check--checked]="c.selected">
           <span *ngIf="c.selected" class="check-icon">✔</span>
         </div>
 
-        <img class="client-avatar" [src]="c.image" [alt]="c.name" />
+        <img
+          class="client-avatar"
+          src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
+          [alt]="c.name"
+        />
 
         <div class="client-info">
-          <div class="client-name">{{ c.name }}</div>
+          <div class="client-name">{{ c.firstName }} {{ c.lastName }}</div>
           <div class="client-email">{{ c.email }}</div>
         </div>
       </div>
@@ -68,7 +69,7 @@
     </div>
 
     <!-- SELECTED RECIPIENTS -->
-    <div class="assign-summary">
+    <div class="assign-summary" *ngIf="selectedClients.length > 0">
       <div class="summary-left">
         <div class="summary-check">✔</div>
       </div>
@@ -77,23 +78,14 @@
         <div class="summary-title">Selected Recipients</div>
 
         <div class="summary-chips">
-          <!-- Chip "John Doe" fixe -->
-          <div class="chip">
-            <div class="chip-avatar chip-avatar--text">
-              {{ johnDoeChip.avatarText }}
-            </div>
-            <span class="chip-label">{{ johnDoeChip.name }}</span>
-            <button class="chip-remove" type="button">✕</button>
-          </div>
-
           <!-- Chips dynamiques -->
           <div class="chip" *ngFor="let c of selectedClients">
             <img
-              [src]="c.image"
-              [alt]="c.name"
+              src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
+              [alt]="c.login"
               class="chip-avatar"
             />
-            <span class="chip-label">{{ c.name }}</span>
+            <span class="chip-label">{{ c.firstName }} {{ c.lastName }}</span>
             <button
               class="chip-remove"
               type="button"
@@ -110,7 +102,7 @@
     <div class="assign-footer">
       <div class="footer-count">
         {{ selectedCount }}
-        client{{ selectedCount > 1 ? 's' : '' }} selected
+        client{{ selectedCount > 1 ? "s" : "" }} selected
       </div>
 
       <div class="footer-actions">
@@ -126,8 +118,7 @@
           type="button"
           class="btn-footer btn-footer--assign"
           [disabled]="assignDisabled"
-          (click)="onAssign()
-          "
+          (click)="onAssign()"
         >
           Assign Program
         </button>

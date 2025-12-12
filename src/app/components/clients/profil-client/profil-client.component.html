@@ -2,7 +2,7 @@
   <!-- Header profil -->
   <div class="profile-header">
     <img
-      [src]="client.photoUrl"
+      src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
       alt="Profile Photo"
       class="profile-picture"
     />
@@ -10,9 +10,9 @@
     <div class="profile-info">
       <h3 class="profile-name">{{ fullName }}</h3>
       <p class="text-muted">
-        {{ client.email || 'Not provided' }}
+        {{ client?.email || "Not provided" }}
       </p>
-      <p class="text-muted">Last workout {{ client.lastWorkout }}</p>
+      <p class="text-muted">Last workout --------</p>
     </div>
 
     <div class="header-actions">
@@ -191,16 +191,13 @@
         <h2 class="section-title">Workout Programs</h2>
         <button
           class="btn-assign-black"
-          (click)="openAssignProgramModal()"
+          (click)="openAssignProgramModal('WORKOUT')"
         >
           Assign New Program
         </button>
       </div>
 
-      <div
-        *ngFor="let program of workoutPrograms"
-        class="program-card"
-      >
+      <div *ngFor="let program of workoutPlan" class="program-card">
         <div class="program-card-top">
           <div class="program-main">
             <div class="program-icon program-icon-blue">
@@ -226,8 +223,8 @@
               <div class="program-meta">
                 <span>
                   <i class="far fa-calendar-alt me-1"></i>
-                  {{ program.startDate | date: 'MMM dd, y' }} -
-                  {{ program.endDate | date: 'MMM dd, y' }}
+                  {{ program.startDate | date : "MMM dd, y" }} -
+                  {{ program.endDate | date : "MMM dd, y" }}
                 </span>
               </div>
             </div>
@@ -243,14 +240,11 @@
           </div>
         </div>
 
-        <div
-          *ngIf="program.status === 'active' && program.currentWeek"
-          class="program-progress"
-        >
+        <div *ngIf="program.status === 'active'" class="program-progress">
           <div class="progress-bar-bg">
             <div
               class="progress-bar-fill"
-              [style.width.%]="(program.currentWeek / program.totalWeeks) * 100"
+              [style.width.%]="program.progressPercent"
             ></div>
           </div>
         </div>
@@ -267,15 +261,15 @@
     <div class="tab-pane" [class.active]="activeTab === 'nutrition'">
       <div class="tab-section-header">
         <h2 class="section-title">Nutrition Plans</h2>
-        <button class="btn-assign-black">
+        <button
+          class="btn-assign-black"
+          (click)="openAssignProgramModal('NUTRITION')"
+        >
           Assign New Plan
         </button>
       </div>
 
-      <div
-        *ngFor="let plan of nutritionPlans"
-        class="program-card"
-      >
+      <div *ngFor="let plan of nutritionPlans" class="program-card">
         <div class="program-card-top">
           <div class="program-main">
             <div class="program-icon program-icon-green">
@@ -301,8 +295,8 @@
               <div class="program-meta">
                 <span>
                   <i class="far fa-calendar-alt me-1"></i>
-                  {{ plan.startDate | date: 'MMM dd, y' }} -
-                  {{ plan.endDate | date: 'MMM dd, y' }}
+                  {{ plan.startDate | date : "MMM dd, y" }} -
+                  {{ plan.endDate | date : "MMM dd, y" }}
                 </span>
 
                 <span>
@@ -378,7 +372,7 @@
             <div class="checkin-row-main">
               <div class="checkin-title">{{ submission.title }}</div>
               <div class="checkin-date">
-                {{ submission.date | date: 'MM/dd/yyyy' }}
+                {{ submission.date | date : "MM/dd/yyyy" }}
               </div>
             </div>
 
@@ -396,9 +390,9 @@
                   class="far fa-check-circle"
                 ></i>
                 {{
-                  submission.status === 'reviewed'
-                    ? 'Reviewed'
-                    : 'Pending Review'
+                  submission.status === "reviewed"
+                    ? "Reviewed"
+                    : "Pending Review"
                 }}
               </span>
             </div>
@@ -442,18 +436,16 @@
 
             <div class="assigned-date">
               <i class="far fa-calendar-alt"></i>
-              {{ form.assignedDate | date: 'MM/dd/yyyy' }}
+              {{ form.assignedDate | date : "MM/dd/yyyy" }}
             </div>
 
             <div class="assigned-date">
               <i class="far fa-calendar-alt"></i>
-              {{ form.dueDate | date: 'MM/dd/yyyy' }}
+              {{ form.dueDate | date : "MM/dd/yyyy" }}
             </div>
 
             <div>
-              <span class="status-pill status-pill--pending">
-                Pending
-              </span>
+              <span class="status-pill status-pill--pending"> Pending </span>
             </div>
 
             <div class="actions-cell">
@@ -491,20 +483,17 @@
       </div>
 
       <div class="progress-grid">
-        <div
-          class="progress-card"
-          *ngFor="let picture of progressPictures"
-        >
+        <div class="progress-card" *ngFor="let picture of progressPictures">
           <div class="progress-card-image">
             <img
               [src]="picture.imageUrl"
-              [alt]="'Progress picture ' + (picture.date | date:'MMM dd, y')"
+              [alt]="'Progress picture ' + (picture.date | date : 'MMM dd, y')"
             />
           </div>
 
           <div class="progress-card-body">
             <div class="progress-date">
-              {{ picture.date | date: 'MMM dd, y' }}
+              {{ picture.date | date : "MMM dd, y" }}
             </div>
             <div class="progress-weight">
               {{ picture.weight }} {{ picture.unit }}
@@ -515,19 +504,14 @@
     </div>
 
     <!-- CALENDAR -->
-    <div
-      class="tab-pane"
-      [class.active]="activeTab === 'calendar'"
-    >
+    <div class="tab-pane" [class.active]="activeTab === 'calendar'">
       <h2>Training Calendar</h2>
       <p class="text-muted">
         For le moment on affiche juste un bloc statique. Tu pourras brancher
         FullCalendar ou autre plus tard.
       </p>
 
-      <div class="calendar-placeholder">
-        Calendar component goes here
-      </div>
+      <div class="calendar-placeholder">Calendar component goes here</div>
     </div>
   </div>
 </section>
@@ -542,7 +526,7 @@
       <div>
         <h2>{{ selectedSubmission?.title }}</h2>
         <div class="modal-date">
-          {{ selectedSubmission?.date | date: 'MM/dd/yyyy' }}
+          {{ selectedSubmission?.date | date : "MM/dd/yyyy" }}
         </div>
       </div>
 
@@ -590,10 +574,7 @@
             </div>
 
             <div *ngSwitchCase="'photos'" class="photo-thumbs">
-              <div
-                *ngFor="let p of ans.photos"
-                class="photo-thumb"
-              ></div>
+              <div *ngFor="let p of ans.photos" class="photo-thumb"></div>
             </div>
 
             <span *ngSwitchDefault>{{ ans.answer }}</span>
@@ -632,14 +613,10 @@
     <div class="checkin-modal-header">
       <div>
         <h2>{{ selectedAssigned?.name }}</h2>
-        <div class="modal-subtitle">
-          Weekly progress tracking form
-        </div>
+        <div class="modal-subtitle">Weekly progress tracking form</div>
       </div>
 
-      <button class="close-btn" (click)="closeAssignedModal()">
-        &times;
-      </button>
+      <button class="close-btn" (click)="closeAssignedModal()">&times;</button>
     </div>
 
     <div class="checkin-modal-body">
@@ -648,7 +625,7 @@
           <div class="summary-label">Assigned Date</div>
           <div class="summary-value">
             <i class="far fa-calendar-alt"></i>
-            {{ selectedAssigned?.assignedDate | date: 'MM/dd/yyyy' }}
+            {{ selectedAssigned?.assignedDate | date : "MM/dd/yyyy" }}
           </div>
         </div>
 
@@ -656,16 +633,14 @@
           <div class="summary-label">Due Date</div>
           <div class="summary-value">
             <i class="far fa-calendar-alt"></i>
-            {{ selectedAssigned?.dueDate | date: 'MM/dd/yyyy' }}
+            {{ selectedAssigned?.dueDate | date : "MM/dd/yyyy" }}
           </div>
         </div>
 
         <div class="summary-card">
           <div class="summary-label">Status</div>
           <div class="summary-value">
-            <span class="status-pill status-pill--pending">
-              Pending
-            </span>
+            <span class="status-pill status-pill--pending"> Pending </span>
           </div>
         </div>
       </div>
@@ -697,12 +672,7 @@
               {{ q.type }}
             </span>
 
-            <span
-              *ngIf="q.required"
-              class="tag-pill required"
-            >
-              Required
-            </span>
+            <span *ngIf="q.required" class="tag-pill required"> Required </span>
           </div>
         </div>
       </div>
@@ -717,10 +687,7 @@
 </div>
 
 <!-- MODAL PROGRESS PICTURES (comparaison avancée) -->
-<div
-  class="checkin-modal-backdrop"
-  *ngIf="showPicturesComparison"
->
+<div class="checkin-modal-backdrop" *ngIf="showPicturesComparison">
   <div class="checkin-modal submission-modal progress-pictures-modal">
     <!-- HEADER -->
     <div class="checkin-modal-header">
@@ -773,15 +740,12 @@
               (click)="onSelectComparisonPicture(picture)"
             >
               <div class="thumbnail-image-wrapper">
-                <img
-                  [src]="picture.imageUrl"
-                  alt="Progress thumbnail"
-                />
+                <img [src]="picture.imageUrl" alt="Progress thumbnail" />
               </div>
 
               <div class="thumbnail-meta">
                 <div class="thumb-date">
-                  {{ picture.date | date: 'dd MMM, y' }}
+                  {{ picture.date | date : "dd MMM, y" }}
                 </div>
                 <div class="thumb-weight">
                   {{ picture.weight }} {{ picture.unit }}
@@ -821,7 +785,7 @@
               />
               <div class="panel-footer">
                 <span>
-                  {{ selectedBeforePicture.date | date: 'dd MMM, y' }}
+                  {{ selectedBeforePicture.date | date : "dd MMM, y" }}
                 </span>
                 <span>
                   {{ selectedBeforePicture.weight }}
@@ -843,13 +807,10 @@
             </div>
 
             <ng-container *ngIf="selectedAfterPicture; else afterPlaceholder">
-              <img
-                [src]="selectedAfterPicture.imageUrl"
-                alt="After picture"
-              />
+              <img [src]="selectedAfterPicture.imageUrl" alt="After picture" />
               <div class="panel-footer">
                 <span>
-                  {{ selectedAfterPicture.date | date: 'dd MMM, y' }}
+                  {{ selectedAfterPicture.date | date : "dd MMM, y" }}
                 </span>
                 <span>
                   {{ selectedAfterPicture.weight }}
@@ -876,16 +837,14 @@
               Picture
             </div>
 
-            <ng-container
-              *ngIf="selectedSinglePicture; else singlePlaceholder"
-            >
+            <ng-container *ngIf="selectedSinglePicture; else singlePlaceholder">
               <img
                 [src]="selectedSinglePicture.imageUrl"
                 alt="Selected picture"
               />
               <div class="panel-footer">
                 <span>
-                  {{ selectedSinglePicture.date | date: 'dd MMM, y' }}
+                  {{ selectedSinglePicture.date | date : "dd MMM, y" }}
                 </span>
                 <span>
                   {{ selectedSinglePicture.weight }}
@@ -895,9 +854,7 @@
             </ng-container>
 
             <ng-template #singlePlaceholder>
-              <p class="panel-placeholder">
-                Select a picture on the left.
-              </p>
+              <p class="panel-placeholder">Select a picture on the left.</p>
             </ng-template>
           </div>
         </section>
@@ -907,15 +864,10 @@
 </div>
 
 <!-- MODAL 1 : Assign Workout Program -->
-<div
-  *ngIf="showAssignModal"
-  class="assign-modal-overlay"
->
+<div *ngIf="showAssignModal" class="assign-modal-overlay">
   <div class="assign-modal">
     <div class="assign-modal-header">
-      <h3 class="assign-modal-title">
-        Assign Workout Program
-      </h3>
+      <h3 class="assign-modal-title">Assign Workout Program</h3>
 
       <button
         type="button"
@@ -985,7 +937,7 @@
       <button
         type="button"
         class="assign-option"
-        (click)="handleCreateNewProgram()"
+        (click)="navigateToCreateProgram()"
       >
         <div class="assign-option-left">
           <div class="assign-option-icon assign-option-icon--green">
@@ -1002,11 +954,9 @@
             </svg>
           </div>
 
-          <div class="assign-option-text">
+          <div class="assign-option-text" >
             <div class="assign-option-title">Create New Program</div>
-            <div class="assign-option-subtitle">
-              Build a custom program
-            </div>
+            <div class="assign-option-subtitle">Build a custom program</div>
           </div>
         </div>
 
@@ -1027,10 +977,7 @@
 </div>
 
 <!-- MODAL 2 : Select Program -->
-<div
-  *ngIf="showProgramSelectionModal"
-  class="assign-modal-overlay"
->
+<div *ngIf="showProgramSelectionModal" class="assign-modal-overlay">
   <div class="assign-modal select-program-modal">
     <!-- Header -->
     <div class="assign-modal-header">
@@ -1074,11 +1021,15 @@
 
     <!-- Body -->
     <div class="select-program-body">
-      <ng-container *ngIf="filteredProgramsForSelection.length; else noPrograms">
+      <ng-container
+        *ngIf="filteredProgramsForSelection.length; else noPrograms"
+      >
         <div
           class="select-program-card"
           *ngFor="let program of filteredProgramsForSelection"
-          [class.select-program-card--selected]="program.id === selectedProgramId"
+          [class.select-program-card--selected]="
+            program.id === selectedProgramId
+          "
           (click)="selectedProgramId = program.id"
         >
           <div class="select-program-main">
@@ -1123,9 +1074,7 @@
       </ng-container>
 
       <ng-template #noPrograms>
-        <div class="select-program-empty">
-          No workout programs found
-        </div>
+        <div class="select-program-empty">No workout programs found</div>
       </ng-template>
 
       <!-- Schedule -->
@@ -1136,10 +1085,7 @@
           <div class="schedule-field">
             <label>Start Date *</label>
             <div class="schedule-input">
-              <input
-                type="date"
-                [(ngModel)]="programStartDate"
-              />
+              <input type="date" [(ngModel)]="programStartDate" />
             </div>
           </div>
 
@@ -1152,10 +1098,7 @@
                 disabled
               />
             </div>
-            <div
-              class="schedule-help"
-              *ngIf="calculatedProgramEndDate"
-            >
+            <div class="schedule-help" *ngIf="calculatedProgramEndDate">
               Automatically calculated based on program duration
             </div>
           </div>
@@ -1165,11 +1108,7 @@
 
     <!-- Footer -->
     <div class="select-program-footer">
-      <button
-        type="button"
-        class="btn-secondary"
-        (click)="backToAssignModal()"
-      >
+      <button type="button" class="btn-secondary" (click)="backToAssignModal()">
         Back
       </button>
 
@@ -1186,6 +1125,120 @@
   </div>
 </div>
 
+<div *ngIf="showProgramCreationNutrition" class="assign-modal-overlay">
+  <div class="assign-modal select-program-modal">
+    <!-- Header -->
+    <div class="assign-modal-header">
+      <button
+        type="button"
+        (click)="closeProgramSelectionModal()"
+        class="assign-modal-close"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
 
+    <!-- Body -->
+    <div class="select-program-body">
+      <ng-container>
+        <div
+          class="select-program-card"
+          [class.select-program-card--selected]="
+            selectedProgramCreationId === 1
+          "
+          (click)="selectedProgramCreationId = 1"
+        >
+          <div class="select-program-main">
+            <div class="select-radio">
+              <span
+                class="select-radio-inner"
+                *ngIf="selectedProgramCreationId === 1"
+              ></span>
+            </div>
 
+            <div class="select-program-text">
+              <div class="select-program-title-row">
+                <span class="select-program-name"
+                  >Create macro only plan for total day</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <div
+          class="select-program-card"
+          [class.select-program-card--selected]="
+            selectedProgramCreationId === 2
+          "
+          (click)="selectedProgramCreationId = 2"
+        >
+          <div class="select-program-main">
+            <div class="select-radio">
+              <span
+                class="select-radio-inner"
+                *ngIf="selectedProgramCreationId === 2"
+              ></span>
+            </div>
+
+            <div class="select-program-text">
+              <div class="select-program-title-row">
+                <span class="select-program-name">Create macro plan</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="select-program-card"
+          [class.select-program-card--selected]="
+            selectedProgramCreationId === 3
+          "
+          (click)="selectedProgramCreationId = 3"
+        >
+          <div class="select-program-main">
+            <div class="select-radio">
+              <span
+                class="select-radio-inner"
+                *ngIf="selectedProgramCreationId === 3"
+              ></span>
+            </div>
+
+            <div class="select-program-text">
+              <div class="select-program-title-row">
+                <span class="select-program-name">Create full meal plan</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Footer -->
+    <div class="select-program-footer">
+      <button type="button" class="btn-secondary" (click)="backToAssignModal()">
+        Back
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [class.btn-primary--disabled]="!selectedProgramCreationId"
+        [disabled]="!selectedProgramCreationId"
+        (click)="assignSelectedProgram()"
+      >
+        Assign Program
+      </button>
+    </div>
+  </div>
+</div>

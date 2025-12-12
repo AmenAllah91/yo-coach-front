@@ -116,4 +116,9 @@ export class WorkoutService {
   getWorkoutById(id: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}${id}`);
   }
+  getWorkoutByCoachIdAndClient(coachId: string, clientId: string): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}client/${clientId}/coach/${coachId}`
+    );
+  }
 }

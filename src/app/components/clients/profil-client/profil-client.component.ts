@@ -1,6 +1,9 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { WorkoutService } from 'app/service/workout.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Client, ClientService } from 'app/service/client.service';
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
 interface ProgressPicture {
@@ -114,16 +117,10 @@ interface AssignedCheckIn {
 export class ProfilClientComponent {
   activeTab: TabId = 'dashboard';
   // ----- Progress pictures : état du modal -----
-
+  userid = sessionStorage.getItem('userId');
   selectedSinglePicture: ProgressPicture | null = null;
 
-  client = {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    photoUrl: 'assets/images/default-avatar.png',
-    lastWorkout: '6 days ago',
-  };
+  client: Client;
 
   clientGoal = `Lose 5kg in 3 months
 Train 3x per week
@@ -172,6 +169,8 @@ Motivated but needs accountability.`;
     },
   ];
 
+  workoutPlan: any;
+
   nutritionPlans: NutritionPlan[] = [
     {
       id: 1,
@@ -196,12 +195,87 @@ Motivated but needs accountability.`;
     },
   ];
 
+  clientId: string = '';
+
+  constructor(
+    private route: ActivatedRoute,
+    private clientService: ClientService,
+    private workoutService: WorkoutService,
+    private router: Router
+  ) {
+    this.clientId = this.route.snapshot.paramMap.get('id');
+
+    if (this.clientId) {
+      this.getClientById(this.clientId);
+      this.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
+    }
+  }
+
+  getClientById(id: string) {
+    this.clientService.getClientById(id).subscribe((res) => {
+      this.client = res;
+    });
+  }
+  getWorkOutPlanByCoachAndClient(idCoach: string, idClient: string) {
+    this.workoutService
+      .getWorkoutByCoachIdAndClient(idCoach, idClient)
+      .subscribe((res) => {
+        this.workoutPlan = res;
+
+        this.workoutPlan = this.workoutPlan.map((program) => {
+          const start = new Date(program.startDate);
+
+          const totalDays = program.workoutDays?.length || 0;
+
+          const end = new Date(start);
+          end.setDate(end.getDate() + totalDays);
+          program.endDate = end;
+
+          const today = new Date();
+
+          if (today < start) {
+            program.status = 'upcoming';
+          } else if (today >= start && today <= end) {
+            program.status = 'active';
+          } else {
+            program.status = 'completed';
+          }
+
+          // 📈 PROGRESSION PAR JOURS
+          let daysPassed = 0;
+
+          if (program.status === 'active') {
+            const diffTime = today.getTime() - start.getTime();
+            daysPassed = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          } else if (program.status === 'completed') {
+            daysPassed = totalDays;
+          }
+
+          program.totalDays = totalDays;
+          program.currentDay = Math.min(daysPassed, totalDays);
+          program.progressPercent =
+            (program.currentDay / program.totalDays) * 100;
+
+          return program;
+        });
+      });
+  }
+
+  navigateToCreateProgram() {
+    console.log('navigateToCreateProgram', this.assignType);
+    if (this.assignType === 'WORKOUT') {
+      const url = 'clients/create-workout/' + this.clientId;
+      this.router.navigateByUrl(url);
+    } else {
+      this.handleProgramCreationNutrition();
+    }
+  }
   setTab(tab: TabId) {
     this.activeTab = tab;
   }
 
   get fullName(): string {
-    return `${this.client.firstName} ${this.client.lastName}`;
+    return `${this.client?.firstName} ${this.client?.lastName}`;
   }
 
   getDays(start: string, end: string): number {
@@ -568,7 +642,10 @@ Motivated but needs accountability.`;
 
   showAssignModal = false;
 
-  openAssignProgramModal(): void {
+  assignType: string;
+
+  openAssignProgramModal(type: string): void {
+    this.assignType = type;
     this.showAssignModal = true;
   }
 
@@ -576,13 +653,6 @@ Motivated but needs accountability.`;
     this.showAssignModal = false;
   }
 
-  handleCreateNewProgram(): void {
-    this.showAssignModal = false;
-    // TODO : navigation ou logique de création
-    // ex :
-    // localStorage.setItem('assignToClientId', '1');
-    // this.router.navigate(['/create-workout-program']);
-  }
   ////////////////2eme modal
   showProgramSelectionModal = false;
   programSearchTerm = '';
@@ -621,6 +691,13 @@ Motivated but needs accountability.`;
       daysPerWeek: 3,
     },
   ];
+
+  showProgramCreationNutrition = false;
+  selectedProgramCreationId: number | null = null;
+  handleProgramCreationNutrition(): void {
+    this.showProgramCreationNutrition = true;
+    console.log(this.showProgramCreationNutrition);
+  }
 
   handleExistingPrograms(): void {
     this.showAssignModal = false;

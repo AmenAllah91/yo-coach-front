@@ -1,0 +1,566 @@
+<!-- Root -->
+<div class="np-root">
+  <div class="np-shell">
+    <!-- ===== Left Sidebar (Days) ===== -->
+    <aside class="np-aside">
+      <div class="np-aside__head">
+        <h2 class="np-h6">Nutrition Days</h2>
+      </div>
+
+      <div class="np-aside__body">
+        <!-- Day list -->
+        <ng-container
+          *ngFor="let d of days; trackBy: trackByDay; let i = index"
+        >
+          <!-- First day (no trash icon) -->
+          <button
+            *ngIf="i === 0; else otherDay"
+            class="np-day"
+            [class.is-active]="selectedDay?.id === d.id"
+            (click)="selectDay(d)"
+          >
+            <span>{{ d.title }}</span>
+            <small class="np-day__meta">
+              <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+              <span class="np-day__dot">•</span>
+              <span class="np-day__date">{{
+                d.date | date : "MMM d, yyyy"
+              }}</span>
+            </small>
+          </button>
+
+          <!-- Other Days -->
+          <ng-template #otherDay>
+            <div class="np-dayrow">
+              <button
+                class="np-day"
+                [class.is-active]="selectedDay?.id === d.id"
+                (click)="selectDay(d)"
+              >
+                <span>{{ d.title }}</span>
+                <small class="np-day__meta">
+                  <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                  <span class="np-day__dot">•</span>
+                  <span class="np-day__date">{{
+                    d.date | date : "MMM d, yyyy"
+                  }}</span>
+                </small>
+              </button>
+              <button
+                class="np-iconbtn"
+                title="Delete"
+                (click)="deleteDay(d, $event)"
+              >
+                <i-feather name="trash-2" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </ng-template>
+        </ng-container>
+
+        <!-- Add Day -->
+        <button
+          class="np-btn np-btn--dash np-btn--ghost np-btn--full"
+          (click)="addDay()"
+        >
+          <i-feather name="plus" class="np-ico"></i-feather>
+          Add Day
+        </button>
+
+        <!-- Duplicate -->
+        <div class="np-stack">
+          <button class="np-rowbtn" (click)="duplicateSelectedDay()">
+            <span>Duplicate Day</span>
+            <i-feather name="copy" class="np-ico"></i-feather>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="np-main">
+      <!-- Page title -->
+      <div class="np-pagehead">
+        <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
+          <svg viewBox="0 0 24 24" class="np-ico">
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </a>
+        <h1 class="np-h5">
+          {{ planId ? "Edit Nutrition Plan" : "Create Nutrition Plan" }}
+        </h1>
+      </div>
+
+      <!-- Main Card -->
+      <section class="np-card">
+        <!-- Plan Title -->
+        <div class="np-field">
+          <label class="np-label"
+            >Plan Title <span class="np-danger">*</span></label
+          >
+          <input class="np-input" type="text" [(ngModel)]="planName" />
+        </div>
+
+        <!-- Add Plan Description -->
+        <ng-container
+          *ngIf="!showPlanDescription && !planDescription; else planDescBlock"
+        >
+          <button class="np-link" (click)="togglePlanDescription()">
+            <i-feather name="plus" class="np-ico"></i-feather>
+            Add Plan Description
+          </button>
+        </ng-container>
+
+        <ng-template #planDescBlock>
+          <div class="np-field">
+            <label class="np-label">Plan Description</label>
+
+            <div class="np-textareaWrap">
+              <textarea
+                class="np-input np-textarea"
+                rows="5"
+                placeholder="Enter Plan Description"
+                [(ngModel)]="planDescription"
+              ></textarea>
+
+              <button
+                type="button"
+                class="np-close"
+                (click)="togglePlanDescription()"
+              >
+                <i-feather name="x" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- Day Header -->
+        <div class="np-sep"></div>
+
+        <div class="np-dayhead">
+          <h3 class="np-h6">{{ getSelectedDayLabel() }}</h3>
+          <button class="np-mini" (click)="toggleDayDescription()">
+            <i-feather name="edit-2" class="np-ico"></i-feather>
+          </button>
+        </div>
+
+        <!-- Day Description -->
+        <ng-container *ngIf="selectedDay">
+          <ng-container
+            *ngIf="
+              !selectedDay.showDescription && !selectedDay.description;
+              else dayDescBlock
+            "
+          >
+            <button class="np-link" (click)="toggleDayDescription()">
+              <i-feather name="plus" class="np-ico"></i-feather>
+              Add Day Description
+            </button>
+          </ng-container>
+
+          <ng-template #dayDescBlock>
+            <div class="np-field">
+              <label class="np-label">Day Description</label>
+              <div class="np-textareaWrap">
+                <textarea
+                  class="np-input np-textarea"
+                  rows="5"
+                  placeholder="Enter Day Description"
+                  [(ngModel)]="selectedDay.description"
+                ></textarea>
+
+                <button
+                  type="button"
+                  class="np-close"
+                  (click)="toggleDayDescription()"
+                >
+                  <i-feather name="x" class="np-ico"></i-feather>
+                </button>
+              </div>
+            </div>
+            <div class="np-sep"></div>
+          </ng-template>
+        </ng-container>
+
+        <!-- Meals -->
+        <div class="np-subtle">Meals</div>
+
+        <!-- ===== Meal Cards ===== -->
+        <ng-container *ngIf="selectedDay">
+          <article
+            class="np-meal"
+            *ngFor="let meal of selectedDay.meals; trackBy: trackByMeal"
+          >
+            <header class="np-meal__head">
+              <div class="np-meal__left">
+                <h4 class="np-h6 np-brand">{{ meal.name }}</h4>
+
+                <button
+                  class="np-mini"
+                  (click)="
+                    renameMeal(
+                      meal,
+                      prompt('Meal name', meal.name) || meal.name
+                    )
+                  "
+                >
+                  <svg viewBox="0 0 24 24" class="np-ico">
+                    <path
+                      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM14.06 4.94l3.75 3.75"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      fill="none"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Meal Macros -->
+              <div class="np-meal__right">
+                <div class="np-badges">
+                  <div class="np-badge">
+                    <div class="np-badge__label">CALORIES</div>
+                    <div class="np-badge__val">
+                      {{ getMealCalories(meal) }} Kcal
+                    </div>
+                  </div>
+
+                  <div class="np-badge">
+                    <div class="np-badge__label">PROTEIN</div>
+                    <div class="np-badge__val">
+                      {{ getMealProtein(meal) }} g
+                    </div>
+                  </div>
+
+                  <div class="np-badge">
+                    <div class="np-badge__label">CARBS</div>
+                    <div class="np-badge__val">{{ getMealCarbs(meal) }} g</div>
+                  </div>
+
+                  <div class="np-badge">
+                    <div class="np-badge__label">FAT</div>
+                    <div class="np-badge__val">{{ getMealFat(meal) }} g</div>
+                  </div>
+                </div>
+
+                <button
+                  class="np-iconbtn"
+                  title="Remove meal"
+                  (click)="removeMeal(meal)"
+                >
+                  <svg viewBox="0 0 24 24" class="np-ico">
+                    <path
+                      d="M19 7l-1 12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 7m3 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M4 7h16"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      fill="none"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </header>
+
+            <!-- Meal body -->
+            <div class="np-meal__body">
+              <!-- Table des aliments -->
+              <table class="np-table" *ngIf="meal.foods?.length">
+                <thead>
+                  <tr>
+                    <th>Food</th>
+                    <th>Quantity</th>
+                    <th>Protein</th>
+                    <th>Carbs</th>
+                    <th>Fat</th>
+                    <th>Calories</th>
+                    <th></th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let food of meal.foods">
+                    <td>{{ food.name }}</td>
+
+                    <td>
+                      <span class="np-num">{{ food.quantity }}</span>
+                      <span class="np-unit">{{ food.unit }}</span>
+                    </td>
+
+                    <td>
+                      <span class="np-num">{{ getFoodProtein(food) }}</span>
+                      <span class="np-unit">g</span>
+                    </td>
+
+                    <td>
+                      <span class="np-num">{{ getFoodCarbs(food) }}</span>
+                      <span class="np-unit">g</span>
+                    </td>
+
+                    <td>
+                      <span class="np-num">{{ getFoodFat(food) }}</span>
+                      <span class="np-unit">g</span>
+                    </td>
+
+                    <td>
+                      <span class="np-num">{{ getFoodCalories(food) }}</span>
+                      <span class="np-unit">Kcal</span>
+                    </td>
+
+                    <td class="np-actions">
+                      <!-- bouton delete food (optionnel)
+                      <button class="np-iconbtn" (click)="removeFood(food, meal)">
+                        <i-feather name="trash-2" class="np-ico"></i-feather>
+                      </button> -->
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Empty state -->
+              <div class="np-emptystate" *ngIf="!meal.foods?.length">
+                <div class="np-emptystate__title">Meal looking empty?</div>
+                <div class="np-emptystate__hint">
+                  Add an item using the button below
+                </div>
+              </div>
+
+              <!-- Add Food -->
+              <div class="np-center">
+                <button
+                  class="np-btn np-btn--brandsoft"
+                  (click)="openFoodModal(meal)"
+                >
+                  <svg viewBox="0 0 24 24" class="np-ico">
+                    <path
+                      d="M12 5v14M5 12h14"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      fill="none"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  Add Food
+                </button>
+              </div>
+            </div>
+          </article>
+        </ng-container>
+
+        <!-- Add Meal Buttons -->
+        <div class="np-grid-2">
+          <button class="np-btn np-btn--branddash" (click)="addMeal()">
+            <svg viewBox="0 0 24 24" class="np-ico">
+              <path
+                d="M12 5v14M5 12h14"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+              />
+            </svg>
+            Add Another Meal
+          </button>
+
+          <button class="np-btn np-btn--branddash">
+            <svg viewBox="0 0 24 24" class="np-ico">
+              <path
+                d="M12 5v14M5 12h14"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+              />
+            </svg>
+            Add Meal From Template
+          </button>
+        </div>
+      </section>
+
+      <!-- Sticky Save -->
+      <div class="np-sticky">
+        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
+          <svg viewBox="0 0 24 24" class="np-ico">
+            <path
+              d="M12 5v14m7-7H5"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+            />
+          </svg>
+          Save Plan
+        </button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== Modal Add Food ===== -->
+<div
+  class="np-modal"
+  *ngIf="isFoodModalOpen"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="npFoodTitle"
+>
+  <div class="np-modal__backdrop" (click)="closeFoodModal()"></div>
+
+  <div class="np-modal__panel np-modal--food" tabindex="-1">
+    <div class="np-modal__head">
+      <h3 id="npFoodTitle" class="np-modal__title">Add Food</h3>
+
+      <button class="np-modal__close" (click)="closeFoodModal()">
+        <svg viewBox="0 0 24 24" class="np-ico">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div class="np-modal__body">
+      <!-- ==== STEP LIST ==== -->
+      <ng-container *ngIf="foodStep === 'list'">
+        <!-- Search -->
+        <div class="np-field np-modal__search">
+          <div class="np-searchwrap">
+            <svg viewBox="0 0 24 24" class="np-ico np-searchwrap__ico">
+              <circle
+                cx="11"
+                cy="11"
+                r="7"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+              />
+              <path
+                d="M20 20l-3.5-3.5"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              />
+            </svg>
+
+            <input
+              class="np-input np-searchwrap__input"
+              type="text"
+              placeholder="Search foods..."
+              [(ngModel)]="foodSearch"
+              (input)="filterFoods()"
+            />
+          </div>
+        </div>
+
+        <div class="np-modal__sectionTitle">Results</div>
+
+        <ul class="np-foodlist">
+          <li
+            *ngFor="let f of filteredFoods"
+            class="np-foodlist__item"
+            (click)="showFoodDetail(f)"
+          >
+            <div class="np-foodlist__name">{{ f.name }}</div>
+            <div class="np-foodlist__meta">
+              {{ f.protein }}g Protein | {{ f.carbohydrates }}g Carbs |
+              {{ f.fat }}g Fat
+            </div>
+          </li>
+        </ul>
+      </ng-container>
+
+      <!-- ==== STEP DETAIL ==== -->
+      <ng-container *ngIf="foodStep === 'detail' && selectedFood">
+        <div class="np-field" style="margin-bottom: 16px">
+          <label class="np-label">{{ selectedFood.name }}</label>
+
+          <div class="np-grid-2">
+            <!-- Quantity -->
+            <div>
+              <label class="np-label">Quantity</label>
+              <input
+                class="np-input"
+                type="number"
+                min="1"
+                [(ngModel)]="foodQty"
+                (input)="recomputeAdjusted()"
+              />
+            </div>
+
+            <!-- Serving -->
+            <div>
+              <label class="np-label">Serving Size</label>
+              <select class="np-input" disabled>
+                <option>g</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nutrition Values -->
+        <div class="np-modal__sectionTitle">Nutrition Values</div>
+
+        <div class="np-badges" style="margin-top: 8px">
+          <div class="np-badge">
+            <div class="np-badge__label">Calories</div>
+            <div class="np-badge__val">
+              {{ adj.calories | number : "1.0-0" }} Kcal
+            </div>
+          </div>
+
+          <div class="np-badge">
+            <div class="np-badge__label">Protein</div>
+            <div class="np-badge__val">
+              {{ adj.protein | number : "1.0-1" }} g
+            </div>
+          </div>
+
+          <div class="np-badge">
+            <div class="np-badge__label">Carbs</div>
+            <div class="np-badge__val">
+              {{ adj.carbohydrates | number : "1.0-1" }} g
+            </div>
+          </div>
+
+          <div class="np-badge">
+            <div class="np-badge__label">Fat</div>
+            <div class="np-badge__val">{{ adj.fat | number : "1.0-1" }} g</div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- FOOTER LIST -->
+    <div class="np-modal__foot" *ngIf="foodStep === 'list'">
+      <button
+        class="np-btn np-btn--ghost np-btn--full"
+        (click)="closeFoodModal()"
+      >
+        Cancel
+      </button>
+    </div>
+
+    <!-- FOOTER DETAIL -->
+    <div class="np-modal__foot" *ngIf="foodStep === 'detail'">
+      <div class="np-grid-2">
+        <button class="np-btn np-btn--ghost" (click)="backToList()">
+          Back
+        </button>
+        <button class="np-btn np-btn--brandsoft" (click)="addFoodToMeal()">
+          Add Food
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

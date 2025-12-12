@@ -84,7 +84,6 @@ export class ProgramLibraryComponent implements OnInit {
   showAssignModal = false;
   programToAssign: Workout | null = null;
 
-  userid = sessionStorage.getItem('userId');
   constructor(
     private workoutService: WorkoutService,
     private exerciseService: ExerciseService,
@@ -107,13 +106,6 @@ export class ProgramLibraryComponent implements OnInit {
     this.loadPrograms();
     this.loadEnums();
     this.loadAllCounts();
-    this.loadClient()
-  }
-
-  loadClient(){
-    this.clientService.getClientsByCoach(this.userid).subscribe(res=>{
-      console.log(res)
-    })
   }
 
   loadAllCounts() {
@@ -225,7 +217,19 @@ export class ProgramLibraryComponent implements OnInit {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProgramAssigned(event: any) {
-    console.log('Assigned:', event);
+    if (event.clients.length > 0) {
+      for (const client of event.clients) {
+        console.log(client);
+        this.programToAssign.client = client;
+        this.programToAssign.startDate = event.date;
+        this.workoutService
+          .updateWorkout(this.programToAssign.id, this.programToAssign)
+          .subscribe((res) => {
+            console.log(res);
+          });
+      }
+    }
+    console.log(event);
 
     /** event = { date: string, clients: Client[] } */
 
