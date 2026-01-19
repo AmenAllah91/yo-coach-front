@@ -9,16 +9,16 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FeatherModule, ChooseMacroTypeModalComponent],
   templateUrl: './choose-plan-type-modal.component.html',
-  styleUrls: ['./choose-plan-type-modal.component.scss']
+  styleUrls: ['./choose-plan-type-modal.component.scss'],
 })
 export class ChoosePlanTypeModalComponent {
-  constructor(private router: Router) {}                           // ✅
+  constructor(private router: Router) {}
 
   @Input() isVisible = false;
+  @Input() isAssign = false;
+  @Input() idClient: string = null;
 
   @Output() onClose = new EventEmitter<void>();
-  @Output() onCreateFullMeal = new EventEmitter<void>();
-  @Output() onCreateMacroOnly = new EventEmitter<void>();
 
   showMacroTypeModal = false;
 
@@ -28,10 +28,15 @@ export class ChoosePlanTypeModalComponent {
 
   createFullMealPlan() {
     this.closeModal();
-    this.router.navigate(['/nutrition/create-full-plan'], {
-      queryParams: { type: 'each' }
-    });
-    this.onCreateFullMeal.emit();
+    if (this.isAssign) {
+      this.router.navigate([
+        `/clients/create-full-plan/${this.idClient}`,
+      ]);
+    } else {
+      this.router.navigate(['/nutrition/create-full-plan'], {
+        queryParams: { type: 'each' },
+      });
+    }
   }
 
   createMacroOnlyPlan() {

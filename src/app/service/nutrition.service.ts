@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { MealPlan } from 'app/models/MealPlan';
+import { MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
 
 export interface Food {
@@ -67,6 +67,9 @@ export interface NutritionPlan {
   lastModifiedDate?: string;
   updatedAt?: Date;
   createdAt?: Date;
+  startDate?: string;
+  endDate?: string;
+  client?: any;
 }
 export interface DayTargets {
   calories: number;
@@ -138,6 +141,10 @@ export class NutritionService {
     );
   }
 
+  duplicate(id: string): Observable<any> {
+    return this.http.post<any>(`${this.mealPlanUrl}${id}/duplicate`, {});
+  }
+
   filteredFoods(
     page: number = 0,
     size: number = 20,
@@ -178,6 +185,9 @@ export class NutritionService {
   getNutritionPlans(): Observable<Page<NutritionPlan>> {
     return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`);
   }
+  getNutritionPlansTemplates(): Observable<Page<NutritionPlan>> {
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`);
+  }
   getNutritionPlanById(id: string): Observable<any> {
     return this.http.get<any>(`${this.mealPlanUrl}${id}`);
   }
@@ -189,8 +199,32 @@ export class NutritionService {
   updateNutritionPlan(plan: any): Observable<NutritionPlan> {
     return this.http.put<NutritionPlan>(`${this.mealPlanUrl}`, plan);
   }
+  assignNutritionPlan(plan: any): Observable<NutritionPlan> {
+    return this.http.put<NutritionPlan>(`${this.mealPlanUrl}assign`, plan);
+  }
 
   deleteNutritionPlan(id: string): Observable<void> {
     return this.http.delete<void>(`${this.mealPlanUrl}${id}`);
+  }
+
+  getNutritionPlanByCoachIdAndClient(
+    coachId: string,
+    clientId: string,
+    page: number,
+    size: number
+  ) {
+    return this.http.get<any>(
+      `${this.mealPlanUrl}client/${clientId}/coach/${coachId}/all`,
+      {
+        params: {
+          page,
+          size,
+        },
+      }
+    );
+  }
+
+  getNutritionPlanByClientId(clientId: string): Observable<any> {
+    return this.http.get<any>(`${this.mealPlanUrl}client/${clientId}`);
   }
 }

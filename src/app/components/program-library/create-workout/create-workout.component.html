@@ -12,7 +12,6 @@
         <ng-container
           *ngFor="let d of days; trackBy: trackByDay; let i = index"
         >
-
           <!-- First day (no trash icon) -->
           <button
             *ngIf="i === 0; else otherDay"
@@ -268,7 +267,10 @@
 
           <!-- If no exercises -->
           <ng-container
-            *ngIf="selectedDay?.workoutSessions[0]?.exercises.length; else wkNoExercises"
+            *ngIf="
+              selectedDay?.workoutSessions[0]?.exercises.length;
+              else wkNoExercises
+            "
           >
             <div class="wkex__stack">
               <ng-container
@@ -369,10 +371,7 @@
                     </div>
 
                     <!-- Sets (hidden if second of superset) -->
-                    <div
-                      *ngIf="exercise.sets?.length && !isSecondOfSuperset(i)"
-                      class="wkex-sets"
-                    >
+                    <div *ngIf="exercise.sets?.length > 0" class="wkex-sets">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
                         <div class="wkex-sets__th">Reps</div>

@@ -1,18 +1,10 @@
 <!-- CONTENEUR PRINCIPAL -->
 <div class="calendar-wrapper">
-
   <!-- ====== HEADER (mois + filtres) ====== -->
   <div class="calendar-header">
-
     <!-- Navigation mois / semaine / jour -->
     <div class="header-left">
-      <button
-        type="button"
-        class="nav-button"
-        (click)="onPrev()"
-      >
-        ‹
-      </button>
+      <button type="button" class="nav-button" (click)="onPrev()">‹</button>
 
       <h1 class="header-title">
         <!-- Ces méthodes sont à définir dans le .ts -->
@@ -23,18 +15,11 @@
         </ng-container>
       </h1>
 
-      <button
-        type="button"
-        class="nav-button"
-        (click)="onNext()"
-      >
-        ›
-      </button>
+      <button type="button" class="nav-button" (click)="onNext()">›</button>
     </div>
 
     <!-- Filtres à droite -->
     <div class="header-right">
-
       <!-- Type de calendrier : Workout / Nutrition -->
       <div class="toggle-group">
         <button
@@ -84,43 +69,30 @@
       </div>
 
       <!-- Select client -->
-      <div class="select-wrapper">
-        <select
-          class="client-select"
-          [(ngModel)]="selectedClient"
-        >
-          <option value="all">All Clients</option>
-          <option
-            *ngFor="let c of clients"
-            [value]="c.id"
-          >
-            {{ c.name }}
-          </option>
-        </select>
-        <span class="select-arrow">⌄</span>
-      </div>
-
+      <select
+        class="client-select"
+        [(ngModel)]="selectedClient"
+        (ngModelChange)="onClientChange($event)"
+      >
+        <option value="all">All Clients</option>
+        <option *ngFor="let c of clients" [value]="c.id">
+          {{ c.firstName }} {{ c.lastName }}
+        </option>
+      </select>
     </div>
   </div>
 
   <!-- ====== VUE MOIS ====== -->
-  <div
-    class="calendar-month"
-    *ngIf="currentView === 'month'"
-  >
+  <div class="calendar-month" *ngIf="currentView === 'month'">
     <!-- En-têtes LUN MAR MER... -->
     <div class="month-header-row">
-      <div
-        class="month-header-cell"
-        *ngFor="let d of weekDays"
-      >
+      <div class="month-header-cell" *ngFor="let d of weekDays">
         {{ d }}
       </div>
     </div>
 
     <!-- Grille des jours -->
     <div class="month-grid">
-
       <!-- cases vides avant le 1er jour -->
       <div
         class="month-cell month-cell-empty"
@@ -136,10 +108,7 @@
       >
         <!-- barre du haut avec numéro + actions -->
         <div class="cell-header">
-          <span
-            class="cell-day-number"
-            [class.cell-day-today]="day.isToday"
-          >
+          <span class="cell-day-number" [class.cell-day-today]="day.isToday">
             {{ day.dayNumber }}
           </span>
 
@@ -166,12 +135,11 @@
 
         <!-- cartes workout / nutrition -->
         <div class="cell-content">
-          <div
-            *ngFor="let item of day.items"
-            class="card-wrapper"
-          >
+          <div *ngFor="let item of day.items" class="card-wrapper">
             <!-- Workout card -->
-            <ng-container *ngIf="calendarType === 'workout'; else nutritionCard">
+            <ng-container
+              *ngIf="calendarType === 'workout'; else nutritionCard"
+            >
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
@@ -193,9 +161,14 @@
 
                   <div
                     *ngIf="item.programId"
-                    class="badge-circle"
+                    [ngClass]="{
+                      'badge-circle-coche': item.status === 'COMPLETED',
+                      'badge-failed': item.status === 'MISSED',
+                      'badge-circle':
+                        item.status !== 'COMPLETED' && item.status !== 'MISSED'
+                    }"
                   >
-                    P
+                    {{ getBadgeText(item.status) }}
                   </div>
                 </div>
 
@@ -232,10 +205,7 @@
 
             <!-- Nutrition card -->
             <ng-template #nutritionCard>
-              <div
-                class="card card-nutrition"
-                (click)="viewNutrition(item)"
-              >
+              <div class="card card-nutrition" (click)="viewNutrition(item)">
                 <div class="card-header">
                   <div class="card-title-block">
                     <div class="card-title">
@@ -250,9 +220,7 @@
                     </div>
                   </div>
 
-                  <div class="badge-circle badge-nutrition">
-                    N
-                  </div>
+                  <div class="badge-circle badge-nutrition">N</div>
                 </div>
 
                 <div class="card-body">
@@ -282,11 +250,7 @@
           >
             Paste
           </button>
-          <button
-            type="button"
-            class="copy-secondary"
-            (click)="cancelCopy()"
-          >
+          <button type="button" class="copy-secondary" (click)="cancelCopy()">
             X
           </button>
         </div>
@@ -295,10 +259,7 @@
   </div>
 
   <!-- ====== VUE SEMAINE ====== -->
-  <div
-    class="calendar-week"
-    *ngIf="currentView === 'week'"
-  >
+  <div class="calendar-week" *ngIf="currentView === 'week'">
     <div class="week-grid">
       <div
         class="week-column"
@@ -310,10 +271,7 @@
           <div class="week-day-label">
             {{ day.weekdayLabel }}
           </div>
-          <div
-            class="week-day-number"
-            [class.week-day-today]="day.isToday"
-          >
+          <div class="week-day-number" [class.week-day-today]="day.isToday">
             {{ day.dayNumber }}
           </div>
 
@@ -339,12 +297,11 @@
         </div>
 
         <div class="week-column-body">
-          <div
-            *ngFor="let item of day.items"
-            class="card-wrapper"
-          >
+          <div *ngFor="let item of day.items" class="card-wrapper">
             <!-- Réutilisation des mêmes cartes -->
-            <ng-container *ngIf="calendarType === 'workout'; else nutritionCardWeek">
+            <ng-container
+              *ngIf="calendarType === 'workout'; else nutritionCardWeek"
+            >
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
@@ -362,11 +319,17 @@
                       {{ item.programName }}
                     </div>
                   </div>
+
                   <div
                     *ngIf="item.programId"
-                    class="badge-circle"
+                    [ngClass]="{
+                      'badge-circle-coche': item.status === 'COMPLETED',
+                      'badge-failed': item.status === 'MISSED',
+                      'badge-circle':
+                        item.status !== 'COMPLETED' && item.status !== 'MISSED'
+                    }"
                   >
-                    P
+                    {{ getBadgeText(item.status) }}
                   </div>
                 </div>
 
@@ -402,10 +365,7 @@
             </ng-container>
 
             <ng-template #nutritionCardWeek>
-              <div
-                class="card card-nutrition"
-                (click)="viewNutrition(item)"
-              >
+              <div class="card card-nutrition" (click)="viewNutrition(item)">
                 <div class="card-header">
                   <div class="card-title-block">
                     <div class="card-title">
@@ -418,9 +378,8 @@
                       {{ item.programName }}
                     </div>
                   </div>
-                  <div class="badge-circle badge-nutrition">
-                    N
-                  </div>
+
+                  <div class="badge-circle badge-nutrition">N</div>
                 </div>
 
                 <div class="card-body">
@@ -437,11 +396,8 @@
             </ng-template>
           </div>
 
-          <div
-            class="week-empty"
-            *ngIf="day.items.length === 0"
-          >
-            No {{ calendarType === 'workout' ? 'workouts' : 'meals' }}
+          <div class="week-empty" *ngIf="day.items.length === 0">
+            No {{ calendarType === "workout" ? "workouts" : "meals" }}
           </div>
         </div>
 
@@ -456,11 +412,7 @@
           >
             Paste
           </button>
-          <button
-            type="button"
-            class="copy-secondary"
-            (click)="cancelCopy()"
-          >
+          <button type="button" class="copy-secondary" (click)="cancelCopy()">
             X
           </button>
         </div>
@@ -469,10 +421,7 @@
   </div>
 
   <!-- ====== VUE JOUR ====== -->
-  <div
-    class="calendar-day"
-    *ngIf="currentView === 'day'"
-  >
+  <div class="calendar-day" *ngIf="currentView === 'day'">
     <div class="day-header">
       <div class="day-header-left">
         <div class="day-weekday">
@@ -489,23 +438,17 @@
           class="primary-button"
           (click)="addItem(currentDayString)"
         >
-          Add {{ calendarType === 'workout' ? 'Workout' : 'Meal' }}
+          Add {{ calendarType === "workout" ? "Workout" : "Meal" }}
         </button>
       </div>
     </div>
 
     <div class="day-body">
-      <div
-        *ngIf="dayItems.length === 0"
-        class="day-empty"
-      >
-        No {{ calendarType === 'workout' ? 'workouts' : 'meals' }} scheduled
+      <div *ngIf="dayItems.length === 0" class="day-empty">
+        No {{ calendarType === "workout" ? "workouts" : "meals" }} scheduled
       </div>
 
-      <div
-        *ngFor="let item of dayItems"
-        class="day-card-wrapper"
-      >
+      <div *ngFor="let item of dayItems" class="day-card-wrapper">
         <!-- Ici tu peux faire une version plus détaillée, ou réutiliser les mêmes cartes -->
         <ng-container *ngIf="calendarType === 'workout'; else nutritionCardDay">
           <div
@@ -531,10 +474,7 @@
         </ng-container>
 
         <ng-template #nutritionCardDay>
-          <div
-            class="card card-nutrition large"
-            (click)="viewNutrition(item)"
-          >
+          <div class="card card-nutrition large" (click)="viewNutrition(item)">
             <div class="card-header">
               <div class="card-title-block">
                 <div class="card-title">
@@ -547,9 +487,8 @@
                   {{ item.programName }}
                 </div>
               </div>
-              <div class="badge-circle badge-nutrition">
-                N
-              </div>
+
+              <div class="badge-circle badge-nutrition">N</div>
             </div>
             <!-- à toi de détailler les repas -->
           </div>
@@ -557,12 +496,8 @@
       </div>
     </div>
   </div>
-
 </div>
-<div
-  class="modal-overlay"
-  *ngIf="showAddWorkoutModal"
->
+<div class="modal-overlay" *ngIf="showAddWorkoutModal">
   <div class="modal-container">
     <!-- Header -->
     <div class="modal-header">
@@ -584,14 +519,10 @@
 
     <!-- Body -->
     <div class="modal-body">
-
       <!-- Rest Day Toggle Card -->
       <div class="rest-card">
         <div class="rest-card-left">
-          <div
-            class="rest-icon-wrapper"
-            [class.rest-icon-active]="isRestDay"
-          >
+          <div class="rest-icon-wrapper" [class.rest-icon-active]="isRestDay">
             <!-- petit drapeau -->
             <span class="rest-flag-icon">⚑</span>
           </div>
@@ -614,22 +545,17 @@
       </div>
 
       <!-- Quand REST DAY activé -->
-      <div
-        class="rest-day-panel"
-        *ngIf="isRestDay"
-      >
-        <div class="rest-day-icon-circle">
-          ⚑
-        </div>
+      <div class="rest-day-panel" *ngIf="isRestDay">
+        <div class="rest-day-icon-circle">⚑</div>
         <h3 class="rest-day-title">Rest Day</h3>
         <p class="rest-day-text">
-          This day is designated for rest and recovery. No exercises will be scheduled.
+          This day is designated for rest and recovery. No exercises will be
+          scheduled.
         </p>
       </div>
 
       <!-- Quand ce n'est PAS un rest day -->
       <div *ngIf="!isRestDay">
-
         <!-- Titre du workout -->
         <div class="form-group">
           <label class="form-label">Workout Title *</label>
@@ -679,7 +605,11 @@
               <!-- Sets section (strength) -->
               <div
                 class="exercise-sets"
-                *ngIf="exercise.type === 'strength' && exercise.sets && exercise.sets.length"
+                *ngIf="
+                  exercise.type === 'strength' &&
+                  exercise.sets &&
+                  exercise.sets.length
+                "
               >
                 <div class="sets-header-row">
                   <div class="sets-col sets-col-set">Set</div>
@@ -753,10 +683,7 @@
               </div>
 
               <!-- Cardio duration -->
-              <div
-                class="exercise-cardio"
-                *ngIf="exercise.type === 'cardio'"
-              >
+              <div class="exercise-cardio" *ngIf="exercise.type === 'cardio'">
                 <label class="form-label">Duration (minutes)</label>
                 <input
                   type="number"
@@ -860,9 +787,11 @@
         type="button"
         class="button-save"
         (click)="handleSaveWorkout()"
-        [disabled]="!isRestDay && (!newWorkoutTitle.trim() || newWorkoutExercises.length === 0)"
+        [disabled]="
+          !isRestDay &&
+          (!newWorkoutTitle.trim() || newWorkoutExercises.length === 0)
+        "
       >
-
         <span class="button-save-text">Save Workout</span>
       </button>
     </div>

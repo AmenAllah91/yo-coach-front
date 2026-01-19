@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
-import { MealDay, Meal, MealPlan } from 'app/models/MealPlan';
+import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 
 @Component({

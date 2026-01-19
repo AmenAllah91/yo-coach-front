@@ -1,6 +1,9 @@
-import { Component } from '@angular/core';
-import {CommonModule} from "@angular/common";
-import {FormsModule} from "@angular/forms";
+import { NutritionService } from 'app/service/nutrition.service';
+import { WorkoutService } from 'app/service/workout.service';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ClientService } from 'app/service/client.service';
 interface ExerciseSet {
   id: string;
   number: number;
@@ -34,6 +37,7 @@ interface WorkoutProgram {
   sessions: WorkoutSession[];
   programId?: string;
   programName?: string;
+  status?: 'COMPLETED' | 'MISSED' | 'PENDING';
 }
 
 interface Client {
@@ -74,15 +78,15 @@ type CalendarType = 'workout' | 'nutrition';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './calendar-clients.component.html',
-  styleUrl: './calendar-clients.component.scss'
+  styleUrl: './calendar-clients.component.scss',
 })
-export class CalendarClientsComponent {
+export class CalendarClientsComponent implements OnInit, OnDestroy {
   currentDate = new Date();
   currentView: CalendarViewMode = 'month';
   calendarType: CalendarType = 'workout';
   selectedClient: string = 'all';
   copiedDate: string | null = null;
-
+  userId = sessionStorage.getItem('userId');
   selectedWorkout: WorkoutProgram | null = null;
   selectedNutritionDay: NutritionProgram | null = null;
   showWorkoutDetails = false;
@@ -131,30 +135,197 @@ export class CalendarClientsComponent {
       duration: 30,
     },
   ];
-  workoutPrograms: WorkoutProgram[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  workoutPrograms: any;
   nutritionPrograms: NutritionProgram[] = [];
-  clients: Client[] = [
-    { id: '1', name: 'John Doe' },
-    { id: '2', name: 'Sarah Smith' },
-    { id: '3', name: 'Michael Johnson' },
-    { id: '4', name: 'Emily Wilson' },
-  ];
+  clients: Client[] = [];
 
   // anciens champs (plus vraiment utilisés par le HTML, mais pas gênant)
   monthEmptyCells: number[] = [];
   monthDates: Date[] = [];
-
+  client: any;
   private storageListener = () => this.loadWorkoutPrograms();
 
+  constructor(
+    private workoutService: WorkoutService,
+    private nutritionService: NutritionService,
+    private clientService: ClientService
+  ) {}
+
   ngOnInit(): void {
-    this.buildMockNutrition();
     this.loadWorkoutPrograms();
     window.addEventListener('storage', this.storageListener);
     this.updateMonthGrid();
+    this.getAllLibrary();
+    this.getWorkout();
+    this.getClients();
+  }
+  onClientChange(clientId: string): void {
+    this.selectedClient = clientId;
+  }
+  getClients(): void {
+    this.clientService
+      .getListClientsByCoachWithoutPagination(this.userId)
+      .subscribe({
+        next: (res) => {
+          this.clients = res;
+          console.log('CLIENTS', this.clients);
+        },
+        error: (err) => {
+          console.error('Error loading clients', err);
+        },
+      });
+  }
+
+  getAllLibrary() {
+    this.nutritionService.getNutritionPlans().subscribe((res) => {
+      this.nutritionPrograms = this.mapBackendToNutritionPrograms(res.content);
+      console.log('NUTRITION PROGRAMS', this.nutritionPrograms);
+    });
+  }
+
+  getWorkout() {
+    this.workoutService.getAllLibrary().subscribe((res) => {
+      console.log(res);
+      this.workoutPrograms = this.mapBackendToWorkoutPrograms(res.content);
+      console.log('WORKOUT PROGRAMS', this.workoutPrograms);
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mapBackendToWorkoutPrograms(plans: any[]): WorkoutProgram[] {
+    const result: WorkoutProgram[] = [];
+
+    plans.forEach((plan) => {
+      const startDate = plan.startDate;
+
+      plan.workoutDays.forEach((day: any) => {
+        const date = this.addDays(startDate, day.dayNumber - 1);
+
+        // ===== REST DAY =====
+        if (day.restDay) {
+          result.push({
+            id: `${plan.id}-rest-${day.dayNumber}`,
+            title: 'Rest Day',
+            date,
+            clientId: plan.client?.id,
+            programId: plan.id,
+            programName: plan.name,
+            sessions: [],
+            status: day.status || 'PENDING',
+          });
+          return;
+        }
+
+        // ===== SESSIONS =====
+        const sessions: WorkoutSession[] = (day.workoutSessions || []).map(
+          (session: any, sIndex: number) => ({
+            id: `${plan.id}-session-${sIndex}`,
+            notes: session.name,
+
+            exercises: (session.exercises || []).map(
+              (ex: any, exIndex: number) => ({
+                id: ex.id || `${plan.id}-ex-${exIndex}`,
+                name: ex.name,
+                type: ex.type === 'CARDIO' ? 'cardio' : 'strength',
+                sets: (ex.sets || []).map((set: any, setIndex: number) => ({
+                  id: `${plan.id}-set-${setIndex}`,
+                  number: set.setNumber ?? setIndex + 1,
+                  reps: String(set.reps),
+                  rest: String((set.restMin ?? 0) * 60 + (set.restSec ?? 0)),
+                })),
+              })
+            ),
+          })
+        );
+
+        result.push({
+          id: `${plan.id}-${day.dayNumber}`,
+          title: day.title || plan.name,
+          date,
+          clientId: plan.client?.id,
+          programId: plan.id,
+          programName: plan.name,
+          sessions,
+          status: day.status,
+        });
+      });
+    });
+
+    return result;
   }
 
   ngOnDestroy(): void {
     window.removeEventListener('storage', this.storageListener);
+  }
+
+  addDays(dateStr: string, days: number): string {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return this.formatDateToYYYYMMDD(d);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mapBackendToNutritionPrograms(plans: any[]): NutritionProgram[] {
+    const result: NutritionProgram[] = [];
+
+    plans.forEach((plan) => {
+      plan.mealDays.forEach((day) => {
+        const isRestDay =
+          (!day.meals || day.meals.length === 0) &&
+          !day.cheatMeal &&
+          !day.refeedDay;
+
+        // ===== REST DAY =====
+        if (isRestDay) {
+          result.push({
+            id: `${plan.id}-rest-${day.date}`,
+            title: 'Rest Day',
+            date: day.date,
+            clientId: plan.client?.id,
+            programName: plan.name,
+            totalCalories: 0,
+            totalProtein: 0,
+            totalCarbs: 0,
+            totalFat: 0,
+            meals: [],
+          });
+          return;
+        }
+
+        // ===== MEALS =====
+        const meals: NutritionMeal[] = (day.meals || []).map(
+          (meal: any, i: number) => ({
+            id: meal.id || `${plan.id}-meal-${i}`,
+            name: meal.name || `Meal ${i + 1}`,
+            foods: (meal.foods || []).map((food: any) => ({
+              name: food.name,
+              quantity: food.quantity,
+              protein: food.protein ?? 0,
+              carbs: food.carbs ?? 0,
+              fat: food.fat ?? 0,
+              calories: food.calories ?? 0,
+            })),
+          })
+        );
+
+        result.push({
+          id: `${plan.id}-${day.date}`,
+          title: plan.name,
+          date: day.date,
+          clientId: plan.client?.id,
+          programName: plan.name,
+          totalCalories: day.dayTargets?.calories ?? 0,
+          totalProtein: day.dayTargets?.proteinG ?? 0,
+          totalCarbs: day.dayTargets?.carbsG ?? 0,
+          totalFat: day.dayTargets?.fatG ?? 0,
+          meals,
+        });
+      });
+    });
+
+    return result;
   }
 
   // ---------- Utils dates ----------
@@ -179,251 +350,26 @@ export class CalendarClientsComponent {
     return this.formatDateToYYYYMMDD(today) === this.formatDateToYYYYMMDD(date);
   }
 
-  // ---------- Mock nutrition ----------
-
-  private buildMockNutrition(): void {
-    const todayStr = this.formatDateToYYYYMMDD(new Date());
-    this.nutritionPrograms = [
-      {
-        id: 'nutrition-1',
-        title: 'High Protein Day',
-        date: todayStr,
-        clientId: '2',
-        programName: 'Muscle Building',
-        totalCalories: 2200,
-        totalProtein: 200,
-        totalCarbs: 150,
-        totalFat: 70,
-        meals: [
-          {
-            id: 'meal-1',
-            name: 'Breakfast',
-            foods: [
-              {
-                name: 'Eggs',
-                quantity: '4 large',
-                protein: 25,
-                carbs: 1.4,
-                fat: 20,
-                calories: 280,
-              },
-              {
-                name: 'Oatmeal',
-                quantity: '100g',
-                protein: 13.2,
-                carbs: 66.3,
-                fat: 6.9,
-                calories: 389,
-              },
-            ],
-          },
-          {
-            id: 'meal-2',
-            name: 'Lunch',
-            foods: [
-              {
-                name: 'Chicken Breast',
-                quantity: '200g',
-                protein: 62,
-                carbs: 0,
-                fat: 7.6,
-                calories: 330,
-              },
-              {
-                name: 'Brown Rice',
-                quantity: '150g',
-                protein: 7.5,
-                carbs: 77.2,
-                fat: 2.7,
-                calories: 370,
-              },
-            ],
-          },
-          {
-            id: 'meal-3',
-            name: 'Dinner',
-            foods: [
-              {
-                name: 'Salmon',
-                quantity: '150g',
-                protein: 37.5,
-                carbs: 0,
-                fat: 20.3,
-                calories: 344,
-              },
-              {
-                name: 'Sweet Potato',
-                quantity: '200g',
-                protein: 4,
-                carbs: 40,
-                fat: 0.3,
-                calories: 180,
-              },
-            ],
-          },
-        ],
-      },
-    ];
-  }
-
-  // ---------- Workouts / localStorage ----------
-
-  private createExampleWorkouts(): WorkoutProgram[] {
-    const today = new Date();
-    const getDateString = (daysOffset: number) => {
-      const date = new Date(today);
-      date.setDate(today.getDate() + daysOffset);
-      return this.formatDateToYYYYMMDD(date);
-    };
-
-    const workouts: WorkoutProgram[] = [
-      {
-        id: 'workout-sarah-1',
-        title: 'Full Body Day 1',
-        date: getDateString(0),
-        clientId: '2',
-        programName: 'Strength Building Program',
-        programId: 'program-strength-1',
-        sessions: [
-          {
-            id: 'session-1',
-            exercises: [
-              {
-                id: 'ex-1',
-                name: 'Squat (Barbell)',
-                type: 'strength',
-                sets: [
-                  { id: 'set-1', number: 1, reps: '8-12', rest: '90' },
-                  { id: 'set-2', number: 2, reps: '8-12', rest: '90' },
-                  { id: 'set-3', number: 3, reps: '8-12', rest: '90' },
-                  { id: 'set-4', number: 4, reps: '8-12', rest: '90' },
-                ],
-              },
-              {
-                id: 'ex-2',
-                name: 'Bench Press (Barbell)',
-                type: 'strength',
-                sets: [
-                  { id: 'set-5', number: 1, reps: '8-12', rest: '90' },
-                  { id: 'set-6', number: 2, reps: '8-12', rest: '90' },
-                  { id: 'set-7', number: 3, reps: '8-12', rest: '90' },
-                  { id: 'set-8', number: 4, reps: '8-12', rest: '90' },
-                ],
-              },
-              {
-                id: 'ex-3',
-                name: 'Bent Over Row (Barbell)',
-                type: 'strength',
-                sets: [
-                  { id: 'set-9', number: 1, reps: '8-12', rest: '90' },
-                  { id: 'set-10', number: 2, reps: '8-12', rest: '90' },
-                  { id: 'set-11', number: 3, reps: '8-12', rest: '90' },
-                  { id: 'set-12', number: 4, reps: '8-12', rest: '90' },
-                ],
-              },
-              {
-                id: 'ex-4',
-                name: 'Overhead Press (Barbell)',
-                type: 'strength',
-                sets: [
-                  { id: 'set-13', number: 1, reps: '8-12', rest: '90' },
-                  { id: 'set-14', number: 2, reps: '8-12', rest: '90' },
-                  { id: 'set-15', number: 3, reps: '8-12', rest: '90' },
-                  { id: 'set-16', number: 4, reps: '8-12', rest: '90' },
-                ],
-              },
-            ],
-            notes: 'Focus on proper form and controlled movements',
-          },
-        ],
-      },
-      {
-        id: 'workout-sarah-2',
-        title: 'Upper Body Focus',
-        date: getDateString(1),
-        clientId: '2',
-        programName: 'Strength Building Program',
-        programId: 'program-strength-1',
-        sessions: [
-          {
-            id: 'session-2',
-            exercises: [
-              {
-                id: 'ex-7',
-                name: 'Incline Dumbbell Press',
-                type: 'strength',
-                sets: [
-                  { id: 'set-23', number: 1, reps: '10-12', rest: '75' },
-                  { id: 'set-24', number: 2, reps: '10-12', rest: '75' },
-                  { id: 'set-25', number: 3, reps: '10-12', rest: '75' },
-                ],
-              },
-              {
-                id: 'ex-8',
-                name: 'Cable Fly',
-                type: 'strength',
-                sets: [
-                  { id: 'set-26', number: 1, reps: '12-15', rest: '60' },
-                  { id: 'set-27', number: 2, reps: '12-15', rest: '60' },
-                  { id: 'set-28', number: 3, reps: '12-15', rest: '60' },
-                ],
-              },
-            ],
-            notes: 'Superset bicep and tricep exercises for efficiency',
-          },
-        ],
-      },
-      {
-        id: 'workout-sarah-3',
-        title: 'Lower Body Power',
-        date: getDateString(2),
-        clientId: '2',
-        programName: 'Strength Building Program',
-        programId: 'program-strength-1',
-        sessions: [
-          {
-            id: 'session-3',
-            exercises: [
-              {
-                id: 'ex-12',
-                name: 'Romanian Deadlift',
-                type: 'strength',
-                sets: [
-                  { id: 'set-38', number: 1, reps: '8-10', rest: '90' },
-                  { id: 'set-39', number: 2, reps: '8-10', rest: '90' },
-                  { id: 'set-40', number: 3, reps: '8-10', rest: '90' },
-                  { id: 'set-41', number: 4, reps: '8-10', rest: '90' },
-                ],
-              },
-            ],
-            notes:
-              'Focus on full range of motion and mind-muscle connection',
-          },
-        ],
-      },
-    ];
-
-    return workouts;
-  }
-
-  private loadWorkoutPrograms(): void {
-    try {
-      const saved = localStorage.getItem('calendarWorkouts');
-      if (saved) {
-        this.workoutPrograms = JSON.parse(saved);
-      } else {
-        const examples = this.createExampleWorkouts();
-        this.workoutPrograms = examples;
-        localStorage.setItem('calendarWorkouts', JSON.stringify(examples));
-      }
-      this.updateMonthGrid();
-    } catch (e) {
-      console.error('Error loading workouts', e);
+  getBadgeText(status: string): string {
+    switch (status) {
+      case 'COMPLETED':
+        return '✓'; // ou autre symbole
+      case 'MISSED':
+        return '✕'; // ou autre symbole
+      default:
+        return 'P'; // par défaut, programme
     }
   }
 
+  private loadWorkoutPrograms(): void {
+    this.workoutService.getWorkouts().subscribe();
+  }
+
   private saveWorkoutPrograms(): void {
-    localStorage.setItem('calendarWorkouts', JSON.stringify(this.workoutPrograms));
+    localStorage.setItem(
+      'calendarWorkouts',
+      JSON.stringify(this.workoutPrograms)
+    );
   }
 
   // ---------- Navigation ----------
@@ -482,7 +428,7 @@ export class CalendarClientsComponent {
       this.currentDate = new Date(
         this.currentDate.getFullYear(),
         this.currentDate.getMonth() - 1,
-        1,
+        1
       );
     } else if (this.currentView === 'week') {
       const d = new Date(this.currentDate);
@@ -501,7 +447,7 @@ export class CalendarClientsComponent {
       this.currentDate = new Date(
         this.currentDate.getFullYear(),
         this.currentDate.getMonth() + 1,
-        1,
+        1
       );
     } else if (this.currentView === 'week') {
       const d = new Date(this.currentDate);
@@ -522,9 +468,6 @@ export class CalendarClientsComponent {
 
   // ---------- Copy / paste ----------
 
-
-
-
   // ---------- Data per day ----------
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
@@ -532,13 +475,13 @@ export class CalendarClientsComponent {
       return this.workoutPrograms.filter(
         (p) =>
           p.date === dateStr &&
-          (this.selectedClient === 'all' || p.clientId === this.selectedClient),
+          (this.selectedClient === 'all' || p.clientId === this.selectedClient)
       );
     } else {
       return this.nutritionPrograms.filter(
         (p) =>
           p.date === dateStr &&
-          (this.selectedClient === 'all' || p.clientId === this.selectedClient),
+          (this.selectedClient === 'all' || p.clientId === this.selectedClient)
       );
     }
   }
@@ -696,7 +639,7 @@ export class CalendarClientsComponent {
     if (!this.copiedDate) return;
 
     const programsToCopy = this.workoutPrograms.filter(
-      p => p.date === this.copiedDate
+      (p) => p.date === this.copiedDate
     );
     if (!programsToCopy.length) return;
 
@@ -724,7 +667,6 @@ export class CalendarClientsComponent {
     this.showExerciseSelector = false;
     this.showAddWorkoutModal = true;
   }
-
 
   closeAddWorkoutModal(): void {
     this.showAddWorkoutModal = false;
@@ -779,9 +721,9 @@ export class CalendarClientsComponent {
       id: `new-ex-${Date.now()}-${Math.random()}`,
       sets: exercise.sets
         ? exercise.sets.map((s, index) => ({
-          ...s,
-          id: `new-set-${Date.now()}-${index}`,
-        }))
+            ...s,
+            id: `new-set-${Date.now()}-${index}`,
+          }))
         : [],
     };
     this.newWorkoutExercises.push(copy);
@@ -886,9 +828,9 @@ export class CalendarClientsComponent {
             id: ex.id || `ex-${Date.now()}-${exIndex}`,
             sets: ex.sets
               ? ex.sets.map((s, sIndex) => ({
-                ...s,
-                id: s.id || `set-${Date.now()}-${exIndex}-${sIndex}`,
-              }))
+                  ...s,
+                  id: s.id || `set-${Date.now()}-${exIndex}-${sIndex}`,
+                }))
               : [],
           })),
           notes: '',
@@ -923,5 +865,4 @@ export class CalendarClientsComponent {
     this.saveWorkoutPrograms();
     this.closeDeleteModal();
   }
-
 }

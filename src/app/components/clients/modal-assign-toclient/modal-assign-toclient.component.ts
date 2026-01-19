@@ -36,22 +36,7 @@ export class ModalAssignToclientComponent implements OnInit {
   userid = sessionStorage.getItem('userId');
 
   clients: Client[] = [
-    // {
-    //   id: 1,
-    //   name: 'Sarah Smith',
-    //   email: 'sarah.smith@example.com',
-    //   image:
-    //     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80',
-    //   selected: false,
-    // },
-    // {
-    //   id: 2,
-    //   name: 'Michael Johnson',
-    //   email: 'michael.j@example.com',
-    //   image:
-    //     'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80',
-    //   selected: false,
-    // },
+
   ];
 
   johnDoeChip = {

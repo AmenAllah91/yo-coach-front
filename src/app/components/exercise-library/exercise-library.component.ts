@@ -5,9 +5,10 @@ import { HttpClientModule } from '@angular/common/http';
 import { FeatherModule } from 'angular-feather';
 import { Location } from '@angular/common';
 import { YouTubePlayerModule } from '@angular/youtube-player';
-import { ExerciseService, Exercise, PageResponse, EnumResponse } from '../../service/exercise.service';
+import { ExerciseService, PageResponse } from '../../service/exercise.service';
 import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
+import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 
 @Component({
   selector: 'app-exercise-library',
@@ -42,7 +43,7 @@ export class ExerciseLibraryComponent implements OnInit {
   templatesCount = 0;
   myExercisesCount = 0;
   isTemplate = false;
-  
+
   // Filters
   selectedEquipment = '';
   selectedMuscle = '';
@@ -121,16 +122,16 @@ export class ExerciseLibraryComponent implements OnInit {
   loadAllExercises() {
     this.isLoading = true;
     const startTime = Date.now();
-    const serviceCall = this.activeTab === 'templates' 
+    const serviceCall = this.activeTab === 'templates'
       ? this.exerciseService.getTemplateExercises(this.currentPage, this.pageSize)
       : this.exerciseService.getMyExercises(this.currentPage, this.pageSize);
-      
+
     serviceCall.subscribe({
       next: (response: PageResponse<Exercise>) => {
         const elapsed = Date.now() - startTime;
         const minDelay = 800; // Minimum 800ms loading time
         const remainingDelay = Math.max(0, minDelay - elapsed);
-        
+
         setTimeout(() => {
           this.allExercises = response.content;
           this.filteredExercises = response.content;
@@ -144,7 +145,7 @@ export class ExerciseLibraryComponent implements OnInit {
         const elapsed = Date.now() - startTime;
         const minDelay = 800;
         const remainingDelay = Math.max(0, minDelay - elapsed);
-        
+
         setTimeout(() => {
           console.error('Error loading exercises:', error);
           this.isLoading = false;
@@ -160,7 +161,7 @@ export class ExerciseLibraryComponent implements OnInit {
       },
       error: (error) => console.error('Error loading templates count:', error)
     });
-    
+
     this.exerciseService.getMyExercises(0, 1).subscribe({
       next: (response: PageResponse<Exercise>) => {
         this.myExercisesCount = response.totalElements || 0;
@@ -177,13 +178,12 @@ export class ExerciseLibraryComponent implements OnInit {
 
   createExercise() {
     if (!this.exerciseName.trim()) return;
-    
+
     const exercise: Exercise = {
       name: this.exerciseName,
       type: this.exerciseType,
       equipment: this.equipment,
       muscle: this.muscle,
-      videoLink: this.videoLink,
       isTemplate: this.isTemplate
     };
 
@@ -226,7 +226,6 @@ export class ExerciseLibraryComponent implements OnInit {
     this.exerciseType = exercise.type;
     this.equipment = exercise.equipment;
     this.muscle = exercise.muscle;
-    this.videoLink = exercise.videoLink || '';
     this.isTemplate = exercise.isTemplate || false;
     this.openCreateModal();
   }

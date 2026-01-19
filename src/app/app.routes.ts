@@ -70,6 +70,10 @@ export const APP_ROUTE: Route[] = [
         component: CreateAndAssignComponent,
       },
       {
+        path: 'clients/create-workout/:idClient/edit/:id',
+        component: CreateAndAssignComponent,
+      },
+      {
         path: 'workout/edit-workout/:id',
         component: CreateWorkoutComponent,
       },
@@ -94,10 +98,6 @@ export const APP_ROUTE: Route[] = [
         component: CreateMacroPlanComponent,
       },
       {
-        path: 'clients/create-macro-plan/:idClient',
-        component: AssignMacroPlanComponent,
-      },
-      {
         path: 'nutrition/create-macro-plan/:id',
         component: CreateMacroPlanComponent,
       },
@@ -106,8 +106,28 @@ export const APP_ROUTE: Route[] = [
         component: CreateMacroPlanTotalDayComponent,
       },
       {
+        path: 'clients/create-macro-plan/:idClient',
+        component: AssignMacroPlanComponent,
+      },
+      {
+        path: 'clients/create-macro-plan/:idClient/edit/:id',
+        component: AssignMacroPlanComponent,
+      },
+      {
         path: 'clients/create-macro-plan-total-day/:idClient',
         component: AssignMacroPlanTotalDayComponent,
+      },
+      {
+        path: 'clients/create-macro-plan-total-day/:idClient/edit/:id',
+        component: AssignMacroPlanTotalDayComponent,
+      },
+      {
+        path: 'clients/create-full-plan/:idClient',
+        component: AssignFullPlanComponent,
+      },
+      {
+        path: 'clients/create-full-plan/:idClient/edit/:id',
+        component: AssignFullPlanComponent,
       },
       {
         path: 'nutrition/create-macro-plan-total-day/:id',
@@ -116,10 +136,6 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/create-full-plan',
         component: CreateFullPlanComponent,
-      },
-      {
-        path: 'clients/create-full-plan/:idClient',
-        component: AssignFullPlanComponent,
       },
       {
         path: 'nutrition/create-full-plan/:id',

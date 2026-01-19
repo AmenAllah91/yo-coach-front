@@ -54,6 +54,7 @@ export class ProgramModalComponent implements OnInit, OnChanges {
     }
   }
 
+
   loadProgramData() {
     this.programName = this.editingProgram.name;
     this.programDescription = this.editingProgram.details || '';

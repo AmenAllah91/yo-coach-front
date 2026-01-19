@@ -40,6 +40,10 @@ export class ClientService {
     );
   }
 
+  getListClientsByCoachWithoutPagination(coachId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}/all`);
+  }
+
   getClientById(id: string): Observable<Client> {
     return this.http.get<Client>(`${this.apiUrl}/${id}`);
   }

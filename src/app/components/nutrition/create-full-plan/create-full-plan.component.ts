@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
-import { Food, FoodRef, Meal, MealDay, MealPlan } from 'app/models/MealPlan';
+import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 
 @Component({
   selector: 'app-create-full-plan',
@@ -137,6 +137,16 @@ export class CreateFullPlanComponent implements OnInit {
     const index = this.days.indexOf(day);
     this.days.splice(index, 1);
     this.selectedDay = this.days[Math.max(0, index - 1)];
+  }
+
+  removeFood(food: Food, meal: Meal) {
+    meal.foods = meal.foods.filter((f) => f.id !== food.id);
+
+    this.recalcMealTargets(meal);
+
+    if (this.selectedDay) {
+      this.recalcDayTargets(this.selectedDay);
+    }
   }
 
   duplicateSelectedDay() {

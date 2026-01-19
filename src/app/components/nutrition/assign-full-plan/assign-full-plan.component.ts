@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
-import { Food, FoodRef, Meal, MealDay, MealPlan } from 'app/models/MealPlan';
+import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
+import { Client, ClientService } from 'app/service/client.service';
 
 @Component({
   selector: 'app-assign-full-plan',
@@ -15,6 +16,7 @@ import { Food, FoodRef, Meal, MealDay, MealPlan } from 'app/models/MealPlan';
 })
 export class AssignFullPlanComponent implements OnInit {
   userId = sessionStorage.getItem('userId');
+  client: Client;
   startDate = new Date().toISOString().split('T')[0];
   endDate: string = '';
   mealPlan: MealPlan = {
@@ -44,18 +46,28 @@ export class AssignFullPlanComponent implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private clientService: ClientService
   ) {}
 
   ngOnInit() {
     this.planId = this.route.snapshot.paramMap.get('id');
-
+    const clientId = this.route.snapshot.paramMap.get('idClient');
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
     } else {
-      this.addDay(); // mode création
-      this.updateAllDates();
+      this.addDay();
     }
+
+    if (clientId) {
+      this.getClientById(clientId);
+    }
+  }
+
+  getClientById(id: string) {
+    this.clientService.getClientById(id).subscribe((res) => {
+      this.client = res;
+    });
   }
 
   updateAllDates() {
@@ -90,7 +102,19 @@ export class AssignFullPlanComponent implements OnInit {
 
         // recalcul si les macros ne sont pas pré-calculées
         this.days.forEach((d) => this.recalcDayTargets(d));
+        this.startDate = new Date(plan.startDate).toISOString().split('T')[0];
+        this.updateAllDates();
       });
+  }
+
+  removeFood(food: Food, meal: Meal) {
+    meal.foods = meal.foods.filter((f) => f.id !== food.id);
+
+    this.recalcMealTargets(meal);
+
+    if (this.selectedDay) {
+      this.recalcDayTargets(this.selectedDay);
+    }
   }
 
   /* ============================================
@@ -406,29 +430,22 @@ export class AssignFullPlanComponent implements OnInit {
     return +this.computeFoodMacros(food).fat.toFixed(1);
   }
 
-  /* ============================================
-                SAVE PLAN + COACH ID
-  ==============================================*/
-
   savePlan() {
     this.mealPlan.name = this.planName;
     this.mealPlan.details = this.planDescription;
     this.mealPlan.mealDays = this.days;
     this.mealPlan.coach = { id: this.userId };
+    this.mealPlan.startDate = this.startDate;
+    this.mealPlan.endDate = this.endDate;
+    this.mealPlan.client = this.client;
 
     if (this.planId) {
-      // -----------------------------
-      // 🔵 MODE UPDATE
-      // -----------------------------
       this.mealPlan.id = this.planId;
 
       this.nutritionService.updateNutritionPlan(this.mealPlan).subscribe(() => {
         this.router.navigate(['/nutrition/plans']);
       });
     } else {
-      // -----------------------------
-      // 🟢 MODE CREATE
-      // -----------------------------
       this.nutritionService.createNutritionPlan(this.mealPlan).subscribe(() => {
         this.router.navigate(['/nutrition/plans']);
       });

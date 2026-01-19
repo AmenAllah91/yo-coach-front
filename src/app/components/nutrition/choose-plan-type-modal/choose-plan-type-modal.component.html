@@ -11,14 +11,24 @@
       <div class="plan-options">
         <div class="plan-option">
           <h3>Full Meal Plan</h3>
-          <p>Create a complete meal plan with specific foods, meals, and days. Ideal for detailed nutrition planning.</p>
-          <button class="btn-primary" (click)="createFullMealPlan()">Create Full Meal Plan</button>
+          <p>
+            Create a complete meal plan with specific foods, meals, and days.
+            Ideal for detailed nutrition planning.
+          </p>
+          <button class="btn-primary" (click)="createFullMealPlan()">
+            Create Full Meal Plan
+          </button>
         </div>
 
         <div class="plan-option">
           <h3>Macro Only Meal Plan</h3>
-          <p>Create a plan with just macronutrient targets without specific foods. Perfect for flexible dieting approaches.</p>
-          <button class="btn-primary" (click)="createMacroOnlyPlan()">Create Macro Only Plan</button>
+          <p>
+            Create a plan with just macronutrient targets without specific
+            foods. Perfect for flexible dieting approaches.
+          </p>
+          <button class="btn-primary" (click)="createMacroOnlyPlan()">
+            Create Macro Only Plan
+          </button>
         </div>
       </div>
     </div>
@@ -29,7 +39,10 @@
   </div>
 </div>
 
-<app-choose-macro-type-modal 
-  [isVisible]="showMacroTypeModal" 
-  (close)="closeMacroTypeModal()">
+<app-choose-macro-type-modal
+  [isVisible]="showMacroTypeModal"
+  [isAssign]="this.isAssign"
+  [idClient]="this.idClient"
+  (close)="closeMacroTypeModal()"
+>
 </app-choose-macro-type-modal>

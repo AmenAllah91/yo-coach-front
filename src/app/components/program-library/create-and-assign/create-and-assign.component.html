@@ -21,7 +21,7 @@
           >
             <span>{{ d.title }}</span>
             <small class="np-day__meta">
-              <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+              <span class="np-day__weekday">{{ d.dayOfWeek }} <span *ngIf="d.isRestDay || d.restDay">Rest Day</span></span>
               <span class="np-day__dot">•</span>
               <span class="np-day__date">{{
                 d.date | date : "MMM d, yyyy"
@@ -39,7 +39,7 @@
               >
                 <span>{{ d.title }}</span>
                 <small class="np-day__meta">
-                  <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                  <span class="np-day__weekday">{{ d.dayOfWeek }}  <span *ngIf="d.isRestDay || d.restDay">Rest Day</span></span>
                   <span class="np-day__dot">•</span>
                   <span class="np-day__date">{{
                     d.date | date : "MMM d, yyyy"
@@ -509,10 +509,7 @@
                     </div>
 
                     <!-- Sets (hidden if second of superset) -->
-                    <div
-                      *ngIf="exercise.sets?.length && !isSecondOfSuperset(i)"
-                      class="wkex-sets"
-                    >
+                    <div *ngIf="exercise.sets?.length" class="wkex-sets">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
                         <div class="wkex-sets__th">Reps</div>
