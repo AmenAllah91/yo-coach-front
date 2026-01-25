@@ -3,7 +3,7 @@ import { CommonModule, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MealDay, MealPlan } from 'app/models/MealPlan';
+import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 
 @Component({

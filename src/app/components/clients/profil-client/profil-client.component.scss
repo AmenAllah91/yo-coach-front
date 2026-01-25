@@ -1,187 +1,12 @@
-
 .main-content {
   padding: 20px;
   font-family: Arial, sans-serif;
-  background-color: #f5f7fb; /* dernière version (plus clair) */
+  background-color: #f5f7fb;
 }
 
-/* Grille générique */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.col {
-  flex: 1;
-  min-width: 260px;
-}
-
-.col-2 {
-  flex: 0 0 calc(50% - 10px);
-}
-
-.col-3 {
-  flex: 0 0 calc(33.333% - 13.5px);
-}
-
-/* Utilitaires */
-.pre-line {
-  white-space: pre-line;
-}
-
-.mt-20 {
-  margin-top: 20px;
-}
-
-.mt-16 {
-  margin-top: 16px;
-}
-
-/* Table générique */
-.table-wrapper {
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  overflow: hidden;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.table th,
-.table td {
-  padding: 8px;
-  text-align: center;
-  border-top: 1px solid #eee;
-}
-
-.table th {
-  background-color: #fafafa;
-  font-weight: 600;
-}
-
-/* Badges génériques */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  color: #fff;
-}
-
-.badge-success {
-  background-color: #28a745;
-}
-
-.badge-danger {
-  background-color: #dc3545;
-}
-
-/* Boutons génériques */
-.btn-primary {
-  border: none;
-  padding: 6px 16px;
-  background-color: #6777ef;
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.btn-primary:hover {
-  background-color: #5768e9;
-}
-
-/* Placeholder poids (si tu l’utilises) */
-.weight-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.weight-main {
-  text-align: center;
-}
-
-.weight-value {
-  display: block;
-  font-size: 2rem;
-  font-weight: bold;
-}
-
-.weight-label {
-  font-size: 0.8rem;
-  color: #777;
-}
-
-.weight-placeholder-chart {
-  height: 120px;
-  border-radius: 6px;
-  border: 1px dashed #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  color: #999;
-}
-
-/* Placeholder photos génériques */
-.picture-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.picture-placeholder {
-  height: 180px;
-  border-radius: 8px;
-  border: 1px dashed #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 0.9rem;
-}
-
-/* Placeholder calendrier générique */
-.calendar-placeholder {
-  height: 260px;
-  border-radius: 8px;
-  border: 1px dashed #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 0.9rem;
-}
-
-/* Responsive global */
-@media (max-width: 768px) {
-  .profile-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .btn-calendar {
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .col-2,
-  .col-3 {
-    flex: 1 1 100%;
-  }
-}
-
-/*******************************************
- * 2) HEADER PROFIL + TABS PRINCIPAUX
- *******************************************/
-
-/* Header profil */
+/* =========================================
+   HEADER PROFIL
+========================================= */
 .profile-header {
   display: flex;
   align-items: center;
@@ -216,7 +41,6 @@
   margin: 2px 0;
 }
 
-/* actions header */
 .header-actions {
   margin-left: auto;
   display: flex;
@@ -224,7 +48,6 @@
   gap: 8px;
 }
 
-/* bouton noir "Send Message" */
 .btn-send-message {
   display: inline-flex;
   align-items: center;
@@ -250,7 +73,6 @@
   background-color: #111;
 }
 
-/* bouton 3 points (more) */
 .btn-more {
   width: 40px;
   height: 40px;
@@ -276,7 +98,9 @@
   margin: 0 1px;
 }
 
-/* Tabs principaux du profil (Dashboard / Workouts / ...) */
+/* =========================================
+   TABS PRINCIPAUX
+========================================= */
 .profile-tabs {
   display: flex;
   gap: 24px;
@@ -317,7 +141,6 @@
   border-radius: 999px;
 }
 
-/* Contenu d’onglet générique */
 .tab-content {
   margin-top: 12px;
 }
@@ -326,23 +149,19 @@
   padding-top: 16px;
 }
 
-/*******************************************
- * 3) DASHBOARD TAB
- *    (Today's Workout + Active Nutrition Plan)
- *******************************************/
-
+/* =========================================
+   DASHBOARD
+========================================= */
 .dashboard-pane {
   margin-top: 16px;
 }
 
-/* Grille principale dashboard */
 .dashboard-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 16px;
 }
 
-/* Carte base dashboard */
 .dashboard-card {
   border-radius: 12px;
   border: 1px solid #e3edf6;
@@ -352,7 +171,6 @@
   background-color: #ffffff;
 }
 
-/* Header carte (icône + titre + bouton) */
 .dashboard-card-header {
   display: flex;
   align-items: center;
@@ -396,7 +214,6 @@
   color: #6b7280;
 }
 
-/* Boutons View */
 .link-button {
   border: none;
   background: transparent;
@@ -410,12 +227,10 @@
   color: #16a34a;
 }
 
-/* Body dashboard */
 .dashboard-card-body {
   padding: 16px 18px 18px;
 }
 
-/* Today's workout (liste exercices) */
 .workout-day-title {
   font-size: 0.9rem;
   font-weight: 700;
@@ -466,8 +281,6 @@
   color: #6b7280;
 }
 
-/* Active Nutrition Plan */
-
 .daily-target-row {
   display: flex;
   justify-content: space-between;
@@ -493,7 +306,6 @@
   font-weight: 400;
 }
 
-/* Macros (3 colonnes) */
 .macro-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -525,7 +337,6 @@
   color: #6b7280;
 }
 
-/* Pastels macros */
 .macro-protein {
   background-color: #fff4f4;
 }
@@ -538,7 +349,6 @@
   background-color: #ebfff6;
 }
 
-/* bandeau statut nutrition */
 .nutrition-status {
   margin-top: 6px;
   padding: 10px 12px;
@@ -551,238 +361,20 @@
   gap: 6px;
 }
 
-/* Responsive Dashboard */
+/* Responsive dashboard */
 @media (max-width: 992px) {
   .dashboard-main-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-/*******************************************
- * 4) WORKOUTS & NUTRITION TABS
- *    (Program cards + pagination)
- *******************************************/
-
-/* Header des sections d’onglet (Workouts / Nutrition) */
-.tab-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-/* bouton noir "Assign New Program/Plan" */
-.btn-assign-black {
-  border: none;
-  background: #000;
-  color: #fff;
-  padding: 8px 18px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.btn-assign-black:hover {
-  background: #44b4df;
-}
-
-/* Cartes programmes / plans (Workouts & Nutrition) */
-.program-card {
-  background-color: #fbfdff;
-  border-radius: 12px;
-  border: 1px solid #e4edf5;
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: box-shadow 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
-}
-
-.program-card:hover {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-
-/* top de la carte */
-.program-card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.program-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.program-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* icône workout */
-.program-icon-blue {
-  background: #e6f5ff;
-  color: #0ba5ff;
-}
-
-/* icône nutrition */
-.program-icon-green {
-  background: #e6f9ec;
-  color: #16a34a;
-}
-
-.program-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.program-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.program-name {
-  font-size: 0.98rem;
-  font-weight: 700;
-  margin: 0;
-  color: #111827;
-}
-
-.program-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.78rem;
-  color: #6b7280;
-}
-
-/* badges statut */
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  border: 1px solid transparent;
-}
-
-/* réutilisé aussi ailleurs : reviewed, pending... */
-.status-pill--active {
-  background: #e3f9ea;
-  color: #15803d;
-  border-color: #bbf7d0;
-}
-
-.status-pill--upcoming {
-  background: #e0f2ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-
-.status-pill--completed {
-  background: #e5e7eb;
-  color: #374151;
-  border-color: #d1d5db;
-}
-
-/* actions de carte (œil / edit) */
-.program-actions {
-  display: flex;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-.icon-btn {
-  border: none;
-  background: transparent;
-  padding: 6px;
-  border-radius: 6px;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.icon-btn:hover {
-  background: rgba(68, 180, 223, 0.08);
-  color: #4b5563;
-}
-
-/* Barre de progression (programme actif) */
-.program-progress {
-  margin-top: 10px;
-}
-
-.progress-bar-bg {
-  width: 100%;
-  height: 6px;
-  border-radius: 999px;
-  background: #e5e7eb;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: #29b6f6;
-}
-
-/* Pagination figma-like */
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 18px;
-}
-
-.page-btn {
-  min-width: 32px;
-  height: 32px;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 0.85rem;
-  color: #4b5563;
-  cursor: pointer;
-}
-
-.page-btn--active {
-  background: #44b4df;
-  border-color: #44b4df;
-  color: #fff;
-}
-
-.page-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-/*******************************************
- * 5) CHECK-INS TAB
- *    (Subtabs, list submissions, assigned table, modals)
- *******************************************/
-
-/* Conteneur onglet Check-ins */
+/* =========================================
+   CHECK-INS
+========================================= */
 .checkins-tab {
   margin-top: 16px;
 }
 
-/* Sous-onglets Check-ins */
 .checkins-header {
   border-bottom: 1px solid #e5e7eb;
   margin-top: 16px;
@@ -793,14 +385,11 @@
   gap: 32px;
 }
 
-/* On réutilise .tab-link pour les sous-onglets Check-ins, déjà stylé plus haut
-   Optionnel: ajuster un peu la hauteur */
 .checkins-subtabs .tab-link {
   padding-top: 12px;
   padding-bottom: 12px;
 }
 
-/* Toolbar (search + bouton Add Check-in) */
 .checkins-toolbar {
   display: flex;
   align-items: center;
@@ -845,7 +434,6 @@
   box-shadow: 0 0 0 1px rgba(68, 180, 223, 0.2);
 }
 
-/* bouton Add Check-in */
 .btn-add-checkin {
   margin-left: 16px;
   display: inline-flex;
@@ -867,7 +455,6 @@
   background: #44b4df;
 }
 
-/* Liste des submissions */
 .checkin-list {
   display: flex;
   flex-direction: column;
@@ -883,8 +470,7 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease,
-  background-color 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .checkin-row:hover {
@@ -904,7 +490,7 @@
   color: #6b7280;
 }
 
-/* Statuts réutilisent .status-pill */
+/* Status pills */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -929,7 +515,7 @@
   color: #d97706;
 }
 
-/* Table Assigned */
+/* Assigned table */
 .assigned-table {
   background: #ffffff;
   border-radius: 4px;
@@ -943,7 +529,6 @@
   grid-template-columns: 3fr 2fr 2fr 1.5fr 1.5fr;
   align-items: center;
   padding: 12px 16px;
-  font-size: 13px;
 }
 
 .assigned-header-row {
@@ -952,6 +537,7 @@
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  font-size: 13px;
 }
 
 .assigned-row {
@@ -988,7 +574,6 @@
   text-align: right;
 }
 
-/* Bouton View dans la table Assigned */
 .link-view {
   border: none;
   background: transparent;
@@ -1002,16 +587,17 @@
   cursor: pointer;
 }
 
-.link-view i {
-  color: inherit;
-  font-size: 13px;
-}
-
 .link-view:hover {
   text-decoration: underline;
 }
 
-/* Modals de Check-ins (Submission + Assigned + générique) */
+.text-right {
+  text-align: right;
+}
+
+/* =========================================
+   MODALS (Submission / Assigned / Pictures)
+========================================= */
 .checkin-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1052,12 +638,7 @@
   font-weight: 700;
 }
 
-.modal-date {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #6b7280;
-}
-
+.modal-date,
 .modal-subtitle {
   margin-top: 4px;
   font-size: 13px;
@@ -1104,7 +685,7 @@
   background: #f3f4f6;
 }
 
-/* Modal Submission (Q/R) */
+/* Submission content */
 .submission-question {
   padding: 12px 0;
   border-bottom: 1px solid #e5e7eb;
@@ -1201,7 +782,7 @@
   margin-right: 6px;
 }
 
-/* Modal Assigned (Form definition) */
+/* Assigned modal content */
 .assigned-summary-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1310,21 +891,13 @@
   color: #b91c1c;
 }
 
-/* Alignement texte */
-.text-right {
-  text-align: right;
-}
-
-/*******************************************
- * 6) PROGRESS PICTURES TAB
- *******************************************/
-
-/* Pane tab */
+/* =========================================
+   PROGRESS PICTURES TAB
+========================================= */
 .progress-pictures-pane {
   margin-top: 8px;
 }
 
-/* Header (titre + actions) */
 .progress-header {
   display: flex;
   align-items: center;
@@ -1337,7 +910,6 @@
   gap: 12px;
 }
 
-/* Boutons header (Comparison, etc.) */
 .btn-progress-secondary {
   display: inline-flex;
   align-items: center;
@@ -1352,60 +924,35 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.btn-progress-secondary i {
-  font-size: 0.9rem;
-}
-
 .btn-progress-secondary:hover {
   background-color: #f3f4f6;
   border-color: #cbd5f5;
 }
 
-.btn-progress-primary {
-  padding: 8px 18px;
-  border-radius: 7px;
-  border: none;
-  background-color: #000000;
-  color: #ffffff;
-  font-size: 0.88rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.btn-progress-primary:hover {
-  background-color: #44b4df;
-}
-
-/* Grille des cartes de photos */
 .progress-grid {
   display: grid;
   gap: 24px;
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
-/* >= 768px : 2 par ligne */
 @media (min-width: 768px) {
   .progress-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* >= 1024px : 3 par ligne */
 @media (min-width: 1024px) {
   .progress-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-/* >= 1280px : 4 par ligne */
 @media (min-width: 1280px) {
   .progress-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-/* Carte individuelle de photo */
 .progress-card {
   background-color: #ffffff;
   border-radius: 10px;
@@ -1425,7 +972,6 @@
   transform: translateY(-1px);
 }
 
-/* Image ratio portrait */
 .progress-card-image {
   position: relative;
   padding-top: 133%;
@@ -1440,7 +986,6 @@
   object-fit: cover;
 }
 
-/* Body de la carte */
 .progress-card-body {
   padding: 10px 14px 12px;
 }
@@ -1457,12 +1002,9 @@
   color: #4b5563;
 }
 
-/*******************************************
- * 7) PROGRESS PICTURES - MODAL DE COMPARAISON
- *    (Single / Comparison, thumbnails, panels)
- *******************************************/
-
-/* Modal Progress Pictures */
+/* =========================================
+   MODAL PROGRESS PICTURES (comparison)
+========================================= */
 .checkin-modal.progress-pictures-modal {
   max-width: 1200px;
   width: calc(100vw - 80px);
@@ -1473,7 +1015,6 @@
   padding: 16px 24px 24px;
 }
 
-/* Toggle Single / Comparison centré */
 .comparison-mode-wrapper {
   display: flex;
   justify-content: center;
@@ -1505,14 +1046,12 @@
   color: #ffffff;
 }
 
-/* Layout principal du modal (liste gauche + panels) */
 .comparison-layout {
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 20px;
 }
 
-/* Liste / thumbnails à gauche */
 .comparison-list {
   background: #ffffff;
   border-radius: 14px;
@@ -1565,7 +1104,6 @@
   transform: translateY(-1px);
 }
 
-/* état before / after visuel supplémentaire si tu veux */
 .thumbnail-card--before {
   border-color: #34a853;
 }
@@ -1605,7 +1143,6 @@
   color: #6b7280;
 }
 
-/* badges BEFORE / AFTER */
 .thumbnail-badge {
   position: absolute;
   top: 10px;
@@ -1625,7 +1162,6 @@
   background: #44b4df;
 }
 
-/* Panels de comparaison à droite */
 .comparison-panels {
   display: flex;
   gap: 16px;
@@ -1699,7 +1235,6 @@
   max-width: 260px;
 }
 
-/* Responsive modal comparison */
 @media (max-width: 1024px) {
   .comparison-layout {
     grid-template-columns: 1fr;
@@ -1710,577 +1245,25 @@
   }
 }
 
-/*******************************************
- * 8) CALENDAR TAB
- *******************************************/
-
-/* L’onglet Calendar réutilise .calendar-placeholder global,
-   donc rien de plus spécifique ici, mais tu peux ajouter : */
-
-.tab-pane[ng-reflect-ng-switch="calendar"],
-.tab-pane.calendar-pane {
-  /* si tu veux des styles spécifiques au tab calendrier */
-}
-
-
-
-
-
-
-
-
-
-
-
-/* === Modal : Assign Workout Program === */
-
-.assign-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45); // voile sombre
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  z-index: 1000;
-}
-
-.assign-modal {
-  background: #ffffff;
-  width: 100%;
-  max-width: 420px;
-  border-radius: 12px;
-  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.16);
-  overflow: hidden;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-  sans-serif;
-}
-
-/* Header */
-
-.assign-modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb; // gris clair
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.assign-modal-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.assign-modal-close {
-  border: none;
-  background: transparent;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.assign-modal-close svg {
-  width: 20px;
-  height: 20px;
-}
-
-.assign-modal-close:hover {
-  color: #4b5563;
-}
-
-/* Body */
-
-.assign-modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  row-gap: 0.75rem;
-}
-
-/* Cartes d’option */
-
-.assign-option {
-  width: 100%;
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  background-color: #ffffff;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.assign-option:hover {
-  border-color: #44b4df;
-  background-color: rgba(68, 180, 223, 0.04);
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-}
-
-.assign-option-left {
-  display: flex;
-  align-items: center;
-  column-gap: 0.75rem;
-}
-
-.assign-option-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background-color: rgba(68, 180, 223, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #44b4df;
-}
-
-.assign-option-icon--green {
-  background-color: #dcfce7; /* vert clair */
-  color: #16a34a;
-}
-
-.assign-option-text {
-  text-align: left;
-}
-
-.assign-option-title {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #111827;
-}
-
-.assign-option-subtitle {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-.assign-option-chevron {
-  width: 20px;
-  height: 20px;
-  color: #9ca3af;
-  flex-shrink: 0;
-  transition: color 0.15s ease;
-}
-
-.assign-option:hover .assign-option-chevron {
-  color: #44b4df;
-}
-/* =========================================================
-   MODALS : Assign / Select Program
-   ======================================================= */
-
-.assign-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  z-index: 1000;
-}
-
-.assign-modal {
-  background: #ffffff;
-  width: 100%;
-  max-width: 420px;
-  border-radius: 12px;
-  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.16);
-  overflow: hidden;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-  sans-serif;
-}
-
-.assign-modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.assign-modal-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.assign-modal-subtitle {
-  margin-top: 0.2rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.assign-modal-close {
-  border: none;
-  background: transparent;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.assign-modal-close svg {
-  width: 20px;
-  height: 20px;
-}
-
-.assign-modal-close:hover {
-  color: #4b5563;
-}
-
-.assign-modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  row-gap: 0.75rem;
-}
-
-/* CARTES d’option du 1er modal */
-
-.assign-option {
-  width: 100%;
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  background-color: #ffffff;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.assign-option:hover {
-  border-color: #44b4df;
-  background-color: rgba(68, 180, 223, 0.04);
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-}
-
-.assign-option-left {
-  display: flex;
-  align-items: center;
-  column-gap: 0.75rem;
-}
-
-.assign-option-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background-color: rgba(68, 180, 223, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #44b4df;
-}
-
-.assign-option-icon--green {
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.assign-option-text {
-  text-align: left;
-}
-
-.assign-option-title {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #111827;
-}
-
-.assign-option-subtitle {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-.assign-option-chevron {
-  width: 20px;
-  height: 20px;
-  color: #9ca3af;
-  flex-shrink: 0;
-  transition: color 0.15s ease;
-}
-
-.assign-option:hover .assign-option-chevron {
-  color: #44b4df;
-}
-
-/* MODAL 2 : Select Program */
-
-.select-program-modal {
-  max-width: 640px;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-}
-
-.select-program-search {
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-}
-
-.select-search-input {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+/* =========================================
+   CALENDAR PLACEHOLDER
+========================================= */
+.calendar-placeholder {
+  height: 260px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  padding: 0.5rem 0.75rem;
-}
-
-.select-search-input i {
-  color: #9ca3af;
-  font-size: 0.875rem;
-}
-
-.select-search-input input {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 0.875rem;
-  color: #111827;
-  background: transparent;
-}
-
-.select-program-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-/* cartes programmes */
-
-.select-program-card {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.select-program-card--selected {
-  border-color: #44b4df;
-  background-color: rgba(68, 180, 223, 0.04);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-}
-
-.select-program-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.select-radio {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  border: 2px solid #d1d5db;
+  border: 1px dashed #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.select-program-card--selected .select-radio {
-  border-color: #44b4df;
-  background-color: #44b4df;
-}
-
-.select-radio-inner {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background-color: #ffffff;
-}
-
-.select-program-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.select-program-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.select-program-name {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #111827;
-}
-
-.select-program-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.select-program-meta span i {
-  margin-right: 0.25rem;
-}
-
-.select-program-empty {
-  padding: 1.5rem 0.25rem;
-  text-align: center;
+  color: #999;
   font-size: 0.9rem;
-  color: #9ca3af;
 }
 
-/* Schedule */
-
-.select-program-schedule {
-  margin-top: 1.25rem;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 1.25rem;
-}
-
-.select-program-schedule h4 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.75rem;
-}
-
-.schedule-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.schedule-field label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.35rem;
-}
-
-.schedule-input input {
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.85rem;
-  color: #111827;
-}
-
-.schedule-input--readonly input {
-  background-color: #f9fafb;
-  color: #6b7280;
-}
-
-.schedule-help {
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-/* Footer boutons */
-
-.select-program-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.btn-secondary {
-  border-radius: 9999px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  padding: 0.45rem 1.25rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background-color: #f3f4f6;
-}
-
-.btn-primary {
-  border-radius: 9999px;
-  border: none;
-  padding: 0.45rem 1.4rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #ffffff;
-  background-color: #111827;
-  cursor: pointer;
-}
-
-.btn-primary:hover:not(.btn-primary--disabled) {
-  background-color: #44b4df;
-}
-
-.btn-primary--disabled {
-  background-color: #d1d5db;
-  cursor: not-allowed;
-}
-
-/* Status pills (si tu ne les as pas déjà) */
-
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.1rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.status-pill--active {
-  background-color: #dcfce7;
-  color: #15803d;
-}
-
-.status-pill--upcoming {
-  background-color: #eff6ff;
-  color: #1d4ed8;
-}
-
-.status-pill--completed {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
-
-.status-pill--pending,
-.status-pill--pending-review {
-  background-color: #fef9c3;
-  color: #854d0e;
-}
-
-.status-pill--reviewed {
-  background-color: #dcfce7;
-  color: #15803d;
+/* Responsive header */
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }

@@ -1,0 +1,411 @@
+<!-- Root -->
+<div class="np-root">
+  <div class="np-shell">
+    <!-- ===== Left Sidebar (Days) ===== -->
+    <aside class="np-aside">
+      <div class="np-aside__head">
+        <h2 class="np-h6">
+          {{ isEditMode ? "Edit Days" : "Nutrition Days" }}
+        </h2>
+      </div>
+
+      <div class="np-aside__body">
+        <!-- Day list -->
+        <ng-container
+          *ngFor="let d of days; trackBy: trackByDay; let i = index"
+        >
+          <!-- First day (no trash icon) -->
+          <button
+            *ngIf="i === 0; else otherDay"
+            class="np-day"
+            [class.is-active]="selectedDay?.id === d.id"
+            (click)="selectDay(d)"
+          >
+            <span>{{ d.title }}</span>
+            <small class="np-day__meta">
+              <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+              <span class="np-day__dot">•</span>
+              <span class="np-day__date">{{
+                d.date | date : "MMM d, yyyy"
+              }}</span>
+            </small>
+          </button>
+
+          <!-- Other Days -->
+          <ng-template #otherDay>
+            <div class="np-dayrow">
+              <button
+                class="np-day"
+                [class.is-active]="selectedDay?.id === d.id"
+                (click)="selectDay(d)"
+              >
+                <span>{{ d.title }}</span>
+                <small class="np-day__meta">
+                  <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                  <span class="np-day__dot">•</span>
+                  <span class="np-day__date">{{
+                    d.date | date : "MMM d, yyyy"
+                  }}</span>
+                </small>
+              </button>
+              <button
+                class="np-iconbtn"
+                title="Delete"
+                (click)="deleteDay(d, $event)"
+              >
+                <i-feather name="trash-2" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </ng-template>
+        </ng-container>
+
+        <!-- Add Day -->
+        <button
+          class="np-btn np-btn--dash np-btn--ghost np-btn--full"
+          (click)="addDay()"
+        >
+          <i-feather name="plus" class="np-ico"></i-feather>
+          Add Day
+        </button>
+
+        <!-- Duplicate -->
+        <div class="np-stack">
+          <button class="np-rowbtn" (click)="duplicateSelectedDay()">
+            <span>Duplicate Day</span>
+            <i-feather name="copy" class="np-ico"></i-feather>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="np-main">
+      <div class="np-pagehead">
+        <a routerLink="/nutrition-plan" class="np-back">
+          <svg viewBox="0 0 24 24" class="np-ico">
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+            />
+          </svg>
+        </a>
+
+        <!-- Dynamic Title -->
+        <h1 class="np-h5">
+          {{ isEditMode ? "Edit Nutrition Plan" : "Create Nutrition Plan" }}
+        </h1>
+      </div>
+
+      <section class="np-card">
+        <!-- Plan Title -->
+        <div class="np-field">
+          <label class="np-label">Plan Title *</label>
+          <input class="np-input" type="text" [(ngModel)]="planName" />
+        </div>
+
+        <!-- Description -->
+        <button
+          *ngIf="!showPlanDescription"
+          class="np-link"
+          (click)="togglePlanDescription()"
+        >
+          <i-feather name="plus" class="np-ico"></i-feather>
+          Add Plan Description
+        </button>
+
+        <ng-template [ngIf]="showPlanDescription">
+          <div class="np-field">
+            <label class="np-label">Plan Description</label>
+            <textarea
+              class="np-input np-textarea"
+              rows="5"
+              [(ngModel)]="planDescription"
+            ></textarea>
+            <button class="np-close" (click)="togglePlanDescription()">
+              <i-feather name="x" class="np-ico"></i-feather>
+            </button>
+          </div>
+        </ng-template>
+
+               <div class="program-schedule-card">
+          <h3 class="program-schedule-title">
+            <span class="program-schedule-title-icon">
+              <!-- Icône calendrier (SVG inline) -->
+              <svg
+                class="program-schedule-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            Program Schedule
+          </h3>
+
+          <div class="program-schedule-grid">
+            <!-- Start Date -->
+            <div class="program-schedule-field">
+              <label class="program-schedule-label">
+                Start Date <span class="required">*</span>
+              </label>
+              <div class="program-schedule-input-wrapper">
+                <span class="program-schedule-input-icon">
+                  <!-- petit calendrier à gauche -->
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="program-schedule-input-icon-svg"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </span>
+                <!-- bind à ta propriété Angular si tu veux -->
+                <input
+                  type="date"
+                  class="program-schedule-input"
+                  [(ngModel)]="startDate"
+                  name="startDate"
+                  (ngModelChange)="updateAllDates()"
+                />
+              </div>
+            </div>
+
+            <!-- End Date -->
+            <div class="program-schedule-field">
+              <label class="program-schedule-label"> End Date </label>
+              <div class="program-schedule-input-wrapper">
+                <span class="program-schedule-input-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="program-schedule-input-icon-svg"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </span>
+                <input
+                  type="date"
+                  class="program-schedule-input program-schedule-input--disabled"
+                  [value]="endDate"
+                  name="endDate"
+                  disabled
+                />
+              </div>
+              <p class="program-schedule-helper">
+                Automatically calculated based on number of days
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Separator -->
+        <div class="np-sep"></div>
+
+        <!-- Day Header -->
+        <div class="np-dayhead">
+          <h3 class="np-h6">{{ selectedDay?.dayOfWeek }}</h3>
+          <button class="np-mini" (click)="toggleDayDescription()">
+            <i-feather name="edit-2" class="np-ico"></i-feather>
+          </button>
+        </div>
+
+        <!-- Day Description -->
+        <ng-container *ngIf="selectedDay">
+          <button
+            *ngIf="!selectedDay.showDescription"
+            class="np-link"
+            (click)="toggleDayDescription()"
+          >
+            <i-feather name="plus" class="np-ico"></i-feather>
+            Add Day Description
+          </button>
+
+          <ng-template [ngIf]="selectedDay.showDescription">
+            <div class="np-field">
+              <label class="np-label">Day Description</label>
+              <textarea
+                class="np-input np-textarea"
+                rows="5"
+                [(ngModel)]="selectedDay.description"
+              ></textarea>
+              <button class="np-close" (click)="toggleDayDescription()">
+                <i-feather name="x" class="np-ico"></i-feather>
+              </button>
+            </div>
+            <div class="np-sep"></div>
+          </ng-template>
+        </ng-container>
+
+        <!-- Meals Title -->
+        <div class="np-subtle">Meals</div>
+
+        <!-- ===== Meals Loop ===== -->
+        <ng-container *ngIf="selectedDay">
+          <article
+            *ngFor="let meal of selectedDay.meals; trackBy: trackByMeal"
+            class="np-meal"
+          >
+            <header class="np-meal__head">
+              <div class="np-meal__left">
+                <h4 class="np-h6 np-brand">{{ meal.name }}</h4>
+                <button
+                  class="np-mini"
+                  (click)="
+                    renameMeal(
+                      meal,
+                      prompt('Meal name', meal.name) || meal.name
+                    )
+                  "
+                >
+                  <i-feather name="edit-2" class="np-ico"></i-feather>
+                </button>
+              </div>
+
+              <div class="np-meal__right">
+                <div class="np-badges">
+                  <div class="np-badge">
+                    <div class="np-badge__label">CALORIES</div>
+                    <div class="np-badge__val">
+                      {{ meal.mealTargets.calories }} Kcal
+                    </div>
+                  </div>
+
+                  <div class="np-badge">
+                    <div class="np-badge__label">PROTEIN</div>
+                    <div class="np-badge__val">
+                      {{ meal.mealTargets.proteinG }} g
+                    </div>
+                  </div>
+
+                  <div class="np-badge">
+                    <div class="np-badge__label">CARBS</div>
+                    <div class="np-badge__val">
+                      {{ meal.mealTargets.carbsG }} g
+                    </div>
+                  </div>
+
+                  <div class="np-badge">
+                    <div class="np-badge__label">FAT</div>
+                    <div class="np-badge__val">
+                      {{ meal.mealTargets.fatG }} g
+                    </div>
+                  </div>
+                </div>
+
+                <button class="np-iconbtn" (click)="removeMeal(meal)">
+                  <i-feather name="trash-2" class="np-ico"></i-feather>
+                </button>
+              </div>
+            </header>
+
+            <div class="np-sep" style="margin-bottom: 16px"></div>
+
+            <!-- Macro Inputs -->
+            <div class="np-meal__body">
+              <div class="np-macro-row">
+                <div class="np-field">
+                  <label class="np-label">Protein</label>
+                  <input
+                    class="np-input np-input--unit"
+                    type="number"
+                    [(ngModel)]="meal.mealTargets.proteinG"
+                    (input)="updateMealCalories(meal)"
+                    data-unit="g"
+                  />
+                </div>
+
+                <div class="np-field">
+                  <label class="np-label">Carbs</label>
+                  <input
+                    class="np-input np-input--unit"
+                    type="number"
+                    [(ngModel)]="meal.mealTargets.carbsG"
+                    (input)="updateMealCalories(meal)"
+                    data-unit="g"
+                  />
+                </div>
+
+                <div class="np-field">
+                  <label class="np-label">Fat</label>
+                  <input
+                    class="np-input np-input--unit"
+                    type="number"
+                    [(ngModel)]="meal.mealTargets.fatG"
+                    (input)="updateMealCalories(meal)"
+                    data-unit="g"
+                  />
+                </div>
+
+                <div class="np-field">
+                  <label class="np-label">Calories</label>
+                  <input
+                    class="np-input np-input--unit"
+                    type="number"
+                    [value]="meal.mealTargets.calories"
+                    disabled
+                    data-unit="Kcal"
+                  />
+                </div>
+              </div>
+            </div>
+          </article>
+        </ng-container>
+
+        <!-- Add Meal -->
+        <div class="np-addmeal">
+          <button class="np-btn np-btn--addmeal" (click)="addMeal()">
+            <i-feather name="plus" class="np-ico"></i-feather>
+            Add Another Meal
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== Sticky Save ===== -->
+      <div class="np-sticky">
+        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
+          <i-feather name="save" class="np-ico"></i-feather>
+
+          <!-- Dynamic Button Text -->
+          {{ isEditMode ? "Update Plan" : "Save Plan" }}
+        </button>
+      </div>
+    </main>
+  </div>
+</div>

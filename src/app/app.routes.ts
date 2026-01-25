@@ -1,3 +1,6 @@
+import { AssignFullPlanComponent } from './components/nutrition/assign-full-plan/assign-full-plan.component';
+import { AssignMacroPlanTotalDayComponent } from './components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component';
+import { AssignMacroPlanComponent } from './components/nutrition/assign-macro-plan/assign-macro-plan.component';
 // app.routes.ts
 
 import { CanActivateFn, Route } from '@angular/router';
@@ -23,6 +26,7 @@ import { ClientNutritionComponent } from './components/clients/client-nutrition/
 import { CalendarClientsComponent } from './components/calendar/calendar-clients/calendar-clients.component';
 import { LandingPageComponent } from './components/website/landing-page/landing-page.component';
 import { YosoftLandingPageComponent } from './components/website/yosoft-landing-page/yosoft-landing-page.component';
+import { CreateAndAssignComponent } from './components/program-library/create-and-assign/create-and-assign.component';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -42,7 +46,7 @@ export const APP_ROUTE: Route[] = [
         component: ClientsComponent,
       },
       {
-        path: 'clients/profil-client',
+        path: 'clients/profil-client/:id',
         component: ProfilClientComponent,
       },
       {
@@ -60,6 +64,14 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'workout/create-workout',
         component: CreateWorkoutComponent,
+      },
+      {
+        path: 'clients/create-workout/:idClient',
+        component: CreateAndAssignComponent,
+      },
+      {
+        path: 'clients/create-workout/:idClient/edit/:id',
+        component: CreateAndAssignComponent,
       },
       {
         path: 'workout/edit-workout/:id',
@@ -92,6 +104,30 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/create-macro-plan-total-day',
         component: CreateMacroPlanTotalDayComponent,
+      },
+      {
+        path: 'clients/create-macro-plan/:idClient',
+        component: AssignMacroPlanComponent,
+      },
+      {
+        path: 'clients/create-macro-plan/:idClient/edit/:id',
+        component: AssignMacroPlanComponent,
+      },
+      {
+        path: 'clients/create-macro-plan-total-day/:idClient',
+        component: AssignMacroPlanTotalDayComponent,
+      },
+      {
+        path: 'clients/create-macro-plan-total-day/:idClient/edit/:id',
+        component: AssignMacroPlanTotalDayComponent,
+      },
+      {
+        path: 'clients/create-full-plan/:idClient',
+        component: AssignFullPlanComponent,
+      },
+      {
+        path: 'clients/create-full-plan/:idClient/edit/:id',
+        component: AssignFullPlanComponent,
       },
       {
         path: 'nutrition/create-macro-plan-total-day/:id',

@@ -1,6 +1,10 @@
-import { Component } from '@angular/core';
-import {CommonModule} from "@angular/common";
-type DayStatus = 'completed' | 'missed' | 'pending';
+import { MealplanDayService } from './../../../service/mealplan-day.service';
+import { NutritionService } from 'app/service/nutrition.service';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ModalConfirmComponent } from '../modal-confirm/modal-confirm.component';
+
+type PlanStatus = 'COMPLETED' | 'MISSED' | 'PENDING';
 
 interface Food {
   id: string;
@@ -16,307 +20,271 @@ interface Meal {
   id: string;
   name: string;
   foods: Food[];
+  mealTargets?: {
+    // ← Ajouté
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    calories: number;
+  };
 }
 
 interface NutritionDay {
   id: string;
   date: string;
   displayDate: string;
+  planId: string;
   programName: string;
   programType: string;
-  status: DayStatus;
+  status: PlanStatus;
   mealCount: number;
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
   totalCalories: number;
   meals: Meal[];
+  dayTargets?: {
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    calories: number;
+  };
 }
 
 @Component({
   selector: 'app-client-nutrition',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ModalConfirmComponent],
   templateUrl: './client-nutrition.component.html',
-  styleUrl: './client-nutrition.component.scss'
+  styleUrl: './client-nutrition.component.scss',
 })
-export class ClientNutritionComponent {
+export class ClientNutritionComponent implements OnInit {
+  userid = sessionStorage.getItem('userId');
+  nutritionDays: NutritionDay[] = [];
+  currentDate: Date = new Date();
   activeTab: 'upcoming' | 'past' = 'upcoming';
-  currentDate: Date = new Date(2022, 9, 1); // 1 Oct 2022
   selectedDay: NutritionDay | null = null;
 
-  nutritionDays: NutritionDay[] = [
-    {
-      id: '1',
-      date: '2022-10-01',
-      displayDate: 'Today',
-      programName: 'Balanced Diet Plan',
-      programType: 'Weight Loss Program',
-      // 👇 comme les workouts "Today" : pending
-      status: 'pending',
-      mealCount: 4,
-      totalProtein: 169,
-      totalCarbs: 180,
-      totalFat: 60,
-      totalCalories: 2000,
-      meals: [
-        {
-          id: 'meal-1',
-          name: 'Breakfast',
-          foods: [
-            {
-              id: 'food-1',
-              name: 'Oatmeal',
-              quantity: '100g',
-              protein: 13.2,
-              carbs: 66.3,
-              fat: 6.9,
-              calories: 389,
-            },
-            {
-              id: 'food-2',
-              name: 'Banana',
-              quantity: '1 medium',
-              protein: 1.3,
-              carbs: 27,
-              fat: 0.4,
-              calories: 105,
-            },
-          ],
-        },
-        {
-          id: 'meal-2',
-          name: 'Lunch',
-          foods: [
-            {
-              id: 'food-3',
-              name: 'Chicken Breast',
-              quantity: '200g',
-              protein: 62,
-              carbs: 0,
-              fat: 7.6,
-              calories: 330,
-            },
-            {
-              id: 'food-4',
-              name: 'Brown Rice',
-              quantity: '150g',
-              protein: 7.5,
-              carbs: 77.2,
-              fat: 2.7,
-              calories: 370,
-            },
-          ],
-        },
-        {
-          id: 'meal-3',
-          name: 'Snack',
-          foods: [
-            {
-              id: 'food-5',
-              name: 'Greek Yogurt',
-              quantity: '200g',
-              protein: 20,
-              carbs: 7.8,
-              fat: 10,
-              calories: 200,
-            },
-          ],
-        },
-        {
-          id: 'meal-4',
-          name: 'Dinner',
-          foods: [
-            {
-              id: 'food-6',
-              name: 'Salmon',
-              quantity: '150g',
-              protein: 37.5,
-              carbs: 0,
-              fat: 20.3,
-              calories: 344,
-            },
-            {
-              id: 'food-7',
-              name: 'Sweet Potato',
-              quantity: '200g',
-              protein: 4,
-              carbs: 40,
-              fat: 0.3,
-              calories: 180,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: '2',
-      date: '2022-10-11',
-      displayDate: 'October 11, 2022',
-      programName: 'High Protein Day',
-      programType: 'Muscle Building',
-      status: 'completed',
-      mealCount: 5,
-      totalProtein: 200,
-      totalCarbs: 150,
-      totalFat: 70,
-      totalCalories: 2200,
-      meals: [
-        {
-          id: 'meal-1',
-          name: 'Breakfast',
-          foods: [
-            {
-              id: 'food-1',
-              name: 'Eggs',
-              quantity: '4 large',
-              protein: 25,
-              carbs: 1.4,
-              fat: 20,
-              calories: 280,
-            },
-          ],
-        },
-        {
-          id: 'meal-2',
-          name: 'Morning Snack',
-          foods: [
-            {
-              id: 'food-2',
-              name: 'Protein Shake',
-              quantity: '1 scoop',
-              protein: 24,
-              carbs: 3,
-              fat: 1.5,
-              calories: 120,
-            },
-          ],
-        },
-        {
-          id: 'meal-3',
-          name: 'Lunch',
-          foods: [
-            {
-              id: 'food-3',
-              name: 'Beef',
-              quantity: '200g',
-              protein: 52,
-              carbs: 0,
-              fat: 30,
-              calories: 500,
-            },
-          ],
-        },
-        {
-          id: 'meal-4',
-          name: 'Afternoon Snack',
-          foods: [
-            {
-              id: 'food-4',
-              name: 'Almonds',
-              quantity: '50g',
-              protein: 10.5,
-              carbs: 10.5,
-              fat: 27,
-              calories: 310,
-            },
-          ],
-        },
-        {
-          id: 'meal-5',
-          name: 'Dinner',
-          foods: [
-            {
-              id: 'food-5',
-              name: 'Turkey',
-              quantity: '200g',
-              protein: 58,
-              carbs: 0,
-              fat: 8,
-              calories: 320,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: '3',
-      date: '2022-10-09',
-      displayDate: 'October 9, 2022',
-      programName: 'Low Carb Day',
-      programType: 'Keto Program',
-      // tu peux en mettre un en "missed" si tu veux tester
-      status: 'completed',
-      mealCount: 3,
-      totalProtein: 150,
-      totalCarbs: 50,
-      totalFat: 120,
-      totalCalories: 1800,
-      meals: [
-        {
-          id: 'meal-1',
-          name: 'Breakfast',
-          foods: [
-            {
-              id: 'food-1',
-              name: 'Bacon',
-              quantity: '100g',
-              protein: 37,
-              carbs: 1.4,
-              fat: 42,
-              calories: 541,
-            },
-          ],
-        },
-        {
-          id: 'meal-2',
-          name: 'Lunch',
-          foods: [
-            {
-              id: 'food-2',
-              name: 'Avocado',
-              quantity: '1 whole',
-              protein: 4,
-              carbs: 17,
-              fat: 30,
-              calories: 320,
-            },
-          ],
-        },
-        {
-          id: 'meal-3',
-          name: 'Dinner',
-          foods: [
-            {
-              id: 'food-3',
-              name: 'Steak',
-              quantity: '250g',
-              protein: 65,
-              carbs: 0,
-              fat: 37.5,
-              calories: 625,
-            },
-          ],
-        },
-      ],
-    },
-  ];
+  showConfirmModal = false;
+  pendingStatus: PlanStatus | null = null;
 
-  // ======= helpers & computed =======
+  userName = 'Kolton';
+
+  coaches: any[] = [];
+
+  selectedCoachId: string | 'all' = 'all';
+
+  constructor(
+    private nutritionService: NutritionService,
+    private mealplanDayService: MealplanDayService
+  ) {}
+
+  ngOnInit(): void {
+    this.getMealPlan();
+  }
+
+  getMealPlan() {
+    this.nutritionService
+      .getNutritionPlanByClientId(this.userid)
+      .subscribe((plans: any[]) => {
+        // Extraire les coachs uniques
+        const coachMap = new Map<string, any>();
+        plans.forEach((plan) => {
+          if (plan.coach && plan.coach.id) {
+            const fullName = `${plan.coach.firstName || 'Coach'} ${
+              plan.coach.lastName || ''
+            }`.trim();
+            coachMap.set(plan.coach.id, {
+              id: plan.coach.id,
+              firstName: plan.coach.firstName || 'Coach',
+              lastName: plan.coach.lastName || '',
+              fullName: fullName || 'Unknown Coach',
+            });
+          }
+        });
+
+        this.coaches = Array.from(coachMap.values());
+
+        // Pré-sélection du coach
+        if (this.coaches.length === 1) {
+          this.selectedCoachId = this.coaches[0].id;
+        } else {
+          this.selectedCoachId = 'all';
+        }
+
+        // Appliquer le filtre initial
+        this.applyCoachFilter(plans);
+      });
+  }
+
+  private applyCoachFilter(plans?: any[]) {
+    // Si plans non fourni, on recharge depuis le service
+    if (!plans) {
+      this.nutritionService
+        .getNutritionPlanByClientId(this.userid)
+        .subscribe((freshPlans: any[]) => {
+          this.processPlansWithFilter(freshPlans);
+        });
+    } else {
+      this.processPlansWithFilter(plans);
+    }
+  }
+
+  private processPlansWithFilter(plans: any[]) {
+    let filteredPlans = plans;
+
+    if (this.selectedCoachId !== 'all') {
+      filteredPlans = plans.filter(
+        (plan) => plan.coach && plan.coach.id === this.selectedCoachId
+      );
+    }
+
+    this.nutritionDays = this.mapApiResponseToNutritionDays(filteredPlans);
+    this.setInitialMonth();
+    this.selectedDay = null; // Retour à la liste
+  }
+
+  onCoachChange(coachId: string | 'all') {
+    this.selectedCoachId = coachId;
+    this.applyCoachFilter();
+  }
+
+  private setInitialMonth(): void {
+    if (this.nutritionDays.length === 0) return;
+    const firstDate = this.nutritionDays
+      .map((d) => new Date(d.date))
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    this.currentDate = new Date(
+      firstDate.getFullYear(),
+      firstDate.getMonth(),
+      1
+    );
+  }
+
+  private mapApiResponseToNutritionDays(plans: any[]): NutritionDay[] {
+    const days: NutritionDay[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    plans.forEach((plan) => {
+      const planStart = new Date(plan.startDate);
+
+      plan.mealDays.forEach((mealDay: any) => {
+        // Correction : dayNumber probablement présent comme dans workout
+        const dayOffset = mealDay.dayNumber ? mealDay.dayNumber - 1 : 0;
+        const mealDate = new Date(planStart);
+        mealDate.setDate(planStart.getDate() + dayOffset);
+
+        const totals = mealDay.dayTargets || {};
+
+        const dateStr = mealDate.toISOString().split('T')[0];
+        const status: PlanStatus =
+          mealDate < today
+            ? 'PENDING'
+            : mealDate > today
+            ? 'PENDING'
+            : 'PENDING';
+        // Tu peux garder un statut persistant si l'API le renvoie : mealDay.status ?? calculé
+
+        days.push({
+          id: mealDay.id,
+          date: dateStr,
+          displayDate: this.getDisplayDate(dateStr),
+          planId: plan.id,
+          programName: plan.name,
+          programType: 'Nutrition Program',
+          status: mealDay.status ?? this.calculateStatus(dateStr),
+          mealCount: mealDay.meals?.length || 0,
+          totalProtein: totals.proteinG || 0,
+          totalCarbs: totals.carbsG || 0,
+          totalFat: totals.fatG || 0,
+          totalCalories: totals.calories || 0,
+          dayTargets: totals,
+          meals: this.mapMeals(mealDay.meals || []),
+        });
+      });
+    });
+
+    return days;
+  }
+
+  private calculateStatus(dateStr: string): PlanStatus {
+    const dayDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dayDate.setHours(0, 0, 0, 0);
+
+    if (dayDate < today) return 'MISSED'; // par défaut si passé
+    return 'PENDING';
+  }
+
+  private getDisplayDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const today = new Date();
+    if (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    ) {
+      return 'Today';
+    }
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
+  private mapMeals(meals: any[]): Meal[] {
+    return meals.map((meal) => ({
+      id: meal.id,
+      name: meal.name,
+      foods: (meal.foods || []).map((food: any) => ({
+        id: food.id,
+        name: food.name,
+        quantity: food.quantity || '',
+        protein: food.proteinG || 0,
+        carbs: food.carbsG || 0,
+        fat: food.fatG || 0,
+        calories: food.calories || 0,
+      })),
+      mealTargets: meal.mealTargets || {
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+        calories: 0,
+      },
+    }));
+  }
 
   get filteredDays(): NutritionDay[] {
-    return this.nutritionDays.filter((day) =>
-      this.activeTab === 'upcoming'
-        ? day.status === 'pending'
-        : day.status === 'completed' || day.status === 'missed'
+    return this.nutritionDays
+      .filter((day) => this.isSameMonthAndYear(day.date, this.currentDate))
+      .filter((day) => {
+        if (this.activeTab === 'upcoming') {
+          return day.status === 'PENDING';
+        }
+        return day.status === 'COMPLETED' || day.status === 'MISSED';
+      });
+  }
+
+  private isSameMonthAndYear(dateStr: string, reference: Date): boolean {
+    const date = new Date(dateStr);
+    return (
+      date.getMonth() === reference.getMonth() &&
+      date.getFullYear() === reference.getFullYear()
     );
   }
 
   formatMonthYear(date: Date): string {
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
-    });
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  get emptyStateMessage(): string {
+    const month = this.formatMonthYear(this.currentDate);
+    return this.activeTab === 'upcoming'
+      ? `No upcoming nutrition plans for ${month}`
+      : `No past nutrition plans for ${month}`;
   }
 
   handlePrevMonth(): void {
@@ -348,12 +316,7 @@ export class ClientNutritionComponent {
     this.selectedDay = null;
   }
 
-  calculateMealTotals(meal: Meal): {
-    protein: number;
-    carbs: number;
-    fat: number;
-    calories: number;
-  } {
+  calculateMealTotals(meal: Meal) {
     return meal.foods.reduce(
       (acc, food) => ({
         protein: acc.protein + food.protein,
@@ -365,17 +328,6 @@ export class ClientNutritionComponent {
     );
   }
 
-  // 👇 version simple : on met à jour le seul tableau nutritionDays
-  updateDayStatus(status: DayStatus) {
-    if (!this.selectedDay) return;
-
-    this.nutritionDays = this.nutritionDays.map((day) =>
-      day.id === this.selectedDay!.id ? { ...day, status } : day
-    );
-
-    this.selectedDay = { ...this.selectedDay, status };
-  }
-
   get greeting(): string {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -383,5 +335,42 @@ export class ClientNutritionComponent {
     return 'Good evening';
   }
 
-  userName = 'Kolton';
+  openConfirmModal(status: PlanStatus): void {
+    this.pendingStatus = status;
+    this.showConfirmModal = true;
+  }
+
+  closeConfirmModal(): void {
+    this.showConfirmModal = false;
+    this.pendingStatus = null;
+  }
+
+  confirmStatusUpdate(): void {
+    if (this.selectedDay && this.pendingStatus) {
+      this.updatePlanStatus(this.selectedDay, this.pendingStatus);
+    }
+    this.closeConfirmModal();
+  }
+
+  updatePlanStatus(day: NutritionDay, status: PlanStatus): void {
+    // Mise à jour immédiate UI
+    day.status = status;
+
+    // Mise à jour dans le tableau global
+    this.nutritionDays = this.nutritionDays.map((d) =>
+      d.id === day.id ? { ...d, status } : d
+    );
+
+    // Appel API
+    this.mealplanDayService
+      .updatePlanDay({ id: day.id, status }, day.planId)
+      .subscribe({
+        next: () => {},
+        error: () => {
+          // Revert en cas d'erreur
+          day.status = 'PENDING';
+          this.nutritionDays = [...this.nutritionDays];
+        },
+      });
+  }
 }

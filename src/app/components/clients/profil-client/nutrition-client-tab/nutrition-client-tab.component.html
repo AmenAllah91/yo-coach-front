@@ -1,0 +1,82 @@
+<div class="tab-section-header">
+  <h2 class="section-title">Nutrition Plans</h2>
+  <button class="btn-assign-black" (click)="openAssignNutrition()">
+    Assign New Plan
+  </button>
+</div>
+
+<div *ngFor="let plan of mealPlan" class="program-card">
+  <div class="program-card-top">
+    <div class="program-main">
+      <div class="program-icon program-icon-green">
+        <i class="fas fa-apple-alt"></i>
+      </div>
+
+      <div class="program-text">
+        <div class="program-title-row">
+          <h5 class="program-name">{{ plan.name }}</h5>
+
+          <span
+            class="status-pill"
+            [ngClass]="{
+              'status-pill--active': plan.status === 'active',
+              'status-pill--upcoming': plan.status === 'upcoming',
+              'status-pill--completed': plan.status === 'completed'
+            }"
+          >
+            {{ plan.status | titlecase }}
+          </span>
+        </div>
+
+        <div class="program-meta">
+          <span>
+            <i class="far fa-calendar-alt me-1"></i>
+            {{ plan.startDate | date : "MMM dd, y" }} -
+            {{ plan.endDate | date : "MMM dd, y" }}
+          </span>
+
+          <span>
+            <i class="far fa-clock me-1"></i>
+            {{ getDays(plan.startDate, plan.endDate) }} days
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="program-actions">
+      <button class="icon-btn">
+        <i class="far fa-eye"></i>
+      </button>
+      <button class="icon-btn" (click)="editPlan(plan)">
+        <i class="far fa-edit"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="pagination-wrapper">
+  <button
+    class="page-btn"
+    [disabled]="page === 0"
+    (click)="changePage(page - 1)"
+  >
+    &lt;
+  </button>
+
+  <button
+    *ngFor="let p of pagesArray"
+    class="page-btn"
+    [class.page-btn--active]="p === page"
+    (click)="changePage(p)"
+  >
+    {{ p + 1 }}
+  </button>
+
+  <button
+    class="page-btn"
+    [disabled]="page === totalPages - 1"
+    (click)="changePage(page + 1)"
+  >
+    &gt;
+  </button>
+</div>

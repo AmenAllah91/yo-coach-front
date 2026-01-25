@@ -1,18 +1,33 @@
-<!-- ===== LIST VIEW ===== -->
+<!-- ===================== LIST VIEW ===================== -->
 <div class="client-page" *ngIf="!selectedDay">
   <div class="client-page-inner">
     <div class="cn-root">
       <!-- HEADER -->
       <header class="client-header">
-        <h1 class="client-header-title">
-          {{ greeting }}, {{ userName }}
-        </h1>
-        <p class="client-header-subtitle">
-          Your nutrition journey starts here
-        </p>
+        <h1 class="client-header-title">{{ greeting }}, {{ userName }}</h1>
+        <p class="client-header-subtitle">Your nutrition journey starts here</p>
       </header>
 
-      <!-- TABS (même que Workouts) -->
+      <!-- FILTRE PAR COACH -->
+      <div class="coach-filter-container" >
+        <label for="nutrition-coach-select" class="coach-filter-label"
+          >Coach:</label
+        >
+        <select
+          id="nutrition-coach-select"
+          class="coach-select"
+          [(ngModel)]="selectedCoachId"
+          (ngModelChange)="onCoachChange($event)"
+        >
+          <option value="all">All coaches</option>
+          <option *ngFor="let coach of coaches" [ngValue]="coach.id">
+            {{ coach.fullName }}
+          </option>
+        </select>
+      </div>
+
+
+      <!-- TABS -->
       <nav class="client-tabs">
         <button
           class="client-tab"
@@ -21,7 +36,6 @@
         >
           Upcoming
         </button>
-
         <button
           class="client-tab"
           [class.client-tab--active]="activeTab === 'past'"
@@ -31,306 +45,269 @@
         </button>
       </nav>
 
-      <!-- MONTH BAR (même que Workouts) -->
+      <!-- MONTH NAV -->
       <div class="client-month-nav">
         <button class="month-nav-btn" (click)="handlePrevMonth()">
           <i class="chevron chevron-left"></i>
         </button>
-
-        <div class="month-title">
-          {{ formatMonthYear(currentDate) }}
-        </div>
-
+        <div class="month-title">{{ formatMonthYear(currentDate) }}</div>
         <button class="month-nav-btn" (click)="handleNextMonth()">
           <i class="chevron chevron-right"></i>
         </button>
       </div>
 
-      <!-- LISTE DES JOURS (utilise client-list comme Workouts) -->
+      <!-- LIST -->
       <div class="client-list">
         <article
           class="cn-day-card"
           *ngFor="let day of filteredDays"
           (click)="selectDay(day)"
         >
-          <!-- Card header -->
           <div class="cn-day-header">
             <div class="cn-day-header-left">
-              <div class="cn-day-chip-date">
-                {{ day.displayDate }}
-              </div>
-              <h3 class="cn-day-title">
-                {{ day.programName }}
-              </h3>
-              <p class="cn-day-subtitle">
-                {{ day.programType }}
-              </p>
+              <div class="cn-day-chip-date">{{ day.displayDate }}</div>
+              <h3 class="cn-day-title">{{ day.programName }}</h3>
+              <p class="cn-day-subtitle">{{ day.programType }}</p>
             </div>
 
             <div class="cn-day-status-icon">
               <ng-container [ngSwitch]="day.status">
-                <div *ngSwitchCase="'completed'" class="status-icon status-icon--completed"></div>
-                <div *ngSwitchCase="'missed'" class="status-icon status-icon--missed"></div>
-                <div *ngSwitchDefault class="status-icon status-icon--pending"></div>
+                <div
+                  *ngSwitchCase="'COMPLETED'"
+                  class="status-icon status-icon--completed"
+                ></div>
+                <div
+                  *ngSwitchCase="'MISSED'"
+                  class="status-icon status-icon--missed"
+                ></div>
+                <div
+                  *ngSwitchDefault
+                  class="status-icon status-icon--pending"
+                ></div>
               </ng-container>
             </div>
-
           </div>
 
           <div class="cn-day-meals-line">
             <span class="cn-utensils-icon">🍽️</span>
-            <span class="cn-day-meals-text">
-              {{ day.mealCount }} meals
-            </span>
+            <span class="cn-day-meals-text">{{ day.mealCount }} meals</span>
           </div>
 
-          <!-- Macros summary -->
           <div class="cn-day-macros">
             <div class="cn-macro-card">
-              <div class="cn-macro-value">
-                {{ day.totalCalories }}
-              </div>
+              <div class="cn-macro-value">{{ day.totalCalories }}</div>
               <div class="cn-macro-label">kcal</div>
             </div>
-
             <div class="cn-macro-card">
-              <div class="cn-macro-value">
-                {{ day.totalProtein }}
-              </div>
+              <div class="cn-macro-value">{{ day.totalProtein }}g</div>
               <div class="cn-macro-label">protein</div>
             </div>
-
             <div class="cn-macro-card">
-              <div class="cn-macro-value">
-                {{ day.totalCarbs }}
-              </div>
+              <div class="cn-macro-value">{{ day.totalCarbs }}g</div>
               <div class="cn-macro-label">carbs</div>
             </div>
-
             <div class="cn-macro-card">
-              <div class="cn-macro-value">
-                {{ day.totalFat }}
-              </div>
+              <div class="cn-macro-value">{{ day.totalFat }}g</div>
               <div class="cn-macro-label">fat</div>
             </div>
           </div>
         </article>
 
-        <!-- Empty state -->
-        <div
-          class="cn-empty"
-          *ngIf="filteredDays.length === 0"
-        >
+        <!-- EMPTY STATE -->
+        <div class="cn-empty" *ngIf="filteredDays.length === 0">
           <div class="cn-empty-icon">📅</div>
           <h3 class="cn-empty-title">No nutrition plans found</h3>
-          <p class="cn-empty-text">
-            {{
-              activeTab === 'upcoming'
-                ? 'No upcoming nutrition plans scheduled'
-                : 'No past nutrition plans to display'
-            }}
-          </p>
+          <p class="cn-empty-text">{{ emptyStateMessage }}</p>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===== DETAIL VIEW ===== -->
+<!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page" *ngIf="selectedDay">
   <div class="client-page-inner">
-    <div class="cn-detail-root">
-      <!-- Sticky header -->
+    <div class="cn-detail-root cn-detail-container">
+      <!-- HEADER -->
       <header class="cn-detail-header">
         <button class="cn-back-btn" (click)="backToList()">‹</button>
 
         <div class="cn-detail-header-main">
-          <h1 class="cn-detail-title">
-            {{ selectedDay?.displayDate }}
-          </h1>
+          <h1 class="cn-detail-title">{{ selectedDay.programName }}</h1>
           <p class="cn-detail-program-line">
             <span class="cn-calendar-icon">📅</span>
-            <span>{{ selectedDay?.programName }}</span>
+            {{ selectedDay.displayDate }}
           </p>
         </div>
 
+        <!-- Petits boutons statut en haut à droite -->
         <div class="cn-detail-status-actions">
           <button
             class="cn-detail-status-btn"
-            [class.cn-detail-status-btn--completed]="selectedDay?.status === 'completed'"
-            (click)="updateDayStatus('completed')"
+            [class.cn-detail-status-btn--completed]="
+              selectedDay.status === 'COMPLETED'
+            "
+            (click)="updatePlanStatus(selectedDay, 'COMPLETED')"
           >
             ✓
           </button>
-
           <button
             class="cn-detail-status-btn"
-            [class.cn-detail-status-btn--missed]="selectedDay?.status === 'missed'"
-            (click)="updateDayStatus('missed')"
+            [class.cn-detail-status-btn--missed]="
+              selectedDay.status === 'MISSED'
+            "
+            (click)="updatePlanStatus(selectedDay, 'MISSED')"
           >
             ✕
           </button>
         </div>
       </header>
 
-
+      <!-- MAIN CONTENT -->
       <main class="cn-detail-main">
-        <!-- Daily totals -->
-        <section class="cn-totals-card">
-          <div class="cn-totals-card-header">
-            Daily Nutrition Goals
-          </div>
+        <!-- Carte des totaux journaliers -->
+        <div class="cn-totals-card">
+          <div class="cn-totals-card-header">Daily Totals</div>
           <div class="cn-totals-card-body">
             <div class="cn-totals-grid">
               <div class="cn-total-box cn-total-box--orange">
                 <div class="cn-total-value">
-                  {{ selectedDay?.totalCalories }}
+                  {{ selectedDay.totalCalories }}
                 </div>
                 <div class="cn-total-label">Calories</div>
               </div>
-              <div class="cn-total-box cn-total-box--red">
+              <div class="cn-total-box cn-total-box--green">
                 <div class="cn-total-value">
-                  {{ selectedDay?.totalProtein }}g
+                  {{ selectedDay.totalProtein }}g
                 </div>
                 <div class="cn-total-label">Protein</div>
               </div>
               <div class="cn-total-box cn-total-box--yellow">
-                <div class="cn-total-value">
-                  {{ selectedDay?.totalCarbs }}g
-                </div>
+                <div class="cn-total-value">{{ selectedDay.totalCarbs }}g</div>
                 <div class="cn-total-label">Carbs</div>
               </div>
-              <div class="cn-total-box cn-total-box--green">
-                <div class="cn-total-value">
-                  {{ selectedDay?.totalFat }}g
-                </div>
+              <div class="cn-total-box cn-total-box--red">
+                <div class="cn-total-value">{{ selectedDay.totalFat }}g</div>
                 <div class="cn-total-label">Fat</div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <!-- Meals -->
-        <section class="cn-meals-section" *ngIf="selectedDay">
-          <div class="cn-meals-header">
-            <span class="cn-utensils-icon">🍽️</span>
-            <h2 class="cn-meals-title">
-              Your Meals ({{ selectedDay.mealCount }})
-            </h2>
+        <!-- Liste des repas -->
+        <div
+          class="cn-meals-section"
+          *ngIf="selectedDay.meals.length > 0; else noMeals"
+        >
+          <ng-container *ngFor="let meal of selectedDay.meals; let i = index">
+            <div class="cn-meal-card">
+              <!-- Header du repas -->
+              <div class="cn-meal-header">
+                <div class="cn-meal-header-left">
+                  <div class="cn-meal-index">{{ i + 1 }}</div>
+                  <h3 class="cn-meal-name">{{ meal.name }}</h3>
+                </div>
+
+                <!-- Macros du repas -->
+                <!-- Macros du repas (objectifs) -->
+                <div class="cn-meal-macros-grid">
+                  <div class="cn-meal-macro-card">
+                    <div class="cn-meal-macro-value">
+                      {{ meal.mealTargets?.calories }}
+                    </div>
+                    <div class="cn-meal-macro-label">kcal</div>
+                  </div>
+                  <div class="cn-meal-macro-card">
+                    <div class="cn-meal-macro-value">
+                      {{ meal.mealTargets?.proteinG }}g
+                    </div>
+                    <div class="cn-meal-macro-label">protein</div>
+                  </div>
+                  <div class="cn-meal-macro-card">
+                    <div class="cn-meal-macro-value">
+                      {{ meal.mealTargets?.carbsG }}g
+                    </div>
+                    <div class="cn-meal-macro-label">carbs</div>
+                  </div>
+                  <div class="cn-meal-macro-card">
+                    <div class="cn-meal-macro-value">
+                      {{ meal.mealTargets?.fatG }}g
+                    </div>
+                    <div class="cn-meal-macro-label">fat</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Liste des aliments -->
+              <div class="cn-meal-foods">
+                <div
+                  class="cn-food-row cn-food-row--bordered"
+                  *ngFor="let food of meal.foods; let last = last"
+                  [class.cn-food-row--bordered]="!last"
+                >
+                  <div class="cn-food-main">
+                    <div class="cn-food-name">{{ food.name }}</div>
+                    <div class="cn-food-qty">{{ food.quantity }}</div>
+                  </div>
+                  <div class="cn-food-macros">
+                    <div class="cn-food-macro">
+                      <div class="cn-food-macro-value">{{ food.calories }}</div>
+                      <div class="cn-food-macro-label">kcal</div>
+                    </div>
+                    <div class="cn-food-macro">
+                      <div class="cn-food-macro-value">{{ food.protein }}g</div>
+                      <div class="cn-food-macro-label">P</div>
+                    </div>
+                    <div class="cn-food-macro">
+                      <div class="cn-food-macro-value">{{ food.carbs }}g</div>
+                      <div class="cn-food-macro-label">C</div>
+                    </div>
+                    <div class="cn-food-macro">
+                      <div class="cn-food-macro-value">{{ food.fat }}g</div>
+                      <div class="cn-food-macro-label">F</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- Pas de repas -->
+        <ng-template #noMeals>
+          <div class="cn-empty" style="margin-top: 32px">
+            <div class="cn-empty-icon">🍽️</div>
+            <h3 class="cn-empty-title">No meals planned</h3>
+            <p class="cn-empty-text">This day has no meals scheduled yet.</p>
           </div>
-
-          <article
-            class="cn-meal-card"
-            *ngFor="let meal of selectedDay.meals; index as idx"
-          >
-            <!-- Meal header -->
-            <div class="cn-meal-header">
-              <div class="cn-meal-header-left">
-                <div class="cn-meal-index">
-                  {{ idx + 1 }}
-                </div>
-                <h3 class="cn-meal-name">
-                  {{ meal.name }}
-                </h3>
-              </div>
-
-              <div class="cn-meal-macros-grid">
-                <div class="cn-meal-macro-card">
-                  <div class="cn-meal-macro-value">
-                    {{ calculateMealTotals(meal).calories }}
-                  </div>
-                  <div class="cn-meal-macro-label">kcal</div>
-                </div>
-                <div class="cn-meal-macro-card">
-                  <div class="cn-meal-macro-value">
-                    {{ calculateMealTotals(meal).protein | number:'1.1-1' }}g
-                  </div>
-                  <div class="cn-meal-macro-label">protein</div>
-                </div>
-                <div class="cn-meal-macro-card">
-                  <div class="cn-meal-macro-value">
-                    {{ calculateMealTotals(meal).carbs | number:'1.1-1' }}g
-                  </div>
-                  <div class="cn-meal-macro-label">carbs</div>
-                </div>
-                <div class="cn-meal-macro-card">
-                  <div class="cn-meal-macro-value">
-                    {{ calculateMealTotals(meal).fat | number:'1.1-1' }}g
-                  </div>
-                  <div class="cn-meal-macro-label">fat</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Foods list -->
-            <div class="cn-meal-foods">
-              <div
-                class="cn-food-row"
-                *ngFor="let food of meal.foods; index as foodIndex"
-                [class.cn-food-row--bordered]="foodIndex !== meal.foods.length - 1"
-              >
-                <div class="cn-food-main">
-                  <div class="cn-food-name">
-                    {{ food.name }}
-                  </div>
-                  <div class="cn-food-qty">
-                    {{ food.quantity }}
-                  </div>
-                </div>
-
-                <div class="cn-food-macros">
-                  <div class="cn-food-macro">
-                    <div class="cn-food-macro-value">
-                      {{ food.calories }}
-                    </div>
-                    <div class="cn-food-macro-label">kcal</div>
-                  </div>
-                  <div class="cn-food-macro">
-                    <div class="cn-food-macro-value">
-                      {{ food.protein | number:'1.1-1' }}
-                    </div>
-                    <div class="cn-food-macro-label">P</div>
-                  </div>
-                  <div class="cn-food-macro">
-                    <div class="cn-food-macro-value">
-                      {{ food.carbs | number:'1.1-1' }}
-                    </div>
-                    <div class="cn-food-macro-label">C</div>
-                  </div>
-                  <div class="cn-food-macro">
-                    <div class="cn-food-macro-value">
-                      {{ food.fat | number:'1.1-1' }}
-                    </div>
-                    <div class="cn-food-macro-label">F</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </article>
-        </section>
+        </ng-template>
       </main>
 
-      <!-- bottom sticky buttons -->
+      <!-- FOOTER – Boutons Mark as Completed / Missed -->
       <footer class="cn-detail-footer">
         <button
-          type="button"
           class="cn-footer-btn cn-footer-btn--green"
-          [class.cn-footer-btn--active]="selectedDay?.status === 'completed'"
-          (click)="updateDayStatus('completed')"
+          [class.cn-footer-btn--active]="selectedDay.status === 'COMPLETED'"
+          (click)="openConfirmModal('COMPLETED')"
         >
           ✓ Mark as Completed
         </button>
-
         <button
-          type="button"
           class="cn-footer-btn cn-footer-btn--red"
-          [class.cn-footer-btn--active]="selectedDay?.status === 'missed'"
-          (click)="updateDayStatus('missed')"
+          [class.cn-footer-btn--active]="selectedDay.status === 'MISSED'"
+          (click)="openConfirmModal('MISSED')"
         >
           ✕ Mark as Missed
         </button>
       </footer>
-
     </div>
   </div>
 </div>
+
+<!-- Modal de confirmation -->
+<app-modal-confirm
+  [show]="showConfirmModal"
+  [programToConfrim]="pendingStatus || ''"
+  (close)="closeConfirmModal()"
+  (confirm)="confirmStatusUpdate()"
+></app-modal-confirm>

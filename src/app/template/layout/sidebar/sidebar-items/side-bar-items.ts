@@ -10,7 +10,8 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
+    submenu: [],
+    roles: ['ROLE_COACH'],
   },
   {
     path: '/clients',
@@ -21,7 +22,32 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
+    submenu: [],
+    roles: ['ROLE_COACH'],
+  },
+  {
+    path: '/clients/client-workouts',
+    title: 'Workouts',
+    iconType: 'feather',
+    icon: 'zap',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: [],
+    roles: ['ROLE_CLIENT'],
+  },
+  {
+    path: '/clients/client-nutrition',
+    title: 'Nutrition',
+    iconType: 'feather',
+    icon: 'heart',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: [],
+    roles: ['ROLE_CLIENT'],
   },
   {
     path: '',
@@ -32,6 +58,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
+    roles: ['ROLE_COACH'],
     submenu: [
       {
         path: '/workout/program-library',
@@ -42,7 +69,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
+        submenu: [],
       },
       {
         path: '/workout/exercise-library',
@@ -53,9 +80,9 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
-      }
-    ]
+        submenu: [],
+      },
+    ],
   },
   {
     path: '',
@@ -66,6 +93,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
+    roles: ['ROLE_COACH'],
     submenu: [
       {
         path: '/nutrition/plans',
@@ -76,7 +104,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
+        submenu: [],
       },
       {
         path: '/nutrition/custom-foods',
@@ -87,7 +115,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
+        submenu: [],
       },
       {
         path: '/nutrition/days',
@@ -98,7 +126,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
+        submenu: [],
       },
       {
         path: '/nutrition/meals',
@@ -109,9 +137,9 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
-      }
-    ]
+        submenu: [],
+      },
+    ],
   },
   {
     path: '/chat',
@@ -122,7 +150,8 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
+    submenu: [],
+    roles: ['ROLE_COACH'],
   },
   {
     path: '/calendar',
@@ -133,7 +162,8 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
+    submenu: [],
+    roles: ['ROLE_COACH'],
   },
   {
     path: '',
@@ -144,6 +174,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
+    roles: ['ROLE_COACH'],
     submenu: [
       {
         path: '/forms/check-in-forms',
@@ -154,7 +185,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
+        submenu: [],
       },
       {
         path: '/forms/initial-questionnaire',
@@ -165,9 +196,9 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: []
-      }
-    ]
+        submenu: [],
+      },
+    ],
   },
   {
     path: '/settings',
@@ -178,6 +209,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
-  }
+    submenu: [],
+    roles: ['ROLE_COACH'],
+  },
 ];

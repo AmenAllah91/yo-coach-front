@@ -1,0 +1,103 @@
+<div *ngIf="isOpen" class="assign-modal-overlay">
+  <div class="assign-modal">
+    <div class="assign-modal-header">
+      <h3 class="assign-modal-title">{{ title }}</h3>
+
+      <button
+        type="button"
+        class="assign-modal-close"
+        (click)="close.emit()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="assign-modal-body">
+      <!-- Existing -->
+      <button type="button" class="assign-option" (click)="existingClick.emit()">
+        <div class="assign-option-left">
+          <div class="assign-option-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3" y2="6"></line>
+              <line x1="3" y1="12" x2="3" y2="12"></line>
+              <line x1="3" y1="18" x2="3" y2="18"></line>
+            </svg>
+          </div>
+
+          <div class="assign-option-text">
+            <div class="assign-option-title">{{ existingTitle }}</div>
+            <div class="assign-option-subtitle">{{ existingSubtitle }}</div>
+          </div>
+        </div>
+
+        <svg
+          class="assign-option-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+
+      <!-- Create -->
+      <button type="button" class="assign-option" (click)="createClick.emit()">
+        <div class="assign-option-left">
+          <div class="assign-option-icon assign-option-icon--green">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+
+          <div class="assign-option-text">
+            <div class="assign-option-title">{{ createTitle }}</div>
+            <div class="assign-option-subtitle">{{ createSubtitle }}</div>
+          </div>
+        </div>
+
+        <svg
+          class="assign-option-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

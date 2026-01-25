@@ -12,24 +12,36 @@ export interface Client {
   login?: string;
   activated?: boolean;
   coachId?: string;
+  image?: string;
   coach?: {
     id: string;
   };
   workoutDates?: string[];
   coachingSpecialities?: any[];
   authorities?: any[];
+  selected: boolean;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ClientService {
   private apiUrl = `${environment.baseApiUrl}/gym_coaching/clients`;
 
   constructor(private http: HttpClient) {}
 
-  getClientsByCoach(coachId: string, page: number = 0, size: number = 10): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}?page=${page}&size=${size}`);
+  getClientsByCoach(
+    coachId: string,
+    page: number = 0,
+    size: number = 10
+  ): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/coach/${coachId}?page=${page}&size=${size}`
+    );
+  }
+
+  getListClientsByCoachWithoutPagination(coachId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}/all`);
   }
 
   getClientById(id: string): Observable<Client> {

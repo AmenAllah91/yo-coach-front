@@ -1,0 +1,99 @@
+<div *ngIf="isOpen" class="assign-modal-overlay">
+  <div class="assign-modal select-program-modal">
+    <!-- Header -->
+    <div class="assign-modal-header">
+      <div>
+        <h3 class="assign-modal-title">Select Nutrition Program</h3>
+        <p class="assign-modal-subtitle">
+          Choose a program to assign to {{ fullName }}
+        </p>
+      </div>
+
+      <button type="button" (click)="close()" class="assign-modal-close">
+        ✕
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="select-program-search">
+      <div class="select-search-input">
+        <input
+          type="text"
+          placeholder="Search nutrition programs..."
+          [(ngModel)]="searchTerm"
+        />
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="select-program-body">
+      <ng-container *ngIf="filteredPrograms.length; else noNutrition">
+        <div
+          class="select-program-card"
+          *ngFor="let program of filteredPrograms"
+          [class.select-program-card--selected]="program.id === selectedProgramId"
+          (click)="selectProgram(program)"
+        >
+          <div class="select-program-main">
+            <div class="select-radio">
+              <span
+                class="select-radio-inner"
+                *ngIf="program.id === selectedProgramId"
+              ></span>
+            </div>
+
+            <div class="select-program-text">
+              <div class="select-program-title-row">
+                <span class="select-program-name">
+                  {{ program.name }}
+                </span>
+              </div>
+
+              <div class="select-program-meta">
+                <span>{{ program.totalDays }} days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noNutrition>
+        <div class="select-program-empty">No nutrition programs found</div>
+      </ng-template>
+
+      <!-- Schedule -->
+      <div *ngIf="selectedProgram" class="select-program-schedule">
+        <h4>Program Schedule</h4>
+
+        <div class="schedule-grid">
+          <div class="schedule-field">
+            <label>Start Date *</label>
+            <div class="schedule-input">
+              <input type="date" [(ngModel)]="startDate" />
+            </div>
+          </div>
+
+          <div class="schedule-field">
+            <label>End Date</label>
+            <div class="schedule-input schedule-input--readonly">
+              <input type="date" [value]="calculatedEndDate || ''" disabled />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="select-program-footer">
+      <button class="btn-secondary" (click)="back()">Back</button>
+
+      <button
+        class="btn-primary"
+        [disabled]="!selectedProgramId || !startDate"
+        (click)="assign()"
+      >
+        Assign Nutrition Program
+      </button>
+    </div>
+  </div>
+</div>

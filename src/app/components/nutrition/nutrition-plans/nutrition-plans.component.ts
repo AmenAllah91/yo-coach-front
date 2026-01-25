@@ -11,6 +11,7 @@ import {
 import { NutritionBlocService } from '../../../service/nutrition-bloc.service';
 import { DeleteNutritionPlanModalComponent } from '../delete-nutrition-plan-modal/delete-nutrition-plan-modal.component';
 import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-plan-type-modal.component';
+import { ModalAssignToclientComponent } from 'app/components/clients/modal-assign-toclient/modal-assign-toclient.component';
 
 @Component({
   selector: 'app-nutrition-plans',
@@ -21,6 +22,7 @@ import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-p
     FeatherModule,
     DeleteNutritionPlanModalComponent,
     ChoosePlanTypeModalComponent,
+    ModalAssignToclientComponent,
   ],
   templateUrl: './nutrition-plans.component.html',
   styleUrls: ['./nutrition-plans.component.scss'],
@@ -72,10 +74,9 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     this.nutritionBloc.setLoading(true);
 
     // Uncomment when backend is ready
-    this.nutritionService.getNutritionPlans().subscribe({
+    this.nutritionService.getNutritionPlansTemplates().subscribe({
       next: (plans) => {
         this.plans = plans.content;
-        console.log(this.plans);
       },
       error: (error) => {
         console.error('Error loading plans:', error);
@@ -98,15 +99,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     this.showChooseModal = false;
   }
 
-  createMacroOnlyPlan() {
-    this.closeChooseModal();
-    this.router.navigate(['/nutrition/create-macro-plan']);
-  }
-
-  createFullMealPlan() {
-    this.closeChooseModal();
-    // TODO: Navigate to full meal plan creation
-  }
 
   editPlan(plan: NutritionPlan) {
     if (plan.trackingMode === 'EACH_MEAL') {
@@ -157,17 +149,49 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.openDropdownId = this.openDropdownId === planId ? null : planId;
   }
-
-  assignPlan(plan: NutritionPlan) {
-    // TODO: Implement assign functionality
-    console.log('Assign plan:', plan.name);
+  programToAssign: NutritionPlan | null = null;
+  showAssignModal = false;
+  assignToClients(program: NutritionPlan) {
+    console.log('Assign to clients:', program);
+    this.programToAssign = program;
+    this.showAssignModal = true;
     this.openDropdownId = null;
   }
 
-  duplicatePlan(plan: NutritionPlan) {
-    // TODO: Implement duplicate functionality
-    console.log('Duplicate plan:', plan.name);
-    this.openDropdownId = null;
+  closeAssignModal() {
+    this.showAssignModal = false;
+    this.programToAssign = null;
+  }
+
+  onProgramAssigned(event: any) {
+    if (event.clients.length > 0) {
+      for (const client of event.clients) {
+        console.log(client);
+        this.programToAssign.client = client;
+        this.programToAssign.startDate = event.date;
+        this.nutritionService
+          .assignNutritionPlan(this.programToAssign)
+          .subscribe((res) => {
+            console.log(res);
+            this.loadPlans();
+          });
+      }
+    }
+    console.log(event);
+
+    /** event = { date: string, clients: Client[] } */
+
+    this.showAssignModal = false;
+  }
+
+  duplicatePlan(id: string) {
+    this.nutritionService.duplicate(id).subscribe({
+      next: () => {
+        this.loadPlans();
+        this.openDropdownId = null;
+      },
+      error: (error) => console.error('Error duplicating program:', error),
+    });
   }
 
   formatDate(date: string | undefined): string {

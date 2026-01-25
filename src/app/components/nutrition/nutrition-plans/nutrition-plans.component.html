@@ -1,6 +1,6 @@
 <div class="nutrition-plans-container">
   <div class="page-header">
-    <h1>Nutrition Planss</h1>
+    <h1>Nutrition Plans</h1>
     <button class="btn-primary" (click)="openChooseModal()">
       <i-feather name="plus"></i-feather>
       Add New Plan
@@ -14,7 +14,8 @@
         type="text"
         placeholder="Search plans..."
         [(ngModel)]="searchTerm"
-        class="search-input">
+        class="search-input"
+      />
     </div>
   </div>
 
@@ -29,8 +30,18 @@
 
     <div class="table-row" *ngFor="let plan of filteredPlans">
       <div class="col-title">
-        <div class="plan-name">{{ plan.name }}</div>
-        <div class="plan-type">{{ plan.trackingMode === 'TOTAL_FOR_DAY' ? 'TOTAL FOR DAY' : plan.trackingMode === 'EACH_MEAL' ? 'EACH MEAL' : 'FULL MEAL PLAN' }}</div>
+        <div class="plan-name">
+          {{ plan.name }} {{ plan.client ? "(Template)" : "" }}
+        </div>
+        <div class="plan-type">
+          {{
+            plan.trackingMode === "TOTAL_FOR_DAY"
+              ? "TOTAL FOR DAY"
+              : plan.trackingMode === "EACH_MEAL"
+              ? "EACH MEAL"
+              : "FULL MEAL PLAN"
+          }}
+        </div>
       </div>
 
       <div class="col-updated">
@@ -49,25 +60,40 @@
 
       <div class="col-actions">
         <div class="dropdown" [class.open]="openDropdownId === plan.id">
-          <button class="actions-btn" (click)="toggleDropdown(plan.id!, $event)">
+          <button
+            class="actions-btn"
+            (click)="toggleDropdown(plan.id!, $event)"
+          >
             Actions
             <i-feather name="chevron-down"></i-feather>
           </button>
 
           <div class="dropdown-menu" *ngIf="openDropdownId === plan.id">
-            <button class="dropdown-item" (click)="editPlan(plan); $event.stopPropagation()">
+            <button
+              class="dropdown-item"
+              (click)="editPlan(plan); $event.stopPropagation()"
+            >
               <i-feather name="edit"></i-feather>
               Edit
             </button>
-            <button class="dropdown-item" (click)="assignPlan(plan); $event.stopPropagation()">
+            <button
+              class="dropdown-item"
+              (click)="assignToClients(plan); $event.stopPropagation()"
+            >
               <i-feather name="user-plus"></i-feather>
               Assign to
             </button>
-            <button class="dropdown-item" (click)="duplicatePlan(plan); $event.stopPropagation()">
+            <button
+              class="dropdown-item"
+              (click)="duplicatePlan(plan.id); $event.stopPropagation()"
+            >
               <i-feather name="copy"></i-feather>
               Duplicate
             </button>
-            <button class="dropdown-item delete" (click)="openDeleteModal(plan); $event.stopPropagation()">
+            <button
+              class="dropdown-item delete"
+              (click)="openDeleteModal(plan); $event.stopPropagation()"
+            >
               <i-feather name="trash-2"></i-feather>
               Delete
             </button>
@@ -77,14 +103,12 @@
     </div>
   </div>
 
-
-
   <!-- Choose Plan Type Modal -->
   <app-choose-plan-type-modal
     [isVisible]="showChooseModal"
+    [isAssign]="false"
     (onClose)="closeChooseModal()"
-    (onCreateFullMeal)="createFullMealPlan()"
-    (onCreateMacroOnly)="createMacroOnlyPlan()">
+  >
   </app-choose-plan-type-modal>
 
   <!-- Delete Plan Modal -->
@@ -92,6 +116,14 @@
     [isVisible]="showDeleteModal"
     [planName]="selectedPlan?.name || ''"
     (onClose)="closeDeleteModal()"
-    (onConfirm)="confirmDelete()">
+    (onConfirm)="confirmDelete()"
+  >
   </app-delete-nutrition-plan-modal>
+  <app-modal-assign-toclient
+    *ngIf="showAssignModal"
+    [programName]="programToAssign?.name"
+    (closeModal)="closeAssignModal()"
+    (cancel)="closeAssignModal()"
+    (assignProgram)="onProgramAssigned($event)"
+  ></app-modal-assign-toclient>
 </div>

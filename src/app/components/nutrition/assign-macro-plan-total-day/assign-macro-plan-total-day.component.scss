@@ -1,0 +1,1321 @@
+/* ===== Theme ===== */
+:root{
+  --np-brand:#44b4df;
+  --np-brand-10: rgba(68,180,223,.10);
+  --np-brand-20: rgba(68,180,223,.20);
+  --np-text:#111827;         /* gray-900 */
+  --np-muted:#6b7280;        /* gray-500 */
+  --np-border:#e5e7eb;       /* gray-200 */
+  --np-border-300:#d1d5db;   /* gray-300 */
+  --np-bg:#f9fafb;           /* gray-50 */
+  --np-white:#fff;
+  --np-danger:#ef4444;
+  --np-card-shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06);
+}
+
+/* ===== Layout ===== */
+.np-root{background:var(--np-bg);min-height:100vh;color:var(--np-text);font:14px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif;}
+.np-shell{display:flex;min-height:100vh;max-width:1600px;margin-inline:auto}
+.np-aside{width:256px;background:var(--np-white);border-right:1px solid var(--np-border)}
+.np-main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* Page head */
+.np-pagehead{display:flex;align-items:center;gap:12px;padding:24px 24px 0 24px}
+.np-back{color:#6b7280;text-decoration:none}
+
+/* Card container */
+.np-card{background:var(--np-white);border:1px solid var(--np-border);border-radius:12px;box-shadow:var(--np-card-shadow);padding:16px;margin:16px 24px}
+@media (min-width:768px){.np-card{padding:24px}}
+
+/* Sidebar content */
+.np-aside__head{padding:16px;border-bottom:1px solid var(--np-border)}
+.np-aside__body{padding:16px}
+
+/* Day list */
+.np-dayrow{display:flex;gap:8px;align-items:center}
+.np-day{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px;border-radius:8px;border:none;background:#fff;color:#374151;cursor:pointer}
+.np-day:hover{background:#f9fafb}
+.np-day.is-active{background:var(--np-brand-10);color:var(--np-brand);font-weight:600}
+
+.np-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:12px 14px;border:1px solid transparent;background:#fff;cursor:pointer;font-weight:600}
+.np-btn--full{width:100%}
+.np-btn--ghost{color:#6b7280;border:1px dashed var(--np-border-300);background:transparent}
+.np-btn--dash{border-style:dashed}
+.np-btn--brandsoft{background:var(--np-brand-10);color:var(--np-brand);border:1px solid rgba(68,180,223,.35)}
+.np-btn--brandsoft:hover{background:var(--np-brand-20)}
+.np-btn--branddash{background:var(--np-brand-10);color:var(--np-brand);border:1px dashed rgba(68,180,223,.5)}
+.np-btn--save{background:#000;color:#fff}
+.np-btn--save:hover{background:var(--np-brand)}
+
+.np-iconbtn{width:32px;height:32px;border-radius:999px;border:1px solid var(--np-border);background:#fff;display:inline-flex;align-items:center;justify-content:center}
+.np-mini{width:28px;height:28px;border-radius:999px;border:1px solid var(--np-border);background:#fff;display:inline-flex;align-items:center;justify-content:center;margin-left:8px}
+.np-ico{width:18px;height:18px;color:#6b7280}
+
+/* Labels & inputs */
+.np-field{margin-bottom:24px}
+.np-label{display:block;font-size:14px;font-weight:600;margin-bottom:8px;color:#374151}
+.np-danger{color:var(--np-danger)}
+.np-input{width:100%;padding:10px 12px;border:1px solid var(--np-border-300);border-radius:8px;font:inherit;outline:none}
+.np-input:focus{border-color:var(--np-brand);box-shadow:0 0 0 3px var(--np-brand-10)}
+
+/* Link (blue + icon) */
+.np-link{display:inline-flex;align-items:center;gap:8px;color:var(--np-brand);background:none;border:none;padding:0;margin:0 0 24px 0;cursor:pointer;font-weight:600}
+
+/* Section separators */
+.np-sep{height:1px;background:var(--np-border);margin:8px 0 16px}
+
+/* Day head row */
+.np-dayhead{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.np-brand{color:var(--np-brand)}
+.np-subtle{color:#6b7280;margin:8px 0 12px}
+
+/* Meal card */
+.np-meal{border:1px solid var(--np-border);border-radius:12px;overflow:hidden;background:#fff;box-shadow:var(--np-card-shadow);margin:0 0 16px 0}
+.np-meal__head{display:flex;flex-direction:column;gap:12px;padding:16px;border-bottom:1px solid var(--np-border);background:#f9fafb}
+.np-meal__left{display:flex;align-items:center}
+.np-meal__right{display:flex;align-items:center;gap:12px;justify-content:space-between}
+@media (min-width:768px){.np-meal__head{flex-direction:row;align-items:center;justify-content:space-between}}
+.np-badges{display:grid;grid-template-columns:repeat(4,auto);gap:8px}
+.np-badge{background:#fff;border:1px solid var(--np-border);border-radius:8px;padding:8px 12px;text-align:center;min-width:96px}
+.np-badge__label{font-size:11px;color:#6b7280}
+.np-badge__val{font-weight:700}
+.np-meal__body{padding:24px}
+
+/* Empty state */
+.np-emptystate{border:1px solid var(--np-border);background:#f9fafb;border-radius:10px;text-align:center;padding:48px;margin-bottom:24px}
+.np-emptystate__title{color:#6b7280;margin-bottom:8px}
+.np-emptystate__hint{color:#9ca3af;font-size:14px}
+.np-center{text-align:center}
+
+/* Grid buttons */
+.np-grid-2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:8px}
+@media (min-width:900px){.np-grid-2{grid-template-columns:1fr 1fr}}
+
+/* Sidebar utilities */
+.np-stack{margin-top:24px}
+.np-rowbtn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;border:none;background:transparent;color:#374151;cursor:pointer}
+.np-rowbtn:hover{background:#f3f4f6}
+
+/* Sticky save */
+.np-sticky{position:sticky;bottom:0;left:0;right:0;padding:16px;background:#fff;border-top:1px solid var(--np-border);box-shadow:0 -6px 18px rgba(0,0,0,.06)}
+
+/* Headings */
+.np-h5{font-size:22px;font-weight:800;margin:0}
+.np-h6{font-size:16px;font-weight:800;margin:0}
+
+/* ===== Responsiveness ===== */
+/* Mobile: sidebar becomes top-row; card keeps margins; badges wrap 2x2 */
+@media (max-width: 767px){
+  .np-shell{flex-direction:column}
+  .np-aside{width:100%;border-right:none;border-bottom:1px solid var(--np-border)}
+  .np-card{margin:12px}
+  .np-pagehead{padding:16px 12px 0}
+  .np-badges{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .np-badge{min-width:0}
+}
+
+/* Large desktop: keep proportions close to screenshot */
+@media (min-width:1200px){
+  .np-card{max-width:1080px}
+}
+/* ====== PATCH COULEURS & CADRES ====== */
+
+/* Palette exacte */
+:root{
+  --np-brand:#44b4df;
+  --np-brand-08: rgba(68,180,223,.08);
+  --np-brand-12: rgba(68,180,223,.12);
+  --np-brand-18: rgba(68,180,223,.18);
+  --np-text:#0f172a;            /* gris très foncé */
+  --np-muted:#6b7280;
+  --np-border:#e6e9ee;          /* plus clair que #e5e7eb */
+  --np-border-strong:#d8dde6;   /* pour cadres intérieurs */
+  --np-bg:#f7f8fb;              /* fond app plus clair */
+  --np-white:#fff;
+}
+
+/* Fond page & cartes (lumière/relief comme la capture) */
+.np-root{ background:var(--np-bg); }
+.np-card{
+  border:1px solid var(--np-border);
+  border-radius:10px;           /* radius un peu plus petit */
+  box-shadow:0 1px 2px rgba(16,24,40,.03);
+}
+
+/* Sidebar list */
+.np-aside{ border-right:1px solid var(--np-border); }
+.np-day{
+  background:#fff;
+  border:1px solid transparent; /* pas de bord visible au repos */
+  color:#334155;
+}
+.np-day:hover{ background:#fafcff; }
+.np-day.is-active{
+  background:var(--np-brand-12);
+  color:var(--np-brand);
+  border-color:var(--np-brand-18);
+  font-weight:600;
+}
+
+/* Bouton "Add Day" dans la sidebar : pointillés bleus très subtils */
+.np-aside .np-btn--dash,
+.np-aside .np-btn--ghost{
+  border-color:rgba(68,180,223,.35) !important;
+  color:#697386;
+  background:transparent;
+}
+.np-aside .np-btn--dash:hover{ background:rgba(68,180,223,.06); }
+
+/* Inputs */
+.np-input{
+  border:1px solid var(--np-border-strong);
+  background:#fff;
+}
+.np-input:focus{
+  border-color:var(--np-brand);
+  box-shadow:0 0 0 3px var(--np-brand-12);
+}
+
+/* Séparateur sous "Add Plan Description" comme la capture */
+.np-sep{ background:var(--np-border); }
+
+/* Titre "Main Meal" bleu et header gris pâle */
+.np-meal{
+  border:1px solid var(--np-border);
+  border-radius:10px;
+}
+.np-meal__head{
+  background:#f8fbfd;                 /* gris-bleuté très léger */
+  border-bottom:1px solid var(--np-border);
+}
+.np-meal__left .np-h6{ color:var(--np-brand); }
+
+/* Pastilles macros (CALORIES/PROTEIN/CARBS/FAT) en "pill" */
+.np-badge{
+  background:#fff;
+  border:1px solid var(--np-border-strong);
+  border-radius:8px;
+  padding:8px 10px;
+  min-width:84px;
+}
+.np-badge__label{
+  font-size:11px;
+  letter-spacing:.02em;
+  color:#8a94a6;
+  margin-bottom:2px;
+  text-transform:uppercase;
+}
+.np-badge__val{ font-weight:700; color:#1f2937; }
+
+/* Bloc vide (empty state) : gris très clair + bord arrondi fin */
+.np-emptystate{
+  background:#f8fafc;
+  border:1px solid var(--np-border);
+  border-radius:10px;
+}
+.np-emptystate__title{ color:#6b7280; }
+.np-emptystate__hint{ color:#98a2b3; }
+
+/* Bouton "Add Food" bleu très doux */
+.np-btn--brandsoft{
+  background:var(--np-brand-08);
+  border:1px solid rgba(68,180,223,.35);
+  color:var(--np-brand);
+}
+.np-btn--brandsoft:hover{ background:var(--np-brand-12); }
+
+/* Bandes en pointillés bleus pour "Add Another Meal / From Template" */
+.np-btn--branddash{
+  border-color:rgba(68,180,223,.45) !important;
+  background:rgba(68,180,223,.06);
+  color:var(--np-brand);
+}
+.np-btn--branddash:hover{ background:rgba(68,180,223,.12); }
+
+/* Conteneur repas (cadres intérieurs très fins) */
+.np-meal__body{
+  background:#fff;
+}
+.np-meal__body > .np-center + .np-center{ border-top:1px solid var(--np-border); }
+
+/* Barre "Save Plan" noire, arrondie aux bords comme la capture */
+.np-sticky{
+  border-top:1px solid var(--np-border);
+  background:#fff;
+  box-shadow:0 -4px 12px rgba(16,24,40,.06);
+}
+.np-btn--save{
+  height:44px;
+  border-radius:8px;
+  background:#000;
+  color:#fff;
+}
+.np-btn--save:hover{ background:#111; }
+
+/* Petites icônes (kebab / trash) plus discrètes */
+.np-ico{ color:#94a3b8; }
+.np-iconbtn{ border:1px solid var(--np-border-strong); background:#fff; }
+.np-iconbtn:hover{ background:#f3f6fb; }
+
+/* Titres / couleurs comme la capture */
+.np-h5{ font-size:22px; font-weight:800; color:#0f172a; }
+.np-h6{ font-size:16px; font-weight:800; color:#0f172a; }
+
+/* Grille des deux gros boutons : bordures bleues en pointillés sur toute la largeur */
+.np-grid-2{
+  margin-top:8px;
+}
+/* -- Boutons dashed bleus (Add Another Meal / Add Meal From Template) -- */
+.np-grid-2 .np-btn {                 /* full width + centrage du contenu */
+  width: 100%;
+  justify-content: center;
+}
+
+.np-btn--branddash{
+  background: #EAF7FD;                           /* bleu très clair */
+  border: 1px dashed #9BD7EE;                     /* bord pointillé bien visible */
+  color: #1EA2D2;                                  /* texte bleu */
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.np-btn--branddash .np-ico{                       /* icône “+” bleu + taille */
+  width: 20px;
+  height: 20px;
+  color: #1EA2D2;
+}
+
+.np-btn--branddash:hover{
+  background: #DDF1FB;                            /* un poil plus soutenu au hover */
+  border-color: #6CC3E3;
+}
+
+.np-btn--branddash:active{
+  background: #D3ECF8;
+}
+
+.np-btn--branddash:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(68,180,223,.22);     /* halo d’accessibilité */
+  border-color: #6CC3E3;
+}
+.np-btn--brandsoft{
+  background: #EAF7FD;
+  border: 1px solid #CFEAF7;
+  color: #1EA2D2;
+  border-radius: 10px;
+}
+.np-btn--brandsoft:hover{ background: #DDF1FB; }
+.np-btn--brandsoft .np-ico{ color:#1EA2D2; }
+/* ===== SIDEBAR DAYS — rendu exact ===== */
+
+/* Bloc & espacements */
+.np-aside__head{
+  padding:14px 16px;
+  border-bottom:1px solid var(--np-border);
+}
+.np-aside__body{
+  display:flex;
+  flex-direction:column;
+  gap:16px;                     /* espace vertical constant entre lignes */
+}
+
+/* Lignes "Day X" */
+.np-dayrow{ display:flex; align-items:center; gap:10px; }
+.np-day{
+  flex:1;
+  display:flex; align-items:center; justify-content:flex-start;
+  padding:12px 14px;
+  border-radius:8px;
+  border:1px solid transparent;
+  background:#fff;
+  color:#334155;
+  font-weight:600;
+}
+.np-day:hover{
+  background:#f9fcff;
+  border-color:#e6f3fb;
+}
+
+/* État actif (fond bleu clair + bord fin) */
+.np-day.is-active{
+  background:#EAF7FD;           /* bleu très clair */
+  border-color:#9BD7EE;         /* liseré bleu */
+  color:#1EA2D2;                /* texte bleu */
+}
+
+/* Icône poubelle à droite des Days (sans pastille) */
+.np-aside .np-iconbtn{
+  width:auto; height:auto;
+  padding:0;
+  border:none;
+  background:transparent;
+  color:#9AA9B8;                /* gris bleuté comme la cap */
+}
+.np-aside .np-iconbtn:hover{ color:#6f8aa0; }
+
+/* Bouton "Add Day" : bloc plein largeur, bord dashed bleu, fond très clair */
+.np-aside .np-btn--dash,
+.np-aside .np-btn--ghost{
+  width:100%;
+  min-height:44px;
+  justify-content:center;
+  border-radius:8px;
+  border:1px dashed #9BD7EE !important;
+  background:#EAF7FD;           /* même fond que l’actif */
+  color:#1EA2D2;
+  font-weight:600;
+}
+.np-aside .np-btn--dash .np-ico,
+.np-aside .np-btn--ghost .np-ico{
+  width:18px; height:18px; color:#1EA2D2;
+}
+.np-aside .np-btn--dash:hover,
+.np-aside .np-btn--ghost:hover{
+  background:#DDF1FB;
+  border-color:#6CC3E3 !important;
+}
+
+/* Ligne "Duplicate Day" : texte à gauche + icône copier à droite */
+.np-rowbtn{
+  padding:0 2px;
+  border-radius:6px;
+  background:transparent;
+  color:#334155;
+  font-weight:600;
+}
+.np-rowbtn .np-ico{ width:18px; height:18px; color:#9AA9B8; }
+.np-rowbtn:hover{ background:transparent; } /* pas d’effet de fond */
+/* ===== TOP SECTION EXACT RENDER ===== */
+
+/* Plan Title label + input */
+.np-field{ margin-bottom:18px; }
+.np-label{
+  font-size:14px;
+  font-weight:700;
+  color:#0f172a;
+  margin-bottom:8px;
+}
+.np-label .np-danger{ color:#ef4444; }
+
+.np-input{
+  height:44px;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid #d8dde6;      /* bord clair comme la capture */
+  background:#fff;
+  font-size:15px;
+}
+.np-input:focus{
+  border-color:#44b4df;
+  box-shadow:0 0 0 3px rgba(68,180,223,.14);
+}
+
+/* Lien + icône (Add Plan/Day Description) */
+.np-link{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:8px 0 12px;
+  font-weight:600;
+  color:#1EA2D2;                  /* bleu identique */
+}
+.np-link .np-ico{
+  width:18px; height:18px;
+  color:#1EA2D2;
+}
+
+/* Séparateur fin */
+.np-sep{
+  height:1px;
+  background:#e6e9ee;
+  margin:16px 0;
+}
+
+/* Titre "Day 1" + petit crayon */
+.np-dayhead{ margin:12px 0 8px; gap:6px; }
+.np-dayhead .np-h6{
+  font-size:20px;                 /* taille comme la capture */
+  font-weight:800;
+  margin:0;
+}
+.np-dayhead .np-mini{
+  width:18px; height:18px;        /* tout petit crayon */
+  margin-left:6px;
+  border:none;                    /* pas de pastille */
+  background:transparent;
+  padding:0;
+}
+.np-dayhead .np-mini .np-ico{ color:#8aa0b2; }
+
+/* Sous-titre "Meals" aligné */
+.np-subtle{
+  margin:12px 0 10px;
+  color:#0f172a;
+  font-weight:700;
+}
+/* ===== MEALS SECTION EXACT LOOK ===== */
+
+/* Carte "Meal" : bord fin, angles doux, légère ombre */
+.np-meal{
+  border:1px solid #e6e9ee;
+  border-radius:10px;
+  box-shadow:0 1px 2px rgba(16,24,40,.03);
+  overflow:hidden;
+}
+
+/* Header de la carte : fond gris très clair + ligne de séparation */
+.np-meal__head{
+  background:#f7fafd;                 /* léger bleu-gris comme la capture */
+  border-bottom:1px solid #e6e9ee;
+  padding:14px 16px;
+}
+
+/* Titre "Main Meal" bleu + petit crayon gris à côté */
+.np-meal__left .np-h6{
+  color:#1EA2D2;
+  font-weight:800;
+}
+.np-meal__left .np-mini{
+  width:18px;height:18px;
+  margin-left:6px;
+  border:none;background:transparent;
+}
+.np-meal__left .np-mini .np-ico{ color:#8aa0b2; }
+
+/* Badges macros à droite (CALORIES/PROTEIN/CARBS/FAT) */
+.np-badges{ gap:10px; }
+.np-badge{
+  min-width:88px;
+  border:1px solid #e6e9ee;
+  border-radius:8px;
+  background:#fff;
+  padding:8px 10px;
+  text-align:center;
+}
+.np-badge__label{
+  text-transform:uppercase;
+  font-size:11px;
+  color:#8a94a6;
+  letter-spacing:.02em;
+  margin-bottom:2px;
+}
+.np-badge__val{
+  font-weight:800;
+  color:#111827;
+}
+
+/* Kebab / icon button discret */
+.np-iconbtn{
+  width:32px;height:32px;
+  border:1px solid #e6e9ee;
+  background:#fff;
+}
+.np-iconbtn .np-ico{ color:#94a3b8; }
+
+/* Corps de la carte */
+.np-meal__body{ padding:20px; }
+
+/* Bloc "empty state" : fond très clair + bord arrondi fin */
+.np-emptystate{
+  background:#f8fafc;
+  border:1px solid #e6e9ee;
+  border-radius:10px;
+  padding:40px 16px;
+  text-align:center;
+  margin-bottom:20px;
+}
+.np-emptystate__title{ color:#6b7280; }
+.np-emptystate__hint{ color:#98a2b3; }
+
+/* Bouton "Add Food" (soft filled bleu, avec +) */
+.np-center .np-btn--brandsoft{
+  display:inline-flex;
+  align-items:center;
+  height:44px;
+  padding:0 18px;
+  border-radius:8px;
+  background:#EAF7FD;
+  border:1px solid #CFEAF7;
+  color:#1EA2D2;
+  font-weight:700;
+  box-shadow:0 1px 0 rgba(16,24,40,.02);
+}
+.np-center .np-btn--brandsoft:hover{ background:#DDF1FB; }
+
+/* Le + dans un petit disque clair */
+.np-center .np-btn--brandsoft .np-ico{
+  width:18px;height:18px;
+  color:#1EA2D2;
+  background:#D7EEF9;
+  border-radius:999px;
+  padding:2px;
+}
+
+/* Gros boutons en bas (déjà stylés, on ajuste juste la hauteur/centrage) */
+.np-grid-2 .np-btn{
+  height:54px;               /* même gabarit que la capture */
+  justify-content:center;
+}
+/* textarea comme les inputs mais plus haut */
+.np-textarea { min-height: 120px; resize: vertical; }
+
+/* bouton X dans l’angle droit du textarea */
+.np-textareaWrap { position: relative; }
+.np-close{
+  position:absolute; top:8px; right:8px;
+  width:24px; height:24px;
+  border:1px solid var(--np-border);
+  border-radius:6px; background:#fff;
+  display:flex; align-items:center; justify-content:center;
+  color:#94a3b8; cursor:pointer;
+}
+.np-close:hover{ background:#f3f4f6; }
+/* ===== SEPARATEURS SIDEBAR & COLONNES ===== */
+
+/* Trait SOUS le titre "Nutrition Days" (plus visible) */
+.np-aside__head{
+  padding: 14px 16px;
+  border-bottom: 1.5px solid #d8dde6; /* plus marqué que var(--np-border) */
+}
+
+/* Trait VERTICAL entre la sidebar et le contenu */
+.np-aside{
+  position: relative;
+  background: #fff;
+  /* on garde la bordure, mais on la rend un poil plus visible */
+  border-right: 1px solid #dfe5ee;
+}
+
+/* Option: petit filet supplémentaire très léger (effet comme la capture) */
+.np-aside::after{
+  content: "";
+  position: absolute;
+  top: 0; right: -1px;
+  width: 1px; height: 100%;
+  background: #f1f4f8;            /* liseré clair */
+  pointer-events: none;
+}
+
+/* (facultatif) un léger padding côté contenu pour “décoller” du trait */
+.np-main{
+  padding-left: 16px;              /* donne l’espace vu sur la capture */
+}
+
+/* Si tu veux un trait horizontal très léger sous la barre de page à droite */
+.np-pagehead{
+  border-bottom: 1px solid #eef2f6;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+/* Séparateur vertical à droite de la sidebar */
+.np-main{
+  border-left: 1px solid #dfe5ee;   /* le trait de séparation */
+  padding-left: 16px;               /* espace visuel côté contenu */
+}
+
+/* Optionnel : renforcer très légèrement la couleur en hover/focus global si tu veux plus visible */
+@media (min-width: 768px){
+  .np-main{ border-left-color: #e6e9ee; }
+}
+/* Carte principale : bordure visible + arrondi doux */
+.np-card{
+  border: 1.5px solid #e2e8f0;   /* plus visible */
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16,24,40,.03);
+}
+/* Labels de formulaire (Plan Title, Plan Description, etc.) */
+.np-label{
+  font-size: 14px;        /* taille modérée (plus petite que 'Day') */
+  font-weight: 600;       /* semi-bold, pas trop gras */
+  color: #0f172a;         /* foncé propre */
+  margin-bottom: 8px;
+}
+
+/* Titre de section 'Day X' reste plus “fort” que les labels */
+.np-dayhead .np-h6{
+  font-size: 20px;        /* plus grand que 14px des labels */
+  font-weight: 800;
+}
+/* 1) La carte prend toute la largeur disponible du main */
+@media (min-width: 1200px){
+  .np-card{ max-width: none; }
+}
+
+/* 2) Gouttières cohérentes avec la barre sticky */
+.np-main{
+  padding-left: 16px;
+  padding-right: 16px;   /* ajouté */
+}
+.np-card{
+  margin:16px 0;         /* plus de marge droite/gauche : on utilise le padding du main */
+}
+/* ===== Modal shell ===== */
+.np-modal{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+.np-modal__backdrop{position:absolute;inset:0;background:rgba(17,24,39,.45);backdrop-filter:saturate(120%) blur(2px)}
+.np-modal__panel{
+  position:relative; z-index:1; width:100%; max-width:520px;
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12); display:flex; flex-direction:column;
+}
+/* Head */
+.np-modal__head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #eef2f6}
+.np-modal__title{margin:0;font-size:20px;font-weight:800;color:#0f172a}
+.np-modal__close{width:34px;height:34px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.np-modal__close:hover{background:#f8fafc}
+/* Body */
+.np-modal__body{padding:16px 18px 8px}
+.np-modal__foot{padding:14px 18px;border-top:1px solid #eef2f6}
+.np-modal__sectionTitle{font-weight:700;color:#0f172a;margin:6px 0 10px}
+/* Search */
+.np-searchwrap{position:relative}
+.np-searchwrap__ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#9aa3b2}
+.np-searchwrap__input{padding-left:38px}
+/* Food list */
+.np-foodlist{list-style:none;margin:0;padding:0;border:1px solid #eef2f6;border-radius:10px;overflow:hidden}
+.np-foodlist__item{padding:14px 14px;border-bottom:1px solid #eef2f6;cursor:pointer;background:#fff}
+.np-foodlist__item:last-child{border-bottom:none}
+.np-foodlist__item:hover{background:#f8fbfd}
+.np-foodlist__name{font-weight:700;color:#0f172a;margin-bottom:4px}
+.np-foodlist__meta{color:#6b7280;font-size:13px}
+/* Buttons reuse */
+.np-btn--ghost{color:#374151;border:1px solid #e5e7eb;background:#fff}
+.np-btn--ghost:hover{background:#f3f4f6}
+/* Small screens */
+@media (max-width:520px){
+  .np-modal{padding:10px}
+  .np-modal__panel{border-radius:10px}
+}
+/* ===== FIX STYLE : titre aliment et bouton Add Food ===== */
+
+/* 1️⃣ Nom de l’aliment : pas en gras */
+.np-modal--food .np-field > .np-label:first-child {
+  font-size: 16px;
+  font-weight: 600; /* plus léger que bold (700) */
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+/* 2️⃣ Bouton Add Food : noir plein + hover gris foncé */
+.np-modal--food .np-btn--brandsoft {
+  background: #0b0f19;
+  border: 1px solid #0b0f19;
+  color: #fff;
+}
+.np-modal--food .np-btn--brandsoft:hover {
+  background: #20242c; /* noir légèrement éclairci au hover */
+  border-color: #20242c;
+  color: #fff;
+}
+/* ======== FOOTER BUTTONS STYLE (exact look comme ta 2e capture) ======== */
+
+/* Conteneur footer */
+.np-modal--food .np-modal__foot {
+  border-top: 1px solid #eef2f6;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Grille à droite (Back | Add Food) */
+.np-modal--food .np-grid-2 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Boutons généraux */
+.np-modal--food .np-btn {
+  height: 44px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 110px;
+  transition: all 0.15s ease;
+}
+
+/* === Back gris clair === */
+.np-modal--food .np-btn--ghost {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+}
+.np-modal--food .np-btn--ghost:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+/* === Add Food bleu clair === */
+.np-modal--food .np-btn--brandsoft {
+  background: #44b4df;
+  border: 1px solid #44b4df;
+  color: #fff;
+}
+.np-modal--food .np-btn--brandsoft:hover {
+  background: #2aa9da; /* plus vif au hover */
+  border-color: #2aa9da;
+  color: #fff;
+}
+/* ✅ Rétablir la grille 2 colonnes pour la zone encadrée */
+.np-modal--food .np-grid-2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+
+/* ✅ Limiter le flex au footer uniquement (Back | Add Food) */
+.np-modal--food .np-modal__foot .np-grid-2{
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* (rappel) style du select "g" désactivé mais avec caret */
+.np-modal--food select.np-input[disabled]{
+  appearance: none;
+  pointer-events: none;
+  opacity: 1;
+  padding-right: 40px;
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    url('data:image/svg+xml;utf8,\
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>')
+    no-repeat right 12px center;
+}
+
+/* (optionnel) remettre le sous-titre et labels comme dans ta maquette */
+.np-modal--food .np-field > .np-label:first-child{
+  font-size:16px; font-weight:700; color:#0f172a; margin-bottom:12px;
+}
+.np-modal--food .np-label{
+  font-size:12px; font-weight:700; color:#6b7280; margin-bottom:6px;
+}
+/* === Add Food : noir par défaut, bleu ciel au hover === */
+.np-modal--food .np-btn--brandsoft{
+  background:#0b0f19 !important;
+  border:1px solid #0b0f19 !important;
+  color:#fff !important;
+  transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.np-modal--food .np-btn--brandsoft:hover,
+.np-modal--food .np-btn--brandsoft:focus{
+  background:#44b4df !important;   /* bleu ciel */
+  border-color:#44b4df !important;
+  color:#fff !important;
+  box-shadow:0 0 0 3px rgba(68,180,223,.20);
+}
+/* 4 inputs sur une ligne comme la capture */
+.np-macro-row{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:16px;
+}
+@media (max-width: 860px){
+  .np-macro-row{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Container bleu clair à bordure pointillée */
+.np-addmeal{
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px dashed #9BD7EE;     /* pointillé visible */
+  background: #EAF7FD;            /* bleu très clair */
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Le bouton lui-même est “transparent” pour que ce soit le ruban qui se voit */
+.np-btn--addmeal{
+  background: transparent;
+  border: 0;
+  height: 25px;                   /* même gabarit que la maquette */
+  font-weight: 700;
+  font-size: 16px;
+  color: #1EA2D2;                 /* bleu texte */
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+/* Icône + un peu plus grande */
+.np-btn--addmeal .np-ico{
+  width: 20px;
+  height: 20px;
+  color: #1EA2D2;
+}
+
+/* Hover identique à la capture */
+.np-addmeal:hover{
+  background: #DDF1FB;
+  border-color: #6CC3E3;
+}
+
+/* Accessibilité focus */
+.np-btn--addmeal:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(68,180,223,.22);
+  border-radius: 8px;
+}
+/* ====== MOBILE MEAL LAYOUT (<= 520px) ====== */
+@media (max-width: 520px){
+
+  /* Carte meal : entête claire + grille gauche/droite */
+  .np-meal{ border-radius: 12px; overflow: hidden; }
+  .np-meal__head{
+    display: grid;
+    grid-template-columns: 1fr auto;  /* titre à gauche, actions à droite */
+    gap: 12px;
+    padding: 12px 12px 10px;
+    background: #f7fafd;
+    border-bottom: 1px solid #e6e9ee;
+  }
+
+  .np-meal__left .np-h6{ font-size: 18px; }
+  .np-meal__right{ display: flex; align-items: center; gap: 10px; }
+
+  /* Badges en 2 x 2 */
+  .np-meal__right .np-badges{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .np-meal__right .np-badge{
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  /* bouton poubelle rond comme dans la maquette */
+  .np-meal__right .np-iconbtn{
+    width: 32px; height: 32px;
+    border-radius: 999px;
+    border: 1px solid #e6e9ee;
+    background: #fff;
+  }
+
+  /* Séparateur fin sous l’entête */
+  .np-meal > .np-sep{ margin: 0; }
+
+  /* Les champs macros : 1 colonne, full width, espacés */
+  .np-macro-row{ display: block; }
+  .np-macro-row .np-field{
+    width: 100%;
+    margin: 0 0 12px;
+  }
+  .np-macro-row .np-input{
+    height: 44px;
+    font-size: 15px;
+  }
+
+  /* Suffixe d’unité (si .np-input--unit + data-unit présents) */
+  .np-input--unit{
+    padding-right: 46px;           /* place pour le chip d’unité */
+    position: relative;
+  }
+  .np-input--unit[data-unit]{
+    position: relative;
+  }
+  .np-input--unit[data-unit]::after{
+    content: attr(data-unit);
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    min-width: 34px;
+    padding: 4px 8px;
+    border: 1px solid #e6e9ee;
+    border-radius: 6px;
+    background: #fff;
+    color: #64748b;
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  /* Gros bouton "Add Another Meal" (plein largeur, dashed bleu) */
+  .np-grid-2{
+    display: block;                 /* une seule action en mobile */
+  }
+  .np-grid-2 .np-btn{
+    width: 100%;
+    justify-content: center;
+  }
+  .np-btn--branddash{
+    background: #eaf7fd;
+    border: 1px dashed #9bd7ee !important;
+    color: #1ea2d2;
+    height: 56px;
+    border-radius: 12px;
+    font-weight: 700;
+  }
+  .np-btn--branddash .np-ico{ color:#1ea2d2; width:20px; height:20px; }
+  .np-btn--branddash:hover{ background:#ddf1fb; }
+
+  /* Marge interne de la carte pour aérer en mobile */
+  .np-meal__body{ padding: 14px 12px; }
+}
+/* ==== Cartes Totaux ==== */
+.np-totals{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap:24px;
+  margin:12px 0 18px;
+}
+.np-total{
+  background:#f7fbff;                   /* fond très clair */
+  border:1px solid #e6e9ee;             /* bord fin */
+  border-radius:10px;
+  padding:16px 14px;
+  text-align:center;
+}
+.np-total__value{
+  font-size:28px;
+  line-height:1;
+  font-weight:800;
+  color:#0f172a;
+  margin-bottom:6px;
+}
+.np-total__label{
+  font-size:13px;
+  color:#6b7280;
+}
+
+/* ==== Ligne d'inputs macros (4 colonnes) ==== */
+.np-macro-row{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap:20px;
+  margin-top:4px;
+}
+
+/* Suffixe unité à droite de l’input (g / Kcal) */
+.np-input--unit{
+  position:relative;
+  padding-right:42px;                    /* place pour l’unité */
+}
+.np-input--unit[data-unit]{
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    linear-gradient(transparent,transparent) border-box;
+}
+.np-input--unit[data-unit]::after{
+  content: attr(data-unit);
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* Mobile : 2 colonnes pour les cartes et inputs */
+@media (max-width: 900px){
+  .np-totals{ grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
+  .np-macro-row{ grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
+}
+/* Wrapper d'input avec unité à droite */
+.np-unit {
+  position: relative;
+  display: block;
+}
+
+/* on réserve la place pour l’unité */
+.np-unit .np-input {
+  padding-right: 44px;            /* assez large pour 'Kcal' */
+}
+
+/* puce d’unité collée à droite de l’input */
+.np-unit::after {
+  content: attr(data-unit);
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: #6b7280;                  /* gris discret */
+  background: #f9fafb;
+  border-left: 1px solid #e5e7eb;  /* petit séparateur vertical */
+  padding-left: 8px;
+  min-width: 28px;
+  text-align: center;
+  font-weight: 600;
+  pointer-events: none;            /* pas cliquable */
+}
+
+/* optionnel : enlever les flèches des number */
+.np-input[type="number"]::-webkit-outer-spin-button,
+.np-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.np-input[type="number"] { -moz-appearance: textfield; }
+/* === Grille 2 colonnes (Protein/Carbs puis Fat/Calories) === */
+.np-macro-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:16px 24px;
+  margin-top: 8px;
+}
+@media (max-width: 900px){
+  .np-macro-grid{ grid-template-columns: 1fr; }
+}
+
+/* === Add-on d’unité collé à droite dans l’input === */
+.np-unit{ position: relative; display:block; }
+.np-unit > .np-input{
+  padding-right: 56px;             /* place pour l’unité */
+  height: 44px;
+}
+
+/* la pastille d’unité à l’intérieur du champ, côté droit */
+.np-unit::after{
+  content: attr(data-unit);
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width: 38px;
+  padding-left: 10px;              /* espace avant la bordure */
+  height: 28px;
+  font-weight: 700;
+  font-size: 13px;
+  color:#6b7280;
+  background:#fff;
+  border-left:1px solid #e5e7eb;   /* petit filet séparateur comme la maquette */
+  pointer-events:none;
+}
+
+/* focus: garder la pastille dans le halo focus de l’input */
+.np-unit:focus-within::after{
+  border-left-color: #cfe3ef;
+}
+
+/* Optionnel — retirer les flèches des number sur Chrome */
+.np-unit input[type="number"]::-webkit-outer-spin-button,
+.np-unit input[type="number"]::-webkit-inner-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+.np-unit input[type="number"]{
+  -moz-appearance: textfield;
+}
+.np-main > .np-card:first-of-type{
+  border-top: 0 !important;
+}
+
+/* (facultatif) si tu veux aussi “masquer” visuellement le raccord arrondi */
+.np-main > .np-card:first-of-type{
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+
+
+
+
+/* Carte globale */
+.program-schedule-card {
+  margin-top: 16px;
+  padding: 16px 18px 18px;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe; /* proche de border-blue-200 */
+  background: linear-gradient(to right, #eff6ff, #ffffff); /* from-blue-50 -> white */
+}
+
+/* Titre + icône */
+.program-schedule-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px;
+  font-size: 0.98rem;
+}
+
+.program-schedule-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: #dbeafe; /* bleu très clair */
+}
+
+.program-schedule-icon {
+  width: 18px;
+  height: 18px;
+  color: #44b4df; /* ta couleur d'accent */
+}
+
+/* Grille des 2 champs */
+.program-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .program-schedule-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Champ individuel */
+.program-schedule-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.program-schedule-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.program-schedule-label .required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+/* Wrapper input + icône à gauche */
+.program-schedule-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.program-schedule-input-icon {
+  position: absolute;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.program-schedule-input-icon-svg {
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+}
+
+/* Input en lui-même */
+.program-schedule-input {
+  width: 100%;
+  padding: 10px 12px 10px 38px; /* padding-left pour l’icône */
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.875rem;
+  color: #111827;
+  background-color: #ffffff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.program-schedule-input:focus {
+  outline: none;
+  border-color: #44b4df;
+  box-shadow: 0 0 0 1px rgba(68, 180, 223, 0.35);
+}
+
+/* Input désactivé (End date) */
+.program-schedule-input--disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+/* Helper texte sous End Date */
+.program-schedule-helper {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.np-day.is-active{background:rgba(68,180,223,.10);border-color:#cfeef9;}
+.np-day.is-active .np-day__title{color:#44b4df;}
+
+
+/* empile le contenu du bouton sur 2 lignes */
+.np-day{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;            /* petit espace entre les 2 lignes */
+}
+
+/* style des 2 lignes */
+.np-day__title{
+  display:block;
+  font-weight:600;
+  color:#44b4df;      /* comme ton état actif */
+}
+
+.np-day__meta{
+  display:block;
+  font-size:11px;
+  line-height:1;
+  color:#64748b;
+}
+.np-day__weekday{ color:#44b4df; font-weight:600; }
+.np-day__dot{ margin:0 6px; color:#cbd5e1; }
+.np-day__date{ color:#64748b; }
+.np-datechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eaf5ff;
+  color: #1570ef;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.np-datechip__ico {
+  width: 16px;
+  height: 16px;
+}
+
+.np-datechip__dot {
+  opacity: 0.6;
+}
+.np-dayhead{
+  display:flex;
+  align-items:center;
+  gap:.5rem;           /* espacement entre titre, crayon, badge */
+}
+
+.wk-datepill{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.35rem .6rem;
+  border-radius:10px;  /* pastille arrondie comme la capture */
+  background:#eef6ff;  /* bleu très pâle */
+  color:#44b4df;  line-height:1;
+  white-space:nowrap;
+}
+
+.wk-datepill__ico{
+  width:18px;
+  height:18px;
+  stroke:currentColor; /* icône prend la couleur du texte */
+}
+
+.wk-datepill__weekday{
+  font-weight:600;     /* “Saturday” plus marqué */
+}
+
+.wk-datepill__date{
+  /* date un peu moins marquée mais bleue aussi */
+  color: #757272;
+}
+

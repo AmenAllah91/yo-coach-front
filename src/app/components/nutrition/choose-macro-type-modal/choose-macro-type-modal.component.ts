@@ -8,10 +8,12 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FeatherModule],
   templateUrl: './choose-macro-type-modal.component.html',
-  styleUrls: ['./choose-macro-type-modal.component.scss']
+  styleUrls: ['./choose-macro-type-modal.component.scss'],
 })
 export class ChooseMacroTypeModalComponent {
   @Input() isVisible = false;
+  @Input() isAssign = false;
+  @Input() idClient: string = null;
   @Output() close = new EventEmitter<void>();
 
   constructor(private router: Router) {}
@@ -22,17 +24,29 @@ export class ChooseMacroTypeModalComponent {
 
   selectTotalForDay() {
     this.closeModal();
-    // TODO: Implement total for day functionality
-    console.log('Total for day selected - functionality not implemented yet');
-    this.router.navigate(['/nutrition/create-macro-plan-total-day'], {
-      queryParams: { type: 'total' }
-    });
+
+    if (this.isAssign) {
+      this.router.navigate([
+        `/clients/create-macro-plan-total-day/${this.idClient}`,
+      ]);
+    } else {
+      this.router.navigate(['/nutrition/create-macro-plan-total-day'], {
+        queryParams: { type: 'total' },
+      });
+    }
   }
 
   selectEachMeal() {
     this.closeModal();
-    this.router.navigate(['/nutrition/create-macro-plan'], {
-      queryParams: { type: 'each' }
-    });
+
+    if (this.isAssign) {
+      this.router.navigate([
+        `/clients/create-macro-plan/${this.idClient}`,
+      ]);
+    } else {
+      this.router.navigate(['/nutrition/create-macro-plan'], {
+        queryParams: { type: 'total' },
+      });
+    }
   }
 }

@@ -1,0 +1,983 @@
+<!-- Root -->
+<div class="np-root" [class.editing]="isEditMode">
+  <div class="np-shell">
+    <!-- ===== Left Sidebar (Days) ===== -->
+    <aside class="np-aside">
+      <div class="np-aside__head">
+        <h2 class="np-h6">Days</h2>
+      </div>
+
+      <div class="np-aside__body">
+        <!-- Day list -->
+        <ng-container
+          *ngFor="let d of days; trackBy: trackByDay; let i = index"
+        >
+          <!-- First day (no trash icon) -->
+          <button
+            *ngIf="i === 0; else otherDay"
+            class="np-day"
+            [class.is-active]="selectedDay?.id === d.id"
+            (click)="selectDay(d)"
+          >
+            <span>{{ d.title }}</span>
+            <small class="np-day__meta">
+              <span class="np-day__weekday">{{ d.dayOfWeek }} <span *ngIf="d.isRestDay || d.restDay">Rest Day</span></span>
+              <span class="np-day__dot">•</span>
+              <span class="np-day__date">{{
+                d.date | date : "MMM d, yyyy"
+              }}</span>
+            </small>
+          </button>
+
+          <!-- Other Days -->
+          <ng-template #otherDay>
+            <div class="np-dayrow">
+              <button
+                class="np-day"
+                [class.is-active]="selectedDay?.id === d.id"
+                (click)="selectDay(d)"
+              >
+                <span>{{ d.title }}</span>
+                <small class="np-day__meta">
+                  <span class="np-day__weekday">{{ d.dayOfWeek }}  <span *ngIf="d.isRestDay || d.restDay">Rest Day</span></span>
+                  <span class="np-day__dot">•</span>
+                  <span class="np-day__date">{{
+                    d.date | date : "MMM d, yyyy"
+                  }}</span>
+                </small>
+              </button>
+              <button
+                class="np-iconbtn"
+                title="Delete"
+                (click)="deleteDay(d, $event)"
+              >
+                <i-feather name="trash-2" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </ng-template>
+        </ng-container>
+
+        <!-- Add Day -->
+        <button
+          class="np-btn np-btn--dash np-btn--ghost np-btn--full"
+          (click)="addDay()"
+        >
+          <i-feather name="plus" class="np-ico"></i-feather>
+          Add Day
+        </button>
+
+        <!-- Duplicate -->
+        <div class="np-stack">
+          <button class="np-rowbtn" (click)="duplicateSelectedDay()">
+            <span>Duplicate Day</span>
+            <i-feather name="copy" class="np-ico"></i-feather>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="np-main">
+      <!-- Page title (desktop) -->
+      <div class="np-pagehead">
+        <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
+          <svg viewBox="0 0 24 24" class="np-ico">
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </a>
+        <h1 class="np-h5">
+          {{ isEditMode ? "Edit Workout Plan" : "Create Workout Plan" }}
+        </h1>
+      </div>
+
+      <!-- Main Card -->
+      <section class="np-card">
+        <!-- Plan Title -->
+        <div class="np-field">
+          <label class="np-label"
+            >Plan Title <span class="np-danger">*</span></label
+          >
+          <input
+            class="np-input"
+            type="text"
+            [(ngModel)]="workoutPlan.name"
+            placeholder="Plan name"
+          />
+        </div>
+
+        <!-- Add Plan Description (collapsed) -->
+        <ng-container *ngIf="!showPlanDescription; else planDescBlock">
+          <button class="np-link" (click)="togglePlanDescription()">
+            <i-feather name="plus" class="np-ico"></i-feather>
+            Add Plan Description
+          </button>
+        </ng-container>
+        <ng-template #planDescBlock>
+          <div class="np-field">
+            <label class="np-label">Plan Description</label>
+            <div class="np-textareaWrap">
+              <textarea
+                class="np-input np-textarea"
+                rows="5"
+                [(ngModel)]="workoutPlan.details"
+                placeholder="Enter Plan Description"
+              ></textarea>
+
+              <button
+                type="button"
+                class="np-close"
+                (click)="togglePlanDescription()"
+                aria-label="Remove plan description"
+              >
+                <i-feather name="x" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </div>
+        </ng-template>
+        <!-- Program Schedule Card khalil-->
+        <div class="program-schedule-card">
+          <h3 class="program-schedule-title">
+            <span class="program-schedule-title-icon">
+              <!-- Icône calendrier (SVG inline) -->
+              <svg
+                class="program-schedule-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            Program Schedule
+          </h3>
+
+          <div class="program-schedule-grid">
+            <!-- Start Date -->
+            <div class="program-schedule-field">
+              <label class="program-schedule-label">
+                Start Date <span class="required">*</span>
+              </label>
+              <div class="program-schedule-input-wrapper">
+                <span class="program-schedule-input-icon">
+                  <!-- petit calendrier à gauche -->
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="program-schedule-input-icon-svg"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </span>
+                <!-- bind à ta propriété Angular si tu veux -->
+                <input
+                  type="date"
+                  class="program-schedule-input"
+                  [(ngModel)]="startDate"
+                  name="startDate"
+                  (ngModelChange)="updateAllDates()"
+                />
+              </div>
+            </div>
+
+            <!-- End Date -->
+            <div class="program-schedule-field">
+              <label class="program-schedule-label"> End Date </label>
+              <div class="program-schedule-input-wrapper">
+                <span class="program-schedule-input-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="program-schedule-input-icon-svg"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </span>
+                <input
+                  type="date"
+                  class="program-schedule-input program-schedule-input--disabled"
+                  [value]="endDate"
+                  name="endDate"
+                  disabled
+                />
+              </div>
+              <p class="program-schedule-helper">
+                Automatically calculated based on number of days
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Day Header -->
+        <div class="np-sep"></div>
+        <!-- Day head date khalil -->
+
+        <div class="np-dayhead">
+          <h3 class="np-h6">{{ selectedDay?.title }}</h3>
+          <span class="wk-datepill">
+            <svg
+              class="wk-datepill__ico"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="3" ry="3"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span class="wk-datepill__weekday">{{
+              selectedDay?.dayOfWeek
+            }}</span>
+            <span class="wk-datepill__date">{{
+              selectedDay?.date | date : "MMM d, yyyy"
+            }}</span>
+          </span>
+          <button class="np-mini" (click)="toggleDayDescription()">
+            <i-feather name="edit-2" class="np-ico"></i-feather>
+          </button>
+        </div>
+
+        <!-- REST DAY SWITCH -->
+        <div class="wk-rest mb-6" *ngIf="selectedDay">
+          <div class="wk-rest__row">
+            <div class="wk-rest__left">
+              <div class="wk-icon" [class.wk-icon--on]="selectedDay.isRestDay">
+                <svg
+                  class="wk-icon__svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <h3 class="wk-rest__title">Rest Day</h3>
+                <p class="wk-rest__subtitle">Mark this day as a rest day</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="wk-switch"
+              [class.is-on]="selectedDay.isRestDay"
+              (click)="toggleRestDay()"
+            >
+              <span class="wk-switch__knob"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- IF REST DAY — SHOW INFO -->
+        <div *ngIf="selectedDay?.isRestDay" class="wk-restbox">
+          <div class="wk-restbox__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+              />
+            </svg>
+          </div>
+
+          <h3 class="wk-restbox__title">Rest Day</h3>
+          <p class="wk-restbox__text">
+            Rest and recovery. No exercises scheduled.
+          </p>
+
+          <!-- Rest notes -->
+          <ng-container *ngIf="showRestNotes; else addNotesBtnRest">
+            <div class="wk-notes">
+              <div class="wk-notes__head">
+                <label class="wk-notes__label">Rest Day Notes</label>
+                <button
+                  type="button"
+                  class="wk-notes__close"
+                  (click)="toggleRestNotes()"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <textarea
+                class="wk-notes__textarea"
+                rows="3"
+                placeholder="Add recovery notes..."
+                [(ngModel)]="selectedDay.description"
+              ></textarea>
+            </div>
+          </ng-container>
+
+          <ng-template #addNotesBtnRest>
+            <button class="np-link" (click)="toggleRestNotes()">
+              <i-feather name="plus" class="np-ico"></i-feather>
+              Add Notes
+            </button>
+          </ng-template>
+        </div>
+
+        <!-- DAY DESCRIPTION (NON REST) -->
+        <ng-container *ngIf="selectedDay">
+          <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
+            <button class="np-link" (click)="toggleDayDescription()">
+              <i-feather name="plus" class="np-ico"></i-feather>
+              Add Day Description
+            </button>
+          </ng-container>
+
+          <ng-template #dayDescBlock>
+            <div class="np-field">
+              <label class="np-label">Day Description</label>
+
+              <div class="np-textareaWrap">
+                <textarea
+                  class="np-input np-textarea"
+                  rows="5"
+                  [(ngModel)]="selectedDay.description"
+                ></textarea>
+
+                <button
+                  type="button"
+                  class="np-close"
+                  (click)="toggleDayDescription()"
+                  aria-label="Remove day description"
+                >
+                  <i-feather name="x" class="np-ico"></i-feather>
+                </button>
+              </div>
+            </div>
+
+            <div class="np-sep"></div>
+          </ng-template>
+        </ng-container>
+
+        <!-- ==== EXERCISES ==== -->
+        <div class="wkex mb-6">
+          <h3 class="wkex__heading">Exercises</h3>
+
+          <!-- If no exercises -->
+          <ng-container
+            *ngIf="
+              selectedDay?.workoutSessions[0]?.exercises.length;
+              else wkNoExercises
+            "
+          >
+            <div class="wkex__stack">
+              <ng-container
+                *ngFor="
+                  let exercise of selectedDay.workoutSessions[0].exercises;
+                  let i = index;
+                  trackBy: trackByExercise
+                "
+              >
+                <!-- Exercise Card -->
+                <article
+                  class="wkex-card"
+                  [class.superset]="isInSuperset(i)"
+                  [class.is-second]="isSecondOfSuperset(i)"
+                >
+                  <div class="wkex-card__inner">
+                    <div class="wkex-card__header">
+                      <div class="wkex-card__media"></div>
+
+                      <div class="wkex-card__titlewrap">
+                        <h4 class="wkex-card__title">
+                          {{ exercise.name }}
+                          <span *ngIf="isInSuperset(i)" class="wkex-badge"
+                            >Superset</span
+                          >
+                        </h4>
+
+                        <!-- Notes -->
+                        <ng-container
+                          *ngIf="
+                            editingExerciseDescription === exercise.id;
+                            else addNotesBtn
+                          "
+                        >
+                          <div class="wkex-notes">
+                            <div class="wkex-notes__head">
+                              <label class="wkex-notes__label"
+                                >Exercise Notes</label
+                              >
+                              <button
+                                type="button"
+                                class="wkex-notes__close"
+                                (click)="setEditingExerciseDescription(null)"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            <textarea
+                              rows="2"
+                              class="wkex-notes__textarea"
+                              [ngModel]="exercise.description || ''"
+                              (ngModelChange)="
+                                handleExerciseDescriptionChange(
+                                  exercise.id,
+                                  $event
+                                )
+                              "
+                            ></textarea>
+                          </div>
+                        </ng-container>
+
+                        <ng-template #addNotesBtn>
+                          <button
+                            type="button"
+                            class="wkex-addnote"
+                            (click)="setEditingExerciseDescription(exercise.id)"
+                          >
+                            <span class="wkex-plus">＋</span>
+                            {{
+                              exercise.description ? "Edit Notes" : "Add Notes"
+                            }}
+                          </button>
+                        </ng-template>
+
+                        <!-- Display notes -->
+                        <div
+                          *ngIf="
+                            exercise.description &&
+                            editingExerciseDescription !== exercise.id
+                          "
+                          class="wkex-noteview"
+                        >
+                          {{ exercise.description }}
+                        </div>
+                      </div>
+
+                      <!-- Remove exercise -->
+                      <div class="wkex-card__actions">
+                        <button
+                          type="button"
+                          class="wkex-action wkex-action--danger"
+                          (click)="handleRemoveExercise(exercise.id)"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Sets (hidden if second of superset) -->
+                    <div *ngIf="exercise.sets?.length" class="wkex-sets">
+                      <div class="wkex-sets__head">
+                        <div class="wkex-sets__th">Set</div>
+                        <div class="wkex-sets__th">Reps</div>
+                        <div class="wkex-sets__th">Rest Period</div>
+                        <div class="wkex-sets__th wkex-sets__th--empty"></div>
+                      </div>
+
+                      <div class="wkex-sets__rows">
+                        <div
+                          class="wkex-sets__row"
+                          *ngFor="let set of exercise.sets; let si = index"
+                        >
+                          <div class="wkex-sets__cell wkex-sets__cell--idx">
+                            {{ si + 1 }}
+                          </div>
+
+                          <div class="wkex-sets__cell">
+                            <input
+                              type="text"
+                              class="wkex-input"
+                              [ngModel]="set.reps"
+                              (ngModelChange)="
+                                handleSetChange(exercise.id, si, 'reps', $event)
+                              "
+                            />
+                          </div>
+
+                          <div class="wkex-sets__cell wkex-sets__cell--rest">
+                            <div class="wkex-restbox">
+                              <span class="wkex-restbox__label">Min:</span>
+                              <input
+                                type="number"
+                                class="wkex-restbox__input"
+                                [ngModel]="set.restMin"
+                                (ngModelChange)="
+                                  handleSetChange(
+                                    exercise.id,
+                                    si,
+                                    'restMin',
+                                    $event
+                                  )
+                                "
+                              />
+                            </div>
+
+                            <div class="wkex-restbox">
+                              <span class="wkex-restbox__label">Sec:</span>
+                              <input
+                                type="number"
+                                class="wkex-restbox__input"
+                                [ngModel]="set.restSec"
+                                (ngModelChange)="
+                                  handleSetChange(
+                                    exercise.id,
+                                    si,
+                                    'restSec',
+                                    $event
+                                  )
+                                "
+                              />
+                            </div>
+                          </div>
+
+                          <div class="wkex-sets__cell wkex-sets__cell--action">
+                            <button
+                              *ngIf="exercise.sets.length > 1"
+                              type="button"
+                              class="wkex-action wkex-action--danger"
+                              (click)="handleRemoveSet(exercise.id, si)"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        class="wkex-addset"
+                        (click)="handleAddSet(exercise.id)"
+                      >
+                        Add Set
+                      </button>
+                    </div>
+                  </div>
+                </article>
+
+                <!-- SUPERSER BUTTON -->
+                <div
+                  *ngIf="canShowSupersetButton(i)"
+                  class="wkex-supersetbar"
+                  [class.is-active]="isSupersetPair(i)"
+                >
+                  <button
+                    type="button"
+                    class="wkex-supersetbtn"
+                    [class.is-active]="isSupersetPair(i)"
+                    (click)="toggleSuperset(i)"
+                  >
+                    {{ isSupersetPair(i) ? "− Superset" : "+ Superset" }}
+                  </button>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+
+          <ng-template #wkNoExercises>
+            <div class="wkex-empty">
+              <p class="wkex-empty__text">No exercises added yet</p>
+            </div>
+          </ng-template>
+
+          <button
+            type="button"
+            class="wkex-addexercise"
+            (click)="openExerciseSelector()"
+          >
+            <span class="wkex-plus">＋</span>
+            Add an Exercise
+          </button>
+        </div>
+      </section>
+
+      <!-- Sticky Save -->
+      <div class="np-sticky">
+        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
+          <svg viewBox="0 0 24 24" class="np-ico">
+            <path
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              [attr.d]="isEditMode ? 'M5 12h14m-7-7v14' : 'M12 5v14m7-7H5'"
+            />
+          </svg>
+
+          {{ isEditMode ? "Update Plan" : "Create Plan" }}
+        </button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ==== MODAL ADD EXERCISE ==== -->
+<div
+  class="np-modal"
+  *ngIf="isExerciseModalOpen"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="npExTitle"
+>
+  <div class="np-modal__backdrop" (click)="closeExerciseModal()"></div>
+
+  <div class="np-modal__panel np-modal--food" tabindex="-1">
+    <div class="np-modal__head">
+      <h3 id="npExTitle" class="np-modal__title">Add Exercise</h3>
+      <button class="np-modal__close" (click)="closeExerciseModal()">
+        <svg viewBox="0 0 24 24" class="np-ico">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div class="np-modal__body">
+      <!-- LIST -->
+      <ng-container *ngIf="exerciseStep === 'list'">
+        <div class="np-field np-modal__search">
+          <div class="np-searchwrap">
+            <svg viewBox="0 0 24 24" class="np-ico np-searchwrap__ico">
+              <circle
+                cx="11"
+                cy="11"
+                r="7"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+              />
+              <path
+                d="M20 20l-3.5-3.5"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              />
+            </svg>
+            <input
+              class="np-input np-searchwrap__input"
+              type="text"
+              placeholder="Search exercises..."
+              [(ngModel)]="exerciseSearch"
+              (input)="filterExercises()"
+            />
+          </div>
+        </div>
+
+        <div class="np-modal__sectionTitle">Common Exercises</div>
+
+        <ul class="np-foodlist">
+          <li
+            class="np-foodlist__item"
+            *ngFor="let ex of filteredExercises"
+            (click)="showExerciseDetail(ex)"
+          >
+            <div class="np-foodlist__name">{{ ex.name }}</div>
+            <div class="np-foodlist__meta">Tap to set sets/reps</div>
+          </li>
+        </ul>
+      </ng-container>
+
+      <!-- DETAIL -->
+      <ng-container *ngIf="exerciseStep === 'detail' && selectedExercise">
+        <div class="np-field" style="margin-bottom: 16px">
+          <label class="np-label">{{ selectedExercise.name }}</label>
+
+          <div class="np-grid-2">
+            <div>
+              <label class="np-label">Sets</label>
+              <input
+                class="np-input"
+                type="number"
+                min="1"
+                [(ngModel)]="selectedExercise.sets"
+              />
+            </div>
+
+            <div>
+              <label class="np-label">Reps</label>
+              <input
+                class="np-input"
+                type="number"
+                min="1"
+                [(ngModel)]="selectedExercise.reps"
+              />
+            </div>
+
+            <div>
+              <label class="np-label">Weight (kg)</label>
+              <input
+                class="np-input"
+                type="number"
+                min="0"
+                step="0.5"
+                [(ngModel)]="selectedExercise.weight"
+              />
+            </div>
+
+            <div>
+              <label class="np-label">Rest (sec)</label>
+              <input
+                class="np-input"
+                type="number"
+                min="0"
+                [(ngModel)]="selectedExercise.restSec"
+              />
+            </div>
+
+            <div>
+              <label class="np-label">Duration (min)</label>
+              <input
+                class="np-input"
+                type="number"
+                min="0"
+                [(ngModel)]="selectedExercise.durationMin"
+              />
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Footer buttons -->
+    <div class="np-modal__foot" *ngIf="exerciseStep === 'list'">
+      <button
+        class="np-btn np-btn--ghost np-btn--full"
+        (click)="closeExerciseModal()"
+      >
+        Cancel
+      </button>
+    </div>
+
+    <div class="np-modal__foot" *ngIf="exerciseStep === 'detail'">
+      <div class="np-grid-2">
+        <button class="np-btn np-btn--ghost" (click)="exerciseStep = 'list'">
+          Back
+        </button>
+
+        <button
+          class="np-btn np-btn--brandsoft"
+          (click)="addExerciseToSession()"
+        >
+          Add Exercise
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==== RIGHT DRAWER EXERCISE SELECTOR ==== -->
+<div *ngIf="showExerciseSelector">
+  <div class="wkdrawer__backdrop" (click)="closeExerciseSelector()"></div>
+
+  <aside class="wkdrawer" role="dialog" aria-label="Choose Exercise">
+    <div class="wkdrawer__head">
+      <h2 class="wkdrawer__title">Choose Exercise</h2>
+      <button class="wkdrawer__close" (click)="closeExerciseSelector()">
+        ✕
+      </button>
+    </div>
+
+    <div class="wkdrawer__body">
+      <!-- Search -->
+      <div class="wkdrawer__search">
+        <svg viewBox="0 0 24 24" class="wkdrawer__searchico">
+          <circle
+            cx="11"
+            cy="11"
+            r="7"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+          ></circle>
+          <path
+            d="M20 20l-3.5-3.5"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+          ></path>
+        </svg>
+
+        <input
+          class="wkinput wkinput--search"
+          type="text"
+          placeholder="Search by name..."
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onFilterChange()"
+        />
+      </div>
+
+      <!-- Filters -->
+      <div class="wkdrawer__filters">
+        <!-- Muscles -->
+        <div class="wkselectwrap">
+          <select
+            class="wkselect"
+            [(ngModel)]="muscleFilter"
+            (ngModelChange)="onFilterChange()"
+          >
+            <option value="">Muscles</option>
+            <option value="CHEST">Chest</option>
+            <option value="BACK">Back</option>
+            <option value="SHOULDERS">Shoulders</option>
+            <option value="ARMS">Arms</option>
+            <option value="LEGS">Legs</option>
+            <option value="CORE">Core</option>
+          </select>
+
+          <svg class="wkselect__chev" viewBox="0 0 24 24">
+            <polyline
+              points="6 9 12 15 18 9"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></polyline>
+          </svg>
+        </div>
+
+        <!-- Equipment -->
+        <div class="wkselectwrap">
+          <select
+            class="wkselect"
+            [(ngModel)]="equipmentFilter"
+            (ngModelChange)="onFilterChange()"
+          >
+            <option value="">Equipment</option>
+            <option value="BARBELL">Barbell</option>
+            <option value="DUMBBELL">Dumbbell</option>
+            <option value="CABLE">Cable</option>
+            <option value="MACHINE">Machine</option>
+            <option value="BODYWEIGHT">Bodyweight</option>
+          </select>
+
+          <svg class="wkselect__chev" viewBox="0 0 24 24">
+            <polyline
+              points="6 9 12 15 18 9"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></polyline>
+          </svg>
+        </div>
+
+        <!-- Types -->
+        <div class="wkselectwrap">
+          <select
+            class="wkselect"
+            [(ngModel)]="typeFilter"
+            (ngModelChange)="onFilterChange()"
+          >
+            <option value="">All Types</option>
+            <option value="CARDIO">Cardio</option>
+            <option value="MUSCULATION">Musculation</option>
+            <option value="STRENGTH">Strength</option>
+          </select>
+
+          <svg class="wkselect__chev" viewBox="0 0 24 24">
+            <polyline
+              points="6 9 12 15 18 9"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></polyline>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Loader -->
+      <div *ngIf="loading" class="wkloader">Loading exercises...</div>
+
+      <!-- List -->
+      <ul class="wkdrawer__list" *ngIf="!loading">
+        <li
+          class="wkdrawer__item"
+          *ngFor="let ex of exerciseDatabase"
+          (mouseenter)="hoveringExerciseId = ex.id"
+          (mouseleave)="hoveringExerciseId = null"
+        >
+          <div class="wkdrawer__thumb"></div>
+
+          <div class="wkdrawer__meta">
+            <div class="wkdrawer__name">{{ ex.name }}</div>
+            <div class="wkdrawer__sub">{{ ex.type || "Exercise" }}</div>
+          </div>
+
+          <button class="wkdrawer__add" (click)="handleSelectExercise(ex)">
+            ＋
+          </button>
+        </li>
+      </ul>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="totalPages > 1 && !loading">
+        <button class="wkbtn-link" (click)="prevPage()" [disabled]="page === 0">
+          Prev
+        </button>
+
+        <span>{{ page + 1 }} / {{ totalPages }}</span>
+
+        <button
+          class="wkbtn-link"
+          (click)="nextPage()"
+          [disabled]="page + 1 >= totalPages"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </aside>
+</div>

@@ -104,9 +104,11 @@ export interface WorkoutPlan {
   details?: string;
   startDate?: string;
   endDate?: string;
-  workoutDays?: WorkoutDay[];
-  coach?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client?: any;
+  workoutDays?: WorkoutDay[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  coach?: any;
   isWorkoutPlanTemplate?: boolean;
   typeWorkoutPlan?: TypeWorkoutPlan;
   createdBy?: string;

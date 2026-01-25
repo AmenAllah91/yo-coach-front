@@ -1,15 +1,36 @@
 <!-- ===================== PAGE LISTE ===================== -->
-
 <div class="client-page" *ngIf="!selectedWorkout">
   <div class="client-page-inner">
-
     <div class="cw-root">
-
       <!-- HEADER -->
       <header class="client-header">
-        <h1 class="client-header-title">Good morning, Kolton</h1>
-        <p class="client-header-subtitle">Your nutrition journey starts here</p>
+        <h1 class="client-header-title">{{ greeting }}, {{ userName }}</h1>
+        <p class="client-header-subtitle">Your workout journey starts here</p>
       </header>
+
+      <!-- FILTRE PAR COACH -->
+      <div class="coach-filter-container" *ngIf="coaches.length > 0">
+        <label for="coach-select" class="coach-filter-label">Coach:</label>
+        <select
+          id="coach-select"
+          class="coach-select"
+          [(ngModel)]="selectedCoachId"
+          (ngModelChange)="onCoachChange($event)"
+        >
+          <option value="all">All coaches</option>
+          <option *ngFor="let coach of coaches" [ngValue]="coach.id">
+            {{ coach.fullName }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Affichage si un seul coach (sans dropdown) -->
+      <div
+        class="coach-current"
+        *ngIf="coaches.length === 1 && selectedCoachId !== 'all'"
+      >
+        <strong>Coach:</strong> {{ coaches[0].fullName }}
+      </div>
 
       <!-- TABS -->
       <nav class="client-tabs">
@@ -20,7 +41,6 @@
         >
           Upcoming
         </button>
-
         <button
           class="client-tab"
           [class.client-tab--active]="activeTab === 'past'"
@@ -30,229 +50,175 @@
         </button>
       </nav>
 
-      <!-- MONTH BAR -->
+      <!-- MONTH NAV -->
       <div class="client-month-nav">
         <button class="month-nav-btn" (click)="prevMonth()">
           <i class="chevron chevron-left"></i>
         </button>
-
         <div class="month-title">{{ currentMonth }}</div>
-
         <button class="month-nav-btn" (click)="nextMonth()">
           <i class="chevron chevron-right"></i>
         </button>
       </div>
 
-      <!-- WORKOUT LIST -->
+      <!-- LIST -->
       <div class="client-list">
-
-        <div
+        <article
+          class="cn-day-card"
           *ngFor="let workout of displayWorkouts"
-          class="workout-card"
           (click)="onSelectWorkout(workout)"
         >
-          <div class="workout-card-inner">
+          <div class="cn-day-header">
+            <div class="cn-day-header-left">
+              <div class="cn-day-chip-date">
+                {{ workout.date | date : "mediumDate" }}
+              </div>
+              <h3 class="cn-day-title">{{ workout.title }}</h3>
+              <p class="cn-day-subtitle" *ngIf="workout.program">
+                {{ workout.program }}
+              </p>
+            </div>
 
-            <!-- Date + statut -->
-            <div class="workout-card-row">
-              <div class="workout-date">{{ workout.date }}</div>
-
+            <div class="cn-day-status-icon">
               <ng-container [ngSwitch]="workout.status">
-                <div *ngSwitchCase="'completed'" class="status-icon status-icon--completed"></div>
-                <div *ngSwitchCase="'missed'" class="status-icon status-icon--missed"></div>
-                <div *ngSwitchDefault class="status-icon status-icon--pending"></div>
+                <div
+                  *ngSwitchCase="'COMPLETED'"
+                  class="status-icon status-icon--completed"
+                ></div>
+                <div
+                  *ngSwitchCase="'MISSED'"
+                  class="status-icon status-icon--missed"
+                ></div>
+                <div
+                  *ngSwitchDefault
+                  class="status-icon status-icon--pending"
+                ></div>
               </ng-container>
             </div>
-
-            <!-- Title -->
-            <h3 class="workout-title">{{ workout.title }}</h3>
-
-            <!-- Program -->
-            <div *ngIf="workout.program" class="workout-program">
-              {{ workout.program }}
-            </div>
-
-            <!-- Exercises -->
-            <div class="workout-exercises">
-              <div class="workout-exercises-header">
-                <span>{{ workout.exercises.length }} exercises</span>
-                <span class="chevron-small">&rsaquo;</span>
-              </div>
-
-              <div class="workout-exercises-list">
-                <div
-                  *ngFor="let exercise of workout.exercises | slice:0:3"
-                  class="exercise-line"
-                >
-                  <div
-                    class="exercise-badge"
-                    [class.exercise-badge--warmup]="exercise.label === '🔥'"
-                  >
-                    {{ exercise.label }}
-                  </div>
-
-                  <span class="exercise-name">{{ exercise.name }}</span>
-                </div>
-
-                <div
-                  *ngIf="workout.exercises.length > 3"
-                  class="exercise-more"
-                >
-                  +{{ workout.exercises.length - 3 }} more exercises
-                </div>
-              </div>
-            </div>
-
           </div>
-        </div>
+
+          <div class="cn-day-meals-line">
+            <span class="cn-utensils-icon">🏋️</span>
+            <span class="cn-day-meals-text"
+              >{{ getTotalExercises(workout) }} exercises</span
+            >
+          </div>
+        </article>
 
         <!-- EMPTY STATE -->
-        <div *ngIf="displayWorkouts.length === 0" class="client-empty">
-          <div class="client-empty-icon">🏋️‍♂️</div>
-          <h3 class="client-empty-title">No workouts found</h3>
-          <p class="client-empty-text">
+        <div class="cn-empty" *ngIf="displayWorkouts.length === 0">
+          <div class="cn-empty-icon">🏋️‍♂️</div>
+          <h3 class="cn-empty-title">No workouts found</h3>
+          <p class="cn-empty-text">
             {{
-              activeTab === 'upcoming'
-                ? 'No upcoming workouts scheduled'
-                : 'No past workouts to display'
+              activeTab === "upcoming"
+                ? "No upcoming workouts scheduled"
+                : "No past workouts to display"
             }}
           </p>
         </div>
-
       </div>
-
     </div>
   </div>
 </div>
 
 <!-- ===================== DETAIL VIEW ===================== -->
-
 <div class="client-page" *ngIf="selectedWorkout">
   <div class="client-page-inner">
+    <div class="cn-detail-root cn-detail-container">
+      <!-- HEADER -->
+      <header class="cn-detail-header">
+        <button class="cn-back-btn" (click)="backToList()">‹</button>
 
-    <div class="cw-detail-root">
-
-      <!-- Top bar -->
-      <header class="cw-detail-header">
-        <button class="cw-back-btn" (click)="backToList()">‹</button>
-
-        <div class="cw-detail-header-main">
-          <h1 class="cw-detail-title">
-            {{ selectedWorkout?.title }}
-          </h1>
-          <p class="cw-detail-program-line">
-            <span class="cw-calendar-icon">📅</span>
-            <span *ngIf="selectedWorkout?.program">
-              {{ selectedWorkout?.program }}
-            </span>
-            <span class="cw-header-date">
-              • {{ selectedWorkout?.date }}
-            </span>
+        <div class="cn-detail-header-main">
+          <h1 class="cn-detail-title">{{ selectedWorkout.title }}</h1>
+          <p class="cn-detail-program-line">
+            <span class="cn-calendar-icon">📅</span>
+            {{ selectedWorkout.date | date : "fullDate" }}
+            <span *ngIf="selectedWorkout.program">
+              • {{ selectedWorkout.program }}</span
+            >
           </p>
         </div>
 
-        <div class="cw-detail-status-actions">
+        <div class="cn-detail-status-actions">
           <button
-            class="cw-detail-status-btn"
-            [class.cw-detail-status-btn--completed]="selectedWorkout?.status === 'completed'"
-            (click)="updateWorkoutStatus(selectedWorkout!.id, 'completed')"
+            class="cn-detail-status-btn"
+            [class.cn-detail-status-btn--completed]="
+              selectedWorkout.status === 'COMPLETED'
+            "
+            (click)="updateWorkoutStatus(selectedWorkout!, 'COMPLETED')"
           >
             ✓
           </button>
-
           <button
-            class="cw-detail-status-btn"
-            [class.cw-detail-status-btn--missed]="selectedWorkout?.status === 'missed'"
-            (click)="updateWorkoutStatus(selectedWorkout!.id, 'missed')"
+            class="cn-detail-status-btn"
+            [class.cn-detail-status-btn--missed]="
+              selectedWorkout.status === 'MISSED'
+            "
+            (click)="updateWorkoutStatus(selectedWorkout!, 'MISSED')"
           >
             ✕
           </button>
         </div>
       </header>
 
-      <!-- Info bar -->
-      <section class="cw-detail-infobar">
-        <div>
-          <div class="cw-detail-date">{{ selectedWorkout?.date }}</div>
-          <div class="cw-detail-program" *ngIf="selectedWorkout?.program">
-            {{ selectedWorkout?.program }}
-          </div>
-        </div>
+      <!-- MAIN CONTENT -->
+      <main class="cn-detail-main">
 
-        <div class="cw-detail-status-pill">
+
+        <!-- Liste des exercices -->
+        <div
+          class="cn-meals-section"
+          *ngIf="selectedWorkout!.groupedExercises.length > 0"
+        >
           <div
-            class="cw-status-icon cw-status-icon--small"
-            [ngClass]="{
-              'cw-status-icon--completed': selectedWorkout?.status === 'completed',
-              'cw-status-icon--missed': selectedWorkout?.status === 'missed',
-              'cw-status-icon--pending': !selectedWorkout?.status || selectedWorkout?.status === 'pending'
-            }"
+            class="cn-meal-card"
+            *ngFor="let exercise of selectedWorkout!.groupedExercises"
           >
-            <span class="cw-status-dot" *ngIf="selectedWorkout?.status === 'pending'"></span>
-          </div>
-
-          <span class="cw-detail-status-text">
-            <ng-container [ngSwitch]="selectedWorkout?.status">
-              <span *ngSwitchCase="'completed'" class="cw-detail-status-text--completed">
-                Completed
-              </span>
-              <span *ngSwitchCase="'missed'" class="cw-detail-status-text--missed">
-                Missed
-              </span>
-              <span *ngSwitchDefault class="cw-detail-status-text--pending">
-                Pending
-              </span>
-            </ng-container>
-          </span>
-        </div>
-      </section>
-
-      <!-- Exercise list -->
-      <main class="cw-detail-body">
-
-        <ng-container *ngIf="selectedWorkout?.exercises?.length; else restDayDetail">
-          <section
-            *ngFor="let exercise of selectedWorkout?.exercises"
-            class="cw-detail-exercise"
-          >
-            <div class="cw-detail-exercise-header">
-
-              <div
-                class="cw-detail-exercise-label"
-                [class.cw-detail-exercise-label--warmup]="exercise.label === '🔥'"
-              >
-                {{ exercise.label }}
+            <!-- Header de l'exercice avec numérotation superset -->
+            <div class="cn-meal-header">
+              <div class="cn-meal-header-left">
+                <div class="cn-meal-index">{{ exercise.displayNumber }}</div>
+                <h3 class="cn-meal-name">
+                  {{ exercise.name }}
+                </h3>
               </div>
 
-              <div class="cw-detail-exercise-info">
-                <h3 class="cw-detail-exercise-name">{{ exercise.name }}</h3>
+              <!-- Info sets ou durée -->
+              <div
+                class="cn-meal-macros-grid"
+                style="justify-content: flex-end"
+              >
+                <div
+                  class="cn-meal-macro-card"
 
-                <div class="cw-detail-exercise-meta">
-                  <span *ngIf="exercise.type === 'strength'">
-                    💪 {{ exercise.sets?.length }} sets
-                  </span>
-                  <span *ngIf="exercise.type === 'cardio'">
-                    ⏱ {{ exercise.duration }} min
-                  </span>
+                >
+                  <div class="cn-meal-macro-value">
+                    {{ exercise.sets.length }}
+                  </div>
+                  <div class="cn-meal-macro-label">sets</div>
+                </div>
+                <div
+                  class="cn-meal-macro-card"
+
+                >
+                  <div class="cn-meal-macro-value">{{ exercise.duration }}</div>
+                  <div class="cn-meal-macro-label">min</div>
                 </div>
               </div>
-
             </div>
 
-            <!-- Sets -->
-            <div
-              class="cw-detail-sets"
-              *ngIf="exercise.type === 'strength' && exercise.sets?.length"
-            >
+            <!-- Détail des sets -->
+            <div class="cw-detail-sets" *ngIf="exercise.sets.length > 0">
               <div class="cw-detail-sets-header">
                 <div>Set</div>
                 <div>Reps</div>
                 <div>Rest</div>
               </div>
-
               <div
                 class="cw-detail-set-row"
-                *ngFor="let set of exercise.sets; index as idx"
+                *ngFor="let set of exercise.sets; let idx = index"
               >
                 <div class="cw-detail-set-cell cw-detail-set-cell--index">
                   {{ idx + 1 }}
@@ -261,39 +227,48 @@
                 <div class="cw-detail-set-cell">{{ set.rest }}s</div>
               </div>
             </div>
+          </div>
+        </div>
 
-          </section>
-        </ng-container>
-
+        <!-- Jour de repos -->
         <ng-template #restDayDetail>
-          <section class="cw-restday-detail">
-            <div class="cw-restday-icon">🕒</div>
-            <h3>Rest Day</h3>
-            <p>Today is a scheduled rest day.</p>
-          </section>
+          <div class="cn-empty" style="margin-top: 32px">
+            <div class="cn-empty-icon">🛌</div>
+            <h3 class="cn-empty-title">Rest Day</h3>
+            <p class="cn-empty-text">
+              Today is a scheduled rest day. Recover well!
+            </p>
+          </div>
         </ng-template>
-
       </main>
 
-      <!-- Footer -->
-      <footer class="cw-detail-footer">
+      <!-- FOOTER -->
+      <footer class="cn-detail-footer">
         <button
-          class="cw-detail-main-btn cw-detail-main-btn--completed"
-          [class.cw-detail-main-btn--active]="selectedWorkout?.status === 'completed'"
-          (click)="updateWorkoutStatus(selectedWorkout!.id, 'completed')"
+          class="cn-footer-btn cn-footer-btn--green"
+          [class.cn-footer-btn--active]="
+            selectedWorkout?.status === 'COMPLETED'
+          "
+          (click)="openConfirmModal('COMPLETED')"
         >
           ✓ Mark as Completed
         </button>
-
         <button
-          class="cw-detail-main-btn cw-detail-main-btn--missed"
-          [class.cw-detail-main-btn--active]="selectedWorkout?.status === 'missed'"
-          (click)="updateWorkoutStatus(selectedWorkout!.id, 'missed')"
+          class="cn-footer-btn cn-footer-btn--red"
+          [class.cn-footer-btn--active]="selectedWorkout?.status === 'MISSED'"
+          (click)="openConfirmModal('MISSED')"
         >
           ✕ Mark as Missed
         </button>
       </footer>
-
     </div>
   </div>
 </div>
+
+<!-- Modal de confirmation -->
+<app-modal-confirm
+  [show]="showConfirmModal"
+  [programToConfrim]="pendingStatus || ''"
+  (close)="closeConfirmModal()"
+  (confirm)="confirmStatusUpdate()"
+></app-modal-confirm>
