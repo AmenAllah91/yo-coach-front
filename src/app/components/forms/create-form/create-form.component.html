@@ -1,15 +1,27 @@
 <div class="fb-root">
-  <!-- Top bar -->
   <!-- TOP BAR -->
   <div class="iq-topbar">
-    <button type="button" class="iq-back" >
+    <button type="button" class="iq-back" (click)="back()">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
 
-    <h1 class="iq-title">Form Title</h1>
+    <!-- Titre éditable (lié au TS) -->
+    <h1 class="iq-title" *ngIf="!isEditingTitle" (click)="startEditTitle()">
+      {{ detailsTitle || formTitle || 'Form Title' }}
+    </h1>
+
+    <input
+      *ngIf="isEditingTitle"
+      class="iq-title-input"
+      type="text"
+      [(ngModel)]="detailsTitle"
+      (blur)="finishEditTitle()"
+      (keydown)="titleKeydown($event)"
+      placeholder="Form Title"
+    />
 
     <button type="button" class="iq-preview" (click)="openPreview()">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
@@ -22,8 +34,6 @@
     </button>
   </div>
 
-
-  <!-- TABS -->
   <!-- Tabs -->
   <div class="iq-tabs">
     <button
@@ -54,26 +64,23 @@
     </button>
   </div>
 
-
-
-
-
   <!-- Content -->
   <div class="fb-content">
     <!-- TAB: FORM -->
-    <ng-container *ngIf="activeTab==='form'">
-      <ng-container *ngIf="questions.length===0; else hasQuestions">
+    <ng-container *ngIf="activeTab === 'form'">
+      <ng-container *ngIf="questions.length === 0; else hasQuestions">
         <div class="fb-emptystate">
           <div class="fb-thumb">
-            <!-- 👍 like Facebook -->
             <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M9 22V11a4 4 0 0 1 4-4h.5l.8-3.2A2 2 0 0 1 16 2h1a2 2 0 0 1 2 2v5h2a2 2 0 0 1 2 2l-1 6a3 3 0 0 1-3 3H9z"
                     stroke-width="1.7" stroke-linejoin="round"/>
               <path d="M1 11h6v11H1z" stroke-width="1.7"/>
             </svg>
           </div>
+
           <p class="fb-hint">Start building your form by adding questions.</p>
-          <button class="btn btn-black" (click)="openTypeDrawer()">
+
+          <button class="btn btn-black" type="button" (click)="openTypeDrawer()">
             <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
@@ -81,76 +88,77 @@
           </button>
         </div>
       </ng-container>
+
       <ng-template #hasQuestions>
         <div class="q-list">
-          <div class="q-block" *ngFor="let q of questions; index as i">
+          <div class="q-block" *ngFor="let q of questions; index as i; trackBy: trackById">
             <!-- HEADER -->
             <div class="q-block__header">
-              <!-- handle drag -->
               <div class="q-block__drag">
-                <span></span>
-                <span></span>
+                <span></span><span></span>
               </div>
 
               <div class="q-block__meta">
                 <div class="q-block__label">Question {{ i + 1 }}</div>
+
+                <!-- ✅ EDITABLE QUESTION TITLE (ngModel) -->
                 <input
                   class="q-block__title"
-                  [value]="q.text"
-                  (input)="q.text = $any($event.target).value"
+                  type="text"
+                  [name]="'qtext-' + q.id"
+                  [(ngModel)]="q.text"
+                  placeholder="Question title"
                 />
               </div>
 
               <div class="q-block__actions">
+                <!-- ✅ REQUIRED -->
                 <label class="q-required">
                   <input
                     type="checkbox"
-                    [checked]="q.isRequired"
-                    (change)="q.isRequired = $any($event.target).checked"
+                    [name]="'qreq-' + q.id"
+                    [(ngModel)]="q.isRequired"
                   />
                   <span>Required</span>
                 </label>
 
-                <!-- BOUTON DE DEBUG BIEN VISIBLE -->
-                <button
-                  type="button"
-                  class="q-trash"
-                  (click)="removeQuestion(i)"
-                >
+                <button type="button" class="q-trash" (click)="removeQuestion(i)">
                   <i class="fa-solid fa-trash"></i>
                 </button>
-
               </div>
             </div>
 
-            <!-- BODY (type de question) -->
+            <!-- BODY -->
             <div class="q-block__body" [ngSwitch]="q.type">
-              <!-- SCALE 1–5 -->
+
+              <!-- SCALE -->
               <div *ngSwitchCase="'scale'" class="q-scale">
-                <button type="button" class="q-scale__item">1</button>
-                <button type="button" class="q-scale__item">2</button>
-                <button type="button" class="q-scale__item">3</button>
-                <button type="button" class="q-scale__item">4</button>
-                <button type="button" class="q-scale__item">5</button>
+                <button type="button" class="q-scale__item" disabled>1</button>
+                <button type="button" class="q-scale__item" disabled>2</button>
+                <button type="button" class="q-scale__item" disabled>3</button>
+                <button type="button" class="q-scale__item" disabled>4</button>
+                <button type="button" class="q-scale__item" disabled>5</button>
               </div>
 
               <!-- MULTIPLE CHOICE -->
               <div *ngSwitchCase="'multiple-choice'" class="q-mc">
-                <div
-                  class="q-mc__option"
-                  *ngFor="let opt of q.options; index as oi"
-                >
+                <div class="q-mc__option" *ngFor="let opt of (q.options || []); index as oi; trackBy: trackByIndex">
                   <span class="q-mc__radio"></span>
+
+                  <!-- ✅ EDITABLE OPTION -->
                   <input
                     class="q-mc__input"
-                    [value]="opt"
-                    (input)="q.options![oi] = $any($event.target).value"
+                    type="text"
+                    [name]="'qopt-' + q.id + '-' + oi"
+                    [(ngModel)]="q.options![oi]"
                     placeholder="Option"
                   />
+
                   <button
                     type="button"
                     class="q-mc__remove"
                     (click)="q.options!.splice(oi, 1)"
+                    aria-label="Remove option"
                   >
                     ✕
                   </button>
@@ -170,127 +178,35 @@
                 <span *ngFor="let s of [1,2,3,4,5]" class="q-stars__item">★</span>
               </div>
 
-              <!-- YES / NO -->
+              <!-- YES/NO -->
               <div *ngSwitchCase="'yes-no'" class="q-yesno">
-                <button type="button" class="q-yesno__btn q-yesno__btn--yes">
-                  Yes
-                </button>
-                <button type="button" class="q-yesno__btn q-yesno__btn--no">
-                  No
-                </button>
+                <button type="button" class="q-yesno__btn q-yesno__btn--yes" disabled>Yes</button>
+                <button type="button" class="q-yesno__btn q-yesno__btn--no" disabled>No</button>
               </div>
 
               <!-- TEXT INPUT -->
               <div *ngSwitchCase="'input-text'" class="q-textinput">
-                <input
-                  class="q-textinput__field"
-                  placeholder="Text input field"
-                  disabled
-                />
-              </div>
-
-              <!-- OPINION RATING (emojis) -->
-              <div *ngSwitchCase="'opinion-rating'" class="q-opinion">
-                <button type="button" class="q-opinion__item">😡</button>
-                <button type="button" class="q-opinion__item">🙁</button>
-                <button type="button" class="q-opinion__item">😐</button>
-                <button type="button" class="q-opinion__item">🙂</button>
-                <button type="button" class="q-opinion__item">👍</button>
-              </div>
-
-
-
-              <!-- MEDIA -->
-              <div *ngSwitchCase="'media'" class="q-media">
-                <div class="q-media__dropzone">
-                  <div class="q-media__icon">
-                    <svg viewBox="0 0 24 24">
-                      <rect
-                        x="3"
-                        y="6"
-                        width="18"
-                        height="12"
-                        rx="2"
-                        fill="none"
-                        stroke="#9ca3af"
-                      />
-                      <circle cx="10" cy="12" r="3" fill="#9ca3af"></circle>
-                      <path
-                        d="M13 14l2-2 3 3"
-                        fill="none"
-                        stroke="#6b7280"
-                        stroke-width="1.4"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <div class="q-media__text">
-                    Upload media (images/videos)
-                  </div>
-                </div>
+                <input class="q-textinput__field" placeholder="Text input field" disabled />
               </div>
 
               <!-- DATE -->
               <div *ngSwitchCase="'date'" class="q-date">
                 <div class="q-date__field">
-            <span class="q-date__icon">
-              <svg viewBox="0 0 24 24">
-                <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="17"
-                  rx="2"
-                  fill="none"
-                  stroke="#d1d5db"
-                />
-                <path
-                  d="M8 2v4M16 2v4M3 9h18"
-                  stroke="#9ca3af"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </span>
-                  <input
-                    class="q-date__input"
-                    placeholder="jj/mm/aaaa"
-                    disabled
-                  />
+                  <span class="q-date__icon">
+                    <svg viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="17" rx="2" fill="none" stroke="#d1d5db"/>
+                      <path d="M8 2v4M16 2v4M3 9h18" stroke="#9ca3af" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                  </span>
+                  <input class="q-date__input" placeholder="jj/mm/aaaa" disabled />
                 </div>
               </div>
 
-              <!-- PROGRESS PHOTO (même style que media mais texte différent) -->
-              <div *ngSwitchCase="'progress-photo'" class="q-media">
-                <div class="q-media__dropzone">
-                  <div class="q-media__icon">
-                    <svg viewBox="0 0 24 24">
-                      <rect
-                        x="3"
-                        y="6"
-                        width="18"
-                        height="12"
-                        rx="2"
-                        fill="none"
-                        stroke="#9ca3af"
-                      />
-                      <circle cx="10" cy="11" r="2.5" fill="#10b981"></circle>
-                      <path
-                        d="M7 15l3-3 2 2 3-3 4 4"
-                        fill="none"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <div class="q-media__text">
-                    Upload progress photo
-                  </div>
-                </div>
+              <!-- fallback -->
+              <div *ngSwitchDefault class="q-textinput">
+                <input class="q-textinput__field" placeholder="Question preview" disabled />
               </div>
+
             </div>
           </div>
 
@@ -299,56 +215,41 @@
           </button>
         </div>
       </ng-template>
-
     </ng-container>
 
     <!-- TAB: DETAILS -->
     <ng-container *ngIf="activeTab === 'details'">
       <div class="details">
-
-        <!-- Form title -->
         <section class="details-section">
           <label class="details-label" for="detailsTitle">Form Title</label>
           <input
             id="detailsTitle"
             class="details-input"
             type="text"
+            name="detailsTitle"
             [(ngModel)]="detailsTitle"
           />
         </section>
 
-        <!-- Show in signup (switch) -->
         <section class="details-section details-section--row">
           <div class="details-text">
             <div class="details-label">Show in Signup</div>
-            <div class="details-sub">
-              Display this form during client signup
-            </div>
+            <div class="details-sub">Display this form during client signup</div>
           </div>
 
           <label class="details-switch">
-            <input
-              type="checkbox"
-              [(ngModel)]="showInSignup"
-            />
+            <input type="checkbox" name="showInSignup" [(ngModel)]="showInSignup" />
             <span class="details-switch-track">
-          <span class="details-switch-knob"></span>
-        </span>
+              <span class="details-switch-knob"></span>
+            </span>
           </label>
         </section>
-
-        <!-- ⚠️ PAS de “Assign to All Clients” ici, on l’enlève totalement -->
-
       </div>
     </ng-container>
 
-
-    <!-- TAB: SCHEDULE -->
     <!-- TAB: SCHEDULE -->
     <ng-container *ngIf="activeTab === 'schedule'">
       <div class="sched">
-
-        <!-- Reminder Frequency -->
         <section class="sched-section">
           <h2 class="sched-title">Reminder Frequency</h2>
           <div class="sched-frequency-row">
@@ -364,7 +265,6 @@
           </div>
         </section>
 
-        <!-- BIWEEKLY : Which Weeks -->
         <section class="sched-section" *ngIf="scheduleFrequency === 'biweekly'">
           <h2 class="sched-title">Which Weeks</h2>
           <div class="sched-radio-wrapper">
@@ -390,43 +290,26 @@
           </div>
         </section>
 
-        <!-- MONTHLY : Monthly Schedule -->
         <section class="sched-section" *ngIf="scheduleFrequency === 'monthly'">
           <h2 class="sched-title">Monthly Schedule</h2>
           <div class="sched-radio-wrapper sched-radio-wrapper--column">
-            <button
-              type="button"
-              class="sched-radio-card"
-              [class.is-active]="monthlyMode === 'start'"
-              (click)="setMonthlyMode('start')"
-            >
+            <button type="button" class="sched-radio-card" [class.is-active]="monthlyMode === 'start'" (click)="setMonthlyMode('start')">
               <span class="sched-radio-dot"></span>
               <span>Start of the month</span>
             </button>
 
-            <button
-              type="button"
-              class="sched-radio-card"
-              [class.is-active]="monthlyMode === 'end'"
-              (click)="setMonthlyMode('end')"
-            >
+            <button type="button" class="sched-radio-card" [class.is-active]="monthlyMode === 'end'" (click)="setMonthlyMode('end')">
               <span class="sched-radio-dot"></span>
               <span>End of the month</span>
             </button>
 
-            <button
-              type="button"
-              class="sched-radio-card"
-              [class.is-active]="monthlyMode === 'specific'"
-              (click)="setMonthlyMode('specific')"
-            >
+            <button type="button" class="sched-radio-card" [class.is-active]="monthlyMode === 'specific'" (click)="setMonthlyMode('specific')">
               <span class="sched-radio-dot"></span>
               <span>Specific day</span>
             </button>
           </div>
         </section>
 
-        <!-- Daily / Weekly / Biweekly : days row -->
         <section class="sched-section" *ngIf="scheduleFrequency !== 'monthly'">
           <h2 class="sched-title">{{ daySectionTitle }}</h2>
           <div class="sched-days-row">
@@ -442,56 +325,39 @@
           </div>
         </section>
 
-        <!-- Monthly : Day of Month (only when Specific day) -->
-        <section
-          class="sched-section"
-          *ngIf="scheduleFrequency === 'monthly' && monthlyMode === 'specific'"
-        >
+        <section class="sched-section" *ngIf="scheduleFrequency === 'monthly' && monthlyMode === 'specific'">
           <h2 class="sched-title">Day of Month</h2>
           <div class="sched-select-wrap">
-            <select
-              class="sched-select"
-              [(ngModel)]="monthlyDay"
-            >
-              <option
-                *ngFor="let d of monthDays"
-                [ngValue]="d"
-              >
-                {{ ordinal(d) }}
-              </option>
+            <select class="sched-select" name="monthlyDay" [(ngModel)]="monthlyDay">
+              <option *ngFor="let d of monthDays" [ngValue]="d">{{ ordinal(d) }}</option>
             </select>
           </div>
         </section>
 
-        <!-- Time -->
         <section class="sched-section">
           <h2 class="sched-title">Time</h2>
           <div class="sched-time">
             <i class="fa-regular fa-clock sched-time__icon"></i>
-            <input
-              type="time"
-              class="sched-time__input"
-              [(ngModel)]="scheduleTime"
-            />
+            <input type="time" class="sched-time__input" name="scheduleTime" [(ngModel)]="scheduleTime" />
           </div>
         </section>
       </div>
     </ng-container>
-
-
   </div>
 
-  <!-- Sticky save bar -->
+  <!-- Save bar -->
   <div class="fb-savebar">
-    <button class="fb-savebtn" (click)="saveForm()">
+    <button class="fb-savebtn" type="button" (click)="saveForm()" [disabled]="isSaving || isLoading">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h9l4 4v12a2 2 0 0 1-2 2z" stroke-width="2"/>
         <path d="M17 21v-8H7v8M7 3v4h8V3" stroke-width="2"/>
       </svg>
-      Save Form
+      {{ isSaving ? 'Saving…' : 'Save Form' }}
     </button>
   </div>
 </div>
+
+<!-- Drawer -->
 <div class="q-drawer" [class.is-open]="showQuestionSidebar">
   <div class="q-drawer__backdrop" (click)="closeTypeDrawer()"></div>
 
@@ -502,78 +368,84 @@
     </div>
 
     <div class="q-drawer__body">
-      <!-- Items -->
-      <button class="q-item" *ngFor="let t of questionTypes" (click)="addQuestion(t.id)">
+      <button class="q-item" type="button" (click)="addQuestion('multiple-choice')">
         <span class="q-ico">
-          <!-- Icônes multicolores (SVG inline) -->
-          <ng-container [ngSwitch]="t.id">
-            <!-- Scale (bar chart multicolore) -->
-            <svg *ngSwitchCase="'scale'" viewBox="0 0 24 24">
-              <rect x="3"  y="11" width="3" height="9"  rx="1" fill="#22c55e"></rect>
-              <rect x="8"  y="8"  width="3" height="12" rx="1" fill="#f59e0b"></rect>
-              <rect x="13" y="5"  width="3" height="15" rx="1" fill="#6366f1"></rect>
-              <rect x="18" y="3"  width="3" height="17" rx="1" fill="#ef4444"></rect>
-            </svg>
-
-            <!-- Multiple Choice (radio) -->
-            <svg *ngSwitchCase="'multiple-choice'" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" fill="#eef2f7" stroke="#c7ced9"></circle>
-              <circle cx="12" cy="12" r="4.5" fill="#4b5563"></circle>
-            </svg>
-
-            <!-- Star Rating -->
-            <svg *ngSwitchCase="'star-rating'" viewBox="0 0 24 24">
-              <path d="M12 3l2.9 5.9L21 10l-4.5 4.3 1.1 6.4L12 17.8 6.4 20.7 7.5 14 3 10l6.1-1.1L12 3z"
-                    fill="#f59e0b" stroke="#d97706" stroke-width="1"></path>
-            </svg>
-
-            <!-- Yes/No (check) -->
-            <svg *ngSwitchCase="'yes-no'" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" fill="#ecfdf5" stroke="#34d399"></circle>
-              <path d="M7.5 12l3 3 6-6" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-
-            <!-- Text Input (paper & pencil) -->
-            <svg *ngSwitchCase="'input-text'" viewBox="0 0 24 24">
-              <rect x="3" y="5" width="18" height="14" rx="2" fill="#fff" stroke="#d1d5db"></rect>
-              <path d="M7 10h10M7 13h10M7 16h7" stroke="#6b7280" stroke-width="1.6" stroke-linecap="round"></path>
-              <path d="M16.5 7.5l2 2" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"></path>
-            </svg>
-
-            <!-- Opinion Rating (like) -->
-            <svg *ngSwitchCase="'opinion-rating'" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" fill="#f3f4f6"></circle>
-              <path d="M9 20V11a4 4 0 0 1 4-4h.5l.8-3.2A2 2 0 0 1 16 2h1a2 2 0 0 1 2 2v5h2a2 2 0 0 1 2 2l-1 6a3 3 0 0 1-3 3H9z"
-                    fill="#fcd34d" stroke="#f59e0b" stroke-width="1.2" stroke-linejoin="round"></path>
-              <rect x="2" y="11" width="6" height="9" rx="1.5" fill="#e5e7eb" stroke="#cbd5e1"></rect>
-            </svg>
-
-
-            <!-- Add Media (caméra) -->
-            <svg *ngSwitchCase="'media'" viewBox="0 0 24 24">
-              <rect x="3" y="6" width="18" height="12" rx="2" fill="#111827"></rect>
-              <circle cx="10" cy="12" r="3" fill="#9ca3af"></circle>
-              <rect x="7" y="4" width="4" height="2" rx="1" fill="#111827"></rect>
-            </svg>
-
-            <!-- Date (calendrier) -->
-            <svg *ngSwitchCase="'date'" viewBox="0 0 24 24">
-              <rect x="3" y="4" width="18" height="17" rx="2" fill="#fff" stroke="#d1d5db"></rect>
-              <rect x="3" y="8" width="18" height="4" fill="#fecaca"></rect>
-              <path d="M16 2v4M8 2v4" stroke="#ef4444" stroke-width="2" stroke-linecap="round"></path>
-              <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#ef4444"></rect>
-            </svg>
-
-            <!-- Progress Photo (photo/galerie) -->
-            <svg *ngSwitchCase="'progress-photo'" viewBox="0 0 24 24">
-              <rect x="3" y="6" width="18" height="12" rx="2" fill="#f0fdf4" stroke="#bbf7d0"></rect>
-              <circle cx="9" cy="11" r="2" fill="#10b981"></circle>
-              <path d="M7 16l3-3 2 2 3-3 4 4" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-          </ng-container>
+          <!-- Multiple Choice (radio) -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" fill="#eef2f7" stroke="#c7ced9"></circle>
+            <circle cx="12" cy="12" r="4.5" fill="#4b5563"></circle>
+          </svg>
         </span>
-        <span class="q-label">{{ t.label }}</span>
+        <span class="q-label">Multiple Choice</span>
+      </button>
+
+      <button class="q-item" type="button" (click)="addQuestion('star-rating')">
+        <span class="q-ico">
+          <!-- Star Rating -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 3l2.9 5.9L21 10l-4.5 4.3 1.1 6.4L12 17.8 6.4 20.7 7.5 14 3 10l6.1-1.1L12 3z"
+                  fill="#f59e0b" stroke="#d97706" stroke-width="1"></path>
+          </svg>
+        </span>
+        <span class="q-label">Star Rating</span>
+      </button>
+
+      <button class="q-item" type="button" (click)="addQuestion('yes-no')">
+        <span class="q-ico">
+          <!-- Yes/No (check) -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" fill="#ecfdf5" stroke="#34d399"></circle>
+            <path d="M7.5 12l3 3 6-6" fill="none" stroke="#059669" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </span>
+        <span class="q-label">Yes/No</span>
+      </button>
+
+      <button class="q-item" type="button" (click)="addQuestion('input-text')">
+        <span class="q-ico">
+          <!-- Text Input -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" fill="#fff" stroke="#d1d5db"></rect>
+            <path d="M7 10h10M7 13h10M7 16h7" stroke="#6b7280" stroke-width="1.6" stroke-linecap="round"></path>
+            <path d="M16.5 7.5l2 2" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+        </span>
+        <span class="q-label">Text Input</span>
+      </button>
+
+      <button class="q-item" type="button" (click)="addQuestion('date')">
+        <span class="q-ico">
+          <!-- Date (calendar) -->
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="17" rx="2" fill="#fff" stroke="#d1d5db"></rect>
+            <rect x="3" y="8" width="18" height="4" fill="#fecaca"></rect>
+            <path d="M16 2v4M8 2v4" stroke="#ef4444" stroke-width="2" stroke-linecap="round"></path>
+            <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#ef4444"></rect>
+          </svg>
+        </span>
+        <span class="q-label">Date</span>
       </button>
     </div>
   </aside>
+</div>
+
+<!-- Preview modal (optionnel) -->
+<div class="fb-modal" *ngIf="showPreview">
+  <div class="fb-modal__backdrop" (click)="closePreview()"></div>
+  <div class="fb-modal__panel">
+    <div class="fb-modal__head">
+      <div class="fb-modal__title">Preview</div>
+      <button class="q-close" type="button" (click)="closePreview()">✕</button>
+    </div>
+    <div class="fb-modal__body">
+      <div class="fb-preview-q" *ngFor="let q of questions; index as i; trackBy: trackById">
+        <div><strong>{{ i + 1 }}.</strong> {{ q.text }}</div>
+        <div class="fb-muted" style="margin-top:6px;">Type: {{ q.type }} • Required: {{ q.isRequired }}</div>
+        <div *ngIf="q.type==='multiple-choice' && (q.options?.length || 0) > 0" style="margin-top:8px;">
+          <div *ngFor="let opt of q.options">{{ opt }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

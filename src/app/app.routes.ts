@@ -27,6 +27,9 @@ import { CalendarClientsComponent } from './components/calendar/calendar-clients
 import { LandingPageComponent } from './components/website/landing-page/landing-page.component';
 import { YosoftLandingPageComponent } from './components/website/yosoft-landing-page/yosoft-landing-page.component';
 import { CreateAndAssignComponent } from './components/program-library/create-and-assign/create-and-assign.component';
+import {FormsListComponent} from "./components/forms/forms-list/forms-list.component";
+import {MyAssignmentsComponent} from "./components/forms/my-assignments-component/my-assignments.component";
+import {AssignmentFillComponent} from "./components/forms/assignment-fill-component/assignment-fill.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -37,6 +40,17 @@ export const APP_ROUTE: Route[] = [
     component: MainLayoutComponent,
     canActivate: [isAuthenticated],
     children: [
+      {
+        path: 'forms/create-form',
+        component: CreateFormComponent,
+      },
+      { path: 'assignments/me', component: MyAssignmentsComponent },
+      { path: 'assignments/:id/fill', component: AssignmentFillComponent },
+      {
+        path: 'forms/:id/edit',
+        component: CreateFormComponent,
+      },
+      { path: 'forms', component: FormsListComponent },
       {
         path: 'workout/exercise-library',
         component: ExerciseLibraryComponent,
@@ -140,10 +154,6 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/create-full-plan/:id',
         component: CreateFullPlanComponent,
-      },
-      {
-        path: 'form/create-form',
-        component: CreateFormComponent,
       },
     ],
   },

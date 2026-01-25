@@ -1,0 +1,76 @@
+<div class="page" *ngIf="!loading(); else loadingTpl">
+  <h1 class="title">{{ form.title }}</h1>
+
+  <div *ngIf="error()" class="alert">{{ error() }}</div>
+
+  <form (ngSubmit)="submit()">
+    <div class="q" *ngFor="let q of form.questions; let i = index">
+      <label class="q-label">{{ i + 1 }}. {{ q.label }} *</label>
+
+      <!-- TEXT -->
+      <input
+        *ngIf="q.type === 'TEXT'"
+        class="field"
+        type="text"
+        [(ngModel)]="answers[i].text"
+        [name]="'q' + i"
+        required
+      />
+
+      <!-- MULTIPLE_CHOICE -->
+      <select
+        *ngIf="q.type === 'MULTIPLE_CHOICE'"
+        class="field"
+        [(ngModel)]="answers[i].selectedOptionId"
+        [name]="'q' + i"
+        required
+      >
+        <option [ngValue]="null">-- choisir --</option>
+        <option *ngFor="let o of (q.options || [])" [ngValue]="o.id">{{ o.label }}</option>
+      </select>
+
+      <!-- YES_NO -->
+      <select
+        *ngIf="q.type === 'YES_NO'"
+        class="field"
+        [(ngModel)]="answers[i].yes"
+        [name]="'q' + i"
+        required
+      >
+        <option [ngValue]="null">-- choisir --</option>
+        <option [ngValue]="true">Oui</option>
+        <option [ngValue]="false">Non</option>
+      </select>
+
+      <!-- DATE -->
+      <input
+        *ngIf="q.type === 'DATE'"
+        class="field"
+        type="date"
+        [(ngModel)]="answers[i].date"
+        [name]="'q' + i"
+        required
+      />
+
+      <!-- STAR_RATING -->
+      <select
+        *ngIf="q.type === 'STAR_RATING'"
+        class="field"
+        [(ngModel)]="answers[i].rating"
+        [name]="'q' + i"
+        required
+      >
+        <option [ngValue]="null">-- choisir --</option>
+        <option *ngFor="let s of [1,2,3,4,5]" [ngValue]="s">{{ s }}</option>
+      </select>
+    </div>
+
+    <button class="btn" type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Envoi...' : 'Soumettre' }}
+    </button>
+  </form>
+</div>
+
+<ng-template #loadingTpl>
+  <div class="loading">Chargement...</div>
+</ng-template>

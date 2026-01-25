@@ -1,0 +1,195 @@
+<div class="page">
+  <div class="header">
+    <div class="title-block">
+      <h1 class="title">Forms</h1>
+      <p class="subtitle">Gérez vos formulaires et leurs versions.</p>
+    </div>
+
+    <button class="btn btn--primary" type="button" (click)="onAdd()">
+      + Ajouter
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="meta">
+        <span class="meta__label">Total :</span>
+        <span class="meta__value">{{ totalElements() }}</span>
+      </div>
+
+      <div class="page-size">
+        <span class="page-size__label">Taille :</span>
+        <select
+          class="select"
+          [value]="pageSize()"
+          (change)="changePageSize(+($any($event.target).value))"
+        >
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    <div *ngIf="error()" class="alert">
+      {{ error() }}
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" aria-label="Forms table">
+        <thead>
+        <tr>
+          <th>Titre</th>
+          <th class="col-status">Statut</th>
+          <th class="col-date">Dernière mise à jour</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngIf="loading()">
+          <td colspan="4" class="loading-row">Chargement...</td>
+        </tr>
+
+        <tr *ngIf="!loading() && forms().length === 0">
+          <td colspan="4" class="empty-row">Aucun form trouvé.</td>
+        </tr>
+
+        <tr *ngFor="let f of forms(); trackBy: trackById">
+          <td>
+            <div class="form-title">{{ f.title || '(Sans titre)' }}</div>
+            <div class="form-desc" *ngIf="f.description">{{ f.description }}</div>
+          </td>
+
+          <td class="col-status">
+            <span [class]="badgeClass(f.status)">{{ f.status }}</span>
+          </td>
+
+          <td class="col-date">
+              <span class="mono">
+                {{ f.updatedAt ? (f.updatedAt | date : 'dd/MM/yyyy HH:mm') : '-' }}
+              </span>
+          </td>
+
+          <td class="col-actions">
+            <button class="btn btn--ghost" type="button" (click)="onEdit(f)">
+              Modifier
+            </button>
+
+            <button class="btn btn--danger" type="button" (click)="openDelete(f)">
+              Supprimer
+            </button>
+
+            <button class="btn btn--primary" type="button" (click)="openAssign(f)">
+              Affecter
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination footer -->
+    <div class="pager" *ngIf="totalPages() > 0">
+      <button class="btn btn--ghost" type="button" (click)="goToPrev()" [disabled]="pageIndex() === 0 || loading()">
+        ← Précédent
+      </button>
+
+      <div class="pager__info">
+        Page <span class="mono">{{ pageIndex() + 1 }}</span> / <span class="mono">{{ totalPages() }}</span>
+      </div>
+
+      <button class="btn btn--ghost" type="button" (click)="goToNext()" [disabled]="pageIndex() >= totalPages() - 1 || loading()">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div class="modal-backdrop" *ngIf="confirmOpen()" (click)="closeDelete()"></div>
+
+  <div class="modal" *ngIf="confirmOpen()" role="dialog" aria-modal="true" aria-label="Confirmation suppression">
+    <div class="modal__content">
+      <div class="modal__title">Confirmer la suppression</div>
+      <div class="modal__text">
+        Voulez-vous vraiment supprimer le form
+        <strong>{{ selectedToDelete()?.title || '(Sans titre)' }}</strong> ?
+        <div class="modal__hint">Cette action est irréversible.</div>
+      </div>
+
+      <div class="modal__actions">
+        <button class="btn btn--ghost" type="button" (click)="closeDelete()" [disabled]="deleting()">
+          Annuler
+        </button>
+
+        <button class="btn btn--danger" type="button" (click)="confirmDelete()" [disabled]="deleting()">
+          <span *ngIf="!deleting()">Supprimer</span>
+          <span *ngIf="deleting()">Suppression...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Assign modal -->
+<div class="modal-backdrop" *ngIf="assignOpen()" (click)="closeAssign()"></div>
+
+<div class="modal" *ngIf="assignOpen()" role="dialog" aria-modal="true" aria-label="Affecter form">
+  <div class="modal__content">
+    <div class="modal__title">
+      Affecter : <span class="mono">{{ selectedToAssign()?.title || '(Sans titre)' }}</span>
+    </div>
+
+    <div class="modal__text">
+      <div class="assign-toolbar">
+        <input
+          class="assign-search"
+          type="text"
+          placeholder="Rechercher par prénom / nom..."
+          [value]="searchTerm()"
+          (input)="onUserSearch($event)"
+        />
+
+        <div class="assign-meta">
+          Sélectionnés : <strong>{{ selectedCount() }}</strong>
+        </div>
+      </div>
+
+      <div *ngIf="usersError()" class="alert" style="margin-top:10px;">
+        {{ usersError() }}
+      </div>
+
+      <div class="assign-list" *ngIf="!usersLoading(); else usersLoadingTpl">
+        <button
+          type="button"
+          class="assign-item"
+          *ngFor="let u of filteredUsers()"
+          [class.is-selected]="isSelected(u)"
+          (click)="toggleUser(u)"
+        >
+          <img class="assign-avatar" src="assets/avatar.png" alt="avatar" />
+          <div class="assign-name">{{ userLabel(u) }}</div>
+        </button>
+
+        <div class="empty-row" *ngIf="filteredUsers().length === 0">
+          Aucun utilisateur trouvé.
+        </div>
+      </div>
+
+      <ng-template #usersLoadingTpl>
+        <div class="loading-row">Chargement des utilisateurs...</div>
+      </ng-template>
+    </div>
+
+    <div class="modal__actions">
+      <button class="btn btn--ghost" type="button" (click)="closeAssign()" [disabled]="assigning()">
+        Annuler
+      </button>
+
+      <button class="btn btn--primary" type="button" (click)="submitAssign()" [disabled]="assigning()">
+        <span *ngIf="!assigning()">Submit</span>
+        <span *ngIf="assigning()">Envoi...</span>
+      </button>
+    </div>
+  </div>
+</div>

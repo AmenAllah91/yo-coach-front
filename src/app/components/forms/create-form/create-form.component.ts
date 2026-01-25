@@ -1,7 +1,17 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {CommonModule} from "@angular/common";
-import {FormsModule} from "@angular/forms";
-import {FeatherModule} from "angular-feather";
+import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { FeatherModule } from 'angular-feather';
+import { ActivatedRoute, Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
+
+import {
+  FormDetails,
+  FormsApiService,
+  QuestionBE,
+  QuestionTypeBE
+} from '../services/forms-api.service'; // adapte le path si besoin
+
 export type QuestionType =
   | 'scale'
   | 'multiple-choice'
@@ -22,20 +32,8 @@ export interface QuestionItem {
   options?: string[];
 }
 
-export interface QuestionItem {
-  id: string
-  type: QuestionType
-  text: string
-  isRequired: boolean
-  options?: string[]
-}
-
-interface QuestionTypeItem {
-  id: QuestionType
-  label: string
-}
 type Tab = 'form' | 'details' | 'schedule';
-type ScheduleFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly'
+type ScheduleFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 type BiweeklyWeekOption = '1-3' | '2-4';
 type MonthlyMode = 'start' | 'end' | 'specific';
 
@@ -46,224 +44,220 @@ type MonthlyMode = 'start' | 'end' | 'specific';
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss'
 })
-export class CreateFormComponent {
-
+export class CreateFormComponent implements OnInit {
+  private api = inject(FormsApiService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   isEditingTitle = false;
-  isDefaultQuestionnaire = false; // pour l’onglet Details
+  // mode create/edit
+  formId: string | null = null;
+  isLoading = false;
+  isSaving = false;
+
+  // UI state
+  activeTab: Tab = 'form';
   showPreview = false;
+  showQuestionSidebar = false;
 
+  // fields
+  formTitle = 'Form Title';
+  detailsTitle = 'Form Title'; // <-- IMPORTANT (ngModel)
+  description = ''; // si tu veux l’ajouter plus tard dans le payload
 
-  // --- helpers ---
-  nowId = () => `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  questions: QuestionItem[] = [];
 
-  // --- actions ---
-  setActiveTab(tab: Tab) {
-    this.activeTab = tab;
-  }
-
-  startEditTitle() {
-    this.isEditingTitle = true;
-  }
-  finishEditTitle() {
-    this.isEditingTitle = false;
-  }
-  titleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') this.finishEditTitle();
-  }
-
-  openPreview() {
-    this.showPreview = true;
-  }
-  closePreview() {
-    this.showPreview = false;
-  }
-
-
-  deleteQuestion(id: string) {
-    this.questions = this.questions.filter((q) => q.id !== id);
-  }
-
-  updateQuestion(id: string, updates: Partial<QuestionItem>) {
-    this.questions = this.questions.map((q) =>
-      q.id === id ? { ...q, ...updates } : q
-    );
-  }
-
-  // options pour multiple-choice
-  addOption(id: string) {
-    this.questions = this.questions.map((q) => {
-      if (q.id !== id) return q;
-      const opts = q.options ? [...q.options, 'New Option'] : ['New Option'];
-      return { ...q, options: opts };
-    });
-  }
-
-  updateOption(id: string, index: number, value: string) {
-    this.questions = this.questions.map((q) => {
-      if (q.id !== id || !q.options) return q;
-      const opts = [...q.options];
-      opts[index] = value;
-      return { ...q, options: opts };
-    });
-  }
-
-  deleteOption(id: string, index: number) {
-    this.questions = this.questions.map((q) => {
-      if (q.id !== id || !q.options) return q;
-      const opts = [...q.options];
-      opts.splice(index, 1);
-      return { ...q, options: opts };
-    });
-  }
-
-  saveForm() {
-    // remplace cette logique par ton appel API si besoin
-    console.log('Saving form…', {
-      activeTab: this.activeTab,
-      title: this.formTitle,
-      questions: this.questions,
-    });
-  }
-
-  back() {
-    history.back();
-  }
-
-  // pour *ngFor trackBy
-  trackById = (_: number, q: QuestionItem) => q.id;
-
-
-
-  activeTab: 'form' | 'details' | 'schedule' = 'form'
-  formTitle = 'Form Title'
-  showQuestionSidebar = false
-
-  questions: QuestionItem[] = []
+  // schedule (statique pour l’instant)
+  scheduleFrequency: ScheduleFrequency = 'daily';
+  scheduleFrequencyOptions = [
+    { id: 'daily' as ScheduleFrequency, label: 'Daily' },
+    { id: 'weekly' as ScheduleFrequency, label: 'Weekly' },
+    { id: 'biweekly' as ScheduleFrequency, label: 'Biweekly' },
+    { id: 'monthly' as ScheduleFrequency, label: 'Monthly' },
+  ];
+  scheduleWeekDays: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  dailySelectedDays: string[] = ['Mon'];
+  weeklySelectedDay: string = 'Mon';
+  biweeklyWeekOption: BiweeklyWeekOption = '1-3';
+  biweeklySelectedDay: string = 'Mon';
+  monthlyMode: MonthlyMode = 'specific';
+  monthDays: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
+  monthlyDay: number = 10;
+  scheduleTime: string = '09:00';
 
   questionTypes = [
-    { id: 'scale' as QuestionType, label: 'Scale' },
     { id: 'multiple-choice' as QuestionType, label: 'Multiple Choice' },
     { id: 'star-rating' as QuestionType, label: 'Star Rating' },
     { id: 'yes-no' as QuestionType, label: 'Yes/No' },
     { id: 'input-text' as QuestionType, label: 'Text Input' },
-    { id: 'opinion-rating' as QuestionType, label: 'Opinion Rating' },
-    { id: 'media' as QuestionType, label: 'Add Media' },
     { id: 'date' as QuestionType, label: 'Date' },
-    { id: 'progress-photo' as QuestionType, label: 'Progress Photo' },
-  ]
+  ];
 
-  setTab(tab: 'form' | 'details' | 'schedule') {
-    this.activeTab = tab
+  ngOnInit(): void {
+    this.formId = this.route.snapshot.paramMap.get('id');
+
+    if (this.formId) {
+      this.isLoading = true;
+      this.api.getForOwner(this.formId)
+        .pipe(finalize(() => (this.isLoading = false)))
+        .subscribe({
+          next: (form) => this.patchFromBackend(form),
+          error: () => this.router.navigate(['/forms'])
+        });
+    } else {
+      // create init
+      this.formTitle = 'Form Title';
+      this.detailsTitle = 'Form Title';
+      this.questions = [];
+    }
+  }
+  startEditTitle(): void {
+    this.isEditingTitle = true;
   }
 
-  openTypeDrawer() {
-    this.showQuestionSidebar = true
+  finishEditTitle(): void {
+    this.isEditingTitle = false;
+
+    // sécurité : si vide, on remet un titre par défaut
+    if (!this.detailsTitle || !this.detailsTitle.trim()) {
+      this.detailsTitle = this.formTitle || 'Form Title';
+    }
   }
 
-  closeTypeDrawer() {
-    this.showQuestionSidebar = false
+  titleKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.finishEditTitle();
+    }
+  }
+  // -------- UI actions --------
+  back() {
+    this.router.navigate(['/forms']);
+  }
+
+  setTab(tab: Tab) {
+    this.activeTab = tab;
+  }
+
+  openPreview() { this.showPreview = true; }
+  closePreview() { this.showPreview = false; }
+
+  openTypeDrawer() { this.showQuestionSidebar = true; }
+  closeTypeDrawer() { this.showQuestionSidebar = false; }
+
+  // -------- questions --------
+  private newId(prefix: string) {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   }
 
   addQuestion(type: QuestionType) {
     const newQuestion: QuestionItem = {
-      id: `question-${Date.now()}`,
+      id: this.newId('q'),
       type,
       text: `Question ${this.questions.length + 1}`,
       isRequired: true,
       options: type === 'multiple-choice' ? ['New Option'] : undefined,
-    }
-    this.questions = [...this.questions, newQuestion]
-    this.showQuestionSidebar = false
+    };
+    this.questions = [...this.questions, newQuestion];
+    this.showQuestionSidebar = false;
   }
 
   removeQuestion(index: number): void {
     this.questions = this.questions.filter((_, i) => i !== index);
   }
 
-  addMcOption(q: QuestionItem) {
-    if (!q.options) q.options = []
-    q.options.push('New Option')
+  trackById = (_: number, q: QuestionItem) => q.id;
+
+  // -------- mapping UI <-> BE --------
+  private toQuestionTypeBE(t: QuestionType): QuestionTypeBE {
+    switch (t) {
+      case 'multiple-choice': return 'MULTIPLE_CHOICE';
+      case 'yes-no': return 'YES_NO';
+      case 'star-rating': return 'STAR_RATING';
+      case 'date': return 'DATE';
+      case 'scale':
+      case 'input-text':
+      case 'opinion-rating':
+      case 'signature':
+      case 'media':
+      case 'progress-photo':
+      default:
+        return 'TEXT';
+    }
   }
 
-  removeMcOption(q: QuestionItem, index: number) {
-    if (!q.options) return
-    q.options.splice(index, 1)
+  private toQuestionTypeUI(t: string): QuestionType {
+    switch (t) {
+      case 'MULTIPLE_CHOICE': return 'multiple-choice';
+      case 'YES_NO': return 'yes-no';
+      case 'STAR_RATING': return 'star-rating';
+      case 'DATE': return 'date';
+      case 'TEXT':
+      default:
+        return 'input-text';
+    }
   }
 
-  trackByIndex(index: number) {
-    return index
+  private patchFromBackend(form: FormDetails) {
+    this.formTitle = form.title;
+    this.detailsTitle = form.title;
+
+    this.questions = (form.questions ?? [])
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map(q => ({
+        id: q.id,
+        type: this.toQuestionTypeUI(q.type),
+        text: q.label,
+        isRequired: !!q.required,
+        options: (q.options ?? []).map(o => o.label),
+      }));
   }
 
-  // options de fréquence
-  scheduleFrequency: ScheduleFrequency = 'daily'
-  scheduleFrequencyOptions = [
-    { id: 'daily' as ScheduleFrequency, label: 'Daily' },
-    { id: 'weekly' as ScheduleFrequency, label: 'Weekly' },
-    { id: 'biweekly' as ScheduleFrequency, label: 'Biweekly' },
-    { id: 'monthly' as ScheduleFrequency, label: 'Monthly' },
-  ]
+  private buildPayload(): FormDetails {
+    const title = (this.detailsTitle?.trim() || this.formTitle?.trim() || 'Form Title');
 
-  // jours de la semaine
-  scheduleWeekDays: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const questionsBE: QuestionBE[] = this.questions.map((q, idx) => ({
+      id: q.id,
+      type: this.toQuestionTypeBE(q.type),
+      label: q.text,
+      required: q.isRequired,
+      order: idx,
+      options: q.type === 'multiple-choice'
+        ? (q.options ?? []).map(label => ({ id: this.newId('opt'), label }))
+        : [],
+    }));
 
-  // jours sélectionnés
-  scheduleSelectedDays: string[] = [...this.scheduleWeekDays]
+    return {
+      title,
+      questions: questionsBE,
+      status: 'DRAFT',
+    };
+  }
 
-  // heure
-  scheduleTime: string = '09:00'
+  saveForm() {
+    const payload = this.buildPayload();
+    this.isSaving = true;
 
+    const req$ = this.formId
+      ? this.api.updateForm(this.formId, payload)
+      : this.api.createForm(payload);
+
+    req$
+      .pipe(finalize(() => (this.isSaving = false)))
+      .subscribe({
+        next: () => this.router.navigate(['/forms']),
+        error: (err) => {
+          console.error(err);
+          alert("Erreur lors de l'enregistrement.");
+        }
+      });
+  }
+
+  // ===== schedule helpers (tu peux garder ton code existant si tu veux) =====
   setScheduleFrequency(freq: ScheduleFrequency): void {
-    this.scheduleFrequency = freq
-
-    if (freq === 'daily') {
-      // Daily → tous les jours sélectionnés
-      this.scheduleSelectedDays = [...this.scheduleWeekDays]
-    } else if (this.scheduleSelectedDays.length === 0) {
-      // au moins 1 jour sélectionné
-      this.scheduleSelectedDays = ['Mon']
-    }
+    this.scheduleFrequency = freq;
+    if (freq === 'daily') this.dailySelectedDays = [...this.scheduleWeekDays];
+    if (freq !== 'daily' && this.dailySelectedDays.length === 0) this.dailySelectedDays = ['Mon'];
   }
-
-  toggleScheduleDay(day: string): void {
-    // Pour Daily les jours sont figés
-    if (this.scheduleFrequency === 'daily') {
-      return
-    }
-
-    const idx = this.scheduleSelectedDays.indexOf(day)
-    if (idx > -1) {
-      this.scheduleSelectedDays = this.scheduleSelectedDays.filter(
-        (d) => d !== day,
-      )
-    } else {
-      this.scheduleSelectedDays = [...this.scheduleSelectedDays, day]
-    }
-  }
-
-  isScheduleDaySelected(day: string): boolean {
-    return this.scheduleSelectedDays.includes(day)
-  }
-
-  isScheduleDayDisabled(): boolean {
-    return this.scheduleFrequency === 'daily'
-  }
-
-
-  // Daily : multi-sélection
-  dailySelectedDays: string[] = ['Mon'];
-
-  // Weekly : un seul jour
-  weeklySelectedDay: string = 'Mon';
-
-  // Biweekly : option de semaine + un jour
-  biweeklyWeekOption: BiweeklyWeekOption = '1-3';
-  biweeklySelectedDay: string = 'Mon';
-
-  // Monthly : mode + jour du mois
-  monthlyMode: MonthlyMode = 'specific';
-  monthDays: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
-  monthlyDay: number = 10;
-
 
   setBiweeklyWeek(option: BiweeklyWeekOption): void {
     this.biweeklyWeekOption = option;
@@ -273,66 +267,43 @@ export class CreateFormComponent {
     this.monthlyMode = mode;
   }
 
-  /** Titre "Select Days" / "Day of Week" selon le mode */
   get daySectionTitle(): string {
     if (this.scheduleFrequency === 'daily') return 'Select Days';
-    if (this.scheduleFrequency === 'weekly' || this.scheduleFrequency === 'biweekly') {
-      return 'Day of Week';
-    }
+    if (this.scheduleFrequency === 'weekly' || this.scheduleFrequency === 'biweekly') return 'Day of Week';
     return '';
   }
 
-  /** Pour *ngFor trackBy sur les jours */
   trackByDay = (_: number, day: string) => day;
 
-  /** Est-ce que le jour est actif, selon la fréquence ? */
   isDayActive(day: string): boolean {
     switch (this.scheduleFrequency) {
-      case 'daily':
-        return this.dailySelectedDays.includes(day);
-      case 'weekly':
-        return this.weeklySelectedDay === day;
-      case 'biweekly':
-        return this.biweeklySelectedDay === day;
-      default:
-        return false;
+      case 'daily': return this.dailySelectedDays.includes(day);
+      case 'weekly': return this.weeklySelectedDay === day;
+      case 'biweekly': return this.biweeklySelectedDay === day;
+      default: return false;
     }
   }
 
-  /** Click sur un jour, comportement différent selon le mode */
   onDayClick(day: string): void {
     switch (this.scheduleFrequency) {
       case 'daily':
-        if (this.dailySelectedDays.includes(day)) {
-          this.dailySelectedDays = this.dailySelectedDays.filter(d => d !== day);
-        } else {
-          this.dailySelectedDays = [...this.dailySelectedDays, day];
-        }
+        this.dailySelectedDays = this.dailySelectedDays.includes(day)
+          ? this.dailySelectedDays.filter(d => d !== day)
+          : [...this.dailySelectedDays, day];
         break;
-
-      case 'weekly':
-        this.weeklySelectedDay = day;
-        break;
-
-      case 'biweekly':
-        this.biweeklySelectedDay = day;
-        break;
+      case 'weekly': this.weeklySelectedDay = day; break;
+      case 'biweekly': this.biweeklySelectedDay = day; break;
     }
   }
 
-  /** Ordinal : 1st, 2nd, 3rd, 4th... pour le select mensuel */
   ordinal(n: number): string {
     const v = n % 100;
     if (v >= 11 && v <= 13) return `${n}th`;
     switch (n % 10) {
-      case 1:
-        return `${n}st`;
-      case 2:
-        return `${n}nd`;
-      case 3:
-        return `${n}rd`;
-      default:
-        return `${n}th`;
+      case 1: return `${n}st`;
+      case 2: return `${n}nd`;
+      case 3: return `${n}rd`;
+      default: return `${n}th`;
     }
   }
 }

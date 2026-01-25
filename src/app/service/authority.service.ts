@@ -8,7 +8,7 @@ import {environment} from "@env/environment";
   providedIn: 'root'
 })
 export class AuthorityService {
-  private user_management_service_url= environment.userManagementServiceUrl ;
+  private user_management_service_url= environment.baseApiUrl ;
   apiURL: string = this.user_management_service_url +'/role';
   constructor(private http: HttpClient) { }
 

@@ -1,0 +1,99 @@
+<div class="page">
+  <div class="header">
+    <div class="title-block">
+      <h1 class="title">Mes affectations</h1>
+      <p class="subtitle">Les formulaires qui vous sont affectés.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="meta">
+        <span class="meta__label">Total :</span>
+        <span class="meta__value">{{ totalElements() }}</span>
+      </div>
+
+      <div class="filters">
+        <div class="filter">
+          <span class="filter__label">Statut :</span>
+          <select class="select" [value]="statusFilter()" (change)="changeStatusFilter(($any($event.target).value))">
+            <option *ngFor="let s of statuses" [value]="s.id">{{ s.label }}</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <span class="filter__label">Taille :</span>
+          <select class="select" [value]="pageSize()" (change)="changePageSize(+($any($event.target).value))">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="error()" class="alert">
+      {{ error() }}
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" aria-label="Assignments table">
+        <thead>
+        <tr>
+          <th>Form</th>
+          <th class="col-status">Statut</th>
+          <th class="col-date">Affecté le</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngIf="loading()">
+          <td colspan="4" class="loading-row">Chargement...</td>
+        </tr>
+
+        <tr *ngIf="!loading() && assignments().length === 0">
+          <td colspan="4" class="empty-row">Aucune affectation.</td>
+        </tr>
+
+        <tr *ngFor="let a of assignments(); trackBy: trackById">
+          <td>
+            <div class="form-title mono">{{ a.formId }}</div>
+            <div class="form-desc mono">Assignment: {{ a.id }}</div>
+          </td>
+
+          <td class="col-status">
+            <span [class]="badgeClass(a.status)">{{ a.status }}</span>
+          </td>
+
+          <td class="col-date">
+            <span class="mono">{{ a.assignedAt ? (a.assignedAt | date : 'dd/MM/yyyy HH:mm') : '-' }}</span>
+          </td>
+
+          <td class="col-actions">
+            <button class="btn btn--primary" type="button" (click)="openAssignment(a)">
+              Ouvrir
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pager" *ngIf="totalPages() > 0">
+      <button class="btn btn--ghost" type="button" (click)="goToPrev()" [disabled]="pageIndex() === 0 || loading()">
+        ← Précédent
+      </button>
+
+      <div class="pager__info">
+        Page <span class="mono">{{ pageIndex() + 1 }}</span> / <span class="mono">{{ totalPages() }}</span>
+      </div>
+
+      <button class="btn btn--ghost" type="button" (click)="goToNext()" [disabled]="pageIndex() >= totalPages() - 1 || loading()">
+        Suivant →
+      </button>
+    </div>
+  </div>
+</div>

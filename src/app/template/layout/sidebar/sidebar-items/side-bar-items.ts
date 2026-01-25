@@ -154,6 +154,17 @@ export const items: RouteInfo[] = [
     roles: ['ROLE_COACH'],
   },
   {
+    path: 'assignments/me',
+    title: 'Formulaires a repondre',
+    iconType: 'feather',
+    icon: 'message-square',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: []
+  },
+  {
     path: '/calendar',
     title: 'Calendar',
     iconType: 'feather',
@@ -177,7 +188,7 @@ export const items: RouteInfo[] = [
     roles: ['ROLE_COACH'],
     submenu: [
       {
-        path: '/forms/check-in-forms',
+        path: '/forms',
         title: 'Check-in Forms',
         iconType: 'feather',
         icon: 'clipboard',
