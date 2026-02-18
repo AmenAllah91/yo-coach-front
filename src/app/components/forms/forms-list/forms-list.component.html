@@ -1,15 +1,31 @@
 <div class="page">
-  <div class="header">
-    <div class="title-block">
-      <h1 class="title">Forms</h1>
-      <p class="subtitle">Gérez vos formulaires et leurs versions.</p>
+  <div class="page-header">
+    <button class="back-btn" type="button" >
+      <i-feather name="arrow-left"></i-feather>
+    </button>
+
+    <div class="header-content">
+      <h1>Forms</h1>
+      <p>Gérez vos formulaires et leurs versions.</p>
     </div>
 
-    <button class="btn btn--primary" type="button" (click)="onAdd()">
-      + Ajouter
+    <!-- actions du form conservées -->
+    <button class="primary-btn" type="button" (click)="onAdd()">
+      <i-feather name="plus"></i-feather>
+      Ajouter
     </button>
   </div>
+  <div class="content">
 
+  <div class="search-section">
+    <div class="search-box">
+      <i-feather name="search" class="search-icon"></i-feather>
+      <input
+        type="text"
+        placeholder="Search clients"
+        >
+    </div>
+  </div>
   <div class="card">
     <div class="toolbar">
       <div class="meta">
@@ -73,17 +89,42 @@
           </td>
 
           <td class="col-actions">
-            <button class="btn btn--ghost" type="button" (click)="onEdit(f)">
-              Modifier
-            </button>
+            <div class="dropdown" [class.open]="openedActionsId() === f.id">
+              <button
+                class="action-btn"
+                type="button"
+                (click)="toggleActions(f.id, $event)"
+                aria-label="Actions"
+              >
+                <i-feather name="more-horizontal"></i-feather>
+              </button>
 
-            <button class="btn btn--danger" type="button" (click)="openDelete(f)">
-              Supprimer
-            </button>
+              <div class="dropdown-menu" *ngIf="openedActionsId() === f.id">
+                <button class="dropdown-item" type="button" (click)="onEdit(f); closeActions()">
+                  <i-feather name="edit-2"></i-feather>
+                  Modifier
+                </button>
 
-            <button class="btn btn--primary" type="button" (click)="openAssign(f)">
-              Affecter
-            </button>
+                <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()">
+                  <i-feather name="users"></i-feather>
+                  Affecter
+                </button>
+
+                <button class="dropdown-item delete" type="button" (click)="openDelete(f); closeActions()">
+                  <i-feather name="trash-2"></i-feather>
+                  Supprimer
+                </button>
+              </div>
+
+              <!-- backdrop pour fermer quand on clique ailleurs -->
+              <button
+                *ngIf="openedActionsId() === f.id"
+                class="dropdown-backdrop"
+                type="button"
+                (click)="closeActions()"
+                aria-label="Fermer"
+              ></button>
+            </div>
           </td>
         </tr>
         </tbody>
@@ -192,4 +233,5 @@
       </button>
     </div>
   </div>
+</div>
 </div>

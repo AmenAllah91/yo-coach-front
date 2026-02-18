@@ -2,7 +2,7 @@ import { RouteInfo } from '../sidebar.metadata';
 
 export const items: RouteInfo[] = [
   {
-    path: '/dashboard',
+    path: '/coach-dashboard',
     title: 'Dashboard',
     iconType: 'feather',
     icon: 'grid',
@@ -155,7 +155,17 @@ export const items: RouteInfo[] = [
   },
   {
     path: 'assignments/me',
-    title: 'Formulaires a repondre',
+    title: 'My Check-ins',
+    iconType: 'feather',
+    icon: 'message-square',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: []
+  }, {
+    path: 'forms/manage-checkins',
+    title: 'Manage Check-ins',
     iconType: 'feather',
     icon: 'message-square',
     class: '',
@@ -192,17 +202,6 @@ export const items: RouteInfo[] = [
         title: 'Check-in Forms',
         iconType: 'feather',
         icon: 'clipboard',
-        class: '',
-        groupTitle: false,
-        badge: '',
-        badgeClass: '',
-        submenu: [],
-      },
-      {
-        path: '/forms/initial-questionnaire',
-        title: 'Initial Questionnaire',
-        iconType: 'feather',
-        icon: 'help-circle',
         class: '',
         groupTitle: false,
         badge: '',

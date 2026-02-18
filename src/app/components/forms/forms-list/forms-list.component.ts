@@ -1,14 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import {Component, OnDestroy, OnInit, computed, signal, HostListener} from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsApiService, Form, PageResponse, UserDto } from '../services/forms-api.service';
 import { Subject, takeUntil } from 'rxjs';
 import {AssignmentsApiService} from "../services/assignments-api.service";
+import {FeatherModule} from "angular-feather";
+import {FormsModule, ReactiveFormsModule} from "@angular/forms";
+import {OverlayModule} from "@angular/cdk/overlay";
 
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FeatherModule, ReactiveFormsModule, FormsModule,    OverlayModule, // ✅ IMPORTANT
+  ],
   templateUrl: './forms-list.component.html',
   styleUrls: ['./forms-list.component.css'],
 })
@@ -289,5 +293,63 @@ export class FormsListComponent implements OnInit, OnDestroy {
         this.usersError.set(err?.error?.message ?? 'Erreur lors de l’affectation.');
       }
     });
+  }
+  // ===== DROPDOWN ACTIONS (ancienne méthode, corrigée) =====
+  readonly openDropdownId = signal<string | null>(null);
+
+  toggleDropdown(formId: string | number, event: MouseEvent) {
+    event.stopPropagation();
+
+    const id = String(formId);
+    const nextId = this.openDropdownId() === id ? null : id;
+    this.openDropdownId.set(nextId);
+
+    if (nextId) {
+      // attendre que le menu soit rendu (*ngIf) puis calculer sa position
+      requestAnimationFrame(() => this.positionDropdown(nextId, event.currentTarget as HTMLElement));
+    }
+  }
+
+  private positionDropdown(formId: string, buttonEl: HTMLElement | null) {
+    const menu = document.getElementById(`dropdown-${formId}`) as HTMLElement | null;
+    if (!menu || !buttonEl) return;
+
+    const rect = buttonEl.getBoundingClientRect();
+
+    const menuW = menu.offsetWidth || 180;
+    const menuH = menu.offsetHeight || 200;
+
+    const top = rect.bottom + menuH > window.innerHeight
+      ? rect.top - menuH - 6
+      : rect.bottom + 6;
+
+    const left = Math.max(8, rect.right - menuW);
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+  }
+
+  closeDropdown() {
+    this.openDropdownId.set(null);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(event: MouseEvent) {
+    const target = event.target as HTMLElement | null;
+    // ✅ Ne ferme PAS si click dans le dropdown
+    if (target?.closest('.dropdown')) return;
+    this.closeDropdown();
+  }
+
+  // ===== DROPDOWN ACTIONS (nouvelle méthode simple) =====
+  readonly openedActionsId = signal<string | number | null>(null);
+
+  toggleActions(formId: string | number, event: MouseEvent): void {
+    event.stopPropagation(); // évite des effets de bord
+    this.openedActionsId.set(this.openedActionsId() === formId ? null : formId);
+  }
+
+  closeActions(): void {
+    this.openedActionsId.set(null);
   }
 }

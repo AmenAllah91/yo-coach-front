@@ -153,7 +153,7 @@ export class CreateFormComponent implements OnInit {
     const newQuestion: QuestionItem = {
       id: this.newId('q'),
       type,
-      text: `Question ${this.questions.length + 1}`,
+        text: '',
       isRequired: true,
       options: type === 'multiple-choice' ? ['New Option'] : undefined,
     };
@@ -306,4 +306,23 @@ export class CreateFormComponent implements OnInit {
       default: return `${n}th`;
     }
   }
+
+  uiTypeLabel(t: QuestionType): string {
+    switch (t) {
+      case 'multiple-choice': return 'MULTIPLE CHOICE';
+      case 'yes-no': return 'YES / NO';
+      case 'star-rating': return 'STAR RATING';
+      case 'scale': return 'SCALE';
+      case 'date': return 'DATE';
+      case 'input-text': return 'TEXT INPUT';
+      default: return 'QUESTION';
+    }
+  }
+
+  addOption(q: QuestionItem) {
+    q.options = q.options || [];
+    q.options.push('New Option');
+  }
+  trackByOptionIndex = (index: number, _opt: string) => index;
+
 }

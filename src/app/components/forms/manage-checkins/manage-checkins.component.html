@@ -1,0 +1,399 @@
+<div class="page">
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <h1 class="title">Check-ins</h1>
+        <p class="subtitle">Manage all client check-ins in one place</p>
+      </div>
+
+      <!-- Search -->
+      <div class="search">
+        <span class="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </span>
+
+        <input
+          class="search-input"
+          type="text"
+          [value]="searchQuery"
+          (input)="onSearch(($any($event.target)).value)"
+          placeholder="Search clients or forms..."
+        />
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+      <!-- Tabs -->
+      <div class="tabs-wrap">
+        <div class="tabs" role="tablist" aria-label="Tabs">
+          <button
+            *ngFor="let tab of tabs"
+            class="tab-btn"
+            [class.active]="activeTab === tab.id"
+            (click)="setTab(tab.id)"
+            type="button"
+          >
+            {{ tab.label }}
+
+            <ng-container *ngIf="(counts[tab.id] || 0) > 0">
+              <span
+                class="count-pill"
+                [ngClass]="{
+                  overdue: tab.id === 'overdue',
+                  active: activeTab === tab.id && tab.id !== 'overdue',
+                  neutral: activeTab !== tab.id && tab.id !== 'overdue'
+                }"
+              >
+                {{ counts[tab.id] }}
+              </span>
+            </ng-container>
+          </button>
+        </div>
+      </div>
+
+      <!-- List -->
+      <ng-container *ngIf="paginatedClients.length > 0; else emptyTpl">
+        <div
+          *ngFor="let client of paginatedClients"
+          class="row row-compact"
+          (click)="openCheckInModal(client)">
+          <!-- left -->
+          <div class="row-left">
+            <div class="avatar">
+              <ng-container *ngIf="client.avatar; else initialsTpl">
+                <img [src]="client.avatar" [alt]="client.name" />
+              </ng-container>
+              <ng-template #initialsTpl>
+                <div class="avatar-fallback">{{ initials(client.name) }}</div>
+              </ng-template>
+            </div>
+
+            <div class="name-form">
+              <p class="name">{{ client.name }}</p>
+              <p class="formType">{{ client.formType }}</p>
+            </div>
+          </div>
+
+          <!-- right -->
+          <div class="row-right">
+            <p class="date">{{ client.date }}</p>
+
+            <div class="badge" [ngClass]="client.status">
+              <span class="badge-icon" aria-hidden="true">
+                <ng-container [ngSwitch]="client.status">
+                  <svg *ngSwitchCase="'due_today'" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                  </svg>
+
+                  <svg *ngSwitchCase="'overdue'" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 8v4"></path>
+                    <path d="M12 16h.01"></path>
+                  </svg>
+
+                  <svg *ngSwitchCase="'to_review'" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+
+                  <svg *ngSwitchCase="'reviewed'" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <path d="M22 4 12 14.01l-3-3"></path>
+                  </svg>
+
+                  <svg *ngSwitchCase="'upcoming'" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <path d="M16 2v4"></path>
+                    <path d="M8 2v4"></path>
+                    <path d="M3 10h18"></path>
+                  </svg>
+                </ng-container>
+              </span>
+              <span class="badge-text">{{ statusLabel(client.status) }}</span>
+            </div>
+
+            <div class="actions actions-fixed" (click)="$event.stopPropagation()">
+              <button class="action-btn" type="button" title="View Details" (click)="openCheckInModal(client)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+
+              <button class="action-btn" type="button" title="Message Client">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Empty -->
+      <ng-template #emptyTpl>
+        <div class="empty">
+          <div class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"></path>
+            </svg>
+          </div>
+          <h3 class="empty-title">No clients found</h3>
+          <p class="empty-subtitle">No check-ins match this filter.</p>
+        </div>
+      </ng-template>
+
+      <!-- Footer / Pagination -->
+      <div class="footer">
+        <p class="results">
+          <span class="results-strong">{{ filteredClients.length }}</span>
+          <span> result{{ filteredClients.length !== 1 ? 's' : '' }}</span>
+        </p>
+
+        <div class="pager">
+          <button class="icon-btn" type="button" (click)="prevPage()" [disabled]="safePage <= 1" aria-label="Previous page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+          </button>
+
+          <div class="page-buttons">
+            <button
+              *ngFor="let p of pages"
+              type="button"
+              class="page-btn"
+              [class.active]="p === safePage"
+              (click)="goToPage(p)"
+            >
+              {{ p }}
+            </button>
+          </div>
+
+          <button class="icon-btn" type="button" (click)="nextPage()" [disabled]="safePage >= totalPages" aria-label="Next page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div *ngIf="isModalOpen && selectedClient" class="modal-backdrop" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">
+          {{ selectedClient.formName || selectedClient.formType }}
+        </h2>
+        <p class="modal-subtitle">
+          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12v6"/>
+          </svg>
+          Client: {{ selectedClient.name }}
+        </p>
+        <p class="modal-subtitle" *ngIf="modalMode === 'view'">
+          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+            <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
+            <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
+            <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+          </svg>
+          Submitted: {{ selectedClient.submittedDate }}
+        </p>
+        <p class="modal-subtitle" *ngIf="modalMode === 'preview'">
+          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+            <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
+            <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
+            <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+          </svg>
+          Due: {{ selectedClient.date }}
+        </p>
+      </div>
+      <button class="close-button" (click)="closeModal()" type="button">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="modal-content">
+
+      <!-- Info banner pour mode preview -->
+      <div *ngIf="modalMode === 'preview'" class="info-banner">
+        <div class="info-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0-4h.01"/>
+          </svg>
+        </div>
+        <div class="info-content">
+          <h4 class="info-title">Preview Mode</h4>
+          <p class="info-text">This is a preview of the questions assigned to the client. The client has not submitted their response yet.</p>
+        </div>
+      </div>
+
+      <!-- Coach Feedback (si mode view ET feedback existe) -->
+      <div *ngIf="modalMode === 'view' && selectedClient.coachFeedback" class="coach-feedback">
+        <div class="feedback-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div class="feedback-content">
+          <h4 class="feedback-title">Your Feedback</h4>
+          <p class="feedback-text">{{ selectedClient.coachFeedback }}</p>
+        </div>
+      </div>
+
+      <div class="questions-container">
+        <div *ngFor="let question of selectedClient.questions; let i = index" class="question-block">
+
+          <!-- Question Label -->
+          <label class="question-label">
+            {{ i + 1 }}. {{ question.label }}
+            <span *ngIf="question.required" class="required-mark">*</span>
+          </label>
+
+          <!-- Help Text -->
+          <p *ngIf="question.helpText" class="help-text">{{ question.helpText }}</p>
+
+          <!-- MODE PREVIEW (voir les questions) -->
+          <ng-container *ngIf="modalMode === 'preview'">
+            <!-- TEXT -->
+            <div *ngIf="question.type === QuestionType.TEXT" class="preview-input">
+              <svg class="preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+              </svg>
+              <span class="preview-text">Text answer expected</span>
+            </div>
+
+            <!-- MULTIPLE_CHOICE -->
+            <div *ngIf="question.type === QuestionType.MULTIPLE_CHOICE" class="preview-options">
+              <div *ngFor="let option of question.options" class="preview-option">
+                <div class="preview-checkbox"></div>
+                <span>{{ option.label }}</span>
+              </div>
+            </div>
+
+            <!-- YES_NO -->
+            <div *ngIf="question.type === QuestionType.YES_NO" class="preview-yes-no">
+              <div class="preview-button">Yes</div>
+              <div class="preview-button">No</div>
+            </div>
+
+            <!-- STAR_RATING -->
+            <div *ngIf="question.type === QuestionType.STAR_RATING" class="preview-stars">
+              <svg *ngFor="let star of getStarsArray(question.maxStars || 5)" class="preview-star" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
+
+            <!-- DATE -->
+            <div *ngIf="question.type === QuestionType.DATE" class="preview-input">
+              <svg class="preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
+                <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+              </svg>
+              <span class="preview-text">Date selection expected</span>
+            </div>
+          </ng-container>
+
+          <!-- MODE VIEW (voir les réponses) -->
+          <ng-container *ngIf="modalMode === 'view'">
+            <ng-container *ngIf="getSubmittedAnswer(question.id) as answer">
+              <!-- TEXT -->
+              <div *ngIf="question.type === QuestionType.TEXT" class="answer-display">
+                {{ answer.text }}
+              </div>
+
+              <!-- MULTIPLE_CHOICE -->
+              <div *ngIf="question.type === QuestionType.MULTIPLE_CHOICE" class="answer-display answer-badge">
+                {{ getOptionLabel(question, answer.selectedOptionId || '') }}
+              </div>
+
+              <!-- YES_NO -->
+              <div *ngIf="question.type === QuestionType.YES_NO" class="answer-display">
+                <span class="yes-no-display" [class.yes]="answer.yes" [class.no]="!answer.yes">
+                  {{ answer.yes ? 'Yes' : 'No' }}
+                </span>
+              </div>
+
+              <!-- STAR_RATING -->
+              <div *ngIf="question.type === QuestionType.STAR_RATING" class="star-rating-display">
+                <svg
+                  *ngFor="let star of getStarsArray(question.maxStars || 5)"
+                  class="star-icon-display"
+                  [class.filled]="isStarFilled(question.id, star)"
+                  viewBox="0 0 24 24"
+                  fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+
+              <!-- DATE -->
+              <div *ngIf="question.type === QuestionType.DATE" class="answer-display">
+                {{ answer.date }}
+              </div>
+            </ng-container>
+          </ng-container>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div *ngIf="modalMode === 'preview'" class="modal-footer modal-footer--preview">
+      <button type="button" (click)="closeModal()" class="close-preview-button">
+        Close Preview
+      </button>
+    </div>
+
+    <!-- Footer pour to_review (SIMPLIFIÉ - sans feedback) -->
+    <div *ngIf="modalMode === 'view' && selectedClient.status === 'to_review'" class="modal-footer modal-footer--actions">
+      <button type="button" (click)="closeModal()" class="btn-cancel">
+        Cancel
+      </button>
+      <button type="button" (click)="markAsReviewed()" class="btn-reviewed">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Mark as Reviewed
+      </button>
+    </div>
+
+    <!-- Footer pour reviewed (déjà reviewé) -->
+    <div *ngIf="modalMode === 'view' && selectedClient.status === 'reviewed'" class="modal-footer modal-footer--view">
+      <button type="button" (click)="closeModal()" class="close-view-button">
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>

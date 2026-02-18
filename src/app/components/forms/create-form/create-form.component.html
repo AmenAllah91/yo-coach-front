@@ -93,121 +93,129 @@
         <div class="q-list">
           <div class="q-block" *ngFor="let q of questions; index as i; trackBy: trackById">
             <!-- HEADER -->
-            <div class="q-block__header">
-              <div class="q-block__drag">
-                <span></span><span></span>
+            <div class="q-card">
+              <!-- TOP ROW -->
+              <div class="q-top">
+                <div class="q-left">
+                  <div class="q-block__drag q-drag">
+                    <span></span><span></span>
+                  </div>
+
+                  <div class="q-num">{{ i + 1 }}</div>
+
+                  <span class="q-badge">{{ uiTypeLabel(q.type) }}</span>
+                </div>
+
+                <div class="q-right">
+                  <!-- Required (toggle) : garde ton [(ngModel)] -->
+                  <label class="q-toggle">
+                    <span class="q-toggle__label">Required</span>
+                    <input
+                      type="checkbox"
+                      [name]="'qreq-' + q.id"
+                      [(ngModel)]="q.isRequired"
+                    />
+                    <span class="q-toggle__track">
+          <span class="q-toggle__thumb"></span>
+        </span>
+                  </label>
+
+                  <button type="button" class="q-iconbtn" (click)="removeQuestion(i)" aria-label="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
               </div>
 
-              <div class="q-block__meta">
-                <div class="q-block__label">Question {{ i + 1 }}</div>
+              <!-- QUESTION TEXT -->
+              <div class="q-section">
+                <div class="q-section__title">QUESTION TEXT</div>
 
-                <!-- ✅ EDITABLE QUESTION TITLE (ngModel) -->
                 <input
-                  class="q-block__title"
+                  class="q-input"
                   type="text"
                   [name]="'qtext-' + q.id"
                   [(ngModel)]="q.text"
-                  placeholder="Question title"
+                  placeholder="Cliquez ici pour écrire votre question"
                 />
               </div>
 
-              <div class="q-block__actions">
-                <!-- ✅ REQUIRED -->
-                <label class="q-required">
-                  <input
-                    type="checkbox"
-                    [name]="'qreq-' + q.id"
-                    [(ngModel)]="q.isRequired"
-                  />
-                  <span>Required</span>
-                </label>
+              <!-- ANSWER PREVIEW -->
+              <div class="q-section q-answer" [ngSwitch]="q.type">
+                <div class="q-section__title">ANSWER PREVIEW</div>
 
-                <button type="button" class="q-trash" (click)="removeQuestion(i)">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- BODY -->
-            <div class="q-block__body" [ngSwitch]="q.type">
-
-              <!-- SCALE -->
-              <div *ngSwitchCase="'scale'" class="q-scale">
-                <button type="button" class="q-scale__item" disabled>1</button>
-                <button type="button" class="q-scale__item" disabled>2</button>
-                <button type="button" class="q-scale__item" disabled>3</button>
-                <button type="button" class="q-scale__item" disabled>4</button>
-                <button type="button" class="q-scale__item" disabled>5</button>
-              </div>
-
-              <!-- MULTIPLE CHOICE -->
-              <div *ngSwitchCase="'multiple-choice'" class="q-mc">
-                <div class="q-mc__option" *ngFor="let opt of (q.options || []); index as oi; trackBy: trackByIndex">
-                  <span class="q-mc__radio"></span>
-
-                  <!-- ✅ EDITABLE OPTION -->
-                  <input
-                    class="q-mc__input"
-                    type="text"
-                    [name]="'qopt-' + q.id + '-' + oi"
-                    [(ngModel)]="q.options![oi]"
-                    placeholder="Option"
-                  />
-
-                  <button
-                    type="button"
-                    class="q-mc__remove"
-                    (click)="q.options!.splice(oi, 1)"
-                    aria-label="Remove option"
+                <!-- MULTIPLE CHOICE -->
+                <ng-container *ngSwitchCase="'multiple-choice'">
+                  <div
+                    class="q-opt"
+                    *ngFor="let opt of (q.options ?? []); index as oi; trackBy: trackByOptionIndex"
                   >
-                    ✕
+                    <span class="q-radio"></span>
+
+                    <input
+                      class="q-opt__input"
+                      type="text"
+                      [name]="'qopt-' + q.id + '-' + oi"
+                      [(ngModel)]="q.options![oi]"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="New option"
+                    />
+
+                    <button
+                      type="button"
+                      class="q-opt__remove"
+                      (click)="q.options!.splice(oi, 1)"
+                      aria-label="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+
+                  <button type="button" class="q-link" (click)="addOption(q)">
+                    + Add Another Option
                   </button>
-                </div>
+                </ng-container>
 
-                <button
-                  type="button"
-                  class="q-mc__add"
-                  (click)="(q.options = q.options || []).push('New Option')"
-                >
-                  + Add Option
-                </button>
+                <!-- YES/NO -->
+                <ng-container *ngSwitchCase="'yes-no'">
+                  <div class="q-opt">
+                    <span class="q-radio"></span>
+                    <input class="q-opt__input" type="text" value="Yes" disabled />
+                    <span></span>
+                  </div>
+                  <div class="q-opt">
+                    <span class="q-radio"></span>
+                    <input class="q-opt__input" type="text" value="No" disabled />
+                    <span></span>
+                  </div>
+                </ng-container>
+
+                <!-- STAR RATING -->
+                <ng-container *ngSwitchCase="'star-rating'">
+                  <div class="q-stars">
+                    <span *ngFor="let s of [1,2,3,4,5]" class="q-stars__item">★</span>
+                  </div>
+                </ng-container>
+
+                <!-- SCALE -->
+                <ng-container *ngSwitchCase="'scale'">
+                  <div class="q-scale">
+                    <span *ngFor="let n of [1,2,3,4,5]" class="q-scale__item">{{ n }}</span>
+                  </div>
+                </ng-container>
+
+                <!-- DATE -->
+                <ng-container *ngSwitchCase="'date'">
+                  <input class="q-opt__input" type="text" placeholder="jj/mm/aaaa" disabled />
+                </ng-container>
+
+                <!-- TEXT INPUT / default -->
+                <ng-container *ngSwitchDefault>
+                  <input class="q-opt__input" type="text" placeholder="Text answer…" disabled />
+                </ng-container>
               </div>
-
-              <!-- STAR RATING -->
-              <div *ngSwitchCase="'star-rating'" class="q-stars">
-                <span *ngFor="let s of [1,2,3,4,5]" class="q-stars__item">★</span>
-              </div>
-
-              <!-- YES/NO -->
-              <div *ngSwitchCase="'yes-no'" class="q-yesno">
-                <button type="button" class="q-yesno__btn q-yesno__btn--yes" disabled>Yes</button>
-                <button type="button" class="q-yesno__btn q-yesno__btn--no" disabled>No</button>
-              </div>
-
-              <!-- TEXT INPUT -->
-              <div *ngSwitchCase="'input-text'" class="q-textinput">
-                <input class="q-textinput__field" placeholder="Text input field" disabled />
-              </div>
-
-              <!-- DATE -->
-              <div *ngSwitchCase="'date'" class="q-date">
-                <div class="q-date__field">
-                  <span class="q-date__icon">
-                    <svg viewBox="0 0 24 24">
-                      <rect x="3" y="4" width="18" height="17" rx="2" fill="none" stroke="#d1d5db"/>
-                      <path d="M8 2v4M16 2v4M3 9h18" stroke="#9ca3af" stroke-width="1.6" stroke-linecap="round"/>
-                    </svg>
-                  </span>
-                  <input class="q-date__input" placeholder="jj/mm/aaaa" disabled />
-                </div>
-              </div>
-
-              <!-- fallback -->
-              <div *ngSwitchDefault class="q-textinput">
-                <input class="q-textinput__field" placeholder="Question preview" disabled />
-              </div>
-
             </div>
+
           </div>
 
           <button class="btn btn-outline q-list__add" type="button" (click)="openTypeDrawer()">

@@ -1,0 +1,177 @@
+<div class="page">
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">Dashboard</h1>
+
+            <div class="actions">
+                <button class="btn btn-primary" (click)="addClient()">
+                    <span class="icon">＋</span>
+                    Add Client
+                </button>
+
+                <button class="btn btn-outline" (click)="addWorkoutPlan()">
+                    <span class="icon">🏋️</span>
+                    Add Workout Plan
+                </button>
+
+                <button class="btn btn-outline" (click)="addNutritionPlan()">
+                    <span class="icon">🍎</span>
+                    Add Nutrition Plan
+                </button>
+
+                <button class="btn btn-outline" (click)="sendMessage()">
+                    <span class="icon">💬</span>
+                    Send Message
+                </button>
+
+                <button class="btn btn-outline" (click)="addCheckIn()">
+                    <span class="icon">✅</span>
+                    Add Check-in
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid">
+            <!-- Left: Clients -->
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Latest Clients</h2>
+                        <p class="muted">Total {{ clients.length }} clients</p>
+                    </div>
+
+
+                </div>
+
+                <!-- Search -->
+                <div class="search">
+                    <span class="search-icon">🔎</span>
+                    <input
+                            type="text"
+                            placeholder="Search clients..."
+                            [(ngModel)]="searchTerm"
+                            class="search-input"
+                    />
+                </div>
+
+                <!-- List -->
+                <div class="list">
+                    <div
+                            class="row row-client"
+                            *ngFor="let client of filteredClients; trackBy: trackByClientId"
+                            (click)="openClient(client.id)"
+                    >
+                        <div class="row-main">
+                            <!-- Avatar -->
+                            <div class="avatar avatar-blue">
+                                <span>{{ getInitials(client.name) }}</span>
+                            </div>
+
+                            <!-- Info -->
+                            <div class="info">
+                                <div class="info-top">
+                                    <h3 class="name">{{ client.name }}</h3>
+                                    <span
+                                            class="active-dot"
+                                            *ngIf="client.status === 'active'"
+                                    ></span>
+                                </div>
+
+                                <p class="email">{{ client.email }}</p>
+
+                                <div class="meta">
+                                    <span class="badge badge-red">{{ client.package }}</span>
+                                    <span class="muted" *ngIf="client.lastCheckIn">
+                    Last check-in: {{ client.lastCheckIn }}
+                  </span>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <!-- Empty -->
+                    <div class="empty" *ngIf="filteredClients.length === 0">
+                        <div class="empty-icon">👤</div>
+                        <p>No clients found</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Check-ins -->
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Recent Check-ins</h2>
+                        <p class="muted">Latest updates from clients</p>
+                    </div>
+
+                </div>
+                <div class="search">
+                    <span class="search-icon">🔎</span>
+                    <input
+                            type="text"
+                            placeholder="Search clients..."
+                            [(ngModel)]="searchTerm"
+                            class="search-input"
+                    />
+                </div>
+                <div class="list">
+                    <div
+                            class="row row-checkin"
+                            *ngFor="let checkIn of recentCheckIns; trackBy: trackByCheckInId"
+                            (click)="openClient(checkIn.clientId)"
+                    >
+                        <div class="row-main">
+                            <div class="avatar avatar-green">
+                                <span>{{ getInitials(checkIn.clientName) }}</span>
+                            </div>
+
+                            <div class="info">
+                                <div class="info-top between">
+                                    <h3 class="name">{{ checkIn.clientName }}</h3>
+                                    <span class="muted tiny">
+                    {{ formatCheckInDate(checkIn.date) }}
+                  </span>
+                                </div>
+
+                                <div class="metrics">
+                  <span class="metric">
+                    <span class="metric-icon">📈</span>
+                      {{ checkIn.weight }}kg
+                  </span>
+
+                                    <span class="metric" *ngIf="checkIn.bodyFat !== undefined">
+                    {{ checkIn.bodyFat }}% BF
+                  </span>
+
+                                    <span class="muted tiny" *ngIf="checkIn.photos !== undefined">
+                    {{ checkIn.photos }} photos
+                  </span>
+                                </div>
+
+                                <p class="notes" *ngIf="checkIn.notes">
+                                    {{ checkIn.notes }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="empty" *ngIf="recentCheckIns.length === 0">
+                        <div class="empty-icon">✅</div>
+                        <p>No recent check-ins</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal -->
+<!--    <app-add-client-modal-->
+<!--            *ngIf="showAddClientModal"-->
+<!--            (close)="closeModal()"-->
+<!--    ></app-add-client-modal>-->
+</div>

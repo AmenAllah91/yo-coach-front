@@ -11,6 +11,15 @@ export type UiAnswer =
 export interface SubmissionPayload {
   answers: any[];
 }
+export interface Submission {
+  id: string;
+  assignmentId: string;
+  formId: string;
+  respondentId: string;
+  ownerId: string;
+  answers: UiAnswer[];
+  submittedAt?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class SubmissionsApiService {
@@ -21,5 +30,8 @@ export class SubmissionsApiService {
   submit(assignmentId: string, payload: SubmissionPayload): Observable<any> {
     const params = new HttpParams().set('assignmentId', assignmentId);
     return this.http.post(this.baseUrl, payload, { params });
+  }
+  getByAssignmentId(assignmentId: string): Observable<Submission> {
+    return this.http.get<Submission>(`${this.baseUrl}/by-assignment/${assignmentId}`);
   }
 }

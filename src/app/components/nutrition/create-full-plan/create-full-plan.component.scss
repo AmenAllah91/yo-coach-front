@@ -814,3 +814,218 @@
   border-top-left-radius: 0 !important;
   border-top-right-radius: 0 !important;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Carte globale */
+.program-schedule-card {
+  margin-top: 16px;
+  padding: 16px 18px 18px;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe; /* proche de border-blue-200 */
+  background: linear-gradient(to right, #eff6ff, #ffffff); /* from-blue-50 -> white */
+}
+
+/* Titre + icône */
+.program-schedule-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px;
+  font-size: 0.98rem;
+}
+
+.program-schedule-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: #dbeafe; /* bleu très clair */
+}
+
+.program-schedule-icon {
+  width: 18px;
+  height: 18px;
+  color: #44b4df; /* ta couleur d'accent */
+}
+
+/* Grille des 2 champs */
+.program-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .program-schedule-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Champ individuel */
+.program-schedule-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.program-schedule-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.program-schedule-label .required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+/* Wrapper input + icône à gauche */
+.program-schedule-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.program-schedule-input-icon {
+  position: absolute;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.program-schedule-input-icon-svg {
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+}
+
+/* Input en lui-même */
+.program-schedule-input {
+  width: 100%;
+  padding: 10px 12px 10px 38px; /* padding-left pour l’icône */
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.875rem;
+  color: #111827;
+  background-color: #ffffff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.program-schedule-input:focus {
+  outline: none;
+  border-color: #44b4df;
+  box-shadow: 0 0 0 1px rgba(68, 180, 223, 0.35);
+}
+
+/* Input désactivé (End date) */
+.program-schedule-input--disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+/* Helper texte sous End Date */
+.program-schedule-helper {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.np-day.is-active{background:rgba(68,180,223,.10);border-color:#cfeef9;}
+.np-day.is-active .np-day__title{color:#44b4df;}
+
+
+/* empile le contenu du bouton sur 2 lignes */
+.np-day{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;            /* petit espace entre les 2 lignes */
+}
+
+/* style des 2 lignes */
+.np-day__title{
+  display:block;
+  font-weight:600;
+  color:#44b4df;      /* comme ton état actif */
+}
+
+.np-day__meta{
+  display:block;
+  font-size:11px;
+  line-height:1;
+  color:#64748b;
+}
+.np-day__weekday{ color:#44b4df; font-weight:600; }
+.np-day__dot{ margin:0 6px; color:#cbd5e1; }
+.np-day__date{ color:#64748b; }
+.np-datechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eaf5ff;
+  color: #1570ef;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.np-datechip__ico {
+  width: 16px;
+  height: 16px;
+}
+
+.np-datechip__dot {
+  opacity: 0.6;
+}
+.np-dayhead{
+  display:flex;
+  align-items:center;
+  gap:.5rem;           /* espacement entre titre, crayon, badge */
+}
+
+.wk-datepill{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.35rem .6rem;
+  border-radius:10px;  /* pastille arrondie comme la capture */
+  background:#eef6ff;  /* bleu très pâle */
+  color:#44b4df;  line-height:1;
+  white-space:nowrap;
+}
+
+.wk-datepill__ico{
+  width:18px;
+  height:18px;
+  stroke:currentColor; /* icône prend la couleur du texte */
+}
+
+.wk-datepill__weekday{
+  font-weight:600;     /* “Saturday” plus marqué */
+}
+
+.wk-datepill__date{
+  /* date un peu moins marquée mais bleue aussi */
+  color: #757272;
+}

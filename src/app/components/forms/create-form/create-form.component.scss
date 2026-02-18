@@ -744,8 +744,6 @@
 
 /* carte de question */
 .q-block {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
   padding: 0.5rem 0.75rem 0.75rem;
   background-color: #fff;
 }
@@ -1548,3 +1546,204 @@
   position: static;        /* au cas où il resterait un sticky */
   margin-top: 24px;        /* comme dans la maquette React */
 }
+.q-titlebox {
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 16px 20px;   /* ↓ moins d’espace */
+}
+
+.q-titlebox__input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+
+  font-size: 20px;      /* ↓ au lieu de 34px */
+  font-weight: 600;
+  color: #374151;       /* un gris plus doux */
+}
+
+.q-titlebox__input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+.q-titlebox:focus-within {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.06);
+}
+.q-card {
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #44b4df;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+}
+
+.q-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.q-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.q-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #44b4df;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.q-badge {
+  font-size: 11px;
+  font-weight: 600;              /* plus léger */
+  letter-spacing: .04em;
+  text-transform: uppercase;
+
+  padding: 5px 12px;
+  border-radius: 999px;
+
+  background: #f3f4f6;           /* gris très clair */
+  color: #6b7280;                /* gris doux au lieu de noir */
+  border: 1px solid #e5e7eb;
+}
+
+
+.q-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.q-iconbtn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.q-iconbtn:hover { background: #f9fafb; }
+
+.q-section { margin-top: 10px; }
+
+.q-section__title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.q-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  outline: none;
+}
+.q-input:focus {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.18);
+}
+.q-input::placeholder { font-weight: 600; color: #9ca3af; }
+
+.q-answer {
+  margin-top: 14px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.q-opt {
+  display: grid;
+  grid-template-columns: 18px 1fr 32px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.q-opt:first-of-type { margin-top: 0; }
+
+.q-radio {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+}
+
+.q-opt__input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+.q-opt__input:focus {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.14);
+}
+
+.q-opt__remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: .6;
+  font-size: 18px;
+}
+.q-opt__remove:hover { opacity: 1; }
+
+.q-link {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: #44b4df;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.q-link:hover { text-decoration: underline; }
+
+/* toggle */
+.q-toggle { display: flex; align-items: center; gap: 10px; user-select: none; }
+.q-toggle__label { font-weight: 600; color: #374151; font-size: 14px; }
+.q-toggle input { display: none; }
+
+.q-toggle__track {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  position: relative;
+  transition: .2s;
+}
+.q-toggle__thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: .2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+.q-toggle input:checked + .q-toggle__track { background: #44b4df; }
+.q-toggle input:checked + .q-toggle__track .q-toggle__thumb { left: 23px; }

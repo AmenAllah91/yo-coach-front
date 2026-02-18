@@ -1,0 +1,261 @@
+<div class="page">
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Welcome Back!</h1>
+            <p>Here is your overview for {{ formatMonthYear(currentDate) }}</p>
+        </div>
+
+        <!-- Coach -->
+        <div class="card">
+            <h2>Your Coach</h2>
+
+            <div class="coach-row">
+                <div class="coach-left">
+                    <div class="avatar">
+                        <img [src]="coach.image" [alt]="coach.name" />
+                    </div>
+                    <div>
+                        <div class="coach-name">{{ coach.name }}</div>
+                        <div class="coach-spec">{{ coach.specialty }}</div>
+                    </div>
+                </div>
+
+                <button class="btn primary" type="button">
+                    Message
+                </button>
+            </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="card card-pad0">
+            <div class="card-head">
+                <h2>Tasks to Do</h2>
+            </div>
+
+            <!-- Week view -->
+            <div class="week">
+                <div class="week-top">
+                    <div class="week-title">Week View</div>
+                    <div class="week-actions">
+                        <button type="button" class="icon-btn" (click)="changeWeek('prev')">‹</button>
+                        <button type="button" class="icon-btn" (click)="changeWeek('next')">›</button>
+                    </div>
+                </div>
+
+                <div class="week-grid">
+                    <button
+                            type="button"
+                            class="day"
+                            *ngFor="let day of weekDays; trackBy: trackByDate"
+                            (click)="selectDay(day)"
+                            [ngClass]="{
+              selected: isSameDay(day, currentDate),
+              today: isToday(day) && !isSameDay(day, currentDate)
+            }"
+                    >
+                        <div class="day-name">{{ formatDayName(day) }}</div>
+                        <div class="day-num">{{ day.getDate() }}</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Check-in button -->
+            <div class="section">
+                <button type="button" class="checkin-btn" (click)="openCheckIn()">
+                    <div class="checkin-left">
+                        <div class="checkin-kicker">Check-In</div>
+                        <div class="checkin-title">Your check-in is Today</div>
+                    </div>
+                    <div class="chev">›</div>
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Workout row -->
+            <button class="task-row" type="button" (click)="openWorkout()">
+                <div class="task-left">
+                    <div class="badge purple">🏋️</div>
+                    <span class="task-day">
+            {{ isSameDay(currentDate, today) ? 'Today' : formatDayName(currentDate) }}
+          </span>
+                </div>
+
+                <div class="task-main">
+                    <h3 class="task-title">{{ currentTasks.workout.name }}</h3>
+                    <p class="task-program">{{ currentTasks.workout.program }}</p>
+                    <div class="pill">
+                        <span class="pill-num">{{ currentTasks.workout.totalExercises }}</span>
+                        <span>exercises</span>
+                    </div>
+                </div>
+
+                <div class="chev muted">›</div>
+            </button>
+
+            <div class="divider"></div>
+
+            <!-- Nutrition row -->
+            <button class="task-row" type="button" (click)="openNutrition()">
+                <div class="task-left">
+                    <div class="badge green">🍏</div>
+                    <span class="task-day">
+            {{ isSameDay(currentDate, today) ? 'Today' : formatDayName(currentDate) }}
+          </span>
+                </div>
+
+                <div class="task-main">
+                    <h3 class="task-title">{{ currentTasks.nutrition.planName }}</h3>
+                    <p class="task-sub">{{ currentTasks.nutrition.program }}</p>
+
+                    <div class="meals">{{ currentTasks.nutrition.meals }} meals</div>
+
+                    <div class="macros">
+                        <div class="macro">
+                            <div class="macro-num">{{ currentTasks.nutrition.calories }}</div>
+                            <div class="macro-lbl">kcal</div>
+                        </div>
+                        <div class="macro red">
+                            <div class="macro-num">{{ currentTasks.nutrition.protein }}</div>
+                            <div class="macro-lbl">protein</div>
+                        </div>
+                        <div class="macro yellow">
+                            <div class="macro-num">{{ currentTasks.nutrition.carbs }}</div>
+                            <div class="macro-lbl">carbs</div>
+                        </div>
+                        <div class="macro green">
+                            <div class="macro-num">{{ currentTasks.nutrition.fat }}</div>
+                            <div class="macro-lbl">fat</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chev muted">›</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Check-in Modal -->
+    <div class="modal-overlay" *ngIf="showCheckInModal">
+        <div class="modal">
+            <div class="modal-head">
+                <div>
+                    <div class="modal-title">Daily Check-in</div>
+                    <div class="modal-sub">{{ formatMonthYear(currentDate) }}</div>
+                </div>
+                <button class="close-btn" type="button" (click)="showCheckInModal = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="q" *ngFor="let question of checkInQuestions; let i = index; trackBy: trackByQuestionId">
+                    <label class="q-label">{{ i + 1 }}. {{ question.question }}</label>
+
+                    <div *ngIf="question.type === 'number'" class="number-wrap">
+                        <input
+                                type="number"
+                                class="input"
+                                [ngModel]="checkInAnswers[question.id] || ''"
+                                (ngModelChange)="answerChange(question.id, $event)"
+                                placeholder="Enter value"
+                        />
+                        <span class="unit" *ngIf="question.unit">{{ question.unit }}</span>
+                    </div>
+
+                    <div *ngIf="question.type === 'scale'" class="scale">
+                        <input
+                                type="range"
+                                class="range"
+                                [min]="question.min"
+                                [max]="question.max"
+                                [ngModel]="checkInAnswers[question.id] ?? question.min"
+                                (ngModelChange)="answerChange(question.id, toNumber($event))"
+                        />
+                        <div class="scale-row">
+                            <span>{{ question.min }}</span>
+                            <span class="scale-val">{{ checkInAnswers[question.id] ?? question.min }}</span>
+                            <span>{{ question.max }}</span>
+                        </div>
+                    </div>
+
+                    <textarea
+                            *ngIf="question.type === 'textarea'"
+                            class="textarea"
+                            rows="3"
+                            [ngModel]="checkInAnswers[question.id] || ''"
+                            (ngModelChange)="answerChange(question.id, $event)"
+                            placeholder="Type your answer here..."
+                    ></textarea>
+                </div>
+            </div>
+
+            <div class="modal-foot">
+                <button class="btn primary full" type="button" (click)="submitCheckIn()">
+                    Submit Check-in
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workout Modal -->
+    <div class="modal-overlay" *ngIf="showWorkoutModal">
+        <div class="modal">
+            <div class="modal-head">
+                <div>
+                    <div class="modal-title">{{ currentTasks.workout.name }}</div>
+                    <div class="modal-sub blue">{{ currentTasks.workout.program }}</div>
+                </div>
+                <button class="close-btn" type="button" (click)="showWorkoutModal = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="ex" *ngFor="let ex of currentTasks.workout.exercises; trackBy: trackByExercise">
+                    <div class="ex-badge" [ngClass]="{ fire: ex.label === '🔥' }">{{ ex.label }}</div>
+                    <div class="ex-name">{{ ex.name }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nutrition Modal -->
+    <div class="modal-overlay" *ngIf="showNutritionModal">
+        <div class="modal">
+            <div class="modal-head">
+                <div>
+                    <div class="modal-title">{{ currentTasks.nutrition.planName }}</div>
+                    <div class="modal-sub">{{ currentTasks.nutrition.program }}</div>
+                </div>
+                <button class="close-btn" type="button" (click)="showNutritionModal = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="kcal">
+                    <div class="kcal-num">{{ currentTasks.nutrition.calories }}</div>
+                    <div class="kcal-lbl">calories per day</div>
+                </div>
+
+                <div class="macro3">
+                    <div class="macro3-card red">
+                        <div class="macro3-lbl">Protein</div>
+                        <div class="macro3-num">{{ currentTasks.nutrition.protein }}</div>
+                        <div class="macro3-unit">grams</div>
+                    </div>
+                    <div class="macro3-card yellow">
+                        <div class="macro3-lbl">Carbs</div>
+                        <div class="macro3-num">{{ currentTasks.nutrition.carbs }}</div>
+                        <div class="macro3-unit">grams</div>
+                    </div>
+                    <div class="macro3-card green">
+                        <div class="macro3-lbl">Fat</div>
+                        <div class="macro3-num">{{ currentTasks.nutrition.fat }}</div>
+                        <div class="macro3-unit">grams</div>
+                    </div>
+                </div>
+
+                <div class="meals-card">
+                    <span>{{ currentTasks.nutrition.meals }} meals per day</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

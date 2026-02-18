@@ -26,10 +26,14 @@ import { ClientNutritionComponent } from './components/clients/client-nutrition/
 import { CalendarClientsComponent } from './components/calendar/calendar-clients/calendar-clients.component';
 import { LandingPageComponent } from './components/website/landing-page/landing-page.component';
 import { YosoftLandingPageComponent } from './components/website/yosoft-landing-page/yosoft-landing-page.component';
+import {CoachDashboardComponent} from "./components/coach-dashboard/coach-dashboard.component";
+import {ClientDashboardComponent} from "./components/clients/client-dashboard/client-dashboard.component";
 import { CreateAndAssignComponent } from './components/program-library/create-and-assign/create-and-assign.component';
 import {FormsListComponent} from "./components/forms/forms-list/forms-list.component";
 import {MyAssignmentsComponent} from "./components/forms/my-assignments-component/my-assignments.component";
 import {AssignmentFillComponent} from "./components/forms/assignment-fill-component/assignment-fill.component";
+import {MyCheckinsComponent} from "./components/forms/my-checkins/my-checkins.component";
+import {ManageCheckinsComponent} from "./components/forms/manage-checkins/manage-checkins.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -155,6 +159,24 @@ export const APP_ROUTE: Route[] = [
         path: 'nutrition/create-full-plan/:id',
         component: CreateFullPlanComponent,
       },
+      // {
+      //   path: 'form/create-form',
+      //   component: CreateFormComponent,
+      // },
+      {
+        path: 'coach-dashboard',
+        component: CoachDashboardComponent,
+      },
+      {
+        path: 'client-dashboard',
+        component: ClientDashboardComponent,
+      },{
+        path: 'forms/my-checkins',
+        component: MyCheckinsComponent,
+      },{
+        path: 'forms/manage-checkins',
+        component: ManageCheckinsComponent,
+      },
     ],
   },
   {
@@ -168,5 +190,5 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'yosoft-landing-page',
     component: YosoftLandingPageComponent,
-  },
+  }
 ];
