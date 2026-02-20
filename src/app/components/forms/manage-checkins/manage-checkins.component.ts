@@ -1,7 +1,10 @@
-import { Component } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
+import { finalize, forkJoin } from 'rxjs';
+import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
+import { FormsApiService, FormDetails } from '../services/forms-api.service';
 
 export enum QuestionType {
   MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
@@ -65,186 +68,8 @@ interface ClientData {
   submittedDate?: string;
 }
 
-// Mock questions
-const MOCK_QUESTIONS: Question[] = [
-  {
-    id: 'q1',
-    type: QuestionType.TEXT,
-    label: 'What was your biggest win this week?',
-    required: true,
-    order: 1,
-    helpText: 'Share your most significant achievement'
-  },
-  {
-    id: 'q2',
-    type: QuestionType.MULTIPLE_CHOICE,
-    label: 'Which area of fitness routine do you feel improved the most this week?',
-    required: true,
-    order: 2,
-    options: [
-      { id: 'opt1', label: 'Strength Training' },
-      { id: 'opt2', label: 'Cardio Endurance' },
-      { id: 'opt3', label: 'Flexibility' },
-      { id: 'opt4', label: 'Nutrition' }
-    ]
-  },
-  {
-    id: 'q3',
-    type: QuestionType.YES_NO,
-    label: 'Did you achieve your target weight or body composition for the week?',
-    required: true,
-    order: 3
-  },
-  {
-    id: 'q4',
-    type: QuestionType.STAR_RATING,
-    label: "Rate your overall satisfaction with this week's progress",
-    required: true,
-    order: 4,
-    minStars: 1,
-    maxStars: 5
-  },
-  {
-    id: 'q5',
-    type: QuestionType.DATE,
-    label: 'On which date this week did you feel most energized and productive?',
-    required: false,
-    order: 5
-  }
-];
 
-const MOCK_ANSWERS: Answer[] = [
-  {
-    questionId: 'q1',
-    type: QuestionType.TEXT,
-    text: 'I managed to complete all 5 of my scheduled workouts, which is a first for me!'
-  },
-  {
-    questionId: 'q2',
-    type: QuestionType.MULTIPLE_CHOICE,
-    selectedOptionId: 'opt1'
-  },
-  {
-    questionId: 'q3',
-    type: QuestionType.YES_NO,
-    yes: true
-  },
-  {
-    questionId: 'q4',
-    type: QuestionType.STAR_RATING,
-    rating: 4
-  },
-  {
-    questionId: 'q5',
-    type: QuestionType.DATE,
-    date: '2025-01-14'
-  }
-];
 
-const MOCK_CLIENTS: ClientData[] = [
-  {
-    id: '1',
-    name: 'Christophe Batiste',
-    formType: 'Essential check-in',
-    date: 'Jan 18, 2025',
-    status: 'due_today',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Essential check-in',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '2',
-    name: 'Maria Garden',
-    formType: 'One 30 day ago',
-    date: 'Jan 18, 2025',
-    status: 'due_today',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'One 30 day ago',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '3',
-    name: 'Marius Culchette',
-    formType: 'Essential check-in',
-    date: 'Jan 18, 2025',
-    status: 'due_today',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Essential check-in',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '4',
-    name: 'Sophie Laurent',
-    formType: 'Weekly progress',
-    date: 'Jan 10, 2025',
-    status: 'overdue',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Weekly progress',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '5',
-    name: 'Thomas Mercier',
-    formType: 'Monthly review',
-    date: 'Jan 5, 2025',
-    status: 'overdue',
-    formName: 'Monthly review',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '6',
-    name: 'Emma Dubois',
-    formType: 'Essential check-in',
-    date: 'Dec 28, 2024',
-    status: 'overdue',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Essential check-in',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '7',
-    name: 'Lucas Martin',
-    formType: 'Essential check-in',
-    date: 'Jan 17, 2025',
-    status: 'to_review',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Essential check-in',
-    questions: MOCK_QUESTIONS,
-    answers: MOCK_ANSWERS,
-    submittedDate: 'Jan 17, 2025'
-  },
-  {
-    id: '8',
-    name: 'Camille Roux',
-    formType: 'Weekly progress',
-    date: 'Jan 16, 2025',
-    status: 'to_review',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Weekly progress',
-    questions: MOCK_QUESTIONS,
-    answers: MOCK_ANSWERS,
-    submittedDate: 'Jan 16, 2025'
-  },
-  {
-    id: '9',
-    name: 'Alexandre Petit',
-    formType: 'Monthly review',
-    date: 'Jan 25, 2025',
-    status: 'upcoming',
-    formName: 'Monthly review',
-    questions: MOCK_QUESTIONS
-  },
-  {
-    id: '10',
-    name: 'Julie Moreau',
-    formType: 'Essential check-in',
-    date: 'Jan 26, 2025',
-    status: 'upcoming',
-    avatar: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    formName: 'Essential check-in',
-    questions: MOCK_QUESTIONS
-  },
-];
 
 const ITEMS_PER_PAGE = 5;
 
@@ -255,7 +80,7 @@ const ITEMS_PER_PAGE = 5;
   templateUrl: './manage-checkins.component.html',
   styleUrl: './manage-checkins.component.scss'
 })
-export class ManageCheckinsComponent {
+export class ManageCheckinsComponent implements OnInit{
   activeTab: ClientStatus = 'due_today';
   searchQuery = '';
   currentPage = 1;
@@ -278,7 +103,88 @@ export class ManageCheckinsComponent {
     { id: 'upcoming', label: 'Upcoming' },
   ];
 
-  clients: ClientData[] = MOCK_CLIENTS;
+  clients: ClientData[];
+  loading = false;
+  error: string | null = null;
+
+  assignments: FormAssignment[] = [];
+
+  constructor(
+    private assignmentsApi: AssignmentsApiService,
+    private formsApi: FormsApiService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadAssignments();
+  }
+
+  loadAssignments(): void {
+    this.loading = true;
+    this.error = null;
+
+    this.assignmentsApi.pageOwnerAssignments(0, 200, 'dueAt', 'ASC')
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
+        next: (res) => {
+          this.assignments = res.content ?? [];
+          this.clients = this.assignments.map(a => this.assignmentToClient(a));
+        },
+        error: (err) => {
+          this.error = err?.error?.message ?? 'Failed to load assignments.';
+        }
+      });
+  }
+
+  private assignmentToClient(a: FormAssignment): ClientData {
+    return {
+      id: a.id,
+      name: a.assigneeId,          // until you have assignee name in DTO
+      avatar: undefined,           // optional
+      formType: a.formId,          // will be replaced when we fetch form
+      formName: a.formId,
+      date: this.formatDueDate(a.dueAt),
+      status: this.mapAssignmentToClientStatus(a),
+      submittedDate: a.submittedAt ? this.formatDate(a.submittedAt) : undefined,
+    };
+  }
+
+  private mapAssignmentToClientStatus(a: FormAssignment): ClientStatus {
+    // canceled -> hide or treat separately (here we exclude it)
+    if (a.status === 'CANCELED') return 'upcoming';
+
+    // submitted => to_review or reviewed
+    if (a.submittedAt) {
+      const sub = new Date(a.submittedAt).getTime();
+      const op = a.openedAt ? new Date(a.openedAt).getTime() : 0;
+      return op > sub ? 'reviewed' : 'to_review';
+    }
+
+    // not submitted: due_today / overdue / upcoming
+    if (!a.dueAt) return 'upcoming';
+
+    const due = new Date(a.dueAt);
+    const now = new Date();
+
+    // compare date-only
+    const due0 = new Date(due); due0.setHours(0,0,0,0);
+    const now0 = new Date(now); now0.setHours(0,0,0,0);
+
+    if (due0.getTime() === now0.getTime()) return 'due_today';
+    if (due0.getTime() < now0.getTime()) return 'overdue';
+    return 'upcoming';
+  }
+
+  private formatDueDate(iso?: string): string {
+    if (!iso) return '';
+    return this.formatDate(iso);
+  }
+
+  private formatDate(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+  }
+
+
 
   // counts
   get counts(): Record<ClientStatus, number> {
@@ -345,21 +251,40 @@ export class ManageCheckinsComponent {
     return name?.trim()?.charAt(0)?.toUpperCase() || '?';
   }
 
-  // Modal actions
   openCheckInModal(client: ClientData) {
+    // find the assignment by client.id (assignment id)
+    const assignment = this.assignments.find(a => a.id === client.id);
+    if (!assignment) return;
+
     this.selectedClient = client;
     this.isModalOpen = true;
 
-    // Déterminer le mode du modal
-    if (client.status === 'to_review' || client.status === 'reviewed') {
-      // Client a déjà répondu -> mode visualisation des réponses
-      this.modalMode = 'view';
-      this.coachFeedback = client.coachFeedback || '';
-    } else {
-      // Client n'a pas encore répondu -> mode prévisualisation des questions
-      this.modalMode = 'preview';
-    }
+    // mode
+    this.modalMode = (client.status === 'to_review' || client.status === 'reviewed') ? 'view' : 'preview';
+
+    // ✅ fetch form details to show title + questions
+    this.formsApi.getFormById(assignment.formId).subscribe({
+      next: (form: FormDetails) => {
+        if (!this.selectedClient) return;
+        this.selectedClient.formType = form.title;
+        this.selectedClient.formName = form.title;
+
+        // adapt mapping if your FormDetails uses QuestionBE
+        this.selectedClient.questions = (form.questions ?? []).map(q => ({
+          id: q.id,
+          type: q.type as any,     // or map to your enum if needed
+          label: q.label,
+          required: q.required,
+          order: q.order,
+          options: (q.options ?? []).map(o => ({ id: o.id, label: o.label }))
+        }));
+      },
+      error: () => {
+        // keep modal open but show fallback title
+      }
+    });
   }
+
 
   closeModal() {
     this.isModalOpen = false;

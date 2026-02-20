@@ -7,6 +7,7 @@ import {AssignmentsApiService} from "../services/assignments-api.service";
 import {FeatherModule} from "angular-feather";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {OverlayModule} from "@angular/cdk/overlay";
+import {ClientService} from "../../../service/client.service";
 
 @Component({
   selector: 'app-forms-list',
@@ -60,12 +61,14 @@ export class FormsListComponent implements OnInit, OnDestroy {
   });
 
   readonly selectedCount = computed(() => this.selectedUserIds().size);
+  userId = sessionStorage.getItem('userId');
 
   constructor(
     private api: FormsApiService,
     private assignmentsApi: AssignmentsApiService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private clientService: ClientService
+) {}
   ngOnInit(): void {
     this.loadPage();
   }
@@ -160,7 +163,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
   }
 
   onEdit(form: Form): void {
-    this.router.navigate(['/forms/create-form', form.id]);
+    this.router.navigate(['/forms/', form.id,'edit']);
   }
 
   // ====== ASSIGNMENT MODAL ======
@@ -188,8 +191,8 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.usersLoading.set(true);
     this.usersError.set(null);
 
-    this.api.getAllUsers()
-      .pipe(takeUntil(this.destroy$))
+    this.clientService
+      .getListClientsByCoachWithoutPagination(this.userId)
       .subscribe({
         next: (users) => {
           this.allUsers.set(users ?? []);

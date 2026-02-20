@@ -7,7 +7,7 @@ import { finalize } from 'rxjs/operators';
 
 import {
   FormDetails,
-  FormsApiService,
+  FormsApiService, FormSchedule,
   QuestionBE,
   QuestionTypeBE
 } from '../services/forms-api.service'; // adapte le path si besoin
@@ -83,6 +83,7 @@ export class CreateFormComponent implements OnInit {
   monthDays: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   monthlyDay: number = 10;
   scheduleTime: string = '09:00';
+  scheduleTouched = false;
 
   questionTypes = [
     { id: 'multiple-choice' as QuestionType, label: 'Multiple Choice' },
@@ -197,6 +198,15 @@ export class CreateFormComponent implements OnInit {
     }
   }
 
+  private toBeBiweeklyWeeks(ui: BiweeklyWeekOption): 'W1_3' | 'W2_4' {
+    return ui === '1-3' ? 'W1_3' : 'W2_4';
+  }
+
+  private fromBeBiweeklyWeeks(be: 'W1_3' | 'W2_4'): BiweeklyWeekOption {
+    return be === 'W1_3' ? '1-3' : '2-4';
+  }
+
+
   private patchFromBackend(form: FormDetails) {
     this.formTitle = form.title;
     this.detailsTitle = form.title;
@@ -210,6 +220,67 @@ export class CreateFormComponent implements OnInit {
         isRequired: !!q.required,
         options: (q.options ?? []).map(o => o.label),
       }));
+
+    if (form.schedule) {
+      this.scheduleTouched = true;
+      this.scheduleFrequency =
+        form.schedule.frequency.toLowerCase() as any;
+
+      this.scheduleTime = form.schedule.time ?? '09:00';
+
+      if (form.schedule.daysOfWeek?.length) {
+        const uiDays = form.schedule.daysOfWeek.map(d =>
+          this.fromBeWeekday(d)
+        );
+
+        if (this.scheduleFrequency === 'daily') {
+          this.dailySelectedDays = uiDays;
+        }
+
+        if (this.scheduleFrequency === 'weekly') {
+          this.weeklySelectedDay = uiDays[0];
+        }
+
+        if (this.scheduleFrequency === 'biweekly') {
+          this.biweeklySelectedDay = uiDays[0];
+        }
+      }
+
+      if (form.schedule.biweeklyWeeks) {
+        this.biweeklyWeekOption = this.fromBeBiweeklyWeeks(form.schedule.biweeklyWeeks);
+      }
+
+
+      if (form.schedule.monthlyMode) {
+        this.monthlyMode =
+          form.schedule.monthlyMode.toLowerCase() as any;
+      }
+
+      if (form.schedule.monthlyDay) {
+        this.monthlyDay = form.schedule.monthlyDay;
+      }
+    }
+  }
+
+
+  private toBeWeekday(d: string): string {
+    const map: Record<string,string> = {
+      Mon: 'MON', Tue: 'TUE', Wed: 'WED', Thu: 'THU', Fri: 'FRI', Sat: 'SAT', Sun: 'SUN',
+    };
+    return map[d] ?? 'MON';
+  }
+
+  private fromBeWeekday(d: string): string {
+    const map: Record<string, string> = {
+      MON: 'Mon',
+      TUE: 'Tue',
+      WED: 'Wed',
+      THU: 'Thu',
+      FRI: 'Fri',
+      SAT: 'Sat',
+      SUN: 'Sun',
+    };
+    return map[d] ?? 'Mon';
   }
 
   private buildPayload(): FormDetails {
@@ -226,12 +297,38 @@ export class CreateFormComponent implements OnInit {
         : [],
     }));
 
+    const schedule: FormSchedule | undefined = this.scheduleTouched
+      ? {
+        frequency: this.scheduleFrequency.toUpperCase() as any,
+        time: this.scheduleTime,
+        daysOfWeek:
+          this.scheduleFrequency === 'daily'
+            ? this.dailySelectedDays.map(d => this.toBeWeekday(d))
+            : this.scheduleFrequency === 'weekly'
+              ? [this.toBeWeekday(this.weeklySelectedDay)]
+              : this.scheduleFrequency === 'biweekly'
+                ? [this.toBeWeekday(this.biweeklySelectedDay)]
+                : undefined,
+        biweeklyWeeks: this.scheduleFrequency === 'biweekly'
+          ? this.toBeBiweeklyWeeks(this.biweeklyWeekOption)
+          : undefined,
+        monthlyMode: this.scheduleFrequency === 'monthly'
+          ? (this.monthlyMode.toUpperCase() as any)
+          : undefined,
+        monthlyDay: (this.scheduleFrequency === 'monthly' && this.monthlyMode === 'specific')
+          ? this.monthlyDay
+          : undefined,
+      }
+      : undefined; // ✅ not touched => omit
+
     return {
       title,
       questions: questionsBE,
       status: 'DRAFT',
+      ...(schedule ? { schedule } : {}) // ✅ schedule omitted if undefined
     };
   }
+
 
   saveForm() {
     const payload = this.buildPayload();
@@ -254,16 +351,19 @@ export class CreateFormComponent implements OnInit {
 
   // ===== schedule helpers (tu peux garder ton code existant si tu veux) =====
   setScheduleFrequency(freq: ScheduleFrequency): void {
+    this.scheduleTouched = true;
     this.scheduleFrequency = freq;
     if (freq === 'daily') this.dailySelectedDays = [...this.scheduleWeekDays];
     if (freq !== 'daily' && this.dailySelectedDays.length === 0) this.dailySelectedDays = ['Mon'];
   }
 
   setBiweeklyWeek(option: BiweeklyWeekOption): void {
+    this.scheduleTouched = true;
     this.biweeklyWeekOption = option;
   }
 
   setMonthlyMode(mode: MonthlyMode): void {
+    this.scheduleTouched = true;
     this.monthlyMode = mode;
   }
 
@@ -285,6 +385,7 @@ export class CreateFormComponent implements OnInit {
   }
 
   onDayClick(day: string): void {
+    this.scheduleTouched = true;
     switch (this.scheduleFrequency) {
       case 'daily':
         this.dailySelectedDays = this.dailySelectedDays.includes(day)

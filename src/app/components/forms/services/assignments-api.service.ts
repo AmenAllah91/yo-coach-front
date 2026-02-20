@@ -14,6 +14,7 @@ export interface FormAssignment {
   assignedAt?: string;
   openedAt?: string;
   submittedAt?: string;
+  dueAt?: string;
 }
 export interface BulkAssignResult {
   created: FormAssignment[];
@@ -90,4 +91,15 @@ export class AssignmentsApiService {
   markOpened(assignmentId: string) {
     return this.http.post<FormAssignment>(`${this.baseUrl}/${assignmentId}/open`, null);
   }
+
+  pageOwnerAssignments(
+    page: number,
+    size: number,
+    sortBy = 'dueAt',
+    direction: 'ASC' | 'DESC' = 'ASC'
+  ): Observable<PageResponse<FormAssignment>> {
+    const params: any = { page, size, sortBy, direction };
+    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
+  }
+
 }

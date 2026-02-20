@@ -32,6 +32,15 @@ export interface QuestionBE {
   options?: OptionItemBE[] | null;
 }
 
+export interface FormSchedule {
+  frequency: 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  time: string;
+  daysOfWeek?: string[];
+  biweeklyWeeks?: 'W1_3' | 'W2_4';
+  monthlyMode?: 'START' | 'END' | 'SPECIFIC';
+  monthlyDay?: number;
+}
+
 export interface FormDetails {
   id?: string;
   title: string;
@@ -40,6 +49,7 @@ export interface FormDetails {
   createdAt?: string;
   updatedAt?: string;
   questions: QuestionBE[];
+  schedule?: FormSchedule;
 }
 
 /** ====== LIST MODEL (ta liste actuelle) ====== */

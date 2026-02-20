@@ -336,7 +336,7 @@
         <section class="sched-section" *ngIf="scheduleFrequency === 'monthly' && monthlyMode === 'specific'">
           <h2 class="sched-title">Day of Month</h2>
           <div class="sched-select-wrap">
-            <select class="sched-select" name="monthlyDay" [(ngModel)]="monthlyDay">
+            <select class="sched-select" name="monthlyDay" [(ngModel)]="monthlyDay"  (ngModelChange)="scheduleTouched = true">
               <option *ngFor="let d of monthDays" [ngValue]="d">{{ ordinal(d) }}</option>
             </select>
           </div>
@@ -346,7 +346,7 @@
           <h2 class="sched-title">Time</h2>
           <div class="sched-time">
             <i class="fa-regular fa-clock sched-time__icon"></i>
-            <input type="time" class="sched-time__input" name="scheduleTime" [(ngModel)]="scheduleTime" />
+            <input type="time" class="sched-time__input" name="scheduleTime" [(ngModel)]="scheduleTime" (ngModelChange)="scheduleTouched = true" />
           </div>
         </section>
       </div>
