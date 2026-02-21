@@ -8,28 +8,33 @@ import { FeatherModule } from 'angular-feather';
   standalone: true,
   imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './add-client-modal.component.html',
-  styleUrls: ['./add-client-modal.component.scss']
+  styleUrls: ['./add-client-modal.component.scss'],
 })
 export class AddClientModalComponent {
   @Input() isVisible = false;
-  @Input() firstName = '';
-  @Input() lastName = '';
-  @Input() email = '';
-  @Input() gender = 'MALE';
-  
-  @Output() onClose = new EventEmitter<void>();
-  @Output() onCreate = new EventEmitter<{firstName: string, lastName: string, email: string, gender: string}>();
 
-  closeModal() {
+  @Output() onClose  = new EventEmitter<void>();
+  @Output() onCreate = new EventEmitter<{ email: string }>();
+
+  email      = '';
+  copied     = false;
+  inviteLink = 'https://app.yourcoach.com/join';
+
+  closeModal(): void {
+    this.email  = '';
+    this.copied = false;
     this.onClose.emit();
   }
 
-  createClient() {
-    this.onCreate.emit({
-      firstName: this.firstName,
-      lastName: this.lastName,
-      email: this.email,
-      gender: this.gender
-    });
+  copyLink(): void {
+    navigator.clipboard.writeText(this.inviteLink).catch(() => {});
+    this.copied = true;
+    setTimeout(() => (this.copied = false), 2000);
+  }
+
+  sendInvitation(): void {
+    if (!this.email.trim()) return;
+    this.onCreate.emit({ email: this.email.trim() });
+    this.closeModal();
   }
 }

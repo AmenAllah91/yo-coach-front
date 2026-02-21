@@ -1,0 +1,271 @@
+<div class="chat-root">
+
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR — liste des conversations
+  ═══════════════════════════════════════════ -->
+  <aside class="chat-sidebar" [class.chat-sidebar--hidden]="isMobile && !showList">
+
+    <div class="chat-sidebar__header">
+      <div class="chat-search">
+        <i-feather name="search" class="chat-search__ico"></i-feather>
+        <input class="chat-search__input" type="text" placeholder="Search" [(ngModel)]="searchTerm" />
+      </div>
+      <button class="chat-icon-btn" type="button" (click)="openNewChatModal()" aria-label="Nouveau chat">
+        <i-feather name="edit-2"></i-feather>
+      </button>
+    </div>
+
+    <div class="chat-list">
+      <div
+        *ngFor="let conv of filteredConversations()"
+        class="chat-item"
+        [class.chat-item--active]="selectedConv?.id === conv.id"
+        (click)="selectConversation(conv)"
+      >
+        <div class="chat-item__avatar">
+          <ng-container *ngIf="conv.isGroup; else singleAvatar">
+            <div class="chat-avatar chat-avatar--group"><i-feather name="users"></i-feather></div>
+          </ng-container>
+          <ng-template #singleAvatar>
+            <img class="chat-avatar chat-avatar--img" [src]="conv.avatar" [alt]="conv.name" />
+          </ng-template>
+          <span class="chat-item__unread-dot" *ngIf="conv.unread"></span>
+        </div>
+
+        <div class="chat-item__body">
+          <div class="chat-item__top">
+            <span class="chat-item__name">{{ conv.name }}</span>
+            <span class="chat-item__members" *ngIf="conv.isGroup">{{ conv.memberCount }} members</span>
+            <span class="chat-item__unread-badge" *ngIf="conv.unread"></span>
+          </div>
+          <div class="chat-item__timestamp">{{ conv.timestamp }}</div>
+          <div class="chat-item__preview">{{ conv.lastMessage }}</div>
+        </div>
+
+        <button class="chat-item__more" type="button" (click)="$event.stopPropagation()">
+          <i-feather name="more-vertical"></i-feather>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════
+       ZONE CHAT
+  ═══════════════════════════════════════════ -->
+  <main class="chat-main" [class.chat-main--hidden]="isMobile && showList">
+
+    <ng-container *ngIf="!selectedConv">
+      <div class="chat-empty">
+        <div class="chat-empty__ico"><i-feather name="message-circle"></i-feather></div>
+        <h2 class="chat-empty__title">No Conversation Selected</h2>
+        <p class="chat-empty__sub">Select a conversation or create a new chat.</p>
+        <button class="chat-empty__btn" type="button" (click)="openNewChatModal()">New Chat</button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="selectedConv">
+      <div class="chat-header">
+        <button *ngIf="isMobile" class="chat-icon-btn" type="button" (click)="backToList()">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="chat-header__info">
+          <ng-container *ngIf="selectedConv.isGroup; else singleHeader">
+            <div class="chat-avatar chat-avatar--group chat-avatar--sm"><i-feather name="users"></i-feather></div>
+            <div>
+              <div class="chat-header__name">{{ selectedConv.name }}</div>
+              <div class="chat-header__sub">{{ selectedConv.memberCount }} members</div>
+            </div>
+          </ng-container>
+          <ng-template #singleHeader>
+            <img class="chat-avatar chat-avatar--img chat-avatar--sm" [src]="selectedConv.avatar" [alt]="selectedConv.name" />
+            <div class="chat-header__name">{{ selectedConv.name }}</div>
+          </ng-template>
+        </div>
+        <button class="chat-icon-btn" type="button"><i-feather name="settings"></i-feather></button>
+      </div>
+
+      <div class="chat-messages" #messagesContainer>
+        <div
+          *ngFor="let msg of messages"
+          class="chat-msg-row"
+          [class.chat-msg-row--mine]="msg.senderId === 'coach'"
+        >
+          <ng-container *ngIf="msg.senderId !== 'coach'">
+            <img class="chat-msg__avatar" [src]="msg.sender.avatar" [alt]="msg.sender.name" />
+          </ng-container>
+
+          <div class="chat-msg__bubble-wrap">
+            <span class="chat-msg__sender-name" *ngIf="selectedConv.isGroup && msg.senderId !== 'coach'">{{ msg.sender.name }}</span>
+            <div class="chat-msg__bubble" [class.chat-msg__bubble--mine]="msg.senderId === 'coach'">{{ msg.text }}</div>
+            <div class="chat-msg__meta" [class.chat-msg__meta--mine]="msg.senderId === 'coach'">
+              {{ msg.timestamp }}
+              <ng-container *ngIf="msg.senderId === 'coach'">
+                <i-feather name="check" class="chat-msg__check"></i-feather>
+                <span class="chat-msg__seen">Seen</span>
+              </ng-container>
+            </div>
+          </div>
+
+          <ng-container *ngIf="msg.senderId === 'coach'">
+            <div class="chat-avatar chat-avatar--coach">CC</div>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <button class="chat-icon-btn" type="button"><i-feather name="plus"></i-feather></button>
+        <button class="chat-icon-btn" type="button"><i-feather name="mic"></i-feather></button>
+        <input
+          class="chat-input"
+          type="text"
+          [placeholder]="'Chat with ' + selectedConv.name"
+          [(ngModel)]="messageText"
+          (keydown.enter)="sendMessage()"
+        />
+        <button class="chat-send-btn" type="button" (click)="sendMessage()" [disabled]="!messageText.trim()">
+          <i-feather name="send"></i-feather>
+        </button>
+      </div>
+    </ng-container>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL : New Chat (choix Private / Group)
+═══════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="showNewChat" (click)="closeModals()">
+  <div class="cm-modal" (click)="$event.stopPropagation()">
+    <div class="cm-header">
+      <span class="cm-title">New Chat</span>
+      <button class="chat-icon-btn" type="button" (click)="closeModals()"><i-feather name="x"></i-feather></button>
+    </div>
+    <div class="cm-body">
+      <button class="cm-option" type="button" (click)="goToSelectClient()">
+        <div class="cm-option__ico"><i-feather name="user"></i-feather></div>
+        <div>
+          <div class="cm-option__title">Private Chat</div>
+          <div class="cm-option__sub">Message a single client</div>
+        </div>
+        <i-feather name="chevron-right" class="cm-option__chev"></i-feather>
+      </button>
+      <button class="cm-option" type="button" (click)="goToCreateGroup()">
+        <div class="cm-option__ico"><i-feather name="users"></i-feather></div>
+        <div>
+          <div class="cm-option__title">Group Chat</div>
+          <div class="cm-option__sub">Create a group with multiple clients</div>
+        </div>
+        <i-feather name="chevron-right" class="cm-option__chev"></i-feather>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL : Create Group Chat
+═══════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="showCreateGroup" (click)="closeModals()">
+  <div class="cm-modal cm-modal--lg" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="cm-header">
+      <div>
+        <h3 class="cm-title">Create Group Chat</h3>
+        <p class="cm-subtitle">Select at least 2 members</p>
+      </div>
+      <button class="chat-icon-btn" type="button" (click)="closeModals()"><i-feather name="x"></i-feather></button>
+    </div>
+
+    <!-- Group name input -->
+    <div class="cm-section cm-section--border">
+      <input
+        class="cm-group-name"
+        type="text"
+        placeholder="Group name..."
+        [(ngModel)]="groupName"
+      />
+    </div>
+
+    <!-- Search clients -->
+    <div class="cm-section cm-section--border">
+      <div class="cm-search-wrap">
+        <i-feather name="search" class="cm-search-ico"></i-feather>
+        <input
+          class="cm-search-input"
+          type="text"
+          placeholder="Search clients..."
+          [(ngModel)]="groupSearchTerm"
+        />
+      </div>
+    </div>
+
+    <!-- Client list -->
+    <div class="cm-list-body">
+
+      <!-- Select All -->
+      <label class="cm-client-item cm-client-item--select-all" [class.cm-client-item--selected]="groupSelectAll">
+        <input type="checkbox" class="cm-sr-only" [checked]="groupSelectAll" (change)="handleGroupSelectAll()" />
+        <span class="cm-checkbox" [class.cm-checkbox--checked]="groupSelectAll">
+          <i-feather *ngIf="groupSelectAll" name="check" class="cm-check-ico"></i-feather>
+        </span>
+        <span class="cm-client-item__name cm-client-item__name--all">Select All ({{ allClients.length }})</span>
+      </label>
+
+      <!-- Individual clients -->
+      <div class="cm-client-list">
+        <label
+          *ngFor="let c of filteredGroupClients()"
+          class="cm-client-item"
+          [class.cm-client-item--selected]="isClientSelected(c.id)"
+        >
+          <input type="checkbox" class="cm-sr-only" [checked]="isClientSelected(c.id)" (change)="toggleClient(c.id)" />
+          <span class="cm-checkbox" [class.cm-checkbox--checked]="isClientSelected(c.id)">
+            <i-feather *ngIf="isClientSelected(c.id)" name="check" class="cm-check-ico"></i-feather>
+          </span>
+          <img class="cm-client-item__avatar" [src]="c.avatar" [alt]="c.name" />
+          <span class="cm-client-item__name">{{ c.name }}</span>
+        </label>
+
+        <div class="cm-empty-row" *ngIf="filteredGroupClients().length === 0">Aucun client trouvé.</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="cm-footer">
+
+      <!-- Chips sélectionnés -->
+      <div class="cm-chips" *ngIf="selectedClientIds.length > 0">
+        <ng-container *ngFor="let id of selectedClientIds.slice(0, 4)">
+          <span class="cm-chip">
+            {{ getClientFirstName(id) }}
+            <button type="button" class="cm-chip__remove" (click)="toggleClient(id)">
+              <i-feather name="x" class="cm-chip__x"></i-feather>
+            </button>
+          </span>
+        </ng-container>
+        <span class="cm-chip cm-chip--more" *ngIf="selectedClientIds.length > 4">
+          +{{ selectedClientIds.length - 4 }} more
+        </span>
+      </div>
+
+      <!-- Actions -->
+      <div class="cm-footer-actions">
+        <span class="cm-footer-count">
+          {{ selectedClientIds.length }} member{{ selectedClientIds.length !== 1 ? 's' : '' }} selected
+          <span class="cm-footer-warn" *ngIf="selectedClientIds.length === 1">(need at least 2)</span>
+        </span>
+        <div class="cm-footer-btns">
+          <button class="cm-btn cm-btn--ghost" type="button" (click)="backToNewChat()">Back</button>
+          <button
+            class="cm-btn cm-btn--primary"
+            type="button"
+            (click)="createGroup()"
+            [disabled]="!groupName.trim() || selectedClientIds.length < 2"
+          >
+            Create Group
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

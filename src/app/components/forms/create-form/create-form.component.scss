@@ -1747,3 +1747,477 @@
 }
 .q-toggle input:checked + .q-toggle__track { background: #44b4df; }
 .q-toggle input:checked + .q-toggle__track .q-toggle__thumb { left: 23px; }
+/* ── Conteneur général ──────────────────────────────────────── */
+
+
+/* ── Section (bloc titre + contenu) ────────────────────────── */
+.sched-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Label de section ───────────────────────────────────────── */
+.sched-label {
+  font-size: 14px;
+  font-weight: 500;               /* pas trop bold */
+  color: #111827;
+  margin: 0;
+}
+
+.sched-label-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+
+/* ── Frequency grid (4 colonnes) ────────────────────────────── */
+.sched-freq-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.sched-pill {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.sched-pill:hover {
+  border-color: #44b4df;
+  color: #44b4df;
+}
+.sched-pill.is-active {
+  background: #44b4df;
+  border-color: #44b4df;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(68, 180, 223, 0.30);
+}
+
+/* ── Days grid (7 colonnes) ─────────────────────────────────── */
+.sched-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.sched-day {
+  padding: 12px 4px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.sched-day:hover {
+  border-color: #44b4df;
+  color: #44b4df;
+}
+.sched-day.is-active {
+  background: #44b4df;
+  border-color: #44b4df;
+  color: #ffffff;
+}
+
+/* ── Radio cards (biweekly: 2 colonnes) ─────────────────────── */
+.sched-radio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Radio cards (monthly: colonne) */
+.sched-radio-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.sched-radio-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 400;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sched-radio-card:hover { border-color: #44b4df; }
+.sched-radio-card.is-active {
+  border-color: #44b4df;
+  background: #eff9fe;
+}
+
+/* Point radio */
+.sched-radio-dot {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.sched-radio-card.is-active .sched-radio-dot {
+  border-color: #44b4df;
+}
+.sched-radio-card.is-active .sched-radio-dot::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #44b4df;
+}
+
+/* ── Day of Month select ─────────────────────────────────────── */
+.sched-select-wrap { max-width: 260px; }
+
+.sched-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+}
+.sched-select:focus { border-color: #44b4df; }
+
+/* ── Send Time + End Date (ligne côte à côte) ──────────────── */
+.sched-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.sched-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Champ avec icône à gauche */
+.sched-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sched-input-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 15px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.sched-input {
+  width: 100%;
+  padding: 12px 14px 12px 36px;  /* place pour l'icône */
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sched-input:focus {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sched-freq-grid  { grid-template-columns: repeat(2, 1fr); }
+  .sched-days-grid  { grid-template-columns: repeat(4, 1fr); }
+  .sched-time-row   { grid-template-columns: 1fr; }
+  .sched-radio-grid { grid-template-columns: 1fr; }
+}
+.iq-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.iq-title-edit-ico {
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.iq-title:hover .iq-title-edit-ico { color: #6b7280; }
+
+.iq-title-input {
+  font-size: 1.125rem;
+  font-weight: 700;
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid #44b4df;
+  outline: none;
+  padding: 2px 4px;
+  background: transparent;
+}
+
+/* ── Show in Signup banner ────────────────────────────────── */
+.cf-signup-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  padding: 16px 20px;
+  margin-bottom: 8px;               /* petit espace avant empty-state */
+
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.cf-signup-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cf-signup-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.cf-signup-sub {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ── Toggle switch (réutilise details-switch déjà défini) ─── */
+/* Si details-switch n'est pas dispo, voici le fallback : */
+.details-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.details-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.details-switch-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  position: relative;
+  transition: background 0.2s ease;
+}
+.details-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+  transition: transform 0.2s ease;
+}
+.details-switch input:checked + .details-switch-track {
+  background: #44b4df;
+}
+.details-switch input:checked + .details-switch-track .details-switch-knob {
+  transform: translateX(20px);
+}
+
+/* ── Empty state thumbs-up (comme capture) ────────────────── */
+.fb-emptystate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  padding: 60px 16px 40px;
+}
+
+.fb-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fb-thumb .ico {
+  width: 28px;
+  height: 28px;
+  color: #9ca3af;
+}
+
+.fb-hint {
+  font-size: 15px;
+  color: #374151;
+  margin: 0;
+}
+
+/* Add Question button */
+.fb-emptystate .btn.btn-black {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.fb-emptystate .btn.btn-black:hover { background: #374151; }
+.fb-emptystate .btn.btn-black .ico {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+/* ══════════════════════════════════════════════════════════
+   TITRE ÉDITABLE — remplace les anciens styles .iq-title*
+   dans create-form.component.scss
+══════════════════════════════════════════════════════════ */
+
+/* ── Topbar (base) ───────────────────────────────────────── */
+.iq-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  min-height: 56px;
+}
+
+/* ── Bouton retour ───────────────────────────────────────── */
+.iq-back {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.iq-back:hover { background: #f3f4f6; }
+.iq-back .ico { width: 20px; height: 20px; color: #374151; }
+
+/* ── Titre en lecture ────────────────────────────────────── */
+.iq-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.iq-title-edit-ico {
+  width: 15px;
+  height: 15px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.iq-title:hover .iq-title-edit-ico { color: #6b7280; }
+
+/* ── Input en mode édition — prend tout l'espace ─────────── */
+.iq-title-input {
+  flex: 1;                          /* occupe tout l'espace dispo */
+  min-width: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  border: 1.5px solid #44b4df;     /* bordure bleue comme capture */
+  border-radius: 8px;
+  padding: 8px 14px;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
+  transition: box-shadow 0.15s;
+}
+.iq-title-input::placeholder { color: #9ca3af; font-weight: 400; }
+.iq-title-input:focus {
+  box-shadow: 0 0 0 4px rgba(68, 180, 223, 0.18);
+}
+
+/* ── Bouton ✓ (confirm) ──────────────────────────────────── */
+.iq-title-confirm {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: #44b4df;             /* bleu comme la capture */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.iq-title-confirm:hover { background: #2ea7d9; }
+
+/* ── Bouton Preview (inchangé, toujours à droite) ────────── */
+.iq-preview {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iq-preview:hover { background: #f9fafb; }
+.iq-preview .ico { width: 16px; height: 16px; color: #6b7280; }

@@ -1,40 +1,47 @@
-<div class="modal-overlay" [class.show]="isVisible" (click)="closeModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2>Add New Client</h2>
-      <button class="close-btn" (click)="closeModal()">
+<div class="acm-overlay" *ngIf="isVisible" (click)="closeModal()">
+  <div class="acm-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="acm-header">
+      <h2 class="acm-title">Invite new clients</h2>
+      <button class="acm-close" type="button" (click)="closeModal()" aria-label="Fermer">
         <i-feather name="x"></i-feather>
       </button>
     </div>
 
-    <div class="modal-body">
-      <div class="form-group">
-        <label>First Name</label>
-        <input type="text" [(ngModel)]="firstName" placeholder="Enter first name">
+    <!-- Body -->
+    <div class="acm-body">
+
+      <!-- Description -->
+      <p class="acm-desc">
+        Invite one or more clients. They will receive a link to accept your invitation
+        and be guided to download the app to be coached.
+        <a href="#" class="acm-link">Learn More</a>
+      </p>
+
+      <!-- Invite Link -->
+      <div class="acm-invite-box">
+        <span class="acm-invite-url">{{ inviteLink }}</span>
+        <button type="button" class="acm-copy-btn" (click)="copyLink()">
+          <i-feather name="copy" class="acm-copy-ico"></i-feather>
+          <span>{{ copied ? 'Copied!' : 'Copy Link' }}</span>
+        </button>
       </div>
 
-      <div class="form-group">
-        <label>Last Name</label>
-        <input type="text" [(ngModel)]="lastName" placeholder="Enter last name">
-      </div>
+      <!-- Email Input -->
+      <input
+        class="acm-email-input"
+        type="email"
+        placeholder="client@example.com"
+        [(ngModel)]="email"
+        name="email"
+      />
 
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" [(ngModel)]="email" placeholder="Enter email address">
-      </div>
+      <!-- Submit -->
+      <button class="acm-submit-btn" type="button" (click)="sendInvitation()" [disabled]="!email.trim()">
+        Send Invitation
+      </button>
 
-      <div class="form-group">
-        <label>Gender</label>
-        <select [(ngModel)]="gender">
-          <option value="MALE">Male</option>
-          <option value="FEMALE">Female</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="cancel-btn" (click)="closeModal()">Cancel</button>
-      <button class="confirm-btn primary" (click)="createClient()">Add Client</button>
     </div>
   </div>
 </div>

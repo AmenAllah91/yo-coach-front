@@ -34,6 +34,8 @@ import {MyAssignmentsComponent} from "./components/forms/my-assignments-componen
 import {AssignmentFillComponent} from "./components/forms/assignment-fill-component/assignment-fill.component";
 import {MyCheckinsComponent} from "./components/forms/my-checkins/my-checkins.component";
 import {ManageCheckinsComponent} from "./components/forms/manage-checkins/manage-checkins.component";
+import {ChatComponent} from "./components/chat/chat/chat.component";
+import {InvitationComponent} from "./components/clients/invitation/invitation.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -176,6 +178,12 @@ export const APP_ROUTE: Route[] = [
       },{
         path: 'forms/manage-checkins',
         component: ManageCheckinsComponent,
+      },{
+        path: 'chat',
+        component: ChatComponent,
+      },{
+        path: 'invitation',
+        component: InvitationComponent,
       },
     ],
   },

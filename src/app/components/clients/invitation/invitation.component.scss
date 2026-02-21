@@ -1,0 +1,212 @@
+/* ══════════════════════════════════════════════════════════
+   INVITATION PAGE — invitation.component.css
+══════════════════════════════════════════════════════════ */
+
+/* ── Root : fond pleine page ───────────────────────────────── */
+.inv-root {
+  min-height: 100vh;
+  width: 100%;
+  background: #f0f4f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px;
+  box-sizing: border-box;
+}
+
+/* ── Conteneur central max 580px ───────────────────────────── */
+.inv-container {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+/* ── Logo ──────────────────────────────────────────────────── */
+.inv-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inv-logo__ico {
+  width: 32px;
+  height: 32px;
+  color: #1a2332;
+}
+.inv-logo__text {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1a2332;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.inv-logo__accent { color: #0abde3; }
+
+/* ── Card ──────────────────────────────────────────────────── */
+.inv-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+/* Card body (zone principale) */
+.inv-card__body {
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+}
+
+/* ── Badge circulaire ──────────────────────────────────────── */
+.inv-badge {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #1a2332;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 12px rgba(26, 35, 50, 0.25);
+  outline: 4px solid #f8fafc;
+}
+.inv-badge__ico {
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  stroke-width: 2;
+}
+.inv-badge__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffffff;
+  line-height: 1;
+}
+
+/* ── Texte ─────────────────────────────────────────────────── */
+.inv-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #1a2332;
+  line-height: 1.65;
+  margin: 0 0 24px;
+}
+.inv-title strong { font-weight: 700; color: #0f172a; }
+
+.inv-sub {
+  font-size: 15px;
+  color: #475569;
+  margin: 0 0 40px;
+  line-height: 1.5;
+}
+
+/* ── CTA ───────────────────────────────────────────────────── */
+.inv-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  min-width: 240px;
+  background: #0abde3;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 4px rgba(10, 189, 227, 0.25);
+  transition: background 0.18s, box-shadow 0.18s;
+}
+.inv-cta:hover {
+  background: #09a3c5;
+  box-shadow: 0 4px 12px rgba(10, 189, 227, 0.30);
+}
+.inv-cta:focus-visible {
+  outline: 3px solid rgba(10, 189, 227, 0.50);
+  outline-offset: 2px;
+}
+
+/* ── Divider ───────────────────────────────────────────────── */
+.inv-divider {
+  height: 1px;
+  background: #f1f5f9;
+}
+
+/* ── Fallback link ─────────────────────────────────────────── */
+.inv-fallback {
+  padding: 32px 40px;
+  background: rgba(248, 250, 252, 0.5);
+  text-align: center;
+}
+.inv-fallback__label {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 10px;
+}
+.inv-fallback__link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #0abde3;
+  word-break: break-all;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.inv-fallback__link:hover {
+  color: #09a3c5;
+  text-decoration: underline;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+.inv-footer {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.inv-footer__report {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: 0;
+}
+.inv-footer__link {
+  color: #94a3b8;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+.inv-footer__link:hover { color: #64748b; }
+.inv-footer__copy {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+/* ── Responsive mobile ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .inv-card__body { padding: 36px 24px; }
+  .inv-fallback   { padding: 24px; }
+  .inv-cta        { width: 100%; min-width: unset; }
+  .inv-title      { font-size: 1rem; }
+}
+
+/* ── Logo image (remplace l'ancien logo texte) ─────────────── */
+.inv-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.inv-logo__img {
+  height: 150px;
+  width: auto;
+  object-fit: contain;
+}

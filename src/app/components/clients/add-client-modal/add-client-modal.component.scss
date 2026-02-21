@@ -1,1 +1,158 @@
-@import '../../shared-styles/shared-styles.scss';
+/* ══════════════════════════════════════════════════════════
+   ADD CLIENT MODAL — "Invite new clients"
+   Préfixe acm- pour zéro conflit
+══════════════════════════════════════════════════════════ */
+
+/* ── Overlay ───────────────────────────────────────────────── */
+.acm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 1rem;
+}
+
+/* ── Modal box ─────────────────────────────────────────────── */
+.acm-modal {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.20);
+  overflow: hidden;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.acm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.acm-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.acm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.15s, background 0.15s;
+}
+.acm-close:hover { color: #374151; background: #f3f4f6; }
+.acm-close i-feather { width: 18px; height: 18px; display: block; }
+
+/* ── Body ──────────────────────────────────────────────────── */
+.acm-body {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Description */
+.acm-desc {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+.acm-link {
+  color: #44b4df;
+  text-decoration: none;
+  font-weight: 500;
+}
+.acm-link:hover { text-decoration: underline; }
+
+/* ── Invite link box ───────────────────────────────────────── */
+.acm-invite-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  background: #f9fafb;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.acm-invite-url {
+  flex: 1;
+  font-size: 13px;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acm-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: #44b4df;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.acm-copy-btn:hover { color: #2ea7d9; }
+.acm-copy-ico { width: 15px; height: 15px; display: block; }
+
+/* ── Email input ───────────────────────────────────────────── */
+.acm-email-input {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.acm-email-input::placeholder { color: #9ca3af; }
+.acm-email-input:focus {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
+}
+
+/* ── Submit button ─────────────────────────────────────────── */
+.acm-submit-btn {
+  width: 100%;
+  padding: 13px;
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.acm-submit-btn:hover:not(:disabled) { background: #44b4df; }
+.acm-submit-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}

@@ -17,10 +17,10 @@
     <div class="search-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input 
-          type="text" 
-          placeholder="Search clients" 
-          [(ngModel)]="searchTerm" 
+        <input
+          type="text"
+          placeholder="Search clients"
+          [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
     </div>
@@ -38,7 +38,7 @@
           <div class="col-client">
             <div class="client-info">
               <div class="client-avatar">
-                <img [src]="'https://ui-avatars.com/api/?name=' + client.firstName + '+' + client.lastName + '&background=0ea5e9&color=fff'" 
+                <img [src]="'https://ui-avatars.com/api/?name=' + client.firstName + '+' + client.lastName + '&background=0ea5e9&color=fff'"
                      [alt]="client.firstName + ' ' + client.lastName">
               </div>
               <div class="client-details">
@@ -50,8 +50,8 @@
 
           <div class="col-workouts">
             <div class="workout-calendar">
-              <div 
-                class="workout-day" 
+              <div
+                class="workout-day"
                 *ngFor="let day of [0,1,2,3,4,5,6]"
                 [class.has-workout]="hasWorkoutOnDay(client, day)">
                 <div class="day-name">{{ getDayName(day) }}</div>
@@ -111,10 +111,6 @@
   <!-- Add Client Modal -->
   <app-add-client-modal
     [isVisible]="showAddModal"
-    [firstName]="firstName"
-    [lastName]="lastName"
-    [email]="email"
-    [gender]="gender"
     (onClose)="closeAddModal()"
     (onCreate)="onCreateClient($event)">
   </app-add-client-modal>

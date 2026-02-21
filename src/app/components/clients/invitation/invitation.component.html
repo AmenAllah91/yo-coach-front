@@ -1,0 +1,49 @@
+<div class="inv-root">
+  <div class="inv-container">
+
+
+
+    <!-- Card -->
+    <div class="inv-card">
+
+      <!-- Card body -->
+      <div class="inv-card__body">
+
+        <!-- Badge circulaire -->
+        <div class="inv-logo">
+          <img src="assets/yocoachlogo.png" alt="YoCoach" class="inv-logo__img" />
+        </div>
+
+        <!-- Texte invitation -->
+        <h1 class="inv-title">
+          <strong>{{ coachName }}</strong> invited you to be coached on the YoCoach mobile app.
+        </h1>
+
+        <p class="inv-sub">Please complete your setup by clicking the link below.</p>
+
+        <!-- Bouton CTA -->
+        <a [href]="inviteLink" class="inv-cta">Accept Invitation</a>
+      </div>
+
+      <!-- Divider -->
+      <div class="inv-divider"></div>
+
+      <!-- Fallback link -->
+      <div class="inv-fallback">
+        <p class="inv-fallback__label">If the button doesn't work, paste this link in your browser:</p>
+        <a [href]="inviteLink" class="inv-fallback__link">{{ inviteLink }}</a>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="inv-footer">
+      <p class="inv-footer__report">
+        If you don't know this coach, please report them
+        <a href="#" class="inv-footer__link">here</a>.
+      </p>
+      <p class="inv-footer__copy">© 2024 YoCoach Inc.</p>
+    </div>
+
+  </div>
+</div>

@@ -32,7 +32,7 @@ export interface QuestionItem {
   options?: string[];
 }
 
-type Tab = 'form' | 'details' | 'schedule';
+type Tab = 'form' | 'schedule';   // ← 'details' retiré
 type ScheduleFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 type BiweeklyWeekOption = '1-3' | '2-4';
 type MonthlyMode = 'start' | 'end' | 'specific';
@@ -58,7 +58,8 @@ export class CreateFormComponent implements OnInit {
   activeTab: Tab = 'form';
   showPreview = false;
   showQuestionSidebar = false;
-
+  showInSignup   = false;
+  scheduleEndDate: string = '';
   // fields
   formTitle = 'Form Title';
   detailsTitle = 'Form Title'; // <-- IMPORTANT (ngModel)
