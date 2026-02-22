@@ -1,0 +1,100 @@
+<div *ngIf="isOpen" class="assign-modal-overlay">
+  <div class="assign-modal select-program-modal">
+
+    <!-- Header -->
+    <div class="assign-modal-header">
+      <div>
+        <h3 class="assign-modal-title">Select Check-in Form</h3>
+        <p class="assign-modal-subtitle">
+          Choose a form to assign to {{ fullName }}
+        </p>
+      </div>
+      <button type="button" (click)="closeModal.emit()" class="assign-modal-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="select-program-search">
+      <div class="select-search-input">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search forms..."
+               [(ngModel)]="searchTerm" />
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="select-program-body">
+      <ng-container *ngIf="filteredForms.length; else noForms">
+        <div
+          class="select-program-card"
+          *ngFor="let form of filteredForms"
+          [class.select-program-card--selected]="form.id === selectedFormId"
+          (click)="selectForm(form)"
+        >
+          <div class="select-program-main">
+            <div class="select-radio">
+              <span class="select-radio-inner"
+                    *ngIf="form.id === selectedFormId"></span>
+            </div>
+            <div class="select-program-text">
+              <div class="select-program-title-row">
+                <span class="select-program-name">{{ form.name }}</span>
+              </div>
+              <div class="select-program-meta">
+                <span>
+                  <i class="far fa-list-alt"></i>
+                  {{ form.questionCount }} questions
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noForms>
+        <div class="select-program-empty">No forms found</div>
+      </ng-template>
+
+      <!-- Schedule -->
+      <div *ngIf="selectedForm" class="select-program-schedule">
+        <h4>Assignment Schedule</h4>
+        <div class="schedule-grid">
+          <div class="schedule-field">
+            <label>Assigned Date *</label>
+            <div class="schedule-input">
+              <input type="date" [(ngModel)]="assignedDate" />
+            </div>
+          </div>
+          <div class="schedule-field">
+            <label>Due Date *</label>
+            <div class="schedule-input">
+              <input type="date" [(ngModel)]="dueDate" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="select-program-footer">
+      <button type="button" class="btn-secondary" (click)="backClick.emit()">
+        Back
+      </button>
+      <button
+        type="button"
+        class="btn-primary"
+        [class.btn-primary--disabled]="!selectedFormId || !assignedDate || !dueDate"
+        [disabled]="!selectedFormId || !assignedDate || !dueDate"
+        (click)="assign()"
+      >
+        Assign Form
+      </button>
+    </div>
+
+  </div>
+</div>

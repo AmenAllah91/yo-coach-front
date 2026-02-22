@@ -56,11 +56,14 @@
   color: #9ca3af;
   cursor: pointer;
   padding: 0;
-  font-size: 1.1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+}
+
+.assign-modal-close svg {
+  width: 20px;
+  height: 20px;
 }
 
 .assign-modal-close:hover {
@@ -220,11 +223,6 @@
   font-size: 0.85rem;
   color: #111827;
   box-sizing: border-box;
-}
-
-.schedule-input--readonly input {
-  background-color: #f9fafb;
-  color: #6b7280;
 }
 
 .select-program-footer {

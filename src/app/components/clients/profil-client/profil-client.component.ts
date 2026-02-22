@@ -12,6 +12,7 @@ import { NutritionClientTabComponent } from './nutrition-client-tab/nutrition-cl
 import { NutritionSelectionModalComponent } from './nutrition-selection-modal/nutrition-selection-modal.component';
 import { WorkoutProgramSelectionModalComponent } from './workout-program-selection-modal/workout-program-selection-modal.component';
 import { AssignSelectModalComponent } from './assign-select-modal/assign-select-modal.component';
+import {FormSelectionModalComponent} from "./form-selection-modal/form-selection-modal.component";
 
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
@@ -105,7 +106,7 @@ interface ActiveNutritionPlan {
     NutritionClientTabComponent,
     NutritionSelectionModalComponent,
     WorkoutProgramSelectionModalComponent,
-    AssignSelectModalComponent,
+    AssignSelectModalComponent,FormSelectionModalComponent
   ],
   templateUrl: './profil-client.component.html',
   styleUrl: './profil-client.component.scss',
@@ -128,7 +129,7 @@ export class ProfilClientComponent {
 
   // Assign flow (NEW)
   showAssignSelectModal = false;
-  assignType: 'WORKOUT' | 'NUTRITION' = 'WORKOUT';
+  assignType: 'WORKOUT' | 'NUTRITION' | 'CHECKIN' = 'WORKOUT';
 
   showProgramSelectionModal = false; // workout selection modal
   showNutritionSelectionModal = false; // nutrition selection modal
@@ -226,21 +227,29 @@ export class ProfilClientComponent {
 
   onExistingFromAssignModal() {
     this.showAssignSelectModal = false;
+    this.showCheckinModal = false;
 
     if (this.assignType === 'WORKOUT') {
       this.showProgramSelectionModal = true;
-    } else {
+    } else if (this.assignType === 'NUTRITION') {
       this.showNutritionSelectionModal = true;
+    } else {
+      this.showFormSelectionModal = true; // ← CHECKIN
     }
   }
 
+
+
   onCreateFromAssignModal() {
     this.showAssignSelectModal = false;
+    this.showCheckinModal = false;
 
     if (this.assignType === 'WORKOUT') {
       this.router.navigateByUrl('clients/create-workout/' + this.clientId);
-    } else {
+    } else if (this.assignType === 'NUTRITION') {
       this.showChooseModal = true;
+    } else {
+      // CHECKIN — à implémenter
     }
   }
 
@@ -446,4 +455,19 @@ export class ProfilClientComponent {
       this.showProgramSelectionModal = false;
     });
   }
+
+  showCheckinModal = false;
+
+// Après closeAssignSelectModal()
+  openCheckinModal() {
+    this.assignType = 'CHECKIN'; // ← plus besoin de "as any"
+    this.showAssignSelectModal = true; // ← utilise showAssignSelectModal pas showCheckinModal
+  }
+  showFormSelectionModal = false;
+
+  onAssignFormFromModal(payload: { form: any; assignedDate: string; dueDate: string }) {
+    console.log('Assign form:', payload);
+    this.showFormSelectionModal = false;
+  }
+
 }

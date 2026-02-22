@@ -290,7 +290,7 @@
             />
           </div>
 
-          <button class="btn-add-checkin">
+          <button class="btn-add-checkin" (click)="openCheckinModal()">
             <i class="fas fa-plus"></i>
             <span>Add Check-in</span>
           </button>
@@ -742,9 +742,9 @@
 </div>
 
 <app-assign-select-modal
-  [isOpen]="showAssignSelectModal"
+  [isOpen]="showAssignSelectModal || showCheckinModal"
   [kind]="assignType"
-  (close)="closeAssignSelectModal()"
+  (close)="showAssignSelectModal = false; showCheckinModal = false"
   (existingClick)="onExistingFromAssignModal()"
   (createClick)="onCreateFromAssignModal()"
 ></app-assign-select-modal>
@@ -774,3 +774,11 @@
   (backClick)="showNutritionSelectionModal = false"
   (assignProgram)="onAssignNutritionFromModal($event)"
 ></app-nutrition-selection-modal>
+<!-- Ajoute ça après app-nutrition-selection-modal -->
+<app-form-selection-modal
+  [isOpen]="showFormSelectionModal"
+  [fullName]="fullName"
+  (closeModal)="showFormSelectionModal = false"
+  (backClick)="showFormSelectionModal = false; assignType = 'CHECKIN'; showAssignSelectModal = true"
+  (assignForm)="onAssignFormFromModal($event)"
+></app-form-selection-modal>

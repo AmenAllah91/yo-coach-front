@@ -1,12 +1,7 @@
-/* =========================================================
-   MODAL : Select Program (Workout)
-   ======================================================= */
-
 :host {
-  display: contents; /* pour ne pas casser le layout */
+  display: contents;
 }
 
-/* overlay */
 .assign-modal-overlay {
   position: fixed;
   inset: 0;
@@ -15,21 +10,25 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 1000;
+  z-index: 1050;
 }
 
-/* modal container */
 .assign-modal {
   background: #ffffff;
   width: 100%;
-  max-width: 420px;
+  max-width: 580px;
   border-radius: 12px;
   box-shadow: 0 24px 40px rgba(15, 23, 42, 0.16);
   overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* header */
+.select-program-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
 .assign-modal-header {
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
@@ -42,6 +41,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   color: #111827;
+  margin: 0;
 }
 
 .assign-modal-subtitle {
@@ -70,15 +70,6 @@
   color: #4b5563;
 }
 
-/* MODAL 2 : Select Program */
-.select-program-modal {
-  max-width: 640px;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-}
-
-/* search */
 .select-program-search {
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
@@ -109,24 +100,19 @@
   background: transparent;
 }
 
-/* body */
 .select-program-body {
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
 }
 
-/* cards */
 .select-program-card {
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   padding: 1rem;
   margin-bottom: 0.75rem;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .select-program-card--selected {
@@ -202,7 +188,6 @@
   color: #9ca3af;
 }
 
-/* schedule */
 .select-program-schedule {
   margin-top: 1.25rem;
   border-top: 1px solid #e5e7eb;
@@ -218,7 +203,7 @@
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
 
@@ -237,6 +222,7 @@
   padding: 0.45rem 0.65rem;
   font-size: 0.85rem;
   color: #111827;
+  box-sizing: border-box;
 }
 
 .schedule-input--readonly input {
@@ -250,7 +236,6 @@
   color: #9ca3af;
 }
 
-/* footer */
 .select-program-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
@@ -260,9 +245,8 @@
   gap: 0.75rem;
 }
 
-/* buttons */
 .btn-secondary {
-  border-radius: 9999px;
+  border-radius: 6px;
   border: 1px solid #d1d5db;
   background-color: #ffffff;
   padding: 0.45rem 1.25rem;
@@ -277,26 +261,25 @@
 }
 
 .btn-primary {
-  border-radius: 9999px;
+  border-radius: 6px;
   border: none;
   padding: 0.45rem 1.4rem;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #ffffff;
   background-color: #111827;
   cursor: pointer;
 }
 
-.btn-primary:hover:not(.btn-primary--disabled) {
+.btn-primary:hover:not(:disabled) {
   background-color: #44b4df;
 }
 
-.btn-primary--disabled {
+.btn-primary:disabled {
   background-color: #d1d5db;
   cursor: not-allowed;
 }
 
-/* status pills (si utilisés dans le modal) */
 .status-pill {
   display: inline-flex;
   align-items: center;

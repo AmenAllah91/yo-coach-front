@@ -1,7 +1,12 @@
 <app-header></app-header>
-<app-sidebar (sidebarToggle)="handleSidebarToggle($event)"></app-sidebar>
 
-<div [ngClass]="{
-  'sidebar-open': isSidebarOpen}" class="content">
-  <router-outlet></router-outlet>
+<div class="layout-body">
+  <!-- Spacer fantôme qui pousse le contenu -->
+  <div class="sidebar-spacer" [class.closed]="!isSidebarOpen"></div>
+
+  <app-sidebar (sidebarToggle)="handleSidebarToggle($event)"></app-sidebar>
+
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
 </div>

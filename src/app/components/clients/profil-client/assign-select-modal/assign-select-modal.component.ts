@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-export type AssignKind = 'WORKOUT' | 'NUTRITION';
-
+export type AssignKind = 'WORKOUT' | 'NUTRITION' | 'CHECKIN';
 @Component({
   selector: 'app-assign-select-modal',
   standalone: true,
@@ -19,32 +18,32 @@ export class AssignSelectModalComponent {
   @Output() createClick = new EventEmitter<void>();
 
   get title(): string {
-    return this.kind === 'WORKOUT'
-      ? 'Assign Workout Program'
-      : 'Assign Nutrition Program';
+    return this.kind === 'WORKOUT' ? 'Assign Workout Program'
+      : this.kind === 'NUTRITION' ? 'Assign Nutrition Program'
+        : 'Add Check-in Form'; // ← CHECKIN
   }
 
   get existingTitle(): string {
-    return this.kind === 'WORKOUT'
-      ? 'Existing Programs'
-      : 'Existing Nutrition Programs';
+    return this.kind === 'WORKOUT' ? 'Existing Programs'
+      : this.kind === 'NUTRITION' ? 'Existing Nutrition Programs'
+        : 'Existing Forms'; // ← CHECKIN
   }
 
   get existingSubtitle(): string {
-    return this.kind === 'WORKOUT'
-      ? 'Choose from your program library'
-      : 'Choose from your nutrition library';
+    return this.kind === 'WORKOUT' ? 'Choose from your program library'
+      : this.kind === 'NUTRITION' ? 'Choose from your nutrition library'
+        : 'Choose from your form library'; // ← CHECKIN
   }
 
   get createTitle(): string {
-    return this.kind === 'WORKOUT'
-      ? 'Create New Program'
-      : 'Create New Nutrition Program';
+    return this.kind === 'WORKOUT' ? 'Create New Program'
+      : this.kind === 'NUTRITION' ? 'Create New Nutrition Program'
+        : 'Create New Form'; // ← CHECKIN
   }
 
   get createSubtitle(): string {
-    return this.kind === 'WORKOUT'
-      ? 'Build a custom program'
-      : 'Build a custom plan';
+    return this.kind === 'WORKOUT' ? 'Build a custom program'
+      : this.kind === 'NUTRITION' ? 'Build a custom plan'
+        : 'Build a custom check-in form'; // ← CHECKIN
   }
 }
