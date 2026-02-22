@@ -60,6 +60,8 @@ export interface Form {
   status: FormStatus;
   updatedAt?: string;
   createdAt?: string;
+  schedule?: FormSchedule | null;
+
 }
 
 export interface PageResponse<T> {

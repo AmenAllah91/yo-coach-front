@@ -3,8 +3,13 @@ import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {FormDetails, FormsApiService} from "../services/forms-api.service";
-import {SubmissionPayload, SubmissionsApiService, UiAnswer} from "../services/submissions-api.service";
+import {SubmissionsApiService} from "../services/submissions-api.service";
 import {AssignmentsApiService} from "../services/assignments-api.service";
+import {Answer, QuestionType, SubmissionPayload} from "../../../models/forms.model";
+
+function assertNever(x: never): never {
+  throw new Error('Unexpected value: ' + JSON.stringify(x));
+}
 
 @Component({
   selector: 'app-assignment-fill',
@@ -22,7 +27,7 @@ export class AssignmentFillComponent implements OnInit {
   assignmentId!: string;
   form!: FormDetails;
 
-  answers: UiAnswer[] = [];
+  answers: Answer[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -49,22 +54,26 @@ export class AssignmentFillComponent implements OnInit {
             this.answers = form.questions
               .slice()
               .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-              .map(q => {
+              .map((q): Answer => {
                 switch (q.type) {
                   case 'MULTIPLE_CHOICE':
-                    return { questionId: q.id, type: 'MULTIPLE_CHOICE', selectedOptionId: null } as UiAnswer;
+                    return { questionId: q.id, type: QuestionType.MULTIPLE_CHOICE, selectedOptionId: null };
+
                   case 'STAR_RATING':
-                    return { questionId: q.id, type: 'STAR_RATING', rating: null } as UiAnswer;
+                    return { questionId: q.id, type: QuestionType.STAR_RATING, rating: null };
+
                   case 'YES_NO':
-                    return { questionId: q.id, type: 'YES_NO', yes: null } as UiAnswer;
+                    return { questionId: q.id, type: QuestionType.YES_NO, yes: null };
+
                   case 'TEXT':
-                    return { questionId: q.id, type: 'TEXT', text: null } as UiAnswer;
+                    return { questionId: q.id, type: QuestionType.TEXT, text: null };
+
                   case 'DATE':
-                    return { questionId: q.id, type: 'DATE', date: null } as UiAnswer;
-                  default:
-                    // sécurité : si jamais un type non supporté arrive
-                    return { questionId: q.id, type: 'TEXT', text: null } as UiAnswer;
+                    return { questionId: q.id, type: QuestionType.DATE, date: null };
                 }
+
+                // ✅ if backend sends a new type, you’ll see it immediately
+                return assertNever(q.type as never);
               });
             this.loading.set(false);
           },
@@ -84,22 +93,28 @@ export class AssignmentFillComponent implements OnInit {
     this.submitting.set(true);
     this.error.set(null);
 
-    const payload = {
-      answers: this.answers.map(a => {
-        // on envoie uniquement les champs utiles
+    const payload: SubmissionPayload = {
+      answers: this.answers.map((a): Answer => {
         switch (a.type) {
-          case 'MULTIPLE_CHOICE':
-            return { questionId: a.questionId, type: a.type, selectedOptionId: a.selectedOptionId };
-          case 'STAR_RATING':
-            return { questionId: a.questionId, type: a.type, rating: a.rating };
-          case 'YES_NO':
-            return { questionId: a.questionId, type: a.type, yes: a.yes };
-          case 'TEXT':
-            return { questionId: a.questionId, type: a.type, text: a.text };
-          case 'DATE':
-            return { questionId: a.questionId, type: a.type, date: a.date };
+          case QuestionType.MULTIPLE_CHOICE:
+            return { questionId: a.questionId, type: a.type, selectedOptionId: a.selectedOptionId ?? null };
+
+          case QuestionType.STAR_RATING:
+            return { questionId: a.questionId, type: a.type, rating: a.rating ?? null };
+
+          case QuestionType.YES_NO:
+            return { questionId: a.questionId, type: a.type, yes: a.yes ?? null };
+
+          case QuestionType.TEXT:
+            return { questionId: a.questionId, type: a.type, text: a.text ?? null };
+
+          case QuestionType.DATE:
+            return { questionId: a.questionId, type: a.type, date: a.date ?? null };
         }
-      })
+
+        // ✅ TS exhaustive check
+        return assertNever(a);
+      }),
     };
 
     this.submissionsApi.submit(this.assignmentId, payload).subscribe({

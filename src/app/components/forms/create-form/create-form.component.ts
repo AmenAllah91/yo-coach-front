@@ -59,7 +59,6 @@ export class CreateFormComponent implements OnInit {
   showPreview = false;
   showQuestionSidebar = false;
   showInSignup   = false;
-  scheduleEndDate: string = '';
   // fields
   formTitle = 'Form Title';
   detailsTitle = 'Form Title'; // <-- IMPORTANT (ngModel)
@@ -67,8 +66,7 @@ export class CreateFormComponent implements OnInit {
 
   questions: QuestionItem[] = [];
 
-  // schedule (statique pour l’instant)
-  scheduleFrequency: ScheduleFrequency = 'daily';
+  scheduleFrequency: ScheduleFrequency | null = null;
   scheduleFrequencyOptions = [
     { id: 'daily' as ScheduleFrequency, label: 'Daily' },
     { id: 'weekly' as ScheduleFrequency, label: 'Weekly' },
@@ -76,15 +74,14 @@ export class CreateFormComponent implements OnInit {
     { id: 'monthly' as ScheduleFrequency, label: 'Monthly' },
   ];
   scheduleWeekDays: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  dailySelectedDays: string[] = ['Mon'];
-  weeklySelectedDay: string = 'Mon';
+  dailySelectedDays: string[] = [];
+  weeklySelectedDay: string | null = null;
   biweeklyWeekOption: BiweeklyWeekOption = '1-3';
-  biweeklySelectedDay: string = 'Mon';
-  monthlyMode: MonthlyMode = 'specific';
+  biweeklySelectedDay: string | null = null;
+  monthlyMode: MonthlyMode | null = null;
   monthDays: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
-  monthlyDay: number = 10;
-  scheduleTime: string = '09:00';
-  scheduleTouched = false;
+  monthlyDay: number | null = null;
+  scheduleTime: string = '';
 
   questionTypes = [
     { id: 'multiple-choice' as QuestionType, label: 'Multiple Choice' },
@@ -223,7 +220,6 @@ export class CreateFormComponent implements OnInit {
       }));
 
     if (form.schedule) {
-      this.scheduleTouched = true;
       this.scheduleFrequency =
         form.schedule.frequency.toLowerCase() as any;
 
@@ -298,35 +294,42 @@ export class CreateFormComponent implements OnInit {
         : [],
     }));
 
-    const schedule: FormSchedule | undefined = this.scheduleTouched
-      ? {
+    let schedule: FormSchedule | undefined;
+
+// ✅ Only send schedule if user provided BOTH frequency and time
+    if (this.scheduleFrequency && this.scheduleTime) {
+      schedule = {
         frequency: this.scheduleFrequency.toUpperCase() as any,
         time: this.scheduleTime,
+
         daysOfWeek:
           this.scheduleFrequency === 'daily'
             ? this.dailySelectedDays.map(d => this.toBeWeekday(d))
-            : this.scheduleFrequency === 'weekly'
+            : this.scheduleFrequency === 'weekly' && this.weeklySelectedDay
               ? [this.toBeWeekday(this.weeklySelectedDay)]
-              : this.scheduleFrequency === 'biweekly'
+              : this.scheduleFrequency === 'biweekly' && this.biweeklySelectedDay
                 ? [this.toBeWeekday(this.biweeklySelectedDay)]
                 : undefined,
+
         biweeklyWeeks: this.scheduleFrequency === 'biweekly'
           ? this.toBeBiweeklyWeeks(this.biweeklyWeekOption)
           : undefined,
-        monthlyMode: this.scheduleFrequency === 'monthly'
+
+        monthlyMode: this.scheduleFrequency === 'monthly' && this.monthlyMode
           ? (this.monthlyMode.toUpperCase() as any)
           : undefined,
+
         monthlyDay: (this.scheduleFrequency === 'monthly' && this.monthlyMode === 'specific')
-          ? this.monthlyDay
+          ? (this.monthlyDay ?? undefined)
           : undefined,
-      }
-      : undefined; // ✅ not touched => omit
+      };
+    }
 
     return {
       title,
       questions: questionsBE,
       status: 'DRAFT',
-      ...(schedule ? { schedule } : {}) // ✅ schedule omitted if undefined
+      ...(schedule ? { schedule } : {})
     };
   }
 
@@ -350,21 +353,33 @@ export class CreateFormComponent implements OnInit {
       });
   }
 
-  // ===== schedule helpers (tu peux garder ton code existant si tu veux) =====
   setScheduleFrequency(freq: ScheduleFrequency): void {
-    this.scheduleTouched = true;
+    if (this.scheduleFrequency === freq) {
+      this.scheduleFrequency = null;
+
+      this.dailySelectedDays = [];
+      this.weeklySelectedDay = null;
+      this.biweeklySelectedDay = null;
+      this.monthlyMode = null;
+      this.monthlyDay = null;
+      this.scheduleTime = '';
+      return;
+    }
+
     this.scheduleFrequency = freq;
-    if (freq === 'daily') this.dailySelectedDays = [...this.scheduleWeekDays];
-    if (freq !== 'daily' && this.dailySelectedDays.length === 0) this.dailySelectedDays = ['Mon'];
+
+    this.dailySelectedDays = [];
+    this.weeklySelectedDay = null;
+    this.biweeklySelectedDay = null;
+    this.monthlyMode = null;
+    this.monthlyDay = null;
   }
 
   setBiweeklyWeek(option: BiweeklyWeekOption): void {
-    this.scheduleTouched = true;
     this.biweeklyWeekOption = option;
   }
 
   setMonthlyMode(mode: MonthlyMode): void {
-    this.scheduleTouched = true;
     this.monthlyMode = mode;
   }
 
@@ -386,7 +401,6 @@ export class CreateFormComponent implements OnInit {
   }
 
   onDayClick(day: string): void {
-    this.scheduleTouched = true;
     switch (this.scheduleFrequency) {
       case 'daily':
         this.dailySelectedDays = this.dailySelectedDays.includes(day)

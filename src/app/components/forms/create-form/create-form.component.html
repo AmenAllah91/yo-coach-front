@@ -254,7 +254,7 @@
         <section class="sched-section" *ngIf="scheduleFrequency === 'monthly' && monthlyMode === 'specific'">
           <h2 class="sched-label">Day of Month</h2>
           <div class="sched-select-wrap">
-            <select class="sched-select" name="monthlyDay" [(ngModel)]="monthlyDay" (ngModelChange)="scheduleTouched = true">
+            <select class="sched-select" name="monthlyDay" [(ngModel)]="monthlyDay" >
               <option *ngFor="let d of monthDays" [ngValue]="d">{{ ordinal(d) }}</option>
             </select>
           </div>
@@ -282,18 +282,7 @@
               <div class="sched-input-wrap">
                 <i class="fa-regular fa-clock sched-input-icon"></i>
                 <input type="time" class="sched-input" name="scheduleTime"
-                       [(ngModel)]="scheduleTime" (ngModelChange)="scheduleTouched = true" />
-              </div>
-            </div>
-            <div class="sched-field">
-              <h2 class="sched-label">
-                End Date
-                <span class="sched-label-hint">— stops sending after</span>
-              </h2>
-              <div class="sched-input-wrap">
-                <i class="fa-regular fa-calendar sched-input-icon"></i>
-                <input type="date" class="sched-input" name="scheduleEndDate"
-                       [(ngModel)]="scheduleEndDate" (ngModelChange)="scheduleTouched = true" />
+                       [(ngModel)]="scheduleTime"  />
               </div>
             </div>
           </div>

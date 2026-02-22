@@ -3,8 +3,12 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 
-export type AssignmentStatus = 'ASSIGNED' | 'OPENED' | 'SUBMITTED' | 'CANCELED';
-
+export type AssignmentStatus =
+  | 'ASSIGNED'
+  | 'OPENED'
+  | 'SUBMITTED'
+  | 'REVIEWED'
+  | 'CANCELED';
 export interface FormAssignment {
   id: string;
   formId: string;
@@ -15,6 +19,7 @@ export interface FormAssignment {
   openedAt?: string;
   submittedAt?: string;
   dueAt?: string;
+  endDate?: string | null;
 }
 export interface BulkAssignResult {
   created: FormAssignment[];
@@ -40,6 +45,12 @@ export interface PageResponse<T> {
   number: number; // page index (0-based)
   size: number;
 }
+
+export interface AssignFormRequest {
+  assigneeIds: string[];
+  dueDate?: string | null;
+  endDate?: string | null;   // ✅ ADD THIS
+}
 @Injectable({ providedIn: 'root' })
 export class AssignmentsApiService {
   private readonly baseUrl = `${environment.baseApiUrl}/api/v1/assignments`;
@@ -58,10 +69,11 @@ export class AssignmentsApiService {
   cancel(assignmentId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${assignmentId}`);
   }
-  bulkAssign(formId: string, assigneeIds: string[]) {
+
+  bulkAssign(formId: string, body: AssignFormRequest) {
     return this.http.post<BulkAssignResult>(
       `${this.baseUrl}/bulk/by-form/${formId}`,
-      { assigneeIds }
+      body
     );
   }
 
@@ -102,4 +114,10 @@ export class AssignmentsApiService {
     return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
   }
 
+  reviewAssignment(assignmentId: string, feedback: string | null) {
+    return this.http.post<FormAssignment>(
+      `${this.baseUrl}/${encodeURIComponent(assignmentId)}/review`,
+      { feedback }
+    );
+  }
 }

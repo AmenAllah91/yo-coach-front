@@ -2,17 +2,11 @@ import {Component, OnInit} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize } from 'rxjs';
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
 import { FormsApiService, FormDetails } from '../services/forms-api.service';
-
-export enum QuestionType {
-  MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
-  STAR_RATING = 'STAR_RATING',
-  YES_NO = 'YES_NO',
-  TEXT = 'TEXT',
-  DATE = 'DATE'
-}
+import {SubmissionsApiService} from "../services/submissions-api.service";
+import {Answer, QuestionType, Submission} from "../../../models/forms.model";
 
 export interface OptionItem {
   id: string;
@@ -44,15 +38,6 @@ export interface Question {
   maxDate?: string;
 }
 
-export interface Answer {
-  questionId: string;
-  type: QuestionType;
-  selectedOptionId?: string;
-  rating?: number;
-  yes?: boolean;
-  text?: string;
-  date?: string;
-}
 
 interface ClientData {
   id: string;
@@ -111,7 +96,8 @@ export class ManageCheckinsComponent implements OnInit{
 
   constructor(
     private assignmentsApi: AssignmentsApiService,
-    private formsApi: FormsApiService
+    private formsApi: FormsApiService,
+    private submissionsApi: SubmissionsApiService
   ) {}
 
   ngOnInit(): void {
@@ -127,6 +113,7 @@ export class ManageCheckinsComponent implements OnInit{
       .subscribe({
         next: (res) => {
           this.assignments = res.content ?? [];
+          console.log(this.assignments);
           this.clients = this.assignments.map(a => this.assignmentToClient(a));
         },
         error: (err) => {
@@ -149,15 +136,13 @@ export class ManageCheckinsComponent implements OnInit{
   }
 
   private mapAssignmentToClientStatus(a: FormAssignment): ClientStatus {
-    // canceled -> hide or treat separately (here we exclude it)
     if (a.status === 'CANCELED') return 'upcoming';
 
-    // submitted => to_review or reviewed
-    if (a.submittedAt) {
-      const sub = new Date(a.submittedAt).getTime();
-      const op = a.openedAt ? new Date(a.openedAt).getTime() : 0;
-      return op > sub ? 'reviewed' : 'to_review';
-    }
+    // ✅ reviewed comes from backend status
+    if (a.status === 'REVIEWED') return 'reviewed';
+
+    // submitted but not reviewed yet
+    if (a.status === 'SUBMITTED' || a.submittedAt) return 'to_review';
 
     // not submitted: due_today / overdue / upcoming
     if (!a.dueAt) return 'upcoming';
@@ -165,7 +150,6 @@ export class ManageCheckinsComponent implements OnInit{
     const due = new Date(a.dueAt);
     const now = new Date();
 
-    // compare date-only
     const due0 = new Date(due); due0.setHours(0,0,0,0);
     const now0 = new Date(now); now0.setHours(0,0,0,0);
 
@@ -173,7 +157,6 @@ export class ManageCheckinsComponent implements OnInit{
     if (due0.getTime() < now0.getTime()) return 'overdue';
     return 'upcoming';
   }
-
   private formatDueDate(iso?: string): string {
     if (!iso) return '';
     return this.formatDate(iso);
@@ -252,37 +235,45 @@ export class ManageCheckinsComponent implements OnInit{
   }
 
   openCheckInModal(client: ClientData) {
-    // find the assignment by client.id (assignment id)
     const assignment = this.assignments.find(a => a.id === client.id);
     if (!assignment) return;
 
     this.selectedClient = client;
     this.isModalOpen = true;
 
-    // mode
     this.modalMode = (client.status === 'to_review' || client.status === 'reviewed') ? 'view' : 'preview';
 
-    // ✅ fetch form details to show title + questions
+    // 1) load form questions
     this.formsApi.getFormById(assignment.formId).subscribe({
       next: (form: FormDetails) => {
         if (!this.selectedClient) return;
+
         this.selectedClient.formType = form.title;
         this.selectedClient.formName = form.title;
 
-        // adapt mapping if your FormDetails uses QuestionBE
         this.selectedClient.questions = (form.questions ?? []).map(q => ({
           id: q.id,
-          type: q.type as any,     // or map to your enum if needed
+          type: q.type as QuestionType, // ✅ now it matches
           label: q.label,
           required: q.required,
           order: q.order,
           options: (q.options ?? []).map(o => ({ id: o.id, label: o.label }))
         }));
-      },
-      error: () => {
-        // keep modal open but show fallback title
       }
     });
+
+    // 2) ✅ if submitted, load submission answers
+    if (assignment.submittedAt) {
+      this.submissionsApi.getByAssignmentId(assignment.id).subscribe({
+        next: (sub: Submission) => {
+          if (!this.selectedClient) return;
+
+          // ✅ NOW THIS WORKS (same Answer type)
+          this.selectedClient.answers = sub.answers ?? [];
+          this.selectedClient.submittedDate = sub.submittedAt ? this.formatDate(sub.submittedAt) : undefined;
+        }
+      });
+    }
   }
 
 
@@ -308,22 +299,42 @@ export class ManageCheckinsComponent implements OnInit{
 
   isStarFilled(questionId: string, starValue: number): boolean {
     const answer = this.getSubmittedAnswer(questionId);
-    return starValue <= (answer?.rating || 0);
+    if (!answer) return false;
+
+    if (answer.type !== QuestionType.STAR_RATING) return false;
+
+    return starValue <= (answer.rating ?? 0);
   }
 
-  // Action pour marquer comme reviewed avec feedback
   markAsReviewed() {
     if (!this.selectedClient) return;
 
-    console.log('Marking as reviewed:', {
-      clientId: this.selectedClient.id,
-      feedback: this.coachFeedback
+    const assignmentId = this.selectedClient.id;
+    const feedback = (this.coachFeedback ?? '').trim() || null;
+
+    this.loading = true;
+    this.error = null;
+
+    this.assignmentsApi.reviewAssignment(assignmentId, feedback).subscribe({
+      next: (updated) => {
+        const idx = this.assignments.findIndex(a => a.id === updated.id);
+        if (idx >= 0) this.assignments[idx] = updated;
+
+        this.clients = this.assignments.map(a => this.assignmentToClient(a));
+
+        if (this.selectedClient) {
+          this.selectedClient.status = 'reviewed';
+          this.selectedClient.coachFeedback = feedback ?? undefined;
+        }
+
+        this.loading = false;
+        this.closeModal();
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err?.error?.message ?? 'Failed to mark as reviewed.';
+      }
     });
-
-    // TODO: Appel API pour enregistrer le feedback et changer le statut
-    // this.checkInService.markAsReviewed(this.selectedClient.id, this.coachFeedback).subscribe(...)
-
-    this.closeModal();
   }
 
   // helpers style/status
