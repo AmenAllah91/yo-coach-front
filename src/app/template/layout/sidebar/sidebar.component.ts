@@ -23,7 +23,7 @@ import { ROUTES } from './sidebar-items';
   styleUrls: ['./sidebar.component.scss'],
 })
 export class SidebarComponent implements OnInit {
-  isExpanded = false;
+  isExpanded = true;
   sidebarItems: RouteInfo[] = [];
   listMaxHeight = '100%';
   activeItem: any = null;

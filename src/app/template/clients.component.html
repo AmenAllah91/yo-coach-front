@@ -34,8 +34,9 @@
       </div>
 
       <div class="table-body">
-        <div class="client-row" *ngFor="let client of filteredClients">
-          <div class="col-client">
+        <div class="client-row" *ngFor="let client of filteredClients"
+             (click)="viewProfile(client)"
+             style="cursor: pointer;">          <div class="col-client">
             <div class="client-info">
               <div class="client-avatar">
                 <img [src]="'https://ui-avatars.com/api/?name=' + client.firstName + '+' + client.lastName + '&background=0ea5e9&color=fff'"
@@ -68,7 +69,7 @@
 
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === client.id">
-              <button class="action-btn" (click)="toggleDropdown(client.id, $event)">
+              <button class="action-btn" (click)="toggleDropdown(client.id, $event); $event.stopPropagation()">
                 <i-feather name="more-horizontal"></i-feather>
               </button>
               <div class="dropdown-menu">

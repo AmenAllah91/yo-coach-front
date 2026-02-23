@@ -19,11 +19,11 @@ import {NgClass} from "@angular/common";
 })
 export class MainLayoutComponent{
   public config!: InConfiguration;
-  isSidebarOpen = false;
 
-  handleSidebarToggle(state: boolean): void {
-    this.isSidebarOpen = state;
-  }
   constructor(){}
+  isSidebarOpen = true; // ← démarre ouvert
 
+  handleSidebarToggle(isOpen: boolean) {
+    this.isSidebarOpen = isOpen;
+  }
 }

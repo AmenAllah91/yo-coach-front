@@ -1,20 +1,17 @@
-// Variables
 $sidebar-width: 15rem;
 $sidebar-collapsed-width: 56px;
-$primary-color: #3c4fe0;   // bleu principal (onglets / logo)
-$primary-light: #edf1fd;   // bleu très clair
-$text-color: #4f5b6b;
-$text-muted: #a0aec0;
-$hover-bg: #f5f7f9;
-$border-color: #e3e8ef;
 $transition-speed: 0.3s;
-$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
 $shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$radius-sm: 4px;
 $radius-md: 6px;
-$radius-lg: 8px;
-$sidebar-bg-dark: #111214;   // fond proche de la capture Hevy Coach
-$sidebar-border-dark: #1f2428;
+
+// Fond sombre Hevy Coach
+$sidebar-bg: #111214;
+$sidebar-border: #1f2428;
+$text-light: #c5c6c9;
+$text-muted: #6b7280;
+$hover-bg: rgba(255, 255, 255, 0.06);
+$active-bg: rgba(255, 255, 255, 0.10);
+$accent: #44b4df;
 
 :host {
   display: contents;
@@ -25,11 +22,11 @@ $sidebar-border-dark: #1f2428;
   position: fixed;
   top: 12px;
   left: 12px;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: none;
-  background: white;
-  border-radius: 50%;
+  background: #1f2428;
+  border-radius: 8px;
   box-shadow: $shadow-md;
   cursor: pointer;
   z-index: 1050;
@@ -39,19 +36,14 @@ $sidebar-border-dark: #1f2428;
   transition: all 0.2s ease;
 
   &:hover {
-    background: $hover-bg;
-    transform: translateY(-2px);
+    background: #2a2f35;
   }
-
-
 
   i-feather {
-    width: 20px;
-    height: 20px;
-    color: $text-color;
+    width: 18px;
+    height: 18px;
+    color: $text-light;
   }
-
-
 }
 
 // Sidebar Container
@@ -61,28 +53,18 @@ $sidebar-border-dark: #1f2428;
   top: 0;
   bottom: 0;
   width: $sidebar-width;
-  background: $sidebar-bg-dark;           // fond sombre style Hevy Coach
-  border-right: 1px solid $border-color;
+  background: $sidebar-bg;
+  border-right: 1px solid $sidebar-border;
   display: flex;
   flex-direction: column;
   transition: width $transition-speed ease, transform $transition-speed ease;
   z-index: 1000;
 
-  // Collapsed State
   &.collapsed {
     width: $sidebar-collapsed-width;
 
-    .sidebar-header {
-      padding: 0;
-      justify-content: center;
-    }
 
-    .logo {
-      height: 50px !important;
-      width: auto !important;
-      object-fit: contain;
-      padding: 0; // retire le padding pour éviter le décalage
-    }
+
 
     .nav-label,
     .nav-badge,
@@ -105,8 +87,6 @@ $sidebar-border-dark: #1f2428;
     }
   }
 
-  // Mobile Responsive
-
   transform: translateX(-100%);
 
   &.expanded {
@@ -114,34 +94,20 @@ $sidebar-border-dark: #1f2428;
   }
 }
 
-// Sidebar Header
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all $transition-speed ease;
 
-  .sidebar.collapsed & {
-    min-height: 64px;    // Smaller height when collapsed
-  }
-}
-
-.logo {
-padding-bottom: 5px;
-}
 
 // Sidebar Navigation
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 12px;
+  padding: 12px 10px;
 
   &::-webkit-scrollbar {
     width: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.08);
     border-radius: 4px;
   }
 
@@ -157,51 +123,59 @@ padding-bottom: 5px;
 }
 
 .nav-item {
-  margin: 4px 0;
+  margin: 2px 0;
 }
+
+// Active states
 .nav-item.active .nav-link {
-  background: #f5f7f9;
-  color: #44b4df;
+  background: $active-bg;
+  color: #ffffff;
+
+  .nav-icon {
+    color: #ffffff;
+  }
 }
 
 .submenu-item.active .submenu-link {
-  background: #f5f7f9;
-  color: #44b4df;
+  background: $active-bg;
+  color: #ffffff;
+
+  .submenu-icon {
+    color: #ffffff;
+  }
 }
 
 // Group Titles
 .nav-group-title {
-  padding: 16px 12px 8px;
-  font-size: 11px;
+  padding: 20px 12px 6px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   color: $text-muted;
-  letter-spacing: 0.5px;
-  transition: padding $transition-speed ease;
+  letter-spacing: 0.8px;
 }
 
 // Nav Links
 .nav-link {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  color: #c5c6c9;
-  font-size: 14px;
-  font-weight: 450;
+  padding: 9px 12px;
+  color: $text-light;
+  font-size: 13.5px;
+  font-weight: 400;
   border-radius: $radius-md;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
   text-decoration: none;
   position: relative;
 
   &:hover {
     background: $hover-bg;
-    color: #44b4df;
+    color: #ffffff;
 
     .nav-icon {
-      color: #44b4df;
+      color: #ffffff;
     }
   }
-
 
   &.has-submenu {
     padding-right: 40px;
@@ -209,11 +183,12 @@ padding-bottom: 5px;
 }
 
 .nav-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   margin-right: 12px;
-  color: #c5c6c9;
+  color: $text-light;
   transition: color 0.2s ease, margin $transition-speed ease;
+  flex-shrink: 0;
 }
 
 .nav-label {
@@ -221,7 +196,6 @@ padding-bottom: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: opacity $transition-speed ease;
 }
 
 .nav-badge {
@@ -233,20 +207,19 @@ padding-bottom: 5px;
   padding: 0 6px;
   font-size: 11px;
   font-weight: 600;
-  color: #44b4df;
-  background-color: $primary-light;
+  color: #ffffff;
+  background-color: rgba(68, 180, 223, 0.15);
   border-radius: 10px;
   margin-left: 8px;
-  transition: opacity $transition-speed ease;
 }
 
 .submenu-arrow {
   position: absolute;
   right: 12px;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   color: $text-muted;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
 
   &.expanded {
     transform: rotate(180deg);
@@ -264,44 +237,43 @@ padding-bottom: 5px;
 
   &.expanded {
     max-height: 1000px;
-    margin-top: 4px;
-    margin-bottom: 8px;
+    margin-top: 2px;
+    margin-bottom: 4px;
   }
 }
 
 .submenu-item {
-  margin: 2px 0;
+  margin: 1px 0;
 }
 
 .submenu-link {
   display: flex;
   align-items: center;
-  padding: 8px 12px 8px 44px;
-  color: #c5c6c9;
+  padding: 8px 12px 8px 42px;
+  color: $text-light;
   font-size: 13px;
   font-weight: 400;
   border-radius: $radius-md;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
   text-decoration: none;
 
   &:hover {
     background: $hover-bg;
-    color: #44b4df;
+    color: #ffffff;
 
     .submenu-icon {
-      color: #44b4df;
+      color: #ffffff;
     }
   }
-
-
 }
 
 .submenu-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   margin-right: 10px;
-  color: white;
+  color: $text-muted;
   transition: color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .submenu-label {
@@ -311,41 +283,47 @@ padding-bottom: 5px;
   text-overflow: ellipsis;
 }
 
-// Animation
+// Animation submenu items
 @keyframes slideIn {
-  from {
-    transform: translateX(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .submenu.expanded .submenu-item {
-  animation: slideIn 0.3s ease forwards;
+  animation: slideIn 0.2s ease forwards;
 
   @for $i from 1 through 10 {
     &:nth-child(#{$i}) {
-      animation-delay: #{$i * 0.05}s;
+      animation-delay: #{$i * 0.04}s;
     }
   }
 }
 
-// Update collapsed state logo styles
-.sidebar.collapsed {
-  .logo {
-    height: 30px !important;  // Smaller but still visible when collapsed
-    width: 30px !important;
-    padding: 5px;
-  }
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 56px; // 56px gauche = place pour le toggle fixe
+  border-bottom: 1px solid $sidebar-border;
+  height: 70px;
+  flex-shrink: 0;
 }
 
-.sidebar {
-  top: -15px;              // identique à la hauteur de la navbar
+.logo {
+  height: 200px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  margin-top: -20px;
 }
-.nav-link:active {
-  background: #fff;
-  color: #000;
+
+.sidebar.collapsed {
+  .sidebar-header {
+    padding: 0;
+    justify-content: center;
+  }
+  .logo {
+    height: 24px;
+    max-width: 24px;
+  }
 }
