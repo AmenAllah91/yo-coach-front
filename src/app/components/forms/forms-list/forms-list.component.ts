@@ -19,9 +19,18 @@ import { switchMap } from 'rxjs/operators';
 export class FormsListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
-  // ── UI state ─────────────────────────────────────────────────────────────────
+  // ── UI state ──────────────────────────────────────────────────────────────────
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+
+  // ── View mode (Active / Archived) ─────────────────────────────────────────────
+  readonly viewMode = signal<'active' | 'archived'>('active');
+
+  setViewMode(mode: 'active' | 'archived'): void {
+    this.viewMode.set(mode);
+    this.pageIndex.set(0);
+    this.loadPage();
+  }
 
   // ── Pagination ────────────────────────────────────────────────────────────────
   readonly pageIndex = signal(0);
@@ -31,6 +40,10 @@ export class FormsListComponent implements OnInit, OnDestroy {
   readonly forms = computed(() => this.pageData()?.content ?? []);
   readonly totalPages = computed(() => this.pageData()?.totalPages ?? 0);
   readonly totalElements = computed(() => this.pageData()?.totalElements ?? 0);
+
+  // Counts for the toggle badges
+  readonly activeForms = computed(() => this.forms().filter(f => !(f as any).archived));
+  readonly archivedForms = computed(() => this.forms().filter(f => (f as any).archived));
 
   // ── Delete modal ──────────────────────────────────────────────────────────────
   readonly confirmOpen = signal(false);
@@ -48,7 +61,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
   readonly searchTerm = signal('');
   readonly selectedUserIds = signal<Set<string>>(new Set());
 
-  // Plain properties (pas des signals) pour éviter les soucis avec (change) + *ngIf
+  // Plain properties pour éviter les soucis avec (change) + *ngIf
   assignSelectAll = false;
   scheduleEnabled = false;
   scheduledDateValue = '';
@@ -67,6 +80,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   userId = sessionStorage.getItem('userId');
   endDateValue = '';
+
   constructor(
     private api: FormsApiService,
     private assignmentsApi: AssignmentsApiService,
@@ -99,16 +113,19 @@ export class FormsListComponent implements OnInit, OnDestroy {
   showSpecificDateSchedule(): boolean {
     return !this.selectedToAssign()?.schedule;
   }
+
   goToPrev(): void {
     if (this.pageIndex() <= 0) return;
     this.pageIndex.set(this.pageIndex() - 1);
     this.loadPage();
   }
+
   goToNext(): void {
     if (this.pageIndex() >= this.totalPages() - 1) return;
     this.pageIndex.set(this.pageIndex() + 1);
     this.loadPage();
   }
+
   changePageSize(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(0);
@@ -120,11 +137,13 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.selectedToDelete.set(form);
     this.confirmOpen.set(true);
   }
+
   closeDelete(): void {
     if (this.deleting()) return;
     this.confirmOpen.set(false);
     this.selectedToDelete.set(null);
   }
+
   confirmDelete(): void {
     const target = this.selectedToDelete();
     if (!target) return;
@@ -172,7 +191,6 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.selectedToAssign.set(null);
   }
 
-  /** Ferme le modal au clic sur l'overlay uniquement */
   onAssignOverlayClick(event: MouseEvent): void {
     if ((event.target as HTMLElement).classList.contains('am-overlay')) {
       this.closeAssign();
@@ -203,7 +221,6 @@ export class FormsListComponent implements OnInit, OnDestroy {
     return full || u.login || u.email || '(Sans nom)';
   }
 
-  /** Retourne le prénom pour les chips */
   getUserFirstName(u: UserDto): string {
     return (u.firstName ?? this.userLabel(u)).split(' ')[0];
   }
@@ -217,12 +234,10 @@ export class FormsListComponent implements OnInit, OnDestroy {
     if (next.has(u.id)) next.delete(u.id);
     else next.add(u.id);
     this.selectedUserIds.set(next);
-    // Sync select-all
     this.assignSelectAll =
       this.allUsers().length > 0 && this.allUsers().every(x => next.has(x.id));
   }
 
-  /** Select All / Deselect All */
   handleAssignSelectAll(): void {
     if (this.assignSelectAll) {
       this.selectedUserIds.set(new Set());

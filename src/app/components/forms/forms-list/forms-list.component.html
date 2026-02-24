@@ -1,18 +1,63 @@
-<div class="page">
+<div>
+  <!-- ══ PAGE HEADER ══ -->
   <div class="page-header">
     <button class="back-btn" type="button">
       <i-feather name="arrow-left"></i-feather>
     </button>
+
     <div class="header-content">
       <h1>Forms</h1>
       <p>Gérez vos formulaires et leurs versions.</p>
     </div>
-    <button class="primary-btn" type="button" (click)="onAdd()">
+
+    <!-- Segmented toggle Active / Archived -->
+    <div class="view-toggle">
+      <button
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'active'"
+        type="button"
+        (click)="setViewMode('active')"
+      >
+        Active
+        <span
+          class="view-toggle__badge"
+          [class.view-toggle__badge--blue]="viewMode() === 'active'"
+          [class.view-toggle__badge--gray]="viewMode() !== 'active'"
+        >{{ totalElements() }}</span>
+      </button>
+      <button
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'archived'"
+        type="button"
+        (click)="setViewMode('archived')"
+      >
+        Archived
+        <span
+          class="view-toggle__badge"
+          [class.view-toggle__badge--amber]="viewMode() === 'archived'"
+          [class.view-toggle__badge--gray]="viewMode() !== 'archived'"
+        >0</span>
+      </button>
+    </div>
+
+    <button
+      class="primary-btn"
+      type="button"
+      (click)="onAdd()"
+      *ngIf="viewMode() === 'active'"
+    >
       <i-feather name="plus"></i-feather>
       Ajouter
     </button>
   </div>
 
+  <!-- Archived info banner -->
+  <div class="archived-banner" *ngIf="viewMode() === 'archived'">
+    <i-feather name="archive" class="archived-banner__icon"></i-feather>
+    <span>Les formulaires archivés sont masqués des clients. Restaurez-en un pour le réactiver.</span>
+  </div>
+
+  <!-- ══ CONTENT ══ -->
   <div class="content">
     <div class="search-section">
       <div class="search-box">
@@ -84,8 +129,13 @@
                     <i-feather name="trash-2"></i-feather> Supprimer
                   </button>
                 </div>
-                <button *ngIf="openedActionsId() === f.id" class="dropdown-backdrop" type="button"
-                        (click)="closeActions()" aria-label="Fermer"></button>
+                <button
+                  *ngIf="openedActionsId() === f.id"
+                  class="dropdown-backdrop"
+                  type="button"
+                  (click)="closeActions()"
+                  aria-label="Fermer"
+                ></button>
               </div>
             </td>
           </tr>
@@ -100,7 +150,7 @@
       </div>
     </div>
 
-    <!-- DELETE MODAL -->
+    <!-- ══ DELETE MODAL ══ -->
     <div class="modal-backdrop" *ngIf="confirmOpen()" (click)="closeDelete()"></div>
     <div class="modal" *ngIf="confirmOpen()" role="dialog" aria-modal="true">
       <div class="modal__content">
@@ -122,13 +172,10 @@
 
   </div><!-- /content -->
 
-  <!-- ══════════════════════════════════════════
-       ASSIGN MODAL
-  ══════════════════════════════════════════ -->
+  <!-- ══ ASSIGN MODAL ══ -->
   <div class="am-overlay" *ngIf="assignOpen()" (click)="onAssignOverlayClick($event)">
     <div class="am-modal" role="dialog" aria-modal="true" aria-labelledby="am-title">
 
-      <!-- Header -->
       <div class="am-header">
         <div>
           <h3 class="am-title" id="am-title">Assign Form to Clients</h3>
@@ -139,7 +186,6 @@
         </button>
       </div>
 
-      <!-- Search -->
       <div class="am-search-bar">
         <div class="am-search-wrap">
           <i-feather name="search" class="am-search-icon"></i-feather>
@@ -153,16 +199,12 @@
         </div>
       </div>
 
-      <!-- Body scrollable -->
       <div class="am-body">
-
         <ng-container *ngIf="usersLoading()">
           <div class="am-state-row">Chargement des utilisateurs...</div>
         </ng-container>
 
         <ng-container *ngIf="!usersLoading()">
-
-          <!-- SELECT ALL -->
           <label class="am-item am-item--select-all" [class.am-item--selected]="assignSelectAll">
             <input type="checkbox" class="am-sr-only" [checked]="assignSelectAll" (change)="handleAssignSelectAll()" />
             <span class="am-checkbox" [class.am-checkbox--checked]="assignSelectAll">
@@ -171,7 +213,6 @@
             <span class="am-select-all-label">Select All Clients ({{ allUsers().length }})</span>
           </label>
 
-          <!-- Individual clients -->
           <div class="am-list">
             <label
               *ngFor="let u of filteredUsers()"
@@ -193,14 +234,10 @@
               Aucun utilisateur trouvé.
             </div>
           </div>
-
         </ng-container>
       </div>
 
-      <!-- Footer -->
       <div class="am-footer">
-
-        <!-- Chips des sélectionnés -->
         <div class="am-chips" *ngIf="selectedCount() > 0">
           <ng-container *ngFor="let u of filteredUsers()">
             <span *ngIf="isSelected(u)" class="am-chip">
@@ -212,28 +249,22 @@
           </ng-container>
         </div>
 
-        <!-- Erreur -->
         <div *ngIf="usersError()" class="am-error-row">{{ usersError() }}</div>
 
-        <!-- Schedule / EndDate -->
-
-        <!-- ✅ CASE 1: form.schedule is NULL → show checkbox + dueDate -->
         <div class="am-schedule" *ngIf="!selectedToAssign()?.schedule">
           <label class="am-schedule__row">
             <input type="checkbox" class="am-sr-only" [checked]="scheduleEnabled" (change)="toggleSchedule()" />
             <span class="am-checkbox am-checkbox--sm" [class.am-checkbox--checked]="scheduleEnabled">
-      <i-feather *ngIf="scheduleEnabled" name="check" class="am-check-icon"></i-feather>
-    </span>
+              <i-feather *ngIf="scheduleEnabled" name="check" class="am-check-icon"></i-feather>
+            </span>
             <span class="am-schedule__label">Schedule send for a specific date</span>
           </label>
-
           <div class="am-date-wrap" *ngIf="scheduleEnabled">
             <i-feather name="calendar" class="am-date-icon"></i-feather>
             <input class="am-date-input" type="date" [(ngModel)]="scheduledDateValue" />
           </div>
         </div>
 
-        <!-- ✅ CASE 2: form.schedule EXISTS → require endDate -->
         <div class="am-schedule" *ngIf="selectedToAssign()?.schedule">
           <div class="am-date-wrap">
             <i-feather name="calendar" class="am-date-icon"></i-feather>
@@ -244,7 +275,6 @@
           </div>
         </div>
 
-        <!-- Actions -->
         <div class="am-actions">
           <span class="am-count">{{ selectedCount() }} client{{ selectedCount() !== 1 ? 's' : '' }} selected</span>
           <div class="am-btns">
@@ -255,9 +285,9 @@
             </button>
           </div>
         </div>
+      </div>
 
-      </div><!-- /am-footer -->
-    </div><!-- /am-modal -->
-  </div><!-- /am-overlay -->
+    </div>
+  </div>
 
-</div><!-- /page -->
+</div>
