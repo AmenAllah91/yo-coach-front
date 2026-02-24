@@ -12,6 +12,7 @@ export type AssignmentStatus =
 export interface FormAssignment {
   id: string;
   formId: string;
+  formName?: string;
   ownerId: string;
   assigneeId: string;
   status: AssignmentStatus;
@@ -26,16 +27,6 @@ export interface BulkAssignResult {
   errors: Array<{ assigneeId: string; reason: string }>;
 }
 
-export interface FormAssignment {
-  id: string;
-  formId: string;
-  ownerId: string;
-  assigneeId: string;
-  status: AssignmentStatus;
-  assignedAt?: string;
-  openedAt?: string;
-  submittedAt?: string;
-}
 
 
 export interface PageResponse<T> {
@@ -104,6 +95,20 @@ export class AssignmentsApiService {
     return this.http.post<FormAssignment>(`${this.baseUrl}/${assignmentId}/open`, null);
   }
 
+  pageOwnerAssignmentsByAsigneeId(
+    page: number,
+    size: number,
+    sortBy = 'assignedAt',
+    direction: 'ASC' | 'DESC' = 'DESC',
+    assigneeId?: string,
+    status?: AssignmentStatus
+  ): Observable<PageResponse<FormAssignment>> {
+    const params: any = { page, size, sortBy, direction };
+    if (assigneeId) params.assigneeId = assigneeId;
+    if (status) params.status = status;
+
+    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
+  }
   pageOwnerAssignments(
     page: number,
     size: number,

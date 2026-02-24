@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import {catchError, forkJoin, of, Subject, takeUntil} from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
 import { FormDetails, FormsApiService, PageResponse } from "../services/forms-api.service";
@@ -61,7 +61,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
 
   // Expose enum for template if you need it (optional)
   QuestionType = QuestionType;
-
+  private readonly formNameMap = new Map<string, string>();
   constructor(
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
@@ -91,7 +91,12 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
       .pageMyAssignments(this.pageIndex(), this.pageSize(), 'assignedAt', 'DESC', undefined)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (res) => { this.pageData.set(res); this.loading.set(false); },
+        next: (res) => {
+          this.pageData.set(res);
+          this.loading.set(false);
+
+          this.attachFormNames(res.content ?? []);
+        },
         error: (err) => {
           this.loading.set(false);
           this.error.set(err?.error?.message ?? 'Erreur lors du chargement des affectations.');
@@ -99,6 +104,47 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
       });
   }
 
+  private attachFormNames(list: FormAssignment[]): void {
+    const ids = Array.from(new Set(list.map(a => a.formId).filter(Boolean)));
+
+    const missing = ids.filter(id => !this.formNameMap.has(String(id)));
+    if (missing.length === 0) {
+      this.applyFormNamesToPage();
+      return;
+    }
+
+    forkJoin(
+      missing.map(id =>
+        this.formsApi.getFormById(id).pipe(
+          takeUntil(this.destroy$),
+          catchError(() => of(null))
+        )
+      )
+    ).subscribe((forms: any[]) => {
+      forms.forEach((f: any, idx: number) => {
+        const id = String(missing[idx]);
+        const title = f?.title ?? f?.name ?? id;
+        this.formNameMap.set(id, title);
+      });
+
+      this.applyFormNamesToPage();
+    });
+  }
+
+  private applyFormNamesToPage(): void {
+    const pd = this.pageData();
+    if (!pd) return;
+
+    const updated = {
+      ...pd,
+      content: (pd.content ?? []).map(a => ({
+        ...a,
+        formName: this.formNameMap.get(String(a.formId)) ?? a.formName ?? a.formId
+      }))
+    };
+
+    this.pageData.set(updated);
+  }
   changePageSize(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(0);

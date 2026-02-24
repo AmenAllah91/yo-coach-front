@@ -2,11 +2,12 @@ import {Component, OnInit} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
-import { finalize } from 'rxjs';
+import {catchError, finalize, forkJoin, of} from 'rxjs';
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
 import { FormsApiService, FormDetails } from '../services/forms-api.service';
 import {SubmissionsApiService} from "../services/submissions-api.service";
 import {Answer, QuestionType, Submission} from "../../../models/forms.model";
+import {ClientService} from "../../../service/client.service";
 
 export interface OptionItem {
   id: string;
@@ -97,7 +98,8 @@ export class ManageCheckinsComponent implements OnInit{
   constructor(
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
-    private submissionsApi: SubmissionsApiService
+    private submissionsApi: SubmissionsApiService,
+    private clientService: ClientService
   ) {}
 
   ngOnInit(): void {
@@ -113,13 +115,76 @@ export class ManageCheckinsComponent implements OnInit{
       .subscribe({
         next: (res) => {
           this.assignments = res.content ?? [];
-          console.log(this.assignments);
+
           this.clients = this.assignments.map(a => this.assignmentToClient(a));
+
+          this.enrichClients(this.assignments);
         },
         error: (err) => {
           this.error = err?.error?.message ?? 'Failed to load assignments.';
         }
       });
+  }
+
+  private enrichClients(assignments: FormAssignment[]) {
+    const uniqueClientIds = Array.from(new Set(assignments.map(a => a.assigneeId).filter(Boolean)));
+    const uniqueFormIds = Array.from(new Set(assignments.map(a => a.formId).filter(Boolean)));
+
+    const clients$ = uniqueClientIds.length
+      ? forkJoin(
+        uniqueClientIds.map(id =>
+          this.clientService.getClientById(id).pipe(
+            catchError(() => of(null))
+          )
+        )
+      )
+      : of([]);
+
+    const forms$ = uniqueFormIds.length
+      ? forkJoin(
+        uniqueFormIds.map(id =>
+          this.formsApi.getFormById(id).pipe(
+            catchError(() => of(null))
+          )
+        )
+      )
+      : of([]);
+
+    forkJoin([clients$, forms$]).subscribe({
+      next: ([clients, forms]: any[]) => {
+        const clientMap = new Map<string, any>();
+        (clients ?? []).forEach((c: any) => {
+          if (c?.id) clientMap.set(String(c.id), c);
+        });
+
+        const formMap = new Map<string, any>();
+        (forms ?? []).forEach((f: any) => {
+          if (f?.id) formMap.set(String(f.id), f);
+        });
+
+        this.clients = this.clients.map(row => {
+          const assignment = this.assignments.find(a => a.id === row.id);
+          if (!assignment) return row;
+
+          const c = clientMap.get(String(assignment.assigneeId));
+          const f = formMap.get(String(assignment.formId));
+
+          const fullName = c
+            ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()
+            : row.name;
+
+          return {
+            ...row,
+            name: fullName || row.name,
+            avatar: c?.avatarUrl ?? c?.avatar ?? row.avatar,
+            formType: f?.title ?? f?.name ?? row.formType,
+            formName: f?.title ?? f?.name ?? row.formName,
+          };
+        });
+      },
+      error: () => {
+      }
+    });
   }
 
   private assignmentToClient(a: FormAssignment): ClientData {

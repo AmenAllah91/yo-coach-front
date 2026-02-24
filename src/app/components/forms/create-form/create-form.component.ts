@@ -338,6 +338,10 @@ export class CreateFormComponent implements OnInit {
     const payload = this.buildPayload();
     this.isSaving = true;
 
+    const returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+    const clientId = this.route.snapshot.queryParamMap.get('clientId');
+    const openAssign = this.route.snapshot.queryParamMap.get('openAssign') === '1';
+
     const req$ = this.formId
       ? this.api.updateForm(this.formId, payload)
       : this.api.createForm(payload);
@@ -345,7 +349,23 @@ export class CreateFormComponent implements OnInit {
     req$
       .pipe(finalize(() => (this.isSaving = false)))
       .subscribe({
-        next: () => this.router.navigate(['/forms']),
+        next: (created: any) => {
+          if (!this.formId && returnTo === 'client-profile' && clientId) {
+            const newFormId = created?.id ?? created?.formId ?? null;
+
+            this.router.navigate(['/clients/profil-client/', clientId], {
+              queryParams: {
+                tab: 'checkins',
+                openAssign: openAssign ? 1 : null,
+                preselectFormId: newFormId
+              },
+              queryParamsHandling: 'merge'
+            });
+            return;
+          }
+
+          this.router.navigate(['/forms']);
+        },
         error: (err) => {
           console.error(err);
           alert("Erreur lors de l'enregistrement.");

@@ -8,7 +8,7 @@ import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { ClientService } from '../../../service/client.service';
-
+import { switchMap } from 'rxjs/operators';
 @Component({
   selector: 'app-forms-list',
   standalone: true,
@@ -252,11 +252,15 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.usersError.set(null);
     const hasSchedule = !!form.schedule;
 
-    this.assignmentsApi.bulkAssign(form.id, {
-      assigneeIds: ids,
-      dueDate: (!hasSchedule && this.scheduleEnabled) ? this.scheduledDateValue : null,
-      endDate: hasSchedule ? this.endDateValue : null,
-    }).subscribe({
+    this.api.ensurePublished(form.id).pipe(
+      switchMap(() =>
+        this.assignmentsApi.bulkAssign(form.id, {
+          assigneeIds: ids,
+          dueDate: (!hasSchedule && this.scheduleEnabled) ? this.scheduledDateValue : null,
+          endDate: hasSchedule ? this.endDateValue : null,
+        })
+      )
+    ).subscribe({
       next: res => {
         const createdCount = res?.created?.length ?? 0;
         const errors = res?.errors ?? [];

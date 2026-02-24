@@ -1271,3 +1271,314 @@
     gap: 12px;
   }
 }
+/* ============================
+   PROFILE MODAL (FIX BLACK SCREEN)
+   ============================ */
+
+.pc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 20000; /* higher than any other overlay */
+}
+
+.pc-modal {
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  background: #fff;
+  color: #111827;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* If you kept your existing class names inside, you can keep them.
+   If you renamed them to pc-*, use these: */
+
+.pc-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+}
+
+.pc-modal-content {
+  padding: 16px 20px;
+  overflow: auto;
+  background: #fff;
+}
+
+.pc-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.pc-close-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  color: #6b7280;
+}
+.pc-close-button:hover { color: #111827; }
+
+
+/* ============================
+   MAKE PC MODAL LOOK LIKE ASSIGNMENTS
+   (no HTML changes needed)
+   ============================ */
+
+.pc-modal .modal-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  background: #fff;
+}
+
+.pc-modal .modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.pc-modal .modal-subtitle {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* close (x) */
+.pc-modal .close-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: #f3f4f6;
+  color: #111827;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.pc-modal .close-button:hover {
+  background: #e5e7eb;
+}
+
+/* body */
+.pc-modal .modal-content {
+  padding: 18px 22px;
+  background: #fff;
+  overflow: auto;
+  max-height: calc(90vh - 150px);
+}
+
+/* question layout */
+.pc-modal .question-block {
+  padding: 14px 0;
+  border-top: 1px solid #f3f4f6;
+}
+.pc-modal .question-block:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.pc-modal .question-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.pc-modal .answer-display {
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* little “pending” message style */
+.pc-modal .answer-display:has(*),
+.pc-modal .answer-display {
+  white-space: pre-line;
+}
+
+/* footer */
+.pc-modal .modal-footer {
+  padding: 14px 22px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pc-modal .btn-secondary {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pc-modal .btn-secondary:hover {
+  background: #f3f4f6;
+}
+/* ============================
+   ASSIGNED MODAL – QUESTIONS
+   ============================ */
+.pc-questions{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pc-question{
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 12px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04);
+}
+
+.pc-qnum{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #374151;
+  font-size: 13px;
+}
+
+.pc-question-top{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pc-qlabel{
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.35;
+}
+
+.pc-qtags{
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pc-tag{
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pc-tag-type{
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+.pc-tag-required{
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.pc-answer{
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.pc-answer--empty{
+  color: #6b7280;
+  font-style: italic;
+}
+
+.pc-answer--badge{
+  display: inline-flex;
+  width: fit-content;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.pc-yesno{
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+.pc-yesno.is-yes{
+  background: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.pc-yesno.is-no{
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.pc-stars{
+  display: flex;
+  gap: 4px;
+  padding: 6px 2px;
+}
+.pc-star{
+  font-size: 18px;
+  color: #d1d5db;
+}
+.pc-star.filled{
+  color: #f59e0b;
+}

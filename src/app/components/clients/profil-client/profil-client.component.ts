@@ -13,6 +13,13 @@ import { NutritionSelectionModalComponent } from './nutrition-selection-modal/nu
 import { WorkoutProgramSelectionModalComponent } from './workout-program-selection-modal/workout-program-selection-modal.component';
 import { AssignSelectModalComponent } from './assign-select-modal/assign-select-modal.component';
 import {FormSelectionModalComponent} from "./form-selection-modal/form-selection-modal.component";
+import {AssignmentsApiService, FormAssignment} from "../../forms/services/assignments-api.service";
+import {Subject, takeUntil} from "rxjs";
+import {FormDetails, FormsApiService} from "../../forms/services/forms-api.service";
+import {Answer, QuestionType} from "../../../models/forms.model";
+import {SubmissionsApiService} from "../../forms/services/submissions-api.service";
+import { Form } from '../../forms/services/forms-api.service';
+import { switchMap } from 'rxjs/operators';
 
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
@@ -33,45 +40,7 @@ type TabId =
   | 'pictures'
   | 'calendar';
 
-type SubmissionStatus = 'reviewed' | 'pendingReview';
-type AssignedStatus = 'pending' | 'active';
 
-interface CheckInSubmissionAnswer {
-  questionNumber: number;
-  question: string;
-  type?: 'text' | 'scale' | 'rating' | 'photos';
-  answer?: string;
-  scaleValue?: number;
-  scaleMax?: number;
-  ratingValue?: number;
-  ratingMax?: number;
-  photos?: string[];
-}
-
-interface CheckInQuestionDefinition {
-  order: number;
-  label: string;
-  type: 'Text' | 'Number' | 'Scale';
-  required: boolean;
-}
-
-interface CheckInSubmission {
-  id: number;
-  title: string;
-  date: string;
-  status: SubmissionStatus;
-  coachNote?: string;
-  answers: CheckInSubmissionAnswer[];
-}
-
-interface AssignedCheckIn {
-  id: number;
-  name: string;
-  assignedDate: string;
-  dueDate: string;
-  status: AssignedStatus;
-  questions: CheckInQuestionDefinition[];
-}
 
 interface Exercise {
   name: string;
@@ -112,7 +81,7 @@ interface ActiveNutritionPlan {
   styleUrl: './profil-client.component.scss',
 })
 export class ProfilClientComponent {
-  // Tabs
+
   activeTab: TabId = 'dashboard';
   setTab(tab: TabId) {
     this.activeTab = tab;
@@ -136,6 +105,24 @@ export class ProfilClientComponent {
   showChooseModal = false; // choose-plan-type modal
 
   nutritionSelectionList: any[] = [];
+  assignments: FormAssignment[] = [];
+  loadingAssignments = false;
+  assignmentsError: string | null = null;
+  private readonly PAGE_SIZE = 50;
+  selectedAssignment: FormAssignment | null = null;
+  private readonly destroy$ = new Subject<void>();
+
+  isModalOpen = false;
+  isViewMode = false;
+
+  modalLoading = false;
+  modalError: string | null = null;
+
+  currentForm: FormDetails | null = null;
+  submittedAnswers: Answer[] = [];
+
+  QuestionType = QuestionType;
+  preselectFormId: string | null = null;
 
   // Dashboard mock
   todaysWorkout: TodaysWorkout = {
@@ -175,13 +162,31 @@ export class ProfilClientComponent {
     private clientService: ClientService,
     private workoutService: WorkoutService,
     private router: Router,
-    private nutritionService: NutritionService
-  ) {
+    private nutritionService: NutritionService,
+    private assignmentsApi: AssignmentsApiService,
+    private formsApi: FormsApiService,
+    private submissionsApi: SubmissionsApiService
+) {
     this.clientId = this.route.snapshot.paramMap.get('id') || '';
 
     if (this.clientId) {
       this.getClientById(this.clientId);
+      this.loadClientAssignments();
     }
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'] as TabId | undefined;
+      if (tab) this.activeTab = tab;
+      const openAssign = params['openAssign'] === '1';
+      const preselectFormId = params['preselectFormId'];
+
+      if (openAssign) {
+        this.assignType = 'CHECKIN';
+        this.showAssignSelectModal = false;
+        this.showFormSelectionModal = true;
+      }
+
+      this.preselectFormId = preselectFormId || null;
+    });
 
     this.getAllNutrition();
   }
@@ -192,7 +197,124 @@ export class ProfilClientComponent {
     });
   }
 
-  // Fetch nutrition templates (used by nutrition-selection-modal input)
+  get assignedList(): FormAssignment[] {
+    const list = this.assignments.filter(a =>
+      a.status === 'ASSIGNED' || a.status === 'OPENED'
+    );
+
+    const term = this.assignedSearch.trim().toLowerCase();
+    if (!term) return list;
+
+    return list.filter(a =>
+      a.formId.toLowerCase().includes(term)
+    );
+  }
+
+  get submissionsList(): FormAssignment[] {
+    const list = this.assignments.filter(a =>
+      a.status === 'SUBMITTED' || a.status === 'REVIEWED'
+    );
+
+    const term = this.submissionSearch.trim().toLowerCase();
+    if (!term) return list;
+
+    return list.filter(a =>
+      a.formId.toLowerCase().includes(term)
+    );
+  }
+  async loadClientAssignments(): Promise<void> {
+    if (!this.clientId) return;
+
+    this.loadingAssignments = true;
+    this.assignmentsError = null;
+
+    this.assignmentsApi
+      .pageOwnerAssignmentsByAsigneeId(0, this.PAGE_SIZE, 'assignedAt', 'DESC', this.clientId)
+      .subscribe({
+        next: async (res) => {   // ✅ هنا
+          this.assignments = res.content;
+          await this.attachFormNames(this.assignments);
+          this.loadingAssignments = false;
+        },
+        error: (err) => {
+          this.assignmentsError = 'Failed to load assignments';
+          this.loadingAssignments = false;
+        },
+      });
+  }
+
+  private async attachFormNames(assignments: FormAssignment[]): Promise<void> {
+
+    const uniqueFormIds = Array.from(new Set(assignments.map(a => a.formId)));
+
+    const map = new Map<string, string>();
+
+    await Promise.all(
+      uniqueFormIds.map(formId =>
+        this.formsApi.getFormById(formId).toPromise().then((f: any) => {
+          map.set(formId, f?.name ?? f?.title ?? formId);
+        }).catch(() => {
+          map.set(formId, formId);
+        })
+      )
+    );
+
+    assignments.forEach(a => {
+      a.formName = map.get(a.formId) ?? a.formId;
+    });
+  }
+
+  openAssignmentModal(a: FormAssignment): void {
+    this.selectedAssignment = a;
+
+    this.isModalOpen = true;
+    this.isViewMode = a.status === 'SUBMITTED' || a.status === 'REVIEWED';
+
+    this.currentForm = null;
+    this.submittedAnswers = [];
+    this.modalError = null;
+    this.modalLoading = true;
+
+    this.formsApi.getFormById(a.formId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (form) => {
+          this.currentForm = {
+            ...form,
+            questions: form.questions.slice().sort((x, y) => (x.order ?? 0) - (y.order ?? 0)),
+          };
+
+          if (this.isViewMode) {
+            this.submissionsApi.getByAssignmentId(a.id)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: (submission) => {
+                  this.submittedAnswers = submission.answers ?? [];
+                  this.modalLoading = false;
+                },
+                error: () => {
+                  this.modalLoading = false;
+                  this.modalError = 'Impossible de charger les réponses.';
+                }
+              });
+          } else {
+            this.modalLoading = false;
+          }
+        },
+        error: () => {
+          this.modalLoading = false;
+          this.modalError = 'Impossible de charger le formulaire.';
+        }
+      });
+  }
+  openAssignedAssignment(a: FormAssignment, event?: MouseEvent) {
+    if (event) event.stopPropagation();
+    this.openAssignmentModal(a);
+  }
+
+  openSubmissionAssignment(a: FormAssignment) {
+    this.openAssignmentModal(a);
+  }
   getAllNutrition() {
     this.nutritionService.getNutritionPlans().subscribe((res: any) => {
       this.nutritionSelectionList = res.content
@@ -221,9 +343,6 @@ export class ProfilClientComponent {
     this.showAssignSelectModal = true;
   }
 
-  closeAssignSelectModal() {
-    this.showAssignSelectModal = false;
-  }
 
   onExistingFromAssignModal() {
     this.showAssignSelectModal = false;
@@ -242,29 +361,30 @@ export class ProfilClientComponent {
 
   onCreateFromAssignModal() {
     this.showAssignSelectModal = false;
-    this.showCheckinModal = false;
 
-    if (this.assignType === 'WORKOUT') {
-      this.router.navigateByUrl('clients/create-workout/' + this.clientId);
-    } else if (this.assignType === 'NUTRITION') {
-      this.showChooseModal = true;
-    } else {
-      // CHECKIN — à implémenter
+    if (this.assignType === 'CHECKIN') {
+      this.router.navigate(['/forms/create-form'], {
+        queryParams: {
+          returnTo: 'client-profile',
+          clientId: this.clientId,
+          openAssign: 1
+        }
+      });      return;
     }
+
+    if (this.assignType === 'WORKOUT') this.router.navigateByUrl('clients/create-workout/' + this.clientId);
+    if (this.assignType === 'NUTRITION') this.showChooseModal = true;
   }
 
-  // Called by workout-program-selection-modal back button
   backToAssignModal(): void {
     this.showProgramSelectionModal = false;
     this.showAssignSelectModal = true;
   }
 
-  // ChoosePlanType modal close
   closeChooseModal() {
     this.showChooseModal = false;
   }
 
-  // Nutrition selection modal assign
   onAssignNutritionFromModal(payload: {
     program: any;
     startDate: string;
@@ -292,83 +412,28 @@ export class ProfilClientComponent {
     this.activeSubTab = tab;
   }
 
-  submissions: CheckInSubmission[] = [
-    {
-      id: 1,
-      title: 'Weekly Check-In',
-      date: '2025-10-15',
-      status: 'reviewed',
-      coachNote: 'Great progress this week! Keep up the good work.',
-      answers: [
-        {
-          questionNumber: 1,
-          question: 'What was your biggest win this week?',
-          type: 'text',
-          answer: 'Completed all workouts.',
-        },
-      ],
-    },
-  ];
-
-  assignedForms: AssignedCheckIn[] = [
-    {
-      id: 1,
-      name: 'Weekly Check-In',
-      assignedDate: '2025-10-01',
-      dueDate: '2025-10-22',
-      status: 'pending',
-      questions: [
-        {
-          order: 1,
-          label: 'What was your biggest win this week?',
-          type: 'Text',
-          required: true,
-        },
-      ],
-    },
-  ];
-
-  get filteredSubmissions(): CheckInSubmission[] {
-    const term = this.submissionSearch.trim().toLowerCase();
-    if (!term) return this.submissions;
-    return this.submissions.filter((s) => s.title.toLowerCase().includes(term));
+  getSubmittedAnswer(questionId: string): Answer | undefined {
+    return this.submittedAnswers.find(a => a.questionId === questionId);
   }
 
-  get filteredAssignedForms(): AssignedCheckIn[] {
-    const term = this.assignedSearch.trim().toLowerCase();
-    if (!term) return this.assignedForms;
-    return this.assignedForms.filter((f) =>
-      f.name.toLowerCase().includes(term)
-    );
+  getOptionLabel(question: any, optionId: string): string {
+    return question.options?.find((o: any) => o.id === optionId)?.label ?? optionId;
   }
 
-  showSubmissionModal = false;
-  showAssignedModal = false;
-
-  selectedSubmission: CheckInSubmission | null = null;
-  selectedAssigned: AssignedCheckIn | null = null;
-
-  openSubmissionModal(submission: CheckInSubmission) {
-    this.selectedSubmission = submission;
-    this.showSubmissionModal = true;
+  getStarsArray(max: number = 5): number[] {
+    return Array.from({ length: max }, (_, i) => i + 1);
   }
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.isViewMode = false;
 
-  closeSubmissionModal() {
-    this.showSubmissionModal = false;
-    this.selectedSubmission = null;
+    this.selectedAssignment = null;
+    this.currentForm = null;
+    this.submittedAnswers = [];
+
+    this.modalLoading = false;
+    this.modalError = null;
   }
-
-  openAssignedModal(form: AssignedCheckIn, event?: MouseEvent) {
-    if (event) event.stopPropagation();
-    this.selectedAssigned = form;
-    this.showAssignedModal = true;
-  }
-
-  closeAssignedModal() {
-    this.showAssignedModal = false;
-    this.selectedAssigned = null;
-  }
-
   getStars(max: number | undefined): number[] {
     const count = max || 5;
     return Array.from({ length: count }, (_, i) => i + 1);
@@ -458,16 +523,30 @@ export class ProfilClientComponent {
 
   showCheckinModal = false;
 
-// Après closeAssignSelectModal()
   openCheckinModal() {
     this.assignType = 'CHECKIN'; // ← plus besoin de "as any"
     this.showAssignSelectModal = true; // ← utilise showAssignSelectModal pas showCheckinModal
   }
   showFormSelectionModal = false;
 
-  onAssignFormFromModal(payload: { form: any; assignedDate: string; dueDate: string }) {
-    console.log('Assign form:', payload);
+  onAssignFormFromModal(payload: { form: Form; assignedDate: string; dueDate: string; endDate: string | null }) {
     this.showFormSelectionModal = false;
+
+    const { form, dueDate, endDate } = payload;
+    const hasSchedule = !!form.schedule;
+
+    this.formsApi.ensurePublished(form.id).pipe(
+      switchMap(() =>
+        this.assignmentsApi.bulkAssign(form.id, {
+          assigneeIds: [this.clientId],
+          dueDate: hasSchedule ? null : (dueDate || null),
+          endDate: hasSchedule ? (endDate || null) : null,
+        })
+      )
+    ).subscribe({
+      next: () => this.loadClientAssignments(),
+      error: (err) => console.error(err),
+    });
   }
 
 }

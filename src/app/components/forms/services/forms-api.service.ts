@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {map, Observable, of} from 'rxjs';
 import { environment } from '@env/environment';
-
+import { switchMap } from 'rxjs/operators';
 export type FormStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 /** ====== BACK MODELS ====== */
@@ -56,6 +56,7 @@ export interface FormDetails {
 export interface Form {
   id: string;
   title: string;
+  name: string;
   description?: string;
   status: FormStatus;
   updatedAt?: string;
@@ -122,5 +123,16 @@ export class FormsApiService {
     return this.http.get<UserDto[]>(`${this.userUrl}`);
   }
 
+  ensurePublished(formId: string) {
+    return this.getForOwner(formId).pipe(
+      switchMap((details) => {
+        if (details.status === 'PUBLISHED') return of(null);
 
+        return this.updateForm(formId, {
+          ...details,
+          status: 'PUBLISHED',
+        }).pipe(map(() => null));
+      })
+    );
+  }
 }

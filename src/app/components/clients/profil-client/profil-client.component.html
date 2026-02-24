@@ -242,37 +242,25 @@
         </div>
 
         <div class="checkin-list">
-          <div
-            class="checkin-row"
-            *ngFor="let submission of filteredSubmissions"
-            (click)="openSubmissionModal(submission)"
-          >
+          <div class="checkin-row"
+               *ngFor="let a of submissionsList"
+               (click)="openSubmissionAssignment(a)">
             <div class="checkin-row-main">
-              <div class="checkin-title">{{ submission.title }}</div>
+              <div class="checkin-title">{{ a.formName }}</div>
               <div class="checkin-date">
-                {{ submission.date | date : "MM/dd/yyyy" }}
+                {{ (a.submittedAt || a.assignedAt) | date : "dd/MM/yyyy" }}
               </div>
             </div>
 
             <div class="checkin-status">
-              <span
-                class="status-pill"
-                [ngClass]="{
-                  'status-pill--reviewed': submission.status === 'reviewed',
-                  'status-pill--pending-review':
-                    submission.status === 'pendingReview'
-                }"
-              >
-                <i
-                  *ngIf="submission.status === 'reviewed'"
-                  class="far fa-check-circle"
-                ></i>
-                {{
-                  submission.status === "reviewed"
-                    ? "Reviewed"
-                    : "Pending Review"
-                }}
-              </span>
+    <span class="status-pill"
+          [ngClass]="{
+        'status-pill--reviewed': a.status === 'REVIEWED',
+        'status-pill--pending-review': a.status === 'SUBMITTED'
+      }">
+      <i *ngIf="a.status === 'REVIEWED'" class="far fa-check-circle"></i>
+      {{ a.status === 'REVIEWED' ? 'Reviewed' : 'Pending Review' }}
+    </span>
             </div>
           </div>
         </div>
@@ -305,32 +293,29 @@
             <div class="text-right">Actions</div>
           </div>
 
-          <div
-            class="assigned-row"
-            *ngFor="let form of filteredAssignedForms"
-            (click)="openAssignedModal(form)"
-          >
-            <div class="assigned-name">{{ form.name }}</div>
+          <div class="assigned-row"
+               *ngFor="let a of assignedList"
+               (click)="openAssignedAssignment(a)">
+            <div class="assigned-name">{{ a.formName }}</div>
 
             <div class="assigned-date">
               <i class="far fa-calendar-alt"></i>
-              {{ form.assignedDate | date : "MM/dd/yyyy" }}
+              {{ a.assignedAt | date : "dd/MM/yyyy" }}
             </div>
 
             <div class="assigned-date">
               <i class="far fa-calendar-alt"></i>
-              {{ form.dueDate | date : "MM/dd/yyyy" }}
+              {{ a.dueAt | date : "dd/MM/yyyy" }}
             </div>
 
             <div>
-              <span class="status-pill status-pill--pending"> Pending </span>
+    <span class="status-pill status-pill--pending">
+      {{ a.status === 'OPENED' ? 'Opened' : 'Pending' }}
+    </span>
             </div>
 
             <div class="actions-cell">
-              <button
-                class="link-view"
-                (click)="openAssignedModal(form, $event)"
-              >
+              <button class="link-view" (click)="openAssignedAssignment(a, $event)">
                 <i class="far fa-eye"></i>
                 View
               </button>
@@ -394,171 +379,124 @@
   </div>
 </section>
 
-<!-- MODAL SUBMISSION (Q/R) -->
-<div
-  class="checkin-modal-backdrop"
-  *ngIf="showSubmissionModal && selectedSubmission"
->
-  <div class="checkin-modal submission-modal">
-    <div class="checkin-modal-header">
+<!-- ======== CHECK-IN MODAL (READ ONLY) ======== -->
+<div *ngIf="isModalOpen && selectedAssignment" class="pc-modal-backdrop" (click)="closeModal()">
+  <div class="pc-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header">
       <div>
-        <h2>{{ selectedSubmission?.title }}</h2>
-        <div class="modal-date">
-          {{ selectedSubmission?.date | date : "MM/dd/yyyy" }}
-        </div>
+        <h2 class="modal-title">
+          {{ selectedAssignment.formName || selectedAssignment.formId }}
+        </h2>
+
+        <p class="modal-subtitle">
+          <ng-container *ngIf="selectedAssignment.dueAt">
+            Échéance : {{ selectedAssignment.dueAt | date:'dd/MM/yyyy' }}
+          </ng-container>
+          <ng-container *ngIf="!selectedAssignment.dueAt">
+            Affecté le : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}
+          </ng-container>
+
+          <ng-container *ngIf="selectedAssignment.submittedAt">
+            · Soumis le : {{ selectedAssignment.submittedAt | date:'dd/MM/yyyy' }}
+          </ng-container>
+        </p>
       </div>
 
-      <button class="close-btn" (click)="closeSubmissionModal()">
+      <button class="close-button" type="button" (click)="closeModal()">
         &times;
       </button>
     </div>
 
-    <div class="checkin-modal-body">
-      <div
-        class="submission-question"
-        *ngFor="let ans of selectedSubmission?.answers"
-      >
-        <div class="submission-question-text">
-          <span class="number">{{ ans.questionNumber }}.</span>
-          {{ ans.question }}
-        </div>
+    <!-- Body -->
+    <div class="modal-content">
 
-        <div class="submission-answer">
-          <ng-container [ngSwitch]="ans.type">
-            <span *ngSwitchCase="'text'">{{ ans.answer }}</span>
+      <!-- Loading -->
+      <div *ngIf="modalLoading" class="modal-loading">
+        Chargement...
+      </div>
 
-            <div *ngSwitchCase="'scale'" class="scale-row">
-              <div class="scale-track">
-                <div
-                  class="scale-fill"
-                  [style.width.%]="
-                    ((ans.scaleValue || 0) / (ans.scaleMax || 10)) * 100
-                  "
-                ></div>
+      <!-- Error -->
+      <div *ngIf="modalError && !modalLoading" class="alert alert--modal">
+        {{ modalError }}
+      </div>
+
+      <!-- Questions -->
+      <div *ngIf="!modalLoading && currentForm" class="pc-questions">
+        <div
+          *ngFor="let q of currentForm.questions; let i = index"
+          class="pc-question"
+        >
+          <div class="pc-question-left">
+            <div class="pc-qnum">{{ i + 1 }}</div>
+          </div>
+
+          <div class="pc-question-main">
+            <div class="pc-question-top">
+              <div class="pc-qlabel">
+                {{ q.label }}
               </div>
-              <div class="scale-value">
-                {{ ans.scaleValue }}/{{ ans.scaleMax }}
+
+              <div class="pc-qtags">
+                <span class="pc-tag pc-tag-type">{{ q.type }}</span>
+                <span *ngIf="q.required" class="pc-tag pc-tag-required">Required</span>
               </div>
             </div>
 
-            <div *ngSwitchCase="'rating'" class="rating-row">
-              <i
-                *ngFor="let star of getStars(ans.ratingMax)"
-                class="fas fa-star"
-                [ngClass]="{
-                  filled: star <= (ans.ratingValue || 0)
-                }"
-              ></i>
-            </div>
+            <!-- ANSWER AREA -->
+            <ng-container *ngIf="isViewMode; else pendingBlock">
+              <ng-container *ngIf="getSubmittedAnswer(q.id) as ans; else emptyAns">
 
-            <div *ngSwitchCase="'photos'" class="photo-thumbs">
-              <div *ngFor="let p of ans.photos" class="photo-thumb"></div>
-            </div>
+                <!-- TEXT -->
+                <div *ngIf="q.type === 'TEXT'" class="pc-answer">
+                  {{ ans.text || '—' }}
+                </div>
 
-            <span *ngSwitchDefault>{{ ans.answer }}</span>
-          </ng-container>
-        </div>
-      </div>
+                <!-- MULTIPLE_CHOICE -->
+                <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="pc-answer pc-answer--badge">
+                  {{ getOptionLabel(q, ans.selectedOptionId || '') }}
+                </div>
 
-      <div
-        *ngIf="selectedSubmission?.status === 'reviewed'"
-        class="submission-status-banner"
-      >
-        <div class="headline">
-          <i class="far fa-check-circle"></i>
-          Reviewed
-        </div>
-        <div class="coach-note">
-          {{ selectedSubmission?.coachNote }}
-        </div>
-      </div>
-    </div>
-
-    <div class="checkin-modal-footer">
-      <button class="btn-secondary" (click)="closeSubmissionModal()">
-        Close
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL ASSIGNED (définition) -->
-<div
-  class="checkin-modal-backdrop"
-  *ngIf="showAssignedModal && selectedAssigned"
->
-  <div class="checkin-modal assigned-modal">
-    <div class="checkin-modal-header">
-      <div>
-        <h2>{{ selectedAssigned?.name }}</h2>
-        <div class="modal-subtitle">Weekly progress tracking form</div>
-      </div>
-
-      <button class="close-btn" (click)="closeAssignedModal()">&times;</button>
-    </div>
-
-    <div class="checkin-modal-body">
-      <div class="assigned-summary-row">
-        <div class="summary-card">
-          <div class="summary-label">Assigned Date</div>
-          <div class="summary-value">
-            <i class="far fa-calendar-alt"></i>
-            {{ selectedAssigned?.assignedDate | date : "MM/dd/yyyy" }}
-          </div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-label">Due Date</div>
-          <div class="summary-value">
-            <i class="far fa-calendar-alt"></i>
-            {{ selectedAssigned?.dueDate | date : "MM/dd/yyyy" }}
-          </div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-label">Status</div>
-          <div class="summary-value">
-            <span class="status-pill status-pill--pending"> Pending </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-questions-title">Form Questions</div>
-
-      <div
-        class="form-question-row"
-        *ngFor="let q of selectedAssigned?.questions"
-      >
-        <div class="form-question-number">
-          {{ q.order }}
-        </div>
-
-        <div class="form-question-main">
-          <div class="form-question-label">
-            {{ q.label }}
-          </div>
-
-          <div class="question-tags">
-            <span
-              class="tag-pill"
-              [ngClass]="{
-                'type-text': q.type === 'Text',
-                'type-number': q.type === 'Number',
-                'type-scale': q.type === 'Scale'
-              }"
-            >
-              {{ q.type }}
+                <!-- YES_NO -->
+                <div *ngIf="q.type === 'YES_NO'" class="pc-answer">
+            <span class="pc-yesno" [class.is-yes]="ans.yes === true" [class.is-no]="ans.yes === false">
+              {{ ans.yes === true ? 'Oui' : ans.yes === false ? 'Non' : '—' }}
             </span>
+                </div>
 
-            <span *ngIf="q.required" class="tag-pill required"> Required </span>
+                <!-- STAR_RATING -->
+                <div *ngIf="q.type === 'STAR_RATING'" class="pc-stars">
+            <span
+              *ngFor="let star of getStarsArray(q.maxStars || 5)"
+              class="pc-star"
+              [class.filled]="(ans.rating || 0) >= star"
+            >★</span>
+                </div>
+
+                <!-- DATE -->
+                <div *ngIf="q.type === 'DATE'" class="pc-answer">
+                  {{ ans.date || '—' }}
+                </div>
+
+              </ng-container>
+
+              <ng-template #emptyAns>
+                <div class="pc-answer pc-answer--empty">—</div>
+              </ng-template>
+            </ng-container>
+
+            <ng-template #pendingBlock>
+              <div class="pc-answer pc-answer--empty">(Formulaire non soumis)</div>
+            </ng-template>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="checkin-modal-footer">
-      <button class="btn-secondary" (click)="closeAssignedModal()">
-        Close
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="closeModal()">
+        Fermer
       </button>
     </div>
   </div>
@@ -742,7 +680,7 @@
 </div>
 
 <app-assign-select-modal
-  [isOpen]="showAssignSelectModal || showCheckinModal"
+  [isOpen]="showAssignSelectModal"
   [kind]="assignType"
   (close)="showAssignSelectModal = false; showCheckinModal = false"
   (existingClick)="onExistingFromAssignModal()"
@@ -778,7 +716,8 @@
 <app-form-selection-modal
   [isOpen]="showFormSelectionModal"
   [fullName]="fullName"
-  (closeModal)="showFormSelectionModal = false"
-  (backClick)="showFormSelectionModal = false; assignType = 'CHECKIN'; showAssignSelectModal = true"
+  [preselectFormId]="preselectFormId"
   (assignForm)="onAssignFormFromModal($event)"
+  (closeModal)="showFormSelectionModal = false"
+  (backClick)="backToAssignModal()"
 ></app-form-selection-modal>
