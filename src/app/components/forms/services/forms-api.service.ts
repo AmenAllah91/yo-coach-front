@@ -59,6 +59,7 @@ export interface Form {
   name: string;
   description?: string;
   status: FormStatus;
+  previousStatus?: FormStatus | null;
   updatedAt?: string;
   createdAt?: string;
   schedule?: FormSchedule | null;
@@ -85,15 +86,21 @@ export class FormsApiService {
   private userUrl = `${environment.baseApiUrl}/clients/clients`;
   constructor(private http: HttpClient) {}
 
-  /** ✅ EXISTANT */
-  getMyFormsPage(page: number, size: number): Observable<PageResponse<Form>> {
-    const params = new HttpParams()
+  getMyFormsPage(page: number, size: number, status?: FormStatus, excludeArchived?: boolean, clientId?: string | null) {
+    let params = new HttpParams()
       .set('page', page)
       .set('size', size)
       .set('sortBy', 'updatedAt')
       .set('direction', 'DESC');
 
+    if (status) params = params.set('status', status);
+    if (excludeArchived) params = params.set('excludeArchived', 'true');
+    if (clientId) params = params.set('clientId', clientId);
     return this.http.get<PageResponse<Form>>(`${this.baseUrl}/page`, { params });
+  }
+
+  getCounts() {
+    return this.http.get<{active: number; archived: number}>(`${this.baseUrl}/counts`);
   }
 
   /** ✅ EXISTANT */
@@ -134,5 +141,13 @@ export class FormsApiService {
         }).pipe(map(() => null));
       })
     );
+  }
+
+  archiveForm(id: string) {
+    return this.http.post<Form>(`${this.baseUrl}/${encodeURIComponent(id)}/archive`, {});
+  }
+
+  unarchiveForm(id: string) {
+    return this.http.post<Form>(`${this.baseUrl}/${encodeURIComponent(id)}/unarchive`, {});
   }
 }

@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize } from 'rxjs/operators';
+import {finalize} from 'rxjs/operators';
 
 import {
   FormDetails,
   FormsApiService, FormSchedule,
   QuestionBE,
   QuestionTypeBE
-} from '../services/forms-api.service'; // adapte le path si besoin
+} from '../services/forms-api.service';
 
 export type QuestionType =
   | 'scale'
@@ -82,6 +82,10 @@ export class CreateFormComponent implements OnInit {
   monthDays: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   monthlyDay: number | null = null;
   scheduleTime: string = '';
+  fromProfile = false;
+  clientIdFromProfile: string | null = null;
+
+  addToLibrary = true;
 
   questionTypes = [
     { id: 'multiple-choice' as QuestionType, label: 'Multiple Choice' },
@@ -93,7 +97,9 @@ export class CreateFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.formId = this.route.snapshot.paramMap.get('id');
-
+    const returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+    this.clientIdFromProfile = this.route.snapshot.queryParamMap.get('clientId');
+    this.fromProfile = returnTo === 'client-profile' && !!this.clientIdFromProfile;
     if (this.formId) {
       this.isLoading = true;
       this.api.getForOwner(this.formId)
@@ -280,7 +286,7 @@ export class CreateFormComponent implements OnInit {
     return map[d] ?? 'Mon';
   }
 
-  private buildPayload(): FormDetails {
+  private buildPayload(): any {
     const title = (this.detailsTitle?.trim() || this.formTitle?.trim() || 'Form Title');
 
     const questionsBE: QuestionBE[] = this.questions.map((q, idx) => ({
@@ -295,13 +301,10 @@ export class CreateFormComponent implements OnInit {
     }));
 
     let schedule: FormSchedule | undefined;
-
-// ✅ Only send schedule if user provided BOTH frequency and time
     if (this.scheduleFrequency && this.scheduleTime) {
       schedule = {
         frequency: this.scheduleFrequency.toUpperCase() as any,
         time: this.scheduleTime,
-
         daysOfWeek:
           this.scheduleFrequency === 'daily'
             ? this.dailySelectedDays.map(d => this.toBeWeekday(d))
@@ -310,29 +313,33 @@ export class CreateFormComponent implements OnInit {
               : this.scheduleFrequency === 'biweekly' && this.biweeklySelectedDay
                 ? [this.toBeWeekday(this.biweeklySelectedDay)]
                 : undefined,
-
         biweeklyWeeks: this.scheduleFrequency === 'biweekly'
           ? this.toBeBiweeklyWeeks(this.biweeklyWeekOption)
           : undefined,
-
         monthlyMode: this.scheduleFrequency === 'monthly' && this.monthlyMode
           ? (this.monthlyMode.toUpperCase() as any)
           : undefined,
-
         monthlyDay: (this.scheduleFrequency === 'monthly' && this.monthlyMode === 'specific')
           ? (this.monthlyDay ?? undefined)
           : undefined,
       };
     }
 
-    return {
+    const payload: any = {
       title,
       questions: questionsBE,
       status: 'DRAFT',
       ...(schedule ? { schedule } : {})
     };
-  }
 
+    if (this.fromProfile && !this.addToLibrary && this.clientIdFromProfile) {
+      payload.clientOnlyFor = this.clientIdFromProfile;
+    } else {
+      payload.showInSignup = !!this.showInSignup;
+    }
+
+    return payload;
+  }
 
   saveForm() {
     const payload = this.buildPayload();
@@ -350,14 +357,15 @@ export class CreateFormComponent implements OnInit {
       .pipe(finalize(() => (this.isSaving = false)))
       .subscribe({
         next: (created: any) => {
-          if (!this.formId && returnTo === 'client-profile' && clientId) {
-            const newFormId = created?.id ?? created?.formId ?? null;
+          const createdId = created?.id ?? created?.formId ?? null;
 
+
+          if (!this.formId && returnTo === 'client-profile' && clientId && createdId) {
             this.router.navigate(['/clients/profil-client/', clientId], {
               queryParams: {
                 tab: 'checkins',
-                openAssign: openAssign ? 1 : null,
-                preselectFormId: newFormId
+                openAssign: 1,
+                preselectFormId: createdId
               },
               queryParamsHandling: 'merge'
             });

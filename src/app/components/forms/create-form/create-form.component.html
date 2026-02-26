@@ -78,16 +78,26 @@
     <ng-container *ngIf="activeTab === 'form'">
 
       <!-- Show in Signup — toujours visible en haut du tab Form -->
-      <div class="cf-signup-banner">
+      <div class="cf-signup-banner" *ngIf="fromProfile">
+        <div class="cf-signup-text">
+          <p class="cf-signup-title">Add to my forms library</p>
+          <p class="cf-signup-sub">If off, this form will be created only for this client</p>
+        </div>
+
+        <label class="details-switch">
+          <input type="checkbox" [(ngModel)]="addToLibrary" />
+          <span class="details-switch-track"><span class="details-switch-knob"></span></span>
+        </label>
+      </div>
+
+      <div class="cf-signup-banner" *ngIf="!fromProfile || addToLibrary">
         <div class="cf-signup-text">
           <p class="cf-signup-title">Show in Signup</p>
           <p class="cf-signup-sub">Display this form when new clients sign up</p>
         </div>
         <label class="details-switch">
-          <input type="checkbox" name="showInSignup" [(ngModel)]="showInSignup" />
-          <span class="details-switch-track">
-            <span class="details-switch-knob"></span>
-          </span>
+          <input type="checkbox" [(ngModel)]="showInSignup" />
+          <span class="details-switch-track"><span class="details-switch-knob"></span></span>
         </label>
       </div>
 

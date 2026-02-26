@@ -23,7 +23,7 @@
           class="view-toggle__badge"
           [class.view-toggle__badge--blue]="viewMode() === 'active'"
           [class.view-toggle__badge--gray]="viewMode() !== 'active'"
-        >{{ totalElements() }}</span>
+        >{{ activeCount() }}</span>
       </button>
       <button
         class="view-toggle__btn"
@@ -36,7 +36,7 @@
           class="view-toggle__badge"
           [class.view-toggle__badge--amber]="viewMode() === 'archived'"
           [class.view-toggle__badge--gray]="viewMode() !== 'archived'"
-        >0</span>
+        >{{ archivedCount() }}</span>
       </button>
     </div>
 
@@ -118,16 +118,36 @@
                 <button class="action-btn" type="button" (click)="toggleActions(f.id, $event)" aria-label="Actions">
                   <i-feather name="more-horizontal"></i-feather>
                 </button>
-                <div class="dropdown-menu" *ngIf="openedActionsId() === f.id">
-                  <button class="dropdown-item" type="button" (click)="onEdit(f); closeActions()">
-                    <i-feather name="edit-2"></i-feather> Modifier
-                  </button>
-                  <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()">
-                    <i-feather name="users"></i-feather> Affecter
-                  </button>
-                  <button class="dropdown-item delete" type="button" (click)="openDelete(f); closeActions()">
-                    <i-feather name="trash-2"></i-feather> Supprimer
-                  </button>
+                <div class="dropdown-menu" [id]="'dropdown-' + f.id" *ngIf="openedActionsId() === f.id">
+
+                  <ng-container *ngIf="viewMode() === 'active'; else archivedActions">
+                    <button class="dropdown-item" type="button" *ngIf="f.status !== 'PUBLISHED'" (click)="onEdit(f); closeActions()">
+                      <i-feather name="edit-2"></i-feather> Modifier
+                    </button>
+
+                    <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()">
+                      <i-feather name="users"></i-feather> Affecter
+                    </button>
+
+                    <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()">
+                      <i-feather name="copy"></i-feather> Dupliquer
+                    </button>
+
+                    <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()">
+                      <i-feather name="archive"></i-feather> Archiver
+                    </button>
+
+                    <button class="dropdown-item delete" type="button" *ngIf="f.status !== 'PUBLISHED'" (click)="openDelete(f); closeActions()">
+                      <i-feather name="trash-2"></i-feather> Supprimer
+                    </button>
+                  </ng-container>
+
+                  <ng-template #archivedActions>
+                    <button class="dropdown-item" type="button" (click)="unarchiveForm(f, $event); closeActions()">
+                      <i-feather name="rotate-ccw"></i-feather> Désarchiver
+                    </button>
+                  </ng-template>
+
                 </div>
                 <button
                   *ngIf="openedActionsId() === f.id"

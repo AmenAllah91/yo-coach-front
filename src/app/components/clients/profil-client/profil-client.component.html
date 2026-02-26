@@ -310,7 +310,7 @@
 
             <div>
     <span class="status-pill status-pill--pending">
-      {{ a.status === 'OPENED' ? 'Opened' : 'Pending' }}
+  {{ a.status }}
     </span>
             </div>
 
@@ -682,7 +682,7 @@
 <app-assign-select-modal
   [isOpen]="showAssignSelectModal"
   [kind]="assignType"
-  (close)="showAssignSelectModal = false; showCheckinModal = false"
+  (close)="showAssignSelectModal = false"
   (existingClick)="onExistingFromAssignModal()"
   (createClick)="onCreateFromAssignModal()"
 ></app-assign-select-modal>
@@ -716,6 +716,7 @@
 <app-form-selection-modal
   [isOpen]="showFormSelectionModal"
   [fullName]="fullName"
+  [clientId]="clientId"
   [preselectFormId]="preselectFormId"
   (assignForm)="onAssignFormFromModal($event)"
   (closeModal)="showFormSelectionModal = false"

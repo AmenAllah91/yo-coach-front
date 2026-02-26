@@ -19,7 +19,7 @@ import {FormDetails, FormsApiService} from "../../forms/services/forms-api.servi
 import {Answer, QuestionType} from "../../../models/forms.model";
 import {SubmissionsApiService} from "../../forms/services/submissions-api.service";
 import { Form } from '../../forms/services/forms-api.service';
-import { switchMap } from 'rxjs/operators';
+import { switchMap,finalize  } from 'rxjs/operators';
 
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
@@ -186,6 +186,18 @@ export class ProfilClientComponent {
       }
 
       this.preselectFormId = preselectFormId || null;
+
+      if (openAssign || preselectFormId) {
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {
+            openAssign: null,
+            preselectFormId: null
+          },
+          queryParamsHandling: 'merge',
+          replaceUrl: true
+        });
+      }
     });
 
     this.getAllNutrition();
@@ -199,15 +211,13 @@ export class ProfilClientComponent {
 
   get assignedList(): FormAssignment[] {
     const list = this.assignments.filter(a =>
-      a.status === 'ASSIGNED' || a.status === 'OPENED'
+      a.status !== 'SUBMITTED' && a.status !== 'REVIEWED'
     );
 
     const term = this.assignedSearch.trim().toLowerCase();
     if (!term) return list;
 
-    return list.filter(a =>
-      a.formId.toLowerCase().includes(term)
-    );
+    return list.filter(a => (a.formName ?? a.formId).toLowerCase().includes(term));
   }
 
   get submissionsList(): FormAssignment[] {
@@ -218,9 +228,7 @@ export class ProfilClientComponent {
     const term = this.submissionSearch.trim().toLowerCase();
     if (!term) return list;
 
-    return list.filter(a =>
-      a.formId.toLowerCase().includes(term)
-    );
+    return list.filter(a => (a.formName ?? a.formId).toLowerCase().includes(term));
   }
   async loadClientAssignments(): Promise<void> {
     if (!this.clientId) return;
@@ -346,15 +354,18 @@ export class ProfilClientComponent {
 
   onExistingFromAssignModal() {
     this.showAssignSelectModal = false;
-    this.showCheckinModal = false;
 
     if (this.assignType === 'WORKOUT') {
       this.showProgramSelectionModal = true;
-    } else if (this.assignType === 'NUTRITION') {
-      this.showNutritionSelectionModal = true;
-    } else {
-      this.showFormSelectionModal = true; // ← CHECKIN
+      return;
     }
+
+    if (this.assignType === 'NUTRITION') {
+      this.showNutritionSelectionModal = true;
+      return;
+    }
+
+    this.showFormSelectionModal = true;
   }
 
 
@@ -378,6 +389,8 @@ export class ProfilClientComponent {
 
   backToAssignModal(): void {
     this.showProgramSelectionModal = false;
+    this.showNutritionSelectionModal = false;
+    this.showFormSelectionModal = false;
     this.showAssignSelectModal = true;
   }
 
@@ -529,24 +542,49 @@ export class ProfilClientComponent {
   }
   showFormSelectionModal = false;
 
-  onAssignFormFromModal(payload: { form: Form; assignedDate: string; dueDate: string; endDate: string | null }) {
-    this.showFormSelectionModal = false;
 
-    const { form, dueDate, endDate } = payload;
-    const hasSchedule = !!form.schedule;
+onAssignFormFromModal(payload: { form: Form; assignedDate: string; dueDate: string; endDate: string | null }) {
+  const { form, dueDate, endDate } = payload;
+  const hasSchedule = !!form.schedule;
 
-    this.formsApi.ensurePublished(form.id).pipe(
-      switchMap(() =>
-        this.assignmentsApi.bulkAssign(form.id, {
-          assigneeIds: [this.clientId],
-          dueDate: hasSchedule ? null : (dueDate || null),
-          endDate: hasSchedule ? (endDate || null) : null,
-        })
+  this.showFormSelectionModal = false;
+
+  this.loadingAssignments = true;
+
+  this.formsApi.ensurePublished(form.id).pipe(
+    switchMap(() =>
+      this.assignmentsApi.bulkAssign(form.id, {
+        assigneeIds: [this.clientId],
+        dueDate: hasSchedule ? null : (dueDate || null),
+        endDate: hasSchedule ? (endDate || null) : null,
+      })
+    ),
+
+    switchMap(() =>
+      this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(
+        0, this.PAGE_SIZE, 'assignedAt', 'DESC', this.clientId
       )
-    ).subscribe({
-      next: () => this.loadClientAssignments(),
-      error: (err) => console.error(err),
-    });
-  }
+    ),
+
+    switchMap(async (res: any) => {
+      this.assignments = res.content;
+      await this.attachFormNames(this.assignments);
+    }),
+
+    finalize(() => {
+      this.loadingAssignments = false;
+    })
+  ).subscribe({
+    next: () => {
+      this.activeTab = 'checkins';
+      this.activeSubTab = 'assigned';
+    },
+    error: (err) => {
+      console.error(err);
+      this.loadingAssignments = false;
+      alert('Assign failed');
+    }
+  });
+}
 
 }

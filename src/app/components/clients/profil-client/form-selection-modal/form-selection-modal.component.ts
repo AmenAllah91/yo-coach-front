@@ -21,7 +21,7 @@ export class FormSelectionModalComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() fullName = '';
   @Input() preselectFormId: string | null = null;
-
+  @Input() clientId: string | null = null;
   @Output() closeModal = new EventEmitter<void>();
   @Output() backClick = new EventEmitter<void>();
 
@@ -69,9 +69,9 @@ export class FormSelectionModalComponent implements OnChanges {
     this.loading = true;
     this.error = null;
 
-    this.formsApi.getMyFormsPage(this.pageIndex, this.pageSize).subscribe({
+    this.formsApi.getMyFormsPage(this.pageIndex, this.pageSize, undefined, true, this.clientId).subscribe({
       next: (res: any) => {
-        const content: Form[] = res?.content ?? [];
+        const content: Form[] = (res?.content ?? []).filter(f => f.status !== 'ARCHIVED');
 
         this.forms = content.map((f: any) => ({
           id: String(f.id),

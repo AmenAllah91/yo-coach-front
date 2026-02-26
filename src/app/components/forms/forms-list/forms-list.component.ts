@@ -9,6 +9,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { ClientService } from '../../../service/client.service';
 import { switchMap } from 'rxjs/operators';
+import { exhaustMap, finalize, tap, catchError, EMPTY } from 'rxjs';
 @Component({
   selector: 'app-forms-list',
   standalone: true,
@@ -60,7 +61,9 @@ export class FormsListComponent implements OnInit, OnDestroy {
   readonly allUsers = signal<UserDto[]>([]);
   readonly searchTerm = signal('');
   readonly selectedUserIds = signal<Set<string>>(new Set());
-
+  readonly duplicating = signal(false);
+  readonly activeCount = signal(0);
+  readonly archivedCount = signal(0);
   // Plain properties pour éviter les soucis avec (change) + *ngIf
   assignSelectAll = false;
   scheduleEnabled = false;
@@ -88,8 +91,45 @@ export class FormsListComponent implements OnInit, OnDestroy {
     private clientService: ClientService,
   ) {}
 
-  ngOnInit(): void { this.loadPage(); }
+  private readonly duplicateClick$ = new Subject<Form>();
 
+  ngOnInit(): void {
+    this.loadPage();
+    this.loadCounts();
+
+    this.duplicateClick$
+      .pipe(
+        takeUntil(this.destroy$),
+
+        exhaustMap((f) => {
+          this.duplicating.set(true);
+          this.error.set(null);
+
+          return this.api.getForOwner(String(f.id)).pipe(
+            switchMap((details: any) =>
+              this.api.createForm(this.duplicatePayloadFromDetails(details))
+            ),
+            finalize(() => this.duplicating.set(false)),
+            tap(() => {
+              this.loadPage();
+
+
+            }),
+            catchError((err) => {
+              this.error.set(this.extractError(err) ?? 'Erreur lors de la duplication.');
+              return EMPTY;
+            })
+          );
+        })
+      )
+      .subscribe();
+  }
+
+  loadCounts(): void {
+    this.api.getCounts().pipe(takeUntil(this.destroy$)).subscribe({
+      next: c => { this.activeCount.set(c.active); this.archivedCount.set(c.archived); }
+    });
+  }
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -99,7 +139,15 @@ export class FormsListComponent implements OnInit, OnDestroy {
   loadPage(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.getMyFormsPage(this.pageIndex(), this.pageSize())
+
+    const isArchived = this.viewMode() === 'archived';
+
+    this.api.getMyFormsPage(
+      this.pageIndex(),
+      this.pageSize(),
+      isArchived ? 'ARCHIVED' : undefined,
+      !isArchived
+    )
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => { this.pageData.set(res); this.loading.set(false); },
@@ -195,6 +243,57 @@ export class FormsListComponent implements OnInit, OnDestroy {
     if ((event.target as HTMLElement).classList.contains('am-overlay')) {
       this.closeAssign();
     }
+  }
+
+  private duplicatePayloadFromDetails(details: any): any {
+    return {
+      title: `${(details.title ?? 'Form Title')} (copie)`,
+      description: details.description ?? '',
+      questions: (details.questions ?? []).map((q: any, idx: number) => ({
+        type: q.type,
+        label: q.label,
+        required: !!q.required,
+        order: idx,
+        options: (q.options ?? []).map((o: any) => ({
+          label: o.label
+        })),
+      })),
+      ...(details.schedule ? { schedule: details.schedule } : {}),
+      status: 'DRAFT',
+    };
+  }
+
+
+  onDuplicate(f: Form, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.duplicateClick$.next(f);
+  }
+
+  archiveForm(f: Form, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    this.api.archiveForm(f.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.loadCounts();
+        this.loadPage();
+      },
+      error: err => this.error.set(this.extractError(err) ?? "Erreur lors de l'archivage."),
+    });
+  }
+
+  unarchiveForm(f: Form, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    this.api.unarchiveForm(f.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.loadCounts();
+        this.loadPage();
+      },
+      error: err => this.error.set(this.extractError(err) ?? "Erreur lors de la restauration."),
+    });
   }
 
   loadUsers(): void {
