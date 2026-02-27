@@ -77,6 +77,7 @@
 
   <!-- Contenu onglets -->
   <div class="tab-content">
+
     <!-- DASHBOARD -->
     <div
       class="tab-pane dashboard-pane"
@@ -98,25 +99,18 @@
                 </div>
               </div>
             </div>
-
             <button class="link-button">View Full</button>
           </div>
 
           <div class="dashboard-card-body">
             <h4 class="workout-day-title">{{ todaysWorkout.name }}</h4>
-
             <div
               class="exercise-row"
               *ngFor="let exercise of todaysWorkout.exercises; let i = index"
             >
-              <div class="exercise-letter">
-                {{ getLetter(i) }}
-              </div>
-
+              <div class="exercise-letter">{{ getLetter(i) }}</div>
               <div class="exercise-info">
-                <div class="exercise-name">
-                  {{ exercise.name }}
-                </div>
+                <div class="exercise-name">{{ exercise.name }}</div>
                 <div class="exercise-meta">
                   {{ exercise.sets }} • Rest: {{ exercise.rest }}
                 </div>
@@ -134,12 +128,9 @@
               </div>
               <div>
                 <div class="header-title">Active Nutrition Plan</div>
-                <div class="header-subtitle">
-                  {{ activeNutritionPlan.name }}
-                </div>
+                <div class="header-subtitle">{{ activeNutritionPlan.name }}</div>
               </div>
             </div>
-
             <button class="link-button link-button-green">View Plan</button>
           </div>
 
@@ -151,31 +142,23 @@
                 <span>calories per day</span>
               </div>
             </div>
-
             <div class="macro-grid">
               <div class="macro-card macro-protein">
                 <div class="macro-label">Protein</div>
-                <div class="macro-value">
-                  {{ activeNutritionPlan.protein }}
-                </div>
+                <div class="macro-value">{{ activeNutritionPlan.protein }}</div>
                 <div class="macro-unit">grams</div>
               </div>
-
               <div class="macro-card macro-carbs">
                 <div class="macro-label">Carbs</div>
-                <div class="macro-value">
-                  {{ activeNutritionPlan.carbs }}
-                </div>
+                <div class="macro-value">{{ activeNutritionPlan.carbs }}</div>
                 <div class="macro-unit">grams</div>
               </div>
-
               <div class="macro-card macro-fat">
                 <div class="macro-label">Fat</div>
                 <div class="macro-value">{{ activeNutritionPlan.fat }}</div>
                 <div class="macro-unit">grams</div>
               </div>
             </div>
-
             <div class="nutrition-status">
               <i class="fas fa-chart-line"></i>
               <span>4 meals</span>
@@ -185,6 +168,7 @@
       </div>
     </div>
 
+    <!-- WORKOUTS -->
     <div class="tab-pane" [class.active]="activeTab === 'workouts'">
       <app-workouts-client-tab
         [clientId]="clientId"
@@ -194,7 +178,6 @@
     </div>
 
     <!-- NUTRITION -->
-
     <div class="tab-pane" [class.active]="activeTab === 'nutrition'">
       <app-nutrition-client-tab
         [clientId]="clientId"
@@ -225,6 +208,21 @@
           >
             Assigned
           </button>
+
+          <button
+            class="tab-link scheduled-tab-btn"
+            [class.active]="activeSubTab === 'scheduled'"
+            (click)="setSubTab('scheduled')"
+          >
+            Scheduled
+            <span
+              class="subtab-badge"
+              *ngIf="activeSchedulesCount > 0"
+              [class.subtab-badge--active]="activeSubTab === 'scheduled'"
+            >
+              {{ activeSchedulesCount }}
+            </span>
+          </button>
         </nav>
       </div>
 
@@ -242,25 +240,28 @@
         </div>
 
         <div class="checkin-list">
-          <div class="checkin-row"
-               *ngFor="let a of submissionsList"
-               (click)="openSubmissionAssignment(a)">
+          <div
+            class="checkin-row"
+            *ngFor="let a of submissionsList"
+            (click)="openSubmissionAssignment(a)"
+          >
             <div class="checkin-row-main">
               <div class="checkin-title">{{ a.formName }}</div>
               <div class="checkin-date">
                 {{ (a.submittedAt || a.assignedAt) | date : "dd/MM/yyyy" }}
               </div>
             </div>
-
             <div class="checkin-status">
-    <span class="status-pill"
-          [ngClass]="{
-        'status-pill--reviewed': a.status === 'REVIEWED',
-        'status-pill--pending-review': a.status === 'SUBMITTED'
-      }">
-      <i *ngIf="a.status === 'REVIEWED'" class="far fa-check-circle"></i>
-      {{ a.status === 'REVIEWED' ? 'Reviewed' : 'Pending Review' }}
-    </span>
+              <span
+                class="status-pill"
+                [ngClass]="{
+                  'status-pill--reviewed': a.status === 'REVIEWED',
+                  'status-pill--pending-review': a.status === 'SUBMITTED'
+                }"
+              >
+                <i *ngIf="a.status === 'REVIEWED'" class="far fa-check-circle"></i>
+                {{ a.status === 'REVIEWED' ? 'Reviewed' : 'Pending Review' }}
+              </span>
             </div>
           </div>
         </div>
@@ -277,7 +278,6 @@
               [(ngModel)]="assignedSearch"
             />
           </div>
-
           <button class="btn-add-checkin" (click)="openCheckinModal()">
             <i class="fas fa-plus"></i>
             <span>Add Check-in</span>
@@ -293,27 +293,25 @@
             <div class="text-right">Actions</div>
           </div>
 
-          <div class="assigned-row"
-               *ngFor="let a of assignedList"
-               (click)="openAssignedAssignment(a)">
+          <div
+            class="assigned-row"
+            *ngFor="let a of assignedList"
+            (click)="openAssignedAssignment(a)"
+          >
             <div class="assigned-name">{{ a.formName }}</div>
-
             <div class="assigned-date">
               <i class="far fa-calendar-alt"></i>
               {{ a.assignedAt | date : "dd/MM/yyyy" }}
             </div>
-
             <div class="assigned-date">
               <i class="far fa-calendar-alt"></i>
               {{ a.dueAt | date : "dd/MM/yyyy" }}
             </div>
-
             <div>
-    <span class="status-pill status-pill--pending">
-  {{ a.status }}
-    </span>
+              <span class="status-pill status-pill--pending">
+                {{ a.status === 'OPENED' ? 'Opened' : 'Pending' }}
+              </span>
             </div>
-
             <div class="actions-cell">
               <button class="link-view" (click)="openAssignedAssignment(a, $event)">
                 <i class="far fa-eye"></i>
@@ -322,6 +320,124 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- SCHEDULED -->
+      <div *ngIf="activeSubTab === 'scheduled'">
+
+        <!-- Empty state -->
+        <div class="scheduled-empty" *ngIf="scheduledCheckIns.length === 0">
+          <div class="scheduled-empty-icon">
+            <i class="far fa-clock"></i>
+          </div>
+          <p class="scheduled-empty-title">No scheduled check-ins</p>
+          <p class="scheduled-empty-sub">
+            Schedule forms from the Check-in Forms page to automate sending.
+          </p>
+        </div>
+
+        <!-- List -->
+        <ng-container *ngIf="scheduledCheckIns.length > 0">
+
+          <!-- Summary bar -->
+          <div class="scheduled-summary">
+            <span class="summary-dot summary-dot--active"></span>
+            <span class="summary-label">{{ activeSchedulesCount }} active</span>
+            <ng-container *ngIf="pausedSchedulesCount > 0">
+              <span class="summary-dot summary-dot--paused"></span>
+              <span class="summary-label summary-label--muted">{{ pausedSchedulesCount }} paused</span>
+            </ng-container>
+          </div>
+
+          <!-- Cards -->
+          <div
+            class="schedule-card"
+            *ngFor="let s of scheduledCheckIns"
+            [class.schedule-card--paused]="s.status === 'paused'"
+            (click)="openScheduleDetail(s)"
+          >
+            <!-- Card header -->
+            <div class="schedule-card-header">
+              <div class="schedule-card-left">
+                <span
+                  class="schedule-status-dot"
+                  [class.schedule-status-dot--active]="s.status === 'active'"
+                  [class.schedule-status-dot--paused]="s.status === 'paused'"
+                ></span>
+                <div class="schedule-card-meta">
+                  <div class="schedule-card-title-row">
+                    <span class="schedule-card-name">{{ s.formName }}</span>
+                    <span class="freq-badge freq-badge--{{ s.frequency }}">
+                      <i class="fas fa-sync-alt"></i>
+                      {{ s.frequency | titlecase }}
+                    </span>
+                    <span class="paused-badge" *ngIf="s.status === 'paused'">Paused</span>
+                    <span class="schedule-qcount" *ngIf="s.questions?.length">
+                      {{ s.questions.length }} questions
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="schedule-card-actions" (click)="$event.stopPropagation()">
+                <button
+                  class="schedule-action-btn"
+                  [class.schedule-action-btn--pause]="s.status === 'active'"
+                  [class.schedule-action-btn--resume]="s.status === 'paused'"
+                  (click)="toggleScheduleStatus(s)"
+                  [title]="s.status === 'active' ? 'Pause' : 'Resume'"
+                >
+                  <i [class]="s.status === 'active' ? 'fas fa-pause-circle' : 'fas fa-play-circle'"></i>
+                </button>
+                <button
+                  class="schedule-action-btn schedule-action-btn--delete"
+                  (click)="deleteSchedule(s)"
+                  title="Delete"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card details grid -->
+            <div class="schedule-card-details">
+              <div class="schedule-detail-item" *ngIf="s.selectedDays?.length > 0">
+                <span class="schedule-detail-label">Days</span>
+                <div class="schedule-days">
+                  <span class="day-pill" *ngFor="let day of s.selectedDays">{{ day }}</span>
+                </div>
+              </div>
+
+              <div class="schedule-detail-item">
+                <span class="schedule-detail-label">Send Time</span>
+                <span class="schedule-detail-value">
+                  <i class="far fa-clock"></i> {{ s.sendTime }}
+                </span>
+              </div>
+
+              <div class="schedule-detail-item">
+                <span class="schedule-detail-label">Next Send</span>
+                <span
+                  class="schedule-detail-value"
+                  [class.schedule-detail-value--active]="s.status === 'active'"
+                  [class.schedule-detail-value--muted]="s.status === 'paused'"
+                >
+                  <i class="far fa-calendar-alt"></i>
+                  {{ s.status === 'active' ? (s.nextSendDate | date:'dd/MM/yyyy') : '—' }}
+                </span>
+              </div>
+
+              <div class="schedule-detail-item">
+                <span class="schedule-detail-label">Ends</span>
+                <span class="schedule-detail-value">
+                  <i class="far fa-calendar-alt"></i> {{ s.endDate | date:'dd/MM/yyyy' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </ng-container>
       </div>
     </section>
 
@@ -332,7 +448,6 @@
     >
       <div class="progress-header">
         <h2 class="section-title">Progress Pictures</h2>
-
         <div class="progress-actions">
           <button
             type="button"
@@ -353,14 +468,9 @@
               [alt]="'Progress picture ' + (picture.date | date : 'MMM dd, y')"
             />
           </div>
-
           <div class="progress-card-body">
-            <div class="progress-date">
-              {{ picture.date | date : "MMM dd, y" }}
-            </div>
-            <div class="progress-weight">
-              {{ picture.weight }} {{ picture.unit }}
-            </div>
+            <div class="progress-date">{{ picture.date | date : "MMM dd, y" }}</div>
+            <div class="progress-weight">{{ picture.weight }} {{ picture.unit }}</div>
           </div>
         </div>
       </div>
@@ -373,9 +483,9 @@
         For le moment on affiche juste un bloc statique. Tu pourras brancher
         FullCalendar ou autre plus tard.
       </p>
-
       <div class="calendar-placeholder">Calendar component goes here</div>
     </div>
+
   </div>
 </section>
 
@@ -435,7 +545,78 @@
       <div *ngIf="modalError && !modalLoading" class="mc-alert">
         {{ modalError }}
       </div>
+      <!-- SCHEDULE CONFIGURATION BLOCK -->
+      <div class="sched-config-card">
+        <div class="sched-config-heading">
+          <svg class="sched-config-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+          Schedule Configuration
+        </div>
 
+        <div class="sched-config-grid">
+          <div class="sched-config-cell">
+            <span class="sched-config-label">Frequency</span>
+            <span class="sched-config-value sched-config-value--bold">Weekly</span>
+          </div>
+
+          <div class="sched-config-cell">
+            <span class="sched-config-label">Days</span>
+            <div class="sched-config-value" style="flex-wrap: wrap; gap: 6px;">
+              <span class="sched-day-tag">Mon</span>
+              <span class="sched-day-tag">Tue</span>
+              <span class="sched-day-tag">Wed</span>
+              <span class="sched-day-tag">Thu</span>
+              <span class="sched-day-tag">Fri</span>
+              <span class="sched-day-tag">Sat</span>
+              <span class="sched-day-tag">Sun</span>
+            </div>
+          </div>
+
+          <div class="sched-config-cell">
+            <span class="sched-config-label">Send Time</span>
+            <span class="sched-config-value">
+        <svg class="sched-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 6v6l4 2"></path>
+        </svg>
+        09:00
+      </span>
+          </div>
+
+          <div class="sched-config-cell">
+            <span class="sched-config-label">Next Send</span>
+            <span class="sched-config-value sched-config-value--blue">
+        <svg class="sched-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>
+        </svg>
+        03/03/2026
+      </span>
+          </div>
+
+          <div class="sched-config-cell">
+            <span class="sched-config-label">End Date</span>
+            <span class="sched-config-value">
+        <svg class="sched-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>
+        </svg>
+        2026-06-30
+      </span>
+          </div>
+
+          <div class="sched-config-cell">
+            <span class="sched-config-label">Created</span>
+            <span class="sched-config-value sched-config-value--bold">01/15/2026</span>
+          </div>
+        </div>
+      </div>
       <!-- Preview banner (optional, keep if you want same as manage) -->
       <div *ngIf="modalMode === 'preview'" class="mc-banner">
         <div class="mc-banner-ico">
@@ -539,15 +720,142 @@
 
     <div class="mc-footer" *ngIf="modalMode === 'view' && selectedAssignment?.status === 'SUBMITTED'">
       <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Cancel</button>
-
-      <button
-        type="button"
-        class="mc-btn mc-btn--primary"
-        (click)="markAsReviewed()"
-        [disabled]="reviewLoading"
-      >
-        ✓ {{ reviewLoading ? 'Saving...' : 'Mark as Reviewed' }}
+      <button type="button" (click)="markAsReviewed()" class="btn-reviewed">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Mark as Reviewed
       </button>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="closeModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ======== SCHEDULE DETAIL MODAL ======== -->
+<div class="pc-modal-backdrop" *ngIf="selectedSchedule" (click)="closeScheduleDetail()">
+  <div class="pc-modal pc-modal--schedule" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div>
+        <div class="modal-title-row">
+          <h2 class="modal-title">{{ selectedSchedule.formName }}</h2>
+          <span class="freq-badge freq-badge--{{ selectedSchedule.frequency }}">
+            <i class="fas fa-sync-alt"></i>
+            {{ selectedSchedule.frequency | titlecase }}
+          </span>
+          <span
+            class="status-pill"
+            [class.status-pill--active]="selectedSchedule.status === 'active'"
+            [class.status-pill--paused]="selectedSchedule.status === 'paused'"
+          >
+            <span
+              class="status-dot"
+              [class.status-dot--green]="selectedSchedule.status === 'active'"
+              [class.status-dot--gray]="selectedSchedule.status === 'paused'"
+            ></span>
+            {{ selectedSchedule.status === 'active' ? 'Active' : 'Paused' }}
+          </span>
+        </div>
+        <p class="modal-subtitle" *ngIf="selectedSchedule.description">
+          {{ selectedSchedule.description }}
+        </p>
+      </div>
+      <button class="close-button" (click)="closeScheduleDetail()">&times;</button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-content">
+
+      <!-- Schedule Configuration -->
+      <div class="schedule-config-section">
+        <h4 class="section-sub-title">
+          <i class="far fa-clock"></i> Schedule Configuration
+        </h4>
+        <div class="schedule-config-grid">
+          <div class="config-item">
+            <span class="config-label">Frequency</span>
+            <span class="config-value">{{ selectedSchedule.frequency | titlecase }}</span>
+          </div>
+          <div class="config-item" *ngIf="selectedSchedule.selectedDays?.length > 0">
+            <span class="config-label">Days</span>
+            <div class="schedule-days">
+              <span class="day-pill" *ngFor="let day of selectedSchedule.selectedDays">{{ day }}</span>
+            </div>
+          </div>
+          <div class="config-item">
+            <span class="config-label">Send Time</span>
+            <span class="config-value">
+              <i class="far fa-clock"></i> {{ selectedSchedule.sendTime }}
+            </span>
+          </div>
+          <div class="config-item">
+            <span class="config-label">Next Send</span>
+            <span
+              class="config-value"
+              [class.config-value--active]="selectedSchedule.status === 'active'"
+              [class.config-value--muted]="selectedSchedule.status === 'paused'"
+            >
+              <i class="far fa-calendar-alt"></i>
+              {{ selectedSchedule.status === 'active' ? (selectedSchedule.nextSendDate | date:'dd/MM/yyyy') : '—' }}
+            </span>
+          </div>
+          <div class="config-item">
+            <span class="config-label">End Date</span>
+            <span class="config-value">
+              <i class="far fa-calendar-alt"></i> {{ selectedSchedule.endDate | date:'dd/MM/yyyy' }}
+            </span>
+          </div>
+          <div class="config-item">
+            <span class="config-label">Created</span>
+            <span class="config-value">{{ selectedSchedule.createdDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Questions -->
+      <div class="schedule-questions-section" *ngIf="selectedSchedule.questions?.length > 0">
+        <h4 class="section-sub-title">
+          <i class="fas fa-edit"></i> Form Questions ({{ selectedSchedule.questions.length }})
+        </h4>
+        <div class="pc-questions">
+          <div
+            class="pc-question"
+            *ngFor="let q of selectedSchedule.questions; let i = index"
+          >
+            <div class="pc-question-left">
+              <div class="pc-qnum">{{ i + 1 }}</div>
+            </div>
+            <div class="pc-question-main">
+              <div class="pc-question-top">
+                <div class="pc-qlabel">{{ q.label }}</div>
+                <div class="pc-qtags">
+                  <span class="pc-tag pc-tag-type">{{ q.type }}</span>
+                  <span *ngIf="q.required" class="pc-tag pc-tag-required">Required</span>
+                  <span *ngIf="!q.required" class="pc-tag pc-tag-optional">Optional</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer modal-footer--space-between">
+      <button
+        class="btn-schedule-toggle"
+        [class.btn-schedule-toggle--pause]="selectedSchedule.status === 'active'"
+        [class.btn-schedule-toggle--resume]="selectedSchedule.status === 'paused'"
+        (click)="toggleScheduleStatus(selectedSchedule)"
+      >
+        <i [class]="selectedSchedule.status === 'active' ? 'fas fa-pause-circle' : 'fas fa-play-circle'"></i>
+        {{ selectedSchedule.status === 'active' ? 'Pause Schedule' : 'Resume Schedule' }}
+      </button>
+      <button class="btn-secondary" (click)="closeScheduleDetail()">Close</button>
     </div>
 
     <div class="mc-footer" *ngIf="modalMode === 'view' && selectedAssignment?.status === 'REVIEWED'">
@@ -559,15 +867,14 @@
     </div>
   </div>
 </div>
+
 <!-- MODAL PROGRESS PICTURES (comparaison avancée) -->
 <div class="checkin-modal-backdrop" *ngIf="showPicturesComparison">
   <div class="checkin-modal submission-modal progress-pictures-modal">
     <!-- HEADER -->
     <div class="checkin-modal-header">
       <h2>Progress Pictures</h2>
-      <button class="close-btn" (click)="onClosePicturesComparison()">
-        &times;
-      </button>
+      <button class="close-btn" (click)="onClosePicturesComparison()">&times;</button>
     </div>
 
     <!-- BODY -->
@@ -601,7 +908,6 @@
           <div class="list-header">
             <span class="list-label">After</span>
           </div>
-
           <div class="thumbs-scroll">
             <div
               class="thumbnail-card"
@@ -615,117 +921,58 @@
               <div class="thumbnail-image-wrapper">
                 <img [src]="picture.imageUrl" alt="Progress thumbnail" />
               </div>
-
               <div class="thumbnail-meta">
-                <div class="thumb-date">
-                  {{ picture.date | date : "dd MMM, y" }}
-                </div>
-                <div class="thumb-weight">
-                  {{ picture.weight }} {{ picture.unit }}
-                </div>
+                <div class="thumb-date">{{ picture.date | date : "dd MMM, y" }}</div>
+                <div class="thumb-weight">{{ picture.weight }} {{ picture.unit }}</div>
               </div>
-
-              <div
-                *ngIf="isSelectedAsBefore(picture)"
-                class="thumbnail-badge thumbnail-badge--before"
-              >
-                Before
-              </div>
-              <div
-                *ngIf="isSelectedAsAfter(picture)"
-                class="thumbnail-badge thumbnail-badge--after"
-              >
-                After
-              </div>
+              <div *ngIf="isSelectedAsBefore(picture)" class="thumbnail-badge thumbnail-badge--before">Before</div>
+              <div *ngIf="isSelectedAsAfter(picture)" class="thumbnail-badge thumbnail-badge--after">After</div>
             </div>
           </div>
         </aside>
 
         <!-- PANELS : COMPARISON -->
-        <section
-          class="comparison-panels"
-          *ngIf="comparisonMode === 'comparison'"
-        >
+        <section class="comparison-panels" *ngIf="comparisonMode === 'comparison'">
           <div class="comparison-panel">
-            <div class="comparison-panel-label comparison-panel-label--before">
-              Before
-            </div>
-
+            <div class="comparison-panel-label comparison-panel-label--before">Before</div>
             <ng-container *ngIf="selectedBeforePicture; else beforePlaceholder">
-              <img
-                [src]="selectedBeforePicture.imageUrl"
-                alt="Before picture"
-              />
+              <img [src]="selectedBeforePicture.imageUrl" alt="Before picture" />
               <div class="panel-footer">
-                <span>
-                  {{ selectedBeforePicture.date | date : "dd MMM, y" }}
-                </span>
-                <span>
-                  {{ selectedBeforePicture.weight }}
-                  {{ selectedBeforePicture.unit }}
-                </span>
+                <span>{{ selectedBeforePicture.date | date : "dd MMM, y" }}</span>
+                <span>{{ selectedBeforePicture.weight }} {{ selectedBeforePicture.unit }}</span>
               </div>
             </ng-container>
-
             <ng-template #beforePlaceholder>
-              <p class="panel-placeholder">
-                Select a <strong>Before</strong> picture on the left.
-              </p>
+              <p class="panel-placeholder">Select a <strong>Before</strong> picture on the left.</p>
             </ng-template>
           </div>
 
           <div class="comparison-panel">
-            <div class="comparison-panel-label comparison-panel-label--after">
-              After
-            </div>
-
+            <div class="comparison-panel-label comparison-panel-label--after">After</div>
             <ng-container *ngIf="selectedAfterPicture; else afterPlaceholder">
               <img [src]="selectedAfterPicture.imageUrl" alt="After picture" />
               <div class="panel-footer">
-                <span>
-                  {{ selectedAfterPicture.date | date : "dd MMM, y" }}
-                </span>
-                <span>
-                  {{ selectedAfterPicture.weight }}
-                  {{ selectedAfterPicture.unit }}
-                </span>
+                <span>{{ selectedAfterPicture.date | date : "dd MMM, y" }}</span>
+                <span>{{ selectedAfterPicture.weight }} {{ selectedAfterPicture.unit }}</span>
               </div>
             </ng-container>
-
             <ng-template #afterPlaceholder>
-              <p class="panel-placeholder">
-                Select an <strong>After</strong> picture on the left.
-              </p>
+              <p class="panel-placeholder">Select an <strong>After</strong> picture on the left.</p>
             </ng-template>
           </div>
         </section>
 
         <!-- PANEL : SINGLE PICTURE -->
-        <section
-          class="comparison-panels comparison-panels--single"
-          *ngIf="comparisonMode === 'single'"
-        >
+        <section class="comparison-panels comparison-panels--single" *ngIf="comparisonMode === 'single'">
           <div class="comparison-panel comparison-panel--single">
-            <div class="comparison-panel-label comparison-panel-label--after">
-              Picture
-            </div>
-
+            <div class="comparison-panel-label comparison-panel-label--after">Picture</div>
             <ng-container *ngIf="selectedSinglePicture; else singlePlaceholder">
-              <img
-                [src]="selectedSinglePicture.imageUrl"
-                alt="Selected picture"
-              />
+              <img [src]="selectedSinglePicture.imageUrl" alt="Selected picture" />
               <div class="panel-footer">
-                <span>
-                  {{ selectedSinglePicture.date | date : "dd MMM, y" }}
-                </span>
-                <span>
-                  {{ selectedSinglePicture.weight }}
-                  {{ selectedSinglePicture.unit }}
-                </span>
+                <span>{{ selectedSinglePicture.date | date : "dd MMM, y" }}</span>
+                <span>{{ selectedSinglePicture.weight }} {{ selectedSinglePicture.unit }}</span>
               </div>
             </ng-container>
-
             <ng-template #singlePlaceholder>
               <p class="panel-placeholder">Select a picture on the left.</p>
             </ng-template>
@@ -736,10 +983,11 @@
   </div>
 </div>
 
+
 <app-assign-select-modal
   [isOpen]="showAssignSelectModal"
   [kind]="assignType"
-  (close)="showAssignSelectModal = false"
+  (close)="showAssignSelectModal = false; showCheckinModal = false"
   (existingClick)="onExistingFromAssignModal()"
   (createClick)="onCreateFromAssignModal()"
 ></app-assign-select-modal>
@@ -758,8 +1006,7 @@
   (onClose)="closeChooseModal()"
   [isAssign]="true"
   [idClient]="this.clientId"
->
-</app-choose-plan-type-modal>
+></app-choose-plan-type-modal>
 
 <app-nutrition-selection-modal
   [isOpen]="showNutritionSelectionModal"
@@ -769,11 +1016,10 @@
   (backClick)="showNutritionSelectionModal = false"
   (assignProgram)="onAssignNutritionFromModal($event)"
 ></app-nutrition-selection-modal>
-<!-- Ajoute ça après app-nutrition-selection-modal -->
+
 <app-form-selection-modal
   [isOpen]="showFormSelectionModal"
   [fullName]="fullName"
-  [clientId]="clientId"
   [preselectFormId]="preselectFormId"
   (assignForm)="onAssignFormFromModal($event)"
   (closeModal)="onCloseFormModal()"

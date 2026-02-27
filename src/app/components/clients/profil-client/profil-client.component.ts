@@ -63,7 +63,19 @@ interface ActiveNutritionPlan {
   carbs: number;
   fat: number;
 }
-
+export interface ScheduledCheckIn {
+  id: string;
+  formName: string;
+  frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly'| 'onetime';
+  selectedDays: string[];
+  sendTime: string;
+  endDate: string; // ISO string: '2026-06-30'
+  status: 'active' | 'paused';
+  nextSendDate: string; // ISO ou Date
+  createdDate: string;
+  description?: string;
+  questions?: Array<{ id: string; label: string; type: string; required: boolean }>;
+}
 @Component({
   selector: 'app-profil-client',
   standalone: true,
@@ -448,11 +460,11 @@ export class ProfilClientComponent {
 
   /* ---------- CHECK-INS ---------- */
 
-  activeSubTab: 'submissions' | 'assigned' = 'submissions';
+  activeSubTab: 'submissions' | 'assigned' | 'scheduled' = 'submissions';
   submissionSearch = '';
   assignedSearch = '';
 
-  setSubTab(tab: 'submissions' | 'assigned') {
+  setSubTab(tab: 'submissions' | 'assigned' | 'scheduled') {
     this.activeSubTab = tab;
   }
 
@@ -606,26 +618,125 @@ export class ProfilClientComponent {
 
       map((items: FormAssignment[]) => [...items]),
 
-      finalize(() => {
-        this.loadingAssignments = false;
-      })
-    ).subscribe({
+    finalize(() => {
+      this.loadingAssignments = false;
+    })
+  ).subscribe({
       next: (items) => {
         this.assignments = items;
 
         this.preselectFormId = null;
-
-        this.activeTab = 'checkins';
-        this.activeSubTab = 'assigned';
-      },
-      error: (err) => {
-        console.error(err);
-        this.loadingAssignments = false;
-        alert('Assign failed');
-      }
-    });
-  }  onCloseFormModal() {
+      this.activeTab = 'checkins';
+      this.activeSubTab = 'assigned';
+    },
+    error: (err) => {
+      console.error(err);
+      this.loadingAssignments = false;
+      alert('Assign failed');
+    }
+  });
+}
+  onCloseFormModal() {
     this.showFormSelectionModal = false;
     this.preselectFormId = null;
   }
+
+  selectedSchedule: ScheduledCheckIn | null = null;
+
+  scheduledCheckIns: ScheduledCheckIn[] = [
+    {
+      id: 'sched-1',
+      formName: 'Weekly Check-In',
+      frequency: 'weekly',
+      selectedDays: ['Mon'],
+      sendTime: '09:00',
+      endDate: '2026-06-30',
+      status: 'active',
+      nextSendDate: '2026-03-03',
+      createdDate: '2026-01-15',
+      description: 'Weekly progress tracking form sent every Monday',
+      questions: [
+        { id: '1', label: 'What was your biggest win this week?', type: 'TEXT', required: true },
+        { id: '2', label: 'How many workouts did you complete this week?', type: 'NUMBER', required: true },
+        { id: '3', label: 'Rate your overall progress this week (1-10)', type: 'SCALE', required: true },
+        { id: '4', label: 'Did you achieve your target weight or body composition?', type: 'YES_NO', required: true },
+        { id: '5', label: 'Upload your progress photos for this week', type: 'PROGRESS_PHOTOS', required: false },
+        { id: '6', label: "Rate your overall satisfaction with this week's progress", type: 'STAR_RATING', required: true },
+      ],
+    },
+    {
+      id: 'sched-2',
+      formName: 'One-Time-Form',
+      frequency: 'onetime',
+      selectedDays: [],
+      sendTime: '10:00',
+      endDate: '2026-12-31',
+      status: 'active',
+      nextSendDate: '2026-03-01',
+      createdDate: '2026-01-01',
+      description: 'Monthly comprehensive progress assessment',
+      questions: [
+        { id: '1', label: 'Upload your monthly progress photos', type: 'PROGRESS_PHOTOS', required: true },
+        { id: '2', label: 'What are your goals for next month?', type: 'TEXT', required: true },
+        { id: '3', label: 'Rate your overall satisfaction this month (1-10)', type: 'SCALE', required: true },
+        { id: '4', label: 'Which area of fitness improved the most this month?', type: 'MULTIPLE_CHOICE', required: true },
+      ],
+    },
+    {
+      id: 'sched-3',
+      formName: 'Daily Mood Tracker',
+      frequency: 'daily',
+      selectedDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      sendTime: '08:00',
+      endDate: '2026-04-30',
+      status: 'paused',
+      nextSendDate: '',
+      createdDate: '2026-02-01',
+      description: 'Quick daily mood and energy check',
+      questions: [
+        { id: '1', label: 'How are you feeling today?', type: 'SCALE', required: true },
+        { id: '2', label: 'Rate your energy level', type: 'STAR_RATING', required: true },
+        { id: '3', label: 'Any notes for your coach?', type: 'TEXT', required: false },
+      ],
+    },
+  ];
+
+// --- Getters ---
+  get activeSchedulesCount(): number {
+    return this.scheduledCheckIns.filter(s => s.status === 'active').length;
+  }
+  get pausedSchedulesCount(): number {
+    return this.scheduledCheckIns.filter(s => s.status === 'paused').length;
+  }
+
+// --- Méthodes ---
+  openScheduleDetail(schedule: ScheduledCheckIn): void {
+    this.selectedSchedule = { ...schedule };
+  }
+
+  closeScheduleDetail(): void {
+    this.selectedSchedule = null;
+  }
+
+  toggleScheduleStatus(schedule: ScheduledCheckIn): void {
+    const newStatus = schedule.status === 'active' ? 'paused' : 'active';
+    this.scheduledCheckIns = this.scheduledCheckIns.map(s =>
+      s.id === schedule.id ? { ...s, status: newStatus } : s
+    );
+    if (this.selectedSchedule?.id === schedule.id) {
+      this.selectedSchedule = { ...this.selectedSchedule, status: newStatus };
+    }
+  }
+
+  deleteSchedule(schedule: ScheduledCheckIn): void {
+    this.scheduledCheckIns = this.scheduledCheckIns.filter(s => s.id !== schedule.id);
+    if (this.selectedSchedule?.id === schedule.id) {
+      this.selectedSchedule = null;
+    }
+  }
+
+
+
+
+
 }
