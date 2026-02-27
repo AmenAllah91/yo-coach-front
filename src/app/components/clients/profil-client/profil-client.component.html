@@ -379,129 +379,186 @@
   </div>
 </section>
 
-<!-- ======== CHECK-IN MODAL (READ ONLY) ======== -->
-<div *ngIf="isModalOpen && selectedAssignment" class="pc-modal-backdrop" (click)="closeModal()">
-  <div class="pc-modal" (click)="$event.stopPropagation()">
-
-    <!-- Header -->
-    <div class="modal-header">
-      <div>
-        <h2 class="modal-title">
+<div
+  *ngIf="isModalOpen && selectedAssignment"
+  class="mc-backdrop"
+  (click)="closeModal()"
+>
+  <div class="mc-modal" (click)="$event.stopPropagation()">
+    <!-- HEADER -->
+    <div class="mc-header">
+      <div class="mc-header-left">
+        <h2 class="mc-title">
           {{ selectedAssignment.formName || selectedAssignment.formId }}
         </h2>
 
-        <p class="modal-subtitle">
-          <ng-container *ngIf="selectedAssignment.dueAt">
-            Échéance : {{ selectedAssignment.dueAt | date:'dd/MM/yyyy' }}
-          </ng-container>
-          <ng-container *ngIf="!selectedAssignment.dueAt">
-            Affecté le : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}
-          </ng-container>
+        <div class="mc-sub">
+          <div class="mc-sub-row">
+            <svg class="mc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12v6"></path>
+            </svg>
+            <span>Client: {{ fullName }}</span>
+          </div>
 
-          <ng-container *ngIf="selectedAssignment.submittedAt">
-            · Soumis le : {{ selectedAssignment.submittedAt | date:'dd/MM/yyyy' }}
-          </ng-container>
-        </p>
+          <div class="mc-sub-row" *ngIf="modalMode === 'view'">
+            <svg class="mc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"></line>
+            </svg>
+            <span>Submitted: {{ selectedAssignment?.submittedAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+
+          <div class="mc-sub-row" *ngIf="modalMode === 'preview'">
+            <svg class="mc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"></line>
+            </svg>
+            <span>Due: {{ selectedAssignment?.dueAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
       </div>
 
-      <button class="close-button" type="button" (click)="closeModal()">
-        &times;
+      <button type="button" class="mc-close" (click)="closeModal()">
+        ✕
       </button>
     </div>
 
-    <!-- Body -->
-    <div class="modal-content">
+    <!-- BODY (scroll like 1111) -->
+    <div class="mc-body">
+      <div *ngIf="modalLoading" class="mc-loading">Chargement...</div>
 
-      <!-- Loading -->
-      <div *ngIf="modalLoading" class="modal-loading">
-        Chargement...
-      </div>
-
-      <!-- Error -->
-      <div *ngIf="modalError && !modalLoading" class="alert alert--modal">
+      <div *ngIf="modalError && !modalLoading" class="mc-alert">
         {{ modalError }}
       </div>
 
-      <!-- Questions -->
-      <div *ngIf="!modalLoading && currentForm" class="pc-questions">
-        <div
-          *ngFor="let q of currentForm.questions; let i = index"
-          class="pc-question"
-        >
-          <div class="pc-question-left">
-            <div class="pc-qnum">{{ i + 1 }}</div>
+      <!-- Preview banner (optional, keep if you want same as manage) -->
+      <div *ngIf="modalMode === 'preview'" class="mc-banner">
+        <div class="mc-banner-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 16v-4m0-4h.01"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="mc-banner-title">Preview Mode</div>
+          <div class="mc-banner-text">
+            This is a preview of the questions assigned to the client. The client has not submitted their response yet.
+          </div>
+        </div>
+      </div>
+
+      <!-- QUESTIONS (1111 style: no cards) -->
+      <div *ngIf="!modalLoading && currentForm" class="mc-questions">
+        <div *ngFor="let q of currentForm.questions; let i = index" class="mc-q">
+          <div class="mc-q-label">
+            {{ i + 1 }}. {{ q.label }}
+            <span *ngIf="q.required" class="mc-required">*</span>
           </div>
 
-          <div class="pc-question-main">
-            <div class="pc-question-top">
-              <div class="pc-qlabel">
-                {{ q.label }}
+          <!-- VIEW MODE -->
+          <ng-container *ngIf="modalMode === 'view'; else previewTpl">
+            <ng-container *ngIf="getSubmittedAnswer(q.id) as ans; else emptyAns">
+
+              <!-- TEXT -->
+              <div *ngIf="q.type === 'TEXT'" class="mc-answer mc-answer--text">
+                {{ ans.text || '—' }}
               </div>
 
-              <div class="pc-qtags">
-                <span class="pc-tag pc-tag-type">{{ q.type }}</span>
-                <span *ngIf="q.required" class="pc-tag pc-tag-required">Required</span>
+              <!-- MULTIPLE_CHOICE (blue box like 1111) -->
+              <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-answer mc-answer--selected">
+                {{ getOptionLabel(q, ans.selectedOptionId || '') }}
+              </div>
+
+              <!-- YES_NO (container + green pill like 1111) -->
+              <div *ngIf="q.type === 'YES_NO'" class="mc-yesno-wrap">
+                <span
+                  class="mc-yesno-pill"
+                  [class.is-yes]="ans.yes === true"
+                  [class.is-no]="ans.yes === false"
+                >
+                  {{ ans.yes === true ? 'Yes' : ans.yes === false ? 'No' : '—' }}
+                </span>
+              </div>
+
+              <!-- STAR_RATING -->
+              <div *ngIf="q.type === 'STAR_RATING'" class="mc-stars">
+                <span
+                  *ngFor="let star of getStarsArray(q.maxStars || 5)"
+                  class="mc-star"
+                  [class.filled]="(ans.rating || 0) >= star"
+                >★</span>
+              </div>
+
+              <!-- DATE -->
+              <div *ngIf="q.type === 'DATE'" class="mc-answer mc-answer--text">
+                {{ ans.date || '—' }}
+              </div>
+            </ng-container>
+
+            <ng-template #emptyAns>
+              <div class="mc-answer mc-answer--empty">—</div>
+            </ng-template>
+          </ng-container>
+
+          <!-- PREVIEW MODE -->
+          <ng-template #previewTpl>
+            <div *ngIf="q.type === 'TEXT'" class="mc-preview">Text answer expected</div>
+
+            <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-preview-list">
+              <div *ngFor="let opt of q.options" class="mc-preview-opt">
+                <span class="mc-preview-box"></span>
+                <span>{{ opt.label }}</span>
               </div>
             </div>
 
-            <!-- ANSWER AREA -->
-            <ng-container *ngIf="isViewMode; else pendingBlock">
-              <ng-container *ngIf="getSubmittedAnswer(q.id) as ans; else emptyAns">
+            <div *ngIf="q.type === 'YES_NO'" class="mc-preview-yesno">
+              <span class="mc-preview-pill">Yes</span>
+              <span class="mc-preview-pill">No</span>
+            </div>
 
-                <!-- TEXT -->
-                <div *ngIf="q.type === 'TEXT'" class="pc-answer">
-                  {{ ans.text || '—' }}
-                </div>
+            <div *ngIf="q.type === 'STAR_RATING'" class="mc-preview-stars">
+              <span *ngFor="let star of getStarsArray(q.maxStars || 5)" class="mc-preview-star">★</span>
+            </div>
 
-                <!-- MULTIPLE_CHOICE -->
-                <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="pc-answer pc-answer--badge">
-                  {{ getOptionLabel(q, ans.selectedOptionId || '') }}
-                </div>
-
-                <!-- YES_NO -->
-                <div *ngIf="q.type === 'YES_NO'" class="pc-answer">
-            <span class="pc-yesno" [class.is-yes]="ans.yes === true" [class.is-no]="ans.yes === false">
-              {{ ans.yes === true ? 'Oui' : ans.yes === false ? 'Non' : '—' }}
-            </span>
-                </div>
-
-                <!-- STAR_RATING -->
-                <div *ngIf="q.type === 'STAR_RATING'" class="pc-stars">
-            <span
-              *ngFor="let star of getStarsArray(q.maxStars || 5)"
-              class="pc-star"
-              [class.filled]="(ans.rating || 0) >= star"
-            >★</span>
-                </div>
-
-                <!-- DATE -->
-                <div *ngIf="q.type === 'DATE'" class="pc-answer">
-                  {{ ans.date || '—' }}
-                </div>
-
-              </ng-container>
-
-              <ng-template #emptyAns>
-                <div class="pc-answer pc-answer--empty">—</div>
-              </ng-template>
-            </ng-container>
-
-            <ng-template #pendingBlock>
-              <div class="pc-answer pc-answer--empty">(Formulaire non soumis)</div>
-            </ng-template>
-          </div>
+            <div *ngIf="q.type === 'DATE'" class="mc-preview">Date selection expected</div>
+          </ng-template>
         </div>
       </div>
     </div>
 
-    <div class="modal-footer">
-      <button type="button" class="btn-secondary" (click)="closeModal()">
-        Fermer
+    <!-- FOOTER (same alignment as 1111) -->
+    <div class="mc-footer" *ngIf="modalMode === 'preview'">
+      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Close Preview</button>
+    </div>
+
+    <div class="mc-footer" *ngIf="modalMode === 'view' && selectedAssignment?.status === 'SUBMITTED'">
+      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Cancel</button>
+
+      <button
+        type="button"
+        class="mc-btn mc-btn--primary"
+        (click)="markAsReviewed()"
+        [disabled]="reviewLoading"
+      >
+        ✓ {{ reviewLoading ? 'Saving...' : 'Mark as Reviewed' }}
       </button>
+    </div>
+
+    <div class="mc-footer" *ngIf="modalMode === 'view' && selectedAssignment?.status === 'REVIEWED'">
+      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Close</button>
+    </div>
+
+    <div *ngIf="reviewError" class="mc-alert mc-alert--footer">
+      {{ reviewError }}
     </div>
   </div>
 </div>
-
 <!-- MODAL PROGRESS PICTURES (comparaison avancée) -->
 <div class="checkin-modal-backdrop" *ngIf="showPicturesComparison">
   <div class="checkin-modal submission-modal progress-pictures-modal">
@@ -719,6 +776,6 @@
   [clientId]="clientId"
   [preselectFormId]="preselectFormId"
   (assignForm)="onAssignFormFromModal($event)"
-  (closeModal)="showFormSelectionModal = false"
+  (closeModal)="onCloseFormModal()"
   (backClick)="backToAssignModal()"
 ></app-form-selection-modal>

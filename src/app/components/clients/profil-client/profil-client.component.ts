@@ -19,8 +19,8 @@ import {FormDetails, FormsApiService} from "../../forms/services/forms-api.servi
 import {Answer, QuestionType} from "../../../models/forms.model";
 import {SubmissionsApiService} from "../../forms/services/submissions-api.service";
 import { Form } from '../../forms/services/forms-api.service';
-import { switchMap,finalize  } from 'rxjs/operators';
-
+import { from } from 'rxjs';
+import { switchMap, finalize, map } from 'rxjs/operators';
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
 
@@ -114,6 +114,9 @@ export class ProfilClientComponent {
 
   isModalOpen = false;
   isViewMode = false;
+  modalMode: 'preview' | 'view' = 'preview';
+  reviewLoading = false;
+  reviewError: string | null = null;
 
   modalLoading = false;
   modalError: string | null = null;
@@ -182,17 +185,18 @@ export class ProfilClientComponent {
       if (openAssign) {
         this.assignType = 'CHECKIN';
         this.showAssignSelectModal = false;
-        this.showFormSelectionModal = true;
+        Promise.resolve().then(() => {
+          this.showFormSelectionModal = true;
+        });      }
+
+      if (typeof preselectFormId === 'string' && preselectFormId.trim() !== '') {
+        this.preselectFormId = preselectFormId;
       }
-
-      this.preselectFormId = preselectFormId || null;
-
       if (openAssign || preselectFormId) {
         this.router.navigate([], {
           relativeTo: this.route,
           queryParams: {
-            openAssign: null,
-            preselectFormId: null
+            openAssign: null
           },
           queryParamsHandling: 'merge',
           replaceUrl: true
@@ -272,11 +276,38 @@ export class ProfilClientComponent {
     });
   }
 
+  markAsReviewed(): void {
+    if (!this.selectedAssignment) return;
+
+    this.reviewLoading = true;
+    this.reviewError = null;
+
+    this.assignmentsApi.reviewAssignment(this.selectedAssignment.id, null)
+      .pipe(finalize(() => (this.reviewLoading = false)))
+      .subscribe({
+        next: (updated) => {
+          const idx = this.assignments.findIndex(a => a.id === updated.id);
+          if (idx >= 0) this.assignments[idx] = { ...this.assignments[idx], ...updated };
+
+          this.selectedAssignment = { ...this.selectedAssignment, ...updated };
+
+          this.closeModal();
+
+          this.loadClientAssignments();
+        },
+        error: (err) => {
+          console.error(err);
+          this.reviewError = err?.error?.message ?? 'Failed to mark as reviewed.';
+        }
+      });
+  }
   openAssignmentModal(a: FormAssignment): void {
     this.selectedAssignment = a;
 
     this.isModalOpen = true;
-    this.isViewMode = a.status === 'SUBMITTED' || a.status === 'REVIEWED';
+
+    const isSubmitted = a.status === 'SUBMITTED' || a.status === 'REVIEWED';
+    this.modalMode = isSubmitted ? 'view' : 'preview';
 
     this.currentForm = null;
     this.submittedAnswers = [];
@@ -292,7 +323,7 @@ export class ProfilClientComponent {
             questions: form.questions.slice().sort((x, y) => (x.order ?? 0) - (y.order ?? 0)),
           };
 
-          if (this.isViewMode) {
+          if (this.modalMode === 'view') {
             this.submissionsApi.getByAssignmentId(a.id)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
@@ -543,22 +574,21 @@ export class ProfilClientComponent {
   showFormSelectionModal = false;
 
 
-onAssignFormFromModal(payload: { form: Form; assignedDate: string; dueDate: string; endDate: string | null }) {
-  const { form, dueDate, endDate } = payload;
-  const hasSchedule = !!form.schedule;
+  onAssignFormFromModal(payload: { form: Form; assignedDate: string; dueDate: string; endDate: string | null }) {
+    const { form, dueDate, endDate } = payload;
+    const hasSchedule = !!form.schedule;
 
-  this.showFormSelectionModal = false;
+    this.showFormSelectionModal = false;
+    this.loadingAssignments = true;
 
-  this.loadingAssignments = true;
-
-  this.formsApi.ensurePublished(form.id).pipe(
-    switchMap(() =>
-      this.assignmentsApi.bulkAssign(form.id, {
-        assigneeIds: [this.clientId],
-        dueDate: hasSchedule ? null : (dueDate || null),
-        endDate: hasSchedule ? (endDate || null) : null,
-      })
-    ),
+    this.formsApi.ensurePublished(form.id).pipe(
+      switchMap(() =>
+        this.assignmentsApi.bulkAssign(form.id, {
+          assigneeIds: [this.clientId],
+          dueDate: hasSchedule ? null : (dueDate || null),
+          endDate: hasSchedule ? (endDate || null) : null,
+        })
+      ),
 
     switchMap(() =>
       this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(
@@ -566,25 +596,36 @@ onAssignFormFromModal(payload: { form: Form; assignedDate: string; dueDate: stri
       )
     ),
 
-    switchMap(async (res: any) => {
-      this.assignments = res.content;
-      await this.attachFormNames(this.assignments);
-    }),
+      switchMap((res: any) =>
+        from((async () => {
+          const items: FormAssignment[] = res.content ?? [];
+          await this.attachFormNames(items);
+          return items;
+        })())
+      ),
 
-    finalize(() => {
-      this.loadingAssignments = false;
-    })
-  ).subscribe({
-    next: () => {
-      this.activeTab = 'checkins';
-      this.activeSubTab = 'assigned';
-    },
-    error: (err) => {
-      console.error(err);
-      this.loadingAssignments = false;
-      alert('Assign failed');
-    }
-  });
-}
+      map((items: FormAssignment[]) => [...items]),
 
+      finalize(() => {
+        this.loadingAssignments = false;
+      })
+    ).subscribe({
+      next: (items) => {
+        this.assignments = items;
+
+        this.preselectFormId = null;
+
+        this.activeTab = 'checkins';
+        this.activeSubTab = 'assigned';
+      },
+      error: (err) => {
+        console.error(err);
+        this.loadingAssignments = false;
+        alert('Assign failed');
+      }
+    });
+  }  onCloseFormModal() {
+    this.showFormSelectionModal = false;
+    this.preselectFormId = null;
+  }
 }

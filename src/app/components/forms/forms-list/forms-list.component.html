@@ -121,7 +121,7 @@
                 <div class="dropdown-menu" [id]="'dropdown-' + f.id" *ngIf="openedActionsId() === f.id">
 
                   <ng-container *ngIf="viewMode() === 'active'; else archivedActions">
-                    <button class="dropdown-item" type="button" *ngIf="f.status !== 'PUBLISHED'" (click)="onEdit(f); closeActions()">
+                    <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()">
                       <i-feather name="edit-2"></i-feather> Modifier
                     </button>
 
@@ -136,8 +136,7 @@
                     <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()">
                       <i-feather name="archive"></i-feather> Archiver
                     </button>
-
-                    <button class="dropdown-item delete" type="button" *ngIf="f.status !== 'PUBLISHED'" (click)="openDelete(f); closeActions()">
+                    <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()">
                       <i-feather name="trash-2"></i-feather> Supprimer
                     </button>
                   </ng-container>

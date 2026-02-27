@@ -10,6 +10,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { ClientService } from '../../../service/client.service';
 import { switchMap } from 'rxjs/operators';
 import { exhaustMap, finalize, tap, catchError, EMPTY } from 'rxjs';
+import {ToastrService} from "ngx-toastr";
 @Component({
   selector: 'app-forms-list',
   standalone: true,
@@ -88,6 +89,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
     private api: FormsApiService,
     private assignmentsApi: AssignmentsApiService,
     private router: Router,
+    private toastr: ToastrService,
     private clientService: ClientService,
   ) {}
 
@@ -174,6 +176,33 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.loadPage();
   }
 
+  private isPublished(f: Form): boolean {
+    return (f.status ?? '').toUpperCase() === 'PUBLISHED';
+  }
+
+  onEditGuarded(f: Form): void {
+    if (this.isPublished(f)) {
+      this.toastr.warning("Ce formulaire est publié. Vous ne pouvez pas le modifier.", "Action impossible", {
+        timeOut: 2500,
+        closeButton: true,
+        progressBar: true,
+      });
+      return;
+    }
+    this.onEdit(f);
+  }
+
+  onDeleteGuarded(f: Form): void {
+    if (this.isPublished(f)) {
+      this.toastr.warning("Ce formulaire est publié. Vous ne pouvez pas le supprimer.", "Action impossible", {
+        timeOut: 2500,
+        closeButton: true,
+        progressBar: true,
+      });
+      return;
+    }
+    this.openDelete(f);
+  }
   changePageSize(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(0);
@@ -364,32 +393,31 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
     this.assigning.set(true);
     this.usersError.set(null);
+
     const hasSchedule = !!form.schedule;
+
+    let dueDate: string | null = null;
+
+    if (!hasSchedule) {
+      if (this.scheduleEnabled && this.scheduledDateValue) {
+        dueDate = this.scheduledDateValue;
+      } else {
+        dueDate = new Date().toISOString();
+      }
+    }
 
     this.api.ensurePublished(form.id).pipe(
       switchMap(() =>
         this.assignmentsApi.bulkAssign(form.id, {
           assigneeIds: ids,
-          dueDate: (!hasSchedule && this.scheduleEnabled) ? this.scheduledDateValue : null,
+          dueDate: dueDate,
           endDate: hasSchedule ? this.endDateValue : null,
         })
       )
     ).subscribe({
       next: res => {
-        const createdCount = res?.created?.length ?? 0;
-        const errors = res?.errors ?? [];
-        if (errors.length > 0) {
-          const already = errors.filter((e: any) => e.reason === 'ALREADY_ASSIGNED').length;
-          const other = errors.length - already;
-          let msg = `Affectation partielle : ${createdCount} succès`;
-          if (already > 0) msg += ` • ${already} déjà affecté(s)`;
-          if (other > 0) msg += ` • ${other} erreur(s)`;
-          this.usersError.set(msg);
-        } else {
-          this.closeAssign();
-        }
         this.assigning.set(false);
-        this.assignOpen.set(false);
+        this.closeAssign();
       },
       error: err => {
         this.assigning.set(false);
@@ -397,7 +425,6 @@ export class FormsListComponent implements OnInit, OnDestroy {
       },
     });
   }
-
   // ── Dropdown ──────────────────────────────────────────────────────────────────
   readonly openDropdownId = signal<string | null>(null);
 

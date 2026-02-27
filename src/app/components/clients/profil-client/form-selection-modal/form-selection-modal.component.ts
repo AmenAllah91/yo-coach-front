@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormsApiService, Form } from '../../../forms/services/forms-api.service';
+import {FeatherModule} from "angular-feather";
 
 export interface CheckinFormItem {
   id: string;
@@ -13,7 +14,7 @@ export interface CheckinFormItem {
 @Component({
   selector: 'app-form-selection-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './form-selection-modal.component.html',
   styleUrls: ['./form-selection-modal.component.scss'],
 })
@@ -46,11 +47,14 @@ export class FormSelectionModalComponent implements OnChanges {
   pageSize = 50;
 
   forms: CheckinFormItem[] = [];
-
+  scheduleEnabled = false;
   constructor(private formsApi: FormsApiService) {}
 
-  ngOnChanges(): void {
-    if (this.isOpen) {
+  ngOnChanges(changes: SimpleChanges): void {
+    const openedNow = changes['isOpen']?.currentValue === true;
+    const newPreselect = changes['preselectFormId']?.currentValue;
+
+    if (this.isOpen && (openedNow || !!newPreselect)) {
       this.resetUi();
       this.loadForms();
     }
@@ -69,7 +73,36 @@ export class FormSelectionModalComponent implements OnChanges {
     this.loading = true;
     this.error = null;
 
-    this.formsApi.getMyFormsPage(this.pageIndex, this.pageSize, undefined, true, this.clientId).subscribe({
+    if (this.preselectFormId) {
+      this.formsApi.getFormById(this.preselectFormId).subscribe({
+        next: (f: any) => {
+          if (f?.status === 'ARCHIVED') {
+            this.forms = [];
+            this.loading = false;
+            return;
+          }
+
+          const item: CheckinFormItem = {
+            id: String(f.id),
+            name: f.title ?? f.name ?? '(Untitled)',
+            questionCount: Array.isArray(f.questions) ? f.questions.length : (f.questionsCount ?? 0),
+            raw: f,
+          };
+
+          this.forms = [item];
+          this.selectForm(item);
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error = err?.error?.message ?? 'Failed to load created form';
+        }
+      });
+
+      return;
+    }
+
+    this.formsApi.getMyFormsPage(this.pageIndex, this.pageSize).subscribe({
       next: (res: any) => {
         const content: Form[] = (res?.content ?? []).filter(f => f.status !== 'ARCHIVED');
 
@@ -79,11 +112,6 @@ export class FormSelectionModalComponent implements OnChanges {
           questionCount: Array.isArray(f.questions) ? f.questions.length : (f.questionsCount ?? 0),
           raw: f,
         }));
-
-        if (this.preselectFormId) {
-          const found = this.forms.find(x => x.id === this.preselectFormId);
-          if (found) this.selectForm(found);
-        }
 
         this.loading = false;
       },
@@ -104,15 +132,23 @@ export class FormSelectionModalComponent implements OnChanges {
     this.selectedFormId = form.id;
     this.selectedForm = form;
 
-    this.dueDateValue = '';
+    this.scheduleEnabled = false;
     this.endDateValue = '';
+
+    const today = new Date().toISOString().split('T')[0];
+    this.dueDateValue = today;
   }
 
   canAssign(): boolean {
     if (!this.selectedForm) return false;
 
     const hasSchedule = !!this.selectedForm.raw?.schedule;
-    return hasSchedule ? !!this.endDateValue : !!this.dueDateValue;
+
+    if (hasSchedule) {
+      return !!this.endDateValue;
+    }
+
+    return this.scheduleEnabled ? !!this.dueDateValue : true;
   }
 
   assign() {
@@ -121,10 +157,20 @@ export class FormSelectionModalComponent implements OnChanges {
     const form = this.selectedForm.raw;
     const hasSchedule = !!form.schedule;
 
+    let dueDate: string | null = null;
+
+    if (!hasSchedule) {
+      if (this.scheduleEnabled && this.dueDateValue) {
+        dueDate = this.dueDateValue;
+      } else {
+        dueDate = new Date().toISOString().split('T')[0];
+      }
+    }
+
     this.assignForm.emit({
       form,
-      assignedDate: hasSchedule ? '' : this.dueDateValue,
-      dueDate: hasSchedule ? null as any : this.dueDateValue,
+      assignedDate: hasSchedule ? '' : dueDate!,
+      dueDate: hasSchedule ? null as any : dueDate,
       endDate: hasSchedule ? this.endDateValue : null,
     });
   }

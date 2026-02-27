@@ -334,3 +334,91 @@
   opacity: .75;
   line-height: 1.35;
 }
+
+
+.am-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.am-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 16px 0;
+}
+
+.am-schedule__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.am-schedule__label {
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.am-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: all 0.15s ease;
+}
+
+.am-checkbox--checked {
+  border-color: #44b4df;
+  background: #44b4df;
+  color: #fff;
+}
+
+.am-check-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.am-date-wrap {
+  position: relative;
+  max-width: 230px;
+  margin-left: 24px;
+}
+
+.am-date-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+
+.am-date-input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  font-size: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    border-color: #44b4df;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
+    outline: none;
+  }
+}

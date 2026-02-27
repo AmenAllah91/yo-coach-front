@@ -28,9 +28,43 @@
 
     <div class="date-panel" *ngIf="selectedForm">
       <ng-container *ngIf="!selectedForm.raw?.schedule; else scheduleTpl">
-        <div class="date-panel-title">Due Date *</div>
-        <div class="date-panel-row">
-          <input class="date-input" type="date" [(ngModel)]="dueDateValue" />
+
+        <div class="am-schedule">
+
+          <label class="am-schedule__row">
+            <input
+              type="checkbox"
+              class="am-sr-only"
+              [checked]="scheduleEnabled"
+              (change)="scheduleEnabled = !scheduleEnabled"
+            />
+
+            <span
+              class="am-checkbox am-checkbox--sm"
+              [class.am-checkbox--checked]="scheduleEnabled"
+            >
+        <i-feather
+          *ngIf="scheduleEnabled"
+          name="check"
+          class="am-check-icon"
+        ></i-feather>
+      </span>
+
+            <span class="am-schedule__label">
+        Schedule for a specific date
+      </span>
+          </label>
+
+          <div class="am-date-wrap" *ngIf="scheduleEnabled">
+            <i-feather name="calendar" class="am-date-icon"></i-feather>
+
+            <input
+              class="am-date-input"
+              type="date"
+              [(ngModel)]="dueDateValue"
+            />
+          </div>
+
         </div>
       </ng-container>
 

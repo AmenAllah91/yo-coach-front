@@ -110,7 +110,7 @@ export class ManageCheckinsComponent implements OnInit{
     this.loading = true;
     this.error = null;
 
-    this.assignmentsApi.pageOwnerAssignments(0, 200, 'dueAt', 'ASC')
+    this.assignmentsApi.pageOwnerAssignments(0, 200, 'dueAt', 'DESC')
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (res) => {
