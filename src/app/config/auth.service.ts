@@ -17,26 +17,36 @@ export class AuthService {
   keycloak:KeycloakService = inject(KeycloakService);
 
   constructor() {
-    if (this.keycloak.isLoggedIn()) {
-      this.storeUserInfo();
+    this.initUserInfo();
+  }
+
+  private async initUserInfo() {
+    const loggedIn = await this.keycloak.isLoggedIn();
+    if (loggedIn) {
+      await this.storeUserInfo();
     }
   }
-  storeUserInfo() {
-    let token : string ;
-    let roles : string[] ;
-    let username = this.getUsername();
-    let userId= this.getId();
-    this.extractUserName().then(u => username = u)
-    this.extractUserId().then(u=>userId=u)
-    this.getToken().then(t => token = t);
-    this.extractRoles().then(userRoles => roles = userRoles)
 
-    this.keycloak.loadUserProfile().then(userProfile => {
+  async storeUserInfo() {
+    try {
+      const profile = await this.keycloak.loadUserProfile();
+      const token = await this.keycloak.getToken();
+      const decoded: any = jwtDecode(token);
+
+      const username = decoded.preferred_username;
+      const userId = decoded.sub;
+      const roles = decoded.realm_access?.roles || [];
+
       sessionStorage.setItem('authToken', token);
       sessionStorage.setItem('username', username);
       sessionStorage.setItem('userId', userId);
       sessionStorage.setItem('roles', JSON.stringify(roles));
-    });
+
+      console.log('User info stored:', { username, userId, roles });
+
+    } catch (err) {
+      console.error('Failed to store user info', err);
+    }
   }
   public logout(): void {
     this.keycloak.logout(environment.apiUrl).then(()=>{
@@ -66,10 +76,18 @@ export class AuthService {
     return this.keycloak.getKeycloakInstance()?.profile?.username as string;
   }
 
-  getId(): string {
-    return this.keycloak?.getKeycloakInstance()?.profile?.id as string;
-  }
+  public async getId(): Promise<string | null> {
+    try {
+      const token = await this.keycloak.getToken();
+      if (!token) return null;
 
+      const decoded: any = jwtDecode(token);
+      return decoded.sub || null;
+    } catch (err) {
+      console.error('Failed to decode token for user ID', err);
+      return null;
+    }
+  }
   getTokenExpirationDate(): number {
     return (this.keycloak.getKeycloakInstance().refreshTokenParsed as { exp: number })['exp'] as number;
   }

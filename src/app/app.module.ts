@@ -29,15 +29,18 @@ import { createTranslateLoader } from './app.config';
 import { APP_ROUTE } from './app.routes';
 import { LanguageService } from './template/core';
 import { PageLoaderComponent } from './template/layout/page-loader/page-loader.component';
+import {firstValueFrom} from "rxjs";
+import {AuthService} from "@config/auth.service";
+import {environment} from "@env/environment";
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
 }
 
-function initializeKeycloak(keycloak: KeycloakService) {
-  return () => {
+function initializeKeycloakAndSync(keycloak: KeycloakService, authService: AuthService, http: HttpClient) {
+  return async () => {
     console.log('Initializing Keycloak...');
-    return keycloak.init({
+    const authenticated = await keycloak.init({
       config: {
         url: 'https://login-int.yogym.co',
         realm: 'yo-coach',
@@ -47,16 +50,27 @@ function initializeKeycloak(keycloak: KeycloakService) {
         onLoad: 'check-sso',
         checkLoginIframe: false
       }
-    }).then(authenticated => {
-      console.log('Keycloak initialized. Authenticated:', authenticated);
-      return authenticated;
-    }).catch(error => {
-      console.error('Keycloak initialization failed:', error);
+    }).catch(err => {
+      console.error('Keycloak initialization failed:', err);
       return false;
     });
+
+    if (authenticated) {
+      console.log('Keycloak initialized. Authenticated:', authenticated);
+      try {
+        const user = await firstValueFrom(http.post<any>(`${environment.baseApiUrl}/public/sync`, {}));
+        if (user && user.id) {
+          sessionStorage.setItem('userId', user.id);
+          console.log('User synced with backend:', user);
+        }
+      } catch (err) {
+        console.error('Error syncing user with backend:', err);
+      }
+    }
+
+    return authenticated;
   };
-}
-@NgModule({
+}@NgModule({
   declarations: [
     AppComponent,
   ],
@@ -114,9 +128,9 @@ function initializeKeycloak(keycloak: KeycloakService) {
 
 
       provide: APP_INITIALIZER,
-      useFactory: initializeKeycloak,
+      useFactory: initializeKeycloakAndSync,
       multi: true,
-      deps: [KeycloakService]
+      deps: [KeycloakService, AuthService, HttpClient]
     }
   ],
   bootstrap: [AppComponent]

@@ -3,11 +3,14 @@
 }
 
 .form-group label {
-
   display: block;
-  font-weight: 600;
   margin-bottom: 5px;
   color: #333;
+}
+
+.form-group label input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.1);
 }
 
 .form-group input,

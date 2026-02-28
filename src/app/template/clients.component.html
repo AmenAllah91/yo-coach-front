@@ -111,6 +111,7 @@
 
   <!-- Add Client Modal -->
   <app-add-client-modal
+    *ngIf="showAddModal"
     [isVisible]="showAddModal"
     (onClose)="closeAddModal()"
     (onCreate)="onCreateClient($event)">

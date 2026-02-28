@@ -1,7 +1,7 @@
-<div class="inv-root">
+<!-- Rien n’est affiché tant que l’invitation n’existe pas -->
+<div class="inv-root" *ngIf="!loading && invitation">
+
   <div class="inv-container">
-
-
 
     <!-- Card -->
     <div class="inv-card">
@@ -11,18 +11,29 @@
 
         <!-- Badge circulaire -->
         <div class="inv-logo">
-          <img src="assets/yocoachlogo.png" alt="YoCoach" class="inv-logo__img" />
+          <img src="assets/yocoachlogo.png"
+               alt="YoCoach"
+               class="inv-logo__img" />
         </div>
 
         <!-- Texte invitation -->
         <h1 class="inv-title">
-          <strong>{{ coachName }}</strong> invited you to be coached on the YoCoach mobile app.
+          <strong>{{ invitation.coachName }}</strong>
+          invited you to be coached on the YoCoach mobile app.
         </h1>
 
-        <p class="inv-sub">Please complete your setup by clicking the link below.</p>
+        <p class="inv-sub">
+          Please complete your setup by clicking the link below.
+        </p>
 
         <!-- Bouton CTA -->
-        <a [href]="inviteLink" class="inv-cta">Accept Invitation</a>
+        <button
+          class="inv-cta"
+          *ngIf="invitation.status === 'PENDING'"
+          (click)="acceptInvitation()">
+          Accept Invitation
+        </button>
+
       </div>
 
       <!-- Divider -->
@@ -30,8 +41,14 @@
 
       <!-- Fallback link -->
       <div class="inv-fallback">
-        <p class="inv-fallback__label">If the button doesn't work, paste this link in your browser:</p>
-        <a [href]="inviteLink" class="inv-fallback__link">{{ inviteLink }}</a>
+        <p class="inv-fallback__label">
+          If the button doesn't work, paste this link in your browser:
+        </p>
+        <button
+          class="inv-fallback__link"
+          (click)="acceptInvitation()">
+          Accept Invitation
+        </button>
       </div>
 
     </div>

@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
 import {CommonModule} from "@angular/common";
 import {RegisterService} from "../../../service/register.service";
+import {Router} from "@angular/router";
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -15,7 +16,9 @@ export class RegisterComponent implements OnInit{
   passwordError: string | null = null;
   generalError: string | null = null;
 
-  constructor(private fb: FormBuilder,private registerService: RegisterService) {}
+  constructor(private fb: FormBuilder,
+              private registerService: RegisterService,
+              private router: Router) {}
 
   ngOnInit(): void {
     this.signupForm = this.fb.group({
@@ -24,7 +27,8 @@ export class RegisterComponent implements OnInit{
       lastName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required]]
+      confirmPassword: ['', [Validators.required]],
+      isCoach: [false]
     }, { validator: this.passwordMatchValidator });
   }
 
@@ -65,13 +69,12 @@ export class RegisterComponent implements OnInit{
       firstName: formValues.firstName,
       lastName:formValues.lastName,
       authorities: [
-        "ROLE_CLIENT"
+        formValues.isCoach ? "ROLE_COACH" : "ROLE_CLIENT"
       ]
     }
     this.registerService.registerUser(user).subscribe({
-      next: (response) => {
-        alert('Registration successful!');
-        console.log('User registered successfully:', response);
+      next: () => {
+        this.router.navigate(['/']);
       },
       error: (error) => {
         if (error.message.includes('already exists')) {

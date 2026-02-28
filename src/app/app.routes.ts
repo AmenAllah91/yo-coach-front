@@ -182,7 +182,7 @@ export const APP_ROUTE: Route[] = [
         path: 'chat',
         component: ChatComponent,
       },{
-        path: 'invitation',
+        path: 'invitation/:token',
         component: InvitationComponent,
       },
     ],
