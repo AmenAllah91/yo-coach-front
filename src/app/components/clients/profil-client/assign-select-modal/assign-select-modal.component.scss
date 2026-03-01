@@ -141,3 +141,12 @@
 .assign-option:hover .assign-option-chevron {
   color: #44b4df;
 }
+.backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 20500;
+}
+.modal{
+  position: relative;
+  z-index: 1;
+}

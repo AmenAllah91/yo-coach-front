@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import {map, Observable, of} from 'rxjs';
 import { environment } from '@env/environment';
 import { switchMap } from 'rxjs/operators';
+import {ClientScheduleItemDto} from "../../../models/client-schedule.model";
 export type FormStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 /** ====== BACK MODELS ====== */
@@ -149,5 +150,15 @@ export class FormsApiService {
 
   unarchiveForm(id: string) {
     return this.http.post<Form>(`${this.baseUrl}/${encodeURIComponent(id)}/unarchive`, {});
+  }
+
+  getClientScheduleItems(clientId: string) {
+    return this.http.get<ClientScheduleItemDto[]>(
+      `${environment.baseApiUrl}/api/v1/client-schedules/clients/${clientId}/schedule-items`
+    );
+  }
+
+  deleteClientScheduleItem(id: string) {
+    return this.http.delete<void>(`${environment.baseApiUrl}/api/v1/client-schedules/client-schedule-items/${id}`);
   }
 }

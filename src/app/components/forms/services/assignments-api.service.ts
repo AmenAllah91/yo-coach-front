@@ -125,4 +125,7 @@ export class AssignmentsApiService {
       { feedback }
     );
   }
+  hardDelete(assignmentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/hard`);
+  }
 }

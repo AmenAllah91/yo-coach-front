@@ -278,7 +278,7 @@
               [(ngModel)]="assignedSearch"
             />
           </div>
-          <button class="btn-add-checkin" (click)="openCheckinModal()">
+          <button class="btn-add-checkin" (click)="openCheckinModal(); $event.stopPropagation()">
             <i class="fas fa-plus"></i>
             <span>Add Check-in</span>
           </button>
@@ -325,8 +325,7 @@
       <!-- SCHEDULED -->
       <div *ngIf="activeSubTab === 'scheduled'">
 
-        <!-- Empty state -->
-        <div class="scheduled-empty" *ngIf="scheduledCheckIns.length === 0">
+        <div class="scheduled-empty" *ngIf="scheduledItems.length === 0">
           <div class="scheduled-empty-icon">
             <i class="far fa-clock"></i>
           </div>
@@ -336,104 +335,80 @@
           </p>
         </div>
 
-        <!-- List -->
-        <ng-container *ngIf="scheduledCheckIns.length > 0">
+        <ng-container *ngIf="scheduledItems.length > 0">
 
-          <!-- Summary bar -->
           <div class="scheduled-summary">
             <span class="summary-dot summary-dot--active"></span>
-            <span class="summary-label">{{ activeSchedulesCount }} active</span>
-            <ng-container *ngIf="pausedSchedulesCount > 0">
-              <span class="summary-dot summary-dot--paused"></span>
-              <span class="summary-label summary-label--muted">{{ pausedSchedulesCount }} paused</span>
-            </ng-container>
+            <span class="summary-label">{{ activeSchedulesCount }} items</span>
           </div>
 
-          <!-- Cards -->
           <div
             class="schedule-card"
-            *ngFor="let s of scheduledCheckIns"
-            [class.schedule-card--paused]="s.status === 'paused'"
+            *ngFor="let s of scheduledItems"
             (click)="openScheduleDetail(s)"
           >
-            <!-- Card header -->
             <div class="schedule-card-header">
               <div class="schedule-card-left">
-                <span
-                  class="schedule-status-dot"
-                  [class.schedule-status-dot--active]="s.status === 'active'"
-                  [class.schedule-status-dot--paused]="s.status === 'paused'"
-                ></span>
+                <span class="schedule-status-dot schedule-status-dot--active"></span>
+
                 <div class="schedule-card-meta">
                   <div class="schedule-card-title-row">
-                    <span class="schedule-card-name">{{ s.formName }}</span>
-                    <span class="freq-badge freq-badge--{{ s.frequency }}">
-                      <i class="fas fa-sync-alt"></i>
-                      {{ s.frequency | titlecase }}
-                    </span>
-                    <span class="paused-badge" *ngIf="s.status === 'paused'">Paused</span>
+                    <span class="schedule-card-name">{{ s.formTitle }}</span>
+
+                    <span class="freq-badge" *ngIf="s.schedule?.frequency">
+                <i class="fas fa-sync-alt"></i>
+                      {{ s.schedule.frequency | titlecase }}
+              </span>
+
+                    <span class="kind-badge" *ngIf="s.kind === 'PLANNED'">Planned</span>
+                    <span class="kind-badge" *ngIf="s.kind === 'ASSIGNED'">Assigned</span>
+
                     <span class="schedule-qcount" *ngIf="s.questions?.length">
-                      {{ s.questions.length }} questions
-                    </span>
+                {{ s.questions.length }} questions
+              </span>
                   </div>
                 </div>
               </div>
 
-              <!-- Actions -->
               <div class="schedule-card-actions" (click)="$event.stopPropagation()">
                 <button
-                  class="schedule-action-btn"
-                  [class.schedule-action-btn--pause]="s.status === 'active'"
-                  [class.schedule-action-btn--resume]="s.status === 'paused'"
-                  (click)="toggleScheduleStatus(s)"
-                  [title]="s.status === 'active' ? 'Pause' : 'Resume'"
-                >
-                  <i [class]="s.status === 'active' ? 'fas fa-pause-circle' : 'fas fa-play-circle'"></i>
-                </button>
-                <button
                   class="schedule-action-btn schedule-action-btn--delete"
-                  (click)="deleteSchedule(s)"
-                  title="Delete"
+                  (click)="openDeleteScheduled(s, $event)"                  title="Delete"
                 >
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </div>
             </div>
 
-            <!-- Card details grid -->
             <div class="schedule-card-details">
-              <div class="schedule-detail-item" *ngIf="s.selectedDays?.length > 0">
+
+              <div class="schedule-detail-item" *ngIf="s.schedule?.daysOfWeek?.length">
                 <span class="schedule-detail-label">Days</span>
                 <div class="schedule-days">
-                  <span class="day-pill" *ngFor="let day of s.selectedDays">{{ day }}</span>
+                  <span class="day-pill" *ngFor="let day of s.schedule.daysOfWeek">{{ day }}</span>
                 </div>
               </div>
 
-              <div class="schedule-detail-item">
+              <div class="schedule-detail-item" *ngIf="s.schedule?.time">
                 <span class="schedule-detail-label">Send Time</span>
                 <span class="schedule-detail-value">
-                  <i class="far fa-clock"></i> {{ s.sendTime }}
-                </span>
+            <i class="far fa-clock"></i> {{ s.schedule.time }}
+          </span>
               </div>
 
               <div class="schedule-detail-item">
-                <span class="schedule-detail-label">Next Send</span>
-                <span
-                  class="schedule-detail-value"
-                  [class.schedule-detail-value--active]="s.status === 'active'"
-                  [class.schedule-detail-value--muted]="s.status === 'paused'"
-                >
-                  <i class="far fa-calendar-alt"></i>
-                  {{ s.status === 'active' ? (s.nextSendDate | date:'dd/MM/yyyy') : '—' }}
-                </span>
-              </div>
-
-              <div class="schedule-detail-item">
-                <span class="schedule-detail-label">Ends</span>
+                <span class="schedule-detail-label">Due</span>
                 <span class="schedule-detail-value">
-                  <i class="far fa-calendar-alt"></i> {{ s.endDate | date:'dd/MM/yyyy' }}
-                </span>
+            <i class="far fa-calendar-alt"></i>
+                  {{ s.dueAt | date:'dd/MM/yyyy' }}
+          </span>
               </div>
+
+              <div class="schedule-detail-item" *ngIf="s.status">
+                <span class="schedule-detail-label">Status</span>
+                <span class="schedule-detail-value">{{ s.status | titlecase }}</span>
+              </div>
+
             </div>
           </div>
 
@@ -545,78 +520,6 @@
       <div *ngIf="modalError && !modalLoading" class="mc-alert">
         {{ modalError }}
       </div>
-      <!-- SCHEDULE CONFIGURATION BLOCK -->
-      <div class="sched-config-card">
-        <div class="sched-config-heading">
-          <svg class="sched-config-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 6v6l4 2"></path>
-          </svg>
-          Schedule Configuration
-        </div>
-
-        <div class="sched-config-grid">
-          <div class="sched-config-cell">
-            <span class="sched-config-label">Frequency</span>
-            <span class="sched-config-value sched-config-value--bold">Weekly</span>
-          </div>
-
-          <div class="sched-config-cell">
-            <span class="sched-config-label">Days</span>
-            <div class="sched-config-value" style="flex-wrap: wrap; gap: 6px;">
-              <span class="sched-day-tag">Mon</span>
-              <span class="sched-day-tag">Tue</span>
-              <span class="sched-day-tag">Wed</span>
-              <span class="sched-day-tag">Thu</span>
-              <span class="sched-day-tag">Fri</span>
-              <span class="sched-day-tag">Sat</span>
-              <span class="sched-day-tag">Sun</span>
-            </div>
-          </div>
-
-          <div class="sched-config-cell">
-            <span class="sched-config-label">Send Time</span>
-            <span class="sched-config-value">
-        <svg class="sched-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 6v6l4 2"></path>
-        </svg>
-        09:00
-      </span>
-          </div>
-
-          <div class="sched-config-cell">
-            <span class="sched-config-label">Next Send</span>
-            <span class="sched-config-value sched-config-value--blue">
-        <svg class="sched-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>
-        </svg>
-        03/03/2026
-      </span>
-          </div>
-
-          <div class="sched-config-cell">
-            <span class="sched-config-label">End Date</span>
-            <span class="sched-config-value">
-        <svg class="sched-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>
-        </svg>
-        2026-06-30
-      </span>
-          </div>
-
-          <div class="sched-config-cell">
-            <span class="sched-config-label">Created</span>
-            <span class="sched-config-value sched-config-value--bold">01/15/2026</span>
-          </div>
-        </div>
-      </div>
       <!-- Preview banner (optional, keep if you want same as manage) -->
       <div *ngIf="modalMode === 'preview'" class="mc-banner">
         <div class="mc-banner-ico">
@@ -726,10 +629,8 @@
         </svg>
         Mark as Reviewed
       </button>
-    <div class="modal-footer">
-      <button type="button" class="btn-secondary" (click)="closeModal()">Fermer</button>
-    </div>
   </div>
+</div>
 </div>
 
 
@@ -741,27 +642,13 @@
     <div class="modal-header">
       <div>
         <div class="modal-title-row">
-          <h2 class="modal-title">{{ selectedSchedule.formName }}</h2>
-          <span class="freq-badge freq-badge--{{ selectedSchedule.frequency }}">
-            <i class="fas fa-sync-alt"></i>
-            {{ selectedSchedule.frequency | titlecase }}
-          </span>
-          <span
-            class="status-pill"
-            [class.status-pill--active]="selectedSchedule.status === 'active'"
-            [class.status-pill--paused]="selectedSchedule.status === 'paused'"
-          >
-            <span
-              class="status-dot"
-              [class.status-dot--green]="selectedSchedule.status === 'active'"
-              [class.status-dot--gray]="selectedSchedule.status === 'paused'"
-            ></span>
-            {{ selectedSchedule.status === 'active' ? 'Active' : 'Paused' }}
-          </span>
+          <h2 class="modal-title">{{ selectedSchedule.formTitle }}</h2>
+          <span class="freq-badge" *ngIf="selectedSchedule.schedule?.frequency">
+  <i class="fas fa-sync-alt"></i>
+            {{ selectedSchedule.schedule.frequency | titlecase }}
+</span>
         </div>
-        <p class="modal-subtitle" *ngIf="selectedSchedule.description">
-          {{ selectedSchedule.description }}
-        </p>
+
       </div>
       <button class="close-button" (click)="closeScheduleDetail()">&times;</button>
     </div>
@@ -775,69 +662,76 @@
           <i class="far fa-clock"></i> Schedule Configuration
         </h4>
         <div class="schedule-config-grid">
-          <div class="config-item">
+          <div class="config-item" *ngIf="selectedSchedule.schedule?.frequency">
             <span class="config-label">Frequency</span>
-            <span class="config-value">{{ selectedSchedule.frequency | titlecase }}</span>
+            <span class="config-value">{{ selectedSchedule.schedule.frequency | titlecase }}</span>
           </div>
-          <div class="config-item" *ngIf="selectedSchedule.selectedDays?.length > 0">
+
+          <div class="config-item" *ngIf="selectedSchedule.schedule?.daysOfWeek?.length">
             <span class="config-label">Days</span>
             <div class="schedule-days">
-              <span class="day-pill" *ngFor="let day of selectedSchedule.selectedDays">{{ day }}</span>
+              <span class="day-pill" *ngFor="let day of selectedSchedule.schedule.daysOfWeek">{{ day }}</span>
             </div>
           </div>
-          <div class="config-item">
+
+          <div class="config-item" *ngIf="selectedSchedule.schedule?.time">
             <span class="config-label">Send Time</span>
             <span class="config-value">
-              <i class="far fa-clock"></i> {{ selectedSchedule.sendTime }}
-            </span>
+    <i class="far fa-clock"></i> {{ selectedSchedule.schedule.time }}
+  </span>
           </div>
+
           <div class="config-item">
-            <span class="config-label">Next Send</span>
-            <span
-              class="config-value"
-              [class.config-value--active]="selectedSchedule.status === 'active'"
-              [class.config-value--muted]="selectedSchedule.status === 'paused'"
-            >
-              <i class="far fa-calendar-alt"></i>
-              {{ selectedSchedule.status === 'active' ? (selectedSchedule.nextSendDate | date:'dd/MM/yyyy') : '—' }}
-            </span>
-          </div>
-          <div class="config-item">
-            <span class="config-label">End Date</span>
+            <span class="config-label">Due</span>
             <span class="config-value">
-              <i class="far fa-calendar-alt"></i> {{ selectedSchedule.endDate | date:'dd/MM/yyyy' }}
-            </span>
+    <i class="far fa-calendar-alt"></i> {{ selectedSchedule.dueAt | date:'dd/MM/yyyy' }}
+  </span>
           </div>
+
           <div class="config-item">
             <span class="config-label">Created</span>
-            <span class="config-value">{{ selectedSchedule.createdDate | date:'dd/MM/yyyy' }}</span>
+            <span class="config-value">{{ selectedSchedule.createdAt | date:'dd/MM/yyyy' }}</span>
           </div>
         </div>
       </div>
 
       <!-- Form Questions -->
-      <div class="schedule-questions-section" *ngIf="selectedSchedule.questions?.length > 0">
+      <div class="schedule-questions-section" *ngIf="selectedSchedule?.questions?.length">
         <h4 class="section-sub-title">
-          <i class="fas fa-edit"></i> Form Questions ({{ selectedSchedule.questions.length }})
+          <i class="fas fa-edit"></i>
+          Form Questions ({{ selectedSchedule.questions.length }})
         </h4>
-        <div class="pc-questions">
-          <div
-            class="pc-question"
-            *ngFor="let q of selectedSchedule.questions; let i = index"
-          >
-            <div class="pc-question-left">
-              <div class="pc-qnum">{{ i + 1 }}</div>
+
+        <div class="mc-questions">
+          <div *ngFor="let q of selectedSchedule.questions; let i = index" class="mc-q">
+            <div class="mc-q-label">
+              {{ i + 1 }}. {{ q.label }}
+              <span *ngIf="q.required" class="mc-required">*</span>
             </div>
-            <div class="pc-question-main">
-              <div class="pc-question-top">
-                <div class="pc-qlabel">{{ q.label }}</div>
-                <div class="pc-qtags">
-                  <span class="pc-tag pc-tag-type">{{ q.type }}</span>
-                  <span *ngIf="q.required" class="pc-tag pc-tag-required">Required</span>
-                  <span *ngIf="!q.required" class="pc-tag pc-tag-optional">Optional</span>
-                </div>
+
+            <!-- PREVIEW ONLY (like Assigned modal preview) -->
+            <div *ngIf="q.type === 'TEXT'" class="mc-preview">Text answer expected</div>
+
+            <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-preview-list">
+              <div *ngFor="let opt of q.options" class="mc-preview-opt">
+                <span class="mc-preview-box"></span>
+                <span>{{ opt.label }}</span>
               </div>
             </div>
+
+            <div *ngIf="q.type === 'YES_NO'" class="mc-preview-yesno">
+              <span class="mc-preview-pill">Yes</span>
+              <span class="mc-preview-pill">No</span>
+            </div>
+
+            <div *ngIf="q.type === 'STAR_RATING'" class="mc-preview-stars">
+        <span
+          *ngFor="let star of getStarsArray(q.maxStars || 5)"
+          class="mc-preview-star"
+        >★</span>
+            </div>
+
+            <div *ngIf="q.type === 'DATE'" class="mc-preview">Date selection expected</div>
           </div>
         </div>
       </div>
@@ -846,15 +740,6 @@
 
     <!-- Footer -->
     <div class="modal-footer modal-footer--space-between">
-      <button
-        class="btn-schedule-toggle"
-        [class.btn-schedule-toggle--pause]="selectedSchedule.status === 'active'"
-        [class.btn-schedule-toggle--resume]="selectedSchedule.status === 'paused'"
-        (click)="toggleScheduleStatus(selectedSchedule)"
-      >
-        <i [class]="selectedSchedule.status === 'active' ? 'fas fa-pause-circle' : 'fas fa-play-circle'"></i>
-        {{ selectedSchedule.status === 'active' ? 'Pause Schedule' : 'Resume Schedule' }}
-      </button>
       <button class="btn-secondary" (click)="closeScheduleDetail()">Close</button>
     </div>
 
@@ -983,11 +868,48 @@
   </div>
 </div>
 
+<div
+  class="pc-confirm-backdrop"
+  *ngIf="confirmScheduledDeleteOpen"
+  (click)="closeScheduledDelete()"
+></div>
 
+<div
+  class="pc-confirm-modal"
+  *ngIf="confirmScheduledDeleteOpen"
+  role="dialog"
+  aria-modal="true"
+  (click)="$event.stopPropagation()"
+>
+  <div class="pc-confirm-content">
+    <div class="pc-confirm-title">Confirm delete</div>
+
+    <div class="pc-confirm-text">
+      Do you really want to delete this scheduled item
+      <strong>{{ selectedScheduledToDelete?.formTitle || selectedScheduledToDelete?.formName || '(Untitled)' }}</strong> ?
+      <div class="pc-confirm-hint">This action is irreversible.</div>
+    </div>
+
+    <div class="pc-confirm-actions">
+      <button class="btn btn--ghost" type="button"
+              (click)="closeScheduledDelete()"
+              [disabled]="deletingScheduled">
+        Cancel
+      </button>
+
+      <button class="btn btn--danger" type="button"
+              (click)="confirmScheduledDelete()"
+              [disabled]="deletingScheduled">
+        <span *ngIf="!deletingScheduled">Delete</span>
+        <span *ngIf="deletingScheduled">Deleting...</span>
+      </button>
+    </div>
+  </div>
+</div>
 <app-assign-select-modal
   [isOpen]="showAssignSelectModal"
   [kind]="assignType"
-  (close)="showAssignSelectModal = false; showCheckinModal = false"
+  (close)="closeAssignFlow()"
   (existingClick)="onExistingFromAssignModal()"
   (createClick)="onCreateFromAssignModal()"
 ></app-assign-select-modal>
@@ -996,14 +918,14 @@
   [isOpen]="showProgramSelectionModal"
   [fullName]="fullName"
   [client]="client"
-  (closed)="showProgramSelectionModal = false"
+  (closed)="closeAssignFlow()"
   (backClicked)="backToAssignModal()"
   (assignProgram)="onAssignWorkoutFromModal($event)"
 ></app-workout-program-selection-modal>
 
 <app-choose-plan-type-modal
   [isVisible]="showChooseModal"
-  (onClose)="closeChooseModal()"
+  (onClose)="closeAssignFlow()"
   [isAssign]="true"
   [idClient]="this.clientId"
 ></app-choose-plan-type-modal>
@@ -1012,7 +934,7 @@
   [isOpen]="showNutritionSelectionModal"
   [fullName]="fullName"
   [programs]="nutritionSelectionList"
-  (closeModal)="showNutritionSelectionModal = false"
+  (closeModal)="closeAssignFlow()"
   (backClick)="showNutritionSelectionModal = false"
   (assignProgram)="onAssignNutritionFromModal($event)"
 ></app-nutrition-selection-modal>
@@ -1022,6 +944,6 @@
   [fullName]="fullName"
   [preselectFormId]="preselectFormId"
   (assignForm)="onAssignFormFromModal($event)"
-  (closeModal)="onCloseFormModal()"
+  (closeModal)="closeAssignFlow()"
   (backClick)="backToAssignModal()"
 ></app-form-selection-modal>
