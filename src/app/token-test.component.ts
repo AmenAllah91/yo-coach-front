@@ -27,23 +27,17 @@ export class TokenTestComponent {
     try {
       const token = this.authService.getToken();
       const userId = await this.authService.extractUserId();
-      
-      console.log('=== TOKEN TEST ===');
-      console.log('Token:', token);
-      console.log('User ID:', userId);
-      
+
       if (token && userId) {
         const headers = new HttpHeaders({
           'Authorization': `Bearer ${token}`
         });
-        
+
         const url = `http://localhost:8080/gym_coaching/clients/coach/${userId}?page=0&size=1`;
-        console.log('Testing URL:', url);
-        
+
         this.http.get(url, { headers }).subscribe({
           next: (response) => {
             this.result = { success: true, response };
-            console.log('SUCCESS:', response);
           },
           error: (error) => {
             this.result = { success: false, error: error.message, status: error.status };

@@ -198,56 +198,6 @@ export class ClientsComponent implements OnInit {
     this.resetForm();
   }
 
-  onCreateClient(clientData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    gender: string;
-  }) {
-    this.firstName = clientData.firstName;
-    this.lastName = clientData.lastName;
-    this.email = clientData.email;
-    this.gender = clientData.gender;
-    this.createClient();
-  }
-
-  async createClient() {
-    try {
-      const coachId = await this.authService.extractUserId();
-
-      if (!coachId) {
-        console.error('No coach ID found');
-        return;
-      }
-
-      const client: Client = {
-        firstName: this.firstName,
-        lastName: this.lastName,
-        email: this.email,
-        gender: this.gender,
-        login: this.email,
-        activated: true,
-        coachId: coachId,
-        workoutDates: [],
-        coachingSpecialities: [],
-        authorities: [],
-        selected: false,
-      };
-
-      this.clientService.createClient(client).subscribe({
-        next: () => {
-          this.loadClients();
-          this.closeAddModal();
-        },
-        error: (error) => {
-          console.error('Error creating client:', error);
-        },
-      });
-    } catch (error) {
-      console.error('Error getting coach ID:', error);
-    }
-  }
-
   viewProfile(client: Client) {
     console.log('View profile:', client);
     const url = 'clients/profil-client/' + client.id;
