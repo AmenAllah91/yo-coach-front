@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { User } from '../models/user';
 import { HttpResponse } from '@angular/common/http';
+import {User} from "../models/user";
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private currentUserSubject: BehaviorSubject<User>;
-  public currentUser: Observable<User>;
+  private currentUserSubject: BehaviorSubject<Partial<User>>;
+  public currentUser: Observable<Partial<User>>;
 
   private users = [
     {
@@ -22,13 +22,13 @@ export class AuthService {
   ];
 
   constructor() {
-    this.currentUserSubject = new BehaviorSubject<User>(
+    this.currentUserSubject = new BehaviorSubject<Partial<User>>(
       JSON.parse(localStorage.getItem('currentUser') || '{}')
     );
     this.currentUser = this.currentUserSubject.asObservable();
   }
 
-  public get currentUserValue(): User {
+  public get currentUserValue(): Partial<User> {
     return this.currentUserSubject.value;
   }
 

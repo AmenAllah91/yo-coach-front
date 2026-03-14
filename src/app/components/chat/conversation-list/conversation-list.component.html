@@ -1,0 +1,112 @@
+<div class="conversation-top">
+  <div class="card-header-title chat-title">
+    <div class="chat-icon">
+      <i-feather name="message-circle" class="bell"></i-feather>
+      <span class="chat-title">{{ 'MESSAGING' | translate }}</span>
+    </div>
+    <button class="toggle-button" (click)="closeChat()">✕</button>
+  </div>
+</div>
+
+<!-- ================= LIST MODE ================= -->
+
+<ng-container *ngIf="mode === 'LIST'">
+
+  <div class="section">
+    <div class="section-header">
+      <span>{{ 'CONVERSATIONS' | translate }}</span>
+      <button class="add-btn" (click)="switchToAdd()">＋</button>
+    </div>
+
+    <input
+      type="text"
+      class="search-input"
+      [placeholder]="'SEARCH' | translate"
+      [(ngModel)]="searchConversation"
+      (input)="onSearchConversation()"
+    />
+
+    <div class="conversation-card"
+         *ngFor="let conv of conversations"
+         (click)="select(conv)">
+
+      <!-- Avatar -->
+      <img *ngIf="conv.avatar"
+           [src]="conv.avatar"
+           alt="avatar">
+
+      <div *ngIf="!conv.avatar" class="avatar">
+        {{ conv.name ? conv.name[0] : '?' }}
+      </div>
+
+      <!-- Info -->
+      <div class="conversation-info">
+        <div class="conversation-name">
+          {{ conv.name }}
+        </div>
+        <div class="conversation-last">
+          {{ conv.lastMessage }}
+        </div>
+      </div>
+
+      <!-- Unread -->
+      <span class="badge" *ngIf="conv.unreadCount">
+        {{ conv.unreadCount }}
+      </span>
+
+    </div>
+  </div>
+
+</ng-container>
+
+<!-- ================= ADD MODE ================= -->
+
+<ng-container *ngIf="mode === 'ADD'">
+
+  <div class="section">
+    <div class="section-header">
+      <span>{{ 'START_CONVERSATION' | translate }}</span>
+      <button class="close-btn" (click)="switchToList()">✕</button>
+    </div>
+
+    <input
+      type="text"
+      class="search-input"
+      [placeholder]="'SEARCH' | translate"
+      [(ngModel)]="searchUser"
+      (input)="searchUsers()"
+    />
+
+    <div *ngIf="userSuggestions.length">
+
+      <div class="section-subtitle">
+        {{ 'USERS' | translate }}
+      </div>
+
+      <div class="conversation-card add"
+           *ngFor="let user of userSuggestions"
+           (click)="createConversationWith(user)">
+
+        <!-- Avatar -->
+        <img *ngIf="user.avatarUrl"
+             [src]="user.avatarUrl"
+             alt="avatar">
+
+        <div *ngIf="!user.avatarUrl" class="avatar">
+          {{ user.firstName[0] }}{{ user.lastName[0] }}
+        </div>
+
+        <!-- Info -->
+        <div class="conversation-info">
+          <div class="conversation-name">
+            {{ user.firstName }} {{ user.lastName }}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</ng-container>

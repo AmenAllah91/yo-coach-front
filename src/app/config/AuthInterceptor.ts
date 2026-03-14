@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest} from '@angular/common/http';
+import {HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse} from '@angular/common/http';
 import {LoaderService} from '../service/loader.service';
 import {ToastService} from '../service/toast.service';
 import {Observable, from, switchMap, tap, catchError, finalize} from 'rxjs';
@@ -35,7 +35,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     this.loaderService.show();
-    
+
     if (this.authService.isLoggedIn()) {
       return from(this.authService.getToken()).pipe(
         switchMap(token => {
@@ -49,14 +49,21 @@ export class AuthInterceptor implements HttpInterceptor {
           }
           return next.handle(req);
         }),
-        tap(() => {
-          const method = req.method;
-          if (['POST', 'PUT', 'DELETE'].includes(method)) {
-            this.showToast(method, 'success');
+        tap((event) => {
+          if (event instanceof HttpResponse) {
+            const method = req.method;
+
+            if (!this.isToastExcluded(req.url) && ['POST', 'PUT', 'DELETE'].includes(method)) {
+              this.showToast(method, 'success');
+            }
           }
         }),
         catchError(error => {
-          this.showToast(req.method, 'error');
+
+          if (!this.isToastExcluded(req.url)) {
+            this.showToast(req.method, 'error');
+          }
+
           throw error;
         }),
         finalize(() => {
@@ -64,16 +71,21 @@ export class AuthInterceptor implements HttpInterceptor {
         })
       );
     }
-    
+
     return next.handle(req).pipe(
       tap(() => {
         const method = req.method;
-        if (['POST', 'PUT', 'DELETE'].includes(method)) {
+
+        if (!this.isToastExcluded(req.url) && ['POST', 'PUT', 'DELETE'].includes(method)) {
           this.showToast(method, 'success');
         }
       }),
       catchError(error => {
-        this.showToast(req.method, 'error');
+
+        if (!this.isToastExcluded(req.url)) {
+          this.showToast(req.method, 'error');
+        }
+
         throw error;
       }),
       finalize(() => {
@@ -100,5 +112,13 @@ export class AuthInterceptor implements HttpInterceptor {
         this.toastService.error(messages.error);
       }
     }
+  }
+
+  private isToastExcluded(url: string): boolean {
+    return url.includes('/chat') ||
+      url.includes('/api/notifications') ||
+      url.includes('/ws') ||
+      url.includes('/sync') ||
+      url.includes('/token');
   }
 }

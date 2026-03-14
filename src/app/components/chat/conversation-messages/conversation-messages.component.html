@@ -1,0 +1,45 @@
+<div class="chat-header">
+  <div class="chat-user">
+    <img
+      [src]="
+                  selectedConversation?.avatar && selectedConversation?.avatar !== 'not found' && selectedConversation?.avatar !== ''
+                  ? selectedConversation.avatar
+                  : '/assets/images/photoprofilvierge.jpg'"
+      alt="avatar"
+      class="profile-img me-2"
+    />
+    <span>{{ selectedConversation?.name }}</span>
+  </div>
+  <div>
+    <button class="back-btn" (click)="back.emit()" aria-label="Retour">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+    <button class="toggle-button" (click)="toggleSidebar()">✕</button>
+  </div>
+
+</div>
+
+<div class="chat-messages" (scroll)="onScroll($event)">
+  <div
+    class="message"
+    *ngFor="let msg of messages"
+    [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
+  >
+    <div class="message-content">
+      {{ msg.content }}
+    </div>
+    <div class="message-time">
+      {{ msg.createdAt | date:'dd MMM yyyy, HH:mm' }}
+    </div>
+  </div>
+</div>
+
+<div class="chat-input">
+  <input
+    type="text"
+    placeholder="Type a message..."
+    [(ngModel)]="messageText"
+    (keyup.enter)="sendMessage()"
+  />
+  <button (click)="sendMessage()">Send</button>
+</div>
