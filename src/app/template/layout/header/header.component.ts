@@ -217,4 +217,5 @@ this.translate.use(lang);}
     })
   }
 
+  protected readonly sessionStorage = sessionStorage;
 }

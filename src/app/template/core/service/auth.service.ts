@@ -12,7 +12,7 @@ export class AuthService {
 
   private users = [
     {
-      id: 1,
+      id: "1",
       username: 'admin@email.com',
       password: 'admin@123',
       firstName: 'Sarah',
@@ -53,7 +53,7 @@ export class AuthService {
 
   }
   ok(body?: {
-    id: number;
+    id: string;
     username: string;
     firstName: string;
     lastName: string;

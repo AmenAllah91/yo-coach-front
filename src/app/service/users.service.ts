@@ -15,8 +15,6 @@ export class UsersService {
   constructor(private http: HttpClient) { }
 
   getUserById(userId: string): Observable<User> {
-    console.log('UserService - Getting user by ID:', userId);
-    console.log('UserService - API URL:', `${this.userServiceUrl}/user/${userId}`);
     return this.http.get<User>(`${this.userServiceUrl}/api/users/${userId}`);
   }
 
@@ -34,5 +32,13 @@ export class UsersService {
     return this.http.get<PageDto<User>>(
       `${this.userServiceUrl}/api/users/chat`
     );
+  }
+
+  updateUser(user : Partial<User>) : Observable<User>{
+    return this.http.put<User>(`${this.userServiceUrl}/api/users`,user);
+  }
+
+  updatePassword(passwordForm : any, id : string) : Observable<any>{
+    return this.http.post<any>(`${this.userServiceUrl}/${id}/change-password`,passwordForm);
   }
 }

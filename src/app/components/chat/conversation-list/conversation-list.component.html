@@ -88,11 +88,11 @@
            (click)="createConversationWith(user)">
 
         <!-- Avatar -->
-        <img *ngIf="user.avatarUrl"
+        <img *ngIf="user.avatarUrl !== 'not found'"
              [src]="user.avatarUrl"
              alt="avatar">
 
-        <div *ngIf="!user.avatarUrl" class="avatar">
+        <div *ngIf="user.avatarUrl === 'not found'" class="avatar">
           {{ user.firstName[0] }}{{ user.lastName[0] }}
         </div>
 

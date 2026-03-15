@@ -64,7 +64,7 @@
         <span class="d-none d-md-inline">{{userName}}</span>
       </a>
       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-        <li><a class="dropdown-item" [routerLink]="'/edit-profile/'">My Profile</a></li>
+        <li><a class="dropdown-item" [routerLink]="'/edit-profile/' + sessionStorage.getItem('userId')">My Profile</a></li>
         <li><a class="dropdown-item" [routerLink]="'/settings'">Settings</a></li>
         <li><a class="dropdown-item" href="#">Messages</a></li>
         <li><hr class="dropdown-divider"></li>

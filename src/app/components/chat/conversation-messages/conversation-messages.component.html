@@ -1,5 +1,5 @@
 <div class="chat-header">
-  <div class="chat-user">
+  <div class="chat-user" (click)="navigateTouserprofile()">
     <img
       [src]="
                   selectedConversation?.avatar && selectedConversation?.avatar !== 'not found' && selectedConversation?.avatar !== ''

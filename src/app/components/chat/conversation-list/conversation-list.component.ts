@@ -129,7 +129,10 @@ export class ConversationListComponent implements OnInit {
     return this.userService.getUserById(otherUserId).pipe(
       map(user => {
         conv.name = user.firstName + " " + user.lastName;
-        conv.avatar = user.avatarUrl;
+        if(user.avatarUrl === 'not found')
+          conv.avatar = null
+        else
+          conv.avatar = user.avatarUrl;
         return conv;
       }),
       catchError(() => of(conv))

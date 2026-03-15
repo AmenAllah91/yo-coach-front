@@ -1,9 +1,16 @@
 export class User {
-  id!: number;
-  username!: string;
+  id!: string;
+  login!: string;
   password!: string;
+  email!: string;
   firstName!: string;
   lastName!: string;
   token!: string;
   avatarUrl!: string;
+  authorities: [];
+  birthDate: null;
+  phoneNumber!: string;
+  identificationNumber!: string;
+
+
 }

@@ -36,6 +36,7 @@ import {MyCheckinsComponent} from "./components/forms/my-checkins/my-checkins.co
 import {ManageCheckinsComponent} from "./components/forms/manage-checkins/manage-checkins.component";
 import {ChatComponent} from "./components/chat/chat/chat.component";
 import {InvitationComponent} from "./components/clients/invitation/invitation.component";
+import {EditProfileComponent} from "./components/profile/edit-profile/edit-profile.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -198,5 +199,9 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'yosoft-landing-page',
     component: YosoftLandingPageComponent,
-  }
+  },
+  {
+    path: 'edit-profile/:id',
+    component: EditProfileComponent,
+  },
 ];

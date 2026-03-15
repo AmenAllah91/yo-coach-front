@@ -7,6 +7,7 @@ import {ChatWebsocketService} from "../../../service/chat-websocket.service";
 import {FormsModule} from "@angular/forms";
 import {DatePipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NotificationService} from "../../../service/notification.service";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-conversation-messages',
@@ -41,7 +42,8 @@ export class ConversationMessagesComponent implements OnInit{
 
   constructor(private chatService: ChatService,
               private wsService: ChatWebsocketService,
-              private notificationService: NotificationService) {}
+              private notificationService: NotificationService,
+              private router: Router) {}
 
   ngOnInit(): void {
     this.currentUserId = sessionStorage.getItem("userId");
@@ -156,6 +158,15 @@ export class ConversationMessagesComponent implements OnInit{
 
     if (isNearBottom) {
       this.scrollToBottom();
+    }
+  }
+
+  navigateTouserprofile(){
+    if(this.selectedConversation.coachId === this.currentUserId) {
+      this.router.navigate(['/edit-profile',this.selectedConversation.clientId]);
+    }
+    else {
+      this.router.navigate(['/edit-profile',this.selectedConversation.coachId]);
     }
   }
 
