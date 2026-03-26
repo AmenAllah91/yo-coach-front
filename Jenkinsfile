@@ -38,7 +38,7 @@ pipeline {
                   password : "${VPS_USER_PSW}",
                   allowAnyHosts: true
                 ], command: """
-                  cd workspace && sudo docker-compose pull ${SERVICE_NAME} && sudo docker-compose down ${SERVICE_NAME} && sudo docker-compose up -d ${SERVICE_NAME}
+                  cd workspace-yocoach && sudo docker-compose pull ${SERVICE_NAME} && sudo docker-compose down ${SERVICE_NAME} && sudo docker-compose up -d ${SERVICE_NAME}
                 """
             }
         }
