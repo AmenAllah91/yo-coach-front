@@ -9,9 +9,9 @@ pipeline {
     }
 
     environment {
-        DOCKER_IMAGE = 'kamdigisdocker/yocoach-front'
+        DOCKER_IMAGE = 'kamdigisdocker/yo-coach-front'
         IMAGE_TAG = 'integ'
-        SERVICE_NAME = 'yocoach-front'
+        SERVICE_NAME = 'yo-coach-front'
         USER_CREDENTIALS= credentials('jenkins-docker')
         VPS_USER = credentials('integration-vps')
         VPS_IP = '54.38.35.221'
