@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './config/auth.service';
 import { HttpClient } from '@angular/common/http';
+import {environment} from "@env/environment";
 
 @Component({
   selector: 'app-test-auth',
@@ -27,7 +28,7 @@ export class TestAuthComponent {
     try {
       const isLoggedIn = this.authService.isLoggedIn();
       const token = await this.authService.getToken();
-      
+
       this.result = {
         isLoggedIn,
         tokenExists: !!token,
@@ -38,7 +39,7 @@ export class TestAuthComponent {
       // Test manual API call with token
       if (token) {
         const headers = { 'Authorization': `Bearer ${token}` };
-        this.http.get('http://localhost:8080/public/enums/', { headers }).subscribe({
+        this.http.get(environment.baseApiUrl + '/public/enums/', { headers }).subscribe({
           next: (response) => {
             this.result.apiTest = { success: true, response };
           },

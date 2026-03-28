@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './config/auth.service';
 import { HttpClient } from '@angular/common/http';
+import {environment} from "@env/environment";
 
 @Component({
   selector: 'app-debug-auth',
@@ -38,7 +39,7 @@ export class DebugAuthComponent implements OnInit {
   async ngOnInit() {
     this.isLoggedIn = this.authService.isLoggedIn();
     this.isExpired = this.authService.isExpired();
-    
+
     try {
       const token = await this.authService.getToken();
       this.tokenPreview = token ? token.substring(0, 100) + '...' : 'No token';
@@ -48,14 +49,14 @@ export class DebugAuthComponent implements OnInit {
   }
 
   testPublicEndpoint() {
-    this.http.get('http://localhost:8080/public/enums/').subscribe({
+    this.http.get(environment.baseApiUrl + '/public/enums/').subscribe({
       next: (result) => this.testResult = { success: true, data: result },
       error: (error) => this.testResult = { success: false, error: error.message }
     });
   }
 
   testProtectedEndpoint() {
-    this.http.get('http://localhost:8080/api/exercise-ref/templates?page=0&size=1').subscribe({
+    this.http.get(environment.baseApiUrl + '/api/exercise-ref/templates?page=0&size=1').subscribe({
       next: (result) => this.testResult = { success: true, data: result },
       error: (error) => this.testResult = { success: false, error: error.message }
     });

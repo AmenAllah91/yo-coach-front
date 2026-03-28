@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './config/auth.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import {environment} from "@env/environment";
 
 @Component({
   selector: 'app-token-test',
@@ -33,7 +34,7 @@ export class TokenTestComponent {
           'Authorization': `Bearer ${token}`
         });
 
-        const url = `http://localhost:8080/gym_coaching/clients/coach/${userId}?page=0&size=1`;
+        const url = environment.baseApiUrl+`/gym_coaching/clients/coach/${userId}?page=0&size=1`;
 
         this.http.get(url, { headers }).subscribe({
           next: (response) => {
