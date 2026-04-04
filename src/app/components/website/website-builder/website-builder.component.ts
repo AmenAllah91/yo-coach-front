@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import {Component, Input} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {CoachLandingPreviewComponent} from "../coach-landing-preview/coach-landing-preview.component";
 import {Router} from "@angular/router";
 import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
 import {WebsiteService} from "../../../service/website.service";
+import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
 
 
 type CoachThemeName = 'Élégance' | 'Dynamique' | 'Confiance' | 'Sérénité';
@@ -92,12 +93,34 @@ interface TestimonialItem {
   templateUrl: './website-builder.component.html',
   styleUrls: ['./website-builder.component.scss']
 })
-export class WebsiteBuilderComponent {
+export class WebsiteBuilderComponent implements OnInit{
 
   constructor(
     private router: Router,
     private sanitizer: DomSanitizer,
-    private websiteService: WebsiteService) {}
+    private websiteService: WebsiteService,
+    private builderState: WebsiteBuilderStateService
+  ) {}
+
+
+  ngOnInit(): void {
+    const saved = this.builderState.getDraft();
+
+    if (saved) {
+      this.selectedTheme.previewKey = saved.themeKey;
+      this.selectedTheme.name = saved.themeName;
+      this.profile = saved.profile;
+      this.video.url = saved.videoUrl;
+      this.announcement = saved.announcement;
+      this.cta = saved.cta;
+      this.leadFields = saved.leadFields;
+      this.colors = saved.colors;
+      this.services = saved.services || [];
+      this.results = saved.results || [];
+      this.certificates = saved.certificates || [];
+      this.testimonials = saved.testimonials || [];
+    }
+  }
 
   previewOpen = false;
 
@@ -299,22 +322,25 @@ export class WebsiteBuilderComponent {
   }
 
   openPreview(): void {
-    this.router.navigate(['/websites/preview'], {
-      state: {
-        themeKey: this.selectedTheme.previewKey,
-        themeName: this.selectedTheme.name,
+    const data = {
+      themeKey: this.selectedTheme.previewKey,
+      themeName: this.selectedTheme.name,
+      profile: this.profile,
+      videoUrl: this.video.url,
+      announcement: this.announcement,
+      cta: this.cta,
+      leadFields: this.leadFields,
+      colors: this.colors,
+      services: this.services,
+      results: this.results,
+      certificates: this.certificates,
+      testimonials: this.testimonials
+    };
 
-        profile: this.profile,
-        videoUrl: this.video.url,
-        announcement: this.announcement,
-        cta: this.cta,
-        leadFields: this.leadFields,
-        colors: this.colors,
-        services: this.services,
-        results: this.results,
-        certificates: this.certificates,
-        testimonials: this.testimonials,
-      }
+    this.builderState.setDraft(data);
+
+    this.router.navigate(['/websites/preview'], {
+      state: data
     });
   }
 
@@ -369,5 +395,31 @@ export class WebsiteBuilderComponent {
         console.error('Erreur lors de l’enregistrement du site', err);
       }
     });
+  }
+
+  onProfileImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      console.error('Le fichier sélectionné n’est pas une image');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.profile.image = reader.result as string;
+    };
+
+    reader.onerror = () => {
+      console.error('Erreur lors de la lecture de l’image');
+    };
+
+    reader.readAsDataURL(file);
   }
 }

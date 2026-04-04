@@ -154,9 +154,22 @@
                   <img [src]="profile.image" alt="profile" class="yc-avatar"/>
 
                   <div class="yc-upload-actions">
-                    <button type="button" class="yc-btn yc-btn--outline">
+                    <input
+                      #profileImageInput
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      (change)="onProfileImageSelected($event)"
+                    />
+
+                    <button
+                      type="button"
+                      class="yc-btn yc-btn--outline"
+                      (click)="profileImageInput.click()"
+                    >
                       Importer une image
                     </button>
+
                     <button type="button" class="yc-link-btn">
                       Ou utiliser un lien URL
                     </button>

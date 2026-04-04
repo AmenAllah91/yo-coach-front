@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import {CommonModule, Location} from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { Router } from "@angular/router";
 import { SafeResourceUrl } from "@angular/platform-browser";
@@ -27,11 +27,11 @@ export class CoachLandingPreviewComponent {
 
   @Input() publicMode = false;
 
-  constructor(private router: Router) {}
+  constructor(private location: Location) {}
 
   closePreview(): void {
     if (!this.publicMode) {
-      this.router.navigate(['/websites/create']);
+      this.location.back();
     }
   }
 
