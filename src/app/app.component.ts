@@ -1,16 +1,39 @@
-import {Component, OnInit} from '@angular/core';
-import {Observable} from "rxjs";
-import {LoaderService} from "./service/loader.service";
-import {ToastService} from "./service/toast.service";
-import {Router} from "@angular/router";
+import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { LoaderService } from "./service/loader.service";
+import { ToastService } from "./service/toast.service";
+import { Router } from "@angular/router";
 
+function isPublicCoachHostname(host: string): boolean {
+  if (!host) return false;
+
+  const normalized = host.toLowerCase();
+
+  if (normalized === 'localhost' || normalized.startsWith('localhost:')) {
+    return false;
+  }
+
+  if (normalized === 'integration.yocoach.co' || normalized === 'www.integration.yocoach.co') {
+    return false;
+  }
+
+  if (normalized === 'app.yocoach.co' || normalized === 'www.app.yocoach.co') {
+    return false;
+  }
+
+  if (normalized === 'yocoach.co' || normalized === 'www.yocoach.co') {
+    return false;
+  }
+
+  return normalized.endsWith('.yocoach.co');
+}
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements OnInit {
   isLoading: Observable<boolean>;
 
   constructor(
@@ -23,16 +46,13 @@ export class AppComponent implements OnInit{
 
   ngOnInit(): void {
     const host = window.location.hostname;
-    const isCoachPublicSubdomain =
-      host.endsWith('.yocoach.co') &&
-      !host.startsWith('www.') &&
-      host !== 'integration.yocoach.co' &&
-      host !== 'www.integration.yocoach.co';
+    const isCoachPublicSubdomain = isPublicCoachHostname(host);
 
     if (isCoachPublicSubdomain && this.router.url === '/') {
       this.router.navigateByUrl('/site');
     }
   }
+
   getToastIcon(type: string): string {
     switch (type) {
       case 'success': return 'fa-check-circle';
@@ -42,5 +62,4 @@ export class AppComponent implements OnInit{
       default: return 'fa-info-circle';
     }
   }
-
 }

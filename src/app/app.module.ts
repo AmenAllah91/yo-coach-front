@@ -36,9 +36,43 @@ import {environment} from "@env/environment";
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
 }
+function isPublicCoachHostname(host: string): boolean {
+  if (!host) return false;
 
-function initializeKeycloakAndSync(keycloak: KeycloakService, authService: AuthService, http: HttpClient) {
+  const normalized = host.toLowerCase();
+
+  if (normalized === 'localhost' || normalized.startsWith('localhost:')) {
+    return false;
+  }
+
+  if (normalized === 'integration.yocoach.co' || normalized === 'www.integration.yocoach.co') {
+    return false;
+  }
+
+  if (normalized === 'app.yocoach.co' || normalized === 'www.app.yocoach.co') {
+    return false;
+  }
+
+  if (normalized === 'yocoach.co' || normalized === 'www.yocoach.co') {
+    return false;
+  }
+
+  return normalized.endsWith('.yocoach.co');
+}
+function initializeKeycloakAndSync(
+  keycloak: KeycloakService,
+  http: HttpClient
+) {
   return async () => {
+    const host = window.location.hostname;
+
+    const isPublicHost = isPublicCoachHostname(host);
+
+    if (isPublicHost) {
+      console.log('Public coach website detected, skipping Keycloak init');
+      return true;
+    }
+
     console.log('Initializing Keycloak...');
     const authenticated = await keycloak.init({
       config: {
@@ -58,7 +92,10 @@ function initializeKeycloakAndSync(keycloak: KeycloakService, authService: AuthS
     if (authenticated) {
       console.log('Keycloak initialized. Authenticated:', authenticated);
       try {
-        const user = await firstValueFrom(http.post<any>(`${environment.baseApiUrl}/public/sync`, {}));
+        const user = await firstValueFrom(
+          http.post<any>(`${environment.baseApiUrl}/public/sync`, {})
+        );
+
         if (user && user.id) {
           sessionStorage.setItem('userId', user.id);
           console.log('User synced with backend:', user);
@@ -70,7 +107,10 @@ function initializeKeycloakAndSync(keycloak: KeycloakService, authService: AuthS
 
     return authenticated;
   };
-}@NgModule({
+}
+
+
+@NgModule({
   declarations: [
     AppComponent,
   ],
