@@ -1,0 +1,454 @@
+<div
+  class="yc-preview"
+  [class.yc-preview--public]="publicMode"
+  [style.--theme-primary]="colors?.primary"
+  [style.--theme-secondary]="colors?.secondary"
+  [style.--theme-accent]="colors?.accent"
+  [style.--theme-bg]="colors?.background"
+  [style.--theme-text]="colors?.text"
+>
+  <div class="yc-preview__topbar" *ngIf="!publicMode">
+    <div class="yc-preview__topbar-left">
+      <span class="yc-preview__mode">Mode Aperçu</span>
+      <span class="yc-preview__theme">{{ themeName }}</span>
+    </div>
+
+    <button type="button" class="yc-preview__close" (click)="closePreview()">
+      Fermer l'aperçu
+    </button>
+  </div>
+
+  <div class="yc-preview__body">
+    <div class="yc-site" [ngClass]="'yc-site--' + themeKey">
+
+      <div
+        *ngIf="announcement?.enabled"
+        class="yc-site__announcement"
+        [style.background]="announcement.bgColor"
+        [style.color]="announcement.textColor"
+      >
+        <div class="yc-site__announcement-marquee">
+          {{ announcement.message }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          {{ announcement.message }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          {{ announcement.message }}
+        </div>
+      </div>
+
+      <!-- ELEGANCE -->
+      <ng-container *ngIf="themeKey === 'elegance'">
+        <section class="yc-elegance-hero">
+          <img [src]="profile.image" [alt]="profile.fullName" class="yc-elegance-hero__avatar" />
+          <h1>{{ profile.fullName }}</h1>
+          <div class="yc-elegance-hero__title">{{ profile.title }}</div>
+          <div class="yc-elegance-hero__slogan">{{ profile.slogan }}</div>
+
+          <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main">
+            {{ cta.label }}
+          </button>
+        </section>
+
+        <section class="yc-elegance-section" *ngIf="videoEmbedUrl">
+          <h2>Découvrez mon approche</h2>
+          <div class="yc-video yc-video--xl">
+            <iframe
+              [src]="videoEmbedUrl"
+              title="Aperçu vidéo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+            ></iframe>
+          </div>
+        </section>
+
+        <section class="yc-elegance-section yc-elegance-section--soft">
+          <h2>À propos</h2>
+          <p>{{ profile.bio }}</p>
+        </section>
+
+        <section class="yc-elegance-section">
+          <h2>Une méthode éprouvée pour des résultats durables</h2>
+          <p>
+            Mon approche se base sur des années d'expérience et une compréhension profonde des mécanismes humains.
+            Nous travaillerons ensemble pour identifier vos blocages et mettre en place des stratégies concrètes.
+          </p>
+          <img
+            class="yc-elegance-image"
+            src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+            alt=""
+          />
+        </section>
+
+        <section class="yc-elegance-section">
+          <h2>Mes Services</h2>
+          <div class="yc-services yc-services--elegance">
+            <article class="yc-service-card" *ngFor="let service of services; trackBy: trackByIndex">
+              <h3>{{ service.title }}</h3>
+              <p>{{ service.description }}</p>
+              <div class="yc-service-card__price">{{ service.price }}</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-elegance-section yc-elegance-section--soft">
+          <h2>Transformations</h2>
+
+          <div class="yc-results--elegance">
+            <article class="yc-result-card yc-result-card--elegance" *ngFor="let result of results; trackBy: trackByIndex">
+              <div class="yc-result-card__images">
+                <div class="yc-result-card__image-wrap">
+                  <span class="yc-badge yc-badge--before">AVANT</span>
+                  <img [src]="result.beforeImage" alt="Avant" />
+                </div>
+
+                <div class="yc-result-card__image-wrap">
+                  <span class="yc-badge yc-badge--after">APRÈS</span>
+                  <img [src]="result.afterImage" alt="Après" />
+                </div>
+              </div>
+
+              <div class="yc-result-card__content">
+                <p class="yc-result-card__quote">"{{ result.text }}"</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-elegance-certificates">
+          <h2>Certifications</h2>
+
+          <div class="yc-certificates">
+            <article class="yc-certificate-card" *ngFor="let certificate of certificates; trackBy: trackByIndex">
+              <div class="yc-certificate-card__icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"></circle>
+                  <path d="M9 12v8l3-2 3 2v-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </div>
+
+              <h3>{{ certificate.title }}</h3>
+              <p>{{ certificate.organization }}</p>
+              <span>{{ certificate.year }}</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-elegance-section">
+          <h2>Témoignages</h2>
+          <div class="yc-testimonials--elegance">
+            <article class="yc-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
+              <p>"{{ testimonial.text }}"</p>
+              <div class="yc-stars">
+                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
+              </div>
+              <strong>— {{ testimonial.author }}</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-elegance-contact yc-elegance-section--soft">
+          <div class="yc-contact-card">
+            <h2>Commençons ensemble</h2>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.firstName">
+              <label>Prénom</label>
+              <input type="text" />
+            </div>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.lastName">
+              <label>Nom</label>
+              <input type="text" />
+            </div>
+
+            <div class="yc-contact-field">
+              <label>Email</label>
+              <input type="email" />
+            </div>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.phone">
+              <label>Téléphone</label>
+              <input type="text" />
+            </div>
+
+            <button type="button" class="yc-site__cta-secondary">
+              {{ leadFields?.buttonLabel }}
+            </button>
+          </div>
+        </section>
+      </ng-container>
+
+      <!-- DYNAMIC -->
+      <ng-container *ngIf="themeKey === 'dynamic'">
+        <section class="yc-dynamic-hero">
+          <div class="yc-dynamic-hero__content">
+            <h1>{{ profile.fullName }}</h1>
+            <div class="yc-dynamic-hero__title">{{ profile.title }}</div>
+            <div class="yc-dynamic-hero__slogan">{{ profile.slogan }}</div>
+
+            <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main yc-site__cta-main--pill">
+              {{ cta.label }}
+            </button>
+          </div>
+
+          <div class="yc-dynamic-hero__media">
+            <img [src]="profile.image" [alt]="profile.fullName" />
+          </div>
+        </section>
+
+        <section class="yc-dynamic-video" *ngIf="videoEmbedUrl">
+          <h2>Regardez ma vidéo</h2>
+          <p>Découvrez en quelques minutes comment je peux vous accompagner vers vos objectifs.</p>
+          <div class="yc-video yc-video--xl">
+            <iframe
+              [src]="videoEmbedUrl"
+              title="Vidéo de présentation"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen>
+            </iframe>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-cert-strip">
+          <span>Certifié par :</span>
+          <span *ngFor="let certificate of certificates; trackBy: trackByIndex">{{ certificate.organization }}</span>
+        </section>
+
+        <section class="yc-dynamic-section yc-dynamic-section--center">
+          <h2>Ma Philosophie</h2>
+          <p>{{ profile.bio }}</p>
+        </section>
+
+        <section class="yc-dynamic-section">
+          <h2>Une méthode éprouvée pour des résultats durables</h2>
+          <p>
+            Mon approche se base sur des années d'expérience et une compréhension profonde des mécanismes humains.
+            Nous travaillerons ensemble pour identifier vos blocages et mettre en place des stratégies concrètes.
+          </p>
+          <img
+            class="yc-dynamic-image"
+            src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+            alt=""
+          />
+        </section>
+
+        <section class="yc-dynamic-section yc-dynamic-section--alt">
+          <h2>Comment je vous accompagne</h2>
+          <div class="yc-services yc-services--dynamic">
+            <article class="yc-service-card yc-service-card--dynamic" *ngFor="let service of services; trackBy: trackByIndex">
+              <h3>{{ service.title }}</h3>
+              <p>{{ service.description }}</p>
+              <div class="yc-service-card__badge">{{ service.price }}</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-section">
+          <h2>Résultats Concrets</h2>
+          <div class="yc-results--dynamic">
+            <article class="yc-result-card--dynamic" *ngFor="let result of results; trackBy: trackByIndex">
+              <div class="yc-result-card__images">
+                <div class="yc-result-card__image-wrap">
+                  <span>AVANT</span>
+                  <img [src]="result.beforeImage" alt="Avant" />
+                </div>
+                <div class="yc-result-card__image-wrap">
+                  <span>APRÈS</span>
+                  <img [src]="result.afterImage" alt="Après" />
+                </div>
+              </div>
+              <p class="yc-result-card__quote">"{{ result.text }}"</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-testimonials">
+          <h2>Ils ont transformé leur vie</h2>
+          <div class="yc-testimonials--dynamic">
+            <article class="yc-testimonial-card--dynamic" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
+              <div class="yc-stars">
+                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
+              </div>
+              <p>"{{ testimonial.text }}"</p>
+              <strong>{{ testimonial.author }}</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-contact">
+          <div class="yc-contact-card yc-contact-card--dynamic">
+            <h2>Passez à l'action</h2>
+            <p>Laissez-moi vos coordonnées pour un premier échange gratuit.</p>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.firstName">
+              <label>Prénom</label>
+              <input type="text" />
+            </div>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.lastName">
+              <label>Nom</label>
+              <input type="text" />
+            </div>
+
+            <div class="yc-contact-field">
+              <label>Email</label>
+              <input type="email" />
+            </div>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.phone">
+              <label>Téléphone</label>
+              <input type="text" />
+            </div>
+
+            <button type="button" class="yc-site__cta-secondary">
+              {{ leadFields?.buttonLabel }}
+            </button>
+          </div>
+        </section>
+      </ng-container>
+
+      <!-- TRUST -->
+      <ng-container *ngIf="themeKey === 'trust'">
+        <section class="yc-dynamic-section yc-dynamic-section--center">
+          <h2>{{ profile.fullName }}</h2>
+          <p>{{ profile.title }}</p>
+          <img [src]="profile.image" [alt]="profile.fullName" class="yc-elegance-hero__avatar" />
+          <p>{{ profile.slogan }}</p>
+          <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main">
+            {{ cta.label }}
+          </button>
+        </section>
+
+        <section class="yc-dynamic-section" *ngIf="videoEmbedUrl">
+          <h2>Présentation</h2>
+          <div class="yc-video yc-video--xl">
+            <iframe [src]="videoEmbedUrl" title="Vidéo de présentation" allowfullscreen></iframe>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-section yc-dynamic-section--center">
+          <h2>À propos</h2>
+          <p>{{ profile.bio }}</p>
+        </section>
+
+        <section class="yc-dynamic-section yc-dynamic-section--alt">
+          <h2>Services</h2>
+          <div class="yc-services yc-services--dynamic">
+            <article class="yc-service-card yc-service-card--dynamic" *ngFor="let service of services">
+              <h3>{{ service.title }}</h3>
+              <p>{{ service.description }}</p>
+              <div class="yc-service-card__badge">{{ service.price }}</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-section">
+          <h2>Résultats</h2>
+          <div class="yc-results--dynamic">
+            <article class="yc-result-card--dynamic" *ngFor="let result of results">
+              <div class="yc-result-card__images">
+                <div class="yc-result-card__image-wrap">
+                  <span>AVANT</span>
+                  <img [src]="result.beforeImage" alt="Avant" />
+                </div>
+                <div class="yc-result-card__image-wrap">
+                  <span>APRÈS</span>
+                  <img [src]="result.afterImage" alt="Après" />
+                </div>
+              </div>
+              <p class="yc-result-card__quote">"{{ result.text }}"</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-dynamic-testimonials">
+          <h2>Témoignages</h2>
+          <div class="yc-testimonials--dynamic">
+            <article class="yc-testimonial-card--dynamic" *ngFor="let testimonial of testimonials">
+              <div class="yc-stars">
+                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
+              </div>
+              <p>"{{ testimonial.text }}"</p>
+              <strong>{{ testimonial.author }}</strong>
+            </article>
+          </div>
+        </section>
+      </ng-container>
+
+      <!-- SERENITY -->
+      <ng-container *ngIf="themeKey === 'serenity'">
+        <section class="yc-elegance-hero">
+          <img [src]="profile.image" [alt]="profile.fullName" class="yc-elegance-hero__avatar" />
+          <h1>{{ profile.fullName }}</h1>
+          <div class="yc-elegance-hero__title">{{ profile.title }}</div>
+          <div class="yc-elegance-hero__slogan">{{ profile.slogan }}</div>
+        </section>
+
+        <section class="yc-elegance-section yc-elegance-section--soft">
+          <h2>Un espace pour avancer sereinement</h2>
+          <p>{{ profile.bio }}</p>
+        </section>
+
+        <section class="yc-elegance-section" *ngIf="videoEmbedUrl">
+          <h2>Découvrir mon univers</h2>
+          <div class="yc-video yc-video--xl">
+            <iframe [src]="videoEmbedUrl" title="Vidéo de présentation" allowfullscreen></iframe>
+          </div>
+        </section>
+
+        <section class="yc-elegance-section">
+          <h2>Mes accompagnements</h2>
+          <div class="yc-services yc-services--elegance">
+            <article class="yc-service-card" *ngFor="let service of services">
+              <h3>{{ service.title }}</h3>
+              <p>{{ service.description }}</p>
+              <div class="yc-service-card__price">{{ service.price }}</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-elegance-section yc-elegance-section--soft">
+          <h2>Ils ont avancé</h2>
+          <div class="yc-testimonials--elegance">
+            <article class="yc-testimonial-card" *ngFor="let testimonial of testimonials">
+              <p>"{{ testimonial.text }}"</p>
+              <div class="yc-stars">
+                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
+              </div>
+              <strong>— {{ testimonial.author }}</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="yc-elegance-contact">
+          <div class="yc-contact-card">
+            <h2>Réserver un échange</h2>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.firstName">
+              <label>Prénom</label>
+              <input type="text" />
+            </div>
+
+            <div class="yc-contact-field">
+              <label>Email</label>
+              <input type="email" />
+            </div>
+
+            <div class="yc-contact-field" *ngIf="leadFields?.phone">
+              <label>Téléphone</label>
+              <input type="text" />
+            </div>
+
+            <button type="button" class="yc-site__cta-secondary">
+              {{ leadFields?.buttonLabel }}
+            </button>
+          </div>
+        </section>
+      </ng-container>
+
+    </div>
+    <div class="yc-builder__floating-cta" *ngIf="cta.enabled && cta.sticky">
+      <button type="button" class="yc-cta-btn" [style.background]="colors.accent">
+        {{ cta.label }}
+      </button>
+    </div>
+  </div>
+</div>

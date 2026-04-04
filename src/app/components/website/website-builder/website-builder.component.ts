@@ -1,0 +1,373 @@
+import { CommonModule } from '@angular/common';
+import {Component, Input} from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {CoachLandingPreviewComponent} from "../coach-landing-preview/coach-landing-preview.component";
+import {Router} from "@angular/router";
+import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
+import {WebsiteService} from "../../../service/website.service";
+
+
+type CoachThemeName = 'Élégance' | 'Dynamique' | 'Confiance' | 'Sérénité';
+
+interface ThemeColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  text: string;
+  announcementBg: string;
+  announcementText: string;
+}
+
+interface ThemePreset {
+  name: CoachThemeName;
+  selected: boolean;
+  previewKey: 'elegance' | 'dynamic' | 'trust' | 'serenity';
+  colors: ThemeColors;
+}
+
+interface ProfileSection {
+  image: string;
+  fullName: string;
+  title: string;
+  slogan: string;
+  bio: string;
+}
+
+interface VideoSection {
+  url: string;
+}
+
+interface AnnouncementSection {
+  enabled: boolean;
+  message: string;
+  bgColor: string;
+  textColor: string;
+}
+
+interface CtaSection {
+  enabled: boolean;
+  label: string;
+  sticky: boolean;
+}
+
+interface LeadFieldsSection {
+  firstName: boolean;
+  lastName: boolean;
+  email: boolean;
+  phone: boolean;
+  buttonLabel: string;
+}
+
+interface ResultItem {
+  beforeImage: string;
+  afterImage: string;
+  text: string;
+}
+
+interface ServiceItem {
+  image: string;
+  title: string;
+  price: string;
+  description: string;
+}
+
+interface CertificateItem {
+  image: string;
+  title: string;
+  organization: string;
+  year: string;
+}
+
+interface TestimonialItem {
+  author: string;
+  rating: number;
+  text: string;
+}
+
+@Component({
+  selector: 'app-yo-coach-builder',
+  standalone: true,
+  imports: [CommonModule, FormsModule, CoachLandingPreviewComponent],
+  templateUrl: './website-builder.component.html',
+  styleUrls: ['./website-builder.component.scss']
+})
+export class WebsiteBuilderComponent {
+
+  constructor(
+    private router: Router,
+    private sanitizer: DomSanitizer,
+    private websiteService: WebsiteService) {}
+
+  previewOpen = false;
+
+  tabs = [
+    'Profil',
+    'Vidéo',
+    'Description',
+    'Résultats',
+    'Services',
+    'Certificats',
+    'Témoignages'
+  ];
+
+  activeTab = 'Profil';
+  siteSlug = 'monsite';
+
+  themes: ThemePreset[] = [
+    {
+      name: 'Élégance',
+      selected: true,
+      previewKey: 'elegance',
+      colors: {
+        primary: '#2c3e50',
+        secondary: '#e8f4f8',
+        accent: '#e67e22',
+        background: '#ffffff',
+        text: '#333333',
+        announcementBg: '#1a1a2e',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Dynamique',
+      selected: false,
+      previewKey: 'dynamic',
+      colors: {
+        primary: '#2c3e50',
+        secondary: '#e8f4f8',
+        accent: '#e67e22',
+        background: '#ffffff',
+        text: '#333333',
+        announcementBg: '#1a1a2e',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Confiance',
+      selected: false,
+      previewKey: 'trust',
+      colors: {
+        primary: '#0f4c75',
+        secondary: '#bbe1fa',
+        accent: '#3282b8',
+        background: '#f8fafc',
+        text: '#1f2937',
+        announcementBg: '#0f4c75',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Sérénité',
+      selected: false,
+      previewKey: 'serenity',
+      colors: {
+        primary: '#557b83',
+        secondary: '#e5efc1',
+        accent: '#39aea9',
+        background: '#ffffff',
+        text: '#374151',
+        announcementBg: '#557b83',
+        announcementText: '#ffffff'
+      }
+    }
+  ];
+
+  profile: ProfileSection = {
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    fullName: 'Sophie Martin',
+    title: 'Coach Certifiée en Développement Personnel',
+    slogan: 'Transformez votre vie, révélez votre potentiel',
+    bio: `Passionnée par l'humain, j'accompagne les professionnels et les particuliers dans l'atteinte de leurs objectifs. Mon approche bienveillante et orientée solutions vous aide à surmonter les obstacles et à construire une vie alignée avec vos valeurs profondes.`
+  };
+
+  video: VideoSection = {
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  };
+
+  announcement: AnnouncementSection = {
+    enabled: true,
+    message: '🎉 Offre spéciale : -20% sur votre première séance de coaching ! Réservez maintenant ❤️',
+    bgColor: '#1a1a2e',
+    textColor: '#ffffff'
+  };
+
+  cta: CtaSection = {
+    enabled: true,
+    label: 'Commencer le coaching',
+    sticky: false
+  };
+
+  leadFields: LeadFieldsSection = {
+    firstName: true,
+    lastName: false,
+    email: true,
+    phone: false,
+    buttonLabel: 'Réserver un appel découverte'
+  };
+
+  colors: ThemeColors = {
+    primary: '#2c3e50',
+    secondary: '#e8f4f8',
+    accent: '#e67e22',
+    background: '#ffffff',
+    text: '#333333',
+    announcementBg: '#1a1a2e',
+    announcementText: '#ffffff'
+  };
+
+  results: ResultItem[] = [
+    {
+      beforeImage: 'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      afterImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      text: 'Retrouver confiance en soi après 3 mois de coaching'
+    }
+  ];
+
+  services: ServiceItem[] = [
+    {
+      image: '',
+      title: 'Coaching Individuel',
+      price: '120€ / séance',
+      description: 'Séances personnalisées pour surmonter vos blocages et atteindre vos objectifs personnels ou professionnels.'
+    },
+    {
+      image: '',
+      title: 'Bilan de Compétences',
+      price: '1500€',
+      description: 'Un accompagnement complet pour faire le point sur votre carrière et définir un nouveau projet professionnel.'
+    },
+    {
+      image: '',
+      title: 'Atelier Confiance en Soi',
+      price: '80€ / personne',
+      description: 'Session de groupe interactive pour développer votre estime personnelle et oser passer à l’action.'
+    }
+  ];
+
+  certificates: CertificateItem[] = [
+    {
+      image: '',
+      title: 'Master Coach Certifié (MCC)',
+      organization: 'International Coaching Federation',
+      year: '2020'
+    },
+    {
+      image: '',
+      title: 'Praticien PNL',
+      organization: 'Institut Français de PNL',
+      year: '2018'
+    }
+  ];
+
+  testimonials: TestimonialItem[] = [
+    {
+      author: 'Julien D.',
+      rating: 5,
+      text: `L'accompagnement de Sophie a été un véritable tournant dans ma carrière. J'ai pu prendre des décisions difficiles avec clarté et sérénité.`
+    },
+    {
+      author: 'Marie L.',
+      rating: 5,
+      text: `Une écoute exceptionnelle et des outils concrets. Je me sens enfin alignée avec mes choix de vie.`
+    }
+  ];
+
+  setTab(tab: string): void {
+    this.activeTab = tab;
+  }
+
+  selectTheme(index: number): void {
+    this.themes = this.themes.map((theme, i) => ({
+      ...theme,
+      selected: i === index
+    }));
+
+    const selected = this.selectedTheme;
+    this.colors = { ...selected.colors };
+    this.announcement.bgColor = selected.colors.announcementBg;
+    this.announcement.textColor = selected.colors.announcementText;
+  }
+
+  get selectedTheme(): ThemePreset {
+    return this.themes.find(t => t.selected) ?? this.themes[0];
+  }
+
+  get videoEmbedUrl(): SafeResourceUrl | null {
+    const embedUrl = this.toEmbedUrl(this.video.url);
+    return embedUrl ? this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl) : null;
+  }
+
+  openPreview(): void {
+    this.router.navigate(['/websites/preview'], {
+      state: {
+        themeKey: this.selectedTheme.previewKey,
+        themeName: this.selectedTheme.name,
+
+        profile: this.profile,
+        videoUrl: this.video.url,
+        announcement: this.announcement,
+        cta: this.cta,
+        leadFields: this.leadFields,
+        colors: this.colors,
+        services: this.services,
+        results: this.results,
+        certificates: this.certificates,
+        testimonials: this.testimonials,
+      }
+    });
+  }
+
+  closePreview(): void {
+    this.previewOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  private toEmbedUrl(url: string): string {
+    if (!url) return '';
+
+    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/i);
+    if (youtubeMatch?.[1]) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/i);
+    if (vimeoMatch?.[1]) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+
+    return url;
+  }
+
+
+  saveWebsite(): void {
+    const payload = {
+      slug: this.siteSlug,
+      themeKey: this.selectedTheme.previewKey,
+      themeName: this.selectedTheme.name,
+
+      profile: this.profile,
+      video: {
+        url: this.video.url
+      },
+      announcement: this.announcement,
+      cta: this.cta,
+      leadFields: this.leadFields,
+      colors: this.colors,
+      services: this.services,
+      results: this.results,
+      certificates: this.certificates,
+      testimonials: this.testimonials,
+      published: true
+    };
+
+    this.websiteService.saveMyWebsite(payload).subscribe({
+      next: res => {
+        console.log('Site enregistré avec succès', res);
+      },
+      error: err => {
+        console.error('Erreur lors de l’enregistrement du site', err);
+      }
+    });
+  }
+}

@@ -222,4 +222,28 @@ export const items: RouteInfo[] = [
     submenu: [],
     roles: ['ROLE_COACH'],
   },
+  {
+    path: '',
+    title: 'Websites',
+    iconType: 'feather',
+    icon: 'website',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    roles: ['ROLE_COACH'],
+    submenu: [
+      {
+        path: '/websites/create',
+        title: 'create',
+        iconType: 'feather',
+        icon: 'clipboard',
+        class: '',
+        groupTitle: false,
+        badge: '',
+        badgeClass: '',
+        submenu: [],
+      },
+    ],
+  },
 ];

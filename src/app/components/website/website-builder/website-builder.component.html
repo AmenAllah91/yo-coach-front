@@ -1,0 +1,579 @@
+<div class="yc-builder">
+  <!-- Top bar -->
+  <div class="yc-builder__topbar">
+    <div class="yc-builder__topbar-inner">
+      <div class="yc-builder__brand">
+        <div class="yc-builder__brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
+            <rect x="3" y="14" width="9" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
+            <rect x="16" y="14" width="5" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
+          </svg>
+        </div>
+        <div class="yc-builder__brand-title">CoachBuilder</div>
+      </div>
+
+      <div class="yc-builder__actions">
+        <button type="button" class="yc-builder__preview-btn" (click)="openPreview()">
+  <span class="yc-builder__preview-icon">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M2.1 12.3a1 1 0 0 1 0-.6 10.7 10.7 0 0 1 19.8 0 1 1 0 0 1 0 .6 10.7 10.7 0 0 1-19.8 0Z"
+            stroke="currentColor" stroke-width="2"></path>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"></circle>
+    </svg>
+  </span>
+          <span>Voir l'aperçu</span>
+        </button>
+
+        <button type="button" class="yc-builder__preview-btn" (click)="saveWebsite()">
+          <span>Enregistrer le site</span>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- URL bar -->
+  <div class="yc-builder__urlbar">
+    <div class="yc-builder__urlbar-inner">
+      <div class="yc-builder__url-label">Adresse de votre site</div>
+
+      <div class="yc-builder__url-input-wrap">
+        <span class="yc-builder__url-prefix">https://</span>
+        <input
+          class="yc-builder__url-input"
+          type="text"
+          [(ngModel)]="siteSlug"
+          placeholder="monsite"
+        />
+        <span class="yc-builder__url-suffix">.yocoach.co</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page content -->
+  <div class="yc-builder__content">
+    <!-- Themes -->
+    <div class="yc-builder__section">
+      <div class="yc-builder__section-title">Thème sélectionné</div>
+
+      <div class="yc-builder__themes">
+        <div
+          class="yc-theme-card"
+          *ngFor="let theme of themes; let i = index"
+          [class.is-selected]="theme.selected"
+          (click)="selectTheme(i)"
+        >
+          <div class="yc-theme-card__name">{{ theme.name }}</div>
+
+          <div class="yc-theme-card__preview" [attr.data-theme]="theme.name">
+            <div class="yc-theme-skeleton yc-theme-skeleton--elegance" *ngIf="theme.name === 'Élégance'">
+              <div class="avatar"></div>
+              <div class="line line-lg"></div>
+              <div class="line line-sm"></div>
+              <div class="grid">
+                <div class="box"></div>
+                <div class="box"></div>
+              </div>
+            </div>
+
+            <div class="yc-theme-skeleton yc-theme-skeleton--dynamic" *ngIf="theme.name === 'Dynamique'">
+              <div class="left">
+                <div class="line white"></div>
+                <div class="line white short"></div>
+                <div class="line gray tiny"></div>
+                <div class="pill"></div>
+              </div>
+              <div class="right"></div>
+            </div>
+
+            <div class="yc-theme-skeleton yc-theme-skeleton--trust" *ngIf="theme.name === 'Confiance'">
+              <div class="top">
+                <div class="square"></div>
+                <div class="stack">
+                  <div class="line dark"></div>
+                  <div class="line gray short"></div>
+                </div>
+              </div>
+              <div class="grid four">
+                <div class="mini-box"></div>
+                <div class="mini-box"></div>
+                <div class="mini-box"></div>
+                <div class="mini-box"></div>
+              </div>
+            </div>
+
+            <div class="yc-theme-skeleton yc-theme-skeleton--serenity" *ngIf="theme.name === 'Sérénité'">
+              <div class="soft-bg"></div>
+              <div class="content">
+                <div class="avatar"></div>
+                <div class="line green"></div>
+                <div class="grid three">
+                  <div class="mini-box"></div>
+                  <div class="mini-box"></div>
+                  <div class="mini-box"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="yc-theme-card__swatches">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="yc-builder__grid">
+      <!-- Left -->
+      <div class="yc-builder__left">
+        <div class="yc-builder__section-title">Contenu de la page</div>
+
+        <div class="yc-card yc-card--tabs">
+          <div class="yc-tabs">
+            <button
+              type="button"
+              *ngFor="let tab of tabs"
+              class="yc-tab"
+              [class.is-active]="activeTab === tab"
+              (click)="setTab(tab)"
+            >
+              {{ tab }}
+            </button>
+          </div>
+
+          <div class="yc-card__body">
+            <!-- PROFIL -->
+            <ng-container *ngIf="activeTab === 'Profil'">
+              <div class="yc-form-block">
+                <label class="yc-label">Photo de profil</label>
+                <div class="yc-profile-upload">
+                  <img [src]="profile.image" alt="profile" class="yc-avatar"/>
+
+                  <div class="yc-upload-actions">
+                    <button type="button" class="yc-btn yc-btn--outline">
+                      Importer une image
+                    </button>
+                    <button type="button" class="yc-link-btn">
+                      Ou utiliser un lien URL
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="yc-form-block">
+                <label class="yc-label">Nom complet</label>
+                <input class="yc-input" type="text" [(ngModel)]="profile.fullName"/>
+              </div>
+
+              <div class="yc-form-block">
+                <label class="yc-label">Titre professionnel</label>
+                <input class="yc-input" type="text" [(ngModel)]="profile.title"/>
+              </div>
+
+              <div class="yc-form-block">
+                <label class="yc-label">Slogan / Accroche</label>
+                <input class="yc-input" type="text" [(ngModel)]="profile.slogan"/>
+              </div>
+
+              <div class="yc-form-block">
+                <label class="yc-label">Biographie courte</label>
+                <textarea class="yc-textarea" rows="5" [(ngModel)]="profile.bio"></textarea>
+              </div>
+            </ng-container>
+
+            <!-- VIDEO -->
+            <ng-container *ngIf="activeTab === 'Vidéo'">
+              <div class="yc-form-block">
+                <label class="yc-label">Vidéo de présentation</label>
+                <div class="yc-helper">
+                  Ajoutez une vidéo publicitaire convaincante pour présenter vos services.
+                </div>
+              </div>
+
+              <div class="yc-form-block">
+                <label class="yc-label">Lien de la vidéo</label>
+                <input
+                  class="yc-input"
+                  type="text"
+                  [(ngModel)]="video.url"
+                  placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                />
+              </div>
+
+              <div class="yc-form-block" *ngIf="videoEmbedUrl">
+                <label class="yc-label">Aperçu</label>
+                <div
+                  style="position: relative; width: 100%; padding-bottom: 56.25%; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
+                  <iframe
+                    [src]="videoEmbedUrl"
+                    title="Aperçu vidéo"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+                  ></iframe>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- DESCRIPTION -->
+            <ng-container *ngIf="activeTab === 'Description'">
+              <div class="yc-form-block">
+                <label class="yc-label">Titre principal</label>
+                <input class="yc-input" type="text" [(ngModel)]="profile.slogan"/>
+              </div>
+
+              <div class="yc-form-block">
+                <label class="yc-label">Description détaillée</label>
+                <textarea class="yc-textarea" rows="8" [(ngModel)]="profile.bio"></textarea>
+              </div>
+            </ng-container>
+
+            <!-- RESULTATS -->
+            <ng-container *ngIf="activeTab === 'Résultats'">
+              <div class="yc-form-block" *ngFor="let result of results; let i = index">
+                <label class="yc-label">Résultat {{ i + 1 }}</label>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Image Avant</label>
+                  <input class="yc-input" type="text" [(ngModel)]="result.beforeImage" placeholder="URL image avant"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Image Après</label>
+                  <input class="yc-input" type="text" [(ngModel)]="result.afterImage" placeholder="URL image après"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Texte</label>
+                  <textarea class="yc-textarea" rows="3" [(ngModel)]="result.text"></textarea>
+                </div>
+
+                <button type="button" class="yc-btn yc-btn--outline" (click)="removeResult(i)">
+                  Supprimer ce résultat
+                </button>
+              </div>
+
+              <div class="yc-form-block">
+                <button type="button" class="yc-btn yc-btn--outline" (click)="addResult()">
+                  + Ajouter un résultat
+                </button>
+              </div>
+            </ng-container>
+
+            <!-- SERVICES -->
+            <ng-container *ngIf="activeTab === 'Services'">
+              <div class="yc-form-block" *ngFor="let service of services; let i = index">
+                <label class="yc-label">Service {{ i + 1 }}</label>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Image du service</label>
+                  <input class="yc-input" type="text" [(ngModel)]="service.image" placeholder="URL image"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Titre</label>
+                  <input class="yc-input" type="text" [(ngModel)]="service.title"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Prix</label>
+                  <input class="yc-input" type="text" [(ngModel)]="service.price"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Description</label>
+                  <textarea class="yc-textarea" rows="4" [(ngModel)]="service.description"></textarea>
+                </div>
+
+                <button type="button" class="yc-btn yc-btn--outline" (click)="removeService(i)">
+                  Supprimer ce service
+                </button>
+              </div>
+
+              <div class="yc-form-block">
+                <button type="button" class="yc-btn yc-btn--outline" (click)="addService()">
+                  + Ajouter un service
+                </button>
+              </div>
+            </ng-container>
+
+            <!-- CERTIFICATS -->
+            <ng-container *ngIf="activeTab === 'Certificats'">
+              <div class="yc-form-block" *ngFor="let certificate of certificates; let i = index">
+                <label class="yc-label">Certificat {{ i + 1 }}</label>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Image du certificat</label>
+                  <input class="yc-input" type="text" [(ngModel)]="certificate.image" placeholder="URL image"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Nom du certificat</label>
+                  <input class="yc-input" type="text" [(ngModel)]="certificate.title"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Organisation</label>
+                  <input class="yc-input" type="text" [(ngModel)]="certificate.organization"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Année</label>
+                  <input class="yc-input" type="text" [(ngModel)]="certificate.year"/>
+                </div>
+
+                <button type="button" class="yc-btn yc-btn--outline" (click)="removeCertificate(i)">
+                  Supprimer ce certificat
+                </button>
+              </div>
+
+              <div class="yc-form-block">
+                <button type="button" class="yc-btn yc-btn--outline" (click)="addCertificate()">
+                  + Ajouter un certificat
+                </button>
+              </div>
+            </ng-container>
+
+            <!-- TEMOIGNAGES -->
+            <ng-container *ngIf="activeTab === 'Témoignages'">
+              <div class="yc-form-block" *ngFor="let testimonial of testimonials; let i = index">
+                <label class="yc-label">Témoignage {{ i + 1 }}</label>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Auteur</label>
+                  <input class="yc-input" type="text" [(ngModel)]="testimonial.author"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Note</label>
+                  <input class="yc-input" type="number" min="1" max="5" [(ngModel)]="testimonial.rating"/>
+                </div>
+
+                <div class="yc-form-block">
+                  <label class="yc-label">Message</label>
+                  <textarea class="yc-textarea" rows="4" [(ngModel)]="testimonial.text"></textarea>
+                </div>
+
+                <button type="button" class="yc-btn yc-btn--outline" (click)="removeTestimonial(i)">
+                  Supprimer ce témoignage
+                </button>
+              </div>
+
+              <div class="yc-form-block">
+                <button type="button" class="yc-btn yc-btn--outline" (click)="addTestimonial()">
+                  + Ajouter un témoignage
+                </button>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div class="yc-builder__right">
+        <!-- Announcement -->
+        <div class="yc-card yc-side-card">
+          <div class="yc-side-card__head">
+            <div class="yc-side-card__title">Barre d'annonce</div>
+            <label class="yc-switch">
+              <input type="checkbox" [(ngModel)]="announcement.enabled"/>
+              <span class="yc-switch__slider"></span>
+            </label>
+          </div>
+
+          <div class="yc-helper">
+            Bandeau défilant en haut de votre page avec un message promotionnel.
+          </div>
+
+          <div class="yc-form-block">
+            <label class="yc-label">Message</label>
+            <textarea class="yc-textarea" rows="2" [(ngModel)]="announcement.message"></textarea>
+          </div>
+
+          <div class="yc-color-grid">
+            <div class="yc-form-block">
+              <label class="yc-label">Fond</label>
+              <div class="yc-color-row">
+                <input type="color" [(ngModel)]="announcement.bgColor"/>
+                <span>{{ announcement.bgColor }}</span>
+              </div>
+            </div>
+
+            <div class="yc-form-block">
+              <label class="yc-label">Texte</label>
+              <div class="yc-color-row">
+                <input type="color" [(ngModel)]="announcement.textColor"/>
+                <span>{{ announcement.textColor }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="yc-form-block">
+            <label class="yc-label">Aperçu</label>
+            <div
+              class="yc-announcement-preview"
+              [style.background]="announcement.bgColor"
+              [style.color]="announcement.textColor"
+            >
+              <div class="yc-marquee">
+                {{ announcement.message }} &nbsp;&nbsp;&nbsp; {{ announcement.message }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="yc-card yc-side-card">
+          <div class="yc-side-card__head">
+            <div class="yc-side-card__title">Bouton d'action</div>
+            <label class="yc-switch">
+              <input type="checkbox" [(ngModel)]="cta.enabled"/>
+              <span class="yc-switch__slider"></span>
+            </label>
+          </div>
+
+          <div class="yc-helper">
+            Bouton qui redirige vers le formulaire de contact. Peut être fixé en bas de l'écran.
+          </div>
+
+          <div class="yc-form-block">
+            <label class="yc-label">Texte du bouton</label>
+            <input class="yc-input" type="text" [(ngModel)]="cta.label"/>
+          </div>
+
+          <div class="yc-sticky-row">
+            <div>
+              <div class="yc-sticky-title">Bouton sticky</div>
+              <div class="yc-sticky-subtitle">Reste fixé en bas de l'écran</div>
+            </div>
+
+            <label class="yc-switch">
+              <input type="checkbox" [(ngModel)]="cta.sticky"/>
+              <span class="yc-switch__slider"></span>
+            </label>
+          </div>
+
+          <div class="yc-form-block">
+            <label class="yc-label">Aperçu</label>
+            <div class="yc-cta-preview">
+              <button type="button" class="yc-cta-btn" [style.background]="colors.accent">
+                {{ cta.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leads -->
+        <div class="yc-card yc-side-card">
+          <div class="yc-side-card__title yc-side-card__title--alone">
+            Formulaire de contact (Leads)
+          </div>
+
+          <div class="yc-helper">
+            Sélectionnez les champs que vos clients devront remplir pour vous contacter.
+          </div>
+
+          <div class="yc-check-list">
+            <label class="yc-check-item">
+              <input type="checkbox" [(ngModel)]="leadFields.firstName"/>
+              <span>Prénom</span>
+            </label>
+
+            <label class="yc-check-item">
+              <input type="checkbox" [(ngModel)]="leadFields.lastName"/>
+              <span>Nom</span>
+            </label>
+
+            <label class="yc-check-item is-disabled">
+              <input type="checkbox" [checked]="leadFields.email" disabled/>
+              <span>Email (Requis)</span>
+            </label>
+
+            <label class="yc-check-item">
+              <input type="checkbox" [(ngModel)]="leadFields.phone"/>
+              <span>Numéro de téléphone</span>
+            </label>
+          </div>
+
+          <div class="yc-form-block">
+            <label class="yc-label">Texte du bouton (Call to Action)</label>
+            <input class="yc-input" type="text" [(ngModel)]="leadFields.buttonLabel"/>
+          </div>
+        </div>
+
+        <!-- Colors -->
+        <div class="yc-card yc-side-card">
+          <div class="yc-side-card__title yc-side-card__title--alone">
+            Personnalisation des couleurs
+          </div>
+
+          <div class="yc-helper">
+            Ajustez les couleurs pour correspondre à votre identité visuelle.
+          </div>
+
+          <div class="yc-color-settings">
+            <div class="yc-color-setting">
+              <div>
+                <div class="yc-color-setting__title">Couleur Principale</div>
+                <div class="yc-color-setting__hint">Titres, boutons, éléments forts</div>
+              </div>
+              <div class="yc-color-setting__action">
+                <span>{{ colors.primary }}</span>
+                <input type="color" [(ngModel)]="colors.primary"/>
+              </div>
+            </div>
+
+            <div class="yc-color-setting">
+              <div>
+                <div class="yc-color-setting__title">Couleur Secondaire</div>
+                <div class="yc-color-setting__hint">Fonds de section, éléments discrets</div>
+              </div>
+              <div class="yc-color-setting__action">
+                <span>{{ colors.secondary }}</span>
+                <input type="color" [(ngModel)]="colors.secondary"/>
+              </div>
+            </div>
+
+            <div class="yc-color-setting">
+              <div>
+                <div class="yc-color-setting__title">Couleur d'Accent</div>
+                <div class="yc-color-setting__hint">Mise en évidence, icônes, prix</div>
+              </div>
+              <div class="yc-color-setting__action">
+                <span>{{ colors.accent }}</span>
+                <input type="color" [(ngModel)]="colors.accent"/>
+              </div>
+            </div>
+
+            <div class="yc-color-setting">
+              <div>
+                <div class="yc-color-setting__title">Fond Général</div>
+                <div class="yc-color-setting__hint">Couleur de fond de la page</div>
+              </div>
+              <div class="yc-color-setting__action">
+                <span>{{ colors.background }}</span>
+                <input type="color" [(ngModel)]="colors.background"/>
+              </div>
+            </div>
+
+            <div class="yc-color-setting">
+              <div>
+                <div class="yc-color-setting__title">Texte Principal</div>
+                <div class="yc-color-setting__hint">Couleur des paragraphes</div>
+              </div>
+              <div class="yc-color-setting__action">
+                <span>{{ colors.text }}</span>
+                <input type="color" [(ngModel)]="colors.text"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

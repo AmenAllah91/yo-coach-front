@@ -37,6 +37,11 @@ import {ManageCheckinsComponent} from "./components/forms/manage-checkins/manage
 import {ChatComponent} from "./components/chat/chat/chat.component";
 import {InvitationComponent} from "./components/clients/invitation/invitation.component";
 import {EditProfileComponent} from "./components/profile/edit-profile/edit-profile.component";
+import {WebsiteBuilderComponent} from "./components/website/website-builder/website-builder.component";
+import {
+  CoachLandingPreviewPageComponent
+} from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
+import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -162,10 +167,10 @@ export const APP_ROUTE: Route[] = [
         path: 'nutrition/create-full-plan/:id',
         component: CreateFullPlanComponent,
       },
-      // {
-      //   path: 'form/create-form',
-      //   component: CreateFormComponent,
-      // },
+      {
+        path: 'websites/create',
+        component: WebsiteBuilderComponent,
+      },
       {
         path: 'coach-dashboard',
         component: CoachDashboardComponent,
@@ -199,6 +204,14 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'yosoft-landing-page',
     component: YosoftLandingPageComponent,
+  },
+  {
+    path: 'websites/preview',
+    component: CoachLandingPreviewPageComponent
+  },
+  {
+    path: 'site',
+    component: PublicWebsiteComponent
   },
   {
     path: 'edit-profile/:id',
