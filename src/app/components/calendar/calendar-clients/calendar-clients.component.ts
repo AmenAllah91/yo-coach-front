@@ -4,6 +4,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClientService } from 'app/service/client.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
 interface ExerciseSet {
   id: string;
   number: number;
@@ -19,7 +21,10 @@ interface Exercise {
   duration?: number;
   notes?: string;
   thumbnail?: string;
-  videoUrl?: string;
+  youtubeUrl?: string;
+  showVideo?: boolean;
+  videoUrl?: SafeResourceUrl;
+  rawVideoUrl?: string;
 }
 
 interface WorkoutSession {
@@ -31,7 +36,7 @@ interface WorkoutSession {
 interface WorkoutProgram {
   id: string;
   title: string;
-  date: string; // yyyy-mm-dd
+  date: string;
   clientId?: string;
   color?: string;
   sessions: WorkoutSession[];
@@ -73,6 +78,7 @@ interface NutritionProgram {
 
 type CalendarViewMode = 'month' | 'week' | 'day';
 type CalendarType = 'workout' | 'nutrition';
+
 @Component({
   selector: 'app-calendar-clients',
   standalone: true,
@@ -91,26 +97,23 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
   selectedNutritionDay: NutritionProgram | null = null;
   showWorkoutDetails = false;
   showNutritionDetails = false;
-  // ====== MODAL STATE ======
+
   showAddWorkoutModal = false;
   isRestDay = false;
   selectedDateString: string | null = null;
-
   newWorkoutTitle = '';
   newWorkoutExercises: Exercise[] = [];
-
   showExerciseSelector = false;
   exerciseSearchTerm = '';
-
   showDeleteModal = false;
   workoutToDelete: WorkoutProgram | null = null;
 
-  // Bibliothèque d'exercices pour le sélecteur
   availableExercises: Exercise[] = [
     {
       id: 'lib-squat',
       name: 'Squat (Barbell)',
       type: 'strength',
+      youtubeUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
       sets: [
         { id: 'lib-squat-set-1', number: 1, reps: '8-12', rest: '90' },
         { id: 'lib-squat-set-2', number: 2, reps: '8-12', rest: '90' },
@@ -121,6 +124,7 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       id: 'lib-bench',
       name: 'Bench Press (Barbell)',
       type: 'strength',
+      youtubeUrl: 'https://www.youtube.com/watch?v=SCVCLChPQFY',
       sets: [
         { id: 'lib-bench-set-1', number: 1, reps: '8-12', rest: '90' },
         { id: 'lib-bench-set-2', number: 2, reps: '8-12', rest: '90' },
@@ -131,25 +135,26 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       id: 'lib-cardio',
       name: 'Treadmill Run',
       type: 'cardio',
+      youtubeUrl: 'https://www.youtube.com/watch?v=kZDvg92tTMc',
       sets: [],
       duration: 30,
     },
   ];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workoutPrograms: any;
+
+  workoutPrograms: any[] = [];
   nutritionPrograms: NutritionProgram[] = [];
   clients: Client[] = [];
-
-  // anciens champs (plus vraiment utilisés par le HTML, mais pas gênant)
   monthEmptyCells: number[] = [];
   monthDates: Date[] = [];
   client: any;
+
   private storageListener = () => this.loadWorkoutPrograms();
 
   constructor(
     private workoutService: WorkoutService,
     private nutritionService: NutritionService,
-    private clientService: ClientService
+    private clientService: ClientService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -160,16 +165,21 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     this.getWorkout();
     this.getClients();
   }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('storage', this.storageListener);
+  }
+
   onClientChange(clientId: string): void {
     this.selectedClient = clientId;
   }
+
   getClients(): void {
     this.clientService
       .getListClientsByCoachWithoutPagination(this.userId)
       .subscribe({
         next: (res) => {
           this.clients = res;
-          console.log('CLIENTS', this.clients);
         },
         error: (err) => {
           console.error('Error loading clients', err);
@@ -177,22 +187,18 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       });
   }
 
-  getAllLibrary() {
+  getAllLibrary(): void {
     this.nutritionService.getNutritionPlans().subscribe((res) => {
       this.nutritionPrograms = this.mapBackendToNutritionPrograms(res.content);
-      console.log('NUTRITION PROGRAMS', this.nutritionPrograms);
     });
   }
 
-  getWorkout() {
+  getWorkout(): void {
     this.workoutService.getAllLibrary().subscribe((res) => {
-      console.log(res);
       this.workoutPrograms = this.mapBackendToWorkoutPrograms(res.content);
-      console.log('WORKOUT PROGRAMS', this.workoutPrograms);
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mapBackendToWorkoutPrograms(plans: any[]): WorkoutProgram[] {
     const result: WorkoutProgram[] = [];
 
@@ -202,7 +208,6 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       plan.workoutDays.forEach((day: any) => {
         const date = this.addDays(startDate, day.dayNumber - 1);
 
-        // ===== REST DAY =====
         if (day.restDay) {
           result.push({
             id: `${plan.id}-rest-${day.dayNumber}`,
@@ -217,17 +222,16 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // ===== SESSIONS =====
         const sessions: WorkoutSession[] = (day.workoutSessions || []).map(
           (session: any, sIndex: number) => ({
             id: `${plan.id}-session-${sIndex}`,
             notes: session.name,
-
             exercises: (session.exercises || []).map(
               (ex: any, exIndex: number) => ({
                 id: ex.id || `${plan.id}-ex-${exIndex}`,
                 name: ex.name,
                 type: ex.type === 'CARDIO' ? 'cardio' : 'strength',
+                youtubeUrl: ex.youtubeUrl || ex.videoUrl || null,
                 sets: (ex.sets || []).map((set: any, setIndex: number) => ({
                   id: `${plan.id}-set-${setIndex}`,
                   number: set.setNumber ?? setIndex + 1,
@@ -255,29 +259,16 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  ngOnDestroy(): void {
-    window.removeEventListener('storage', this.storageListener);
-  }
-
-  addDays(dateStr: string, days: number): string {
-    const d = new Date(dateStr);
-    d.setDate(d.getDate() + days);
-    return this.formatDateToYYYYMMDD(d);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mapBackendToNutritionPrograms(plans: any[]): NutritionProgram[] {
     const result: NutritionProgram[] = [];
 
     plans.forEach((plan) => {
-      plan.mealDays.forEach((day) => {
+      plan.mealDays.forEach((day: any) => {
         const isRestDay =
           (!day.meals || day.meals.length === 0) &&
           !day.cheatMeal &&
           !day.refeedDay;
 
-        // ===== REST DAY =====
         if (isRestDay) {
           result.push({
             id: `${plan.id}-rest-${day.date}`,
@@ -294,7 +285,6 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // ===== MEALS =====
         const meals: NutritionMeal[] = (day.meals || []).map(
           (meal: any, i: number) => ({
             id: meal.id || `${plan.id}-meal-${i}`,
@@ -328,7 +318,13 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  // ---------- Utils dates ----------
+  // ---------- Utils ----------
+
+  addDays(dateStr: string, days: number): string {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return this.formatDateToYYYYMMDD(d);
+  }
 
   formatDateToYYYYMMDD(date: Date): string {
     const year = date.getFullYear();
@@ -352,12 +348,9 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
 
   getBadgeText(status: string): string {
     switch (status) {
-      case 'COMPLETED':
-        return '✓'; // ou autre symbole
-      case 'MISSED':
-        return '✕'; // ou autre symbole
-      default:
-        return 'P'; // par défaut, programme
+      case 'COMPLETED': return '✓';
+      case 'MISSED': return '✕';
+      default: return 'P';
     }
   }
 
@@ -366,18 +359,16 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
   }
 
   private saveWorkoutPrograms(): void {
-    localStorage.setItem(
-      'calendarWorkouts',
-      JSON.stringify(this.workoutPrograms)
-    );
+    localStorage.setItem('calendarWorkouts', JSON.stringify(this.workoutPrograms));
   }
+
+  private updateMonthGrid(): void {}
 
   // ---------- Navigation ----------
 
   getMonthLabel(): string {
     return this.currentDate.toLocaleDateString('fr-FR', {
-      month: 'long',
-      year: 'numeric',
+      month: 'long', year: 'numeric',
     });
   }
 
@@ -385,35 +376,26 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     const days = this.getWeekDates();
     const first = days[0];
     const last = days[6];
-
-    const startStr = first.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-    });
+    const startStr = first.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     const endStr = last.toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'short',
       year: first.getFullYear() === last.getFullYear() ? undefined : 'numeric',
     });
-
     return `Semaine du ${startStr} au ${endStr}`;
   }
 
   getDayLabel(): string {
     return this.currentDate.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
   }
 
   getWeekDates(): Date[] {
     const startOfWeek = new Date(this.currentDate);
     const day = this.currentDate.getDay();
-    const diff = day === 0 ? -6 : 1 - day; // semaine commence lundi
+    const diff = day === 0 ? -6 : 1 - day;
     startOfWeek.setDate(this.currentDate.getDate() + diff);
-
     const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(startOfWeek);
@@ -423,13 +405,10 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     return days;
   }
 
-  goPrev(): void {
+  onPrev(): void {
     if (this.currentView === 'month') {
       this.currentDate = new Date(
-        this.currentDate.getFullYear(),
-        this.currentDate.getMonth() - 1,
-        1
-      );
+        this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
     } else if (this.currentView === 'week') {
       const d = new Date(this.currentDate);
       d.setDate(d.getDate() - 7);
@@ -439,16 +418,12 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       d.setDate(d.getDate() - 1);
       this.currentDate = d;
     }
-    this.updateMonthGrid();
   }
 
-  goNext(): void {
+  onNext(): void {
     if (this.currentView === 'month') {
       this.currentDate = new Date(
-        this.currentDate.getFullYear(),
-        this.currentDate.getMonth() + 1,
-        1
-      );
+        this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
     } else if (this.currentView === 'week') {
       const d = new Date(this.currentDate);
       d.setDate(d.getDate() + 7);
@@ -458,35 +433,83 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       d.setDate(d.getDate() + 1);
       this.currentDate = d;
     }
-    this.updateMonthGrid();
   }
 
-  // ---------- Month grid (ancienne version, gardée vide) ----------
-  private updateMonthGrid(): void {
-    // plus utilisé par le HTML, mais on laisse pour compat
+  setCalendarType(type: CalendarType): void { this.calendarType = type; }
+  setView(view: CalendarViewMode): void { this.currentView = view; }
+
+  // ---------- Getters template ----------
+
+  get weekDays(): string[] {
+    return ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
   }
 
-  // ---------- Copy / paste ----------
+  get monthLeadingEmptyCells(): any[] {
+    const year = this.currentDate.getFullYear();
+    const month = this.currentDate.getMonth();
+    const firstDay = this.getFirstDayOfMonth(year, month);
+    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
+    return Array(adjustedFirstDay).fill(0);
+  }
 
-  // ---------- Data per day ----------
+  get monthDays() {
+    const year = this.currentDate.getFullYear();
+    const month = this.currentDate.getMonth();
+    const daysInMonth = this.getDaysInMonth(year, month);
+    const result: any[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const dateString = this.formatDateToYYYYMMDD(date);
+      result.push({
+        date, dateString, dayNumber: d,
+        isToday: this.isToday(date),
+        items: this.getItemsForDay(dateString),
+      });
+    }
+    return result;
+  }
+
+  get weekDaysData() {
+    return this.getWeekDates().map((date) => {
+      const dateString = this.formatDateToYYYYMMDD(date);
+      return {
+        date, dateString,
+        dayNumber: date.getDate(),
+        isToday: this.isToday(date),
+        weekdayLabel: date.toLocaleDateString('fr-FR', { weekday: 'short' }).toUpperCase(),
+        items: this.getItemsForDay(dateString),
+      };
+    });
+  }
+
+  get currentDayString(): string { return this.formatDateToYYYYMMDD(this.currentDate); }
+  get dayItems() { return this.getItemsForDay(this.currentDayString); }
+  get dayLabelWeekday(): string {
+    return this.currentDate.toLocaleDateString('fr-FR', { weekday: 'long' });
+  }
+  get dayLabelFull(): string {
+    return this.currentDate.toLocaleDateString('fr-FR', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+  }
+
+  // ---------- Data ----------
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
     if (this.calendarType === 'workout') {
       return this.workoutPrograms.filter(
-        (p) =>
-          p.date === dateStr &&
+        (p) => p.date === dateStr &&
           (this.selectedClient === 'all' || p.clientId === this.selectedClient)
       );
     } else {
       return this.nutritionPrograms.filter(
-        (p) =>
-          p.date === dateStr &&
+        (p) => p.date === dateStr &&
           (this.selectedClient === 'all' || p.clientId === this.selectedClient)
       );
     }
   }
 
-  // ---------- Détails ----------
+  // ---------- Details ----------
 
   viewWorkout(w: WorkoutProgram): void {
     this.selectedWorkout = w;
@@ -518,146 +541,26 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     return `${secs}sec`;
   }
 
-  // méthodes appelées par le HTML (navigation + filtres)
+  // ---------- Copy/Paste ----------
 
-  onPrev(): void {
-    this.goPrev();
-  }
-
-  onNext(): void {
-    this.goNext();
-  }
-
-  setCalendarType(type: CalendarType): void {
-    this.calendarType = type;
-  }
-
-  setView(view: CalendarViewMode): void {
-    this.currentView = view;
-  }
-
-  // ---------- Données pour le template (getters simples) ----------
-
-  // En-tête des jours (LUN, MAR, ...)
-  get weekDays(): string[] {
-    return ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
-  }
-
-  // Cases vides avant le 1er jour du mois
-  get monthLeadingEmptyCells(): any[] {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    const firstDay = this.getFirstDayOfMonth(year, month);
-    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1; // lundi = 0
-    return Array(adjustedFirstDay).fill(0);
-  }
-
-  // Données pour chaque jour du mois
-  get monthDays(): {
-    date: Date;
-    dateString: string;
-    dayNumber: number;
-    isToday: boolean;
-    items: (WorkoutProgram | NutritionProgram)[];
-  }[] {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    const daysInMonth = this.getDaysInMonth(year, month);
-    const result: any[] = [];
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      const dateString = this.formatDateToYYYYMMDD(date);
-      result.push({
-        date,
-        dateString,
-        dayNumber: d,
-        isToday: this.isToday(date),
-        items: this.getItemsForDay(dateString),
-      });
-    }
-
-    return result;
-  }
-
-  // Données pour la vue semaine
-  get weekDaysData(): {
-    date: Date;
-    dateString: string;
-    dayNumber: number;
-    isToday: boolean;
-    weekdayLabel: string;
-    items: (WorkoutProgram | NutritionProgram)[];
-  }[] {
-    const dates = this.getWeekDates();
-    return dates.map((date) => {
-      const dateString = this.formatDateToYYYYMMDD(date);
-      return {
-        date,
-        dateString,
-        dayNumber: date.getDate(),
-        isToday: this.isToday(date),
-        weekdayLabel: date
-          .toLocaleDateString('fr-FR', { weekday: 'short' })
-          .toUpperCase(),
-        items: this.getItemsForDay(dateString),
-      };
-    });
-  }
-
-  // Vue jour
-
-  get currentDayString(): string {
-    return this.formatDateToYYYYMMDD(this.currentDate);
-  }
-
-  get dayItems(): (WorkoutProgram | NutritionProgram)[] {
-    return this.getItemsForDay(this.currentDayString);
-  }
-
-  get dayLabelWeekday(): string {
-    return this.currentDate.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-    });
-  }
-
-  get dayLabelFull(): string {
-    return this.currentDate.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
-
-  // Bouton "Add ..." dans le HTML – pour l’instant simple console.log
-
-  copyDay(dateStr: string): void {
-    this.copiedDate = dateStr;
-  }
+  copyDay(dateStr: string): void { this.copiedDate = dateStr; }
 
   pasteDay(targetDate: string): void {
     if (!this.copiedDate) return;
-
-    const programsToCopy = this.workoutPrograms.filter(
-      (p) => p.date === this.copiedDate
-    );
+    const programsToCopy = this.workoutPrograms.filter((p) => p.date === this.copiedDate);
     if (!programsToCopy.length) return;
-
     const now = Date.now();
     const newPrograms = programsToCopy.map((p, idx) => ({
-      ...p,
-      id: `${p.id}-copy-${now}-${idx}`,
-      date: targetDate,
+      ...p, id: `${p.id}-copy-${now}-${idx}`, date: targetDate,
     }));
-
     this.workoutPrograms = [...this.workoutPrograms, ...newPrograms];
     this.saveWorkoutPrograms();
   }
 
-  cancelCopy(): void {
-    this.copiedDate = null;
-  }
-  // Ouvrir le modal d'ajout pour un jour donné
+  cancelCopy(): void { this.copiedDate = null; }
+
+  // ---------- Modal ----------
+
   addItem(dateStr: string): void {
     this.selectedDateString = dateStr;
     this.isRestDay = false;
@@ -676,28 +579,19 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     this.newWorkoutExercises = [];
   }
 
-  toggleRestDay(): void {
-    this.isRestDay = !this.isRestDay;
-  }
+  toggleRestDay(): void { this.isRestDay = !this.isRestDay; }
 
   getSelectedDateLabel(): string {
-    if (!this.selectedDateString) {
-      return '';
-    }
+    if (!this.selectedDateString) return '';
     const date = new Date(this.selectedDateString);
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
   }
 
-  // ====== EXERCISES SELECTOR ======
+  // ---------- Exercise Selector ----------
 
-  openExerciseSelector(): void {
-    this.showExerciseSelector = true;
-  }
+  openExerciseSelector(): void { this.showExerciseSelector = true; }
 
   closeExerciseSelector(): void {
     this.showExerciseSelector = false;
@@ -706,24 +600,23 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
 
   getFilteredExercises(): Exercise[] {
     const term = this.exerciseSearchTerm.trim().toLowerCase();
-    if (!term) {
-      return this.availableExercises;
-    }
+    if (!term) return this.availableExercises;
     return this.availableExercises.filter((e) =>
       e.name.toLowerCase().includes(term)
     );
   }
 
   handleAddExerciseToWorkout(exercise: Exercise): void {
-    // copie profonde pour ne pas modifier la librairie
     const copy: Exercise = {
       ...exercise,
       id: `new-ex-${Date.now()}-${Math.random()}`,
+      showVideo: false,
+      videoUrl: undefined,
       sets: exercise.sets
         ? exercise.sets.map((s, index) => ({
-            ...s,
-            id: `new-set-${Date.now()}-${index}`,
-          }))
+          ...s,
+          id: `new-set-${Date.now()}-${index}`,
+        }))
         : [],
     };
     this.newWorkoutExercises.push(copy);
@@ -738,80 +631,85 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
   }
 
   addSetToExercise(exercise: Exercise): void {
-    if (!exercise.sets) {
-      exercise.sets = [];
-    }
+    if (!exercise.sets) exercise.sets = [];
     const lastSet = exercise.sets[exercise.sets.length - 1];
-    const nextNumber = exercise.sets.length + 1;
     exercise.sets.push({
       id: `set-${Date.now()}`,
-      number: nextNumber,
+      number: exercise.sets.length + 1,
       reps: lastSet ? lastSet.reps : '8-12',
       rest: lastSet ? lastSet.rest : '60',
     });
   }
 
   removeSetFromExercise(exercise: Exercise, setIndex: number): void {
-    if (!exercise.sets) {
-      return;
-    }
+    if (!exercise.sets) return;
     exercise.sets.splice(setIndex, 1);
     exercise.sets.forEach((s, i) => (s.number = i + 1));
   }
 
-  // gestion rest en minutes/secondes
   getRestMinutes(set: ExerciseSet): number {
     const total = parseInt(set.rest, 10);
-    if (isNaN(total)) return 0;
-    return Math.floor(total / 60);
+    return isNaN(total) ? 0 : Math.floor(total / 60);
   }
 
   getRestSeconds(set: ExerciseSet): number {
     const total = parseInt(set.rest, 10);
-    if (isNaN(total)) return 0;
-    return total % 60;
+    return isNaN(total) ? 0 : total % 60;
   }
 
   updateRestMinutes(set: ExerciseSet, minutes: number): void {
     const m = isNaN(minutes) ? 0 : minutes;
-    const s = this.getRestSeconds(set);
-    set.rest = String(m * 60 + s);
+    set.rest = String(m * 60 + this.getRestSeconds(set));
   }
 
   updateRestSeconds(set: ExerciseSet, seconds: number): void {
-    const s = isNaN(seconds) ? 0 : seconds;
-    const m = this.getRestMinutes(set);
-    const sec = Math.min(Math.max(s, 0), 59);
-    set.rest = String(m * 60 + sec);
+    const s = isNaN(seconds) ? 0 : Math.min(Math.max(seconds, 0), 59);
+    set.rest = String(this.getRestMinutes(set) * 60 + s);
   }
 
-  // ====== SAVE WORKOUT ======
+  // ---------- Video ----------
+
+  toggleExerciseVideo(exercise: any): void {
+    exercise.showVideo = !exercise.showVideo;
+    if (exercise.showVideo && !exercise.videoUrl) {
+      const videoId = this.extractYoutubeId(exercise.youtubeUrl);
+      if (videoId) {
+        exercise.videoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+          `https://www.youtube.com/embed/${videoId}`
+        );
+        exercise.rawVideoUrl = exercise.youtubeUrl;
+      }
+    }
+  }
+
+  extractYoutubeId(url: string): string | null {
+    if (!url) return null;
+    const match = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    );
+    return match ? match[1] : null;
+  }
+
+  // ---------- Save Workout ----------
 
   handleSaveWorkout(): void {
-    if (!this.selectedDateString) {
-      return;
-    }
-
-    const clientId =
-      this.selectedClient === 'all' ? undefined : this.selectedClient;
+    if (!this.selectedDateString) return;
+    const clientId = this.selectedClient === 'all' ? undefined : this.selectedClient;
 
     if (this.isRestDay) {
-      const restProgram: WorkoutProgram = {
+      this.workoutPrograms = [...this.workoutPrograms, {
         id: `rest-${Date.now()}`,
         title: 'Rest Day',
         date: this.selectedDateString,
         clientId,
         sessions: [],
-      };
-      this.workoutPrograms = [...this.workoutPrograms, restProgram];
+      }];
       this.saveWorkoutPrograms();
       this.closeAddWorkoutModal();
       return;
     }
 
-    if (!this.newWorkoutTitle.trim() || !this.newWorkoutExercises.length) {
-      return;
-    }
+    if (!this.newWorkoutTitle.trim() || !this.newWorkoutExercises.length) return;
 
     const newProgram: WorkoutProgram = {
       id: `workout-${Date.now()}`,
@@ -820,22 +718,20 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
       clientId,
       programName: undefined,
       programId: undefined,
-      sessions: [
-        {
-          id: `session-${Date.now()}`,
-          exercises: this.newWorkoutExercises.map((ex, exIndex) => ({
-            ...ex,
-            id: ex.id || `ex-${Date.now()}-${exIndex}`,
-            sets: ex.sets
-              ? ex.sets.map((s, sIndex) => ({
-                  ...s,
-                  id: s.id || `set-${Date.now()}-${exIndex}-${sIndex}`,
-                }))
-              : [],
-          })),
-          notes: '',
-        },
-      ],
+      sessions: [{
+        id: `session-${Date.now()}`,
+        exercises: this.newWorkoutExercises.map((ex, exIndex) => ({
+          ...ex,
+          id: ex.id || `ex-${Date.now()}-${exIndex}`,
+          sets: ex.sets
+            ? ex.sets.map((s, sIndex) => ({
+              ...s,
+              id: s.id || `set-${Date.now()}-${exIndex}-${sIndex}`,
+            }))
+            : [],
+        })),
+        notes: '',
+      }],
     };
 
     this.workoutPrograms = [...this.workoutPrograms, newProgram];
@@ -843,7 +739,7 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
     this.closeAddWorkoutModal();
   }
 
-  // ====== DELETE WORKOUT ======
+  // ---------- Delete Workout ----------
 
   openDeleteModal(workout: WorkoutProgram): void {
     this.workoutToDelete = workout;
@@ -857,10 +753,8 @@ export class CalendarClientsComponent implements OnInit, OnDestroy {
 
   handleDeleteWorkout(): void {
     if (!this.workoutToDelete) return;
-
-    const idToDelete = this.workoutToDelete.id;
     this.workoutPrograms = this.workoutPrograms.filter(
-      (w) => w.id !== idToDelete
+      (w) => w.id !== this.workoutToDelete!.id
     );
     this.saveWorkoutPrograms();
     this.closeDeleteModal();

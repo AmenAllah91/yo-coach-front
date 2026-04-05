@@ -293,3 +293,139 @@
   text-align: center;
   color: #64748b;
 }
+
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+
+/* ── Tablet (≤ 1024px) : masquer la colonne workouts ── */
+@media (max-width: 1024px) {
+  .content {
+    padding: 16px;
+  }
+
+  .clients-table {
+    .table-header {
+      grid-template-columns: 2fr 1fr 60px;
+      gap: 16px;
+
+      .col-workouts {
+        display: none;
+      }
+    }
+
+    .table-body .client-row {
+      grid-template-columns: 2fr 1fr 60px;
+      gap: 16px;
+
+      .col-workouts {
+        display: none;
+      }
+    }
+  }
+}
+
+/* ── Mobile (≤ 640px) : carte par client ── */
+@media (max-width: 640px) {
+  .content {
+    padding: 12px;
+  }
+
+  .search-section .search-box {
+    max-width: 100%;
+  }
+
+  /* Masquer le header du tableau */
+  .clients-table .table-header {
+    display: none;
+  }
+
+  /* Chaque row devient une carte */
+  .clients-table .table-body .client-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    border-bottom: 1px solid #f1f5f9;
+    position: relative;
+
+    /* Cacher les colonnes inutiles sur mobile */
+    .col-workouts {
+      display: none;
+    }
+
+    /* La colonne client prend toute la largeur */
+    .col-client {
+      padding: 16px 16px 10px 16px;
+
+      .client-info {
+        .client-avatar {
+          width: 44px;
+          height: 44px;
+        }
+
+        .client-details {
+          h4 {
+            font-size: 15px;
+          }
+
+          p {
+            font-size: 12px;
+          }
+        }
+      }
+    }
+
+    /* Status et actions sur la même ligne en bas */
+    .col-status {
+      padding: 0 16px 14px 72px; /* aligné avec le texte du client */
+    }
+
+    /* Bouton action en position absolue en haut à droite */
+    .col-actions {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+    }
+  }
+
+  /* Pagination compacte */
+  .pagination {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    button {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    span {
+      width: 100%;
+      text-align: center;
+      order: -1;
+      font-size: 13px;
+    }
+  }
+}
+
+/* ── Très petit mobile (≤ 380px) ── */
+@media (max-width: 380px) {
+  .clients-table .table-body .client-row {
+    .col-client .client-info {
+      .client-avatar {
+        width: 38px;
+        height: 38px;
+      }
+
+      .client-details h4 {
+        font-size: 14px;
+      }
+    }
+
+    .col-status {
+      padding-left: 62px;
+    }
+  }
+}

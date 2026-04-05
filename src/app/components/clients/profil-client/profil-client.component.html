@@ -882,25 +882,37 @@
   (click)="$event.stopPropagation()"
 >
   <div class="pc-confirm-content">
-    <div class="pc-confirm-title">Confirm delete</div>
+    <!-- Close -->
+    <button class="pc-confirm-close" type="button" (click)="closeScheduledDelete()">✕</button>
 
-    <div class="pc-confirm-text">
-      Do you really want to delete this scheduled item
-      <strong>{{ selectedScheduledToDelete?.formTitle || selectedScheduledToDelete?.formName || '(Untitled)' }}</strong> ?
-      <div class="pc-confirm-hint">This action is irreversible.</div>
+    <!-- Title -->
+    <div class="pc-confirm-title">Are you sure?</div>
+
+    <!-- Body -->
+    <div class="pc-confirm-body">
+      <div class="pc-confirm-warn-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 8v4"></path>
+          <path d="M12 16h.01"></path>
+        </svg>
+      </div>
+      <p class="pc-confirm-text">
+        Once deleted, you will not be able to recover this scheduled check-in!
+        All future sends will be permanently cancelled.
+      </p>
     </div>
 
+    <!-- Actions -->
     <div class="pc-confirm-actions">
-      <button class="btn btn--ghost" type="button"
-              (click)="closeScheduledDelete()"
-              [disabled]="deletingScheduled">
-        Cancel
+      <button class="pc-confirm-btn pc-confirm-btn--no" type="button"
+              (click)="closeScheduledDelete()" [disabled]="deletingScheduled">
+        No
       </button>
-
-      <button class="btn btn--danger" type="button"
-              (click)="confirmScheduledDelete()"
-              [disabled]="deletingScheduled">
-        <span *ngIf="!deletingScheduled">Delete</span>
+      <button class="pc-confirm-btn pc-confirm-btn--yes" type="button"
+              (click)="confirmScheduledDelete()" [disabled]="deletingScheduled">
+        <span *ngIf="!deletingScheduled">Yes</span>
         <span *ngIf="deletingScheduled">Deleting...</span>
       </button>
     </div>
