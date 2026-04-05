@@ -65,51 +65,48 @@ function initializeKeycloakAndSync(
   http: HttpClient
 ) {
   return async () => {
-    const host = window.location.hostname;
+    try {
+      const host = window.location.hostname;
+      const isPublicHost = isPublicCoachHostname(host);
 
-    const isPublicHost = isPublicCoachHostname(host);
-
-    if (isPublicHost) {
-      console.log('Public coach website detected, skipping Keycloak init');
-      return true;
-    }
-
-    console.log('Initializing Keycloak...');
-    const authenticated = await keycloak.init({
-      config: {
-        url: 'https://login-int.yogym.co',
-        realm: 'yo-coach',
-        clientId: 'front-app'
-      },
-      initOptions: {
-        onLoad: 'check-sso',
-        checkLoginIframe: false
+      if (isPublicHost) {
+        console.log('Public coach website detected, skipping Keycloak init');
+        return true;
       }
-    }).catch(err => {
-      console.error('Keycloak initialization failed:', err);
-      return false;
-    });
 
-    if (authenticated) {
-      console.log('Keycloak initialized. Authenticated:', authenticated);
-      await authService.storeUserInfo();
-
-      try {
-        const user = await firstValueFrom(
-          http.post<any>(`${environment.baseApiUrl}/public/sync`, {})
-        );
-
-        console.log('SYNC RESPONSE:', user);
-
-        if (user && user.id) {
-          sessionStorage.setItem('userId', user.id);
-          console.log('User synced with backend:', user);
+      console.log('Initializing Keycloak...');
+      const authenticated = await keycloak.init({
+        config: {
+          url: 'https://login-int.yogym.co',
+          realm: 'yo-coach',
+          clientId: 'front-app'
+        },
+        initOptions: {
+          onLoad: 'check-sso',
+          checkLoginIframe: false
         }
-      } catch (err) {
-        console.error('Error syncing user with backend:', err);
+      });
+
+      if (authenticated) {
+        await authService.storeUserInfo();
+
+        try {
+          const user = await firstValueFrom(
+            http.post<any>(`${environment.baseApiUrl}/public/sync`, {})
+          );
+
+          if (user?.id) {
+            sessionStorage.setItem('userId', user.id);
+          }
+        } catch (err) {
+          console.error('Error syncing user with backend:', err);
+        }
       }
+
+    } catch (err) {
+      console.error('INIT GLOBAL ERROR:', err);
     }
-    return authenticated;
+    return true;
   };
 }
 
