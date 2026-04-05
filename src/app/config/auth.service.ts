@@ -66,10 +66,9 @@ export class AuthService {
     return token;
   }
 
-  isLoggedIn():  boolean {
-    const loggedIn = this.keycloak.isLoggedIn();
-    console.log('AuthService - isLoggedIn:', loggedIn);
-    return loggedIn;
+
+  async isLoggedIn(): Promise<boolean> {
+    return await this.keycloak.isLoggedIn();
   }
 
   getUsername(): string {

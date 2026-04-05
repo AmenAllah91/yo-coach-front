@@ -61,6 +61,7 @@ function isPublicCoachHostname(host: string): boolean {
 }
 function initializeKeycloakAndSync(
   keycloak: KeycloakService,
+  authService: AuthService,
   http: HttpClient
 ) {
   return async () => {
@@ -91,10 +92,14 @@ function initializeKeycloakAndSync(
 
     if (authenticated) {
       console.log('Keycloak initialized. Authenticated:', authenticated);
+      await authService.storeUserInfo();
+
       try {
         const user = await firstValueFrom(
           http.post<any>(`${environment.baseApiUrl}/public/sync`, {})
         );
+
+        console.log('SYNC RESPONSE:', user);
 
         if (user && user.id) {
           sessionStorage.setItem('userId', user.id);
@@ -104,7 +109,6 @@ function initializeKeycloakAndSync(
         console.error('Error syncing user with backend:', err);
       }
     }
-
     return authenticated;
   };
 }
