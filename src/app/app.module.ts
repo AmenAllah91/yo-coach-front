@@ -59,54 +59,57 @@ function isPublicCoachHostname(host: string): boolean {
 
   return normalized.endsWith('.yocoach.co');
 }
+
+
 function initializeKeycloakAndSync(
   keycloak: KeycloakService,
   authService: AuthService,
   http: HttpClient
 ) {
   return async () => {
-    try {
-      const host = window.location.hostname;
-      const isPublicHost = isPublicCoachHostname(host);
+    const host = window.location.hostname;
 
-      if (isPublicHost) {
-        console.log('Public coach website detected, skipping Keycloak init');
-        return true;
-      }
+    const isPublicHost = isPublicCoachHostname(host);
 
-      console.log('Initializing Keycloak...');
-      const authenticated = await keycloak.init({
-        config: {
-          url: 'https://login-int.yogym.co',
-          realm: 'yo-coach',
-          clientId: 'front-app'
-        },
-        initOptions: {
-          onLoad: 'check-sso',
-          checkLoginIframe: false
-        }
-      });
-
-      if (authenticated) {
-        await authService.storeUserInfo();
-
-        try {
-          const user = await firstValueFrom(
-            http.post<any>(`${environment.baseApiUrl}/public/sync`, {})
-          );
-
-          if (user?.id) {
-            sessionStorage.setItem('userId', user.id);
-          }
-        } catch (err) {
-          console.error('Error syncing user with backend:', err);
-        }
-      }
-
-    } catch (err) {
-      console.error('INIT GLOBAL ERROR:', err);
+    if (isPublicHost) {
+      console.log('Public coach website detected, skipping Keycloak init');
+      return true;
     }
-    return true;
+
+    console.log('Initializing Keycloak...');
+    const authenticated = await keycloak.init({
+      config: {
+        url: 'https://login-int.yogym.co',
+        realm: 'yo-coach',
+        clientId: 'front-app'
+      },
+      initOptions: {
+        onLoad: 'check-sso',
+        checkLoginIframe: false
+      }
+    }).catch(err => {
+      console.error('Keycloak initialization failed:', err);
+      return false;
+    });
+
+    if (authenticated) {
+      await authService.storeUserInfo();
+      console.log('Keycloak initialized. Authenticated:', authenticated);
+      try {
+        const user = await firstValueFrom(
+          http.post<any>(`${environment.baseApiUrl}/public/sync`, {})
+        );
+
+        if (user && user.id) {
+          sessionStorage.setItem('userId', user.id);
+          console.log('User synced with backend:', user);
+        }
+      } catch (err) {
+        console.error('Error syncing user with backend:', err);
+      }
+    }
+
+    return authenticated;
   };
 }
 

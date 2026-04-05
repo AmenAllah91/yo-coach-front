@@ -8,6 +8,29 @@ export interface AuthConfig {
   redirectUrlLogin: string;
   redirectUrlLogout: string;
 }
+function isPublicCoachHostname(host: string): boolean {
+  if (!host) return false;
+
+  const normalized = host.toLowerCase();
+
+  if (normalized === 'localhost' || normalized.startsWith('localhost:')) {
+    return false;
+  }
+
+  if (normalized === 'integration.yocoach.co' || normalized === 'www.integration.yocoach.co') {
+    return false;
+  }
+
+  if (normalized === 'app.yocoach.co' || normalized === 'www.app.yocoach.co') {
+    return false;
+  }
+
+  if (normalized === 'yocoach.co' || normalized === 'www.yocoach.co') {
+    return false;
+  }
+
+  return normalized.endsWith('.yocoach.co');
+}
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +40,13 @@ export class AuthService {
   keycloak:KeycloakService = inject(KeycloakService);
 
   constructor() {
-    this.initUserInfo();
+    const host = window.location.hostname;
+
+    if (!isPublicCoachHostname(host)) {
+      this.initUserInfo();
+    } else {
+      console.log('Public site detected → skip auth');
+    }
   }
 
   private async initUserInfo() {
@@ -28,6 +57,8 @@ export class AuthService {
   }
 
   async storeUserInfo() {
+    if (!this.isAuthEnabled()) return;
+
     try {
       const profile = await this.keycloak.loadUserProfile();
       const token = await this.keycloak.getToken();
@@ -42,13 +73,10 @@ export class AuthService {
       sessionStorage.setItem('userId', userId);
       sessionStorage.setItem('roles', JSON.stringify(roles));
 
-      console.log('User info stored:', { username, userId, roles });
-
     } catch (err) {
       console.error('Failed to store user info', err);
     }
-  }
-  public logout(): void {
+  }  public logout(): void {
     this.keycloak.logout(environment.apiUrl).then(()=>{
       sessionStorage.removeItem('authToken');
       sessionStorage.removeItem('username');
@@ -60,10 +88,10 @@ export class AuthService {
     this.keycloak.login({redirectUri: "http://localhost:4200/#/dashboard/main"}).then();
   }
 
-  getToken(){
-    const token = this.keycloak.getToken();
-    console.log('AuthService - getToken called, token exists:', !!token);
-    return token;
+  async getToken(): Promise<string | null> {
+    if (!this.isAuthEnabled()) return null;
+
+    return await this.keycloak.getToken();
   }
 
   isLoggedIn():  boolean {
@@ -143,5 +171,11 @@ export class AuthService {
       console.error('Failed to refresh token', error);
       return false;
     }
+  }
+
+
+  private isAuthEnabled(): boolean {
+    const host = window.location.hostname;
+    return !isPublicCoachHostname(host);
   }
 }
