@@ -16,23 +16,21 @@ export class AuthService {
 
   keycloak:KeycloakService = inject(KeycloakService);
 
+  constructor() {
+    this.initUserInfo();
+  }
+
+  private async initUserInfo() {
+    const loggedIn = await this.keycloak.isLoggedIn();
+    if (loggedIn) {
+      await this.storeUserInfo();
+    }
+  }
 
   async storeUserInfo() {
     try {
-      const isLoggedIn = await this.keycloak.isLoggedIn();
-
-      if (!isLoggedIn) {
-        console.warn('User not logged in, skipping storeUserInfo');
-        return;
-      }
-
+      const profile = await this.keycloak.loadUserProfile();
       const token = await this.keycloak.getToken();
-
-      if (!token) {
-        console.warn('No token available');
-        return;
-      }
-
       const decoded: any = jwtDecode(token);
 
       const username = decoded.preferred_username;
@@ -50,9 +48,6 @@ export class AuthService {
       console.error('Failed to store user info', err);
     }
   }
-
-
-
   public logout(): void {
     this.keycloak.logout(environment.apiUrl).then(()=>{
       sessionStorage.removeItem('authToken');
@@ -65,15 +60,16 @@ export class AuthService {
     this.keycloak.login({redirectUri: "http://localhost:4200/#/dashboard/main"}).then();
   }
 
-  async getToken(): Promise<string> {
-    const token = await this.keycloak.getToken();
-    console.log('AuthService - token exists:', !!token);
+  getToken(){
+    const token = this.keycloak.getToken();
+    console.log('AuthService - getToken called, token exists:', !!token);
     return token;
   }
 
-
-  async isLoggedIn(): Promise<boolean> {
-    return await this.keycloak.isLoggedIn();
+  isLoggedIn():  boolean {
+    const loggedIn = this.keycloak.isLoggedIn();
+    console.log('AuthService - isLoggedIn:', loggedIn);
+    return loggedIn;
   }
 
   getUsername(): string {
