@@ -6,6 +6,7 @@ import {Router} from "@angular/router";
 import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
 import {WebsiteService} from "../../../service/website.service";
 import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
+import {UsersService} from "../../../service/users.service";
 
 
 type CoachThemeName = 'Élégance' | 'Dynamique' | 'Confiance' | 'Sérénité';
@@ -99,11 +100,45 @@ export class WebsiteBuilderComponent implements OnInit{
     private router: Router,
     private sanitizer: DomSanitizer,
     private websiteService: WebsiteService,
-    private builderState: WebsiteBuilderStateService
+    private builderState: WebsiteBuilderStateService,
+    private userService: UsersService
   ) {}
 
 
   ngOnInit(): void {
+    this.loadWebsiteOrUserData();
+  }
+  loadWebsiteOrUserData(): void {
+    this.websiteService.getMyWebsite().subscribe({
+      next: async (website) => {
+        if (website) {
+          this.populateFromWebsite(website);
+        }
+      },
+      error: () => {
+        this.loadUserProfile();
+      }
+    });
+  }
+
+  populateFromWebsite(site: any): void {
+    this.siteSlug = site.slug;
+
+    this.profile = site.profile;
+    this.video.url = site.video?.url;
+
+    this.announcement = site.announcement;
+    this.cta = site.cta;
+    this.leadFields = site.leadFields;
+    this.colors = site.colors;
+
+    this.services = site.services || [];
+    this.results = site.results || [];
+    this.certificates = site.certificates || [];
+    this.testimonials = site.testimonials || [];
+  }
+
+  loadUserProfile(): void {
     const saved = this.builderState.getDraft();
 
     if (saved) {
@@ -120,7 +155,42 @@ export class WebsiteBuilderComponent implements OnInit{
       this.certificates = saved.certificates || [];
       this.testimonials = saved.testimonials || [];
     }
+    else {
+      this.userService.getUserById(sessionStorage.getItem('userId')).subscribe({
+        next: async (user) => {
+
+          this.profile.fullName = `${user.firstName} ${user.lastName}`;
+          this.profile.title = 'Coach';
+          this.profile.slogan = 'Transformez votre vie';
+          this.profile.bio = 'Parlez de vous ici...';
+          this.siteSlug = `${user.firstName}-${user.lastName}`;
+
+          if (user.avatarUrl) {
+            try {
+              this.profile.image = await this.convertImageToBase64(user.avatarUrl);
+            } catch {
+              this.profile.image = '';
+            }
+          }
+
+        },
+        error: () => {
+        }
+      });
+    }
   }
+
+  private convertImageToBase64(url: string): Promise<string> {
+    return fetch(url)
+      .then(res => res.blob())
+      .then(blob => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }));
+  }
+
 
   previewOpen = false;
 
@@ -197,8 +267,8 @@ export class WebsiteBuilderComponent implements OnInit{
   ];
 
   profile: ProfileSection = {
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    fullName: 'Sophie Martin',
+    image: 'assets/images/photoprofilvierge.jpg',
+    fullName: '',
     title: 'Coach Certifiée en Développement Personnel',
     slogan: 'Transformez votre vie, révélez votre potentiel',
     bio: `Passionnée par l'humain, j'accompagne les professionnels et les particuliers dans l'atteinte de leurs objectifs. Mon approche bienveillante et orientée solutions vous aide à surmonter les obstacles et à construire une vie alignée avec vos valeurs profondes.`
