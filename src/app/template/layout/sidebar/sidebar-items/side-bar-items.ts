@@ -162,7 +162,8 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
+    submenu: [],
+    roles: ['ROLE_CLIENT'],
   }, {
     path: 'forms/manage-checkins',
     title: 'Manage Check-ins',

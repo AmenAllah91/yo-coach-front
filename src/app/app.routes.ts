@@ -42,6 +42,7 @@ import {
   CoachLandingPreviewPageComponent
 } from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
 import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
+import {SettingsComponent} from "./components/settings/settings.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -190,6 +191,9 @@ export const APP_ROUTE: Route[] = [
       },{
         path: 'invitation/:token',
         component: InvitationComponent,
+      },{
+        path: 'settings',
+        component: SettingsComponent,
       },
     ],
   },
