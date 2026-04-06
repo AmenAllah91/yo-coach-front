@@ -234,40 +234,242 @@
 
             <!-- DESCRIPTION -->
             <ng-container *ngIf="activeTab === 'Description'">
-              <div class="yc-form-block">
-                <label class="yc-label">Titre principal</label>
-                <input class="yc-input" type="text" [(ngModel)]="profile.slogan"/>
+              <div class="yc-helper">
+                Construisez la description détaillée de votre approche en ajoutant différents blocs.
               </div>
 
-              <div class="yc-form-block">
-                <label class="yc-label">Description détaillée</label>
-                <textarea class="yc-textarea" rows="8" [(ngModel)]="profile.bio"></textarea>
+              <div
+                class="yc-dynamic-block"
+                *ngFor="let block of descriptionBlocks; let i = index; trackBy: trackByBlockId"
+              >
+                <div class="yc-dynamic-block__actions">
+                  <button
+                    type="button"
+                    class="yc-icon-btn"
+                    (click)="moveBlockUp(block.id)"
+                    [disabled]="i === 0"
+                  >
+                    ↑
+                  </button>
+
+                  <button
+                    type="button"
+                    class="yc-icon-btn"
+                    (click)="moveBlockDown(block.id)"
+                    [disabled]="i === descriptionBlocks.length - 1"
+                  >
+                    ↓
+                  </button>
+                </div>
+
+                <div class="yc-dynamic-block__content">
+                  <div class="yc-dynamic-block__head">
+                    <select
+                      class="yc-input"
+                      [ngModel]="block.type"
+                      (ngModelChange)="updateBlock(block.id, { type: $event, content: '' })"
+                    >
+                      <option value="text">Texte</option>
+                      <option value="heading">Titre</option>
+                      <option value="image">Image</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      class="yc-icon-btn yc-icon-btn--danger"
+                      (click)="removeBlock(block.id)"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+
+                  <div *ngIf="block.type === 'heading'">
+                    <input
+                      class="yc-input"
+                      type="text"
+                      [ngModel]="block.content"
+                      (ngModelChange)="updateBlock(block.id, { content: $event })"
+                      placeholder="Votre titre ici..."
+                    />
+                  </div>
+
+                  <div *ngIf="block.type === 'text'">
+        <textarea
+          class="yc-textarea"
+          rows="4"
+          [ngModel]="block.content"
+          (ngModelChange)="updateBlock(block.id, { content: $event })"
+          placeholder="Votre texte ici..."
+        ></textarea>
+                  </div>
+
+                  <div *ngIf="block.type === 'image'" class="yc-image-upload-box">
+                    <ng-container *ngIf="block.content; else emptyBlockImage">
+                      <img
+                        [src]="block.content"
+                        alt="Bloc image"
+                        class="yc-block-image-preview"
+                      />
+
+                      <label class="yc-image-upload-label">
+                        Remplacer l'image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          (change)="onBlockImageSelected(block.id, $event)"
+                        />
+                      </label>
+                    </ng-container>
+
+                    <ng-template #emptyBlockImage>
+                      <label class="yc-image-upload-label">
+                        Cliquez pour ajouter une image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          (change)="onBlockImageSelected(block.id, $event)"
+                        />
+                      </label>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+
+              <div class="yc-dynamic-buttons">
+                <button
+                  type="button"
+                  class="yc-btn yc-btn--outline"
+                  (click)="addBlock('text')"
+                >
+                  + Texte
+                </button>
+
+                <button
+                  type="button"
+                  class="yc-btn yc-btn--outline"
+                  (click)="addBlock('heading')"
+                >
+                  + Titre
+                </button>
+
+                <button
+                  type="button"
+                  class="yc-btn yc-btn--outline"
+                  (click)="addBlock('image')"
+                >
+                  + Image
+                </button>
               </div>
             </ng-container>
 
             <!-- RESULTATS -->
             <ng-container *ngIf="activeTab === 'Résultats'">
+              <div class="yc-helper">
+                Montrez les transformations de vos clients avec des images Avant / Après.
+              </div>
+
               <div class="yc-form-block" *ngFor="let result of results; let i = index">
-                <label class="yc-label">Résultat {{ i + 1 }}</label>
+                <div class="yc-dynamic-block">
+                  <div class="yc-dynamic-block__content">
+                    <div class="yc-dynamic-block__head">
+                      <label class="yc-label" style="margin: 0;">Résultat {{ i + 1 }}</label>
 
-                <div class="yc-form-block">
-                  <label class="yc-label">Image Avant</label>
-                  <input class="yc-input" type="text" [(ngModel)]="result.beforeImage" placeholder="URL image avant"/>
+                      <button
+                        type="button"
+                        class="yc-icon-btn yc-icon-btn--danger"
+                        (click)="removeResult(i)"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                      <div>
+                        <label class="yc-label">Image Avant</label>
+
+                        <div class="yc-image-upload-box">
+                          <ng-container *ngIf="result.beforeImage; else emptyBeforeImage">
+                            <img
+                              [src]="result.beforeImage"
+                              alt="Avant"
+                              class="yc-block-image-preview"
+                            />
+
+                            <label class="yc-image-upload-label">
+                              Remplacer l'image
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                (change)="onResultImageSelected(i, 'before', $event)"
+                              />
+                            </label>
+                          </ng-container>
+
+                          <ng-template #emptyBeforeImage>
+                            <label class="yc-image-upload-label">
+                              Ajouter l'image avant
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                (change)="onResultImageSelected(i, 'before', $event)"
+                              />
+                            </label>
+                          </ng-template>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="yc-label">Image Après</label>
+
+                        <div class="yc-image-upload-box">
+                          <ng-container *ngIf="result.afterImage; else emptyAfterImage">
+                            <img
+                              [src]="result.afterImage"
+                              alt="Après"
+                              class="yc-block-image-preview"
+                            />
+
+                            <label class="yc-image-upload-label">
+                              Remplacer l'image
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                (change)="onResultImageSelected(i, 'after', $event)"
+                              />
+                            </label>
+                          </ng-container>
+
+                          <ng-template #emptyAfterImage>
+                            <label class="yc-image-upload-label">
+                              Ajouter l'image après
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                (change)="onResultImageSelected(i, 'after', $event)"
+                              />
+                            </label>
+                          </ng-template>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Texte / Légende</label>
+                      <textarea
+                        class="yc-textarea"
+                        rows="3"
+                        [(ngModel)]="result.text"
+                        placeholder="Ex: Transformation en 3 mois grâce au coaching"
+                      ></textarea>
+                    </div>
+                  </div>
                 </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Image Après</label>
-                  <input class="yc-input" type="text" [(ngModel)]="result.afterImage" placeholder="URL image après"/>
-                </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Texte</label>
-                  <textarea class="yc-textarea" rows="3" [(ngModel)]="result.text"></textarea>
-                </div>
-
-                <button type="button" class="yc-btn yc-btn--outline" (click)="removeResult(i)">
-                  Supprimer ce résultat
-                </button>
               </div>
 
               <div class="yc-form-block">
@@ -280,31 +482,76 @@
             <!-- SERVICES -->
             <ng-container *ngIf="activeTab === 'Services'">
               <div class="yc-form-block" *ngFor="let service of services; let i = index">
-                <label class="yc-label">Service {{ i + 1 }}</label>
+                <div class="yc-dynamic-block">
+                  <div class="yc-dynamic-block__content">
+                    <div class="yc-dynamic-block__head">
+                      <label class="yc-label" style="margin: 0;">Service {{ i + 1 }}</label>
 
-                <div class="yc-form-block">
-                  <label class="yc-label">Image du service</label>
-                  <input class="yc-input" type="text" [(ngModel)]="service.image" placeholder="URL image"/>
+                      <button
+                        type="button"
+                        class="yc-icon-btn yc-icon-btn--danger"
+                        (click)="removeService(i)"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Image du service</label>
+
+                      <div class="yc-image-upload-box">
+                        <ng-container *ngIf="service.image; else emptyServiceImage">
+                          <img
+                            [src]="service.image"
+                            alt="Service"
+                            class="yc-block-image-preview"
+                          />
+
+                          <label class="yc-image-upload-label">
+                            Remplacer l'image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              hidden
+                              (change)="onServiceImageSelected(i, $event)"
+                            />
+                          </label>
+                        </ng-container>
+
+                        <ng-template #emptyServiceImage>
+                          <label class="yc-image-upload-label">
+                            Ajouter une image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              hidden
+                              (change)="onServiceImageSelected(i, $event)"
+                            />
+                          </label>
+                        </ng-template>
+                      </div>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Titre</label>
+                      <input class="yc-input" type="text" [(ngModel)]="service.title" />
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Prix</label>
+                      <input class="yc-input" type="text" [(ngModel)]="service.price" />
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Description</label>
+                      <textarea
+                        class="yc-textarea"
+                        rows="4"
+                        [(ngModel)]="service.description"
+                      ></textarea>
+                    </div>
+                  </div>
                 </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Titre</label>
-                  <input class="yc-input" type="text" [(ngModel)]="service.title"/>
-                </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Prix</label>
-                  <input class="yc-input" type="text" [(ngModel)]="service.price"/>
-                </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Description</label>
-                  <textarea class="yc-textarea" rows="4" [(ngModel)]="service.description"></textarea>
-                </div>
-
-                <button type="button" class="yc-btn yc-btn--outline" (click)="removeService(i)">
-                  Supprimer ce service
-                </button>
               </div>
 
               <div class="yc-form-block">
@@ -317,35 +564,80 @@
             <!-- CERTIFICATS -->
             <ng-container *ngIf="activeTab === 'Certificats'">
               <div class="yc-form-block" *ngFor="let certificate of certificates; let i = index">
-                <label class="yc-label">Certificat {{ i + 1 }}</label>
+                <div class="yc-dynamic-block">
+                  <div class="yc-dynamic-block__content">
+                    <div class="yc-dynamic-block__head">
+                      <label class="yc-label" style="margin: 0;">Certificat {{ i + 1 }}</label>
 
-                <div class="yc-form-block">
-                  <label class="yc-label">Image du certificat</label>
-                  <input class="yc-input" type="text" [(ngModel)]="certificate.image" placeholder="URL image"/>
+                      <button
+                        type="button"
+                        class="yc-icon-btn yc-icon-btn--danger"
+                        (click)="removeCertificate(i)"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Image du certificat</label>
+
+                      <div class="yc-image-upload-box">
+                        <ng-container *ngIf="certificate.image; else emptyCertificateImage">
+                          <img
+                            [src]="certificate.image"
+                            alt="Certificat"
+                            class="yc-block-image-preview"
+                          />
+
+                          <label class="yc-image-upload-label">
+                            Remplacer l'image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              hidden
+                              (change)="onCertificateImageSelected(i, $event)"
+                            />
+                          </label>
+                        </ng-container>
+
+                        <ng-template #emptyCertificateImage>
+                          <label class="yc-image-upload-label">
+                            Ajouter une image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              hidden
+                              (change)="onCertificateImageSelected(i, $event)"
+                            />
+                          </label>
+                        </ng-template>
+                      </div>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Nom du certificat</label>
+                      <input class="yc-input" type="text" [(ngModel)]="certificate.title" />
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Organisation</label>
+                      <input class="yc-input" type="text" [(ngModel)]="certificate.organization" />
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Année</label>
+                      <input class="yc-input" type="text" [(ngModel)]="certificate.year" />
+                    </div>
+                  </div>
                 </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Nom du certificat</label>
-                  <input class="yc-input" type="text" [(ngModel)]="certificate.title"/>
-                </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Organisation</label>
-                  <input class="yc-input" type="text" [(ngModel)]="certificate.organization"/>
-                </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Année</label>
-                  <input class="yc-input" type="text" [(ngModel)]="certificate.year"/>
-                </div>
-
-                <button type="button" class="yc-btn yc-btn--outline" (click)="removeCertificate(i)">
-                  Supprimer ce certificat
-                </button>
               </div>
 
               <div class="yc-form-block">
-                <button type="button" class="yc-btn yc-btn--outline" (click)="addCertificate()">
+                <button
+                  type="button"
+                  class="yc-btn yc-btn--outline"
+                  (click)="addCertificate()"
+                >
                   + Ajouter un certificat
                 </button>
               </div>
@@ -354,34 +646,65 @@
             <!-- TEMOIGNAGES -->
             <ng-container *ngIf="activeTab === 'Témoignages'">
               <div class="yc-form-block" *ngFor="let testimonial of testimonials; let i = index">
-                <label class="yc-label">Témoignage {{ i + 1 }}</label>
+                <div class="yc-dynamic-block">
+                  <div class="yc-dynamic-block__content">
+                    <div class="yc-dynamic-block__head">
+                      <label class="yc-label" style="margin: 0;">Témoignage {{ i + 1 }}</label>
 
-                <div class="yc-form-block">
-                  <label class="yc-label">Auteur</label>
-                  <input class="yc-input" type="text" [(ngModel)]="testimonial.author"/>
+                      <button
+                        type="button"
+                        class="yc-icon-btn yc-icon-btn--danger"
+                        (click)="removeTestimonial(i)"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Auteur</label>
+                      <input
+                        class="yc-input"
+                        type="text"
+                        [(ngModel)]="testimonial.author"
+                        placeholder="Nom du client"
+                      />
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Note</label>
+                      <select class="yc-input" [(ngModel)]="testimonial.rating">
+                        <option [ngValue]="5">5 étoiles</option>
+                        <option [ngValue]="4">4 étoiles</option>
+                        <option [ngValue]="3">3 étoiles</option>
+                        <option [ngValue]="2">2 étoiles</option>
+                        <option [ngValue]="1">1 étoile</option>
+                      </select>
+                    </div>
+
+                    <div class="yc-form-block">
+                      <label class="yc-label">Message</label>
+                      <textarea
+                        class="yc-textarea"
+                        rows="4"
+                        [(ngModel)]="testimonial.text"
+                        placeholder="Texte du témoignage"
+                      ></textarea>
+                    </div>
+                  </div>
                 </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Note</label>
-                  <input class="yc-input" type="number" min="1" max="5" [(ngModel)]="testimonial.rating"/>
-                </div>
-
-                <div class="yc-form-block">
-                  <label class="yc-label">Message</label>
-                  <textarea class="yc-textarea" rows="4" [(ngModel)]="testimonial.text"></textarea>
-                </div>
-
-                <button type="button" class="yc-btn yc-btn--outline" (click)="removeTestimonial(i)">
-                  Supprimer ce témoignage
-                </button>
               </div>
 
               <div class="yc-form-block">
-                <button type="button" class="yc-btn yc-btn--outline" (click)="addTestimonial()">
+                <button
+                  type="button"
+                  class="yc-btn yc-btn--outline"
+                  (click)="addTestimonial()"
+                >
                   + Ajouter un témoignage
                 </button>
               </div>
             </ng-container>
+
           </div>
         </div>
       </div>
