@@ -21,7 +21,8 @@ import { CoachLandingPreviewComponent } from "../coach-landing-preview/coach-lan
       [services]="data.services"
       [results]="data.results"
       [certificates]="data.certificates"
-      [testimonials]="data.testimonials">
+      [testimonials]="data.testimonials"
+      [descriptionBlocks]="data.descriptionBlocks">
     </app-coach-landing-preview>
   `
 })

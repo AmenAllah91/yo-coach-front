@@ -8,8 +8,15 @@ import {WebsiteService} from "../../../service/website.service";
 import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
 import {UsersService} from "../../../service/users.service";
 
+type DescriptionBlockType = 'text' | 'heading' | 'image';
 
 type CoachThemeName = 'Élégance' | 'Dynamique' | 'Confiance' | 'Sérénité';
+
+interface DescriptionBlock {
+  id: string;
+  type: DescriptionBlockType;
+  content: string;
+}
 
 interface ThemeColors {
   primary: string;
@@ -109,10 +116,19 @@ export class WebsiteBuilderComponent implements OnInit{
     this.loadWebsiteOrUserData();
   }
   loadWebsiteOrUserData(): void {
+    const saved = this.builderState.getDraft();
+
+    if (saved) {
+      this.populateFromDraft(saved);
+      return;
+    }
+
     this.websiteService.getMyWebsite().subscribe({
       next: async (website) => {
         if (website) {
           this.populateFromWebsite(website);
+        } else {
+          this.loadUserProfile();
         }
       },
       error: () => {
@@ -121,16 +137,42 @@ export class WebsiteBuilderComponent implements OnInit{
     });
   }
 
+  populateFromDraft(saved: any): void {
+    this.siteSlug = saved.slug || this.siteSlug;
+
+    this.themes = this.themes.map(theme => ({
+      ...theme,
+      selected: theme.previewKey === saved.themeKey
+    }));
+
+    this.profile = saved.profile || this.profile;
+    this.video.url = saved.videoUrl || '';
+    this.descriptionBlocks = saved.descriptionBlocks || [];
+    this.announcement = saved.announcement || this.announcement;
+    this.cta = saved.cta || this.cta;
+    this.leadFields = saved.leadFields || this.leadFields;
+    this.colors = saved.colors || this.colors;
+    this.services = saved.services || [];
+    this.results = saved.results || [];
+    this.certificates = saved.certificates || [];
+    this.testimonials = saved.testimonials || [];
+  }
+
   populateFromWebsite(site: any): void {
-    this.siteSlug = site.slug;
+    this.siteSlug = site.slug || this.siteSlug;
 
-    this.profile = site.profile;
-    this.video.url = site.video?.url;
+    this.themes = this.themes.map(theme => ({
+      ...theme,
+      selected: theme.previewKey === site.themeKey
+    }));
 
-    this.announcement = site.announcement;
-    this.cta = site.cta;
-    this.leadFields = site.leadFields;
-    this.colors = site.colors;
+    this.profile = site.profile || this.profile;
+    this.video.url = site.video?.url || '';
+    this.descriptionBlocks = site.descriptionBlocks || [];
+    this.announcement = site.announcement || this.announcement;
+    this.cta = site.cta || this.cta;
+    this.leadFields = site.leadFields || this.leadFields;
+    this.colors = site.colors || this.colors;
 
     this.services = site.services || [];
     this.results = site.results || [];
@@ -139,47 +181,25 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   loadUserProfile(): void {
-    const saved = this.builderState.getDraft();
+    this.userService.getUserById(sessionStorage.getItem('userId')).subscribe({
+      next: async (user) => {
+        this.profile.fullName = `${user.firstName} ${user.lastName}`;
+        this.profile.title = 'Coach';
+        this.profile.slogan = 'Transformez votre vie';
+        this.profile.bio = 'Parlez de vous ici...';
+        this.siteSlug = `${user.firstName}-${user.lastName}`;
 
-    if (saved) {
-      this.selectedTheme.previewKey = saved.themeKey;
-      this.selectedTheme.name = saved.themeName;
-      this.profile = saved.profile;
-      this.video.url = saved.videoUrl;
-      this.announcement = saved.announcement;
-      this.cta = saved.cta;
-      this.leadFields = saved.leadFields;
-      this.colors = saved.colors;
-      this.services = saved.services || [];
-      this.results = saved.results || [];
-      this.certificates = saved.certificates || [];
-      this.testimonials = saved.testimonials || [];
-    }
-    else {
-      this.userService.getUserById(sessionStorage.getItem('userId')).subscribe({
-        next: async (user) => {
-
-          this.profile.fullName = `${user.firstName} ${user.lastName}`;
-          this.profile.title = 'Coach';
-          this.profile.slogan = 'Transformez votre vie';
-          this.profile.bio = 'Parlez de vous ici...';
-          this.siteSlug = `${user.firstName}-${user.lastName}`;
-
-          if (user.avatarUrl) {
-            try {
-              this.profile.image = await this.convertImageToBase64(user.avatarUrl);
-            } catch {
-              this.profile.image = '';
-            }
+        if (user.avatarUrl) {
+          try {
+            this.profile.image = await this.convertImageToBase64(user.avatarUrl);
+          } catch {
+            this.profile.image = '';
           }
-
-        },
-        error: () => {
         }
-      });
-    }
+      },
+      error: () => {}
+    });
   }
-
   private convertImageToBase64(url: string): Promise<string> {
     return fetch(url)
       .then(res => res.blob())
@@ -191,7 +211,13 @@ export class WebsiteBuilderComponent implements OnInit{
       }));
   }
 
-
+  descriptionBlocks: DescriptionBlock[] = [
+    {
+      id: this.generateId(),
+      type: 'text',
+      content: 'Parlez ici de votre approche, de votre méthode et des résultats que vous apportez.'
+    }
+  ];
   previewOpen = false;
 
   tabs = [
@@ -393,8 +419,10 @@ export class WebsiteBuilderComponent implements OnInit{
 
   openPreview(): void {
     const data = {
+      slug: this.siteSlug,
       themeKey: this.selectedTheme.previewKey,
       themeName: this.selectedTheme.name,
+      descriptionBlocks: this.descriptionBlocks,
       profile: this.profile,
       videoUrl: this.video.url,
       announcement: this.announcement,
@@ -406,7 +434,6 @@ export class WebsiteBuilderComponent implements OnInit{
       certificates: this.certificates,
       testimonials: this.testimonials
     };
-
     this.builderState.setDraft(data);
 
     this.router.navigate(['/websites/preview'], {
@@ -441,7 +468,7 @@ export class WebsiteBuilderComponent implements OnInit{
       slug: this.siteSlug,
       themeKey: this.selectedTheme.previewKey,
       themeName: this.selectedTheme.name,
-
+      descriptionBlocks: this.descriptionBlocks,
       profile: this.profile,
       video: {
         url: this.video.url
@@ -491,5 +518,153 @@ export class WebsiteBuilderComponent implements OnInit{
     };
 
     reader.readAsDataURL(file);
+  }
+
+  private generateId(): string {
+    return Math.random().toString(36).substring(2, 11);
+  }
+
+  addBlock(type: DescriptionBlockType): void {
+    this.descriptionBlocks.push({
+      id: this.generateId(),
+      type,
+      content: ''
+    });
+  }
+
+  updateBlock(id: string, updates: Partial<DescriptionBlock>): void {
+    const block = this.descriptionBlocks.find(item => item.id === id);
+    if (!block) return;
+
+    Object.assign(block, updates);
+    this.descriptionBlocks = [...this.descriptionBlocks];
+  }
+
+  removeBlock(id: string): void {
+    this.descriptionBlocks = this.descriptionBlocks.filter(block => block.id !== id);
+  }
+
+  moveBlockUp(id: string): void {
+    const index = this.descriptionBlocks.findIndex(block => block.id === id);
+    if (index <= 0) return;
+
+    const updated = [...this.descriptionBlocks];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    this.descriptionBlocks = updated;
+  }
+
+  moveBlockDown(id: string): void {
+    const index = this.descriptionBlocks.findIndex(block => block.id === id);
+    if (index === -1 || index >= this.descriptionBlocks.length - 1) return;
+
+    const updated = [...this.descriptionBlocks];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    this.descriptionBlocks = updated;
+  }
+
+  addResult(): void {
+    this.results.push({
+      beforeImage: '',
+      afterImage: '',
+      text: ''
+    });
+  }
+
+  removeResult(index: number): void {
+    this.results.splice(index, 1);
+  }
+
+  addService(): void {
+    this.services.push({
+      image: '',
+      title: 'Nouveau service',
+      price: '',
+      description: ''
+    });
+  }
+
+  removeService(index: number): void {
+    this.services.splice(index, 1);
+  }
+
+  addCertificate(): void {
+    this.certificates.push({
+      image: '',
+      title: 'Nouveau certificat',
+      organization: '',
+      year: new Date().getFullYear().toString()
+    });
+  }
+
+  removeCertificate(index: number): void {
+    this.certificates.splice(index, 1);
+  }
+
+  addTestimonial(): void {
+    this.testimonials.push({
+      author: 'Nouveau client',
+      rating: 5,
+      text: ''
+    });
+  }
+
+  removeTestimonial(index: number): void {
+    this.testimonials.splice(index, 1);
+  }
+
+  onBlockImageSelected(id: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.updateBlock(id, { content: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  onServiceImageSelected(index: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.services[index].image = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  onCertificateImageSelected(index: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.certificates[index].image = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  onResultImageSelected(index: number, type: 'before' | 'after', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (type === 'before') {
+        this.results[index].beforeImage = reader.result as string;
+      } else {
+        this.results[index].afterImage = reader.result as string;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  trackByBlockId(index: number, block: DescriptionBlock): string {
+    return block.id;
   }
 }

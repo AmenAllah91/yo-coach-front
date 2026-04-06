@@ -8,6 +8,12 @@ export interface CoachWebsitePayload {
   themeKey: 'elegance' | 'dynamic' | 'trust' | 'serenity';
   themeName: string;
 
+  descriptionBlocks: Array<{
+    id: string;
+    type: 'text' | 'heading' | 'image';
+    content: string;
+  }>;
+
   profile: {
     image: string;
     fullName: string;
@@ -79,7 +85,6 @@ export interface CoachWebsitePayload {
 
   published: boolean;
 }
-
 @Injectable({
   providedIn: 'root'
 })

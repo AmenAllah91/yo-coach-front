@@ -1,7 +1,6 @@
-import {CommonModule, Location} from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { Router } from "@angular/router";
-import { SafeResourceUrl } from "@angular/platform-browser";
+import { SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-coach-landing-preview',
@@ -24,6 +23,7 @@ export class CoachLandingPreviewComponent {
   @Input() results: any[] = [];
   @Input() certificates: any[] = [];
   @Input() testimonials: any[] = [];
+  @Input() descriptionBlocks: any[] = [];
 
   @Input() publicMode = false;
 
@@ -41,5 +41,9 @@ export class CoachLandingPreviewComponent {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  get hasDescriptionBlocks(): boolean {
+    return Array.isArray(this.descriptionBlocks) && this.descriptionBlocks.length > 0;
   }
 }
