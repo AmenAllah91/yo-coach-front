@@ -12,6 +12,27 @@ export interface PageResponse<T> {
   number: number;
   size: number;
 }
+export interface SaveWorkoutSetRequest {
+  setNumber: number;
+  reps: number | null;
+  restMin: number;
+  restSec: number;
+}
+
+export interface SaveWorkoutExerciseRequest {
+  name: string;
+  type: 'CARDIO' | 'STRENGTH';
+  sets: SaveWorkoutSetRequest[];
+}
+
+export interface SaveWorkoutDayRequest {
+  title: string;
+  date: string;
+  restDay: boolean;
+  exercises: SaveWorkoutExerciseRequest[];
+}
+
+export interface UpdateWorkoutDayRequest extends SaveWorkoutDayRequest {}
 
 @Injectable({
   providedIn: 'root',
@@ -96,5 +117,20 @@ export class WorkoutService {
 
   getWorkoutPlansByClient(clientId: string): Observable<WorkoutPlan[]> {
     return this.http.get<WorkoutPlan[]>(`${this.apiUrl}client/${clientId}`);
+  }
+  addWorkoutDay(programId: string, body: SaveWorkoutDayRequest) {
+    return this.http.post(`${this.apiUrl}${programId}/days`, body);
+  }
+
+  updateWorkoutDay(
+    programId: string,
+    dayId: string,
+    body: UpdateWorkoutDayRequest
+  ) {
+    return this.http.put(`${this.apiUrl}${programId}/days/${dayId}`, body);
+  }
+
+  deleteWorkoutDay(programId: string, dayId: string) {
+    return this.http.delete(`${this.apiUrl}${programId}/days/${dayId}`);
   }
 }

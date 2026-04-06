@@ -22,6 +22,7 @@ import { Form } from '../../forms/services/forms-api.service';
 import { from } from 'rxjs';
 import { switchMap, finalize, map } from 'rxjs/operators';
 import {ClientScheduleItemDto} from "../../../models/client-schedule.model";
+import {CalendarClientsComponent} from "../../calendar/calendar-clients/calendar-clients.component";
 
 const PROGRESS_IMAGE_URL =
   'https://myindianthings.com/cdn/shop/products/Gym_Yoga_wallpapers-compressed-page-100_0076fb15-cb84-43e3-996f-cbad0dc0dd06_800x.jpg?v=1658401669';
@@ -89,7 +90,7 @@ export interface ScheduledCheckIn {
     NutritionClientTabComponent,
     NutritionSelectionModalComponent,
     WorkoutProgramSelectionModalComponent,
-    AssignSelectModalComponent,FormSelectionModalComponent
+    AssignSelectModalComponent, FormSelectionModalComponent, CalendarClientsComponent
   ],
   templateUrl: './profil-client.component.html',
   styleUrl: './profil-client.component.scss',
@@ -381,23 +382,14 @@ export class ProfilClientComponent {
   }
   getAllNutrition() {
     this.nutritionService.getNutritionPlans().subscribe((res: any) => {
-      this.nutritionSelectionList = res.content
+      this.nutritionSelectionList = (res.content || [])
         .filter((plan: any) => plan.client === null)
-        .map((plan: any) => {
-          const totalDays = plan.mealDays?.length || 0;
-
-          return {
-            id: plan.id,
-            name: plan.name,
-            coach: plan.coach,
-            status: 'upcoming',
-            startDate: '',
-            endDate: '',
-            totalDays,
-            trackingMode: plan.trackingMode,
-            calories: plan.mealDays?.[0]?.dayTargets?.calories ?? null,
-          };
-        });
+        .map((plan: any) => ({
+          ...plan,
+          status: 'upcoming',
+          totalDays: plan.mealDays?.length || 0,
+          calories: plan.mealDays?.[0]?.dayTargets?.calories ?? null,
+        }));
     });
   }
 
@@ -460,11 +452,34 @@ export class ProfilClientComponent {
     startDate: string;
     endDate: string | null;
   }) {
-    const { program, startDate, endDate } = payload;
+    const { program, startDate } = payload;
 
     const item = { ...program };
+
     item.startDate = startDate;
-    item.endDate = endDate;
+
+    const mealDays = (program.mealDays || []).map((day: any, index: number) => {
+      const current = new Date(startDate);
+      current.setDate(current.getDate() + index);
+
+      return {
+        ...day,
+        date: current.toISOString().split('T')[0],
+        dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
+      };
+    });
+
+    item.mealDays = mealDays;
+
+    const totalDays = mealDays.length || 0;
+    if (totalDays > 0) {
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + totalDays - 1);
+      item.endDate = end.toISOString().split('T')[0];
+    } else {
+      item.endDate = startDate;
+    }
+
     item.client = this.client;
 
     this.nutritionService.assignNutritionPlan(item).subscribe(() => {

@@ -1,18 +1,14 @@
-<!-- Root -->
 <div class="np-root">
   <div class="np-shell">
-    <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
         <h2 class="np-h6">Nutrition Days</h2>
       </div>
 
       <div class="np-aside__body">
-        <!-- Liste des Days -->
         <ng-container
           *ngFor="let d of days; trackBy: trackByDay; let i = index"
         >
-          <!-- Day 1 (no delete) -->
           <button
             *ngIf="i === 0; else otherDay"
             class="np-day"
@@ -22,7 +18,6 @@
             <span>{{ getDayLabel(d, i) }}</span>
           </button>
 
-          <!-- Other days -->
           <ng-template #otherDay>
             <div class="np-dayrow">
               <button
@@ -43,7 +38,6 @@
           </ng-template>
         </ng-container>
 
-        <!-- Add Day -->
         <button
           class="np-btn np-btn--dash np-btn--ghost np-btn--full"
           (click)="addDay()"
@@ -52,7 +46,6 @@
           Add Day
         </button>
 
-        <!-- Duplicate -->
         <div class="np-stack">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
             <span>Duplicate Day</span>
@@ -62,9 +55,7 @@
       </div>
     </aside>
 
-    <!-- ===== Main ===== -->
     <main class="np-main">
-      <!-- Page title -->
       <div class="np-pagehead">
         <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
           <svg viewBox="0 0 24 24" class="np-ico">
@@ -83,17 +74,14 @@
         </h1>
       </div>
 
-      <!-- Main Card -->
       <section class="np-card">
-        <!-- Plan Title -->
         <div class="np-field">
           <label class="np-label"
-            >Plan Title <span class="np-danger">*</span></label
+          >Plan Title <span class="np-danger">*</span></label
           >
           <input class="np-input" type="text" [(ngModel)]="planName" />
         </div>
 
-        <!-- Add Plan Description -->
         <ng-container
           *ngIf="!showPlanDescription && !planDescription; else planDescBlock"
         >
@@ -126,7 +114,6 @@
           </div>
         </ng-template>
 
-        <!-- Day Header -->
         <div class="np-sep"></div>
 
         <div class="np-dayhead">
@@ -136,7 +123,6 @@
           </button>
         </div>
 
-        <!-- Day Description -->
         <ng-container *ngIf="selectedDay">
           <ng-container
             *ngIf="
@@ -172,12 +158,52 @@
             </div>
             <div class="np-sep"></div>
           </ng-template>
+
+          <div class="np-day-total">
+            <div class="np-day-total__header">
+              <span class="np-day-total__title">DAY TOTAL</span>
+              <span class="np-day-total__count">
+                {{ selectedDay.meals?.length || 0 }} meal{{ (selectedDay.meals?.length || 0) > 1 ? 's' : '' }}
+              </span>
+            </div>
+
+            <div class="np-day-total__grid">
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.calories || 0 }}
+                </div>
+                <div class="np-day-total__label">CALORIES</div>
+                <div class="np-day-total__unit">kcal</div>
+              </div>
+
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.proteinG || 0 }}<span class="np-inline-unit">g</span>
+                </div>
+                <div class="np-day-total__label">PROTEIN</div>
+              </div>
+
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.carbsG || 0 }}<span class="np-inline-unit">g</span>
+                </div>
+                <div class="np-day-total__label">CARBS</div>
+              </div>
+
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.fatG || 0 }}<span class="np-inline-unit">g</span>
+                </div>
+                <div class="np-day-total__label">FAT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="np-sep"></div>
         </ng-container>
 
-        <!-- Meals -->
         <div class="np-subtle">Meals</div>
 
-        <!-- ===== Meal Cards ===== -->
         <ng-container *ngIf="selectedDay">
           <article
             class="np-meal"
@@ -189,12 +215,7 @@
 
                 <button
                   class="np-mini"
-                  (click)="
-                    renameMeal(
-                      meal,
-                      prompt('Meal name', meal.name) || meal.name
-                    )
-                  "
+                  (click)="renameMeal(meal, prompt('Meal name', meal.name) || meal.name)"
                 >
                   <svg viewBox="0 0 24 24" class="np-ico">
                     <path
@@ -209,7 +230,6 @@
                 </button>
               </div>
 
-              <!-- Meal Macros -->
               <div class="np-meal__right">
                 <div class="np-badges">
                   <div class="np-badge">
@@ -256,64 +276,61 @@
               </div>
             </header>
 
-            <!-- Meal body -->
             <div class="np-meal__body">
-              <!-- Table des aliments -->
               <table class="np-table" *ngIf="meal.foods?.length">
                 <thead>
-                  <tr>
-                    <th>Food</th>
-                    <th>Quantity</th>
-                    <th>Protein</th>
-                    <th>Carbs</th>
-                    <th>Fat</th>
-                    <th>Calories</th>
-                    <th></th>
-                  </tr>
+                <tr>
+                  <th>Food</th>
+                  <th>Quantity</th>
+                  <th>Protein</th>
+                  <th>Carbs</th>
+                  <th>Fat</th>
+                  <th>Calories</th>
+                  <th></th>
+                </tr>
                 </thead>
 
                 <tbody>
-                  <tr *ngFor="let food of meal.foods">
-                    <td>{{ food.name }}</td>
+                <tr *ngFor="let food of meal.foods">
+                  <td>{{ food.name }}</td>
 
-                    <td>
-                      <span class="np-num">{{ food.quantity }}</span>
-                      <span class="np-unit">{{ food.unit }}</span>
-                    </td>
+                  <td>
+                    <span class="np-num">{{ food.quantity }}</span>
+                    <span class="np-unit">{{ food.unit }}</span>
+                  </td>
 
-                    <td>
-                      <span class="np-num">{{ getFoodProtein(food) }}</span>
-                      <span class="np-unit">g</span>
-                    </td>
+                  <td>
+                    <span class="np-num">{{ getFoodProtein(food) }}</span>
+                    <span class="np-unit">g</span>
+                  </td>
 
-                    <td>
-                      <span class="np-num">{{ getFoodCarbs(food) }}</span>
-                      <span class="np-unit">g</span>
-                    </td>
+                  <td>
+                    <span class="np-num">{{ getFoodCarbs(food) }}</span>
+                    <span class="np-unit">g</span>
+                  </td>
 
-                    <td>
-                      <span class="np-num">{{ getFoodFat(food) }}</span>
-                      <span class="np-unit">g</span>
-                    </td>
+                  <td>
+                    <span class="np-num">{{ getFoodFat(food) }}</span>
+                    <span class="np-unit">g</span>
+                  </td>
 
-                    <td>
-                      <span class="np-num">{{ getFoodCalories(food) }}</span>
-                      <span class="np-unit">Kcal</span>
-                    </td>
+                  <td>
+                    <span class="np-num">{{ getFoodCalories(food) }}</span>
+                    <span class="np-unit">Kcal</span>
+                  </td>
 
-                    <td class="np-actions">
-                      <button
-                        class="np-iconbtn"
-                        (click)="removeFood(food, meal)"
-                      >
-                        <i-feather name="trash-2" class="np-ico"></i-feather>
-                      </button>
-                    </td>
-                  </tr>
+                  <td class="np-actions">
+                    <button
+                      class="np-iconbtn"
+                      (click)="removeFood(food, meal)"
+                    >
+                      <i-feather name="trash-2" class="np-ico"></i-feather>
+                    </button>
+                  </td>
+                </tr>
                 </tbody>
               </table>
 
-              <!-- Empty state -->
               <div class="np-emptystate" *ngIf="!meal.foods?.length">
                 <div class="np-emptystate__title">Meal looking empty?</div>
                 <div class="np-emptystate__hint">
@@ -321,7 +338,6 @@
                 </div>
               </div>
 
-              <!-- Add Food -->
               <div class="np-center">
                 <button
                   class="np-btn np-btn--brandsoft"
@@ -343,7 +359,6 @@
           </article>
         </ng-container>
 
-        <!-- Add Meal Buttons -->
         <div class="np-grid-2">
           <button class="np-btn np-btn--branddash" (click)="addMeal()">
             <svg viewBox="0 0 24 24" class="np-ico">
@@ -371,7 +386,6 @@
         </div>
       </section>
 
-      <!-- Sticky Save -->
       <div class="np-sticky">
         <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
           <svg viewBox="0 0 24 24" class="np-ico">
@@ -390,7 +404,6 @@
   </div>
 </div>
 
-<!-- ===== Modal Add Food ===== -->
 <div
   class="np-modal"
   *ngIf="isFoodModalOpen"
@@ -418,9 +431,7 @@
     </div>
 
     <div class="np-modal__body">
-      <!-- ==== STEP LIST ==== -->
       <ng-container *ngIf="foodStep === 'list'">
-        <!-- Search -->
         <div class="np-field np-modal__search">
           <div class="np-searchwrap">
             <svg viewBox="0 0 24 24" class="np-ico np-searchwrap__ico">
@@ -468,13 +479,11 @@
         </ul>
       </ng-container>
 
-      <!-- ==== STEP DETAIL ==== -->
       <ng-container *ngIf="foodStep === 'detail' && selectedFood">
         <div class="np-field" style="margin-bottom: 16px">
           <label class="np-label">{{ selectedFood.name }}</label>
 
           <div class="np-grid-2">
-            <!-- Quantity -->
             <div>
               <label class="np-label">Quantity</label>
               <input
@@ -486,7 +495,6 @@
               />
             </div>
 
-            <!-- Serving -->
             <div>
               <label class="np-label">Serving Size</label>
               <select class="np-input" disabled>
@@ -496,7 +504,6 @@
           </div>
         </div>
 
-        <!-- Nutrition Values -->
         <div class="np-modal__sectionTitle">Nutrition Values</div>
 
         <div class="np-badges" style="margin-top: 8px">
@@ -529,7 +536,6 @@
       </ng-container>
     </div>
 
-    <!-- FOOTER LIST -->
     <div class="np-modal__foot" *ngIf="foodStep === 'list'">
       <button
         class="np-btn np-btn--ghost np-btn--full"
@@ -539,7 +545,6 @@
       </button>
     </div>
 
-    <!-- FOOTER DETAIL -->
     <div class="np-modal__foot" *ngIf="foodStep === 'detail'">
       <div class="np-grid-2">
         <button class="np-btn np-btn--ghost" (click)="backToList()">

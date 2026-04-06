@@ -251,7 +251,22 @@ export class WorkoutPlanFacade {
   }
 
   addDay() {
+    const sortedDays = [...this.days].sort((a, b) => {
+      const aTime = a.date ? new Date(a.date).getTime() : 0;
+      const bTime = b.date ? new Date(b.date).getTime() : 0;
+      return aTime - bTime;
+    });
+
+    let nextDate = new Date();
+
+    if (sortedDays.length > 0) {
+      const lastDay = sortedDays[sortedDays.length - 1];
+      nextDate = lastDay.date ? new Date(lastDay.date) : new Date();
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+
     const newIdx = this.days.length + 1;
+    const nextDateStr = nextDate.toISOString().split('T')[0];
 
     const session: WorkoutSession = {
       name: 'Main Session',
@@ -268,6 +283,8 @@ export class WorkoutPlanFacade {
       showDescription: false,
       title: `Day ${newIdx}`,
       dayNumber: newIdx,
+      date: nextDateStr,
+      dayOfWeek: nextDate.toLocaleDateString('en-US', { weekday: 'long' }),
       restDay: false,
       workoutSessions: [session],
       session,
@@ -283,11 +300,27 @@ export class WorkoutPlanFacade {
   duplicateSelectedDay() {
     if (!this.selectedDay) return;
 
+    const sortedDays = [...this.days].sort((a, b) => {
+      const aTime = a.date ? new Date(a.date).getTime() : 0;
+      const bTime = b.date ? new Date(b.date).getTime() : 0;
+      return aTime - bTime;
+    });
+
+    let nextDate = new Date();
+
+    if (sortedDays.length > 0) {
+      const lastDay = sortedDays[sortedDays.length - 1];
+      nextDate = lastDay.date ? new Date(lastDay.date) : new Date();
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+
     const copy: WorkoutDay = JSON.parse(JSON.stringify(this.selectedDay));
     copy.id = crypto.randomUUID();
-    copy.name = `Day ${this.days.length + 1}`;
-    copy.title = copy.name;
+    copy.date = nextDate.toISOString().split('T')[0];
+    copy.dayOfWeek = nextDate.toLocaleDateString('en-US', { weekday: 'long' });
     copy.dayNumber = this.days.length + 1;
+    copy.title = `Day ${copy.dayNumber}`;
+    copy.name = copy.title;
 
     if (!copy.workoutSessions || copy.workoutSessions.length === 0) {
       copy.workoutSessions = [

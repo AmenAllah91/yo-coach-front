@@ -211,28 +211,59 @@ export class ProgramLibraryComponent implements OnInit {
     this.programToAssign = null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProgramAssigned(event: any) {
-    if (event.clients.length > 0) {
-      for (const client of event.clients) {
-        console.log(client);
-        this.programToAssign.client = client;
-        this.programToAssign.startDate = event.date;
-        this.workoutService
-          .assignWorkout(this.programToAssign.id, this.programToAssign)
-          .subscribe((res) => {
-            console.log(res);
-            this.loadPrograms();
-            this.loadEnums();
-            this.loadAllCounts();
-          });
-      }
+    if (!this.programToAssign || !event?.clients?.length || !event?.date) {
+      this.showAssignModal = false;
+      return;
     }
-    console.log(event);
 
-    /** event = { date: string, clients: Client[] } */
+    for (const client of event.clients) {
+      const startDate = event.date;
+
+      const workoutDays = (this.programToAssign.workoutDays || []).map(
+        (day: any, index: number) => {
+          const current = new Date(startDate);
+          current.setDate(current.getDate() + index);
+
+          return {
+            ...day,
+            date: current.toISOString().split('T')[0],
+            dayOfWeek: current.toLocaleDateString('en-US', {
+              weekday: 'long',
+            }),
+            dayNumber: index + 1,
+            title: day.restDay ? 'Rest Day' : `Day ${index + 1}`,
+          };
+        }
+      );
+
+      const endDate = workoutDays.length
+        ? workoutDays[workoutDays.length - 1].date
+        : startDate;
+
+      const item = {
+        ...this.programToAssign,
+        client,
+        startDate,
+        endDate,
+        workoutDays,
+      };
+
+      this.workoutService.assignWorkout(item.id, item).subscribe({
+        next: () => {
+          this.loadPrograms();
+          this.loadEnums();
+          this.loadAllCounts();
+        },
+        error: (err) => {
+          console.error('Error assigning workout program:', err);
+        },
+      });
+    }
 
     this.showAssignModal = false;
+    this.programToAssign = null;
   }
 
   editProgram(id: string) {

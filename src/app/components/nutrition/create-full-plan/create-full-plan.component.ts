@@ -14,7 +14,7 @@ import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan'
   styleUrls: ['./create-full-plan.component.scss'],
 })
 export class CreateFullPlanComponent implements OnInit {
-  userId = sessionStorage.getItem('userId'); // ✔ COACH ID
+  userId = sessionStorage.getItem('userId');
 
   mealPlan: MealPlan = {
     id: undefined,
@@ -39,6 +39,7 @@ export class CreateFullPlanComponent implements OnInit {
   trackByDay = (_: number, d: MealDay) => d.id;
   trackByMeal = (_: number, m: Meal) => m.id;
   planId: string | null = null;
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -51,7 +52,7 @@ export class CreateFullPlanComponent implements OnInit {
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
     } else {
-      this.addDay(); // mode création
+      this.addDay();
     }
   }
 
@@ -63,10 +64,9 @@ export class CreateFullPlanComponent implements OnInit {
         this.planName = plan.name;
         this.planDescription = plan.details;
         this.days = plan.mealDays || [];
-        this.selectedDay = this.days[0];
+        this.selectedDay = this.days[0] || null;
 
-        // recalcul si les macros ne sont pas pré-calculées
-        this.days.forEach((d) => this.recalcDayTargets(d));
+        this.recalcAllDays();
       });
   }
 
@@ -124,6 +124,7 @@ export class CreateFullPlanComponent implements OnInit {
     this.days.push(newDay);
     this.selectedDay = newDay;
     this.mealPlan.mealDays = this.days;
+    this.recalcDayTargets(newDay);
   }
 
   selectDay(day: MealDay) {
@@ -136,7 +137,9 @@ export class CreateFullPlanComponent implements OnInit {
 
     const index = this.days.indexOf(day);
     this.days.splice(index, 1);
-    this.selectedDay = this.days[Math.max(0, index - 1)];
+    this.selectedDay = this.days[Math.max(0, index - 1)] || null;
+
+    this.recalcAllDays();
   }
 
   removeFood(food: Food, meal: Meal) {
@@ -333,14 +336,15 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   recalcDayTargets(day: MealDay) {
-    const totals = day.meals.reduce(
+    (day.meals || []).forEach((meal) => this.recalcMealTargets(meal));
+
+    const totals = (day.meals || []).reduce(
       (acc, meal) => {
-        const m = this.computeMealMacros(meal);
         return {
-          calories: acc.calories + m.calories,
-          protein: acc.protein + m.protein,
-          carbs: acc.carbs + m.carbs,
-          fat: acc.fat + m.fat,
+          calories: acc.calories + Number(meal.mealTargets?.calories ?? 0),
+          protein: acc.protein + Number(meal.mealTargets?.proteinG ?? 0),
+          carbs: acc.carbs + Number(meal.mealTargets?.carbsG ?? 0),
+          fat: acc.fat + Number(meal.mealTargets?.fatG ?? 0),
         };
       },
       { calories: 0, protein: 0, carbs: 0, fat: 0 }
@@ -352,6 +356,10 @@ export class CreateFullPlanComponent implements OnInit {
       carbsG: +totals.carbs.toFixed(1),
       fatG: +totals.fat.toFixed(1),
     };
+  }
+
+  recalcAllDays() {
+    this.days.forEach((day) => this.recalcDayTargets(day));
   }
 
   /* ============================================
@@ -391,28 +399,24 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   /* ============================================
-                SAVE PLAN + COACH ID
+                SAVE PLAN
   ==============================================*/
 
   savePlan() {
+    this.recalcAllDays();
+
     this.mealPlan.name = this.planName;
     this.mealPlan.details = this.planDescription;
     this.mealPlan.mealDays = this.days;
     this.mealPlan.coach = { id: this.userId };
 
     if (this.planId) {
-      // -----------------------------
-      // 🔵 MODE UPDATE
-      // -----------------------------
       this.mealPlan.id = this.planId;
 
       this.nutritionService.updateNutritionPlan(this.mealPlan).subscribe(() => {
         this.router.navigate(['/nutrition/plans']);
       });
     } else {
-      // -----------------------------
-      // 🟢 MODE CREATE
-      // -----------------------------
       this.nutritionService.createNutritionPlan(this.mealPlan).subscribe(() => {
         this.router.navigate(['/nutrition/plans']);
       });

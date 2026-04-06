@@ -65,6 +65,7 @@ export class CreateMacroPlanComponent implements OnInit {
         d.meals.forEach((m) => (m.id = m.id ?? crypto.randomUUID()));
       });
 
+      this.days.forEach((d) => this.updateDayTotals(d));
       this.selectedDay = this.days[0];
     });
   }
@@ -152,6 +153,7 @@ export class CreateMacroPlanComponent implements OnInit {
     };
 
     this.selectedDay.meals.push(meal);
+    this.updateDayTotals(this.selectedDay);
   }
 
   removeMeal(meal: Meal) {
@@ -191,6 +193,8 @@ export class CreateMacroPlanComponent implements OnInit {
       SAVE (CREATE OR UPDATE)
   ======================================================*/
   savePlan() {
+    this.days.forEach((d) => this.updateDayTotals(d));
+
     const plan: MealPlan = {
       id: this.planId || undefined,
       name: this.planName,

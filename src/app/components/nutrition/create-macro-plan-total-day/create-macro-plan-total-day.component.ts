@@ -138,8 +138,10 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       date: '',
     };
 
+    // keep both fields aligned with the new day number
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (duplicated as any).name = `Day ${index}`;
+    duplicated.dayOfWeek = `Day ${index}`;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (duplicated as any).showDescription = false;
 
@@ -165,7 +167,11 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       this.days.splice(index, 1);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.days.forEach((d, i) => ((d as any).name = `Day ${i + 1}`));
+      this.days.forEach((d, i) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (d as any).name = `Day ${i + 1}`;
+  d.dayOfWeek = `Day ${i + 1}`;
+});
 
       if (this.selectedDay?.id === day.id) {
         this.selectedDay = this.days[Math.max(0, index - 1)];

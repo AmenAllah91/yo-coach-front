@@ -113,3 +113,31 @@ export interface WorkoutPlan {
   typeWorkoutPlan?: TypeWorkoutPlan;
   createdBy?: string;
 }
+
+interface SaveWorkoutDayRequest {
+  title: string;
+  date: string; // yyyy-mm-dd
+  restDay: boolean;
+  exercises: SaveWorkoutExerciseRequest[];
+}
+
+interface SaveWorkoutExerciseRequest {
+  name: string;
+  type: 'CARDIO' | 'STRENGTH';
+  duration?: number;
+  sets: SaveWorkoutSetRequest[];
+}
+
+interface SaveWorkoutSetRequest {
+  setNumber: number;
+  reps: number | null;
+  restMin: number;
+  restSec: number;
+}
+
+interface UpdateWorkoutDayRequest extends SaveWorkoutDayRequest {}
+
+interface WorkoutPlanRef {
+  programId: string;
+  programName: string;
+}

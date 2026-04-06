@@ -127,7 +127,49 @@
             <div class="np-sep"></div>
           </ng-template>
         </ng-container>
+        <ng-container *ngIf="selectedDay">
+          <div class="np-day-total">
+            <div class="np-day-total__header">
+              <span class="np-day-total__title">DAY TOTAL</span>
+              <span class="np-day-total__count">
+        {{ selectedDay.meals?.length || 0 }} meal{{ (selectedDay.meals?.length || 0) > 1 ? 's' : '' }}
+      </span>
+            </div>
 
+            <div class="np-day-total__grid">
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.calories || 0 }}
+                </div>
+                <div class="np-day-total__label">CALORIES</div>
+                <div class="np-day-total__unit">kcal</div>
+              </div>
+
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.proteinG || 0 }}<span class="np-inline-unit">g</span>
+                </div>
+                <div class="np-day-total__label">PROTEIN</div>
+              </div>
+
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.carbsG || 0 }}<span class="np-inline-unit">g</span>
+                </div>
+                <div class="np-day-total__label">CARBS</div>
+              </div>
+
+              <div class="np-day-total__item">
+                <div class="np-day-total__value">
+                  {{ selectedDay.dayTargets?.fatG || 0 }}<span class="np-inline-unit">g</span>
+                </div>
+                <div class="np-day-total__label">FAT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="np-sep"></div>
+        </ng-container>
         <!-- Meals Title -->
         <div class="np-subtle">Meals</div>
 

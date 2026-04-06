@@ -39,6 +39,9 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   openDropdownId: string | null = null;
   loading = false;
 
+  programToAssign: NutritionPlan | null = null;
+  showAssignModal = false;
+
   constructor(
     private nutritionService: NutritionService,
     private nutritionBloc: NutritionBlocService,
@@ -46,7 +49,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Subscribe to nutrition state
     this.nutritionBloc.state$
       .pipe(takeUntil(this.destroy$))
       .subscribe((state) => {
@@ -56,7 +58,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
     this.loadPlans();
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.dropdown')) {
@@ -73,7 +74,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   loadPlans() {
     this.nutritionBloc.setLoading(true);
 
-    // Uncomment when backend is ready
     this.nutritionService.getNutritionPlansTemplates().subscribe({
       next: (plans) => {
         this.plans = plans.content;
@@ -99,7 +99,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     this.showChooseModal = false;
   }
 
-
   editPlan(plan: NutritionPlan) {
     if (plan.trackingMode === 'EACH_MEAL') {
       const url = 'nutrition/create-macro-plan/' + plan.id;
@@ -113,8 +112,7 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     }
   }
 
-  openDeleteModal(plan: any) {
-    console.log(plan);
+  openDeleteModal(plan: NutritionPlan) {
     this.selectedPlan = plan;
     this.showDeleteModal = true;
     this.openDropdownId = null;
@@ -127,21 +125,17 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   confirmDelete() {
     if (this.selectedPlan) {
-      this.nutritionService
-        .deleteNutritionPlan(this.selectedPlan.id!)
-        .subscribe({
-          next: () => {
-            this.closeDeleteModal();
-
-            // 🔥 Rafraîchir la liste après suppression
-            this.loadPlans();
-          },
-          error: (error) => {
-            console.error('Error deleting plan:', error);
-            this.nutritionBloc.setError('Failed to delete nutrition plan');
-            this.closeDeleteModal();
-          },
-        });
+      this.nutritionService.deleteNutritionPlan(this.selectedPlan.id!).subscribe({
+        next: () => {
+          this.closeDeleteModal();
+          this.loadPlans();
+        },
+        error: (error) => {
+          console.error('Error deleting plan:', error);
+          this.nutritionBloc.setError('Failed to delete nutrition plan');
+          this.closeDeleteModal();
+        },
+      });
     }
   }
 
@@ -149,10 +143,8 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.openDropdownId = this.openDropdownId === planId ? null : planId;
   }
-  programToAssign: NutritionPlan | null = null;
-  showAssignModal = false;
+
   assignToClients(program: NutritionPlan) {
-    console.log('Assign to clients:', program);
     this.programToAssign = program;
     this.showAssignModal = true;
     this.openDropdownId = null;
@@ -164,24 +156,49 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   onProgramAssigned(event: any) {
-    if (event.clients.length > 0) {
-      for (const client of event.clients) {
-        console.log(client);
-        this.programToAssign.client = client;
-        this.programToAssign.startDate = event.date;
-        this.nutritionService
-          .assignNutritionPlan(this.programToAssign)
-          .subscribe((res) => {
-            console.log(res);
-            this.loadPlans();
-          });
-      }
+    if (!this.programToAssign || !event?.clients?.length || !event?.date) {
+      this.showAssignModal = false;
+      return;
     }
-    console.log(event);
 
-    /** event = { date: string, clients: Client[] } */
+    for (const client of event.clients) {
+      const mealDays = (this.programToAssign.mealDays || []).map(
+        (day: any, index: number) => {
+          const current = new Date(event.date);
+          current.setDate(current.getDate() + index);
+
+          return {
+            ...day,
+            date: current.toISOString().split('T')[0],
+            dayOfWeek: current.toLocaleDateString('en-US', {
+              weekday: 'long',
+            }),
+          };
+        }
+      );
+
+      const item = {
+        ...this.programToAssign,
+        client,
+        startDate: event.date,
+        mealDays,
+        endDate: mealDays.length
+          ? mealDays[mealDays.length - 1].date
+          : event.date,
+      };
+
+      this.nutritionService.assignNutritionPlan(item).subscribe({
+        next: () => {
+          this.loadPlans();
+        },
+        error: (err) => {
+          console.error('Error assigning nutrition plan:', err);
+        },
+      });
+    }
 
     this.showAssignModal = false;
+    this.programToAssign = null;
   }
 
   duplicatePlan(id: string) {
@@ -233,7 +250,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   getTotalCalories(plan: NutritionPlan): string {
-    console.log(plan);
     const total =
       plan.mealDays?.reduce(
         (sum, day) => sum + (day.dayTargets.calories || 0),

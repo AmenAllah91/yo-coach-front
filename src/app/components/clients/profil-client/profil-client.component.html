@@ -453,12 +453,11 @@
 
     <!-- CALENDAR -->
     <div class="tab-pane" [class.active]="activeTab === 'calendar'">
-      <h2>Training Calendar</h2>
-      <p class="text-muted">
-        For le moment on affiche juste un bloc statique. Tu pourras brancher
-        FullCalendar ou autre plus tard.
-      </p>
-      <div class="calendar-placeholder">Calendar component goes here</div>
+      <app-calendar-clients
+        [embeddedClientId]="clientId"
+        [embeddedCoachId]="userid"
+        [hideClientFilter]="true"
+      ></app-calendar-clients>
     </div>
 
   </div>

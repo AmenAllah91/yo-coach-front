@@ -1029,3 +1029,99 @@
   /* date un peu moins marquée mais bleue aussi */
   color: #757272;
 }
+.np-day-total{
+  margin: 16px 0 18px;
+  border: 1px solid #e6e9ee;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16,24,40,.03);
+}
+
+.np-day-total__header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 12px 16px;
+  background:#f8fbfd;
+  border-bottom:1px solid #e6e9ee;
+}
+
+.np-day-total__title{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.06em;
+  color:#6b7280;
+}
+
+.np-day-total__count{
+  font-size:12px;
+  font-weight:600;
+  color:#9aa3b2;
+}
+
+.np-day-total__grid{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.np-day-total__item{
+  padding: 18px 10px 14px;
+  text-align:center;
+  border-right:1px solid #e6e9ee;
+}
+
+.np-day-total__item:last-child{
+  border-right:none;
+}
+
+.np-day-total__value{
+  font-size:28px;
+  line-height:1;
+  font-weight:800;
+  color:#111827;
+}
+
+.np-inline-unit{
+  font-size:14px;
+  font-weight:700;
+  color:#6b7280;
+  margin-left:2px;
+}
+
+.np-day-total__label{
+  margin-top:10px;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  color:#9aa3b2;
+}
+
+.np-day-total__unit{
+  margin-top:2px;
+  font-size:11px;
+  color:#9aa3b2;
+}
+
+@media (max-width: 767px){
+  .np-day-total__grid{
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .np-day-total__item{
+    border-bottom:1px solid #e6e9ee;
+  }
+
+  .np-day-total__item:nth-child(2){
+    border-right:none;
+  }
+
+  .np-day-total__item:nth-child(3),
+  .np-day-total__item:nth-child(4){
+    border-bottom:none;
+  }
+
+  .np-day-total__value{
+    font-size:22px;
+  }
+}

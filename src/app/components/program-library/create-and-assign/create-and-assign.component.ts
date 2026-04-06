@@ -164,18 +164,47 @@ export class CreateAndAssignComponent implements OnInit {
 
     const start = new Date(this.startDate);
 
-    this.facade.days.forEach((day, index) => {
-      const current = new Date(start);
-      current.setDate(start.getDate() + index);
-
-      day.date = current.toISOString().split('T')[0];
-      day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
-      day.title = `Day ${index + 1}`;
+    const sortedDays = [...this.facade.days].sort((a, b) => {
+      const aTime = a.date ? new Date(a.date).getTime() : Number.MAX_SAFE_INTEGER;
+      const bTime = b.date ? new Date(b.date).getTime() : Number.MAX_SAFE_INTEGER;
+      return aTime - bTime;
     });
 
-    const end = new Date(start);
-    end.setDate(start.getDate() + (this.facade.days.length - 1));
-    this.endDate = end.toISOString().split('T')[0];
+    let lastAssignedDate: Date | null = null;
+
+    sortedDays.forEach((day, index) => {
+      let current: Date;
+
+      if (day.date) {
+        current = new Date(day.date);
+      } else if (lastAssignedDate) {
+        current = new Date(lastAssignedDate);
+        current.setDate(current.getDate() + 1);
+        day.date = current.toISOString().split('T')[0];
+      } else {
+        current = new Date(start);
+        day.date = current.toISOString().split('T')[0];
+      }
+
+      day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
+      day.dayNumber = index + 1;
+      day.title = day.restDay ? 'Rest Day' : `Day ${index + 1}`;
+      day.name = day.title;
+
+      lastAssignedDate = new Date(current);
+    });
+
+    // keep facade.days ordered by actual date
+    this.facade.days = sortedDays;
+
+    const validDates = sortedDays
+      .map((d) => d.date)
+      .filter((d): d is string => !!d)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+    this.endDate = validDates.length
+      ? validDates[validDates.length - 1]
+      : this.startDate;
   }
 
   // ===== template functions (proxies) =====
