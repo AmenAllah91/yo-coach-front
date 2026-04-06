@@ -1892,3 +1892,32 @@
 .icon-button-video:hover {
   background: #3a9bc1;
 }
+.week-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.week-column-head-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.cell-actions-visible {
+  opacity: 1 !important;
+}
+
+.day-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-day .card.large .card-body {
+  margin-top: 8px;
+}
+
+.calendar-day .exercise-preview {
+  margin-bottom: 6px;
+}
