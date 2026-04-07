@@ -825,13 +825,13 @@
             </label>
 
             <label class="yc-check-item is-disabled">
-              <input type="checkbox" [checked]="leadFields.email" disabled/>
-              <span>Email (Requis)</span>
+              <input type="checkbox" [checked]="leadFields.email"/>
+              <span>Email</span>
             </label>
 
             <label class="yc-check-item">
-              <input type="checkbox" [(ngModel)]="leadFields.phone"/>
-              <span>Numéro de téléphone</span>
+              <input type="checkbox" [(ngModel)]="leadFields.phone" disabled/>
+              <span>Numéro de téléphone (Requis)</span>
             </label>
           </div>
 

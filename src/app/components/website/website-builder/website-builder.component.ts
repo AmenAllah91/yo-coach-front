@@ -320,8 +320,8 @@ export class WebsiteBuilderComponent implements OnInit{
   leadFields: LeadFieldsSection = {
     firstName: true,
     lastName: false,
-    email: true,
-    phone: false,
+    email: false,
+    phone: true,
     buttonLabel: 'Réserver un appel découverte'
   };
 

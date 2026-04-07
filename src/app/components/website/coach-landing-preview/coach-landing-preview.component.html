@@ -187,14 +187,14 @@
                 <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameElegance" />
               </div>
 
-              <div class="yc-contact-field">
+              <div class="yc-contact-field" *ngIf="leadFields?.email">
                 <label>Email</label>
-                <input type="email" [(ngModel)]="leadForm.email" name="emailElegance" required />
+                <input type="email" [(ngModel)]="leadForm.email" name="emailElegance" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
                 <label>Téléphone</label>
-                <input type="text" [(ngModel)]="leadForm.phone" name="phoneElegance" />
+                <input type="text" [(ngModel)]="leadForm.phone" name="phoneElegance" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary" [disabled]="submittingLead">
@@ -357,14 +357,14 @@
                 <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameDynamic" />
               </div>
 
-              <div class="yc-contact-field">
+              <div class="yc-contact-field" *ngIf="leadFields?.email">
                 <label>Email</label>
-                <input type="email" [(ngModel)]="leadForm.email" name="emailDynamic" required />
+                <input type="email" [(ngModel)]="leadForm.email" name="emailDynamic" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
                 <label>Téléphone</label>
-                <input type="text" [(ngModel)]="leadForm.phone" name="phoneDynamic" />
+                <input type="text" [(ngModel)]="leadForm.phone" name="phoneDynamic" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary" [disabled]="submittingLead">
@@ -526,14 +526,14 @@
                 <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameTrust" />
               </div>
 
-              <div class="yc-contact-field">
+              <div class="yc-contact-field" *ngIf="leadFields?.email">
                 <label>Email professionnel</label>
-                <input type="email" [(ngModel)]="leadForm.email" name="emailTrust" required />
+                <input type="email" [(ngModel)]="leadForm.email" name="emailTrust" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
                 <label>Téléphone</label>
-                <input type="text" [(ngModel)]="leadForm.phone" name="phoneTrust" />
+                <input type="text" [(ngModel)]="leadForm.phone" name="phoneTrust" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary yc-site__cta-secondary--trust" [disabled]="submittingLead">
@@ -681,12 +681,12 @@
                 <input type="text" placeholder="Nom" [(ngModel)]="leadForm.lastName" name="lastNameSerenity" />
               </div>
 
-              <div class="yc-contact-field">
-                <input type="email" placeholder="Email" [(ngModel)]="leadForm.email" name="emailSerenity" required />
+              <div class="yc-contact-field" *ngIf="leadFields?.email">
+                <input type="email" placeholder="Email" [(ngModel)]="leadForm.email" name="emailSerenity" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <input type="text" placeholder="Téléphone" [(ngModel)]="leadForm.phone" name="phoneSerenity" />
+                <input type="text" placeholder="Téléphone" [(ngModel)]="leadForm.phone" name="phoneSerenity" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary yc-site__cta-secondary--serenity" [disabled]="submittingLead">
