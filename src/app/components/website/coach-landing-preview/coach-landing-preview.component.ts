@@ -73,8 +73,8 @@ export class CoachLandingPreviewComponent {
       return;
     }
 
-    if (!this.leadForm.email?.trim()) {
-      this.leadError = 'L’email est requis.';
+    if (!this.leadForm.phone?.trim()) {
+      this.leadError = 'Le Téléphone est requis.';
       return;
     }
 
