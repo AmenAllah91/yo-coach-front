@@ -43,6 +43,7 @@ import {
 } from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
 import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
 import {SettingsComponent} from "./components/settings/settings.component";
+import {ProgressPicturesComponent} from "./components/progress-pictures-module/progress-pictures/progress-pictures.component";
 import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
@@ -200,6 +201,10 @@ export const APP_ROUTE: Route[] = [
         path: 'settings',
         component: SettingsComponent,
       },
+      {
+        path: 'progress-pictures',
+        component: ProgressPicturesComponent,
+      }
     ],
   },
   {

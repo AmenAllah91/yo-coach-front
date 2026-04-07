@@ -258,4 +258,16 @@ export const items: RouteInfo[] = [
       },
     ],
   },
+  {
+    path: 'progress-pictures',
+    title: 'Progress pictures',
+    iconType: 'feather',
+    icon: 'camera',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: [],
+    roles: ['ROLE_CLIENT'],
+  }
 ];

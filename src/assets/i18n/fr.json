@@ -2,5 +2,42 @@
   "lang": "Langue",
   "sidebar": {
     "manage-coach": "Gestion des entraineurs "
-  }
+  },
+  "FORM_NAME": "Nom du formulaire",
+  "LOADING": "Chargement...",
+  "CANCEL": "Annuler",
+  "SAVE": "Enregistrer",
+  "SAVING": "Enregistrement...",
+
+  "PROGRESS_PICTURES_TITLE": "Photos de progression",
+  "PROGRESS_PICTURES_SUBTITLE": "Suivez les changements visuels au fil du temps avec des photos datées et le poids.",
+  "PICTURES_ITEMS": "photos",
+  "ADD_PICTURE": "Ajouter une photo",
+  "COMPARE": "Comparer",
+
+  "PHOTO": "Photo",
+  "WEIGHT": "Poids",
+  "DATE": "Date",
+
+  "ADD_PROGRESS_PICTURE_TITLE": "Ajouter une photo de progression",
+  "ADD_PROGRESS_PICTURE_SUBTITLE": "Téléchargez une photo et enregistrez le poids actuel et la date.",
+
+  "EMPTY_PROGRESS_PICTURES_TITLE": "Aucune photo de progression",
+  "EMPTY_PROGRESS_PICTURES_SUBTITLE": "Vos photos de progression apparaîtront ici après l’ajout de la première photo.",
+
+  "COMPARISON_TITLE": "Comparaison des photos de progression",
+  "COMPARISON_SUBTITLE": "Comparez les photos côte à côte pour suivre la transformation.",
+  "SINGLE_PICTURE": "Photo unique",
+  "COMPARISON": "Comparaison",
+  "BEFORE": "Avant",
+  "AFTER": "Après",
+  "PICTURE": "Photo",
+  "SELECT_BEFORE_PICTURE": "Sélectionnez une photo avant.",
+  "SELECT_AFTER_PICTURE": "Sélectionnez une photo après.",
+  "SELECT_PICTURE": "Sélectionnez une photo.",
+
+  "LOAD_PROGRESS_PICTURES_ERROR": "Impossible de charger les photos de progression.",
+  "SAVE_PROGRESS_PICTURE_ERROR": "Impossible d’enregistrer la photo de progression.",
+  "UPLOAD_PROGRESS_PICTURE_ERROR": "Impossible de téléverser la photo.",
+  "CLIENT_ID_MISSING": "L'identifiant du client est manquant."
 }

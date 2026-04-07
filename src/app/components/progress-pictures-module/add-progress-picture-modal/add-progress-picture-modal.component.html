@@ -1,0 +1,63 @@
+<div class="pp-modal-backdrop" *ngIf="isOpen" (click)="onClose()">
+  <div class="pp-modal-container" (click)="$event.stopPropagation()">
+    <div class="pp-modal-header">
+      <div>
+        <h2 class="pp-modal-title">{{ 'ADD_PROGRESS_PICTURE_TITLE' | translate }}</h2>
+        <p class="pp-modal-subtitle">
+          {{ 'ADD_PROGRESS_PICTURE_SUBTITLE' | translate }}
+        </p>
+      </div>
+
+      <button class="pp-close-button" type="button" (click)="onClose()">
+        <svg class="pp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="pp-modal-content">
+      <div class="pp-form-grid">
+        <div class="pp-field pp-field--full">
+          <label class="pp-label">{{ 'PHOTO' | translate }}</label>
+          <input
+            class="pp-input-file"
+            type="file"
+            accept="image/*"
+            (change)="onFileSelected($event)"
+          />
+        </div>
+
+        <div class="pp-preview" *ngIf="filePreviewUrl">
+          <img [src]="filePreviewUrl" alt="Preview" />
+        </div>
+
+        <div class="pp-field">
+          <label class="pp-label">{{ 'WEIGHT' | translate }}</label>
+          <div class="pp-input-with-suffix">
+            <input class="pp-input" type="number" [(ngModel)]="weight" min="0" step="0.1" />
+            <span class="pp-suffix">kg</span>
+          </div>
+        </div>
+
+        <div class="pp-field">
+          <label class="pp-label">{{ 'DATE' | translate }}</label>
+          <input class="pp-input" type="date" [(ngModel)]="date" />
+        </div>
+      </div>
+    </div>
+
+    <div class="pp-modal-footer">
+      <button type="button" class="pp-btn pp-btn--secondary" (click)="onClose()">
+        {{ 'CANCEL' | translate }}
+      </button>
+      <button
+        type="button"
+        class="pp-btn pp-btn--primary"
+        [disabled]="!isFormValid() || saving"
+        (click)="submit()"
+      >
+        {{ saving ? ('SAVING' | translate) : ('SAVE' | translate) }}
+      </button>
+    </div>
+  </div>
+</div>

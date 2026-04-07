@@ -2,5 +2,43 @@
   "lang": "Language",
   "sidebar": {
     "manage-clients": "Clients management "
-  }
+  },
+  "FORM_NAME": "Form name",
+  "LOADING": "Loading...",
+  "CANCEL": "Cancel",
+  "SAVE": "Save",
+  "SAVING": "Saving...",
+
+  "PROGRESS_PICTURES_TITLE": "Progress Pictures",
+  "PROGRESS_PICTURES_SUBTITLE": "Track visual changes over time with dated photos and weight records.",
+  "PICTURES_ITEMS": "pictures",
+  "ADD_PICTURE": "Add Picture",
+  "COMPARE": "Compare",
+
+  "PHOTO": "Photo",
+  "WEIGHT": "Weight",
+  "DATE": "Date",
+
+  "ADD_PROGRESS_PICTURE_TITLE": "Add Progress Picture",
+  "ADD_PROGRESS_PICTURE_SUBTITLE": "Upload a photo and save the current weight and date.",
+
+  "EMPTY_PROGRESS_PICTURES_TITLE": "No progress pictures yet",
+  "EMPTY_PROGRESS_PICTURES_SUBTITLE": "Your progress pictures will appear here once you add one.",
+
+  "COMPARISON_TITLE": "Progress Picture Comparison",
+  "COMPARISON_SUBTITLE": "Compare photos side by side to track transformation.",
+  "SINGLE_PICTURE": "Single Picture",
+  "COMPARISON": "Comparison",
+  "BEFORE": "Before",
+  "AFTER": "After",
+  "PICTURE": "Picture",
+  "SELECT_BEFORE_PICTURE": "Select a before picture.",
+  "SELECT_AFTER_PICTURE": "Select an after picture.",
+  "SELECT_PICTURE": "Select a picture.",
+
+  "LOAD_PROGRESS_PICTURES_ERROR": "Failed to load progress pictures.",
+  "SAVE_PROGRESS_PICTURE_ERROR": "Failed to save progress picture.",
+  "UPLOAD_PROGRESS_PICTURE_ERROR": "Failed to upload picture.",
+  "CLIENT_ID_MISSING": "Client ID is missing."
+
 }

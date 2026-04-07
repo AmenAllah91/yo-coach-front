@@ -1,0 +1,206 @@
+<div class="page">
+  <div class="wrap">
+    <div class="header">
+      <h1 class="h1">{{ 'PROGRESS_PICTURES_TITLE' | translate }}</h1>
+      <p class="sub">{{ 'PROGRESS_PICTURES_SUBTITLE' | translate }}</p>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-badge" *ngIf="picturesCount > 0">
+            {{ picturesCount }} {{ 'PICTURES_ITEMS' | translate }}
+          </span>
+        </div>
+
+        <div class="toolbar-actions">
+          <button
+            type="button"
+            class="action-btn action-btn--secondary"
+            (click)="openComparison()"
+            [disabled]="picturesCount === 0"
+          >
+            {{ 'COMPARE' | translate }}
+          </button>
+
+          <button
+            *ngIf="allowAddPicture"
+            type="button"
+            class="action-btn action-btn--primary"
+            (click)="openAddModal()"
+          >
+            {{ 'ADD_PICTURE' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div class="content">
+        <div *ngIf="loading" class="empty">
+          <div class="empty-title">{{ 'LOADING' | translate }}</div>
+        </div>
+
+        <div *ngIf="error && !loading" class="empty">
+          <div class="empty-title">{{ error | translate }}</div>
+        </div>
+
+        <div class="grid" *ngIf="!loading && sortedPictures.length > 0">
+          <div class="picture-card" *ngFor="let picture of sortedPictures; trackBy: trackByPictureId">
+            <div class="picture-card__image">
+              <img [src]="picture.imageUrl" [alt]="'Progress picture ' + (picture.date | date:'mediumDate')" />
+            </div>
+
+            <div class="picture-card__body">
+              <div class="picture-card__row">
+                <h3 class="picture-card__title">{{ picture.date | date:'dd MMM yyyy' }}</h3>
+              </div>
+
+              <div class="picture-card__meta">
+                <span class="meta-pill">
+                  {{ 'WEIGHT' | translate }}: {{ picture.weight }} kg
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty" *ngIf="!loading && sortedPictures.length === 0">
+          <div class="empty-icon empty-icon--gray">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+              <circle cx="9" cy="9" r="2" stroke-width="2"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15l-5-5L5 21"/>
+            </svg>
+          </div>
+          <div class="empty-title">{{ 'EMPTY_PROGRESS_PICTURES_TITLE' | translate }}</div>
+          <div class="empty-sub">{{ 'EMPTY_PROGRESS_PICTURES_SUBTITLE' | translate }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-add-progress-picture-modal
+  [isOpen]="showAddModal"
+  [saving]="saving"
+  (close)="closeAddModal()"
+  (save)="onSavePicture($event)"
+></app-add-progress-picture-modal>
+
+<div class="modal-backdrop" *ngIf="showPicturesComparison" (click)="closeComparison()">
+  <div class="comparison-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">{{ 'COMPARISON_TITLE' | translate }}</h2>
+        <p class="modal-subtitle">{{ 'COMPARISON_SUBTITLE' | translate }}</p>
+      </div>
+      <button class="close-button" type="button" (click)="closeComparison()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="comparison-toolbar">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.is-active]="comparisonMode === 'single'"
+        (click)="changeComparisonMode('single')"
+      >
+        {{ 'SINGLE_PICTURE' | translate }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.is-active]="comparisonMode === 'comparison'"
+        (click)="changeComparisonMode('comparison')"
+      >
+        {{ 'COMPARISON' | translate }}
+      </button>
+    </div>
+
+    <div class="comparison-content">
+      <aside class="comparison-sidebar">
+        <div
+          class="thumb-card"
+          *ngFor="let picture of sortedPictures; trackBy: trackByPictureId"
+          [class.thumb-card--before]="isSelectedAsBefore(picture)"
+          [class.thumb-card--after]="isSelectedAsAfter(picture)"
+          (click)="selectComparisonPicture(picture)"
+        >
+          <div class="thumb-card__image">
+            <img [src]="picture.imageUrl" alt="thumbnail" />
+          </div>
+          <div class="thumb-card__meta">
+            <div class="thumb-date">{{ picture.date | date:'dd MMM yyyy' }}</div>
+            <div class="thumb-weight">{{ picture.weight }} kg</div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="comparison-panels" *ngIf="comparisonMode === 'comparison'">
+        <div class="comparison-panel">
+          <div class="comparison-label comparison-label--before">
+            {{ 'BEFORE' | translate }}
+          </div>
+
+          <ng-container *ngIf="selectedBeforePicture; else beforePlaceholder">
+            <img [src]="selectedBeforePicture.imageUrl" alt="Before picture" />
+            <div class="comparison-footer">
+              <span>{{ selectedBeforePicture.date | date:'dd MMM yyyy' }}</span>
+              <span>{{ selectedBeforePicture.weight }} kg</span>
+            </div>
+          </ng-container>
+
+          <ng-template #beforePlaceholder>
+            <p class="comparison-placeholder">
+              {{ 'SELECT_BEFORE_PICTURE' | translate }}
+            </p>
+          </ng-template>
+        </div>
+
+        <div class="comparison-panel">
+          <div class="comparison-label comparison-label--after">
+            {{ 'AFTER' | translate }}
+          </div>
+
+          <ng-container *ngIf="selectedAfterPicture; else afterPlaceholder">
+            <img [src]="selectedAfterPicture.imageUrl" alt="After picture" />
+            <div class="comparison-footer">
+              <span>{{ selectedAfterPicture.date | date:'dd MMM yyyy' }}</span>
+              <span>{{ selectedAfterPicture.weight }} kg</span>
+            </div>
+          </ng-container>
+
+          <ng-template #afterPlaceholder>
+            <p class="comparison-placeholder">
+              {{ 'SELECT_AFTER_PICTURE' | translate }}
+            </p>
+          </ng-template>
+        </div>
+      </section>
+
+      <section class="comparison-panels comparison-panels--single" *ngIf="comparisonMode === 'single'">
+        <div class="comparison-panel">
+          <div class="comparison-label comparison-label--after">
+            {{ 'PICTURE' | translate }}
+          </div>
+
+          <ng-container *ngIf="selectedSinglePicture; else singlePlaceholder">
+            <img [src]="selectedSinglePicture.imageUrl" alt="Selected picture" />
+            <div class="comparison-footer">
+              <span>{{ selectedSinglePicture.date | date:'dd MMM yyyy' }}</span>
+              <span>{{ selectedSinglePicture.weight }} kg</span>
+            </div>
+          </ng-container>
+
+          <ng-template #singlePlaceholder>
+            <p class="comparison-placeholder">
+              {{ 'SELECT_PICTURE' | translate }}
+            </p>
+          </ng-template>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

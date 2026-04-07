@@ -1,5 +1,4 @@
 <section class="main-content">
-  <!-- Header profil -->
   <div class="profile-header">
     <img
       src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
@@ -29,7 +28,6 @@
     </div>
   </div>
 
-  <!-- Onglets horizontaux -->
   <nav class="profile-tabs">
     <button
       class="tab-link"
@@ -75,16 +73,12 @@
     </button>
   </nav>
 
-  <!-- Contenu onglets -->
   <div class="tab-content">
-
-    <!-- DASHBOARD -->
     <div
       class="tab-pane dashboard-pane"
       [class.active]="activeTab === 'dashboard'"
     >
       <div class="dashboard-main-grid">
-        <!-- Today's Workout -->
         <div class="card dashboard-card today-card">
           <div class="dashboard-card-header">
             <div class="header-left">
@@ -119,7 +113,6 @@
           </div>
         </div>
 
-        <!-- Active Nutrition Plan -->
         <div class="card dashboard-card nutrition-card">
           <div class="dashboard-card-header">
             <div class="header-left">
@@ -168,7 +161,6 @@
       </div>
     </div>
 
-    <!-- WORKOUTS -->
     <div class="tab-pane" [class.active]="activeTab === 'workouts'">
       <app-workouts-client-tab
         [clientId]="clientId"
@@ -177,7 +169,6 @@
       />
     </div>
 
-    <!-- NUTRITION -->
     <div class="tab-pane" [class.active]="activeTab === 'nutrition'">
       <app-nutrition-client-tab
         [clientId]="clientId"
@@ -186,7 +177,6 @@
       />
     </div>
 
-    <!-- CHECK-INS -->
     <section
       class="checkins-tab tab-pane"
       [class.active]="activeTab === 'checkins'"
@@ -226,7 +216,6 @@
         </nav>
       </div>
 
-      <!-- SUBMISSIONS -->
       <div *ngIf="activeSubTab === 'submissions'">
         <div class="checkins-toolbar">
           <div class="search-input-wrapper full-width">
@@ -267,7 +256,6 @@
         </div>
       </div>
 
-      <!-- ASSIGNED -->
       <div *ngIf="activeSubTab === 'assigned'">
         <div class="checkins-toolbar">
           <div class="search-input-wrapper">
@@ -322,9 +310,7 @@
         </div>
       </div>
 
-      <!-- SCHEDULED -->
       <div *ngIf="activeSubTab === 'scheduled'">
-
         <div class="scheduled-empty" *ngIf="scheduledItems.length === 0">
           <div class="scheduled-empty-icon">
             <i class="far fa-clock"></i>
@@ -336,7 +322,6 @@
         </div>
 
         <ng-container *ngIf="scheduledItems.length > 0">
-
           <div class="scheduled-summary">
             <span class="summary-dot summary-dot--active"></span>
             <span class="summary-label">{{ activeSchedulesCount }} items</span>
@@ -356,16 +341,16 @@
                     <span class="schedule-card-name">{{ s.formTitle }}</span>
 
                     <span class="freq-badge" *ngIf="s.schedule?.frequency">
-                <i class="fas fa-sync-alt"></i>
+                      <i class="fas fa-sync-alt"></i>
                       {{ s.schedule.frequency | titlecase }}
-              </span>
+                    </span>
 
                     <span class="kind-badge" *ngIf="s.kind === 'PLANNED'">Planned</span>
                     <span class="kind-badge" *ngIf="s.kind === 'ASSIGNED'">Assigned</span>
 
                     <span class="schedule-qcount" *ngIf="s.questions?.length">
-                {{ s.questions.length }} questions
-              </span>
+                      {{ s.questions.length }} questions
+                    </span>
                   </div>
                 </div>
               </div>
@@ -373,7 +358,8 @@
               <div class="schedule-card-actions" (click)="$event.stopPropagation()">
                 <button
                   class="schedule-action-btn schedule-action-btn--delete"
-                  (click)="openDeleteScheduled(s, $event)"                  title="Delete"
+                  (click)="openDeleteScheduled(s, $event)"
+                  title="Delete"
                 >
                   <i class="fas fa-trash-alt"></i>
                 </button>
@@ -381,7 +367,6 @@
             </div>
 
             <div class="schedule-card-details">
-
               <div class="schedule-detail-item" *ngIf="s.schedule?.daysOfWeek?.length">
                 <span class="schedule-detail-label">Days</span>
                 <div class="schedule-days">
@@ -392,66 +377,38 @@
               <div class="schedule-detail-item" *ngIf="s.schedule?.time">
                 <span class="schedule-detail-label">Send Time</span>
                 <span class="schedule-detail-value">
-            <i class="far fa-clock"></i> {{ s.schedule.time }}
-          </span>
+                  <i class="far fa-clock"></i> {{ s.schedule.time }}
+                </span>
               </div>
 
               <div class="schedule-detail-item">
                 <span class="schedule-detail-label">Due</span>
                 <span class="schedule-detail-value">
-            <i class="far fa-calendar-alt"></i>
+                  <i class="far fa-calendar-alt"></i>
                   {{ s.dueAt | date:'dd/MM/yyyy' }}
-          </span>
+                </span>
               </div>
 
               <div class="schedule-detail-item" *ngIf="s.status">
                 <span class="schedule-detail-label">Status</span>
                 <span class="schedule-detail-value">{{ s.status | titlecase }}</span>
               </div>
-
             </div>
           </div>
-
         </ng-container>
       </div>
     </section>
 
-    <!-- PROGRESS PICTURES -->
     <div
       class="tab-pane progress-pictures-pane"
       [class.active]="activeTab === 'pictures'"
     >
-      <div class="progress-header">
-        <h2 class="section-title">Progress Pictures</h2>
-        <div class="progress-actions">
-          <button
-            type="button"
-            class="btn-progress-secondary"
-            (click)="onOpenPicturesComparison()"
-          >
-            <i class="far fa-images"></i>
-            <span>Comparison</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="progress-grid">
-        <div class="progress-card" *ngFor="let picture of progressPictures">
-          <div class="progress-card-image">
-            <img
-              [src]="picture.imageUrl"
-              [alt]="'Progress picture ' + (picture.date | date : 'MMM dd, y')"
-            />
-          </div>
-          <div class="progress-card-body">
-            <div class="progress-date">{{ picture.date | date : "MMM dd, y" }}</div>
-            <div class="progress-weight">{{ picture.weight }} {{ picture.unit }}</div>
-          </div>
-        </div>
-      </div>
+      <app-progress-pictures
+        [clientId]="clientId"
+        [allowAddPicture]="false"
+      ></app-progress-pictures>
     </div>
 
-    <!-- CALENDAR -->
     <div class="tab-pane" [class.active]="activeTab === 'calendar'">
       <app-calendar-clients
         [embeddedClientId]="clientId"
@@ -459,7 +416,6 @@
         [hideClientFilter]="true"
       ></app-calendar-clients>
     </div>
-
   </div>
 </section>
 
@@ -469,7 +425,6 @@
   (click)="closeModal()"
 >
   <div class="mc-modal" (click)="$event.stopPropagation()">
-    <!-- HEADER -->
     <div class="mc-header">
       <div class="mc-header-left">
         <h2 class="mc-title">
@@ -512,14 +467,13 @@
       </button>
     </div>
 
-    <!-- BODY (scroll like 1111) -->
     <div class="mc-body">
       <div *ngIf="modalLoading" class="mc-loading">Chargement...</div>
 
       <div *ngIf="modalError && !modalLoading" class="mc-alert">
         {{ modalError }}
       </div>
-      <!-- Preview banner (optional, keep if you want same as manage) -->
+
       <div *ngIf="modalMode === 'preview'" class="mc-banner">
         <div class="mc-banner-ico">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -536,7 +490,6 @@
         </div>
       </div>
 
-      <!-- QUESTIONS (1111 style: no cards) -->
       <div *ngIf="!modalLoading && currentForm" class="mc-questions">
         <div *ngFor="let q of currentForm.questions; let i = index" class="mc-q">
           <div class="mc-q-label">
@@ -544,21 +497,16 @@
             <span *ngIf="q.required" class="mc-required">*</span>
           </div>
 
-          <!-- VIEW MODE -->
           <ng-container *ngIf="modalMode === 'view'; else previewTpl">
             <ng-container *ngIf="getSubmittedAnswer(q.id) as ans; else emptyAns">
-
-              <!-- TEXT -->
               <div *ngIf="q.type === 'TEXT'" class="mc-answer mc-answer--text">
                 {{ ans.text || '—' }}
               </div>
 
-              <!-- MULTIPLE_CHOICE (blue box like 1111) -->
               <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-answer mc-answer--selected">
                 {{ getOptionLabel(q, ans.selectedOptionId || '') }}
               </div>
 
-              <!-- YES_NO (container + green pill like 1111) -->
               <div *ngIf="q.type === 'YES_NO'" class="mc-yesno-wrap">
                 <span
                   class="mc-yesno-pill"
@@ -569,7 +517,6 @@
                 </span>
               </div>
 
-              <!-- STAR_RATING -->
               <div *ngIf="q.type === 'STAR_RATING'" class="mc-stars">
                 <span
                   *ngFor="let star of getStarsArray(q.maxStars || 5)"
@@ -578,7 +525,6 @@
                 >★</span>
               </div>
 
-              <!-- DATE -->
               <div *ngIf="q.type === 'DATE'" class="mc-answer mc-answer--text">
                 {{ ans.date || '—' }}
               </div>
@@ -589,7 +535,6 @@
             </ng-template>
           </ng-container>
 
-          <!-- PREVIEW MODE -->
           <ng-template #previewTpl>
             <div *ngIf="q.type === 'TEXT'" class="mc-preview">Text answer expected</div>
 
@@ -615,7 +560,6 @@
       </div>
     </div>
 
-    <!-- FOOTER (same alignment as 1111) -->
     <div class="mc-footer" *ngIf="modalMode === 'preview'">
       <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Close Preview</button>
     </div>
@@ -628,34 +572,26 @@
         </svg>
         Mark as Reviewed
       </button>
+    </div>
   </div>
 </div>
-</div>
 
-
-<!-- ======== SCHEDULE DETAIL MODAL ======== -->
 <div class="pc-modal-backdrop" *ngIf="selectedSchedule" (click)="closeScheduleDetail()">
   <div class="pc-modal pc-modal--schedule" (click)="$event.stopPropagation()">
-
-    <!-- Header -->
     <div class="modal-header">
       <div>
         <div class="modal-title-row">
           <h2 class="modal-title">{{ selectedSchedule.formTitle }}</h2>
           <span class="freq-badge" *ngIf="selectedSchedule.schedule?.frequency">
-  <i class="fas fa-sync-alt"></i>
+            <i class="fas fa-sync-alt"></i>
             {{ selectedSchedule.schedule.frequency | titlecase }}
-</span>
+          </span>
         </div>
-
       </div>
       <button class="close-button" (click)="closeScheduleDetail()">&times;</button>
     </div>
 
-    <!-- Body -->
     <div class="modal-content">
-
-      <!-- Schedule Configuration -->
       <div class="schedule-config-section">
         <h4 class="section-sub-title">
           <i class="far fa-clock"></i> Schedule Configuration
@@ -676,15 +612,15 @@
           <div class="config-item" *ngIf="selectedSchedule.schedule?.time">
             <span class="config-label">Send Time</span>
             <span class="config-value">
-    <i class="far fa-clock"></i> {{ selectedSchedule.schedule.time }}
-  </span>
+              <i class="far fa-clock"></i> {{ selectedSchedule.schedule.time }}
+            </span>
           </div>
 
           <div class="config-item">
             <span class="config-label">Due</span>
             <span class="config-value">
-    <i class="far fa-calendar-alt"></i> {{ selectedSchedule.dueAt | date:'dd/MM/yyyy' }}
-  </span>
+              <i class="far fa-calendar-alt"></i> {{ selectedSchedule.dueAt | date:'dd/MM/yyyy' }}
+            </span>
           </div>
 
           <div class="config-item">
@@ -694,7 +630,6 @@
         </div>
       </div>
 
-      <!-- Form Questions -->
       <div class="schedule-questions-section" *ngIf="selectedSchedule?.questions?.length">
         <h4 class="section-sub-title">
           <i class="fas fa-edit"></i>
@@ -708,7 +643,6 @@
               <span *ngIf="q.required" class="mc-required">*</span>
             </div>
 
-            <!-- PREVIEW ONLY (like Assigned modal preview) -->
             <div *ngIf="q.type === 'TEXT'" class="mc-preview">Text answer expected</div>
 
             <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-preview-list">
@@ -724,20 +658,18 @@
             </div>
 
             <div *ngIf="q.type === 'STAR_RATING'" class="mc-preview-stars">
-        <span
-          *ngFor="let star of getStarsArray(q.maxStars || 5)"
-          class="mc-preview-star"
-        >★</span>
+              <span
+                *ngFor="let star of getStarsArray(q.maxStars || 5)"
+                class="mc-preview-star"
+              >★</span>
             </div>
 
             <div *ngIf="q.type === 'DATE'" class="mc-preview">Date selection expected</div>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- Footer -->
     <div class="modal-footer modal-footer--space-between">
       <button class="btn-secondary" (click)="closeScheduleDetail()">Close</button>
     </div>
@@ -748,121 +680,6 @@
 
     <div *ngIf="reviewError" class="mc-alert mc-alert--footer">
       {{ reviewError }}
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PROGRESS PICTURES (comparaison avancée) -->
-<div class="checkin-modal-backdrop" *ngIf="showPicturesComparison">
-  <div class="checkin-modal submission-modal progress-pictures-modal">
-    <!-- HEADER -->
-    <div class="checkin-modal-header">
-      <h2>Progress Pictures</h2>
-      <button class="close-btn" (click)="onClosePicturesComparison()">&times;</button>
-    </div>
-
-    <!-- BODY -->
-    <div class="checkin-modal-body progress-modal-body">
-      <!-- TOGGLE -->
-      <div class="comparison-mode-wrapper">
-        <div class="comparison-mode-toggle">
-          <button
-            type="button"
-            class="mode-pill"
-            [class.mode-pill--active]="comparisonMode === 'single'"
-            (click)="onChangeComparisonMode('single')"
-          >
-            Single Picture
-          </button>
-          <button
-            type="button"
-            class="mode-pill"
-            [class.mode-pill--active]="comparisonMode === 'comparison'"
-            (click)="onChangeComparisonMode('comparison')"
-          >
-            Comparison
-          </button>
-        </div>
-      </div>
-
-      <!-- LAYOUT -->
-      <div class="comparison-layout">
-        <!-- LISTE GAUCHE -->
-        <aside class="comparison-list">
-          <div class="list-header">
-            <span class="list-label">After</span>
-          </div>
-          <div class="thumbs-scroll">
-            <div
-              class="thumbnail-card"
-              *ngFor="let picture of progressPictures"
-              [ngClass]="{
-                'thumbnail-card--before': isSelectedAsBefore(picture),
-                'thumbnail-card--after': isSelectedAsAfter(picture)
-              }"
-              (click)="onSelectComparisonPicture(picture)"
-            >
-              <div class="thumbnail-image-wrapper">
-                <img [src]="picture.imageUrl" alt="Progress thumbnail" />
-              </div>
-              <div class="thumbnail-meta">
-                <div class="thumb-date">{{ picture.date | date : "dd MMM, y" }}</div>
-                <div class="thumb-weight">{{ picture.weight }} {{ picture.unit }}</div>
-              </div>
-              <div *ngIf="isSelectedAsBefore(picture)" class="thumbnail-badge thumbnail-badge--before">Before</div>
-              <div *ngIf="isSelectedAsAfter(picture)" class="thumbnail-badge thumbnail-badge--after">After</div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- PANELS : COMPARISON -->
-        <section class="comparison-panels" *ngIf="comparisonMode === 'comparison'">
-          <div class="comparison-panel">
-            <div class="comparison-panel-label comparison-panel-label--before">Before</div>
-            <ng-container *ngIf="selectedBeforePicture; else beforePlaceholder">
-              <img [src]="selectedBeforePicture.imageUrl" alt="Before picture" />
-              <div class="panel-footer">
-                <span>{{ selectedBeforePicture.date | date : "dd MMM, y" }}</span>
-                <span>{{ selectedBeforePicture.weight }} {{ selectedBeforePicture.unit }}</span>
-              </div>
-            </ng-container>
-            <ng-template #beforePlaceholder>
-              <p class="panel-placeholder">Select a <strong>Before</strong> picture on the left.</p>
-            </ng-template>
-          </div>
-
-          <div class="comparison-panel">
-            <div class="comparison-panel-label comparison-panel-label--after">After</div>
-            <ng-container *ngIf="selectedAfterPicture; else afterPlaceholder">
-              <img [src]="selectedAfterPicture.imageUrl" alt="After picture" />
-              <div class="panel-footer">
-                <span>{{ selectedAfterPicture.date | date : "dd MMM, y" }}</span>
-                <span>{{ selectedAfterPicture.weight }} {{ selectedAfterPicture.unit }}</span>
-              </div>
-            </ng-container>
-            <ng-template #afterPlaceholder>
-              <p class="panel-placeholder">Select an <strong>After</strong> picture on the left.</p>
-            </ng-template>
-          </div>
-        </section>
-
-        <!-- PANEL : SINGLE PICTURE -->
-        <section class="comparison-panels comparison-panels--single" *ngIf="comparisonMode === 'single'">
-          <div class="comparison-panel comparison-panel--single">
-            <div class="comparison-panel-label comparison-panel-label--after">Picture</div>
-            <ng-container *ngIf="selectedSinglePicture; else singlePlaceholder">
-              <img [src]="selectedSinglePicture.imageUrl" alt="Selected picture" />
-              <div class="panel-footer">
-                <span>{{ selectedSinglePicture.date | date : "dd MMM, y" }}</span>
-                <span>{{ selectedSinglePicture.weight }} {{ selectedSinglePicture.unit }}</span>
-              </div>
-            </ng-container>
-            <ng-template #singlePlaceholder>
-              <p class="panel-placeholder">Select a picture on the left.</p>
-            </ng-template>
-          </div>
-        </section>
-      </div>
     </div>
   </div>
 </div>
@@ -881,13 +698,10 @@
   (click)="$event.stopPropagation()"
 >
   <div class="pc-confirm-content">
-    <!-- Close -->
     <button class="pc-confirm-close" type="button" (click)="closeScheduledDelete()">✕</button>
 
-    <!-- Title -->
     <div class="pc-confirm-title">Are you sure?</div>
 
-    <!-- Body -->
     <div class="pc-confirm-body">
       <div class="pc-confirm-warn-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -903,7 +717,6 @@
       </p>
     </div>
 
-    <!-- Actions -->
     <div class="pc-confirm-actions">
       <button class="pc-confirm-btn pc-confirm-btn--no" type="button"
               (click)="closeScheduledDelete()" [disabled]="deletingScheduled">
@@ -917,6 +730,7 @@
     </div>
   </div>
 </div>
+
 <app-assign-select-modal
   [isOpen]="showAssignSelectModal"
   [kind]="assignType"
