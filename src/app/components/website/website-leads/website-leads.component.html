@@ -62,6 +62,7 @@
           <div class="dropdown-menu" *ngIf="openDropdownId === lead.id">
             <button
               class="dropdown-item"
+              [disabled]="!lead.email"
               type="button"
               (click)="copyEmail(lead.email); $event.stopPropagation()"
             >
