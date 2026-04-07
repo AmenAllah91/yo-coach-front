@@ -2,7 +2,25 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {environment} from "@env/environment";
+export interface CoachWebsiteLeadPayload {
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+}
 
+export interface CoachWebsiteLead {
+  id: string;
+  websiteId: string;
+  coachId: string;
+  slug: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  sourceTheme?: string;
+  createdAt: string;
+}
 export interface CoachWebsitePayload {
   slug: string;
   themeKey: 'elegance' | 'dynamic' | 'trust' | 'serenity';
@@ -90,6 +108,7 @@ export interface CoachWebsitePayload {
 })
 export class WebsiteService {
   private resourceUrl = environment.baseApiUrl + '/api/websites';
+  private leadsUrl = environment.baseApiUrl + '/api/website-leads';
 
   constructor(private http: HttpClient) {}
 
@@ -103,5 +122,13 @@ export class WebsiteService {
 
   getPublicWebsite(slug: string): Observable<any> {
     return this.http.get(`${this.resourceUrl}/public/${slug}`);
+  }
+
+  submitPublicLead(slug: string, payload: CoachWebsiteLeadPayload): Observable<CoachWebsiteLead> {
+    return this.http.post<CoachWebsiteLead>(`${this.leadsUrl}/public/${slug}`, payload);
+  }
+
+  getMyLeads(): Observable<CoachWebsiteLead[]> {
+    return this.http.get<CoachWebsiteLead[]>(`${this.leadsUrl}/me`);
   }
 }

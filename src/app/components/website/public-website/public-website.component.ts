@@ -15,6 +15,7 @@ import { WebsiteService } from '../../../service/website.service';
     <app-coach-landing-preview
       *ngIf="!loading && !error && website"
       [publicMode]="true"
+      [publicSlug]="website.slug"
       [themeKey]="website.themeKey"
       [themeName]="website.themeName"
       [profile]="website.profile"
@@ -23,6 +24,7 @@ import { WebsiteService } from '../../../service/website.service';
       [cta]="website.cta"
       [leadFields]="website.leadFields"
       [colors]="website.colors"
+      [descriptionBlocks]="website.descriptionBlocks || []"
       [services]="website.services || []"
       [results]="website.results || []"
       [certificates]="website.certificates || []"
