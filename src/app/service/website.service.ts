@@ -2,6 +2,30 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {environment} from "@env/environment";
+
+export interface CoachWebsiteLead {
+  id: string;
+  websiteId: string;
+  coachId: string;
+  slug: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  sourceTheme?: string;
+  createdAt: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}
+
 export interface CoachWebsiteLeadPayload {
   firstName?: string;
   lastName?: string;
@@ -128,7 +152,9 @@ export class WebsiteService {
     return this.http.post<CoachWebsiteLead>(`${this.leadsUrl}/public/${slug}`, payload);
   }
 
-  getMyLeads(): Observable<CoachWebsiteLead[]> {
-    return this.http.get<CoachWebsiteLead[]>(`${this.leadsUrl}/me`);
+  getMyLeads(search = '', page = 0, size = 10): Observable<PageResponse<CoachWebsiteLead>> {
+    return this.http.get<PageResponse<CoachWebsiteLead>>(
+      `${this.leadsUrl}/me?search=${encodeURIComponent(search)}&page=${page}&size=${size}`
+    );
   }
 }

@@ -43,6 +43,7 @@ import {
 } from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
 import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
 import {SettingsComponent} from "./components/settings/settings.component";
+import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -171,6 +172,10 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'websites/create',
         component: WebsiteBuilderComponent,
+      },
+      {
+        path: 'websites/leads',
+        component: WebsiteLeadsComponent
       },
       {
         path: 'coach-dashboard',
