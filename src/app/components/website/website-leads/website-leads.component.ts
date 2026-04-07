@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, interval, takeUntil } from 'rxjs';
 import { WebsiteService, CoachWebsiteLead, PageResponse } from '../../../service/website.service';
 
 @Component({
@@ -40,6 +40,11 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
       });
 
     document.addEventListener('click', this.handleOutsideClick);
+    interval(60000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.leads = [...this.leads];
+      });
   }
 
   ngOnDestroy(): void {
@@ -116,5 +121,57 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
 
   get pages(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  getElapsedTime(date: string | undefined): string {
+    if (!date) return '—';
+
+    const createdAt = new Date(date).getTime();
+    const now = Date.now();
+
+    const diffMs = now - createdAt;
+
+    if (diffMs < 0) {
+      return 'À l’instant';
+    }
+
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+    const month = 30 * day;
+    const year = 365 * day;
+
+    if (diffMs < minute) {
+      return 'À l’instant';
+    }
+
+    if (diffMs < hour) {
+      const minutes = Math.floor(diffMs / minute);
+      return `Il y a ${minutes} min`;
+    }
+
+    if (diffMs < day) {
+      const hours = Math.floor(diffMs / hour);
+      return `Il y a ${hours} h`;
+    }
+
+    if (diffMs < week) {
+      const days = Math.floor(diffMs / day);
+      return `Il y a ${days} j`;
+    }
+
+    if (diffMs < month) {
+      const weeks = Math.floor(diffMs / week);
+      return `Il y a ${weeks} sem`;
+    }
+
+    if (diffMs < year) {
+      const months = Math.floor(diffMs / month);
+      return `Il y a ${months} mois`;
+    }
+
+    const years = Math.floor(diffMs / year);
+    return `Il y a ${years} an${years > 1 ? 's' : ''}`;
   }
 }

@@ -32,7 +32,7 @@
     <div class="table-row" *ngFor="let lead of leads">
       <div class="col-title">
         <div class="plan-name">{{ getLeadFullName(lead) }}</div>
-        <div class="plan-type">{{ lead.slug }}</div>
+        <div class="plan-type">{{ getElapsedTime(lead.createdAt) }}</div>
       </div>
 
       <div class="col-updated">
