@@ -141,6 +141,32 @@ export const items: RouteInfo[] = [
       },
     ],
   },
+
+  {
+    path: '',
+    title: 'Nutrition',
+    iconType: 'feather',
+    icon: 'heart',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    roles: ['ROLE_ADMIN'],
+    submenu: [
+      {
+        path: '/nutrition/custom-foods',
+        title: 'Custom Foods',
+        iconType: 'feather',
+        icon: 'plus-circle',
+        class: '',
+        groupTitle: false,
+        badge: '',
+        badgeClass: '',
+        submenu: [],
+      },
+    ],
+  },
+
   {
     path: '/chat',
     title: 'Chat',
