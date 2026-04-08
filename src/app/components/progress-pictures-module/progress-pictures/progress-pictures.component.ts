@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { finalize } from 'rxjs/operators';
 import { TranslateModule } from '@ngx-translate/core';
+import { finalize, catchError, map, switchMap } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
 import { DocumentService } from 'app/service/document.service';
 import {
   ProgressPicture,
@@ -11,7 +12,7 @@ import {
 import {
   AddProgressPictureModalComponent,
   AddProgressPicturePayload
-} from "../add-progress-picture-modal/add-progress-picture-modal.component";
+} from '../add-progress-picture-modal/add-progress-picture-modal.component';
 
 @Component({
   selector: 'app-progress-pictures',
@@ -56,7 +57,6 @@ export class ProgressPicturesComponent implements OnInit {
       return;
     }
 
-    console.log(this.clientId);
     this.loadPictures();
   }
 
@@ -66,22 +66,61 @@ export class ProgressPicturesComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
+    const folderPath = `${this.progressPicturesDirectory}/${this.clientId}`;
+
     this.progressPicturesService
       .getProgressPicturesByClient(this.clientId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (pictures) => {
-          this.pictures = (pictures ?? []).sort(
+      .pipe(
+        switchMap((pictures) => {
+          const backendPictures = (pictures ?? []).sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
+
+          if (!backendPictures.length) {
+            return of([]);
+          }
+
+          return this.documentService.getFilesInFolder(folderPath).pipe(
+            map((freshUrls: string[]) => {
+              if (!freshUrls?.length) {
+                return backendPictures;
+              }
+
+              return backendPictures.map((picture) => {
+                const currentFileName = this.extractFileName(picture.imageUrl);
+
+                const freshUrl = freshUrls.find((url) => {
+                  const freshFileName = this.extractFileName(url);
+                  return !!currentFileName && currentFileName === freshFileName;
+                });
+
+                return {
+                  ...picture,
+                  imageUrl: freshUrl || picture.imageUrl
+                };
+              });
+            }),
+            catchError((err) => {
+              console.error('getFilesInFolder failed:', err);
+              return of(backendPictures);
+            })
+          );
+        }),
+        finalize(() => (this.loading = false))
+      )
+      .subscribe({
+        next: (pictures) => {
+          this.pictures = pictures;
         },
-        error: () => {
+        error: (err) => {
+          console.error('loadPictures failed:', err);
           this.error = 'LOAD_PROGRESS_PICTURES_ERROR';
         }
       });
   }
 
   openAddModal(): void {
+    if (!this.allowAddPicture) return;
     this.showAddModal = true;
   }
 
@@ -91,10 +130,6 @@ export class ProgressPicturesComponent implements OnInit {
   }
 
   onSavePicture(payload: AddProgressPicturePayload): void {
-    console.log('onSavePicture payload:', payload);
-    console.log('clientId:', this.clientId);
-    console.log('saving:', this.saving);
-
     if (!this.clientId) {
       this.error = 'CLIENT_ID_MISSING';
       console.error('Progress picture save stopped: clientId is missing');
@@ -102,15 +137,16 @@ export class ProgressPicturesComponent implements OnInit {
     }
 
     if (this.saving) {
-      console.warn('Progress picture save stopped: already saving');
       return;
     }
 
     this.saving = true;
     this.error = null;
 
+    const folderPath = `${this.progressPicturesDirectory}/${this.clientId}`;
+
     this.documentService
-      .uploadFileInPath(payload.file, `${this.progressPicturesDirectory}/${this.clientId}`)
+      .uploadFileInPath(payload.file, folderPath)
       .subscribe({
         next: (uploadedPath: string) => {
           const body: SaveProgressPictureRequest = {
@@ -125,20 +161,28 @@ export class ProgressPicturesComponent implements OnInit {
             .pipe(finalize(() => (this.saving = false)))
             .subscribe({
               next: (created) => {
-                this.pictures = [created, ...this.pictures].sort(
-                  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-                );
                 this.showAddModal = false;
                 this.pictureAdded.emit(created);
+
+                // Reload to get fresh URLs from DocumentService
+                this.loadPictures();
               },
-              error: () => {
-                this.error = 'SAVE_PROGRESS_PICTURE_ERROR';
+              error: (err) => {
+                console.error('createProgressPicture failed:', err);
+                this.error =
+                  err?.error?.message ||
+                  err?.message ||
+                  'SAVE_PROGRESS_PICTURE_ERROR';
               }
             });
         },
-        error: () => {
+        error: (err) => {
+          console.error('uploadFileInPath failed:', err);
           this.saving = false;
-          this.error = 'UPLOAD_PROGRESS_PICTURE_ERROR';
+          this.error =
+            err?.error?.message ||
+            err?.message ||
+            'UPLOAD_PROGRESS_PICTURE_ERROR';
         }
       });
   }
@@ -159,6 +203,14 @@ export class ProgressPicturesComponent implements OnInit {
 
   changeComparisonMode(mode: 'single' | 'comparison'): void {
     this.comparisonMode = mode;
+
+    if (mode === 'single') {
+      this.selectedSinglePicture =
+        this.selectedAfterPicture ||
+        this.selectedBeforePicture ||
+        this.sortedPictures[0] ||
+        null;
+    }
   }
 
   selectComparisonPicture(picture: ProgressPicture): void {
@@ -196,5 +248,14 @@ export class ProgressPicturesComponent implements OnInit {
 
   get picturesCount(): number {
     return this.pictures.length;
+  }
+
+  private extractFileName(pathOrUrl: string | null | undefined): string {
+    if (!pathOrUrl) return '';
+
+    const withoutQuery = pathOrUrl.split('?')[0];
+    const parts = withoutQuery.split('/');
+
+    return parts.length ? parts[parts.length - 1] : '';
   }
 }
