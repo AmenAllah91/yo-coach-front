@@ -6,7 +6,7 @@
       <h1 class="page__title">Abonnements &amp; Paiements</h1>
       <p class="page__subtitle">Gérez les forfaits et les revenus de la plateforme</p>
     </div>
-    <button class="btn btn--primary">
+    <button class="btn btn--primary" (click)="onAddPlan()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
@@ -198,8 +198,8 @@
         </ul>
 
         <div class="plan-card__actions">
-          <button class="btn btn--outline btn--full">Modifier</button>
-          <button class="btn btn--icon btn--danger-ghost">
+          <button class="btn btn--outline btn--full" (click)="onEditPlan(plan)">Modifier</button>
+          <button class="btn btn--icon btn--danger-ghost" (click)="onDeletePlan(plan)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <line x1="15" y1="9" x2="9" y2="15"/>
@@ -225,7 +225,8 @@
           <input
             type="text"
             placeholder="Rechercher..."
-            [(ngModel)]="searchQuery"
+            [ngModel]="searchQuery"
+            (ngModelChange)="onSearchChange($event)"
             class="search-field__input">
         </div>
 
@@ -233,7 +234,7 @@
           <svg class="select-wrapper__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
           </svg>
-          <select [(ngModel)]="statusFilter" class="select-wrapper__select">
+          <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange()" class="select-wrapper__select">
             <option value="Tous">Tous les statuts</option>
             <option value="Actif">Actif</option>
             <option value="Expiré">Expiré</option>
@@ -242,9 +243,9 @@
         </div>
 
         <div class="select-wrapper">
-          <select [(ngModel)]="planFilter" class="select-wrapper__select select-wrapper__select--no-icon">
+          <select [(ngModel)]="planFilter" (ngModelChange)="onPlanFilterChange()" class="select-wrapper__select select-wrapper__select--no-icon">
             <option value="Tous">Tous les plans</option>
-            <option *ngFor="let p of plans" [value]="p.name">{{ p.name }}</option>
+            <option *ngFor="let p of plans" [value]="p.id">{{ p.name }}</option>
           </select>
         </div>
       </div>
@@ -264,22 +265,24 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngIf="filteredSubscriptions.length === 0">
+        <tr *ngIf="allSubscriptions.length === 0">
           <td colspan="7" class="data-table__empty">Aucun abonnement trouvé.</td>
         </tr>
 
-        <tr *ngFor="let sub of filteredSubscriptions" class="data-table__row">
+        <tr *ngFor="let sub of allSubscriptions" class="data-table__row">
           <td>
             <div class="coach-cell">
-              <img [src]="sub.avatar" [alt]="sub.coachName" class="coach-cell__avatar">
-              <div>
+              <img *ngIf="sub.avatarUrl !== 'not found' && sub.avatarUrl !== null" [src]="sub.avatarUrl" [alt]="sub.coachName" class="coach-cell__avatar">
+              <div *ngIf="sub.avatarUrl === 'not found' || sub.avatarUrl === null" class="avatar-initials" [style.background]="'#e8ebf2'" [style.color]="'#4b5a7a'">
+                {{ getInitials(sub.coachName) }}
+              </div>              <div>
                 <div class="coach-cell__name">{{ sub.coachName }}</div>
                 <div class="coach-cell__email">{{ sub.email }}</div>
               </div>
             </div>
           </td>
 
-          <td class="fw-medium">{{ sub.plan }}</td>
+          <td class="fw-medium">{{ sub.planName }}</td>
 
           <td>
             <span class="badge" [ngClass]="statusClass(sub.status)">{{ sub.status }}</span>
@@ -291,21 +294,21 @@
 
           <td>
             <div class="action-btns">
-              <button class="action-btn action-btn--view" title="Voir détails">
+              <button class="action-btn action-btn--view" title="Voir détails" (click)="onViewSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
               </button>
 
-              <button class="action-btn action-btn--edit" title="Modifier">
+              <button class="action-btn action-btn--edit" title="Modifier" (click)="onEditSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
 
-              <button *ngIf="sub.status === 'Actif'" class="action-btn action-btn--suspend" title="Suspendre">
+              <button *ngIf="sub.status === 'Actif'" class="action-btn action-btn--suspend" title="Suspendre" (click)="onSuspendSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="10" y1="15" x2="10" y2="9"/>
@@ -313,14 +316,14 @@
                 </svg>
               </button>
 
-              <button *ngIf="sub.status !== 'Actif'" class="action-btn action-btn--renew" title="Renouveler">
+              <button *ngIf="sub.status !== 'Actif'" class="action-btn action-btn--renew" title="Renouveler" (click)="onRenewSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="23 4 23 10 17 10"/>
                   <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                 </svg>
               </button>
 
-              <button class="action-btn action-btn--cancel" title="Annuler">
+              <button class="action-btn action-btn--cancel" title="Annuler" (click)="onCancelSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="15" y1="9" x2="9" y2="15"/>
@@ -335,4 +338,157 @@
     </div>
   </div>
 
+</div>
+
+
+<div class="modal-backdrop" *ngIf="modalOpen" (click)="closeModal()">
+  <div class="subscription-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3>{{ getModalTitle() }}</h3>
+      </div>
+
+      <button type="button" class="modal-close-btn" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <ng-container [ngSwitch]="modalMode">
+
+        <ng-container *ngSwitchCase="'add-plan'">
+          <div class="modal-form-grid">
+            <div class="form-field">
+              <label>Nom</label>
+              <input type="text" [(ngModel)]="planForm.name" />
+            </div>
+
+            <div class="form-field">
+              <label>Mensuel</label>
+              <input type="number" [(ngModel)]="planForm.priceMonthly" />
+            </div>
+
+            <div class="form-field">
+              <label>Annuel</label>
+              <input type="number" [(ngModel)]="planForm.priceAnnual" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Fonctionnalités (une par ligne)</label>
+              <textarea [(ngModel)]="planForm.featuresText"></textarea>
+            </div>
+
+            <div class="form-check form-field-full">
+              <input id="popular" type="checkbox" [(ngModel)]="planForm.isPopular" />
+              <label for="popular">Plan populaire</label>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'edit-plan'">
+          <div class="modal-form-grid">
+            <div class="form-field">
+              <label>Nom</label>
+              <input type="text" [(ngModel)]="planForm.name" />
+            </div>
+
+            <div class="form-field">
+              <label>Mensuel</label>
+              <input type="number" [(ngModel)]="planForm.priceMonthly" />
+            </div>
+
+            <div class="form-field">
+              <label>Annuel</label>
+              <input type="number" [(ngModel)]="planForm.priceAnnual" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Fonctionnalités (une par ligne)</label>
+              <textarea [(ngModel)]="planForm.featuresText"></textarea>
+            </div>
+
+            <div class="form-check form-field-full">
+              <input id="popular-edit" type="checkbox" [(ngModel)]="planForm.isPopular" />
+              <label for="popular-edit">Plan populaire</label>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'delete-plan'">
+          <p>Voulez-vous vraiment supprimer le plan <strong>{{ selectedPlan?.name }}</strong> ?</p>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'view-subscription'">
+          <div *ngIf="selectedSubscription as sub" class="modal-info-grid">
+            <div class="info-item"><label>Coach</label><span>{{ sub.coachName }}</span></div>
+            <div class="info-item"><label>Email</label><span>{{ sub.email }}</span></div>
+            <div class="info-item"><label>Plan</label><span>{{ sub.planName }}</span></div>
+            <div class="info-item"><label>Statut</label><span>{{ sub.status }}</span></div>
+            <div class="info-item"><label>Date début</label><span>{{ sub.startDate }}</span></div>
+            <div class="info-item"><label>Date fin</label><span>{{ sub.endDate }}</span></div>
+            <div class="info-item"><label>Montant</label><span>{{ sub.amountPaid }} €</span></div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'edit-subscription'">
+          <div class="modal-form-grid">
+            <div class="form-field form-field-full">
+              <label>Plan</label>
+              <select [(ngModel)]="subscriptionForm.planId">
+                <option *ngFor="let p of plans" [value]="p.id">{{ p.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label>Statut</label>
+              <select [(ngModel)]="subscriptionForm.status">
+                <option value="Actif">Actif</option>
+                <option value="Expiré">Expiré</option>
+                <option value="Annulé">Annulé</option>
+                <option value="Suspendu">Suspendu</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label>Montant</label>
+              <input type="number" [(ngModel)]="subscriptionForm.amountPaid" />
+            </div>
+
+            <div class="form-field">
+              <label>Date début</label>
+              <input type="date" [(ngModel)]="subscriptionForm.startDate" />
+            </div>
+
+            <div class="form-field">
+              <label>Date fin</label>
+              <input type="date" [(ngModel)]="subscriptionForm.endDate" />
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'suspend-subscription'">
+          <p>Voulez-vous suspendre cet abonnement ?</p>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'renew-subscription'">
+          <p>Voulez-vous renouveler cet abonnement ?</p>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'cancel-subscription'">
+          <p>Voulez-vous annuler cet abonnement ?</p>
+        </ng-container>
+
+      </ng-container>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn--outline" (click)="closeModal()">Fermer</button>
+      <button
+        *ngIf="modalMode !== 'view-subscription'"
+        type="button"
+        class="btn btn--primary"
+        [disabled]="modalLoading"
+        (click)="submitModalAction()">
+        {{ modalLoading ? 'Traitement...' : getConfirmButtonLabel() }}
+      </button>
+    </div>
+  </div>
 </div>

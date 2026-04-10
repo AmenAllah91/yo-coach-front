@@ -406,3 +406,136 @@
   color: #111827;
   box-shadow: 0 1px 3px rgba(0,0,0,.1);
 }
+
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1200;
+}
+
+.subscription-modal {
+  width: 100%;
+  max-width: 640px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.modal-header,
+.modal-footer {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.modal-footer {
+  border-top: 1px solid #f3f4f6;
+  border-bottom: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
+}
+
+.modal-body {
+  padding: 1.25rem;
+}
+
+.modal-close-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--body);
+}
+
+.modal-form-grid,
+.modal-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+
+  label {
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--body);
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    padding: .75rem;
+    font: inherit;
+    outline: none;
+    background: #fff;
+
+    &:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(77,184,199,.15);
+    }
+  }
+
+  textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+}
+
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.info-item {
+  padding: .875rem 1rem;
+  border: 1px solid #f3f4f6;
+  border-radius: .75rem;
+  background: #fafafa;
+
+  label {
+    display: block;
+    font-size: .75rem;
+    color: var(--body);
+    margin-bottom: .35rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  span {
+    color: var(--heading);
+    font-weight: 600;
+  }
+}
+.avatar-initials {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #e8ebf2;
+  color: #4b5a7a;
+}
