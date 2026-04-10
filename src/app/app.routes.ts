@@ -42,7 +42,6 @@ import {
   CoachLandingPreviewPageComponent
 } from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
 import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
-import {SettingsComponent} from "./components/settings/settings.component";
 import {ProgressPicturesComponent} from "./components/progress-pictures-module/progress-pictures/progress-pictures.component";
 import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
 import {RevenueSubscriptionsComponent} from "./components/admin/revenue-subscriptions/revenue-subscriptions.component";
@@ -200,8 +199,8 @@ export const APP_ROUTE: Route[] = [
         path: 'invitation/:token',
         component: InvitationComponent,
       },{
-        path: 'settings',
-        component: SettingsComponent,
+        path: 'edit-profile/:id',
+        component: EditProfileComponent,
       },{
         path: 'subscriptions',
         component: RevenueSubscriptionsComponent,
@@ -234,9 +233,5 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'site',
     component: PublicWebsiteComponent
-  },
-  {
-    path: 'edit-profile/:id',
-    component: EditProfileComponent,
   },
 ];

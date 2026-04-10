@@ -1,220 +1,280 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { NgIf } from '@angular/common';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ToastrService } from 'ngx-toastr';
-import {UsersService} from "../../../service/users.service";
-import {DocumentService} from "../../../service/document.service";
-import {User} from "../../../template/core";
-import {
-  NgbNav,
-  NgbNavContent,
-  NgbNavItem, NgbNavLink, NgbNavLinkBase,
-  NgbNavOutlet
-} from "@ng-bootstrap/ng-bootstrap";
+
+import { UsersService } from '../../../service/users.service';
+import { DocumentService } from '../../../service/document.service';
+import { User } from '../../../template/core';
+
 @Component({
   selector: 'app-edit-profile',
   standalone: true,
-  imports: [
-    NgIf,
-    FormsModule,
-    NgbNavOutlet,
-    NgbNavItem,
-    NgbNav,
-    NgbNavLink,
-    NgbNavLinkBase,
-    NgbNavContent
-  ],
+  imports: [CommonModule, FormsModule],
   templateUrl: './edit-profile.component.html',
-  styleUrl: './edit-profile.component.scss'
+  styleUrl: './edit-profile.component.scss',
 })
 export class EditProfileComponent implements OnInit {
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('passwordFormRef') passwordFormRef!: NgForm;
 
-  profileForm: Partial<User> = {
+  activeTab: string = 'overview';
+  isEditing: boolean = false;
+  isLoading: boolean = true;
+  isSaving: boolean = false;
+  isUploadingPhoto: boolean = false;
+  isChangingPassword: boolean = false;
+
+  currentUserId: string = '';
+  selectedFile: File | null = null;
+
+  tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'settings', label: 'Settings' },
+  ];
+
+  userData: Partial<User> = {
     id: '',
     firstName: '',
     lastName: '',
     login: '',
     email: '',
-    authorities: [],
-    avatarUrl: '',
-    birthDate: null,
     phoneNumber: '',
-    identificationNumber: '',
+    avatarUrl: '',
+    bio: ''
   };
-  @ViewChild('userForm') userForm!: NgForm;
-  @ViewChild('passwordForm', { static: false }) passwordForm!: NgForm;
 
+  editData: Partial<User> = {
+    id: '',
+    firstName: '',
+    lastName: '',
+    login: '',
+    email: '',
+    phoneNumber: '',
+    avatarUrl: '',
+    bio: ''
+  };
 
-  id!: string;
-
-  active = 1;
-
-  file: File | null = null;
-
-  isLoading = true;
-  isSaving = false;
-
-  showOldPassword: boolean = false;
-  showNewPassword: boolean = false;
-
-  passwordFormModel: any = {
+  passwordFormModel = {
     oldPassword: '',
     newPassword: '',
     confirmPassword: '',
   };
 
-  isPasswordFormValid: boolean = true;
-  isCurrentUser: boolean = false;
-  currentUserId!: string;
-
+  passwordError: string = '';
+  passwordSuccess: string = '';
 
   constructor(
-    private userService: UsersService,
+    private usersService: UsersService,
     private documentService: DocumentService,
-    private router: Router,
-    private route: ActivatedRoute,
-    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
     this.currentUserId = sessionStorage.getItem('userId') || '';
 
-    this.route.paramMap.subscribe(params => {
-      const newId = params.get('id');
-      if (newId && newId !== this.id) {
-        this.id = newId;
-        this.isCurrentUser = this.id === this.currentUserId;
-        this.resetForm();
-        this.loadProfile();
-      }
-    });
-  }
-
-  resetForm() {
-    this.profileForm = {
-      id: '',
-      firstName: '',
-      lastName: '',
-      login: '',
-      email: '',
-      authorities: [],
-      avatarUrl: '',
-      birthDate: null,
-      phoneNumber: '',
-      identificationNumber: '',
-    };
-    this.file = null;
-    this.isLoading = true;
-  }
-
-  loadProfile() {
-
-    this.userService.getUserById(this.id).subscribe({
-      next: (user) => {
-        this.profileForm = user;
-        this.isLoading = false;
-      },
-      error: () => {
-        this.toastr.error("Failed to load profile");
-        this.isLoading = false;
-      }
-    });
-
-  }
-
-  onImageUpload(event: any) {
-
-    this.file = event.target.files[0];
-
-    if (!this.file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = (e: any) => {
-      this.profileForm.avatarUrl = e.target.result;
-    };
-
-    reader.readAsDataURL(this.file);
-
-
-    if (this.file) {
-      this.uploadPhoto();
+    if (!this.currentUserId) {
+      this.isLoading = false;
+      return;
     }
 
+    this.loadUserProfile();
   }
 
-  uploadPhoto() {
+  loadUserProfile(): void {
+    this.isLoading = true;
 
-    if (!this.file) return;
+    this.usersService.getUserById(this.currentUserId).subscribe({
+      next: (user) => {
+        this.userData = { ...user };
+        this.editData = { ...user };
+        this.loadProfilePhoto();
+      },
+      error: () => {
+        this.isLoading = false;
+      },
+    });
+  }
+
+  loadProfilePhoto(): void {
+    if (!this.userData.id) {
+      this.isLoading = false;
+      return;
+    }
 
     this.documentService
-      .uploadPhoto(this.file, this.profileForm.id, "user-profile-photos")
+      .getPhoto(this.userData.id, 'user-profile-photos')
       .subscribe({
-        next: (url: string) => {
+        next: (photoUrl: string) => {
+          this.userData.avatarUrl = photoUrl;
+          this.editData.avatarUrl = photoUrl;
+          this.isLoading = false;
         },
         error: () => {
-          this.toastr.error("Photo upload failed");
-        }
+          this.isLoading = false;
+        },
       });
-
   }
 
-  onSubmit() {
+  setActiveTab(tabId: string): void {
+    this.activeTab = tabId;
+    this.passwordError = '';
+    this.passwordSuccess = '';
+  }
 
-    if (!this.userForm.valid) return;
+  handleEditStart(): void {
+    this.editData = { ...this.userData };
+    this.isEditing = true;
+  }
+
+  handleEditCancel(): void {
+    this.editData = { ...this.userData };
+    this.isEditing = false;
+    this.selectedFile = null;
+  }
+
+  handleEditSave(): void {
+    if (!this.userData.id) return;
 
     this.isSaving = true;
 
-    this.userService.updateUser(this.profileForm.id, this.profileForm).subscribe({
-      next: () => {
+    const payload: Partial<User> = {
+      firstName: this.editData.firstName || '',
+      lastName: this.editData.lastName || '',
+      email: this.editData.email || '',
+      login: this.editData.login || '',
+      phoneNumber: this.editData.phoneNumber || '',
+      bio: this.editData.bio || ''
+    };
 
+    this.usersService.updateUser(this.userData.id, payload as any).subscribe({
+      next: (updatedUser) => {
+        this.userData = { ...this.userData, ...updatedUser };
+        this.editData = { ...this.userData };
+        this.isEditing = false;
         this.isSaving = false;
-
-        this.toastr.success("Profile updated successfully");
-
       },
       error: () => {
-
         this.isSaving = false;
-        this.toastr.error("Update failed");
+      },
+    });
+  }
 
+  triggerFileInput(): void {
+    this.fileInputRef.nativeElement.click();
+  }
+
+  handlePhotoChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file || !this.userData.id) return;
+
+    this.selectedFile = file;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const preview = reader.result as string;
+      this.userData.avatarUrl = preview;
+      this.editData.avatarUrl = preview;
+    };
+    reader.readAsDataURL(file);
+
+    this.uploadProfilePhoto();
+  }
+
+  uploadProfilePhoto(): void {
+    if (!this.selectedFile || !this.userData.id) return;
+
+    this.isUploadingPhoto = true;
+
+    this.documentService
+      .uploadPhoto(this.selectedFile, this.userData.id, 'user-profile-photos')
+      .subscribe({
+        next: () => {
+          this.documentService
+            .getPhoto(this.userData.id!, 'user-profile-photos')
+            .subscribe({
+              next: (photoUrl: string) => {
+                this.userData.avatarUrl = photoUrl;
+                this.editData.avatarUrl = photoUrl;
+                this.isUploadingPhoto = false;
+              },
+              error: () => {
+                this.isUploadingPhoto = false;
+              },
+            });
+        },
+        error: () => {
+          this.isUploadingPhoto = false;
+        },
+      });
+  }
+
+  onSubmitNewPassword(): void {
+    this.passwordError = '';
+    this.passwordSuccess = '';
+
+    if (!this.userData.id) return;
+
+    if (
+      !this.passwordFormModel.oldPassword ||
+      !this.passwordFormModel.newPassword ||
+      !this.passwordFormModel.confirmPassword
+    ) {
+      this.passwordError = 'Tous les champs sont obligatoires.';
+      return;
+    }
+
+    if (this.passwordFormModel.newPassword !== this.passwordFormModel.confirmPassword) {
+      this.passwordError = 'La confirmation du mot de passe est incorrecte.';
+      return;
+    }
+
+    this.isChangingPassword = true;
+
+    this.usersService.updateMyPassword(this.passwordFormModel).subscribe({
+      next: () => {
+        this.passwordSuccess = 'Mot de passe modifié avec succès.';
+        this.passwordError = '';
+        this.isChangingPassword = false;
+
+        this.passwordFormModel = {
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        };
+
+        if (this.passwordFormRef) {
+          this.passwordFormRef.resetForm();
+        }
+      },
+      error: () => {
+        this.passwordSuccess = '';
+        this.passwordError = 'Échec de la modification du mot de passe.';
+        this.isChangingPassword = false;
       }
     });
-
   }
 
-  cancel() {
-    this.router.navigate(['/']);
+  get fullName(): string {
+    return `${this.userData.firstName || ''} ${this.userData.lastName || ''}`.trim();
   }
 
-  onImageError(event: Event) {
+  get profileCompletion(): number {
+    const fields = [
+      this.userData.firstName,
+      this.userData.lastName,
+      this.userData.login,
+      this.userData.email,
+      this.userData.phoneNumber,
+      this.userData.avatarUrl,
+    ];
+
+    const filled = fields.filter(value => !!value).length;
+    return Math.round((filled / fields.length) * 100);
+  }
+
+  onImageError(event: Event): void {
     const img = event.target as HTMLImageElement;
     img.src = '/assets/images/photoprofilvierge.jpg';
   }
-
-
-  onSubmitNewPassword(){
-    if (this.passwordForm.valid) {
-      if (
-        this.passwordFormModel?.newPassword !==
-        this.passwordFormModel?.confirmPassword
-      ){
-        this.isPasswordFormValid = false;
-      } else {
-        this.userService.updatePassword(this.passwordFormModel,this.id).subscribe(
-          () => {
-            this.passwordFormModel = {
-              oldPassword: '',
-              newPassword: '',
-              confirmPassword: '',
-            }
-            this.active = 1;
-          }
-        );
-      }
-
-    }
-  }
-
 }

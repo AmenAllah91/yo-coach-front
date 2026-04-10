@@ -40,6 +40,14 @@ export class UsersService {
     return this.http.post<any>(`${this.userServiceUrl}/${id}/change-password`,passwordForm);
   }
 
+  updateMyPassword(passwordForm: {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.userServiceUrl}/api/users/me/change-password`, passwordForm);
+  }
+
   getAdminUsers(params: {
     role?: string;
     activated?: boolean | '';

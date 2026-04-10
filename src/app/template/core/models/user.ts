@@ -11,6 +11,7 @@ export class User {
   birthDate: null;
   phoneNumber!: string;
   identificationNumber!: string;
+  bio!: string
 
 
 }

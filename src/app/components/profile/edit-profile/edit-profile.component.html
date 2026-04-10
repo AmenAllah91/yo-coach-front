@@ -1,416 +1,259 @@
-<section class="dashboard-container" *ngIf="!isLoading">
+<div class="settings-wrapper">
 
-  <!-- BACK BUTTON -->
-  <div class="back-button-container">
-    <button class="back-button" (click)="cancel()">
-      <i class="material-icons">arrow_back</i>
-      <span>Back</span>
+  <!-- Profile Header -->
+  <div class="profile-card">
+    <div class="cover-area">
+      <div class="cover-pattern"></div>
+    </div>
+
+    <div class="profile-body">
+      <div class="profile-top-row">
+
+        <!-- Avatar -->
+        <div class="avatar-container group-hover" (click)="triggerFileInput()">
+          <div class="avatar-ring">
+            <img
+              *ngIf="userData.avatarUrl"
+              [src]="userData.avatarUrl"
+              alt="Profile"
+              class="avatar-img"
+              (error)="onImageError($event)"
+            />
+            <div *ngIf="!userData.avatarUrl" class="avatar-placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <div class="avatar-overlay">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span>Change Photo</span>
+            </div>
+          </div>
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            class="hidden-input"
+            (change)="handlePhotoChange($event)"
+          />
+        </div>
+
+        <!-- Profile Info -->
+        <div class="profile-info">
+          <div class="profile-name-row">
+            <h1>{{ userData.firstName }} {{ userData.lastName }}</h1>
+            <span class="online-dot"></span>
+          </div>
+
+          <div class="profile-meta">
+            <span class="meta-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              {{ userData.email }}
+            </span>
+
+            <span class="meta-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+              </svg>
+              {{ userData.login }}
+            </span>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value stat-value-blue">{{ profileCompletion }}%</div>
+              <div class="stat-label">Profile Complete</div>
+            </div>
+          </div>
+
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" [style.width.%]="profileCompletion"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-nav">
+    <button
+      *ngFor="let tab of tabs"
+      class="tab-btn"
+      [class.active]="activeTab === tab.id"
+      (click)="setActiveTab(tab.id)"
+    >
+      {{ tab.label }}
     </button>
   </div>
 
-  <!-- PROFILE HEADER -->
-  <div class="profile-header-dynamic">
+  <!-- OVERVIEW -->
+  <div *ngIf="activeTab === 'overview'" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <h2>Profile Details</h2>
 
-    <!-- PHOTO -->
-    <div class="photo-section">
-      <div class="photo-wrapper">
+        <div *ngIf="!isEditing">
+          <button class="btn-dark" (click)="handleEditStart()">
+            Edit Profile
+          </button>
+        </div>
 
-        <input
-          type="file"
-          (change)="onImageUpload($event)"
-          id="fileInput"
-          style="display:none"
-          [disabled]="!isCurrentUser"
-        />
+        <div *ngIf="isEditing" class="action-btns">
+          <button class="btn-outline" (click)="handleEditCancel()">
+            Cancel
+          </button>
+          <button class="btn-blue" (click)="handleEditSave()" [disabled]="isSaving">
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
 
-        <label for="fileInput" class="photo-label">
-
-          <div class="photo-container">
-
-            <img
-              [src]="profileForm.avatarUrl || '/assets/images/photoprofilvierge.jpg'"
-              class="profile-photo"
-              (error)="onImageError($event)"
-            />
-
-            <div class="image-overlay">
-              <i class="fas fa-camera camera-icon"></i>
-              <span>Change your photo</span>
-            </div>
-
+      <div class="card-body">
+        <!-- View -->
+        <div *ngIf="!isEditing" class="fields-grid">
+          <div class="field-group">
+            <label class="field-label">Full Name</label>
+            <div class="field-value">{{ userData.firstName }} {{ userData.lastName }}</div>
           </div>
 
-        </label>
+          <div class="field-group">
+            <label class="field-label">Username</label>
+            <div class="field-value">{{ userData.login }}</div>
+          </div>
 
+          <div class="field-group">
+            <label class="field-label">Email</label>
+            <div class="field-value">{{ userData.email }}</div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Phone</label>
+            <div class="field-value" [class.text-muted]="!userData.phoneNumber">
+              {{ userData.phoneNumber || 'Not provided' }}
+            </div>
+          </div>
+
+          <div class="field-group field-full">
+            <label class="field-label">Bio</label>
+            <div class="field-value" [class.text-muted]="!userData.bio">
+              {{ userData.bio || 'No bio added yet' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit -->
+        <div *ngIf="isEditing" class="fields-grid">
+          <div class="field-group">
+            <label class="field-label-dark">First Name</label>
+            <input type="text" class="form-input" [(ngModel)]="editData.firstName" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label-dark">Last Name</label>
+            <input type="text" class="form-input" [(ngModel)]="editData.lastName" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label-dark">Username</label>
+            <input type="text" class="form-input" [(ngModel)]="editData.login" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label-dark">Phone</label>
+            <input type="text" class="form-input" [(ngModel)]="editData.phoneNumber" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label-dark">Email</label>
+            <input type="email" class="form-input form-input-disabled" [value]="editData.email" disabled />
+            <p class="hint-text">Email cannot be changed</p>
+          </div>
+
+          <div class="field-group field-full">
+            <label class="field-label-dark">Bio</label>
+            <textarea
+              class="form-input form-textarea"
+              [(ngModel)]="editData.bio"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- USER INFO -->
-    <div class="info-section">
-
-      <div class="name">
-        {{ profileForm.firstName || 'New' }} {{ profileForm.lastName || 'User' }}
-      </div>
-
-      <div class="email">
-        <i class="fas fa-user"></i> {{ profileForm.login || 'No username' }}
-      </div>
-
-    </div>
-
   </div>
 
+  <!-- SETTINGS = CHANGE PASSWORD -->
+  <div *ngIf="activeTab === 'settings'" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <h2>Change Password</h2>
+      </div>
 
-  <!-- CONTENT -->
-  <div class="content-section">
+      <div class="card-body">
+        <form #passwordFormRef="ngForm" (ngSubmit)="onSubmitNewPassword()" class="fields-grid">
+          <div class="field-group field-full">
+            <label class="field-label-dark">Current Password</label>
+            <input
+              type="password"
+              class="form-input"
+              name="oldPassword"
+              [(ngModel)]="passwordFormModel.oldPassword"
+              required
+            />
+          </div>
 
-    <div class="tabs-container">
+          <div class="field-group">
+            <label class="field-label-dark">New Password</label>
+            <input
+              type="password"
+              class="form-input"
+              name="newPassword"
+              [(ngModel)]="passwordFormModel.newPassword"
+              required
+            />
+          </div>
 
-      <ul ngbNav #nav="ngbNav" [(activeId)]="active" class="nav nav-tabs custom-nav-tabs">
+          <div class="field-group">
+            <label class="field-label-dark">Confirm New Password</label>
+            <input
+              type="password"
+              class="form-input"
+              name="confirmPassword"
+              [(ngModel)]="passwordFormModel.confirmPassword"
+              required
+            />
+          </div>
 
-        <li [ngbNavItem]="1">
+          <div *ngIf="passwordError" class="field-full message-error">
+            {{ passwordError }}
+          </div>
 
-          <a ngbNavLink class="nav-link">
-            <i class="fas fa-user-edit"></i>
-            <span>Edit Profile</span>
-          </a>
+          <div *ngIf="passwordSuccess" class="field-full message-success">
+            {{ passwordSuccess }}
+          </div>
 
-          <ng-template ngbNavContent>
-
-            <div class="tab-content-container">
-
-              <form (ngSubmit)="onSubmit()" #userForm="ngForm" class="custom-form">
-
-                <div class="row">
-
-                  <!-- FIRST NAME -->
-                  <div class="col-md-6">
-
-                    <div class="form-group">
-
-                      <label>First Name</label>
-
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">person</i>
-
-                        <input
-                          type="text"
-                          name="firstName"
-                          class="form-control"
-                          [(ngModel)]="profileForm.firstName"
-                          #firstName="ngModel"
-                          required
-                          placeholder="First Name"
-                          [disabled]="!isCurrentUser"
-                        >
-
-                      </div>
-
-                      <div class="validation-error" *ngIf="firstName.touched && !firstName.valid">
-                        <i class="material-icons">error</i>
-                        <span>First name is required</span>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  <!-- LAST NAME -->
-                  <div class="col-md-6">
-
-                    <div class="form-group">
-
-                      <label>Last Name</label>
-
-                      <div class="input-with-icon">
-
-                        <i class="material-icons input-icon">person</i>
-
-                        <input
-                          type="text"
-                          name="lastName"
-                          class="form-control"
-                          [(ngModel)]="profileForm.lastName"
-                          #lastName="ngModel"
-                          required
-                          placeholder="Last Name"
-                          [disabled]="!isCurrentUser"
-                        >
-
-                      </div>
-
-                      <div class="validation-error" *ngIf="lastName.touched && !lastName.valid">
-                        <i class="material-icons">error</i>
-                        <span>Last name is required</span>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  <!-- USERNAME -->
-                  <div class="col-md-6">
-
-                    <div class="form-group">
-
-                      <label>Username</label>
-
-                      <div class="input-with-icon">
-
-                        <i class="material-icons input-icon">account_circle</i>
-
-                        <input
-                          type="text"
-                          name="username"
-                          class="form-control"
-                          [(ngModel)]="profileForm.login"
-                          #username="ngModel"
-                          required
-                          placeholder="Username"
-                          [disabled]="!isCurrentUser"
-                        >
-
-                      </div>
-
-                      <div class="validation-error" *ngIf="username.touched && !username.valid">
-                        <i class="material-icons">error</i>
-                        <span>Username is required</span>
-                      </div>
-
-                    </div>
-
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="email">Email</label>
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">email</i>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          class="form-control"
-                          [(ngModel)]="profileForm.email"
-                          #email="ngModel"
-                          required
-                          pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                          placeholder="Email"
-                          [disabled]="!isCurrentUser"
-                        >
-                      </div>
-                      <div class="validation-error" *ngIf="email.touched && email.errors">
-                        <i class="material-icons">error</i>
-                        <span *ngIf="email.errors['required']">Email is required</span>
-                        <span *ngIf="email.errors['pattern']">Email is required</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="dateNaiss">Date of birth</label>
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">calendar_today</i>
-                        <input
-                          type="date"
-                          id="dateNaiss"
-                          name="dateNaiss"
-                          class="form-control"
-                          [(ngModel)]="profileForm.birthDate"
-                          [disabled]="!isCurrentUser"
-                        >
-                      </div>
-                    </div>
-                  </div>
-
-
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="numtel">Phone number</label>
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">phone</i>
-                        <input
-                          type="tel"
-                          id="numtel"
-                          name="numtel"
-                          class="form-control"
-                          [(ngModel)]="profileForm.phoneNumber"
-                          pattern="[0-9]+"
-                          #phone="ngModel"
-                          placeholder="Phone number"
-                          [disabled]="!isCurrentUser"
-                        >
-                      </div>
-                      <div class="validation-error" *ngIf="phone.touched && phone.errors?.['pattern']">
-                        <i class="material-icons">error</i>
-                        <span>Phoen number is required</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-
-                <!-- BUTTON -->
-                <div class="form-group row text-right">
-
-                  <div class="col-md-12">
-
-                    <div class="form-actions" *ngIf="isCurrentUser">
-
-                      <button
-                        type="submit"
-                        class="btn btn-black-upload"
-                        [disabled]="userForm.form.invalid"
-                      >
-                        Save Changes
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-
-                <!-- LOADING -->
-                <div class="autosave-indicator" *ngIf="isSaving">
-                  <i class="material-icons spin">sync</i>
-                  <span>Saving...</span>
-                </div>
-
-              </form>
-
-            </div>
-
-          </ng-template>
-
-        </li>
-        <li [ngbNavItem]="2" *ngIf="isCurrentUser">
-          <a ngbNavLink class="nav-link">
-            <i class="fas fa-user-secret"></i>
-            <span>Change You Password</span>
-          </a>
-          <ng-template ngbNavContent>
-            <div class="tab-content-container">
-              <form (ngSubmit)="onSubmitNewPassword()" #passwordForm="ngForm" class="custom-form">
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="oldPassword">Current Password</label>
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">lock</i>
-                        <input
-                          [type]="showOldPassword ? 'text' : 'password'"
-                          id="oldPassword"
-                          class="form-control"
-                          name="oldPassword"
-                          [(ngModel)]="passwordFormModel.oldPassword"
-                          #oldPassword="ngModel"
-                          required
-                          placeholder="Current Password"
-                          [disabled]="!isCurrentUser"
-                        >
-                        <i class="material-icons eye-icon"
-                           (click)="showOldPassword = !showOldPassword">
-                          {{ showOldPassword ? 'visibility_off' : 'visibility' }}
-                        </i>
-                      </div>
-                      <div class="validation-error" *ngIf="oldPassword.touched && !oldPassword.valid">
-                        <i class="material-icons">error</i>
-                        <span>Current password is required</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="newPassword">New Password</label>
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">lock_open</i>
-                        <input
-                          [type]="showNewPassword ? 'text' : 'password'"
-                          id="newPassword"
-                          name="newPassword"
-                          class="form-control"
-                          [(ngModel)]="passwordFormModel.newPassword"
-                          #newPassword="ngModel"
-                          required
-                          placeholder="New Password"
-                          [disabled]="!isCurrentUser"
-                        >
-                        <i class="material-icons eye-icon"
-                           (click)="showNewPassword = !showNewPassword">
-                          {{ showNewPassword ? 'visibility_off' : 'visibility' }}
-                        </i>
-                      </div>
-                      <div class="validation-error" *ngIf="newPassword.touched && !newPassword.valid">
-                        <i class="material-icons">error</i>
-                        <span>New password is required</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="email">Confirm Password</label>
-                      <div class="input-with-icon">
-                        <i class="material-icons input-icon">check_circle</i>
-                        <input
-                          [type]="showConfirmPassword ? 'text' : 'password'"
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          class="form-control"
-                          [(ngModel)]="passwordFormModel.confirmPassword"
-                          #confirmPassword="ngModel"
-                          required
-                          placeholder="Confirm Password"
-                          [disabled]="!isCurrentUser"
-                        >
-                        <i class="material-icons eye-icon"
-                           (click)="showConfirmPassword = !showConfirmPassword">
-                          {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
-                        </i>
-                      </div>
-                      <div class="validation-error" *ngIf="confirmPassword.touched && !confirmPassword.valid">
-                        <i class="material-icons">error</i>
-                        <span>Password confirmation is required</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="validation-form-error" *ngIf="!isPasswordFormValid">
-                  <i class="material-icons">error</i>
-                  <span>Verify your password Confirmation</span>
-                </div>
-                <div class="form-group row text-right">
-                  <div class="col-md-12">
-                    <div class="form-actions" *ngIf="isCurrentUser">
-                      <button  type="submit" class="btn btn-black-upload"
-                               [disabled]="passwordForm.form.invalid">
-                        Save Changes
-                      </button>
-
-                    </div>
-                  </div>
-                </div>
-                <!-- Autosave Indicator -->
-                <div class="autosave-indicator" *ngIf="isSaving">
-                  <i class="material-icons spin">sync</i>
-                  <span>Saving...</span>
-                </div>
-              </form>
-            </div>
-          </ng-template>
-        </li>
-
-      </ul>
-
-      <div [ngbNavOutlet]="nav"></div>
-
+          <div class="field-full password-actions">
+            <button
+              type="submit"
+              class="btn-blue"
+              [disabled]="isChangingPassword"
+            >
+              {{ isChangingPassword ? 'Updating...' : 'Update Password' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-
   </div>
 
-</section>
+</div>
