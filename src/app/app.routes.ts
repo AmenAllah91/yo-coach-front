@@ -45,6 +45,8 @@ import {PublicWebsiteComponent} from "./components/website/public-website/public
 import {SettingsComponent} from "./components/settings/settings.component";
 import {ProgressPicturesComponent} from "./components/progress-pictures-module/progress-pictures/progress-pictures.component";
 import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
+import {RevenueSubscriptionsComponent} from "./components/admin/revenue-subscriptions/revenue-subscriptions.component";
+import {UsersComponent} from "./components/admin/users/users.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -200,6 +202,12 @@ export const APP_ROUTE: Route[] = [
       },{
         path: 'settings',
         component: SettingsComponent,
+      },{
+        path: 'subscriptions',
+        component: RevenueSubscriptionsComponent,
+      },{
+        path: 'users',
+        component: UsersComponent,
       },
       {
         path: 'progress-pictures',
