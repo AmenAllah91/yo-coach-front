@@ -4,7 +4,7 @@
       <h1>Gestion des utilisateurs</h1>
       <p>Gérez vos clients, coachs et administrateurs</p>
     </div>
-    <button class="add-user-btn" type="button" >
+    <button class="add-user-btn" type="button" (click)="onAddUser()">
       <svg class="btn-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
@@ -77,7 +77,7 @@
         type="button"
         class="tab-btn"
         [class.active]="activeTab === tab.id"
-        (click)="activeTab = tab.id"
+        (click)="onTabChange(tab.id)"
       >
         {{ tab.label }}
       </button>
@@ -93,7 +93,8 @@
         <input
           type="text"
           placeholder="Rechercher un utilisateur..."
-          [(ngModel)]="searchQuery"
+          [ngModel]="searchQuery"
+          (ngModelChange)="onSearchChange($event)"
         />
       </div>
 
@@ -103,7 +104,7 @@
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
           </svg>
         </span>
-        <select [(ngModel)]="statusFilter">
+        <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange()">
           <option value="Tous">Tous les statuts</option>
           <option value="Actif">Actif</option>
           <option value="Suspendu">Suspendu</option>
@@ -136,9 +137,10 @@
         <tr *ngFor="let user of filteredUsers; trackBy: trackByUser">
           <td>
             <div class="user-cell">
-              <div class="avatar-initials" [style.background]="user.avatarBg || '#e8ebf2'" [style.color]="user.avatarColor || '#4b5a7a'">
+              <div *ngIf="user.avatarUrl === 'not found' || user.avatarUrl === null" class="avatar-initials" [style.background]="user.avatarBg || '#e8ebf2'" [style.color]="user.avatarColor || '#4b5a7a'">
                 {{ getInitials(user.name) }}
               </div>
+              <img [src]="user.avatarUrl" *ngIf="user.avatarUrl !== 'not found' && user.avatarUrl !== null" class="avatar-initials" alt="user profile image">
               <div>
                 <div class="user-name">{{ user.name }}</div>
                 <div class="user-email">{{ user.email }}</div>
@@ -209,5 +211,247 @@
         Aucun utilisateur trouvé pour ces critères.
       </div>
     </ng-template>
+  </div>
+</div>
+<div class="modal-backdrop" *ngIf="modalOpen" (click)="closeModal()">
+  <div class="user-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3>{{ getModalTitle() }}</h3>
+        <p>{{ getModalDescription() }}</p>
+      </div>
+
+      <button type="button" class="modal-close-btn" (click)="closeModal()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedUser === null">
+
+      <ng-container [ngSwitch]="modalMode">
+
+        <ng-container *ngSwitchCase="'add'">
+          <div class="modal-form-grid">
+            <div class="form-field">
+              <label>Prénom</label>
+              <input type="text" [(ngModel)]="editForm.firstName" />
+            </div>
+
+            <div class="form-field">
+              <label>Nom</label>
+              <input type="text" [(ngModel)]="editForm.lastName" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="editForm.email" />
+            </div>
+
+            <div class="form-field">
+              <label>Login</label>
+              <input type="text" [(ngModel)]="editForm.login" />
+            </div>
+
+            <div class="form-field">
+              <label>Mot de passe</label>
+              <input type="password" [(ngModel)]="editForm.password" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Rôle</label>
+              <select [(ngModel)]="editForm.role">
+                <option value="ROLE_CLIENT">Client</option>
+                <option value="ROLE_COACH">Coach</option>
+                <option value="ROLE_ADMIN">Admin</option>
+              </select>
+            </div>
+
+            <div class="form-check form-field-full">
+              <input id="add-activated" type="checkbox" [(ngModel)]="editForm.activated" />
+              <label for="add-activated">Utilisateur actif</label>
+            </div>
+          </div>
+        </ng-container>
+
+      </ng-container>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedUser as user">
+
+      <ng-container [ngSwitch]="modalMode">
+
+        <ng-container *ngSwitchCase="'view'">
+          <div class="modal-user-card">
+            <div *ngIf="!user.avatarUrl || user.avatarUrl === 'not found'" class="avatar-initials modal-avatar">
+              {{ getInitials(user.name) }}
+            </div>
+            <img
+              *ngIf="user.avatarUrl && user.avatarUrl !== 'not found'"
+              [src]="user.avatarUrl"
+              class="avatar-initials modal-avatar"
+              alt="user profile image"
+            />
+
+            <div class="modal-user-meta">
+              <h4>{{ user.name }}</h4>
+              <p>{{ user.email }}</p>
+              <span [class]="getStatusClass(user.status)">{{ user.status }}</span>
+            </div>
+          </div>
+
+          <div class="modal-info-grid">
+            <div class="info-item">
+              <label>Rôle</label>
+              <span>{{ user.role }}</span>
+            </div>
+
+            <div class="info-item" *ngIf="user.role === 'Client'">
+              <label>Coach</label>
+              <span>{{ user.coach || '—' }}</span>
+            </div>
+
+            <div class="info-item" *ngIf="user.role === 'Client'">
+              <label>Activité</label>
+              <span>{{ user.activite || '—' }}</span>
+            </div>
+
+            <div class="info-item" *ngIf="user.role === 'Coach'">
+              <label>Nombre de clients</label>
+              <span>{{ user.nbClients || 0 }}</span>
+            </div>
+
+            <div class="info-item" *ngIf="user.role === 'Admin'">
+              <label>Dernière connexion</label>
+              <span>{{ user.derniereConnexion || '—' }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'edit'">
+          <div class="modal-form-grid">
+            <div class="form-field">
+              <label>Prénom</label>
+              <input type="text" [(ngModel)]="editForm.firstName" />
+            </div>
+
+            <div class="form-field">
+              <label>Nom</label>
+              <input type="text" [(ngModel)]="editForm.lastName" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="editForm.email" />
+            </div>
+
+            <div class="form-check form-field-full">
+              <input id="activated" type="checkbox" [(ngModel)]="editForm.activated" />
+              <label for="activated">Utilisateur actif</label>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'add'">
+          <div class="modal-form-grid">
+            <div class="form-field">
+              <label>Prénom</label>
+              <input type="text" [(ngModel)]="editForm.firstName" />
+            </div>
+
+            <div class="form-field">
+              <label>Nom</label>
+              <input type="text" [(ngModel)]="editForm.lastName" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="editForm.email" />
+            </div>
+
+            <div class="form-field">
+              <label>Login</label>
+              <input type="text" [(ngModel)]="editForm.login" />
+            </div>
+
+            <div class="form-field">
+              <label>Mot de passe</label>
+              <input type="password" [(ngModel)]="editForm.password" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Rôle</label>
+              <select [(ngModel)]="editForm.role">
+                <option value="ROLE_CLIENT">Client</option>
+                <option value="ROLE_COACH">Coach</option>
+                <option value="ROLE_ADMIN">Admin</option>
+              </select>
+            </div>
+
+            <div class="form-check form-field-full">
+              <input id="add-activated" type="checkbox" [(ngModel)]="editForm.activated" />
+              <label for="add-activated">Utilisateur actif</label>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'suspend'">
+          <div class="modal-confirm-block">
+            <div class="confirm-icon confirm-icon-warning">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+            </div>
+            <p>Le compte sera désactivé et l’utilisateur ne pourra plus accéder à l’application.</p>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'ban'">
+          <div class="modal-confirm-block">
+            <div class="confirm-icon confirm-icon-danger">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <p>L’utilisateur sera banni. Cette action peut être réversible si tu prévois une API de déblocage.</p>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'delete'">
+          <div class="modal-confirm-block">
+            <div class="confirm-icon confirm-icon-danger">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4h6v2"/>
+              </svg>
+            </div>
+            <p>Cette suppression est définitive et supprimera les données liées à ce compte selon la logique backend.</p>
+          </div>
+        </ng-container>
+
+      </ng-container>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="modal-secondary-btn" (click)="closeModal()">
+        Fermer
+      </button>
+
+      <button
+        *ngIf="modalMode !== 'view'"
+        type="button"
+        class="modal-primary-btn"
+        [class.modal-danger-btn]="isDangerAction()"
+        [disabled]="modalLoading"
+        (click)="submitModalAction()"
+      >
+        {{ modalLoading ? 'Traitement...' : getConfirmButtonLabel() }}
+      </button>
+    </div>
   </div>
 </div>

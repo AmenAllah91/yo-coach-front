@@ -166,7 +166,7 @@ export class EditProfileComponent implements OnInit {
 
     this.isSaving = true;
 
-    this.userService.updateUser(this.profileForm).subscribe({
+    this.userService.updateUser(this.profileForm.id, this.profileForm).subscribe({
       next: () => {
 
         this.isSaving = false;

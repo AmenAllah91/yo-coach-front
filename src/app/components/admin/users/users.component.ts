@@ -1,22 +1,26 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import {UsersService} from "../../../service/users.service";
+import {EditUserForm, ModalMode, UserStatus} from "../models/user-models";
 
-type Role = 'Client' | 'Coach' | 'Admin';
 type TabType = 'Tous' | 'Coachs' | 'Clients' | 'Admins';
-type Status = 'Actif' | 'Suspendu' | 'En attente' | 'Tous';
+type StatusFilter = 'Tous' | 'Actif' | 'Suspendu';
 
-interface AppUser {
-  id: number;
+interface UiUser {
+  id: string;
   name: string;
   email: string;
-  role: Role;
-  avatar: string;
+  role: 'Client' | 'Coach' | 'Admin';
+  status: UserStatus;
   coach?: string;
   activite?: string;
   nbClients?: number;
   derniereConnexion?: string;
-  status: Exclude<Status, 'Tous'>;
+  avatarUrl?: string;
+  avatarBg?: string;
+  avatarColor?: string;
 }
 
 @Component({
@@ -26,186 +30,376 @@ interface AppUser {
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
-export class UsersComponent {
+export class UsersComponent implements OnInit {
   activeTab: TabType = 'Tous';
   searchQuery = '';
-  statusFilter: Status = 'Tous';
+  statusFilter: StatusFilter = 'Tous';
 
-  tabs: { id: TabType; label: string }[] = [
-    { id: 'Tous', label: 'Tous' },
-    { id: 'Coachs', label: 'Coachs' },
-    { id: 'Clients', label: 'Clients' },
-    { id: 'Admins', label: 'Admins' }
+  tabs = [
+    { id: 'Tous' as TabType, label: 'Tous' },
+    { id: 'Coachs' as TabType, label: 'Coachs' },
+    { id: 'Clients' as TabType, label: 'Clients' },
+    { id: 'Admins' as TabType, label: 'Admins' }
   ];
 
-  users: AppUser[] = [
-    {
-      id: 1,
-      name: 'Thomas Dubois',
-      email: 'thomas.d@example.com',
-      role: 'Client',
-      avatar: 'https://i.pravatar.cc/100?img=12',
-      coach: 'Sarah Martin',
-      activite: 'Il y a 2h',
-      status: 'Actif'
-    },
-    {
-      id: 2,
-      name: 'Marie Laurent',
-      email: 'marie.l@example.com',
-      role: 'Client',
-      avatar: 'https://i.pravatar.cc/100?img=32',
-      coach: 'Sarah Martin',
-      activite: 'Hier',
-      status: 'Actif'
-    },
-    {
-      id: 3,
-      name: 'Lucas Bernard',
-      email: 'lucas.b@example.com',
-      role: 'Client',
-      avatar: 'https://i.pravatar.cc/100?img=15',
-      coach: 'Julien Moreau',
-      activite: 'Il y a 15 jours',
-      status: 'Suspendu'
-    },
-    {
-      id: 4,
-      name: 'Sarah Martin',
-      email: 'sarah.m@coach.com',
-      role: 'Coach',
-      avatar: 'https://i.pravatar.cc/100?img=48',
-      nbClients: 8,
-      status: 'Actif'
-    },
-    {
-      id: 5,
-      name: 'Julien Moreau',
-      email: 'julien.m@coach.com',
-      role: 'Coach',
-      avatar: 'https://i.pravatar.cc/100?img=56',
-      nbClients: 5,
-      status: 'Actif'
-    },
-    {
-      id: 6,
-      name: 'Sophie Petit',
-      email: 'sophie.p@coach.com',
-      role: 'Coach',
-      avatar: 'https://i.pravatar.cc/100?img=21',
-      nbClients: 0,
-      status: 'En attente'
-    },
-    {
-      id: 7,
-      name: 'Admin Principal',
-      email: 'admin@fitapp.com',
-      role: 'Admin',
-      avatar: 'https://i.pravatar.cc/100?img=5',
-      derniereConnexion: 'Aujourd’hui à 09:12',
-      status: 'Actif'
-    },
-    {
-      id: 8,
-      name: 'Nadia Benali',
-      email: 'nadia.b@fitapp.com',
-      role: 'Admin',
-      avatar: 'https://i.pravatar.cc/100?img=25',
-      derniereConnexion: 'Hier à 18:40',
-      status: 'Actif'
-    },
-    {
-      id: 9,
-      name: 'Yassine Karim',
-      email: 'yassine.k@example.com',
-      role: 'Client',
-      avatar: 'https://i.pravatar.cc/100?img=67',
-      coach: 'Julien Moreau',
-      activite: 'Il y a 1 jour',
-      status: 'Actif'
-    }
-  ];
+  users: UiUser[] = [];
+  loading = false;
 
-  get totalUsers(): number {
-    return this.users.length;
-  }
+  totalUsers = 0;
+  totalCoachs = 0;
+  totalClients = 0;
+  totalAdmins = 0;
+  totalSuspendus = 0;
 
-  get totalCoachs(): number {
-    return this.users.filter(u => u.role === 'Coach').length;
-  }
+  page = 0;
+  size = 10;
+  totalElements = 0;
 
-  get totalClients(): number {
-    return this.users.filter(u => u.role === 'Client').length;
-  }
+  modalOpen = false;
+  modalMode: ModalMode = null;
+  modalLoading = false;
+  selectedUser: UiUser | null = null;
 
-  get totalSuspendus(): number {
-    return this.users.filter(u => u.status === 'Suspendu').length;
-  }
+  editForm: EditUserForm = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    activated: true
+  };
 
-  get filteredUsers(): AppUser[] {
-    return this.users.filter((user) => {
-      const matchesTab =
-        this.activeTab === 'Tous' ||
-        (this.activeTab === 'Coachs' && user.role === 'Coach') ||
-        (this.activeTab === 'Clients' && user.role === 'Client') ||
-        (this.activeTab === 'Admins' && user.role === 'Admin');
+  private searchSubject = new Subject<string>();
 
-      const q = this.searchQuery.trim().toLowerCase();
-      const matchesSearch =
-        !q ||
-        user.name.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q);
+  constructor(private usersService: UsersService) {}
 
-      const matchesStatus =
-        this.statusFilter === 'Tous' || user.status === this.statusFilter;
+  ngOnInit(): void {
+    this.loadStats();
+    this.loadUsers();
 
-      return matchesTab && matchesSearch && matchesStatus;
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.page = 0;
+      this.loadUsers();
     });
   }
 
-  getStatusClass(status: AppUser['status']): string {
+  onSearchChange(value: string): void {
+    this.searchQuery = value;
+    this.searchSubject.next(value);
+  }
+
+  onTabChange(tab: TabType): void {
+    this.activeTab = tab;
+    this.page = 0;
+    this.loadUsers();
+  }
+
+  onStatusChange(): void {
+    this.page = 0;
+    this.loadUsers();
+  }
+
+  loadStats(): void {
+    this.usersService.getAdminStats().subscribe({
+      next: stats => {
+        this.totalUsers = stats.totalUsers;
+        this.totalCoachs = stats.totalCoachs;
+        this.totalClients = stats.totalClients;
+        this.totalAdmins = stats.totalAdmins;
+        this.totalSuspendus = stats.totalSuspendus;
+      }
+    });
+  }
+
+  loadUsers(): void {
+    this.loading = true;
+
+    const roleMap: Record<TabType, string | undefined> = {
+      Tous: undefined,
+      Coachs: 'ROLE_COACH',
+      Clients: 'ROLE_CLIENT',
+      Admins: 'ROLE_ADMIN'
+    };
+
+    const activatedMap: Record<StatusFilter, boolean | ''> = {
+      Tous: '',
+      Actif: true,
+      Suspendu: false
+    };
+
+    this.usersService.getAdminUsers({
+      role: roleMap[this.activeTab],
+      activated: activatedMap[this.statusFilter],
+      search: this.searchQuery?.trim() || undefined,
+      page: this.page,
+      size: this.size
+    }).subscribe({
+      next: res => {
+        this.users = res.content.map(u => this.mapToUiUser(u));
+        this.totalElements = res.totalElements;
+        this.loading = false;
+      },
+      error: () => {
+        this.users = [];
+        this.loading = false;
+      }
+    });
+  }
+
+  mapToUiUser(u: any): UiUser {
+    const role = this.extractRole(u.authorities || u.roleNames || []);
+    return {
+      id: u.id,
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+      email: u.email,
+      role,
+      status: u.banned ? 'Banni' : (u.activated ? 'Actif' : 'Suspendu'),
+      coach: u.coachName,
+      activite: u.lastActivityLabel,
+      nbClients: u.nbClients,
+      derniereConnexion: u.lastLoginLabel,
+      avatarUrl: u.avatarUrl
+    };
+  }
+
+  extractRole(roles: string[]): 'Client' | 'Coach' | 'Admin' {
+    if (roles.includes('ROLE_ADMIN')) return 'Admin';
+    if (roles.includes('ROLE_COACH')) return 'Coach';
+    return 'Client';
+  }
+
+  get filteredUsers(): UiUser[] {
+    return this.users;
+  }
+
+  getStatusClass(status: UiUser['status']): string {
     switch (status) {
       case 'Actif':
         return 'badge badge-success';
       case 'Suspendu':
         return 'badge badge-danger';
-      case 'En attente':
-        return 'badge badge-warning';
+      case 'Banni':
+        return 'badge badge-danger';
       default:
         return 'badge';
     }
   }
 
-  trackByUser(index: number, user: AppUser): number {
+  trackByUser(index: number, user: UiUser): string {
     return user.id;
   }
 
-  onView(user: AppUser): void {
-    console.log('Voir', user);
+  onView(user: UiUser): void {
+    this.openModal('view', user);
   }
 
-  onEdit(user: AppUser): void {
-    console.log('Modifier', user);
+  onEdit(user: UiUser): void {
+    this.openModal('edit', user);
   }
 
-  onSuspend(user: AppUser): void {
-    console.log('Suspendre', user);
+  onSuspend(user: UiUser): void {
+    this.openModal('suspend', user);
   }
 
-  onBan(user: AppUser): void {
-    console.log('Bannir', user);
+  onBan(user: UiUser): void {
+    this.openModal('ban', user);
   }
 
-  onDelete(user: AppUser): void {
-    console.log('Supprimer', user);
+  onDelete(user: UiUser): void {
+    this.openModal('delete', user);
   }
+
+  openModal(mode: ModalMode, user: UiUser): void {
+    this.modalMode = mode;
+    this.selectedUser = user;
+    this.modalOpen = true;
+
+    this.editForm = {
+      firstName: this.getFirstName(user.name),
+      lastName: this.getLastName(user.name),
+      email: user.email,
+      activated: user.status === 'Actif'
+    };
+  }
+
+  closeModal(): void {
+    this.modalOpen = false;
+    this.modalMode = null;
+    this.selectedUser = null;
+    this.modalLoading = false;
+  }
+
+  submitModalAction(): void {
+
+    if (this.modalMode === 'add') {
+      const login = this.editForm.login?.trim() || this.editForm.email?.trim() || '';
+
+      this.usersService.createUser({
+        login,
+        firstName: this.editForm.firstName,
+        lastName: this.editForm.lastName,
+        email: this.editForm.email,
+        password: this.editForm.password || '',
+        activated: this.editForm.activated,
+        authorities: [this.editForm.role || 'ROLE_CLIENT']
+      }).subscribe({
+        next: () => {
+          this.afterActionSuccess();
+        },
+        error: (err) => {
+          console.error('Create user failed', err);
+          this.modalLoading = false;
+        }
+      });
+      return;
+    }
+
+
+    if (!this.selectedUser || !this.modalMode) return;
+
+    this.modalLoading = true;
+
+    if (this.modalMode === 'edit') {
+      this.usersService.updateUser(this.selectedUser.id, {
+        firstName: this.editForm.firstName,
+        lastName: this.editForm.lastName,
+        email: this.editForm.email,
+        activated: this.editForm.activated
+      }).subscribe({
+        next: () => {
+          this.afterActionSuccess();
+        },
+        error: () => {
+          this.modalLoading = false;
+        }
+      });
+      return;
+    }
+
+    if (this.modalMode === 'suspend') {
+      this.usersService.updateUserStatus(this.selectedUser.id, false).subscribe({
+        next: () => {
+          this.afterActionSuccess();
+        },
+        error: () => {
+          this.modalLoading = false;
+        }
+      });
+      return;
+    }
+
+    if (this.modalMode === 'ban') {
+      this.usersService.banUser(this.selectedUser.id).subscribe({
+        next: () => {
+          this.afterActionSuccess();
+        },
+        error: () => {
+          this.modalLoading = false;
+        }
+      });
+      return;
+    }
+
+    if (this.modalMode === 'delete') {
+      this.usersService.deleteUser(this.selectedUser.id).subscribe({
+        next: () => {
+          this.afterActionSuccess();
+        },
+        error: () => {
+          this.modalLoading = false;
+        }
+      });
+      return;
+    }
+
+    this.modalLoading = false;
+  }
+
+  afterActionSuccess(): void {
+    this.closeModal();
+    this.loadUsers();
+    this.loadStats();
+  }
+
+  getModalTitle(): string {
+    switch (this.modalMode) {
+      case 'view': return 'Détails utilisateur';
+      case 'add': return 'Ajouter un utilisateur';
+      case 'edit': return 'Modifier utilisateur';
+      case 'suspend': return 'Suspendre utilisateur';
+      case 'ban': return 'Bannir utilisateur';
+      case 'delete': return 'Supprimer utilisateur';
+      default: return '';
+    }
+  }
+
+  getModalDescription(): string {
+    if (!this.selectedUser) return '';
+
+    switch (this.modalMode) {
+      case 'view':
+        return 'Consultez les informations principales de cet utilisateur.';
+      case 'add':
+        return 'Créez un nouvel utilisateur et définissez son rôle.';
+      case 'edit':
+        return 'Modifiez les informations de cet utilisateur.';
+      case 'suspend':
+        return `Voulez-vous vraiment suspendre ${this.selectedUser.name} ?`;
+      case 'ban':
+        return `Voulez-vous vraiment bannir ${this.selectedUser.name} ?`;
+      case 'delete':
+        return `Cette action supprimera définitivement ${this.selectedUser.name}.`;
+      default:
+        return '';
+    }
+  }
+
+  getConfirmButtonLabel(): string {
+    switch (this.modalMode) {
+      case 'add': return 'Créer';
+      case 'edit': return 'Enregistrer';
+      case 'suspend': return 'Suspendre';
+      case 'ban': return 'Bannir';
+      case 'delete': return 'Supprimer';
+      default: return 'Confirmer';
+    }
+  }
+
+  isDangerAction(): boolean {
+    return this.modalMode === 'delete' || this.modalMode === 'ban' || this.modalMode === 'suspend';
+  }
+
   getInitials(name: string): string {
     if (!name) return '';
-
-    const parts = name.split(' ');
-    return parts
+    return name.split(' ')
       .map(p => p.charAt(0).toUpperCase())
       .slice(0, 2)
       .join('');
+  }
+
+  private getFirstName(fullName: string): string {
+    return fullName?.split(' ')?.[0] || '';
+  }
+
+  private getLastName(fullName: string): string {
+    const parts = fullName?.split(' ') || [];
+    return parts.length > 1 ? parts.slice(1).join(' ') : '';
+  }
+
+  onAddUser(): void {
+    this.modalMode = 'add';
+    this.selectedUser = null;
+    this.modalOpen = true;
+
+    this.editForm = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      activated: true,
+      login: '',
+      password: '',
+      role: 'ROLE_CLIENT'
+    };
   }
 }
