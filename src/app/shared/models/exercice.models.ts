@@ -9,8 +9,13 @@ export interface ExerciseSet {
 export interface ExerciseRef {
   id?: string;
   name?: string;
-  videoUrl?: string;
+  videoLink?: string;
   description?: string;
+  type?: string;
+  muscle?: string;
+  equipment?: string;
+  createdBy?: string;
+  isTemplate?: boolean;
 }
 
 export interface Exercise {
@@ -26,11 +31,13 @@ export interface Exercise {
 
   image?: string;
   videoUrl?: string;
+  videoLink?: string;
   description?: string;
 
   equipment?: string;
   muscle?: string;
   isTemplate?: boolean;
+  createdBy?: string;
 }
 
 export interface WorkoutSession {

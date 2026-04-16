@@ -22,6 +22,8 @@ export interface SaveWorkoutSetRequest {
 export interface SaveWorkoutExerciseRequest {
   name: string;
   type: 'CARDIO' | 'STRENGTH';
+  description?: string;
+  videoLink?: string;
   sets: SaveWorkoutSetRequest[];
 }
 

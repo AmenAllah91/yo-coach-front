@@ -197,7 +197,7 @@ export class WorkoutPlanFacade {
               name: e.name,
               type: e.type,
               exerciseRef: e.exerciseRef,
-              videoUrl: e.exerciseRef?.videoUrl ?? e.videoUrl,
+              videoUrl: e.exerciseRef?.videoLink ?? e.videoUrl,
               sets: [{ reps: '8', restMin: 1, restSec: 0 }],
             };
             return ex;

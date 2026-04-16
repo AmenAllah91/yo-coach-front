@@ -107,19 +107,22 @@ export class ProgramModalComponent implements OnInit, OnChanges {
         restDay: false,
         workoutSessions: [{
           name: day.name,
-          exercises: day.exercises.map((exercise: any) => ({
-            exerciseRef: { id: exercise.exerciseRef },
-            isSuperset: exercise.isSuperset || false,
-            supersetWith: exercise.supersetWith || null,
-            supersetGroupId: exercise.supersetGroupId || null,
-            notes: exercise.notes || '',
-            sets: exercise.sets.map((set: any, setIndex: number) => ({
-              setNumber: setIndex + 1,
-              reps: set.reps || 8,
-              restMin: set.restMin || 1,
-              restSec: set.restSec || 0
+exercises: day.exercises.map((exercise: any) => ({
+              name: exercise.name,
+              exerciseRef: { id: exercise.exerciseRef },
+              description: exercise.description || '',
+              videoLink: exercise.videoUrl || exercise.videoLink || '',
+              isSuperset: exercise.isSuperset || false,
+              supersetWith: exercise.supersetWith || null,
+              supersetGroupId: exercise.supersetGroupId || null,
+              notes: exercise.notes || '',
+              sets: exercise.sets.map((set: any, setIndex: number) => ({
+                setNumber: setIndex + 1,
+                reps: set.reps || 8,
+                restMin: set.restMin || 1,
+                restSec: set.restSec || 0
+              }))
             }))
-          }))
         }]
       }))
     };

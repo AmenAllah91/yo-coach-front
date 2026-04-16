@@ -30,6 +30,7 @@ export class ExerciseLibraryComponent implements OnInit {
   equipment = '';
   muscle = '';
   videoLink = '';
+  exerciseDescription = '';
   allExercises: Exercise[] = [];
   filteredExercises: Exercise[] = [];
   isLoading = false;
@@ -179,12 +180,15 @@ export class ExerciseLibraryComponent implements OnInit {
   createExercise() {
     if (!this.exerciseName.trim()) return;
 
-    const exercise: Exercise = {
+    const exercise: any = {
       name: this.exerciseName,
       type: this.exerciseType,
       equipment: this.equipment,
       muscle: this.muscle,
-      isTemplate: this.isTemplate
+      isTemplate: this.isTemplate,
+      videoLink: this.videoLink,
+      description: this.exerciseDescription,
+      createdBy: this.editingExercise?.createdBy || null
     };
 
     if (this.editingExercise) {
@@ -216,6 +220,7 @@ export class ExerciseLibraryComponent implements OnInit {
     this.equipment = this.enums?.equipment[0] || '';
     this.muscle = this.enums?.muscleGroup[0] || '';
     this.videoLink = '';
+    this.exerciseDescription = '';
     this.isTemplate = false;
     this.editingExercise = null;
   }
@@ -227,6 +232,8 @@ export class ExerciseLibraryComponent implements OnInit {
     this.equipment = exercise.equipment;
     this.muscle = exercise.muscle;
     this.isTemplate = exercise.isTemplate || false;
+    this.videoLink = (exercise as any).videoLink || exercise.videoUrl || '';
+    this.exerciseDescription = exercise.description || '';
     this.openCreateModal();
   }
 

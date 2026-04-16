@@ -48,9 +48,9 @@
       <div class="exercises-section" *ngIf="filteredExercises.length > 0">
         <h3>Exercises ({{ filteredExercises.length }})</h3>
         <div class="exercise-list">
-          <div class="exercise-item" 
-               *ngFor="let exercise of filteredExercises" 
-               [class.selected]="selectedExercise === exercise.id" 
+          <div class="exercise-item"
+               *ngFor="let exercise of filteredExercises"
+               [class.selected]="selectedExercise === exercise.id"
                (click)="selectExercise(exercise.id!)">
             <div class="exercise-icon">
               <i-feather name="activity"></i-feather>
@@ -69,9 +69,9 @@
             </div>
           </div>
         </div>
-        
+
         <app-scroll-loader [isLoading]="isLoading" loadingText="Loading exercises..."></app-scroll-loader>
-        
+
         <div class="pagination" *ngIf="totalPages > 1">
           <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
           <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
@@ -100,10 +100,10 @@
           </button>
           <h2>{{ getExerciseName() }}</h2>
         </div>
-        
+
         <div class="video-section">
           <div class="video-wrapper">
-            <youtube-player 
+            <youtube-player
               *ngIf="getSelectedExercise()?.videoLink && getYouTubeVideoId(getSelectedExercise()!.videoLink!); else placeholder"
               [videoId]="getYouTubeVideoId(getSelectedExercise()!.videoLink!)"
               class="video-player">
@@ -115,11 +115,16 @@
             </ng-template>
           </div>
         </div>
-        
+
         <div class="exercise-meta-section">
           <span class="meta-tag">{{ getSelectedExercise()?.type }}</span>
           <span class="meta-tag">{{ getSelectedExercise()?.muscle }}</span>
           <span class="meta-tag">{{ getSelectedExercise()?.equipment }}</span>
+        </div>
+
+        <div class="exercise-description" *ngIf="getSelectedExercise()?.description">
+          <h3>Description</h3>
+          <p>{{ getSelectedExercise()?.description }}</p>
         </div>
       </div>
     </div>
@@ -191,6 +196,11 @@
             <div class="or-divider">or</div>
             <input type="text" placeholder="Paste a YouTube video link" [(ngModel)]="videoLink">
           </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea placeholder="Enter exercise description" [(ngModel)]="exerciseDescription" rows="3"></textarea>
         </div>
       </div>
 

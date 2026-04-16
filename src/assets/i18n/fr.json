@@ -23,7 +23,7 @@
   "ADD_PROGRESS_PICTURE_SUBTITLE": "Téléchargez une photo et enregistrez le poids actuel et la date.",
 
   "EMPTY_PROGRESS_PICTURES_TITLE": "Aucune photo de progression",
-  "EMPTY_PROGRESS_PICTURES_SUBTITLE": "Vos photos de progression apparaîtront ici après l’ajout de la première photo.",
+  "EMPTY_PROGRESS_PICTURES_SUBTITLE": "Vos photos de progression apparaîtront ici après l'ajout de la première photo.",
 
   "COMPARISON_TITLE": "Comparaison des photos de progression",
   "COMPARISON_SUBTITLE": "Comparez les photos côte à côte pour suivre la transformation.",
@@ -37,7 +37,7 @@
   "SELECT_PICTURE": "Sélectionnez une photo.",
 
   "LOAD_PROGRESS_PICTURES_ERROR": "Impossible de charger les photos de progression.",
-  "SAVE_PROGRESS_PICTURE_ERROR": "Impossible d’enregistrer la photo de progression.",
+  "SAVE_PROGRESS_PICTURE_ERROR": "Impossible d'enregistrer la photo de progression.",
   "UPLOAD_PROGRESS_PICTURE_ERROR": "Impossible de téléverser la photo.",
   "CLIENT_ID_MISSING": "L'identifiant du client est manquant."
 }
