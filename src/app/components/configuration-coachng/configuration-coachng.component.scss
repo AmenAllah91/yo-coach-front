@@ -1,0 +1,458 @@
+// ═══════════════════════════════════════════════════════
+//  CONFIGURATION COACH – SCSS  (mobile-first responsive)
+//  Breakpoints :  sm = 480px  |  md = 640px  |  lg = 768px
+// ═══════════════════════════════════════════════════════
+
+$accent:        #44b4df;
+$accent-dark:   #3a9cc2;
+$accent-light:  rgba(68, 180, 223, 0.10);
+$accent-border: rgba(68, 180, 223, 0.20);
+$gray-50:   #f9fafb;
+$gray-100:  #f3f4f6;
+$gray-200:  #e5e7eb;
+$gray-300:  #d1d5db;
+$gray-400:  #9ca3af;
+$gray-500:  #6b7280;
+$gray-700:  #374151;
+$gray-900:  #111827;
+
+$sm: 480px;
+$md: 640px;
+$lg: 768px;
+
+// ─── Host ────────────────────────────────────────────
+:host {
+  display: block;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+// ─── Wrapper ─────────────────────────────────────────
+.coach-settings {
+  margin: 0 auto;
+  // mobile : padding réduit
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media (min-width: $md) {
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: $lg) {
+    padding: 2rem 1.5rem;
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  HEADER
+// ════════════════════════════════════════════════════
+.cs-header {
+  display: flex;
+  flex-direction: column;
+  gap: .875rem;
+
+  // Sur md+ : titre à gauche, boutons à droite, même ligne
+  @media (min-width: $md) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $gray-900;
+    margin: 0;
+    line-height: 1.2;
+
+    @media (min-width: $md) { font-size: 1.5rem; }
+  }
+
+  &__sub {
+    font-size: .8125rem;
+    color: $gray-500;
+    margin: .2rem 0 0;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+    // mobile : boutons pleine largeur
+    width: 100%;
+
+    @media (min-width: $md) {
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      // mobile : chaque bouton prend la moitié
+      flex: 1;
+      justify-content: center;
+
+      @media (min-width: $md) {
+        flex: none;
+      }
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  BUTTONS
+// ════════════════════════════════════════════════════
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .5625rem 1.125rem;
+  border-radius: 8px;
+  font-size: .875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+  line-height: 1.5;
+  // touch target mobile confortable
+  min-height: 44px;
+
+  &--outline {
+    background: #fff;
+    color: $gray-700;
+    border: 1px solid $gray-300;
+    &:hover  { background: $gray-50; border-color: $gray-400; }
+    &:active { background: $gray-100; }
+  }
+
+  &--accent {
+    background: $accent;
+    color: #fff;
+    border: 1px solid $accent;
+    &:hover  { background: $accent-dark; border-color: $accent-dark; }
+    &:active { background: darken($accent-dark, 6%); }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  SECTION CARDS
+// ════════════════════════════════════════════════════
+.section-card {
+  background: #fff;
+  border: 1px solid $gray-200;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.section-inner {
+  display: flex;
+  flex-direction: column; // mobile : empilé
+
+  @media (min-width: $md) { flex-direction: row; }
+}
+
+// Sidebar (icône + titre)
+.section-side {
+  display: flex;
+  align-items: center;         // mobile : centré horizontalement
+  gap: .625rem;
+  padding: .875rem 1rem;
+  border-bottom: 1px solid $gray-100;
+  background: $gray-50;        // léger fond sur mobile pour distinguer
+
+  @media (min-width: $md) {
+    align-items: flex-start;
+    width: 200px;
+    flex-shrink: 0;
+    padding: 1.5rem;
+    border-bottom: none;
+    border-right: 1px solid $gray-100;
+    background: transparent;
+  }
+
+  @media (min-width: $lg) { width: 220px; }
+}
+
+.section-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: $accent-light;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  @media (min-width: $md) {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.section-title {
+  font-size: .875rem;
+  font-weight: 700;
+  color: $gray-900;
+  margin: 0;
+
+  @media (min-width: $md) {
+    font-size: .9375rem;
+    padding-top: .3rem;
+  }
+}
+
+// Body
+.section-body {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media (min-width: $md) {
+    padding: 1.25rem 1.5rem;
+    gap: 1.25rem;
+  }
+
+  // variante workout (row sur desktop)
+  &--row {
+    @media (min-width: $lg) {
+      flex-direction: row;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  TOGGLE
+// ════════════════════════════════════════════════════
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  // touch zone confortable
+  min-height: 36px;
+}
+
+.toggle-label {
+  font-size: .875rem;
+  font-weight: 500;
+  color: $gray-700;
+  line-height: 1.4;
+}
+
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  background: $gray-200;
+  transition: background .2s;
+  flex-shrink: 0;
+  padding: 0;
+  // touch target
+  touch-action: manipulation;
+
+  &--on { background: $accent; }
+
+  &__thumb {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    transform: translateX(.25rem);
+    transition: transform .2s;
+
+    &--on { transform: translateX(1.5rem); }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  SELECTS
+// ════════════════════════════════════════════════════
+.select-label {
+  display: block;
+  font-size: .75rem;
+  color: $gray-500;
+  margin-bottom: .3rem;
+  white-space: nowrap;
+}
+
+.select {
+  width: 100%;
+  padding: .5rem .625rem;
+  background: #fff;
+  border: 1px solid $gray-300;
+  border-radius: 8px;
+  font-size: .875rem;
+  font-family: inherit;
+  color: $gray-900;
+  outline: none;
+  cursor: pointer;
+  // touch : hauteur min confortable
+  min-height: 40px;
+  transition: border-color .15s, box-shadow .15s;
+
+  &:focus {
+    border-color: $accent;
+    box-shadow: 0 0 0 3px rgba(68,180,223,.15);
+  }
+
+  &--sm { max-width: 9rem; }
+  &--lg { max-width: 13rem; }
+}
+
+.select-group {
+  display: flex;
+  flex-direction: column;
+}
+
+// ════════════════════════════════════════════════════
+//  WORKOUT SECTION
+// ════════════════════════════════════════════════════
+.workout-selects {
+  display: grid;
+  // mobile : 2 colonnes
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  width: 100%;
+
+  @media (min-width: $sm) {
+    // sm : 4 colonnes
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: $lg) {
+    // desktop : largeur auto + flex
+    display: flex;
+    align-items: flex-end;
+    gap: .875rem;
+    width: auto;
+    flex: 1;
+
+    .select-group {
+      width: 88px;
+      flex-shrink: 0;
+
+      .select { width: 100%; }
+    }
+  }
+
+  // mobile/sm : tous les selects prennent toute la largeur de leur cellule
+  .select-group .select {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.workout-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .625rem;
+  width: 100%;               // mobile : pleine largeur
+  padding-top: .25rem;
+
+  @media (min-width: $lg) {
+    width: auto;
+    flex-shrink: 0;
+    padding-top: 0;
+    padding-bottom: .125rem; // aligner avec le bas des selects
+    justify-content: flex-start;
+  }
+
+  .toggle-label { white-space: nowrap; }
+}
+
+// ════════════════════════════════════════════════════
+//  SUB-BOX (Meal Defaults)
+// ════════════════════════════════════════════════════
+.sub-box {
+  background: rgba($gray-50, .6);
+  border: 1px solid $gray-100;
+  border-radius: 10px;
+  padding: 1rem;
+
+  @media (min-width: $md) { padding: 1.25rem; }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .875rem;
+  }
+
+  &__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 4px;
+    background: $accent-light;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-size: .875rem;
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    gap: .875rem;
+
+    // sm+ : côte à côte
+    @media (min-width: $sm) {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    // mobile : le toggle-row prend toute la largeur
+    .toggle-row {
+      width: 100%;
+
+      @media (min-width: $sm) { width: auto; }
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  INFO BANNER
+// ════════════════════════════════════════════════════
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: .625rem;
+  background: rgba(68,180,223,.05);
+  border: 1px solid $accent-border;
+  border-radius: 10px;
+  padding: .875rem 1rem;
+
+  svg { flex-shrink: 0; margin-top: .1rem; }
+
+  &__text {
+    font-size: .8125rem;
+    font-weight: 500;
+    color: $accent;
+    margin: 0;
+    line-height: 1.5;
+  }
+}

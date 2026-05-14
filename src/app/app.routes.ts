@@ -48,6 +48,7 @@ import {WebsiteLeadsComponent} from "./components/website/website-leads/website-
 import {RevenueSubscriptionsComponent} from "./components/admin/revenue-subscriptions/revenue-subscriptions.component";
 import {UsersComponent} from "./components/admin/users/users.component";
 import {VideoViewerComponent} from "./components/video-viewer/video-viewer.component";
+import {ConfigurationCoachngComponent} from "./components/configuration-coachng/configuration-coachng.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -217,7 +218,11 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'body-measurements',
         component: BodyMeasurementsComponent,
-      }
+      },
+      {
+        path: 'configuration',
+        component: ConfigurationCoachngComponent,
+      },
     ],
   },
   {
@@ -243,5 +248,6 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'video-viewer',
     component: VideoViewerComponent,
-  }
+  },
+
 ];
