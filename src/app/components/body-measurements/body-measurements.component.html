@@ -1,0 +1,189 @@
+<div class="measurements-page">
+  <div class="measurements-shell">
+    <aside class="measurements-sidebar">
+      <div class="measurement-search">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="search"
+          placeholder="Search measurement"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="measurement-type"
+        *ngFor="let type of filteredTypes; trackBy: trackByType"
+        [class.active]="selectedType === type.key"
+        (click)="selectType(type.key)"
+      >
+        <i class="fas" [ngClass]="type.icon"></i>
+        <span>{{ type.label }}</span>
+      </button>
+    </aside>
+
+    <section class="measurements-content">
+      <div class="measurements-topbar">
+        <div>
+          <h2>{{ currentType.label }}</h2>
+          <p *ngIf="latestMeasurement">Latest record from {{ latestMeasurement.date | date:'mediumDate' }}</p>
+          <p *ngIf="!latestMeasurement">No records yet</p>
+        </div>
+
+        <button
+          *ngIf="allowAdd"
+          type="button"
+          class="add-measurement-btn"
+          (click)="openAddModal()"
+        >
+          <i class="fas fa-plus"></i>
+          Add Measurement
+        </button>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span>Last</span>
+          <strong>{{ latestValue }}</strong>
+          <div class="goal-summary" *ngIf="showGoalLine">
+            {{ goalLabel }}
+          </div>
+        </div>
+
+        <div class="chart-wrap" *ngIf="selectedMeasurements.length > 0">
+          <svg viewBox="0 0 700 300" preserveAspectRatio="none">
+            <line x1="30" y1="25" x2="670" y2="25" class="grid-line"></line>
+            <line x1="30" y1="101.5" x2="670" y2="101.5" class="grid-line"></line>
+            <line x1="30" y1="178" x2="670" y2="178" class="grid-line"></line>
+            <line x1="30" y1="255" x2="670" y2="255" class="grid-line"></line>
+
+            <line
+              *ngIf="showGoalLine"
+              x1="30"
+              x2="670"
+              [attr.y1]="goalLineY"
+              [attr.y2]="goalLineY"
+              class="goal-line"
+            ></line>
+
+            <text
+              *ngIf="showGoalLine"
+              x="558"
+              [attr.y]="goalLabelY"
+              class="goal-line-label"
+            >
+              {{ goalLabel }}
+            </text>
+
+            <polyline
+              [attr.points]="chartPoints"
+              class="chart-line"
+            ></polyline>
+
+            <circle
+              *ngFor="let dot of chartDots"
+              [attr.cx]="dot.x"
+              [attr.cy]="dot.y"
+              r="5"
+              class="chart-dot"
+            ></circle>
+          </svg>
+
+          <div class="y-axis">
+            <span *ngFor="let label of yAxisLabels">{{ formatValue(label) }}</span>
+          </div>
+        </div>
+
+        <div class="empty-chart" *ngIf="selectedMeasurements.length === 0">
+          <i class="fas fa-chart-line"></i>
+          <span>No data yet for {{ currentType.label }}</span>
+          <small *ngIf="showGoalLine">{{ goalLabel }}</small>
+        </div>
+      </div>
+
+      <div class="history-section">
+        <h3>History</h3>
+
+        <div class="history-list" *ngIf="history.length > 0">
+          <div
+            class="history-row"
+            *ngFor="let item of history; trackBy: trackByMeasurementId"
+          >
+            <div class="history-icon">
+              <i class="fas fa-arrow-up-right-dots"></i>
+            </div>
+
+            <div class="history-value">
+              {{ formatValue(item.value) }} {{ item.unit || currentType.unit }}
+            </div>
+
+            <div class="history-date">
+              {{ formatDate(item.date) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="history-empty" *ngIf="history.length === 0">
+          No history for this measurement yet.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div
+  class="measurement-modal-backdrop"
+  *ngIf="showAddModal"
+  (click)="closeAddModal()"
+>
+  <div class="measurement-modal" (click)="$event.stopPropagation()">
+    <div class="measurement-modal-header">
+      <div>
+        <h3>Add {{ currentType.label }}</h3>
+        <p>Track a new body measurement record.</p>
+      </div>
+      <button type="button" class="modal-close" (click)="closeAddModal()">×</button>
+    </div>
+
+    <div class="measurement-modal-body">
+      <label>
+        Value ({{ currentType.unit }})
+        <input
+          type="number"
+          step="0.1"
+          [(ngModel)]="addForm.value"
+          placeholder="Enter value"
+        />
+      </label>
+
+      <label>
+        Date
+        <input
+          type="date"
+          [(ngModel)]="addForm.date"
+        />
+      </label>
+
+      <label>
+        Note
+        <textarea
+          rows="3"
+          [(ngModel)]="addForm.note"
+          placeholder="Optional note"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="measurement-modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeAddModal()">Cancel</button>
+      <button
+        type="button"
+        class="btn-save"
+        (click)="saveMeasurement()"
+        [disabled]="saving || addForm.value === null || addForm.value === undefined"
+      >
+        {{ saving ? 'Saving...' : 'Save Measurement' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -34,7 +34,12 @@ export class SubscriptionsService {
   }): Observable<PageDto<CoachSubscriptionDto>> {
     let httpParams = new HttpParams()
       .set('page', params.page ?? 0)
-      .set('size', params.size ?? 10);
+      .set('size', params.size ?? 10)
+      // Spring Pageable style: newest startDate first.
+      .set('sort', 'startDate,desc')
+      // Fallback for APIs that use custom sort params.
+      .set('sortBy', 'startDate')
+      .set('direction', 'DESC');
 
     if (params.search?.trim()) {
       httpParams = httpParams.set('search', params.search.trim());

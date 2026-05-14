@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
 import {
   WorkoutDay,
@@ -20,13 +20,17 @@ import { Exercise } from '@shared/models/exercice.models';
 })
 export class CreateWorkoutComponent implements OnInit {
   isEditMode = false;
+  isVisibleToOthers = false;
+  private returnUrl: string | null = null;
 
   constructor(
     public facade: WorkoutPlanFacade,
-    private route: ActivatedRoute
-  ) {}
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+  }
 
-  // ====== PROPS utilisés par le template (alias facade) ======
   get workoutPlan(): WorkoutPlan {
     return this.facade.plan;
   }
@@ -56,7 +60,7 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   get isExerciseModalOpen(): boolean {
-    return this.facade.isExerciseModalOpen ?? false; // si pas encore dans facade
+    return this.facade.isExerciseModalOpen ?? false;
   }
 
   get showExerciseSelector(): boolean {
@@ -79,10 +83,10 @@ export class CreateWorkoutComponent implements OnInit {
     return this.facade.totalPages;
   }
 
-  // ===== filters bindings =====
   get searchQuery(): string {
     return this.facade.searchQuery;
   }
+
   set searchQuery(v: string) {
     this.facade.searchQuery = v;
   }
@@ -90,6 +94,7 @@ export class CreateWorkoutComponent implements OnInit {
   get muscleFilter(): string {
     return this.facade.muscleFilter;
   }
+
   set muscleFilter(v: string) {
     this.facade.muscleFilter = v;
   }
@@ -97,6 +102,7 @@ export class CreateWorkoutComponent implements OnInit {
   get equipmentFilter(): string {
     return this.facade.equipmentFilter;
   }
+
   set equipmentFilter(v: string) {
     this.facade.equipmentFilter = v;
   }
@@ -104,16 +110,163 @@ export class CreateWorkoutComponent implements OnInit {
   get typeFilter(): string {
     return this.facade.typeFilter;
   }
+
   set typeFilter(v: string) {
     this.facade.typeFilter = v;
   }
 
-  // ===== notes state =====
   get editingExerciseDescription(): string | null {
     return this.facade.editingExerciseDescription;
   }
 
-  // ===== lifecycle =====
+  get exerciseStep(): 'list' | 'detail' {
+    return this.facade.exerciseStep;
+  }
+
+  set exerciseStep(value: 'list' | 'detail') {
+    this.facade.exerciseStep = value;
+  }
+
+  get exerciseSearch(): string {
+    return this.facade.exerciseSearch;
+  }
+
+  set exerciseSearch(value: string) {
+    this.facade.exerciseSearch = value;
+  }
+
+  get filteredExercises(): Exercise[] {
+    return this.facade.filteredExercises;
+  }
+
+  get selectedExercise(): any {
+    return this.facade.selectedExercise;
+  }
+
+  set selectedExercise(value: any) {
+    this.facade.selectedExercise = value;
+  }
+
+  get hoveringExerciseId(): string | null {
+    return this.facade.hoveringExerciseId;
+  }
+
+  set hoveringExerciseId(value: string | null) {
+    this.facade.hoveringExerciseId = value;
+  }
+
+
+  get canCreateTemplate(): boolean {
+    const roles = this.getCurrentRoles();
+
+    console.log('[ADMIN CHECK CURRENT ROLES]', roles);
+
+    return roles.some((role) =>
+      role === 'ROLE_ADMIN' ||
+      role === 'ADMIN' ||
+      role === 'ROLE_SUPER_ADMIN' ||
+      role === 'SUPER_ADMIN'
+    );
+  }
+
+  private getCurrentRoles(): string[] {
+    const roles = new Set<string>();
+
+    const cleanRole = (value: any): string => {
+      return String(value)
+        .replace(/\\/g, '')
+        .replace(/"/g, '')
+        .replace(/'/g, '')
+        .trim()
+        .toUpperCase();
+    };
+
+    const addRole = (value: any) => {
+      if (!value) return;
+
+      if (Array.isArray(value)) {
+        value.forEach(addRole);
+        return;
+      }
+
+      if (typeof value === 'object') {
+        ['authority', 'name', 'role', 'value'].forEach((key) => {
+          if (value[key]) addRole(value[key]);
+        });
+        return;
+      }
+
+      String(value)
+        .replace('[', '')
+        .replace(']', '')
+        .replace(/"/g, '')
+        .replace(/'/g, '')
+        .replace(/,/g, ' ')
+        .split(/\s+/)
+        .map(cleanRole)
+        .filter(Boolean)
+        .forEach((role) => roles.add(role));
+    };
+
+    const currentToken =
+      sessionStorage.getItem('access_token') ||
+      sessionStorage.getItem('accessToken') ||
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('id_token') ||
+      sessionStorage.getItem('idToken');
+
+    const payload = this.decodeJwtPayload(currentToken);
+
+    if (payload) {
+      addRole(payload.authorities);
+      addRole(payload.roles);
+      addRole(payload.scope);
+      addRole(payload.scp);
+      addRole(payload.auth);
+      addRole(payload.realm_access?.roles);
+
+      const resourceAccess = payload.resource_access;
+      if (resourceAccess && typeof resourceAccess === 'object') {
+        Object.values(resourceAccess).forEach((entry: any) =>
+          addRole(entry?.roles)
+        );
+      }
+    }
+
+    if (roles.size === 0) {
+      try {
+        addRole(JSON.parse(sessionStorage.getItem('roles') || '[]'));
+      } catch {
+        addRole(sessionStorage.getItem('roles'));
+      }
+
+      try {
+        addRole(JSON.parse(sessionStorage.getItem('authorities') || '[]'));
+      } catch {
+        addRole(sessionStorage.getItem('authorities'));
+      }
+    }
+
+    return Array.from(roles);
+  }
+
+  private decodeJwtPayload(token: string | null): any {
+    if (!token || !token.includes('.')) return null;
+
+    try {
+      const payload = token.split('.')[1];
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(
+        normalized.length + ((4 - (normalized.length % 4)) % 4),
+        '=',
+      );
+
+      return JSON.parse(atob(padded));
+    } catch {
+      return null;
+    }
+  }
+
   ngOnInit() {
     const planId = this.route.snapshot.paramMap.get('id');
 
@@ -122,6 +275,13 @@ export class CreateWorkoutComponent implements OnInit {
       this.facade.loadPlanForEdit(planId).subscribe({
         next: (plan: WorkoutPlan) => {
           this.facade.applyPlanForEdit(plan);
+          this.isVisibleToOthers = this.canCreateTemplate
+            ? Boolean(plan.isWorkoutPlanTemplate)
+            : false;
+          this.facade.setPlan({
+            ...this.facade.plan,
+            isWorkoutPlanTemplate: this.isVisibleToOthers,
+          });
         },
         error: (err) =>
           console.error('Erreur lors du chargement du plan :', err),
@@ -129,12 +289,16 @@ export class CreateWorkoutComponent implements OnInit {
     } else {
       this.isEditMode = false;
       this.facade.initCreate();
+      this.isVisibleToOthers = false;
+      this.facade.setPlan({
+        ...this.facade.plan,
+        isWorkoutPlanTemplate: false,
+      });
     }
 
     this.facade.loadExercisesFromAPI();
   }
 
-  // ===== template functions (proxies) =====
   trackByDay = (index: number, d: WorkoutDay) => d.id;
   trackByExercise = (_: number, ex: Exercise) => ex.id;
 
@@ -180,7 +344,6 @@ export class CreateWorkoutComponent implements OnInit {
       this.selectedDay.workoutSessions = [];
       this.selectedDay.session = null;
     } else {
-      // recréer une session si on sort du rest day
       if (
         !this.selectedDay.workoutSessions ||
         this.selectedDay.workoutSessions.length === 0
@@ -192,6 +355,7 @@ export class CreateWorkoutComponent implements OnInit {
           totalReps: 0,
           totalDurationMin: 0,
         };
+
         this.selectedDay.workoutSessions = [newSession];
         this.selectedDay.session = newSession;
       } else {
@@ -207,6 +371,22 @@ export class CreateWorkoutComponent implements OnInit {
 
   closeExerciseSelector() {
     this.facade.showExerciseSelector = false;
+  }
+
+  closeExerciseModal() {
+    this.facade.closeExerciseModal();
+  }
+
+  filterExercises() {
+    this.facade.filterExercises();
+  }
+
+  showExerciseDetail(ex: Exercise) {
+    this.facade.showExerciseDetail(ex);
+  }
+
+  addExerciseToSession() {
+    this.facade.addExerciseToSession();
   }
 
   onFilterChange() {
@@ -225,21 +405,22 @@ export class CreateWorkoutComponent implements OnInit {
     this.facade.handleSelectExercise(ex);
   }
 
-  // Si ton template utilise ces fonctions superset/sets,
-  // il faut qu’elles existent dans la facade OU tu les mets ici en proxy aussi.
-  // (je peux te donner la facade complète si tu veux)
   isInSuperset(i: number) {
     return this.facade.isInSuperset?.(i) ?? false;
   }
+
   isSecondOfSuperset(i: number) {
     return this.facade.isSecondOfSuperset?.(i) ?? false;
   }
+
   isSupersetPair(i: number) {
     return this.facade.isSupersetPair?.(i) ?? false;
   }
+
   canShowSupersetButton(i: number) {
     return this.facade.canShowSupersetButton?.(i) ?? false;
   }
+
   toggleSuperset(i: number) {
     this.facade.toggleSuperset?.(i);
   }
@@ -247,15 +428,19 @@ export class CreateWorkoutComponent implements OnInit {
   handleRemoveExercise(exId: string) {
     this.facade.handleRemoveExercise?.(exId);
   }
+
   handleAddSet(exId: string) {
     this.facade.handleAddSet?.(exId);
   }
+
   handleRemoveSet(exId: string, si: number) {
     this.facade.handleRemoveSet?.(exId, si);
   }
+
   handleExerciseDescriptionChange(exId: string, v: string) {
     this.facade.handleExerciseDescriptionChange?.(exId, v);
   }
+
   setEditingExerciseDescription(exId: string | null) {
     this.facade.editingExerciseDescription = exId;
   }
@@ -264,19 +449,132 @@ export class CreateWorkoutComponent implements OnInit {
     this.facade.handleSetChange?.(exId, si, field, value);
   }
 
+  getExerciseVideoLink(exercise: Exercise | null | undefined): string {
+    if (!exercise) return '';
+
+    return (
+      ((exercise as any).videoLink as string) ||
+      ((exercise as any).videoUrl as string) ||
+      ((exercise as any).exerciseRef?.videoLink as string) ||
+      ((exercise as any).exerciseRef?.videoUrl as string) ||
+      ''
+    ).trim();
+  }
+
+  getExerciseImageUrl(exercise: Exercise | null | undefined): string {
+    if (!exercise) return '';
+
+    return (
+      ((exercise as any).imageUrl as string) ||
+      ((exercise as any).image as string) ||
+      ((exercise as any).thumbnailUrl as string) ||
+      ((exercise as any).photoUrl as string) ||
+      ((exercise as any).exerciseRef?.imageUrl as string) ||
+      ((exercise as any).exerciseRef?.image as string) ||
+      ((exercise as any).exerciseRef?.thumbnailUrl as string) ||
+      ((exercise as any).exerciseRef?.photoUrl as string) ||
+      ''
+    ).trim();
+  }
+
+  getExerciseThumbnail(exercise: Exercise | null | undefined): string {
+    if (!exercise) return '';
+
+    const existingImage = this.getExerciseImageUrl(exercise);
+
+    if (existingImage) {
+      return existingImage;
+    }
+
+    const videoUrl = this.getExerciseVideoLink(exercise);
+    const videoId = this.getYouTubeVideoId(videoUrl);
+
+    if (!videoId) return '';
+
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+
+  getYouTubeVideoId(url: string): string {
+    if (!url || !url.trim()) return '';
+
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      const segments = parsed.pathname.split('/').filter(Boolean);
+
+      let videoId = '';
+
+      if (host.includes('youtu.be')) {
+        videoId = segments[0] ?? '';
+      }
+
+      if (host.includes('youtube.com')) {
+        videoId = parsed.searchParams.get('v') ?? '';
+
+        if (!videoId && segments[0] === 'shorts') {
+          videoId = segments[1] ?? '';
+        }
+
+        if (!videoId && segments[0] === 'embed') {
+          videoId = segments[1] ?? '';
+        }
+      }
+
+      return videoId.split('?')[0].split('&')[0].trim();
+    } catch {
+      const regex =
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^"&?/\s]{6,})/;
+
+      const match = url.match(regex);
+
+      return match ? match[1] : '';
+    }
+  }
+
   savePlan() {
     this.facade.syncPlanDays();
 
+    const finalTemplateValue = this.canCreateTemplate
+      ? Boolean(this.isVisibleToOthers)
+      : false;
+
+    this.facade.setPlan({
+      ...this.facade.plan,
+      isWorkoutPlanTemplate: finalTemplateValue,
+      workoutDays: this.facade.days,
+    });
+
+    console.log(
+      '[CreateWorkoutComponent] final isWorkoutPlanTemplate =',
+      finalTemplateValue,
+      this.facade.plan,
+    );
+
     if (this.facade.plan.id) {
       this.facade.updatePlan().subscribe({
-        next: (res) => console.log('Workout plan updated:', res),
+        next: (res) => {
+          console.log('Workout plan updated:', res);
+          this.router.navigate(['/workout/program-library']);
+        },
         error: (err) => console.error('Error updating workout plan:', err),
       });
     } else {
       this.facade.createPlan().subscribe({
         next: (res) => {
           console.log('Workout plan created:', res);
-          this.facade.initCreate();
+
+          if (this.returnUrl) {
+            this.router.navigateByUrl(this.returnUrl, {
+              state: {
+                assignAfterCreate: {
+                  type: 'workout',
+                  item: res,
+                },
+              },
+            });
+          } else {
+            this.router.navigate(['/workout/program-library']);
+          }
         },
         error: (err) => console.error('Error creating workout plan:', err),
       });

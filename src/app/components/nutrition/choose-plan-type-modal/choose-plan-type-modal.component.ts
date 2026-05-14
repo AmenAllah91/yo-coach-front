@@ -17,6 +17,7 @@ export class ChoosePlanTypeModalComponent {
   @Input() isVisible = false;
   @Input() isAssign = false;
   @Input() idClient: string = null;
+  @Input() returnUrl: string | null = null;
 
   @Output() onClose = new EventEmitter<void>();
 
@@ -28,14 +29,15 @@ export class ChoosePlanTypeModalComponent {
 
   createFullMealPlan() {
     this.closeModal();
+    const queryParams: any = { type: 'each' };
+    if (this.returnUrl) queryParams.returnUrl = this.returnUrl;
+
     if (this.isAssign) {
       this.router.navigate([
         `/clients/create-full-plan/${this.idClient}`,
       ]);
     } else {
-      this.router.navigate(['/nutrition/create-full-plan'], {
-        queryParams: { type: 'each' },
-      });
+      this.router.navigate(['/nutrition/create-full-plan'], { queryParams });
     }
   }
 

@@ -775,6 +775,20 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   }
 
   copyDay(dateStr: string): void {
+    if (this.calendarType !== 'workout') {
+      return;
+    }
+
+    const sourcePrograms = this.workoutPrograms.filter(
+      (p: WorkoutProgram) =>
+        p.date === dateStr &&
+        (this.selectedClient === 'all' || p.clientId === this.selectedClient)
+    );
+
+    if (!sourcePrograms.length) {
+      return;
+    }
+
     this.copiedDate = dateStr;
   }
 

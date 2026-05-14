@@ -1,13 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
-import {catchError, forkJoin, of, Subject, takeUntil} from 'rxjs';
+import { catchError, forkJoin, of, Subject, takeUntil } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
 import { FormDetails, FormsApiService, PageResponse } from "../services/forms-api.service";
 import { AssignmentsApiService, AssignmentStatus, FormAssignment } from "../services/assignments-api.service";
 import { SubmissionsApiService } from "../services/submissions-api.service";
-import {Answer, QuestionType, SubmissionPayload} from "../../../models/forms.model";
-
+import { Answer, QuestionType, SubmissionPayload } from "../../../models/forms.model";
 
 type Tab = 'pending' | 'submitted';
 
@@ -55,13 +54,26 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
 
   currentForm: FormDetails | null = null;
 
-  // ✅ now Answer[] (not UiAnswer[])
   modalAnswers: Answer[] = [];
   submittedAnswers: Answer[] = [];
 
-  // Expose enum for template if you need it (optional)
+  /**
+   * UI-only selection state for multiple choice.
+   *
+   * Important:
+   * We cannot use selectedOptionId for selected CSS because some forms can have
+   * duplicated/empty option ids. If duplicated ids are used for CSS selection,
+   * selecting one option visually selects all options with that same id.
+   *
+   * This map stores the selected option index per question id for UI only.
+   * The submitted payload still sends the real backend option id.
+   */
+  selectedOptionIndexes: Record<string, number> = {};
+
   QuestionType = QuestionType;
+
   private readonly formNameMap = new Map<string, string>();
+
   constructor(
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
@@ -94,7 +106,6 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
         next: (res) => {
           this.pageData.set(res);
           this.loading.set(false);
-
           this.attachFormNames(res.content ?? []);
         },
         error: (err) => {
@@ -108,6 +119,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     const ids = Array.from(new Set(list.map(a => a.formId).filter(Boolean)));
 
     const missing = ids.filter(id => !this.formNameMap.has(String(id)));
+
     if (missing.length === 0) {
       this.applyFormNamesToPage();
       return;
@@ -133,18 +145,20 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
 
   private applyFormNamesToPage(): void {
     const pd = this.pageData();
+
     if (!pd) return;
 
     const updated = {
       ...pd,
       content: (pd.content ?? []).map(a => ({
         ...a,
-        formName: this.formNameMap.get(String(a.formId)) ?? a.formName ?? a.formId
-      }))
+        formName: this.formNameMap.get(String(a.formId)) ?? a.formName ?? a.formId,
+      })),
     };
 
     this.pageData.set(updated);
   }
+
   changePageSize(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(0);
@@ -153,28 +167,36 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
 
   goToPrev(): void {
     if (this.pageIndex() <= 0) return;
+
     this.pageIndex.set(this.pageIndex() - 1);
     this.loadPage();
   }
 
   goToNext(): void {
     if (this.pageIndex() >= this.totalPages() - 1) return;
+
     this.pageIndex.set(this.pageIndex() + 1);
     this.loadPage();
   }
 
   isOverdue(dueDate?: string): boolean {
     if (!dueDate) return false;
+
     return new Date(dueDate) < new Date();
   }
 
   statusLabel(status: AssignmentStatus): string {
     switch (status) {
-      case 'ASSIGNED': return 'Assigné';
-      case 'OPENED':   return 'Ouvert';
-      case 'SUBMITTED': return 'Soumis';
-      case 'CANCELED': return 'Annulé';
-      default: return status;
+      case 'ASSIGNED':
+        return 'Assigné';
+      case 'OPENED':
+        return 'Ouvert';
+      case 'SUBMITTED':
+        return 'Soumis';
+      case 'CANCELED':
+        return 'Annulé';
+      default:
+        return status;
     }
   }
 
@@ -191,6 +213,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     this.currentForm = null;
     this.modalAnswers = [];
     this.submittedAnswers = [];
+    this.selectedOptionIndexes = {};
     this.modalError.set(null);
     this.modalLoading.set(true);
 
@@ -214,22 +237,45 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
             error: () => {
               this.modalLoading.set(false);
               this.modalError.set('Impossible de charger les réponses.');
-            }
+            },
           });
         } else {
-          // ✅ Create empty answers using QuestionType enum
-          this.modalAnswers = this.currentForm!.questions.map((q): Answer => {
+          this.modalAnswers = this.currentForm.questions.map((q): Answer => {
             switch (q.type) {
               case 'MULTIPLE_CHOICE':
-                return { questionId: q.id, type: QuestionType.MULTIPLE_CHOICE, selectedOptionId: null };
+                return {
+                  questionId: q.id,
+                  type: QuestionType.MULTIPLE_CHOICE,
+                  selectedOptionId: null,
+                };
+
               case 'STAR_RATING':
-                return { questionId: q.id, type: QuestionType.STAR_RATING, rating: null };
+                return {
+                  questionId: q.id,
+                  type: QuestionType.STAR_RATING,
+                  rating: null,
+                };
+
               case 'YES_NO':
-                return { questionId: q.id, type: QuestionType.YES_NO, yes: null };
+                return {
+                  questionId: q.id,
+                  type: QuestionType.YES_NO,
+                  yes: null,
+                };
+
               case 'DATE':
-                return { questionId: q.id, type: QuestionType.DATE, date: null };
+                return {
+                  questionId: q.id,
+                  type: QuestionType.DATE,
+                  date: null,
+                };
+
               default:
-                return { questionId: q.id, type: QuestionType.TEXT, text: null };
+                return {
+                  questionId: q.id,
+                  type: QuestionType.TEXT,
+                  text: null,
+                };
             }
           });
 
@@ -239,7 +285,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
       error: () => {
         this.modalLoading.set(false);
         this.modalError.set('Impossible de charger le formulaire.');
-      }
+      },
     });
   }
 
@@ -250,8 +296,28 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     this.currentForm = null;
     this.modalAnswers = [];
     this.submittedAnswers = [];
+    this.selectedOptionIndexes = {};
     this.modalError.set(null);
     this.submitting.set(false);
+  }
+
+  selectOption(
+    questionIndex: number,
+    questionId: string,
+    optionIndex: number,
+    optionId: string | null | undefined,
+  ): void {
+    this.selectedOptionIndexes[questionId] = optionIndex;
+
+    const answer = this.modalAnswers[questionIndex];
+
+    if (answer?.type === QuestionType.MULTIPLE_CHOICE) {
+      answer.selectedOptionId = optionId ?? null;
+    }
+  }
+
+  isOptionSelected(questionId: string, optionIndex: number): boolean {
+    return this.selectedOptionIndexes[questionId] === optionIndex;
   }
 
   submitModal(): void {
@@ -267,19 +333,39 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
       answers: this.modalAnswers.map((a): Answer => {
         switch (a.type) {
           case QuestionType.MULTIPLE_CHOICE:
-            return { questionId: a.questionId, type: a.type, selectedOptionId: a.selectedOptionId ?? null };
+            return {
+              questionId: a.questionId,
+              type: a.type,
+              selectedOptionId: a.selectedOptionId ?? null,
+            };
 
           case QuestionType.STAR_RATING:
-            return { questionId: a.questionId, type: a.type, rating: a.rating ?? null };
+            return {
+              questionId: a.questionId,
+              type: a.type,
+              rating: a.rating ?? null,
+            };
 
           case QuestionType.YES_NO:
-            return { questionId: a.questionId, type: a.type, yes: a.yes ?? null };
+            return {
+              questionId: a.questionId,
+              type: a.type,
+              yes: a.yes ?? null,
+            };
 
           case QuestionType.TEXT:
-            return { questionId: a.questionId, type: a.type, text: a.text ?? null };
+            return {
+              questionId: a.questionId,
+              type: a.type,
+              text: a.text ?? null,
+            };
 
           case QuestionType.DATE:
-            return { questionId: a.questionId, type: a.type, date: a.date ?? null };
+            return {
+              questionId: a.questionId,
+              type: a.type,
+              date: a.date ?? null,
+            };
         }
       }),
     };
@@ -292,25 +378,39 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.submitting.set(false);
-        this.modalError.set(err?.error?.error ?? err?.error?.message ?? 'Erreur lors de la soumission.');
-      }
+        this.modalError.set(
+          err?.error?.error ??
+          err?.error?.message ??
+          'Erreur lors de la soumission.'
+        );
+      },
     });
   }
 
   isValid(): boolean {
     return this.modalAnswers.every(a => {
       switch (a.type) {
-        case QuestionType.YES_NO:          return a.yes !== null && a.yes !== undefined;
-        case QuestionType.STAR_RATING:     return a.rating !== null && a.rating !== undefined;
-        case QuestionType.MULTIPLE_CHOICE: return !!a.selectedOptionId;
-        case QuestionType.TEXT:            return !!a.text && a.text.trim().length > 0;
-        case QuestionType.DATE:            return !!a.date;
-        default:                           return false;
+        case QuestionType.YES_NO:
+          return a.yes !== null && a.yes !== undefined;
+
+        case QuestionType.STAR_RATING:
+          return a.rating !== null && a.rating !== undefined;
+
+        case QuestionType.MULTIPLE_CHOICE:
+          return !!a.selectedOptionId;
+
+        case QuestionType.TEXT:
+          return !!a.text && a.text.trim().length > 0;
+
+        case QuestionType.DATE:
+          return !!a.date;
+
+        default:
+          return false;
       }
     });
   }
 
-  // ✅ now returns Answer
   getSubmittedAnswer(questionId: string): Answer | undefined {
     return this.submittedAnswers.find(a => a.questionId === questionId);
   }

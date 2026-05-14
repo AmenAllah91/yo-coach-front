@@ -118,10 +118,11 @@
 }
 
 .view-toggle__badge--blue  { background: rgba(68,180,223,0.15); color: #0b74a6; }
+.view-toggle__badge--purple { background: rgba(139,92,246,0.15); color: #7c3aed; }
 .view-toggle__badge--amber { background: #fef3c7; color: #d97706; }
 .view-toggle__badge--gray  { background: #e5e7eb; color: #6b7280; }
 
-/* ── Archived banner ──────────────────────────────── */
+/* ── Archived banner ───────────────────────────── */
 .archived-banner {
   display: flex;
   align-items: center;
@@ -131,6 +132,32 @@
   border-bottom: 1px solid #fde68a;
   font-size: 13px;
   color: #92400e;
+}
+
+.archived-banner__icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+/* ── Unsaved banner ────────────────────────────── */
+.unsaved-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  background: #f5f3ff;
+  border-bottom: 1px solid #ddd6fe;
+  font-size: 13px;
+  color: #5b21b6;
+}
+
+.unsaved-banner__icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #7c3aed;
 }
 
 .archived-banner__icon {
@@ -973,4 +1000,9 @@ td.col-actions {
 
   &:hover { background: #44b4df; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+.badge--unsaved {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border-color: #e9d5ff;
 }

@@ -19,7 +19,20 @@
     </div>
   </div>
 
-  <div class="plans-table">
+  <div class="plans-state" *ngIf="loading">
+    Loading nutrition plans...
+  </div>
+
+  <div class="plans-state plans-state--error" *ngIf="!loading && error">
+    {{ error }}
+  </div>
+
+  <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">
+    No nutrition plans found.
+  </div>
+
+
+  <div class="plans-table" *ngIf="!loading && !error && filteredPlans.length > 0">
     <div class="table-header">
       <div class="col-title">TITLE</div>
       <div class="col-updated">LAST UPDATED ON</div>
@@ -31,15 +44,15 @@
     <div class="table-row" *ngFor="let plan of filteredPlans">
       <div class="col-title">
         <div class="plan-name">
-          {{ plan.name }} {{ plan.client ? "(Template)" : "" }}
+          {{ plan.name }} {{ isTemplatePlan(plan) ? "(Template)" : "" }}
         </div>
         <div class="plan-type">
           {{
             plan.trackingMode === "TOTAL_FOR_DAY"
               ? "TOTAL FOR DAY"
               : plan.trackingMode === "EACH_MEAL"
-              ? "EACH MEAL"
-              : "FULL MEAL PLAN"
+                ? "EACH MEAL"
+                : "FULL MEAL PLAN"
           }}
         </div>
       </div>
@@ -70,6 +83,7 @@
 
           <div class="dropdown-menu" *ngIf="openDropdownId === plan.id">
             <button
+              *ngIf="canManagePlan(plan)"
               class="dropdown-item"
               (click)="editPlan(plan); $event.stopPropagation()"
             >
@@ -91,6 +105,7 @@
               Duplicate
             </button>
             <button
+              *ngIf="canManagePlan(plan)"
               class="dropdown-item delete"
               (click)="openDeleteModal(plan); $event.stopPropagation()"
             >

@@ -9,7 +9,12 @@
     <div class="panel">
       <!-- Tabs -->
       <div class="tabs">
-        <button type="button" class="tab" [class.is-active]="activeTab === 'pending'" (click)="setTab('pending')">
+        <button
+          type="button"
+          class="tab"
+          [class.is-active]="activeTab === 'pending'"
+          (click)="setTab('pending')"
+        >
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
@@ -19,7 +24,12 @@
           <span class="tab-underline" *ngIf="activeTab === 'pending'"></span>
         </button>
 
-        <button type="button" class="tab" [class.is-active]="activeTab === 'submitted'" (click)="setTab('submitted')">
+        <button
+          type="button"
+          class="tab"
+          [class.is-active]="activeTab === 'submitted'"
+          (click)="setTab('submitted')"
+        >
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
@@ -32,12 +42,19 @@
       <!-- Filters bar -->
       <div class="filters-bar">
         <div class="filters-left">
-          <span class="total-label">Total : <strong>{{ totalElements() }}</strong></span>
+          <span class="total-label">
+            Total : <strong>{{ totalElements() }}</strong>
+          </span>
         </div>
+
         <div class="filters-right">
           <div class="filter-group">
             <label class="filter-label">Taille :</label>
-            <select class="select" [value]="pageSize()" (change)="changePageSize(+($any($event.target).value))">
+            <select
+              class="select"
+              [value]="pageSize()"
+              (change)="changePageSize(+($any($event.target).value))"
+            >
               <option [value]="5">5</option>
               <option [value]="10">10</option>
               <option [value]="20">20</option>
@@ -67,27 +84,53 @@
         <!-- Pending -->
         <ng-container *ngIf="activeTab === 'pending' && !loading()">
           <div class="list" *ngIf="pendingAssignments().length > 0; else emptyPending">
-            <button type="button" class="card" *ngFor="let a of pendingAssignments(); trackBy: trackById" (click)="openAssignment(a)">
+            <button
+              type="button"
+              class="card"
+              *ngFor="let a of pendingAssignments(); trackBy: trackById"
+              (click)="openAssignment(a)"
+            >
               <div class="card-body">
                 <div class="card-header-row">
                   <div class="card-title-group">
                     <h3 class="card-title">{{ a.formName || a.formId }}</h3>
-                    <span class="badge" [class.badge-overdue]="isOverdue(a.dueDate)" [class.badge-pending]="!isOverdue(a.dueDate)">
-                      <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" *ngIf="isOverdue(a.dueDate)">
+
+                    <span
+                      class="badge"
+                      [class.badge-overdue]="isOverdue(a.dueDate)"
+                      [class.badge-pending]="!isOverdue(a.dueDate)"
+                    >
+                      <svg
+                        class="badge-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        *ngIf="isOverdue(a.dueDate)"
+                      >
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/>
                       </svg>
-                      <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" *ngIf="!isOverdue(a.dueDate)">
+
+                      <svg
+                        class="badge-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        *ngIf="!isOverdue(a.dueDate)"
+                      >
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
                       </svg>
+
                       {{ isOverdue(a.dueDate) ? 'En retard' : statusLabel(a.status) }}
                     </span>
                   </div>
+
                   <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
                 </div>
+
                 <div class="card-meta">
                   <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
@@ -95,13 +138,21 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
                   </svg>
-                  <span class="meta-text">Affecté le : {{ a.assignedAt | date:'dd/MM/yyyy' }}</span>
+
+                  <span class="meta-text">
+                    Affecté le : {{ a.assignedAt | date:'dd/MM/yyyy' }}
+                  </span>
+
                   <span class="meta-sep" *ngIf="a.dueDate">·</span>
-                  <span class="meta-text meta-text--due" *ngIf="a.dueDate">Échéance : {{ a.dueDate | date:'dd/MM/yyyy' }}</span>
+
+                  <span class="meta-text meta-text--due" *ngIf="a.dueDate">
+                    Échéance : {{ a.dueDate | date:'dd/MM/yyyy' }}
+                  </span>
                 </div>
               </div>
             </button>
           </div>
+
           <ng-template #emptyPending>
             <div class="empty">
               <div class="empty-icon">
@@ -119,11 +170,17 @@
         <!-- Submitted -->
         <ng-container *ngIf="activeTab === 'submitted' && !loading()">
           <div class="list" *ngIf="submittedAssignments().length > 0; else emptySubmitted">
-            <button type="button" class="card card--completed" *ngFor="let a of submittedAssignments(); trackBy: trackById" (click)="openAssignment(a)">
+            <button
+              type="button"
+              class="card card--completed"
+              *ngFor="let a of submittedAssignments(); trackBy: trackById"
+              (click)="openAssignment(a)"
+            >
               <div class="card-body">
                 <div class="card-header-row">
                   <div class="card-title-group">
                     <h3 class="card-title">{{ a.formName || a.formId }}</h3>
+
                     <span class="badge badge-completed">
                       <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
@@ -132,10 +189,12 @@
                       Soumis
                     </span>
                   </div>
+
                   <svg class="chevron chevron--gray" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
                 </div>
+
                 <div class="card-meta">
                   <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
@@ -143,11 +202,15 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
                   </svg>
-                  <span class="meta-text">Soumis le : {{ a.submittedAt ? (a.submittedAt | date:'dd/MM/yyyy') : '-' }}</span>
+
+                  <span class="meta-text">
+                    Soumis le : {{ a.submittedAt ? (a.submittedAt | date:'dd/MM/yyyy') : '-' }}
+                  </span>
                 </div>
               </div>
             </button>
           </div>
+
           <ng-template #emptySubmitted>
             <div class="empty">
               <div class="empty-icon empty-icon--gray">
@@ -166,14 +229,32 @@
 
       <!-- Pagination -->
       <div class="pager" *ngIf="totalPages() > 1">
-        <button class="btn btn--ghost" type="button" (click)="goToPrev()" [disabled]="pageIndex() === 0 || loading()">← Précédent</button>
-        <div class="pager__info">Page <span class="mono">{{ pageIndex() + 1 }}</span> / <span class="mono">{{ totalPages() }}</span></div>
-        <button class="btn btn--ghost" type="button" (click)="goToNext()" [disabled]="pageIndex() >= totalPages() - 1 || loading()">Suivant →</button>
+        <button
+          class="btn btn--ghost"
+          type="button"
+          (click)="goToPrev()"
+          [disabled]="pageIndex() === 0 || loading()"
+        >
+          ← Précédent
+        </button>
+
+        <div class="pager__info">
+          Page <span class="mono">{{ pageIndex() + 1 }}</span> /
+          <span class="mono">{{ totalPages() }}</span>
+        </div>
+
+        <button
+          class="btn btn--ghost"
+          type="button"
+          (click)="goToNext()"
+          [disabled]="pageIndex() >= totalPages() - 1 || loading()"
+        >
+          Suivant →
+        </button>
       </div>
     </div>
   </div>
 </div>
-
 
 <!-- ======== MODAL ======== -->
 <div *ngIf="isModalOpen && selectedAssignment" class="modal-backdrop" (click)="closeModal()">
@@ -182,7 +263,10 @@
     <!-- Header -->
     <div class="modal-header">
       <div>
-        <h2 class="modal-title">{{ selectedAssignment.formName || selectedAssignment.formId }}</h2>
+        <h2 class="modal-title">
+          {{ selectedAssignment.formName || selectedAssignment.formId }}
+        </h2>
+
         <p class="modal-subtitle">
           <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
@@ -190,11 +274,21 @@
             <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
             <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
           </svg>
-          <ng-container *ngIf="!isViewMode && selectedAssignment.dueDate">Échéance : {{ selectedAssignment.dueDate | date:'dd/MM/yyyy' }}</ng-container>
-          <ng-container *ngIf="!isViewMode && !selectedAssignment.dueDate">Affecté le : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}</ng-container>
-          <ng-container *ngIf="isViewMode">Soumis le : {{ selectedAssignment.submittedAt ? (selectedAssignment.submittedAt | date:'dd/MM/yyyy') : '—' }}</ng-container>
+
+          <ng-container *ngIf="!isViewMode && selectedAssignment.dueDate">
+            Échéance : {{ selectedAssignment.dueDate | date:'dd/MM/yyyy' }}
+          </ng-container>
+
+          <ng-container *ngIf="!isViewMode && !selectedAssignment.dueDate">
+            Affecté le : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}
+          </ng-container>
+
+          <ng-container *ngIf="isViewMode">
+            Soumis le : {{ selectedAssignment.submittedAt ? (selectedAssignment.submittedAt | date:'dd/MM/yyyy') : '—' }}
+          </ng-container>
         </p>
       </div>
+
       <button class="close-button" (click)="closeModal()" type="button">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -211,7 +305,7 @@
         <span>Chargement du formulaire...</span>
       </div>
 
-      <!-- Modal level error (no form loaded) -->
+      <!-- Modal level error -->
       <div *ngIf="modalError() && !modalLoading() && !currentForm" class="alert alert--modal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="alert-icon">
           <circle cx="12" cy="12" r="10" stroke-width="2"/>
@@ -229,7 +323,9 @@
             <span *ngIf="q.required && !isViewMode" class="required-mark">*</span>
           </label>
 
-          <p *ngIf="q.helpText && !isViewMode" class="help-text">{{ q.helpText }}</p>
+          <p *ngIf="q.helpText && !isViewMode" class="help-text">
+            {{ q.helpText }}
+          </p>
 
           <!-- ══ VIEW MODE (SUBMITTED) ══ -->
           <ng-container *ngIf="isViewMode">
@@ -247,7 +343,11 @@
 
               <!-- YES_NO -->
               <div *ngIf="q.type === 'YES_NO'" class="answer-display">
-                <span class="yes-no-display" [class.yes]="ans.yes === true" [class.no]="ans.yes === false">
+                <span
+                  class="yes-no-display"
+                  [class.yes]="ans.yes === true"
+                  [class.no]="ans.yes === false"
+                >
                   {{ ans.yes === true ? 'Oui' : 'Non' }}
                 </span>
               </div>
@@ -259,7 +359,8 @@
                   class="star-icon-display"
                   [class.filled]="(ans.rating || 0) >= star"
                   viewBox="0 0 24 24"
-                  fill="currentColor">
+                  fill="currentColor"
+                >
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
               </div>
@@ -270,6 +371,7 @@
               </div>
 
             </ng-container>
+
             <!-- No answer found fallback -->
             <ng-container *ngIf="!getSubmittedAnswer(q.id)">
               <div class="answer-display answer-empty">—</div>
@@ -285,27 +387,41 @@
               [(ngModel)]="modalAnswers[i].text"
               class="input-textarea"
               rows="3"
-              placeholder="Votre réponse...">
-            </textarea>
+              placeholder="Votre réponse..."
+            ></textarea>
 
             <!-- MULTIPLE_CHOICE -->
             <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="options-container">
               <button
-                *ngFor="let opt of (q.options || [])"
+                *ngFor="let opt of (q.options || []); let optionIndex = index"
                 type="button"
-                (click)="modalAnswers[i].selectedOptionId = opt.id"
-                [class.selected]="modalAnswers[i].selectedOptionId === opt.id"
-                class="option-button">
+                (click)="selectOption(i, q.id, optionIndex, opt.id)"
+                [class.selected]="isOptionSelected(q.id, optionIndex)"
+                class="option-button"
+              >
                 {{ opt.label }}
               </button>
             </div>
 
             <!-- YES_NO -->
             <div *ngIf="q.type === 'YES_NO'" class="yes-no-container">
-              <button type="button" (click)="modalAnswers[i].yes = true"
-                      [class.selected]="modalAnswers[i].yes === true" class="yes-no-button">Oui</button>
-              <button type="button" (click)="modalAnswers[i].yes = false"
-                      [class.selected]="modalAnswers[i].yes === false" class="yes-no-button">Non</button>
+              <button
+                type="button"
+                (click)="modalAnswers[i].yes = true"
+                [class.selected]="modalAnswers[i].yes === true"
+                class="yes-no-button"
+              >
+                Oui
+              </button>
+
+              <button
+                type="button"
+                (click)="modalAnswers[i].yes = false"
+                [class.selected]="modalAnswers[i].yes === false"
+                class="yes-no-button"
+              >
+                Non
+              </button>
             </div>
 
             <!-- STAR_RATING -->
@@ -314,15 +430,26 @@
                 *ngFor="let star of getStarsArray(q.maxStars || 5)"
                 type="button"
                 (click)="modalAnswers[i].rating = star"
-                class="star-button">
-                <svg class="star-icon" [class.filled]="(modalAnswers[i].rating || 0) >= star" viewBox="0 0 24 24" fill="currentColor">
+                class="star-button"
+              >
+                <svg
+                  class="star-icon"
+                  [class.filled]="(modalAnswers[i].rating || 0) >= star"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
               </button>
             </div>
 
             <!-- DATE -->
-            <input *ngIf="q.type === 'DATE'" type="date" [(ngModel)]="modalAnswers[i].date" class="input-date">
+            <input
+              *ngIf="q.type === 'DATE'"
+              type="date"
+              [(ngModel)]="modalAnswers[i].date"
+              class="input-date"
+            >
 
           </ng-container>
 
@@ -332,19 +459,37 @@
 
     <!-- Footer: fill mode -->
     <div class="modal-footer" *ngIf="!modalLoading() && currentForm && !isViewMode">
-      <div *ngIf="modalError()" class="submit-error">{{ modalError() }}</div>
-      <button type="button" (click)="submitModal()" class="submit-button" [disabled]="submitting()">
+      <div *ngIf="modalError()" class="submit-error">
+        {{ modalError() }}
+      </div>
+
+      <button
+        type="button"
+        (click)="submitModal()"
+        class="submit-button"
+        [disabled]="submitting()"
+      >
         <div class="spinner spinner--sm" *ngIf="submitting()"></div>
-        <svg *ngIf="!submitting()" class="icon-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+        <svg
+          *ngIf="!submitting()"
+          class="icon-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
         </svg>
+
         {{ submitting() ? 'Envoi en cours...' : 'Soumettre' }}
       </button>
     </div>
 
     <!-- Footer: view mode -->
     <div class="modal-footer modal-footer--view" *ngIf="!modalLoading() && currentForm && isViewMode">
-      <button type="button" (click)="closeModal()" class="close-view-button">Fermer</button>
+      <button type="button" (click)="closeModal()" class="close-view-button">
+        Fermer
+      </button>
     </div>
 
   </div>

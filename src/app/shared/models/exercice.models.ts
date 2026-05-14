@@ -1,6 +1,7 @@
 export interface ExerciseSet {
   reps?: string;
   weight?: number;
+  duration?: number;
   restMin?: number;
   restSec?: number;
   setNumber?: number;
@@ -25,6 +26,7 @@ export interface Exercise {
   restDay?: boolean;
   exerciseRef?: ExerciseRef;
   type?: string;
+  duration?: number;
 
   supersetGroupId?: string | null;
   sets?: ExerciseSet[];

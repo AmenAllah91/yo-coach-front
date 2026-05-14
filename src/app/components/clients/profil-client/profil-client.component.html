@@ -28,6 +28,56 @@
     </div>
   </div>
 
+  <div class="client-stats-grid">
+    <div class="client-stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-balance-scale"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Start Weight</div>
+        <div class="stat-value">
+          {{ startWeight !== null ? (formatNumber(startWeight) + ' kg') : '--' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="client-stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-balance-scale-right"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Current Weight</div>
+        <div class="stat-value">
+          {{ currentWeight !== null ? (formatNumber(currentWeight) + ' kg') : '--' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="client-stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-bullseye"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Goal Weight</div>
+        <div class="stat-value">
+          {{ clientTargetWeight !== null ? (formatNumber(clientTargetWeight) + ' kg') : '--' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="client-stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-bullseye"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Objective</div>
+        <div class="stat-value stat-value--objective">
+          {{ clientObjective || '--' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
   <nav class="profile-tabs">
     <button
       class="tab-link"
@@ -56,6 +106,13 @@
       (click)="setTab('checkins')"
     >
       Check-ins
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'measurements'"
+      (click)="setTab('measurements')"
+    >
+      Measurements
     </button>
     <button
       class="tab-link"
@@ -398,6 +455,17 @@
         </ng-container>
       </div>
     </section>
+
+    <div
+      class="tab-pane measurements-pane"
+      [class.active]="activeTab === 'measurements'"
+    >
+      <app-body-measurements
+        [clientId]="clientId"
+        [allowAdd]="false"
+        [targetWeight]="clientTargetWeight"
+      ></app-body-measurements>
+    </div>
 
     <div
       class="tab-pane progress-pictures-pane"

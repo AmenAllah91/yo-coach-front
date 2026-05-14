@@ -112,6 +112,7 @@
             </button>
 
             <button
+              *ngIf="calendarType === 'workout' && day.items.length > 0"
               type="button"
               class="icon-button"
               (click)="copyDay(day.dateString)"
@@ -300,6 +301,7 @@
             </button>
 
             <button
+              *ngIf="calendarType === 'workout' && day.items.length > 0"
               type="button"
               class="icon-button"
               (click)="copyDay(day.dateString)"
@@ -479,6 +481,7 @@
         </button>
 
         <button
+          *ngIf="calendarType === 'workout' && dayItems.length > 0"
           type="button"
           class="icon-button"
           (click)="copyDay(currentDayString)"

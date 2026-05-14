@@ -143,6 +143,20 @@
             </div>
           </div>
 
+          <div class="field-group">
+            <label class="field-label">Target Weight</label>
+            <div class="field-value" [class.text-muted]="!userData.targetWeight">
+              {{ userData.targetWeight ? (userData.targetWeight + ' kg') : 'Not provided' }}
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Ideal Shape Description</label>
+            <div class="field-value" [class.text-muted]="!userData.idealShapeDescription">
+              {{ userData.idealShapeDescription || 'No ideal shape description added yet' }}
+            </div>
+          </div>
+
           <div class="field-group field-full">
             <label class="field-label">Bio</label>
             <div class="field-value" [class.text-muted]="!userData.bio">
@@ -171,6 +185,29 @@
           <div class="field-group">
             <label class="field-label-dark">Phone</label>
             <input type="text" class="form-input" [(ngModel)]="editData.phoneNumber" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label-dark">Target Weight (kg)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              class="form-input"
+              [(ngModel)]="editData.targetWeight"
+              name="targetWeight"
+            />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label-dark">Ideal Shape Description</label>
+            <textarea
+              class="form-input form-textarea"
+              [(ngModel)]="editData.idealShapeDescription"
+              name="idealShapeDescription"
+              rows="3"
+              placeholder="Describe the ideal shape or physique goal"
+            ></textarea>
           </div>
 
           <div class="field-group">

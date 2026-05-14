@@ -310,7 +310,7 @@
         <path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h9l4 4v12a2 2 0 0 1-2 2z" stroke-width="2"/>
         <path d="M17 21v-8H7v8M7 3v4h8V3" stroke-width="2"/>
       </svg>
-      {{ isSaving ? 'Saving…' : 'Save Form' }}
+      {{ isSaving ? 'Saving…' : 'Publish' }}
     </button>
   </div>
 
@@ -383,22 +383,85 @@
   </aside>
 </div>
 
-<!-- Preview modal -->
-<div class="fb-modal" *ngIf="showPreview">
+<div class="fb-modal client-preview-modal" *ngIf="showPreview">
   <div class="fb-modal__backdrop" (click)="closePreview()"></div>
-  <div class="fb-modal__panel">
-    <div class="fb-modal__head">
-      <div class="fb-modal__title">Preview</div>
-      <button class="q-close" type="button" (click)="closePreview()">✕</button>
+
+  <div class="client-preview-sheet">
+    <div class="client-preview-header">
+      <div>
+        <h2 class="client-preview-title">
+          {{ detailsTitle || formTitle || 'mobile program' }}
+        </h2>
+
+        <div class="client-preview-date">
+          <i class="fa-regular fa-calendar"></i>
+          <span>Affecté le : 03/05/2026</span>
+        </div>
+      </div>
+
+      <button class="client-preview-close" type="button" (click)="closePreview()">✕</button>
     </div>
-    <div class="fb-modal__body">
-      <div class="fb-preview-q" *ngFor="let q of questions; index as i; trackBy: trackById">
-        <div><strong>{{ i + 1 }}.</strong> {{ q.text }}</div>
-        <div class="fb-muted" style="margin-top:6px;">Type: {{ q.type }} • Required: {{ q.isRequired }}</div>
-        <div *ngIf="q.type==='multiple-choice' && (q.options?.length || 0) > 0" style="margin-top:8px;">
-          <div *ngFor="let opt of q.options">{{ opt }}</div>
+
+    <p class="client-preview-description" *ngIf="description">
+      {{ description }}
+    </p>
+
+    <div class="client-preview-body" *ngIf="questions.length > 0">
+      <div
+        class="client-preview-question"
+        *ngFor="let q of questions; index as i; trackBy: trackById"
+      >
+        <div class="client-preview-question-label">
+          {{ i + 1 }}. {{ q.text || ('Question ' + (i + 1)) }}
+          <span *ngIf="q.isRequired">*</span>
+        </div>
+
+        <div class="client-preview-answer" [ngSwitch]="q.type">
+          <ng-container *ngSwitchCase="'multiple-choice'">
+            <div
+              class="client-preview-input"
+              *ngFor="let opt of (q.options?.length ? q.options : ['Option'])"
+            >
+              {{ opt || 'Option' }}
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'yes-no'">
+            <div class="client-preview-choice-row">
+              <button type="button" class="client-preview-choice">Oui</button>
+              <button type="button" class="client-preview-choice">Non</button>
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'star-rating'">
+            <div class="client-preview-stars">
+              <span *ngFor="let s of [1,2,3,4,5]">★</span>
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'date'">
+            <div class="client-preview-input client-preview-date-input">
+              <span>jj/mm/aaaa</span>
+              <i class="fa-regular fa-calendar"></i>
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchDefault>
+            <div class="client-preview-textarea">
+              Votre réponse...
+            </div>
+          </ng-container>
         </div>
       </div>
     </div>
+
+    <div class="client-preview-empty" *ngIf="questions.length === 0">
+      No questions yet
+    </div>
+
+    <button type="button" class="client-preview-submit">
+      <span>✓</span>
+      Soumettre
+    </button>
   </div>
 </div>

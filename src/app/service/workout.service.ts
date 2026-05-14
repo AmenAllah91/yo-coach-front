@@ -15,6 +15,7 @@ export interface PageResponse<T> {
 export interface SaveWorkoutSetRequest {
   setNumber: number;
   reps: number | null;
+  duration?: number;
   restMin: number;
   restSec: number;
 }
@@ -79,11 +80,17 @@ export class WorkoutService {
   }
 
   createWorkout(workout: WorkoutPlan): Observable<WorkoutPlan> {
+    console.log('[WORKOUT SERVICE CREATE] workout =', workout);
+    console.log('[WORKOUT SERVICE CREATE] workout.isWorkoutPlanTemplate =', workout.isWorkoutPlanTemplate);
+    console.log('[WORKOUT SERVICE CREATE] JSON.stringify =', JSON.stringify(workout));
     return this.http.post<WorkoutPlan>(this.apiUrl, workout);
   }
 
 
   updateWorkout(id: string, workout: WorkoutPlan): Observable<WorkoutPlan> {
+    console.log('[WORKOUT SERVICE UPDATE] workout =', workout);
+    console.log('[WORKOUT SERVICE UPDATE] workout.isWorkoutPlanTemplate =', workout.isWorkoutPlanTemplate);
+    console.log('[WORKOUT SERVICE UPDATE] JSON.stringify =', JSON.stringify(workout));
     return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}`, workout);
   }
 

@@ -14,6 +14,7 @@ export class ChooseMacroTypeModalComponent {
   @Input() isVisible = false;
   @Input() isAssign = false;
   @Input() idClient: string = null;
+  @Input() returnUrl: string | null = null;
   @Output() close = new EventEmitter<void>();
 
   constructor(private router: Router) {}
@@ -24,29 +25,29 @@ export class ChooseMacroTypeModalComponent {
 
   selectTotalForDay() {
     this.closeModal();
+    const queryParams: any = { type: 'total' };
+    if (this.returnUrl) queryParams.returnUrl = this.returnUrl;
 
     if (this.isAssign) {
       this.router.navigate([
         `/clients/create-macro-plan-total-day/${this.idClient}`,
       ]);
     } else {
-      this.router.navigate(['/nutrition/create-macro-plan-total-day'], {
-        queryParams: { type: 'total' },
-      });
+      this.router.navigate(['/nutrition/create-macro-plan-total-day'], { queryParams });
     }
   }
 
   selectEachMeal() {
     this.closeModal();
+    const queryParams: any = { type: 'total' };
+    if (this.returnUrl) queryParams.returnUrl = this.returnUrl;
 
     if (this.isAssign) {
       this.router.navigate([
         `/clients/create-macro-plan/${this.idClient}`,
       ]);
     } else {
-      this.router.navigate(['/nutrition/create-macro-plan'], {
-        queryParams: { type: 'total' },
-      });
+      this.router.navigate(['/nutrition/create-macro-plan'], { queryParams });
     }
   }
 }

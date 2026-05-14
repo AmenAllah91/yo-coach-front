@@ -539,3 +539,597 @@
   background: #e8ebf2;
   color: #4b5a7a;
 }
+
+/* MOBILE ONLY - added at the end. Desktop styles above are unchanged. */
+@media (max-width: 768px) {
+  :host {
+    background: #f7f9fb;
+    overflow-x: hidden;
+  }
+
+  .page {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 1rem;
+    gap: 1.25rem;
+    overflow-x: hidden;
+  }
+
+  .page__header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 0.75rem;
+  }
+
+  .page__title {
+    font-size: 1.35rem;
+    line-height: 1.15;
+  }
+
+  .page__subtitle {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .page__header .btn--primary {
+    height: 2.7rem;
+    padding: 0 0.85rem;
+    border-radius: 0.45rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .page__header .btn--primary svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    min-height: 5.35rem;
+    padding: 0.85rem;
+    gap: 0.7rem;
+    border-radius: 0.7rem;
+  }
+
+  .stat-card__icon {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+
+  .stat-card__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stat-card__label {
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .stat-card__value {
+    font-size: 1.12rem;
+    line-height: 1.1;
+    margin-top: 0.15rem;
+  }
+
+  .chart-outer-head {
+    display: block;
+  }
+
+  .chart-outer-head .card__title {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .chart-summary {
+    gap: 0.85rem;
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+
+  .chart-outer-head__right {
+    margin-top: 0.75rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .chart-outer-head__right > div:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .year-nav {
+    justify-content: flex-end;
+    white-space: nowrap;
+  }
+
+  .year-nav__btn {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .year-nav__label {
+    min-width: 2.75rem;
+    font-size: 0.85rem;
+  }
+
+  .card {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .chart-container {
+    width: 100%;
+    height: 15.8rem;
+    min-height: 15.8rem;
+    overflow: hidden;
+  }
+
+  .chart-container apx-chart {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .chart-container ::ng-deep .apexcharts-canvas,
+  .chart-container ::ng-deep .apexcharts-svg,
+  .chart-container ::ng-deep svg {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .chart-container ::ng-deep .apexcharts-xaxis-label,
+  .chart-container ::ng-deep .apexcharts-yaxis-label {
+    font-size: 9px !important;
+  }
+
+  .chart-container ::ng-deep .apexcharts-datalabels {
+    display: none !important;
+  }
+
+  .card--table {
+    padding: 0;
+    overflow: visible;
+    border-radius: 0.75rem;
+  }
+
+  .table-toolbar {
+    padding: 1rem;
+    display: block;
+  }
+
+  .table-toolbar .card__title {
+    font-size: 1rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .table-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    width: 100%;
+  }
+
+  .search-field,
+  .select-wrapper {
+    width: 100%;
+  }
+
+  .search-field__input,
+  .select-wrapper__select {
+    width: 100%;
+    height: 2.35rem;
+    font-size: 0.78rem;
+  }
+
+  .table-scroll {
+    overflow: visible;
+  }
+
+  .data-table,
+  .data-table thead,
+  .data-table tbody,
+  .data-table tr,
+  .data-table th,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table__row {
+    margin: 0.85rem 1rem;
+    border: 1px solid #edf0f3;
+    border-radius: 0.75rem;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+
+  .data-table__row:hover {
+    background: #ffffff;
+  }
+
+  .data-table td {
+    position: relative;
+    min-height: 2.75rem;
+    padding: 0.72rem 0.9rem 0.72rem 5.9rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
+    color: var(--heading);
+  }
+
+  .data-table td:last-child {
+    border-bottom: none;
+  }
+
+  .data-table td::before {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4.65rem;
+    text-align: left;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8b95a1;
+    content: '';
+  }
+
+  .data-table td:nth-child(1)::before { content: 'Coach'; }
+  .data-table td:nth-child(2)::before { content: 'Plan'; }
+  .data-table td:nth-child(3)::before { content: 'Statut'; }
+  .data-table td:nth-child(4)::before { content: 'Début'; }
+  .data-table td:nth-child(5)::before { content: 'Fin'; }
+  .data-table td:nth-child(6)::before { content: 'Montant'; }
+  .data-table td:nth-child(7)::before { content: 'Actions'; }
+
+  .coach-cell {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2rem;
+    align-items: center;
+    justify-content: end;
+    text-align: right;
+    gap: 0.5rem;
+  }
+
+  .coach-cell__avatar,
+  .avatar-initials {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    font-size: 0.7rem;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .coach-cell > div:last-child {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .coach-cell__name {
+    font-size: 0.76rem;
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  .coach-cell__email {
+    font-size: 0.62rem;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .badge {
+    font-size: 0.66rem;
+    padding: 0.18rem 0.52rem;
+  }
+
+  .fw-medium,
+  .text-muted {
+    font-size: 0.72rem;
+    word-break: break-word;
+  }
+
+  .action-btns {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .action-btn {
+    padding: 0.34rem;
+  }
+
+  .action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .subscription-modal {
+    max-width: none;
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 1rem 1rem 0 0;
+    overflow-y: auto;
+  }
+
+  .modal-form-grid,
+  .modal-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+  }
+}
+
+@media (max-width: 380px) {
+  .page {
+    padding: 0.85rem;
+  }
+
+  .chart-outer-head__right {
+    grid-template-columns: 1fr;
+  }
+
+  .year-nav {
+    justify-content: center;
+  }
+
+  .data-table td {
+    padding-left: 5.65rem;
+    padding-right: 0.75rem;
+  }
+
+  .data-table td::before {
+    width: 4.25rem;
+    left: 0.75rem;
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE TABLE CLEANUP OVERRIDE
+   Add after all existing mobile rules.
+───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .card--table {
+    background: #fff;
+  }
+
+  .table-toolbar {
+    padding: 1rem;
+    border-bottom: 1px solid #eef2f6;
+  }
+
+  .table-filters {
+    gap: 0.55rem;
+  }
+
+  .table-scroll {
+    padding: 0 0 0.9rem;
+  }
+
+  .data-table {
+    display: block;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .data-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table__row {
+    display: block;
+    width: auto;
+    margin: 0.8rem 1rem;
+    padding: 0;
+    background: #fff;
+    border: 1px solid #edf1f5;
+    border-radius: 0.8rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
+
+  .data-table td {
+    box-sizing: border-box;
+    min-height: 0;
+    padding: 0.65rem 0.85rem 0.65rem 5.8rem;
+    border-bottom: 1px solid #f1f3f6;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
+    font-size: 0.72rem;
+    line-height: 1.25;
+    color: #111827;
+  }
+
+  .data-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .data-table td::before {
+    left: 0.85rem;
+    width: 4.35rem;
+    font-size: 0.58rem;
+    font-weight: 800;
+    color: #8a94a3;
+    letter-spacing: 0.04em;
+  }
+
+  /* Coach row becomes the card header */
+  .data-table td:nth-child(1) {
+    padding: 0.85rem;
+    justify-content: flex-start;
+    text-align: left;
+    background: #fbfcfe;
+  }
+
+  .data-table td:nth-child(1)::before {
+    display: none;
+  }
+
+  .coach-cell {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 0.65rem;
+  }
+
+  .coach-cell__avatar,
+  .avatar-initials {
+    order: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    border-radius: 50%;
+    font-size: 0.72rem;
+  }
+
+  .coach-cell > div:last-child {
+    order: 1;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .coach-cell__name {
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #111827;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .coach-cell__email {
+    margin-top: 0.15rem;
+    font-size: 0.68rem;
+    line-height: 1.15;
+    text-align: left;
+    color: #667085;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+  }
+
+  .data-table td:nth-child(2)::before { content: 'Plan'; }
+  .data-table td:nth-child(3)::before { content: 'Statut'; }
+  .data-table td:nth-child(4)::before { content: 'Début'; }
+  .data-table td:nth-child(5)::before { content: 'Fin'; }
+  .data-table td:nth-child(6)::before { content: 'Montant'; }
+  .data-table td:nth-child(7)::before { content: 'Actions'; }
+
+  .data-table td:nth-child(2),
+  .data-table td:nth-child(4),
+  .data-table td:nth-child(5),
+  .data-table td:nth-child(6) {
+    word-break: break-word;
+  }
+
+  .data-table td:nth-child(4),
+  .data-table td:nth-child(5) {
+    font-size: 0.68rem;
+    color: #475467;
+  }
+
+  .data-table td:nth-child(6) {
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 0.18rem 0.5rem;
+  }
+
+  .action-btns {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  .action-btn {
+    width: 1.65rem;
+    height: 1.65rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .action-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .data-table__row {
+    margin-left: 0.75rem;
+    margin-right: 0.75rem;
+  }
+
+  .data-table td {
+    padding-left: 5.25rem;
+    padding-right: 0.75rem;
+  }
+
+  .data-table td::before {
+    left: 0.75rem;
+    width: 4rem;
+  }
+
+  .data-table td:nth-child(1) {
+    padding: 0.8rem 0.75rem;
+  }
+
+  .coach-cell__name {
+    font-size: 0.78rem;
+  }
+
+  .coach-cell__email {
+    font-size: 0.62rem;
+  }
+}

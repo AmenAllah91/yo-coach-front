@@ -213,7 +213,7 @@
             <div class="cw-detail-sets" *ngIf="exercise.sets.length > 0">
               <div class="cw-detail-sets-header">
                 <div>Set</div>
-                <div>Reps</div>
+                <div>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</div>
                 <div>Rest</div>
               </div>
               <div
@@ -223,7 +223,7 @@
                 <div class="cw-detail-set-cell cw-detail-set-cell--index">
                   {{ idx + 1 }}
                 </div>
-                <div class="cw-detail-set-cell">{{ set.reps }}</div>
+                <div class="cw-detail-set-cell">{{ exercise.type === 'CARDIO' ? (set.duration ?? 0) : set.reps }}</div>
                 <div class="cw-detail-set-cell">{{ set.rest }}s</div>
               </div>
             </div>

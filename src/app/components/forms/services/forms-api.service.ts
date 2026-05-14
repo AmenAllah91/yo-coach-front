@@ -4,7 +4,7 @@ import {map, Observable, of} from 'rxjs';
 import { environment } from '@env/environment';
 import { switchMap } from 'rxjs/operators';
 import {ClientScheduleItemDto} from "../../../models/client-schedule.model";
-export type FormStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type FormStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'UNSAVED';
 
 /** ====== BACK MODELS ====== */
 export type QuestionTypeBE =
@@ -116,14 +116,30 @@ export class FormsApiService {
   getFormById(formId: string): Observable<FormDetails> {
     return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}`);
   }
-  /** ✅ NEW : CREATE */
   createForm(payload: FormDetails): Observable<FormDetails> {
-    return this.http.post<FormDetails>(`${this.baseUrl}`, payload);
+    return this.http.post<FormDetails>(
+      `${this.baseUrl}`,
+      payload,
+      {
+        headers: {
+          'X-Skip-Toast': 'true',
+          'X-Skip-Loader': 'true'
+        }
+      }
+    );
   }
 
-  /** ✅ NEW : UPDATE */
   updateForm(formId: string, payload: FormDetails): Observable<FormDetails> {
-    return this.http.put<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}`, payload);
+    return this.http.put<FormDetails>(
+      `${this.baseUrl}/${encodeURIComponent(formId)}`,
+      payload,
+      {
+        headers: {
+          'X-Skip-Toast': 'true',
+          'X-Skip-Loader': 'true'
+        }
+      }
+    );
   }
 
   /** une api provisoire pour recuperer les utilisateurs seulement pour tester l'affectation de formulaire */

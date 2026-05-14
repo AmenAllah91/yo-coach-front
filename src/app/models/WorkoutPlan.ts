@@ -131,6 +131,7 @@ interface SaveWorkoutExerciseRequest {
 interface SaveWorkoutSetRequest {
   setNumber: number;
   reps: number | null;
+  duration?: number;
   restMin: number;
   restSec: number;
 }

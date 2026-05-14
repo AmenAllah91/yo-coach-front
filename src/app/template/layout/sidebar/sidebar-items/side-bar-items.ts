@@ -46,7 +46,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    roles: ['ROLE_COACH'],
+    roles: ['ROLE_ADMIN'],
     submenu: [
       {
         path: '/users',
@@ -93,7 +93,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    roles: ['ROLE_COACH'],
+    roles: ['ROLE_COACH', 'ROLE_ADMIN'],
     submenu: [
       {
         path: '/workout/program-library',
@@ -176,7 +176,6 @@ export const items: RouteInfo[] = [
       },
     ],
   },
-
   {
     path: '',
     title: 'Nutrition',
@@ -188,6 +187,17 @@ export const items: RouteInfo[] = [
     badgeClass: '',
     roles: ['ROLE_ADMIN'],
     submenu: [
+      {
+        path: '/nutrition/plans',
+        title: 'Plans',
+        iconType: 'feather',
+        icon: 'clipboard',
+        class: '',
+        groupTitle: false,
+        badge: '',
+        badgeClass: '',
+        submenu: [],
+      },
       {
         path: '/nutrition/custom-foods',
         title: 'Custom Foods',
@@ -201,7 +211,6 @@ export const items: RouteInfo[] = [
       },
     ],
   },
-
   {
     path: '/chat',
     title: 'Chat',
@@ -225,7 +234,8 @@ export const items: RouteInfo[] = [
     badgeClass: '',
     submenu: [],
     roles: ['ROLE_CLIENT'],
-  }, {
+  },
+  {
     path: 'forms/manage-checkins',
     title: 'Manage Check-ins',
     iconType: 'feather',
@@ -234,7 +244,7 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    submenu: []
+    submenu: [],
   },
   {
     path: '/calendar',
@@ -320,6 +330,18 @@ export const items: RouteInfo[] = [
     ],
   },
   {
+    path: 'body-measurements',
+    title: 'Body Measurements',
+    iconType: 'feather',
+    icon: 'activity',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: [],
+    roles: ['ROLE_CLIENT'],
+  },
+  {
     path: 'progress-pictures',
     title: 'Progress pictures',
     iconType: 'feather',
@@ -330,5 +352,5 @@ export const items: RouteInfo[] = [
     badgeClass: '',
     submenu: [],
     roles: ['ROLE_CLIENT'],
-  }
+  },
 ];

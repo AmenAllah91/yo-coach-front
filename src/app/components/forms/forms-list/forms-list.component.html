@@ -10,7 +10,7 @@
       <p>Gérez vos formulaires et leurs versions.</p>
     </div>
 
-    <!-- Segmented toggle Active / Archived -->
+    <!-- Segmented toggle Active / Unsaved / Archived -->
     <div class="view-toggle">
       <button
         class="view-toggle__btn"
@@ -23,8 +23,27 @@
           class="view-toggle__badge"
           [class.view-toggle__badge--blue]="viewMode() === 'active'"
           [class.view-toggle__badge--gray]="viewMode() !== 'active'"
-        >{{ activeCount() }}</span>
+        >
+          {{ activeCount() }}
+        </span>
       </button>
+
+      <button
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'unsaved'"
+        type="button"
+        (click)="setViewMode('unsaved')"
+      >
+        Unsaved
+        <span
+          class="view-toggle__badge"
+          [class.view-toggle__badge--purple]="viewMode() === 'unsaved'"
+          [class.view-toggle__badge--gray]="viewMode() !== 'unsaved'"
+        >
+          {{ unsavedCount() }}
+        </span>
+      </button>
+
       <button
         class="view-toggle__btn"
         [class.view-toggle__btn--active]="viewMode() === 'archived'"
@@ -36,7 +55,9 @@
           class="view-toggle__badge"
           [class.view-toggle__badge--amber]="viewMode() === 'archived'"
           [class.view-toggle__badge--gray]="viewMode() !== 'archived'"
-        >{{ archivedCount() }}</span>
+        >
+          {{ archivedCount() }}
+        </span>
       </button>
     </div>
 
@@ -57,12 +78,18 @@
     <span>Les formulaires archivés sont masqués des clients. Restaurez-en un pour le réactiver.</span>
   </div>
 
+  <!-- Unsaved info banner -->
+  <div class="unsaved-banner" *ngIf="viewMode() === 'unsaved'">
+    <i-feather name="edit-3" class="unsaved-banner__icon"></i-feather>
+    <span>Unsaved forms are persisted in the backend. Click Save Form to move them into Active as real saved forms.</span>
+  </div>
+
   <!-- ══ CONTENT ══ -->
   <div class="content">
     <div class="search-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search clients">
+        <input type="text" placeholder="Search clients" />
       </div>
     </div>
 
@@ -72,9 +99,14 @@
           <span class="meta__label">Total :</span>
           <span class="meta__value">{{ totalElements() }}</span>
         </div>
+
         <div class="page-size">
           <span class="page-size__label">Taille :</span>
-          <select class="select" [value]="pageSize()" (change)="changePageSize(+($any($event.target).value))">
+          <select
+            class="select"
+            [value]="pageSize()"
+            (change)="changePageSize(+($any($event.target).value))"
+          >
             <option [value]="5">5</option>
             <option [value]="10">10</option>
             <option [value]="20">20</option>
@@ -95,59 +127,143 @@
             <th class="col-actions">Actions</th>
           </tr>
           </thead>
+
           <tbody>
           <tr *ngIf="loading()">
             <td colspan="4" class="loading-row">Chargement...</td>
           </tr>
+
           <tr *ngIf="!loading() && forms().length === 0">
             <td colspan="4" class="empty-row">Aucun form trouvé.</td>
           </tr>
+
           <tr *ngFor="let f of forms(); trackBy: trackById">
             <td>
               <div class="form-title">{{ f.title || '(Sans titre)' }}</div>
               <div class="form-desc" *ngIf="f.description">{{ f.description }}</div>
             </td>
+
             <td class="col-status">
               <span [class]="badgeClass(f.status)">{{ f.status }}</span>
             </td>
+
             <td class="col-date">
-              <span class="mono">{{ f.updatedAt ? (f.updatedAt | date : 'dd/MM/yyyy HH:mm') : '-' }}</span>
+                <span class="mono">
+                  {{ f.updatedAt ? (f.updatedAt | date : 'dd/MM/yyyy HH:mm') : '-' }}
+                </span>
             </td>
+
             <td class="col-actions">
               <div class="dropdown" [class.open]="openedActionsId() === f.id">
-                <button class="action-btn" type="button" (click)="toggleActions(f.id, $event)" aria-label="Actions">
+                <button
+                  class="action-btn"
+                  type="button"
+                  (click)="toggleActions(f.id, $event)"
+                  aria-label="Actions"
+                >
                   <i-feather name="more-horizontal"></i-feather>
                 </button>
-                <div class="dropdown-menu" [id]="'dropdown-' + f.id" *ngIf="openedActionsId() === f.id">
 
-                  <ng-container *ngIf="viewMode() === 'active'; else archivedActions">
-                    <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()">
-                      <i-feather name="edit-2"></i-feather> Modifier
-                    </button>
+                <div
+                  class="dropdown-menu"
+                  [id]="'dropdown-' + f.id"
+                  *ngIf="openedActionsId() === f.id"
+                >
+                  <ng-container [ngSwitch]="viewMode()">
+                    <!-- ACTIVE -->
+                    <ng-container *ngSwitchCase="'active'">
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="onEditGuarded(f); closeActions()"
+                      >
+                        <i-feather name="edit-2"></i-feather>
+                        Modifier
+                      </button>
 
-                    <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()">
-                      <i-feather name="users"></i-feather> Affecter
-                    </button>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="openAssign(f); closeActions()"
+                      >
+                        <i-feather name="users"></i-feather>
+                        Affecter
+                      </button>
 
-                    <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()">
-                      <i-feather name="copy"></i-feather> Dupliquer
-                    </button>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="onDuplicate(f, $event); closeActions()"
+                        [disabled]="duplicating()"
+                      >
+                        <i-feather name="copy"></i-feather>
+                        Dupliquer
+                      </button>
 
-                    <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()">
-                      <i-feather name="archive"></i-feather> Archiver
-                    </button>
-                    <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()">
-                      <i-feather name="trash-2"></i-feather> Supprimer
-                    </button>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="archiveForm(f, $event); closeActions()"
+                      >
+                        <i-feather name="archive"></i-feather>
+                        Archiver
+                      </button>
+
+                      <button
+                        class="dropdown-item delete"
+                        type="button"
+                        (click)="onDeleteGuarded(f); closeActions()"
+                      >
+                        <i-feather name="trash-2"></i-feather>
+                        Supprimer
+                      </button>
+                    </ng-container>
+
+                    <!-- UNSAVED -->
+                    <ng-container *ngSwitchCase="'unsaved'">
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="continueCreating(f); closeActions()"
+                      >
+                        <i-feather name="play"></i-feather>
+                        Continuer la création
+                      </button>
+
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="onDuplicate(f, $event); closeActions()"
+                        [disabled]="duplicating()"
+                      >
+                        <i-feather name="copy"></i-feather>
+                        Dupliquer
+                      </button>
+
+                      <button
+                        class="dropdown-item delete"
+                        type="button"
+                        (click)="onDeleteGuarded(f); closeActions()"
+                      >
+                        <i-feather name="trash-2"></i-feather>
+                        Supprimer
+                      </button>
+                    </ng-container>
+
+                    <!-- ARCHIVED -->
+                    <ng-container *ngSwitchCase="'archived'">
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        (click)="unarchiveForm(f, $event); closeActions()"
+                      >
+                        <i-feather name="rotate-ccw"></i-feather>
+                        Désarchiver
+                      </button>
+                    </ng-container>
                   </ng-container>
-
-                  <ng-template #archivedActions>
-                    <button class="dropdown-item" type="button" (click)="unarchiveForm(f, $event); closeActions()">
-                      <i-feather name="rotate-ccw"></i-feather> Désarchiver
-                    </button>
-                  </ng-template>
-
                 </div>
+
                 <button
                   *ngIf="openedActionsId() === f.id"
                   class="dropdown-backdrop"
@@ -163,43 +279,77 @@
       </div>
 
       <div class="pager" *ngIf="totalPages() > 0">
-        <button class="btn btn--ghost" type="button" (click)="goToPrev()" [disabled]="pageIndex() === 0 || loading()">← Précédent</button>
-        <div class="pager__info">Page <span class="mono">{{ pageIndex() + 1 }}</span> / <span class="mono">{{ totalPages() }}</span></div>
-        <button class="btn btn--ghost" type="button" (click)="goToNext()" [disabled]="pageIndex() >= totalPages() - 1 || loading()">Suivant →</button>
+        <button
+          class="btn btn--ghost"
+          type="button"
+          (click)="goToPrev()"
+          [disabled]="pageIndex() === 0 || loading()"
+        >
+          ← Précédent
+        </button>
+
+        <div class="pager__info">
+          Page <span class="mono">{{ pageIndex() + 1 }}</span> /
+          <span class="mono">{{ totalPages() }}</span>
+        </div>
+
+        <button
+          class="btn btn--ghost"
+          type="button"
+          (click)="goToNext()"
+          [disabled]="pageIndex() >= totalPages() - 1 || loading()"
+        >
+          Suivant →
+        </button>
       </div>
     </div>
 
     <!-- ══ DELETE MODAL ══ -->
     <div class="modal-backdrop" *ngIf="confirmOpen()" (click)="closeDelete()"></div>
+
     <div class="modal" *ngIf="confirmOpen()" role="dialog" aria-modal="true">
       <div class="modal__content">
         <div class="modal__title">Confirmer la suppression</div>
+
         <div class="modal__text">
           Voulez-vous vraiment supprimer le form
           <strong>{{ selectedToDelete()?.title || '(Sans titre)' }}</strong> ?
           <div class="modal__hint">Cette action est irréversible.</div>
         </div>
+
         <div class="modal__actions">
-          <button class="btn btn--ghost" type="button" (click)="closeDelete()" [disabled]="deleting()">Annuler</button>
-          <button class="btn btn--danger" type="button" (click)="confirmDelete()" [disabled]="deleting()">
+          <button
+            class="btn btn--ghost"
+            type="button"
+            (click)="closeDelete()"
+            [disabled]="deleting()"
+          >
+            Annuler
+          </button>
+
+          <button
+            class="btn btn--danger"
+            type="button"
+            (click)="confirmDelete()"
+            [disabled]="deleting()"
+          >
             <span *ngIf="!deleting()">Supprimer</span>
             <span *ngIf="deleting()">Suppression...</span>
           </button>
         </div>
       </div>
     </div>
-
-  </div><!-- /content -->
+  </div>
 
   <!-- ══ ASSIGN MODAL ══ -->
   <div class="am-overlay" *ngIf="assignOpen()" (click)="onAssignOverlayClick($event)">
     <div class="am-modal" role="dialog" aria-modal="true" aria-labelledby="am-title">
-
       <div class="am-header">
         <div>
           <h3 class="am-title" id="am-title">Assign Form to Clients</h3>
           <p class="am-subtitle">{{ selectedToAssign()?.title || '(Sans titre)' }}</p>
         </div>
+
         <button class="am-close" type="button" (click)="closeAssign()" aria-label="Fermer">
           <i-feather name="x"></i-feather>
         </button>
@@ -224,25 +374,43 @@
         </ng-container>
 
         <ng-container *ngIf="!usersLoading()">
-          <label class="am-item am-item--select-all" [class.am-item--selected]="assignSelectAll">
-            <input type="checkbox" class="am-sr-only" [checked]="assignSelectAll" (change)="handleAssignSelectAll()" />
+          <label
+            class="am-item am-item--select-all"
+            [class.am-item--selected]="assignSelectAll"
+          >
+            <input
+              type="checkbox"
+              class="am-sr-only"
+              [checked]="assignSelectAll"
+              (change)="handleAssignSelectAll()"
+            />
+
             <span class="am-checkbox" [class.am-checkbox--checked]="assignSelectAll">
               <i-feather *ngIf="assignSelectAll" name="check" class="am-check-icon"></i-feather>
             </span>
+
             <span class="am-select-all-label">Select All Clients ({{ allUsers().length }})</span>
           </label>
 
           <div class="am-list">
             <label
-              *ngFor="let u of filteredUsers()"
+              *ngFor="let u of filteredUsers(); trackBy: trackById"
               class="am-item"
               [class.am-item--selected]="isSelected(u)"
             >
-              <input type="checkbox" class="am-sr-only" [checked]="isSelected(u)" (change)="toggleUser(u)" />
+              <input
+                type="checkbox"
+                class="am-sr-only"
+                [checked]="isSelected(u)"
+                (change)="toggleUser(u)"
+              />
+
               <span class="am-checkbox" [class.am-checkbox--checked]="isSelected(u)">
                 <i-feather *ngIf="isSelected(u)" name="check" class="am-check-icon"></i-feather>
               </span>
+
               <img class="am-avatar" src="assets/avatar.png" [alt]="userLabel(u)" />
+
               <div class="am-user-info">
                 <p class="am-user-name">{{ userLabel(u) }}</p>
                 <p class="am-user-email" *ngIf="u.email">{{ u.email }}</p>
@@ -258,10 +426,16 @@
 
       <div class="am-footer">
         <div class="am-chips" *ngIf="selectedCount() > 0">
-          <ng-container *ngFor="let u of filteredUsers()">
+          <ng-container *ngFor="let u of filteredUsers(); trackBy: trackById">
             <span *ngIf="isSelected(u)" class="am-chip">
               {{ getUserFirstName(u) }}
-              <button type="button" class="am-chip__remove" (click)="toggleUser(u)" aria-label="Retirer">
+
+              <button
+                type="button"
+                class="am-chip__remove"
+                (click)="toggleUser(u)"
+                aria-label="Retirer"
+              >
                 <i-feather name="x" class="am-chip-x"></i-feather>
               </button>
             </span>
@@ -272,12 +446,20 @@
 
         <div class="am-schedule" *ngIf="!selectedToAssign()?.schedule">
           <label class="am-schedule__row">
-            <input type="checkbox" class="am-sr-only" [checked]="scheduleEnabled" (change)="toggleSchedule()" />
+            <input
+              type="checkbox"
+              class="am-sr-only"
+              [checked]="scheduleEnabled"
+              (change)="toggleSchedule()"
+            />
+
             <span class="am-checkbox am-checkbox--sm" [class.am-checkbox--checked]="scheduleEnabled">
               <i-feather *ngIf="scheduleEnabled" name="check" class="am-check-icon"></i-feather>
             </span>
+
             <span class="am-schedule__label">Schedule send for a specific date</span>
           </label>
+
           <div class="am-date-wrap" *ngIf="scheduleEnabled">
             <i-feather name="calendar" class="am-date-icon"></i-feather>
             <input class="am-date-input" type="date" [(ngModel)]="scheduledDateValue" />
@@ -289,24 +471,41 @@
             <i-feather name="calendar" class="am-date-icon"></i-feather>
             <input class="am-date-input" type="date" [(ngModel)]="endDateValue" />
           </div>
-          <div class="am-hint" style="margin-top:6px; font-size:12px; opacity:.8;">
+
+          <div class="am-hint" style="margin-top: 6px; font-size: 12px; opacity: .8;">
             End Date (required): after this date, no more assignments will be generated.
           </div>
         </div>
 
         <div class="am-actions">
-          <span class="am-count">{{ selectedCount() }} client{{ selectedCount() !== 1 ? 's' : '' }} selected</span>
+          <span class="am-count">
+            {{ selectedCount() }} client{{ selectedCount() !== 1 ? 's' : '' }} selected
+          </span>
+
           <div class="am-btns">
-            <button class="btn btn--ghost" type="button" (click)="closeAssign()" [disabled]="assigning()">Cancel</button>
-            <button class="am-btn-assign" type="button" (click)="submitAssign()" [disabled]="assigning()">
-              <span *ngIf="!assigning()">{{ scheduleEnabled && scheduledDateValue ? 'Schedule' : 'Assign Form' }}</span>
+            <button
+              class="btn btn--ghost"
+              type="button"
+              (click)="closeAssign()"
+              [disabled]="assigning()"
+            >
+              Cancel
+            </button>
+
+            <button
+              class="am-btn-assign"
+              type="button"
+              (click)="submitAssign()"
+              [disabled]="assigning()"
+            >
+              <span *ngIf="!assigning()">
+                {{ scheduleEnabled && scheduledDateValue ? 'Schedule' : 'Assign Form' }}
+              </span>
               <span *ngIf="assigning()">Envoi...</span>
             </button>
           </div>
         </div>
       </div>
-
     </div>
   </div>
-
 </div>

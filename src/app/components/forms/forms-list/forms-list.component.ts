@@ -1,40 +1,40 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, signal, HostListener } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormsApiService, Form, PageResponse, UserDto } from '../services/forms-api.service';
-import { Subject, takeUntil } from 'rxjs';
+import { FormsApiService, Form, FormStatus, PageResponse, UserDto } from '../services/forms-api.service';
 import { AssignmentsApiService } from '../services/assignments-api.service';
+import { ClientService } from '../../../service/client.service';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
-import { ClientService } from '../../../service/client.service';
-import { switchMap } from 'rxjs/operators';
-import { exhaustMap, finalize, tap, catchError, EMPTY } from 'rxjs';
-import {ToastrService} from "ngx-toastr";
+import { ToastrService } from 'ngx-toastr';
+import { EMPTY, Subject } from 'rxjs';
+import { catchError, exhaustMap, finalize, switchMap, takeUntil, tap } from 'rxjs/operators';
+
+type FormsViewMode = 'active' | 'unsaved' | 'archived';
+
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [CommonModule, FeatherModule, ReactiveFormsModule, FormsModule, OverlayModule],
+  imports: [
+    CommonModule,
+    FeatherModule,
+    ReactiveFormsModule,
+    FormsModule,
+    OverlayModule,
+  ],
   templateUrl: './forms-list.component.html',
   styleUrls: ['./forms-list.component.css'],
 })
 export class FormsListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
+  private readonly duplicateClick$ = new Subject<Form>();
 
-  // ── UI state ──────────────────────────────────────────────────────────────────
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  // ── View mode (Active / Archived) ─────────────────────────────────────────────
-  readonly viewMode = signal<'active' | 'archived'>('active');
+  readonly viewMode = signal<FormsViewMode>('active');
 
-  setViewMode(mode: 'active' | 'archived'): void {
-    this.viewMode.set(mode);
-    this.pageIndex.set(0);
-    this.loadPage();
-  }
-
-  // ── Pagination ────────────────────────────────────────────────────────────────
   readonly pageIndex = signal(0);
   readonly pageSize = signal(10);
   readonly pageData = signal<PageResponse<Form> | null>(null);
@@ -43,16 +43,14 @@ export class FormsListComponent implements OnInit, OnDestroy {
   readonly totalPages = computed(() => this.pageData()?.totalPages ?? 0);
   readonly totalElements = computed(() => this.pageData()?.totalElements ?? 0);
 
-  // Counts for the toggle badges
-  readonly activeForms = computed(() => this.forms().filter(f => !(f as any).archived));
-  readonly archivedForms = computed(() => this.forms().filter(f => (f as any).archived));
+  readonly activeCount = signal(0);
+  readonly archivedCount = signal(0);
+  readonly unsavedCount = signal(0);
 
-  // ── Delete modal ──────────────────────────────────────────────────────────────
   readonly confirmOpen = signal(false);
   readonly deleting = signal(false);
   readonly selectedToDelete = signal<Form | null>(null);
 
-  // ── Assign modal ──────────────────────────────────────────────────────────────
   readonly assignOpen = signal(false);
   readonly assigning = signal(false);
   readonly selectedToAssign = signal<Form | null>(null);
@@ -62,60 +60,63 @@ export class FormsListComponent implements OnInit, OnDestroy {
   readonly allUsers = signal<UserDto[]>([]);
   readonly searchTerm = signal('');
   readonly selectedUserIds = signal<Set<string>>(new Set());
+
   readonly duplicating = signal(false);
-  readonly activeCount = signal(0);
-  readonly archivedCount = signal(0);
-  // Plain properties pour éviter les soucis avec (change) + *ngIf
+
   assignSelectAll = false;
   scheduleEnabled = false;
   scheduledDateValue = '';
+  endDateValue = '';
+
+  userId = sessionStorage.getItem('userId');
 
   readonly filteredUsers = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
     const users = this.allUsers();
+
     if (!term) return users;
+
     return users.filter(u => {
       const full = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim().toLowerCase();
-      return full.includes(term);
+      const email = `${u.email ?? ''}`.toLowerCase();
+      const login = `${u.login ?? ''}`.toLowerCase();
+
+      return full.includes(term) || email.includes(term) || login.includes(term);
     });
   });
 
   readonly selectedCount = computed(() => this.selectedUserIds().size);
 
-  userId = sessionStorage.getItem('userId');
-  endDateValue = '';
+  readonly openedActionsId = signal<string | number | null>(null);
+  readonly openDropdownId = signal<string | null>(null);
 
   constructor(
     private api: FormsApiService,
     private assignmentsApi: AssignmentsApiService,
+    private clientService: ClientService,
     private router: Router,
     private toastr: ToastrService,
-    private clientService: ClientService,
   ) {}
 
-  private readonly duplicateClick$ = new Subject<Form>();
-
   ngOnInit(): void {
-    this.loadPage();
     this.loadCounts();
+    this.loadPage();
 
     this.duplicateClick$
       .pipe(
         takeUntil(this.destroy$),
-
-        exhaustMap((f) => {
+        exhaustMap((form) => {
           this.duplicating.set(true);
           this.error.set(null);
 
-          return this.api.getForOwner(String(f.id)).pipe(
+          return this.api.getForOwner(String(form.id)).pipe(
             switchMap((details: any) =>
               this.api.createForm(this.duplicatePayloadFromDetails(details))
             ),
             finalize(() => this.duplicating.set(false)),
             tap(() => {
+              this.loadCounts();
               this.loadPage();
-
-
             }),
             catchError((err) => {
               this.error.set(this.extractError(err) ?? 'Erreur lors de la duplication.');
@@ -127,89 +128,137 @@ export class FormsListComponent implements OnInit, OnDestroy {
       .subscribe();
   }
 
-  loadCounts(): void {
-    this.api.getCounts().pipe(takeUntil(this.destroy$)).subscribe({
-      next: c => { this.activeCount.set(c.active); this.archivedCount.set(c.archived); }
-    });
-  }
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  // ── Page load ─────────────────────────────────────────────────────────────────
+  setViewMode(mode: FormsViewMode): void {
+    this.viewMode.set(mode);
+    this.pageIndex.set(0);
+    this.closeActions();
+    this.loadPage();
+  }
+
   loadPage(): void {
     this.loading.set(true);
     this.error.set(null);
 
-    const isArchived = this.viewMode() === 'archived';
+    const mode = this.viewMode();
 
-    this.api.getMyFormsPage(
-      this.pageIndex(),
-      this.pageSize(),
-      isArchived ? 'ARCHIVED' : undefined,
-      !isArchived
-    )
+    let status: FormStatus | undefined;
+    let excludeArchived = true;
+
+    if (mode === 'unsaved') {
+      status = 'UNSAVED' as FormStatus;
+      excludeArchived = false;
+    } else if (mode === 'archived') {
+      status = 'ARCHIVED' as FormStatus;
+      excludeArchived = false;
+    }
+
+    this.api
+      .getMyFormsPage(this.pageIndex(), this.pageSize(), status, excludeArchived)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: res => { this.pageData.set(res); this.loading.set(false); },
-        error: err => {
+        next: (res) => {
+          this.pageData.set(res);
+          this.loading.set(false);
+        },
+        error: (err) => {
           this.loading.set(false);
           this.error.set(this.extractError(err) ?? 'Erreur lors du chargement des forms.');
         },
       });
   }
 
-  showSpecificDateSchedule(): boolean {
-    return !this.selectedToAssign()?.schedule;
+  loadCounts(): void {
+    this.api.getCounts()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (c: any) => {
+          this.activeCount.set(c.active ?? c.published ?? 0);
+          this.archivedCount.set(c.archived ?? 0);
+          this.unsavedCount.set(c.unsaved ?? 0);
+        },
+        error: () => {
+          this.activeCount.set(0);
+          this.archivedCount.set(0);
+          this.unsavedCount.set(0);
+        },
+      });
   }
 
   goToPrev(): void {
     if (this.pageIndex() <= 0) return;
+
     this.pageIndex.set(this.pageIndex() - 1);
     this.loadPage();
   }
 
   goToNext(): void {
     if (this.pageIndex() >= this.totalPages() - 1) return;
+
     this.pageIndex.set(this.pageIndex() + 1);
     this.loadPage();
   }
 
-  private isPublished(f: Form): boolean {
-    return (f.status ?? '').toUpperCase() === 'PUBLISHED';
-  }
-
-  onEditGuarded(f: Form): void {
-    if (this.isPublished(f)) {
-      this.toastr.warning("Ce formulaire est publié. Vous ne pouvez pas le modifier.", "Action impossible", {
-        timeOut: 2500,
-        closeButton: true,
-        progressBar: true,
-      });
-      return;
-    }
-    this.onEdit(f);
-  }
-
-  onDeleteGuarded(f: Form): void {
-    if (this.isPublished(f)) {
-      this.toastr.warning("Ce formulaire est publié. Vous ne pouvez pas le supprimer.", "Action impossible", {
-        timeOut: 2500,
-        closeButton: true,
-        progressBar: true,
-      });
-      return;
-    }
-    this.openDelete(f);
-  }
   changePageSize(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(0);
     this.loadPage();
   }
 
-  // ── Delete modal ──────────────────────────────────────────────────────────────
+  onAdd(): void {
+    this.router.navigate(['/forms/create-form']);
+  }
+
+  onEdit(form: Form): void {
+    this.router.navigate(['/forms', form.id, 'edit']);
+  }
+
+  continueCreating(form: Form): void {
+    this.router.navigate(['/forms', form.id, 'edit']);
+  }
+
+  private isPublished(form: Form): boolean {
+    return (form.status ?? '').toUpperCase() === 'PUBLISHED';
+  }
+
+  onEditGuarded(form: Form): void {
+    if (this.isPublished(form)) {
+      this.toastr.warning(
+        'Ce formulaire est publié. Vous ne pouvez pas le modifier.',
+        'Action impossible',
+        {
+          timeOut: 2500,
+          closeButton: true,
+          progressBar: true,
+        }
+      );
+      return;
+    }
+
+    this.onEdit(form);
+  }
+
+  onDeleteGuarded(form: Form): void {
+    if (this.isPublished(form)) {
+      this.toastr.warning(
+        'Ce formulaire est publié. Vous ne pouvez pas le supprimer.',
+        'Action impossible',
+        {
+          timeOut: 2500,
+          closeButton: true,
+          progressBar: true,
+        }
+      );
+      return;
+    }
+
+    this.openDelete(form);
+  }
+
   openDelete(form: Form): void {
     this.selectedToDelete.set(form);
     this.confirmOpen.set(true);
@@ -217,6 +266,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   closeDelete(): void {
     if (this.deleting()) return;
+
     this.confirmOpen.set(false);
     this.selectedToDelete.set(null);
   }
@@ -224,46 +274,111 @@ export class FormsListComponent implements OnInit, OnDestroy {
   confirmDelete(): void {
     const target = this.selectedToDelete();
     if (!target) return;
+
     this.deleting.set(true);
     this.error.set(null);
-    this.api.deleteForm(target.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.deleting.set(false);
-        this.confirmOpen.set(false);
-        this.selectedToDelete.set(null);
-        if (this.forms().length === 1 && this.pageIndex() > 0) {
-          this.pageIndex.set(this.pageIndex() - 1);
-        }
-        this.loadPage();
-      },
-      error: err => {
-        this.deleting.set(false);
-        this.error.set(this.extractError(err) ?? 'Suppression impossible.');
-      },
-    });
+
+    this.api
+      .deleteForm(target.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.deleting.set(false);
+          this.confirmOpen.set(false);
+          this.selectedToDelete.set(null);
+
+          if (this.forms().length === 1 && this.pageIndex() > 0) {
+            this.pageIndex.set(this.pageIndex() - 1);
+          }
+
+          this.loadCounts();
+          this.loadPage();
+        },
+        error: (err) => {
+          this.deleting.set(false);
+          this.error.set(this.extractError(err) ?? 'Suppression impossible.');
+        },
+      });
   }
 
-  // ── Navigation ────────────────────────────────────────────────────────────────
-  onAdd(): void { this.router.navigate(['/forms/create-form']); }
-  onEdit(form: Form): void { this.router.navigate(['/forms/', form.id, 'edit']); }
+  private duplicatePayloadFromDetails(details: any): any {
+    return {
+      title: `${details.title ?? 'Form Title'} (copie)`,
+      description: details.description ?? '',
+      questions: (details.questions ?? []).map((q: any, idx: number) => ({
+        type: q.type,
+        label: q.label,
+        required: !!q.required,
+        order: idx,
+        options: (q.options ?? []).map((o: any) => ({
+          label: o.label,
+        })),
+      })),
+      ...(details.schedule ? { schedule: details.schedule } : {}),
+      status: 'DRAFT',
+      showInSignup: !!details.showInSignup,
+    };
+  }
 
-  // ── Assign modal ──────────────────────────────────────────────────────────────
+  onDuplicate(form: Form, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.duplicateClick$.next(form);
+  }
+
+  archiveForm(form: Form, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    this.api.archiveForm(form.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadCounts();
+          this.loadPage();
+        },
+        error: (err) => {
+          this.error.set(this.extractError(err) ?? "Erreur lors de l'archivage.");
+        },
+      });
+  }
+
+  unarchiveForm(form: Form, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    this.api.unarchiveForm(form.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadCounts();
+          this.loadPage();
+        },
+        error: (err) => {
+          this.error.set(this.extractError(err) ?? 'Erreur lors de la restauration.');
+        },
+      });
+  }
+
   openAssign(form: Form): void {
     this.selectedToAssign.set(form);
     this.assignOpen.set(true);
     this.assigning.set(false);
     this.usersError.set(null);
+
     this.searchTerm.set('');
     this.selectedUserIds.set(new Set());
     this.assignSelectAll = false;
     this.scheduleEnabled = false;
     this.scheduledDateValue = '';
     this.endDateValue = '';
+
     this.loadUsers();
   }
 
   closeAssign(): void {
     if (this.assigning()) return;
+
     this.assignOpen.set(false);
     this.selectedToAssign.set(null);
   }
@@ -274,96 +389,55 @@ export class FormsListComponent implements OnInit, OnDestroy {
     }
   }
 
-  private duplicatePayloadFromDetails(details: any): any {
-    return {
-      title: `${(details.title ?? 'Form Title')} (copie)`,
-      description: details.description ?? '',
-      questions: (details.questions ?? []).map((q: any, idx: number) => ({
-        type: q.type,
-        label: q.label,
-        required: !!q.required,
-        order: idx,
-        options: (q.options ?? []).map((o: any) => ({
-          label: o.label
-        })),
-      })),
-      ...(details.schedule ? { schedule: details.schedule } : {}),
-      status: 'DRAFT',
-    };
-  }
-
-
-  onDuplicate(f: Form, event?: MouseEvent): void {
-    event?.preventDefault();
-    event?.stopPropagation();
-    this.duplicateClick$.next(f);
-  }
-
-  archiveForm(f: Form, event?: MouseEvent): void {
-    event?.preventDefault();
-    event?.stopPropagation();
-
-    this.api.archiveForm(f.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.loadCounts();
-        this.loadPage();
-      },
-      error: err => this.error.set(this.extractError(err) ?? "Erreur lors de l'archivage."),
-    });
-  }
-
-  unarchiveForm(f: Form, event?: MouseEvent): void {
-    event?.preventDefault();
-    event?.stopPropagation();
-
-    this.api.unarchiveForm(f.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.loadCounts();
-        this.loadPage();
-      },
-      error: err => this.error.set(this.extractError(err) ?? "Erreur lors de la restauration."),
-    });
-  }
-
   loadUsers(): void {
     this.usersLoading.set(true);
     this.usersError.set(null);
-    this.clientService.getListClientsByCoachWithoutPagination(this.userId).subscribe({
-      next: users => {
-        this.allUsers.set(users ?? []);
-        this.usersLoading.set(false);
-      },
-      error: err => {
-        this.usersLoading.set(false);
-        this.usersError.set(this.extractError(err) ?? 'Erreur lors du chargement des utilisateurs.');
-      },
-    });
+
+    this.clientService.getListClientsByCoachWithoutPagination(this.userId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (users) => {
+          this.allUsers.set(users ?? []);
+          this.usersLoading.set(false);
+        },
+        error: (err) => {
+          this.usersLoading.set(false);
+          this.usersError.set(this.extractError(err) ?? 'Erreur lors du chargement des utilisateurs.');
+        },
+      });
   }
 
-  onUserSearch(ev: Event): void {
-    this.searchTerm.set((ev.target as HTMLInputElement)?.value ?? '');
+  onUserSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement)?.value ?? '';
+    this.searchTerm.set(value);
   }
 
-  userLabel(u: UserDto): string {
-    const full = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim();
-    return full || u.login || u.email || '(Sans nom)';
+  userLabel(user: UserDto): string {
+    const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return full || user.login || user.email || '(Sans nom)';
   }
 
-  getUserFirstName(u: UserDto): string {
-    return (u.firstName ?? this.userLabel(u)).split(' ')[0];
+  getUserFirstName(user: UserDto): string {
+    return (user.firstName ?? this.userLabel(user)).split(' ')[0];
   }
 
-  isSelected(u: UserDto): boolean {
-    return this.selectedUserIds().has(u.id);
+  isSelected(user: UserDto): boolean {
+    return this.selectedUserIds().has(user.id);
   }
 
-  toggleUser(u: UserDto): void {
+  toggleUser(user: UserDto): void {
     const next = new Set(this.selectedUserIds());
-    if (next.has(u.id)) next.delete(u.id);
-    else next.add(u.id);
+
+    if (next.has(user.id)) {
+      next.delete(user.id);
+    } else {
+      next.add(user.id);
+    }
+
     this.selectedUserIds.set(next);
+
     this.assignSelectAll =
-      this.allUsers().length > 0 && this.allUsers().every(x => next.has(x.id));
+      this.allUsers().length > 0 && this.allUsers().every(u => next.has(u.id));
   }
 
   handleAssignSelectAll(): void {
@@ -378,7 +452,10 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   toggleSchedule(): void {
     this.scheduleEnabled = !this.scheduleEnabled;
-    if (!this.scheduleEnabled) this.scheduledDateValue = '';
+
+    if (!this.scheduleEnabled) {
+      this.scheduledDateValue = '';
+    }
   }
 
   submitAssign(): void {
@@ -386,15 +463,21 @@ export class FormsListComponent implements OnInit, OnDestroy {
     if (!form) return;
 
     const ids = Array.from(this.selectedUserIds());
+
     if (ids.length === 0) {
       this.usersError.set('Sélectionne au moins un utilisateur.');
       return;
     }
 
+    const hasSchedule = !!form.schedule;
+
+    if (hasSchedule && !this.endDateValue) {
+      this.usersError.set('Sélectionne une date de fin.');
+      return;
+    }
+
     this.assigning.set(true);
     this.usersError.set(null);
-
-    const hasSchedule = !!form.schedule;
 
     let dueDate: string | null = null;
 
@@ -406,77 +489,125 @@ export class FormsListComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.api.ensurePublished(form.id).pipe(
-      switchMap(() =>
-        this.assignmentsApi.bulkAssign(form.id, {
-          assigneeIds: ids,
-          dueDate: dueDate,
-          endDate: hasSchedule ? this.endDateValue : null,
-        })
+    this.api.ensurePublished(form.id)
+      .pipe(
+        takeUntil(this.destroy$),
+        switchMap(() =>
+          this.assignmentsApi.bulkAssign(form.id, {
+            assigneeIds: ids,
+            dueDate,
+            endDate: hasSchedule ? this.endDateValue : null,
+          })
+        )
       )
-    ).subscribe({
-      next: res => {
-        this.assigning.set(false);
-        this.closeAssign();
-      },
-      error: err => {
-        this.assigning.set(false);
-        this.usersError.set(err?.error?.message ?? "Erreur lors de l'affectation.");
-      },
-    });
-  }
-  // ── Dropdown ──────────────────────────────────────────────────────────────────
-  readonly openDropdownId = signal<string | null>(null);
+      .subscribe({
+        next: (res: any) => {
+          const createdCount = res?.created?.length ?? 0;
+          const errors = res?.errors ?? [];
 
-  toggleDropdown(formId: string | number, event: MouseEvent) {
-    event.stopPropagation();
-    const id = String(formId);
-    const nextId = this.openDropdownId() === id ? null : id;
-    this.openDropdownId.set(nextId);
-    if (nextId) {
-      requestAnimationFrame(() => this.positionDropdown(nextId, event.currentTarget as HTMLElement));
-    }
-  }
+          if (errors.length > 0) {
+            const already = errors.filter((e: any) => e.reason === 'ALREADY_ASSIGNED').length;
+            const other = errors.length - already;
 
-  private positionDropdown(formId: string, buttonEl: HTMLElement | null) {
-    const menu = document.getElementById(`dropdown-${formId}`) as HTMLElement | null;
-    if (!menu || !buttonEl) return;
-    const rect = buttonEl.getBoundingClientRect();
-    const menuW = menu.offsetWidth || 180;
-    const menuH = menu.offsetHeight || 200;
-    const top = rect.bottom + menuH > window.innerHeight ? rect.top - menuH - 6 : rect.bottom + 6;
-    const left = Math.max(8, rect.right - menuW);
-    menu.style.top = `${top}px`;
-    menu.style.left = `${left}px`;
+            let msg = `Affectation partielle : ${createdCount} succès`;
+
+            if (already > 0) msg += ` • ${already} déjà affecté(s)`;
+            if (other > 0) msg += ` • ${other} erreur(s)`;
+
+            this.usersError.set(msg);
+
+            if (createdCount > 0) {
+              this.closeAssign();
+            }
+          } else {
+            this.closeAssign();
+          }
+
+          this.assigning.set(false);
+          this.loadCounts();
+          this.loadPage();
+        },
+        error: (err) => {
+          this.assigning.set(false);
+          this.usersError.set(err?.error?.message ?? "Erreur lors de l'affectation.");
+        },
+      });
   }
 
-  closeDropdown() { this.openDropdownId.set(null); }
-
-  @HostListener('document:click', ['$event'])
-  onDocClick(event: MouseEvent) {
-    const target = event.target as HTMLElement | null;
-    if (target?.closest('.dropdown')) return;
-    this.closeDropdown();
+  showSpecificDateSchedule(): boolean {
+    return !this.selectedToAssign()?.schedule;
   }
-
-  readonly openedActionsId = signal<string | number | null>(null);
 
   toggleActions(formId: string | number, event: MouseEvent): void {
     event.stopPropagation();
     this.openedActionsId.set(this.openedActionsId() === formId ? null : formId);
   }
 
-  closeActions(): void { this.openedActionsId.set(null); }
+  closeActions(): void {
+    this.openedActionsId.set(null);
+  }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────────
-  trackById(_: number, f: Form) { return f.id; }
+  toggleDropdown(formId: string | number, event: MouseEvent): void {
+    event.stopPropagation();
+
+    const id = String(formId);
+    const nextId = this.openDropdownId() === id ? null : id;
+    this.openDropdownId.set(nextId);
+
+    if (nextId) {
+      requestAnimationFrame(() => this.positionDropdown(nextId, event.currentTarget as HTMLElement));
+    }
+  }
+
+  private positionDropdown(formId: string, buttonEl: HTMLElement | null): void {
+    const menu = document.getElementById(`dropdown-${formId}`) as HTMLElement | null;
+    if (!menu || !buttonEl) return;
+
+    const rect = buttonEl.getBoundingClientRect();
+
+    const menuW = menu.offsetWidth || 180;
+    const menuH = menu.offsetHeight || 200;
+
+    const top = rect.bottom + menuH > window.innerHeight
+      ? rect.top - menuH - 6
+      : rect.bottom + 6;
+
+    const left = Math.max(8, rect.right - menuW);
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+  }
+
+  closeDropdown(): void {
+    this.openDropdownId.set(null);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+
+    if (target?.closest('.dropdown')) return;
+
+    this.closeDropdown();
+    this.closeActions();
+  }
+
+  trackById(_: number, item: Form | UserDto): string {
+    return String(item.id);
+  }
 
   badgeClass(status: string): string {
-    switch (status) {
-      case 'PUBLISHED': return 'badge badge--published';
-      case 'DRAFT':     return 'badge badge--draft';
-      case 'ARCHIVED':  return 'badge badge--archived';
-      default:          return 'badge';
+    switch ((status ?? '').toUpperCase()) {
+      case 'PUBLISHED':
+        return 'badge badge--published';
+      case 'DRAFT':
+        return 'badge badge--draft';
+      case 'UNSAVED':
+        return 'badge badge--unsaved';
+      case 'ARCHIVED':
+        return 'badge badge--archived';
+      default:
+        return 'badge';
     }
   }
 

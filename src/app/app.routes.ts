@@ -43,9 +43,11 @@ import {
 } from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
 import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
 import {ProgressPicturesComponent} from "./components/progress-pictures-module/progress-pictures/progress-pictures.component";
+import { BodyMeasurementsComponent } from './components/body-measurements/body-measurements.component';
 import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
 import {RevenueSubscriptionsComponent} from "./components/admin/revenue-subscriptions/revenue-subscriptions.component";
 import {UsersComponent} from "./components/admin/users/users.component";
+import {VideoViewerComponent} from "./components/video-viewer/video-viewer.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -211,6 +213,10 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'progress-pictures',
         component: ProgressPicturesComponent,
+      },
+      {
+        path: 'body-measurements',
+        component: BodyMeasurementsComponent,
       }
     ],
   },
@@ -234,4 +240,8 @@ export const APP_ROUTE: Route[] = [
     path: 'site',
     component: PublicWebsiteComponent
   },
+  {
+    path: 'video-viewer',
+    component: VideoViewerComponent,
+  }
 ];

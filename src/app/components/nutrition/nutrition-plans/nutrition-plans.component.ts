@@ -8,7 +8,6 @@ import {
   NutritionService,
   NutritionPlan,
 } from '../../../service/nutrition.service';
-import { NutritionBlocService } from '../../../service/nutrition-bloc.service';
 import { DeleteNutritionPlanModalComponent } from '../delete-nutrition-plan-modal/delete-nutrition-plan-modal.component';
 import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-plan-type-modal.component';
 import { ModalAssignToclientComponent } from 'app/components/clients/modal-assign-toclient/modal-assign-toclient.component';
@@ -29,6 +28,12 @@ import { ModalAssignToclientComponent } from 'app/components/clients/modal-assig
 })
 export class NutritionPlansComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private documentClickHandler = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.dropdown')) {
+      this.openDropdownId = null;
+    }
+  };
 
   plans: NutritionPlan[] = [];
   searchTerm = '';
@@ -38,56 +43,89 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   selectedPlan: NutritionPlan | null = null;
   openDropdownId: string | null = null;
   loading = false;
+  error: string | null = null;
 
   programToAssign: NutritionPlan | null = null;
   showAssignModal = false;
 
   constructor(
     private nutritionService: NutritionService,
-    private nutritionBloc: NutritionBlocService,
     private router: Router
   ) {}
 
   ngOnInit() {
-    this.nutritionBloc.state$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((state) => {
-        this.plans = state.plans;
-        this.loading = state.loading;
-      });
-
     this.loadPlans();
-
-    document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown')) {
-        this.openDropdownId = null;
-      }
-    });
+    document.addEventListener('click', this.documentClickHandler);
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    document.removeEventListener('click', this.documentClickHandler);
   }
 
   loadPlans() {
-    this.nutritionBloc.setLoading(true);
+    this.loading = true;
+    this.error = null;
 
-    this.nutritionService.getNutritionPlansTemplates().subscribe({
-      next: (plans) => {
-        this.plans = plans.content;
-      },
-      error: (error) => {
-        console.error('Error loading plans:', error);
-        this.nutritionBloc.setError('Failed to load nutrition plans');
-      },
+    // IMPORTANT:
+    // Normal Nutrition Plans list must load /api/meal-plan/.
+    // /api/meal-plan/templates is only for the global templates list.
+    this.nutritionService
+      .getNutritionPlans()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          const content = response?.content || [];
+
+          this.plans = this.sortNewestFirst(content);
+          this.loading = false;
+
+          console.log('[NUTRITION PLANS] loaded normal plans =', this.plans.length, this.plans);
+        },
+        error: (error) => {
+          console.error('[NUTRITION PLANS] Error loading normal plans:', error);
+          this.plans = [];
+          this.loading = false;
+          this.error = 'Failed to load nutrition plans';
+        },
+      });
+  }
+
+  private sortNewestFirst(plans: NutritionPlan[]): NutritionPlan[] {
+    return [...plans].sort((a, b) => {
+      const bTime = this.toDateTime(b.updatedAt || b.createdAt || b.startDate);
+      const aTime = this.toDateTime(a.updatedAt || a.createdAt || a.startDate);
+
+      if (bTime !== aTime) {
+        return bTime - aTime;
+      }
+
+      return (b.id || '').localeCompare(a.id || '');
     });
   }
 
+  private toDateTime(value: string | Date | undefined): number {
+    if (!value) return 0;
+
+    const time = value instanceof Date ? value.getTime() : Date.parse(value);
+
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  isTemplatePlan(plan: NutritionPlan): boolean {
+    return Boolean((plan as any).isMealPlanTemplate);
+  }
+
   get filteredPlans() {
+    const query = this.searchTerm.trim().toLowerCase();
+
+    if (!query) {
+      return this.plans;
+    }
+
     return this.plans.filter((plan) =>
-      plan.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+      (plan.name || '').toLowerCase().includes(query)
     );
   }
 
@@ -97,6 +135,29 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   closeChooseModal() {
     this.showChooseModal = false;
+  }
+
+  getCurrentUserId(): string {
+    return (
+      sessionStorage.getItem('userId') ||
+      localStorage.getItem('userId') ||
+      ''
+    );
+  }
+
+  getPlanOwnerId(plan: NutritionPlan): string {
+    return String(
+      (plan as any).createdBy ||
+      (plan as any).coach?.id ||
+      ''
+    ).trim();
+  }
+
+  canManagePlan(plan: NutritionPlan): boolean {
+    const currentUserId = this.getCurrentUserId();
+    const ownerId = this.getPlanOwnerId(plan);
+
+    return !!currentUserId && !!ownerId && currentUserId === ownerId;
   }
 
   editPlan(plan: NutritionPlan) {
@@ -124,19 +185,24 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete() {
-    if (this.selectedPlan) {
-      this.nutritionService.deleteNutritionPlan(this.selectedPlan.id!).subscribe({
+    if (!this.selectedPlan) {
+      return;
+    }
+
+    this.nutritionService
+      .deleteNutritionPlan(this.selectedPlan.id!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
           this.closeDeleteModal();
           this.loadPlans();
         },
         error: (error) => {
           console.error('Error deleting plan:', error);
-          this.nutritionBloc.setError('Failed to delete nutrition plan');
+          this.error = 'Failed to delete nutrition plan';
           this.closeDeleteModal();
         },
       });
-    }
   }
 
   toggleDropdown(planId: string, event: Event) {
@@ -185,34 +251,46 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
         endDate: mealDays.length
           ? mealDays[mealDays.length - 1].date
           : event.date,
+        isMealPlanTemplate: false,
       };
 
-      this.nutritionService.assignNutritionPlan(item).subscribe({
-        next: () => {
-          this.loadPlans();
-        },
-        error: (err) => {
-          console.error('Error assigning nutrition plan:', err);
-        },
-      });
+      this.nutritionService
+        .assignNutritionPlan(item)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loadPlans();
+          },
+          error: (err) => {
+            console.error('Error assigning nutrition plan:', err);
+          },
+        });
     }
 
     this.showAssignModal = false;
     this.programToAssign = null;
   }
 
-  duplicatePlan(id: string) {
-    this.nutritionService.duplicate(id).subscribe({
-      next: () => {
-        this.loadPlans();
-        this.openDropdownId = null;
-      },
-      error: (error) => console.error('Error duplicating program:', error),
-    });
+  duplicatePlan(id: string | undefined) {
+    if (!id) {
+      return;
+    }
+
+    this.nutritionService
+      .duplicate(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadPlans();
+          this.openDropdownId = null;
+        },
+        error: (error) => console.error('Error duplicating program:', error),
+      });
   }
 
-  formatDate(date: string | undefined): string {
+  formatDate(date: string | Date | undefined): string {
     if (!date) return '';
+
     return new Date(date).toLocaleDateString('en-US', {
       day: '2-digit',
       month: 'short',
@@ -225,36 +303,40 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   getTotalProtein(plan: NutritionPlan): string {
     const total =
       plan.mealDays?.reduce(
-        (sum, day) => sum + (day.dayTargets.proteinG || 0),
+        (sum, day) => sum + (day.dayTargets?.proteinG || 0),
         0
       ) || 0;
+
     return `${total}g Protein`;
   }
 
   getTotalCarbs(plan: NutritionPlan): string {
     const total =
       plan.mealDays?.reduce(
-        (sum, day) => sum + (day.dayTargets.carbsG || 0),
+        (sum, day) => sum + (day.dayTargets?.carbsG || 0),
         0
       ) || 0;
+
     return `${total}g Carbs`;
   }
 
   getTotalFat(plan: NutritionPlan): string {
     const total =
       plan.mealDays?.reduce(
-        (sum, day) => sum + (day.dayTargets.fatG || 0),
+        (sum, day) => sum + (day.dayTargets?.fatG || 0),
         0
       ) || 0;
+
     return `${total}g Fat`;
   }
 
   getTotalCalories(plan: NutritionPlan): string {
     const total =
       plan.mealDays?.reduce(
-        (sum, day) => sum + (day.dayTargets.calories || 0),
+        (sum, day) => sum + (day.dayTargets?.calories || 0),
         0
       ) || 0;
+
     return `${total} Kcal`;
   }
 }

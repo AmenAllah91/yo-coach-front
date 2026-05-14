@@ -1,18 +1,12 @@
-<!-- Root -->
 <div class="np-root" [class.editing]="isEditMode">
   <div class="np-shell">
-    <!-- ==== LEFT SIDEBAR (Days) ==== -->
     <aside class="np-aside">
       <div class="np-aside__head">
         <h2 class="np-h6">Days</h2>
       </div>
 
       <div class="np-aside__body">
-        <!-- Day list -->
-        <ng-container
-          *ngFor="let d of days; trackBy: trackByDay; let i = index"
-        >
-          <!-- First day (no trash icon) -->
+        <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
           <button
             *ngIf="i === 0; else otherDay"
             class="np-day"
@@ -22,7 +16,6 @@
             <span>{{ d.title }}</span>
           </button>
 
-          <!-- Other Days -->
           <ng-template #otherDay>
             <div class="np-dayrow">
               <button
@@ -32,27 +25,19 @@
               >
                 <span>{{ d.title }}</span>
               </button>
-              <button
-                class="np-iconbtn"
-                title="Delete"
-                (click)="deleteDay(d, $event)"
-              >
+
+              <button class="np-iconbtn" title="Delete" (click)="deleteDay(d, $event)">
                 <i-feather name="trash-2" class="np-ico"></i-feather>
               </button>
             </div>
           </ng-template>
         </ng-container>
 
-        <!-- Add Day -->
-        <button
-          class="np-btn np-btn--dash np-btn--ghost np-btn--full"
-          (click)="addDay()"
-        >
+        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
           <i-feather name="plus" class="np-ico"></i-feather>
           Add Day
         </button>
 
-        <!-- Duplicate -->
         <div class="np-stack">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
             <span>Duplicate Day</span>
@@ -62,9 +47,7 @@
       </div>
     </aside>
 
-    <!-- ==== MAIN CONTENT ==== -->
     <main class="np-main">
-      <!-- Page title -->
       <div class="np-pagehead">
         <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
           <svg viewBox="0 0 24 24" class="np-ico">
@@ -78,18 +61,15 @@
             />
           </svg>
         </a>
+
         <h1 class="np-h5">
           {{ isEditMode ? "Edit Workout Plan" : "Create Workout Plan" }}
         </h1>
       </div>
 
-      <!-- Main Card -->
       <section class="np-card">
-        <!-- PLAN TITLE -->
         <div class="np-field">
-          <label class="np-label"
-            >Plan Title <span class="np-danger">*</span></label
-          >
+          <label class="np-label">Plan Title <span class="np-danger">*</span></label>
           <input
             class="np-input"
             type="text"
@@ -98,7 +78,6 @@
           />
         </div>
 
-        <!-- PLAN DESCRIPTION TOGGLE -->
         <ng-container *ngIf="!showPlanDescription; else planDescBlock">
           <button class="np-link" (click)="togglePlanDescription()">
             <i-feather name="plus" class="np-ico"></i-feather>
@@ -109,6 +88,7 @@
         <ng-template #planDescBlock>
           <div class="np-field">
             <label class="np-label">Plan Description</label>
+
             <div class="np-textareaWrap">
               <textarea
                 class="np-input np-textarea"
@@ -129,9 +109,24 @@
           </div>
         </ng-template>
 
+        <div class="np-field np-template-visibility" *ngIf="canCreateTemplate">
+          <label class="np-checkline">
+            <input
+              type="checkbox"
+              [(ngModel)]="isVisibleToOthers"
+            />
+            <span>
+              Visible to other coaches
+            </span>
+          </label>
+          <p class="np-help">
+            If checked, this workout plan will appear in Templates for other coaches.
+          </p>
+        </div>
+
+
         <div class="np-sep"></div>
 
-        <!-- CURRENT DAY HEADER -->
         <div class="np-dayhead">
           <h3 class="np-h6">{{ selectedDay?.title }}</h3>
 
@@ -140,17 +135,11 @@
           </button>
         </div>
 
-        <!-- REST DAY SWITCH -->
         <div class="wk-rest mb-6" *ngIf="selectedDay">
           <div class="wk-rest__row">
             <div class="wk-rest__left">
               <div class="wk-icon" [class.wk-icon--on]="selectedDay.isRestDay">
-                <svg
-                  class="wk-icon__svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                >
+                <svg class="wk-icon__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -177,7 +166,6 @@
           </div>
         </div>
 
-        <!-- IF REST DAY — SHOW INFO -->
         <div *ngIf="selectedDay?.isRestDay" class="wk-restbox">
           <div class="wk-restbox__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -191,22 +179,13 @@
           </div>
 
           <h3 class="wk-restbox__title">Rest Day</h3>
-          <p class="wk-restbox__text">
-            Rest and recovery. No exercises scheduled.
-          </p>
+          <p class="wk-restbox__text">Rest and recovery. No exercises scheduled.</p>
 
-          <!-- Rest notes -->
           <ng-container *ngIf="showRestNotes; else addNotesBtnRest">
             <div class="wk-notes">
               <div class="wk-notes__head">
                 <label class="wk-notes__label">Rest Day Notes</label>
-                <button
-                  type="button"
-                  class="wk-notes__close"
-                  (click)="toggleRestNotes()"
-                >
-                  ✕
-                </button>
+                <button type="button" class="wk-notes__close" (click)="toggleRestNotes()">✕</button>
               </div>
 
               <textarea
@@ -226,7 +205,6 @@
           </ng-template>
         </div>
 
-        <!-- DAY DESCRIPTION (NON REST) -->
         <ng-container *ngIf="selectedDay">
           <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
             <button class="np-link" (click)="toggleDayDescription()">
@@ -261,16 +239,11 @@
           </ng-template>
         </ng-container>
 
-        <!-- ==== EXERCISES ==== -->
         <div class="wkex mb-6">
           <h3 class="wkex__heading">Exercises</h3>
 
-          <!-- If no exercises -->
           <ng-container
-            *ngIf="
-              selectedDay?.workoutSessions[0]?.exercises.length;
-              else wkNoExercises
-            "
+            *ngIf="selectedDay?.workoutSessions[0]?.exercises.length; else wkNoExercises"
           >
             <div class="wkex__stack">
               <ng-container
@@ -280,7 +253,6 @@
                   trackBy: trackByExercise
                 "
               >
-                <!-- Exercise Card -->
                 <article
                   class="wkex-card"
                   [class.superset]="isInSuperset(i)"
@@ -288,28 +260,39 @@
                 >
                   <div class="wkex-card__inner">
                     <div class="wkex-card__header">
-                      <div class="wkex-card__media"></div>
+                      <div class="wkex-card__media">
+                        <img
+                          *ngIf="getExerciseThumbnail(exercise); else wkexMediaFallback"
+                          [src]="getExerciseThumbnail(exercise)"
+                          [alt]="exercise.name"
+                          loading="lazy"
+                        />
+
+                        <ng-template #wkexMediaFallback>
+                          <div class="wkex-card__mediaFallback">
+                            <i-feather name="activity" class="np-ico"></i-feather>
+                          </div>
+                        </ng-template>
+
+                        <div class="wkex-card__play" *ngIf="getExerciseVideoLink(exercise)">
+                          ▶
+                        </div>
+                      </div>
 
                       <div class="wkex-card__titlewrap">
                         <h4 class="wkex-card__title">
                           {{ exercise.name }}
-                          <span *ngIf="isInSuperset(i)" class="wkex-badge"
-                            >Superset</span
-                          >
+                          <span *ngIf="isInSuperset(i)" class="wkex-badge">
+                            Superset
+                          </span>
                         </h4>
 
-                        <!-- Notes -->
                         <ng-container
-                          *ngIf="
-                            editingExerciseDescription === exercise.id;
-                            else addNotesBtn
-                          "
+                          *ngIf="editingExerciseDescription === exercise.id; else addNotesBtn"
                         >
                           <div class="wkex-notes">
                             <div class="wkex-notes__head">
-                              <label class="wkex-notes__label"
-                                >Exercise Notes</label
-                              >
+                              <label class="wkex-notes__label">Exercise Notes</label>
                               <button
                                 type="button"
                                 class="wkex-notes__close"
@@ -323,12 +306,7 @@
                               rows="2"
                               class="wkex-notes__textarea"
                               [ngModel]="exercise.description || ''"
-                              (ngModelChange)="
-                                handleExerciseDescriptionChange(
-                                  exercise.id,
-                                  $event
-                                )
-                              "
+                              (ngModelChange)="handleExerciseDescriptionChange(exercise.id, $event)"
                             ></textarea>
                           </div>
                         </ng-container>
@@ -340,25 +318,18 @@
                             (click)="setEditingExerciseDescription(exercise.id)"
                           >
                             <span class="wkex-plus">＋</span>
-                            {{
-                              exercise.description ? "Edit Notes" : "Add Notes"
-                            }}
+                            {{ exercise.description ? "Edit Notes" : "Add Notes" }}
                           </button>
                         </ng-template>
 
-                        <!-- Display notes -->
                         <div
-                          *ngIf="
-                            exercise.description &&
-                            editingExerciseDescription !== exercise.id
-                          "
+                          *ngIf="exercise.description && editingExerciseDescription !== exercise.id"
                           class="wkex-noteview"
                         >
                           {{ exercise.description }}
                         </div>
                       </div>
 
-                      <!-- Remove exercise -->
                       <div class="wkex-card__actions">
                         <button
                           type="button"
@@ -370,11 +341,12 @@
                       </div>
                     </div>
 
-                    <!-- Sets (hidden if second of superset) -->
                     <div *ngIf="exercise.sets?.length > 0" class="wkex-sets">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
-                        <div class="wkex-sets__th">Reps</div>
+                        <div class="wkex-sets__th">
+                          {{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}
+                        </div>
                         <div class="wkex-sets__th">Rest Period</div>
                         <div class="wkex-sets__th wkex-sets__th--empty"></div>
                       </div>
@@ -390,11 +362,16 @@
 
                           <div class="wkex-sets__cell">
                             <input
-                              type="text"
+                              type="{{ exercise.type === 'CARDIO' ? 'number' : 'text' }}"
                               class="wkex-input"
-                              [ngModel]="set.reps"
+                              [ngModel]="exercise.type === 'CARDIO' ? set.duration : set.reps"
                               (ngModelChange)="
-                                handleSetChange(exercise.id, si, 'reps', $event)
+                                handleSetChange(
+                                  exercise.id,
+                                  si,
+                                  exercise.type === 'CARDIO' ? 'duration' : 'reps',
+                                  $event
+                                )
                               "
                             />
                           </div>
@@ -406,14 +383,7 @@
                                 type="number"
                                 class="wkex-restbox__input"
                                 [ngModel]="set.restMin"
-                                (ngModelChange)="
-                                  handleSetChange(
-                                    exercise.id,
-                                    si,
-                                    'restMin',
-                                    $event
-                                  )
-                                "
+                                (ngModelChange)="handleSetChange(exercise.id, si, 'restMin', $event)"
                               />
                             </div>
 
@@ -423,14 +393,7 @@
                                 type="number"
                                 class="wkex-restbox__input"
                                 [ngModel]="set.restSec"
-                                (ngModelChange)="
-                                  handleSetChange(
-                                    exercise.id,
-                                    si,
-                                    'restSec',
-                                    $event
-                                  )
-                                "
+                                (ngModelChange)="handleSetChange(exercise.id, si, 'restSec', $event)"
                               />
                             </div>
                           </div>
@@ -448,18 +411,13 @@
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        class="wkex-addset"
-                        (click)="handleAddSet(exercise.id)"
-                      >
+                      <button type="button" class="wkex-addset" (click)="handleAddSet(exercise.id)">
                         Add Set
                       </button>
                     </div>
                   </div>
                 </article>
 
-                <!-- SUPERSER BUTTON -->
                 <div
                   *ngIf="canShowSupersetButton(i)"
                   class="wkex-supersetbar"
@@ -484,18 +442,13 @@
             </div>
           </ng-template>
 
-          <button
-            type="button"
-            class="wkex-addexercise"
-            (click)="openExerciseSelector()"
-          >
+          <button type="button" class="wkex-addexercise" (click)="openExerciseSelector()">
             <span class="wkex-plus">＋</span>
             Add an Exercise
           </button>
         </div>
       </section>
 
-      <!-- SAVE BUTTON -->
       <div class="np-sticky">
         <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
           <svg viewBox="0 0 24 24" class="np-ico">
@@ -515,7 +468,6 @@
   </div>
 </div>
 
-<!-- ==== MODAL ADD EXERCISE ==== -->
 <div
   class="np-modal"
   *ngIf="isExerciseModalOpen"
@@ -528,6 +480,7 @@
   <div class="np-modal__panel np-modal--food" tabindex="-1">
     <div class="np-modal__head">
       <h3 id="npExTitle" class="np-modal__title">Add Exercise</h3>
+
       <button class="np-modal__close" (click)="closeExerciseModal()">
         <svg viewBox="0 0 24 24" class="np-ico">
           <path
@@ -542,19 +495,11 @@
     </div>
 
     <div class="np-modal__body">
-      <!-- LIST -->
       <ng-container *ngIf="exerciseStep === 'list'">
         <div class="np-field np-modal__search">
           <div class="np-searchwrap">
             <svg viewBox="0 0 24 24" class="np-ico np-searchwrap__ico">
-              <circle
-                cx="11"
-                cy="11"
-                r="7"
-                stroke="currentColor"
-                stroke-width="2"
-                fill="none"
-              />
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none" />
               <path
                 d="M20 20l-3.5-3.5"
                 stroke="currentColor"
@@ -563,6 +508,7 @@
                 stroke-linecap="round"
               />
             </svg>
+
             <input
               class="np-input np-searchwrap__input"
               type="text"
@@ -581,13 +527,29 @@
             *ngFor="let ex of filteredExercises"
             (click)="showExerciseDetail(ex)"
           >
-            <div class="np-foodlist__name">{{ ex.name }}</div>
-            <div class="np-foodlist__meta">Tap to set sets/reps</div>
+            <div class="np-foodlist__thumb">
+              <img
+                *ngIf="getExerciseThumbnail(ex); else foodThumbFallback"
+                [src]="getExerciseThumbnail(ex)"
+                [alt]="ex.name"
+                loading="lazy"
+              />
+
+              <ng-template #foodThumbFallback>
+                <div class="np-foodlist__thumbFallback">
+                  <i-feather name="activity" class="np-ico"></i-feather>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="np-foodlist__text">
+              <div class="np-foodlist__name">{{ ex.name }}</div>
+              <div class="np-foodlist__meta">Tap to set sets/reps</div>
+            </div>
           </li>
         </ul>
       </ng-container>
 
-      <!-- DETAIL -->
       <ng-container *ngIf="exerciseStep === 'detail' && selectedExercise">
         <div class="np-field" style="margin-bottom: 16px">
           <label class="np-label">{{ selectedExercise.name }}</label>
@@ -595,22 +557,12 @@
           <div class="np-grid-2">
             <div>
               <label class="np-label">Sets</label>
-              <input
-                class="np-input"
-                type="number"
-                min="1"
-                [(ngModel)]="selectedExercise.sets"
-              />
+              <input class="np-input" type="number" min="1" [(ngModel)]="selectedExercise.sets" />
             </div>
 
             <div>
               <label class="np-label">Reps</label>
-              <input
-                class="np-input"
-                type="number"
-                min="1"
-                [(ngModel)]="selectedExercise.reps"
-              />
+              <input class="np-input" type="number" min="1" [(ngModel)]="selectedExercise.reps" />
             </div>
 
             <div>
@@ -626,12 +578,7 @@
 
             <div>
               <label class="np-label">Rest (sec)</label>
-              <input
-                class="np-input"
-                type="number"
-                min="0"
-                [(ngModel)]="selectedExercise.restSec"
-              />
+              <input class="np-input" type="number" min="0" [(ngModel)]="selectedExercise.restSec" />
             </div>
 
             <div>
@@ -648,12 +595,8 @@
       </ng-container>
     </div>
 
-    <!-- Footer buttons -->
     <div class="np-modal__foot" *ngIf="exerciseStep === 'list'">
-      <button
-        class="np-btn np-btn--ghost np-btn--full"
-        (click)="closeExerciseModal()"
-      >
+      <button class="np-btn np-btn--ghost np-btn--full" (click)="closeExerciseModal()">
         Cancel
       </button>
     </div>
@@ -664,10 +607,7 @@
           Back
         </button>
 
-        <button
-          class="np-btn np-btn--brandsoft"
-          (click)="addExerciseToSession()"
-        >
+        <button class="np-btn np-btn--brandsoft" (click)="addExerciseToSession()">
           Add Exercise
         </button>
       </div>
@@ -675,30 +615,19 @@
   </div>
 </div>
 
-<!-- ==== RIGHT DRAWER EXERCISE SELECTOR ==== -->
 <div *ngIf="showExerciseSelector">
   <div class="wkdrawer__backdrop" (click)="closeExerciseSelector()"></div>
 
   <aside class="wkdrawer" role="dialog" aria-label="Choose Exercise">
     <div class="wkdrawer__head">
       <h2 class="wkdrawer__title">Choose Exercise</h2>
-      <button class="wkdrawer__close" (click)="closeExerciseSelector()">
-        ✕
-      </button>
+      <button class="wkdrawer__close" (click)="closeExerciseSelector()">✕</button>
     </div>
 
     <div class="wkdrawer__body">
-      <!-- Search -->
       <div class="wkdrawer__search">
         <svg viewBox="0 0 24 24" class="wkdrawer__searchico">
-          <circle
-            cx="11"
-            cy="11"
-            r="7"
-            stroke="currentColor"
-            stroke-width="2"
-            fill="none"
-          ></circle>
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"></circle>
           <path
             d="M20 20l-3.5-3.5"
             stroke="currentColor"
@@ -717,15 +646,9 @@
         />
       </div>
 
-      <!-- Filters -->
       <div class="wkdrawer__filters">
-        <!-- Muscles -->
         <div class="wkselectwrap">
-          <select
-            class="wkselect"
-            [(ngModel)]="muscleFilter"
-            (ngModelChange)="onFilterChange()"
-          >
+          <select class="wkselect" [(ngModel)]="muscleFilter" (ngModelChange)="onFilterChange()">
             <option value="">Muscles</option>
             <option value="CHEST">Chest</option>
             <option value="BACK">Back</option>
@@ -747,13 +670,8 @@
           </svg>
         </div>
 
-        <!-- Equipment -->
         <div class="wkselectwrap">
-          <select
-            class="wkselect"
-            [(ngModel)]="equipmentFilter"
-            (ngModelChange)="onFilterChange()"
-          >
+          <select class="wkselect" [(ngModel)]="equipmentFilter" (ngModelChange)="onFilterChange()">
             <option value="">Equipment</option>
             <option value="BARBELL">Barbell</option>
             <option value="DUMBBELL">Dumbbell</option>
@@ -774,13 +692,8 @@
           </svg>
         </div>
 
-        <!-- Types -->
         <div class="wkselectwrap">
-          <select
-            class="wkselect"
-            [(ngModel)]="typeFilter"
-            (ngModelChange)="onFilterChange()"
-          >
+          <select class="wkselect" [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
             <option value="">All Types</option>
             <option value="CARDIO">Cardio</option>
             <option value="MUSCULATION">Musculation</option>
@@ -800,10 +713,8 @@
         </div>
       </div>
 
-      <!-- Loader -->
       <div *ngIf="loading" class="wkloader">Loading exercises...</div>
 
-      <!-- List -->
       <ul class="wkdrawer__list" *ngIf="!loading">
         <li
           class="wkdrawer__item"
@@ -811,7 +722,24 @@
           (mouseenter)="hoveringExerciseId = ex.id"
           (mouseleave)="hoveringExerciseId = null"
         >
-          <div class="wkdrawer__thumb"></div>
+          <div class="wkdrawer__thumb">
+            <img
+              *ngIf="getExerciseThumbnail(ex); else drawerThumbFallback"
+              [src]="getExerciseThumbnail(ex)"
+              [alt]="ex.name"
+              loading="lazy"
+            />
+
+            <ng-template #drawerThumbFallback>
+              <div class="wkdrawer__thumbFallback">
+                <i-feather name="activity" class="np-ico"></i-feather>
+              </div>
+            </ng-template>
+
+            <div class="wkdrawer__thumbPlay" *ngIf="getExerciseVideoLink(ex)">
+              ▶
+            </div>
+          </div>
 
           <div class="wkdrawer__meta">
             <div class="wkdrawer__name">{{ ex.name }}</div>
@@ -824,7 +752,6 @@
         </li>
       </ul>
 
-      <!-- Pagination -->
       <div class="pagination" *ngIf="totalPages > 1 && !loading">
         <button class="wkbtn-link" (click)="prevPage()" [disabled]="page === 0">
           Prev
@@ -832,11 +759,7 @@
 
         <span>{{ page + 1 }} / {{ totalPages }}</span>
 
-        <button
-          class="wkbtn-link"
-          (click)="nextPage()"
-          [disabled]="page + 1 >= totalPages"
-        >
+        <button class="wkbtn-link" (click)="nextPage()" [disabled]="page + 1 >= totalPages">
           Next
         </button>
       </div>

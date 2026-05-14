@@ -1,175 +1,319 @@
-import { Component } from '@angular/core';
-import {Router} from "@angular/router";
-import {FormsModule} from "@angular/forms";
-import {CommonModule} from "@angular/common";
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
+import { ClientService } from '../../service/client.service';
+import { WorkoutService } from '../../service/workout.service';
+import { NutritionService } from '../../service/nutrition.service';
+import {
+  AssignmentsApiService,
+  FormAssignment,
+} from '../forms/services/assignments-api.service';
+import { FormsApiService } from '../forms/services/forms-api.service';
+import { AddClientModalComponent } from '../clients/add-client-modal/add-client-modal.component';
+import { ChoosePlanTypeModalComponent } from '../nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
 
-interface Client {
+interface ClientDisplay {
   id: string;
   name: string;
-  email: string;
-  avatar?: string;
   package: string;
-  progress: number;
   status: 'active' | 'inactive';
   lastCheckIn?: string;
 }
 
-interface CheckIn {
+interface CheckInDisplay {
   id: string;
   clientId: string;
   clientName: string;
-  clientAvatar?: string;
-  date: string; // ISO string
-  weight: number;
-  bodyFat?: number;
-  notes?: string;
-  photos?: number;
+  formName: string;
+  status: string;
+  overdue: boolean;
 }
+
+type AssignType = 'workout' | 'nutrition' | 'checkin';
+
+interface PendingAssign {
+  type: AssignType;
+  item: any;
+}
+
 @Component({
   selector: 'app-coach-dashboard',
   standalone: true,
-  imports: [FormsModule,CommonModule],
+  imports: [
+    FormsModule,
+    CommonModule,
+    AddClientModalComponent,
+    ChoosePlanTypeModalComponent,
+  ],
   templateUrl: './coach-dashboard.component.html',
-  styleUrl: './coach-dashboard.component.scss'
+  styleUrl: './coach-dashboard.component.scss',
 })
-export class CoachDashboardComponent {
+export class CoachDashboardComponent implements OnInit {
   showAddClientModal = false;
-  searchTerm = '';
+  showChoosePlanTypeModal = false;
 
-  // Mock data (comme dans React)
-  clients: Client[] = [
-    {
-      id: '1',
-      name: 'David Crawford',
-      email: 'david@example.com',
-      package: 'Online Coaching',
-      progress: 75,
-      status: 'active',
-      lastCheckIn: '2 days ago',
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      package: 'Premium Plan',
-      progress: 60,
-      status: 'active',
-      lastCheckIn: '1 day ago',
-    },
-    {
-      id: '3',
-      name: 'Mike Thompson',
-      email: 'mike@example.com',
-      package: 'Basic Plan',
-      progress: 45,
-      status: 'active',
-      lastCheckIn: '5 days ago',
-    },
-    {
-      id: '4',
-      name: 'Emma Wilson',
-      email: 'emma@example.com',
-      package: 'Online Coaching',
-      progress: 90,
-      status: 'active',
-      lastCheckIn: '1 day ago',
-    },
-    {
-      id: '5',
-      name: 'James Brown',
-      email: 'james@example.com',
-      package: 'Premium Plan',
-      progress: 30,
-      status: 'inactive',
-      lastCheckIn: '10 days ago',
-    },
-  ];
+  selectedTab: 'clients' | 'checkins' = 'clients';
 
-  recentCheckIns: CheckIn[] = [
-    {
-      id: '1',
-      clientId: '2',
-      clientName: 'Sarah Johnson',
-      date: '2024-01-15',
-      weight: 68.5,
-      bodyFat: 22.3,
-      notes: 'Feeling great! Energy levels are up.',
-      photos: 3,
-    },
-    {
-      id: '2',
-      clientId: '4',
-      clientName: 'Emma Wilson',
-      date: '2024-01-15',
-      weight: 62.0,
-      bodyFat: 19.8,
-      notes: 'Hit a new PR on squats!',
-      photos: 2,
-    },
-    {
-      id: '3',
-      clientId: '1',
-      clientName: 'David Crawford',
-      date: '2024-01-13',
-      weight: 82.3,
-      bodyFat: 18.5,
-      notes: 'Down 2kg this week. Feeling strong.',
-      photos: 4,
-    },
-    {
-      id: '4',
-      clientId: '3',
-      clientName: 'Mike Thompson',
-      date: '2024-01-10',
-      weight: 90.5,
-      bodyFat: 25.1,
-      notes: 'Struggled with diet this week.',
-      photos: 1,
-    },
-  ];
+  loading = false;
+  error: string | null = null;
 
-  constructor(private router: Router) {}
+  clients: ClientDisplay[] = [];
+  recentCheckIns: CheckInDisplay[] = [];
 
-  get filteredClients(): Client[] {
-    const q = this.searchTerm.trim().toLowerCase();
-    if (!q) return this.clients;
-    return this.clients.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
+  pendingAssign: PendingAssign | null = null;
+  showPostCreatePrompt = false;
+  showAssignModal = false;
+  assignClientId = '';
+  assignDate = this.todayInputValue();
+  assignSaving = false;
+  assignError: string | null = null;
+
+  private assignments: FormAssignment[] = [];
+  private coachId = '';
+
+  constructor(
+    private router: Router,
+    private clientService: ClientService,
+    private workoutService: WorkoutService,
+    private nutritionService: NutritionService,
+    private assignmentsApi: AssignmentsApiService,
+    private formsApi: FormsApiService,
+  ) {}
+
+  ngOnInit(): void {
+    this.coachId = sessionStorage.getItem('userId') || '';
+    this.loadData();
+  }
+
+  loadData(): void {
+    if (!this.coachId) {
+      this.error = 'Coach not found.';
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    forkJoin({
+      clients: this.clientService
+        .getListClientsByCoachWithoutPagination(this.coachId)
+        .pipe(catchError(() => of([]))),
+
+      assignments: this.assignmentsApi
+        .pageOwnerAssignments(0, 100, 'dueAt', 'DESC')
+        .pipe(catchError(() => of({ content: [] }))),
+    })
+      .pipe(
+        finalize(() => {
+          this.loading = false;
+        }),
+      )
+      .subscribe({
+        next: (result) => {
+          const rawClients: any[] = result.clients || [];
+
+          this.clients = rawClients.map((client: any) => ({
+            id: String(client.id),
+            name: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+            package: 'Online Coaching',
+            status: 'active' as const,
+            lastCheckIn: this.getLastCheckInDate(client),
+          }));
+
+          this.assignments = result.assignments?.content || [];
+          this.enrichCheckIns(rawClients);
+          this.openPendingAssignFromNavigationState();
+        },
+
+        error: () => {
+          this.error = 'Failed to load dashboard data.';
+        },
+      });
+  }
+
+  private openPendingAssignFromNavigationState(): void {
+    const state = history.state || {};
+    const created = state.assignAfterCreate;
+
+    if (!created?.type || !created?.item) return;
+
+    this.pendingAssign = {
+      type: created.type,
+      item: created.item,
+    };
+
+    this.assignClientId = '';
+    this.assignDate = this.todayInputValue();
+    this.assignError = null;
+    this.showAssignModal = false;
+    this.showPostCreatePrompt = true;
+
+    history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  private enrichCheckIns(rawClients: any[]): void {
+    const clientMap = new Map<string, any>();
+
+    rawClients.forEach((client: any) => {
+      if (client?.id) {
+        clientMap.set(String(client.id), client);
+      }
+    });
+
+    this.recentCheckIns = this.assignments.map((assignment) => {
+      const client = clientMap.get(String(assignment.assigneeId));
+
+      const fullName = client
+        ? `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim()
+        : String(assignment.assigneeId);
+
+      return {
+        id: String(assignment.id),
+        clientId: String(assignment.assigneeId),
+        clientName: fullName || String(assignment.assigneeId),
+        formName: assignment.formName || 'Check-in',
+        status: this.mapStatus(assignment.status),
+        overdue: this.isOverdue(assignment),
+      };
+    });
+  }
+
+  private getLastCheckInDate(client: any): string {
+    if (client.workoutDates?.length) {
+      const dates = client.workoutDates.map((date: string) => new Date(date));
+
+      const latest = new Date(
+        Math.max(...dates.map((date: Date) => date.getTime())),
+      );
+
+      return this.formatDate(latest);
+    }
+
+    return 'Niveau';
+  }
+
+  private formatDate(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+
+    return `${Math.floor(days / 7)} weeks ago`;
+  }
+
+  private mapStatus(status: string): string {
+    switch (status) {
+      case 'ASSIGNED':
+        return 'Pending';
+      case 'OPENED':
+        return 'Opened';
+      case 'SUBMITTED':
+        return 'Submitted';
+      case 'REVIEWED':
+        return 'Reviewed';
+      case 'CANCELED':
+        return 'Canceled';
+      default:
+        return status || 'Pending';
+    }
+  }
+
+  private isOverdue(assignment: FormAssignment): boolean {
+    if (!assignment.dueAt) return false;
+
+    const due = new Date(assignment.dueAt);
+    const now = new Date();
+
+    return (
+      due < now &&
+      assignment.status !== 'SUBMITTED' &&
+      assignment.status !== 'REVIEWED'
     );
+  }
+
+  setTab(tab: 'clients' | 'checkins'): void {
+    this.selectedTab = tab;
   }
 
   getInitials(name: string): string {
     return name
       .split(' ')
       .filter(Boolean)
-      .map((n) => n[0])
+      .map((part) => part[0])
       .join('')
       .toUpperCase();
   }
 
-  getProgressClass(progress: number): string {
-    if (progress >= 70) return 'progress green';
-    if (progress >= 40) return 'progress blue';
-    return 'progress orange';
+  getStatusClass(status?: string): string {
+    switch (status) {
+      case 'Submitted':
+        return 'status submitted';
+      case 'Opened':
+        return 'status opened';
+      case 'Reviewed':
+        return 'status reviewed';
+      default:
+        return 'status pending';
+    }
   }
 
-  formatCheckInDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  formatCheckInDate(checkIn: CheckInDisplay): string {
+    const assignment = this.assignments.find((item) => item.id === checkIn.id);
+
+    if (!assignment?.dueAt) {
+      return checkIn.overdue ? 'Overdue' : '';
+    }
+
+    const date = new Date(assignment.dueAt);
+    const now = new Date();
+
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const dueDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+
+    const diff = Math.floor(
+      (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diff < 0) return 'Overdue';
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff < 7) return `In ${diff} days`;
+
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   }
 
-  // Actions
   addClient(): void {
     this.showAddClientModal = true;
   }
 
+  closeAddClientModal(): void {
+    this.showAddClientModal = false;
+  }
+
   addWorkoutPlan(): void {
-    this.router.navigate(['/workout-programs']);
+    this.router.navigate(['/workout/create-workout'], {
+      queryParams: {
+        returnUrl: '/coach-dashboard',
+      },
+    });
   }
 
   addNutritionPlan(): void {
-    this.router.navigate(['/nutrition-plan']);
+    this.showChoosePlanTypeModal = true;
+  }
+
+  closeChoosePlanTypeModal(): void {
+    this.showChoosePlanTypeModal = false;
   }
 
   sendMessage(): void {
@@ -177,20 +321,299 @@ export class CoachDashboardComponent {
   }
 
   addCheckIn(): void {
-    this.router.navigate(['/check-ins']);
+    this.router.navigate(['/forms/create-form'], {
+      queryParams: {
+        returnTo: 'dashboard',
+      },
+    });
   }
 
   openClient(id: string): void {
-    this.router.navigate([`/client/${id}`]);
+    this.router.navigate([`/clients/profil-client/${id}`]);
   }
 
-  closeModal(): void {
-    this.showAddClientModal = false;
+  get pendingAssignTitle(): string {
+    if (!this.pendingAssign) return '';
+    if (this.pendingAssign.type === 'checkin') {
+      return this.pendingAssign.item?.title || 'Check-in';
+    }
+
+    return this.pendingAssign.item?.name || 'Plan';
   }
-  trackByClientId(index: number, client: Client): string {
+
+  get pendingAssignLabel(): string {
+    switch (this.pendingAssign?.type) {
+      case 'workout':
+        return 'Workout created';
+      case 'nutrition':
+        return 'Nutrition plan created';
+      case 'checkin':
+        return 'Check-in created';
+      default:
+        return 'Created';
+    }
+  }
+
+  get pendingAssignIcon(): string {
+    switch (this.pendingAssign?.type) {
+      case 'workout':
+        return '🏋️';
+      case 'nutrition':
+        return '🍎';
+      case 'checkin':
+        return '✅';
+      default:
+        return '✓';
+    }
+  }
+
+  get assignDateLabel(): string {
+    return this.pendingAssign?.type === 'checkin' ? 'Due date' : 'Start date';
+  }
+
+  notNowAssign(): void {
+    this.showPostCreatePrompt = false;
+    this.showAssignModal = false;
+    this.pendingAssign = null;
+    this.assignError = null;
+  }
+
+  openAssignModal(): void {
+    this.showPostCreatePrompt = false;
+    this.showAssignModal = true;
+    this.assignClientId = this.clients[0]?.id || '';
+    this.assignDate = this.todayInputValue();
+    this.assignError = null;
+  }
+
+  closeAssignModal(): void {
+    if (this.assignSaving) return;
+
+    this.showAssignModal = false;
+    this.pendingAssign = null;
+    this.assignError = null;
+  }
+
+  confirmAssign(): void {
+    if (!this.pendingAssign || !this.assignClientId) {
+      this.assignError = 'Please select a client.';
+      return;
+    }
+
+    this.assignSaving = true;
+    this.assignError = null;
+
+    if (this.pendingAssign.type === 'workout') {
+      this.assignWorkoutPlan();
+      return;
+    }
+
+    if (this.pendingAssign.type === 'nutrition') {
+      this.assignNutritionPlan();
+      return;
+    }
+
+    this.assignCheckIn();
+  }
+
+  private assignWorkoutPlan(): void {
+    const workout = this.pendingAssign!.item;
+
+    if (!workout?.id) {
+      this.assignSaving = false;
+      this.assignError = 'Workout was created, but its id was not returned by the server.';
+      return;
+    }
+
+    const startDate = this.parseInputDate(this.assignDate);
+    const workoutDays = this.buildWorkoutDays(workout, startDate);
+    const endDate = this.addDays(startDate, Math.max(workoutDays.length - 1, 0));
+    const selectedClient = this.clients.find((client) => client.id === this.assignClientId);
+
+    const payload: any = {
+      ...workout,
+      id: workout.id,
+      name: workout.name,
+      details: workout.details ?? '',
+      isWorkoutPlanTemplate: false,
+      isTemplate: false,
+      startDate: this.toDateOnly(startDate),
+      endDate: this.toDateOnly(endDate),
+      workoutDays,
+      coach: workout.coach || { id: this.coachId },
+      client: {
+        id: this.assignClientId,
+        name: selectedClient?.name || '',
+      },
+    };
+
+    this.workoutService
+      .assignWorkout(workout.id, payload)
+      .pipe(finalize(() => (this.assignSaving = false)))
+      .subscribe({
+        next: () => this.finishAssignSuccess(),
+        error: (err) => {
+          console.error('Workout assign failed:', err, payload);
+          this.assignError = this.readBackendError(err, 'Failed to assign workout.');
+        },
+      });
+  }
+
+  private assignNutritionPlan(): void {
+    const plan = this.pendingAssign!.item;
+
+    if (!plan?.id) {
+      this.assignSaving = false;
+      this.assignError = 'Nutrition plan was created, but its id was not returned by the server.';
+      return;
+    }
+
+    const startDate = this.parseInputDate(this.assignDate);
+    const mealDays = this.buildMealDays(plan, startDate);
+    const endDate = this.addDays(startDate, Math.max(mealDays.length - 1, 0));
+    const selectedClient = this.clients.find((client) => client.id === this.assignClientId);
+
+    const payload: any = {
+      ...plan,
+      id: plan.id,
+      name: plan.name,
+      details: plan.details ?? plan.description ?? '',
+      description: plan.description ?? plan.details ?? '',
+      trackingMode: plan.trackingMode ?? null,
+      startDate: this.toDateOnly(startDate),
+      endDate: this.toDateOnly(endDate),
+      mealDays,
+      coach: plan.coach || { id: this.coachId },
+      coachId: plan.coachId || this.coachId,
+      client: {
+        id: this.assignClientId,
+        name: selectedClient?.name || '',
+      },
+    };
+
+    this.nutritionService
+      .assignNutritionPlan(payload)
+      .pipe(finalize(() => (this.assignSaving = false)))
+      .subscribe({
+        next: () => this.finishAssignSuccess(),
+        error: (err) => {
+          console.error('Nutrition assign failed:', err, payload);
+          this.assignError = this.readBackendError(err, 'Failed to assign nutrition plan.');
+        },
+      });
+  }
+
+  private assignCheckIn(): void {
+    const form = this.pendingAssign!.item;
+    const formId = form?.id || form?.formId;
+
+    if (!formId) {
+      this.assignSaving = false;
+      this.assignError = 'Form not found.';
+      return;
+    }
+
+    this.formsApi
+      .ensurePublished(formId)
+      .pipe(
+        switchMap(() =>
+          this.assignmentsApi.bulkAssign(formId, {
+            assigneeIds: [this.assignClientId],
+            dueDate: this.assignDate || null,
+            endDate: null,
+          }),
+        ),
+        finalize(() => (this.assignSaving = false)),
+      )
+      .subscribe({
+        next: () => this.finishAssignSuccess(),
+        error: (err) => {
+          console.error('Check-in assign failed:', err);
+          this.assignError = this.readBackendError(err, 'Failed to assign check-in.');
+        },
+      });
+  }
+
+  private finishAssignSuccess(): void {
+    this.showAssignModal = false;
+    this.pendingAssign = null;
+    this.assignError = null;
+    this.loadData();
+  }
+
+  private readBackendError(err: any, fallback: string): string {
+    return (
+      err?.error?.message ||
+      err?.error?.error ||
+      err?.message ||
+      fallback
+    );
+  }
+
+  private buildWorkoutDays(workout: any, startDate: Date): any[] {
+    const days = workout?.workoutDays || [];
+
+    return days.map((day: any, index: number) => {
+      const date = this.addDays(startDate, index);
+
+      return {
+        ...day,
+        date: this.toDateOnly(date),
+        dayOfWeek: this.weekday(date),
+        dayNumber: day.dayNumber || index + 1,
+      };
+    });
+  }
+
+  private buildMealDays(plan: any, startDate: Date): any[] {
+    const days = plan?.mealDays || [];
+
+    return days.map((day: any, index: number) => {
+      const date = this.addDays(startDate, index);
+
+      return {
+        ...day,
+        date: this.toDateOnly(date),
+        dayOfWeek: day.dayOfWeek || `Day ${index + 1}`,
+        dayNumber: day.dayNumber || index + 1,
+      };
+    });
+  }
+
+  private todayInputValue(): string {
+    return this.toDateOnly(new Date());
+  }
+
+  private parseInputDate(value: string): Date {
+    if (!value) return new Date();
+
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+
+  private toDateOnly(date: Date): string {
+    const year = String(date.getFullYear()).padStart(4, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private weekday(date: Date): string {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+
+  trackByClientId(index: number, client: ClientDisplay): string {
     return client.id;
   }
-  trackByCheckInId(index: number, checkIn: CheckIn): string {
+
+  trackByCheckInId(index: number, checkIn: CheckInDisplay): string {
     return checkIn.id;
   }
 }

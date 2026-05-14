@@ -151,7 +151,7 @@ export class RevenueSubscriptionsComponent implements OnInit {
       size: this.size
     }).subscribe({
       next: (res) => {
-        this.allSubscriptions = res.content;
+        this.allSubscriptions = this.sortSubscriptionsNewestFirst(res.content || []);
         this.totalElements = res.totalElements;
         this.loading = false;
       },
@@ -160,6 +160,44 @@ export class RevenueSubscriptionsComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private sortSubscriptionsNewestFirst(
+    subscriptions: CoachSubscriptionDto[]
+  ): CoachSubscriptionDto[] {
+    return [...subscriptions].sort((a, b) => {
+      const bTime = this.toDateTime(b.startDate);
+      const aTime = this.toDateTime(a.startDate);
+
+      if (bTime !== aTime) {
+        return bTime - aTime;
+      }
+
+      return (b.id || '').localeCompare(a.id || '');
+    });
+  }
+
+  private toDateTime(value: string | null | undefined): number {
+    if (!value) return 0;
+
+    const native = Date.parse(value);
+    if (!Number.isNaN(native)) {
+      return native;
+    }
+
+    const parts = value.split(/[\/\-]/).map(part => Number(part));
+
+    if (parts.length === 3 && parts.every(part => !Number.isNaN(part))) {
+      const [first, second, third] = parts;
+
+      if (first > 31) {
+        return new Date(first, second - 1, third).getTime();
+      }
+
+      return new Date(third, second - 1, first).getTime();
+    }
+
+    return 0;
   }
 
   refreshPageData(): void {
@@ -216,7 +254,7 @@ export class RevenueSubscriptionsComponent implements OnInit {
 
     this.areaChartOptions = {
       series: [{ name: 'Revenus', data: values }],
-      chart: { type: 'bar', height: 260, toolbar: { show: false } },
+      chart: { type: 'bar', height: 260, width: '100%', toolbar: { show: false }, redrawOnParentResize: true, redrawOnWindowResize: true, parentHeightOffset: 0 },
       dataLabels: {
         enabled: true,
         formatter: (val: number) => `${(val / 1000).toFixed(1)}k€`
@@ -227,13 +265,35 @@ export class RevenueSubscriptionsComponent implements OnInit {
         gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.02, stops: [5, 95] },
         colors: ['#4db8c7']
       },
-      xaxis: { categories: data.map(d => d.month) },
+      xaxis: {
+        categories: data.map(d => this.shortMonthLabel(d.month)),
+        labels: {
+          rotate: 0,
+          trim: true,
+          hideOverlappingLabels: true,
+          style: { fontSize: '11px' }
+        }
+      },
       yaxis: {
         min: yMin,
         max: yMax,
         labels: { formatter: (val: number) => `${(val / 1000).toFixed(0)}k€` }
       },
-      colors: ['#4db8c7']
+      grid: { padding: { left: 0, right: 8, top: 8, bottom: 0 } },
+      colors: ['#4db8c7'],
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            chart: { height: 255, width: '100%' },
+            plotOptions: { bar: { columnWidth: '38%', borderRadius: 5 } },
+            dataLabels: { enabled: false },
+            xaxis: { labels: { rotate: 0, style: { fontSize: '9px' } } },
+            yaxis: { labels: { minWidth: 24, maxWidth: 28, style: { fontSize: '9px' } } },
+            grid: { padding: { left: -4, right: 4, top: 6, bottom: 0 } }
+          }
+        }
+      ]
     };
   }
 
@@ -245,18 +305,71 @@ export class RevenueSubscriptionsComponent implements OnInit {
 
     this.barChartOptions = {
       series: [{ name: 'Revenus', data: annual.map(a => a.revenue) }],
-      chart: { type: 'bar', height: 288, toolbar: { show: false } },
+      chart: { type: 'bar', height: 288, width: '100%', toolbar: { show: false }, redrawOnParentResize: true, redrawOnWindowResize: true, parentHeightOffset: 0 },
       plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
       dataLabels: {
         enabled: true,
         formatter: (val: number) => `${(val / 1000).toFixed(0)}k€`
       },
-      xaxis: { categories: annual.map(a => a.year) },
+      xaxis: {
+        categories: annual.map(a => a.year),
+        labels: { rotate: 0, style: { fontSize: '11px' } }
+      },
       yaxis: {
         labels: { formatter: (val: number) => `${(val / 1000).toFixed(0)}k€` }
       },
-      colors: ['#4db8c7']
+      grid: { padding: { left: 0, right: 8, top: 8, bottom: 0 } },
+      colors: ['#4db8c7'],
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            chart: { height: 255, width: '100%' },
+            plotOptions: { bar: { columnWidth: '38%', borderRadius: 5 } },
+            dataLabels: { enabled: false },
+            xaxis: { labels: { rotate: 0, style: { fontSize: '9px' } } },
+            yaxis: { labels: { minWidth: 24, maxWidth: 28, style: { fontSize: '9px' } } },
+            grid: { padding: { left: -4, right: 4, top: 6, bottom: 0 } }
+          }
+        }
+      ]
     };
+  }
+
+  shortMonthLabel(month: string): string {
+    const normalized = (month || '').toLowerCase().trim();
+
+    const map: Record<string, string> = {
+      janvier: 'janv.',
+      january: 'janv.',
+      février: 'févr.',
+      fevrier: 'févr.',
+      february: 'févr.',
+      mars: 'mars',
+      march: 'mars',
+      avril: 'avr.',
+      april: 'avr.',
+      mai: 'mai',
+      may: 'mai',
+      juin: 'juin',
+      june: 'juin',
+      juillet: 'juil.',
+      july: 'juil.',
+      août: 'août',
+      aout: 'août',
+      august: 'août',
+      septembre: 'sept.',
+      september: 'sept.',
+      octobre: 'oct.',
+      october: 'oct.',
+      novembre: 'nov.',
+      november: 'nov.',
+      décembre: 'déc.',
+      decembre: 'déc.',
+      december: 'déc.'
+    };
+
+    return map[normalized] || month;
   }
 
   statusClass(status: string): string {

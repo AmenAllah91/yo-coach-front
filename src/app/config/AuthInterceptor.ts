@@ -1,124 +1,107 @@
 import { Injectable } from '@angular/core';
-import {HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse} from '@angular/common/http';
-import {LoaderService} from '../service/loader.service';
-import {ToastService} from '../service/toast.service';
-import {Observable, from, switchMap, tap, catchError, finalize} from 'rxjs';
+import {
+  HttpEvent,
+  HttpHandler,
+  HttpInterceptor,
+  HttpRequest
+} from '@angular/common/http';
+import { LoaderService } from '../service/loader.service';
+import { ToastService } from '../service/toast.service';
+import { Observable, from, switchMap, catchError, finalize, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  private messageMapping = {
-    GET: {
-      success: 'Data retrieved successfully!',
-      error: 'Failed to retrieve data.'
-    },
-    POST: {
-      success: 'Data submitted successfully!',
-      error: 'Failed to submit data.'
-    },
-    PUT: {
-      success: 'Data updated successfully!',
-      error: 'Failed to update data.'
-    },
-    DELETE: {
-      success: 'Data deleted successfully!',
-      error: 'Failed to delete data.'
-    }
+
+  private errorMessageMapping = {
+    GET: 'Failed to retrieve data.',
+    POST: 'Failed to submit data.',
+    PUT: 'Failed to update data.',
+    DELETE: 'Failed to delete data.'
   };
 
   constructor(
     private loaderService: LoaderService,
     private toastService: ToastService,
     private authService: AuthService
-  ) {
-  }
+  ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    this.loaderService.show();
+    const skipToast = req.headers.has('X-Skip-Toast');
+    const skipLoader = req.headers.has('X-Skip-Loader');
+
+    let cleanReq = req;
+
+    if (skipToast || skipLoader) {
+      cleanReq = req.clone({
+        headers: req.headers
+          .delete('X-Skip-Toast')
+          .delete('X-Skip-Loader')
+      });
+    }
+
+    if (!skipLoader) {
+      this.loaderService.show();
+    }
+
+    const handle = (request: HttpRequest<any>) => {
+      return next.handle(request).pipe(
+        catchError(error => {
+          if (!this.isToastExcluded(request.url) && !skipToast) {
+            this.showErrorToast(request.method);
+          }
+
+          return throwError(() => error);
+        }),
+
+        finalize(() => {
+          if (!skipLoader) {
+            this.loaderService.hide();
+          }
+        })
+      );
+    };
 
     if (this.authService.isLoggedIn()) {
       return from(this.authService.getToken()).pipe(
         switchMap(token => {
-          if (token) {
-            const authReq = req.clone({
+          const authReq = token
+            ? cleanReq.clone({
               setHeaders: {
                 Authorization: `Bearer ${token}`
               }
-            });
-            return next.handle(authReq);
-          }
-          return next.handle(req);
-        }),
-        tap((event) => {
-          if (event instanceof HttpResponse) {
-            const method = req.method;
+            })
+            : cleanReq;
 
-            if (!this.isToastExcluded(req.url) && ['POST', 'PUT', 'DELETE'].includes(method)) {
-              this.showToast(method, 'success');
-            }
-          }
-        }),
-        catchError(error => {
-
-          if (!this.isToastExcluded(req.url)) {
-            this.showToast(req.method, 'error');
-          }
-
-          throw error;
-        }),
-        finalize(() => {
-          this.loaderService.hide();
+          return handle(authReq);
         })
       );
     }
 
-    return next.handle(req).pipe(
-      tap(() => {
-        const method = req.method;
-
-        if (!this.isToastExcluded(req.url) && ['POST', 'PUT', 'DELETE'].includes(method)) {
-          this.showToast(method, 'success');
-        }
-      }),
-      catchError(error => {
-
-        if (!this.isToastExcluded(req.url)) {
-          this.showToast(req.method, 'error');
-        }
-
-        throw error;
-      }),
-      finalize(() => {
-        this.loaderService.hide();
-      })
-    );
+    return handle(cleanReq);
   }
 
+  private showErrorToast(method: string): void {
+    const message =
+      this.errorMessageMapping[
+        method as keyof typeof this.errorMessageMapping
+        ];
 
-  private setAuthHeader(request: HttpRequest<any>, token: string): HttpRequest<any> {
-    return request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-  }
-
-  private showToast(method: string, type: 'success' | 'error'): void {
-    const messages = this.messageMapping[method];
-    if (messages) {
-      if (type === 'success') {
-        this.toastService.success(messages.success);
-      } else {
-        this.toastService.error(messages.error);
-      }
+    if (!message) {
+      return;
     }
+
+    this.toastService.error(message);
   }
 
   private isToastExcluded(url: string): boolean {
-    return url.includes('/chat') ||
+    return (
+      url.includes('/chat') ||
       url.includes('/api/notifications') ||
       url.includes('/ws') ||
       url.includes('/sync') ||
-      url.includes('/token');
+      url.includes('/token') ||
+      url.includes('UNSAVED')
+    );
   }
 }

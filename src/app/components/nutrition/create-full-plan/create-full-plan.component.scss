@@ -1125,3 +1125,166 @@
     font-size:22px;
   }
 }
+/* ===== FULL WIDTH PAGE FIX =====
+   Removes the empty left/right space on create nutrition pages.
+   Keep this block at the END of the SCSS file so it overrides older rules.
+*/
+:host {
+  display: block;
+  width: 100%;
+}
+
+.np-root {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--np-bg);
+}
+
+.np-shell {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: stretch;
+}
+
+.np-aside {
+  width: 256px;
+  min-width: 256px;
+  flex: 0 0 256px;
+}
+
+.np-main {
+  flex: 1 1 auto;
+  width: calc(100% - 256px);
+  min-width: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.np-card {
+  width: 100%;
+  max-width: none !important;
+  margin: 16px 0 !important;
+}
+
+.np-pagehead {
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.np-sticky {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+@media (max-width: 767px) {
+  .np-shell {
+    flex-direction: column;
+  }
+
+  .np-aside {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .np-main {
+    width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .np-card {
+    margin: 12px 0 !important;
+  }
+}
+
+/* Admin visibility checkbox */
+.np-checkline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+}
+
+.np-checkline input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #39aeef;
+}
+
+.np-help {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+/* Admin visibility checkbox - better spacing */
+.np-template-visibility,
+.np-field:has(.np-checkline) {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #dbeafe;
+  border-radius: 0.75rem;
+  background: #f0f9ff;
+}
+
+.np-checkline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.np-checkline input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  accent-color: #39aeef;
+  cursor: pointer;
+}
+
+.np-checkline span {
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.np-help {
+  margin: 0.55rem 0 0 1.85rem;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
+/* Admin visibility checkbox */
+.np-checkline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+}
+
+.np-checkline input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #39aeef;
+}
+
+.np-help {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}

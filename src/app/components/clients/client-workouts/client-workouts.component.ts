@@ -9,6 +9,7 @@ type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING';
 interface ExerciseSet {
   setNumber?: number;
   reps: number;
+  duration?: number;
   restMin: number;
   restSec: number;
 }
@@ -19,6 +20,7 @@ interface RawExercise {
   type: 'CARDIO' | 'MUSCULATION';
   supersetGroupId: string | null;
   sets: ExerciseSet[];
+  duration?: number;
 }
 
 interface WorkoutSession {
@@ -32,6 +34,7 @@ interface Workout {
   date: string;
   title: string;
   program: string;
+  dayNumber: number;
   status: WorkoutStatus;
   rawSessions: WorkoutSession[]; // Sessions brutes pour le mapping
   groupedExercises: GroupedExercise[]; // Exercices groupés avec numérotation
@@ -47,6 +50,7 @@ interface GroupedExercise {
   sets: {
     reps: string;
     rest: string;
+    duration?: number;
   }[];
   duration?: number;
 }
@@ -181,6 +185,7 @@ export class ClientWorkoutsComponent implements OnInit {
           date: dateStr,
           title: day.title || `Day ${day.dayNumber}`,
           program: plan.name,
+          dayNumber: day.dayNumber,
           status: day.status ?? 'PENDING',
           rawSessions: day.workoutSessions || [],
           groupedExercises,
@@ -212,6 +217,7 @@ export class ClientWorkoutsComponent implements OnInit {
           ? `${globalIndex}.${subIndex + 1}`
           : `${globalIndex}`;
 
+        const totalDuration = ex.sets?.reduce((sum, s) => sum + (s.duration || 0), 0) ?? ex.duration;
         groupedExercises.push({
           groupIndex: globalIndex,
           subIndex: isSuperset ? subIndex + 1 : undefined,
@@ -223,8 +229,9 @@ export class ClientWorkoutsComponent implements OnInit {
             ex.sets?.map((s) => ({
               reps: `${s.reps}`,
               rest: `${s.restMin * 60 + s.restSec}`,
+              duration: s.duration,
             })) || [],
-          duration: ex.type === 'CARDIO' ? ex.sets?.[0]?.reps || 0 : 0,
+          duration: totalDuration,
         });
       });
       globalIndex++;
@@ -299,9 +306,9 @@ export class ClientWorkoutsComponent implements OnInit {
     workout.status = status;
 
     this.workoutDayService
-      .updateWorkoutDay({ id: workout.id, status }, workout.planId)
+      .updateWorkoutDay({ id: workout.id, dayNumber: workout.dayNumber, status }, workout.planId)
       .subscribe({
-        next: () => console.log('Status updated:', status),
+        next: () => this.getWorkoutDay(),
         error: (err) => {
           console.error('Update failed:', err);
           workout.status = 'PENDING'; // Revert

@@ -1,0 +1,35 @@
+<div class="video-page">
+  <header class="video-header">
+    <div class="title-block">
+      <p>Exercise video</p>
+      <h1>{{ title }}</h1>
+    </div>
+  </header>
+
+  <main class="video-content">
+    <section class="hero-card">
+      <div class="loading-card" *ngIf="loadingShort">
+        <div class="loader"></div>
+        <h2>Opening Shorts video...</h2>
+        <p>The video will open inside this viewer.</p>
+      </div>
+
+      <div class="player-card" *ngIf="!loadingShort && videoUrl; else invalidVideo">
+        <iframe
+          [src]="videoUrl"
+          title="Exercise video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
+      </div>
+
+      <ng-template #invalidVideo>
+        <div class="error-card" *ngIf="!loadingShort">
+          <div class="error-icon">!</div>
+          <h2>Video unavailable</h2>
+          <p>This video link is invalid or unsupported.</p>
+        </div>
+      </ng-template>
+    </section>
+  </main>
+</div>

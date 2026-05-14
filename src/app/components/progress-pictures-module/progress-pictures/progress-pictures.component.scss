@@ -10,7 +10,7 @@
 
 .wrap {
   max-width: 80rem;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .header {
@@ -474,4 +474,71 @@
   .comparison-panel img {
     max-height: 50vh;
   }
+}
+
+
+/* Minimal requested fix: remove side empty space + lighter blue weight pill */
+.page,
+.wrap {
+  width: 100%;
+}
+
+.wrap {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.meta-pill {
+  color: #1d9bd7;
+  background: #eef9ff;
+  border-color: #d7f0fc;
+}
+
+
+/* Minimal requested fix: reduce top empty space */
+.page {
+  padding-top: 0;
+}
+
+.wrap {
+  padding-top: 8px;
+}
+
+.header {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.h1 {
+  margin-top: 0;
+}
+
+
+/* Minimal requested fix: keep comparison photos fixed while sidebar scrolls */
+.comparison-content {
+  align-items: start;
+}
+
+.comparison-sidebar {
+  max-height: calc(92vh - 190px);
+  overflow-y: auto;
+}
+
+.comparison-panels {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: calc(92vh - 190px);
+  overflow: hidden;
+}
+
+.comparison-panel {
+  max-height: calc(92vh - 190px);
+}
+
+.comparison-panel img {
+  max-height: calc(92vh - 240px);
 }

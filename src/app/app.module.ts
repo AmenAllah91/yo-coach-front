@@ -68,6 +68,20 @@ function initializeKeycloakAndSync(
 ) {
   return async () => {
     const host = window.location.hostname;
+    const path = window.location.pathname;
+
+    const publicPaths = [
+      '/video-viewer',
+    ];
+
+    const isPublicPath = publicPaths.some((publicPath) =>
+      path.startsWith(publicPath)
+    );
+
+    if (isPublicPath) {
+      console.log('Public page detected, skipping Keycloak init:', path);
+      return true;
+    }
 
     const isPublicHost = isPublicCoachHostname(host);
 
@@ -77,16 +91,17 @@ function initializeKeycloakAndSync(
     }
 
     console.log('Initializing Keycloak...');
+
     const authenticated = await keycloak.init({
       config: {
         url: 'https://login-int.yogym.co',
         realm: 'yo-coach',
-        clientId: 'front-app'
+        clientId: 'front-app',
       },
       initOptions: {
         onLoad: 'check-sso',
-        checkLoginIframe: false
-      }
+        checkLoginIframe: false,
+      },
     }).catch(err => {
       console.error('Keycloak initialization failed:', err);
       return false;
@@ -95,6 +110,7 @@ function initializeKeycloakAndSync(
     if (authenticated) {
       await authService.storeUserInfo();
       console.log('Keycloak initialized. Authenticated:', authenticated);
+
       try {
         const user = await firstValueFrom(
           http.post<any>(`${environment.baseApiUrl}/public/sync`, {})

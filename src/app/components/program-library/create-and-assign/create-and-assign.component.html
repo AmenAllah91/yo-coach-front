@@ -508,11 +508,11 @@
                       </div>
                     </div>
 
-                    <!-- Sets (hidden if second of superset) -->
+                    <!-- Sets -->
                     <div *ngIf="exercise.sets?.length" class="wkex-sets">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
-                        <div class="wkex-sets__th">Reps</div>
+                        <div class="wkex-sets__th">{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</div>
                         <div class="wkex-sets__th">Rest Period</div>
                         <div class="wkex-sets__th wkex-sets__th--empty"></div>
                       </div>
@@ -528,11 +528,11 @@
 
                           <div class="wkex-sets__cell">
                             <input
-                              type="text"
+                              type="{{ exercise.type === 'CARDIO' ? 'number' : 'text' }}"
                               class="wkex-input"
-                              [ngModel]="set.reps"
+                              [ngModel]="exercise.type === 'CARDIO' ? set.duration : set.reps"
                               (ngModelChange)="
-                                handleSetChange(exercise.id, si, 'reps', $event)
+                                handleSetChange(exercise.id, si, exercise.type === 'CARDIO' ? 'duration' : 'reps', $event)
                               "
                             />
                           </div>

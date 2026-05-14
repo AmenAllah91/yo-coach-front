@@ -22,12 +22,15 @@ import { switchMap, finalize, map } from 'rxjs/operators';
 import { ClientScheduleItemDto } from '../../../models/client-schedule.model';
 import { CalendarClientsComponent } from '../../calendar/calendar-clients/calendar-clients.component';
 import { ProgressPicturesComponent } from 'app/components/progress-pictures-module/progress-pictures/progress-pictures.component';
+import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
+import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
 
 type TabId =
   | 'dashboard'
   | 'workouts'
   | 'nutrition'
   | 'checkins'
+  | 'measurements'
   | 'pictures'
   | 'calendar';
 
@@ -81,7 +84,8 @@ export interface ScheduledCheckIn {
     AssignSelectModalComponent,
     FormSelectionModalComponent,
     CalendarClientsComponent,
-    ProgressPicturesComponent
+    ProgressPicturesComponent,
+    BodyMeasurementsComponent
   ],
   templateUrl: './profil-client.component.html',
   styleUrl: './profil-client.component.scss',
@@ -99,6 +103,70 @@ export class ProfilClientComponent {
 
   get fullName(): string {
     return `${this.client?.firstName} ${this.client?.lastName}`;
+  }
+
+  get clientTargetWeight(): number | null {
+    const value = (this.client as any)?.targetWeight;
+
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+
+  get bodyweightMeasurements(): BodyMeasurement[] {
+    return this.bodyMeasurements
+      .filter((item) => item.measurementType === 'BODYWEIGHT')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  get startWeight(): number | null {
+    const items = this.bodyweightMeasurements;
+    return items.length ? items[0].value : null;
+  }
+
+  get currentWeight(): number | null {
+    const items = this.bodyweightMeasurements;
+    return items.length ? items[items.length - 1].value : null;
+  }
+
+  get clientObjective(): string {
+    return (
+      (this.client as any)?.idealShapeDescription ||
+      (this.client as any)?.objective ||
+      (this.client as any)?.goal ||
+      (this.clientTargetWeight ? `Goal weight ${this.formatNumber(this.clientTargetWeight)} kg` : '')
+    );
+  }
+
+  formatNumber(value: number | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '--';
+    }
+
+    return Number(value).toLocaleString('fr-FR', {
+      maximumFractionDigits: 1,
+    });
+  }
+
+  loadBodyMeasurements(): void {
+    if (!this.clientId) {
+      return;
+    }
+
+    this.bodyMeasurementsService.getByClient(this.clientId).subscribe({
+      next: (items) => {
+        this.bodyMeasurements = items || [];
+      },
+      error: (err) => {
+        console.error('Failed to load body measurements:', err);
+        this.bodyMeasurements = [];
+      },
+    });
   }
 
   showAssignSelectModal = false;
@@ -166,6 +234,7 @@ export class ProfilClientComponent {
   showFormSelectionModal = false;
 
   scheduledCheckIns: ScheduledCheckIn[] = [];
+  bodyMeasurements: BodyMeasurement[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -175,13 +244,15 @@ export class ProfilClientComponent {
     private nutritionService: NutritionService,
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
-    private submissionsApi: SubmissionsApiService
+    private submissionsApi: SubmissionsApiService,
+    private bodyMeasurementsService: BodyMeasurementsService
   ) {
     this.clientId = this.route.snapshot.paramMap.get('id') || '';
 
     if (this.clientId) {
       this.getClientById(this.clientId);
       this.loadClientAssignments();
+      this.loadBodyMeasurements();
     }
 
     this.route.queryParams.subscribe(params => {

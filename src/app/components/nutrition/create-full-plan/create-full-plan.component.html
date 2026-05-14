@@ -114,6 +114,22 @@
           </div>
         </ng-template>
 
+        <div class="np-field np-template-visibility" *ngIf="canCreateTemplate">
+          <label class="np-checkline">
+            <input
+              type="checkbox"
+              [(ngModel)]="isMealPlanTemplate"
+            />
+            <span>
+              Visible to other coaches
+            </span>
+          </label>
+          <p class="np-help">
+            If checked, this nutrition plan will appear in Templates for other coaches.
+          </p>
+        </div>
+
+
         <div class="np-sep"></div>
 
         <div class="np-dayhead">

@@ -70,6 +70,7 @@ export interface NutritionPlan {
   startDate?: string;
   endDate?: string;
   client?: any;
+  isMealPlanTemplate?: boolean;
 }
 export interface DayTargets {
   calories: number;

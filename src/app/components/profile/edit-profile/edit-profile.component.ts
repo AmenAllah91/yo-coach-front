@@ -6,6 +6,11 @@ import { UsersService } from '../../../service/users.service';
 import { DocumentService } from '../../../service/document.service';
 import { User } from '../../../template/core';
 
+type ProfileUser = Partial<User> & {
+  targetWeight?: number | null;
+  idealShapeDescription?: string | null;
+};
+
 @Component({
   selector: 'app-edit-profile',
   standalone: true,
@@ -32,7 +37,7 @@ export class EditProfileComponent implements OnInit {
     { id: 'settings', label: 'Settings' },
   ];
 
-  userData: Partial<User> = {
+  userData: ProfileUser = {
     id: '',
     firstName: '',
     lastName: '',
@@ -40,10 +45,12 @@ export class EditProfileComponent implements OnInit {
     email: '',
     phoneNumber: '',
     avatarUrl: '',
-    bio: ''
+    bio: '',
+    targetWeight: null,
+    idealShapeDescription: ''
   };
 
-  editData: Partial<User> = {
+  editData: ProfileUser = {
     id: '',
     firstName: '',
     lastName: '',
@@ -51,7 +58,9 @@ export class EditProfileComponent implements OnInit {
     email: '',
     phoneNumber: '',
     avatarUrl: '',
-    bio: ''
+    bio: '',
+    targetWeight: null,
+    idealShapeDescription: ''
   };
 
   passwordFormModel = {
@@ -131,18 +140,30 @@ export class EditProfileComponent implements OnInit {
     this.selectedFile = null;
   }
 
+  private normalizeTargetWeight(value: number | string | null | undefined): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const numericValue = Number(value);
+
+    return Number.isNaN(numericValue) ? null : numericValue;
+  }
+
   handleEditSave(): void {
     if (!this.userData.id) return;
 
     this.isSaving = true;
 
-    const payload: Partial<User> = {
+    const payload: ProfileUser = {
       firstName: this.editData.firstName || '',
       lastName: this.editData.lastName || '',
       email: this.editData.email || '',
       login: this.editData.login || '',
       phoneNumber: this.editData.phoneNumber || '',
-      bio: this.editData.bio || ''
+      bio: this.editData.bio || '',
+      targetWeight: this.normalizeTargetWeight(this.editData.targetWeight),
+      idealShapeDescription: this.editData.idealShapeDescription || ''
     };
 
     this.usersService.updateUser(this.userData.id, payload as any).subscribe({
@@ -267,6 +288,8 @@ export class EditProfileComponent implements OnInit {
       this.userData.email,
       this.userData.phoneNumber,
       this.userData.avatarUrl,
+      this.userData.targetWeight,
+      this.userData.idealShapeDescription,
     ];
 
     const filled = fields.filter(value => !!value).length;
