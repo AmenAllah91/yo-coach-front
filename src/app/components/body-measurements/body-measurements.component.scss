@@ -4,9 +4,8 @@
 }
 
 .measurements-page {
-  width: 100%;
-  padding: 16px 22px;
-  background: #f8fafc;
+  font-family: inherit;
+  color: #374151;
 }
 
 .measurements-shell {
@@ -602,5 +601,171 @@
 
   .history-section h3 {
     font-size: 18px;
+  }
+}
+/* =========================================
+   MEASUREMENTS PAGE - SOFTER TYPOGRAPHY
+   Match profile tabs style
+========================================= */
+
+.measurements-page {
+  font-family: inherit;
+  color: #374151;
+}
+
+/* Sidebar search */
+.measurement-search input {
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.measurement-search input::placeholder {
+  color: #8b95a1;
+  font-weight: 400;
+}
+
+/* Sidebar items */
+.measurement-type {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.measurement-type i {
+  color: #374151;
+  font-size: 14px;
+}
+
+.measurement-type.active {
+  color: #111827;
+  font-weight: 500;
+  background: #f1f3f6;
+}
+
+/* Page title */
+.measurements-topbar h2 {
+  color: #111827;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.measurements-topbar p {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Chart header */
+.chart-header span {
+  color: #8b95a1;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.chart-header strong {
+  color: #111827;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Goal badge */
+.goal-summary {
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Goal label inside chart */
+.goal-line-label {
+  fill: #0f766e;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Y axis */
+.y-axis {
+  color: #8b95a1;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* History title */
+.history-section h3 {
+  color: #111827;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* History rows */
+.history-value {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.history-date {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Buttons */
+.add-measurement-btn,
+.btn-save,
+.btn-cancel {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Modal typography */
+.measurement-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.measurement-modal-body label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .measurement-type {
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  .measurement-type.active {
+    font-weight: 500;
+  }
+
+  .measurements-topbar h2 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .chart-header strong {
+    font-size: 26px;
+    font-weight: 600;
+  }
+
+  .history-section h3 {
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .history-value {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .history-date {
+    font-size: 12px;
   }
 }

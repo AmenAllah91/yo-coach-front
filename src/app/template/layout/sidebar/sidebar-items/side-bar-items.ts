@@ -283,7 +283,7 @@ export const items: RouteInfo[] = [
     ],
   },
   {
-    path: '/settings',
+    path: '/configuration',
     title: 'Settings',
     iconType: 'feather',
     icon: 'settings',
