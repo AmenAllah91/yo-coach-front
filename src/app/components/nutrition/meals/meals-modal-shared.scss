@@ -1,0 +1,233 @@
+/* Modal Styles Override for Meal Templates Modal */
+
+/* Template Picker Modal */
+.np-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+
+  &__backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+  }
+
+  &__panel {
+    position: relative;
+    background: var(--np-white);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--np-border);
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--np-text);
+  }
+
+  &__close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--np-muted);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: var(--np-text);
+    }
+  }
+
+  &__body {
+    padding: 20px 24px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  &__foot {
+    padding: 16px 24px;
+    border-top: 1px solid var(--np-border);
+    flex-shrink: 0;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
+  &__sectionTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--np-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    margin-top: 24px;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+/* Template List */
+.np-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--np-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--np-bg);
+    }
+
+    > div:first-child {
+      flex: 1;
+
+      > div:first-child {
+        font-weight: 600;
+        color: var(--np-text);
+        margin-bottom: 4px;
+      }
+
+      > div:last-child {
+        font-size: 12px;
+        color: var(--np-muted);
+      }
+    }
+  }
+}
+
+/* Dropdown for meal actions */
+.np-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: var(--np-white);
+  border: 1px solid var(--np-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+  margin-top: 4px;
+
+  &__item {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--np-text);
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--np-bg);
+    }
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--np-border);
+    }
+  }
+}
+
+/* Button base */
+.np-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--np-brand);
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--np-muted);
+    border: 1px dashed var(--np-border-300);
+
+    &:hover {
+      background: var(--np-bg);
+    }
+  }
+}
+
+/* Icon Button */
+.np-iconbtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--np-border);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--np-bg);
+    border-color: var(--np-brand);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: var(--np-muted);
+  }
+}
+

@@ -6,6 +6,7 @@ import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { ClientService } from '../../service/client.service';
 import { WorkoutService } from '../../service/workout.service';
 import { NutritionService } from '../../service/nutrition.service';
+import { CoachSettingsService } from '../../service/coach-settings.service';
 import {
   AssignmentsApiService,
   FormAssignment,
@@ -78,13 +79,30 @@ export class CoachDashboardComponent implements OnInit {
     private clientService: ClientService,
     private workoutService: WorkoutService,
     private nutritionService: NutritionService,
+    private coachSettingsService: CoachSettingsService,
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
   ) {}
 
   ngOnInit(): void {
     this.coachId = sessionStorage.getItem('userId') || '';
-    this.loadData();
+
+    this.coachSettingsService.loadConfig().subscribe({
+      next: () => this.loadData(),
+      error: () => this.loadData(),
+    });
+  }
+
+  get assignAfterNutrition(): boolean {
+    return this.coachSettingsService.getConfig().quickActions.assignAfterNutrition;
+  }
+
+  get assignAfterWorkout(): boolean {
+    return this.coachSettingsService.getConfig().quickActions.assignAfterWorkout;
+  }
+
+  get assignAfterCheckIn(): boolean {
+    return this.coachSettingsService.getConfig().quickActions.assignAfterCheckIn;
   }
 
   loadData(): void {
@@ -138,6 +156,32 @@ export class CoachDashboardComponent implements OnInit {
     const created = state.assignAfterCreate;
 
     if (!created?.type || !created?.item) return;
+
+    const settings = this.coachSettingsService.getConfig();
+
+    if (
+      created.type === 'workout' &&
+      !settings.quickActions.assignAfterWorkout
+    ) {
+      history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (
+      created.type === 'nutrition' &&
+      !settings.quickActions.assignAfterNutrition
+    ) {
+      history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (
+      created.type === 'checkin' &&
+      !settings.quickActions.assignAfterCheckIn
+    ) {
+      history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
 
     this.pendingAssign = {
       type: created.type,
@@ -304,6 +348,7 @@ export class CoachDashboardComponent implements OnInit {
     this.router.navigate(['/workout/create-workout'], {
       queryParams: {
         returnUrl: '/coach-dashboard',
+        assignAfterCreate: this.assignAfterWorkout,
       },
     });
   }
@@ -324,6 +369,7 @@ export class CoachDashboardComponent implements OnInit {
     this.router.navigate(['/forms/create-form'], {
       queryParams: {
         returnTo: 'dashboard',
+        assignAfterCreate: this.assignAfterCheckIn,
       },
     });
   }

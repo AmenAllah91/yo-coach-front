@@ -153,10 +153,10 @@ export const items: RouteInfo[] = [
         submenu: [],
       },
       {
-        path: '/nutrition/days',
-        title: 'Days',
+        path: '/nutrition/food-replacement-groups',
+        title: 'Food Replacement Groups',
         iconType: 'feather',
-        icon: 'calendar',
+        icon: 'shuffle',
         class: '',
         groupTitle: false,
         badge: '',
@@ -292,7 +292,7 @@ export const items: RouteInfo[] = [
     badge: '',
     badgeClass: '',
     submenu: [],
-    roles: ['ROLE_COACH'],
+    roles: ['ROLE_COACH', 'ROLE_ADMIN'],
   },
   {
     path: '',

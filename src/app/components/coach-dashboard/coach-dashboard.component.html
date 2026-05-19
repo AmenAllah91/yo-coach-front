@@ -34,26 +34,78 @@
       </button>
     </section>
 
-    <section class="tabs">
-      <button
-        type="button"
-        class="tab-btn"
-        [class.selected]="selectedTab === 'clients'"
-        (click)="setTab('clients')"
-      >
-        Clients
-      </button>
+    <!-- ===================== MOBILE TABS ===================== -->
+    <div class="mobile-dashboard-tabs">
+      <div class="mobile-tabs-header">
+        <button
+          class="mobile-tab-btn"
+          [class.active]="selectedTab === 'clients'"
+          (click)="setTab('clients')"
+        >
+          Clients
+        </button>
 
-      <button
-        type="button"
-        class="tab-btn"
-        [class.selected]="selectedTab === 'checkins'"
-        (click)="setTab('checkins')"
-      >
-        Check-ins
-      </button>
-    </section>
+        <button
+          class="mobile-tab-btn"
+          [class.active]="selectedTab === 'checkins'"
+          (click)="setTab('checkins')"
+        >
+          Check-ins
+        </button>
+      </div>
 
+      <!-- MOBILE CLIENTS -->
+      <section *ngIf="selectedTab === 'clients'" class="mobile-section">
+        <article
+          class="client-card"
+          *ngFor="let client of clients; trackBy: trackByClientId"
+          (click)="openClient(client.id)"
+        >
+          <div class="avatar">{{ getInitials(client.name) }}</div>
+          <div class="card-info">
+            <div class="name-row">
+              <h3>{{ client.name }}</h3>
+              <span class="online-dot" *ngIf="client.status === 'active'"></span>
+            </div>
+            <div class="meta-row">
+              <span class="plan">{{ client.package }}</span>
+              <span class="dot">•</span>
+              <span class="muted">{{ client.lastCheckIn || 'Niveau' }}</span>
+            </div>
+          </div>
+          <span class="chevron">›</span>
+        </article>
+        <div *ngIf="clients.length === 0" class="empty-state">No clients found</div>
+      </section>
+
+      <!-- MOBILE CHECK-INS -->
+      <section *ngIf="selectedTab === 'checkins'" class="mobile-section">
+        <article
+          class="checkin-card"
+          [class.overdue-card]="checkIn.overdue"
+          *ngFor="let checkIn of recentCheckIns; trackBy: trackByCheckInId"
+          (click)="openClient(checkIn.clientId)"
+        >
+          <div class="avatar icon-avatar"></div>
+          <div class="card-info">
+            <div class="name-row">
+              <h3>{{ checkIn.clientName }}</h3>
+              <span class="overdue-badge" *ngIf="checkIn.overdue">Overdue</span>
+            </div>
+            <div class="meta-row">
+              <span class="plan">{{ checkIn.formName || 'Check-in' }}</span>
+            </div>
+          </div>
+          <div class="status-side">
+            <span [class]="getStatusClass(checkIn.status)">{{ checkIn.status || 'Pending' }}</span>
+            <span class="due">{{ formatCheckInDate(checkIn) }}</span>
+          </div>
+        </article>
+        <div *ngIf="recentCheckIns.length === 0" class="empty-state">No check-ins found</div>
+      </section>
+    </div>
+
+    <!-- ===================== LOADING / ERROR ===================== -->
     <div *ngIf="loading" class="loading-state">
       <span>Loading...</span>
     </div>
@@ -63,89 +115,90 @@
       <button type="button" class="retry-btn" (click)="loadData()">Retry</button>
     </div>
 
-    <section class="dashboard-list" *ngIf="!loading && !error && selectedTab === 'clients'">
-      <article
-        class="client-card"
-        *ngFor="let client of clients; trackBy: trackByClientId"
-        (click)="openClient(client.id)"
-      >
-        <div class="avatar">
-          {{ getInitials(client.name) }}
+    <!-- ===================== DESKTOP GRID (no selectedTab) ===================== -->
+    <div class="dashboard-grid">
+
+      <!-- CLIENTS PANEL -->
+      <div class="dashboard-panel" *ngIf="!loading && !error">
+        <div class="panel-header">
+          <h2>Latest Clients</h2>
+          <p>Total {{ clients.length }} clients</p>
         </div>
 
-        <div class="card-info">
-          <div class="name-row">
-            <h3>{{ client.name }}</h3>
-            <span class="online-dot" *ngIf="client.status === 'active'"></span>
-          </div>
-
-          <div class="meta-row">
-            <span class="plan">{{ client.package }}</span>
-            <span class="dot">•</span>
-            <span class="muted">{{ client.lastCheckIn || 'Niveau' }}</span>
-          </div>
+        <div class="panel-body">
+          <article
+            class="client-card"
+            *ngFor="let client of clients; trackBy: trackByClientId"
+            (click)="openClient(client.id)"
+          >
+            <div class="avatar">{{ getInitials(client.name) }}</div>
+            <div class="card-info">
+              <div class="name-row">
+                <h3>{{ client.name }}</h3>
+                <span class="online-dot" *ngIf="client.status === 'active'"></span>
+              </div>
+              <div class="meta-row">
+                <span class="plan">{{ client.package }}</span>
+                <span class="dot">•</span>
+                <span class="muted">{{ client.lastCheckIn || 'Niveau' }}</span>
+              </div>
+            </div>
+            <span class="chevron">›</span>
+          </article>
+          <div *ngIf="clients.length === 0" class="empty-state">No clients found</div>
         </div>
-
-        <span class="chevron">›</span>
-      </article>
-
-      <div *ngIf="clients.length === 0" class="empty-state">
-        No clients found
       </div>
-    </section>
 
-    <section class="dashboard-list" *ngIf="!loading && !error && selectedTab === 'checkins'">
-      <article
-        class="checkin-card"
-        [class.overdue-card]="checkIn.overdue"
-        *ngFor="let checkIn of recentCheckIns; trackBy: trackByCheckInId"
-        (click)="openClient(checkIn.clientId)"
-      >
-        <div class="avatar icon-avatar"></div>
-
-        <div class="card-info">
-          <div class="name-row">
-            <h3>{{ checkIn.clientName }}</h3>
-
-            <span class="overdue-badge" *ngIf="checkIn.overdue">
-              Overdue
-            </span>
-          </div>
-
-          <div class="meta-row">
-            <span class="plan">{{ checkIn.formName || 'Check-in' }}</span>
-          </div>
+      <!-- CHECKINS PANEL -->
+      <div class="dashboard-panel" *ngIf="!loading && !error">
+        <div class="panel-header">
+          <h2>Recent Check-ins</h2>
+          <p>Latest updates from clients</p>
         </div>
 
-        <div class="status-side">
-          <span [class]="getStatusClass(checkIn.status)">
-            {{ checkIn.status || 'Pending' }}
-          </span>
-
-          <span class="due">
-            {{ formatCheckInDate(checkIn) }}
-          </span>
+        <div class="panel-body">
+          <article
+            class="checkin-card"
+            [class.overdue-card]="checkIn.overdue"
+            *ngFor="let checkIn of recentCheckIns; trackBy: trackByCheckInId"
+            (click)="openClient(checkIn.clientId)"
+          >
+            <div class="avatar icon-avatar"></div>
+            <div class="card-info">
+              <div class="name-row">
+                <h3>{{ checkIn.clientName }}</h3>
+                <span class="overdue-badge" *ngIf="checkIn.overdue">Overdue</span>
+              </div>
+              <div class="meta-row">
+                <span class="plan">{{ checkIn.formName || 'Check-in' }}</span>
+              </div>
+            </div>
+            <div class="status-side">
+              <span [class]="getStatusClass(checkIn.status)">{{ checkIn.status || 'Pending' }}</span>
+              <span class="due">{{ formatCheckInDate(checkIn) }}</span>
+            </div>
+          </article>
+          <div *ngIf="recentCheckIns.length === 0" class="empty-state">No check-ins found</div>
         </div>
-      </article>
-
-      <div *ngIf="recentCheckIns.length === 0" class="empty-state">
-        No check-ins found
       </div>
-    </section>
+
+    </div>
+    <!-- ===================== END DESKTOP GRID ===================== -->
+
   </div>
 
+  <!-- ===================== MODALS ===================== -->
   <app-add-client-modal
     [isVisible]="showAddClientModal"
     (onClose)="closeAddClientModal()"
-  >
-  </app-add-client-modal>
+  ></app-add-client-modal>
 
   <app-choose-plan-type-modal
     [isVisible]="showChoosePlanTypeModal"
     [returnUrl]="'/coach-dashboard'"
+    [assignAfterCreate]="assignAfterNutrition"
     (onClose)="closeChoosePlanTypeModal()"
-  >
-  </app-choose-plan-type-modal>
+  ></app-choose-plan-type-modal>
 
   <div class="assign-overlay" *ngIf="showPostCreatePrompt">
     <div class="assign-card">

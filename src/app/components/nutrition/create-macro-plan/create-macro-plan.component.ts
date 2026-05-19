@@ -5,6 +5,7 @@ import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
   selector: 'app-create-macro-plan',
@@ -37,7 +38,8 @@ export class CreateMacroPlanComponent implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
 
@@ -210,7 +212,17 @@ export class CreateMacroPlanComponent implements OnInit {
 
     this.days.push(newDay);
     this.selectedDay = newDay;
-    this.addMeal();
+
+    const defaultMealsCount = this.coachSettingsService.getDefaultMealsCount();
+    const autoCreateMeals = this.coachSettingsService.getConfig().nutrition.autoCreateMeals;
+
+    if (autoCreateMeals) {
+      for (let i = 0; i < defaultMealsCount; i++) {
+        this.addMeal();
+      }
+    } else {
+      this.addMeal();
+    }
   }
 
   deleteDay(day: MealDay, event: Event) {

@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 
 import { ExerciseService, PageResponse } from 'app/service/exercise.service';
 import { WorkoutService } from 'app/service/workout.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 import {
   WorkoutDay,
@@ -76,6 +77,7 @@ export class WorkoutPlanFacade {
   constructor(
     private exerciseRefService: ExerciseService,
     private workoutService: WorkoutService,
+    private coachSettingsService: CoachSettingsService,
   ) {}
 
   initCreate() {
@@ -152,9 +154,6 @@ export class WorkoutPlanFacade {
   }
 
   private buildSavePayload(): WorkoutPlan {
-    console.log('[FACADE BEFORE PAYLOAD] this.plan =', this.plan);
-    console.log('[FACADE BEFORE PAYLOAD] this.plan.isWorkoutPlanTemplate =', this.plan.isWorkoutPlanTemplate);
-    console.log('[FACADE BEFORE PAYLOAD] days =', this.days);
     const payload: WorkoutPlan = {
       ...this.plan,
       workoutDays: this.days,
@@ -165,12 +164,6 @@ export class WorkoutPlanFacade {
       isWorkoutPlanTemplate: Boolean(this.plan.isWorkoutPlanTemplate),
     };
 
-    console.log(
-      '[WorkoutPlanFacade] saving isWorkoutPlanTemplate =',
-      payload.isWorkoutPlanTemplate,
-      payload,
-    );
-
     this.setPlan(payload);
 
     return payload;
@@ -178,13 +171,11 @@ export class WorkoutPlanFacade {
 
   createPlan() {
     const payload = this.buildSavePayload();
-
     return this.workoutService.createWorkout(payload);
   }
 
   updatePlan() {
     const payload = this.buildSavePayload();
-
     return this.workoutService.updateWorkout(payload.id!, payload);
   }
 
@@ -299,6 +290,62 @@ export class WorkoutPlanFacade {
     return this.getYoutubeThumbnailFromUrl(videoUrl);
   }
 
+  private buildInitialSets(isCardio: boolean): ExerciseSet[] {
+    const autoFill = this.coachSettingsService.shouldAutoFillWorkoutDefaults();
+
+    if (!autoFill) {
+      return isCardio
+        ? [{ duration: 30, restMin: 1, restSec: 0 }]
+        : [{ reps: '8', restMin: 1, restSec: 0 }];
+    }
+
+    const count = isCardio
+      ? this.coachSettingsService.getCardioSets()
+      : this.coachSettingsService.getWorkoutSets();
+
+    return Array.from({ length: count }, (_, index) => {
+      if (isCardio) {
+        return {
+          setNumber: index,
+          duration: this.coachSettingsService.getCardioMinutes(),
+          restMin: 1,
+          restSec: 0,
+        };
+      }
+
+      return {
+        setNumber: index,
+        reps: this.coachSettingsService.getWorkoutReps(),
+        restMin: 1,
+        restSec: 0,
+      };
+    });
+  }
+
+  private buildAdditionalSet(isCardio: boolean, setNumber: number): ExerciseSet {
+    const autoFill = this.coachSettingsService.shouldAutoFillWorkoutDefaults();
+
+    if (!autoFill) {
+      return isCardio
+        ? { setNumber, duration: 10, restMin: 1, restSec: 0 }
+        : { setNumber, reps: '8', restMin: 1, restSec: 0 };
+    }
+
+    return isCardio
+      ? {
+          setNumber,
+          duration: this.coachSettingsService.getCardioMinutes(),
+          restMin: 1,
+          restSec: 0,
+        }
+      : {
+          setNumber,
+          reps: this.coachSettingsService.getWorkoutReps(),
+          restMin: 1,
+          restSec: 0,
+        };
+  }
+
   private normalizeExerciseForDrawer(e: Exercise): Exercise {
     const isCardio = e.type === 'CARDIO';
     const videoLink = this.getExerciseVideoLink(e);
@@ -320,9 +367,7 @@ export class WorkoutPlanFacade {
       thumbnailUrl,
       photoUrl: thumbnailUrl,
 
-      sets: isCardio
-        ? [{ duration: 30, restMin: 1, restSec: 0 }]
-        : [{ reps: '8', restMin: 1, restSec: 0 }],
+      sets: this.buildInitialSets(isCardio),
     } as Exercise;
   }
 
@@ -347,9 +392,7 @@ export class WorkoutPlanFacade {
       thumbnailUrl,
       photoUrl: thumbnailUrl,
 
-      sets: isCardio
-        ? [{ duration: 30, restMin: 1, restSec: 0 }]
-        : [{ reps: '8', restMin: 1, restSec: 0 }],
+      sets: this.buildInitialSets(isCardio),
     } as Exercise;
   }
 
@@ -369,19 +412,6 @@ export class WorkoutPlanFacade {
         next: (res: PageResponse<Exercise>) => {
           this.exerciseDatabase = (res.content || []).map((e: Exercise) =>
             this.normalizeExerciseForDrawer(e),
-          );
-
-          console.log(
-            'Exercise media check:',
-            this.exerciseDatabase.map((e: any) => ({
-              name: e.name,
-              videoUrl: e.videoUrl,
-              videoLink: e.videoLink,
-              imageUrl: e.imageUrl,
-              thumbnailUrl: e.thumbnailUrl,
-              exerciseRefVideo: e.exerciseRef?.videoLink,
-              exerciseRefImage: e.exerciseRef?.imageUrl,
-            })),
           );
 
           this.totalPages = res.totalPages ?? 1;
@@ -704,7 +734,7 @@ export class WorkoutPlanFacade {
           e.supersetGroupId = null;
 
           if (!e.sets || e.sets.length === 0) {
-            e.sets = [{ reps: '8', restMin: 1, restSec: 0 }];
+            e.sets = this.buildInitialSets(e.type === 'CARDIO');
           }
         }
       });
@@ -732,11 +762,7 @@ export class WorkoutPlanFacade {
 
     const isCardio = ex.type === 'CARDIO';
 
-    ex.sets.push(
-      isCardio
-        ? { duration: 10, restMin: 1, restSec: 0 }
-        : { reps: '8', restMin: 1, restSec: 0 },
-    );
+    ex.sets.push(this.buildAdditionalSet(isCardio, ex.sets.length));
 
     this.recomputeSession(session);
   }
@@ -822,11 +848,7 @@ export class WorkoutPlanFacade {
       b.supersetGroupId = null;
 
       if (!b.sets || b.sets.length === 0) {
-        const isCardio = b.type === 'CARDIO';
-
-        b.sets = isCardio
-          ? [{ duration: 10, restMin: 1, restSec: 0 }]
-          : [{ reps: '8', restMin: 1, restSec: 0 }];
+        b.sets = this.buildInitialSets(b.type === 'CARDIO');
       }
     } else {
       const groupId =
@@ -863,14 +885,14 @@ export class WorkoutPlanFacade {
         : d.workoutSessions && d.workoutSessions.length > 0
           ? d.workoutSessions
           : [
-            {
-              name: 'Main Session',
-              exercises: [],
-              totalSets: 0,
-              totalReps: 0,
-              totalDurationMin: 0,
-            },
-          ];
+              {
+                name: 'Main Session',
+                exercises: [],
+                totalSets: 0,
+                totalReps: 0,
+                totalDurationMin: 0,
+              },
+            ];
 
       const normalizedSessions = sessions.map((s) => ({
         ...s,

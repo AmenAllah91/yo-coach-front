@@ -1,0 +1,90 @@
+<div class="meals-page">
+  <div class="page-header">
+    <h1>Meals</h1>
+    <button class="btn-primary" routerLink="/nutrition/meals/create">
+      <i-feather name="plus"></i-feather>
+      Add New Meal
+    </button>
+  </div>
+
+  <div class="search-container">
+    <div class="search-box">
+      <i-feather name="search" class="search-icon"></i-feather>
+      <input
+        type="text"
+        placeholder="Search meals..."
+        [(ngModel)]="search"
+        (input)="onSearch()"
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <div class="plans-state" *ngIf="!meals?.length && !loading">
+    No meals found.
+  </div>
+
+  <div class="meals-table" *ngIf="meals?.length">
+    <div class="table-header">
+      <div class="col-title">TITLE</div>
+      <div class="col-updated">LAST UPDATED ON</div>
+      <div class="col-foods">FOODS</div>
+      <div class="col-macros">MACROS</div>
+      <div class="col-actions">ACTIONS</div>
+    </div>
+
+    <div class="table-row" *ngFor="let m of meals">
+      <div class="col-title">
+        <div class="meal-name">{{ m.name }}</div>
+      </div>
+
+      <div class="col-updated">
+        {{ m.updatedAt || m.lastModifiedDate ? formatDate(m.updatedAt || m.lastModifiedDate) : '-' }}
+      </div>
+
+      <div class="col-foods">
+        {{ m.foods?.length || 0 }} foods
+      </div>
+
+      <div class="col-macros">
+        <ng-container *ngIf="m.foods?.length; else noMacros">
+          <span class="macro macro--protein">P {{ mealMacros(m).protein }}</span>
+          <span class="macro macro--carbs">C {{ mealMacros(m).carbs }}</span>
+          <span class="macro macro--fat">F {{ mealMacros(m).fat }}</span>
+          <span class="macro macro--kcal">{{ mealMacros(m).calories }} <span class="macro-unit">kcal</span></span>
+        </ng-container>
+        <ng-template #noMacros><span class="no-macros">-</span></ng-template>
+      </div>
+
+      <div class="col-actions">
+        <div class="dropdown" [class.open]="activeMealMenuId === m.id">
+          <button class="actions-btn" (click)="toggleDropdown(m.id, $event)">
+            Actions
+            <i-feather name="chevron-down"></i-feather>
+          </button>
+          <div class="dropdown-menu" *ngIf="activeMealMenuId === m.id">
+            <button class="dropdown-item" (click)="editMeal(m); activeMealMenuId=null">
+              <i-feather name="edit"></i-feather>
+              Edit
+            </button>
+            <button class="dropdown-item" (click)="duplicateMeal(m); activeMealMenuId=null">
+              <i-feather name="copy"></i-feather>
+              Duplicate
+            </button>
+            <button class="dropdown-item delete" (click)="deleteMeal(m); activeMealMenuId=null">
+              <i-feather name="trash-2"></i-feather>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-delete-meal-modal
+  [isVisible]="showDeleteModal"
+  [mealName]="mealToDelete?.name || ''"
+  (onClose)="closeDeleteModal()"
+  (onConfirm)="confirmDeleteMeal()"
+></app-delete-meal-modal>

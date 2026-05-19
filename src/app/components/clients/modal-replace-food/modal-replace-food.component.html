@@ -1,0 +1,84 @@
+<div class="modal-overlay" *ngIf="show" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Replace: <strong>{{ originalFood?.name }}</strong></h2>
+      <button class="modal-close" (click)="onClose()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="food-info-section" *ngIf="originalFood">
+        <h4 class="section-title">Current Food</h4>
+        <div class="food-card current-food">
+          <div class="food-details">
+            <div class="food-name">{{ originalFood.name }}</div>
+            <div class="food-qty">Qty: {{ originalFood.quantity }}</div>
+          </div>
+          <div class="food-macros">
+            <div class="macro">
+              <span class="macro-value">{{ originalFood.calories }}</span>
+              <span class="macro-label">kcal</span>
+            </div>
+            <div class="macro">
+              <span class="macro-value">{{ originalFood.protein }}g</span>
+              <span class="macro-label">P</span>
+            </div>
+            <div class="macro">
+              <span class="macro-value">{{ originalFood.carbs }}g</span>
+              <span class="macro-label">C</span>
+            </div>
+            <div class="macro">
+              <span class="macro-value">{{ originalFood.fat }}g</span>
+              <span class="macro-label">F</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="loading-state" *ngIf="loading">
+        <div class="spinner"></div>
+        <p>Loading alternatives...</p>
+      </div>
+
+      <div class="error-state" *ngIf="error && !loading">
+        <p>{{ error }}</p>
+      </div>
+
+      <div class="alternatives-section" *ngIf="groups.length > 0 && !loading">
+        <h4 class="section-title">Available Alternatives</h4>
+        <div class="groups-container">
+          <div *ngFor="let group of groups" class="group-item">
+            <h5 class="group-name">{{ group.name }}</h5>
+            <div class="foods-list">
+              <button
+                *ngFor="let food of group.foods"
+                [class.selected]="selectedFoodId === food.foodRefId"
+                (click)="selectReplacement(food, group)"
+                class="food-option"
+              >
+                <div class="food-option-check">✓</div>
+                <div class="food-option-info">
+                  <div class="food-option-name">{{ food.name }}</div>
+                </div>
+                <div class="food-option-macros">
+                  <span>{{ food.energy || 0 }} kcal</span>
+                  <span>P: {{ food.protein || 0 }}g</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="onClose()">Cancel</button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!selectedFoodId || loading"
+        (click)="confirmReplace()"
+      >
+        Replace
+      </button>
+    </div>
+  </div>
+</div>

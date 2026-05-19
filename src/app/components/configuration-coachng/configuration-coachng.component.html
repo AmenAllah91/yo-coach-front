@@ -1,25 +1,37 @@
 <div class="coach-settings">
-
-  <!-- ══════════════════════════════════════
-       HEADER : titre + boutons
-       ══════════════════════════════════════ -->
   <div class="cs-header">
     <div class="cs-header__text">
-      <h1 class="cs-header__title">Coach Settings</h1>
-      <p class="cs-header__sub">Configure your workspace.</p>
+      <h1 class="cs-header__title">
+        {{ 'COACH_SETTINGS.TITLE' | translate }}
+      </h1>
+      <p class="cs-header__sub">
+        {{ 'COACH_SETTINGS.SUBTITLE' | translate }}
+      </p>
     </div>
+
     <div class="cs-header__actions">
-      <button class="btn btn--outline" type="button" (click)="onCancel()">Cancel</button>
-      <button class="btn btn--accent"  type="button" (click)="onSave()">Save Changes</button>
+      <button
+        class="btn btn--outline"
+        type="button"
+        [disabled]="saving || loading"
+        (click)="onCancel()"
+      >
+        {{ 'COACH_SETTINGS.CANCEL' | translate }}
+      </button>
+
+      <button
+        class="btn btn--accent"
+        type="button"
+        [disabled]="saving || loading"
+        (click)="onSave()"
+      >
+        {{ saving ? ('COACH_SETTINGS.SAVING' | translate) : ('COACH_SETTINGS.SAVE_CHANGES' | translate) }}
+      </button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       1. NUTRITION PLANS
-       ══════════════════════════════════════ -->
   <div class="section-card">
     <div class="section-inner">
-
       <div class="section-side">
         <div class="section-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -29,33 +41,63 @@
             <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
           </svg>
         </div>
-        <h3 class="section-title">1. Nutrition Plans</h3>
+        <h3 class="section-title">
+          1. {{ 'COACH_SETTINGS.NUTRITION_PLANS' | translate }}
+        </h3>
       </div>
 
       <div class="section-body">
         <div class="toggle-row">
-          <span class="toggle-label">Full Meal Plan</span>
-          <button class="toggle" [class.toggle--on]="config.nutrition.fullMealPlan"
-                  type="button" (click)="toggleFullMealPlan()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.nutrition.fullMealPlan"></span>
-          </button>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Macro Plan — Daily</span>
-          <button class="toggle" [class.toggle--on]="config.nutrition.macroPlanDaily"
-                  type="button" (click)="toggleMacroPlanDaily()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.nutrition.macroPlanDaily"></span>
-          </button>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Macro Plan — Each Meal</span>
-          <button class="toggle" [class.toggle--on]="config.nutrition.macroPlanMeal"
-                  type="button" (click)="toggleMacroPlanMeal()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.nutrition.macroPlanMeal"></span>
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.FULL_MEAL_PLAN' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.nutrition.fullMealPlan"
+            type="button"
+            (click)="toggleFullMealPlan()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.nutrition.fullMealPlan"
+            ></span>
           </button>
         </div>
 
-        <!-- Meal Defaults sub-box -->
+        <div class="toggle-row">
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.MACRO_PLAN_DAILY' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.nutrition.macroPlanDaily"
+            type="button"
+            (click)="toggleMacroPlanDaily()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.nutrition.macroPlanDaily"
+            ></span>
+          </button>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.MACRO_PLAN_EACH_MEAL' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.nutrition.macroPlanMeal"
+            type="button"
+            (click)="toggleMacroPlanMeal()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.nutrition.macroPlanMeal"
+            ></span>
+          </button>
+        </div>
+
         <div class="sub-box">
           <div class="sub-box__header">
             <div class="sub-box__icon">
@@ -66,88 +108,52 @@
                 <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
               </svg>
             </div>
-            <span class="sub-box__title">Meal Defaults</span>
+            <span class="sub-box__title">
+              {{ 'COACH_SETTINGS.MEAL_DEFAULTS' | translate }}
+            </span>
           </div>
+
           <div class="sub-box__row">
             <div class="select-group">
-              <label class="select-label">Meals shown by default</label>
+              <label class="select-label">
+                {{ 'COACH_SETTINGS.MEALS_SHOWN_BY_DEFAULT' | translate }}
+              </label>
               <select [(ngModel)]="config.nutrition.defaultMeals" class="select select--sm">
+                <option value="1">1</option>
+                <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4</option>
                 <option value="5">5</option>
                 <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
               </select>
             </div>
+
             <div class="toggle-row">
-              <span class="toggle-label">Auto-create meals</span>
-              <button class="toggle" [class.toggle--on]="config.nutrition.autoCreateMeals"
-                      type="button" (click)="toggleAutoCreateMeals()">
-                <span class="toggle__thumb" [class.toggle__thumb--on]="config.nutrition.autoCreateMeals"></span>
+              <span class="toggle-label">
+                {{ 'COACH_SETTINGS.AUTO_CREATE_MEALS' | translate }}
+              </span>
+              <button
+                class="toggle"
+                [class.toggle--on]="config.nutrition.autoCreateMeals"
+                type="button"
+                (click)="toggleAutoCreateMeals()"
+              >
+                <span
+                  class="toggle__thumb"
+                  [class.toggle__thumb--on]="config.nutrition.autoCreateMeals"
+                ></span>
               </button>
             </div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       2. QUICK ACTIONS
-       ══════════════════════════════════════ -->
   <div class="section-card">
     <div class="section-inner">
-
-      <div class="section-side">
-        <div class="section-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-               fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
-        </div>
-        <h3 class="section-title">2. Quick Actions</h3>
-      </div>
-
-      <div class="section-body">
-        <div class="toggle-row">
-          <span class="toggle-label">Assign after Nutrition Plan</span>
-          <button class="toggle" [class.toggle--on]="config.quickActions.assignAfterNutrition"
-                  type="button" (click)="toggleAssignAfterNutrition()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.quickActions.assignAfterNutrition"></span>
-          </button>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Assign after Workout Plan</span>
-          <button class="toggle" [class.toggle--on]="config.quickActions.assignAfterWorkout"
-                  type="button" (click)="toggleAssignAfterWorkout()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.quickActions.assignAfterWorkout"></span>
-          </button>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Assign after Check-in</span>
-          <button class="toggle" [class.toggle--on]="config.quickActions.assignAfterCheckIn"
-                  type="button" (click)="toggleAssignAfterCheckIn()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.quickActions.assignAfterCheckIn"></span>
-          </button>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Create as template first</span>
-          <button class="toggle" [class.toggle--on]="config.quickActions.createAsTemplate"
-                  type="button" (click)="toggleCreateAsTemplate()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.quickActions.createAsTemplate"></span>
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       3. WORKOUT DEFAULTS
-       ══════════════════════════════════════ -->
-  <div class="section-card">
-    <div class="section-inner">
-
       <div class="section-side">
         <div class="section-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -157,67 +163,161 @@
             <path d="M6 12h12M9 7v10M15 7v10"/>
           </svg>
         </div>
-        <h3 class="section-title">3. Workout Defaults</h3>
+        <h3 class="section-title">
+          2. {{ 'COACH_SETTINGS.WORKOUT_DEFAULTS' | translate }}
+        </h3>
       </div>
 
       <div class="section-body section-body--row">
-        <!-- Les 4 selects alignés -->
         <div class="workout-selects">
           <div class="select-group">
-            <label class="select-label">Strength sets</label>
-            <select [(ngModel)]="config.workout.strengthSets" class="select">
+            <label class="select-label">
+              {{ 'COACH_SETTINGS.WORKOUT_SETS' | translate }}
+            </label>
+            <select [(ngModel)]="config.workout.workoutSets" class="select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+
+          <div class="select-group">
+            <label class="select-label">
+              {{ 'COACH_SETTINGS.WORKOUT_REPS' | translate }}
+            </label>
+            <select [(ngModel)]="config.workout.workoutReps" class="select">
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+
+          <div class="select-group">
+            <label class="select-label">
+              {{ 'COACH_SETTINGS.CARDIO_SETS' | translate }}
+            </label>
+            <select [(ngModel)]="config.workout.cardioSets" class="select">
+              <option value="1">1</option>
+              <option value="2">2</option>
               <option value="3">3</option>
               <option value="4">4</option>
               <option value="5">5</option>
             </select>
           </div>
+
           <div class="select-group">
-            <label class="select-label">Strength reps</label>
-            <select [(ngModel)]="config.workout.strengthReps" class="select">
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="12">12</option>
-              <option value="15">15</option>
-            </select>
-          </div>
-          <div class="select-group">
-            <label class="select-label">Cardio sets</label>
-            <select [(ngModel)]="config.workout.cardioSets" class="select">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-            </select>
-          </div>
-          <div class="select-group">
-            <label class="select-label">Cardio minutes</label>
+            <label class="select-label">
+              {{ 'COACH_SETTINGS.CARDIO_MINUTES' | translate }}
+            </label>
             <select [(ngModel)]="config.workout.cardioMinutes" class="select">
+              <option value="5">5</option>
               <option value="10">10</option>
               <option value="15">15</option>
               <option value="20">20</option>
               <option value="30">30</option>
+              <option value="45">45</option>
+              <option value="60">60</option>
             </select>
           </div>
         </div>
 
-        <!-- Toggle auto-fill aligné à droite sur la même ligne -->
         <div class="workout-toggle">
-          <span class="toggle-label">Auto-fill defaults</span>
-          <button class="toggle" [class.toggle--on]="config.workout.autoFillDefaults"
-                  type="button" (click)="toggleAutoFillDefaults()">
-            <span class="toggle__thumb" [class.toggle__thumb--on]="config.workout.autoFillDefaults"></span>
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.AUTO_FILL_DEFAULTS' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.workout.autoFillDefaults"
+            type="button"
+            (click)="toggleAutoFillDefaults()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.workout.autoFillDefaults"
+            ></span>
           </button>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       4. DEFAULTS
-       ══════════════════════════════════════ -->
+  <div class="section-card" *ngIf="!isAdmin">
+    <div class="section-inner">
+      <div class="section-side">
+        <div class="section-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <h3 class="section-title">
+          3. {{ 'COACH_SETTINGS.QUICK_ACTIONS' | translate }}
+        </h3>
+      </div>
+
+      <div class="section-body">
+        <div class="toggle-row">
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.ASSIGN_AFTER_NUTRITION' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.quickActions.assignAfterNutrition"
+            type="button"
+            (click)="toggleAssignAfterNutrition()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.quickActions.assignAfterNutrition"
+            ></span>
+          </button>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.ASSIGN_AFTER_WORKOUT' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.quickActions.assignAfterWorkout"
+            type="button"
+            (click)="toggleAssignAfterWorkout()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.quickActions.assignAfterWorkout"
+            ></span>
+          </button>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">
+            {{ 'COACH_SETTINGS.ASSIGN_AFTER_CHECKIN' | translate }}
+          </span>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.quickActions.assignAfterCheckIn"
+            type="button"
+            (click)="toggleAssignAfterCheckIn()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.quickActions.assignAfterCheckIn"
+            ></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="section-card">
     <div class="section-inner">
-
       <div class="section-side">
         <div class="section-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -227,34 +327,71 @@
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </div>
-        <h3 class="section-title">4. Defaults</h3>
+        <h3 class="section-title">
+          4. {{ 'COACH_SETTINGS.DEFAULTS_TITLE' | translate }}
+        </h3>
       </div>
 
       <div class="section-body">
         <div class="select-group">
-          <label class="select-label">Default language</label>
-          <select [(ngModel)]="config.defaults.language" class="select select--lg">
-            <option value="English">English</option>
-            <option value="French">French</option>
-            <option value="Spanish">Spanish</option>
+          <label class="select-label">
+            {{ 'COACH_SETTINGS.DEFAULT_LANGUAGE' | translate }}
+          </label>
+
+          <select
+            [(ngModel)]="config.defaults.language"
+            class="select select--lg"
+            (ngModelChange)="onLanguageChange()"
+          >
+            <option value="English">
+              {{ 'COACH_SETTINGS.LANGUAGE_ENGLISH' | translate }}
+            </option>
+            <option value="French">
+              {{ 'COACH_SETTINGS.LANGUAGE_FRENCH' | translate }}
+            </option>
           </select>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       INFO BANNER
-       ══════════════════════════════════════ -->
   <div class="info-banner">
     <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
          fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
     </svg>
-    <p class="info-banner__text">These settings are default preferences only.</p>
+    <p class="info-banner__text">
+      {{ 'COACH_SETTINGS.INFO' | translate }}
+    </p>
+  </div>
+</div>
+
+<div
+  class="coach-settings-toast-layer"
+  [class.show]="showSaveSuccessPopup || showSaveErrorPopup"
+>
+  <div
+    class="coach-settings-toast coach-settings-toast--success"
+    *ngIf="showSaveSuccessPopup"
+  >
+    <div class="coach-settings-toast__icon">✓</div>
+    <div>
+      <strong>{{ 'COACH_SETTINGS.SAVED_SUCCESS_TITLE' | translate }}</strong>
+      <p>{{ 'COACH_SETTINGS.SAVED_SUCCESS_MESSAGE' | translate }}</p>
+    </div>
   </div>
 
+  <div
+    class="coach-settings-toast coach-settings-toast--error"
+    *ngIf="showSaveErrorPopup"
+  >
+    <div class="coach-settings-toast__icon">!</div>
+    <div>
+      <strong>{{ 'COACH_SETTINGS.SAVED_ERROR_TITLE' | translate }}</strong>
+      <p>{{ 'COACH_SETTINGS.SAVED_ERROR_MESSAGE' | translate }}</p>
+    </div>
+  </div>
 </div>
+

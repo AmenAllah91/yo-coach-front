@@ -1,9 +1,11 @@
-import {Component} from '@angular/core';
-import {RouterOutlet} from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../../sidebar/sidebar.component';
 import { HeaderComponent } from '../../header/header.component';
-import {InConfiguration } from '../../../core';
-import {NgClass} from "@angular/common";
+import { InConfiguration } from '../../../core';
+import { NgClass } from '@angular/common';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { LanguageService } from 'app/service/language.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -17,11 +19,27 @@ import {NgClass} from "@angular/common";
     NgClass,
   ],
 })
-export class MainLayoutComponent{
+export class MainLayoutComponent implements OnInit {
   public config!: InConfiguration;
+  isSidebarOpen = true;
 
-  constructor(){}
-  isSidebarOpen = true; // ← démarre ouvert
+  constructor(
+    private coachSettingsService: CoachSettingsService,
+    private languageService: LanguageService,
+  ) {}
+
+  ngOnInit(): void {
+    this.coachSettingsService.loadConfig().subscribe({
+      next: (config) => {
+        const langCode = this.languageService.languageNameToCode(
+          config.defaults.language,
+        );
+
+        this.languageService.setLanguage(langCode);
+      },
+      error: () => {},
+    });
+  }
 
   handleSidebarToggle(isOpen: boolean) {
     this.isSidebarOpen = isOpen;

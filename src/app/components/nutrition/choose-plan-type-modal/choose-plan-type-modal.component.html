@@ -1,49 +1,69 @@
-<div class="modal-overlay" [class.show]="isVisible" (click)="closeModal()">
+<div
+  class="modal-overlay"
+  [class.show]="shouldShowMainModal"
+  *ngIf="shouldShowMainModal"
+  (click)="closeModal()"
+>
   <div class="modal-content choose-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>Choose a nutrition plan type</h2>
-      <button class="close-btn" (click)="closeModal()">
+
+      <button class="close-btn" type="button" (click)="closeModal()">
         <i-feather name="x"></i-feather>
       </button>
     </div>
 
     <div class="modal-body">
-      <div class="plan-options">
-        <div class="plan-option">
+      <div class="plan-options" *ngIf="hasAnyPlanType; else noPlanTypes">
+        <div class="plan-option" *ngIf="canCreateFullMealPlan">
           <h3>Full Meal Plan</h3>
           <p>
             Create a complete meal plan with specific foods, meals, and days.
             Ideal for detailed nutrition planning.
           </p>
-          <button class="btn-primary" (click)="createFullMealPlan()">
+
+          <button class="btn-primary" type="button" (click)="createFullMealPlan()">
             Create Full Meal Plan
           </button>
         </div>
 
-        <div class="plan-option">
+        <div class="plan-option" *ngIf="canCreateAnyMacroPlan">
           <h3>Macro Only Meal Plan</h3>
           <p>
-            Create a plan with just macronutrient targets without specific
-            foods. Perfect for flexible dieting approaches.
+            Create a plan with macronutrient targets without specific foods.
+            Perfect for flexible dieting approaches.
           </p>
-          <button class="btn-primary" (click)="createMacroOnlyPlan()">
+
+          <button class="btn-primary" type="button" (click)="createMacroOnlyPlan()">
             Create Macro Only Plan
           </button>
         </div>
       </div>
+
+      <ng-template #noPlanTypes>
+        <div class="plan-option">
+          <h3>No plan types enabled</h3>
+          <p>
+            Enable at least one nutrition plan type from Coach Settings.
+          </p>
+        </div>
+      </ng-template>
     </div>
 
     <div class="modal-footer">
-      <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn-secondary" type="button" (click)="closeModal()">
+        Cancel
+      </button>
     </div>
   </div>
 </div>
 
 <app-choose-macro-type-modal
-  [isVisible]="showMacroTypeModal"
-  [isAssign]="this.isAssign"
-  [idClient]="this.idClient"
+  [isVisible]="isVisible && showMacroTypeModal"
+  [isAssign]="isAssign"
+  [idClient]="idClient"
   [returnUrl]="returnUrl"
+  [assignAfterCreate]="assignAfterCreate"
   (close)="closeMacroTypeModal()"
 >
 </app-choose-macro-type-modal>

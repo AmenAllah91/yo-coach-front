@@ -273,22 +273,28 @@
                   </div>
                 </div>
 
-                <button
-                  class="np-iconbtn"
-                  title="Remove meal"
-                  (click)="removeMeal(meal)"
-                >
-                  <svg viewBox="0 0 24 24" class="np-ico">
-                    <path
-                      d="M19 7l-1 12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 7m3 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M4 7h16"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      fill="none"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </button>
+
+
+                <div class="np-meal__menu">
+                  <button class="np-iconbtn" (click)="activeMealMenuId = activeMealMenuId === meal.id ? null : meal.id" title="Actions">
+                    <svg viewBox="0 0 24 24" class="np-ico"><path d="M12 5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm0 5.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm0 5.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" stroke="currentColor" stroke-width="0" fill="currentColor"/></svg>
+                  </button>
+
+                  <div class="np-dropdown" *ngIf="activeMealMenuId === meal.id">
+                    <button class="np-dropdown__item" (click)="removeMeal(meal); activeMealMenuId=null">
+                      <i-feather name="trash-2" class="np-ico"></i-feather>
+                      Delete Meal
+                    </button>
+                    <button class="np-dropdown__item" (click)="saveMealAsTemplate(meal); activeMealMenuId=null">
+                      <i-feather name="bookmark" class="np-ico"></i-feather>
+                      Save Meal as Template
+                    </button>
+                    <button class="np-dropdown__item" (click)="duplicateMealInDay(meal); activeMealMenuId=null">
+                      <i-feather name="copy" class="np-ico"></i-feather>
+                      Duplicate Meal
+                    </button>
+                  </div>
+                </div>
               </div>
             </header>
 
@@ -388,7 +394,7 @@
             Add Another Meal
           </button>
 
-          <button class="np-btn np-btn--branddash">
+           <button class="np-btn np-btn--branddash" (click)="openTemplateModal()">
             <svg viewBox="0 0 24 24" class="np-ico">
               <path
                 d="M12 5v14M5 12h14"
@@ -401,6 +407,34 @@
           </button>
         </div>
       </section>
+
+      <!-- Template picker modal -->
+      <div class="np-modal" *ngIf="isTemplateModalOpen" role="dialog" aria-modal="true">
+        <div class="np-modal__backdrop" (click)="closeTemplateModal()"></div>
+        <div class="np-modal__panel" tabindex="-1">
+          <div class="np-modal__head">
+            <h3 class="np-modal__title">Select Meal Template</h3>
+            <button class="np-modal__close" (click)="closeTemplateModal()">✕</button>
+          </div>
+          <div class="np-modal__body">
+            <div class="np-emptystate" *ngIf="!templates?.length" style="border:none; margin:0; padding:24px">
+              <div class="np-emptystate__title">No templates available</div>
+            </div>
+            <ul *ngIf="templates?.length" class="np-foodlist">
+              <li *ngFor="let t of templates" class="np-foodlist__item" style="display:flex; justify-content:space-between; align-items:center; cursor:default">
+                <div>
+                  <div class="np-foodlist__name">{{ t.name }}</div>
+                  <div class="np-foodlist__meta">{{ t.foods?.length || 0 }} foods</div>
+                </div>
+                <button class="np-btn np-btn--brandsoft" style="border-radius:8px; padding:8px 14px; font-size:13px" (click)="applyTemplateToSelectedDay(t)">Use</button>
+              </li>
+            </ul>
+          </div>
+          <div class="np-modal__foot">
+            <button class="np-btn np-btn--ghost" (click)="closeTemplateModal()">Close</button>
+          </div>
+        </div>
+      </div>
 
       <div class="np-sticky">
         <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">

@@ -48,6 +48,9 @@ import {WebsiteLeadsComponent} from "./components/website/website-leads/website-
 import {RevenueSubscriptionsComponent} from "./components/admin/revenue-subscriptions/revenue-subscriptions.component";
 import {UsersComponent} from "./components/admin/users/users.component";
 import {VideoViewerComponent} from "./components/video-viewer/video-viewer.component";
+import {
+  FoodReplacementGroupsComponent
+} from "./components/nutrition/food-replacement-groups/food-replacement-groups.component";
 import {ConfigurationCoachngComponent} from "./components/configuration-coachng/configuration-coachng.component";
 
 const isAuthenticated: CanActivateFn = (route, state) =>
@@ -121,6 +124,22 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/custom-foods',
         component: CustomFoodsComponent,
+      },
+      {
+        path: 'nutrition/meals',
+        loadComponent: () => import('./components/nutrition/meals/meals-list.component').then(m => m.MealsListComponent),
+      },
+      {
+        path: 'nutrition/meals/create',
+        loadComponent: () => import('./components/nutrition/meals/meal-editor.component').then(m => m.MealEditorComponent),
+      },
+      {
+        path: 'nutrition/meals/:id',
+        loadComponent: () => import('./components/nutrition/meals/meal-editor.component').then(m => m.MealEditorComponent),
+      },
+      {
+        path: 'nutrition/food-replacement-groups',
+        component: FoodReplacementGroupsComponent,
       },
       {
         path: 'nutrition/plans',

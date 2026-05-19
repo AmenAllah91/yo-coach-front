@@ -1,7 +1,15 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
   selector: 'app-choose-macro-type-modal',
@@ -10,44 +18,122 @@ import { Router } from '@angular/router';
   templateUrl: './choose-macro-type-modal.component.html',
   styleUrls: ['./choose-macro-type-modal.component.scss'],
 })
-export class ChooseMacroTypeModalComponent {
+export class ChooseMacroTypeModalComponent implements OnChanges {
   @Input() isVisible = false;
   @Input() isAssign = false;
   @Input() idClient: string = null;
   @Input() returnUrl: string | null = null;
+  @Input() assignAfterCreate = false;
+
   @Output() close = new EventEmitter<void>();
 
-  constructor(private router: Router) {}
+  private autoSelectionDone = false;
 
-  closeModal() {
+  constructor(
+    private router: Router,
+    private coachSettingsService: CoachSettingsService,
+  ) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isVisible']?.currentValue === true) {
+      this.autoSelectionDone = false;
+      setTimeout(() => this.applyAutoSelectionRules());
+    }
+  }
+
+  get canCreateMacroDailyPlan(): boolean {
+    return this.coachSettingsService.canCreateMacroDailyPlan();
+  }
+
+  get canCreateMacroEachMealPlan(): boolean {
+    return this.coachSettingsService.canCreateMacroEachMealPlan();
+  }
+
+  get enabledMacroCount(): number {
+    let count = 0;
+
+    if (this.canCreateMacroDailyPlan) count++;
+    if (this.canCreateMacroEachMealPlan) count++;
+
+    return count;
+  }
+
+  get hasAnyMacroPlanType(): boolean {
+    return this.canCreateMacroDailyPlan || this.canCreateMacroEachMealPlan;
+  }
+
+  get shouldShowModal(): boolean {
+    return this.isVisible && this.enabledMacroCount !== 1;
+  }
+
+  closeModal(): void {
     this.close.emit();
   }
 
-  selectTotalForDay() {
+  selectTotalForDay(): void {
+    if (!this.canCreateMacroDailyPlan) return;
+
     this.closeModal();
-    const queryParams: any = { type: 'total' };
-    if (this.returnUrl) queryParams.returnUrl = this.returnUrl;
+
+    const queryParams: any = {
+      type: 'total',
+      assignAfterCreate: this.assignAfterCreate,
+    };
+
+    if (this.returnUrl) {
+      queryParams.returnUrl = this.returnUrl;
+    }
 
     if (this.isAssign) {
       this.router.navigate([
         `/clients/create-macro-plan-total-day/${this.idClient}`,
       ]);
-    } else {
-      this.router.navigate(['/nutrition/create-macro-plan-total-day'], { queryParams });
+      return;
     }
+
+    this.router.navigate(['/nutrition/create-macro-plan-total-day'], {
+      queryParams,
+    });
   }
 
-  selectEachMeal() {
+  selectEachMeal(): void {
+    if (!this.canCreateMacroEachMealPlan) return;
+
     this.closeModal();
-    const queryParams: any = { type: 'total' };
-    if (this.returnUrl) queryParams.returnUrl = this.returnUrl;
+
+    const queryParams: any = {
+      type: 'each',
+      assignAfterCreate: this.assignAfterCreate,
+    };
+
+    if (this.returnUrl) {
+      queryParams.returnUrl = this.returnUrl;
+    }
 
     if (this.isAssign) {
-      this.router.navigate([
-        `/clients/create-macro-plan/${this.idClient}`,
-      ]);
-    } else {
-      this.router.navigate(['/nutrition/create-macro-plan'], { queryParams });
+      this.router.navigate([`/clients/create-macro-plan/${this.idClient}`]);
+      return;
+    }
+
+    this.router.navigate(['/nutrition/create-macro-plan'], {
+      queryParams,
+    });
+  }
+
+  private applyAutoSelectionRules(): void {
+    if (!this.isVisible || this.autoSelectionDone) return;
+
+    if (this.enabledMacroCount !== 1) return;
+
+    this.autoSelectionDone = true;
+
+    if (this.canCreateMacroDailyPlan) {
+      this.selectTotalForDay();
+      return;
+    }
+
+    if (this.canCreateMacroEachMealPlan) {
+      this.selectEachMeal();
     }
   }
 }

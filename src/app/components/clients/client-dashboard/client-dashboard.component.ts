@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import {FormsModule} from "@angular/forms";
 import {CommonModule} from "@angular/common";
+import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
 type Direction = 'prev' | 'next';
 interface Coach {
   name: string;
@@ -49,13 +50,14 @@ type CheckInQuestion =
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [FormsModule,CommonModule],
+  imports: [FormsModule, CommonModule, BodyMeasurementsComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss'
 })
 export class ClientDashboardComponent {
   today = new Date()
   currentDate = new Date()
+  userId = sessionStorage.getItem('userId') || ''
 
   showCheckInModal = false
   showWorkoutModal = false

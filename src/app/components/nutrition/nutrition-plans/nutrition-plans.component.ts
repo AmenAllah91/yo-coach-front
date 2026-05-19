@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import {
   NutritionService,
   NutritionPlan,
@@ -68,28 +68,69 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    // IMPORTANT:
-    // Normal Nutrition Plans list must load /api/meal-plan/.
-    // /api/meal-plan/templates is only for the global templates list.
-    this.nutritionService
-      .getNutritionPlans()
+    forkJoin({
+      privatePlans: this.nutritionService.getNutritionPlans(),
+      templatePlans: this.nutritionService.getNutritionPlansTemplates(),
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
-          const content = response?.content || [];
+        next: ({ privatePlans, templatePlans }) => {
+          const privateContent = this.extractPlans(privatePlans);
+          const templateContent = this.extractPlans(templatePlans).map((plan) => ({
+            ...plan,
+            isMealPlanTemplate: true,
+          }));
 
-          this.plans = this.sortNewestFirst(content);
+          this.plans = this.sortNewestFirst(
+            this.dedupePlans([...privateContent, ...templateContent])
+          );
+
           this.loading = false;
 
-          console.log('[NUTRITION PLANS] loaded normal plans =', this.plans.length, this.plans);
+          console.log(
+            '[NUTRITION PLANS] loaded plans =',
+            this.plans.length,
+            {
+              privatePlans: privateContent.length,
+              templatePlans: templateContent.length,
+              all: this.plans,
+            }
+          );
         },
         error: (error) => {
-          console.error('[NUTRITION PLANS] Error loading normal plans:', error);
+          console.error('[NUTRITION PLANS] Error loading plans:', error);
           this.plans = [];
           this.loading = false;
           this.error = 'Failed to load nutrition plans';
         },
       });
+  }
+
+  private extractPlans(response: any): NutritionPlan[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.content)) {
+      return response.content;
+    }
+
+    return [];
+  }
+
+  private dedupePlans(plans: NutritionPlan[]): NutritionPlan[] {
+    const map = new Map<string, NutritionPlan>();
+
+    for (const plan of plans) {
+      if (!plan.id) {
+        map.set(crypto.randomUUID(), plan);
+        continue;
+      }
+
+      map.set(plan.id, plan);
+    }
+
+    return Array.from(map.values());
   }
 
   private sortNewestFirst(plans: NutritionPlan[]): NutritionPlan[] {
@@ -114,7 +155,7 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   isTemplatePlan(plan: NutritionPlan): boolean {
-    return Boolean((plan as any).isMealPlanTemplate);
+    return Boolean((plan as any).isMealPlanTemplate || (plan as any).mealPlanTemplate);
   }
 
   get filteredPlans() {
@@ -154,6 +195,10 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   canManagePlan(plan: NutritionPlan): boolean {
+    if (this.isTemplatePlan(plan)) {
+      return false;
+    }
+
     const currentUserId = this.getCurrentUserId();
     const ownerId = this.getPlanOwnerId(plan);
 
@@ -161,6 +206,10 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   editPlan(plan: NutritionPlan) {
+    if (this.isTemplatePlan(plan)) {
+      return;
+    }
+
     if (plan.trackingMode === 'EACH_MEAL') {
       const url = 'nutrition/create-macro-plan/' + plan.id;
       this.router.navigateByUrl(url);
@@ -174,6 +223,10 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   openDeleteModal(plan: NutritionPlan) {
+    if (this.isTemplatePlan(plan)) {
+      return;
+    }
+
     this.selectedPlan = plan;
     this.showDeleteModal = true;
     this.openDropdownId = null;

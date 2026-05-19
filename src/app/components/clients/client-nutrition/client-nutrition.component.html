@@ -11,7 +11,7 @@
       <!-- FILTRE PAR COACH -->
       <div class="coach-filter-container" >
         <label for="nutrition-coach-select" class="coach-filter-label"
-          >Coach:</label
+        >Coach:</label
         >
         <select
           id="nutrition-coach-select"
@@ -246,7 +246,16 @@
                   [class.cn-food-row--bordered]="!last"
                 >
                   <div class="cn-food-main">
-                    <div class="cn-food-name">{{ food.name }}</div>
+                    <div class="cn-food-name-row">
+                      <div class="cn-food-name">{{ food.name }}</div>
+                      <button
+                        *ngIf="hasReplacementGroup(food)"
+                        class="cn-food-replace-btn"
+                        (click)="openReplaceModal(food, meal)"
+                      >
+                        Replace
+                      </button>
+                    </div>
                     <div class="cn-food-qty">{{ food.quantity }}</div>
                   </div>
                   <div class="cn-food-macros">
@@ -311,3 +320,14 @@
   (close)="closeConfirmModal()"
   (confirm)="confirmStatusUpdate()"
 ></app-modal-confirm>
+
+<!-- Food Replacement Modal -->
+<app-modal-replace-food
+  [show]="showReplaceModal"
+  [originalFood]="foodToReplace"
+  [mealPlanId]="selectedDay?.planId || null"
+  [mealDayId]="selectedDay?.id || null"
+  [mealId]="mealToUpdate?.id || null"
+  (close)="closeReplaceModal()"
+  (replace)="replaceFood($event)"
+></app-modal-replace-food>

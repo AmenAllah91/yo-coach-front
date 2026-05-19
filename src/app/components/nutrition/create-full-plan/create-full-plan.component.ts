@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { MealsService } from 'app/service/meals.service';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 
 @Component({
@@ -44,7 +46,9 @@ export class CreateFullPlanComponent implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private coachSettingsService: CoachSettingsService,
+    private mealsService: MealsService
   ) {}
 
 
@@ -217,6 +221,16 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   private makeEmptyDay(): MealDay {
+    const defaultMealsCount = this.coachSettingsService.getDefaultMealsCount();
+    const autoCreateMeals = this.coachSettingsService.getConfig().nutrition.autoCreateMeals;
+
+    const meals = autoCreateMeals
+      ? Array.from({ length: defaultMealsCount }, (_, index) => ({
+          ...this.makeEmptyMeal(),
+          name: `Meal ${index + 1}`,
+        }))
+      : [this.makeEmptyMeal()];
+
     return {
       id: crypto.randomUUID?.() ?? Date.now().toString(),
       date: '',
@@ -231,7 +245,7 @@ export class CreateFullPlanComponent implements OnInit {
         carbsG: 0,
         fatG: 0,
       },
-      meals: [this.makeEmptyMeal()],
+      meals,
     };
   }
 
@@ -319,6 +333,69 @@ export class CreateFullPlanComponent implements OnInit {
 
   renameMeal(meal: Meal, newName: string) {
     meal.name = newName.trim() || meal.name;
+  }
+
+  /* ============================================
+            MEAL TEMPLATES / DUPLICATION
+  ==============================================*/
+
+  templates: any[] = [];
+  isTemplateModalOpen = false;
+  activeMealMenuId: string | null = null;
+
+  openTemplateModal() {
+    this.isTemplateModalOpen = true;
+    this.loadTemplates();
+  }
+
+  closeTemplateModal() {
+    this.isTemplateModalOpen = false;
+  }
+
+  loadTemplates() {
+    this.mealsService.getTemplates().subscribe({
+      next: (res: any) => {
+        this.templates = Array.isArray(res) ? res : res.content || [];
+        console.log('Templates loaded:', this.templates.length);
+      },
+      error: (err: any) => {
+        console.error('Failed to load templates', err);
+      },
+    });
+  }
+
+  applyTemplateToSelectedDay(tpl: any) {
+    if (!this.selectedDay) return;
+
+    const cloned = JSON.parse(JSON.stringify(tpl));
+    // ensure unique ids for local plan
+    cloned.id = crypto.randomUUID?.() ?? Date.now().toString();
+    cloned.foods = (cloned.foods || []).map((f: any) => ({ ...f, id: crypto.randomUUID?.() ?? Date.now().toString() }));
+
+    this.selectedDay.meals.push(cloned);
+    this.recalcDayTargets(this.selectedDay);
+    this.closeTemplateModal();
+  }
+
+  saveMealAsTemplate(meal: Meal) {
+    const payload = {
+      name: meal.name,
+      foods: meal.foods || [],
+    };
+
+    this.mealsService.saveTemplate(payload).subscribe(() => {
+      alert('Template saved');
+      this.loadTemplates();
+    });
+  }
+
+  duplicateMealInDay(meal: Meal) {
+    if (!this.selectedDay) return;
+    const clone: Meal = JSON.parse(JSON.stringify(meal));
+    clone.id = crypto.randomUUID?.() ?? Date.now().toString();
+    clone.foods = (clone.foods || []).map((f: any) => ({ ...f, id: crypto.randomUUID?.() ?? Date.now().toString() }));
+    this.selectedDay.meals.push(clone);
+    this.recalcDayTargets(this.selectedDay);
   }
 
   /* ============================================

@@ -228,4 +228,21 @@ export class NutritionService {
   getNutritionPlanByClientId(clientId: string): Observable<any> {
     return this.http.get<any>(`${this.mealPlanUrl}client/${clientId}`);
   }
+
+  replaceAssignedMealFood(
+    mealPlanId: string,
+    mealDayId: string,
+    mealId: string,
+    foodId: string,
+    payload: {
+      replacementFoodRefId: string;
+      quantity: number;
+      unit: string;
+    }
+  ): Observable<any> {
+    return this.http.patch<any>(
+      `${this.mealPlanUrl}${mealPlanId}/days/${mealDayId}/meals/${mealId}/foods/${foodId}/replace`,
+      payload
+    );
+  }
 }

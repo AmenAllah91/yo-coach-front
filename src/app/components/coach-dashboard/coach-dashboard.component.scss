@@ -868,3 +868,348 @@ body {
     padding: 28px 18px 20px;
   }
 }
+/* =========================================================
+   MOBILE DASHBOARD TABS STYLE
+   Like screenshot: 2 cards side-by-side on desktop
+   stacked tabs on mobile
+========================================================= */
+
+/* DESKTOP LAYOUT */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.dashboard-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+}
+
+.panel-header {
+  padding: 22px 22px 16px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.panel-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.panel-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* SEARCH */
+.panel-search {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.search-box {
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #dbe2ea;
+  background: #f8fafc;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.search-box:focus {
+  background: #ffffff;
+  border-color: #39aeef;
+  box-shadow: 0 0 0 3px rgba(57, 174, 239, 0.12);
+}
+
+/* LIST */
+.panel-body {
+  padding: 8px 0;
+}
+
+.client-row,
+.checkin-row {
+  width: 100%;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.client-row:last-child,
+.checkin-row:last-child {
+  border-bottom: 0;
+}
+
+.client-row:hover,
+.checkin-row:hover {
+  background: #f8fafc;
+}
+
+/* AVATAR */
+.row-avatar {
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  border-radius: 50%;
+  background: #e8f4ff;
+  color: #0ea5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* CONTENT */
+.row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-top h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+/* SUBTEXT */
+.row-subtitle {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.row-meta {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* BADGES */
+.plan-badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.plan-badge.blue {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.plan-badge.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.meta-text {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* RIGHT SIDE */
+.row-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.row-date {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* =========================================================
+   MOBILE TABS VERSION
+========================================================= */
+
+.mobile-dashboard-tabs {
+  display: none;
+}
+
+.mobile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    display: none !important;
+  }
+
+  .mobile-dashboard-tabs {
+    display: block;
+  }
+
+  .mobile-tabs-header {
+    width: 100%;
+    height: 48px;
+    padding: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  .mobile-tab-btn {
+    border: 0;
+    background: transparent;
+    border-radius: 10px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .mobile-tab-btn.active {
+    background: #eaf8ff;
+    color: #0ea5e9;
+    box-shadow: 0 1px 3px rgba(14, 165, 233, 0.12);
+  }
+
+  .dashboard-panel {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 18px 18px 14px;
+  }
+
+  .panel-header h2 {
+    font-size: 18px;
+  }
+
+  .panel-header p {
+    font-size: 12px;
+  }
+
+  .panel-search {
+    padding: 12px 14px;
+  }
+
+  .search-box {
+    height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .client-row,
+  .checkin-row {
+    padding: 16px 14px;
+    align-items: flex-start;
+  }
+
+  .row-avatar {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    font-size: 14px;
+  }
+
+  .row-top h3 {
+    font-size: 15px;
+  }
+
+  .row-subtitle,
+  .meta-text {
+    font-size: 12px;
+  }
+
+  .plan-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .row-side {
+    align-items: flex-end;
+  }
+
+  .row-date {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-dashboard-tabs {
+    display: none;
+  }
+}
+
+/* EXTRA SMALL */
+@media (max-width: 480px) {
+  .mobile-tabs-header {
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .mobile-tab-btn {
+    font-size: 13px;
+  }
+
+  .client-row,
+  .checkin-row {
+    gap: 12px;
+  }
+
+  .row-top {
+    flex-wrap: wrap;
+  }
+
+  .row-meta {
+    gap: 6px;
+  }
+}
