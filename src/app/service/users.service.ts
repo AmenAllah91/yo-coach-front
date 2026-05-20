@@ -29,9 +29,11 @@ export class UsersService {
     );
   }
 
-  getUsersSuggestions(): Observable<PageDto<User>> {
+  getUsersSuggestions(page: number = 0, size: number = 5): Observable<PageDto<User>> {
+    const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<PageDto<User>>(
-      `${this.userServiceUrl}/api/users/chat`
+      `${this.userServiceUrl}/api/users/chat`,
+      { params }
     );
   }
 

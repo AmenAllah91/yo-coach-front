@@ -8,6 +8,11 @@ import {FormsModule} from "@angular/forms";
 import {DatePipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NotificationService} from "../../../service/notification.service";
 import {Router} from "@angular/router";
+import {UsersService} from "../../../service/users.service";
+import {forkJoin, of} from "rxjs";
+import {catchError, map} from "rxjs/operators";
+
+export interface Member { id: string; name: string; avatar: string; }
 
 @Component({
   selector: 'app-conversation-messages',
@@ -30,6 +35,8 @@ export class ConversationMessagesComponent implements OnInit{
   isOpenSidebar = true;
 
   currentUserId: string;
+  groupMembers: Member[] = [];
+  showAllGroupMembers = false;
 
   messages: ChatMessage[] = [];
   page = 0;
@@ -43,6 +50,7 @@ export class ConversationMessagesComponent implements OnInit{
   constructor(private chatService: ChatService,
               private wsService: ChatWebsocketService,
               private notificationService: NotificationService,
+              private userService: UsersService,
               private router: Router) {}
 
   ngOnInit(): void {
@@ -50,8 +58,12 @@ export class ConversationMessagesComponent implements OnInit{
     this.messages = [];
     this.page = 0;
     this.hasMore = true;
+    this.groupMembers = [];
     this.wsService.subscribeToConversation(this.selectedConversation.id);
     this.loadInitialMessages();
+    if (this.selectedConversation.isGroup && this.selectedConversation.memberIds?.length) {
+      this.resolveGroupMembers(this.selectedConversation.memberIds);
+    }
 
     this.wsService.messages$.subscribe(msg => {
       if (!msg || !this.selectedConversation) return;
@@ -78,6 +90,28 @@ export class ConversationMessagesComponent implements OnInit{
       this.loading = false;
       setTimeout(() => this.scrollToBottom(), 0);
     });
+  }
+
+  private resolveGroupMembers(memberIds: string[]): void {
+    const requests = memberIds.map(id =>
+      this.userService.getUserById(id).pipe(
+        map(user => ({ id, name: user.firstName + ' ' + user.lastName, avatar: user.avatarUrl === 'not found' ? '' : user.avatarUrl })),
+        catchError(() => of({ id, name: 'Unknown', avatar: '' }))
+      )
+    );
+    forkJoin(requests).subscribe(members => {
+      this.groupMembers = members;
+    });
+  }
+
+  toggleGroupMembers(): void {
+    this.showAllGroupMembers = !this.showAllGroupMembers;
+  }
+
+  getSenderName(senderId: string): string {
+    if (senderId === this.currentUserId) return 'You';
+    const member = this.groupMembers.find(m => m.id === senderId);
+    return member ? member.name : senderId.slice(0, 8);
   }
 
   sendMessage() {

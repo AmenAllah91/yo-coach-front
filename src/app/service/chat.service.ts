@@ -96,6 +96,10 @@ export class ChatService {
     return this.http.post<Conversation>(`${this.apiUrl}/conversations`, request);
   }
 
+  createGroupConversation(request: { name: string, memberIds: string[] }): Observable<Conversation> {
+    return this.http.post<Conversation>(`${this.apiUrl}/group/conversations`, request);
+  }
+
   addUserToConversation(conv: Conversation, userId: string): Observable<any> {
     return this.http.post(
       `${this.apiUrl}/conversations/add-user`,

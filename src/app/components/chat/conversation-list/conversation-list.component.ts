@@ -115,6 +115,7 @@ export class ConversationListComponent implements OnInit {
   }
 
   private enrichConversation(conv: Conversation): Observable<Conversation> {
+    if (conv.isGroup) return of(conv);
 
     const currentUserId = sessionStorage.getItem('userId');
     let otherUserId;

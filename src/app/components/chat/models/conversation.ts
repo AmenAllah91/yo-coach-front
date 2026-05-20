@@ -11,4 +11,5 @@ export interface Conversation {
   clientId: string;
   coachId: string;
   isGroup: boolean;
+  memberIds?: string[];
 }

@@ -30,12 +30,13 @@
             <img class="chat-avatar chat-avatar--img" [src]="conv.avatar" [alt]="conv.name" />
           </ng-template>
           <span class="chat-item__unread-dot" *ngIf="conv.unread"></span>
+          <span class="chat-item__unread-dot" *ngIf="conv.unread"></span>
         </div>
 
         <div class="chat-item__body">
           <div class="chat-item__top">
             <span class="chat-item__name">{{ conv.name }}</span>
-            <span class="chat-item__members" *ngIf="conv.isGroup">{{ conv.memberCount }} members</span>
+            <span class="chat-item__members" *ngIf="conv.isGroup">{{ conv.memberIds?.length || 0 }} members</span>
             <span class="chat-item__unread-badge" *ngIf="conv.unread"></span>
           </div>
           <div class="chat-item__timestamp">{{ conv.timestamp }}</div>
@@ -73,7 +74,11 @@
             <div class="chat-avatar chat-avatar--group chat-avatar--sm"><i-feather name="users"></i-feather></div>
             <div>
               <div class="chat-header__name">{{ selectedConv.name }}</div>
-              <div class="chat-header__sub">{{ selectedConv.memberCount }} members</div>
+              <div class="chat-header__sub">{{ selectedConv.memberIds?.length || 0 }} members</div>
+              <div class="chat-header__members" *ngIf="selectedConvMembers.length">
+                <span *ngFor="let m of (showAllMembers ? selectedConvMembers : selectedConvMembers.slice(0, 3))" class="chat-header__member-chip">{{ m.name }}</span>
+                <span *ngIf="!showAllMembers && selectedConvMembers.length > 3" class="chat-header__member-chip chat-header__member-chip--more" (click)="showAllMembers = true; $event.stopPropagation()">+{{ selectedConvMembers.length - 3 }} more</span>
+              </div>
             </div>
           </ng-container>
           <ng-template #singleHeader>
@@ -86,29 +91,17 @@
 
       <div class="chat-messages" #messagesContainer>
         <div
-          *ngFor="let msg of messages"
-          class="chat-msg-row"
-          [class.chat-msg-row--mine]="msg.senderId === 'coach'"
+          *ngFor="let msg of displayMessages"
+          class="message"
+          [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
         >
-          <ng-container *ngIf="msg.senderId !== 'coach'">
-            <img class="chat-msg__avatar" [src]="msg.sender.avatar" [alt]="msg.sender.name" />
-          </ng-container>
-
-          <div class="chat-msg__bubble-wrap">
-            <span class="chat-msg__sender-name" *ngIf="selectedConv.isGroup && msg.senderId !== 'coach'">{{ msg.sender.name }}</span>
-            <div class="chat-msg__bubble" [class.chat-msg__bubble--mine]="msg.senderId === 'coach'">{{ msg.text }}</div>
-            <div class="chat-msg__meta" [class.chat-msg__meta--mine]="msg.senderId === 'coach'">
-              {{ msg.timestamp }}
-              <ng-container *ngIf="msg.senderId === 'coach'">
-                <i-feather name="check" class="chat-msg__check"></i-feather>
-                <span class="chat-msg__seen">Seen</span>
-              </ng-container>
-            </div>
+          <span class="message-sender" *ngIf="selectedConv?.isGroup && msg.senderId !== currentUserId">{{ msg.sender?.name }}</span>
+          <div class="message-content">
+            {{ msg.text }}
           </div>
-
-          <ng-container *ngIf="msg.senderId === 'coach'">
-            <div class="chat-avatar chat-avatar--coach">CC</div>
-          </ng-container>
+          <div class="message-time">
+            {{ msg.timestamp }}
+          </div>
         </div>
       </div>
 
@@ -156,6 +149,46 @@
         </div>
         <i-feather name="chevron-right" class="cm-option__chev"></i-feather>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL : Select Client (Private Chat)
+═══════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="showSelectClient" (click)="closeModals()">
+  <div class="cm-modal cm-modal--lg" (click)="$event.stopPropagation()">
+    <div class="cm-header">
+      <div>
+        <h3 class="cm-title">Select Client</h3>
+        <p class="cm-subtitle">Choose a client to message</p>
+      </div>
+      <button class="chat-icon-btn" type="button" (click)="closeModals()"><i-feather name="x"></i-feather></button>
+    </div>
+    <div class="cm-section cm-section--border">
+      <div class="cm-search-wrap">
+        <i-feather name="search" class="cm-search-ico"></i-feather>
+        <input
+          class="cm-search-input"
+          type="text"
+          placeholder="Search clients..."
+          [(ngModel)]="selectClientSearchTerm"
+        />
+      </div>
+    </div>
+    <div class="cm-list-body">
+      <div class="cm-client-list">
+        <div
+          *ngFor="let c of filteredSelectClients()"
+          class="cm-client-item"
+          (click)="startPrivateChat(c)"
+          style="cursor:pointer"
+        >
+          <img class="cm-client-item__avatar" [src]="c.avatar" [alt]="c.name" />
+          <span class="cm-client-item__name">{{ c.name }}</span>
+        </div>
+        <div class="cm-empty-row" *ngIf="filteredSelectClients().length === 0">No clients found.</div>
+      </div>
     </div>
   </div>
 </div>

@@ -8,7 +8,20 @@
       alt="avatar"
       class="profile-img me-2"
     />
-    <span>{{ selectedConversation?.name }}</span>
+    <div>
+      <span>{{ selectedConversation?.name }}</span>
+      <div class="chat-header__members" *ngIf="selectedConversation?.isGroup && groupMembers.length">
+        <span
+          *ngFor="let m of (showAllGroupMembers ? groupMembers : groupMembers.slice(0, 3))"
+          class="chat-header__member-chip"
+        >{{ m.name }}</span>
+        <span
+          *ngIf="!showAllGroupMembers && groupMembers.length > 3"
+          class="chat-header__member-chip chat-header__member-chip--more"
+          (click)="toggleGroupMembers(); $event.stopPropagation()"
+        >+{{ groupMembers.length - 3 }} more</span>
+      </div>
+    </div>
   </div>
   <div>
     <button class="back-btn" (click)="back.emit()" aria-label="Retour">
@@ -25,6 +38,7 @@
     *ngFor="let msg of messages"
     [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
   >
+    <span class="message-sender" *ngIf="selectedConversation?.isGroup && msg.senderId !== currentUserId">{{ getSenderName(msg.senderId) }}</span>
     <div class="message-content">
       {{ msg.content }}
     </div>

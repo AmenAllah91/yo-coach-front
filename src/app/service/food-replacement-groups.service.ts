@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '@env/environment';
 
 export interface FoodReplacementGroupItem {
   foodRefId: string;
@@ -42,7 +43,7 @@ export interface Page<T> {
   providedIn: 'root',
 })
 export class FoodReplacementGroupsService {
-  private readonly baseUrl = '/api/food-replacement-groups';
+  private readonly baseUrl = `${environment.baseApiUrl}/api/food-replacement-groups`;
 
   constructor(private http: HttpClient) {}
 

@@ -148,6 +148,13 @@
   border-bottom-left-radius: 4px;
 }
 
+.message-sender {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #44b4df;
+  margin-bottom: 1px;
+  margin-left: 2px;
+}
 .message-time {
   font-size: 0.7rem;
   color: #6b7280;
@@ -299,4 +306,27 @@
 
 .chat-user{
   cursor: pointer;
+}
+
+.chat-header__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.chat-header__member-chip {
+  font-size: 11px;
+  background: #eff9fe;
+  color: #44b4df;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.chat-header__member-chip--more {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: pointer;
+}
+.chat-header__member-chip--more:hover {
+  background: #e5e7eb;
 }

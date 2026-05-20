@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '@env/environment';
 
 export interface MealTemplateDto {
   id?: string;
@@ -12,8 +13,8 @@ export interface MealTemplateDto {
 
 @Injectable({ providedIn: 'root' })
 export class MealsService {
-  private base = '/api/meals';
-  private tpl = '/api/meal-templates';
+  private base = `${environment.baseApiUrl}/api/meals`;
+  private tpl = `${environment.baseApiUrl}/api/meal-templates`;
 
   constructor(private http: HttpClient) {}
 

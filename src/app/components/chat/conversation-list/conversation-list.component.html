@@ -43,9 +43,13 @@
       <div class="conversation-info">
         <div class="conversation-name">
           {{ conv.name }}
+          <span class="badge-group" *ngIf="conv.isGroup">Group</span>
         </div>
         <div class="conversation-last">
-          {{ conv.lastMessage }}
+          <span *ngIf="conv.isGroup; else lastMsg">
+            {{ conv.memberIds?.length || 0 }} members
+          </span>
+          <ng-template #lastMsg>{{ conv.lastMessage }}</ng-template>
         </div>
       </div>
 
