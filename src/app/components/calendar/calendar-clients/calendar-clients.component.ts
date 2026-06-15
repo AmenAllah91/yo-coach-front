@@ -3,12 +3,14 @@ import { WorkoutService } from 'app/service/workout.service';
 import {
   Component,
   OnInit,
+  OnDestroy,
   Input,
   OnChanges,
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { ClientService } from 'app/service/client.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -101,11 +103,11 @@ type CalendarType = 'workout' | 'nutrition';
 @Component({
   selector: 'app-calendar-clients',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DragDropModule],
   templateUrl: './calendar-clients.component.html',
   styleUrl: './calendar-clients.component.scss',
 })
-export class CalendarClientsComponent implements OnInit, OnChanges {
+export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
   currentDate = new Date();
   currentView: CalendarViewMode = 'month';
   calendarType: CalendarType = 'workout';
@@ -132,6 +134,11 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   showDeleteModal = false;
   workoutToDelete: WorkoutProgram | null = null;
   editingWorkout: WorkoutProgram | null = null;
+
+  // Fix: Add connected lists for drag and drop
+  connectedLists: string[] = [];
+
+  private beforeToggleHandler: ((e: Event) => void) | null = null;
 
   availableExercises: Exercise[] = [
     {
@@ -204,6 +211,12 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     } else {
       this.getWorkout();
     }
+
+  }
+
+  ngOnDestroy(): void {
+    this.cleanupWorkoutPointerDrag();
+    this.teardownPopoverIntercept();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -263,6 +276,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
               'CLIENT ASSIGNED WORKOUT PROGRAMS',
               this.workoutPrograms
             );
+            this.updateMonthGrid();
           },
           error: (err) => {
             console.error('Error loading client assigned workout plans', err);
@@ -306,6 +320,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
           'ALL CLIENTS ASSIGNED WORKOUT PROGRAMS',
           this.workoutPrograms
         );
+        this.updateMonthGrid();
       },
       error: (err) => {
         console.error('Error loading all assigned workout plans', err);
@@ -580,7 +595,90 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     this.updateMonthGrid();
   }
 
-  private updateMonthGrid(): void {}
+  /**
+   * Two monkey-patches to keep CDK drag previews completely out of the
+   * Popover API, because CDK v17 insists on making them popovers:
+   *
+   * 1. Block `setAttribute('popover', …)` — prevents the UA stylesheet
+   *    `[popover]:not(:popover-open) { display: none; }` from matching.
+   * 2. Block `showPopover()` — prevents the `NotSupportedError` that
+   *    occurs when calling `showPopover()` without the `popover` attribute.
+   *
+   * The order in `_createPreview` (drag-drop.mjs) ensures the class
+   * `cdk-drag-preview` is added BEFORE the popover attribute is set
+   * (line 408 vs 409), so the class check in the patches works.
+   */
+  private static _popoverPatchApplied = false;
+
+  private setupPopoverIntercept(): void {
+    if (CalendarClientsComponent._popoverPatchApplied) return;
+    CalendarClientsComponent._popoverPatchApplied = true;
+
+    const origSetAttr = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function (name: string, value: string) {
+      if (name === 'popover' && this.classList?.contains('cdk-drag-preview')) {
+        return;
+      }
+      origSetAttr.call(this, name, value);
+    };
+
+    const origShowPopover = HTMLElement.prototype.showPopover;
+    HTMLElement.prototype.showPopover = function () {
+      if (this.classList?.contains('cdk-drag-preview')) {
+        return;
+      }
+      return origShowPopover.call(this);
+    };
+  }
+
+  private teardownPopoverIntercept(): void {
+    // No-op: the patch is global and harmless, applied once.
+  }
+
+  onDragStarted(event: any): void {
+    console.log('CDK Drag Started!', event);
+    const preview = document.querySelector('.cdk-drag-preview') as HTMLElement;
+    if (preview) {
+      const cs = getComputedStyle(preview);
+      const rect = preview.getBoundingClientRect();
+      console.log('[onDragStarted] preview', {
+        display: cs.display,
+        visibility: cs.visibility,
+        opacity: cs.opacity,
+        position: cs.position,
+        zIndex: cs.zIndex,
+        hasPopoverAttr: preview.hasAttribute('popover'),
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        left: rect.left,
+        transform: preview.style.transform,
+      });
+
+      preview.style.setProperty('display', 'block', 'important');
+      preview.style.setProperty('visibility', 'visible', 'important');
+      preview.style.setProperty('opacity', '0.95', 'important');
+
+      const card = preview.querySelector('.card') as HTMLElement;
+      if (card) {
+        card.style.setProperty('visibility', 'visible', 'important');
+        card.style.setProperty('opacity', '1', 'important');
+      }
+    } else {
+      console.log('[onDragStarted] NO PREVIEW FOUND IN DOM');
+    }
+  }
+
+  updateMonthGrid(): void {
+    // Update connected lists for drag and drop — only current view
+    if (this.currentView === 'month') {
+      this.connectedLists = this.monthDays.map(day => 'drop-list-' + day.dateString);
+    } else if (this.currentView === 'week') {
+      this.connectedLists = this.weekDaysData.map(day => 'drop-list-week-' + day.dateString);
+    } else {
+      this.connectedLists = ['drop-list-day-' + this.currentDayString];
+    }
+  }
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
     if (this.calendarType === 'workout') {
@@ -652,10 +750,12 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   setCalendarType(type: CalendarType): void {
     this.calendarType = type;
+    this.updateMonthGrid();
   }
 
   setView(view: CalendarViewMode): void {
     this.currentView = view;
+    this.updateMonthGrid();
   }
 
   get weekDays(): string[] {
@@ -794,6 +894,307 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   cancelCopy(): void {
     this.copiedDate = null;
+  }
+
+  private pointerDragState: {
+    workout: WorkoutProgram;
+    sourceDate: string;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    moved: boolean;
+    sourceElement: HTMLElement | null;
+    ghost: HTMLElement | null;
+    moveHandler: (event: MouseEvent | TouchEvent) => void;
+    upHandler: (event: MouseEvent | TouchEvent) => void;
+  } | null = null;
+
+  private suppressWorkoutClickUntil = 0;
+
+  openWorkoutCard(workout: WorkoutProgram, event?: Event): void {
+    if (Date.now() < this.suppressWorkoutClickUntil) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      return;
+    }
+
+    this.viewWorkout(workout);
+  }
+
+  startWorkoutPointerDrag(
+    event: MouseEvent | TouchEvent,
+    workout: WorkoutProgram,
+    sourceDate: string
+  ): void {
+    if (this.calendarType !== 'workout') return;
+
+    if (!this.canManageWorkoutDays()) {
+      alert('Please select one client first, then drag the workout day.');
+      return;
+    }
+
+    if (!workout?.programId) {
+      alert('This workout day is not associated with a program.');
+      return;
+    }
+
+    const point = this.getPointerPoint(event);
+    if (!point) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const handle = event.currentTarget as HTMLElement | null;
+    const sourceElement = handle?.closest('.card-wrapper, .day-card-wrapper') as HTMLElement | null;
+
+    const moveHandler = (moveEvent: MouseEvent | TouchEvent) =>
+      this.onWorkoutPointerMove(moveEvent);
+    const upHandler = (upEvent: MouseEvent | TouchEvent) =>
+      this.onWorkoutPointerUp(upEvent);
+
+    this.pointerDragState = {
+      workout,
+      sourceDate,
+      startX: point.clientX,
+      startY: point.clientY,
+      currentX: point.clientX,
+      currentY: point.clientY,
+      moved: false,
+      sourceElement,
+      ghost: null,
+      moveHandler,
+      upHandler,
+    };
+
+    document.body.classList.add('calendar-pointer-drag-active');
+    sourceElement?.classList.add('is-pointer-drag-source');
+
+    window.addEventListener('mousemove', moveHandler, { passive: false });
+    window.addEventListener('mouseup', upHandler, { passive: false });
+    window.addEventListener('touchmove', moveHandler, { passive: false });
+    window.addEventListener('touchend', upHandler, { passive: false });
+    window.addEventListener('touchcancel', upHandler, { passive: false });
+  }
+
+  private onWorkoutPointerMove(event: MouseEvent | TouchEvent): void {
+    const state = this.pointerDragState;
+    if (!state) return;
+
+    const point = this.getPointerPoint(event);
+    if (!point) return;
+
+    event.preventDefault();
+
+    state.currentX = point.clientX;
+    state.currentY = point.clientY;
+
+    const distance = Math.hypot(
+      state.currentX - state.startX,
+      state.currentY - state.startY
+    );
+
+    if (!state.moved && distance > 4) {
+      state.moved = true;
+      this.suppressWorkoutClickUntil = Date.now() + 700;
+      this.createWorkoutDragGhost(state);
+    }
+
+    if (state.ghost) {
+      state.ghost.style.transform = `translate3d(${state.currentX + 12}px, ${state.currentY + 12}px, 0)`;
+    }
+
+    this.highlightWorkoutDropTarget(state.currentX, state.currentY);
+  }
+
+  private onWorkoutPointerUp(event: MouseEvent | TouchEvent): void {
+    const state = this.pointerDragState;
+    if (!state) return;
+
+    const point = this.getPointerPoint(event) || {
+      clientX: state.currentX,
+      clientY: state.currentY,
+    };
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const targetDate = this.getDropDateFromPoint(point.clientX, point.clientY);
+    const shouldMove = !!targetDate && targetDate !== state.sourceDate && state.moved;
+
+    const workout = state.workout;
+    const sourceDate = state.sourceDate;
+
+    this.cleanupWorkoutPointerDrag();
+
+    if (shouldMove && targetDate) {
+      this.moveDay(workout, sourceDate, targetDate);
+    }
+  }
+
+  private getPointerPoint(
+    event: MouseEvent | TouchEvent
+  ): { clientX: number; clientY: number } | null {
+    if (event instanceof MouseEvent) {
+      return { clientX: event.clientX, clientY: event.clientY };
+    }
+
+    const touch = event.touches?.[0] || event.changedTouches?.[0];
+    if (!touch) return null;
+
+    return { clientX: touch.clientX, clientY: touch.clientY };
+  }
+
+  private createWorkoutDragGhost(state: NonNullable<typeof this.pointerDragState>): void {
+    if (state.ghost || !state.sourceElement) return;
+
+    const card = state.sourceElement.querySelector('.card') || state.sourceElement;
+    const ghost = card.cloneNode(true) as HTMLElement;
+
+    ghost.classList.add('calendar-pointer-drag-ghost');
+    ghost.style.width = `${card.getBoundingClientRect().width}px`;
+    ghost.style.transform = `translate3d(${state.currentX + 12}px, ${state.currentY + 12}px, 0)`;
+
+    document.body.appendChild(ghost);
+    state.ghost = ghost;
+  }
+
+  private highlightWorkoutDropTarget(clientX: number, clientY: number): void {
+    document
+      .querySelectorAll('.calendar-drop-target-active')
+      .forEach((el) => el.classList.remove('calendar-drop-target-active'));
+
+    const targetDate = this.getDropDateFromPoint(clientX, clientY);
+    if (!targetDate) return;
+
+    const target = document.querySelector(
+      `[data-workout-drop-date="${targetDate}"]`
+    );
+    target?.classList.add('calendar-drop-target-active');
+  }
+
+  private getDropDateFromPoint(clientX: number, clientY: number): string | null {
+    const el = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const dropTarget = el?.closest('[data-workout-drop-date]') as HTMLElement | null;
+    return dropTarget?.dataset?.['workoutDropDate'] || null;
+  }
+
+  private cleanupWorkoutPointerDrag(): void {
+    const state = this.pointerDragState;
+    if (!state) return;
+
+    window.removeEventListener('mousemove', state.moveHandler as EventListener);
+    window.removeEventListener('mouseup', state.upHandler as EventListener);
+    window.removeEventListener('touchmove', state.moveHandler as EventListener);
+    window.removeEventListener('touchend', state.upHandler as EventListener);
+    window.removeEventListener('touchcancel', state.upHandler as EventListener);
+
+    state.sourceElement?.classList.remove('is-pointer-drag-source');
+    state.ghost?.remove();
+
+    document.body.classList.remove('calendar-pointer-drag-active');
+    document
+      .querySelectorAll('.calendar-drop-target-active')
+      .forEach((el) => el.classList.remove('calendar-drop-target-active'));
+
+    this.pointerDragState = null;
+  }
+
+  onWorkoutDrop(event: CdkDragDrop<any>, targetDate: string): void {
+    // Kept only so old templates do not break during hot reload.
+    if (this.calendarType !== 'workout') return;
+
+    const dragData = event.item.data;
+    if (!dragData) return;
+    if (dragData.sourceDate === targetDate) return;
+
+    this.moveDay(dragData.item, dragData.sourceDate, targetDate);
+  }
+
+  private moveDay(
+    workout: WorkoutProgram,
+    sourceDate: string,
+    targetDate: string
+  ): void {
+    if (this.calendarType !== 'workout') return;
+
+    if (!this.canManageWorkoutDays()) {
+      alert('Please select one client first, then drag the workout day.');
+      this.getWorkout();
+      return;
+    }
+
+    const programId = workout.programId;
+    if (!programId) {
+      alert('This workout day is not associated with a program.');
+      return;
+    }
+
+    const clientId = workout.clientId || this.selectedClient;
+
+    const exists = this.workoutPrograms.some(
+      (p: WorkoutProgram) =>
+        p.id !== workout.id &&
+        p.date === targetDate &&
+        p.clientId === clientId
+    );
+
+    if (exists) {
+      alert('Target date already has a workout day.');
+      return;
+    }
+
+    const previousPrograms = [...this.workoutPrograms];
+
+    this.workoutPrograms = this.workoutPrograms.map((p: WorkoutProgram) =>
+      p.id === workout.id ? { ...p, date: targetDate } : p
+    );
+    this.updateMonthGrid();
+
+    this.workoutService.getWorkoutById(programId).subscribe({
+      next: (plan: any) => {
+        const workoutDays = [...(plan.workoutDays || [])];
+        const dayIndex = workoutDays.findIndex((d: any) => d.id === workout.id);
+
+        if (dayIndex === -1) {
+          alert('Workout day not found in plan.');
+          this.workoutPrograms = previousPrograms;
+          this.updateMonthGrid();
+          return;
+        }
+
+        workoutDays[dayIndex] = {
+          ...workoutDays[dayIndex],
+          date: targetDate,
+        };
+
+        const normalizedDays = this.normalizePlanDays(workoutDays);
+
+        const updatedPlan = {
+          ...plan,
+          workoutDays: normalizedDays,
+          endDate: normalizedDays.length
+            ? normalizedDays[normalizedDays.length - 1].date
+            : plan.endDate,
+        };
+
+        this.workoutService.updateWorkout(plan.id, updatedPlan).subscribe({
+          next: () => this.getWorkout(),
+          error: (err) => {
+            console.error('Error moving workout day', err);
+            alert('Failed to move workout day.');
+            this.workoutPrograms = previousPrograms;
+            this.updateMonthGrid();
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Error loading plan for move', err);
+        alert('Failed to load workout plan.');
+        this.workoutPrograms = previousPrograms;
+        this.updateMonthGrid();
+      },
+    });
   }
 
   pasteDay(targetDate: string): void {

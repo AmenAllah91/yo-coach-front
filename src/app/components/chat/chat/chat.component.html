@@ -86,7 +86,15 @@
             <div class="chat-header__name">{{ selectedConv.name }}</div>
           </ng-template>
         </div>
-        <button class="chat-icon-btn" type="button"><i-feather name="settings"></i-feather></button>
+        <button
+          *ngIf="selectedConv && !selectedConv.isGroup"
+          class="chat-icon-btn"
+          type="button"
+          (click)="toggleClientProfile()"
+          [title]="showClientProfile ? 'Hide Client' : 'Show Client'"
+        >
+          <i-feather [name]="showClientProfile ? 'user-x' : 'user'"></i-feather>
+        </button>
       </div>
 
       <div class="chat-messages" #messagesContainer>
@@ -96,9 +104,41 @@
           [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
         >
           <span class="message-sender" *ngIf="selectedConv?.isGroup && msg.senderId !== currentUserId">{{ msg.sender?.name }}</span>
-          <div class="message-content">
+
+          <ng-container [ngSwitch]="msg.type">
+            <div class="message-content" *ngSwitchCase="'TEXT'">
+              {{ msg.text }}
+            </div>
+
+            <div class="message-content message-content--voice" *ngSwitchCase="'VOICE'">
+              <div class="voice-bubble">
+                <div class="voice-bubble__icon"><i-feather name="mic"></i-feather></div>
+                <audio class="voice-bubble__audio" [src]="msg.attachmentUrl" controls></audio>
+                <span class="voice-bubble__duration">{{ formatDuration(msg.durationSeconds) }}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="message-content message-content--doc"
+              *ngSwitchCase="'DOCUMENT'"
+              (click)="downloadDocument(msg, $event)"
+            >
+              <div class="doc-bubble">
+                <div class="doc-bubble__icon"><i-feather name="file-text"></i-feather></div>
+                <div class="doc-bubble__info">
+                  <div class="doc-bubble__name">{{ msg.attachmentName }}</div>
+                  <div class="doc-bubble__meta">{{ msg.attachmentType || 'Document' }} {{ formatFileSize(msg.attachmentSize) }}</div>
+                </div>
+                <div class="doc-bubble__download">⬇</div>
+              </div>
+            </button>
+          </ng-container>
+
+          <div class="message-caption" *ngIf="msg.type === 'DOCUMENT' && msg.text">
             {{ msg.text }}
           </div>
+
           <div class="message-time">
             {{ msg.timestamp }}
           </div>
@@ -106,21 +146,76 @@
       </div>
 
       <div class="chat-input-bar">
-        <button class="chat-icon-btn" type="button"><i-feather name="plus"></i-feather></button>
-        <button class="chat-icon-btn" type="button"><i-feather name="mic"></i-feather></button>
-        <input
-          class="chat-input"
-          type="text"
-          [placeholder]="'Chat with ' + selectedConv.name"
-          [(ngModel)]="messageText"
-          (keydown.enter)="sendMessage()"
-        />
-        <button class="chat-send-btn" type="button" (click)="sendMessage()" [disabled]="!messageText.trim()">
-          <i-feather name="send"></i-feather>
-        </button>
+        <input #documentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onDocumentSelected($event)" />
+
+        <div class="pending-attachment" *ngIf="pendingDocument">
+          <div class="pending-attachment__icon"><i-feather name="file-text"></i-feather></div>
+          <div class="pending-attachment__info">
+            <strong>{{ pendingDocument.name }}</strong>
+            <span>{{ formatFileSize(pendingDocument.size) }}</span>
+          </div>
+          <button type="button" class="pending-attachment__remove" (click)="removePendingDocument()">×</button>
+        </div>
+
+        <div class="attachment-error" *ngIf="attachmentError">{{ attachmentError }}</div>
+
+        <div class="chat-input-row">
+          <div class="chat-attach-wrap">
+            <button class="chat-icon-btn" type="button" (click)="toggleAttachmentMenu()">
+              <i-feather name="plus"></i-feather>
+            </button>
+
+            <div class="chat-attach-menu" *ngIf="showAttachmentMenu">
+              <button type="button" class="chat-attach-menu__item" (click)="documentInput.click(); showAttachmentMenu = false">
+                <i-feather name="file-text"></i-feather>
+                <span>Document</span>
+              </button>
+            </div>
+          </div>
+
+          <button
+            class="chat-icon-btn"
+            type="button"
+            [class.chat-icon-btn--recording]="isRecording"
+            (click)="toggleVoiceRecording()"
+          >
+            <i-feather [name]="isRecording ? 'square' : 'mic'"></i-feather>
+          </button>
+
+          <div class="recording-chip" *ngIf="isRecording">
+            <span class="recording-dot"></span>
+            {{ formatDuration(recordingSeconds) }}
+            <button type="button" class="recording-cancel" (click)="cancelVoiceRecording()">×</button>
+          </div>
+
+          <input
+            class="chat-input"
+            type="text"
+            [placeholder]="pendingDocument ? 'Ajouter un message...' : (isRecording ? 'Recording voice message...' : 'Chat with ' + selectedConv.name)"
+            [(ngModel)]="messageText"
+            (keydown.enter)="sendMessage()"
+            [disabled]="isRecording || isUploadingAttachment"
+          />
+
+          <button
+            class="chat-send-btn"
+            type="button"
+            (click)="sendMessage()"
+            [disabled]="(!messageText.trim() && !pendingDocument) || isRecording || isUploadingAttachment"
+          >
+            <i-feather name="send"></i-feather>
+          </button>
+        </div>
       </div>
     </ng-container>
   </main>
+
+  <!-- ═══════════════════════════════════════════
+       CLIENT PROFILE — slide-in panel
+  ═══════════════════════════════════════════ -->
+  <aside class="chat-profile" [class.chat-profile--open]="showClientProfile && !selectedConv?.isGroup" [style.flex-basis.px]="showClientProfile && !selectedConv?.isGroup ? 320 : 0">
+    <app-profil-client *ngIf="selectedClientId" [clientIdInput]="selectedClientId"></app-profil-client>
+  </aside>
 </div>
 
 <!-- ═══════════════════════════════════════════

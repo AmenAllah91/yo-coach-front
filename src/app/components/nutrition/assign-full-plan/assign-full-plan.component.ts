@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NutritionService } from 'app/service/nutrition.service';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { Client, ClientService } from 'app/service/client.service';
@@ -10,7 +11,7 @@ import { Client, ClientService } from 'app/service/client.service';
 @Component({
   selector: 'app-assign-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
   templateUrl: './assign-full-plan.component.html',
   styleUrl: './assign-full-plan.component.scss',
 })
@@ -187,6 +188,17 @@ export class AssignFullPlanComponent implements OnInit {
     const index = this.days.indexOf(day);
     this.days.splice(index, 1);
     this.selectedDay = this.days[Math.max(0, index - 1)];
+  }
+
+  onDropDay(event: CdkDragDrop<MealDay[]>) {
+    moveItemInArray(this.days, event.previousIndex, event.currentIndex);
+    this.updateAllDates();
+  }
+
+  onDropMeal(event: CdkDragDrop<Meal[]>) {
+    if (!this.selectedDay) return;
+    moveItemInArray(this.selectedDay.meals, event.previousIndex, event.currentIndex);
+    this.recalcDayTargets(this.selectedDay);
   }
 
   duplicateSelectedDay() {

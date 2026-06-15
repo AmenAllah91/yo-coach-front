@@ -51,7 +51,8 @@
                             (click)="selectDay(day)"
                             [ngClass]="{
               selected: isSameDay(day, currentDate),
-              today: isToday(day) && !isSameDay(day, currentDate)
+              today: isToday(day) && !isSameDay(day, currentDate),
+              hasWorkout: hasWorkoutOn(day)
             }"
                     >
                         <div class="day-name">{{ formatDayName(day) }}</div>
@@ -74,7 +75,12 @@
             <div class="divider"></div>
 
             <!-- Workout row -->
-            <button class="task-row" type="button" (click)="openWorkout()">
+            <button
+                    class="task-row"
+                    type="button"
+                    (click)="hasWorkoutToday && openWorkout()"
+                    [class.empty-task]="!hasWorkoutToday"
+            >
                 <div class="task-left">
                     <div class="badge purple">🏋️</div>
                     <span class="task-day">
@@ -82,7 +88,7 @@
           </span>
                 </div>
 
-                <div class="task-main">
+                <div class="task-main" *ngIf="hasWorkoutToday; else noWorkoutTpl">
                     <h3 class="task-title">{{ currentTasks.workout.name }}</h3>
                     <p class="task-program">{{ currentTasks.workout.program }}</p>
                     <div class="pill">
@@ -91,13 +97,25 @@
                     </div>
                 </div>
 
-                <div class="chev muted">›</div>
+                <ng-template #noWorkoutTpl>
+                    <div class="task-main">
+                        <h3 class="task-title">No workout planned for this day</h3>
+                        <p class="task-sub">No session scheduled.</p>
+                    </div>
+                </ng-template>
+
+                <div class="chev muted" *ngIf="hasWorkoutToday">›</div>
             </button>
 
             <div class="divider"></div>
 
             <!-- Nutrition row -->
-            <button class="task-row" type="button" (click)="openNutrition()">
+            <button
+                    class="task-row"
+                    type="button"
+                    (click)="hasNutritionToday && openNutrition()"
+                    [class.empty-task]="!hasNutritionToday"
+            >
                 <div class="task-left">
                     <div class="badge green">🍏</div>
                     <span class="task-day">
@@ -105,7 +123,7 @@
           </span>
                 </div>
 
-                <div class="task-main">
+                <div class="task-main" *ngIf="hasNutritionToday; else noNutritionTpl">
                     <h3 class="task-title">{{ currentTasks.nutrition.planName }}</h3>
                     <p class="task-sub">{{ currentTasks.nutrition.program }}</p>
 
@@ -131,7 +149,14 @@
                     </div>
                 </div>
 
-                <div class="chev muted">›</div>
+                <ng-template #noNutritionTpl>
+                    <div class="task-main">
+                        <h3 class="task-title">No active nutrition plan for this day</h3>
+                        <p class="task-sub">No nutrition target scheduled.</p>
+                    </div>
+                </ng-template>
+
+                <div class="chev muted" *ngIf="hasNutritionToday">›</div>
             </button>
         </div>
 
@@ -201,7 +226,7 @@
     </div>
 
     <!-- Workout Modal -->
-    <div class="modal-overlay" *ngIf="showWorkoutModal">
+    <div class="modal-overlay" *ngIf="showWorkoutModal && hasWorkoutToday">
         <div class="modal">
             <div class="modal-head">
                 <div>
@@ -221,7 +246,7 @@
     </div>
 
     <!-- Nutrition Modal -->
-    <div class="modal-overlay" *ngIf="showNutritionModal">
+    <div class="modal-overlay" *ngIf="showNutritionModal && hasNutritionToday">
         <div class="modal">
             <div class="modal-head">
                 <div>

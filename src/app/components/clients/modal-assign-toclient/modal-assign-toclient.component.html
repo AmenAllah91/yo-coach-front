@@ -10,19 +10,38 @@
       <button class="assign-close" type="button" (click)="close()">✕</button>
     </div>
 
-    <!-- START DATE -->
+    <!-- DATES -->
     <div class="assign-section assign-section--grey">
-      <label class="assign-label">Start Date *</label>
-      <div class="date-wrapper">
-        <span class="input-icon-left calendar-icon"></span>
+      <div class="assign-date-grid" [class.assign-date-grid--single]="!showEndDate">
+        <div>
+          <label class="assign-label">Start Date *</label>
+          <div class="date-wrapper">
+            <span class="input-icon-left calendar-icon"></span>
 
-        <input
-          type="date"
-          class="assign-input assign-input--date"
-          [(ngModel)]="startDate"
-        />
+            <input
+              type="date"
+              class="assign-input assign-input--date"
+              [(ngModel)]="startDate"
+            />
 
-        <span class="input-icon-right calendar-icon"></span>
+            <span class="input-icon-right calendar-icon"></span>
+          </div>
+        </div>
+
+        <div *ngIf="showEndDate">
+          <label class="assign-label">End Date</label>
+          <div class="date-wrapper">
+            <span class="input-icon-left calendar-icon"></span>
+
+            <input
+              type="date"
+              class="assign-input assign-input--date"
+              [(ngModel)]="endDate"
+            />
+
+            <span class="input-icon-right calendar-icon"></span>
+          </div>
+        </div>
       </div>
     </div>
 

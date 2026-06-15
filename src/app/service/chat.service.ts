@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {BehaviorSubject, Observable, throwError} from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {Conversation} from "../components/chat/models/conversation";
 import {HttpClient, HttpParams} from "@angular/common/http";
 import {environment} from "@env/environment";
@@ -110,5 +111,82 @@ export class ChatService {
     );
   }
 
+  uploadMessageAttachment(formData: FormData): Observable<ChatMessage> {
+    const url = `${this.apiUrl}/messages/upload`;
+
+    console.log('UPLOAD URL =', url);
+
+    formData.forEach((value, key) => {
+      console.log('UPLOAD FIELD:', key, value);
+    });
+
+    return this.http.post<ChatMessage>(url, formData).pipe(
+      catchError((err) => {
+        console.error('UPLOAD ERROR STATUS =', err.status);
+        console.error('UPLOAD ERROR URL =', err.url);
+        console.error('UPLOAD ERROR MESSAGE =', err.message);
+        console.error('UPLOAD ERROR BODY =', err.error);
+        console.error('UPLOAD ERROR FULL =', err);
+
+        alert(
+          'Upload failed\n' +
+          'Status: ' + err.status + '\n' +
+          'Message: ' + err.message
+        );
+
+        return throwError(() => err);
+      })
+    );
+  }
+
+  uploadAttachment(
+    conversationId: string,
+    senderId: string,
+    type: 'VOICE' | 'DOCUMENT',
+    file: File,
+    durationSeconds?: number,
+    content?: string
+  ): Observable<ChatMessage> {
+    const formData = new FormData();
+    formData.append('conversationId', conversationId);
+    formData.append('senderId', senderId);
+    formData.append('type', type);
+    formData.append('file', file, file.name);
+
+    const cleanContent = (content || '').trim();
+    if (cleanContent) {
+      formData.append('content', cleanContent);
+    }
+
+    if (durationSeconds != null) {
+      formData.append('durationSeconds', String(durationSeconds));
+    }
+
+    return this.uploadMessageAttachment(formData);
+  }
+
+
+  downloadAttachment(attachmentUrl: string, downloadName?: string): Observable<Blob> {
+    let params = new HttpParams().set('attachmentUrl', attachmentUrl);
+    if (downloadName) {
+      params = params.set('downloadName', downloadName);
+    }
+
+    return this.http.get(`${this.apiUrl}/messages/download`, {
+      params,
+      responseType: 'blob'
+    }).pipe(
+      catchError((err) => {
+        console.error('DOWNLOAD ERROR STATUS =', err.status);
+        console.error('DOWNLOAD ERROR URL =', err.url);
+        console.error('DOWNLOAD ERROR MESSAGE =', err.message);
+        console.error('DOWNLOAD ERROR BODY =', err.error);
+        console.error('DOWNLOAD ERROR FULL =', err);
+
+        return throwError(() => err);
+      })
+    );
+  }
 
 }
+

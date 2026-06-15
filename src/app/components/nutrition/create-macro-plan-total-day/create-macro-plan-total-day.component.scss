@@ -1481,3 +1481,31 @@
   font-size: 0.78rem;
   line-height: 1.35;
 }
+
+/* ===== Drag & Drop ===== */
+.cdk-drag-preview {
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  border-radius: 10px;
+  opacity: .95;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-dragging .np-dayrow:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.np-aside__body.cdk-drop-list-dragging .np-day,
+.np-aside__body.cdk-drop-list-dragging .np-dayrow {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}

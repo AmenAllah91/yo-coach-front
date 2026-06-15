@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
@@ -10,7 +11,7 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
   templateUrl: './create-macro-plan.component.html',
   styleUrls: ['./create-macro-plan.component.scss'],
 })
@@ -234,6 +235,17 @@ export class CreateMacroPlanComponent implements OnInit {
 
     this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
     this.selectedDay = this.days[Math.max(0, i - 1)];
+  }
+
+  onDropDay(event: CdkDragDrop<MealDay[]>) {
+    moveItemInArray(this.days, event.previousIndex, event.currentIndex);
+    this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
+  }
+
+  onDropMeal(event: CdkDragDrop<Meal[]>) {
+    if (!this.selectedDay) return;
+    moveItemInArray(this.selectedDay.meals, event.previousIndex, event.currentIndex);
+    this.updateDayTotals(this.selectedDay);
   }
 
   selectDay(day: MealDay) {

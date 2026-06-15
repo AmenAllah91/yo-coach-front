@@ -3,6 +3,7 @@ import { CommonModule, DecimalPipe, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { Client, ClientService } from 'app/service/client.service';
@@ -18,7 +19,7 @@ import { Client, ClientService } from 'app/service/client.service';
     ReactiveFormsModule,
     CommonModule,
     FormsModule,
-    FeatherModule,
+    DragDropModule,
   ],
   templateUrl: './assign-macro-plan-total-day.component.html',
   styleUrl: './assign-macro-plan-total-day.component.scss',
@@ -210,6 +211,11 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
         this.selectedDay = this.days[Math.max(0, index - 1)];
       }
     }
+  }
+
+  onDropDay(event: CdkDragDrop<MealDay[]>) {
+    moveItemInArray(this.days, event.previousIndex, event.currentIndex);
+    this.days.forEach((d, i) => ((d as any).name = `Day ${i + 1}`));
   }
 
   togglePlanDescription() {

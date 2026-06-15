@@ -1213,3 +1213,102 @@ body {
     gap: 6px;
   }
 }
+
+/* =========================================================
+   RECENT CHECK-INS: submitted/answered lines + pagination
+   Same visual target as the capture
+========================================================= */
+.checkin-date-lines {
+  margin-top: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+.checkin-date-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.checkins-pagination {
+  padding: 12px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pagination-btn,
+.pagination-page {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pagination-btn {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pagination-page {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.pagination-page:hover:not(:disabled),
+.pagination-page.active {
+  border-color: #39aeef;
+  background: #39aeef;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(57, 174, 239, 0.25);
+}
+
+.pagination-page.dots {
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .checkin-date-lines {
+    font-size: 11px;
+  }
+
+  .checkin-date-line {
+    white-space: normal;
+  }
+
+  .pagination-btn,
+  .pagination-page {
+    width: 34px;
+    height: 34px;
+  }
+}

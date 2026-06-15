@@ -221,3 +221,62 @@
 .aside-mobile-expanded .aside{left:0}
 .aside-mobile-expanded .navbar{margin-left:15rem}
 .aside-mobile-expanded #app{margin-left:15rem}
+
+/* ==========================================================================
+   ANGULAR CDK DRAG AND DROP — GLOBAL STYLES (out of component encapsulation)
+   ========================================================================== */
+
+/* 1) Floating preview card that follows the cursor */
+.cdk-drag-preview {
+  display: block !important;
+  opacity: 0.95 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 3px 10px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 10px !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  background: #ffffff !important;
+  border: 2px solid #44b4df !important;
+}
+
+.cdk-drag-preview .card,
+.cdk-drag-preview .card-workout,
+.cdk-drag-preview .card-nutrition {
+  transform: rotate(2deg);
+  transform-origin: center center;
+  background: #ffffff;
+  border: 1px solid rgba(68, 180, 223, 0.8);
+}
+
+/* 2) Ghost placeholder left behind in the source drop list */
+.cdk-drag-placeholder {
+  opacity: 0.25 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  border: 2px dashed #999 !important;
+  border-radius: 8px !important;
+  min-height: 80px;
+}
+
+.cdk-drag-placeholder * {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* 3) Animate remaining cards when another card is dragged over them */
+.cdk-drop-list-dragging .card:not(.cdk-drag-placeholder),
+.cdk-drop-list-dragging .card-wrapper:not(.cdk-drag-placeholder),
+.cdk-drop-list-dragging .day-card-wrapper:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1) !important;
+}
+
+/* 4) Animate the dropped element snapping back into place */
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1) !important;
+}
+
+/* 5) Highlight the drop target when dragging over it */
+.cdk-drop-list-receiving {
+  background-color: rgba(57, 174, 239, 0.08) !important;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}

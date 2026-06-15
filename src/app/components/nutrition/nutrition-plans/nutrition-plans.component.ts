@@ -76,10 +76,12 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
       .subscribe({
         next: ({ privatePlans, templatePlans }) => {
           const privateContent = this.extractPlans(privatePlans);
-          const templateContent = this.extractPlans(templatePlans).map((plan) => ({
-            ...plan,
-            isMealPlanTemplate: true,
-          }));
+          const templateContent = this.extractPlans(templatePlans)
+            .filter((plan: any) => !plan.isDemo)
+            .map((plan) => ({
+              ...plan,
+              isMealPlanTemplate: true,
+            }));
 
           this.plans = this.sortNewestFirst(
             this.dedupePlans([...privateContent, ...templateContent])

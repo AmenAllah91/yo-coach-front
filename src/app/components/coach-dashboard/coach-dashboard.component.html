@@ -83,7 +83,7 @@
         <article
           class="checkin-card"
           [class.overdue-card]="checkIn.overdue"
-          *ngFor="let checkIn of recentCheckIns; trackBy: trackByCheckInId"
+          *ngFor="let checkIn of paginatedRecentCheckIns; trackBy: trackByCheckInId"
           (click)="openClient(checkIn.clientId)"
         >
           <div class="avatar icon-avatar"></div>
@@ -95,6 +95,10 @@
             <div class="meta-row">
               <span class="plan">{{ checkIn.formName || 'Check-in' }}</span>
             </div>
+            <div class="checkin-date-lines">
+              <span class="checkin-date-line">📅 Submitted: {{ checkIn.submittedDate }}</span>
+              <span class="checkin-date-line">🕘 Answered: {{ checkIn.answeredDate }}</span>
+            </div>
           </div>
           <div class="status-side">
             <span [class]="getStatusClass(checkIn.status)">{{ checkIn.status || 'Pending' }}</span>
@@ -102,6 +106,20 @@
           </div>
         </article>
         <div *ngIf="recentCheckIns.length === 0" class="empty-state">No check-ins found</div>
+
+        <div class="checkins-pagination" *ngIf="totalCheckInPages > 1">
+          <button type="button" class="pagination-btn" [disabled]="!canGoPreviousCheckIns" (click)="previousCheckInsPage($event)">‹</button>
+          <button
+            type="button"
+            *ngFor="let page of checkInsPageNumbers"
+            class="pagination-page"
+            [class.active]="page === checkInsPage"
+            [class.dots]="page === '...'"
+            [disabled]="page === '...'"
+            (click)="goToCheckInsPage(page, $event)"
+          >{{ page }}</button>
+          <button type="button" class="pagination-btn" [disabled]="!canGoNextCheckIns" (click)="nextCheckInsPage($event)">›</button>
+        </div>
       </section>
     </div>
 
@@ -160,7 +178,7 @@
           <article
             class="checkin-card"
             [class.overdue-card]="checkIn.overdue"
-            *ngFor="let checkIn of recentCheckIns; trackBy: trackByCheckInId"
+            *ngFor="let checkIn of paginatedRecentCheckIns; trackBy: trackByCheckInId"
             (click)="openClient(checkIn.clientId)"
           >
             <div class="avatar icon-avatar"></div>
@@ -172,6 +190,10 @@
               <div class="meta-row">
                 <span class="plan">{{ checkIn.formName || 'Check-in' }}</span>
               </div>
+              <div class="checkin-date-lines">
+                <span class="checkin-date-line">📅 Submitted: {{ checkIn.submittedDate }}</span>
+                <span class="checkin-date-line">🕘 Answered: {{ checkIn.answeredDate }}</span>
+              </div>
             </div>
             <div class="status-side">
               <span [class]="getStatusClass(checkIn.status)">{{ checkIn.status || 'Pending' }}</span>
@@ -179,6 +201,20 @@
             </div>
           </article>
           <div *ngIf="recentCheckIns.length === 0" class="empty-state">No check-ins found</div>
+
+          <div class="checkins-pagination" *ngIf="totalCheckInPages > 1">
+            <button type="button" class="pagination-btn" [disabled]="!canGoPreviousCheckIns" (click)="previousCheckInsPage($event)">‹</button>
+            <button
+              type="button"
+              *ngFor="let page of checkInsPageNumbers"
+              class="pagination-page"
+              [class.active]="page === checkInsPage"
+              [class.dots]="page === '...'"
+              [disabled]="page === '...'"
+              (click)="goToCheckInsPage(page, $event)"
+            >{{ page }}</button>
+            <button type="button" class="pagination-btn" [disabled]="!canGoNextCheckIns" (click)="nextCheckInsPage($event)">›</button>
+          </div>
         </div>
       </div>
 

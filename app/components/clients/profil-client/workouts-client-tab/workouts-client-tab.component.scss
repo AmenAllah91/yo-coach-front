@@ -1,0 +1,182 @@
+.tab-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.program-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.btn-assign-black {
+  border: none;
+  background: #000;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-assign-black:hover {
+  background: #44b4df;
+}
+
+.program-card {
+  background-color: #fbfdff;
+  border-radius: 12px;
+  border: 1px solid #e4edf5;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.15s ease, transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.program-card:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.program-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.program-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* icône workout */
+.program-icon-blue {
+  background: #e6f5ff;
+  color: #0ba5ff;
+}
+
+.program-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.program-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.program-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+/* réutilisé aussi ailleurs : reviewed, pending... */
+.status-pill--active {
+  background: #e3f9ea;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.status-pill--upcoming {
+  background: #e0f2ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.status-pill--completed {
+  background: #e5e7eb;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.program-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.program-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  padding: 6px;
+  border-radius: 6px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(68, 180, 223, 0.08);
+  color: #4b5563;
+}
+
+.program-progress {
+  margin-top: 10px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.page-btn--active {
+  background: #44b4df;
+  border-color: #44b4df;
+  color: #fff;
+}
+
+.page-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

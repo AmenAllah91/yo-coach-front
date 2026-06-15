@@ -66,6 +66,8 @@ export class ChatWebsocketService {
 
     console.log('[CHAT SERVICE] subscribing to conversation:', conversationId);
 
+    this.conversationSubscription?.unsubscribe();
+
     this.conversationSubscription =
       this.stompClient.subscribe(
         `/topic/conversation/${conversationId}`,
@@ -77,7 +79,13 @@ export class ChatWebsocketService {
             senderId: backendMessage.senderId,
             content: backendMessage.content,
             createdAt: backendMessage.createdAt,
-            conversationId: conversationId
+            conversationId: backendMessage.conversationId || conversationId,
+            type: backendMessage.type || 'TEXT',
+            attachmentUrl: backendMessage.attachmentUrl,
+            attachmentName: backendMessage.attachmentName,
+            attachmentType: backendMessage.attachmentType,
+            attachmentSize: backendMessage.attachmentSize,
+            durationSeconds: backendMessage.durationSeconds
           };
 
           this.ngZone.run(() => {
@@ -95,7 +103,7 @@ export class ChatWebsocketService {
 
     this.stompClient.publish({
       destination: '/app/chat.send',
-      body: JSON.stringify({ conversationId, content, senderId })
+      body: JSON.stringify({ conversationId, content, senderId, type: 'TEXT' })
     });
   }
 

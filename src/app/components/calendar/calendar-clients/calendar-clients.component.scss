@@ -320,6 +320,13 @@
   margin-bottom: 4px;
 }
 
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .card-title-block {
   flex: 1 1 auto;
   min-width: 0;
@@ -1920,4 +1927,79 @@
 
 .calendar-day .exercise-preview {
   margin-bottom: 6px;
+}
+
+/* Drag handle visual indicator (⣿ icon inside cards) */
+.drag-handle {
+  cursor: grab;
+  color: #999;
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
+
+  &:hover {
+    color: #333;
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    cursor: grabbing !important;
+    color: #111;
+    background: rgba(0, 0, 0, 0.12);
+  }
+}
+
+
+/* ========= CUSTOM POINTER DRAG FOR CALENDAR WORKOUT DAYS ========= */
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.card-wrapper.is-pointer-drag-source,
+.day-card-wrapper.is-pointer-drag-source {
+  opacity: 0.35;
+}
+
+.calendar-pointer-drag-active,
+.calendar-pointer-drag-active * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.calendar-pointer-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999999;
+  pointer-events: none;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+  opacity: 0.96;
+}
+
+.cell-content,
+.week-column-body,
+.day-body {
+  min-height: 90px;
+}
+
+.cell-content.calendar-drop-target-active,
+.week-column-body.calendar-drop-target-active,
+.day-body.calendar-drop-target-active {
+  outline: 3px dashed #44b4df;
+  outline-offset: -4px;
+  background-color: rgba(68, 180, 223, 0.08);
 }

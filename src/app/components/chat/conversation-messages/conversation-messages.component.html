@@ -2,9 +2,10 @@
   <div class="chat-user" (click)="navigateTouserprofile()">
     <img
       [src]="
-                  selectedConversation?.avatar && selectedConversation?.avatar !== 'not found' && selectedConversation?.avatar !== ''
-                  ? selectedConversation.avatar
-                  : '/assets/images/photoprofilvierge.jpg'"
+        selectedConversation?.avatar && selectedConversation?.avatar !== 'not found' && selectedConversation?.avatar !== ''
+          ? selectedConversation.avatar
+          : '/assets/images/photoprofilvierge.jpg'
+      "
       alt="avatar"
       class="profile-img me-2"
     />
@@ -25,11 +26,10 @@
   </div>
   <div>
     <button class="back-btn" (click)="back.emit()" aria-label="Retour">
-        <i class="fas fa-arrow-left"></i>
+      <i class="fas fa-arrow-left"></i>
     </button>
     <button class="toggle-button" (click)="toggleSidebar()">✕</button>
   </div>
-
 </div>
 
 <div class="chat-messages" (scroll)="onScroll($event)">
@@ -38,10 +38,61 @@
     *ngFor="let msg of messages"
     [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
   >
-    <span class="message-sender" *ngIf="selectedConversation?.isGroup && msg.senderId !== currentUserId">{{ getSenderName(msg.senderId) }}</span>
-    <div class="message-content">
+    <span class="message-sender" *ngIf="selectedConversation?.isGroup && msg.senderId !== currentUserId">
+      {{ getSenderName(msg.senderId) }}
+    </span>
+
+    <ng-container [ngSwitch]="getMessageType(msg)">
+      <!-- TEXT -->
+      <div class="message-content" *ngSwitchCase="'TEXT'">
+        {{ msg.content }}
+      </div>
+
+      <!-- VOICE -->
+      <div class="message-content message-content--voice" *ngSwitchCase="'VOICE'">
+        <div class="voice-bubble">
+          <div class="voice-bubble__icon">🎙️</div>
+          <audio
+            class="voice-bubble__audio"
+            [src]="getAttachmentUrl(msg)"
+            controls
+            preload="metadata"
+          ></audio>
+          <span class="voice-bubble__duration">
+            {{ formatDuration(msg.durationSeconds) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- DOCUMENT -->
+      <button
+        type="button"
+        class="message-content message-content--doc"
+        *ngSwitchCase="'DOCUMENT'"
+        (click)="downloadDocument(msg, $event)"
+      >
+        <div class="doc-bubble">
+          <div class="doc-bubble__icon">📎</div>
+          <div class="doc-bubble__info">
+            <div class="doc-bubble__name">{{ msg.attachmentName || 'Document' }}</div>
+            <div class="doc-bubble__meta">
+              {{ msg.attachmentType || 'Document' }} {{ formatFileSize(msg.attachmentSize) }}
+            </div>
+          </div>
+          <div class="doc-bubble__download">⬇</div>
+        </div>
+      </button>
+
+      <!-- FALLBACK -->
+      <div class="message-content" *ngSwitchDefault>
+        {{ msg.content || msg.attachmentName || 'Message' }}
+      </div>
+    </ng-container>
+
+    <div class="message-caption" *ngIf="getMessageType(msg) === 'DOCUMENT' && msg.content">
       {{ msg.content }}
     </div>
+
     <div class="message-time">
       {{ msg.createdAt | date:'dd MMM yyyy, HH:mm' }}
     </div>
@@ -49,11 +100,54 @@
 </div>
 
 <div class="chat-input">
-  <input
-    type="text"
-    placeholder="Type a message..."
-    [(ngModel)]="messageText"
-    (keyup.enter)="sendMessage()"
-  />
-  <button (click)="sendMessage()">Send</button>
+  <input #documentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onDocumentSelected($event)" />
+
+  <div class="pending-attachment" *ngIf="pendingDocument">
+    <div class="pending-attachment__icon">📎</div>
+    <div class="pending-attachment__info">
+      <strong>{{ pendingDocument.name }}</strong>
+      <span>{{ formatFileSize(pendingDocument.size) }}</span>
+    </div>
+    <button type="button" class="pending-attachment__remove" (click)="removePendingDocument()">×</button>
+  </div>
+
+  <div class="attachment-error" *ngIf="attachmentError">{{ attachmentError }}</div>
+
+  <div class="chat-input__row">
+    <button
+      type="button"
+      class="chat-input__icon"
+      title="Send document"
+      (click)="documentInput.click()"
+      [disabled]="isUploadingAttachment"
+    >
+      +
+    </button>
+
+    <button
+      type="button"
+      class="chat-input__icon"
+      title="Voice message"
+      (click)="toggleVoiceRecording()"
+      [class.is-recording]="isRecordingVoice"
+      [disabled]="isUploadingAttachment"
+    >
+      {{ isRecordingVoice ? '■' : '🎙️' }}
+    </button>
+
+    <input
+      type="text"
+      [placeholder]="pendingDocument ? 'Ajouter un message...' : 'Type a message...'"
+      [(ngModel)]="messageText"
+      (keyup.enter)="sendMessage()"
+    />
+
+    <button
+      type="button"
+      (click)="sendMessage()"
+      [disabled]="isUploadingAttachment || (!messageText.trim() && !pendingDocument)"
+    >
+      Send
+    </button>
+  </div>
 </div>

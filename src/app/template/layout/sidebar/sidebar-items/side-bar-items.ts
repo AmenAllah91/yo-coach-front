@@ -283,6 +283,18 @@ export const items: RouteInfo[] = [
     ],
   },
   {
+    path: '/theme',
+    title: 'Theme',
+    iconType: 'feather',
+    icon: 'sliders',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: [],
+    roles: ['ROLE_COACH'],
+  },
+  {
     path: '/configuration',
     title: 'Settings',
     iconType: 'feather',

@@ -5,12 +5,18 @@
         <h2 class="np-h6">Nutrition Days</h2>
       </div>
 
-      <div class="np-aside__body">
+      <div
+        class="np-aside__body"
+        cdkDropList
+        [cdkDropListData]="days"
+        (cdkDropListDropped)="onDropDay($event)"
+      >
         <ng-container
           *ngFor="let d of days; trackBy: trackByDay; let i = index"
         >
           <button
             *ngIf="i === 0; else otherDay"
+            cdkDrag
             class="np-day"
             [class.is-active]="selectedDay?.id === d.id"
             (click)="selectDay(d)"
@@ -19,7 +25,7 @@
           </button>
 
           <ng-template #otherDay>
-            <div class="np-dayrow">
+            <div class="np-dayrow" cdkDrag>
               <button
                 class="np-day"
                 [class.is-active]="selectedDay?.id === d.id"
@@ -221,8 +227,14 @@
         <div class="np-subtle">Meals</div>
 
         <ng-container *ngIf="selectedDay">
+          <div
+            cdkDropList
+            [cdkDropListData]="selectedDay.meals"
+            (cdkDropListDropped)="onDropMeal($event)"
+          >
           <article
             class="np-meal"
+            cdkDrag
             *ngFor="let meal of selectedDay.meals; trackBy: trackByMeal"
           >
             <header class="np-meal__head">
@@ -379,6 +391,7 @@
               </div>
             </div>
           </article>
+          </div>
         </ng-container>
 
         <div class="np-grid-2">

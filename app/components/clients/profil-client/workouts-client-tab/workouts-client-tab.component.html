@@ -1,0 +1,86 @@
+<div class="tab-section-header">
+  <h2 class="section-title">Workout Programs</h2>
+  <button class="btn-assign-black" (click)="openAssignWorkout()">
+    Assign New Program
+  </button>
+</div>
+
+<div *ngFor="let program of workoutPlan" class="program-card">
+  <div class="program-card-top">
+    <div class="program-main">
+      <div class="program-icon program-icon-blue">
+        <i class="fas fa-dumbbell"></i>
+      </div>
+
+      <div class="program-text">
+        <div class="program-title-row">
+          <h5 class="program-name">{{ program.name }}</h5>
+
+          <span
+            class="status-pill"
+            [ngClass]="{
+              'status-pill--active': program.status === 'active',
+              'status-pill--upcoming': program.status === 'upcoming',
+              'status-pill--completed': program.status === 'completed'
+            }"
+          >
+            {{ program.status | titlecase }}
+          </span>
+        </div>
+
+        <div class="program-meta">
+          <span>
+            <i class="far fa-calendar-alt me-1"></i>
+            {{ program.startDate | date : "MMM dd, y" }} -
+            {{ program.endDate | date : "MMM dd, y" }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="program-actions">
+      <button class="icon-btn">
+        <i class="far fa-eye"></i>
+      </button>
+      <button class="icon-btn" (click)="editWorkout(program)">
+        <i class="far fa-edit"></i>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="program.status === 'active'" class="program-progress">
+    <div class="progress-bar-bg">
+      <div
+        class="progress-bar-fill"
+        [style.width.%]="program.progressPercent"
+      ></div>
+    </div>
+  </div>
+</div>
+
+<div class="pagination-wrapper">
+  <button
+    class="page-btn"
+    [disabled]="workoutPage === 0"
+    (click)="changeWorkoutPage(workoutPage - 1)"
+  >
+    &lt;
+  </button>
+
+  <button
+    *ngFor="let p of workoutPagesArray"
+    class="page-btn"
+    [class.page-btn--active]="p === workoutPage"
+    (click)="changeWorkoutPage(p)"
+  >
+    {{ p + 1 }}
+  </button>
+
+  <button
+    class="page-btn"
+    [disabled]="workoutPage === workoutTotalPages - 1"
+    (click)="changeWorkoutPage(workoutPage + 1)"
+  >
+    &gt;
+  </button>
+</div>

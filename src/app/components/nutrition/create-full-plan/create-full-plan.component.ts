@@ -6,12 +6,13 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { MealsService } from 'app/service/meals.service';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss'],
 })
@@ -270,6 +271,16 @@ export class CreateFullPlanComponent implements OnInit {
     this.selectedDay = this.days[Math.max(0, index - 1)] || null;
 
     this.recalcAllDays();
+  }
+
+  onDropDay(event: CdkDragDrop<MealDay[]>) {
+    moveItemInArray(this.days, event.previousIndex, event.currentIndex);
+  }
+
+  onDropMeal(event: CdkDragDrop<Meal[]>) {
+    if (!this.selectedDay) return;
+    moveItemInArray(this.selectedDay.meals, event.previousIndex, event.currentIndex);
+    this.recalcDayTargets(this.selectedDay);
   }
 
   removeFood(food: Food, meal: Meal) {

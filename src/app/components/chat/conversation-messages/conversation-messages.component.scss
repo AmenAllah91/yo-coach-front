@@ -330,3 +330,261 @@
 .chat-header__member-chip--more:hover {
   background: #e5e7eb;
 }
+
+/* ===== Attachments / voice support for client-side chat drawer ===== */
+.message-content--voice,
+.message-content--doc {
+  min-width: 260px;
+  max-width: min(420px, 80vw);
+}
+
+.voice-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.voice-bubble__icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.18);
+}
+
+.message.other .voice-bubble__icon {
+  background: #f3f4f6;
+}
+
+.voice-bubble__audio {
+  width: 190px;
+  height: 34px;
+}
+
+.voice-bubble__duration {
+  font-size: 12px;
+  opacity: .75;
+  white-space: nowrap;
+}
+
+.message-content--doc {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.doc-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+}
+
+.doc-bubble__icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.18);
+}
+
+.message.other .doc-bubble__icon {
+  background: #f3f4f6;
+}
+
+.doc-bubble__info {
+  min-width: 0;
+}
+
+.doc-bubble__name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-bubble__meta {
+  font-size: 12px;
+  opacity: .75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-input__icon {
+  width: 38px !important;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  color: #6b7280 !important;
+  font-size: 20px;
+}
+
+.chat-input__icon:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.chat-input__icon.is-recording {
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
+}
+
+.chat-input button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+
+.message-content--doc {
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+}
+
+.doc-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doc-bubble__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.doc-bubble__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-bubble__download {
+  margin-left: 8px;
+  opacity: .75;
+  font-weight: 700;
+}
+
+/* Fix composer always visible + Gmail-like pending attachment */
+.chat-input {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  height: auto !important;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.chat-input__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-input__row input {
+  flex: 1;
+}
+
+.pending-attachment {
+  width: min(420px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.pending-attachment__icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eaf8ff;
+  color: #39aeef;
+}
+
+.pending-attachment__info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pending-attachment__info strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #111827;
+}
+
+.pending-attachment__info span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pending-attachment__remove {
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.attachment-error {
+  font-size: 12px;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 7px 10px;
+}
+
+.message-caption {
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  word-break: break-word;
+}
+
+.message.me .message-caption {
+  background: #000;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.message.other .message-caption {
+  background: #e5e7eb;
+  color: #111827;
+  border-bottom-left-radius: 4px;
+}

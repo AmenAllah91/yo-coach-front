@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { ClientService, Client } from '../service/client.service';
+import { ClientService, Client, ClientStatus } from '../service/client.service';
 import { AuthService } from '../config/auth.service';
 import { environment } from '../../environments/environment';
 import { WorkoutPlanService } from '../service/workout-plan.service';
@@ -10,6 +10,13 @@ import { AddClientModalComponent } from '../components/clients/add-client-modal/
 import { DeleteClientModalComponent } from '../components/clients/delete-client-modal/delete-client-modal.component';
 import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
 import { Router } from '@angular/router';
+
+interface StatusCountResponse {
+  active: number;
+  paused: number;
+  archived: number;
+  total: number;
+}
 
 @Component({
   selector: 'app-clients',
@@ -29,12 +36,28 @@ export class ClientsComponent implements OnInit {
   clients: Client[] = [];
   filteredClients: Client[] = [];
   searchTerm: string = '';
+  statusFilter: ClientStatus | 'ALL' = 'ACTIVE';
+  programFilter = 'ALL';
+  goalFilter = 'ALL';
   showAddModal = false;
   showDeleteModal = false;
   selectedClient: Client | null = null;
   clientToDelete: Client | null = null;
   isLoading = false;
   openDropdownId: string | null = null;
+
+  showStatusModal = false;
+  statusModalClient: Client | null = null;
+  pendingStatus: ClientStatus | null = null;
+  isStatusUpdating = false;
+
+  activeClientLimit = 25;
+  statusCounts: StatusCountResponse = {
+    active: 0,
+    paused: 0,
+    archived: 0,
+    total: 0,
+  };
 
   // Pagination
   currentPage = 0;
@@ -63,7 +86,6 @@ export class ClientsComponent implements OnInit {
     const startTime = Date.now();
 
     try {
-      // Console log all user info from Keycloak
       console.log('=== KEYCLOAK USER INFO ===');
       console.log('Is logged in:', this.authService.isLoggedIn());
       console.log('Username:', this.authService.getUsername());
@@ -95,31 +117,34 @@ export class ClientsComponent implements OnInit {
         return;
       }
 
+      this.loadStatusCounts(coachId);
+
       console.log('Making API call to get clients for coachId:', coachId);
       console.log(
         'API URL will be:',
         `${environment.baseApiUrl}/gym_coaching/clients/coach/${coachId}`
       );
 
+      const statusParam = this.statusFilter === 'ALL' ? undefined : this.statusFilter;
+
       this.clientService
-        .getClientsByCoach(coachId, this.currentPage, this.pageSize)
+        .getClientsByCoach(coachId, this.currentPage, this.pageSize, statusParam)
         .subscribe({
           next: (response) => {
             const elapsed = Date.now() - startTime;
-            const minDelay = 800; // Minimum 800ms loading time
+            const minDelay = 800;
             const remainingDelay = Math.max(0, minDelay - elapsed);
 
             setTimeout(() => {
-              // Handle both paginated and non-paginated responses
               const clientsData = response.content || response;
-              this.clients = clientsData.map((client) => ({
+              this.clients = clientsData.map((client: Client) => ({
                 ...client,
-                workoutDates: this.generateRandomWorkoutDates(),
-                program: this.getRandomProgram(),
+                clientStatus: this.normalizeStatus(client.clientStatus),
+                workoutDates: client.workoutDates || this.generateRandomWorkoutDates(),
+                program: this.getClientProgram(client) || this.getRandomProgram(),
               }));
-              this.filteredClients = this.clients;
 
-              if (response.totalPages) {
+              if (response.totalPages !== undefined) {
                 this.totalPages = response.totalPages;
                 this.totalElements = response.totalElements;
                 this.currentPage = response.number;
@@ -128,6 +153,8 @@ export class ClientsComponent implements OnInit {
                 this.totalElements = this.clients.length;
                 this.currentPage = 0;
               }
+
+              this.applyFilters();
               this.isLoading = false;
             }, remainingDelay);
           },
@@ -154,20 +181,63 @@ export class ClientsComponent implements OnInit {
     }
   }
 
-  onSearch() {
-    if (!this.searchTerm) {
-      this.filteredClients = this.clients;
+  async loadStatusCounts(coachId?: string) {
+    const resolvedCoachId = coachId || (await this.authService.extractUserId());
+
+    if (!resolvedCoachId) {
       return;
     }
 
-    this.filteredClients = this.clients.filter(
-      (client) =>
-        client.firstName
-          .toLowerCase()
-          .includes(this.searchTerm.toLowerCase()) ||
-        client.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        client.email.toLowerCase().includes(this.searchTerm.toLowerCase())
-    );
+    this.clientService.getClientStatusCounts(resolvedCoachId).subscribe({
+      next: (counts) => {
+        this.statusCounts = {
+          active: counts.active || 0,
+          paused: counts.paused || 0,
+          archived: counts.archived || 0,
+          total: counts.total || 0,
+        };
+      },
+      error: (error) => console.error('Error loading client status counts:', error),
+    });
+  }
+
+  onSearch() {
+    this.applyFilters();
+  }
+
+  applyFilters() {
+    const term = this.searchTerm.trim().toLowerCase();
+
+    this.filteredClients = this.clients.filter((client) => {
+      const status = this.normalizeStatus(client.clientStatus);
+      const matchesStatus = this.statusFilter === 'ALL' || status === this.statusFilter;
+      const matchesSearch =
+        !term ||
+        client.firstName?.toLowerCase().includes(term) ||
+        client.lastName?.toLowerCase().includes(term) ||
+        client.email?.toLowerCase().includes(term);
+
+      const matchesProgram =
+        this.programFilter === 'ALL' || this.getClientProgram(client) === this.programFilter;
+
+      return matchesStatus && matchesSearch && matchesProgram;
+    });
+  }
+
+  setStatusFilter(status: ClientStatus) {
+    this.statusFilter = status;
+    this.currentPage = 0;
+    this.openDropdownId = null;
+    this.loadClients();
+  }
+
+  clearFilters() {
+    this.searchTerm = '';
+    this.programFilter = 'ALL';
+    this.goalFilter = 'ALL';
+    this.statusFilter = 'ACTIVE';
+    this.currentPage = 0;
+    this.loadClients();
   }
 
   previousPage() {
@@ -229,19 +299,16 @@ export class ClientsComponent implements OnInit {
 
         if (dropdown) {
           const buttonRect = button.getBoundingClientRect();
-          const dropdownHeight = 200; // Approximate dropdown height
+          const dropdownHeight = 200;
           const viewportHeight = window.innerHeight;
 
-          // Position dropdown
           if (buttonRect.bottom + dropdownHeight > viewportHeight) {
-            // Show above if not enough space below
             dropdown.style.top = `${buttonRect.top - dropdownHeight}px`;
           } else {
-            // Show below
             dropdown.style.top = `${buttonRect.bottom + 4}px`;
           }
 
-          dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
+          dropdown.style.left = `${buttonRect.right - 190}px`;
         }
       }, 0);
     }
@@ -250,6 +317,7 @@ export class ClientsComponent implements OnInit {
   deleteClient(client: Client) {
     this.clientToDelete = client;
     this.showDeleteModal = true;
+    this.openDropdownId = null;
   }
 
   confirmDelete() {
@@ -269,6 +337,140 @@ export class ClientsComponent implements OnInit {
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.clientToDelete = null;
+  }
+
+  openStatusModal(client: Client, status: ClientStatus, event?: Event) {
+    event?.stopPropagation();
+    this.statusModalClient = client;
+    this.pendingStatus = status;
+    this.showStatusModal = true;
+    this.openDropdownId = null;
+  }
+
+  closeStatusModal() {
+    if (this.isStatusUpdating) {
+      return;
+    }
+    this.showStatusModal = false;
+    this.statusModalClient = null;
+    this.pendingStatus = null;
+  }
+
+  confirmStatusChange() {
+    if (!this.statusModalClient?.id || !this.pendingStatus) {
+      return;
+    }
+
+    this.isStatusUpdating = true;
+
+    this.clientService.updateClientStatus(this.statusModalClient.id, this.pendingStatus).subscribe({
+      next: () => {
+        this.isStatusUpdating = false;
+        this.closeStatusModal();
+        this.loadClients();
+      },
+      error: (error) => {
+        console.error('Error updating client status:', error);
+        this.isStatusUpdating = false;
+      },
+    });
+  }
+
+  getStatusModalTitle(): string {
+    switch (this.pendingStatus) {
+      case 'PAUSED':
+        return 'Pause client?';
+      case 'ARCHIVED':
+        return 'Archive client?';
+      case 'ACTIVE':
+        return 'Reactivate client?';
+      default:
+        return 'Update client?';
+    }
+  }
+
+  getStatusModalDescription(): string {
+    switch (this.pendingStatus) {
+      case 'PAUSED':
+        return 'Paused clients stay in your database, keep their history, and do not count toward billing. Use this for temporary breaks.';
+      case 'ARCHIVED':
+        return 'Archived clients stay in your database, keep their history, and no longer count toward billing. You can reactivate them later.';
+      case 'ACTIVE':
+        return 'This client will become active again and will count toward your plan usage.';
+      default:
+        return '';
+    }
+  }
+
+  getStatusConfirmLabel(): string {
+    switch (this.pendingStatus) {
+      case 'PAUSED':
+        return 'Pause';
+      case 'ARCHIVED':
+        return 'Archive';
+      case 'ACTIVE':
+        return 'Reactivate';
+      default:
+        return 'Confirm';
+    }
+  }
+
+  getStatusModalIcon(): string {
+    switch (this.pendingStatus) {
+      case 'PAUSED':
+        return 'pause-circle';
+      case 'ARCHIVED':
+        return 'archive';
+      case 'ACTIVE':
+        return 'rotate-ccw';
+      default:
+        return 'info';
+    }
+  }
+
+  getStatusModalClass(): string {
+    return (this.pendingStatus || 'ACTIVE').toLowerCase();
+  }
+
+  getAlternativeText(): string {
+    if (this.pendingStatus === 'ARCHIVED') {
+      return 'Alternative: use Pause client for temporary breaks.';
+    }
+
+    if (this.pendingStatus === 'PAUSED') {
+      return 'Use Archive client only when the coaching relationship is finished.';
+    }
+
+    return 'Only active clients count toward your plan.';
+  }
+
+  getActiveProgressWidth(): number {
+    if (!this.activeClientLimit) {
+      return 0;
+    }
+
+    return Math.min(100, Math.round((this.statusCounts.active / this.activeClientLimit) * 100));
+  }
+
+  getRemainingActiveSlots(): number {
+    return Math.max(0, this.activeClientLimit - this.statusCounts.active);
+  }
+
+  normalizeStatus(status?: string | null): ClientStatus {
+    if (status === 'PAUSED' || status === 'ARCHIVED') {
+      return status;
+    }
+
+    return 'ACTIVE';
+  }
+
+  getClientStatus(client: Client): ClientStatus {
+    return this.normalizeStatus(client.clientStatus);
+  }
+
+  getClientStatusLabel(client: Client): string {
+    const status = this.getClientStatus(client);
+    return status.charAt(0) + status.slice(1).toLowerCase();
   }
 
   createWorkoutPlan(client: Client) {
@@ -371,24 +573,35 @@ export class ClientsComponent implements OnInit {
     return date.getDate();
   }
 
-  getClientStatus(client: Client): string {
-    const recentWorkouts = client.workoutDates?.filter((date) => {
-      const workoutDate = new Date(date);
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      return workoutDate >= threeDaysAgo;
-    });
-
-    return recentWorkouts && recentWorkouts.length > 0 ? 'Active' : 'Inactive';
-  }
-
   getRandomProgram(): string {
     const programs = ['Push Pull', 'Full Body', 'Upper Lower', 'PPL Split'];
     return programs[Math.floor(Math.random() * programs.length)];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getClientProgram(client: any): string {
-    return client.program || '';
+    return client.currentProgramName || client.lastProgramName || client.program || '';
+  }
+
+  getProgramOptions(): string[] {
+    const programs = this.clients
+      .map((client) => this.getClientProgram(client))
+      .filter((program) => !!program);
+
+    return Array.from(new Set(programs));
+  }
+
+  onCreateClient(client: Client) {
+    const newClient = {
+      ...client,
+      clientStatus: 'ACTIVE' as ClientStatus,
+    };
+
+    this.clientService.createClient(newClient).subscribe({
+      next: () => {
+        this.closeAddModal();
+        this.loadClients();
+      },
+      error: (error) => console.error('Error creating client:', error),
+    });
   }
 }

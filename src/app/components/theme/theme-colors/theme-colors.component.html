@@ -1,0 +1,229 @@
+<div class="theme-builder-page">
+<header class="top-bar">
+  <button type="button" class="close-btn" aria-label="Close">×</button>
+
+  <h1>Customize your app</h1>
+
+  <div class="top-actions">
+    <span *ngIf="saving" class="saving-indicator">Saving...</span>
+  </div>
+</header>
+
+  <div *ngIf="error" class="alert error">{{ error }}</div>
+  <div *ngIf="success" class="alert success">{{ success }}</div>
+
+  <div class="builder-layout">
+    <!-- LEFT CONFIG -->
+    <aside class="left-panel">
+      <div class="panel-heading">
+        <h3>Theme Settings</h3>
+        <p>Customize mobile app colors</p>
+      </div>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'branding'"
+        (click)="activeColorSection = 'branding'"
+      >
+        <span class="item-icon">◎</span>
+        <span>Logo</span>
+      </button>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'templates'"
+        (click)="activeColorSection = 'templates'"
+      >
+        <span class="item-icon">◐</span>
+        <span>Templates</span>
+      </button>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'brand'"
+        (click)="activeColorSection = 'brand'"
+      >
+        <span class="item-icon">●</span>
+        <span>Brand Colors</span>
+      </button>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'background'"
+        (click)="activeColorSection = 'background'"
+      >
+        <span class="item-icon">▣</span>
+        <span>Background & Cards</span>
+      </button>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'text'"
+        (click)="activeColorSection = 'text'"
+      >
+        <span class="item-icon">T</span>
+        <span>Text Colors</span>
+      </button>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'status'"
+        (click)="activeColorSection = 'status'"
+      >
+        <span class="item-icon">✓</span>
+        <span>Status Colors</span>
+      </button>
+
+      <button
+        type="button"
+        class="config-item"
+        [class.active]="activeColorSection === 'navigation'"
+        (click)="activeColorSection = 'navigation'"
+      >
+        <span class="item-icon">≡</span>
+        <span>Navigation & Header</span>
+      </button>
+    </aside>
+
+    <!-- CENTER PREVIEW -->
+    <main class="preview-area">
+      <div class="flutter-preview-wrapper">
+        <iframe
+          #flutterPreview
+          class="flutter-preview-frame"
+          [src]="flutterPreviewUrl"
+          (load)="onFlutterIframeLoaded()"
+        ></iframe>
+      </div>
+
+      <p class="preview-label">Live Flutter Preview</p>
+    </main>
+
+    <!-- RIGHT SETTINGS -->
+    <aside class="right-panel">
+      <div class="settings-header">
+        <h3>Basic Settings</h3>
+        <p>Choose theme colors and templates to quickly customize your app.</p>
+      </div>
+
+      <label class="theme-name-field">
+        <span>Theme name</span>
+        <input type="text" [(ngModel)]="selectedTheme.name" />
+      </label>
+
+      <div class="branding-section" *ngIf="activeColorSection === 'branding'">
+        <h4>Mobile logo</h4>
+        <p>Upload the logo shown in the client mobile app header.</p>
+
+        <div class="logo-upload-card">
+          <div class="logo-preview-box">
+            <img
+              *ngIf="selectedTheme.mobileLogoUrl"
+              [src]="getLogoPreviewUrl(selectedTheme.mobileLogoUrl)"
+              alt="Mobile logo preview"
+            />
+
+            <div *ngIf="!selectedTheme.mobileLogoUrl" class="logo-empty-state">
+              No logo uploaded
+            </div>
+          </div>
+
+          <label class="upload-logo-btn">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              (change)="onMobileLogoSelected($event)"
+              hidden
+            />
+
+            {{ uploadingLogo ? 'Uploading...' : 'Upload logo' }}
+          </label>
+
+          <button
+            type="button"
+            class="remove-logo-btn"
+            *ngIf="selectedTheme.mobileLogoUrl"
+            (click)="removeMobileLogo()"
+            [disabled]="uploadingLogo"
+          >
+            Remove logo
+          </button>
+
+          <small>Recommended: transparent PNG or SVG, max 2MB.</small>
+        </div>
+      </div>
+
+      <div class="template-section" *ngIf="activeColorSection === 'templates'">
+        <h4>Templates</h4>
+        <p>Select from predefined templates or design custom colors.</p>
+
+        <button
+          type="button"
+          class="template-card"
+          *ngFor="let preset of presets"
+          [class.selected]="selectedPreset === preset.name"
+          (click)="applyPreset(preset)"
+        >
+          <span class="template-circle">
+            <i [style.background]="preset.primary"></i>
+            <i [style.background]="preset.secondary"></i>
+          </span>
+
+          {{ preset.name }}
+        </button>
+      </div>
+
+      <div class="colors-section" *ngIf="activeColorSection !== 'templates'">
+        <h4>{{ getSectionTitle() }}</h4>
+
+        <div class="color-row" *ngFor="let control of visibleControls; trackBy: trackByControl">
+          <div>
+            <strong>{{ control.label }}</strong>
+            <small>{{ control.key }}</small>
+          </div>
+
+          <div class="color-picker">
+            <input
+              type="color"
+              [ngModel]="getColor(control.key)"
+              (ngModelChange)="setColor(control.key, $event)"
+            />
+
+            <input
+              type="text"
+              [ngModel]="getColor(control.key)"
+              (ngModelChange)="setColor(control.key, $event)"
+              (blur)="normalizeHex(control.key)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-actions-card">
+        <button
+          type="button"
+          class="action-btn light"
+          (click)="resetToDefaultColors()"
+          [disabled]="saving"
+        >
+          Reset to default colors
+        </button>
+
+        <button
+          type="button"
+          class="action-btn dark"
+          (click)="saveAndUseTheme()"
+          [disabled]="saving"
+        >
+          {{ saving ? 'Saving...' : 'Save & use this theme' }}
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>

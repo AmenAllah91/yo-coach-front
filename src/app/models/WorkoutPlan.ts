@@ -34,14 +34,18 @@ export enum Equipment {
   BODYWEIGHT = 'BODYWEIGHT'
 }
 
+export type WorkoutSetType = 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
+
 // -------------------------
 // 📌 EXERCISE SET (si utilisé)
 // -------------------------
 export interface ExerciseSet {
+  setNumber?: number;
   reps?: number;
-  weight?: number;
+  weight?: number | null;
   duration?: number;
   rest?: number;
+  type?: WorkoutSetType;
 }
 
 // -------------------------
@@ -112,6 +116,16 @@ export interface WorkoutPlan {
   isWorkoutPlanTemplate?: boolean;
   typeWorkoutPlan?: TypeWorkoutPlan;
   createdBy?: string;
+
+  workoutPlanMode?: 'NORMAL' | 'FILE' | string;
+  resourceType?: string;
+  fileName?: string;
+  originalFileName?: string;
+  fileUrl?: string;
+  fileContentType?: string;
+  fileSizeBytes?: number;
+  fileUploadedAt?: string;
+  sourceWorkoutPlanId?: string;
 }
 
 interface SaveWorkoutDayRequest {
@@ -131,9 +145,11 @@ interface SaveWorkoutExerciseRequest {
 interface SaveWorkoutSetRequest {
   setNumber: number;
   reps: number | null;
+  weight?: number | null;
   duration?: number;
   restMin: number;
   restSec: number;
+  type?: 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
 }
 
 interface UpdateWorkoutDayRequest extends SaveWorkoutDayRequest {}

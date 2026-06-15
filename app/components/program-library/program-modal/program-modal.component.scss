@@ -1,0 +1,387 @@
+.create-program-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.create-program-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f0f9ff;
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  overflow-y: auto;
+
+  .sidebar-header {
+    margin-bottom: 1.5rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+  }
+
+  .days-list {
+    .day-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: white;
+      border: 1px solid #e2e8f0;
+
+      &:hover {
+        background: #f8fafc;
+      }
+
+      &.active {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        color: #1e40af;
+      }
+
+      .day-name {
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+
+      .remove-day-btn {
+        background: none;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        opacity: 1;
+        transition: all 0.2s ease;
+
+        &:hover {
+          color: #dc2626;
+        }
+      }
+    }
+
+    .add-day-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem;
+      background: white;
+      border: 1px dashed #d1d5db;
+      border-radius: 6px;
+      color: #6b7280;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+      }
+    }
+  }
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  .header-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      width: 40px;
+
+      &:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+      }
+    }
+
+    .header-title {
+      flex: 1;
+      text-align: center;
+
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+    }
+
+    .header-spacer {
+      width: 40px;
+    }
+  }
+
+  .form-section {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+
+    .form-container {
+      width: 100%;
+      max-width: 800px;
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+
+        label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          color: #374151;
+
+          .required {
+            color: #dc2626;
+          }
+
+          .remove-description-btn {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+
+            &:hover {
+              background: #f1f5f9;
+              color: #dc2626;
+            }
+          }
+        }
+
+        .program-title-input, .date-input, .select-input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 1rem;
+
+          &:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+        }
+
+        .program-description-input, .day-description-input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 2px solid #3b82f6;
+          border-radius: 8px;
+          font-size: 1rem;
+          resize: vertical;
+          min-height: 100px;
+
+          &:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+        }
+
+        .add-description-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: none;
+          border: none;
+          color: #3b82f6;
+          cursor: pointer;
+          font-weight: 500;
+          padding: 0.5rem 0;
+
+          &:hover {
+            color: #1d4ed8;
+          }
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          margin: 0;
+          justify-content: flex-start;
+
+          .checkbox-input {
+            width: 18px;
+            height: 18px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+            order: 1;
+          }
+
+          .checkbox-text {
+            font-weight: 500;
+            color: #374151;
+            font-size: 1rem;
+            order: 2;
+          }
+        }
+      }
+
+      .day-content {
+        .day-header {
+          margin-bottom: 2rem;
+
+          h2 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 0 1rem 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+
+            .edit-icon {
+              color: #64748b;
+              cursor: pointer;
+
+              &:hover {
+                color: #3b82f6;
+              }
+            }
+          }
+
+          .day-description-section {
+            margin-top: 1rem;
+          }
+        }
+
+        .exercises-section {
+          h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+          }
+
+          .exercises-content {
+            .no-exercises {
+              background: #f8fafc;
+              border-radius: 12px;
+              padding: 2rem;
+              text-align: center;
+              min-height: 200px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 1rem;
+
+              p {
+                margin: 0;
+                color: #64748b;
+                font-size: 1rem;
+              }
+            }
+
+            .add-exercise-btn {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.75rem 1.5rem;
+              background: #e0f2fe;
+              border: none;
+              border-radius: 8px;
+              color: #0ea5e9;
+              cursor: pointer;
+              font-weight: 500;
+              transition: all 0.2s ease;
+              width: 100%;
+              justify-content: center;
+              margin-top: 1rem;
+
+              &:hover {
+                background: #bae6fd;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .save-section {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+
+    .save-program-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 1rem 2rem;
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #1e293b;
+      }
+    }
+  }
+}

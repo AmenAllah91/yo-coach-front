@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import {FormsModule} from "@angular/forms";
 import {CommonModule} from "@angular/common";
 import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
+import { WorkoutService } from 'app/service/workout.service';
+import { NutritionService } from 'app/service/nutrition.service';
 type Direction = 'prev' | 'next';
 interface Coach {
   name: string;
@@ -54,7 +56,11 @@ type CheckInQuestion =
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss'
 })
-export class ClientDashboardComponent {
+export class ClientDashboardComponent implements OnInit {
+  constructor(
+    private workoutService: WorkoutService,
+    private nutritionService: NutritionService
+  ) {}
   today = new Date()
   currentDate = new Date()
   userId = sessionStorage.getItem('userId') || ''
@@ -151,13 +157,62 @@ export class ClientDashboardComponent {
     },
   }
 
+
+  loadingTodayData = false
+  todayWorkout: any = null
+  todayNutrition: any = null
+  workoutDates: string[] = []
+
+  ngOnInit(): void {
+    this.loadTodayData()
+  }
+
+  loadTodayData(): void {
+    if (!this.userId) return
+
+    this.loadingTodayData = true
+    this.workoutService.getWorkoutPlansByClient(this.userId).subscribe({
+      next: (plans: any[]) => {
+        this.todayWorkout = this.findWorkoutForDate(plans || [], this.currentDate)
+        this.workoutDates = this.extractWorkoutDates(plans || [])
+        this.loadingTodayData = false
+      },
+      error: () => {
+        this.todayWorkout = null
+        this.workoutDates = []
+        this.loadingTodayData = false
+      },
+    })
+
+    this.nutritionService.getNutritionPlanByClientId(this.userId).subscribe({
+      next: (plans: any[]) => {
+        this.todayNutrition = this.findNutritionForDate(plans || [], this.currentDate)
+      },
+      error: () => {
+        this.todayNutrition = null
+      },
+    })
+  }
+
   // ✅ getters (évite la logique dans le template)
   get dateKey(): string {
     return this.getDateKey(this.currentDate)
   }
 
   get currentTasks(): any {
-    return this.tasksData[this.dateKey] || this.tasksData['2025-01-15']
+    return {
+      checkIn: this.tasksData[this.dateKey]?.checkIn || this.tasksData['2025-01-15'].checkIn,
+      workout: this.toWorkoutTask(this.todayWorkout),
+      nutrition: this.toNutritionTask(this.todayNutrition),
+    }
+  }
+
+  get hasWorkoutToday(): boolean {
+    return !!this.todayWorkout
+  }
+
+  get hasNutritionToday(): boolean {
+    return !!this.todayNutrition
   }
 
   get weekDays(): Date[] {
@@ -194,18 +249,20 @@ export class ClientDashboardComponent {
   }
 
   getDateKey(date: Date): string {
-    // YYYY-MM-DD
-    return date.toISOString().split('T')[0]
+    // local YYYY-MM-DD, same day as mobile calendar
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   }
 
   changeWeek(direction: 'prev' | 'next'): void {
     const newDate = new Date(this.currentDate)
     newDate.setDate(this.currentDate.getDate() + (direction === 'next' ? 7 : -7))
     this.currentDate = newDate
+    this.loadTodayData()
   }
 
   selectDay(date: Date): void {
     this.currentDate = date
+    this.loadTodayData()
   }
 
   openCheckIn(): void {
@@ -237,6 +294,126 @@ export class ClientDashboardComponent {
     console.log('Submitting check-in:', this.checkInAnswers)
     this.showCheckInModal = false
     this.checkInAnswers = {}
+  }
+
+
+  private normalizeDate(date: any): Date | null {
+    if (!date) return null
+    const d = new Date(date)
+    return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  }
+
+  private findWorkoutForDate(plans: any[], targetDate: Date): any | null {
+    const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime()
+
+    for (const plan of plans) {
+      const days = plan?.workoutDays || []
+      for (const day of days) {
+        const dayDate = this.normalizeDate(day?.date) || this.scheduledDateFromPlan(plan, day)
+        if (dayDate && dayDate.getTime() === target) {
+          return { plan, day }
+        }
+      }
+    }
+
+    return null
+  }
+
+  private findNutritionForDate(plans: any[], targetDate: Date): any | null {
+    const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime()
+
+    for (const plan of plans) {
+      const days = plan?.mealDays || []
+      for (const day of days) {
+        const dayDate = this.normalizeDate(day?.date) || this.scheduledDateFromPlan(plan, day)
+        if (dayDate && dayDate.getTime() === target) {
+          return { plan, day }
+        }
+      }
+    }
+
+    return null
+  }
+
+
+  private scheduledDateFromPlan(plan: any, day: any): Date | null {
+    const start = this.normalizeDate(plan?.startDate)
+    const dayNumber = Number(day?.dayNumber)
+    if (!start || !Number.isFinite(dayNumber) || dayNumber <= 0) return null
+    const d = new Date(start)
+    d.setDate(start.getDate() + dayNumber - 1)
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  }
+
+  private extractWorkoutDates(plans: any[]): string[] {
+    const dates = new Set<string>()
+    for (const plan of plans) {
+      for (const day of plan?.workoutDays || []) {
+        const d = this.normalizeDate(day?.date) || this.scheduledDateFromPlan(plan, day)
+        if (d) dates.add(this.getDateKey(d))
+      }
+    }
+    return Array.from(dates)
+  }
+
+  hasWorkoutOn(date: Date): boolean {
+    return this.workoutDates.includes(this.getDateKey(date))
+  }
+
+  private toWorkoutTask(item: any): any {
+    if (!item) {
+      return {
+        name: 'No workout planned',
+        program: 'No session scheduled for this day',
+        exercises: [],
+        totalExercises: 0,
+      }
+    }
+
+    const plan = item.plan || {}
+    const day = item.day || {}
+    const sessions = day.workoutSessions || []
+    const exercises = sessions.flatMap((session: any) => session?.exercises || [])
+
+    return {
+      name: day.title || day.name || plan.name || 'Workout',
+      program: plan.name || 'Programme d’entraînement',
+      exercises: exercises.map((ex: any, index: number) => ({
+        label: ex?.type === 'CARDIO' ? '🔥' : String(index + 1),
+        name: ex?.name || ex?.exerciseName || 'Exercise',
+      })),
+      totalExercises: exercises.length,
+    }
+  }
+
+  private toNutritionTask(item: any): any {
+    if (!item) {
+      return {
+        planName: 'No nutrition plan',
+        program: 'No active nutrition plan for this day',
+        meals: 0,
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      }
+    }
+
+    const plan = item.plan || {}
+    const day = item.day || {}
+    const targets = day.dayTargets || {}
+    const meals = day.meals || []
+    const sum = (field: string) => meals.reduce((total: number, meal: any) => total + Number(meal?.[field] || 0), 0)
+
+    return {
+      planName: day.name || plan.name || 'Nutrition plan',
+      program: plan.name || 'Objectif nutritionnel quotidien',
+      meals: meals.length,
+      calories: day.totalCalories || sum('calories') || targets.calories || 0,
+      protein: day.totalProtein || sum('protein') || targets.proteinG || 0,
+      carbs: day.totalCarbs || sum('carbs') || targets.carbsG || 0,
+      fat: day.totalFat || sum('fat') || targets.fatG || 0,
+    }
   }
 
   // trackBy

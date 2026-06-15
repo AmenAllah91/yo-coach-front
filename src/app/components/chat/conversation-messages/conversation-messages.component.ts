@@ -5,12 +5,13 @@ import {ChatService} from "../../../service/chat.service";
 import {AuthService} from "@config/auth.service";
 import {ChatWebsocketService} from "../../../service/chat-websocket.service";
 import {FormsModule} from "@angular/forms";
-import {DatePipe, NgClass, NgForOf, NgIf} from "@angular/common";
+import {DatePipe, NgClass, NgForOf, NgIf, NgSwitch, NgSwitchCase, NgSwitchDefault} from "@angular/common";
 import {NotificationService} from "../../../service/notification.service";
 import {Router} from "@angular/router";
 import {UsersService} from "../../../service/users.service";
 import {forkJoin, of} from "rxjs";
 import {catchError, map} from "rxjs/operators";
+import { environment } from "@env/environment";
 
 export interface Member { id: string; name: string; avatar: string; }
 
@@ -22,7 +23,10 @@ export interface Member { id: string; name: string; avatar: string; }
     NgClass,
     NgForOf,
     DatePipe,
-    NgIf
+    NgIf,
+    NgSwitch,
+    NgSwitchCase,
+    NgSwitchDefault
   ],
   templateUrl: './conversation-messages.component.html',
   styleUrl: './conversation-messages.component.scss'
@@ -46,6 +50,16 @@ export class ConversationMessagesComponent implements OnInit{
 
 
   messageText: string = '';
+
+  isUploadingAttachment = false;
+  pendingDocument: File | null = null;
+  attachmentError = '';
+  readonly acceptedDocumentExtensions = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp';
+  private readonly acceptedDocumentExtensionList = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'];
+  isRecordingVoice = false;
+  private mediaRecorder?: MediaRecorder;
+  private recordedChunks: Blob[] = [];
+  private recordingStartedAt = 0;
 
   constructor(private chatService: ChatService,
               private wsService: ChatWebsocketService,
@@ -115,8 +129,20 @@ export class ConversationMessagesComponent implements OnInit{
   }
 
   sendMessage() {
+    if (this.isUploadingAttachment || this.isRecordingVoice) return;
+
     const text = this.messageText.trim();
+
+    if (this.pendingDocument) {
+      const file = this.pendingDocument;
+      this.pendingDocument = null;
+      this.messageText = '';
+      this.uploadAttachment(file, 'DOCUMENT', undefined, text);
+      return;
+    }
+
     if (!text) return;
+
     this.chatService.sendMessage(this.selectedConversation.id, text, this.currentUserId);
     this.sendNotificationMessage([this.selectedConversation.clientId,this.selectedConversation.coachId]);
 
@@ -193,6 +219,219 @@ export class ConversationMessagesComponent implements OnInit{
     if (isNearBottom) {
       this.scrollToBottom();
     }
+  }
+
+
+
+  getMessageType(msg: ChatMessage): 'TEXT' | 'VOICE' | 'DOCUMENT' {
+    const value = (msg?.type || 'TEXT').toString().trim().toUpperCase();
+
+    if (value === 'VOICE' || value === 'AUDIO') return 'VOICE';
+    if (value === 'DOCUMENT' || value === 'DOC' || value === 'FILE' || value === 'ATTACHMENT') return 'DOCUMENT';
+
+    // Safety: if backend forgot type but sent an attachment, infer it from mime type/url.
+    const attachmentType = (msg?.attachmentType || '').toLowerCase();
+    const attachmentUrl = (msg?.attachmentUrl || '').toLowerCase();
+
+    if (attachmentType.startsWith('audio/') || attachmentUrl.endsWith('.webm') || attachmentUrl.endsWith('.mp3') || attachmentUrl.endsWith('.wav') || attachmentUrl.endsWith('.m4a')) {
+      return 'VOICE';
+    }
+
+    if (msg?.attachmentUrl) return 'DOCUMENT';
+
+    return 'TEXT';
+  }
+
+  getAttachmentUrl(msg: ChatMessage): string {
+    const url = msg?.attachmentUrl || '';
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) {
+      return url;
+    }
+    return `${environment.baseApiUrl}${url.startsWith('/') ? url : '/' + url}`;
+  }
+
+  formatDuration(seconds?: number): string {
+    const total = Math.max(0, Math.round(Number(seconds || 0)));
+    const min = Math.floor(total / 60);
+    const sec = total % 60;
+    return `${min}:${String(sec).padStart(2, '0')}`;
+  }
+
+  formatFileSize(size?: number): string {
+    const bytes = Number(size || 0);
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  onDocumentSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    if (!this.isAcceptedDocument(file)) {
+      this.pendingDocument = null;
+      this.attachmentError = 'Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.';
+      return;
+    }
+
+    this.attachmentError = '';
+    this.pendingDocument = file;
+  }
+
+  removePendingDocument(): void {
+    this.pendingDocument = null;
+    this.attachmentError = '';
+  }
+
+  private isAcceptedDocument(file: File): boolean {
+    const extension = this.getFileExtension(file.name);
+    return this.acceptedDocumentExtensionList.includes(extension);
+  }
+
+  private getFileExtension(fileName: string): string {
+    return (fileName.split('.').pop() || '').toLowerCase();
+  }
+
+  async toggleVoiceRecording(): Promise<void> {
+    if (this.isRecordingVoice) {
+      this.stopVoiceRecording();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.recordedChunks = [];
+      this.recordingStartedAt = Date.now();
+      this.mediaRecorder = new MediaRecorder(stream);
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
+        const blob = new Blob(this.recordedChunks, { type: mimeType });
+        const duration = Math.max(1, Math.round((Date.now() - this.recordingStartedAt) / 1000));
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: mimeType });
+
+        stream.getTracks().forEach(track => track.stop());
+        this.isRecordingVoice = false;
+
+        if (blob.size > 0) {
+          this.uploadAttachment(file, 'VOICE', duration);
+        }
+      };
+
+      this.mediaRecorder.start();
+      this.isRecordingVoice = true;
+    } catch (error) {
+      console.error('Microphone permission / recording failed:', error);
+      this.isRecordingVoice = false;
+    }
+  }
+
+  stopVoiceRecording(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+  }
+
+  private uploadAttachment(file: File, type: 'VOICE' | 'DOCUMENT', durationSeconds?: number, content?: string): void {
+    if (!this.selectedConversation?.id || !this.currentUserId) return;
+
+    this.isUploadingAttachment = true;
+
+    this.chatService
+      .uploadAttachment(
+        this.selectedConversation.id,
+        this.currentUserId,
+        type,
+        file,
+        durationSeconds,
+        content
+      )
+      .subscribe({
+        next: (msg) => {
+          this.isUploadingAttachment = false;
+
+          const normalizedMsg: ChatMessage = {
+            ...msg,
+            type: msg.type || type,
+            attachmentName: msg.attachmentName || file.name,
+            attachmentType: msg.attachmentType || file.type,
+            attachmentSize: msg.attachmentSize || file.size,
+          };
+
+          const exists = this.messages.some(m => m.id === normalizedMsg.id);
+          if (!exists) {
+            this.messages = [...this.messages, normalizedMsg];
+            this.selectedConversation = {
+              ...this.selectedConversation,
+              messages: [...(this.selectedConversation.messages || []), normalizedMsg],
+              lastMessage: type === 'DOCUMENT'
+                ? (content || `📎 ${normalizedMsg.attachmentName || 'Document'}`)
+                : '🎤 Voice message',
+            } as Conversation;
+            setTimeout(() => this.scrollToBottom(), 0);
+          }
+
+          this.sendNotificationMessage([this.selectedConversation.clientId, this.selectedConversation.coachId]);
+        },
+        error: (err) => {
+          this.isUploadingAttachment = false;
+          console.error('Attachment upload failed:', err);
+          alert('Upload failed - Status: ' + (err.status || 'unknown') + '\nMessage: ' + (err.message || 'unknown') + '\nCheck console for details.');
+        },
+      });
+  }
+
+
+  downloadDocument(msg: ChatMessage, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const attachmentUrl = msg?.attachmentUrl || '';
+    if (!attachmentUrl) {
+      console.error('Document download failed: missing attachmentUrl', msg);
+      return;
+    }
+
+    const fileName = msg?.attachmentName || this.extractFileNameFromUrl(attachmentUrl) || 'document';
+
+    this.chatService.downloadAttachment(attachmentUrl, fileName).subscribe({
+      next: (blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(blobUrl);
+      },
+      error: (err) => {
+        console.error('Document download failed:', err);
+
+        // fallback: open static URL if the download endpoint is not reachable
+        const fallbackUrl = this.getAttachmentUrl(msg);
+        if (fallbackUrl) {
+          window.open(fallbackUrl, '_blank');
+        }
+      }
+    });
+  }
+
+  private extractFileNameFromUrl(url: string): string {
+    if (!url) return '';
+    const cleanUrl = url.split('?')[0];
+    const parts = cleanUrl.split('/').filter(Boolean);
+    return decodeURIComponent(parts[parts.length - 1] || 'document');
   }
 
   navigateTouserprofile(){

@@ -52,4 +52,14 @@ export interface WorkoutPlan {
   totalDays?: number;
   currentDay?: number;
   progressPercent?: number;
+
+  workoutPlanMode?: 'NORMAL' | 'FILE' | string;
+  resourceType?: string;
+  fileName?: string;
+  originalFileName?: string;
+  fileUrl?: string;
+  fileContentType?: string;
+  fileSizeBytes?: number;
+  fileUploadedAt?: string;
+  sourceWorkoutPlanId?: string;
 }

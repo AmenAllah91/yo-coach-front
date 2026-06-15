@@ -20,16 +20,19 @@ export class ModalAssignToclientComponent implements OnInit {
   constructor(private clientService: ClientService) {}
   // Nom du programme affiché sous le titre
   @Input() programName = '';
+  @Input() showEndDate = false;
 
   // Events vers le parent
   @Output() closeModal = new EventEmitter<void>();
   @Output() assignProgram = new EventEmitter<{
     date: string;
+    endDate?: string;
     clients: Client[];
   }>();
   @Output() cancel = new EventEmitter<void>();
 
   startDate = '';
+  endDate = '';
   selectedClients: Client[] = [];
   searchTerm = '';
 
@@ -95,6 +98,9 @@ export class ModalAssignToclientComponent implements OnInit {
   }
 
   get assignDisabled(): boolean {
+    if (this.showEndDate) {
+      return !this.startDate || !this.endDate || this.selectedCount === 0;
+    }
     return !this.startDate || this.selectedCount === 0;
   }
 
@@ -112,6 +118,7 @@ export class ModalAssignToclientComponent implements OnInit {
 
     this.assignProgram.emit({
       date: this.startDate,
+      endDate: this.showEndDate ? this.endDate : undefined,
       clients: this.selectedClients,
     });
   }

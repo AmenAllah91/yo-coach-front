@@ -14,15 +14,43 @@
   </div>
 
   <div class="content">
-    <div class="search-section">
+
+    <div class="filters-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
         <input
           type="text"
-          placeholder="Search clients"
+          placeholder="Search clients..."
           [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
+
+    </div>
+
+    <div class="status-tabs">
+      <button
+        class="status-tab active-tab"
+        [class.selected]="statusFilter === 'ACTIVE'"
+        (click)="setStatusFilter('ACTIVE')">
+        Active <span>{{ statusCounts.active }}</span>
+      </button>
+      <button
+        class="status-tab paused-tab"
+        [class.selected]="statusFilter === 'PAUSED'"
+        (click)="setStatusFilter('PAUSED')">
+        Paused <span>{{ statusCounts.paused }}</span>
+      </button>
+      <button
+        class="status-tab archived-tab"
+        [class.selected]="statusFilter === 'ARCHIVED'"
+        (click)="setStatusFilter('ARCHIVED')">
+        Archived <span>{{ statusCounts.archived }}</span>
+      </button>
+    </div>
+
+    <div class="helper-line">
+      <i-feather name="info"></i-feather>
+      Switch between tabs to view active, paused, or archived clients separately.
     </div>
 
     <div class="clients-table">
@@ -36,7 +64,8 @@
       <div class="table-body">
         <div class="client-row" *ngFor="let client of filteredClients"
              (click)="viewProfile(client)"
-             style="cursor: pointer;">          <div class="col-client">
+             style="cursor: pointer;">
+          <div class="col-client">
             <div class="client-info">
               <div class="client-avatar">
                 <img [src]="'https://ui-avatars.com/api/?name=' + client.firstName + '+' + client.lastName + '&background=0ea5e9&color=fff'"
@@ -63,7 +92,7 @@
 
           <div class="col-status">
             <span class="status-badge" [class]="getClientStatus(client).toLowerCase()">
-              {{ getClientStatus(client) }}
+              {{ getClientStatusLabel(client) }}
             </span>
           </div>
 
@@ -73,21 +102,38 @@
                 <i-feather name="more-horizontal"></i-feather>
               </button>
               <div class="dropdown-menu">
-                <button class="dropdown-item" (click)="viewProfile(client)">
+                <button class="dropdown-item" (click)="viewProfile(client); $event.stopPropagation()">
                   <i-feather name="user"></i-feather>
-                  View Profile
+                  View profile
                 </button>
-                <button class="dropdown-item" (click)="sendMessage(client)">
-                  <i-feather name="message-square"></i-feather>
-                  Send Message
+
+                <button
+                  *ngIf="getClientStatus(client) === 'ACTIVE'"
+                  class="dropdown-item warning"
+                  (click)="openStatusModal(client, 'PAUSED', $event)">
+                  <i-feather name="pause-circle"></i-feather>
+                  Pause client
                 </button>
-                <button class="dropdown-item" (click)="createWorkoutPlan(client)">
-                  <i-feather name="plus"></i-feather>
-                  Create Workout Plan
+
+                <button
+                  *ngIf="getClientStatus(client) === 'PAUSED' || getClientStatus(client) === 'ARCHIVED'"
+                  class="dropdown-item success"
+                  (click)="openStatusModal(client, 'ACTIVE', $event)">
+                  <i-feather name="rotate-ccw"></i-feather>
+                  Reactivate client
                 </button>
+
+                <button
+                  *ngIf="getClientStatus(client) !== 'ARCHIVED'"
+                  class="dropdown-item"
+                  (click)="openStatusModal(client, 'ARCHIVED', $event)">
+                  <i-feather name="archive"></i-feather>
+                  Archive client
+                </button>
+
                 <button class="dropdown-item delete" (click)="deleteClient(client); $event.stopPropagation()">
                   <i-feather name="trash-2"></i-feather>
-                  Delete Client
+                  Delete client
                 </button>
               </div>
             </div>
@@ -124,4 +170,46 @@
     (onClose)="closeDeleteModal()"
     (onConfirm)="confirmDelete()">
   </app-delete-client-modal>
+
+  <!-- Pause / Archive / Reactivate Modal -->
+  <div class="modal-backdrop" *ngIf="showStatusModal" (click)="closeStatusModal()">
+    <div class="status-modal" (click)="$event.stopPropagation()">
+      <div class="status-modal-header">
+        <div class="modal-icon" [class]="getStatusModalClass()">
+          <i-feather [name]="getStatusModalIcon()"></i-feather>
+        </div>
+        <div>
+          <h3>{{ getStatusModalTitle() }}</h3>
+          <p *ngIf="statusModalClient">
+            {{ statusModalClient.firstName }} {{ statusModalClient.lastName }}
+          </p>
+        </div>
+        <button class="modal-close" (click)="closeStatusModal()">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <p class="modal-description">{{ getStatusModalDescription() }}</p>
+
+      <div class="modal-actions">
+        <button class="secondary-btn" (click)="closeStatusModal()" [disabled]="isStatusUpdating">
+          Cancel
+        </button>
+        <button
+          class="confirm-btn"
+          [class.warning]="pendingStatus === 'PAUSED'"
+          [class.archive]="pendingStatus === 'ARCHIVED'"
+          [class.success]="pendingStatus === 'ACTIVE'"
+          (click)="confirmStatusChange()"
+          [disabled]="isStatusUpdating">
+          {{ isStatusUpdating ? 'Saving...' : getStatusConfirmLabel() }}
+        </button>
+      </div>
+
+      <div class="modal-note">
+        <i-feather name="info"></i-feather>
+        {{ getAlternativeText() }}
+      </div>
+    </div>
+  </div>
 </div>

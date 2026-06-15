@@ -123,61 +123,39 @@
           </div>
         </div>
 
-        <div class="cell-content">
-          <div *ngFor="let item of day.items" class="card-wrapper">
-            <ng-container
-              *ngIf="calendarType === 'workout'; else nutritionCard"
-            >
+        <div
+          class="cell-content"
+          [attr.data-workout-drop-date]="day.dateString"
+        >
+          <div
+            *ngFor="let item of day.items"
+            class="card-wrapper"
+          >
+            <ng-container *ngIf="calendarType === 'workout'; else nutritionCard">
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
-                (click)="viewWorkout(item)"
+                (click)="openWorkoutCard(item, $event)"
               >
                 <div class="card-header">
                   <div class="card-title-block">
-                    <div class="card-title">
-                      {{ item.title }}
-                    </div>
-
-                    <div
-                      *ngIf="item.programName"
-                      class="card-subtitle program-name"
-                    >
-                      {{ item.programName }}
-                    </div>
+                    <div class="card-title">{{ item.title }}</div>
+                    <div *ngIf="item.programName" class="card-subtitle program-name">{{ item.programName }}</div>
                   </div>
-
                   <div class="card-header-right">
-                    <div
-                      *ngIf="item.programId"
-                      [ngClass]="{
-                        'badge-circle-coche': item.status === 'COMPLETED',
-                        'badge-failed': item.status === 'MISSED',
-                        'badge-circle':
-                          item.status !== 'COMPLETED' &&
-                          item.status !== 'MISSED'
-                      }"
-                    >
-                      {{ getBadgeText(item.status) }}
-                    </div>
-
-                    <button
-                      type="button"
-                      class="icon-button"
-                      title="Edit day"
-                      (click)="openEditWorkoutModal(item, $event)"
-                    >
-                      ✎
-                    </button>
-
-                    <button
-                      type="button"
-                      class="icon-button"
-                      title="Delete day"
-                      (click)="openDeleteModal(item, $event)"
-                    >
-                      🗑
-                    </button>
+                    <span
+                      class="drag-handle"
+                      title="Drag to move day"
+                      (mousedown)="startWorkoutPointerDrag($event, item, day.dateString)"
+                      (touchstart)="startWorkoutPointerDrag($event, item, day.dateString)"
+                    >⣿</span>
+                    <div *ngIf="item.programId" [ngClass]="{
+                      'badge-circle-coche': item.status === 'COMPLETED',
+                      'badge-failed': item.status === 'MISSED',
+                      'badge-circle': item.status !== 'COMPLETED' && item.status !== 'MISSED'
+                    }">{{ getBadgeText(item.status) }}</div>
+                    <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">✎</button>
+                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">🗑</button>
                   </div>
                 </div>
 
@@ -217,7 +195,6 @@
                     <div class="card-title">
                       {{ item.title }}
                     </div>
-
                     <div
                       *ngIf="item.programName"
                       class="card-subtitle nutrition-program"
@@ -225,7 +202,6 @@
                       {{ item.programName }}
                     </div>
                   </div>
-
                   <div class="badge-circle badge-nutrition">N</div>
                 </div>
 
@@ -312,60 +288,39 @@
           </div>
         </div>
 
-        <div class="week-column-body">
-          <div *ngFor="let item of day.items" class="card-wrapper">
-            <ng-container
-              *ngIf="calendarType === 'workout'; else nutritionCardWeek"
-            >
+        <div
+          class="week-column-body"
+          [attr.data-workout-drop-date]="day.dateString"
+        >
+          <div
+            *ngFor="let item of day.items"
+            class="card-wrapper"
+          >
+            <ng-container *ngIf="calendarType === 'workout'; else nutritionCardWeek">
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
-                (click)="viewWorkout(item)"
+                (click)="openWorkoutCard(item, $event)"
               >
                 <div class="card-header">
                   <div class="card-title-block">
-                    <div class="card-title">
-                      {{ item.title }}
-                    </div>
-                    <div
-                      *ngIf="item.programName"
-                      class="card-subtitle program-name"
-                    >
-                      {{ item.programName }}
-                    </div>
+                    <div class="card-title">{{ item.title }}</div>
+                    <div *ngIf="item.programName" class="card-subtitle program-name">{{ item.programName }}</div>
                   </div>
-
                   <div class="card-header-right">
-                    <div
-                      *ngIf="item.programId"
-                      [ngClass]="{
-                        'badge-circle-coche': item.status === 'COMPLETED',
-                        'badge-failed': item.status === 'MISSED',
-                        'badge-circle':
-                          item.status !== 'COMPLETED' &&
-                          item.status !== 'MISSED'
-                      }"
-                    >
-                      {{ getBadgeText(item.status) }}
-                    </div>
-
-                    <button
-                      type="button"
-                      class="icon-button"
-                      title="Edit day"
-                      (click)="openEditWorkoutModal(item, $event)"
-                    >
-                      ✎
-                    </button>
-
-                    <button
-                      type="button"
-                      class="icon-button"
-                      title="Delete day"
-                      (click)="openDeleteModal(item, $event)"
-                    >
-                      🗑
-                    </button>
+                    <span
+                      class="drag-handle"
+                      title="Drag to move day"
+                      (mousedown)="startWorkoutPointerDrag($event, item, day.dateString)"
+                      (touchstart)="startWorkoutPointerDrag($event, item, day.dateString)"
+                    >⣿</span>
+                    <div *ngIf="item.programId" [ngClass]="{
+                      'badge-circle-coche': item.status === 'COMPLETED',
+                      'badge-failed': item.status === 'MISSED',
+                      'badge-circle': item.status !== 'COMPLETED' && item.status !== 'MISSED'
+                    }">{{ getBadgeText(item.status) }}</div>
+                    <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">✎</button>
+                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">🗑</button>
                   </div>
                 </div>
 
@@ -412,7 +367,6 @@
                       {{ item.programName }}
                     </div>
                   </div>
-
                   <div class="badge-circle badge-nutrition">N</div>
                 </div>
 
@@ -491,15 +445,6 @@
         </button>
 
         <button
-          *ngIf="copiedDate && copiedDate !== currentDayString"
-          type="button"
-          class="copy-primary"
-          (click)="pasteDay(currentDayString)"
-        >
-          Paste
-        </button>
-
-        <button
           *ngIf="copiedDate"
           type="button"
           class="copy-secondary"
@@ -510,17 +455,23 @@
       </div>
     </div>
 
-    <div class="day-body">
+    <div
+      class="day-body"
+      [attr.data-workout-drop-date]="currentDayString"
+    >
       <div *ngIf="dayItems.length === 0" class="day-empty">
         No {{ calendarType === "workout" ? "workouts" : "meals" }} scheduled
       </div>
 
-      <div *ngFor="let item of dayItems" class="day-card-wrapper">
+      <div
+        *ngFor="let item of dayItems"
+        class="day-card-wrapper"
+      >
         <ng-container *ngIf="calendarType === 'workout'; else nutritionCardDay">
           <div
             class="card card-workout large"
             [class.card-program]="item.programId"
-            (click)="viewWorkout(item)"
+            (click)="openWorkoutCard(item, $event)"
           >
             <div class="card-header">
               <div class="card-title-block">
@@ -534,8 +485,14 @@
                   {{ item.programName }}
                 </div>
               </div>
-
               <div class="card-header-right">
+                <span
+                  class="drag-handle"
+                  title="Drag to move day"
+                  (mousedown)="startWorkoutPointerDrag($event, item, currentDayString)"
+                  (touchstart)="startWorkoutPointerDrag($event, item, currentDayString)"
+                >⣿</span>
+
                 <div
                   *ngIf="item.programId"
                   [ngClass]="{
@@ -612,7 +569,6 @@
                   {{ item.programName }}
                 </div>
               </div>
-
               <div class="badge-circle badge-nutrition">N</div>
             </div>
 
@@ -641,6 +597,7 @@
   </div>
 </div>
 
+<!-- MODALS (reste identique) -->
 <div class="modal-overlay" *ngIf="showAddWorkoutModal">
   <div class="modal-container">
     <div class="modal-header">

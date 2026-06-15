@@ -336,3 +336,22 @@
   align-items: center;
   justify-content: center;
 }
+
+.day.hasWorkout:not(.selected)::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: 6px auto 0;
+  border-radius: 999px;
+  background: #44b4df;
+}
+
+.task-row.empty-task {
+  cursor: default;
+  opacity: .82;
+}
+
+.task-row.empty-task:hover {
+  background: #fff;
+}

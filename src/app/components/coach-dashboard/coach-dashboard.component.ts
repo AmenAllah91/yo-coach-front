@@ -30,6 +30,8 @@ interface CheckInDisplay {
   formName: string;
   status: string;
   overdue: boolean;
+  submittedDate: string;
+  answeredDate: string;
 }
 
 type AssignType = 'workout' | 'nutrition' | 'checkin';
@@ -63,6 +65,9 @@ export class CoachDashboardComponent implements OnInit {
   clients: ClientDisplay[] = [];
   recentCheckIns: CheckInDisplay[] = [];
 
+  checkInsPage = 1;
+  readonly checkInsPageSize = 4;
+
   pendingAssign: PendingAssign | null = null;
   showPostCreatePrompt = false;
   showAssignModal = false;
@@ -73,6 +78,42 @@ export class CoachDashboardComponent implements OnInit {
 
   private assignments: FormAssignment[] = [];
   private coachId = '';
+
+  get totalCheckInPages(): number {
+    return Math.max(1, Math.ceil(this.recentCheckIns.length / this.checkInsPageSize));
+  }
+
+  get paginatedRecentCheckIns(): CheckInDisplay[] {
+    const start = (this.checkInsPage - 1) * this.checkInsPageSize;
+    return this.recentCheckIns.slice(start, start + this.checkInsPageSize);
+  }
+
+  get canGoPreviousCheckIns(): boolean {
+    return this.checkInsPage > 1;
+  }
+
+  get canGoNextCheckIns(): boolean {
+    return this.checkInsPage < this.totalCheckInPages;
+  }
+
+  get checkInsPageNumbers(): Array<number | '...'> {
+    const total = this.totalCheckInPages;
+
+    if (total <= 1) return [1];
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, index) => index + 1);
+    }
+
+    if (this.checkInsPage <= 3) {
+      return [1, 2, 3, '...', total];
+    }
+
+    if (this.checkInsPage >= total - 2) {
+      return [1, '...', total - 2, total - 1, total];
+    }
+
+    return [1, '...', this.checkInsPage - 1, this.checkInsPage, this.checkInsPage + 1, '...', total];
+  }
 
   constructor(
     private router: Router,
@@ -141,7 +182,9 @@ export class CoachDashboardComponent implements OnInit {
           }));
 
           this.assignments = result.assignments?.content || [];
+          this.checkInsPage = 1;
           this.enrichCheckIns(rawClients);
+          this.clampCheckInsPage();
           this.openPendingAssignFromNavigationState();
         },
 
@@ -213,13 +256,24 @@ export class CoachDashboardComponent implements OnInit {
         ? `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim()
         : String(assignment.assigneeId);
 
+      const status = assignment.status;
+      const isSubmittedOrReviewed = status === 'SUBMITTED' || status === 'REVIEWED';
+
       return {
         id: String(assignment.id),
         clientId: String(assignment.assigneeId),
         clientName: fullName || String(assignment.assigneeId),
         formName: assignment.formName || 'Check-in',
-        status: this.mapStatus(assignment.status),
+        status: this.mapStatus(status),
         overdue: this.isOverdue(assignment),
+        submittedDate: this.formatAssignmentDate(
+          isSubmittedOrReviewed
+            ? (assignment as any).submittedAt
+            : (assignment as any).dueAt || (assignment as any).assignedAt,
+        ),
+        answeredDate: this.formatAssignmentDate(
+          (assignment as any).reviewedAt,
+        ),
       };
     });
   }
@@ -236,6 +290,20 @@ export class CoachDashboardComponent implements OnInit {
     }
 
     return 'Niveau';
+  }
+
+  private formatAssignmentDate(value?: string | Date | null): string {
+    if (!value) return '-';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return '-';
+
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   private formatDate(date: Date): string {
@@ -291,6 +359,44 @@ export class CoachDashboardComponent implements OnInit {
       .map((part) => part[0])
       .join('')
       .toUpperCase();
+  }
+
+  previousCheckInsPage(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.canGoPreviousCheckIns) {
+      this.checkInsPage -= 1;
+      this.clampCheckInsPage();
+    }
+  }
+
+  nextCheckInsPage(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.canGoNextCheckIns) {
+      this.checkInsPage += 1;
+      this.clampCheckInsPage();
+    }
+  }
+
+  goToCheckInsPage(page: number | '...', event?: Event): void {
+    event?.stopPropagation();
+
+    if (page === '...') return;
+
+    this.checkInsPage = page;
+    this.clampCheckInsPage();
+  }
+
+  private clampCheckInsPage(): void {
+    if (this.checkInsPage < 1) {
+      this.checkInsPage = 1;
+      return;
+    }
+
+    if (this.checkInsPage > this.totalCheckInPages) {
+      this.checkInsPage = this.totalCheckInPages;
+    }
   }
 
   getStatusClass(status?: string): string {

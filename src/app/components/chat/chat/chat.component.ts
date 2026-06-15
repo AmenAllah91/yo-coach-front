@@ -6,20 +6,24 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { ChatService } from '../../../service/chat.service';
+import { ChatWebsocketService } from '../../../service/chat-websocket.service';
 import { UsersService } from '../../../service/users.service';
 import { Conversation } from '../models/conversation';
 import { ChatMessage } from '../models/chat-message';
+import { ProfilClientComponent } from '../../clients/profil-client/profil-client.component';
 import { Subject, Observable, takeUntil, forkJoin, of } from 'rxjs';
 import { switchMap, catchError, map, tap } from 'rxjs/operators';
+import { environment } from '@env/environment';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
+type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT';
 
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, ProfilClientComponent],
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss'],
 })
@@ -43,6 +47,31 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   private scrollPending = false;
   displayMessages: any[] = [];
 
+  // Attachments / voice messages
+  showAttachmentMenu = false;
+  isRecording = false;
+  isUploadingAttachment = false;
+  pendingDocument: File | null = null;
+  attachmentError = '';
+  readonly acceptedDocumentExtensions = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp';
+  private readonly acceptedDocumentExtensionList = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'];
+  recordingSeconds = 0;
+  private mediaRecorder: MediaRecorder | null = null;
+  private recordedChunks: Blob[] = [];
+  private recordingTimer: any = null;
+
+  // ── Client Profile ─────────────────────────────────────────────────────────
+  showClientProfile = false;
+
+  get selectedClientId(): string {
+    if (!this.selectedConv || this.selectedConv.isGroup) return '';
+    return this.selectedConv.clientId;
+  }
+
+  toggleClientProfile(): void {
+    this.showClientProfile = !this.showClientProfile;
+  }
+
   // ── Modals ────────────────────────────────────────────────────────────────
   showNewChat     = false;
   showSelectClient = false;
@@ -63,7 +92,8 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   constructor(
     private chatService: ChatService,
-    private userService: UsersService
+    private userService: UsersService,
+    private wsService: ChatWebsocketService
   ) {}
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -75,6 +105,16 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.addMissingConvClients();
     });
+
+    this.wsService.messages$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((msg) => {
+        if (!msg || !this.selectedConv || msg.conversationId !== this.selectedConv.id) return;
+        if (this.displayMessages.some((m: any) => m.id === msg.id)) return;
+        this.displayMessages = [...this.displayMessages, this.mapMessageToUi(msg)];
+        this.updateConversationPreview(msg);
+        this.scrollPending = true;
+      });
   }
 
   ngAfterViewChecked(): void {
@@ -82,6 +122,7 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelVoiceRecording();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -203,6 +244,7 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
      this.selectedConvMembers = [];
      this.showAllMembers = false;
      this.displayMessages = [];
+     this.wsService.subscribeToConversation(conv.id);
      this.loadMessages(conv.id);
      if (conv.isGroup && conv.memberIds?.length) {
        this.resolveGroupMembers(conv.memberIds);
@@ -243,21 +285,9 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
              this.displayMessages = [];
              return;
            }
-           this.displayMessages = pageDto.content.map((msg: ChatMessage) => {
-             console.log('Processing message:', msg);
-             return {
-               id: msg.id,
-               senderId: msg.senderId,
-               text: msg.content || '',
-               timestamp: this.formatTime(msg.createdAt),
-               isRead: true,
-               sender: {
-                 name: this.getUserName(msg.senderId),
-                 avatar: this.getUserAvatar(msg.senderId),
-                 initials: this.getInitials(msg.senderId)
-               }
-             };
-           });
+            this.displayMessages = pageDto.content
+             .reverse()
+             .map((msg: ChatMessage) => this.mapMessageToUi(msg));
            console.log('🟣 [loadMessages] displayMessages:', this.displayMessages.map((m: any) => ({ id: m.id, senderId: m.senderId, text: m.text })));
            this.scrollPending = true;
          },
@@ -266,6 +296,56 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
            this.displayMessages = [];
          }
        });
+   }
+
+   private mapMessageToUi(msg: ChatMessage): any {
+     const type = this.normalizeMessageType(msg.type);
+
+     return {
+       id: msg.id,
+       senderId: msg.senderId,
+       text: msg.content || '',
+       type,
+       attachmentUrl: msg.attachmentUrl ? this.resolveFileUrl(msg.attachmentUrl) : '',
+       attachmentName: msg.attachmentName || 'Document',
+       attachmentType: msg.attachmentType || '',
+       attachmentSize: msg.attachmentSize || 0,
+       durationSeconds: msg.durationSeconds || 0,
+       timestamp: this.formatTime(msg.createdAt),
+       isRead: true,
+       sender: {
+         name: this.getUserName(msg.senderId),
+         avatar: this.getUserAvatar(msg.senderId),
+         initials: this.getInitials(msg.senderId)
+       }
+     };
+   }
+
+   private normalizeMessageType(type?: string): ChatUiMessageType {
+     const value = (type || 'TEXT').toUpperCase();
+     if (value === 'VOICE' || value === 'AUDIO') return 'VOICE';
+     if (value === 'DOCUMENT' || value === 'DOC' || value === 'FILE') return 'DOCUMENT';
+     return 'TEXT';
+   }
+
+   private resolveFileUrl(url: string): string {
+     if (!url) return '';
+     if (url.startsWith('http://') || url.startsWith('https://')) return url;
+     return `${environment.baseApiUrl}${url}`;
+   }
+
+   formatFileSize(bytes?: number): string {
+     if (!bytes) return '';
+     if (bytes < 1024) return `${bytes} B`;
+     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+   }
+
+   formatDuration(seconds?: number): string {
+     const total = Math.max(0, Math.round(seconds || 0));
+     const min = Math.floor(total / 60);
+     const sec = total % 60;
+     return `${min}:${String(sec).padStart(2, '0')}`;
    }
 
    private formatTime(date: string | undefined): string {
@@ -311,30 +391,182 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   // ── Messages ──────────────────────────────────────────────────────────────
   sendMessage(): void {
-    if (!this.messageText.trim() || !this.selectedConv) return;
+    if (!this.selectedConv || this.isRecording || this.isUploadingAttachment) return;
 
     const content = this.messageText.trim();
+
+    if (this.pendingDocument) {
+      const file = this.pendingDocument;
+      this.pendingDocument = null;
+      this.messageText = '';
+      this.uploadAttachment(file, 'DOCUMENT', undefined, content);
+      return;
+    }
+
+    if (!content) return;
+
     this.messageText = '';
-
     this.chatService.sendMessage(this.selectedConv.id, content, this.currentUserId);
+    this.updateLocalConversationLastMessage(content);
+  }
 
-    // Add message optimistically to UI
-    const msg = {
-      id: `msg-${Date.now()}`,
-      senderId: this.currentUserId,
-      text: content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isRead: false,
-      sender: {
-        name: 'You',
-        avatar: '',
-        initials: 'YO'
-      }
-    };
-    this.displayMessages = [...this.displayMessages, msg];
-    this.scrollPending = true;
+  toggleAttachmentMenu(): void {
+    this.showAttachmentMenu = !this.showAttachmentMenu;
+  }
 
-    // Update conversation last message
+  onDocumentSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file || !this.selectedConv) return;
+
+    this.showAttachmentMenu = false;
+
+    if (!this.isAcceptedDocument(file)) {
+      this.pendingDocument = null;
+      this.attachmentError = 'Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.';
+      return;
+    }
+
+    this.attachmentError = '';
+    this.pendingDocument = file;
+  }
+
+  removePendingDocument(): void {
+    this.pendingDocument = null;
+    this.attachmentError = '';
+  }
+
+  private isAcceptedDocument(file: File): boolean {
+    const extension = this.getFileExtension(file.name);
+    return this.acceptedDocumentExtensionList.includes(extension);
+  }
+
+  private getFileExtension(fileName: string): string {
+    return (fileName.split('.').pop() || '').toLowerCase();
+  }
+
+  async toggleVoiceRecording(): Promise<void> {
+    if (this.isRecording) {
+      this.stopVoiceRecording();
+      return;
+    }
+
+    if (!this.selectedConv) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.recordedChunks = [];
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.recordingSeconds = 0;
+      this.isRecording = true;
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.recordedChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
+        const duration = this.recordingSeconds;
+        this.cleanupRecording();
+        this.uploadAttachment(file, 'VOICE', duration);
+      };
+
+      this.recordingTimer = setInterval(() => {
+        this.recordingSeconds += 1;
+      }, 1000);
+
+      this.mediaRecorder.start();
+    } catch (err) {
+      console.error('Microphone permission denied or unavailable:', err);
+      this.cleanupRecording();
+    }
+  }
+
+  stopVoiceRecording(): void {
+    if (!this.mediaRecorder || !this.isRecording) return;
+    this.mediaRecorder.stop();
+    this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+
+  cancelVoiceRecording(): void {
+    if (this.mediaRecorder && this.isRecording) {
+      this.mediaRecorder.onstop = null;
+      this.mediaRecorder.stop();
+      this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+    this.cleanupRecording();
+  }
+
+  private cleanupRecording(): void {
+    this.isRecording = false;
+    this.mediaRecorder = null;
+    this.recordedChunks = [];
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = null;
+    }
+  }
+
+  private uploadAttachment(file: File, type: 'VOICE' | 'DOCUMENT', durationSeconds?: number, content?: string): void {
+    if (!this.selectedConv) return;
+
+    this.isUploadingAttachment = true;
+
+    this.chatService
+      .uploadAttachment(
+        this.selectedConv.id,
+        this.currentUserId,
+        type,
+        file,
+        durationSeconds,
+        content
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (savedMessage) => {
+          this.isUploadingAttachment = false;
+
+          const normalizedMessage: ChatMessage = {
+            ...savedMessage,
+            type: savedMessage.type || type,
+            attachmentName: savedMessage.attachmentName || file.name,
+            attachmentType: savedMessage.attachmentType || file.type,
+            attachmentSize: savedMessage.attachmentSize || file.size,
+          };
+
+          if (!this.displayMessages.some((m: any) => m.id === normalizedMessage.id)) {
+            this.displayMessages = [...this.displayMessages, this.mapMessageToUi(normalizedMessage)];
+          }
+          this.updateConversationPreview(normalizedMessage);
+          this.scrollPending = true;
+        },
+        error: (err) => {
+          this.isUploadingAttachment = false;
+          console.error('Attachment upload failed:', err);
+          alert('Upload failed - Status: ' + (err.status || 'unknown') + '\nMessage: ' + (err.message || 'unknown') + '\nCheck console for details.');
+        }
+      });
+  }
+
+  private updateConversationPreview(msg: ChatMessage): void {
+    const type = this.normalizeMessageType(msg.type);
+    const preview = type === 'VOICE'
+      ? '🎤 Voice message'
+      : type === 'DOCUMENT'
+        ? `📎 ${msg.attachmentName || 'Document'}`
+        : (msg.content || '');
+
+    this.updateLocalConversationLastMessage(preview);
+  }
+
+  private updateLocalConversationLastMessage(content: string): void {
+    if (!this.selectedConv) return;
+
     const idx = this.conversations.findIndex(c => c.id === this.selectedConv!.id);
     if (idx !== -1) {
       this.conversations[idx] = {
@@ -466,4 +698,49 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.selectedClientIds = [];
     this.groupSelectAll  = false;
   }
+
+  downloadDocument(msg: any, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const attachmentUrl = msg?.attachmentUrl || '';
+    if (!attachmentUrl) {
+      console.error('Document download failed: missing attachmentUrl', msg);
+      return;
+    }
+
+    const fileName = msg?.attachmentName || this.extractFileNameFromUrl(attachmentUrl) || 'document';
+
+    this.chatService.downloadAttachment(attachmentUrl, fileName).subscribe({
+      next: (blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(blobUrl);
+      },
+      error: (err) => {
+        console.error('Document download failed:', err);
+
+        // fallback: open static URL if the download endpoint is not reachable
+        const fallbackUrl = this.resolveFileUrl
+          ? this.resolveFileUrl(attachmentUrl)
+          : attachmentUrl;
+        if (fallbackUrl) {
+          window.open(fallbackUrl, '_blank');
+        }
+      }
+    });
+  }
+
+  private extractFileNameFromUrl(url: string): string {
+    if (!url) return '';
+    const cleanUrl = url.split('?')[0];
+    const parts = cleanUrl.split('/').filter(Boolean);
+    return decodeURIComponent(parts[parts.length - 1] || 'document');
+  }
+
 }

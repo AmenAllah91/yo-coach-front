@@ -12,7 +12,7 @@ import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
 import { Router } from '@angular/router';
 import { ModalAssignToclientComponent } from '../clients/modal-assign-toclient/modal-assign-toclient.component';
-import { ClientService } from 'app/service/client.service';
+import { ClientService, Client } from 'app/service/client.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 
@@ -35,7 +35,9 @@ import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 })
 export class ProgramLibraryComponent implements OnInit {
   programs: WorkoutPlan[] = [];
+  allPrograms: WorkoutPlan[] = [];
   searchTerm = '';
+  programTypeFilter: 'ALL' | 'APP' | 'PDF' | 'EXCEL' = 'ALL';
   currentPage = 0;
   pageSize = 12;
   totalPages = 0;
@@ -80,8 +82,37 @@ export class ProgramLibraryComponent implements OnInit {
   showAssignModal = false;
   programToAssign: WorkoutPlan | null = null;
 
+  showFileAssignModal = false;
+  fileAssignProgram: WorkoutPlan | null = null;
+  fileAssignClients: Client[] = [];
+  selectedFileAssignClientIds: string[] = [];
+  fileAssignStartDate = '';
+  fileAssignEndDate = '';
+  fileAssignNotifyClient = true;
+  fileAssignSaving = false;
+  fileAssignError = '';
+
+  showCreateTypeModal = false;
+  showImportFileModal = false;
+  importFile: File | null = null;
+  importProgramName = '';
+  importProgramDescription = '';
+  importSaving = false;
+  importError = '';
+  assignImportedProgram = false;
+  notifyImportedClients = true;
+  importAssignStartDate = '';
+  importAssignEndDate = '';
+  importClients: Client[] = [];
+  selectedImportClientIds: string[] = [];
+  importClientsLoading = false;
+  showFilePreviewModal = false;
+  previewProgram: WorkoutPlan | null = null;
+  selectedLibraryFileProgram: WorkoutPlan | null = null;
+
   constructor(
-    private workoutService: WorkoutService,
+    public workoutService: WorkoutService,
+    private clientService: ClientService,
     private exerciseService: ExerciseService,
     private location: Location,
     private authService: AuthService,
@@ -124,46 +155,68 @@ export class ProgramLibraryComponent implements OnInit {
   loadPrograms() {
     this.isLoading = true;
     const startTime = Date.now();
+
+    // Filters PDF / Excel / App cannot be applied safely after backend pagination,
+    // because page 1 can be empty while page 2 contains matches.
+    // So we load a large library page once, then paginate the filtered result locally.
     const serviceCall =
       this.activeTab === 'templates'
-        ? this.workoutService.getTemplates(this.currentPage, this.pageSize)
-        : this.workoutService.getMyLibrary(this.currentPage, this.pageSize);
+        ? this.workoutService.getTemplates(0, 500)
+        : this.workoutService.getMyLibrary(0, 500);
 
     serviceCall.subscribe({
       next: (response: PageResponse<WorkoutPlan>) => {
-        console.log('== ', response);
-        // const elapsed = Date.now() - startTime;
-        // const minDelay = 800;
-        // Minimum 800ms loading time
-        // const remainingDelay = Math.max(0, minDelay - elapsed);
+        this.allPrograms = response.content || [];
+        this.applyProgramFilters();
 
-        this.programs = response.content || [];
-        this.totalPages = response.totalPages || 0;
-        this.totalElements = response.totalElements || 0;
-
-        // Update the appropriate count based on active tab
         if (this.activeTab === 'templates') {
-          this.templatesCount = this.totalElements;
+          this.templatesCount = response.totalElements || this.allPrograms.length;
         } else {
-          this.myLibraryCount = this.totalElements;
+          this.myLibraryCount = response.totalElements || this.allPrograms.length;
         }
 
-        this.isLoading = false;
-      },
-      error: (error) => {
         const elapsed = Date.now() - startTime;
-        const minDelay = 800;
+        const minDelay = 250;
         const remainingDelay = Math.max(0, minDelay - elapsed);
-
         setTimeout(() => {
-          console.error('Error loading programs:', error);
-          this.programs = [];
-          this.totalPages = 0;
-          this.totalElements = 0;
           this.isLoading = false;
         }, remainingDelay);
       },
+      error: (error) => {
+        console.error('Error loading programs:', error);
+        this.allPrograms = [];
+        this.programs = [];
+        this.totalPages = 0;
+        this.totalElements = 0;
+        this.isLoading = false;
+      },
     });
+  }
+
+  applyProgramFilters() {
+    const term = (this.searchTerm || '').trim().toLowerCase();
+
+    const filtered = (this.allPrograms || []).filter((program) => {
+      const type = this.getProgramTypeKey(program);
+      const matchesType = this.programTypeFilter === 'ALL' || type === this.programTypeFilter;
+      const searchable = [program.name, program.details, program.originalFileName, this.getProgramTypeLabel(program)]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const matchesSearch = !term || searchable.includes(term);
+      return matchesType && matchesSearch;
+    });
+
+    this.totalElements = filtered.length;
+    this.totalPages = Math.max(1, Math.ceil(filtered.length / this.pageSize));
+
+    if (this.currentPage > this.totalPages - 1) {
+      this.currentPage = 0;
+    }
+
+    const start = this.currentPage * this.pageSize;
+    this.programs = filtered.slice(start, start + this.pageSize);
+    this.ensureSelectedLibraryFileProgram();
   }
 
   toggleDropdown(programId: string | null, event?: Event) {
@@ -182,7 +235,7 @@ export class ProgramLibraryComponent implements OnInit {
 
       if (dropdown) {
         const buttonRect = button.getBoundingClientRect();
-        const dropdownHeight = 200; // Approximate dropdown height
+        const dropdownHeight = 280; // Side action list height
         const viewportHeight = window.innerHeight;
 
         // Position dropdown
@@ -194,7 +247,7 @@ export class ProgramLibraryComponent implements OnInit {
           dropdown.style.top = `${buttonRect.bottom + 4}px`;
         }
 
-        dropdown.style.left = `${buttonRect.right - 180}px`; // 180px is dropdown width
+        dropdown.style.left = `${Math.max(16, buttonRect.right - 220)}px`; // side action menu
       }
     }
   }
@@ -211,6 +264,86 @@ export class ProgramLibraryComponent implements OnInit {
     this.programToAssign = null;
   }
 
+  openFileAssignModal(program: WorkoutPlan) {
+    this.fileAssignProgram = program;
+    this.selectedFileAssignClientIds = [];
+    this.fileAssignStartDate = program.startDate || '';
+    this.fileAssignEndDate = program.endDate || '';
+    this.fileAssignNotifyClient = true;
+    this.fileAssignError = '';
+    this.showFileAssignModal = true;
+    this.loadImportClients();
+  }
+
+  closeFileAssignModal() {
+    if (this.fileAssignSaving) return;
+
+    this.showFileAssignModal = false;
+    this.fileAssignProgram = null;
+    this.selectedFileAssignClientIds = [];
+    this.fileAssignStartDate = '';
+    this.fileAssignEndDate = '';
+    this.fileAssignNotifyClient = true;
+    this.fileAssignError = '';
+  }
+
+  onFileAssignClientSelection(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.selectedFileAssignClientIds = Array.from(select.selectedOptions).map((option) => option.value);
+  }
+
+  getSelectedFileAssignClients(): Client[] {
+    return this.importClients.filter(
+      (client) => !!client.id && this.selectedFileAssignClientIds.includes(client.id)
+    );
+  }
+
+  confirmFileAssign() {
+    if (!this.fileAssignProgram) return;
+
+    const clientsToAssign = this.getSelectedFileAssignClients();
+
+    if (!clientsToAssign.length) {
+      this.fileAssignError = 'Sélectionnez au moins un client.';
+      return;
+    }
+
+    this.fileAssignSaving = true;
+    this.fileAssignError = '';
+
+    let remaining = clientsToAssign.length;
+
+    clientsToAssign.forEach((client) => {
+      const item = {
+        ...this.fileAssignProgram!,
+        client,
+        startDate: this.fileAssignStartDate || this.fileAssignProgram!.startDate,
+        endDate: this.fileAssignEndDate || this.fileAssignProgram!.endDate || this.fileAssignStartDate || this.fileAssignProgram!.startDate,
+        workoutDays: [],
+      };
+
+      this.workoutService.assignWorkout(item.id!, item).subscribe({
+        next: () => {
+          remaining -= 1;
+          if (remaining === 0) {
+            this.fileAssignSaving = false;
+            this.closeFileAssignModal();
+            this.loadPrograms();
+            this.loadAllCounts();
+          }
+        },
+        error: (error) => {
+          console.error('Error assigning file workout program:', error);
+          remaining -= 1;
+          this.fileAssignError = 'Une erreur est survenue pendant l’assignation.';
+          if (remaining === 0) {
+            this.fileAssignSaving = false;
+          }
+        },
+      });
+    });
+  }
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProgramAssigned(event: any) {
     if (!this.programToAssign || !event?.clients?.length || !event?.date) {
@@ -218,53 +351,93 @@ export class ProgramLibraryComponent implements OnInit {
       return;
     }
 
+    const isFile = this.isFileProgram(this.programToAssign);
+
+    if (isFile && !event.endDate) {
+      console.error('File workout assignment requires an end date.');
+      return;
+    }
+
+    let remaining = event.clients.length;
+    let hasError = false;
+
     for (const client of event.clients) {
       const startDate = event.date;
+      const endDate = isFile
+        ? event.endDate
+        : undefined;
 
-      const workoutDays = (this.programToAssign.workoutDays || []).map(
-        (day: any, index: number) => {
-          const current = new Date(startDate);
-          current.setDate(current.getDate() + index);
+      const workoutDays = isFile
+        ? []
+        : (this.programToAssign.workoutDays || []).map((day: any, index: number) => {
+            const current = new Date(startDate);
+            current.setDate(current.getDate() + index);
 
-          return {
-            ...day,
-            date: current.toISOString().split('T')[0],
-            dayOfWeek: current.toLocaleDateString('en-US', {
-              weekday: 'long',
-            }),
-            dayNumber: index + 1,
-            title: day.restDay ? 'Rest Day' : `Day ${index + 1}`,
-          };
-        }
-      );
+            return {
+              ...day,
+              date: current.toISOString().split('T')[0],
+              dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
+              dayNumber: index + 1,
+              title: day.restDay ? 'Rest Day' : `Day ${index + 1}`,
+            };
+          });
 
-      const endDate = workoutDays.length
-        ? workoutDays[workoutDays.length - 1].date
-        : startDate;
+      const calculatedEndDate = isFile
+        ? endDate
+        : (workoutDays.length ? workoutDays[workoutDays.length - 1].date : startDate);
 
-      const item = {
-        ...this.programToAssign,
-        client,
+      const item: any = {
+        id: this.programToAssign.id,
+        name: this.programToAssign.name,
+        details: this.programToAssign.details,
+        createdBy: this.programToAssign.createdBy,
+        coach: this.programToAssign.coach,
+        client: client,
         startDate,
-        endDate,
+        endDate: calculatedEndDate,
         workoutDays,
+        typeWorkoutPlan: this.programToAssign.typeWorkoutPlan,
+        isWorkoutPlanTemplate: false,
+
+        // Important for FILE assignments: keep the source as a real file program.
+        workoutPlanMode: isFile ? 'FILE' : (this.programToAssign.workoutPlanMode || 'NORMAL'),
+        resourceType: this.programToAssign.resourceType,
+        fileName: this.programToAssign.fileName,
+        originalFileName: this.programToAssign.originalFileName,
+        fileUrl: this.programToAssign.fileUrl,
+        fileContentType: this.programToAssign.fileContentType,
+        fileSizeBytes: this.programToAssign.fileSizeBytes,
       };
 
-      this.workoutService.assignWorkout(item.id, item).subscribe({
+      this.workoutService.assignWorkout(item.id!, item).subscribe({
         next: () => {
-          this.loadPrograms();
-          this.loadEnums();
-          this.loadAllCounts();
+          remaining -= 1;
+          if (remaining === 0) {
+            this.showAssignModal = false;
+            this.programToAssign = null;
+            this.loadPrograms();
+            this.loadEnums();
+            this.loadAllCounts();
+          }
         },
         error: (err) => {
           console.error('Error assigning workout program:', err);
+          hasError = true;
+          remaining -= 1;
+          if (remaining === 0) {
+            if (!hasError) {
+              this.showAssignModal = false;
+              this.programToAssign = null;
+            }
+            this.loadPrograms();
+            this.loadEnums();
+            this.loadAllCounts();
+          }
         },
       });
     }
-
-    this.showAssignModal = false;
-    this.programToAssign = null;
   }
+
 
   editProgram(id: string) {
     const url = 'workout/edit-workout/' + id;
@@ -312,8 +485,378 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   createProgram() {
+    this.showCreateTypeModal = true;
+  }
+
+  closeCreateTypeModal() {
+    this.showCreateTypeModal = false;
+  }
+
+  createNormalWorkout() {
+    this.showCreateTypeModal = false;
     this.router.navigateByUrl('workout/create-workout');
   }
+
+  openImportFileWorkout() {
+    this.showCreateTypeModal = false;
+    this.showImportFileModal = true;
+    this.importError = '';
+    this.loadImportClients();
+  }
+
+  closeImportFileWorkout() {
+    this.showImportFileModal = false;
+    this.importFile = null;
+    this.importProgramName = '';
+    this.importProgramDescription = '';
+    this.importSaving = false;
+    this.importError = '';
+    this.assignImportedProgram = false;
+    this.notifyImportedClients = true;
+    this.importAssignStartDate = '';
+    this.importAssignEndDate = '';
+    this.selectedImportClientIds = [];
+  }
+
+  onImportDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  onImportDrop(event: DragEvent) {
+    event.preventDefault();
+    const file = event.dataTransfer?.files?.[0] || null;
+    if (file) this.setImportFile(file);
+  }
+
+  onImportFileSelected(event: Event) {
+    const file = (event.target as HTMLInputElement)?.files?.[0] || null;
+    if (file) this.setImportFile(file);
+  }
+
+  setImportFile(file: File) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['pdf', 'xls', 'xlsx'].includes(ext)) {
+      this.importError = 'Only PDF, XLS, and XLSX files are allowed.';
+      this.importFile = null;
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      this.importError = 'File is too large. Maximum size is 25 MB.';
+      this.importFile = null;
+      return;
+    }
+    this.importError = '';
+    this.importFile = file;
+    if (!this.importProgramName.trim()) {
+      const base = file.name.replace(/\.[^.]+$/, '');
+      this.importProgramName = base;
+    }
+  }
+
+
+  async loadImportClients() {
+    if (this.importClients.length > 0 || this.importClientsLoading) {
+      return;
+    }
+
+    this.importClientsLoading = true;
+
+    try {
+      const coachId = await this.authService.extractUserId();
+
+      if (!coachId) {
+        this.importClientsLoading = false;
+        return;
+      }
+
+      const service: any = this.clientService as any;
+      const request$ = service.getListClientsByCoachWithoutPagination
+        ? service.getListClientsByCoachWithoutPagination(coachId)
+        : service.getClientsByCoach(coachId, 0, 500);
+
+      request$.subscribe({
+        next: (response: any) => {
+          this.importClients = response?.content || response || [];
+          this.importClientsLoading = false;
+        },
+        error: (error: any) => {
+          console.error('Error loading clients for import assignment:', error);
+          this.importClientsLoading = false;
+        },
+      });
+    } catch (error) {
+      console.error('Error resolving coach id for import clients:', error);
+      this.importClientsLoading = false;
+    }
+  }
+
+  onImportClientSelection(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.selectedImportClientIds = Array.from(select.selectedOptions).map((option) => option.value);
+  }
+
+  getSelectedImportClients(): Client[] {
+    return this.importClients.filter(
+      (client) => !!client.id && this.selectedImportClientIds.includes(client.id)
+    );
+  }
+
+  saveImportedFileWorkout() {
+    if (!this.importFile || !this.importProgramName.trim()) {
+      this.importError = 'Please choose a file and enter a program name.';
+      return;
+    }
+
+    this.importSaving = true;
+    this.workoutService
+      .createFileWorkout(
+        this.importFile,
+        this.importProgramName.trim(),
+        this.importProgramDescription?.trim() || '',
+        this.activeTab === 'templates'
+      )
+      .subscribe({
+        next: (createdProgram: WorkoutPlan) => {
+          const clientsToAssign = this.assignImportedProgram ? this.getSelectedImportClients() : [];
+
+          if (!clientsToAssign.length) {
+            this.importSaving = false;
+            this.closeImportFileWorkout();
+            this.loadPrograms();
+            this.loadAllCounts();
+            return;
+          }
+
+          let remaining = clientsToAssign.length;
+
+          clientsToAssign.forEach((client) => {
+            const item = {
+              ...createdProgram,
+              client,
+              startDate: this.importAssignStartDate || createdProgram.startDate,
+              endDate: this.importAssignEndDate || createdProgram.endDate || this.importAssignStartDate || createdProgram.startDate,
+              workoutDays: [],
+            };
+
+            this.workoutService.assignWorkout(item.id!, item).subscribe({
+              next: () => {
+                remaining -= 1;
+                if (remaining === 0) {
+                  this.importSaving = false;
+                  this.closeImportFileWorkout();
+                  this.loadPrograms();
+                  this.loadAllCounts();
+                }
+              },
+              error: (error) => {
+                console.error('Error assigning imported file workout:', error);
+                remaining -= 1;
+                if (remaining === 0) {
+                  this.importSaving = false;
+                  this.closeImportFileWorkout();
+                  this.loadPrograms();
+                  this.loadAllCounts();
+                }
+              },
+            });
+          });
+        },
+        error: (error) => {
+          console.error('Error saving file workout:', error);
+          this.importSaving = false;
+          this.importError = 'Upload failed. Please try again.';
+        },
+      });
+  }
+
+  isFileProgram(program: WorkoutPlan | null | undefined): boolean {
+    return !!program && String(program.workoutPlanMode || '').toUpperCase() === 'FILE';
+  }
+
+  getProgramResourceLabel(program: WorkoutPlan): string {
+    if (!this.isFileProgram(program)) return '';
+    const type = String(program.resourceType || '').toUpperCase();
+    if (type === 'XLS' || type === 'XLSX') return 'EXCEL';
+    return type || 'FILE';
+  }
+
+  getProgramMeta(program: WorkoutPlan): string {
+    if (this.isFileProgram(program)) {
+      const parts = [];
+      if (program.originalFileName) parts.push(program.originalFileName);
+      if (program.fileSizeBytes) parts.push(this.formatFileSize(program.fileSizeBytes));
+      return parts.join(' · ');
+    }
+    const dayCount = program.workoutDays?.length || 0;
+    const parts = [dayCount + ' day' + (dayCount === 1 ? '' : 's')];
+    if (program.typeWorkoutPlan) parts.push(String(program.typeWorkoutPlan).replace(/_/g, ' ').toLowerCase());
+    return parts.join(' · ');
+  }
+
+  formatFileSize(bytes?: number): string {
+    const value = Number(bytes || 0);
+    if (!value) return '';
+    if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  previewFileProgram(program: WorkoutPlan) {
+    this.previewProgram = program;
+    this.showFilePreviewModal = true;
+    this.openDropdownId = null;
+  }
+
+  closeFilePreviewModal() {
+    this.previewProgram = null;
+    this.showFilePreviewModal = false;
+  }
+
+  private async fetchProgramFileBlob(program: WorkoutPlan): Promise<Blob> {
+    const url = this.workoutService.getWorkoutFileUrl(program);
+    const token = await this.authService.getToken();
+
+    const response = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) {
+      throw new Error(`File request failed with status ${response.status}`);
+    }
+
+    return response.blob();
+  }
+
+  async openProgramFile(program: WorkoutPlan) {
+    this.openDropdownId = null;
+
+    try {
+      const blob = await this.fetchProgramFileBlob(program);
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      console.error('Error opening workout file:', error);
+      alert('Impossible d’ouvrir le fichier. Vérifiez votre session puis réessayez.');
+    }
+  }
+
+  async downloadProgramFile(program: WorkoutPlan) {
+    this.openDropdownId = null;
+
+    try {
+      const blob = await this.fetchProgramFileBlob(program);
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = program.originalFileName || program.fileName || `${program.name || 'workout-program'}.${String(program.resourceType || 'pdf').toLowerCase()}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      console.error('Error downloading workout file:', error);
+      alert('Impossible de télécharger le fichier. Vérifiez votre session puis réessayez.');
+    }
+  }
+
+  get filteredPrograms(): WorkoutPlan[] {
+    return this.programs || [];
+  }
+
+  setProgramTypeFilter(type: 'ALL' | 'APP' | 'PDF' | 'EXCEL') {
+    this.programTypeFilter = type;
+    this.currentPage = 0;
+    this.applyProgramFilters();
+  }
+
+  getProgramTypeKey(program: WorkoutPlan): 'APP' | 'PDF' | 'EXCEL' {
+    if (!this.isFileProgram(program)) return 'APP';
+    const type = String(program.resourceType || '').toUpperCase();
+    if (type === 'XLS' || type === 'XLSX' || type === 'EXCEL') return 'EXCEL';
+    return 'PDF';
+  }
+
+  getProgramTypeLabel(program: WorkoutPlan): string {
+    const key = this.getProgramTypeKey(program);
+    if (key === 'APP') return 'App Program';
+    return key === 'EXCEL' ? 'Excel' : 'PDF';
+  }
+
+  getProgramIconName(program: WorkoutPlan): string {
+    return this.getProgramTypeKey(program) === 'APP' ? 'grid' : 'file-text';
+  }
+
+  getProgramDescription(program: WorkoutPlan): string {
+    if (program.details) return program.details;
+    if (this.isFileProgram(program)) {
+      return [program.originalFileName, program.fileSizeBytes ? this.formatFileSize(program.fileSizeBytes) : '']
+        .filter(Boolean)
+        .join(' · ');
+    }
+    const days = program.workoutDays?.length || 0;
+    return days ? `${days}-day workout program` : 'In-app workout program';
+  }
+
+  get filePrograms(): WorkoutPlan[] {
+    return this.programs.filter((program) => this.isFileProgram(program));
+  }
+
+  get normalPrograms(): WorkoutPlan[] {
+    return this.programs.filter((program) => !this.isFileProgram(program));
+  }
+
+  ensureSelectedLibraryFileProgram() {
+    const files = this.filePrograms;
+    if (!files.length) {
+      this.selectedLibraryFileProgram = null;
+      return;
+    }
+
+    if (!this.selectedLibraryFileProgram || !files.some((p) => p.id === this.selectedLibraryFileProgram?.id)) {
+      this.selectedLibraryFileProgram = files[0];
+    }
+  }
+
+  selectLibraryFileProgram(program: WorkoutPlan) {
+    this.selectedLibraryFileProgram = program;
+  }
+
+  getFileProgramsCurrent(): WorkoutPlan[] {
+    return this.filePrograms.filter((program) => !program.endDate || new Date(program.endDate) >= new Date());
+  }
+
+  getFileProgramsHistory(): WorkoutPlan[] {
+    return this.filePrograms.filter((program) => !!program.endDate && new Date(program.endDate) < new Date());
+  }
+
+  getFileDateLabel(program: WorkoutPlan): string {
+    const source = program.startDate || (program as any).fileUploadedAt || '';
+    if (!source) return '';
+    return new Date(source).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  getSelectedFileSafeUrl(): string {
+    return this.selectedLibraryFileProgram ? this.workoutService.getWorkoutFileUrl(this.selectedLibraryFileProgram) : '';
+  }
+
+  openSelectedLibraryFile() {
+    if (this.selectedLibraryFileProgram) {
+      this.downloadProgramFile(this.selectedLibraryFileProgram);
+    }
+  }
+
+  printSelectedLibraryFile() {
+    this.openSelectedLibraryFile();
+  }
+
+  shareSelectedLibraryFile() {
+    this.openSelectedLibraryFile();
+  }
+
+  fullscreenSelectedLibraryFile() {
+    this.openSelectedLibraryFile();
+  }
+
 
   closeCreateModal() {
     this.showCreateModal = false;
@@ -394,7 +937,7 @@ export class ProgramLibraryComponent implements OnInit {
       type: exercise.type,
       muscle: exercise.muscle,
       equipment: exercise.equipment,
-      sets: [{ reps: 8, restMin: 1, restSec: 0 }],
+      sets: [{ setNumber: 1, reps: 8, weight: 0, restMin: 1, restSec: 0, type: 'REGULAR' }],
       isSuperset: false,
       supersetWith: undefined,
       supersetGroupId: undefined,
@@ -405,11 +948,16 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   addSet(exerciseIndex: number) {
-    this.trainingDays[this.selectedDayIndex].exercises[exerciseIndex].sets.push(
+    const sets = this.trainingDays[this.selectedDayIndex].exercises[exerciseIndex].sets;
+    const nextSetNumber = sets.length + 1;
+    sets.push(
       {
+        setNumber: nextSetNumber,
         reps: 8,
+        weight: 0,
         restMin: 1,
         restSec: 0,
+        type: 'REGULAR',
       }
     );
   }
@@ -439,7 +987,7 @@ export class ProgramLibraryComponent implements OnInit {
           ex.supersetGroupId = undefined;
           // Restore sets if they were cleared
           if (ex.sets.length === 0) {
-            ex.sets = [{ reps: 8, restMin: 1, restSec: 0 }];
+            ex.sets = [{ setNumber: 1, reps: 8, weight: 0, restMin: 1, restSec: 0, type: 'REGULAR' }];
           }
         }
       });
@@ -469,7 +1017,7 @@ export class ProgramLibraryComponent implements OnInit {
       nextExercise.supersetWith = undefined;
       nextExercise.supersetGroupId = undefined;
       if (nextExercise.sets.length === 0) {
-        nextExercise.sets = [{ reps: 8, restMin: 1, restSec: 0 }];
+        nextExercise.sets = [{ setNumber: 1, reps: 8, weight: 0, restMin: 1, restSec: 0, type: 'REGULAR' }];
       }
     } else {
       // First, break ALL existing superset connections
@@ -482,7 +1030,7 @@ export class ProgramLibraryComponent implements OnInit {
           ex.supersetWith = undefined;
           ex.supersetGroupId = undefined;
           if (ex.sets.length === 0) {
-            ex.sets = [{ reps: 8, restMin: 1, restSec: 0 }];
+            ex.sets = [{ setNumber: 1, reps: 8, weight: 0, restMin: 1, restSec: 0, type: 'REGULAR' }];
           }
         }
       });
@@ -520,25 +1068,28 @@ export class ProgramLibraryComponent implements OnInit {
   setActiveTab(tab: string) {
     this.activeTab = tab;
     this.currentPage = 0;
+    if (tab === 'templates') {
+      this.programTypeFilter = 'ALL';
+    }
     this.loadPrograms();
   }
 
   onSearchChange() {
     this.currentPage = 0;
-    this.loadPrograms();
+    this.applyProgramFilters();
   }
 
   previousPage() {
     if (this.currentPage > 0) {
       this.currentPage--;
-      this.loadPrograms();
+      this.applyProgramFilters();
     }
   }
 
   nextPage() {
     if (this.currentPage < this.totalPages - 1) {
       this.currentPage++;
-      this.loadPrograms();
+      this.applyProgramFilters();
     }
   }
 

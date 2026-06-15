@@ -2,6 +2,7 @@ import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/cor
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, filter, finalize, takeUntil, catchError } from 'rxjs/operators';
 import { BehaviorSubject, Subject, of } from 'rxjs';
@@ -43,7 +44,7 @@ type SaveStatus = 'UNSAVED' | 'DRAFT' | 'PUBLISHED';
 @Component({
   selector: 'app-create-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss'
 })
@@ -283,6 +284,11 @@ export class CreateFormComponent implements OnInit, OnDestroy {
 
   removeQuestion(index: number): void {
     this.questions = this.questions.filter((_, i) => i !== index);
+    this.triggerAutoSave();
+  }
+
+  onDrop(event: CdkDragDrop<QuestionItem[]>): void {
+    moveItemInArray(this.questions, event.previousIndex, event.currentIndex);
     this.triggerAutoSave();
   }
 
