@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -6,6 +6,7 @@ import { WorkoutService } from 'app/service/workout.service';
 import { ModalConfirmComponent } from '../modal-confirm/modal-confirm.component';
 import { WorkoutDayService } from 'app/service/workout-day.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import * as XLSX from 'xlsx';
 
 type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING';
 type WorkoutSetType = 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
@@ -71,6 +72,7 @@ interface FileProgram {
   coachName: string;
   resourceType: string;
   originalFileName?: string;
+  fileName?: string;
   fileUrl?: string;
   fileSizeBytes?: number;
   startDate?: string;
@@ -87,13 +89,35 @@ interface FileProgram {
   templateUrl: './client-workouts.component.html',
   styleUrl: './client-workouts.component.scss',
 })
-export class ClientWorkoutsComponent implements OnInit {
+export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   activeTab: 'upcoming' | 'past' = 'upcoming';
   clientViewMode: 'calendar' | 'file' = 'calendar';
   currentMonthDate = new Date();
   userid = sessionStorage.getItem('userId');
   selectedWorkout: Workout | null = null;
   selectedFileProgram: FileProgram | null = null;
+  selectedFileSafeUrl: SafeResourceUrl | null = null;
+  selectedFileBlobUrl: string | null = null;
+  selectedFileLoading = false;
+  selectedFileError = '';
+
+  @ViewChild('pdfCanvas') pdfCanvas?: ElementRef<HTMLCanvasElement>;
+
+  private pdfJsLib: any = null;
+  private pdfDocument: any = null;
+  private pdfBlob: Blob | null = null;
+  private pdfRenderTask: any = null;
+
+  pdfCurrentPage = 1;
+  pdfTotalPages = 0;
+  pdfZoom: number = 100;
+  isPdfFullscreen = false;
+
+  excelSheets: string[] = [];
+  selectedExcelSheetName = '';
+  excelRows: any[][] = [];
+  excelHeaders: string[] = [];
+  excelLoading = false;
 
   workouts: Workout[] = [];
   filePrograms: FileProgram[] = [];
@@ -115,6 +139,10 @@ export class ClientWorkoutsComponent implements OnInit {
       next: () => this.getWorkoutDay(),
       error: () => this.getWorkoutDay(),
     });
+  }
+
+  ngOnDestroy(): void {
+    this.revokeSelectedFileBlob();
   }
 
   get showExerciseWeight(): boolean {
@@ -167,6 +195,7 @@ export class ClientWorkoutsComponent implements OnInit {
       this.clientViewMode = 'file';
     }
 
+    this.loadSelectedFilePreview();
     this.selectedWorkout = null;
   }
 
@@ -249,6 +278,7 @@ export class ClientWorkoutsComponent implements OnInit {
         coachName,
         resourceType: type === 'XLS' || type === 'XLSX' ? 'EXCEL' : (type || 'PDF'),
         originalFileName: plan.originalFileName,
+        fileName: plan.fileName,
         fileUrl: plan.fileUrl,
         fileSizeBytes: plan.fileSizeBytes,
         startDate: plan.startDate,
@@ -281,33 +311,330 @@ export class ClientWorkoutsComponent implements OnInit {
     if (mode === 'file' && !this.selectedFileProgram) {
       this.selectedFileProgram = this.currentPrograms[0] || this.filePrograms[0] || null;
     }
+    if (mode === 'file') {
+      this.loadSelectedFilePreview();
+    }
   }
 
   selectFileProgram(program: FileProgram) {
     this.selectedFileProgram = program;
     this.clientViewMode = 'file';
+    this.loadSelectedFilePreview();
   }
 
   getSafeSelectedFileUrl(): SafeResourceUrl | null {
-    if (!this.selectedFileProgram) return null;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(this.workoutService.getWorkoutFileUrl(this.selectedFileProgram as any));
+    return this.selectedFileSafeUrl;
+  }
+
+  private revokeSelectedFileBlob() {
+    if (this.selectedFileBlobUrl) {
+      window.URL.revokeObjectURL(this.selectedFileBlobUrl);
+      this.selectedFileBlobUrl = null;
+    }
+    this.selectedFileSafeUrl = null;
+    this.pdfDocument = null;
+    this.pdfBlob = null;
+  }
+
+
+  async ensurePdfJsLoaded() {
+    if (this.pdfJsLib) {
+      return this.pdfJsLib;
+    }
+
+    const pdfjs = await import('pdfjs-dist');
+    (pdfjs as any).GlobalWorkerOptions.workerSrc = 'assets/pdf.worker.min.mjs';
+
+    this.pdfJsLib = pdfjs as any;
+    return this.pdfJsLib;
+  }
+
+  async renderPdfPage() {
+    if (!this.pdfDocument || !this.pdfCanvas?.nativeElement) {
+      return;
+    }
+
+    if (this.pdfRenderTask) {
+      try {
+        this.pdfRenderTask.cancel();
+      } catch (e) {}
+      this.pdfRenderTask = null;
+    }
+
+    const canvas = this.pdfCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      return;
+    }
+
+    const page = await this.pdfDocument.getPage(this.pdfCurrentPage);
+    const parent = canvas.parentElement;
+    const availableWidth = Math.max(320, (parent?.clientWidth || 900) - 48);
+
+    const baseViewport = page.getViewport({ scale: 1 });
+    const pageWidthScale = availableWidth / baseViewport.width;
+    const scale = pageWidthScale * (Number(this.pdfZoom || 100) / 100);
+    const viewport = page.getViewport({ scale });
+
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+    this.pdfRenderTask = page.render({ canvasContext: ctx, viewport });
+
+    try {
+      await this.pdfRenderTask.promise;
+    } catch (error: any) {
+      if (error?.name !== 'RenderingCancelledException') {
+        console.error('PDF render error:', error);
+      }
+    } finally {
+      this.pdfRenderTask = null;
+    }
+  }
+
+  loadSelectedFilePreview() {
+    this.revokeSelectedFileBlob();
+    this.selectedFileError = '';
+
+    const resourceType = String(this.selectedFileProgram?.resourceType || '').toUpperCase();
+
+    if (!this.selectedFileProgram) {
+      this.selectedFileLoading = false;
+      return;
+    }
+
+    if (resourceType === 'EXCEL' || resourceType === 'XLS' || resourceType === 'XLSX') {
+      this.loadSelectedExcelPreview();
+      return;
+    }
+
+    if (resourceType !== 'PDF') {
+      this.selectedFileLoading = false;
+      return;
+    }
+
+    this.selectedFileLoading = true;
+
+    this.workoutService.getWorkoutFileBlob(this.selectedFileProgram as any).subscribe({
+      next: async (blob) => {
+        try {
+          const pdfBlob = blob.type === 'application/pdf'
+            ? blob
+            : new Blob([blob], { type: 'application/pdf' });
+
+          this.pdfBlob = pdfBlob;
+          this.selectedFileBlobUrl = window.URL.createObjectURL(pdfBlob);
+          this.selectedFileSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.selectedFileBlobUrl);
+
+          const pdfjs = await this.ensurePdfJsLoaded();
+          const arrayBuffer = await pdfBlob.arrayBuffer();
+
+          this.pdfDocument = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+          this.pdfTotalPages = this.pdfDocument.numPages || 0;
+          this.pdfCurrentPage = 1;
+          this.selectedFileLoading = false;
+
+          setTimeout(() => this.renderPdfPage(), 0);
+        } catch (error) {
+          console.error('Error preparing PDF preview:', error);
+          this.selectedFileError = 'Impossible d’afficher l’aperçu du PDF. Téléchargez le fichier pour l’ouvrir.';
+          this.selectedFileLoading = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading PDF preview:', error);
+        this.selectedFileError = 'Impossible d’afficher l’aperçu du PDF. Téléchargez le fichier pour l’ouvrir.';
+        this.selectedFileLoading = false;
+      },
+    });
+  }
+
+  loadSelectedExcelPreview() {
+    this.excelLoading = true;
+    this.selectedFileLoading = true;
+    this.selectedFileError = '';
+
+    if (!this.selectedFileProgram) return;
+
+    this.workoutService.getWorkoutFileBlob(this.selectedFileProgram as any).subscribe({
+      next: async (blob) => {
+        try {
+          const arrayBuffer = await blob.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+          this.excelSheets = workbook.SheetNames || [];
+          this.selectedExcelSheetName = this.excelSheets[0] || '';
+
+          this.populateExcelPreview(workbook, this.selectedExcelSheetName);
+
+          this.excelLoading = false;
+          this.selectedFileLoading = false;
+        } catch (error) {
+          console.error('Error loading Excel preview:', error);
+          this.selectedFileError = 'Impossible d’afficher l’aperçu Excel. Téléchargez le fichier pour l’ouvrir.';
+          this.excelLoading = false;
+          this.selectedFileLoading = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading Excel preview:', error);
+        this.selectedFileError = 'Impossible d’afficher l’aperçu Excel. Téléchargez le fichier pour l’ouvrir.';
+        this.excelLoading = false;
+        this.selectedFileLoading = false;
+      },
+    });
+  }
+
+  populateExcelPreview(workbook: XLSX.WorkBook, sheetName: string) {
+    const sheet = workbook.Sheets[sheetName];
+
+    if (!sheet) {
+      this.excelHeaders = [];
+      this.excelRows = [];
+      return;
+    }
+
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: false,
+      defval: '',
+    }) as any[][];
+
+    const nonEmptyRows = rows.filter((row) => row.some((cell) => String(cell || '').trim() !== ''));
+    const previewRows = nonEmptyRows.slice(0, 80);
+    const maxColumns = Math.min(
+      16,
+      Math.max(1, ...previewRows.map((row) => row.length))
+    );
+
+    this.excelHeaders = Array.from({ length: maxColumns }).map((_, index) => this.excelColumnName(index));
+    this.excelRows = previewRows.map((row) =>
+      Array.from({ length: maxColumns }).map((_, index) => row[index] ?? '')
+    );
+  }
+
+  excelColumnName(index: number): string {
+    let name = '';
+    let n = index + 1;
+
+    while (n > 0) {
+      const r = (n - 1) % 26;
+      name = String.fromCharCode(65 + r) + name;
+      n = Math.floor((n - 1) / 26);
+    }
+
+    return name;
+  }
+
+
+  onExcelSheetChange(sheetName: string) {
+    if (!this.selectedFileProgram || !sheetName) return;
+
+    this.selectedExcelSheetName = sheetName;
+    this.loadSelectedExcelPreview();
   }
 
   openSelectedFile() {
+    // Open preview in a new tab without forcing download.
+    if (this.selectedFileBlobUrl) {
+      window.open(this.selectedFileBlobUrl, '_blank');
+      return;
+    }
+
     if (!this.selectedFileProgram) return;
-    window.open(this.workoutService.getWorkoutFileUrl(this.selectedFileProgram as any), '_blank');
+
+    this.workoutService.getWorkoutFileBlob(this.selectedFileProgram as any).subscribe({
+      next: (blob) => {
+        const pdfBlob = blob.type === 'application/pdf'
+          ? blob
+          : new Blob([blob], { type: 'application/pdf' });
+
+        const blobUrl = window.URL.createObjectURL(pdfBlob);
+        window.open(blobUrl, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+      },
+      error: (error) => {
+        console.error('Error opening file:', error);
+      },
+    });
   }
 
-  printSelectedFile() {
-    this.openSelectedFile();
+  downloadSelectedFile() {
+    // Download only when user clicks Télécharger.
+    if (!this.selectedFileProgram) return;
+
+    this.workoutService.getWorkoutFileBlob(this.selectedFileProgram as any).subscribe({
+      next: (blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download =
+          this.selectedFileProgram?.originalFileName ||
+          (this.selectedFileProgram as any)?.fileName ||
+          `${this.selectedFileProgram?.name || 'workout-program'}.pdf`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+      },
+      error: (error) => {
+        console.error('Error downloading file:', error);
+      },
+    });
   }
 
-  shareSelectedFile() {
-    this.openSelectedFile();
+  pdfPreviousPage() {
+    if (this.pdfCurrentPage > 1) {
+      this.pdfCurrentPage -= 1;
+      this.renderPdfPage();
+    }
+  }
+
+  pdfNextPage() {
+    if (!this.pdfTotalPages || this.pdfCurrentPage < this.pdfTotalPages) {
+      this.pdfCurrentPage += 1;
+      this.renderPdfPage();
+    }
+  }
+
+  pdfZoomOut() {
+    this.pdfZoom = Math.max(50, Number(this.pdfZoom || 100) - 10);
+    this.renderPdfPage();
+  }
+
+  pdfZoomIn() {
+    this.pdfZoom = Math.min(180, Number(this.pdfZoom || 100) + 10);
+    this.renderPdfPage();
+  }
+
+  setPdfPageWidth() {
+    this.pdfZoom = 100;
+    this.renderPdfPage();
+  }
+
+  get pdfZoomLabel(): string {
+    return this.pdfZoom === 100 ? 'Page width' : `${this.pdfZoom}%`;
+  }
+
+  togglePdfFullscreen() {
+    this.isPdfFullscreen = !this.isPdfFullscreen;
+    setTimeout(() => this.renderPdfPage(), 120);
+  }
+
+  scrollPdfToBottom() {
+    const container = document.querySelector('.yo-pdf-stage') as HTMLElement | null;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
   }
 
   fullscreenSelectedFile() {
-    this.openSelectedFile();
+    this.togglePdfFullscreen();
   }
 
   formatFileSize(bytes?: number): string {

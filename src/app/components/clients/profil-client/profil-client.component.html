@@ -880,6 +880,142 @@
   (assignProgram)="onAssignWorkoutFromModal($event)"
 ></app-workout-program-selection-modal>
 
+
+
+<div *ngIf="showWorkoutTypeModal" class="workout-plan-type-backdrop">
+  <div class="workout-plan-type-modal">
+    <div class="workout-plan-type-header">
+      <h3>Choose a workout plan type</h3>
+
+      <button type="button" class="workout-plan-type-close" (click)="closeWorkoutTypeModal()">
+        ×
+      </button>
+    </div>
+
+    <div class="workout-plan-type-body">
+      <div class="workout-plan-type-card">
+        <h4>Normal Workout Plan</h4>
+        <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
+
+        <button type="button" class="workout-plan-type-primary" (click)="createNormalWorkoutFromProfile()">
+          Create Normal Workout
+        </button>
+      </div>
+
+      <div class="workout-plan-type-card">
+        <h4>File Workout Plan</h4>
+        <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
+
+        <button type="button" class="workout-plan-type-primary" (click)="importFileWorkoutFromProfile()">
+          Import PDF / Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="workout-plan-type-footer">
+      <button type="button" class="workout-plan-type-cancel" (click)="closeWorkoutTypeModal()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<div *ngIf="showFileWorkoutImportModal" class="profile-file-import-backdrop">
+  <div class="profile-file-import-modal">
+    <div class="profile-file-import-header">
+      <div>
+        <h3>Importer un programme</h3>
+        <p>Importez un fichier PDF ou Excel, puis assignez-le uniquement à ce client.</p>
+      </div>
+
+      <button type="button" class="profile-file-import-close" (click)="closeFileWorkoutImportModal()">
+        ×
+      </button>
+    </div>
+
+    <div class="profile-file-import-body">
+      <input
+        id="profileWorkoutFileInput"
+        type="file"
+        accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        hidden
+        (change)="onProfileWorkoutFileSelected($event)"
+      />
+
+      <div class="profile-file-dropzone" (click)="browseProfileWorkoutFile()" [class.has-file]="profileImportWorkoutFile">
+        <div class="profile-file-upload-icon">↥</div>
+
+        <ng-container *ngIf="!profileImportWorkoutFile; else selectedProfileFile">
+          <strong>Glissez votre fichier ici ou <span>parcourez</span></strong>
+          <small>PDF, XLS, XLSX · jusqu'à 25 MB</small>
+        </ng-container>
+
+        <ng-template #selectedProfileFile>
+          <strong>{{ profileImportWorkoutFile?.name }}</strong>
+          <small>{{ (profileImportWorkoutFile?.size || 0) / 1024 / 1024 | number:'1.0-1' }} MB</small>
+          <button type="button" class="profile-file-clear" (click)="clearProfileWorkoutFile($event)">Changer le fichier</button>
+        </ng-template>
+      </div>
+
+      <label class="profile-file-label">
+        Nom du programme <span>*</span>
+        <input
+          type="text"
+          [(ngModel)]="profileImportWorkoutName"
+          placeholder="Ex: Programme Hypertrophie - Phase 1"
+        />
+      </label>
+
+      <label class="profile-file-label">
+        Description <em>(optionnelle)</em>
+        <textarea
+          rows="3"
+          [(ngModel)]="profileImportWorkoutDetails"
+          placeholder="Ex: Programme complet de 6 semaines..."
+        ></textarea>
+      </label>
+
+      <div class="profile-file-date-grid">
+        <label class="profile-file-label">
+          Date de début <span>*</span>
+          <input type="date" [(ngModel)]="profileImportStartDate" />
+        </label>
+
+        <label class="profile-file-label">
+          Date de fin <span>*</span>
+          <input type="date" [(ngModel)]="profileImportEndDate" />
+        </label>
+      </div>
+
+      <div class="profile-file-info">
+        <i class="fas fa-info-circle"></i>
+        Ce programme sera enregistré et assigné uniquement à ce client. Il n’apparaîtra pas dans Workout Library.
+      </div>
+
+      <div class="profile-file-error" *ngIf="profileImportError">
+        {{ profileImportError }}
+      </div>
+    </div>
+
+    <div class="profile-file-import-footer">
+      <button type="button" class="profile-file-cancel" (click)="closeFileWorkoutImportModal()" [disabled]="profileImportSaving">
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="profile-file-save"
+        (click)="saveAndAssignProfileFileWorkout()"
+        [disabled]="!canSaveProfileFileWorkout()"
+      >
+        <span *ngIf="!profileImportSaving">Enregistrer et assigner</span>
+        <span *ngIf="profileImportSaving">Enregistrement...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <app-choose-plan-type-modal
   [isVisible]="showChooseModal"
   (onClose)="closeAssignFlow()"

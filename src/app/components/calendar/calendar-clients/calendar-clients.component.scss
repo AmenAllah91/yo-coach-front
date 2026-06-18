@@ -2003,3 +2003,295 @@
   outline-offset: -4px;
   background-color: rgba(68, 180, 223, 0.08);
 }
+
+
+/* ========= PDF / EXCEL workout programs in calendar ========= */
+/* Non-invasive styles: existing workout/nutrition cards stay unchanged. */
+
+.card-file-workout {
+  border-left-width: 4px;
+}
+
+.card-file-pdf {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
+.card-file-excel {
+  border-color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.08) !important;
+}
+
+.card-file-pdf .card-title {
+  color: #991b1b;
+}
+
+.card-file-excel .card-title {
+  color: #065f46;
+}
+
+.card-file-pdf .program-name {
+  color: #ef4444;
+}
+
+.card-file-excel .program-name {
+  color: #16a34a;
+}
+
+.file-card-inline-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1;
+  background: #ffffff;
+  vertical-align: middle;
+}
+
+.card-file-pdf .file-card-inline-icon {
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.card-file-excel .file-card-inline-icon {
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.file-calendar-meta {
+  margin-top: 6px;
+  font-size: 9px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card.large .file-calendar-meta {
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+
+/* ========= Connected PDF / Excel bars ========= */
+/* This only affects file workout programs. Normal workout days stay unchanged. */
+
+.calendar-month {
+  overflow: hidden;
+}
+
+.month-grid,
+.month-cell,
+.cell-content {
+  overflow: visible;
+}
+
+.file-range-wrapper {
+  position: relative;
+  z-index: 5;
+  overflow: visible;
+}
+
+.file-range-wrapper .file-range-card {
+  position: relative;
+  width: calc((100% + 16px) * var(--file-span, 1) - 16px);
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left-width: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: none;
+}
+
+.file-range-wrapper .file-range-card:hover {
+  transform: none;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.file-range-card .card-header {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+  align-items: center;
+}
+
+.file-range-card .card-title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-range-card .card-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.file-range-card .program-name {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.file-range-card .file-calendar-meta {
+  margin: 0 0 0 auto;
+  padding-left: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  flex: 0 0 auto;
+}
+
+.file-range-card .file-calendar-meta::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 10px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.card-file-pdf.file-range-card .file-calendar-meta::after {
+  background: #ef4444;
+}
+
+.card-file-excel.file-range-card .file-calendar-meta::after {
+  background: #22c55e;
+}
+
+.card-file-pdf.file-range-card {
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  background: rgba(239, 68, 68, 0.075) !important;
+}
+
+.card-file-excel.file-range-card {
+  border: 1px solid rgba(34, 197, 94, 0.28) !important;
+  background: rgba(34, 197, 94, 0.075) !important;
+}
+
+.card-file-pdf.file-range-card .card-title {
+  color: #991b1b;
+}
+
+.card-file-excel.file-range-card .card-title {
+  color: #065f46;
+}
+
+@media (max-width: 900px) {
+  .file-range-wrapper .file-range-card {
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .file-range-card .card-title {
+    font-size: 11px;
+  }
+
+  .file-range-card .program-name,
+  .file-range-card .file-calendar-meta {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .file-range-card .program-name,
+  .file-range-card .file-calendar-meta {
+    display: none;
+  }
+
+  .file-range-wrapper .file-range-card {
+    min-height: 38px;
+  }
+}
+
+
+/* ========= Connected segmented PDF / Excel bars - no overlap ========= */
+/* Each day cell owns its small segment, so normal workout cards on middle days are not covered. */
+
+.file-range-wrapper {
+  z-index: 2;
+  overflow: visible;
+  margin: 0 -1px 4px -1px;
+}
+
+.file-range-wrapper .file-range-card {
+  width: 100% !important;
+  min-height: 42px;
+  height: 42px;
+  padding: 8px 10px;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.file-range-start .file-range-card,
+.file-range-single .file-range-card {
+  border-top-left-radius: 9px;
+  border-bottom-left-radius: 9px;
+}
+
+.file-range-end .file-range-card,
+.file-range-single .file-range-card {
+  border-top-right-radius: 9px;
+  border-bottom-right-radius: 9px;
+}
+
+.file-range-middle .file-range-card {
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+.file-range-card .card-header {
+  min-width: 0;
+  width: 100%;
+}
+
+.file-range-card .card-title-block {
+  min-width: 0;
+  width: 100%;
+}
+
+.file-range-card .card-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-range-middle .file-range-card .card-title {
+  opacity: 0.35;
+}
+
+.file-range-card .program-name {
+  white-space: nowrap;
+}
+
+.file-range-card .file-calendar-meta {
+  margin-left: auto;
+  padding-left: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.file-range-card .file-calendar-meta::after {
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+}
+
+.file-range-wrapper .file-range-card:hover {
+  transform: none;
+}
+
+@media (max-width: 900px) {
+  .file-range-wrapper .file-range-card {
+    height: 38px;
+    min-height: 38px;
+    padding: 7px 8px;
+  }
+}

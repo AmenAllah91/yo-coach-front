@@ -176,6 +176,16 @@ export class ProfilClientComponent {
   showProgramSelectionModal = false;
   showNutritionSelectionModal = false;
   showChooseModal = false;
+  showWorkoutTypeModal = false;
+  showFileWorkoutImportModal = false;
+
+  profileImportWorkoutFile: File | null = null;
+  profileImportWorkoutName = '';
+  profileImportWorkoutDetails = '';
+  profileImportStartDate = '';
+  profileImportEndDate = '';
+  profileImportSaving = false;
+  profileImportError = '';
 
   nutritionSelectionList: any[] = [];
   assignments: FormAssignment[] = [];
@@ -209,6 +219,7 @@ export class ProfilClientComponent {
 
   todaysWorkout: TodaysWorkout | null = null;
   activeNutritionPlan: ActiveNutritionPlan | null = null;
+  private pendingCreatedWorkoutToAssign: any | null = null;
   loadingDashboardPrograms = false;
   dashboardProgramsError: string | null = null;
 
@@ -283,6 +294,11 @@ export class ProfilClientComponent {
       }
     });
 
+    const assignAfterCreate = history.state?.assignAfterCreate;
+    if (assignAfterCreate?.type === 'workout' && assignAfterCreate?.item) {
+      this.pendingCreatedWorkoutToAssign = assignAfterCreate.item;
+    }
+
     this.getAllNutrition();
   }
 
@@ -301,6 +317,7 @@ export class ProfilClientComponent {
   getClientById(id: string) {
     this.clientService.getClientById(id).subscribe((res) => {
       this.client = res;
+      this.assignPendingCreatedWorkoutIfNeeded();
     });
   }
 
@@ -652,6 +669,12 @@ export class ProfilClientComponent {
     });
   }
 
+  openDirectWorkoutSelection(): void {
+    this.assignType = 'WORKOUT';
+    this.showAssignSelectModal = false;
+    this.showProgramSelectionModal = true;
+  }
+
   openAssignProgramModal(type: 'WORKOUT' | 'NUTRITION'): void {
     this.assignType = type;
     this.showAssignSelectModal = true;
@@ -681,20 +704,145 @@ export class ProfilClientComponent {
         queryParams: {
           returnTo: 'client-profile',
           clientId: this.clientId,
-          openAssign: 1
-        }
+          openAssign: 1,
+        },
       });
       return;
     }
 
     if (this.assignType === 'WORKOUT') {
-      this.router.navigateByUrl('clients/create-workout/' + this.clientId);
+      // Create New Program / Build a custom program => open the same type chooser as Workout Library.
+      this.showWorkoutTypeModal = true;
+      return;
     }
 
     if (this.assignType === 'NUTRITION') {
       this.showChooseModal = true;
+      return;
     }
   }
+
+
+  closeWorkoutTypeModal(): void {
+    this.showWorkoutTypeModal = false;
+  }
+
+  createNormalWorkoutFromProfile(): void {
+    this.showWorkoutTypeModal = false;
+
+    const returnUrl = this.router.url.split('?')[0] + '?tab=workouts';
+
+    this.router.navigate(['clients/create-workout', this.clientId], {
+      queryParams: {
+        returnUrl,
+        assignOnly: 1,
+      },
+    });
+  }
+
+  importFileWorkoutFromProfile(): void {
+    // Do not redirect to Program Library from profile.
+    // Open the import modal and save+assign ONLY to this client.
+    this.showWorkoutTypeModal = false;
+    this.openFileWorkoutImportModal();
+  }
+
+  openFileWorkoutImportModal(): void {
+    this.showFileWorkoutImportModal = true;
+    this.profileImportWorkoutFile = null;
+    this.profileImportWorkoutName = '';
+    this.profileImportWorkoutDetails = '';
+    this.profileImportStartDate = '';
+    this.profileImportEndDate = '';
+    this.profileImportError = '';
+    this.profileImportSaving = false;
+  }
+
+  closeFileWorkoutImportModal(): void {
+    if (this.profileImportSaving) return;
+    this.showFileWorkoutImportModal = false;
+    this.profileImportError = '';
+  }
+
+  browseProfileWorkoutFile(): void {
+    const input = document.getElementById('profileWorkoutFileInput') as HTMLInputElement | null;
+    input?.click();
+  }
+
+  onProfileWorkoutFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const valid = fileName.endsWith('.pdf') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx');
+
+    if (!valid) {
+      this.profileImportError = 'Only PDF, XLS, or XLSX files are accepted.';
+      input.value = '';
+      return;
+    }
+
+    const maxSize = 25 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      this.profileImportError = 'File size must be less than 25 MB.';
+      input.value = '';
+      return;
+    }
+
+    this.profileImportWorkoutFile = file;
+    this.profileImportError = '';
+
+    if (!this.profileImportWorkoutName) {
+      this.profileImportWorkoutName = file.name.replace(/\.(pdf|xls|xlsx)$/i, '');
+    }
+  }
+
+  clearProfileWorkoutFile(event?: Event): void {
+    event?.stopPropagation();
+    this.profileImportWorkoutFile = null;
+    const input = document.getElementById('profileWorkoutFileInput') as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
+  canSaveProfileFileWorkout(): boolean {
+    return !!this.profileImportWorkoutFile
+      && !!this.profileImportWorkoutName?.trim()
+      && !!this.profileImportStartDate
+      && !!this.profileImportEndDate
+      && !this.profileImportSaving;
+  }
+
+  saveAndAssignProfileFileWorkout(): void {
+    if (!this.canSaveProfileFileWorkout() || !this.profileImportWorkoutFile || !this.clientId) return;
+
+    this.profileImportSaving = true;
+    this.profileImportError = '';
+
+    this.workoutService.createAndAssignFileWorkoutOnly(
+      this.profileImportWorkoutFile,
+      this.profileImportWorkoutName.trim(),
+      this.profileImportWorkoutDetails?.trim() || undefined,
+      this.clientId,
+      this.profileImportStartDate,
+      this.profileImportEndDate
+    ).subscribe({
+      next: () => {
+        this.profileImportSaving = false;
+        this.showFileWorkoutImportModal = false;
+        this.closeAssignFlow();
+        this.loadDashboardPrograms();
+      },
+      error: (err) => {
+        console.error('Failed to import and assign file workout:', err);
+        this.profileImportSaving = false;
+        this.profileImportError = 'Impossible d’importer et assigner ce programme. Vérifiez le fichier et les dates.';
+      },
+    });
+  }
+
 
   backToAssignModal(): void {
     this.showProgramSelectionModal = false;
@@ -785,11 +933,60 @@ export class ProfilClientComponent {
     return Array.from({ length: count }, (_, i) => i + 1);
   }
 
+
+  private assignPendingCreatedWorkoutIfNeeded(): void {
+    if (!this.pendingCreatedWorkoutToAssign || !this.client) return;
+
+    const program = this.pendingCreatedWorkoutToAssign;
+    this.pendingCreatedWorkoutToAssign = null;
+
+    const startDate = program.startDate || new Date().toISOString().slice(0, 10);
+    const workoutDays = program.workoutDays || [];
+    let endDate = program.endDate || startDate;
+
+    if (!program.endDate && workoutDays.length) {
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + workoutDays.length - 1);
+      endDate = end.toISOString().slice(0, 10);
+    }
+
+    const item = {
+      ...program,
+      startDate,
+      endDate,
+      client: this.client,
+      isWorkoutPlanTemplate: false,
+    };
+
+    this.workoutService.assignWorkout(item.id, item).subscribe({
+      next: () => {
+        // Created from the client profile only to assign it.
+        // Remove the source from Workout Library after the assigned copy is saved.
+        this.workoutService.deleteWorkout(program.id).subscribe({
+          next: () => this.loadDashboardPrograms(),
+          error: () => this.loadDashboardPrograms(),
+        });
+      },
+      error: (err) => {
+        console.error('Failed to assign newly created workout:', err);
+      },
+    });
+  }
+
   onAssignWorkoutFromModal(payload: {
     program: any;
     startDate: string;
     endDate: string | null;
+    result?: any;
   }) {
+    // The selection modal performs the assign request itself.
+    // If result exists, just close and refresh.
+    if (payload?.result) {
+      this.showProgramSelectionModal = false;
+      this.loadDashboardPrograms();
+      return;
+    }
+
     const { program, startDate, endDate } = payload;
 
     const item = { ...program };
@@ -828,6 +1025,8 @@ export class ProfilClientComponent {
     this.showProgramSelectionModal = false;
     this.showNutritionSelectionModal = false;
     this.showChooseModal = false;
+    this.showWorkoutTypeModal = false;
+    this.showFileWorkoutImportModal = false;
     this.preselectFormId = null;
   }
 

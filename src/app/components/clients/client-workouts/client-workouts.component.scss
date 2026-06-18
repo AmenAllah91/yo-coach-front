@@ -1788,3 +1788,793 @@
   margin: 0;
   line-height: 1.6;
 }
+
+/* Client file viewer actions: only fullscreen/download, aligned right */
+.file-actions-bar {
+  justify-content: flex-end;
+}
+
+
+/* ===========================
+   YOCOACH CUSTOM PDF VIEWER
+   =========================== */
+
+.yo-pdf-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d7e3f0;
+  border-radius: 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.yo-pdf-card--fullscreen {
+  position: fixed !important;
+  inset: 12px !important;
+  z-index: 4000 !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.35) !important;
+}
+
+.yo-pdf-card .file-preview-topbar {
+  flex: 0 0 auto;
+  height: 42px;
+  padding: 0 14px;
+  background: #1e293b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.yo-pdf-card .file-preview-topbar small {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+}
+
+.yo-pdf-stage {
+  height: clamp(640px, 72vh, 920px);
+  background: #f8fafc;
+  overflow: hidden;
+  position: relative;
+}
+
+.yo-pdf-card--fullscreen .yo-pdf-stage {
+  height: calc(100vh - 126px);
+}
+
+.yo-pdf-viewer-shell {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #f8fafc;
+}
+
+.yo-pdf-viewer-shell ::ng-deep #viewerContainer {
+  top: 0 !important;
+  background: #f8fafc !important;
+}
+
+.yo-pdf-viewer-shell ::ng-deep .page {
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.14) !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+.yo-pdf-viewer-shell ::ng-deep .toolbar,
+.yo-pdf-viewer-shell ::ng-deep #toolbarContainer,
+.yo-pdf-viewer-shell ::ng-deep #sidebarContainer,
+.yo-pdf-viewer-shell ::ng-deep #secondaryToolbar {
+  display: none !important;
+}
+
+.yo-pdf-bottom-bar {
+  flex: 0 0 auto;
+  min-height: 58px;
+  padding: 10px 14px;
+  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.yo-pdf-nav-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yo-pdf-nav-group--center {
+  justify-self: center;
+}
+
+.yo-pdf-icon-btn,
+.yo-pdf-zoom-label,
+.yo-pdf-scroll-btn {
+  border: 1px solid #d8e2ec;
+  background: #ffffff;
+  color: #0f172a;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yo-pdf-icon-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.yo-pdf-page-label {
+  min-width: 112px;
+  text-align: center;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.yo-pdf-zoom-label {
+  min-width: 92px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.yo-pdf-scroll-btn {
+  justify-self: end;
+  background: #f8fafc;
+}
+
+.yo-pdf-scroll-btn span {
+  display: inline-block;
+  font-size: 22px;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+
+.yo-pdf-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.yo-pdf-actions .ghost-action,
+.yo-pdf-actions .primary-action {
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 800;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.yo-pdf-actions .ghost-action {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.yo-pdf-actions .primary-action {
+  background: #0ea5c6;
+  border: 1px solid #0ea5c6;
+  color: #ffffff;
+}
+
+.excel-preview-empty {
+  min-height: 560px;
+}
+
+@media (max-width: 900px) {
+  .yo-pdf-bottom-bar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .yo-pdf-nav-group,
+  .yo-pdf-nav-group--center,
+  .yo-pdf-actions {
+    justify-self: stretch;
+    justify-content: center;
+  }
+
+  .yo-pdf-scroll-btn {
+    justify-self: center;
+  }
+}
+
+
+/* Canvas PDF viewer fallback: no ngx-extended-pdf-viewer */
+.yo-pdf-stage {
+  overflow: auto !important;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.yo-pdf-canvas-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.yo-pdf-canvas {
+  display: block;
+  background: #ffffff;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.14);
+  border-radius: 4px;
+  max-width: none;
+}
+
+
+/* ===========================
+   YOCOACH EXCEL PREVIEW
+   =========================== */
+.yo-excel-stage {
+  min-height: 640px;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.yo-excel-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.yo-excel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #dbe7f2;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.yo-excel-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.yo-excel-file-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yo-excel-file strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 520px;
+}
+
+.yo-excel-file small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.yo-excel-toolbar select {
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.yo-excel-table-wrap {
+  flex: 1;
+  min-height: 560px;
+  overflow: auto;
+  border: 1px solid #dbe7f2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.yo-excel-table {
+  border-collapse: collapse;
+  min-width: 100%;
+  width: max-content;
+  font-size: 13px;
+}
+
+.yo-excel-table th,
+.yo-excel-table td {
+  border: 1px solid #e2e8f0;
+  padding: 9px 12px;
+  min-width: 110px;
+  max-width: 280px;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yo-excel-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 900;
+  text-align: center;
+}
+
+.yo-excel-table .row-index {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  min-width: 54px;
+  width: 54px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  font-weight: 900;
+}
+
+.yo-excel-table tbody .row-index {
+  z-index: 1;
+}
+
+.yo-excel-table tbody tr:nth-child(even) td {
+  background: #fbfdff;
+}
+
+.yo-excel-table tbody tr:hover td,
+.yo-excel-table tbody tr:hover .row-index {
+  background: #eff6ff;
+}
+
+@media (max-width: 900px) {
+  .yo-excel-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .yo-excel-file strong {
+    max-width: 280px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE FILE VIEW FIX — Client > Workouts > Fichier
+   Fixes PDF + Excel previews on small screens.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .client-page-inner {
+    padding: 0 10px 16px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .file-toggle-wrap {
+    margin: 6px 0 12px;
+    padding: 0 2px;
+  }
+
+  .file-mode-switch {
+    width: 100%;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 999px;
+  }
+
+  .file-mode-btn {
+    min-width: 0;
+    width: 100%;
+    padding: 9px 8px;
+    gap: 4px;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .file-mode-btn span {
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .file-mode-btn small {
+    font-size: 10px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-mode-hint {
+    padding: 0 4px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .file-client-layout {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .file-sidebar {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .file-search-box input {
+    height: 38px;
+    font-size: 12px;
+  }
+
+  .sidebar-section + .sidebar-section {
+    margin-top: 10px;
+  }
+
+  .sidebar-heading {
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-program {
+    grid-template-columns: 24px minmax(0, 1fr) 18px;
+    gap: 8px;
+    padding: 9px;
+    border-radius: 9px;
+  }
+
+  .sidebar-icon {
+    font-size: 15px;
+  }
+
+  .sidebar-title {
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sidebar-meta {
+    font-size: 10px;
+  }
+
+  .file-main {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .file-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .file-card-title-wrap {
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .file-card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    flex: 0 0 30px;
+    font-size: 14px;
+  }
+
+  .file-card-title-row {
+    gap: 7px;
+  }
+
+  .file-card-title-row h2 {
+    font-size: 15px;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .active-pill {
+    font-size: 9px;
+    padding: 2px 7px;
+  }
+
+  .file-card-meta-row {
+    gap: 6px 10px;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .date-range-chip {
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 6px 9px;
+    font-size: 10px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .file-preview-shell {
+    margin: 0 8px 12px;
+    border-radius: 10px;
+    max-width: calc(100vw - 20px);
+    overflow: hidden;
+  }
+
+  .file-preview-topbar {
+    padding: 9px 10px;
+    gap: 8px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .file-preview-topbar span,
+  .file-preview-topbar small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-preview-empty {
+    padding: 22px 14px;
+  }
+
+  .file-preview-empty h3 {
+    font-size: 15px;
+    margin: 0;
+  }
+
+  .file-preview-empty p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* PDF mobile */
+  .yo-pdf-stage {
+    height: 58vh !important;
+    min-height: 360px;
+    padding: 8px !important;
+    overflow: auto !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .yo-pdf-canvas-wrap {
+    width: max-content;
+    min-width: 100%;
+    justify-content: center;
+  }
+
+  .yo-pdf-canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .yo-pdf-card--fullscreen {
+    inset: 4px !important;
+    border-radius: 12px !important;
+  }
+
+  .yo-pdf-card--fullscreen .yo-pdf-stage {
+    height: calc(100vh - 116px) !important;
+  }
+
+  .yo-pdf-bottom-bar {
+    min-height: auto;
+    padding: 8px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .yo-pdf-nav-group,
+  .yo-pdf-nav-group--center,
+  .yo-pdf-actions {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .yo-pdf-page-label {
+    min-width: 96px;
+    font-size: 11px;
+  }
+
+  .yo-pdf-icon-btn,
+  .yo-pdf-zoom-label,
+  .yo-pdf-scroll-btn {
+    height: 34px;
+    min-width: 34px;
+    border-radius: 9px;
+  }
+
+  .yo-pdf-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .yo-pdf-actions .ghost-action,
+  .yo-pdf-actions .primary-action {
+    width: 100%;
+    height: 38px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  /* Excel mobile */
+  .yo-excel-stage {
+    min-height: 0;
+    height: 58vh;
+    padding: 8px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .yo-excel-preview {
+    height: 100%;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .yo-excel-toolbar {
+    padding: 9px;
+    border-radius: 10px;
+    gap: 8px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .yo-excel-file {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .yo-excel-file-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    flex: 0 0 30px;
+    font-size: 13px;
+  }
+
+  .yo-excel-file strong {
+    max-width: 100%;
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .yo-excel-file small {
+    font-size: 10px;
+  }
+
+  .yo-excel-toolbar select {
+    width: 100%;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .yo-excel-table-wrap {
+    min-height: 0;
+    height: calc(58vh - 86px);
+    max-height: calc(58vh - 86px);
+    overflow: auto;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .yo-excel-table {
+    font-size: 11px;
+    min-width: max-content;
+    width: max-content;
+  }
+
+  .yo-excel-table th,
+  .yo-excel-table td {
+    min-width: 74px;
+    max-width: 150px;
+    padding: 7px 8px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .yo-excel-table .row-index {
+    min-width: 38px;
+    width: 38px;
+    padding: 7px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .client-header {
+    padding: 14px 8px 8px;
+  }
+
+  .client-header-title {
+    font-size: 18px;
+  }
+
+  .client-header-subtitle {
+    font-size: 11px;
+  }
+
+  .file-mode-switch {
+    border-radius: 16px;
+  }
+
+  .file-mode-btn {
+    border-radius: 14px;
+  }
+
+  .file-main {
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .file-preview-shell {
+    margin-left: 6px;
+    margin-right: 6px;
+    max-width: calc(100vw - 12px);
+  }
+
+  .yo-excel-stage,
+  .yo-pdf-stage {
+    height: 56vh !important;
+    min-height: 330px;
+  }
+
+  .yo-excel-table-wrap {
+    height: calc(56vh - 82px);
+    max-height: calc(56vh - 82px);
+  }
+
+  .yo-excel-table th,
+  .yo-excel-table td {
+    min-width: 66px;
+    max-width: 128px;
+    padding: 6px 7px;
+  }
+
+  .yo-excel-table .row-index {
+    min-width: 34px;
+    width: 34px;
+  }
+}

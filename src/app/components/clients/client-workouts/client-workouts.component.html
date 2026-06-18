@@ -92,28 +92,118 @@
               </div>
             </div>
 
-            <div class="file-preview-shell">
+            <div class="file-preview-shell yo-pdf-card" [class.yo-pdf-card--fullscreen]="isPdfFullscreen">
               <div class="file-preview-topbar">
                 <span>Aperçu du document {{ currentFile.resourceType }}</span>
-                <small>Utilisez les contrôles du lecteur pour zoomer</small>
+                <small *ngIf="currentFile.resourceType === 'PDF'">Page {{ pdfCurrentPage }} / {{ pdfTotalPages || currentFile.pageCountLabel || '—' }}</small>
               </div>
-              <div class="file-preview-body">
-                <iframe *ngIf="currentFile.resourceType === 'PDF'" [src]="getSafeSelectedFileUrl()" title="Workout file preview"></iframe>
-                <div class="file-preview-empty" *ngIf="currentFile.resourceType !== 'PDF'">
+
+              <div class="yo-pdf-stage" *ngIf="currentFile.resourceType === 'PDF'">
+                <div class="file-preview-empty" *ngIf="selectedFileLoading">
+                  <div class="file-preview-empty-icon">⏳</div>
+                  <h3>Chargement du PDF...</h3>
+                  <p>Préparation de l’aperçu sécurisé.</p>
+                </div>
+
+                <div
+                  *ngIf="selectedFileBlobUrl && !selectedFileLoading && !selectedFileError"
+                  class="yo-pdf-canvas-wrap">
+                  <canvas #pdfCanvas class="yo-pdf-canvas"></canvas>
+                </div>
+
+                <div class="file-preview-empty" *ngIf="!selectedFileLoading && selectedFileError">
+                  <div class="file-preview-empty-icon">📄</div>
+                  <h3>Aperçu indisponible</h3>
+                  <p>{{ selectedFileError }}</p>
+                </div>
+              </div>
+
+              <div class="yo-excel-stage" *ngIf="currentFile.resourceType !== 'PDF'">
+                <div class="file-preview-empty" *ngIf="excelLoading || selectedFileLoading">
+                  <div class="file-preview-empty-icon">⏳</div>
+                  <h3>Chargement du fichier Excel...</h3>
+                  <p>Préparation de l’aperçu sécurisé.</p>
+                </div>
+
+                <div class="file-preview-empty" *ngIf="!excelLoading && !selectedFileLoading && selectedFileError">
                   <div class="file-preview-empty-icon">📊</div>
-                  <h3>{{ currentFile.originalFileName || currentFile.name }}</h3>
-                  <p>La prévisualisation Excel n'est pas disponible ici. Téléchargez le fichier pour l'ouvrir.</p>
+                  <h3>Aperçu Excel indisponible</h3>
+                  <p>{{ selectedFileError }}</p>
+                </div>
+
+                <div class="yo-excel-preview" *ngIf="!excelLoading && !selectedFileLoading && !selectedFileError">
+                  <div class="yo-excel-toolbar">
+                    <div class="yo-excel-file">
+                      <span class="yo-excel-file-icon">📊</span>
+                      <div>
+                        <strong>{{ currentFile.originalFileName || currentFile.name }}</strong>
+                        <small>{{ excelRows.length }} lignes affichées</small>
+                      </div>
+                    </div>
+
+                    <select
+                      *ngIf="excelSheets.length > 1"
+                      [(ngModel)]="selectedExcelSheetName"
+                      (ngModelChange)="onExcelSheetChange($event)">
+                      <option *ngFor="let sheet of excelSheets" [value]="sheet">{{ sheet }}</option>
+                    </select>
+                  </div>
+
+                  <div class="yo-excel-table-wrap" *ngIf="excelRows.length > 0; else emptyExcelSheet">
+                    <table class="yo-excel-table">
+                      <thead>
+                        <tr>
+                          <th class="row-index"></th>
+                          <th *ngFor="let header of excelHeaders">{{ header }}</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        <tr *ngFor="let row of excelRows; let rowIndex = index">
+                          <th class="row-index">{{ rowIndex + 1 }}</th>
+                          <td *ngFor="let cell of row">{{ cell }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <ng-template #emptyExcelSheet>
+                    <div class="file-preview-empty">
+                      <div class="file-preview-empty-icon">📊</div>
+                      <h3>Feuille vide</h3>
+                      <p>Cette feuille ne contient aucune donnée affichable.</p>
+                    </div>
+                  </ng-template>
+                </div>
+              </div>
+
+              <div class="yo-pdf-bottom-bar">
+                <div class="yo-pdf-nav-group" *ngIf="currentFile.resourceType === 'PDF'">
+                  <button class="yo-pdf-icon-btn" (click)="pdfPreviousPage()" [disabled]="pdfCurrentPage <= 1">‹</button>
+                  <span class="yo-pdf-page-label">Page {{ pdfCurrentPage }} / {{ pdfTotalPages || '—' }}</span>
+                  <button class="yo-pdf-icon-btn" (click)="pdfNextPage()" [disabled]="pdfTotalPages > 0 && pdfCurrentPage >= pdfTotalPages">›</button>
+                </div>
+
+                <div class="yo-pdf-nav-group yo-pdf-nav-group--center" *ngIf="currentFile.resourceType === 'PDF'">
+                  <button class="yo-pdf-icon-btn" (click)="pdfZoomOut()">−</button>
+                  <button class="yo-pdf-zoom-label" (click)="setPdfPageWidth()">{{ pdfZoomLabel }}</button>
+                  <button class="yo-pdf-icon-btn" (click)="pdfZoomIn()">+</button>
+                </div>
+
+                <button class="yo-pdf-scroll-btn" *ngIf="currentFile.resourceType === 'PDF'" (click)="scrollPdfToBottom()" title="Aller en bas">
+                  <span>⌄</span>
+                </button>
+
+                <div class="yo-pdf-actions">
+                  <button class="ghost-action" *ngIf="currentFile.resourceType === 'PDF'" (click)="togglePdfFullscreen()">
+                    {{ isPdfFullscreen ? 'Quitter plein écran' : 'Plein écran' }}
+                  </button>
+                  <button class="primary-action" (click)="downloadSelectedFile()">Télécharger</button>
                 </div>
               </div>
             </div>
 
-            <div class="file-actions-bar">
-              <button (click)="printSelectedFile()">Imprimer</button>
-              <button (click)="shareSelectedFile()">Partager</button>
-              <button class="ghost-action" (click)="fullscreenSelectedFile()">Plein écran</button>
-              <button class="primary-action" (click)="openSelectedFile()">Télécharger</button>
-            </div>
-          </section>
+</section>
         </div>
       </ng-container>
 

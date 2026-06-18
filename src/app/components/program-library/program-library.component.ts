@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -15,6 +16,7 @@ import { ModalAssignToclientComponent } from '../clients/modal-assign-toclient/m
 import { ClientService, Client } from 'app/service/client.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { EnumResponse, Exercise } from '@shared/models/exercice.models';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-program-library',
@@ -712,30 +714,361 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   private async fetchProgramFileBlob(program: WorkoutPlan): Promise<Blob> {
-    const url = this.workoutService.getWorkoutFileUrl(program);
-    const token = await this.authService.getToken();
+    // Same secure blob loading as client > Workouts, with a timeout so the popup
+    // never stays blocked on "Chargement du fichier..." forever.
+    return await Promise.race([
+      firstValueFrom(this.workoutService.getWorkoutFileBlob(program)),
+      new Promise<Blob>((_, reject) =>
+        setTimeout(() => reject(new Error('FILE_LOAD_TIMEOUT')), 30000)
+      ),
+    ]);
+  }
 
-    const response = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+  private getWorkoutFileExtension(program: WorkoutPlan): string {
+    const name = String(program.originalFileName || program.fileName || '').toLowerCase();
+    const resourceType = String(program.resourceType || '').toUpperCase();
 
-    if (!response.ok) {
-      throw new Error(`File request failed with status ${response.status}`);
+    if (resourceType === 'PDF' || name.endsWith('.pdf')) return 'pdf';
+    if (resourceType === 'EXCEL' || resourceType === 'XLSX' || name.endsWith('.xlsx')) return 'xlsx';
+    if (resourceType === 'XLS' || name.endsWith('.xls')) return 'xls';
+
+    return resourceType.toLowerCase() || 'file';
+  }
+
+  private isExcelProgram(program: WorkoutPlan): boolean {
+    const ext = this.getWorkoutFileExtension(program);
+    return ext === 'xls' || ext === 'xlsx' || ext === 'excel';
+  }
+
+  private isPdfProgram(program: WorkoutPlan): boolean {
+    return this.getWorkoutFileExtension(program) === 'pdf';
+  }
+
+  private escapeHtml(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  private buildFileViewerShell(title: string, subtitle: string, body: string): string {
+    return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${this.escapeHtml(title)}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7fb;
+      color: #0f172a;
+    }
+    .viewer-header {
+      min-height: 64px;
+      padding: 14px 20px;
+      background: #ffffff;
+      border-bottom: 1px solid #dbe3ea;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .viewer-title {
+      min-width: 0;
+    }
+    .viewer-title h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .viewer-title p {
+      margin: 3px 0 0;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .viewer-badge {
+      border: 1px solid #bae6fd;
+      background: #e0f2fe;
+      color: #0284c7;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .viewer-body {
+      padding: 18px;
+    }
+    .pdf-frame {
+      width: 100%;
+      height: calc(100vh - 104px);
+      border: 1px solid #dbe3ea;
+      border-radius: 12px;
+      background: #ffffff;
+    }
+    .excel-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .excel-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .excel-info strong { font-size: 14px; }
+    .excel-info span { font-size: 12px; color: #64748b; }
+    .excel-table-wrap {
+      width: 100%;
+      max-height: calc(100vh - 150px);
+      overflow: auto;
+      border: 1px solid #dbe3ea;
+      border-radius: 12px;
+      background: #ffffff;
+    }
+    table {
+      border-collapse: collapse;
+      min-width: 100%;
+      width: max-content;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      min-width: 96px;
+      max-width: 260px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 900;
+      text-align: center;
+    }
+    .row-index {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      min-width: 48px;
+      width: 48px;
+      background: #f8fafc;
+      color: #64748b;
+      text-align: center;
+      font-weight: 900;
+    }
+    tbody .row-index { z-index: 1; }
+    tbody tr:nth-child(even) td { background: #fbfdff; }
+    tbody tr:hover td,
+    tbody tr:hover .row-index { background: #eff6ff; }
+    .empty {
+      padding: 60px 20px;
+      text-align: center;
+      color: #64748b;
+    }
+    @media (max-width: 768px) {
+      .viewer-header { padding: 12px; }
+      .viewer-title h1 { font-size: 14px; }
+      .viewer-body { padding: 10px; }
+      .pdf-frame { height: calc(100vh - 92px); border-radius: 10px; }
+      .excel-table-wrap { max-height: calc(100vh - 132px); }
+      th, td { min-width: 72px; max-width: 150px; padding: 7px 8px; font-size: 11px; }
+      .row-index { min-width: 36px; width: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer-header">
+    <div class="viewer-title">
+      <h1>${this.escapeHtml(title)}</h1>
+      <p>${this.escapeHtml(subtitle)}</p>
+    </div>
+  </div>
+  <div class="viewer-body">
+    ${body}
+  </div>
+</body>
+</html>`;
+  }
+
+  private async openPdfBlobInNewWindow(program: WorkoutPlan, blob: Blob, popup: Window): Promise<void> {
+    const pdfBlob = blob.type === 'application/pdf'
+      ? blob
+      : new Blob([blob], { type: 'application/pdf' });
+
+    const blobUrl = window.URL.createObjectURL(pdfBlob);
+
+    // Important: navigate the popup directly to the PDF blob.
+    // This uses Chrome's native PDF viewer and avoids the about:blank iframe freeze.
+    popup.location.href = blobUrl;
+
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
+  }
+
+  private excelColumnName(index: number): string {
+    let name = '';
+    let n = index + 1;
+
+    while (n > 0) {
+      const r = (n - 1) % 26;
+      name = String.fromCharCode(65 + r) + name;
+      n = Math.floor((n - 1) / 26);
     }
 
-    return response.blob();
+    return name;
+  }
+
+  private async openExcelBlobInNewWindow(program: WorkoutPlan, blob: Blob, popup: Window): Promise<void> {
+    const arrayBuffer = await blob.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const sheetName = workbook.SheetNames?.[0] || '';
+    const sheet = workbook.Sheets[sheetName];
+
+    const rawRows = sheet
+      ? (XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' }) as any[][])
+      : [];
+
+    const rows = rawRows
+      .filter((row) => row.some((cell) => String(cell || '').trim() !== ''))
+      .slice(0, 300);
+
+    const maxColumns = Math.min(
+      30,
+      Math.max(1, ...rows.map((row) => row.length), 1)
+    );
+
+    const headers = Array.from({ length: maxColumns })
+      .map((_, index) => `<th>${this.excelColumnName(index)}</th>`)
+      .join('');
+
+    const bodyRows = rows.length
+      ? rows.map((row, rowIndex) => {
+          const cells = Array.from({ length: maxColumns })
+            .map((_, colIndex) => `<td>${this.escapeHtml(row[colIndex] ?? '')}</td>`)
+            .join('');
+
+          return `<tr><th class="row-index">${rowIndex + 1}</th>${cells}</tr>`;
+        }).join('')
+      : `<tr><td colspan="${maxColumns + 1}" class="empty">Feuille vide</td></tr>`;
+
+    const title = program.originalFileName || program.fileName || program.name || 'Workout Excel';
+    const subtitle = `${program.name || 'Workout program'} · ${sheetName || 'Excel'} · ${rows.length} lignes affichées`;
+
+    const table = `
+      <div class="excel-toolbar">
+        <div class="excel-info">
+          <strong>${this.escapeHtml(sheetName || 'Sheet 1')}</strong>
+          <span>${rows.length} lignes affichées${workbook.SheetNames?.length > 1 ? ' · ' + workbook.SheetNames.length + ' feuilles dans le fichier' : ''}</span>
+        </div>
+        <span class="viewer-badge">Excel Preview</span>
+      </div>
+      <div class="excel-table-wrap">
+        <table>
+          <thead>
+            <tr><th class="row-index"></th>${headers}</tr>
+          </thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+    `;
+
+    popup.document.open();
+    popup.document.write(this.buildFileViewerShell(title, subtitle, table));
+    popup.document.close();
   }
 
   async openProgramFile(program: WorkoutPlan) {
     this.openDropdownId = null;
 
+    const popup = window.open('', '_blank');
+
+    if (!popup) {
+      alert('Le navigateur a bloqué la nouvelle fenêtre. Autorisez les popups puis réessayez.');
+      return;
+    }
+
+    popup.document.open();
+    popup.document.write(`
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Chargement du fichier...</title>
+        <style>
+          body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:36px;color:#111827;background:#fff}
+          .loader{font-size:20px;font-weight:500}
+          .hint{margin-top:12px;color:#64748b;font-size:14px}
+        </style>
+      </head>
+      <body>
+        <div class="loader">Chargement du fichier...</div>
+        <div class="hint">Préparation de l’aperçu sécurisé.</div>
+      </body>
+      </html>
+    `);
+    popup.document.close();
+
     try {
       const blob = await this.fetchProgramFileBlob(program);
+
+      if (this.isExcelProgram(program)) {
+        await this.openExcelBlobInNewWindow(program, blob, popup);
+        return;
+      }
+
+      if (this.isPdfProgram(program)) {
+        await this.openPdfBlobInNewWindow(program, blob, popup);
+        return;
+      }
+
       const blobUrl = window.URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+      popup.location.href = blobUrl;
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
     } catch (error) {
       console.error('Error opening workout file:', error);
+
+      popup.document.open();
+      popup.document.write(`
+        <!doctype html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Impossible d’ouvrir le fichier</title>
+          <style>
+            body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:36px;color:#111827;background:#fff}
+            .box{max-width:560px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:14px;padding:22px}
+            h1{font-size:20px;margin:0 0 8px}
+            p{margin:0;color:#7f1d1d;line-height:1.5}
+          </style>
+        </head>
+        <body>
+          <div class="box">
+            <h1>Impossible d’ouvrir le fichier</h1>
+            <p>Vérifiez que le fichier existe dans le dossier d’upload, que votre session est valide, puis réessayez.</p>
+          </div>
+        </body>
+        </html>
+      `);
+      popup.document.close();
+
       alert('Impossible d’ouvrir le fichier. Vérifiez votre session puis réessayez.');
     }
   }
@@ -748,7 +1081,7 @@ export class ProgramLibraryComponent implements OnInit {
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = program.originalFileName || program.fileName || `${program.name || 'workout-program'}.${String(program.resourceType || 'pdf').toLowerCase()}`;
+      link.download = program.originalFileName || program.fileName || `${program.name || 'workout-program'}.${this.getWorkoutFileExtension(program)}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -758,6 +1091,7 @@ export class ProgramLibraryComponent implements OnInit {
       alert('Impossible de télécharger le fichier. Vérifiez votre session puis réessayez.');
     }
   }
+
 
   get filteredPrograms(): WorkoutPlan[] {
     return this.programs || [];

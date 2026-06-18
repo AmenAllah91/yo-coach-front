@@ -54,6 +54,13 @@ interface WorkoutProgram {
   programId?: string;
   programName?: string;
   status?: 'COMPLETED' | 'MISSED' | 'PENDING';
+
+  // Optional metadata for imported PDF / Excel workout programs.
+  // Existing workout-day behavior stays untouched.
+  fileProgram?: boolean;
+  resourceType?: 'PDF' | 'EXCEL';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface WorkoutPlanRef {
@@ -329,12 +336,108 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private isBackendFileWorkoutPlan(plan: any): boolean {
+    const mode = String(plan?.workoutPlanMode || '').toUpperCase();
+    const type = String(plan?.resourceType || '').toUpperCase();
+
+    return (
+      mode === 'FILE' ||
+      type === 'PDF' ||
+      type === 'EXCEL' ||
+      type === 'XLS' ||
+      type === 'XLSX' ||
+      !!plan?.fileName ||
+      !!plan?.originalFileName ||
+      !!plan?.fileUrl
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private getBackendFileWorkoutResourceType(plan: any): 'PDF' | 'EXCEL' {
+    const type = String(plan?.resourceType || '').toUpperCase();
+    const fileName = String(plan?.originalFileName || plan?.fileName || '').toLowerCase();
+
+    if (type === 'PDF' || fileName.endsWith('.pdf')) {
+      return 'PDF';
+    }
+
+    return 'EXCEL';
+  }
+
+  private enumerateDateRange(startDate: string, endDate: string): string[] {
+    if (!startDate) {
+      return [];
+    }
+
+    const dates: string[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate || startDate);
+
+    if (isNaN(start.getTime())) {
+      return [];
+    }
+
+    if (isNaN(end.getTime()) || end < start) {
+      dates.push(this.formatDateToYYYYMMDD(start));
+      return dates;
+    }
+
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      dates.push(this.formatDateToYYYYMMDD(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  isFileWorkoutItem(item: WorkoutProgram | NutritionProgram): boolean {
+    return this.calendarType === 'workout' && !!(item as WorkoutProgram).fileProgram;
+  }
+
+  getFileResourceType(item: WorkoutProgram | NutritionProgram): 'PDF' | 'EXCEL' {
+    return ((item as WorkoutProgram).resourceType || 'PDF') as 'PDF' | 'EXCEL';
+  }
+
+  getFileProgramSubtitle(item: WorkoutProgram | NutritionProgram): string {
+    return this.getFileResourceType(item) === 'EXCEL' ? 'Programme Excel' : 'Programme PDF';
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mapBackendToWorkoutPrograms(plans: any[]): WorkoutProgram[] {
     const result: WorkoutProgram[] = [];
 
     plans.forEach((plan) => {
       const startDate = plan.startDate;
+      const endDate = plan.endDate || plan.startDate;
+
+      // Imported PDF / Excel workout programs do not have workoutDays.
+      // We display them in the calendar during their assigned period.
+      // Existing in-app workout day logic below is untouched.
+      if (this.isBackendFileWorkoutPlan(plan)) {
+        const resourceType = this.getBackendFileWorkoutResourceType(plan);
+
+        // One item only. The calendar decides where to render connected weekly bars.
+        result.push({
+          id: `${plan.id}-file-range`,
+          title: plan.name || (resourceType === 'EXCEL' ? 'Programme Excel' : 'Programme PDF'),
+          date: startDate,
+          clientId: plan.client?.id,
+          programId: plan.id,
+          programName: resourceType === 'EXCEL' ? 'Programme Excel' : 'Programme PDF',
+          sessions: [],
+          status: 'PENDING',
+          fileProgram: true,
+          resourceType,
+          startDate,
+          endDate,
+        });
+
+        return;
+      }
 
       (plan.workoutDays || []).forEach((day: any) => {
         const date = day.date
@@ -397,6 +500,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
 
     return result;
   }
+
 
   addDays(dateStr: string, days: number): string {
     const d = new Date(dateStr);
@@ -682,11 +786,20 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
     if (this.calendarType === 'workout') {
-      return this.workoutPrograms.filter(
-        (p: WorkoutProgram) =>
-          p.date === dateStr &&
-          (this.selectedClient === 'all' || p.clientId === this.selectedClient)
-      );
+      return this.workoutPrograms.filter((p: WorkoutProgram) => {
+        const matchesClient =
+          this.selectedClient === 'all' || p.clientId === this.selectedClient;
+
+        if (!matchesClient) {
+          return false;
+        }
+
+        if (p.fileProgram) {
+          return this.shouldRenderFileRangeOnDate(p, dateStr);
+        }
+
+        return p.date === dateStr;
+      });
     } else {
       return this.nutritionPrograms.filter(
         (p) =>
@@ -696,7 +809,212 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+
+  private parseCalendarDate(dateStr?: string): Date | null {
+    if (!dateStr) {
+      return null;
+    }
+
+    const parts = dateStr.slice(0, 10).split('-').map((value) => Number(value));
+
+    if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) {
+      return null;
+    }
+
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  private isDateWithinFileRange(item: WorkoutProgram, dateStr: string): boolean {
+    const date = this.parseCalendarDate(dateStr);
+    const start = this.parseCalendarDate(item.startDate || item.date);
+    const end = this.parseCalendarDate(item.endDate || item.startDate || item.date);
+
+    if (!date || !start || !end) {
+      return false;
+    }
+
+    return date >= start && date <= end;
+  }
+
+  private isMonday(date: Date): boolean {
+    return date.getDay() === 1;
+  }
+
+  private isFirstVisibleMonthDay(date: Date): boolean {
+    return (
+      this.currentView === 'month' &&
+      date.getDate() === 1 &&
+      date.getMonth() === this.currentDate.getMonth() &&
+      date.getFullYear() === this.currentDate.getFullYear()
+    );
+  }
+
+  shouldRenderFileRangeOnDate(item: WorkoutProgram, dateStr: string): boolean {
+    // Render a segment inside every day of the file period.
+    // CSS makes adjacent segments look connected, without using a huge width
+    // that overlays normal workout cards on middle days.
+    return !!item.fileProgram && this.isDateWithinFileRange(item, dateStr);
+  }
+
+  shouldShowFileRangeText(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
+    const workoutItem = item as WorkoutProgram;
+
+    if (!workoutItem.fileProgram) {
+      return true;
+    }
+
+    const date = this.parseCalendarDate(dateStr);
+    const start = this.parseCalendarDate(workoutItem.startDate || workoutItem.date);
+
+    if (!date || !start) {
+      return true;
+    }
+
+    if (this.currentView === 'day') {
+      return true;
+    }
+
+    return (
+      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(start) ||
+      this.isMonday(date) ||
+      this.isFirstVisibleMonthDay(date)
+    );
+  }
+
+  shouldShowFileRangeEndDate(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
+    const workoutItem = item as WorkoutProgram;
+
+    if (!workoutItem.fileProgram) {
+      return false;
+    }
+
+    const date = this.parseCalendarDate(dateStr);
+    const end = this.parseCalendarDate(workoutItem.endDate || workoutItem.startDate || workoutItem.date);
+
+    if (!date || !end) {
+      return false;
+    }
+
+    if (this.currentView === 'day') {
+      return true;
+    }
+
+    return (
+      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(end) ||
+      date.getDay() === 0
+    );
+  }
+
+  isFileRangeStart(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
+    const workoutItem = item as WorkoutProgram;
+    const date = this.parseCalendarDate(dateStr);
+    const start = this.parseCalendarDate(workoutItem.startDate || workoutItem.date);
+
+    if (!date || !start) {
+      return false;
+    }
+
+    return (
+      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(start) ||
+      this.isMonday(date) ||
+      this.isFirstVisibleMonthDay(date) ||
+      this.currentView === 'day'
+    );
+  }
+
+  isFileRangeEnd(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
+    const workoutItem = item as WorkoutProgram;
+    const date = this.parseCalendarDate(dateStr);
+    const end = this.parseCalendarDate(workoutItem.endDate || workoutItem.startDate || workoutItem.date);
+
+    if (!date || !end) {
+      return false;
+    }
+
+    return (
+      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(end) ||
+      date.getDay() === 0 ||
+      this.currentView === 'day'
+    );
+  }
+
+  getFileRangePositionClass(item: WorkoutProgram | NutritionProgram, dateStr: string): string {
+    if (!this.isFileWorkoutItem(item)) {
+      return '';
+    }
+
+    const isStart = this.isFileRangeStart(item, dateStr);
+    const isEnd = this.isFileRangeEnd(item, dateStr);
+
+    if (isStart && isEnd) {
+      return 'file-range-single';
+    }
+
+    if (isStart) {
+      return 'file-range-start';
+    }
+
+    if (isEnd) {
+      return 'file-range-end';
+    }
+
+    return 'file-range-middle';
+  }
+
+  getFileRangeEndLabel(item: WorkoutProgram | NutritionProgram): string {
+    const workoutItem = item as WorkoutProgram;
+    return workoutItem.endDate || workoutItem.startDate || workoutItem.date || '';
+  }
+
+  getFileRangeSpan(item: WorkoutProgram | NutritionProgram, dateStr: string): number {
+    const workoutItem = item as WorkoutProgram;
+
+    if (!workoutItem.fileProgram) {
+      return 1;
+    }
+
+    const start = this.parseCalendarDate(dateStr);
+    const end = this.parseCalendarDate(
+      workoutItem.endDate || workoutItem.startDate || workoutItem.date
+    );
+
+    if (!start || !end) {
+      return 1;
+    }
+
+    if (this.currentView === 'day') {
+      return 1;
+    }
+
+    const limit = new Date(start);
+    const day = limit.getDay();
+    const diffToSunday = day === 0 ? 0 : 7 - day;
+    limit.setDate(limit.getDate() + diffToSunday);
+
+    if (this.currentView === 'month') {
+      const endOfMonth = new Date(
+        this.currentDate.getFullYear(),
+        this.currentDate.getMonth() + 1,
+        0
+      );
+
+      if (limit > endOfMonth) {
+        limit.setTime(endOfMonth.getTime());
+      }
+    }
+
+    const finalEnd = end < limit ? end : limit;
+    const diffMs = finalEnd.getTime() - start.getTime();
+    const days = Math.floor(diffMs / 86400000) + 1;
+
+    return Math.max(1, Math.min(7, days));
+  }
+
   viewWorkout(w: WorkoutProgram): void {
+    if (w.fileProgram) {
+      return;
+    }
+
     this.selectedWorkout = w;
     this.showWorkoutDetails = true;
   }
@@ -916,6 +1234,10 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
     if (Date.now() < this.suppressWorkoutClickUntil) {
       event?.preventDefault();
       event?.stopPropagation();
+      return;
+    }
+
+    if (workout.fileProgram) {
       return;
     }
 

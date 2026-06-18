@@ -29,6 +29,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   @Output() closed = new EventEmitter<void>();
   @Output() backClicked = new EventEmitter<void>();
   @Output() assigned = new EventEmitter<any>(); // optionnel (si tu veux refresh dans parent)
+  @Output() assignProgram = new EventEmitter<any>();
 
   // ===== programSelectionList (maintenant ici) =====
   programs: any[] = [];
@@ -39,7 +40,9 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   selectedProgramId: string | null = null;
   selectedProgramItem: any | null = null;
   startDate = '';
+  endDate = '';
   assigning = false;
+  readonly isAssignModalTitle = 'Assign Workout Program';
 
   constructor(private workoutService: WorkoutService) {}
 
@@ -57,26 +60,36 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   private loadPrograms(): void {
     this.loadingPrograms = true;
 
-    this.workoutService.getTemplates().subscribe({
+    this.workoutService.getMyLibrary(0, 200).subscribe({
       next: (res: PageResponse<WorkoutPlan>) => {
-        this.programs = (res?.content || []).map((tpl: WorkoutPlan) => {
-          const totalDays = tpl.workoutDays?.length || 0;
-          const totalWeeks = Math.ceil(totalDays / 7);
+        this.programs = (res?.content || [])
+          .filter((tpl: any) => !tpl.client)
+          .map((tpl: any) => {
+            const isFile = this.isFileProgram(tpl);
+            const totalDays = tpl.workoutDays?.length || 0;
+            const totalWeeks = Math.ceil(totalDays / 7);
 
-          return {
-            id: tpl.id,
-            name: tpl.name,
-            coach: tpl.coach,
+            return {
+              ...tpl,
+              id: tpl.id,
+              name: tpl.name,
+              coach: tpl.coach,
+              isFile,
+              resourceType: tpl.resourceType,
+              fileName: tpl.fileName,
+              fileUrl: tpl.fileUrl,
+              originalFileName: tpl.originalFileName,
+              fileSizeBytes: tpl.fileSizeBytes,
 
-            status: 'upcoming',
-            startDate: '',
-            endDate: '',
+              status: 'upcoming',
+              startDate: '',
+              endDate: '',
 
-            totalWeeks,
-            daysPerWeek: Math.min(totalDays, 7),
-            totalDays,
-          };
-        });
+              totalWeeks,
+              daysPerWeek: Math.min(totalDays, 7),
+              totalDays,
+            };
+          });
 
         this.loadingPrograms = false;
       },
@@ -85,6 +98,22 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
       },
     });
   }
+
+  isFileProgram(program: any): boolean {
+    const mode = String(program?.workoutPlanMode || '').toUpperCase();
+    const type = String(program?.resourceType || '').toUpperCase();
+    return mode === 'FILE' || !!program?.fileName || !!program?.fileUrl || ['PDF', 'XLS', 'XLSX', 'EXCEL'].includes(type);
+  }
+
+  getProgramTypeLabel(program: any): string {
+    if (!this.isFileProgram(program)) return 'App Program';
+
+    const type = String(program?.resourceType || '').toUpperCase();
+    if (type === 'PDF') return 'PDF';
+    if (type === 'XLS' || type === 'XLSX' || type === 'EXCEL') return 'Excel';
+    return 'File';
+  }
+
 
   // ===== UI logic =====
   get filteredPrograms(): any[] {
@@ -99,6 +128,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     this.selectedProgramItem = program;
     this.selectedProgramId = program.id;
     this.startDate = '';
+    this.endDate = '';
   }
 
   get selectedProgram(): any | null {
@@ -109,9 +139,13 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   get calculatedEndDate(): string | null {
     if (!this.selectedProgram || !this.startDate) return null;
 
+    if (this.isFileProgram(this.selectedProgram)) {
+      return this.endDate || null;
+    }
+
     const start = new Date(this.startDate);
     const end = new Date(start);
-    end.setDate(end.getDate() + (this.selectedProgram.totalDays || 0));
+    end.setDate(end.getDate() + Math.max((this.selectedProgram.totalDays || 1) - 1, 0));
     return end.toISOString().slice(0, 10);
   }
 
@@ -128,6 +162,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
 
   assign(): void {
     if (!this.selectedProgramItem || !this.startDate || !this.client) return;
+    if (this.isFileProgram(this.selectedProgramItem) && !this.endDate) return;
 
     const item = { ...this.selectedProgramItem };
     item.startDate = this.startDate;
@@ -140,6 +175,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
       next: (res) => {
         this.assigning = false;
         this.assigned.emit(res);
+        this.assignProgram.emit({ program: item, startDate: item.startDate, endDate: item.endDate, result: res });
         this.close();
       },
       error: () => {
@@ -153,6 +189,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     this.selectedProgramId = null;
     this.selectedProgramItem = null;
     this.startDate = '';
+    this.endDate = '';
     this.assigning = false;
   }
 }

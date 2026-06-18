@@ -23,6 +23,7 @@ export class CreateWorkoutComponent implements OnInit {
   isEditMode = false;
   isVisibleToOthers = false;
   private returnUrl: string | null = null;
+  private assignOnly = false;
 
   constructor(
     public facade: WorkoutPlanFacade,
@@ -30,6 +31,7 @@ export class CreateWorkoutComponent implements OnInit {
     private router: Router,
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    this.assignOnly = this.route.snapshot.queryParamMap.get('assignOnly') === '1';
   }
 
   get workoutPlan(): WorkoutPlan {
@@ -623,9 +625,9 @@ export class CreateWorkoutComponent implements OnInit {
   savePlan() {
     this.facade.syncPlanDays();
 
-    const finalTemplateValue = this.canCreateTemplate
-      ? Boolean(this.isVisibleToOthers)
-      : false;
+    const finalTemplateValue = this.assignOnly
+      ? false
+      : (this.canCreateTemplate ? Boolean(this.isVisibleToOthers) : false);
 
     this.facade.setPlan({
       ...this.facade.plan,
@@ -658,6 +660,7 @@ export class CreateWorkoutComponent implements OnInit {
                 assignAfterCreate: {
                   type: 'workout',
                   item: res,
+                  assignOnly: this.assignOnly,
                 },
               },
             });

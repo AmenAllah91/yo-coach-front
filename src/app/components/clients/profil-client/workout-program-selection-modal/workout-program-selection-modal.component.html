@@ -3,9 +3,9 @@
     <!-- Header -->
     <div class="assign-modal-header">
       <div>
-        <h3 class="assign-modal-title">Select Program</h3>
+        <h3 class="assign-modal-title">Assign Workout Program</h3>
         <p class="assign-modal-subtitle">
-          Choose a program to assign to {{ fullName }}
+          Choose an existing workout program to assign to {{ fullName }}
         </p>
       </div>
 
@@ -60,16 +60,22 @@
                 ></span>
               </div>
 
+              <div class="select-program-type-icon" [class.select-program-type-icon--file]="program.isFile" [class.select-program-type-icon--app]="!program.isFile">
+                <i class="fas" [ngClass]="program.isFile ? 'fa-file-alt' : 'fa-dumbbell'"></i>
+              </div>
+
               <div class="select-program-text">
                 <div class="select-program-title-row">
                   <span class="select-program-name">
                     {{ program.name }}
                   </span>
 
-
+                  <span class="mini-type-pill" [class.mini-type-pill--file]="program.isFile" [class.mini-type-pill--app]="!program.isFile">
+                    {{ getProgramTypeLabel(program) }}
+                  </span>
                 </div>
 
-                <div class="select-program-meta">
+                <div class="select-program-meta" *ngIf="!program.isFile">
                   <span>
                     <i class="far fa-clock"></i>
                     {{ program.totalWeeks }} weeks
@@ -77,6 +83,16 @@
                   <span>
                     <i class="fas fa-dumbbell"></i>
                     {{ program.daysPerWeek }} days/week
+                  </span>
+                </div>
+
+                <div class="select-program-meta" *ngIf="program.isFile">
+                  <span>
+                    <i class="far fa-file"></i>
+                    {{ program.originalFileName || program.fileName || 'Imported file' }}
+                  </span>
+                  <span *ngIf="program.fileSizeBytes">
+                    {{ program.fileSizeBytes / 1024 / 1024 | number:'1.0-1' }} MB
                   </span>
                 </div>
               </div>
@@ -101,11 +117,21 @@
             </div>
 
             <div class="schedule-field">
-              <label>End Date</label>
-              <div class="schedule-input schedule-input--readonly">
-                <input type="date" [value]="calculatedEndDate || ''" disabled />
+              <label>End Date <span *ngIf="selectedProgram?.isFile">*</span></label>
+              <div class="schedule-input" [class.schedule-input--readonly]="!selectedProgram?.isFile">
+                <input
+                  type="date"
+                  *ngIf="selectedProgram?.isFile"
+                  [(ngModel)]="endDate"
+                />
+                <input
+                  type="date"
+                  *ngIf="!selectedProgram?.isFile"
+                  [value]="calculatedEndDate || ''"
+                  disabled
+                />
               </div>
-              <div class="schedule-help" *ngIf="calculatedEndDate">
+              <div class="schedule-help" *ngIf="calculatedEndDate && !selectedProgram?.isFile">
                 Automatically calculated based on program duration
               </div>
             </div>
@@ -123,7 +149,7 @@
       <button
         type="button"
         class="btn-primary"
-        [disabled]="!selectedProgramId || !startDate || assigning"
+        [disabled]="!selectedProgramId || !startDate || (selectedProgram?.isFile && !endDate) || assigning"
         (click)="assign()"
       >
         {{ assigning ? 'Assigning...' : 'Assign Program' }}

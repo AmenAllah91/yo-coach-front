@@ -130,19 +130,32 @@
           <div
             *ngFor="let item of day.items"
             class="card-wrapper"
+            [class.file-range-wrapper]="isFileWorkoutItem(item)"
+            [ngClass]="getFileRangePositionClass(item, day.dateString)"
           >
             <ng-container *ngIf="calendarType === 'workout'; else nutritionCard">
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
+                [class.file-range-card]="isFileWorkoutItem(item)"
+                [class.card-file-workout]="isFileWorkoutItem(item)"
+                [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
+                [class.card-file-excel]="isFileWorkoutItem(item) && getFileResourceType(item) === 'EXCEL'"
                 (click)="openWorkoutCard(item, $event)"
               >
                 <div class="card-header">
                   <div class="card-title-block">
-                    <div class="card-title">{{ item.title }}</div>
-                    <div *ngIf="item.programName" class="card-subtitle program-name">{{ item.programName }}</div>
+                    <div class="card-title">
+                      <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
+                        {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                      </span>
+                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ item.title }}</ng-container>
+                    </div>
+                    <div *ngIf="item.programName" class="card-subtitle program-name">
+                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ isFileWorkoutItem(item) ? getFileProgramSubtitle(item) : item.programName }}</ng-container>
+                    </div>
                   </div>
-                  <div class="card-header-right">
+                  <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
                     <span
                       class="drag-handle"
                       title="Drag to move day"
@@ -185,6 +198,9 @@
                     + {{ item.sessions[0].exercises.length - 2 }} more exercises
                   </div>
                 </div>
+                <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, day.dateString)">
+                  {{ item.startDate | date:'d MMM' }} → {{ getFileRangeEndLabel(item) | date:'d MMM' }}
+                </div>
               </div>
             </ng-container>
 
@@ -193,7 +209,7 @@
                 <div class="card-header">
                   <div class="card-title-block">
                     <div class="card-title">
-                      {{ item.title }}
+                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ item.title }}</ng-container>
                     </div>
                     <div
                       *ngIf="item.programName"
@@ -295,19 +311,32 @@
           <div
             *ngFor="let item of day.items"
             class="card-wrapper"
+            [class.file-range-wrapper]="isFileWorkoutItem(item)"
+            [ngClass]="getFileRangePositionClass(item, day.dateString)"
           >
             <ng-container *ngIf="calendarType === 'workout'; else nutritionCardWeek">
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
+                [class.file-range-card]="isFileWorkoutItem(item)"
+                [class.card-file-workout]="isFileWorkoutItem(item)"
+                [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
+                [class.card-file-excel]="isFileWorkoutItem(item) && getFileResourceType(item) === 'EXCEL'"
                 (click)="openWorkoutCard(item, $event)"
               >
                 <div class="card-header">
                   <div class="card-title-block">
-                    <div class="card-title">{{ item.title }}</div>
-                    <div *ngIf="item.programName" class="card-subtitle program-name">{{ item.programName }}</div>
+                    <div class="card-title">
+                      <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
+                        {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                      </span>
+                      {{ item.title }}
+                    </div>
+                    <div *ngIf="item.programName" class="card-subtitle program-name">
+                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ isFileWorkoutItem(item) ? getFileProgramSubtitle(item) : item.programName }}</ng-container>
+                    </div>
                   </div>
-                  <div class="card-header-right">
+                  <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
                     <span
                       class="drag-handle"
                       title="Drag to move day"
@@ -349,6 +378,9 @@
                   >
                     + {{ item.sessions[0].exercises.length - 2 }} more exercises
                   </div>
+                </div>
+                <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, day.dateString)">
+                  {{ item.startDate | date:'d MMM' }} → {{ getFileRangeEndLabel(item) | date:'d MMM' }}
                 </div>
               </div>
             </ng-container>
@@ -471,21 +503,28 @@
           <div
             class="card card-workout large"
             [class.card-program]="item.programId"
+            [class.file-range-card]="isFileWorkoutItem(item)"
+            [class.card-file-workout]="isFileWorkoutItem(item)"
+            [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
+            [class.card-file-excel]="isFileWorkoutItem(item) && getFileResourceType(item) === 'EXCEL'"
             (click)="openWorkoutCard(item, $event)"
           >
             <div class="card-header">
               <div class="card-title-block">
                 <div class="card-title">
+                  <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
+                    {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                  </span>
                   {{ item.title }}
                 </div>
                 <div
                   *ngIf="item.programName"
                   class="card-subtitle program-name"
                 >
-                  {{ item.programName }}
+                  <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ isFileWorkoutItem(item) ? getFileProgramSubtitle(item) : item.programName }}</ng-container>
                 </div>
               </div>
-              <div class="card-header-right">
+              <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
                 <span
                   class="drag-handle"
                   title="Drag to move day"
@@ -552,6 +591,9 @@
                 + {{ item.sessions[0].exercises.length - 4 }} more exercises
               </div>
             </div>
+            <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, day.dateString)">
+                  {{ item.startDate | date:'d MMM' }} → {{ getFileRangeEndLabel(item) | date:'d MMM' }}
+                </div>
           </div>
         </ng-container>
 
@@ -560,6 +602,9 @@
             <div class="card-header">
               <div class="card-title-block">
                 <div class="card-title">
+                  <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
+                    {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                  </span>
                   {{ item.title }}
                 </div>
                 <div

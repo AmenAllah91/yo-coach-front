@@ -303,3 +303,43 @@
   background-color: #f3f4f6;
   color: #4b5563;
 }
+
+.select-program-type-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.select-program-type-icon--app {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.select-program-type-icon--file {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.mini-type-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mini-type-pill--app {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.mini-type-pill--file {
+  background: #fee2e2;
+  color: #dc2626;
+}
