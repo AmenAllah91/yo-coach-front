@@ -1,5 +1,6 @@
 import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -93,7 +94,9 @@ export interface ScheduledCheckIn {
 })
 export class ProfilClientComponent {
 
-  activeTab: TabId = 'dashboard';
+
+  workoutFileEnabled = true;
+activeTab: TabId = 'dashboard';
   setTab(tab: TabId) {
     this.activeTab = tab;
   }
@@ -246,7 +249,8 @@ export class ProfilClientComponent {
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
-    private bodyMeasurementsService: BodyMeasurementsService
+    private bodyMeasurementsService: BodyMeasurementsService,
+    private coachSettingsService: CoachSettingsService
   ) {
     const routeId = this.route.snapshot.paramMap.get('id') || '';
     if (routeId) {
@@ -284,6 +288,23 @@ export class ProfilClientComponent {
     });
 
     this.getAllNutrition();
+    this.loadWorkoutFileSetting();
+  }
+
+
+  private loadWorkoutFileSetting(): void {
+    this.coachSettingsService.loadConfig().subscribe({
+      next: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+
+        if (!this.workoutFileEnabled) {
+          this.showFileWorkoutImportModal = false;
+        }
+      },
+      error: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+      },
+    });
   }
 
   private loadClientData(): void {
@@ -674,6 +695,10 @@ export class ProfilClientComponent {
   }
 
   onCreateFromAssignModal() {
+    if (!this.workoutFileEnabled) {
+      this.createNormalWorkoutFromProfile();
+      return;
+    }
     this.showAssignSelectModal = false;
 
     if (this.assignType === 'CHECKIN') {

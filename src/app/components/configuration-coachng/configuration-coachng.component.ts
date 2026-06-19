@@ -237,6 +237,11 @@ export class ConfigurationCoachngComponent implements OnInit {
       this.config.workout.showExerciseWeight === false;
   }
 
+  toggleWorkoutFileEnabled(): void {
+    this.config.workout.workoutFileEnabled =
+      this.config.workout.workoutFileEnabled === false;
+  }
+
   private handleDemoActionSuccess(status: DemoWorkspaceStatus): void {
     this.demoStatus = this.normalizeDemoStatus(status);
     this.demoActionLoading = null;

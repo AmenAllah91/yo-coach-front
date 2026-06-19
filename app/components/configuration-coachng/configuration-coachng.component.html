@@ -504,6 +504,29 @@
   </div>
 
 
+
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">
+              Activer les programmes PDF / Excel
+            </span>
+            <p class="demo-workspace-description" style="margin: 4px 0 0;">
+              Si désactivé, les imports PDF/Excel sont masqués et l’application fonctionne comme avant l’ajout du workout file.
+            </p>
+          </div>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.workout.workoutFileEnabled !== false"
+            type="button"
+            (click)="toggleWorkoutFileEnabled()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.workout.workoutFileEnabled !== false"
+            ></span>
+          </button>
+        </div>
+
   <div class="info-banner">
     <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
          fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

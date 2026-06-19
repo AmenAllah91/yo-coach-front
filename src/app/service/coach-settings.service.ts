@@ -30,6 +30,9 @@ export interface CoachSettingsConfig {
 
     /** Controls if the weight column/input is visible in workout program editors. */
     showExerciseWeight: boolean;
+
+    /** Controls imported workout files (PDF / Excel) across the app. */
+    workoutFileEnabled: boolean;
   };
 
   defaults: {
@@ -67,6 +70,12 @@ export class CoachSettingsService {
         localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
       }),
     );
+  }
+
+  getConfigForCoach(coachId: string): Observable<CoachSettingsConfig> {
+    return this.http
+      .get<CoachSettingsConfig>(`${this.baseUrl}/coach/${coachId}`)
+      .pipe(tap((config) => this.mergeWithDefaults(config)));
   }
 
   saveConfig(config: CoachSettingsConfig): Observable<CoachSettingsConfig> {
@@ -121,6 +130,7 @@ export class CoachSettingsService {
         cardioMinutes: '20',
         autoFillDefaults: true,
         showExerciseWeight: true,
+        workoutFileEnabled: true,
       },
       defaults: {
         language: 'French',
@@ -159,6 +169,10 @@ export class CoachSettingsService {
 
   shouldShowExerciseWeight(): boolean {
     return this.getConfig().workout.showExerciseWeight !== false;
+  }
+
+  shouldUseWorkoutFiles(): boolean {
+    return this.getConfig().workout.workoutFileEnabled !== false;
   }
 
   canCreateFullMealPlan(): boolean {
@@ -210,6 +224,7 @@ export class CoachSettingsService {
         ...defaults.workout,
         ...(config.workout || {}),
         showExerciseWeight: (config.workout as any)?.showExerciseWeight !== false,
+        workoutFileEnabled: (config.workout as any)?.workoutFileEnabled !== false,
       },
       defaults: {
         ...defaults.defaults,

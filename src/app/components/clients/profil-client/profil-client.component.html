@@ -872,6 +872,7 @@
 ></app-assign-select-modal>
 
 <app-workout-program-selection-modal
+  [workoutFileEnabled]="workoutFileEnabled"
   [isOpen]="showProgramSelectionModal"
   [fullName]="fullName"
   [client]="client"
@@ -902,7 +903,7 @@
         </button>
       </div>
 
-      <div class="workout-plan-type-card">
+      <div class="workout-plan-type-card" *ngIf="workoutFileEnabled">
         <h4>File Workout Plan</h4>
         <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
 
@@ -921,7 +922,7 @@
 </div>
 
 
-<div *ngIf="showFileWorkoutImportModal" class="profile-file-import-backdrop">
+<div *ngIf="workoutFileEnabled && showFileWorkoutImportModal" class="profile-file-import-backdrop">
   <div class="profile-file-import-modal">
     <div class="profile-file-import-header">
       <div>

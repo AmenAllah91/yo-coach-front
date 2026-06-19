@@ -17,7 +17,7 @@
 
       <div class="coach-current" *ngIf="coaches.length === 1"><strong>Coach:</strong> {{ coaches[0].fullName }}</div>
 
-      <div class="file-toggle-wrap">
+      <div class="file-toggle-wrap" *ngIf="showWorkoutFiles">
         <div class="file-mode-switch">
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'calendar'" (click)="setClientViewMode('calendar')">
             <span>Calendrier</span>
@@ -31,7 +31,7 @@
         <p class="file-mode-hint">Votre coach utilise les deux formats — choisissez la vue qui vous convient.</p>
       </div>
 
-      <ng-container *ngIf="clientViewMode === 'file'; else calendarArea">
+      <ng-container *ngIf="showWorkoutFiles && clientViewMode === 'file'; else calendarArea">
         <div class="file-client-layout">
           <aside class="file-sidebar">
             <div class="file-search-box">

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
   selector: 'app-workouts-client-tab',
@@ -20,6 +21,7 @@ export class WorkoutsClientTabComponent implements OnInit {
   activeTab: 'ALL' | 'APP' | 'FILES' = 'ALL';
   appPrograms: WorkoutPlan[] = [];
   uploadedFiles: WorkoutPlan[] = [];
+  allVisibleWorkoutPrograms: WorkoutPlan[] = [];
   openedActionsId: string | null = null;
   isAssignMenuOpen = false;
   showUploadFileModal = false;
@@ -42,25 +44,91 @@ export class WorkoutsClientTabComponent implements OnInit {
   dateEnd = '';
   dateSaving = false;
   dateError: string | null = null;
+  workoutFileEnabled = true;
 
   workoutPage = 0;
   workoutSize = 5;
   workoutTotalPages = 0;
   workoutPagesArray: number[] = [];
 
-  constructor(public workoutService: WorkoutService, private router: Router) {}
+  constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService) {}
 
   ngOnInit(): void {
-    if (this.clientId && this.coachId) {
-      this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+    this.coachSettingsService.loadConfig().subscribe({
+      next: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        if (!this.workoutFileEnabled && this.activeTab === 'FILES') {
+          this.activeTab = 'ALL';
+        }
+        if (this.clientId && this.coachId) {
+          this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+        }
+      },
+      error: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        if (this.clientId && this.coachId) {
+          this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+        }
+      },
+    });
+  }
+
+  isFileWorkoutProgram(program: WorkoutPlan): boolean {
+    return this.isFileWorkout(program);
+  }
+
+  isNormalWorkoutProgram(program: WorkoutPlan): boolean {
+    return !this.isFileWorkout(program);
+  }
+
+  getWorkoutFileType(program: WorkoutPlan): 'PDF' | 'EXCEL' {
+    return this.getFileKind(program) === 'pdf' ? 'PDF' : 'EXCEL';
+  }
+
+  getWorkoutProgramCardType(program: WorkoutPlan): 'APP' | 'PDF' | 'EXCEL' {
+    if (!this.isFileWorkout(program)) return 'APP';
+    return this.getWorkoutFileType(program) === 'PDF' ? 'PDF' : 'EXCEL';
+  }
+
+  getCurrentWeekNumber(program: WorkoutPlan): number {
+    if (this.isFileWorkout(program)) return 0;
+
+    const anyProgram = program as any;
+    const currentDay = Number(anyProgram?.currentDay || 0);
+    if (currentDay > 0) {
+      return Math.max(1, Math.ceil(currentDay / 7));
     }
+
+    if (!program?.startDate) return 0;
+    const start = new Date(program.startDate);
+    if (Number.isNaN(start.getTime())) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+
+    if (today < start) return 1;
+
+    const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.max(1, Math.ceil(diffDays / 7));
+  }
+
+  getProgramTotalWeeks(program: WorkoutPlan): number {
+    if (this.isFileWorkout(program)) return 0;
+
+    const anyProgram = program as any;
+    const totalDays = Number(anyProgram?.totalDays || program?.workoutDays?.length || 0);
+    return totalDays > 0 ? Math.ceil(totalDays / 7) : 0;
   }
 
   get displayedPrograms(): WorkoutPlan[] {
+    if (!this.workoutFileEnabled) {
+      return this.appPrograms;
+    }
+
     if (this.activeTab === 'APP') return this.appPrograms;
     if (this.activeTab === 'FILES') return this.uploadedFiles;
 
-    // Keep backend period order in "All" instead of grouping App first and Files second.
     return this.workoutPlan;
   }
 
@@ -71,6 +139,11 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   setActiveTab(tab: 'ALL' | 'APP' | 'FILES') {
+    if (!this.workoutFileEnabled) {
+      this.activeTab = 'APP';
+      return;
+    }
+
     this.activeTab = tab;
     this.openedActionsId = null;
     this.isAssignMenuOpen = false;
@@ -88,6 +161,10 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   openUploadFileModal() {
+    if (!this.workoutFileEnabled) {
+      return;
+    }
+
     this.isAssignMenuOpen = false;
     this.selectedUploadFile = null;
     this.uploadFileKind = null;
@@ -179,20 +256,17 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   getWorkOutPlanByCoachAndClient(idCoach: string, idClient: string) {
+    const backendPage = this.workoutFileEnabled ? this.workoutPage : 0;
+    const backendSize = this.workoutFileEnabled ? this.workoutSize : 500;
+
     this.workoutService
       .getWorkoutByCoachIdAndClient(
         idCoach,
         idClient,
-        this.workoutPage,
-        this.workoutSize
+        backendPage,
+        backendSize
       )
       .subscribe((res) => {
-        this.workoutTotalPages = res.totalPages || 0;
-        this.workoutPagesArray = Array.from(
-          { length: this.workoutTotalPages },
-          (_, i) => i
-        );
-
         const programs = (res.content || []).map((program: WorkoutPlan) => {
           const isFile = this.isFileWorkout(program);
 
@@ -249,6 +323,36 @@ export class WorkoutsClientTabComponent implements OnInit {
           return bStart - aStart;
         });
 
+        if (!this.workoutFileEnabled) {
+          const appOnlyPrograms = programs.filter((program) => !this.isFileWorkout(program));
+          this.allVisibleWorkoutPrograms = appOnlyPrograms;
+
+          this.workoutTotalPages = Math.max(1, Math.ceil(appOnlyPrograms.length / this.workoutSize));
+          this.workoutPagesArray = Array.from(
+            { length: this.workoutTotalPages },
+            (_, i) => i
+          );
+
+          if (this.workoutPage > this.workoutTotalPages - 1) {
+            this.workoutPage = 0;
+          }
+
+          const startIndex = this.workoutPage * this.workoutSize;
+          const currentPagePrograms = appOnlyPrograms.slice(startIndex, startIndex + this.workoutSize);
+
+          this.appPrograms = currentPagePrograms;
+          this.uploadedFiles = [];
+          this.workoutPlan = currentPagePrograms;
+          return;
+        }
+
+        this.workoutTotalPages = res.totalPages || 0;
+        this.workoutPagesArray = Array.from(
+          { length: this.workoutTotalPages },
+          (_, i) => i
+        );
+
+        this.allVisibleWorkoutPrograms = programs;
         this.appPrograms = programs.filter((program) => !this.isFileWorkout(program));
         this.uploadedFiles = programs.filter((program) => this.isFileWorkout(program));
         this.workoutPlan = programs;

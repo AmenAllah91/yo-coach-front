@@ -102,6 +102,8 @@ export class ClientWorkoutsComponent implements OnInit {
   selectedCoachId: string | 'all' = 'all';
   searchProgram = '';
   allPlans: any[] = [];
+  workoutFileEnabled = true;
+  coachWorkoutFileEnabled = new Map<string, boolean>();
 
   constructor(
     public workoutService: WorkoutService,
@@ -112,13 +114,23 @@ export class ClientWorkoutsComponent implements OnInit {
 
   ngOnInit(): void {
     this.coachSettingsService.loadConfig().subscribe({
-      next: () => this.getWorkoutDay(),
-      error: () => this.getWorkoutDay(),
+      next: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.getWorkoutDay();
+      },
+      error: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.getWorkoutDay();
+      },
     });
   }
 
   get showExerciseWeight(): boolean {
     return this.coachSettingsService.shouldShowExerciseWeight();
+  }
+
+  get showWorkoutFiles(): boolean {
+    return this.workoutFileEnabled;
   }
 
   getWorkoutDay() {
@@ -137,8 +149,51 @@ export class ClientWorkoutsComponent implements OnInit {
       });
       this.coaches = Array.from(coachMap.values());
       this.selectedCoachId = this.coaches.length === 1 ? this.coaches[0].id : 'all';
-      this.applyCoachFilter();
+      this.loadCoachWorkoutFileSettings();
     });
+  }
+
+
+  loadCoachWorkoutFileSettings() {
+    const coachIds = this.coaches.map((coach) => coach.id).filter(Boolean);
+
+    if (!coachIds.length) {
+      this.applyCoachFilter();
+      return;
+    }
+
+    forkJoin(
+      coachIds.map((coachId) =>
+        this.coachSettingsService.getConfigForCoach(coachId).pipe(
+          map((config) => ({
+            coachId,
+            enabled: config.workout?.workoutFileEnabled !== false,
+          })),
+          catchError(() => of({ coachId, enabled: true }))
+        )
+      )
+    ).subscribe({
+      next: (items) => {
+        this.coachWorkoutFileEnabled.clear();
+        items.forEach((item) => {
+          this.coachWorkoutFileEnabled.set(item.coachId, item.enabled);
+        });
+        this.applyCoachFilter();
+      },
+      error: () => this.applyCoachFilter(),
+    });
+  }
+
+  isWorkoutFileEnabledForCoach(coachId: string | null): boolean {
+    if (!coachId) {
+      return this.workoutFileEnabled;
+    }
+
+    if (!this.coachWorkoutFileEnabled.has(coachId)) {
+      return this.workoutFileEnabled;
+    }
+
+    return this.coachWorkoutFileEnabled.get(coachId) !== false;
   }
 
   applyCoachFilter() {
@@ -147,11 +202,22 @@ export class ClientWorkoutsComponent implements OnInit {
       filteredPlans = filteredPlans.filter((plan: any) => plan.coach && plan.coach.id === this.selectedCoachId);
     }
 
+    const selectedCoachSettingEnabled = this.selectedCoachId === 'all'
+      ? this.coaches.some((coach) => this.isWorkoutFileEnabledForCoach(coach.id))
+      : this.isWorkoutFileEnabledForCoach(this.selectedCoachId);
+
+    this.workoutFileEnabled = selectedCoachSettingEnabled;
+
     const normalPlans = filteredPlans.filter((plan: any) => !this.isFilePlan(plan));
-    const filePlans = filteredPlans.filter((plan: any) => this.isFilePlan(plan));
+    const filePlans = filteredPlans.filter((plan: any) =>
+      this.isFilePlan(plan) && this.isWorkoutFileEnabledForCoach(this.getPlanCoachId(plan))
+    );
 
     this.workouts = this.mapPlansToWorkouts(normalPlans);
     this.filePrograms = this.mapPlansToFilePrograms(filePlans);
+    if (!this.workoutFileEnabled && this.clientViewMode === 'file') {
+      this.clientViewMode = 'calendar';
+    }
     this.applyFileSearch();
 
     if (this.filePrograms.length > 0 && !this.selectedFileProgram) {
@@ -270,6 +336,10 @@ export class ClientWorkoutsComponent implements OnInit {
   }
 
   setClientViewMode(mode: 'calendar' | 'file') {
+    if (mode === 'file' && !this.workoutFileEnabled) {
+      return;
+    }
+
     this.clientViewMode = mode;
     this.selectedWorkout = null;
     if (mode === 'file' && !this.selectedFileProgram) {
@@ -278,6 +348,10 @@ export class ClientWorkoutsComponent implements OnInit {
   }
 
   selectFileProgram(program: FileProgram) {
+    if (!this.workoutFileEnabled) {
+      return;
+    }
+
     this.selectedFileProgram = program;
     this.clientViewMode = 'file';
   }
@@ -434,7 +508,10 @@ export class ClientWorkoutsComponent implements OnInit {
   updateWorkoutStatus(workout: Workout, status: WorkoutStatus): void {
     workout.status = status;
     this.workoutDayService.updateWorkoutDay({ id: workout.id, dayNumber: workout.dayNumber, status }, workout.planId).subscribe({
-      next: () => this.getWorkoutDay(),
+      next: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.getWorkoutDay();
+      },
       error: (err) => {
         console.error('Update failed:', err);
         workout.status = 'PENDING';

@@ -16,6 +16,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 interface ExerciseSet {
   id: string;
@@ -115,7 +116,9 @@ type CalendarType = 'workout' | 'nutrition';
   styleUrl: './calendar-clients.component.scss',
 })
 export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
-  currentDate = new Date();
+
+  workoutFileEnabled = true;
+currentDate = new Date();
   currentView: CalendarViewMode = 'month';
   calendarType: CalendarType = 'workout';
   selectedClient: string = 'all';
@@ -198,10 +201,20 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
     private nutritionService: NutritionService,
     private clientService: ClientService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
   ngOnInit(): void {
+    this.coachSettingsService.loadConfig().subscribe({
+      next: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.updateMonthGrid();
+      },
+      error: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+      },
+    });
     if (this.embeddedCoachId) {
       this.coachId = this.embeddedCoachId;
     }
@@ -339,6 +352,10 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private isBackendFileWorkoutPlan(plan: any): boolean {
+    if (!this.workoutFileEnabled) {
+      return false;
+    }
+
     const mode = String(plan?.workoutPlanMode || '').toUpperCase();
     const type = String(plan?.resourceType || '').toUpperCase();
 

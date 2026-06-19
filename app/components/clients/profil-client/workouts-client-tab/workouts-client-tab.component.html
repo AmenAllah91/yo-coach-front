@@ -1,59 +1,187 @@
 <div class="tab-section-header">
   <h2 class="section-title">Workout Programs</h2>
-  <button class="btn-assign-black" (click)="openAssignWorkout()">
+  <button class="btn-assign-black" type="button" (click)="openAssignWorkout()">
+    <i class="fas fa-plus"></i>
     Assign New Program
   </button>
 </div>
 
-<div *ngFor="let program of workoutPlan" class="program-card">
+<div class="workout-filter-tabs" *ngIf="workoutFileEnabled">
+  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
+    All
+  </button>
+  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'APP'" (click)="setActiveTab('APP')">
+    App Programs
+  </button>
+  <button *ngIf="workoutFileEnabled" class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'FILES'" (click)="setActiveTab('FILES')">
+    Uploaded Files
+  </button>
+</div>
+
+<div
+  *ngFor="let program of displayedPrograms"
+  class="program-card"
+  [class.program-card-app]="isNormalWorkoutProgram(program)"
+  [class.program-card-pdf]="getWorkoutProgramCardType(program) === 'PDF'"
+  [class.program-card-excel]="getWorkoutProgramCardType(program) === 'EXCEL'"
+  [class.program-card--file]="isFileWorkout(program)"
+  [class.program-card--pdf]="isFileWorkout(program) && getFileKind(program) === 'pdf'"
+  [class.program-card--excel]="isFileWorkout(program) && getFileKind(program) === 'excel'"
+>
   <div class="program-card-top">
     <div class="program-main">
-      <div class="program-icon program-icon-blue">
-        <i class="fas fa-dumbbell"></i>
+      <div
+        class="program-icon"
+        [ngClass]="{
+          'program-icon-blue': !isFileWorkout(program),
+          'program-icon-red': isFileWorkout(program) && getFileKind(program) === 'pdf',
+          'program-icon-green': isFileWorkout(program) && getFileKind(program) === 'excel'
+        }"
+      >
+        <i *ngIf="!isFileWorkout(program)" class="fas fa-dumbbell"></i>
+        <i *ngIf="isFileWorkout(program) && getFileKind(program) === 'pdf'" class="far fa-file-alt"></i>
+        <i *ngIf="isFileWorkout(program) && getFileKind(program) === 'excel'" class="far fa-file-excel"></i>
       </div>
 
       <div class="program-text">
         <div class="program-title-row">
           <h5 class="program-name">{{ program.name }}</h5>
 
-          <span
-            class="status-pill"
-            [ngClass]="{
-              'status-pill--active': program.status === 'active',
-              'status-pill--upcoming': program.status === 'upcoming',
-              'status-pill--completed': program.status === 'completed'
-            }"
-          >
-            {{ program.status | titlecase }}
-          </span>
+          <ng-container *ngIf="!isFileWorkout(program); else fileBadgeBlock">
+            <span
+              class="status-pill"
+              [ngClass]="{
+                'status-pill--active': program.status === 'active',
+                'status-pill--upcoming': program.status === 'upcoming',
+                'status-pill--completed': program.status === 'completed'
+              }"
+            >
+              {{ program.status | titlecase }}
+            </span>
+            <span class="program-type-pill program-type-pill--app">App Program</span>
+          </ng-container>
+
+          <ng-template #fileBadgeBlock>
+            <span
+              class="file-type-pill"
+              [ngClass]="{
+                'file-type-pill--pdf': getFileKind(program) === 'pdf',
+                'file-type-pill--excel': getFileKind(program) === 'excel'
+              }"
+            >
+              {{ getFileLabel(program) }}
+            </span>
+          </ng-template>
         </div>
 
         <div class="program-meta">
-          <span>
+          <span *ngIf="program.startDate || program.endDate">
             <i class="far fa-calendar-alt me-1"></i>
-            {{ program.startDate | date : "MMM dd, y" }} -
-            {{ program.endDate | date : "MMM dd, y" }}
+            {{ program.startDate | date : "MMM dd, y" }}
+            <ng-container *ngIf="program.endDate"> - {{ program.endDate | date : "MMM dd, y" }}</ng-container>
           </span>
+
+          <ng-container *ngIf="!isFileWorkout(program)">
+            <span *ngIf="getProgramTotalWeeks(program) > 0">
+              <i class="far fa-clock me-1"></i>
+              {{ getProgramTotalWeeks(program) }} weeks
+            </span>
+            <span *ngIf="getCurrentWeekNumber(program) > 0" class="program-meta-highlight">
+              <i class="far fa-dot-circle me-1"></i>
+              Week {{ getCurrentWeekNumber(program) }}
+            </span>
+          </ng-container>
+
+          <ng-container *ngIf="isFileWorkout(program)">
+            <span *ngIf="program.fileUploadedAt">
+              <i class="far fa-calendar-alt me-1"></i>
+              Uploaded {{ program.fileUploadedAt | date : "MMM dd, y" }}
+            </span>
+            <span *ngIf="program.fileSizeBytes">
+              <i class="far fa-file-alt me-1"></i>
+              {{ formatFileSize(program.fileSizeBytes) }}
+            </span>
+          </ng-container>
+        </div>
+
+        <div *ngIf="isFileWorkout(program)" class="static-document-row">
+          <span></span>
+          <strong>STATIC DOCUMENT</strong>
+          <span></span>
         </div>
       </div>
     </div>
 
-    <div class="program-actions">
-      <button class="icon-btn">
-        <i class="far fa-eye"></i>
-      </button>
-      <button class="icon-btn" (click)="editWorkout(program)">
-        <i class="far fa-edit"></i>
-      </button>
+    <div class="program-actions" (click)="$event.stopPropagation()">
+      <ng-container *ngIf="isFileWorkout(program); else appActions">
+        <button class="file-action-btn" type="button" (click)="previewFile(program)">
+          <i class="far fa-eye"></i>
+          Preview
+        </button>
+        <button class="file-action-btn" type="button" (click)="downloadFile(program)">
+          <i class="fas fa-download"></i>
+          Download
+        </button>
+        <div class="file-actions-menu-wrap">
+          <button class="file-action-btn" type="button" (click)="toggleActions(program, $event)">
+            Actions
+            <i class="fas" [ngClass]="isActionsOpen(program) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+          </button>
+
+          <div class="file-actions-menu" *ngIf="isActionsOpen(program)">
+            <button type="button" (click)="previewFile(program)">
+              <i class="far fa-eye"></i>
+              Preview file
+            </button>
+            <button type="button" (click)="downloadFile(program)">
+              <i class="fas fa-download"></i>
+              Download file
+            </button>
+            <button type="button" (click)="replaceFile(program)">
+              <i class="fas fa-sync-alt"></i>
+              Replace file
+            </button>
+            <button type="button" (click)="changeDates(program)">
+              <i class="far fa-calendar-alt"></i>
+              Change dates
+            </button>
+            <button type="button" class="danger" (click)="removeProgram(program)">
+              <i class="far fa-trash-alt"></i>
+              Remove program
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #appActions>
+        <div class="file-actions-menu-wrap">
+          <button class="file-action-btn" type="button" (click)="toggleActions(program, $event)">
+            Actions
+            <i class="fas" [ngClass]="isActionsOpen(program) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+          </button>
+
+          <div class="file-actions-menu" *ngIf="isActionsOpen(program)">
+            <button type="button" (click)="editWorkout(program)">
+              <i class="far fa-edit"></i>
+              Edit program
+            </button>
+            <button type="button" (click)="changeDates(program)">
+              <i class="far fa-calendar-alt"></i>
+              Change dates
+            </button>
+            <button type="button" class="danger" (click)="removeProgram(program)">
+              <i class="far fa-trash-alt"></i>
+              Remove program
+            </button>
+          </div>
+        </div>
+      </ng-template>
     </div>
   </div>
 
-  <div *ngIf="program.status === 'active'" class="program-progress">
+  <div *ngIf="!isFileWorkout(program) && program.status === 'active'" class="program-progress">
     <div class="progress-bar-bg">
-      <div
-        class="progress-bar-fill"
-        [style.width.%]="program.progressPercent"
-      ></div>
+      <div class="progress-bar-fill" [style.width.%]="program.progressPercent"></div>
     </div>
   </div>
 </div>
@@ -83,4 +211,106 @@
   >
     &gt;
   </button>
+</div>
+
+<div class="upload-file-modal-backdrop" *ngIf="workoutFileEnabled && showUploadFileModal" (click)="closeUploadFileModal()">
+  <div class="upload-file-modal import-style-modal" (click)="$event.stopPropagation()">
+    <div class="upload-file-modal-header import-style-head">
+      <div>
+        <h3>Importer un programme</h3>
+        <p>Importez un fichier PDF ou Excel, puis enregistrez-le dans votre bibliothèque ou envoyez-le à vos clients.</p>
+      </div>
+      <button type="button" class="upload-file-close" (click)="closeUploadFileModal()">&times;</button>
+    </div>
+
+    <label class="upload-zone">
+      <input type="file" accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden (change)="onUploadFileSelected($event)" />
+      <div class="upload-zone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+      <strong>{{ selectedUploadFile ? selectedUploadFile.name : 'Glissez votre fichier ici ou parcourez' }}</strong>
+      <span>PDF, XLS, XLSX · jusqu'à 25 MB</span>
+    </label>
+
+    <div class="upload-error" *ngIf="uploadError">{{ uploadError }}</div>
+
+    <label class="upload-field-label">Nom du programme <b>*</b></label>
+    <input class="upload-field" type="text" [(ngModel)]="uploadProgramName" placeholder="Ex: Programme Hypertrophie - Phase 1" />
+
+    <label class="upload-field-label">Description <em>(optionnelle)</em></label>
+    <textarea class="upload-field" rows="3" [(ngModel)]="uploadProgramDescription" placeholder="Ex: Programme complet de 6 semaines..."></textarea>
+
+    <div class="upload-date-grid">
+      <div>
+        <label class="upload-field-label">Start date</label>
+        <input class="upload-field" type="date" [(ngModel)]="uploadStartDate" />
+      </div>
+      <div>
+        <label class="upload-field-label">End date</label>
+        <input class="upload-field" type="date" [(ngModel)]="uploadEndDate" />
+      </div>
+    </div>
+
+    <div class="upload-info">
+      <i class="fas fa-info-circle"></i>
+      <span>Le programme sera créé et assigné automatiquement à ce client.</span>
+    </div>
+
+    <div class="upload-file-modal-actions">
+      <button type="button" class="upload-cancel-btn" (click)="closeUploadFileModal()" [disabled]="uploadSaving">Annuler</button>
+      <button type="button" class="upload-save-btn" (click)="createAndAssignUploadedFile()" [disabled]="!selectedUploadFile || !uploadProgramName.trim() || uploadSaving">
+        {{ uploadSaving ? 'Enregistrement...' : 'Enregistrer et assigner' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<input
+  id="profile-workout-replace-file-input"
+  type="file"
+  accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  hidden
+  (change)="onReplaceFileSelected($event)"
+/>
+
+<div class="replace-error-banner" *ngIf="replaceError">
+  {{ replaceError }}
+</div>
+
+<div class="change-dates-backdrop" *ngIf="showChangeDatesModal" (click)="closeChangeDatesModal()">
+  <div class="change-dates-modal" (click)="$event.stopPropagation()">
+    <div class="change-dates-header">
+      <h3>Change Dates</h3>
+      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" aria-label="Close modal">×</button>
+    </div>
+
+    <div class="change-dates-body">
+      <p class="change-dates-description">
+        Update the schedule for <strong>{{ dateTargetProgram?.name }}</strong>.
+      </p>
+
+      <div class="change-dates-fields">
+        <div class="change-date-field">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="dateStart" />
+        </div>
+
+        <div class="change-date-field">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="dateEnd" />
+        </div>
+      </div>
+
+      <div class="upload-error" *ngIf="dateError">{{ dateError }}</div>
+    </div>
+
+    <div class="change-dates-footer">
+      <button type="button" class="change-dates-cancel" (click)="closeChangeDatesModal()" [disabled]="dateSaving">
+        Cancel
+      </button>
+
+      <button type="button" class="change-dates-save" (click)="saveChangedDates()" [disabled]="!dateStart || !dateEnd || dateSaving">
+        {{ dateSaving ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
 </div>

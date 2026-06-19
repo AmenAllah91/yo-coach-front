@@ -92,4 +92,12 @@ export interface MealPlan {
   client: any;
   date?: string;
   title?: string;
+  nutritionPlanMode?: 'APP' | 'FILE' | string;
+  resourceType?: 'PDF' | 'EXCEL' | string;
+  fileName?: string;
+  originalFileName?: string;
+  fileUrl?: string;
+  fileContentType?: string;
+  fileSizeBytes?: number;
+  fileUploadedAt?: string;
 }

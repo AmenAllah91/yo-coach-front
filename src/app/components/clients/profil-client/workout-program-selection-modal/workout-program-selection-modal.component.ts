@@ -24,6 +24,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() fullName = '';
   @Input() client: Client | null = null;
+  @Input() workoutFileEnabled = true;
 
   // ===== Outputs =====
   @Output() closed = new EventEmitter<void>();
@@ -47,7 +48,8 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   constructor(private workoutService: WorkoutService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen']?.currentValue === true) {
+    if (changes['isOpen']?.currentValue === true || changes['workoutFileEnabled']) {
+      this.programs = [];
       this.ensureProgramsLoaded();
     }
   }
@@ -64,6 +66,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
       next: (res: PageResponse<WorkoutPlan>) => {
         this.programs = (res?.content || [])
           .filter((tpl: any) => !tpl.client)
+          .filter((tpl: any) => this.workoutFileEnabled || !this.isFileProgram(tpl))
           .map((tpl: any) => {
             const isFile = this.isFileProgram(tpl);
             const totalDays = tpl.workoutDays?.length || 0;

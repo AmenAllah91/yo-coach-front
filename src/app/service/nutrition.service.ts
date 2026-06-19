@@ -71,6 +71,14 @@ export interface NutritionPlan {
   endDate?: string;
   client?: any;
   isMealPlanTemplate?: boolean;
+  nutritionPlanMode?: 'APP' | 'FILE' | string;
+  resourceType?: 'PDF' | 'EXCEL' | string;
+  fileName?: string;
+  originalFileName?: string;
+  fileUrl?: string;
+  fileContentType?: string;
+  fileSizeBytes?: number;
+  fileUploadedAt?: string;
 }
 export interface DayTargets {
   calories: number;
@@ -203,6 +211,57 @@ export class NutritionService {
   assignNutritionPlan(plan: any): Observable<NutritionPlan> {
     return this.http.put<NutritionPlan>(`${this.mealPlanUrl}assign`, plan);
   }
+
+  createNutritionFilePlan(
+    file: File,
+    name: string,
+    details?: string,
+    startDate?: string,
+    endDate?: string
+  ): Observable<NutritionPlan> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+
+    if (details) {
+      formData.append('details', details);
+    }
+
+    if (startDate) {
+      formData.append('startDate', startDate);
+    }
+
+    if (endDate) {
+      formData.append('endDate', endDate);
+    }
+
+    return this.http.post<NutritionPlan>(`${this.mealPlanUrl}file`, formData);
+  }
+
+  getNutritionFileUrl(plan: NutritionPlan | MealPlan | any): string {
+    const id = plan?.id;
+    if (id) {
+      return `${this.mealPlanUrl}${id}/file/download`;
+    }
+
+    if (plan?.fileUrl) {
+      const fileUrl = String(plan.fileUrl);
+      return fileUrl.startsWith('http')
+        ? fileUrl
+        : `${environment.baseApiUrl}${fileUrl}`;
+    }
+
+    if (plan?.fileName) {
+      return `${this.mealPlanUrl}file/${plan.fileName}`;
+    }
+
+    return '';
+  }
+
+  downloadNutritionFile(plan: NutritionPlan | MealPlan | any): Observable<Blob> {
+    return this.http.get(this.getNutritionFileUrl(plan), { responseType: 'blob' });
+  }
+
 
   deleteNutritionPlan(id: string): Observable<void> {
     return this.http.delete<void>(`${this.mealPlanUrl}${id}`);

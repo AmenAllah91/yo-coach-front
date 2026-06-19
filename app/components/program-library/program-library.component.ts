@@ -109,6 +109,7 @@ export class ProgramLibraryComponent implements OnInit {
   showFilePreviewModal = false;
   previewProgram: WorkoutPlan | null = null;
   selectedLibraryFileProgram: WorkoutPlan | null = null;
+  workoutFileEnabled = true;
 
   constructor(
     public workoutService: WorkoutService,
@@ -116,7 +117,8 @@ export class ProgramLibraryComponent implements OnInit {
     private exerciseService: ExerciseService,
     private location: Location,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
   ngOnInit() {
@@ -129,9 +131,23 @@ export class ProgramLibraryComponent implements OnInit {
       return;
     }
     console.log('Program Library - User is logged in, loading data');
-    this.loadPrograms();
-    this.loadEnums();
-    this.loadAllCounts();
+    this.coachSettingsService.loadConfig().subscribe({
+      next: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        if (!this.workoutFileEnabled && this.programTypeFilter !== 'APP') {
+          this.programTypeFilter = 'ALL';
+        }
+        this.loadPrograms();
+        this.loadEnums();
+        this.loadAllCounts();
+      },
+      error: () => {
+        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.loadPrograms();
+        this.loadEnums();
+        this.loadAllCounts();
+      },
+    });
   }
 
   loadAllCounts() {
@@ -197,6 +213,10 @@ export class ProgramLibraryComponent implements OnInit {
     const term = (this.searchTerm || '').trim().toLowerCase();
 
     const filtered = (this.allPrograms || []).filter((program) => {
+      if (!this.workoutFileEnabled && this.isFileProgram(program)) {
+        return false;
+      }
+
       const type = this.getProgramTypeKey(program);
       const matchesType = this.programTypeFilter === 'ALL' || type === this.programTypeFilter;
       const searchable = [program.name, program.details, program.originalFileName, this.getProgramTypeLabel(program)]
@@ -457,6 +477,11 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   createProgram() {
+    if (!this.workoutFileEnabled) {
+      this.createNormalWorkout();
+      return;
+    }
+
     this.showCreateTypeModal = true;
   }
 
@@ -470,6 +495,11 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   openImportFileWorkout() {
+    if (!this.workoutFileEnabled) {
+      this.showCreateTypeModal = false;
+      return;
+    }
+
     this.showCreateTypeModal = false;
     this.showImportFileModal = true;
     this.importError = '';
@@ -736,13 +766,17 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   setProgramTypeFilter(type: 'ALL' | 'APP' | 'PDF' | 'EXCEL') {
+    if (!this.workoutFileEnabled && (type === 'PDF' || type === 'EXCEL')) {
+      return;
+    }
+
     this.programTypeFilter = type;
     this.currentPage = 0;
     this.applyProgramFilters();
   }
 
   getProgramTypeKey(program: WorkoutPlan): 'APP' | 'PDF' | 'EXCEL' {
-    if (!this.isFileProgram(program)) return 'APP';
+    if (!this.workoutFileEnabled || !this.isFileProgram(program)) return 'APP';
     const type = String(program.resourceType || '').toUpperCase();
     if (type === 'XLS' || type === 'XLSX' || type === 'EXCEL') return 'EXCEL';
     return 'PDF';

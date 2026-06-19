@@ -29,7 +29,7 @@
         <input type="text" placeholder="Search programs..." [(ngModel)]="searchTerm" />
       </div>
 
-      <div class="type-filters" *ngIf="activeTab !== 'templates'">
+      <div class="type-filters" *ngIf="activeTab !== 'templates' && workoutFileEnabled">
         <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">All</button>
         <button class="type-filter" [class.active]="programTypeFilter === 'APP'" (click)="setProgramTypeFilter('APP')">
           <i-feather name="grid"></i-feather>
@@ -255,7 +255,7 @@
           <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
           <button class="type-action" (click)="createNormalWorkout()">Create Normal Workout</button>
         </div>
-        <div class="workout-type-card">
+        <div class="workout-type-card" *ngIf="workoutFileEnabled">
           <h4>File Workout Plan</h4>
           <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
           <button class="type-action" (click)="openImportFileWorkout()">Import PDF / Excel</button>
@@ -267,7 +267,7 @@
     </div>
   </div>
 
-  <div class="import-workout-overlay" *ngIf="showImportFileModal" (click)="closeImportFileWorkout()">
+  <div class="import-workout-overlay" *ngIf="workoutFileEnabled && showImportFileModal" (click)="closeImportFileWorkout()">
     <div class="import-workout-modal" (click)="$event.stopPropagation()">
       <div class="import-workout-head">
         <div>
