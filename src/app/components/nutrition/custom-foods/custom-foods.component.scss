@@ -448,7 +448,7 @@
   }
 }
 
-/* Ordinary app pagination */
+/* Ordinary app pagination - same as Meals / Nutrition Plans */
 .app-pagination {
   display: flex;
   align-items: center;
@@ -483,4 +483,10 @@
 .app-pagination .page-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+
+.foods-table .pagination,
+.pagination {
+  display: none !important;
 }

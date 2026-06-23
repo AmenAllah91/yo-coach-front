@@ -206,3 +206,43 @@
     &gt;
   </button>
 </div>
+
+
+<div class="change-dates-backdrop" *ngIf="showChangeDatesModal" (click)="closeChangeDatesModal()">
+  <div class="change-dates-modal" (click)="$event.stopPropagation()">
+    <div class="change-dates-header">
+      <h3>Change Dates</h3>
+      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" aria-label="Close modal">×</button>
+    </div>
+
+    <div class="change-dates-body">
+      <p class="change-dates-description">
+        Update the schedule for <strong>{{ dateTargetPlan?.name }}</strong>.
+      </p>
+
+      <div class="change-dates-fields">
+        <div class="change-date-field">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="dateStart" />
+        </div>
+
+        <div class="change-date-field">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="dateEnd" />
+        </div>
+      </div>
+
+      <div class="upload-error" *ngIf="dateError">{{ dateError }}</div>
+    </div>
+
+    <div class="change-dates-footer">
+      <button type="button" class="change-dates-cancel" (click)="closeChangeDatesModal()" [disabled]="dateSaving">
+        Cancel
+      </button>
+
+      <button type="button" class="change-dates-save" (click)="saveChangedDates()" [disabled]="!dateStart || !dateEnd || dateSaving">
+        {{ dateSaving ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
+</div>

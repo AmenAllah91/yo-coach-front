@@ -29,7 +29,7 @@
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search nutrition plans..." [(ngModel)]="searchTerm" />
+        <input type="text" placeholder="Search nutrition plans..." [(ngModel)]="searchTerm" (input)="onSearch()" />
       </div>
 
       <div class="type-filters" *ngIf="activeTab !== 'templates' && nutritionFileEnabled !== false">
@@ -162,6 +162,36 @@
         </div>
       </div>
     </div>
+
+  <div class="app-pagination" *ngIf="totalPages > 1">
+    <button
+      type="button"
+      class="page-btn"
+      [disabled]="currentPage === 0"
+      (click)="previousPage()"
+    >
+      &lt;
+    </button>
+
+    <button
+      type="button"
+      class="page-btn"
+      *ngFor="let page of pagesArray"
+      [class.active]="page === currentPage"
+      (click)="onPageChange(page)"
+    >
+      {{ page + 1 }}
+    </button>
+
+    <button
+      type="button"
+      class="page-btn"
+      [disabled]="currentPage >= totalPages - 1"
+      (click)="nextPage()"
+    >
+      &gt;
+    </button>
+  </div>
   </div>
 
   <!-- keep existing modals -->
@@ -174,7 +204,7 @@
         <button type="button" class="modal-x" (click)="closeNutritionPlanTypeModal()">×</button>
       </div>
 
-      <div class="nutrition-type-body">
+      <div class="nutrition-type-body nutrition-type-body--workout-like">
         <div class="nutrition-type-card">
           <h4>Normal Nutrition Plan</h4>
           <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
@@ -183,7 +213,7 @@
 
         <div class="nutrition-type-card" *ngIf="nutritionFileEnabled !== false">
           <h4>File Nutrition Plan</h4>
-          <p>Import a PDF or Excel nutrition plan, save it in your library, then assign it to clients.</p>
+          <p>Import a PDF or Excel nutrition plan and manage it from your nutrition library.</p>
           <button class="type-action" type="button" (click)="openImportNutritionFile()">Import PDF / Excel</button>
         </div>
       </div>

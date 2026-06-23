@@ -1380,39 +1380,214 @@
 }
 
 
-/* Ordinary app pagination */
+/* Ordinary app pagination - match app cap */
 .app-pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin: 18px 0 8px;
+  gap: 6px;
+  margin: 20px 0 8px;
 }
 
 .app-pagination .page-btn {
-  min-width: 34px;
-  height: 34px;
-  border: 1px solid #d8e2ef;
-  background: #fff;
-  color: #344054;
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d6dde8;
+  background: #ffffff;
+  color: #6b7280;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
+  line-height: 1;
   cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .app-pagination .page-btn:hover:not(:disabled) {
-  background: #f1f7ff;
-  border-color: #8ec5ff;
+  background: #f5f9ff;
+  border-color: #a9d7f5;
+  color: #4b5563;
 }
 
 .app-pagination .page-btn.active {
-  background: #44b4df;
-  border-color: #44b4df;
-  color: #fff;
+  background: #49b8df;
+  border-color: #49b8df;
+  color: #ffffff;
 }
 
 .app-pagination .page-btn:disabled {
-  opacity: 0.55;
+  background: #f8fafc;
+  border-color: #dde4ee;
+  color: #c4cbd6;
   cursor: not-allowed;
+  opacity: 1;
+}
+
+
+
+
+
+
+
+/* =========================================================
+   NUTRITION CHOOSE TYPE MODAL = WORKOUT DESIGN
+   ========================================================= */
+.nutrition-type-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 3500 !important;
+  background: rgba(15, 23, 42, 0.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+}
+
+.nutrition-type-modal {
+  width: min(760px, calc(100vw - 48px)) !important;
+  background: #ffffff !important;
+  border-radius: 10px !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28) !important;
+  overflow: hidden !important;
+}
+
+.nutrition-type-header {
+  min-height: 78px !important;
+  padding: 0 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.nutrition-type-header h3 {
+  margin: 0 !important;
+  color: #1f2937 !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.nutrition-type-header .modal-x {
+  width: 38px !important;
+  height: 38px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #64748b !important;
+  font-size: 32px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.nutrition-type-header .modal-x:hover {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+.nutrition-type-body {
+  padding: 24px 28px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 22px !important;
+}
+
+.nutrition-type-card {
+  border: 1px solid #dfe5ec !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  padding: 30px 24px !important;
+  min-height: 220px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+.nutrition-type-card:hover {
+  border-color: #dfe5ec !important;
+  box-shadow: none !important;
+}
+
+.nutrition-type-card h4 {
+  margin: 0 0 14px !important;
+  color: #1f2937 !important;
+  font-size: 19px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+}
+
+.nutrition-type-card p {
+  margin: 0 0 24px !important;
+  color: #64748b !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+  font-weight: 400 !important;
+}
+
+.nutrition-type-card .type-action {
+  margin-top: auto !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  padding: 0 18px !important;
+  cursor: pointer !important;
+}
+
+.nutrition-type-card .type-action:hover {
+  background: #111827 !important;
+}
+
+.nutrition-type-footer {
+  min-height: 72px !important;
+  padding: 16px 28px !important;
+  border-top: 1px solid #e5e7eb !important;
+  background: #ffffff !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.nutrition-type-footer .btn-cancel {
+  min-width: 90px !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+  background: #f8fafc !important;
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  padding: 0 16px !important;
+}
+
+.nutrition-type-footer .btn-cancel:hover {
+  background: #f1f5f9 !important;
+}
+
+@media (max-width: 760px) {
+  .nutrition-type-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .nutrition-type-modal {
+    width: min(100%, calc(100vw - 32px)) !important;
+  }
 }

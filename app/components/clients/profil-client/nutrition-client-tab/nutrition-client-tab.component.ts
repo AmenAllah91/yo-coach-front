@@ -1,13 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
   selector: 'app-nutrition-client-tab',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './nutrition-client-tab.component.html',
   styleUrl: './nutrition-client-tab.component.scss',
 })
@@ -23,6 +24,12 @@ export class NutritionClientTabComponent implements OnInit {
   filePlans: any[] = [];
   activeTab: 'ALL' | 'APP' | 'FILES' = 'ALL';
   openActionsPlanId: string | null = null;
+  showChangeDatesModal = false;
+  dateTargetPlan: any | null = null;
+  dateStart = '';
+  dateEnd = '';
+  dateSaving = false;
+  dateError: string | null = null;
 
   page = 0;
   size = 5;
@@ -47,6 +54,10 @@ export class NutritionClientTabComponent implements OnInit {
   }
 
   setActiveTab(tab: 'ALL' | 'APP' | 'FILES') {
+    if (this.nutritionFileEnabled === false) {
+      tab = 'APP';
+    }
+
     if (this.activeTab === tab) {
       return;
     }
@@ -63,6 +74,9 @@ export class NutritionClientTabComponent implements OnInit {
   }
 
   getMealPlanByCoachAndClient(idCoach: string, idClient: string) {
+    if (this.nutritionFileEnabled === false) {
+      this.activeTab = 'APP';
+    }
     this.nutritionService
       .getNutritionPlanByCoachIdAndClient(
         idCoach,
@@ -122,6 +136,9 @@ export class NutritionClientTabComponent implements OnInit {
         });
 
         this.mealPlan = plans;
+        this.mealPlan = this.nutritionFileEnabled === false
+          ? plans.filter((plan: any) => !this.isFilePlan(plan))
+          : plans;
         this.appPlans = this.activeTab === 'APP'
           ? plans
           : plans.filter((plan) => !this.isFilePlan(plan));
@@ -208,7 +225,68 @@ export class NutritionClientTabComponent implements OnInit {
 
   changeDates(plan: any): void {
     this.closeActions();
-    // Date change modal can be wired next, same as workout file.
+    this.dateTargetPlan = plan;
+    this.dateStart = this.toDateInputValue(plan?.startDate);
+    this.dateEnd = this.toDateInputValue(plan?.endDate);
+    this.dateError = null;
+    this.showChangeDatesModal = true;
+  }
+
+  closeChangeDatesModal(): void {
+    if (this.dateSaving) return;
+
+    this.showChangeDatesModal = false;
+    this.dateTargetPlan = null;
+    this.dateStart = '';
+    this.dateEnd = '';
+    this.dateError = null;
+  }
+
+  saveChangedDates(): void {
+    if (!this.dateTargetPlan?.id) return;
+
+    if (!this.dateStart || !this.dateEnd) {
+      this.dateError = 'Start date and end date are required.';
+      return;
+    }
+
+    if (this.dateEnd < this.dateStart) {
+      this.dateError = 'End date must be after start date.';
+      return;
+    }
+
+    this.dateSaving = true;
+    this.dateError = null;
+
+    this.nutritionService
+      .updateNutritionPlanDates(this.dateTargetPlan.id, this.dateStart, this.dateEnd)
+      .subscribe({
+        next: (updatedPlan) => {
+          if (this.dateTargetPlan) {
+            this.dateTargetPlan.startDate = updatedPlan?.startDate || this.dateStart;
+            this.dateTargetPlan.endDate = updatedPlan?.endDate || this.dateEnd;
+          }
+          this.dateSaving = false;
+          this.closeChangeDatesModal();
+          this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+        },
+        error: (error) => {
+          console.error('Error updating nutrition dates:', error);
+          this.dateSaving = false;
+          this.dateError = 'Could not update dates.';
+        },
+      });
+  }
+
+  private toDateInputValue(value: any): string {
+    if (!value) return '';
+    if (typeof value === 'string') return value.slice(0, 10);
+
+    try {
+      return new Date(value).toISOString().slice(0, 10);
+    } catch {
+      return '';
+    }
   }
 
   replaceFile(plan: any): void {
@@ -274,48 +352,223 @@ export class NutritionClientTabComponent implements OnInit {
 
     const popup = window.open('', '_blank');
 
-    if (!popup) return;
+    if (!popup) {
+      console.error('Preview popup was blocked by the browser.');
+      return;
+    }
+
+    const fileName = plan?.originalFileName || plan?.fileName || plan?.name || 'nutrition-file';
 
     popup.document.open();
     popup.document.write(`
+      <!doctype html>
       <html>
         <head>
-          <title>${this.escapeHtml(plan?.name || 'Nutrition file')}</title>
+          <title>${this.escapeHtml(fileName)}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 0; background: #f8fafc; color: #111827; }
-            .topbar { padding: 14px 18px; background: #111827; color: #fff; font-weight: 700; }
-            .loading { padding: 24px; color: #475467; }
+            html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }
+            .message { max-width: 680px; margin: 80px auto; padding: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,.08); }
+            .message h2 { margin: 0 0 12px; font-size: 22px; }
+            .message p { margin: 0; color: #64748b; line-height: 1.6; }
+            iframe { width: 100%; height: 100%; border: 0; background: #fff; }
           </style>
         </head>
-        <body>
-          <div class="topbar">Loading nutrition file preview...</div>
-          <div class="loading">Please wait.</div>
-        </body>
+        <body><div class="message"><h2>Loading preview...</h2><p>Please wait.</p></div></body>
       </html>
     `);
     popup.document.close();
 
     this.nutritionService.downloadNutritionFile(plan).subscribe({
       next: (blob) => {
-        if (this.getFileKind(plan) === 'pdf') {
-          this.renderPdfPreview(popup, plan, blob);
-          return;
+        const contentType = this.getNutritionPreviewContentType(plan, blob);
+        const fileBlob = blob.type === contentType ? blob : new Blob([blob], { type: contentType });
+        const blobUrl = window.URL.createObjectURL(fileBlob);
+
+        if (contentType === 'application/pdf') {
+          popup.document.open();
+          popup.document.write(`
+            <!doctype html>
+            <html>
+              <head>
+                <title>${this.escapeHtml(fileName)}</title>
+                <style>html, body { margin: 0; height: 100%; } iframe { width: 100%; height: 100%; border: 0; }</style>
+              </head>
+              <body>
+                <iframe src="${blobUrl}" title="${this.escapeHtml(fileName)}"></iframe>
+              </body>
+            </html>
+          `);
+          popup.document.close();
+        } else {
+          popup.document.open();
+          popup.document.write(this.buildNutritionExcelPreviewHtml(blobUrl, fileName));
+          popup.document.close();
         }
 
-        this.renderExcelPreview(popup, plan, blob);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error previewing nutrition file:', error);
         popup.document.open();
         popup.document.write(`
+          <!doctype html>
           <html>
-            <body style="font-family:Arial;padding:24px;color:#dc2626">
-              Could not open nutrition file preview.
+            <head><title>Preview error</title></head>
+            <body style="font-family: Arial, sans-serif; padding: 40px;">
+              <h2>Could not preview this file</h2>
+              <p>Please try again later.</p>
             </body>
           </html>
         `);
         popup.document.close();
       },
     });
+  }
+
+  private getNutritionPreviewContentType(plan: any, blob: Blob): string {
+    const blobType = String(blob?.type || '').toLowerCase();
+
+    if (blobType.includes('pdf')) {
+      return 'application/pdf';
+    }
+
+    if (
+      blobType.includes('spreadsheet') ||
+      blobType.includes('excel') ||
+      blobType.includes('application/vnd.ms-excel')
+    ) {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+
+    const name = String(plan?.originalFileName || plan?.fileName || plan?.name || '').toLowerCase();
+    const type = String(plan?.resourceType || plan?.fileContentType || '').toLowerCase();
+
+    if (name.endsWith('.pdf') || type.includes('pdf')) {
+      return 'application/pdf';
+    }
+
+    if (
+      name.endsWith('.xlsx') ||
+      name.endsWith('.xls') ||
+      type.includes('excel') ||
+      type.includes('spreadsheet')
+    ) {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+
+    return 'application/pdf';
+  }
+
+  private buildNutritionExcelPreviewHtml(blobUrl: string, fileName: string): string {
+    const safeTitle = this.escapeHtml(fileName);
+    const safeBlobUrl = this.escapeHtml(blobUrl);
+
+    return `
+      <!doctype html>
+      <html>
+        <head>
+          <title>${safeTitle}</title>
+          <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }
+            .topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 22px; background: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(15,23,42,.05); }
+            .title { min-width: 0; }
+            h1 { margin: 0; font-size: 20px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .subtitle { margin-top: 4px; color: #64748b; font-size: 13px; }
+            .tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 22px; background: #fff; border-bottom: 1px solid #e5e7eb; }
+            .tab { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; color: #334155; }
+            .tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+            .content { padding: 20px 22px; }
+            .sheet-wrap { overflow: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,.06); max-height: calc(100vh - 145px); }
+            table { border-collapse: collapse; min-width: 100%; font-size: 13px; }
+            td, th { border: 1px solid #e5e7eb; padding: 8px 10px; min-width: 90px; max-width: 360px; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }
+            th { background: #f1f5f9; position: sticky; top: 0; z-index: 1; font-weight: 700; }
+            .row-number { background: #f8fafc; color: #64748b; text-align: right; min-width: 54px; width: 54px; position: sticky; left: 0; z-index: 2; }
+            th.row-number { z-index: 3; }
+            .message { max-width: 760px; margin: 80px auto; padding: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,.08); }
+            .message h2 { margin: 0 0 12px; font-size: 22px; }
+            .message p { margin: 0; color: #64748b; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="message" id="loading"><h2>Opening Excel preview...</h2><p>Please wait.</p></div>
+          <div id="app" style="display:none;">
+            <div class="topbar">
+              <div class="title">
+                <h1>${safeTitle}</h1>
+                <div class="subtitle">Excel preview · no automatic download</div>
+              </div>
+            </div>
+            <div class="tabs" id="tabs"></div>
+            <div class="content"><div class="sheet-wrap" id="sheet"></div></div>
+          </div>
+
+          <script>
+            const fileUrl = '${safeBlobUrl}';
+            const escapeText = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+            const columnName = (index) => {
+              let name = '';
+              let n = index + 1;
+              while (n > 0) {
+                const rem = (n - 1) % 26;
+                name = String.fromCharCode(65 + rem) + name;
+                n = Math.floor((n - 1) / 26);
+              }
+              return name;
+            };
+
+            function renderSheet(workbook, sheetName) {
+              const worksheet = workbook.Sheets[sheetName];
+              const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+              const maxCols = Math.max(1, ...rows.map(row => row.length));
+              let html = '<table><thead><tr><th class="row-number"></th>';
+              for (let c = 0; c < maxCols; c++) html += '<th>' + columnName(c) + '</th>';
+              html += '</tr></thead><tbody>';
+              rows.forEach((row, r) => {
+                html += '<tr><th class="row-number">' + (r + 1) + '</th>';
+                for (let c = 0; c < maxCols; c++) html += '<td>' + escapeText(row[c]) + '</td>';
+                html += '</tr>';
+              });
+              if (!rows.length) html += '<tr><th class="row-number">1</th><td>Empty sheet</td></tr>';
+              html += '</tbody></table>';
+              document.getElementById('sheet').innerHTML = html;
+              document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.sheet === sheetName));
+            }
+
+            async function init() {
+              try {
+                if (!window.XLSX) throw new Error('Excel preview library failed to load.');
+                const response = await fetch(fileUrl);
+                if (!response.ok) throw new Error('Could not load the Excel file.');
+                const buffer = await response.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                const sheetNames = workbook.SheetNames || [];
+                if (!sheetNames.length) throw new Error('This Excel file has no sheets.');
+
+                const tabs = document.getElementById('tabs');
+                sheetNames.forEach((sheetName) => {
+                  const btn = document.createElement('button');
+                  btn.className = 'tab';
+                  btn.type = 'button';
+                  btn.dataset.sheet = sheetName;
+                  btn.textContent = sheetName;
+                  btn.onclick = () => renderSheet(workbook, sheetName);
+                  tabs.appendChild(btn);
+                });
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                renderSheet(workbook, sheetNames[0]);
+              } catch (error) {
+                document.body.innerHTML = '<div class="message"><h2>Could not open Excel preview</h2><p>' + escapeText(error.message || error) + '</p></div>';
+              }
+            }
+            init();
+          </script>
+        </body>
+      </html>
+    `;
   }
 
   private renderPdfPreview(popup: Window, plan: any, blob: Blob): void {
@@ -366,109 +619,174 @@ export class NutritionClientTabComponent implements OnInit {
     setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
   }
 
-  private renderExcelPreview(popup: Window, plan: any, blob: Blob): void {
-    blob.arrayBuffer()
-      .then((buffer) => import('xlsx').then((XLSX) => ({ XLSX, buffer })))
-      .then(({ XLSX, buffer }) => {
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, {
-          header: 1,
-          raw: false,
-          defval: '',
-        }) as any[][];
+  private renderExcelPreview(previewWindow: Window, plan: any, blob: Blob): void {
+    const title = this.escapeHtml(plan?.name || plan?.originalFileName || 'Excel preview');
+    const fileName = this.escapeHtml(plan?.originalFileName || plan?.fileName || '');
+    const excelBlob = new Blob([blob], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const blobUrl = window.URL.createObjectURL(excelBlob);
+    const safeBlobUrl = blobUrl.replace(/'/g, '%27');
 
-        const maxRows = rows.slice(0, 120);
-        const tableRows = maxRows
-          .map((row, rowIndex) => `
-            <tr>
-              <th class="row-index">${rowIndex + 1}</th>
-              ${row.map((cell) => `<td>${this.escapeHtml(String(cell ?? ''))}</td>`).join('')}
-            </tr>
-          `)
-          .join('');
+    previewWindow.document.open();
+    previewWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+          <style>
+            html, body { margin: 0; min-height: 100%; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }
+            .topbar {
+              height: 58px;
+              display: flex;
+              align-items: center;
+              padding: 0 18px;
+              background: #111827;
+              color: #fff;
+              font-weight: 700;
+              box-sizing: border-box;
+            }
+            .meta {
+              padding: 12px 18px;
+              color: #667085;
+              background: #fff;
+              border-bottom: 1px solid #e5e7eb;
+              font-size: 13px;
+            }
+            .tabs {
+              display: flex;
+              gap: 8px;
+              padding: 10px 18px;
+              background: #fff;
+              border-bottom: 1px solid #e5e7eb;
+              overflow-x: auto;
+            }
+            .tab {
+              border: 1px solid #dbe7f2;
+              background: #fff;
+              border-radius: 8px;
+              padding: 7px 12px;
+              cursor: pointer;
+              white-space: nowrap;
+            }
+            .tab.active {
+              background: #eaf8ff;
+              color: #0284c7;
+              border-color: #7dd3fc;
+              font-weight: 700;
+            }
+            .wrap {
+              padding: 18px;
+              overflow: auto;
+              height: calc(100vh - 113px);
+              box-sizing: border-box;
+            }
+            table {
+              border-collapse: collapse;
+              background: #fff;
+              min-width: max-content;
+              box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+            }
+            th, td {
+              border: 1px solid #e5e7eb;
+              padding: 8px 10px;
+              font-size: 13px;
+              white-space: nowrap;
+              max-width: 280px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            th {
+              background: #f8fafc;
+              color: #475569;
+              font-weight: 700;
+            }
+            .row-index {
+              position: sticky;
+              left: 0;
+              min-width: 44px;
+              text-align: center;
+              z-index: 2;
+            }
+            .message {
+              padding: 28px;
+              color: #475569;
+            }
+            .error {
+              color: #dc2626;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="topbar">${title}</div>
+          <div class="meta">${fileName} · Excel preview</div>
+          <div class="tabs" id="tabs"></div>
+          <div class="wrap" id="sheet"><div class="message">Loading Excel preview...</div></div>
+          <script>
+            const fileUrl = '${safeBlobUrl}';
+            const escapeText = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+            const columnName = (index) => {
+              let name = '';
+              let n = index + 1;
+              while (n > 0) {
+                const rem = (n - 1) % 26;
+                name = String.fromCharCode(65 + rem) + name;
+                n = Math.floor((n - 1) / 26);
+              }
+              return name;
+            };
+            function renderSheet(workbook, sheetName) {
+              const worksheet = workbook.Sheets[sheetName];
+              const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+              const previewRows = rows.filter(row => row.some(cell => String(cell || '').trim() !== '')).slice(0, 200);
+              const maxCols = Math.min(24, Math.max(1, ...previewRows.map(row => row.length)));
+              let html = '<table><thead><tr><th class="row-index"></th>';
+              for (let c = 0; c < maxCols; c++) html += '<th>' + columnName(c) + '</th>';
+              html += '</tr></thead><tbody>';
+              previewRows.forEach((row, r) => {
+                html += '<tr><th class="row-index">' + (r + 1) + '</th>';
+                for (let c = 0; c < maxCols; c++) html += '<td>' + escapeText(row[c]) + '</td>';
+                html += '</tr>';
+              });
+              if (!previewRows.length) html += '<tr><th class="row-index">1</th><td>No data found in this sheet.</td></tr>';
+              html += '</tbody></table>';
+              document.getElementById('sheet').innerHTML = html;
+              document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.sheet === sheetName));
+            }
+            async function init() {
+              try {
+                if (!window.XLSX) throw new Error('Excel preview library failed to load.');
+                const response = await fetch(fileUrl);
+                if (!response.ok) throw new Error('Could not load the Excel file.');
+                const buffer = await response.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                const sheetNames = workbook.SheetNames || [];
+                if (!sheetNames.length) throw new Error('This Excel file has no sheets.');
+                const tabs = document.getElementById('tabs');
+                sheetNames.forEach((sheetName) => {
+                  const btn = document.createElement('button');
+                  btn.className = 'tab';
+                  btn.type = 'button';
+                  btn.dataset.sheet = sheetName;
+                  btn.textContent = sheetName;
+                  btn.onclick = () => renderSheet(workbook, sheetName);
+                  tabs.appendChild(btn);
+                });
+                renderSheet(workbook, sheetNames[0]);
+              } catch (error) {
+                document.getElementById('sheet').innerHTML = '<div class="message error">Could not render Excel preview. Use Download to open this file.<br>' + escapeText(error.message || error) + '</div>';
+              }
+            }
+            init();
+          </script>
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
 
-        const title = this.escapeHtml(plan?.name || plan?.originalFileName || 'Excel Preview');
-        const fileName = this.escapeHtml(plan?.originalFileName || plan?.fileName || '');
-
-        popup.document.open();
-        popup.document.write(`
-          <html>
-            <head>
-              <title>${title}</title>
-              <style>
-                body { margin: 0; background: #f8fafc; font-family: Arial, sans-serif; color: #111827; }
-                .topbar {
-                  padding: 14px 18px;
-                  background: #111827;
-                  color: #fff;
-                  font-weight: 700;
-                }
-                .meta {
-                  padding: 12px 18px;
-                  background: #fff;
-                  border-bottom: 1px solid #e5e7eb;
-                  color: #667085;
-                  font-size: 13px;
-                }
-                .wrap {
-                  padding: 18px;
-                  overflow: auto;
-                  height: calc(100vh - 92px);
-                  box-sizing: border-box;
-                }
-                table {
-                  border-collapse: collapse;
-                  background: #fff;
-                  min-width: max-content;
-                  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-                }
-                th, td {
-                  border: 1px solid #e5e7eb;
-                  padding: 8px 10px;
-                  font-size: 13px;
-                  white-space: nowrap;
-                  max-width: 260px;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                }
-                th.row-index {
-                  position: sticky;
-                  left: 0;
-                  background: #f1f5f9;
-                  color: #475569;
-                  z-index: 2;
-                  min-width: 44px;
-                  text-align: center;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="topbar">${title}</div>
-              <div class="meta">${fileName} · ${rows.length} rows previewed</div>
-              <div class="wrap">
-                <table>
-                  <tbody>${tableRows || '<tr><td>No data found in this Excel file.</td></tr>'}</tbody>
-                </table>
-              </div>
-            </body>
-          </html>
-        `);
-        popup.document.close();
-      })
-      .catch(() => {
-        popup.document.open();
-        popup.document.write(`
-          <html>
-            <body style="font-family:Arial;padding:24px;color:#dc2626">
-              Could not render Excel preview. Use Download to open the file.
-            </body>
-          </html>
-        `);
-        popup.document.close();
-      });
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
   }
+
 
   private escapeHtml(value: string): string {
     return value
@@ -528,9 +846,6 @@ export class NutritionClientTabComponent implements OnInit {
     }
   }
 
-  openAssignNutrition() {
-    this.assignNew.emit();
-  }
 
   private loadNutritionFileSetting(): void {
     this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
@@ -538,13 +853,20 @@ export class NutritionClientTabComponent implements OnInit {
     this.coachSettingsService.loadConfig().subscribe({
       next: (config) => {
         this.nutritionFileEnabled = config.nutrition?.nutritionFileEnabled !== false;
-        this.applyFilters?.();
+        if (this.nutritionFileEnabled === false) {
+          this.activeTab = 'APP';
+        }
+        if (this.clientId && this.coachId) {
+          this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+        }
       },
       error: () => {
         this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
       },
     });
   }
+
+  openAssignNutrition() {
+    this.assignNew.emit();
+  }
 }
-
-

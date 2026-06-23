@@ -546,3 +546,115 @@
     right: auto;
   }
 }
+
+
+.change-dates-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.change-dates-modal {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.change-dates-header,
+.change-dates-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e5edf5;
+}
+
+.change-dates-footer {
+  border-top: 1px solid #e5edf5;
+  border-bottom: none;
+  justify-content: flex-end;
+}
+
+.change-dates-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.change-dates-close {
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.change-dates-body {
+  padding: 22px;
+}
+
+.change-dates-description {
+  margin: 0 0 16px;
+  color: #667085;
+  font-size: 14px;
+}
+
+.change-dates-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.change-date-field {
+  display: grid;
+  gap: 7px;
+}
+
+.change-date-field label {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.change-date-field input {
+  height: 42px;
+  border: 1px solid #dbe7f2;
+  border-radius: 10px;
+  padding: 0 12px;
+}
+
+.change-dates-cancel,
+.change-dates-save {
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.change-dates-cancel {
+  border: 1px solid #dbe7f2;
+  background: #fff;
+  color: #111827;
+}
+
+.change-dates-save {
+  border: none;
+  background: #111827;
+  color: #fff;
+}
+
+.change-dates-save:disabled,
+.change-dates-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
