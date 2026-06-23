@@ -47,7 +47,7 @@
         <div class="group-meta">
           <span>
             <i-feather name="shopping-bag"></i-feather>
-            {{ group.foods.length }} foods
+            {{ group.foods?.length || 0 }} foods
           </span>
           <span class="divider"></span>
           <span>Client note: {{ group.clientNote }}</span>
@@ -76,9 +76,34 @@
     </div>
   </div>
 
-  <div class="info-box">
-    <i-feather name="info"></i-feather>
-    Any food inside a group can suggest the others as replacements.
+  <div class="app-pagination" *ngIf="totalPages > 1">
+    <button
+      type="button"
+      class="page-btn"
+      [disabled]="currentPage === 0"
+      (click)="previousPage()"
+    >
+      &lt;
+    </button>
+
+    <button
+      type="button"
+      class="page-btn"
+      *ngFor="let page of pagesArray"
+      [class.active]="page === currentPage"
+      (click)="onPageChange(page)"
+    >
+      {{ page + 1 }}
+    </button>
+
+    <button
+      type="button"
+      class="page-btn"
+      [disabled]="currentPage >= totalPages - 1"
+      (click)="nextPage()"
+    >
+      &gt;
+    </button>
   </div>
 </div>
 

@@ -178,6 +178,8 @@ activeTab: TabId = 'dashboard';
 
   showProgramSelectionModal = false;
   showNutritionSelectionModal = false;
+  showNutritionExistingTypeModal = false;
+  nutritionSelectionMode: 'ALL' | 'APP' | 'FILES' = 'ALL';
   showChooseModal = false;
 
   nutritionSelectionList: any[] = [];
@@ -299,6 +301,7 @@ activeTab: TabId = 'dashboard';
 
         if (!this.workoutFileEnabled) {
           this.showFileWorkoutImportModal = false;
+    this.showNutritionFileImportModal = false;
         }
       },
       error: () => {
@@ -660,6 +663,35 @@ activeTab: TabId = 'dashboard';
     this.openAssignmentModal(a);
   }
 
+
+  isFileNutritionPlan(plan: any): boolean {
+    const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
+    const type = String(plan?.resourceType || '').toUpperCase();
+
+    return (
+      mode === 'FILE' ||
+      type === 'PDF' ||
+      type === 'EXCEL' ||
+      type === 'XLS' ||
+      type === 'XLSX' ||
+      !!plan?.fileName ||
+      !!plan?.originalFileName ||
+      !!plan?.fileUrl
+    );
+  }
+
+  get nutritionSelectionPrograms(): any[] {
+    if (this.nutritionSelectionMode === 'APP') {
+      return this.nutritionSelectionList.filter((plan) => !this.isFileNutritionPlan(plan));
+    }
+
+    if (this.nutritionSelectionMode === 'FILES') {
+      return this.nutritionSelectionList.filter((plan) => this.isFileNutritionPlan(plan));
+    }
+
+    return this.nutritionSelectionList;
+  }
+
   getAllNutrition() {
     this.nutritionService.getNutritionPlans().subscribe((res: any) => {
       this.nutritionSelectionList = (res.content || [])
@@ -687,11 +719,45 @@ activeTab: TabId = 'dashboard';
     }
 
     if (this.assignType === 'NUTRITION') {
+      this.nutritionSelectionMode = 'ALL';
       this.showNutritionSelectionModal = true;
       return;
     }
 
     this.showFormSelectionModal = true;
+  }
+
+
+  closeNutritionExistingTypeModal(): void {
+    this.showNutritionExistingTypeModal = false;
+  }
+
+
+  createNormalNutritionFromProfile(): void {
+    this.showNutritionExistingTypeModal = false;
+    this.showChooseModal = true;
+  }
+
+  importFileNutritionFromProfile(): void {
+    this.showNutritionExistingTypeModal = false;
+    this.openImportNutritionFileFromProfile();
+  }
+
+  openImportNutritionFileFromProfile(): void {
+    this.showNutritionFileImportModal = true;
+    this.profileImportNutritionFile = null;
+    this.profileImportNutritionName = '';
+    this.profileImportNutritionDetails = '';
+    this.profileImportNutritionStartDate = '';
+    this.profileImportNutritionEndDate = '';
+    this.profileImportNutritionError = '';
+    this.profileImportNutritionSaving = false;
+  }
+
+  openExistingNutritionPrograms(mode: 'APP' | 'FILES'): void {
+    this.nutritionSelectionMode = mode;
+    this.showNutritionExistingTypeModal = false;
+    this.showNutritionSelectionModal = true;
   }
 
   onCreateFromAssignModal() {
@@ -721,9 +787,117 @@ activeTab: TabId = 'dashboard';
     }
   }
 
+
+  closeNutritionFileImportModal(): void {
+    if (this.profileImportNutritionSaving) return;
+    this.showNutritionFileImportModal = false;
+    this.profileImportNutritionError = '';
+  }
+
+  browseProfileNutritionFile(): void {
+    const input = document.getElementById('profileNutritionFileInput') as HTMLInputElement | null;
+    input?.click();
+  }
+
+  onProfileNutritionFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const valid = fileName.endsWith('.pdf') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx');
+
+    if (!valid) {
+      this.profileImportNutritionError = 'Only PDF, XLS, or XLSX files are accepted.';
+      input.value = '';
+      return;
+    }
+
+    const maxSize = 25 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      this.profileImportNutritionError = 'File is too large. Maximum size is 25 MB.';
+      input.value = '';
+      return;
+    }
+
+    this.profileImportNutritionFile = file;
+    this.profileImportNutritionError = '';
+
+    if (!this.profileImportNutritionName) {
+      this.profileImportNutritionName = file.name.replace(/\.(pdf|xls|xlsx)$/i, '');
+    }
+  }
+
+  clearProfileNutritionFile(event?: Event): void {
+    event?.stopPropagation();
+    this.profileImportNutritionFile = null;
+    const input = document.getElementById('profileNutritionFileInput') as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
+  canSaveProfileFileNutrition(): boolean {
+    return !!this.profileImportNutritionFile
+      && !!this.profileImportNutritionName?.trim()
+      && !!this.profileImportNutritionStartDate
+      && !!this.profileImportNutritionEndDate
+      && !this.profileImportNutritionSaving;
+  }
+
+  saveAndAssignProfileFileNutrition(): void {
+    if (!this.canSaveProfileFileNutrition() || !this.profileImportNutritionFile || !this.client) return;
+
+    this.profileImportNutritionSaving = true;
+    this.profileImportNutritionError = '';
+
+    this.nutritionService.createNutritionFilePlan(
+      this.profileImportNutritionFile,
+      this.profileImportNutritionName.trim(),
+      this.profileImportNutritionDetails?.trim() || undefined,
+      undefined,
+      undefined
+    ).subscribe({
+      next: (createdPlan: any) => {
+        const item = {
+          ...createdPlan,
+          client: this.client,
+          startDate: this.profileImportNutritionStartDate,
+          endDate: this.profileImportNutritionEndDate,
+          mealDays: [],
+          isMealPlanTemplate: false,
+        };
+
+        this.nutritionService.assignNutritionPlan(item).subscribe({
+          next: () => {
+            this.profileImportNutritionSaving = false;
+            this.showNutritionFileImportModal = false;
+            this.closeAssignFlow();
+            this.getAllNutrition();
+            this.loadDashboardPrograms();
+          },
+          error: (err) => {
+            console.error('Failed to assign imported nutrition file:', err);
+            this.profileImportNutritionSaving = false;
+            this.profileImportNutritionError = 'File imported, but assignment failed. Please try assigning it from Existing Nutrition Programs.';
+            this.getAllNutrition();
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Failed to import nutrition file:', err);
+        this.profileImportNutritionSaving = false;
+        this.profileImportNutritionError = 'Impossible d’importer et assigner ce programme nutrition. Vérifiez le fichier et les dates.';
+      },
+    });
+  }
+
+
   backToAssignModal(): void {
     this.showProgramSelectionModal = false;
     this.showNutritionSelectionModal = false;
+    this.showNutritionExistingTypeModal = false;
+    this.showNutritionFileImportModal = false;
     this.showFormSelectionModal = false;
     this.showChooseModal = false;
     this.showAssignSelectModal = true;
@@ -738,10 +912,28 @@ activeTab: TabId = 'dashboard';
     startDate: string;
     endDate: string | null;
   }) {
-    const { program, startDate } = payload;
+    const { program, startDate, endDate } = payload;
     const item = { ...program };
 
     item.startDate = startDate;
+
+    if (this.isFileNutritionPlan(program)) {
+      if (!endDate) {
+        return;
+      }
+
+      item.endDate = endDate;
+      item.mealDays = [];
+      item.client = this.client;
+      item.isMealPlanTemplate = false;
+
+      this.nutritionService.assignNutritionPlan(item).subscribe(() => {
+        this.showNutritionSelectionModal = false;
+        this.loadDashboardPrograms();
+      });
+
+      return;
+    }
 
     const mealDays = (program.mealDays || []).map((day: any, index: number) => {
       const current = new Date(startDate);

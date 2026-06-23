@@ -13,6 +13,9 @@ export interface CoachSettingsConfig {
     macroPlanMeal: boolean;
     defaultMeals: string;
     autoCreateMeals: boolean;
+
+    /** Controls imported nutrition files (PDF / Excel) across the app. */
+    nutritionFileEnabled?: boolean;
   };
 
   quickActions: {
@@ -117,7 +120,8 @@ export class CoachSettingsService {
         macroPlanMeal: true,
         defaultMeals: '5',
         autoCreateMeals: true,
-      },
+
+      nutritionFileEnabled: true,},
       quickActions: {
         assignAfterNutrition: true,
         assignAfterWorkout: true,
@@ -169,6 +173,10 @@ export class CoachSettingsService {
 
   shouldShowExerciseWeight(): boolean {
     return this.getConfig().workout.showExerciseWeight !== false;
+  }
+
+  shouldUseNutritionFiles(): boolean {
+    return this.cachedConfig.nutrition.nutritionFileEnabled !== false;
   }
 
   shouldUseWorkoutFiles(): boolean {

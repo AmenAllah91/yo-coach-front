@@ -30,6 +30,12 @@ export class FoodReplacementGroupsComponent implements OnInit {
   statusFilter: StatusFilter = 'all';
   loading = false;
 
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+  pagesArray: number[] = [];
+
   editingGroup: FoodReplacementGroup | null = null;
 
   groupName = '';
@@ -87,10 +93,14 @@ export class FoodReplacementGroupsComponent implements OnInit {
         : this.statusFilter === 'active';
 
     this.replacementGroupsService
-      .getGroups(0, 50, this.searchTerm, active)
+      .getGroups(this.currentPage, this.pageSize, this.searchTerm, active)
       .subscribe({
         next: (page) => {
           this.groups = page.content || [];
+          this.totalElements = page.totalElements || 0;
+          this.totalPages = page.totalPages || 0;
+          this.currentPage = page.number ?? this.currentPage;
+          this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
           this.loading = false;
         },
         error: (error) => {
@@ -110,11 +120,30 @@ export class FoodReplacementGroupsComponent implements OnInit {
   }
 
   onSearch(): void {
+    this.currentPage = 0;
     this.loadGroups();
   }
 
   onStatusChange(): void {
+    this.currentPage = 0;
     this.loadGroups();
+  }
+
+  onPageChange(page: number): void {
+    if (page < 0 || page >= this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.loadGroups();
+  }
+
+  previousPage(): void {
+    this.onPageChange(this.currentPage - 1);
+  }
+
+  nextPage(): void {
+    this.onPageChange(this.currentPage + 1);
   }
 
   goBack(): void {

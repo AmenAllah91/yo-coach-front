@@ -148,6 +148,29 @@
             </div>
           </div>
         </div>
+
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">
+              Activer les programmes nutrition PDF / Excel
+            </span>
+            <p class="demo-workspace-description" style="margin: 4px 0 0;">
+              Si désactivé, les imports PDF/Excel nutrition sont masqués et la nutrition fonctionne comme avant l’ajout des fichiers.
+            </p>
+          </div>
+          <button
+            class="toggle"
+            [class.toggle--on]="config.nutrition.nutritionFileEnabled !== false"
+            type="button"
+            (click)="toggleNutritionFileEnabled()"
+          >
+            <span
+              class="toggle__thumb"
+              [class.toggle__thumb--on]="config.nutrition.nutritionFileEnabled !== false"
+            ></span>
+          </button>
+        </div>
+
       </div>
     </div>
   </div>

@@ -17,9 +17,9 @@
     <div class="search-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input 
-          type="text" 
-          placeholder="Search foods" 
+        <input
+          type="text"
+          placeholder="Search foods"
           [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
@@ -94,6 +94,36 @@
     </div>
   </div>
 
+
+  <div class="app-pagination" *ngIf="totalPages > 1">
+    <button
+      type="button"
+      class="page-btn"
+      [disabled]="currentPage === 0"
+      (click)="previousPage()"
+    >
+      &lt;
+    </button>
+
+    <button
+      type="button"
+      class="page-btn"
+      *ngFor="let page of pagesArray"
+      [class.active]="page === currentPage"
+      (click)="onPageChange(page)"
+    >
+      {{ page + 1 }}
+    </button>
+
+    <button
+      type="button"
+      class="page-btn"
+      [disabled]="currentPage >= totalPages - 1"
+      (click)="nextPage()"
+    >
+      &gt;
+    </button>
+  </div>
   <!-- Add/Edit Food Modal -->
   <div class="modal-overlay" [class.show]="showAddModal" (click)="closeAddModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">

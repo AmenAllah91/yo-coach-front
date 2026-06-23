@@ -872,6 +872,7 @@
 ></app-assign-select-modal>
 
 <app-workout-program-selection-modal
+  [workoutFileEnabled]="workoutFileEnabled"
   [isOpen]="showProgramSelectionModal"
   [fullName]="fullName"
   [client]="client"
@@ -880,6 +881,102 @@
   (assignProgram)="onAssignWorkoutFromModal($event)"
 ></app-workout-program-selection-modal>
 
+
+<div *ngIf="showNutritionFileImportModal" class="profile-file-import-backdrop">
+  <div class="profile-file-import-modal">
+    <div class="profile-file-import-header">
+      <div>
+        <h3>Importer un programme nutrition</h3>
+        <p>Importez un fichier PDF ou Excel, puis assignez-le uniquement à ce client.</p>
+      </div>
+
+      <button type="button" class="profile-file-import-close" (click)="closeNutritionFileImportModal()">
+        ×
+      </button>
+    </div>
+
+    <div class="profile-file-import-body">
+      <input
+        id="profileNutritionFileInput"
+        type="file"
+        accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        hidden
+        (change)="onProfileNutritionFileSelected($event)"
+      />
+
+      <div class="profile-file-dropzone" (click)="browseProfileNutritionFile()" [class.has-file]="profileImportNutritionFile">
+        <div class="profile-file-upload-icon">↥</div>
+
+        <ng-container *ngIf="!profileImportNutritionFile; else selectedProfileNutritionFile">
+          <strong>Glissez votre fichier ici ou <span>parcourez</span></strong>
+          <small>PDF, XLS, XLSX · jusqu'à 25 MB</small>
+        </ng-container>
+
+        <ng-template #selectedProfileNutritionFile>
+          <strong>{{ profileImportNutritionFile?.name }}</strong>
+          <small>{{ (profileImportNutritionFile?.size || 0) / 1024 / 1024 | number:'1.0-1' }} MB</small>
+          <button type="button" class="profile-file-clear" (click)="clearProfileNutritionFile($event)">Changer le fichier</button>
+        </ng-template>
+      </div>
+
+      <label class="profile-file-label">
+        Nom du programme nutrition <span>*</span>
+        <input
+          type="text"
+          [(ngModel)]="profileImportNutritionName"
+          placeholder="Ex: Plan nutrition sèche - Phase 1"
+        />
+      </label>
+
+      <label class="profile-file-label">
+        Description <em>(optionnelle)</em>
+        <textarea
+          rows="3"
+          [(ngModel)]="profileImportNutritionDetails"
+          placeholder="Ex: Plan nutrition PDF/Excel complet..."
+        ></textarea>
+      </label>
+
+      <div class="profile-file-date-grid">
+        <label class="profile-file-label">
+          Date de début <span>*</span>
+          <input type="date" [(ngModel)]="profileImportNutritionStartDate" />
+        </label>
+
+        <label class="profile-file-label">
+          Date de fin <span>*</span>
+          <input type="date" [(ngModel)]="profileImportNutritionEndDate" />
+        </label>
+      </div>
+
+      <div class="profile-file-info">
+        <i class="fas fa-info-circle"></i>
+        Ce programme nutrition sera enregistré puis assigné à ce client avec les dates choisies.
+      </div>
+
+      <div class="profile-file-error" *ngIf="profileImportNutritionError">
+        {{ profileImportNutritionError }}
+      </div>
+    </div>
+
+    <div class="profile-file-import-footer">
+      <button type="button" class="profile-file-cancel" (click)="closeNutritionFileImportModal()" [disabled]="profileImportNutritionSaving">
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="profile-file-save"
+        (click)="saveAndAssignProfileFileNutrition()"
+        [disabled]="!canSaveProfileFileNutrition()"
+      >
+        <span *ngIf="!profileImportNutritionSaving">Enregistrer et assigner</span>
+        <span *ngIf="profileImportNutritionSaving">Enregistrement...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <app-choose-plan-type-modal
   [isVisible]="showChooseModal"
   (onClose)="closeAssignFlow()"
@@ -887,12 +984,51 @@
   [idClient]="this.clientId"
 ></app-choose-plan-type-modal>
 
+
+<div *ngIf="showNutritionExistingTypeModal" class="workout-plan-type-backdrop">
+  <div class="workout-plan-type-modal">
+    <div class="workout-plan-type-header">
+      <h3>Choose a nutrition plan type</h3>
+
+      <button type="button" class="workout-plan-type-close" (click)="closeNutritionExistingTypeModal()">
+        ×
+      </button>
+    </div>
+
+    <div class="workout-plan-type-body">
+      <div class="workout-plan-type-card">
+        <h4>Normal Nutrition Plan</h4>
+        <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
+
+        <button type="button" class="workout-plan-type-primary" (click)="createNormalNutritionFromProfile()">
+          Create Normal Nutrition
+        </button>
+      </div>
+
+      <div class="workout-plan-type-card">
+        <h4>File Nutrition Plan</h4>
+        <p>Import a PDF or Excel nutrition document, then assign it directly to this client.</p>
+
+        <button type="button" class="workout-plan-type-primary" (click)="importFileNutritionFromProfile()">
+          Import PDF / Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="workout-plan-type-footer">
+      <button type="button" class="workout-plan-type-cancel" (click)="closeNutritionExistingTypeModal()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <app-nutrition-selection-modal
   [isOpen]="showNutritionSelectionModal"
   [fullName]="fullName"
-  [programs]="nutritionSelectionList"
+  [programs]="nutritionSelectionPrograms"
   (closeModal)="closeAssignFlow()"
-  (backClick)="showNutritionSelectionModal = false"
+  (backClick)="backToAssignModal()"
   (assignProgram)="onAssignNutritionFromModal($event)"
 ></app-nutrition-selection-modal>
 

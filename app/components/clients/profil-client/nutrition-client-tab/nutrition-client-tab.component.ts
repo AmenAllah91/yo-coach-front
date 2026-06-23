@@ -47,10 +47,6 @@ export class NutritionClientTabComponent implements OnInit {
   }
 
   setActiveTab(tab: 'ALL' | 'APP' | 'FILES') {
-    if (this.nutritionFileEnabled === false) {
-      tab = 'APP';
-    }
-
     if (this.activeTab === tab) {
       return;
     }
@@ -67,9 +63,6 @@ export class NutritionClientTabComponent implements OnInit {
   }
 
   getMealPlanByCoachAndClient(idCoach: string, idClient: string) {
-    if (this.nutritionFileEnabled === false) {
-      this.activeTab = 'APP';
-    }
     this.nutritionService
       .getNutritionPlanByCoachIdAndClient(
         idCoach,
@@ -129,9 +122,6 @@ export class NutritionClientTabComponent implements OnInit {
         });
 
         this.mealPlan = plans;
-        this.mealPlan = this.nutritionFileEnabled === false
-          ? plans.filter((plan: any) => !this.isFilePlan(plan))
-          : plans;
         this.appPlans = this.activeTab === 'APP'
           ? plans
           : plans.filter((plan) => !this.isFilePlan(plan));
@@ -538,6 +528,9 @@ export class NutritionClientTabComponent implements OnInit {
     }
   }
 
+  openAssignNutrition() {
+    this.assignNew.emit();
+  }
 
   private loadNutritionFileSetting(): void {
     this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
@@ -545,20 +538,13 @@ export class NutritionClientTabComponent implements OnInit {
     this.coachSettingsService.loadConfig().subscribe({
       next: (config) => {
         this.nutritionFileEnabled = config.nutrition?.nutritionFileEnabled !== false;
-        if (this.nutritionFileEnabled === false) {
-          this.activeTab = 'APP';
-        }
-        if (this.clientId && this.coachId) {
-          this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
-        }
+        this.applyFilters?.();
       },
       error: () => {
         this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
       },
     });
   }
-
-  openAssignNutrition() {
-    this.assignNew.emit();
-  }
 }
+
+

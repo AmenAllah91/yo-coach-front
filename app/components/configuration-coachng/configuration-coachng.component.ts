@@ -241,6 +241,11 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.config.workout.workoutFileEnabled =
       this.config.workout.workoutFileEnabled === false;
   }
+  toggleNutritionFileEnabled(): void {
+    this.config.nutrition.nutritionFileEnabled =
+      this.config.nutrition.nutritionFileEnabled === false;
+  }
+
 
   private handleDemoActionSuccess(status: DemoWorkspaceStatus): void {
     this.demoStatus = this.normalizeDemoStatus(status);

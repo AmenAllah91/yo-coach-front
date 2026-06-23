@@ -1635,3 +1635,3498 @@
   border-radius: 12px;
   margin: 16px 20px;
 }
+
+
+/* =========================================================
+   CLIENT NUTRITION FILE VIEW - SAME IDEA AS CLIENT WORKOUT FILE VIEW
+   ========================================================= */
+.file-toggle-wrap {
+  padding: 0 16px 12px;
+}
+
+.file-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.file-mode-btn {
+  border: none;
+  background: #fff;
+  padding: 12px 10px;
+  color: #667085;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-mode-btn--active {
+  background: #111827;
+  color: #fff;
+}
+
+.file-mode-btn small {
+  font-size: 11px;
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.file-mode-hint {
+  margin: 8px 2px 0;
+  color: #667085;
+  font-size: 12px;
+  text-align: center;
+}
+
+.file-client-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  padding: 0 16px 20px;
+  min-height: 560px;
+}
+
+.file-sidebar {
+  border: 1px solid #e4e7ec;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  height: fit-content;
+}
+
+.file-search-box {
+  padding: 12px;
+  border-bottom: 1px solid #edf0f3;
+  background: #f9fafb;
+}
+
+.file-search-box input {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 0 12px;
+  outline: none;
+  color: #111827;
+}
+
+.sidebar-section {
+  padding: 12px;
+}
+
+.sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.sidebar-program {
+  width: 100%;
+  border: 1px solid transparent;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.sidebar-program:hover,
+.sidebar-program--active {
+  border-color: rgba(68, 180, 223, 0.35);
+  background: #f7fbff;
+}
+
+.sidebar-program--history {
+  opacity: 0.92;
+}
+
+.sidebar-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-title {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-meta {
+  color: #667085;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.sidebar-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.file-main {
+  min-width: 0;
+  border: 1px solid #e4e7ec;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.file-main--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 18px;
+}
+
+.file-empty-state {
+  text-align: center;
+  max-width: 360px;
+}
+
+.file-empty-icon {
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.file-empty-state h2 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.file-empty-state p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.file-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #edf0f3;
+  background: #fff;
+}
+
+.file-card-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.file-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #e6f5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.file-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-card-title-row h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-card-title-wrap p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 12px;
+}
+
+.file-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.file-download-btn {
+  border: 1px solid #e4e7ec;
+  background: #fff;
+  color: #111827;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.file-download-btn:hover {
+  background: #f9fafb;
+}
+
+.file-date-range {
+  display: inline-flex;
+  margin: 12px 18px 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e4e7ec;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.file-preview-panel {
+  margin: 14px 18px 18px;
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.file-preview-title {
+  background: #111827;
+  color: #fff;
+  padding: 12px 14px;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.file-preview-loading,
+.file-preview-error,
+.file-preview-empty {
+  padding: 22px;
+  color: #667085;
+  font-weight: 700;
+}
+
+.file-preview-error {
+  color: #dc2626;
+}
+
+.file-preview-content {
+  min-height: 520px;
+  background: #f8fafc;
+}
+
+.pdf-iframe {
+  width: 100%;
+  min-height: 720px;
+  border: 0;
+  background: #fff;
+}
+
+.excel-preview {
+  background: #fff;
+}
+
+.excel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e4e7ec;
+}
+
+.excel-file-name {
+  min-width: 0;
+  color: #111827;
+  font-weight: 900;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.excel-toolbar select {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #fff;
+}
+
+.excel-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-height: 520px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.excel-table {
+  width: max-content;
+  min-width: max-content;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.excel-table th,
+.excel-table td {
+  display: table-cell;
+  min-width: 120px;
+  max-width: 240px;
+  border: 1px solid #e4e7ec;
+  padding: 8px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+.excel-table .row-index {
+  position: sticky;
+  left: 0;
+  min-width: 48px;
+  width: 48px;
+  max-width: 48px;
+  background: #f8fafc;
+  color: #475467;
+  text-align: center;
+  z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .file-client-layout {
+    grid-template-columns: 1fr;
+    padding: 0 10px 18px;
+  }
+
+  .file-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .file-download-btn {
+    width: 100%;
+  }
+
+  .pdf-iframe {
+    min-height: 620px;
+  }
+}
+
+
+/* ===========================
+   NUTRITION – LAYOUT GLOBAL
+   =========================== */
+
+.cn-root,
+.cn-detail-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #ffffff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* Header (Good morning, Kolton...) */
+.client-header {
+  padding: 20px 16px 12px;
+  text-align: center;
+}
+
+.client-header-title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.client-header-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Onglets Upcoming / Past – EXACTEMENT comme Nutritions */
+
+.client-tabs {
+  display: flex;
+  border-top: 1px solid #edf0f3;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.client-tab {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #6b7280;
+  position: relative;
+}
+
+.client-tab--active {
+  color: #44b4df;
+}
+
+.client-tab--active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-color: #44b4df;
+}
+
+/* Navigation mois – même barre que Nutritions */
+
+.client-month-nav {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.month-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.month-nav-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.month-nav-btn:hover {
+  background-color: rgba(68, 180, 223, 0.08);
+}
+
+/* Petites flèches custom */
+
+.chevron {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #44b4df;
+  border-right: 2px solid #44b4df;
+}
+
+.chevron-left {
+  transform: rotate(-135deg);
+}
+
+.chevron-right {
+  transform: rotate(45deg);
+}
+
+/* Conteneur de liste – partagé Nutrition / Nutritions */
+
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===========================
+   NUTRITION – LIST VIEW
+   =========================== */
+
+/* Card jour – même gabarit que .nutrition-card */
+
+.cn-day-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.05s ease,
+    border-color 0.15s ease;
+}
+
+.cn-day-card:hover {
+  border-color: rgba(68, 180, 223, 0.45);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.cn-day-header {
+  padding: 12px 14px 10px;
+  background-color: #f9fcff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cn-day-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-day-chip-date {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: transparent;
+  color: #44b4df;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.cn-day-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cn-day-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* statut à droite (rond bleu/vert) */
+
+.cn-day-status-icon {
+  flex-shrink: 0;
+}
+
+.cn-status-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e5f0ff;
+  color: #44b4df;
+  font-size: 13px;
+}
+
+.cn-status-circle--completed {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.cn-status-circle--upcoming {
+  background-color: #e5f0ff;
+  color: #44b4df;
+}
+
+/* ligne "X meals" */
+
+.cn-day-meals-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px;
+}
+
+.cn-utensils-icon {
+  font-size: 14px;
+}
+
+.cn-day-meals-text {
+  font-size: 12px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* bloc macros en bas de la carte */
+
+.cn-day-macros {
+  padding: 8px 12px 12px;
+  background-color: #f3f4f6;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cn-macro-card {
+  text-align: center;
+  padding: 6px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.cn-macro-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-macro-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Empty state */
+
+.cn-empty {
+  margin-top: 16px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.cn-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background-color: rgba(68, 180, 223, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  font-size: 26px;
+}
+
+.cn-empty-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-empty-text {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* ===========================
+   NUTRITION – DETAIL VIEW
+   =========================== */
+
+.cn-detail-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* header détail proche de cw-detail-header */
+
+.cn-detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
+  background-color: #ffffff;
+}
+
+.cn-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  margin-right: 8px;
+  cursor: pointer;
+  background: transparent;
+  font-size: 1.2rem;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cn-back-btn:hover {
+  background-color: rgba(68, 180, 223, 0.1);
+}
+
+.cn-detail-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-detail-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-detail-program-line {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cn-calendar-icon {
+  font-size: 12px;
+}
+
+/* pill statut à droite */
+
+.cn-detail-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background-color: #eff6ff;
+}
+
+.cn-detail-status-pill--completed {
+  border-color: #bbf7d0;
+  background-color: #dcfce7;
+}
+
+.cn-detail-status-pill--upcoming {
+  border-color: #bfdbfe;
+  background-color: #eff6ff;
+}
+
+.cn-detail-status-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.cn-detail-status-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.cn-detail-status-pill--completed .cn-detail-status-text {
+  color: #15803d;
+}
+
+/* main body */
+
+.cn-detail-main {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 80px; /* pour laisser la place au footer */
+  background-color: #f9fafb;
+}
+
+/* carte des totaux */
+
+.cn-totals-card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  margin-bottom: 16px;
+}
+
+.cn-totals-card-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fcff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-totals-card-body {
+  padding: 14px 16px 16px;
+}
+
+.cn-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .cn-totals-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.cn-total-box {
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.cn-total-box--orange {
+  background-color: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.cn-total-box--red {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.cn-total-box--yellow {
+  background-color: #fffbeb;
+  border-color: #fef3c7;
+}
+
+.cn-total-box--green {
+  background-color: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.cn-total-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-total-label {
+  margin-top: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* section Meals */
+
+.cn-meals-section {
+  margin-top: 8px;
+}
+
+.cn-meals-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cn-meals-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* cartes repas */
+
+.cn-meal-card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.cn-meal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fcff;
+}
+
+.cn-meal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cn-meal-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: #44b4df;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.cn-meal-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-meal-macros-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cn-meal-macro-card {
+  text-align: center;
+  padding: 6px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.cn-meal-macro-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-meal-macro-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: lowercase;
+}
+
+/* liste des aliments */
+
+.cn-meal-foods {
+  padding: 8px 12px 10px;
+}
+
+.cn-food-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px;
+  border-radius: 10px;
+  transition: background-color 0.12s ease;
+}
+
+.cn-food-row--bordered {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cn-food-row:hover {
+  background-color: #f9fafb;
+}
+
+.cn-food-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-food-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cn-food-qty {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cn-food-macros {
+  display: flex;
+  gap: 8px;
+  margin-left: 10px;
+  font-size: 12px;
+}
+
+.cn-food-macro {
+  min-width: 40px;
+  text-align: center;
+}
+
+.cn-food-macro-value {
+  font-weight: 700;
+  color: #111827;
+}
+
+.cn-food-macro-label {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* footer sticky (boutons Completed / Missed) */
+
+.cn-detail-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 10px 16px 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.cn-footer-btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cn-footer-btn--green {
+  background-color: #ffffff;
+  border: 2px solid #16a34a;
+  color: #16a34a;
+}
+
+.cn-footer-btn--red {
+  background-color: #ffffff;
+  border: 2px solid #dc2626;
+  color: #dc2626;
+}
+
+.cn-footer-btn--green:hover {
+  background-color: #f0fdf4;
+}
+
+.cn-footer-btn--red:hover {
+  background-color: #fef2f2;
+}
+
+.cn-footer-btn--active.cn-footer-btn--green {
+  background-color: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35);
+}
+
+.cn-footer-btn--active.cn-footer-btn--red {
+  background-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.35);
+}
+
+/* responsive */
+
+@media (max-width: 640px) {
+  .cn-detail-main {
+    padding-inline: 12px;
+  }
+
+  .cn-detail-footer {
+    flex-direction: column;
+  }
+}
+/* --- STATUS ICONS (mêmes que nutritions) --- */
+.cn-status-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--small {
+    width: 14px;
+    height: 14px;
+  }
+
+  &--completed {
+    background: #4caf50;
+  }
+
+  &--missed {
+    background: #e53935;
+  }
+
+  &--pending {
+    border: 2px solid #9e9e9e;
+  }
+}
+
+.cn-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9e9e9e;
+}
+/* --- TOP RIGHT STATUS BUTTONS --- */
+.cn-detail-status-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cn-detail-status-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid #ccc;
+  background: white;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &--completed {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: white;
+  }
+
+  &--missed {
+    border-color: #e53935;
+    background: #e53935;
+    color: white;
+  }
+
+  &:hover {
+    transform: scale(1.06);
+  }
+}
+/* --- STATUS PILL --- */
+.cn-detail-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f5f5f5;
+  font-weight: 500;
+}
+.cn-detail-status-text--completed {
+  color: #4caf50;
+}
+.cn-detail-status-text--missed {
+  color: #e53935;
+}
+.cn-detail-status-text--pending {
+  color: #9e9e9e;
+}
+
+/* Boutons ✓ / ✕ à droite (copie de cn-detail-status-actions/btn) */
+.cw-detail-status-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cw-detail-status-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid #ccc;
+  background: white;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &--completed {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: white;
+  }
+
+  &--missed {
+    border-color: #e53935;
+    background: #e53935;
+    color: white;
+  }
+
+  &:hover {
+    transform: scale(1.06);
+  }
+}
+
+/* infobar */
+
+.cw-detail-infobar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: rgba(68, 180, 223, 0.05);
+}
+
+.cw-detail-date {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.cw-detail-program {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.cw-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: #d1d5db;
+}
+.cw-status-icon--small {
+  width: 22px;
+  height: 22px;
+}
+
+.cw-status-icon--completed {
+  border-color: #22c55e;
+}
+
+.cw-status-icon--missed {
+  border-color: #ef4444;
+}
+
+.cw-status-icon--pending {
+  border-color: #d1d5db;
+}
+.cw-status-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cw-detail-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  gap: 6px;
+}
+
+.cw-detail-status-text {
+  font-size: 0.8rem;
+}
+
+.cw-detail-status-text--completed {
+  color: #16a34a;
+}
+
+.cw-detail-status-text--missed {
+  color: #dc2626;
+}
+
+.cw-detail-status-text--pending {
+  color: #6b7280;
+}
+
+/* body */
+
+.cw-detail-body {
+  flex: 1;
+  background-color: #f9fafb;
+  overflow-y: auto;
+  padding: 8px 0 0;
+}
+
+.cw-detail-exercise {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px 14px;
+}
+
+.cw-detail-exercise-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cw-detail-exercise-label {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background-color: rgba(68, 180, 223, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0284c7;
+}
+
+.cw-detail-exercise-label--warmup {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+.cw-detail-exercise-info {
+  flex: 1;
+}
+
+.cw-detail-exercise-name {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cw-detail-exercise-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.cw-detail-video-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background-color: transparent;
+  color: #44b4df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.cw-detail-video-btn--active {
+  background-color: #44b4df;
+  color: #ffffff;
+}
+
+/* sets */
+
+.cw-detail-sets {
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+.cw-detail-sets-header,
+.cw-detail-set-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 1fr 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.cw-detail-sets-header {
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.cw-detail-set-row {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+.cw-detail-set-cell {
+  color: #111827;
+}
+
+.cw-detail-set-cell--index {
+  font-weight: 600;
+}
+
+.cw-set-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+.cw-set-type--regular {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.cw-set-type--warmup {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+.cw-set-type--dropset {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.cw-set-type--failure {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+/* cardio */
+
+.cw-detail-cardio {
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.cw-detail-cardio-icon {
+  margin-right: 8px;
+}
+
+.cw-detail-cardio-text strong {
+  font-weight: 600;
+}
+
+/* video */
+
+.cw-detail-video-wrapper {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.cw-detail-video-ratio {
+  position: relative;
+  padding-bottom: 56.25%;
+}
+
+.cw-detail-video-ratio iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* rest day detail */
+
+.cw-restday-detail {
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.cw-restday-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background-color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  margin: 0 auto 12px;
+}
+
+.cw-restday-detail h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  color: #111827;
+}
+
+.cw-restday-detail p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* footer buttons */
+
+.cw-detail-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  display: flex;
+  gap: 8px;
+}
+.cw-detail-main-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cw-detail-main-btn--completed {
+  background-color: #ffffff;
+  border: 2px solid #16a34a;
+  color: #16a34a;
+}
+
+.cw-detail-main-btn--missed {
+  background-color: #ffffff;
+  border: 2px solid #dc2626;
+  color: #dc2626;
+}
+
+.cw-detail-main-btn--active.cw-detail-main-btn--completed {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+.cw-detail-main-btn--active.cw-detail-main-btn--missed {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+/* responsive */
+
+@media (max-width: 768px) {
+  .cw-month-bar {
+    padding-inline: 16px;
+  }
+
+  .cw-detail-header {
+    padding-inline: 10px;
+  }
+
+  .cw-detail-footer {
+    flex-direction: column;
+  }
+}
+/* ===== Layout commun Nutrition / Nutritions ===== */
+
+.client-page {
+  min-height: 100vh;
+  background-color: #f7f8fb;
+}
+
+.client-page-inner {
+  margin: 0 auto;
+  padding: 0 16px 20px;
+}
+
+/* Header (Good morning, Kolton...) */
+.client-header-wrapper {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.client-header {
+  padding: 20px 16px 12px;
+  text-align: center;
+}
+
+.client-header-title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.client-header-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Onglets Upcoming / Past */
+
+.client-tabs {
+  display: flex;
+  border-top: 1px solid #edf0f3;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.client-tab {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #6b7280;
+  position: relative;
+}
+
+.client-tab--active {
+  color: #44b4df;
+}
+
+.client-tab--active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-color: #44b4df;
+}
+
+/* Navigation mois */
+
+.client-month-nav {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.month-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.month-nav-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.month-nav-btn:hover {
+  background-color: rgba(68, 180, 223, 0.08);
+}
+
+/* Petites flèches custom (remplace les icônes lucide) */
+.chevron {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #44b4df;
+  border-right: 2px solid #44b4df;
+}
+
+.chevron-left {
+  transform: rotate(-135deg);
+}
+
+.chevron-right {
+  transform: rotate(45deg);
+}
+
+/* Liste Nutritions */
+
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Carte nutrition – mêmes proportions que cartes nutrition */
+
+.nutrition-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.05s ease,
+    border-color 0.15s ease;
+}
+
+.nutrition-card:hover {
+  border-color: rgba(68, 180, 223, 0.45);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.nutrition-card-inner {
+  padding: 12px 14px 12px;
+}
+
+/* Date + statut */
+
+.nutrition-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.nutrition-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+/* petit rond de statut, même style que Nutrition */
+
+.status-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid #e5e7eb;
+  position: relative;
+}
+
+.status-icon::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+}
+
+.status-icon--completed {
+  border-color: #4ade80;
+}
+
+.status-icon--completed::after {
+  background-color: #4ade80;
+}
+
+.status-icon--missed {
+  border-color: #f97373;
+}
+
+.status-icon--missed::after {
+  background-color: #f97373;
+}
+
+.status-icon--pending::after {
+  background-color: #d1d5db;
+}
+
+/* Titre + programme */
+
+.nutrition-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.nutrition-program {
+  font-size: 13px;
+  color: #44b4df;
+  margin-bottom: 6px;
+}
+
+/* Résumé exercices */
+
+.nutrition-exercises {
+  margin-top: 4px;
+}
+
+.nutrition-exercises-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.chevron-small {
+  font-size: 14px;
+  color: #44b4df;
+}
+
+.nutrition-exercises-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exercise-line {
+  display: flex;
+  align-items: center;
+}
+
+.exercise-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background-color: rgba(68, 180, 223, 0.08);
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.exercise-badge--warmup {
+  background-color: #fee2e2;
+}
+
+.exercise-name {
+  font-size: 13px;
+  color: #111827;
+}
+
+.exercise-more {
+  font-size: 12px;
+  color: #44b4df;
+  margin-left: 30px;
+}
+
+/* État vide */
+
+.client-empty {
+  margin-top: 16px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.client-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background-color: rgba(68, 180, 223, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  font-size: 26px;
+}
+
+.client-empty-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.client-empty-text {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+/* ===== WORKOUT DETAIL HEADER (même style que Nutrition) ===== */
+
+.cw-detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
+  background-color: #ffffff;
+}
+
+.cw-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  margin-right: 8px;
+  cursor: pointer;
+  background: transparent;
+  font-size: 1.2rem;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cw-back-btn:hover {
+  background-color: rgba(68, 180, 223, 0.1);
+}
+
+.cw-detail-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cw-detail-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cw-detail-program-line {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cw-calendar-icon {
+  font-size: 12px;
+}
+
+.cw-header-date {
+  color: #6b7280;
+}
+
+/* Boutons ✓ / ✕ à droite (copie de cn-detail-status-actions/btn) */
+.cw-detail-status-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cw-detail-status-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid #ccc;
+  background: white;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &--completed {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: white;
+  }
+
+  &--missed {
+    border-color: #e53935;
+    background: #e53935;
+    color: white;
+  }
+
+  &:hover {
+    transform: scale(1.06);
+  }
+}
+
+.coach-filter-container {
+
+
+  border-radius: 12px;
+  margin: 16px 20px;
+
+}
+
+.coach-filter-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.coach-select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.coach-current {
+  padding: 16px 20px;
+  text-align: center;
+  color: #444;
+  font-size: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin: 16px 20px;
+}
+
+
+.file-toggle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 18px;
+}
+
+.file-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #d8e2ec;
+  border-radius: 999px;
+  padding: 3px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.file-mode-btn {
+  min-width: 180px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 10px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #334155;
+}
+.file-mode-btn small { color: #64748b; font-size: 11px; }
+.file-mode-btn--active {
+  background: linear-gradient(90deg, #1f9dc2 0%, #0d95b8 100%);
+  color: #fff;
+}
+.file-mode-btn--active small { color: rgba(255,255,255,0.9); }
+.file-mode-hint { margin: 0; font-size: 12px; color: #64748b; }
+
+.file-client-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.file-sidebar {
+  background: #fff;
+  border: 1px solid #d9e3ee;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.file-search-box { margin-bottom: 12px; }
+.file-search-box input {
+  width: 100%;
+  border: 1px solid #d8e2ec;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.sidebar-section + .sidebar-section { margin-top: 16px; }
+.sidebar-heading {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size: 11px; font-weight: 700; color:#6b7280; margin-bottom: 10px;
+}
+.sidebar-program {
+  width: 100%; text-align:left; border:1px solid transparent; background:#fff; border-radius:10px;
+  padding: 10px; display:grid; grid-template-columns: 28px 1fr auto; gap:10px; cursor:pointer;
+}
+.sidebar-program + .sidebar-program { margin-top: 8px; }
+.sidebar-program--active {
+  background: #edfafd; border-color:#9bdff1; box-shadow: inset 0 0 0 1px #bfeaf5;
+}
+.sidebar-icon { font-size: 18px; line-height: 1; }
+.sidebar-title { font-size: 13px; font-weight: 700; color:#0f172a; margin-bottom: 2px; }
+.sidebar-meta { font-size: 11px; color:#64748b; }
+.sidebar-check { color:#0ea5b7; font-weight: 700; }
+
+.file-main {
+  background: #fff;
+  border: 1px solid #d9e3ee;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.file-card-header {
+  display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding: 18px 18px 12px;
+}
+.file-card-title-wrap { display:flex; gap:12px; align-items:flex-start; }
+.file-card-icon { width: 36px; height:36px; border-radius: 10px; background:#fff1f2; display:flex; align-items:center; justify-content:center; }
+.file-card-title-row { display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
+.file-card-title-row h2 { margin:0; font-size: 18px; color:#0f172a; }
+.active-pill { font-size: 11px; font-weight:700; color:#059669; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:999px; padding: 3px 8px; }
+.file-card-meta-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; color:#64748b; font-size:12px; }
+.date-range-chip { border:1px solid #d8e2ec; background:#f8fafc; border-radius:999px; padding: 6px 10px; font-size:12px; color:#475569; }
+.file-preview-shell { margin: 0 18px 18px; border:1px solid #d8e2ec; border-radius: 10px; overflow:hidden; }
+.file-preview-topbar { background:#1e293b; color:#fff; display:flex; justify-content:space-between; padding:10px 12px; font-size:12px; }
+.file-preview-topbar small { color: rgba(255,255,255,0.7); }
+.file-preview-body { background:#f5f7fb; height: 520px; display:flex; align-items:center; justify-content:center; }
+.file-preview-body iframe { width:100%; height:100%; border:0; background:#fff; }
+.file-preview-empty { display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center; color:#64748b; padding: 24px; }
+.file-preview-empty-icon { font-size: 36px; }
+.file-actions-bar { display:flex; gap:10px; justify-content:flex-end; padding: 0 18px 18px; }
+.file-actions-bar button {
+  border:1px solid #d1d5db; background:#fff; color:#0f172a; border-radius:8px; padding:10px 14px; cursor:pointer; font-weight:600;
+}
+.file-actions-bar .primary-action { background:#0f9dc0; border-color:#0f9dc0; color:white; }
+.file-actions-bar .ghost-action { background:#fff; }
+
+@media (max-width: 1100px) {
+  .file-client-layout { grid-template-columns: 1fr; }
+}
+
+.file-main--empty {
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.file-empty-state {
+  text-align: center;
+  max-width: 420px;
+  padding: 40px;
+  color: #64748b;
+}
+.file-empty-icon {
+  font-size: 44px;
+  margin-bottom: 14px;
+}
+.file-empty-state h2 {
+  color: #0f172a;
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.file-empty-state p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Client file viewer actions: only fullscreen/download, aligned right */
+.file-actions-bar {
+  justify-content: flex-end;
+}
+
+
+/* ===========================
+   YOCOACH CUSTOM PDF VIEWER
+   =========================== */
+
+.yo-pdf-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d7e3f0;
+  border-radius: 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.yo-pdf-card--fullscreen {
+  position: fixed !important;
+  inset: 12px !important;
+  z-index: 4000 !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.35) !important;
+}
+
+.yo-pdf-card .file-preview-topbar {
+  flex: 0 0 auto;
+  height: 42px;
+  padding: 0 14px;
+  background: #1e293b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.yo-pdf-card .file-preview-topbar small {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+}
+
+.yo-pdf-stage {
+  height: clamp(640px, 72vh, 920px);
+  background: #f8fafc;
+  overflow: hidden;
+  position: relative;
+}
+
+.yo-pdf-card--fullscreen .yo-pdf-stage {
+  height: calc(100vh - 126px);
+}
+
+.yo-pdf-viewer-shell {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #f8fafc;
+}
+
+.yo-pdf-viewer-shell ::ng-deep #viewerContainer {
+  top: 0 !important;
+  background: #f8fafc !important;
+}
+
+.yo-pdf-viewer-shell ::ng-deep .page {
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.14) !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+.yo-pdf-viewer-shell ::ng-deep .toolbar,
+.yo-pdf-viewer-shell ::ng-deep #toolbarContainer,
+.yo-pdf-viewer-shell ::ng-deep #sidebarContainer,
+.yo-pdf-viewer-shell ::ng-deep #secondaryToolbar {
+  display: none !important;
+}
+
+.yo-pdf-bottom-bar {
+  flex: 0 0 auto;
+  min-height: 58px;
+  padding: 10px 14px;
+  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.yo-pdf-nav-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yo-pdf-nav-group--center {
+  justify-self: center;
+}
+
+.yo-pdf-icon-btn,
+.yo-pdf-zoom-label,
+.yo-pdf-scroll-btn {
+  border: 1px solid #d8e2ec;
+  background: #ffffff;
+  color: #0f172a;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yo-pdf-icon-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.yo-pdf-page-label {
+  min-width: 112px;
+  text-align: center;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.yo-pdf-zoom-label {
+  min-width: 92px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.yo-pdf-scroll-btn {
+  justify-self: end;
+  background: #f8fafc;
+}
+
+.yo-pdf-scroll-btn span {
+  display: inline-block;
+  font-size: 22px;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+
+.yo-pdf-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.yo-pdf-actions .ghost-action,
+.yo-pdf-actions .primary-action {
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 800;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.yo-pdf-actions .ghost-action {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.yo-pdf-actions .primary-action {
+  background: #0ea5c6;
+  border: 1px solid #0ea5c6;
+  color: #ffffff;
+}
+
+.excel-preview-empty {
+  min-height: 560px;
+}
+
+@media (max-width: 900px) {
+  .yo-pdf-bottom-bar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .yo-pdf-nav-group,
+  .yo-pdf-nav-group--center,
+  .yo-pdf-actions {
+    justify-self: stretch;
+    justify-content: center;
+  }
+
+  .yo-pdf-scroll-btn {
+    justify-self: center;
+  }
+}
+
+
+/* Canvas PDF viewer fallback: no ngx-extended-pdf-viewer */
+.yo-pdf-stage {
+  overflow: auto !important;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.yo-pdf-canvas-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.yo-pdf-canvas {
+  display: block;
+  background: #ffffff;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.14);
+  border-radius: 4px;
+  max-width: none;
+}
+
+
+/* ===========================
+   YOCOACH EXCEL PREVIEW
+   =========================== */
+.yo-excel-stage {
+  min-height: 640px;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.yo-excel-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.yo-excel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #dbe7f2;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.yo-excel-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.yo-excel-file-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yo-excel-file strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 520px;
+}
+
+.yo-excel-file small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.yo-excel-toolbar select {
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.yo-excel-table-wrap {
+  flex: 1;
+  min-height: 560px;
+  overflow: auto;
+  border: 1px solid #dbe7f2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.yo-excel-table {
+  border-collapse: collapse;
+  min-width: 100%;
+  width: max-content;
+  font-size: 13px;
+}
+
+.yo-excel-table th,
+.yo-excel-table td {
+  border: 1px solid #e2e8f0;
+  padding: 9px 12px;
+  min-width: 110px;
+  max-width: 280px;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yo-excel-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 900;
+  text-align: center;
+}
+
+.yo-excel-table .row-index {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  min-width: 54px;
+  width: 54px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  font-weight: 900;
+}
+
+.yo-excel-table tbody .row-index {
+  z-index: 1;
+}
+
+.yo-excel-table tbody tr:nth-child(even) td {
+  background: #fbfdff;
+}
+
+.yo-excel-table tbody tr:hover td,
+.yo-excel-table tbody tr:hover .row-index {
+  background: #eff6ff;
+}
+
+@media (max-width: 900px) {
+  .yo-excel-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .yo-excel-file strong {
+    max-width: 280px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE FILE VIEW FIX — Client > Nutritions > Fichier
+   Fixes PDF + Excel previews on small screens.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .client-page-inner {
+    padding: 0 10px 16px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .file-toggle-wrap {
+    margin: 6px 0 12px;
+    padding: 0 2px;
+  }
+
+  .file-mode-switch {
+    width: 100%;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 999px;
+  }
+
+  .file-mode-btn {
+    min-width: 0;
+    width: 100%;
+    padding: 9px 8px;
+    gap: 4px;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .file-mode-btn span {
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .file-mode-btn small {
+    font-size: 10px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-mode-hint {
+    padding: 0 4px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .file-client-layout {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .file-sidebar {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .file-search-box input {
+    height: 38px;
+    font-size: 12px;
+  }
+
+  .sidebar-section + .sidebar-section {
+    margin-top: 10px;
+  }
+
+  .sidebar-heading {
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-program {
+    grid-template-columns: 24px minmax(0, 1fr) 18px;
+    gap: 8px;
+    padding: 9px;
+    border-radius: 9px;
+  }
+
+  .sidebar-icon {
+    font-size: 15px;
+  }
+
+  .sidebar-title {
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sidebar-meta {
+    font-size: 10px;
+  }
+
+  .file-main {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .file-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .file-card-title-wrap {
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .file-card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    flex: 0 0 30px;
+    font-size: 14px;
+  }
+
+  .file-card-title-row {
+    gap: 7px;
+  }
+
+  .file-card-title-row h2 {
+    font-size: 15px;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .active-pill {
+    font-size: 9px;
+    padding: 2px 7px;
+  }
+
+  .file-card-meta-row {
+    gap: 6px 10px;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .date-range-chip {
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 6px 9px;
+    font-size: 10px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .file-preview-shell {
+    margin: 0 8px 12px;
+    border-radius: 10px;
+    max-width: calc(100vw - 20px);
+    overflow: hidden;
+  }
+
+  .file-preview-topbar {
+    padding: 9px 10px;
+    gap: 8px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .file-preview-topbar span,
+  .file-preview-topbar small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-preview-empty {
+    padding: 22px 14px;
+  }
+
+  .file-preview-empty h3 {
+    font-size: 15px;
+    margin: 0;
+  }
+
+  .file-preview-empty p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* PDF mobile */
+  .yo-pdf-stage {
+    height: 58vh !important;
+    min-height: 360px;
+    padding: 8px !important;
+    overflow: auto !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .yo-pdf-canvas-wrap {
+    width: max-content;
+    min-width: 100%;
+    justify-content: center;
+  }
+
+  .yo-pdf-canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .yo-pdf-card--fullscreen {
+    inset: 4px !important;
+    border-radius: 12px !important;
+  }
+
+  .yo-pdf-card--fullscreen .yo-pdf-stage {
+    height: calc(100vh - 116px) !important;
+  }
+
+  .yo-pdf-bottom-bar {
+    min-height: auto;
+    padding: 8px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .yo-pdf-nav-group,
+  .yo-pdf-nav-group--center,
+  .yo-pdf-actions {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .yo-pdf-page-label {
+    min-width: 96px;
+    font-size: 11px;
+  }
+
+  .yo-pdf-icon-btn,
+  .yo-pdf-zoom-label,
+  .yo-pdf-scroll-btn {
+    height: 34px;
+    min-width: 34px;
+    border-radius: 9px;
+  }
+
+  .yo-pdf-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .yo-pdf-actions .ghost-action,
+  .yo-pdf-actions .primary-action {
+    width: 100%;
+    height: 38px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  /* Excel mobile */
+  .yo-excel-stage {
+    min-height: 0;
+    height: 58vh;
+    padding: 8px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .yo-excel-preview {
+    height: 100%;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .yo-excel-toolbar {
+    padding: 9px;
+    border-radius: 10px;
+    gap: 8px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .yo-excel-file {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .yo-excel-file-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    flex: 0 0 30px;
+    font-size: 13px;
+  }
+
+  .yo-excel-file strong {
+    max-width: 100%;
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .yo-excel-file small {
+    font-size: 10px;
+  }
+
+  .yo-excel-toolbar select {
+    width: 100%;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .yo-excel-table-wrap {
+    min-height: 0;
+    height: calc(58vh - 86px);
+    max-height: calc(58vh - 86px);
+    overflow: auto;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .yo-excel-table {
+    font-size: 11px;
+    min-width: max-content;
+    width: max-content;
+  }
+
+  .yo-excel-table th,
+  .yo-excel-table td {
+    min-width: 74px;
+    max-width: 150px;
+    padding: 7px 8px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .yo-excel-table .row-index {
+    min-width: 38px;
+    width: 38px;
+    padding: 7px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .client-header {
+    padding: 14px 8px 8px;
+  }
+
+  .client-header-title {
+    font-size: 18px;
+  }
+
+  .client-header-subtitle {
+    font-size: 11px;
+  }
+
+  .file-mode-switch {
+    border-radius: 16px;
+  }
+
+  .file-mode-btn {
+    border-radius: 14px;
+  }
+
+  .file-main {
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .file-preview-shell {
+    margin-left: 6px;
+    margin-right: 6px;
+    max-width: calc(100vw - 12px);
+  }
+
+  .yo-excel-stage,
+  .yo-pdf-stage {
+    height: 56vh !important;
+    min-height: 330px;
+  }
+
+  .yo-excel-table-wrap {
+    height: calc(56vh - 82px);
+    max-height: calc(56vh - 82px);
+  }
+
+  .yo-excel-table th,
+  .yo-excel-table td {
+    min-width: 66px;
+    max-width: 128px;
+    padding: 6px 7px;
+  }
+
+  .yo-excel-table .row-index {
+    min-width: 34px;
+    width: 34px;
+  }
+}
+
+
+/* =========================================================
+   CLIENT WORKOUTS - EXCEL MOBILE NORMAL TABLE
+   Keep Excel as a real horizontal table on mobile.
+   Prevent the sheet from collapsing into one vertical/long line.
+   ========================================================= */
+@media (max-width: 768px) {
+  .yo-excel-stage {
+    width: 100%;
+    max-width: 100%;
+    min-height: 540px;
+    padding: 10px;
+    overflow: hidden;
+  }
+
+  .yo-excel-preview {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .yo-excel-toolbar {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .yo-excel-file {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .yo-excel-file strong {
+    max-width: calc(100vw - 130px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .yo-excel-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-height: 520px;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+
+  .yo-excel-table {
+    width: max-content !important;
+    min-width: max-content !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+  }
+
+  .yo-excel-table thead,
+  .yo-excel-table tbody,
+  .yo-excel-table tr {
+    width: auto !important;
+  }
+
+  .yo-excel-table th,
+  .yo-excel-table td {
+    display: table-cell !important;
+    min-width: 120px !important;
+    max-width: 220px !important;
+    width: auto !important;
+    padding: 9px 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+  }
+
+  .yo-excel-table .row-index {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 4 !important;
+    min-width: 48px !important;
+    width: 48px !important;
+    max-width: 48px !important;
+    background: #f8fafc !important;
+    text-align: center !important;
+  }
+
+  .yo-excel-table thead .row-index {
+    z-index: 6 !important;
+  }
+}
+
+
+
+
+/* =========================================================
+   NUTRITION CLIENT - EXACT WORKOUT FLOW OVERRIDE
+   Keep file mode identical to workout mode.
+   ========================================================= */
+.cw-root .file-client-layout {
+  display: grid !important;
+  grid-template-columns: 280px minmax(0, 1fr) !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.cw-root .file-toggle-wrap {
+  margin-top: 12px !important;
+}
+
+.cw-root .file-main,
+.cw-root .file-sidebar {
+  background: #fff !important;
+}
+
+.cw-root .pdf-iframe {
+  width: 100% !important;
+  min-height: 720px !important;
+  border: 0 !important;
+  background: #fff !important;
+}
+
+.cw-root .excel-table-wrap {
+  overflow: auto !important;
+  max-width: 100% !important;
+  min-height: 520px !important;
+}
+
+.cw-root .excel-table {
+  width: max-content !important;
+  min-width: max-content !important;
+  border-collapse: collapse !important;
+}
+
+.cw-root .excel-table th,
+.cw-root .excel-table td {
+  min-width: 120px !important;
+  max-width: 240px !important;
+  border: 1px solid #e4e7ec !important;
+  padding: 8px 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cw-root .excel-table .row-index {
+  position: sticky !important;
+  left: 0 !important;
+  background: #f8fafc !important;
+  z-index: 2 !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  text-align: center !important;
+}
+
+.cw-root .file-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 20px;
+}
+
+@media (max-width: 900px) {
+  .cw-root .file-client-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+
+
+
+
+/* =========================================================
+   EXACT WORKOUT SIDEBAR / FILE CARD OVERRIDE FOR NUTRITION
+   ========================================================= */
+
+.cw-root .file-toggle-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 8px 0 18px !important;
+}
+
+.cw-root .file-mode-switch {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  background: #fff !important;
+  border: 1px solid #d8e2ec !important;
+  border-radius: 999px !important;
+  padding: 3px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+.cw-root .file-mode-btn {
+  min-width: 180px !important;
+  height: auto !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 999px !important;
+  padding: 10px 18px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  color: #334155 !important;
+  box-shadow: none !important;
+}
+
+.cw-root .file-mode-btn small {
+  color: #64748b !important;
+  font-size: 11px !important;
+  line-height: normal !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  opacity: 1 !important;
+}
+
+.cw-root .file-mode-btn--active {
+  background: linear-gradient(90deg, #1f9dc2 0%, #0d95b8 100%) !important;
+  color: #fff !important;
+}
+
+.cw-root .file-mode-btn--active small {
+  color: rgba(255,255,255,0.9) !important;
+}
+
+.cw-root .file-mode-hint {
+  margin: 0 !important;
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+
+.cw-root .file-client-layout {
+  display: grid !important;
+  grid-template-columns: 260px minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.cw-root .file-sidebar {
+  background: #fff !important;
+  border: 1px solid #d9e3ee !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+  min-height: auto !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+}
+
+.cw-root .file-search-box {
+  margin-bottom: 12px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.cw-root .file-search-box input {
+  width: 100% !important;
+  height: auto !important;
+  border: 1px solid #d8e2ec !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  font-size: 13px !important;
+  color: #111827 !important;
+}
+
+.cw-root .sidebar-section {
+  padding: 0 !important;
+}
+
+.cw-root .sidebar-section + .sidebar-section {
+  margin-top: 16px !important;
+}
+
+.cw-root .sidebar-heading {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #6b7280 !important;
+  margin: 0 0 10px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.cw-root .sidebar-program {
+  width: 100% !important;
+  text-align: left !important;
+  border: 1px solid transparent !important;
+  background: #fff !important;
+  border-radius: 10px !important;
+  padding: 10px !important;
+  display: grid !important;
+  grid-template-columns: 28px 1fr auto !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  min-height: auto !important;
+}
+
+.cw-root .sidebar-program + .sidebar-program {
+  margin-top: 8px !important;
+}
+
+.cw-root .sidebar-program--active {
+  background: #edfafd !important;
+  border-color: #9bdff1 !important;
+  box-shadow: inset 0 0 0 1px #bfeaf5 !important;
+}
+
+.cw-root .sidebar-icon {
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  display: block !important;
+}
+
+.cw-root .sidebar-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  margin-bottom: 2px !important;
+}
+
+.cw-root .sidebar-meta {
+  font-size: 11px !important;
+  color: #64748b !important;
+  margin-top: 0 !important;
+}
+
+.cw-root .sidebar-check {
+  color: #0ea5b7 !important;
+  font-weight: 700 !important;
+  background: transparent !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+}
+
+.cw-root .file-main {
+  background: #fff !important;
+  border: 1px solid #d9e3ee !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  min-height: auto !important;
+  box-shadow: none !important;
+}
+
+.cw-root .file-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  padding: 18px 18px 12px !important;
+  background: #fff !important;
+  border-bottom: none !important;
+}
+
+.cw-root .file-card-title-wrap {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+}
+
+.cw-root .file-card-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: #fff1f2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cw-root .file-card-title-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+.cw-root .file-card-title-row h2 {
+  margin: 0 !important;
+  font-size: 18px !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.cw-root .active-pill {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #059669 !important;
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  border-radius: 999px !important;
+  padding: 3px 8px !important;
+}
+
+.cw-root .file-card-meta-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 6px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+}
+
+.cw-root .date-range-chip {
+  border: 1px solid #d8e2ec !important;
+  background: #f8fafc !important;
+  border-radius: 999px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  color: #475569 !important;
+}
+
+.cw-root .file-preview-shell {
+  margin: 0 18px 18px !important;
+  border: 1px solid #d8e2ec !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+}
+
+.cw-root .file-preview-topbar,
+.cw-root .file-preview-title {
+  background: #1e293b !important;
+  color: #fff !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  padding: 10px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  height: auto !important;
+}
+
+.cw-root .file-preview-content {
+  background: #f5f7fb !important;
+  min-height: 520px !important;
+}
+
+.cw-root .excel-table-wrap {
+  overflow: auto !important;
+  max-width: 100% !important;
+  min-height: 520px !important;
+  background: #fff !important;
+}
+
+.cw-root .excel-table {
+  width: max-content !important;
+  min-width: 100% !important;
+  border-collapse: collapse !important;
+  background: #fff !important;
+}
+
+.cw-root .excel-table th,
+.cw-root .excel-table td {
+  border: 1px solid #e5e7eb !important;
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+
+.cw-root .excel-table .row-index {
+  min-width: 44px !important;
+  width: 44px !important;
+  text-align: center !important;
+  background: #f8fafc !important;
+  color: #475569 !important;
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 2 !important;
+}
+
+@media (max-width: 1100px) {
+  .cw-root .file-client-layout {
+    grid-template-columns: 1fr !important;
+  }
+}

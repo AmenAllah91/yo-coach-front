@@ -908,6 +908,52 @@ export class WorkoutPlanFacade {
     return !!up?.supersetGroupId && up.supersetGroupId === me?.supersetGroupId;
   }
 
+  private getSupersetRun(groupId: string | null | undefined): Exercise[] {
+    if (!groupId) return [];
+
+    return this.exList.filter((exercise) => exercise.supersetGroupId === groupId);
+  }
+
+  private getContiguousSupersetRun(index: number): { start: number; end: number; groupId: string | null } {
+    const list = this.exList;
+    const groupId = list[index]?.supersetGroupId || null;
+
+    if (!groupId) {
+      return { start: index, end: index, groupId: null };
+    }
+
+    let start = index;
+    let end = index;
+
+    while (start > 0 && list[start - 1]?.supersetGroupId === groupId) {
+      start -= 1;
+    }
+
+    while (end < list.length - 1 && list[end + 1]?.supersetGroupId === groupId) {
+      end += 1;
+    }
+
+    return { start, end, groupId };
+  }
+
+  private clearInvalidSingleExerciseGroup(groupId: string | null | undefined): void {
+    if (!groupId) return;
+
+    const group = this.getSupersetRun(groupId);
+
+    if (group.length < 2) {
+      group.forEach((exercise) => (exercise.supersetGroupId = null));
+    }
+  }
+
+  private getNewSupersetGroupId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+
+    return `superset-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
   toggleSuperset(i: number): void {
     const session = this.currentSession;
 
@@ -923,19 +969,38 @@ export class WorkoutPlanFacade {
     if (!a || !b) return;
 
     if (this.isSupersetPair(i)) {
-      a.supersetGroupId = null;
-      b.supersetGroupId = null;
+      const groupId = a.supersetGroupId;
+      const rightRun = this.getContiguousSupersetRun(i + 1);
 
-      if (!b.sets || b.sets.length === 0) {
-        b.sets = this.buildInitialSets(b.type === 'CARDIO');
+      for (let idx = i + 1; idx <= rightRun.end; idx += 1) {
+        if (list[idx]?.supersetGroupId === groupId) {
+          list[idx].supersetGroupId = null;
+
+          if (!list[idx].sets || list[idx].sets.length === 0) {
+            list[idx].sets = this.buildInitialSets(list[idx].type === 'CARDIO');
+          }
+        }
       }
-    } else {
-      const groupId =
-        a.supersetGroupId || b.supersetGroupId || crypto.randomUUID();
 
-      a.supersetGroupId = groupId;
-      b.supersetGroupId = groupId;
+      this.clearInvalidSingleExerciseGroup(groupId);
+      this.recomputeSession(session);
+      return;
     }
+
+    const groupId = a.supersetGroupId || b.supersetGroupId || this.getNewSupersetGroupId();
+    const aGroup = a.supersetGroupId;
+    const bGroup = b.supersetGroupId;
+
+    list.forEach((exercise) => {
+      if (
+        exercise === a ||
+        exercise === b ||
+        (aGroup && exercise.supersetGroupId === aGroup) ||
+        (bGroup && exercise.supersetGroupId === bGroup)
+      ) {
+        exercise.supersetGroupId = groupId;
+      }
+    });
 
     this.recomputeSession(session);
   }
@@ -945,14 +1010,23 @@ export class WorkoutPlanFacade {
 
     if (!session) return false;
 
-    const lastIdx = session.exercises.length - 1;
+    const list = session.exercises;
+    const lastIdx = list.length - 1;
 
     if (i >= lastIdx) return false;
 
-    const isCurrentPair = this.isSupersetPair(i);
-    const isPrevPair = i > 0 ? this.isSupersetPair(i - 1) : false;
+    const current = list[i];
+    const next = list[i + 1];
 
-    return isCurrentPair || !isPrevPair;
+    if (!current || !next) return false;
+
+    // Active links are always displayed so the coach can split/remove the link.
+    if (this.isSupersetPair(i)) return true;
+
+    // A new link can be created between any adjacent exercises.
+    // This allows Superset A+B+C+D by clicking:
+    // A+B, then B+C, then C+D.
+    return true;
   }
 
   private normalizeDaysFromApi(days: WorkoutDay[] = []): WorkoutDay[] {

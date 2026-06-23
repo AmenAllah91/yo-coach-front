@@ -8,23 +8,18 @@
   "CANCEL": "Cancel",
   "SAVE": "Save",
   "SAVING": "Saving...",
-
   "PROGRESS_PICTURES_TITLE": "Progress Pictures",
   "PROGRESS_PICTURES_SUBTITLE": "Track visual changes over time with dated photos and weight records.",
   "PICTURES_ITEMS": "pictures",
   "ADD_PICTURE": "Add Picture",
   "COMPARE": "Compare",
-
   "PHOTO": "Photo",
   "WEIGHT": "Weight",
   "DATE": "Date",
-
   "ADD_PROGRESS_PICTURE_TITLE": "Add Progress Picture",
   "ADD_PROGRESS_PICTURE_SUBTITLE": "Upload a photo and save the current weight and date.",
-
   "EMPTY_PROGRESS_PICTURES_TITLE": "No progress pictures yet",
   "EMPTY_PROGRESS_PICTURES_SUBTITLE": "Your progress pictures will appear here once you add one.",
-
   "COMPARISON_TITLE": "Progress Picture Comparison",
   "COMPARISON_SUBTITLE": "Compare photos side by side to track transformation.",
   "SINGLE_PICTURE": "Single Picture",
@@ -35,19 +30,16 @@
   "SELECT_BEFORE_PICTURE": "Select a before picture.",
   "SELECT_AFTER_PICTURE": "Select an after picture.",
   "SELECT_PICTURE": "Select a picture.",
-
   "LOAD_PROGRESS_PICTURES_ERROR": "Failed to load progress pictures.",
   "SAVE_PROGRESS_PICTURE_ERROR": "Failed to save progress picture.",
   "UPLOAD_PROGRESS_PICTURE_ERROR": "Failed to upload picture.",
   "CLIENT_ID_MISSING": "Client ID is missing.",
-
   "COACH_SETTINGS": {
     "TITLE": "Coach Settings",
     "SUBTITLE": "Configure your workspace.",
     "CANCEL": "Cancel",
     "SAVE_CHANGES": "Save Changes",
     "SAVING": "Saving...",
-
     "NUTRITION_PLANS": "Nutrition Plans",
     "FULL_MEAL_PLAN": "Full Meal Plan",
     "MACRO_PLAN_DAILY": "Macro Plan — Daily",
@@ -55,30 +47,28 @@
     "MEAL_DEFAULTS": "Meal Defaults",
     "MEALS_SHOWN_BY_DEFAULT": "Meals shown by default",
     "AUTO_CREATE_MEALS": "Auto-create meals",
-
     "WORKOUT_DEFAULTS": "Workout Defaults",
     "WORKOUT_SETS": "Workout sets",
     "WORKOUT_REPS": "Workout reps",
     "CARDIO_SETS": "Cardio sets",
     "CARDIO_MINUTES": "Cardio minutes",
     "AUTO_FILL_DEFAULTS": "Auto-fill defaults",
-
     "QUICK_ACTIONS": "Quick Actions",
     "ASSIGN_AFTER_NUTRITION": "Assign after Nutrition Plan",
     "ASSIGN_AFTER_WORKOUT": "Assign after Workout Plan",
     "ASSIGN_AFTER_CHECKIN": "Assign after Check-in",
-
     "DEFAULTS_TITLE": "Defaults",
     "DEFAULT_LANGUAGE": "Default language",
     "LANGUAGE_ENGLISH": "English",
     "LANGUAGE_FRENCH": "French",
-
     "INFO": "These settings are default preferences only.",
-
     "SAVED_SUCCESS_TITLE": "Settings saved",
     "SAVED_SUCCESS_MESSAGE": "Your coach preferences were updated successfully.",
     "SAVED_ERROR_TITLE": "Save failed",
-    "SAVED_ERROR_MESSAGE": "Could not save your settings. Please try again."
+    "SAVED_ERROR_MESSAGE": "Could not save your settings. Please try again.",
+    "NUTRITION_FILE_ENABLED": "Enable nutrition PDF / Excel programs",
+    "NUTRITION_FILE_ENABLED_DESC": "If disabled, nutrition PDF/Excel imports are hidden and nutrition works like before file plans were added.",
+    "WORKOUT_FILE_ENABLED": "Enable PDF / Excel programs",
+    "WORKOUT_FILE_ENABLED_DESC": "If disabled, PDF/Excel imports are hidden and the app works like before workout files were added."
   }
-
 }

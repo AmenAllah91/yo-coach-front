@@ -19,6 +19,12 @@ export class MealsListComponent implements OnInit, OnDestroy {
   search = '';
   activeMealMenuId: string | null = null;
   loading = false;
+
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+  pagesArray: number[] = [];
   showDeleteModal = false;
   mealToDelete: any = null;
 
@@ -42,9 +48,13 @@ export class MealsListComponent implements OnInit, OnDestroy {
 
   load() {
     this.loading = true;
-    this.mealsService.getMeals(this.search).subscribe({
+    this.mealsService.getMeals(this.currentPage, this.pageSize, this.search).subscribe({
       next: (res: any) => {
         this.meals = Array.isArray(res) ? res : res.content || [];
+        this.totalElements = Array.isArray(res) ? this.meals.length : (res.totalElements || 0);
+        this.totalPages = Array.isArray(res) ? 1 : (res.totalPages || 0);
+        this.currentPage = Array.isArray(res) ? 0 : (res.number ?? this.currentPage);
+        this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
         this.loading = false;
       },
       error: () => this.loading = false,
@@ -52,7 +62,25 @@ export class MealsListComponent implements OnInit, OnDestroy {
   }
 
   onSearch() {
+    this.currentPage = 0;
     this.load();
+  }
+
+  onPageChange(page: number) {
+    if (page < 0 || page >= this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.load();
+  }
+
+  previousPage() {
+    this.onPageChange(this.currentPage - 1);
+  }
+
+  nextPage() {
+    this.onPageChange(this.currentPage + 1);
   }
 
   toggleDropdown(id: string, event: Event) {

@@ -623,3 +623,758 @@
     width: 100%;
   }
 }
+
+
+
+
+
+
+/* =========================================================
+   EXACT WORKOUT PROGRAM LIBRARY LOOK + DROPDOWN FIX
+   ========================================================= */
+
+.page-container {
+  padding: 32px 32px 48px !important;
+  background: #f7f9fc !important;
+}
+
+.page-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin-bottom: 26px !important;
+}
+
+.back-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #111827 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+.header-content {
+  flex: 1 !important;
+}
+
+.header-content h1 {
+  margin: 0 !important;
+  font-size: 26px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+  color: #111827 !important;
+}
+
+.header-content p {
+  margin: 6px 0 0 !important;
+  color: #667085 !important;
+  font-size: 14px !important;
+}
+
+.primary-btn {
+  min-height: 46px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: #000 !important;
+  color: #fff !important;
+  padding: 0 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+}
+
+.tabs {
+  display: flex !important;
+  gap: 28px !important;
+  border-bottom: 1px solid #dbe7f2 !important;
+  margin-bottom: 28px !important;
+}
+
+.tab {
+  border: none !important;
+  background: transparent !important;
+  color: #475569 !important;
+  padding: 0 0 18px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  position: relative !important;
+  display: inline-flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.tab.active {
+  color: #0ea5e9 !important;
+}
+
+.tab.active::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: -1px !important;
+  height: 2px !important;
+  background: #0ea5e9 !important;
+}
+
+.count {
+  min-width: 24px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  background: #eaf8ff !important;
+  color: #0ea5e9 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.program-toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin-bottom: 24px !important;
+}
+
+.search-box {
+  width: 360px !important;
+  height: 48px !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.search-box .search-icon {
+  position: absolute !important;
+  left: 14px !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #94a3b8 !important;
+}
+
+.search-box input {
+  width: 100% !important;
+  height: 48px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  padding: 0 14px 0 46px !important;
+  outline: none !important;
+  color: #111827 !important;
+  font-size: 14px !important;
+}
+
+.type-filters {
+  display: flex !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.type-filter {
+  height: 40px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: #111827 !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.type-filter.active {
+  border-color: #93c5fd !important;
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+.type-filter i-feather {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.programs-table--cap,
+.programs-table,
+.table-body {
+  overflow: visible !important;
+}
+
+.programs-table--cap {
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
+.table-header,
+.program-row {
+  display: grid !important;
+  grid-template-columns: minmax(420px, 1fr) 180px 160px 160px 80px !important;
+  align-items: center !important;
+}
+
+.table-header {
+  height: 52px !important;
+  padding: 0 24px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #dbe7f2 !important;
+  color: #475569 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.program-row {
+  min-height: 74px !important;
+  padding: 0 24px !important;
+  border-bottom: 1px solid #edf2f7 !important;
+  position: relative !important;
+  background: #fff !important;
+}
+
+.program-row:hover {
+  background: #fbfdff !important;
+}
+
+.program-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+}
+
+.program-icon {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.program-icon--app {
+  background: #eaf8ff !important;
+  color: #0ea5e9 !important;
+}
+
+.program-icon--pdf {
+  background: #fff1f2 !important;
+  color: #ef4444 !important;
+}
+
+.program-icon--excel {
+  background: #ecfdf5 !important;
+  color: #16a34a !important;
+}
+
+.program-copy {
+  min-width: 0 !important;
+}
+
+.program-name {
+  color: #111827 !important;
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  margin-bottom: 5px !important;
+}
+
+.program-meta {
+  color: #64748b !important;
+  font-size: 12px !important;
+}
+
+.type-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  border: 1px solid #dbe7f2 !important;
+}
+
+.type-badge--app {
+  background: #eaf8ff !important;
+  border-color: #bfdbfe !important;
+  color: #0ea5e9 !important;
+}
+
+.type-badge--pdf {
+  background: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #ef4444 !important;
+}
+
+.type-badge--excel {
+  background: #ecfdf5 !important;
+  border-color: #bbf7d0 !important;
+  color: #16a34a !important;
+}
+
+.col-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.dropdown {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.action-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: #111827 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-weight: 900 !important;
+}
+
+.three-dots {
+  letter-spacing: 2px !important;
+  transform: translateY(-2px) !important;
+}
+
+.dropdown-menu--side,
+.dropdown-menu {
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 8px) !important;
+  width: 250px !important;
+  background: #fff !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.16) !important;
+  padding: 8px !important;
+  z-index: 9999 !important;
+  display: block !important;
+}
+
+.dropdown-item {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  color: #111827 !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-align: left !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.dropdown-item:hover {
+  background: #f8fafc !important;
+}
+
+.dropdown-item.delete {
+  color: #ef4444 !important;
+}
+
+
+
+/* SOFTEN LIBRARY UI BACK TO ORIGINAL WEIGHTS */
+.page-container {
+  padding-top: 28px !important;
+}
+
+.header-content h1 {
+  font-weight: 700 !important;
+}
+
+.header-content p,
+.program-meta,
+.col-created,
+.col-modified {
+  font-weight: 400 !important;
+}
+
+.tab,
+.type-filter,
+.program-name,
+.type-badge,
+.dropdown-item,
+.primary-btn {
+  font-weight: 600 !important;
+}
+
+.table-header {
+  font-weight: 700 !important;
+}
+
+.program-row {
+  min-height: 72px !important;
+}
+
+.program-icon,
+.action-btn {
+  box-shadow: none !important;
+}
+
+.file-preview-backdrop,
+.file-preview-modal {
+  display: none !important;
+}
+
+
+
+/* Restore old modal styles enough if the original block was missing */
+.nutrition-type-overlay,
+.import-nutrition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.nutrition-type-modal,
+.import-nutrition-modal {
+  width: min(760px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.nutrition-type-header,
+.import-nutrition-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5edf5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.nutrition-type-header h3,
+.import-nutrition-head h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.import-nutrition-head p {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.modal-x {
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.nutrition-type-body {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.nutrition-type-card {
+  border: 1px solid #dbe7f2;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fbfdff;
+}
+
+.nutrition-type-card h4 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nutrition-type-card p {
+  margin: 0 0 18px;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.type-action,
+.save-file-btn {
+  border: none;
+  background: #0ea5e9;
+  color: #fff;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nutrition-type-footer,
+.import-nutrition-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5edf5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-cancel {
+  border: 1px solid #dbe7f2;
+  background: #fff;
+  color: #111827;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-nutrition-content {
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.upload-zone {
+  border: 1px dashed #b9cbe0;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 26px;
+  text-align: center;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+}
+
+.upload-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eaf8ff;
+  color: #0ea5e9;
+  margin: 0 auto 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.import-field {
+  display: grid;
+  gap: 7px;
+}
+
+.import-field span {
+  font-weight: 600;
+  color: #344054;
+  font-size: 13px;
+}
+
+.import-field input,
+.import-field textarea {
+  border: 1px solid #dbe7f2;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.import-error {
+  color: #dc2626;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   FINAL: REMOVE OVER-BOLD NUTRITION LIBRARY UI
+   Put last to override all previous workout-style bold rules.
+   ========================================================= */
+
+:host,
+.page-container,
+.page-container * {
+  font-family: inherit !important;
+}
+
+.page-container {
+  background: #f7f9fc !important;
+}
+
+/* Header */
+.header-content h1,
+.page-header h1 {
+  font-size: 25px !important;
+  font-weight: 600 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.015em !important;
+  color: #0f172a !important;
+}
+
+.header-content p,
+.page-header p {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #667085 !important;
+}
+
+/* Top tabs */
+.tabs .tab,
+.tab {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+}
+
+.tabs .tab.active,
+.tab.active {
+  font-weight: 600 !important;
+  color: #0ea5e9 !important;
+}
+
+.count {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+/* Search and filters */
+.search-box input {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #344054 !important;
+}
+
+.type-filter {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+}
+
+.type-filter.active {
+  font-weight: 600 !important;
+}
+
+/* Table */
+.table-header {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  letter-spacing: 0 !important;
+}
+
+.program-row {
+  min-height: 72px !important;
+}
+
+.program-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #111827 !important;
+  letter-spacing: 0 !important;
+}
+
+.program-meta {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: #64748b !important;
+}
+
+.col-created,
+.col-modified {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: #334155 !important;
+}
+
+/* Badges */
+.type-badge {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+
+.type-badge--app,
+.type-badge--pdf,
+.type-badge--excel {
+  font-weight: 500 !important;
+}
+
+/* Dropdown */
+.action-btn {
+  font-weight: 500 !important;
+}
+
+.three-dots {
+  font-weight: 500 !important;
+  letter-spacing: 2px !important;
+}
+
+.dropdown-item {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+}
+
+.dropdown-item.delete {
+  font-weight: 500 !important;
+  color: #ef4444 !important;
+}
+
+/* Buttons */
+.primary-btn,
+.secondary-btn,
+.btn-cancel,
+.type-action,
+.save-file-btn {
+  font-weight: 600 !important;
+}
+
+/* Feather icons in filters/badges can visually look bold; reduce stroke */
+.type-filter i-feather svg,
+.type-badge i-feather svg,
+.program-icon i-feather svg,
+.dropdown-item i-feather svg,
+.action-btn i-feather svg {
+  stroke-width: 1.8 !important;
+}
+
+.dropdown-item i-feather svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.program-icon {
+  box-shadow: none !important;
+}
+
+/* Keep menu same but lighter */
+.dropdown-menu,
+.dropdown-menu--side {
+  font-weight: 400 !important;
+}

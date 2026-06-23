@@ -18,8 +18,8 @@ export class MealsService {
 
   constructor(private http: HttpClient) {}
 
-  getMeals(search?: string): Observable<any> {
-    const params: any = {};
+  getMeals(page: number = 0, size: number = 10, search?: string): Observable<any> {
+    const params: any = { page, size };
     if (search) params.search = search;
     return this.http.get<any>(this.base, { params });
   }

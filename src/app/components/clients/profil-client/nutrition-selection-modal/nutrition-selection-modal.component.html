@@ -32,6 +32,9 @@
           class="select-program-card"
           *ngFor="let program of filteredPrograms"
           [class.select-program-card--selected]="program.id === selectedProgramId"
+          [class.select-program-card--file]="isFileProgram(program)"
+          [class.select-program-card--pdf]="isFileProgram(program) && getFileKind(program) === 'PDF'"
+          [class.select-program-card--excel]="isFileProgram(program) && getFileKind(program) === 'EXCEL'"
           (click)="selectProgram(program)"
         >
           <div class="select-program-main">
@@ -47,10 +50,25 @@
                 <span class="select-program-name">
                   {{ program.name }}
                 </span>
+
+                <span
+                  class="select-program-type"
+                  [class.select-program-type--app]="!isFileProgram(program)"
+                  [class.select-program-type--pdf]="isFileProgram(program) && getFileKind(program) === 'PDF'"
+                  [class.select-program-type--excel]="isFileProgram(program) && getFileKind(program) === 'EXCEL'"
+                >
+                  {{ getProgramTypeLabel(program) }}
+                </span>
               </div>
 
               <div class="select-program-meta">
-                <span>{{ program.totalDays }} days</span>
+                <ng-container *ngIf="!isFileProgram(program); else fileMetaTpl">
+                  <span>{{ program.totalDays }} days</span>
+                </ng-container>
+
+                <ng-template #fileMetaTpl>
+                  <span>{{ getFileMeta(program) }}</span>
+                </ng-template>
               </div>
             </div>
           </div>
@@ -74,9 +92,24 @@
           </div>
 
           <div class="schedule-field">
-            <label>End Date</label>
-            <div class="schedule-input schedule-input--readonly">
-              <input type="date" [value]="calculatedEndDate || ''" disabled />
+            <label>
+              End Date
+              <span *ngIf="isFileProgram(selectedProgram)">*</span>
+            </label>
+
+            <div
+              class="schedule-input"
+              [class.schedule-input--readonly]="!isFileProgram(selectedProgram)"
+            >
+              <input
+                *ngIf="isFileProgram(selectedProgram); else normalCalculatedEndDate"
+                type="date"
+                [(ngModel)]="endDate"
+              />
+
+              <ng-template #normalCalculatedEndDate>
+                <input type="date" [value]="calculatedEndDate || ''" disabled />
+              </ng-template>
             </div>
           </div>
         </div>
@@ -89,7 +122,7 @@
 
       <button
         class="btn-primary"
-        [disabled]="!selectedProgramId || !startDate"
+        [disabled]="!canAssign"
         (click)="assign()"
       >
         Assign Nutrition Program

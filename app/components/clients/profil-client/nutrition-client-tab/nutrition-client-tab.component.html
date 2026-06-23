@@ -6,14 +6,14 @@
   </button>
 </div>
 
-<div class="workout-filter-tabs" *ngIf="nutritionFileEnabled !== false">
+<div class="workout-filter-tabs">
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
     All
   </button>
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'APP'" (click)="setActiveTab('APP')">
     App Plans
   </button>
-  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'FILES'" (click)="setActiveTab('FILES')">
+  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'FILES'" (click)="setActiveTab('FILES')" *ngIf="nutritionFileEnabled !== false">
     Uploaded Files
   </button>
 </div>

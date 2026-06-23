@@ -8,9 +8,11 @@ import {
   NutritionService,
   NutritionPlan,
 } from '../../../service/nutrition.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { DeleteNutritionPlanModalComponent } from '../delete-nutrition-plan-modal/delete-nutrition-plan-modal.component';
 import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-plan-type-modal.component';
 import { ModalAssignToclientComponent } from 'app/components/clients/modal-assign-toclient/modal-assign-toclient.component';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-nutrition-plans',
@@ -27,6 +29,26 @@ import { ModalAssignToclientComponent } from 'app/components/clients/modal-assig
   styleUrls: ['./nutrition-plans.component.scss'],
 })
 export class NutritionPlansComponent implements OnInit, OnDestroy {
+  goBack(): void {
+    window.history.back();
+  }
+
+
+  nutritionFileEnabled = true;
+
+
+  getProgramId = (plan: any): string => {
+    return String(
+      plan?.id ||
+      plan?._id ||
+      plan?.uuid ||
+      plan?.fileName ||
+      plan?.originalFileName ||
+      plan?.name ||
+      ''
+    );
+  };
+
   private destroy$ = new Subject<void>();
   private documentClickHandler = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
@@ -37,11 +59,30 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   plans: NutritionPlan[] = [];
   searchTerm = '';
+  activeTab: 'my-library' | 'templates' = 'my-library';
+  programTypeFilter: 'ALL' | 'APP' | 'PDF' | 'EXCEL' = 'ALL';
+
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+  pagesArray: number[] = [];
 
   showChooseModal = false;
   showDeleteModal = false;
   selectedPlan: NutritionPlan | null = null;
   openDropdownId: string | null = null;
+
+  showFilePreviewModal = false;
+  previewPlan: NutritionPlan | null = null;
+  previewLoading = false;
+  previewError = '';
+  previewFileKind: 'PDF' | 'EXCEL' | null = null;
+  previewBlobUrl: string | null = null;
+  excelRows: any[][] = [];
+  excelSheets: string[] = [];
+  selectedExcelSheetName = '';
+  selectedExcelWorkbook: any | null = null;
   loading = false;
   error: string | null = null;
 
@@ -61,60 +102,79 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   constructor(
     private nutritionService: NutritionService,
-    private router: Router
+    private router: Router,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
   ngOnInit() {
+    this.loadNutritionFileSetting();
     this.loadPlans();
     document.addEventListener('click', this.documentClickHandler);
+  }
+
+
+  private loadNutritionFileSetting(): void {
+    this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
+
+    this.coachSettingsService.loadConfig().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (config) => {
+        this.nutritionFileEnabled = config.nutrition?.nutritionFileEnabled !== false;
+        if (!this.nutritionFileEnabled && this.programTypeFilter !== 'APP') {
+          this.programTypeFilter = 'ALL';
+        }
+        if (!this.nutritionFileEnabled) {
+          this.showNutritionPlanTypeModal = false;
+          this.showImportFileModal = false;
+        }
+      },
+      error: () => {
+        this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
+      },
+    });
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
     document.removeEventListener('click', this.documentClickHandler);
+    this.revokePreviewBlob();
   }
 
   loadPlans() {
     this.loading = true;
     this.error = null;
 
-    forkJoin({
-      privatePlans: this.nutritionService.getNutritionPlans(),
-      templatePlans: this.nutritionService.getNutritionPlansTemplates(),
-    })
+    const request$ = this.activeTab === 'templates'
+      ? this.nutritionService.getNutritionPlansTemplates(this.currentPage, this.pageSize)
+      : this.nutritionService.getNutritionPlans(this.currentPage, this.pageSize);
+
+    request$
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ privatePlans, templatePlans }) => {
-          const privateContent = this.extractPlans(privatePlans);
-          const templateContent = this.extractPlans(templatePlans)
-            .filter((plan: any) => !plan.isDemo)
-            .map((plan) => ({
-              ...plan,
-              isMealPlanTemplate: true,
-            }));
+        next: (page) => {
+          const content = this.extractPlans(page);
 
           this.plans = this.sortNewestFirst(
-            this.dedupePlans([...privateContent, ...templateContent])
+            this.activeTab === 'templates'
+              ? content
+                  .filter((plan: any) => !plan.isDemo)
+                  .map((plan) => ({
+                    ...plan,
+                    isMealPlanTemplate: true,
+                  }))
+              : content
           );
 
+          this.totalElements = page?.totalElements || this.plans.length;
+          this.totalPages = page?.totalPages || 0;
+          this.currentPage = page?.number ?? this.currentPage;
+          this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
           this.loading = false;
-
-          console.log(
-            '[NUTRITION PLANS] loaded plans =',
-            this.plans.length,
-            {
-              privatePlans: privateContent.length,
-              templatePlans: templateContent.length,
-              all: this.plans,
-            }
-          );
         },
         error: (error) => {
-          console.error('[NUTRITION PLANS] Error loading plans:', error);
-          this.plans = [];
+          console.error('Error loading nutrition plans:', error);
+          this.error = 'Failed to load nutrition plans.';
           this.loading = false;
-          this.error = 'Failed to load nutrition plans';
         },
       });
   }
@@ -167,6 +227,100 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     return Number.isNaN(time) ? 0 : time;
   }
 
+
+  get myLibraryCount(): number {
+    return this.plans.filter((plan) => !this.isTemplatePlan(plan)).length;
+  }
+
+  get templatesCount(): number {
+    return this.plans.filter((plan) => this.isTemplatePlan(plan)).length;
+  }
+
+  setActiveTab(tab: 'my-library' | 'templates') {
+    this.activeTab = tab;
+    this.openDropdownId = null;
+    this.currentPage = 0;
+
+    if (tab === 'templates') {
+      this.programTypeFilter = 'ALL';
+    }
+
+    this.loadPlans();
+  }
+
+  setProgramTypeFilter(type: 'ALL' | 'APP' | 'PDF' | 'EXCEL') {
+    this.programTypeFilter = type;
+    this.openDropdownId = null;
+    this.currentPage = 0;
+    this.loadPlans();
+  }
+
+  onSearch(): void {
+    this.currentPage = 0;
+    this.loadPlans();
+  }
+
+  onPageChange(page: number): void {
+    if (page < 0 || page >= this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.loadPlans();
+  }
+
+  previousPage(): void {
+    this.onPageChange(this.currentPage - 1);
+  }
+
+  nextPage(): void {
+    this.onPageChange(this.currentPage + 1);
+  }
+
+  getProgramTypeKey(plan: NutritionPlan): 'APP' | 'PDF' | 'EXCEL' {
+    if (!this.isFilePlan(plan)) {
+      return 'APP';
+    }
+
+    return this.getFileKind(plan);
+  }
+
+  getProgramIconName(plan: NutritionPlan): string {
+    const type = this.getProgramTypeKey(plan);
+if (type === 'APP') {
+      return 'grid';
+    }
+
+    return 'file-text';
+  }
+
+  getProgramDescription(plan: NutritionPlan): string {
+    if (this.isFilePlan(plan)) {
+      const fileName = (plan as any).originalFileName || (plan as any).fileName || 'Static nutrition document';
+      const size = (plan as any).fileSizeBytes ? ` · ${this.formatFileSize((plan as any).fileSizeBytes)}` : '';
+      return `${fileName}${size}`;
+    }
+
+    const days = plan.mealDays?.length || 0;
+    if (days > 0) {
+      return `${days}-day nutrition program`;
+    }
+
+    return (plan as any).details || 'Nutrition program';
+  }
+
+  trackByProgram(_index: number, program: any): string {
+    return String(
+      program?.id ||
+      program?._id ||
+      program?.uuid ||
+      program?.fileName ||
+      program?.originalFileName ||
+      program?.name ||
+      _index
+    );
+  }
+
   isTemplatePlan(plan: NutritionPlan): boolean {
     return Boolean((plan as any).isMealPlanTemplate || (plan as any).mealPlanTemplate);
   }
@@ -174,18 +328,23 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   isFilePlan(plan: NutritionPlan): boolean {
     const anyPlan = plan as any;
-    const mode = String(anyPlan?.nutritionPlanMode || '').toUpperCase();
-    const type = String(anyPlan?.resourceType || '').toUpperCase();
+    const mode = String(anyPlan?.nutritionPlanMode || anyPlan?.mealPlanMode || anyPlan?.planMode || '').toUpperCase();
+    const type = String(anyPlan?.resourceType || anyPlan?.fileType || anyPlan?.documentType || '').toUpperCase();
+    const fileName = String(anyPlan?.originalFileName || anyPlan?.fileName || anyPlan?.fileUrl || '').toLowerCase();
 
     return (
       mode === 'FILE' ||
+      mode === 'DOCUMENT' ||
       type === 'PDF' ||
       type === 'EXCEL' ||
       type === 'XLS' ||
       type === 'XLSX' ||
       !!anyPlan?.fileName ||
       !!anyPlan?.originalFileName ||
-      !!anyPlan?.fileUrl
+      !!anyPlan?.fileUrl ||
+      fileName.endsWith('.pdf') ||
+      fileName.endsWith('.xls') ||
+      fileName.endsWith('.xlsx')
     );
   }
 
@@ -203,14 +362,10 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   getPlanTypeLabel(plan: NutritionPlan): string {
     if (this.isFilePlan(plan)) {
-      return this.getFileKind(plan) === 'PDF' ? 'PDF Document' : 'Excel Document';
+      return this.getFileKind(plan) === 'PDF' ? 'PDF' : 'Excel';
     }
 
-    return plan.trackingMode === 'TOTAL_FOR_DAY'
-      ? 'TOTAL FOR DAY'
-      : plan.trackingMode === 'EACH_MEAL'
-        ? 'EACH MEAL'
-        : 'FULL MEAL PLAN';
+    return 'App Program';
   }
 
   formatFileSize(bytes?: number): string {
@@ -227,33 +382,176 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     return `${(value / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+
+  private revokePreviewBlob(): void {
+    if (this.previewBlobUrl) {
+      window.URL.revokeObjectURL(this.previewBlobUrl);
+      this.previewBlobUrl = null;
+    }
+  }
+
   previewNutritionFile(plan: NutritionPlan) {
     this.openDropdownId = null;
-    const popup = window.open('', '_blank');
 
-    if (!popup) {
+    const previewWindow = window.open('', '_blank');
+    if (!previewWindow) {
       return;
     }
 
-    popup.document.open();
-    popup.document.write('<p style="font-family:Arial;padding:24px">Loading nutrition file...</p>');
-    popup.document.close();
+    const title = this.escapeHtml(plan.name || 'Nutrition file');
+    previewWindow.document.open();
+    previewWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { margin: 0; font-family: Arial, sans-serif; background: #f7f9fc; color: #111827; }
+            .topbar { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; background: #111827; color: #fff; box-sizing: border-box; }
+            .title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .loading { padding: 28px; color: #667085; }
+          </style>
+        </head>
+        <body>
+          <div class="topbar"><div class="title">${title}</div></div>
+          <div class="loading">Loading preview...</div>
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
 
     this.nutritionService
       .downloadNutritionFile(plan)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (blob) => {
-          const blobUrl = window.URL.createObjectURL(blob);
-          popup.location.href = blobUrl;
-          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+        next: async (blob) => {
+          try {
+            if (this.getFileKind(plan) === 'PDF') {
+              this.renderPdfInNewTab(previewWindow, plan, blob);
+              return;
+            }
+
+            await this.renderExcelInNewTab(previewWindow, plan, blob);
+          } catch (error) {
+            console.error('Nutrition file preview error:', error);
+            this.renderPreviewError(previewWindow);
+          }
         },
-        error: () => {
-          popup.document.open();
-          popup.document.write('<p style="font-family:Arial;padding:24px;color:#dc2626">Could not open nutrition file.</p>');
-          popup.document.close();
+        error: (error) => {
+          console.error('Nutrition file preview error:', error);
+          this.renderPreviewError(previewWindow);
         },
       });
+  }
+
+  private renderPdfInNewTab(previewWindow: Window, plan: NutritionPlan, blob: Blob): void {
+    const title = this.escapeHtml(plan.name || (plan as any).originalFileName || 'PDF preview');
+    const pdfBlob = blob.type === 'application/pdf'
+      ? blob
+      : new Blob([blob], { type: 'application/pdf' });
+    const blobUrl = window.URL.createObjectURL(pdfBlob);
+
+    previewWindow.document.open();
+    previewWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; background: #111827; }
+            .topbar { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; background: #111827; color: #fff; box-sizing: border-box; }
+            .title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            iframe { width: 100%; height: calc(100vh - 54px); border: 0; background: #fff; }
+          </style>
+        </head>
+        <body>
+          <div class="topbar"><div class="title">${title}</div></div>
+          <iframe src="${blobUrl}"></iframe>
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
+
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
+  }
+
+  private async renderExcelInNewTab(previewWindow: Window, plan: NutritionPlan, blob: Blob): Promise<void> {
+    const buffer = await blob.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames?.[0] || '';
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = worksheet
+      ? (XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' }) as any[][])
+      : [];
+
+    const title = this.escapeHtml(plan.name || (plan as any).originalFileName || 'Excel preview');
+    const fileName = this.escapeHtml((plan as any).originalFileName || (plan as any).fileName || '');
+    const visibleRows = rows.slice(0, 160);
+
+    const tableRows = visibleRows.map((row, rowIndex) => `
+      <tr>
+        <th class="row-index">${rowIndex + 1}</th>
+        ${row.map((cell) => `<td>${this.escapeHtml(String(cell ?? ''))}</td>`).join('')}
+      </tr>
+    `).join('');
+
+    previewWindow.document.open();
+    previewWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { margin: 0; font-family: Arial, sans-serif; background: #f7f9fc; color: #111827; }
+            .topbar { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; background: #111827; color: #fff; box-sizing: border-box; }
+            .title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .meta { padding: 12px 18px; color: #667085; background: #fff; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+            .wrap { padding: 18px; overflow: auto; height: calc(100vh - 96px); box-sizing: border-box; }
+            table { border-collapse: collapse; background: #fff; min-width: max-content; box-shadow: 0 1px 2px rgba(15,23,42,.06); }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+            .row-index { position: sticky; left: 0; background: #f8fafc; color: #475569; text-align: center; min-width: 44px; z-index: 2; }
+          </style>
+        </head>
+        <body>
+          <div class="topbar"><div class="title">${title}</div></div>
+          <div class="meta">${fileName} · ${rows.length} rows</div>
+          <div class="wrap">
+            <table><tbody>${tableRows || '<tr><td>No data found in this Excel file.</td></tr>'}</tbody></table>
+          </div>
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
+  }
+
+  private renderPreviewError(previewWindow: Window): void {
+    previewWindow.document.open();
+    previewWindow.document.write(`
+      <html>
+        <body style="font-family:Arial,sans-serif;padding:28px;color:#dc2626">
+          Could not preview this file. Use Download to open it.
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  closeFilePreviewModal(): void {
+    this.showFilePreviewModal = false;
+  }
+
+  openProgramFile(plan: NutritionPlan): void {
+    this.previewNutritionFile(plan);
+  }
+
+  downloadProgramFile(plan: NutritionPlan): void {
+    this.downloadNutritionFile(plan);
   }
 
   downloadNutritionFile(plan: NutritionPlan) {
@@ -285,16 +583,54 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   get filteredPlans() {
     const query = this.searchTerm.trim().toLowerCase();
 
-    if (!query) {
-      return this.plans;
-    }
+    return this.plans.filter((plan) => {
+      const matchesTab = this.activeTab === 'templates'
+        ? this.isTemplatePlan(plan)
+        : !this.isTemplatePlan(plan);
 
-    return this.plans.filter((plan) =>
-      (plan.name || '').toLowerCase().includes(query)
-    );
+      if (!matchesTab) {
+        return false;
+      }
+
+      const type = this.getProgramTypeKey(plan);
+if (this.nutritionFileEnabled === false && type !== 'APP') {
+        return false;
+      }
+
+      const matchesType =
+        this.activeTab === 'templates' ||
+        this.programTypeFilter === 'ALL' ||
+        type === this.programTypeFilter;
+
+      if (!matchesType) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const searchable = [
+        plan.name,
+        (plan as any).details,
+        (plan as any).originalFileName,
+        (plan as any).fileName,
+        this.getProgramDescription(plan),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
   }
 
   openChooseModal() {
+    if (this.nutritionFileEnabled === false) {
+      this.createNormalNutritionPlan();
+      return;
+    }
+
     this.showNutritionPlanTypeModal = true;
   }
 
@@ -312,14 +648,17 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   openImportNutritionFile() {
+    if (this.nutritionFileEnabled === false) {
+      return;
+    }
+
     this.showNutritionPlanTypeModal = false;
     this.importFile = null;
     this.importFileKind = null;
     this.importPlanName = '';
     this.importPlanDescription = '';
-    const today = new Date().toISOString().slice(0, 10);
-    this.importStartDate = today;
-    this.importEndDate = today;
+    this.importStartDate = '';
+    this.importEndDate = '';
     this.importError = '';
     this.showImportFileModal = true;
   }
@@ -406,9 +745,9 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
       .createNutritionFilePlan(
         this.importFile,
         this.importPlanName.trim(),
-        this.importPlanDescription.trim(),
-        this.importStartDate,
-        this.importEndDate
+        this.importPlanDescription.trim() || undefined,
+        undefined,
+        undefined
       )
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -513,15 +852,20 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
       });
   }
 
-  toggleDropdown(planId: string, event: Event) {
+  toggleDropdown = (planId: string, event: Event): void => {
     event.stopPropagation();
+
+    if (!planId) {
+      return;
+    }
+
     this.openDropdownId = this.openDropdownId === planId ? null : planId;
-  }
+  };
 
   assignToClients(program: NutritionPlan) {
+    this.openDropdownId = null;
     this.programToAssign = program;
     this.showAssignModal = true;
-    this.openDropdownId = null;
   }
 
   closeAssignModal() {
@@ -537,11 +881,16 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
     for (const client of event.clients) {
       if (this.isFilePlan(this.programToAssign)) {
+        if (!event.endDate) {
+          this.error = 'End date is required for PDF / Excel nutrition plans.';
+          return;
+        }
+
         const item = {
           ...this.programToAssign,
           client,
           startDate: event.date,
-          endDate: event.endDate || event.date,
+          endDate: event.endDate,
           mealDays: [],
           isMealPlanTemplate: false,
         };

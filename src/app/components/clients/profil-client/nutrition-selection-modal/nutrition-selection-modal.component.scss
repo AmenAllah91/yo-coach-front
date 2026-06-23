@@ -270,3 +270,46 @@
   background-color: #d1d5db;
   cursor: not-allowed;
 }
+
+
+/* Nutrition file plans in selection modal */
+.select-program-card--file {
+  border-left: 4px solid #94a3b8;
+}
+
+.select-program-card--pdf {
+  border-left-color: #ef4444;
+}
+
+.select-program-card--excel {
+  border-left-color: #16a34a;
+}
+
+.select-program-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.select-program-type--app {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.select-program-type--pdf {
+  background: #fff1f2;
+  color: #dc2626;
+  border-color: #fecdd3;
+}
+
+.select-program-type--excel {
+  background: #ecfdf5;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}

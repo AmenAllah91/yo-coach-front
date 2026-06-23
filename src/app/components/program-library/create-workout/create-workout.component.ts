@@ -433,13 +433,29 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   private isSupersetOrderValid(list: Exercise[]): boolean {
-    for (let i = 0; i < list.length; i++) {
-      const g = list[i].supersetGroupId;
-      if (!g) continue;
-      const left = i > 0 && list[i - 1].supersetGroupId === g;
-      const right = i < list.length - 1 && list[i + 1].supersetGroupId === g;
-      if (!left && !right) return false;
+    const ranges = new Map<string, { first: number; last: number; count: number }>();
+
+    list.forEach((exercise, index) => {
+      const groupId = exercise.supersetGroupId;
+      if (!groupId) return;
+
+      const range = ranges.get(groupId) || { first: index, last: index, count: 0 };
+      range.first = Math.min(range.first, index);
+      range.last = Math.max(range.last, index);
+      range.count += 1;
+      ranges.set(groupId, range);
+    });
+
+    for (const [groupId, range] of ranges.entries()) {
+      if (range.count < 2) return false;
+
+      for (let i = range.first; i <= range.last; i += 1) {
+        if (list[i]?.supersetGroupId !== groupId) {
+          return false;
+        }
+      }
     }
+
     return true;
   }
 

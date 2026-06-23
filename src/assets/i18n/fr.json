@@ -8,23 +8,18 @@
   "CANCEL": "Annuler",
   "SAVE": "Enregistrer",
   "SAVING": "Enregistrement...",
-
   "PROGRESS_PICTURES_TITLE": "Photos de progression",
   "PROGRESS_PICTURES_SUBTITLE": "Suivez les changements visuels au fil du temps avec des photos datées et le poids.",
   "PICTURES_ITEMS": "photos",
   "ADD_PICTURE": "Ajouter une photo",
   "COMPARE": "Comparer",
-
   "PHOTO": "Photo",
   "WEIGHT": "Poids",
   "DATE": "Date",
-
   "ADD_PROGRESS_PICTURE_TITLE": "Ajouter une photo de progression",
   "ADD_PROGRESS_PICTURE_SUBTITLE": "Téléchargez une photo et enregistrez le poids actuel et la date.",
-
   "EMPTY_PROGRESS_PICTURES_TITLE": "Aucune photo de progression",
   "EMPTY_PROGRESS_PICTURES_SUBTITLE": "Vos photos de progression apparaîtront ici après l'ajout de la première photo.",
-
   "COMPARISON_TITLE": "Comparaison des photos de progression",
   "COMPARISON_SUBTITLE": "Comparez les photos côte à côte pour suivre la transformation.",
   "SINGLE_PICTURE": "Photo unique",
@@ -35,19 +30,16 @@
   "SELECT_BEFORE_PICTURE": "Sélectionnez une photo avant.",
   "SELECT_AFTER_PICTURE": "Sélectionnez une photo après.",
   "SELECT_PICTURE": "Sélectionnez une photo.",
-
   "LOAD_PROGRESS_PICTURES_ERROR": "Impossible de charger les photos de progression.",
   "SAVE_PROGRESS_PICTURE_ERROR": "Impossible d'enregistrer la photo de progression.",
   "UPLOAD_PROGRESS_PICTURE_ERROR": "Impossible de téléverser la photo.",
   "CLIENT_ID_MISSING": "L'identifiant du client est manquant.",
-
   "COACH_SETTINGS": {
     "TITLE": "Paramètres coach",
     "SUBTITLE": "Configurez votre espace de travail.",
     "CANCEL": "Annuler",
     "SAVE_CHANGES": "Enregistrer les modifications",
     "SAVING": "Enregistrement...",
-
     "NUTRITION_PLANS": "Plans nutrition",
     "FULL_MEAL_PLAN": "Plan repas complet",
     "MACRO_PLAN_DAILY": "Plan macros — journée",
@@ -55,29 +47,28 @@
     "MEAL_DEFAULTS": "Paramètres des repas",
     "MEALS_SHOWN_BY_DEFAULT": "Repas affichés par défaut",
     "AUTO_CREATE_MEALS": "Créer automatiquement les repas",
-
     "WORKOUT_DEFAULTS": "Paramètres entraînement",
     "WORKOUT_SETS": "Séries d'entraînement",
     "WORKOUT_REPS": "Répétitions d'entraînement",
     "CARDIO_SETS": "Séries cardio",
     "CARDIO_MINUTES": "Minutes cardio",
     "AUTO_FILL_DEFAULTS": "Remplir automatiquement",
-
     "QUICK_ACTIONS": "Actions rapides",
     "ASSIGN_AFTER_NUTRITION": "Assigner après le plan nutrition",
     "ASSIGN_AFTER_WORKOUT": "Assigner après le plan entraînement",
     "ASSIGN_AFTER_CHECKIN": "Assigner après le check-in",
-
     "DEFAULTS_TITLE": "Préférences",
     "DEFAULT_LANGUAGE": "Langue par défaut",
     "LANGUAGE_ENGLISH": "Anglais",
     "LANGUAGE_FRENCH": "Français",
-
     "INFO": "Ces paramètres sont uniquement des préférences par défaut.",
-
     "SAVED_SUCCESS_TITLE": "Paramètres enregistrés",
     "SAVED_SUCCESS_MESSAGE": "Vos préférences coach ont été mises à jour avec succès.",
     "SAVED_ERROR_TITLE": "Échec de l'enregistrement",
-    "SAVED_ERROR_MESSAGE": "Impossible d'enregistrer vos paramètres. Veuillez réessayer."
+    "SAVED_ERROR_MESSAGE": "Impossible d'enregistrer vos paramètres. Veuillez réessayer.",
+    "NUTRITION_FILE_ENABLED": "Activer les programmes nutrition PDF / Excel",
+    "NUTRITION_FILE_ENABLED_DESC": "Si désactivé, les imports PDF/Excel nutrition sont masqués et la nutrition fonctionne comme avant l’ajout des fichiers.",
+    "WORKOUT_FILE_ENABLED": "Activer les programmes PDF / Excel",
+    "WORKOUT_FILE_ENABLED_DESC": "Si désactivé, les imports PDF/Excel sont masqués et l’application fonctionne comme avant l’ajout du workout file."
   }
 }

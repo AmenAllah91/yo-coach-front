@@ -191,11 +191,11 @@ export class NutritionService {
   }
 
   // Nutrition plan management
-  getNutritionPlans(page: number = 0, size: number = 10): Observable<Page<NutritionPlan>> {
-    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}?page=${page}&size=${size}`);
+  getNutritionPlans(): Observable<Page<NutritionPlan>> {
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`);
   }
-  getNutritionPlansTemplates(page: number = 0, size: number = 10): Observable<Page<NutritionPlan>> {
-    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates?page=${page}&size=${size}`);
+  getNutritionPlansTemplates(): Observable<Page<NutritionPlan>> {
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`);
   }
   getNutritionPlanById(id: string): Observable<any> {
     return this.http.get<any>(`${this.mealPlanUrl}${id}`);

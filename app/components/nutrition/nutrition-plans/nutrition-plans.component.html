@@ -1,154 +1,173 @@
-<div >
+<div class="page-container">
   <div class="page-header">
-    <h1>Nutrition Plans</h1>
-    <button class="btn-primary" (click)="openChooseModal()">
+    <button class="back-btn" type="button" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
+
+    <div class="header-content">
+      <h1>Nutrition Plans</h1>
+      <p>Create, organize and manage your nutrition programs</p>
+    </div>
+
+    <button class="primary-btn" type="button" (click)="openChooseModal()">
       <i-feather name="plus"></i-feather>
-      Add New Plan
+      Create Nutrition Plan
     </button>
   </div>
 
-  <div class="search-container">
-    <div class="search-box">
-      <i-feather name="search" class="search-icon"></i-feather>
-      <input
-        type="text"
-        placeholder="Search plans..."
-        [(ngModel)]="searchTerm"
-        class="search-input"
-      />
-    </div>
-  </div>
+  <div class="content">
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab === 'my-library'" (click)="setActiveTab('my-library')">
+        My Library <span class="count">{{ myLibraryCount }}</span>
+      </button>
 
-  <div class="plans-state" *ngIf="loading">
-    Loading nutrition plans...
-  </div>
-
-  <div class="plans-state plans-state--error" *ngIf="!loading && error">
-    {{ error }}
-  </div>
-
-  <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">
-    No nutrition plans found.
-  </div>
-
-
-  <div class="plans-table" *ngIf="!loading && !error && filteredPlans.length > 0">
-    <div class="table-header">
-      <div class="col-title">TITLE</div>
-      <div class="col-updated">LAST UPDATED ON</div>
-      <div class="col-macros">MACRONUTRIENTS</div>
-      <div class="col-calories">CALORIES</div>
-      <div class="col-actions">ACTIONS</div>
+      <button class="tab" [class.active]="activeTab === 'templates'" (click)="setActiveTab('templates')">
+        YoCoach Templates <span class="count">{{ templatesCount }}</span>
+      </button>
     </div>
 
-    <div class="table-row" *ngFor="let plan of filteredPlans">
-      <div class="col-title">
-        <div class="plan-name">
-          {{ plan.name }} {{ isTemplatePlan(plan) ? "(Template)" : "" }}
-        </div>
-        <div
-          class="plan-type"
-          [class.plan-type--pdf]="isFilePlan(plan) && getFileKind(plan) === 'PDF'"
-          [class.plan-type--excel]="isFilePlan(plan) && getFileKind(plan) === 'EXCEL'"
-        >
-          {{ getPlanTypeLabel(plan) }}
-        </div>
-        <div class="plan-file-meta" *ngIf="isFilePlan(plan)">
-          {{ plan.originalFileName || plan.fileName }}
-          <span *ngIf="plan.fileSizeBytes"> · {{ formatFileSize(plan.fileSizeBytes) }}</span>
-        </div>
+    <div class="program-toolbar">
+      <div class="search-box">
+        <i-feather name="search" class="search-icon"></i-feather>
+        <input type="text" placeholder="Search nutrition plans..." [(ngModel)]="searchTerm" />
       </div>
 
-      <div class="col-updated">
-        {{ isFilePlan(plan) ? formatDate(plan.fileUploadedAt || plan.updatedAt) : formatDate(plan.updatedAt) }}
+      <div class="type-filters" *ngIf="activeTab !== 'templates' && nutritionFileEnabled !== false">
+        <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">
+          All
+        </button>
+
+        <button class="type-filter" [class.active]="programTypeFilter === 'APP'" (click)="setProgramTypeFilter('APP')">
+          <i-feather name="grid"></i-feather>
+          App Programs
+        </button>
+
+        <button *ngIf="nutritionFileEnabled !== false" class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'PDF'" (click)="setProgramTypeFilter('PDF')">
+          <i-feather name="file-text"></i-feather>
+          PDF
+        </button>
+
+        <button *ngIf="nutritionFileEnabled !== false" class="type-filter type-filter--excel" [class.active]="programTypeFilter === 'EXCEL'" (click)="setProgramTypeFilter('EXCEL')">
+          <i-feather name="file-text"></i-feather>
+          Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="plans-state" *ngIf="loading">Loading nutrition plans...</div>
+    <div class="plans-state plans-state--error" *ngIf="!loading && error">{{ error }}</div>
+    <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">No nutrition plans found.</div>
+
+    <div class="programs-table programs-table--cap" *ngIf="!loading && !error && filteredPlans.length > 0">
+      <div class="table-header">
+        <div class="col-program">PROGRAM</div>
+        <div class="col-type">TYPE</div>
+        <div class="col-created">START</div>
+        <div class="col-modified">END</div>
+        <div class="col-actions"></div>
       </div>
 
-      <div class="col-macros">
-        <ng-container *ngIf="!isFilePlan(plan); else fileNutritionInfo">
-          <div class="macro-item">{{ getTotalProtein(plan) }}</div>
-          <div class="macro-item">{{ getTotalCarbs(plan) }}</div>
-          <div class="macro-item">{{ getTotalFat(plan) }}</div>
-        </ng-container>
+      <div class="table-body">
+        <div class="program-row" *ngFor="let plan of filteredPlans; trackBy: trackByProgram">
+          <div class="col-program">
+            <div class="program-info">
+              <div
+                class="program-icon"
+                [ngClass]="{
+                  'program-icon--app': getProgramTypeKey(plan) === 'APP',
+                  'program-icon--pdf': getProgramTypeKey(plan) === 'PDF',
+                  'program-icon--excel': getProgramTypeKey(plan) === 'EXCEL'
+                }"
+              >
+                <i-feather [name]="getProgramIconName(plan)"></i-feather>
+              </div>
 
-        <ng-template #fileNutritionInfo>
-          <div class="macro-item">Static nutrition document</div>
-          <div class="macro-item">{{ getFileKind(plan) }}</div>
-        </ng-template>
-      </div>
+              <div class="program-copy">
+                <div class="program-name">{{ plan.name || 'Unnamed Nutrition Plan' }}</div>
+                <div class="program-meta">{{ getProgramDescription(plan) }}</div>
+              </div>
+            </div>
+          </div>
 
-      <div class="col-calories">
-        {{ isFilePlan(plan) ? (plan.fileSizeBytes ? formatFileSize(plan.fileSizeBytes) : '-') : getTotalCalories(plan) }}
-      </div>
+          <div class="col-type" data-label="Type">
+            <span
+              class="type-badge"
+              [ngClass]="{
+                'type-badge--app': getProgramTypeKey(plan) === 'APP',
+                'type-badge--pdf': getProgramTypeKey(plan) === 'PDF',
+                'type-badge--excel': getProgramTypeKey(plan) === 'EXCEL'
+              }"
+            >
+              <i-feather [name]="getProgramIconName(plan)"></i-feather>
+              {{ getPlanTypeLabel(plan) }}
+            </span>
+          </div>
 
-      <div class="col-actions">
-        <div class="dropdown" [class.open]="openDropdownId === plan.id">
-          <button
-            class="actions-btn"
-            (click)="toggleDropdown(plan.id!, $event)"
-          >
-            Actions
-            <i-feather name="chevron-down"></i-feather>
-          </button>
+          <div class="col-created" data-label="Start">{{ plan.startDate || '-' }}</div>
+          <div class="col-modified" data-label="End">{{ plan.endDate || '-' }}</div>
 
-          <div class="dropdown-menu" *ngIf="openDropdownId === plan.id">
-            <button
-              *ngIf="canManagePlan(plan) && !isFilePlan(plan)"
-              class="dropdown-item"
-              (click)="editPlan(plan); $event.stopPropagation()"
-            >
-              <i-feather name="edit"></i-feather>
-              Edit
-            </button>
+          <div class="col-actions">
+            <div class="dropdown" [class.open]="openDropdownId === getProgramId(plan)">
+              <button class="action-btn" type="button" (click)="toggleDropdown(getProgramId(plan), $event)">
+                <span class="three-dots">•••</span>
+              </button>
 
-            <button
-              *ngIf="isFilePlan(plan)"
-              class="dropdown-item"
-              (click)="previewNutritionFile(plan); $event.stopPropagation()"
-            >
-              <i-feather name="eye"></i-feather>
-              Preview file
-            </button>
+              <div class="dropdown-menu dropdown-menu--side" *ngIf="openDropdownId === getProgramId(plan)" (click)="$event.stopPropagation()">
+                <ng-container *ngIf="isFilePlan(plan); else appPlanMenu">
+                  <button class="dropdown-item" type="button" (click)="assignToClients(plan)">
+                    <i-feather name="users"></i-feather>
+                    Assign to Clients
+                  </button>
 
-            <button
-              *ngIf="isFilePlan(plan)"
-              class="dropdown-item"
-              (click)="downloadNutritionFile(plan); $event.stopPropagation()"
-            >
-              <i-feather name="download"></i-feather>
-              Download file
-            </button>
-            <button
-              class="dropdown-item"
-              (click)="assignToClients(plan); $event.stopPropagation()"
-            >
-              <i-feather name="user-plus"></i-feather>
-              Assign to
-            </button>
-            <button
-              *ngIf="!isFilePlan(plan)"
-              class="dropdown-item"
-              (click)="duplicatePlan(plan.id); $event.stopPropagation()"
-            >
-              <i-feather name="copy"></i-feather>
-              Duplicate
-            </button>
-            <button
-              *ngIf="canManagePlan(plan)"
-              class="dropdown-item delete"
-              (click)="openDeleteModal(plan); $event.stopPropagation()"
-            >
-              <i-feather name="trash-2"></i-feather>
-              Delete
-            </button>
+                  <button class="dropdown-item" type="button" (click)="openProgramFile(plan)">
+                    <i-feather name="eye"></i-feather>
+                    Open File
+                  </button>
+
+                  <button class="dropdown-item" type="button" (click)="downloadProgramFile(plan)">
+                    <i-feather name="download"></i-feather>
+                    Download File
+                  </button>
+
+                  <button class="dropdown-item delete" type="button" (click)="openDeleteModal(plan)">
+                    <i-feather name="trash-2"></i-feather>
+                    Delete File
+                  </button>
+                </ng-container>
+
+                <ng-template #appPlanMenu>
+                  <button class="dropdown-item" type="button" (click)="assignToClients(plan)">
+                    <i-feather name="users"></i-feather>
+                    Assign to Clients
+                  </button>
+
+                  <button class="dropdown-item" type="button" (click)="editPlan(plan)">
+                    <i-feather name="edit"></i-feather>
+                    Edit Program
+                  </button>
+
+                  <button class="dropdown-item" type="button" (click)="duplicatePlan(plan.id)">
+                    <i-feather name="copy"></i-feather>
+                    Duplicate
+                  </button>
+
+                  <button class="dropdown-item delete" type="button" (click)="openDeleteModal(plan)">
+                    <i-feather name="trash-2"></i-feather>
+                    Delete
+                  </button>
+                </ng-template>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- keep existing modals -->
 
   <!-- Nutrition Plan Type Modal -->
-  <div class="nutrition-type-overlay" *ngIf="showNutritionPlanTypeModal" (click)="closeNutritionPlanTypeModal()">
+  <div class="nutrition-type-overlay" *ngIf="showNutritionPlanTypeModal && nutritionFileEnabled !== false" (click)="closeNutritionPlanTypeModal()">
     <div class="nutrition-type-modal" (click)="$event.stopPropagation()">
       <div class="nutrition-type-header">
         <h3>Choose a nutrition plan type</h3>
@@ -159,18 +178,18 @@
         <div class="nutrition-type-card">
           <h4>Normal Nutrition Plan</h4>
           <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
-          <button class="type-action" (click)="createNormalNutritionPlan()">Create Normal Nutrition</button>
+          <button class="type-action" type="button" (click)="createNormalNutritionPlan()">Create Normal Nutrition</button>
         </div>
 
-        <div class="nutrition-type-card">
+        <div class="nutrition-type-card" *ngIf="nutritionFileEnabled !== false">
           <h4>File Nutrition Plan</h4>
           <p>Import a PDF or Excel nutrition plan, save it in your library, then assign it to clients.</p>
-          <button class="type-action" (click)="openImportNutritionFile()">Import PDF / Excel</button>
+          <button class="type-action" type="button" (click)="openImportNutritionFile()">Import PDF / Excel</button>
         </div>
       </div>
 
       <div class="nutrition-type-footer">
-        <button class="btn-cancel" (click)="closeNutritionPlanTypeModal()">Cancel</button>
+        <button class="btn-cancel" type="button" (click)="closeNutritionPlanTypeModal()">Cancel</button>
       </div>
     </div>
   </div>
@@ -205,24 +224,13 @@
           <span>Description <em>(optionnelle)</em></span>
           <textarea rows="3" [(ngModel)]="importPlanDescription" placeholder="Ex: Plan nutrition complet en PDF ou Excel..."></textarea>
         </label>
-
-        <div class="import-date-grid">
-          <label class="import-field">
-            <span>Start date</span>
-            <input type="date" [(ngModel)]="importStartDate" />
-          </label>
-
-          <label class="import-field">
-            <span>End date</span>
-            <input type="date" [(ngModel)]="importEndDate" />
-          </label>
-        </div>
       </div>
 
       <div class="import-nutrition-footer">
-        <button class="btn-cancel" (click)="closeImportNutritionFile()" [disabled]="importSaving">Cancel</button>
+        <button class="btn-cancel" type="button" (click)="closeImportNutritionFile()" [disabled]="importSaving">Cancel</button>
         <button
           class="save-file-btn"
+          type="button"
           (click)="saveImportedNutritionFile()"
           [disabled]="importSaving || !importFile || !importPlanName.trim()">
           {{ importSaving ? 'Saving...' : 'Save nutrition file' }}
@@ -231,14 +239,12 @@
     </div>
   </div>
 
-
   <!-- Choose Plan Type Modal -->
   <app-choose-plan-type-modal
     [isVisible]="showChooseModal"
     [isAssign]="false"
     (onClose)="closeChooseModal()"
-  >
-  </app-choose-plan-type-modal>
+  ></app-choose-plan-type-modal>
 
   <!-- Delete Plan Modal -->
   <app-delete-nutrition-plan-modal
@@ -246,13 +252,15 @@
     [planName]="selectedPlan?.name || ''"
     (onClose)="closeDeleteModal()"
     (onConfirm)="confirmDelete()"
-  >
-  </app-delete-nutrition-plan-modal>
+  ></app-delete-nutrition-plan-modal>
+
+  <!-- Assign Modal -->
   <app-modal-assign-toclient
     *ngIf="showAssignModal"
     [programName]="programToAssign?.name"
+    [showEndDate]="programToAssign ? isFilePlan(programToAssign) : false"
     (closeModal)="closeAssignModal()"
     (cancel)="closeAssignModal()"
     (assignProgram)="onProgramAssigned($event)"
   ></app-modal-assign-toclient>
-</div>
+

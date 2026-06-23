@@ -16,6 +16,7 @@ export class NutritionSelectionModalComponent {
 
   // liste complète (non filtrée) fournie par le parent
   @Input() programs: any[] = [];
+  @Input() nutritionFileEnabled = true;
 
   // events vers parent
   @Output() closeModal = new EventEmitter<void>();
@@ -33,19 +34,37 @@ export class NutritionSelectionModalComponent {
   selectedProgramId: string | null = null;
   selectedProgramItem: any | null = null;
   startDate = '';
+  endDate = '';
 
   // --- FONCTIONS EXTRAITES ---
 
   get filteredPrograms(): any[] {
+    const visiblePrograms = this.nutritionFileEnabled === false
+      ? (this.programs || []).filter((program) => !this.isFileProgram(program))
+      : (this.programs || []);
+
     const term = this.searchTerm.trim().toLowerCase();
-    if (!term) return this.programs;
-    return this.programs.filter((p) => (p.name || '').toLowerCase().includes(term));
+    if (!term) return visiblePrograms;
+
+    return visiblePrograms.filter((p) =>
+      [
+        p.name,
+        p.originalFileName,
+        p.fileName,
+        this.getProgramTypeLabel(p)
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
+    );
   }
 
   selectProgram(program: any): void {
     this.selectedProgramItem = program;
     this.selectedProgramId = program.id;
     this.startDate = '';
+    this.endDate = '';
   }
 
   get selectedProgram(): any | null {
@@ -53,15 +72,79 @@ export class NutritionSelectionModalComponent {
     return this.programs.find((p) => p.id === this.selectedProgramId) || null;
   }
 
+  isFileProgram(program: any): boolean {
+    const mode = String(program?.nutritionPlanMode || '').toUpperCase();
+    const type = String(program?.resourceType || '').toUpperCase();
+
+    return (
+      mode === 'FILE' ||
+      type === 'PDF' ||
+      type === 'EXCEL' ||
+      type === 'XLS' ||
+      type === 'XLSX' ||
+      !!program?.fileName ||
+      !!program?.originalFileName ||
+      !!program?.fileUrl
+    );
+  }
+
+  getFileKind(program: any): 'PDF' | 'EXCEL' {
+    const type = String(program?.resourceType || '').toUpperCase();
+    const fileName = String(program?.originalFileName || program?.fileName || '').toLowerCase();
+
+    if (type === 'PDF' || fileName.endsWith('.pdf')) {
+      return 'PDF';
+    }
+
+    return 'EXCEL';
+  }
+
+  getProgramTypeLabel(program: any): string {
+    if (this.isFileProgram(program)) {
+      return this.getFileKind(program);
+    }
+
+    return program?.trackingMode === 'TOTAL_FOR_DAY'
+      ? 'TOTAL FOR DAY'
+      : program?.trackingMode === 'EACH_MEAL'
+        ? 'EACH MEAL'
+        : 'FULL MEAL PLAN';
+  }
+
+  getFileMeta(program: any): string {
+    const fileName = program?.originalFileName || program?.fileName || '';
+
+    if (!fileName) {
+      return this.getFileKind(program);
+    }
+
+    return fileName;
+  }
+
   get calculatedEndDate(): string | null {
     if (!this.selectedProgram || !this.startDate) return null;
+
+    if (this.isFileProgram(this.selectedProgram)) {
+      return this.endDate || null;
+    }
 
     const start = new Date(this.startDate);
     const end = new Date(start);
 
-    // même logique que toi : + totalDays
-    end.setDate(end.getDate() + (this.selectedProgram.totalDays || 0));
+    end.setDate(end.getDate() + Math.max((this.selectedProgram.totalDays || 1) - 1, 0));
     return end.toISOString().slice(0, 10);
+  }
+
+  get canAssign(): boolean {
+    if (!this.selectedProgramItem || !this.startDate) {
+      return false;
+    }
+
+    if (this.isFileProgram(this.selectedProgramItem) && !this.endDate) {
+      return false;
+    }
+
+    return true;
   }
 
   // fermer
@@ -76,7 +159,7 @@ export class NutritionSelectionModalComponent {
 
   // assign (le parent fera l'appel service)
   assign(): void {
-    if (!this.selectedProgramItem || !this.startDate) return;
+    if (!this.canAssign) return;
 
     this.assignProgram.emit({
       program: this.selectedProgramItem,
@@ -91,5 +174,6 @@ export class NutritionSelectionModalComponent {
     this.selectedProgramId = null;
     this.selectedProgramItem = null;
     this.startDate = '';
+    this.endDate = '';
   }
 }
