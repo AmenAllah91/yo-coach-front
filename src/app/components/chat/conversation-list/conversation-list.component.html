@@ -1,21 +1,22 @@
 <div class="conversation-top">
-  <div class="card-header-title chat-title">
-    <div class="chat-icon">
-      <i-feather name="message-circle" class="bell"></i-feather>
-      <span class="chat-title">{{ 'MESSAGING' | translate }}</span>
+  <div class="chat-title">
+    <div class="chat-title__label">
+      <i-feather name="message-circle"></i-feather>
+      <span>{{ 'MESSAGING' | translate }}</span>
     </div>
-    <button class="toggle-button" (click)="closeChat()">✕</button>
+    <button class="header-action" type="button" (click)="closeChat()" aria-label="Close messaging">
+      <i-feather name="x"></i-feather>
+    </button>
   </div>
 </div>
 
-<!-- ================= LIST MODE ================= -->
-
 <ng-container *ngIf="mode === 'LIST'">
-
   <div class="section">
     <div class="section-header">
       <span>{{ 'CONVERSATIONS' | translate }}</span>
-      <button class="add-btn" (click)="switchToAdd()">＋</button>
+      <button class="header-action header-action--small" type="button" (click)="switchToAdd()" aria-label="Start conversation">
+        <i-feather name="plus"></i-feather>
+      </button>
     </div>
 
     <input
@@ -26,51 +27,45 @@
       (input)="onSearchConversation()"
     />
 
-    <div class="conversation-card"
-         *ngFor="let conv of conversations"
-         (click)="select(conv)">
+    <div class="conversation-list">
+      <button
+        type="button"
+        class="conversation-card"
+        *ngFor="let conv of conversations"
+        (click)="select(conv)"
+      >
+        <img *ngIf="conv.avatar" [src]="conv.avatar" alt="" />
 
-      <!-- Avatar -->
-      <img *ngIf="conv.avatar"
-           [src]="conv.avatar"
-           alt="avatar">
-
-      <div *ngIf="!conv.avatar" class="avatar">
-        {{ conv.name ? conv.name[0] : '?' }}
-      </div>
-
-      <!-- Info -->
-      <div class="conversation-info">
-        <div class="conversation-name">
-          {{ conv.name }}
-          <span class="badge-group" *ngIf="conv.isGroup">Group</span>
+        <div *ngIf="!conv.avatar" class="avatar">
+          {{ conv.name ? conv.name[0] : '?' }}
         </div>
-        <div class="conversation-last">
-          <span *ngIf="conv.isGroup; else lastMsg">
-            {{ conv.memberIds?.length || 0 }} members
-          </span>
-          <ng-template #lastMsg>{{ conv.lastMessage }}</ng-template>
+
+        <div class="conversation-info">
+          <div class="conversation-name">
+            {{ conv.name }}
+            <span class="badge-group" *ngIf="conv.isGroup">Group</span>
+          </div>
+          <div class="conversation-last">
+            <span *ngIf="conv.isGroup; else lastMsg">
+              {{ conv.memberIds?.length || 0 }} members
+            </span>
+            <ng-template #lastMsg>{{ conv.lastMessage }}</ng-template>
+          </div>
         </div>
-      </div>
 
-      <!-- Unread -->
-      <span class="badge" *ngIf="conv.unreadCount">
-        {{ conv.unreadCount }}
-      </span>
-
+        <span class="badge" *ngIf="conv.unreadCount">{{ conv.unreadCount }}</span>
+      </button>
     </div>
   </div>
-
 </ng-container>
 
-<!-- ================= ADD MODE ================= -->
-
 <ng-container *ngIf="mode === 'ADD'">
-
   <div class="section">
     <div class="section-header">
       <span>{{ 'START_CONVERSATION' | translate }}</span>
-      <button class="close-btn" (click)="switchToList()">✕</button>
+      <button class="header-action header-action--small" type="button" (click)="switchToList()" aria-label="Back to conversations">
+        <i-feather name="x"></i-feather>
+      </button>
     </div>
 
     <input
@@ -81,36 +76,25 @@
       (input)="searchUsers()"
     />
 
-    <div *ngIf="userSuggestions.length">
+    <div class="conversation-list" *ngIf="userSuggestions.length">
+      <div class="section-subtitle">{{ 'USERS' | translate }}</div>
 
-      <div class="section-subtitle">
-        {{ 'USERS' | translate }}
-      </div>
-
-      <div class="conversation-card add"
-           *ngFor="let user of userSuggestions"
-           (click)="createConversationWith(user)">
-
-        <!-- Avatar -->
-        <img *ngIf="user.avatarUrl !== 'not found'"
-             [src]="user.avatarUrl"
-             alt="avatar">
+      <button
+        type="button"
+        class="conversation-card"
+        *ngFor="let user of userSuggestions"
+        (click)="createConversationWith(user)"
+      >
+        <img *ngIf="user.avatarUrl !== 'not found'" [src]="user.avatarUrl" alt="" />
 
         <div *ngIf="user.avatarUrl === 'not found'" class="avatar">
           {{ user.firstName[0] }}{{ user.lastName[0] }}
         </div>
 
-        <!-- Info -->
         <div class="conversation-info">
-          <div class="conversation-name">
-            {{ user.firstName }} {{ user.lastName }}
-          </div>
+          <div class="conversation-name">{{ user.firstName }} {{ user.lastName }}</div>
         </div>
-
-      </div>
-
+      </button>
     </div>
-
   </div>
-
 </ng-container>

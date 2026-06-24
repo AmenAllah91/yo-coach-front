@@ -107,6 +107,7 @@
     >
       Check-ins
     </button>
+
     <button
       class="tab-link"
       [class.active]="activeTab === 'measurements'"
@@ -127,6 +128,13 @@
       (click)="setTab('calendar')"
     >
       Calendar
+    </button>
+    <button
+      class="tab-link"
+      [class.active]="activeTab === 'chat'"
+      (click)="setTab('chat')"
+    >
+      Chat
     </button>
   </nav>
 
@@ -345,6 +353,7 @@
               type="text"
               placeholder="Search submissions..."
               [(ngModel)]="submissionSearch"
+              (ngModelChange)="onSubmissionSearchChange()"
             />
           </div>
         </div>
@@ -375,6 +384,20 @@
             </div>
           </div>
         </div>
+
+        <div class="profile-pagination" *ngIf="submissionsTotalPages > 1">
+          <button type="button" class="profile-page-btn" [disabled]="submissionsPage === 0" (click)="changeSubmissionsPage(submissionsPage - 1)">&lt;</button>
+          <button
+            type="button"
+            class="profile-page-btn"
+            *ngFor="let page of submissionsPagesArray"
+            [class.active]="page === submissionsPage"
+            (click)="changeSubmissionsPage(page)"
+          >
+            {{ page + 1 }}
+          </button>
+          <button type="button" class="profile-page-btn" [disabled]="submissionsPage >= submissionsTotalPages - 1" (click)="changeSubmissionsPage(submissionsPage + 1)">&gt;</button>
+        </div>
       </div>
 
       <div *ngIf="activeSubTab === 'assigned'">
@@ -385,6 +408,7 @@
               type="text"
               placeholder="Search assigned forms..."
               [(ngModel)]="assignedSearch"
+              (ngModelChange)="onAssignedSearchChange()"
             />
           </div>
           <button class="btn-add-checkin" (click)="openCheckinModal(); $event.stopPropagation()">
@@ -428,6 +452,20 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <div class="profile-pagination" *ngIf="assignedTotalPages > 1">
+          <button type="button" class="profile-page-btn" [disabled]="assignedPage === 0" (click)="changeAssignedPage(assignedPage - 1)">&lt;</button>
+          <button
+            type="button"
+            class="profile-page-btn"
+            *ngFor="let page of assignedPagesArray"
+            [class.active]="page === assignedPage"
+            (click)="changeAssignedPage(page)"
+          >
+            {{ page + 1 }}
+          </button>
+          <button type="button" class="profile-page-btn" [disabled]="assignedPage >= assignedTotalPages - 1" (click)="changeAssignedPage(assignedPage + 1)">&gt;</button>
         </div>
       </div>
 
@@ -517,8 +555,29 @@
             </div>
           </div>
         </ng-container>
+        <div class="profile-pagination" *ngIf="scheduledTotalPages > 1">
+          <button type="button" class="profile-page-btn" [disabled]="scheduledPage === 0" (click)="changeScheduledPage(scheduledPage - 1)">&lt;</button>
+          <button
+            type="button"
+            class="profile-page-btn"
+            *ngFor="let page of scheduledPagesArray"
+            [class.active]="page === scheduledPage"
+            (click)="changeScheduledPage(page)"
+          >
+            {{ page + 1 }}
+          </button>
+          <button type="button" class="profile-page-btn" [disabled]="scheduledPage >= scheduledTotalPages - 1" (click)="changeScheduledPage(scheduledPage + 1)">&gt;</button>
+        </div>
       </div>
     </section>
+
+    <div class="tab-pane chat-profile-pane" [class.active]="activeTab === 'chat'">
+      <app-chat
+        [embeddedMode]="true"
+        [embeddedClientId]="clientId"
+        [embeddedCoachId]="userid || ''"
+      ></app-chat>
+    </div>
 
     <div
       class="tab-pane measurements-pane"

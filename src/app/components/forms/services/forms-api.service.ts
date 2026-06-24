@@ -168,6 +168,20 @@ export class FormsApiService {
     return this.http.post<Form>(`${this.baseUrl}/${encodeURIComponent(id)}/unarchive`, {});
   }
 
+
+  getClientScheduleItemsPage(clientId: string, page: number, size: number) {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sortBy', 'dueAt')
+      .set('direction', 'ASC');
+
+    return this.http.get<PageResponse<ClientScheduleItemDto>>(
+      `${environment.baseApiUrl}/api/v1/client-schedules/clients/${clientId}/schedule-items/page`,
+      { params }
+    );
+  }
+
   getClientScheduleItems(clientId: string) {
     return this.http.get<ClientScheduleItemDto[]>(
       `${environment.baseApiUrl}/api/v1/client-schedules/clients/${clientId}/schedule-items`

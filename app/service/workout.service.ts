@@ -116,17 +116,38 @@ export class WorkoutService {
     coachId: string,
     clientId: string,
     page: number,
-    size: number
+    size: number,
+    type: 'ALL' | 'APP' | 'FILES' = 'ALL'
   ) {
     return this.http.get<PageResponse<WorkoutPlan>>(
       `${this.apiUrl}client/${clientId}/coach/${coachId}`,
       {
-        params: { page, size },
+        params: { page, size, type },
       }
     );
   }
 
 
+
+
+  createAndAssignFileWorkoutOnly(
+    file: File,
+    name: string,
+    details: string | undefined,
+    clientId: string,
+    startDate: string,
+    endDate: string
+  ): Observable<WorkoutPlan> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    if (details) formData.append('details', details);
+    formData.append('clientId', clientId);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
+
+    return this.http.post<WorkoutPlan>(`${this.apiUrl}file/assign-only`, formData);
+  }
 
   createFileWorkout(
     file: File,
@@ -142,12 +163,58 @@ export class WorkoutService {
     return this.http.post<WorkoutPlan>(`${this.apiUrl}file`, formData);
   }
 
+
+  replaceWorkoutFile(id: string, file: File): Observable<WorkoutPlan> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}/file/replace`, formData);
+  }
+
+  updateWorkoutPlanDates(id: string, startDate: string, endDate: string): Observable<WorkoutPlan> {
+    return this.http.patch<WorkoutPlan>(`${this.apiUrl}${id}/dates`, {
+      startDate,
+      endDate,
+    });
+  }
+
   getWorkoutFileUrl(plan?: Partial<WorkoutPlan> | null): string {
     if (!plan) return '';
+
     const direct = plan.fileUrl || '';
-    if (direct && /^https?:\/\//i.test(direct)) return direct;
-    if (plan.id) return `${this.apiUrl}${plan.id}/file/download`;
+
+    // Absolute file URL
+    if (direct && /^https?:\/\//i.test(direct)) {
+      return direct;
+    }
+
+    // IMPORTANT:
+    // Prefer the program id endpoint instead of /file/{fileName}.
+    // Reason: after Replace File from client > Workouts, a stale library item can still contain
+    // the old fileName in memory/DB. The id endpoint lets backend resolve the latest file metadata
+    // and fallback to sourceWorkoutPlanId when needed.
+    if (plan.id) {
+      return `${this.apiUrl}${plan.id}/file/download`;
+    }
+
+    // Fallback only when we do not have an id.
+    if (plan.fileName) {
+      return `${this.apiUrl}file/${encodeURIComponent(plan.fileName)}`;
+    }
+
+    // Relative backend URL saved in DB, ex: /api/workout-plan/file/xxx.pdf
+    // Keep it last because it can also contain an old filename.
+    if (direct && direct.startsWith('/api/')) {
+      return `${environment.baseApiUrl}${direct}`;
+    }
+
     return direct;
+  }
+
+  getWorkoutFileBlob(plan?: Partial<WorkoutPlan> | null): Observable<Blob> {
+    return this.http.get(this.getWorkoutFileUrl(plan), {
+      responseType: 'blob',
+      params: { t: Date.now().toString() },
+    });
   }
 
   getWorkoutPlansByClient(clientId: string): Observable<WorkoutPlan[]> {

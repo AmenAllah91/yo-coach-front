@@ -1748,9 +1748,13 @@
 }
 
 .type-filter.active {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #2563eb;
+  background: #eaf8ff;
+  border-color: #bae6fd;
+  color: #0ea5e9;
+}
+
+.type-filter:not(.type-filter--pdf):not(.type-filter--excel):hover {
+  color: #0ea5e9;
 }
 
 .type-filter--pdf.active,

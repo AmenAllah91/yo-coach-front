@@ -12,6 +12,7 @@ import {UsersService} from "../../../service/users.service";
 import {forkJoin, of} from "rxjs";
 import {catchError, map} from "rxjs/operators";
 import { environment } from "@env/environment";
+import {FeatherModule} from "angular-feather";
 
 export interface Member { id: string; name: string; avatar: string; }
 
@@ -26,7 +27,8 @@ export interface Member { id: string; name: string; avatar: string; }
     NgIf,
     NgSwitch,
     NgSwitchCase,
-    NgSwitchDefault
+    NgSwitchDefault,
+    FeatherModule
   ],
   templateUrl: './conversation-messages.component.html',
   styleUrl: './conversation-messages.component.scss'
@@ -35,6 +37,7 @@ export class ConversationMessagesComponent implements OnInit{
   @Input() selectedConversation!: Conversation;
   @Output() back = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
+  @Output() expanded = new EventEmitter<void>();
 
   isOpenSidebar = true;
 
@@ -435,11 +438,15 @@ export class ConversationMessagesComponent implements OnInit{
   }
 
   navigateTouserprofile(){
-    if(this.selectedConversation.coachId === this.currentUserId) {
-      this.router.navigate(['/edit-profile',this.selectedConversation.clientId]);
-    }
-    else {
-      this.router.navigate(['/edit-profile',this.selectedConversation.coachId]);
+    if (this.selectedConversation?.isGroup) return;
+
+    const clientId = this.selectedConversation.coachId === this.currentUserId
+      ? this.selectedConversation.clientId
+      : this.selectedConversation.coachId;
+
+    if (clientId) {
+      this.router.navigate(['/clients/profil-client', clientId]);
+      this.closed.emit();
     }
   }
 

@@ -29,6 +29,7 @@ export class ConversationListComponent implements OnInit {
   @Output() closed = new EventEmitter<void>();
 
   conversations: Conversation[] = [];
+  allConversations: Conversation[] = [];
   userSuggestions: any[] = [];
   searchUser = '';
   searchConversation = '';
@@ -53,6 +54,7 @@ export class ConversationListComponent implements OnInit {
         );
 
         forkJoin(observables).subscribe(finalConvs => {
+          this.allConversations = finalConvs;
           this.conversations = finalConvs;
         });
       },
@@ -108,6 +110,7 @@ export class ConversationListComponent implements OnInit {
     ).subscribe(convEnriched => {
 
       this.conversations = [convEnriched, ...this.conversations];
+      this.allConversations = [convEnriched, ...this.allConversations];
       this.switchToList();
       this.select(convEnriched);
 
@@ -142,10 +145,10 @@ export class ConversationListComponent implements OnInit {
 
 
   onSearchConversation() {
-    const value = this.searchConversation.toLowerCase();
-    this.conversations = this.conversations.filter(c =>
-      c.name?.toLowerCase().includes(value)
-    );
+    const value = this.searchConversation.trim().toLowerCase();
+    this.conversations = value
+      ? this.allConversations.filter(c => c.name?.toLowerCase().includes(value))
+      : [...this.allConversations];
   }
 
   closeChat() {

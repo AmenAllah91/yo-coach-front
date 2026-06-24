@@ -1,9 +1,10 @@
 import {Conversation} from "../models/conversation";
 import {Component, EventEmitter, Output} from "@angular/core";
 import {ConversationListComponent} from "../conversation-list/conversation-list.component";
-import {DatePipe, NgClass, NgForOf, NgIf} from "@angular/common";
+import {NgClass, NgIf} from "@angular/common";
 import {ConversationMessagesComponent} from "../conversation-messages/conversation-messages.component";
-import {ReactiveFormsModule} from "@angular/forms";
+import {Router} from "@angular/router";
+import {ChatService} from "../../../service/chat.service";
 
 @Component({
   selector: 'app-chat-panel',
@@ -14,10 +15,7 @@ import {ReactiveFormsModule} from "@angular/forms";
     ConversationListComponent,
     NgClass,
     ConversationMessagesComponent,
-    NgIf,
-    DatePipe,
-    NgForOf,
-    ReactiveFormsModule
+    NgIf
   ]
 })
 export class ChatPanelComponent{
@@ -27,6 +25,11 @@ export class ChatPanelComponent{
   view: 'LIST' | 'MESSAGES' = 'LIST';
 
   selectedConversation: Conversation | null = null;
+
+  constructor(
+    private router: Router,
+    private chatService: ChatService
+  ) {}
 
   open() {
     this.isOpen = true;
@@ -46,5 +49,13 @@ export class ChatPanelComponent{
   backToList() {
     this.view = 'LIST';
     this.selectedConversation = null;
+  }
+
+  expandConversation(): void {
+    if (!this.selectedConversation) return;
+
+    this.chatService.openConversation(this.selectedConversation);
+    this.router.navigate(['/chat']);
+    this.close();
   }
 }

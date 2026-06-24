@@ -77,8 +77,8 @@
         <div class="program-meta">
           <span *ngIf="program.startDate || program.endDate">
             <i class="far fa-calendar-alt me-1"></i>
-            {{ program.startDate | date : "MMM dd, y" }}
-            <ng-container *ngIf="program.endDate"> - {{ program.endDate | date : "MMM dd, y" }}</ng-container>
+            {{ formatProgramDate(program.startDate) }}
+            <ng-container *ngIf="getDisplayEndDate(program)"> - {{ formatProgramDate(getDisplayEndDate(program)) }}</ng-container>
           </span>
 
           <ng-container *ngIf="!isFileWorkout(program)">

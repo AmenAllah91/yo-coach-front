@@ -3469,3 +3469,51 @@
     width: 100%;
   }
 }
+
+
+/* Profile check-ins backend pagination */
+.profile-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 8px;
+}
+
+.profile-page-btn {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid #d8e2ef;
+  background: #fff;
+  color: #344054;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.profile-page-btn:hover:not(:disabled) {
+  background: #f1f7ff;
+  border-color: #8ec5ff;
+}
+
+.profile-page-btn.active {
+  background: #44b4df;
+  border-color: #44b4df;
+  color: #fff;
+}
+
+.profile-page-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+.chat-profile-pane {
+  padding: 18px 8px 28px;
+}
+
+.chat-profile-pane app-chat {
+  display: block;
+  width: 100%;
+}

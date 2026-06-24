@@ -795,9 +795,9 @@
 }
 
 .type-filter.active {
-  border-color: #93c5fd !important;
-  background: #eff6ff !important;
-  color: #2563eb !important;
+  border-color: #bae6fd !important;
+  background: #eaf8ff !important;
+  color: #0ea5e9 !important;
 }
 
 .type-filter i-feather {
@@ -1278,6 +1278,25 @@
 
 .type-filter.active {
   font-weight: 600 !important;
+}
+
+/* Match Workout Library filter hover states. */
+.type-filter:not(.type-filter--pdf):not(.type-filter--excel):hover {
+  color: #0ea5e9 !important;
+}
+
+.type-filter--pdf:hover,
+.type-filter--pdf.active {
+  color: #ef4444 !important;
+  background: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+}
+
+.type-filter--excel:hover,
+.type-filter--excel.active {
+  color: #16a34a !important;
+  background: #ecfdf3 !important;
+  border-color: #bbf7d0 !important;
 }
 
 /* Table */

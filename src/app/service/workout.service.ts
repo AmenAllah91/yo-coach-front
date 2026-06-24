@@ -116,12 +116,13 @@ export class WorkoutService {
     coachId: string,
     clientId: string,
     page: number,
-    size: number
+    size: number,
+    type: 'ALL' | 'APP' | 'FILES' = 'ALL'
   ) {
     return this.http.get<PageResponse<WorkoutPlan>>(
       `${this.apiUrl}client/${clientId}/coach/${coachId}`,
       {
-        params: { page, size },
+        params: { page, size, type },
       }
     );
   }
