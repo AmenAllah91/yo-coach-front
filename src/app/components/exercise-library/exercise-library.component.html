@@ -1,4 +1,4 @@
-<div class="page-container">
+<div class="page-container" [class.detail-open]="selectedExercise">
   <div class="page-header">
     <button class="back-btn" (click)="goBack()">
       <i-feather name="arrow-left"></i-feather>
@@ -111,7 +111,7 @@
 
             <div class="exercise-info">
               <h4>{{ exercise.name }}</h4>
-              <p>{{ exercise.muscle }} • {{ exercise.equipment }}</p>
+              <p>{{ exercise.muscle }} &bull; {{ exercise.equipment }}</p>
             </div>
 
             <div class="exercise-actions" *ngIf="canShowExerciseActions(exercise)">
@@ -173,18 +173,34 @@
             <i-feather name="arrow-left"></i-feather>
           </button>
 
-          <h2>{{ getExerciseName() }}</h2>
+          <div class="exercise-title-block">
+            <h2>{{ getExerciseName() }}</h2>
+
+            <div class="exercise-meta-section">
+              <span class="meta-tag type" *ngIf="getSelectedExercise()?.type">
+                {{ getSelectedExercise()?.type }}
+              </span>
+              <span class="meta-tag" *ngIf="getSelectedExercise()?.equipment">
+                {{ getSelectedExercise()?.equipment }}
+              </span>
+              <span class="meta-tag" *ngIf="getSelectedExercise()?.muscle">
+                {{ getSelectedExercise()?.muscle }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div class="video-section">
-          <div class="video-wrapper">
+          <div class="video-wrapper" #videoWrapper>
             <youtube-player
               *ngIf="
-                getSelectedExercise()?.videoLink &&
-                  getYouTubeVideoId(getSelectedExercise()!.videoLink!);
+                getExerciseVideoLink(getSelectedExercise()) &&
+                  getYouTubeVideoId(getExerciseVideoLink(getSelectedExercise()));
                 else videoPreview
               "
-              [videoId]="getYouTubeVideoId(getSelectedExercise()!.videoLink!)"
+              [videoId]="getYouTubeVideoId(getExerciseVideoLink(getSelectedExercise()))"
+              [width]="videoPlayerWidth"
+              [height]="videoPlayerHeight"
               class="video-player"
             >
             </youtube-player>
@@ -202,20 +218,39 @@
                     <i-feather name="play-circle" size="64"></i-feather>
                   </div>
                 </ng-template>
+
+                <div class="preview-play" *ngIf="getExerciseVideoLink(getSelectedExercise())">
+                  <i-feather name="play"></i-feather>
+                </div>
               </div>
             </ng-template>
           </div>
         </div>
 
-        <div class="exercise-meta-section">
-          <span class="meta-tag">{{ getSelectedExercise()?.type }}</span>
-          <span class="meta-tag">{{ getSelectedExercise()?.muscle }}</span>
-          <span class="meta-tag">{{ getSelectedExercise()?.equipment }}</span>
-        </div>
+        <div
+          class="exercise-notes"
+          *ngIf="getInstructionLines(getSelectedExercise()).length || getTipLines(getSelectedExercise()).length"
+        >
+          <div
+            class="notes-column"
+            *ngIf="getInstructionLines(getSelectedExercise()).length"
+          >
+            <h3>INSTRUCTIONS</h3>
+            <ol>
+              <li *ngFor="let instruction of getInstructionLines(getSelectedExercise())">
+                {{ instruction }}
+              </li>
+            </ol>
+          </div>
 
-        <div class="exercise-description" *ngIf="getSelectedExercise()?.description">
-          <h3>Description</h3>
-          <p>{{ getSelectedExercise()?.description }}</p>
+          <div class="notes-column" *ngIf="getTipLines(getSelectedExercise()).length">
+            <h3>TIPS</h3>
+            <ul>
+              <li *ngFor="let tip of getTipLines(getSelectedExercise())">
+                {{ tip }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

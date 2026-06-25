@@ -1,4 +1,4 @@
-<div class="page-container">
+<div class="page-container" [class.detail-open]="selectedExercise">
   <div class="page-header">
     <button class="back-btn" (click)="goBack()">
       <i-feather name="arrow-left"></i-feather>
@@ -177,7 +177,7 @@
         </div>
 
         <div class="video-section">
-          <div class="video-wrapper">
+          <div class="video-wrapper" #videoWrapper>
             <youtube-player
               *ngIf="
                 getSelectedExercise()?.videoLink &&
@@ -185,6 +185,8 @@
                 else videoPreview
               "
               [videoId]="getYouTubeVideoId(getSelectedExercise()!.videoLink!)"
+              [width]="videoPlayerWidth"
+              [height]="videoPlayerHeight"
               class="video-player"
             >
             </youtube-player>

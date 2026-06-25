@@ -1,23 +1,18 @@
 <div class="theme-builder-page">
-<header class="top-bar">
-  <button type="button" class="close-btn" aria-label="Close">×</button>
-
-  <h1>Customize your app</h1>
-
-  <div class="top-actions">
-    <span *ngIf="saving" class="saving-indicator">Saving...</span>
-  </div>
-</header>
-
   <div *ngIf="error" class="alert error">{{ error }}</div>
   <div *ngIf="success" class="alert success">{{ success }}</div>
 
   <div class="builder-layout">
-    <!-- LEFT CONFIG -->
     <aside class="left-panel">
       <div class="panel-heading">
-        <h3>Theme Settings</h3>
-        <p>Customize mobile app colors</p>
+        <div>
+          <h3>Theme Settings</h3>
+          <p>Customize mobile app colors</p>
+        </div>
+
+        <button type="button" class="close-btn" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
       <button
@@ -26,7 +21,7 @@
         [class.active]="activeColorSection === 'branding'"
         (click)="activeColorSection = 'branding'"
       >
-        <span class="item-icon">◎</span>
+        <span class="item-icon"><i class="far fa-image"></i></span>
         <span>Logo</span>
       </button>
 
@@ -36,7 +31,7 @@
         [class.active]="activeColorSection === 'templates'"
         (click)="activeColorSection = 'templates'"
       >
-        <span class="item-icon">◐</span>
+        <span class="item-icon"><i class="fas fa-border-all"></i></span>
         <span>Templates</span>
       </button>
 
@@ -46,7 +41,7 @@
         [class.active]="activeColorSection === 'brand'"
         (click)="activeColorSection = 'brand'"
       >
-        <span class="item-icon">●</span>
+        <span class="item-icon"><i class="fas fa-palette"></i></span>
         <span>Brand Colors</span>
       </button>
 
@@ -56,7 +51,7 @@
         [class.active]="activeColorSection === 'background'"
         (click)="activeColorSection = 'background'"
       >
-        <span class="item-icon">▣</span>
+        <span class="item-icon"><i class="far fa-credit-card"></i></span>
         <span>Background & Cards</span>
       </button>
 
@@ -66,7 +61,7 @@
         [class.active]="activeColorSection === 'text'"
         (click)="activeColorSection = 'text'"
       >
-        <span class="item-icon">T</span>
+        <span class="item-icon text-icon">T</span>
         <span>Text Colors</span>
       </button>
 
@@ -76,7 +71,7 @@
         [class.active]="activeColorSection === 'status'"
         (click)="activeColorSection = 'status'"
       >
-        <span class="item-icon">✓</span>
+        <span class="item-icon"><i class="far fa-check-circle"></i></span>
         <span>Status Colors</span>
       </button>
 
@@ -86,121 +81,121 @@
         [class.active]="activeColorSection === 'navigation'"
         (click)="activeColorSection = 'navigation'"
       >
-        <span class="item-icon">≡</span>
+        <span class="item-icon"><i class="far fa-paper-plane"></i></span>
         <span>Navigation & Header</span>
       </button>
     </aside>
 
-    <!-- CENTER PREVIEW -->
     <main class="preview-area">
-      <div class="flutter-preview-wrapper">
-        <iframe
-          #flutterPreview
-          class="flutter-preview-frame"
-          [src]="flutterPreviewUrl"
-          (load)="onFlutterIframeLoaded()"
-        ></iframe>
+      <h1>Customize your app</h1>
+
+      <div class="preview-phone-slot">
+        <div class="flutter-preview-wrapper">
+          <iframe
+            #flutterPreview
+            class="flutter-preview-frame"
+            [src]="flutterPreviewUrl"
+            (load)="onFlutterIframeLoaded()"
+          ></iframe>
+        </div>
       </div>
 
       <p class="preview-label">Live Flutter Preview</p>
     </main>
 
-    <!-- RIGHT SETTINGS -->
     <aside class="right-panel">
-      <div class="settings-header">
-        <h3>Basic Settings</h3>
-        <p>Choose theme colors and templates to quickly customize your app.</p>
-      </div>
+      <div class="right-panel-scroll">
+        <div class="settings-header">
+          <h3>Basic Settings</h3>
+          <p>Choose theme colors and templates to quickly customize your app.</p>
+        </div>
 
-      <label class="theme-name-field">
-        <span>Theme name</span>
-        <input type="text" [(ngModel)]="selectedTheme.name" />
-      </label>
+        <label class="theme-name-field">
+          <span>Theme name</span>
+          <input type="text" [(ngModel)]="selectedTheme.name" />
+        </label>
 
-      <div class="branding-section" *ngIf="activeColorSection === 'branding'">
-        <h4>Mobile logo</h4>
-        <p>Upload the logo shown in the client mobile app header.</p>
+        <div class="branding-section" *ngIf="activeColorSection === 'branding'">
+          <h4>Mobile logo</h4>
+          <p>Upload the logo shown in the client mobile app header.</p>
 
-        <div class="logo-upload-card">
-          <div class="logo-preview-box">
-            <img
-              *ngIf="selectedTheme.mobileLogoUrl"
-              [src]="getLogoPreviewUrl(selectedTheme.mobileLogoUrl)"
-              alt="Mobile logo preview"
-            />
+          <div class="logo-upload-card">
+            <div class="logo-preview-box">
+              <img
+                *ngIf="selectedTheme.mobileLogoUrl"
+                [src]="getLogoPreviewUrl(selectedTheme.mobileLogoUrl)"
+                alt="Mobile logo preview"
+              />
 
-            <div *ngIf="!selectedTheme.mobileLogoUrl" class="logo-empty-state">
-              No logo uploaded
+              <div *ngIf="!selectedTheme.mobileLogoUrl" class="logo-empty-state">
+                No logo uploaded
+              </div>
             </div>
+
+            <label class="upload-logo-btn">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                (change)="onMobileLogoSelected($event)"
+                hidden
+              />
+
+              {{ uploadingLogo ? 'Uploading...' : 'Upload logo' }}
+            </label>
+
+            <button
+              type="button"
+              class="remove-logo-btn"
+              *ngIf="selectedTheme.mobileLogoUrl"
+              (click)="removeMobileLogo()"
+              [disabled]="uploadingLogo"
+            >
+              Remove logo
+            </button>
+
+            <small>Recommended: transparent PNG or SVG, max 2MB.</small>
           </div>
+        </div>
 
-          <label class="upload-logo-btn">
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              (change)="onMobileLogoSelected($event)"
-              hidden
-            />
-
-            {{ uploadingLogo ? 'Uploading...' : 'Upload logo' }}
-          </label>
+        <div class="template-section" *ngIf="activeColorSection === 'templates'">
+          <h4>Templates</h4>
+          <p>Select from predefined templates or design custom colors.</p>
 
           <button
             type="button"
-            class="remove-logo-btn"
-            *ngIf="selectedTheme.mobileLogoUrl"
-            (click)="removeMobileLogo()"
-            [disabled]="uploadingLogo"
+            class="template-card"
+            *ngFor="let preset of presets"
+            [class.selected]="selectedPreset === preset.name"
+            (click)="applyPreset(preset)"
           >
-            Remove logo
+            <span class="template-circle" [style.background]="preset.primary"></span>
+            <span>{{ preset.name }}</span>
           </button>
-
-          <small>Recommended: transparent PNG or SVG, max 2MB.</small>
         </div>
-      </div>
 
-      <div class="template-section" *ngIf="activeColorSection === 'templates'">
-        <h4>Templates</h4>
-        <p>Select from predefined templates or design custom colors.</p>
+        <div class="colors-section" *ngIf="activeColorSection !== 'templates'">
+          <h4>{{ getSectionTitle() }}</h4>
 
-        <button
-          type="button"
-          class="template-card"
-          *ngFor="let preset of presets"
-          [class.selected]="selectedPreset === preset.name"
-          (click)="applyPreset(preset)"
-        >
-          <span class="template-circle">
-            <i [style.background]="preset.primary"></i>
-            <i [style.background]="preset.secondary"></i>
-          </span>
+          <div class="color-row" *ngFor="let control of visibleControls; trackBy: trackByControl">
+            <div>
+              <strong>{{ control.label }}</strong>
+              <small>{{ control.key }}</small>
+            </div>
 
-          {{ preset.name }}
-        </button>
-      </div>
+            <div class="color-picker">
+              <input
+                type="color"
+                [ngModel]="getColor(control.key)"
+                (ngModelChange)="setColor(control.key, $event)"
+              />
 
-      <div class="colors-section" *ngIf="activeColorSection !== 'templates'">
-        <h4>{{ getSectionTitle() }}</h4>
-
-        <div class="color-row" *ngFor="let control of visibleControls; trackBy: trackByControl">
-          <div>
-            <strong>{{ control.label }}</strong>
-            <small>{{ control.key }}</small>
-          </div>
-
-          <div class="color-picker">
-            <input
-              type="color"
-              [ngModel]="getColor(control.key)"
-              (ngModelChange)="setColor(control.key, $event)"
-            />
-
-            <input
-              type="text"
-              [ngModel]="getColor(control.key)"
-              (ngModelChange)="setColor(control.key, $event)"
-              (blur)="normalizeHex(control.key)"
-            />
+              <input
+                type="text"
+                [ngModel]="getColor(control.key)"
+                (ngModelChange)="setColor(control.key, $event)"
+                (blur)="normalizeHex(control.key)"
+              />
+            </div>
           </div>
         </div>
       </div>

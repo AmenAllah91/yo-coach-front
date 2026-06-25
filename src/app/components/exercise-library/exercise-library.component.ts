@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
@@ -26,11 +26,31 @@ import { EnumResponse, Exercise } from '@shared/models/exercice.models';
     '../../shared/styles/video-player.scss',
   ],
 })
-export class ExerciseLibraryComponent implements OnInit {
+export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   selectedExercise: string | null = null;
   showCreateModal = false;
   showDeleteModal = false;
   exerciseToDelete: Exercise | null = null;
+  videoPlayerWidth = 640;
+  videoPlayerHeight = 360;
+  private videoResizeObserver: ResizeObserver | null = null;
+
+  @ViewChild('videoWrapper')
+  set videoWrapper(element: ElementRef<HTMLElement> | undefined) {
+    this.videoResizeObserver?.disconnect();
+    this.videoResizeObserver = null;
+
+    if (!element) return;
+
+    const wrapper = element.nativeElement;
+    this.updateVideoPlayerSize(wrapper);
+    setTimeout(() => this.updateVideoPlayerSize(wrapper));
+
+    this.videoResizeObserver = new ResizeObserver(() => {
+      this.updateVideoPlayerSize(wrapper);
+    });
+    this.videoResizeObserver.observe(wrapper);
+  }
 
   exerciseName = '';
   exerciseType = '';
@@ -481,6 +501,23 @@ export class ExerciseLibraryComponent implements OnInit {
     }, remainingDelay);
   }
 
+  ngOnDestroy() {
+    this.videoResizeObserver?.disconnect();
+  }
+
+  private updateVideoPlayerSize(wrapper: HTMLElement) {
+    const rect = wrapper.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height || (width * 9) / 16));
+
+    if (this.videoPlayerWidth === width && this.videoPlayerHeight === height) {
+      return;
+    }
+
+    this.videoPlayerWidth = width;
+    this.videoPlayerHeight = height;
+  }
+
   private handleLoadErrorWithDelay(error: any, startTime: number) {
     const elapsed = Date.now() - startTime;
     const minDelay = 800;
@@ -666,6 +703,8 @@ export class ExerciseLibraryComponent implements OnInit {
 
       return matchesSearch && matchesEquipment && matchesMuscle && matchesType;
     });
+
+    this.clearSelectionIfFilteredOut();
   }
 
   onSearch() {
@@ -703,6 +742,63 @@ export class ExerciseLibraryComponent implements OnInit {
       (exercise as any).exerciseRef?.createdBy ||
       '',
     ).trim();
+  }
+
+  private clearSelectionIfFilteredOut() {
+    if (!this.selectedExercise) return;
+
+    const selectedStillVisible = this.filteredExercises.some(
+      (exercise) => exercise.id === this.selectedExercise,
+    );
+
+    if (!selectedStillVisible) {
+      this.selectedExercise = null;
+    }
+  }
+
+  getInstructionLines(exercise: Exercise | null): string[] {
+    if (!exercise) return [];
+
+    const data = exercise as any;
+    const rawInstructions =
+      data.instructions ||
+      data.instruction ||
+      data.instructionSteps ||
+      data.steps ||
+      exercise.description ||
+      '';
+
+    return this.normalizeDetailLines(rawInstructions);
+  }
+
+  getTipLines(exercise: Exercise | null): string[] {
+    if (!exercise) return [];
+
+    const data = exercise as any;
+    const rawTips =
+      data.tips ||
+      data.tip ||
+      data.coachingTips ||
+      data.safetyTips ||
+      data.notes ||
+      '';
+
+    return this.normalizeDetailLines(rawTips);
+  }
+
+  private normalizeDetailLines(value: any): string[] {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+    }
+
+    return String(value)
+      .split(/\r?\n|(?:^|\s)(?:\d+[\).]|[-•])\s+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
 
   private templateAlreadyInMyExercises(template: Exercise): boolean {

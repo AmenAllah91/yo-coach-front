@@ -65,6 +65,8 @@ export class CoachDashboardComponent implements OnInit {
   clients: ClientDisplay[] = [];
   recentCheckIns: CheckInDisplay[] = [];
 
+  clientsPage = 1;
+  readonly clientsPageSize = 4;
   checkInsPage = 1;
   readonly checkInsPageSize = 4;
 
@@ -78,6 +80,27 @@ export class CoachDashboardComponent implements OnInit {
 
   private assignments: FormAssignment[] = [];
   private coachId = '';
+
+  get totalClientPages(): number {
+    return Math.max(1, Math.ceil(this.clients.length / this.clientsPageSize));
+  }
+
+  get paginatedClients(): ClientDisplay[] {
+    const start = (this.clientsPage - 1) * this.clientsPageSize;
+    return this.clients.slice(start, start + this.clientsPageSize);
+  }
+
+  get canGoPreviousClients(): boolean {
+    return this.clientsPage > 1;
+  }
+
+  get canGoNextClients(): boolean {
+    return this.clientsPage < this.totalClientPages;
+  }
+
+  get clientPageNumbers(): Array<number | '...'> {
+    return this.buildPageNumbers(this.clientsPage, this.totalClientPages);
+  }
 
   get totalCheckInPages(): number {
     return Math.max(1, Math.ceil(this.recentCheckIns.length / this.checkInsPageSize));
@@ -97,22 +120,7 @@ export class CoachDashboardComponent implements OnInit {
   }
 
   get checkInsPageNumbers(): Array<number | '...'> {
-    const total = this.totalCheckInPages;
-
-    if (total <= 1) return [1];
-    if (total <= 5) {
-      return Array.from({ length: total }, (_, index) => index + 1);
-    }
-
-    if (this.checkInsPage <= 3) {
-      return [1, 2, 3, '...', total];
-    }
-
-    if (this.checkInsPage >= total - 2) {
-      return [1, '...', total - 2, total - 1, total];
-    }
-
-    return [1, '...', this.checkInsPage - 1, this.checkInsPage, this.checkInsPage + 1, '...', total];
+    return this.buildPageNumbers(this.checkInsPage, this.totalCheckInPages);
   }
 
   constructor(
@@ -182,8 +190,10 @@ export class CoachDashboardComponent implements OnInit {
           }));
 
           this.assignments = result.assignments?.content || [];
+          this.clientsPage = 1;
           this.checkInsPage = 1;
           this.enrichCheckIns(rawClients);
+          this.clampClientsPage();
           this.clampCheckInsPage();
           this.openPendingAssignFromNavigationState();
         },
@@ -361,6 +371,40 @@ export class CoachDashboardComponent implements OnInit {
       .toUpperCase();
   }
 
+  previousClientsPage(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.canGoPreviousClients) {
+      this.clientsPage -= 1;
+      this.clampClientsPage();
+    }
+  }
+
+  nextClientsPage(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.canGoNextClients) {
+      this.clientsPage += 1;
+      this.clampClientsPage();
+    }
+  }
+
+  goToClientsPage(page: number | '...', event?: Event): void {
+    event?.stopPropagation();
+
+    if (page === '...') return;
+
+    this.clientsPage = page;
+    this.clampClientsPage();
+  }
+
+  private clampClientsPage(): void {
+    this.clientsPage = Math.min(
+      Math.max(this.clientsPage, 1),
+      this.totalClientPages,
+    );
+  }
+
   previousCheckInsPage(event?: Event): void {
     event?.stopPropagation();
 
@@ -397,6 +441,35 @@ export class CoachDashboardComponent implements OnInit {
     if (this.checkInsPage > this.totalCheckInPages) {
       this.checkInsPage = this.totalCheckInPages;
     }
+  }
+
+  private buildPageNumbers(
+    currentPage: number,
+    totalPages: number,
+  ): Array<number | '...'> {
+    if (totalPages <= 1) return [1];
+
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [
+      1,
+      '...',
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      '...',
+      totalPages,
+    ];
   }
 
   getStatusClass(status?: string): string {
