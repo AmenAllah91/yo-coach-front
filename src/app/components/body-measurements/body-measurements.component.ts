@@ -22,6 +22,8 @@ interface MeasurementTypeItem {
   styleUrls: ['./body-measurements.component.scss'],
 })
 export class BodyMeasurementsComponent implements OnInit, OnChanges {
+  private readonly historyPageSize = 5;
+
   @Input() clientId = '';
   @Input() allowAdd = true;
 
@@ -38,6 +40,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   search = '';
   selectedType = 'BODYWEIGHT';
+  historyLimit = this.historyPageSize;
 
   showAddModal = false;
 
@@ -136,6 +139,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   selectType(type: string): void {
     this.selectedType = type;
+    this.historyLimit = this.historyPageSize;
   }
 
   openAddModal(): void {
@@ -213,6 +217,18 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     return [...this.selectedMeasurements].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+  }
+
+  get visibleHistory(): BodyMeasurement[] {
+    return this.history.slice(0, this.historyLimit);
+  }
+
+  get hasMoreHistory(): boolean {
+    return this.historyLimit < this.history.length;
+  }
+
+  loadMoreHistory(): void {
+    this.historyLimit += this.historyPageSize;
   }
 
   get latestMeasurement(): BodyMeasurement | null {

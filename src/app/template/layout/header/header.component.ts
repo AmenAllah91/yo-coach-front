@@ -183,6 +183,10 @@ this.translate.use(lang);}
   }
 
   openConversationList() {
+    if (this.chatPanelOpen) {
+      return;
+    }
+
     this.chatPanelOpen = true;
 
     const factory = this.componentFactoryResolver.resolveComponentFactory(ChatPanelComponent);

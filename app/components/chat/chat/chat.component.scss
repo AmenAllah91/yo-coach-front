@@ -92,42 +92,6 @@
 .chat-icon-btn:hover { color: #44b4df; background: #f3f4f6; }
 .chat-icon-btn i-feather { width: 18px; height: 18px; display: block; }
 
-.chat-client-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 36px;
-  padding: 0 10px;
-  color: #111111;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  background: #ffffff;
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background-color 0.15s ease;
-}
-
-.chat-client-toggle:hover {
-  background: #f5f5f5;
-}
-
-.chat-client-toggle:focus-visible {
-  outline: 2px solid #111111;
-  outline-offset: 2px;
-}
-
-.chat-client-toggle i-feather {
-  width: 15px;
-  height: 15px;
-  display: block;
-  stroke-width: 1.8;
-}
-
 /* Liste des conversations */
 .chat-list {
   flex: 1;

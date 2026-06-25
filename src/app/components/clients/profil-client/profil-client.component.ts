@@ -25,12 +25,14 @@ import { CalendarClientsComponent } from '../../calendar/calendar-clients/calend
 import { ProgressPicturesComponent } from 'app/components/progress-pictures-module/progress-pictures/progress-pictures.component';
 import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
 import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
+import { ChatComponent } from '../../chat/chat/chat.component';
 
 type TabId =
   | 'dashboard'
   | 'workouts'
   | 'nutrition'
   | 'checkins'
+  | 'chat'
   | 'measurements'
   | 'pictures'
   | 'calendar';
@@ -87,7 +89,8 @@ export interface ScheduledCheckIn {
     FormSelectionModalComponent,
     CalendarClientsComponent,
     ProgressPicturesComponent,
-    BodyMeasurementsComponent
+    BodyMeasurementsComponent,
+    ChatComponent
   ],
   templateUrl: './profil-client.component.html',
   styleUrl: './profil-client.component.scss',
@@ -203,9 +206,24 @@ export class ProfilClientComponent {
 
   nutritionSelectionList: any[] = [];
   assignments: FormAssignment[] = [];
+  submissionAssignments: FormAssignment[] = [];
+  assignedAssignments: FormAssignment[] = [];
   loadingAssignments = false;
   assignmentsError: string | null = null;
-  private readonly PAGE_SIZE = 50;
+  private readonly PAGE_SIZE = 5;
+
+  submissionsPage = 0;
+  submissionsTotalPages = 0;
+  submissionsPagesArray: number[] = [];
+
+  assignedPage = 0;
+  assignedTotalPages = 0;
+  assignedPagesArray: number[] = [];
+
+  scheduledPage = 0;
+  scheduledPageSize = 5;
+  scheduledTotalPages = 0;
+  scheduledPagesArray: number[] = [];
   selectedAssignment: FormAssignment | null = null;
   private readonly destroy$ = new Subject<void>();
 
@@ -552,50 +570,108 @@ export class ProfilClientComponent {
   }
 
   get assignedList(): FormAssignment[] {
-    const now = new Date().getTime();
-
-    const list = this.assignments.filter(a =>
-      a.status !== 'SUBMITTED' &&
-      a.status !== 'REVIEWED' &&
-      (!a.dueAt || new Date(a.dueAt).getTime() <= now)
-    );
-
-    const term = this.assignedSearch.trim().toLowerCase();
-    if (!term) return list;
-
-    return list.filter(a => (a.formName ?? a.formId).toLowerCase().includes(term));
+    return this.assignedAssignments;
   }
 
   get submissionsList(): FormAssignment[] {
-    const list = this.assignments.filter(a =>
-      a.status === 'SUBMITTED' || a.status === 'REVIEWED'
-    );
-
-    const term = this.submissionSearch.trim().toLowerCase();
-    if (!term) return list;
-
-    return list.filter(a => (a.formName ?? a.formId).toLowerCase().includes(term));
+    return this.submissionAssignments;
   }
 
   async loadClientAssignments(): Promise<void> {
     if (!this.clientId) return;
 
+    this.loadSubmissionsPage(0);
+    this.loadAssignedPage(0);
+  }
+
+  loadSubmissionsPage(page: number = this.submissionsPage): void {
+    if (!this.clientId) return;
+
     this.loadingAssignments = true;
     this.assignmentsError = null;
+    this.submissionsPage = Math.max(page, 0);
 
     this.assignmentsApi
-      .pageOwnerAssignmentsByAsigneeId(0, this.PAGE_SIZE, 'assignedAt', 'DESC', this.clientId)
+      .pageOwnerAssignmentsByAssigneeIdStatuses(
+        this.submissionsPage,
+        this.PAGE_SIZE,
+        'submittedAt',
+        'DESC',
+        this.clientId,
+        ['SUBMITTED', 'REVIEWED'],
+        this.submissionSearch
+      )
       .subscribe({
         next: async (res) => {
-          this.assignments = res.content;
-          await this.attachFormNames(this.assignments);
+          this.submissionAssignments = res.content || [];
+          await this.attachFormNames(this.submissionAssignments);
+          this.submissionsTotalPages = res.totalPages || 0;
+          this.submissionsPage = res.number ?? this.submissionsPage;
+          this.submissionsPagesArray = Array.from({ length: this.submissionsTotalPages }, (_, i) => i);
+          this.syncAssignmentsCache();
           this.loadingAssignments = false;
         },
         error: () => {
-          this.assignmentsError = 'Failed to load assignments';
+          this.assignmentsError = 'Failed to load submissions';
           this.loadingAssignments = false;
         },
       });
+  }
+
+  loadAssignedPage(page: number = this.assignedPage): void {
+    if (!this.clientId) return;
+
+    this.loadingAssignments = true;
+    this.assignmentsError = null;
+    this.assignedPage = Math.max(page, 0);
+
+    this.assignmentsApi
+      .pageOwnerAssignmentsByAssigneeIdStatuses(
+        this.assignedPage,
+        this.PAGE_SIZE,
+        'assignedAt',
+        'DESC',
+        this.clientId,
+        ['ASSIGNED', 'OPENED'],
+        this.assignedSearch
+      )
+      .subscribe({
+        next: async (res) => {
+          this.assignedAssignments = res.content || [];
+          await this.attachFormNames(this.assignedAssignments);
+          this.assignedTotalPages = res.totalPages || 0;
+          this.assignedPage = res.number ?? this.assignedPage;
+          this.assignedPagesArray = Array.from({ length: this.assignedTotalPages }, (_, i) => i);
+          this.syncAssignmentsCache();
+          this.loadingAssignments = false;
+        },
+        error: () => {
+          this.assignmentsError = 'Failed to load assigned check-ins';
+          this.loadingAssignments = false;
+        },
+      });
+  }
+
+  onSubmissionSearchChange(): void {
+    this.loadSubmissionsPage(0);
+  }
+
+  onAssignedSearchChange(): void {
+    this.loadAssignedPage(0);
+  }
+
+  changeSubmissionsPage(page: number): void {
+    if (page < 0 || page >= this.submissionsTotalPages || page === this.submissionsPage) return;
+    this.loadSubmissionsPage(page);
+  }
+
+  changeAssignedPage(page: number): void {
+    if (page < 0 || page >= this.assignedTotalPages || page === this.assignedPage) return;
+    this.loadAssignedPage(page);
+  }
+
+  private syncAssignmentsCache(): void {
+    this.assignments = [...this.submissionAssignments, ...this.assignedAssignments];
   }
 
   private async attachFormNames(assignments: FormAssignment[]): Promise<void> {
@@ -633,7 +709,8 @@ export class ProfilClientComponent {
           this.selectedAssignment = { ...this.selectedAssignment, ...updated };
 
           this.closeModal();
-          this.loadClientAssignments();
+          this.loadSubmissionsPage(this.submissionsPage);
+          this.loadAssignedPage(this.assignedPage);
         },
         error: (err) => {
           console.error(err);
@@ -1154,7 +1231,10 @@ export class ProfilClientComponent {
 
   setSubTab(tab: 'submissions' | 'assigned' | 'scheduled') {
     this.activeSubTab = tab;
-    if (tab === 'scheduled') this.loadScheduledItems();
+
+    if (tab === 'submissions') this.loadSubmissionsPage(0);
+    if (tab === 'assigned') this.loadAssignedPage(0);
+    if (tab === 'scheduled') this.loadScheduledItems(0);
 
     this.closeModal();
     this.closeScheduleDetail();
@@ -1309,14 +1389,23 @@ export class ProfilClientComponent {
         })
       ),
       switchMap(() =>
-        this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(
-          0, this.PAGE_SIZE, 'assignedAt', 'DESC', this.clientId
+        this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(
+          0,
+          this.PAGE_SIZE,
+          'assignedAt',
+          'DESC',
+          this.clientId,
+          ['ASSIGNED', 'OPENED'],
+          this.assignedSearch
         )
       ),
       switchMap((res: any) =>
         from((async () => {
           const items: FormAssignment[] = res.content ?? [];
           await this.attachFormNames(items);
+          this.assignedTotalPages = res.totalPages || 0;
+          this.assignedPage = res.number ?? 0;
+          this.assignedPagesArray = Array.from({ length: this.assignedTotalPages }, (_, i) => i);
           return items;
         })())
       ),
@@ -1326,7 +1415,8 @@ export class ProfilClientComponent {
       })
     ).subscribe({
       next: (items) => {
-        this.assignments = items;
+        this.assignedAssignments = items;
+        this.syncAssignmentsCache();
         this.preselectFormId = null;
         this.activeTab = 'checkins';
         this.activeSubTab = 'assigned';
@@ -1418,19 +1508,41 @@ export class ProfilClientComponent {
     }
   }
 
-  loadScheduledItems(): void {
+  loadScheduledItems(page: number = this.scheduledPage): void {
     if (!this.clientId) return;
 
     this.loadingScheduled = true;
     this.scheduledError = null;
+    this.scheduledPage = Math.max(page, 0);
 
-    this.formsApi.getClientScheduleItems(this.clientId)
+    this.formsApi.getClientScheduleItemsPage(this.clientId, this.scheduledPage, this.scheduledPageSize)
       .pipe(finalize(() => (this.loadingScheduled = false)))
       .subscribe({
-        next: (items) => (
-          this.scheduledItems = items ?? []),
-        error: () => (this.scheduledError = 'Failed to load scheduled items'),
+        next: (res) => {
+          this.scheduledItems = res.content ?? [];
+          this.scheduledTotalPages = res.totalPages || 0;
+          this.scheduledPage = res.number ?? this.scheduledPage;
+          this.scheduledPagesArray = Array.from({ length: this.scheduledTotalPages }, (_, i) => i);
+        },
+        error: () => {
+          // Fallback if backend page endpoint is not available yet.
+          this.formsApi.getClientScheduleItems(this.clientId).subscribe({
+            next: (items) => {
+              const all = items ?? [];
+              this.scheduledTotalPages = Math.ceil(all.length / this.scheduledPageSize);
+              this.scheduledPagesArray = Array.from({ length: this.scheduledTotalPages }, (_, i) => i);
+              const start = this.scheduledPage * this.scheduledPageSize;
+              this.scheduledItems = all.slice(start, start + this.scheduledPageSize);
+            },
+            error: () => (this.scheduledError = 'Failed to load scheduled items'),
+          });
+        },
       });
+  }
+
+  changeScheduledPage(page: number): void {
+    if (page < 0 || page >= this.scheduledTotalPages || page === this.scheduledPage) return;
+    this.loadScheduledItems(page);
   }
 
 

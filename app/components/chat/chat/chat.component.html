@@ -88,14 +88,12 @@
         </div>
         <button
           *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode"
-          class="chat-client-toggle"
+          class="chat-icon-btn"
           type="button"
           (click)="toggleClientProfile()"
-          [attr.aria-pressed]="showClientProfile"
-          [attr.aria-label]="showClientProfile ? 'Hide client' : 'Show client'"
+          [title]="showClientProfile ? 'Hide Client' : 'Show Client'"
         >
-          <i-feather name="arrow-left"></i-feather>
-          <span>{{ showClientProfile ? 'Hide client' : 'Show client' }}</span>
+          <i-feather [name]="showClientProfile ? 'user-x' : 'user'"></i-feather>
         </button>
       </div>
 

@@ -116,8 +116,7 @@ export class WorkoutsClientTabComponent implements OnInit {
   getProgramTotalWeeks(program: WorkoutPlan): number {
     if (this.isFileWorkout(program)) return 0;
 
-    const anyProgram = program as any;
-    const totalDays = Number(anyProgram?.totalDays || program?.workoutDays?.length || 0);
+    const totalDays = this.getWorkoutDaySpan(program);
     return totalDays > 0 ? Math.ceil(totalDays / 7) : 0;
   }
 
@@ -139,14 +138,19 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   setActiveTab(tab: 'ALL' | 'APP' | 'FILES') {
-    if (!this.workoutFileEnabled) {
-      this.activeTab = 'APP';
+    if (!this.workoutFileEnabled && tab === 'FILES') {
+      tab = 'APP';
+    }
+
+    if (this.activeTab === tab) {
       return;
     }
 
     this.activeTab = tab;
     this.openedActionsId = null;
     this.isAssignMenuOpen = false;
+    this.workoutPage = 0;
+    this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
   }
 
   toggleAssignMenu(event: MouseEvent) {
@@ -256,107 +260,158 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   getWorkOutPlanByCoachAndClient(idCoach: string, idClient: string) {
-    const backendPage = this.workoutFileEnabled ? this.workoutPage : 0;
-    const backendSize = this.workoutFileEnabled ? this.workoutSize : 500;
+    const backendType = this.workoutFileEnabled ? this.activeTab : 'APP';
 
     this.workoutService
       .getWorkoutByCoachIdAndClient(
         idCoach,
         idClient,
-        backendPage,
-        backendSize
+        this.workoutPage,
+        this.workoutSize,
+        backendType
       )
       .subscribe((res) => {
         const programs = (res.content || []).map((program: WorkoutPlan) => {
           const isFile = this.isFileWorkout(program);
 
           if (isFile) {
-            return program;
+            this.normalizeWorkoutProgramDates(program, 1, true);
+          } else {
+            const totalDays = program.workoutDays?.length || 0;
+            this.normalizeWorkoutProgramDates(program, totalDays, false);
+            this.applyProgramStatusAndProgress(program, totalDays);
           }
-
-          const start = program.startDate ? new Date(program.startDate) : null;
-          const totalDays = program.workoutDays?.length || 0;
-
-          let end = program.endDate ? new Date(program.endDate) : null;
-
-          if (start && !end) {
-            end = new Date(start);
-            end.setDate(end.getDate() + Math.max(totalDays - 1, 0));
-            program.endDate = end.toISOString().slice(0, 10);
-          }
-
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          if (start) start.setHours(0, 0, 0, 0);
-          if (end) end.setHours(0, 0, 0, 0);
-
-          if (start && today < start) program.status = 'upcoming';
-          else if (start && end && today >= start && today <= end) program.status = 'active';
-          else if (start && !end && today >= start) program.status = 'active';
-          else program.status = 'completed';
-
-          let daysPassed = 0;
-          if (program.status === 'active' && start) {
-            const diffTime = today.getTime() - start.getTime();
-            daysPassed = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-          } else if (program.status === 'completed') {
-            daysPassed = totalDays;
-          }
-
-          program.totalDays = totalDays;
-          program.currentDay = Math.min(daysPassed, totalDays || daysPassed || 0);
-          program.progressPercent = totalDays
-            ? (program.currentDay / program.totalDays) * 100
-            : 0;
 
           return program;
         });
 
-        programs.sort((a: WorkoutPlan, b: WorkoutPlan) => {
-          const aEnd = this.getProgramEndTime(a);
-          const bEnd = this.getProgramEndTime(b);
+        const dedupedPrograms = this.dedupeWorkoutPrograms(programs)
+          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramsByPeriod(a, b));
 
-          if (aEnd !== bEnd) return bEnd - aEnd;
-
-          const aStart = this.getProgramStartTime(a);
-          const bStart = this.getProgramStartTime(b);
-          return bStart - aStart;
-        });
-
-        if (!this.workoutFileEnabled) {
-          const appOnlyPrograms = programs.filter((program) => !this.isFileWorkout(program));
-          this.allVisibleWorkoutPrograms = appOnlyPrograms;
-
-          this.workoutTotalPages = Math.max(1, Math.ceil(appOnlyPrograms.length / this.workoutSize));
-          this.workoutPagesArray = Array.from(
-            { length: this.workoutTotalPages },
-            (_, i) => i
-          );
-
-          if (this.workoutPage > this.workoutTotalPages - 1) {
-            this.workoutPage = 0;
-          }
-
-          const startIndex = this.workoutPage * this.workoutSize;
-          const currentPagePrograms = appOnlyPrograms.slice(startIndex, startIndex + this.workoutSize);
-
-          this.appPrograms = currentPagePrograms;
-          this.uploadedFiles = [];
-          this.workoutPlan = currentPagePrograms;
-          return;
-        }
-
-        this.workoutTotalPages = res.totalPages || 0;
+        this.workoutTotalPages = Math.max(1, Math.ceil((res.totalElements || dedupedPrograms.length) / this.workoutSize));
         this.workoutPagesArray = Array.from(
           { length: this.workoutTotalPages },
           (_, i) => i
         );
 
-        this.allVisibleWorkoutPrograms = programs;
-        this.appPrograms = programs.filter((program) => !this.isFileWorkout(program));
-        this.uploadedFiles = programs.filter((program) => this.isFileWorkout(program));
-        this.workoutPlan = programs;
+        this.allVisibleWorkoutPrograms = dedupedPrograms;
+        this.appPrograms = dedupedPrograms.filter((program) => !this.isFileWorkout(program));
+        this.uploadedFiles = dedupedPrograms.filter((program) => this.isFileWorkout(program));
+        this.workoutPlan = dedupedPrograms;
       });
+  }
+
+
+  private dedupeWorkoutPrograms(programs: WorkoutPlan[]): WorkoutPlan[] {
+    const map = new Map<string, WorkoutPlan>();
+
+    (programs || []).forEach((program) => {
+      const isFile = this.isFileWorkout(program);
+      const source = (program as any)?.sourceWorkoutPlanId || String(program?.name || '').trim().toLowerCase();
+      const fileKey = isFile
+        ? String(program?.fileName || program?.originalFileName || program?.fileUrl || '').trim().toLowerCase()
+        : 'APP';
+      const start = this.toDateOnlyString(program?.startDate) || '';
+      const end = this.toDateOnlyString(this.getDisplayEndDate(program)) || this.toDateOnlyString(program?.endDate) || '';
+      const key = `${source}|${fileKey}|${start}|${end}`;
+
+      if (!map.has(key)) {
+        map.set(key, program);
+      }
+    });
+
+    return Array.from(map.values());
+  }
+
+  private applyProgramStatusAndProgress(program: WorkoutPlan, totalDays: number): void {
+    const start = program.startDate ? new Date(program.startDate) : null;
+    const end = program.endDate ? new Date(program.endDate) : null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(0, 0, 0, 0);
+
+    if (start && today < start) program.status = 'upcoming';
+    else if (start && end && today >= start && today <= end) program.status = 'active';
+    else if (start && !end && today >= start) program.status = 'active';
+    else program.status = 'completed';
+
+    let daysPassed = 0;
+    if (program.status === 'active' && start) {
+      const diffTime = today.getTime() - start.getTime();
+      daysPassed = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    } else if (program.status === 'completed') {
+      daysPassed = totalDays;
+    }
+
+    program.totalDays = totalDays;
+    program.currentDay = Math.min(daysPassed, totalDays || daysPassed || 0);
+    program.progressPercent = totalDays
+      ? (program.currentDay / program.totalDays) * 100
+      : 0;
+  }
+
+  private compareProgramsByPeriod(a: WorkoutPlan, b: WorkoutPlan): number {
+    const aEnd = this.getProgramEndTime(a);
+    const bEnd = this.getProgramEndTime(b);
+
+    if (aEnd !== bEnd) return bEnd - aEnd;
+
+    const aStart = this.getProgramStartTime(a);
+    const bStart = this.getProgramStartTime(b);
+    return bStart - aStart;
+  }
+
+
+  private normalizeWorkoutProgramDates(program: WorkoutPlan, totalDays: number, isFile: boolean): void {
+    const start = this.toDateOnlyString(program?.startDate);
+    const end = this.toDateOnlyString(program?.endDate);
+
+    if (start) {
+      program.startDate = start as any;
+    }
+
+    if (!start) {
+      if (end) program.endDate = end as any;
+      return;
+    }
+
+    if (isFile) {
+      program.endDate = end && this.compareDateOnly(end, start) >= 0 ? end as any : start as any;
+      return;
+    }
+
+    const logicalSpan = this.getWorkoutDaySpan(program);
+    program.endDate = this.addDaysToDateOnly(start, Math.max(logicalSpan - 1, 0)) as any;
+  }
+
+  private toDateOnlyString(value: any): string | null {
+    if (!value) return null;
+
+    if (typeof value === 'string') {
+      const match = value.match(/^\d{4}-\d{2}-\d{2}/);
+      if (match) return match[0];
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private addDaysToDateOnly(dateOnly: string, days: number): string {
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+    return this.toDateOnlyString(date) || dateOnly;
+  }
+
+  private compareDateOnly(a: string, b: string): number {
+    return a.localeCompare(b);
   }
 
   getProgramEndTime(program: any): number {
@@ -403,6 +458,43 @@ export class WorkoutsClientTabComponent implements OnInit {
     if (!value) return '';
     if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
     return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+
+
+  getDisplayEndDate(program: WorkoutPlan): any {
+    if (this.isFileWorkout(program)) {
+      return program.endDate;
+    }
+
+    const start = this.toDateOnlyString(program?.startDate);
+    if (!start) return program.endDate;
+
+    const span = this.getWorkoutDaySpan(program);
+    return this.addDaysToDateOnly(start, Math.max(span - 1, 0));
+  }
+
+  private getWorkoutDaySpan(program: WorkoutPlan): number {
+    const days = program?.workoutDays || [];
+    const maxDayNumber = days
+      .map((day: any) => Number(day?.dayNumber || 0))
+      .filter((dayNumber) => dayNumber > 0)
+      .reduce((max, dayNumber) => Math.max(max, dayNumber), 0);
+
+    return maxDayNumber || days.length || 1;
+  }
+
+  formatProgramDate(value: any): string {
+    const dateOnly = this.toDateOnlyString(value);
+    if (!dateOnly) return '-';
+
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    });
   }
 
   toggleActions(program: WorkoutPlan, event: MouseEvent) {
@@ -751,6 +843,7 @@ export class WorkoutsClientTabComponent implements OnInit {
       next: () => {
         this.dateSaving = false;
         this.closeChangeDatesModal();
+        this.workoutPage = 0;
         this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
       },
       error: (error) => {

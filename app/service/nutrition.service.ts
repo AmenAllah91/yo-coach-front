@@ -191,11 +191,32 @@ export class NutritionService {
   }
 
   // Nutrition plan management
-  getNutritionPlans(): Observable<Page<NutritionPlan>> {
-    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`);
+  getNutritionPlans(
+    page: number = 0,
+    size: number = 10,
+    planType: 'ALL' | 'APP' | 'PDF' | 'EXCEL' = 'ALL',
+    search: string = ''
+  ): Observable<Page<NutritionPlan>> {
+    const params: any = { page, size, planType };
+
+    if (search?.trim()) {
+      params.search = search.trim();
+    }
+
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`, { params });
   }
-  getNutritionPlansTemplates(): Observable<Page<NutritionPlan>> {
-    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`);
+  getNutritionPlansTemplates(
+    page: number = 0,
+    size: number = 10,
+    search: string = ''
+  ): Observable<Page<NutritionPlan>> {
+    const params: any = { page, size };
+
+    if (search?.trim()) {
+      params.search = search.trim();
+    }
+
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`, { params });
   }
   getNutritionPlanById(id: string): Observable<any> {
     return this.http.get<any>(`${this.mealPlanUrl}${id}`);
@@ -258,32 +279,47 @@ export class NutritionService {
   }
 
   getNutritionFileUrl(plan: NutritionPlan | MealPlan | any): string {
-    const id = plan?.id;
-    if (id) {
-      return `${this.mealPlanUrl}${id}/file/download`;
+    if (!plan) return '';
+
+    const direct = plan.fileUrl ? String(plan.fileUrl) : '';
+
+    if (direct && /^https?:\/\//i.test(direct)) {
+      return direct;
     }
 
-    if (plan?.fileUrl) {
-      const fileUrl = String(plan.fileUrl);
-      return fileUrl.startsWith('http')
-        ? fileUrl
-        : `${environment.baseApiUrl}${fileUrl}`;
+    // Same behavior as Workout: prefer id endpoint so backend resolves the real stored file.
+    if (plan.id) {
+      return `${this.mealPlanUrl}${plan.id}/file/download`;
     }
 
-    if (plan?.fileName) {
-      return `${this.mealPlanUrl}file/${plan.fileName}`;
+    if (plan.fileName) {
+      return `${this.mealPlanUrl}file/${encodeURIComponent(plan.fileName)}`;
     }
 
-    return '';
+    if (direct && direct.startsWith('/api/')) {
+      return `${environment.baseApiUrl}${direct}`;
+    }
+
+    return direct;
   }
 
   downloadNutritionFile(plan: NutritionPlan | MealPlan | any): Observable<Blob> {
-    return this.http.get(this.getNutritionFileUrl(plan), { responseType: 'blob' });
+    return this.http.get(this.getNutritionFileUrl(plan), {
+      responseType: 'blob',
+      params: { t: Date.now().toString() },
+    });
   }
 
 
   deleteNutritionPlan(id: string): Observable<void> {
     return this.http.delete<void>(`${this.mealPlanUrl}${id}`);
+  }
+
+  updateNutritionPlanDates(id: string, startDate: string, endDate: string): Observable<NutritionPlan> {
+    return this.http.patch<NutritionPlan>(`${this.mealPlanUrl}${id}/dates`, {
+      startDate,
+      endDate,
+    });
   }
 
   getNutritionPlanByCoachIdAndClient(

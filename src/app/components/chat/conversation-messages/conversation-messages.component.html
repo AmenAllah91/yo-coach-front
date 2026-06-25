@@ -1,34 +1,37 @@
 <div class="chat-header">
-  <div class="chat-user" (click)="navigateTouserprofile()">
+  <button class="header-action" type="button" (click)="back.emit()" aria-label="Back to conversations">
+    <i-feather name="arrow-left"></i-feather>
+  </button>
+
+  <button
+    type="button"
+    class="chat-user"
+    [class.chat-user--clickable]="!selectedConversation?.isGroup"
+    (click)="navigateTouserprofile()"
+  >
     <img
       [src]="
-        selectedConversation?.avatar && selectedConversation?.avatar !== 'not found' && selectedConversation?.avatar !== ''
+        selectedConversation?.avatar && selectedConversation?.avatar !== 'not found'
           ? selectedConversation.avatar
           : '/assets/images/photoprofilvierge.jpg'
       "
-      alt="avatar"
-      class="profile-img me-2"
+      alt=""
     />
-    <div>
-      <span>{{ selectedConversation?.name }}</span>
-      <div class="chat-header__members" *ngIf="selectedConversation?.isGroup && groupMembers.length">
-        <span
-          *ngFor="let m of (showAllGroupMembers ? groupMembers : groupMembers.slice(0, 3))"
-          class="chat-header__member-chip"
-        >{{ m.name }}</span>
-        <span
-          *ngIf="!showAllGroupMembers && groupMembers.length > 3"
-          class="chat-header__member-chip chat-header__member-chip--more"
-          (click)="toggleGroupMembers(); $event.stopPropagation()"
-        >+{{ groupMembers.length - 3 }} more</span>
-      </div>
+    <div class="chat-user__info">
+      <span class="chat-user__name">{{ selectedConversation?.name }}</span>
+      <span class="chat-user__members" *ngIf="selectedConversation?.isGroup">
+        {{ selectedConversation?.memberIds?.length || 0 }} members
+      </span>
     </div>
-  </div>
-  <div>
-    <button class="back-btn" (click)="back.emit()" aria-label="Retour">
-      <i class="fas fa-arrow-left"></i>
+  </button>
+
+  <div class="chat-header__actions">
+    <button class="header-action" type="button" (click)="expanded.emit()" aria-label="Open full page chat">
+      <i-feather name="maximize-2"></i-feather>
     </button>
-    <button class="toggle-button" (click)="toggleSidebar()">✕</button>
+    <button class="header-action" type="button" (click)="closed.emit()" aria-label="Close conversation">
+      <i-feather name="x"></i-feather>
+    </button>
   </div>
 </div>
 
@@ -43,28 +46,16 @@
     </span>
 
     <ng-container [ngSwitch]="getMessageType(msg)">
-      <!-- TEXT -->
-      <div class="message-content" *ngSwitchCase="'TEXT'">
-        {{ msg.content }}
-      </div>
+      <div class="message-content" *ngSwitchCase="'TEXT'">{{ msg.content }}</div>
 
-      <!-- VOICE -->
       <div class="message-content message-content--voice" *ngSwitchCase="'VOICE'">
         <div class="voice-bubble">
-          <div class="voice-bubble__icon">🎙️</div>
-          <audio
-            class="voice-bubble__audio"
-            [src]="getAttachmentUrl(msg)"
-            controls
-            preload="metadata"
-          ></audio>
-          <span class="voice-bubble__duration">
-            {{ formatDuration(msg.durationSeconds) }}
-          </span>
+          <i-feather name="mic"></i-feather>
+          <audio [src]="getAttachmentUrl(msg)" controls preload="metadata"></audio>
+          <span>{{ formatDuration(msg.durationSeconds) }}</span>
         </div>
       </div>
 
-      <!-- DOCUMENT -->
       <button
         type="button"
         class="message-content message-content--doc"
@@ -72,18 +63,15 @@
         (click)="downloadDocument(msg, $event)"
       >
         <div class="doc-bubble">
-          <div class="doc-bubble__icon">📎</div>
-          <div class="doc-bubble__info">
-            <div class="doc-bubble__name">{{ msg.attachmentName || 'Document' }}</div>
-            <div class="doc-bubble__meta">
-              {{ msg.attachmentType || 'Document' }} {{ formatFileSize(msg.attachmentSize) }}
-            </div>
-          </div>
-          <div class="doc-bubble__download">⬇</div>
+          <span class="doc-bubble__icon"><i-feather name="paperclip"></i-feather></span>
+          <span class="doc-bubble__info">
+            <strong>{{ msg.attachmentName || 'Document' }}</strong>
+            <small>{{ msg.attachmentType || 'Document' }} {{ formatFileSize(msg.attachmentSize) }}</small>
+          </span>
+          <i-feather name="download"></i-feather>
         </div>
       </button>
 
-      <!-- FALLBACK -->
       <div class="message-content" *ngSwitchDefault>
         {{ msg.content || msg.attachmentName || 'Message' }}
       </div>
@@ -93,61 +81,71 @@
       {{ msg.content }}
     </div>
 
-    <div class="message-time">
-      {{ msg.createdAt | date:'dd MMM yyyy, HH:mm' }}
-    </div>
+    <div class="message-time">{{ msg.createdAt | date:'dd MMM, HH:mm' }}</div>
   </div>
 </div>
 
 <div class="chat-input">
-  <input #documentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onDocumentSelected($event)" />
+  <input
+    #documentInput
+    type="file"
+    hidden
+    [accept]="acceptedDocumentExtensions"
+    (change)="onDocumentSelected($event)"
+  />
 
   <div class="pending-attachment" *ngIf="pendingDocument">
-    <div class="pending-attachment__icon">📎</div>
-    <div class="pending-attachment__info">
+    <span class="pending-attachment__icon"><i-feather name="paperclip"></i-feather></span>
+    <span class="pending-attachment__info">
       <strong>{{ pendingDocument.name }}</strong>
-      <span>{{ formatFileSize(pendingDocument.size) }}</span>
-    </div>
-    <button type="button" class="pending-attachment__remove" (click)="removePendingDocument()">×</button>
+      <small>{{ formatFileSize(pendingDocument.size) }}</small>
+    </span>
+    <button type="button" class="pending-attachment__remove" (click)="removePendingDocument()" aria-label="Remove attachment">
+      <i-feather name="x"></i-feather>
+    </button>
   </div>
 
   <div class="attachment-error" *ngIf="attachmentError">{{ attachmentError }}</div>
 
   <div class="chat-input__row">
-    <button
-      type="button"
-      class="chat-input__icon"
-      title="Send document"
-      (click)="documentInput.click()"
-      [disabled]="isUploadingAttachment"
-    >
-      +
-    </button>
-
-    <button
-      type="button"
-      class="chat-input__icon"
-      title="Voice message"
-      (click)="toggleVoiceRecording()"
-      [class.is-recording]="isRecordingVoice"
-      [disabled]="isUploadingAttachment"
-    >
-      {{ isRecordingVoice ? '■' : '🎙️' }}
-    </button>
-
     <input
+      class="message-field"
       type="text"
-      [placeholder]="pendingDocument ? 'Ajouter un message...' : 'Type a message...'"
+      [placeholder]="pendingDocument ? 'Add a message...' : 'Write a message...'"
       [(ngModel)]="messageText"
       (keyup.enter)="sendMessage()"
     />
 
-    <button
-      type="button"
-      (click)="sendMessage()"
-      [disabled]="isUploadingAttachment || (!messageText.trim() && !pendingDocument)"
-    >
-      Send
-    </button>
+    <div class="composer-actions">
+      <button
+        type="button"
+        class="composer-icon"
+        title="Send document"
+        (click)="documentInput.click()"
+        [disabled]="isUploadingAttachment"
+      >
+        <i-feather name="paperclip"></i-feather>
+      </button>
+
+      <button
+        type="button"
+        class="composer-icon"
+        title="Voice message"
+        (click)="toggleVoiceRecording()"
+        [class.is-recording]="isRecordingVoice"
+        [disabled]="isUploadingAttachment"
+      >
+        <i-feather [name]="isRecordingVoice ? 'square' : 'mic'"></i-feather>
+      </button>
+
+      <button
+        type="button"
+        class="send-button"
+        (click)="sendMessage()"
+        [disabled]="isUploadingAttachment || (!messageText.trim() && !pendingDocument)"
+      >
+        Send
+      </button>
+    </div>
   </div>
 </div>

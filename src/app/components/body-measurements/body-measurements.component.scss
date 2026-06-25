@@ -250,6 +250,31 @@
   font-size: 14px;
 }
 
+.load-more-history-btn {
+  justify-self: center;
+  min-width: 132px;
+  margin-top: 8px;
+  padding: 10px 20px;
+  color: #111111;
+  font: inherit;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.load-more-history-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.load-more-history-btn:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 2px;
+}
+
 .history-empty {
   min-height: 90px;
   display: grid;

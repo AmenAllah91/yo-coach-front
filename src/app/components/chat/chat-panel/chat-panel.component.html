@@ -13,7 +13,8 @@
         *ngIf="view === 'MESSAGES'"
         [selectedConversation]="selectedConversation"
         (closed)="close()"
-        (back)="backToList()">
+        (back)="backToList()"
+        (expanded)="expandConversation()">
       </app-conversation-messages>
 
 

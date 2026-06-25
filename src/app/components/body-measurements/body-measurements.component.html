@@ -107,7 +107,7 @@
         <div class="history-list" *ngIf="history.length > 0">
           <div
             class="history-row"
-            *ngFor="let item of history; trackBy: trackByMeasurementId"
+            *ngFor="let item of visibleHistory; trackBy: trackByMeasurementId"
           >
             <div class="history-icon">
               <i class="fas fa-arrow-up-right-dots"></i>
@@ -121,6 +121,15 @@
               {{ formatDate(item.date) }}
             </div>
           </div>
+
+          <button
+            type="button"
+            class="load-more-history-btn"
+            *ngIf="hasMoreHistory"
+            (click)="loadMoreHistory()"
+          >
+            Load more
+          </button>
         </div>
 
         <div class="history-empty" *ngIf="history.length === 0">

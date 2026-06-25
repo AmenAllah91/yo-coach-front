@@ -12,7 +12,7 @@ import { UsersService } from '../../../service/users.service';
 import { Conversation } from '../models/conversation';
 import { ChatMessage } from '../models/chat-message';
 import { ProfilClientComponent } from '../../clients/profil-client/profil-client.component';
-import { Subject, Observable, take, takeUntil, forkJoin, of } from 'rxjs';
+import { Subject, Observable, takeUntil, forkJoin, of } from 'rxjs';
 import { switchMap, catchError, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
@@ -141,7 +141,6 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     }).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.addMissingConvClients();
       this.tryOpenEmbeddedConversation();
-      this.openExpandedConversation();
     });
 
     this.wsService.messages$
@@ -310,21 +309,6 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         }
 
         this.selectConversation(conversation);
-      });
-  }
-
-  private openExpandedConversation(): void {
-    if (this.embeddedMode) return;
-
-    this.chatService.selectedConversation$
-      .pipe(take(1), takeUntil(this.destroy$))
-      .subscribe((conversation) => {
-        if (!conversation) return;
-
-        const match = this.conversations.find(item => item.id === conversation.id);
-        if (match) {
-          this.selectConversation(match);
-        }
       });
   }
 

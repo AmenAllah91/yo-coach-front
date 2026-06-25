@@ -109,6 +109,31 @@ export class AssignmentsApiService {
 
     return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
   }
+
+  pageOwnerAssignmentsByAssigneeIdStatuses(
+    page: number,
+    size: number,
+    sortBy = 'assignedAt',
+    direction: 'ASC' | 'DESC' = 'DESC',
+    assigneeId?: string,
+    statuses: AssignmentStatus[] = [],
+    search?: string
+  ): Observable<PageResponse<FormAssignment>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sortBy', sortBy)
+      .set('direction', direction);
+
+    if (assigneeId) params = params.set('assigneeId', assigneeId);
+    statuses.forEach((status) => {
+      params = params.append('status', status);
+    });
+    if (search?.trim()) params = params.set('search', search.trim());
+
+    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
+  }
+
   pageOwnerAssignments(
     page: number,
     size: number,

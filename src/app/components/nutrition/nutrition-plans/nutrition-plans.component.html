@@ -204,7 +204,7 @@
         <button type="button" class="modal-x" (click)="closeNutritionPlanTypeModal()">×</button>
       </div>
 
-      <div class="nutrition-type-body">
+      <div class="nutrition-type-body nutrition-type-body--workout-like">
         <div class="nutrition-type-card">
           <h4>Normal Nutrition Plan</h4>
           <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
@@ -213,7 +213,7 @@
 
         <div class="nutrition-type-card" *ngIf="nutritionFileEnabled !== false">
           <h4>File Nutrition Plan</h4>
-          <p>Import a PDF or Excel nutrition plan, save it in your library, then assign it to clients.</p>
+          <p>Import a PDF or Excel nutrition plan and manage it from your nutrition library.</p>
           <button class="type-action" type="button" (click)="openImportNutritionFile()">Import PDF / Excel</button>
         </div>
       </div>
