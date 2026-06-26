@@ -1,20 +1,22 @@
-<!-- Toggle Button -->
-<button class="toggle-sidebar" (click)="toggleSidebar()">
-  <i-feather name="menu"></i-feather>
+<button
+  type="button"
+  class="toggle-sidebar"
+  (click)="toggleSidebar()"
+  [attr.aria-expanded]="isExpanded"
+  aria-controls="app-sidebar"
+  [attr.aria-label]="isExpanded ? 'Close sidebar' : 'Open sidebar'">
+  <i-feather [name]="isExpanded ? 'x' : 'menu'"></i-feather>
 </button>
 
-<!-- Sidebar -->
-<aside class="sidebar" [class.expanded]="isExpanded">
-  <!-- Logo -->
+<aside id="app-sidebar" class="sidebar" [class.expanded]="isExpanded">
   <div class="sidebar-header">
     <img
-      src="assets/yocoachlogo.png"
+      src="assets/yocoachlogo-sidebar.png"
       class="logo"
       alt="Yo Coach Logo"
     />
   </div>
 
-  <!-- Navigation -->
   <div class="sidebar-nav">
     <ng-scrollbar [style.height]="listMaxHeight" visibility="hover">
       <ul class="nav-list">

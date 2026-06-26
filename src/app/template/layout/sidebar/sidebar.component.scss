@@ -1,201 +1,163 @@
 $sidebar-width: 15rem;
-$sidebar-collapsed-width: 56px;
-$transition-speed: 0.3s;
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$radius-md: 6px;
-
-// Fond sombre Hevy Coach
-$sidebar-bg: #111214;
-$sidebar-border: #1f2428;
-$text-light: #c5c6c9;
-$text-muted: #6b7280;
-$hover-bg: rgba(255, 255, 255, 0.06);
-$active-bg: rgba(255, 255, 255, 0.10);
+$sidebar-mobile-width: min(18rem, calc(100vw - 28px));
+$transition-speed: 0.24s;
+$sidebar-bg: #0f1115;
+$sidebar-bg-soft: #161a20;
+$sidebar-border: rgba(255, 255, 255, 0.08);
+$text-light: #e6e9ef;
+$text-muted: #9aa3af;
+$hover-bg: rgba(255, 255, 255, 0.07);
+$active-bg: rgba(68, 180, 223, 0.14);
 $accent: #44b4df;
+$shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 
 :host {
   display: contents;
 }
 
-// Toggle Button
 .toggle-sidebar {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: #1f2428;
-  border-radius: 8px;
-  box-shadow: $shadow-md;
-  cursor: pointer;
-  z-index: 1050;
-  display: flex;
+  top: 14px;
+  left: 14px;
+  z-index: 1060;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  color: $text-light;
+  background: rgba(22, 26, 32, 0.94);
+  border: 1px solid $sidebar-border;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  transition: background $transition-speed ease, border-color $transition-speed ease, transform $transition-speed ease;
 
   &:hover {
-    background: #2a2f35;
+    background: #202630;
+    border-color: rgba(68, 180, 223, 0.42);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(68, 180, 223, 0.28);
+    outline-offset: 2px;
   }
 
   i-feather {
-    width: 18px;
-    height: 18px;
-    color: $text-light;
+    width: 19px;
+    height: 19px;
+    stroke-width: 2.2;
   }
 }
 
-// Sidebar Container
 .sidebar {
   position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: $sidebar-width;
-  background: $sidebar-bg;
-  border-right: 1px solid $sidebar-border;
+  inset: 0 auto 0 0;
+  z-index: 1040;
   display: flex;
   flex-direction: column;
-  transition: width $transition-speed ease, transform $transition-speed ease;
-  z-index: 1000;
-
-  &.collapsed {
-    width: $sidebar-collapsed-width;
-
-
-
-
-    .nav-label,
-    .nav-badge,
-    .submenu-arrow,
-    .nav-group-title span {
-      display: none;
-    }
-
-    .nav-link {
-      justify-content: center;
-      padding: 12px 0;
-    }
-
-    .nav-icon {
-      margin-right: 0;
-    }
-
-    .submenu {
-      display: none;
-    }
-  }
-
+  width: $sidebar-width;
+  max-width: 100vw;
+  color: $text-light;
+  background: linear-gradient(180deg, #101318 0%, $sidebar-bg 100%);
+  border-right: 1px solid $sidebar-border;
+  box-shadow: $shadow-lg;
   transform: translateX(-100%);
+  transition: transform $transition-speed ease;
+  will-change: transform;
 
   &.expanded {
     transform: translateX(0);
   }
 }
 
-
-
-// Sidebar Navigation
-.sidebar-nav {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 10px;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72px;
+  padding: 0 18px 0 52px;
+  border-bottom: 1px solid $sidebar-border;
+  flex-shrink: 0;
 }
 
-.nav-list {
+.logo {
+  width: clamp(138px, 58%, 160px);
+  height: auto;
+  max-height: 60px;
+  object-fit: contain;
+  padding: 0;
+  transform: translateY(-3px);
+}
+
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 10px 18px;
+}
+
+.nav-list,
+.submenu {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
 .nav-item {
-  margin: 2px 0;
+  margin: 3px 0;
 }
 
-// Active states
-.nav-item.active .nav-link {
-  background: $active-bg;
-  color: #ffffff;
-
-  .nav-icon {
-    color: #ffffff;
-  }
-}
-
-.submenu-item.active .submenu-link {
-  background: $active-bg;
-  color: #ffffff;
-
-  .submenu-icon {
-    color: #ffffff;
-  }
-}
-
-// Group Titles
-.nav-group-title {
-  padding: 20px 12px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: $text-muted;
-  letter-spacing: 0.8px;
-}
-
-// Nav Links
-.nav-link {
-  display: flex;
+.nav-link,
+.submenu-link {
+  display: grid;
   align-items: center;
-  padding: 9px 12px;
+  min-height: 42px;
   color: $text-light;
-  font-size: 13.5px;
-  font-weight: 400;
-  border-radius: $radius-md;
-  transition: all 0.18s ease;
+  border-radius: 8px;
   text-decoration: none;
-  position: relative;
+  transition: background $transition-speed ease, color $transition-speed ease, box-shadow $transition-speed ease;
+}
+
+.nav-link {
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  gap: 11px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
 
   &:hover {
-    background: $hover-bg;
     color: #ffffff;
-
-    .nav-icon {
-      color: #ffffff;
-    }
+    background: $hover-bg;
   }
 
-  &.has-submenu {
-    padding-right: 40px;
+  &.active,
+  .nav-item.active & {
+    color: #ffffff;
+    background: $active-bg;
+    box-shadow: inset 3px 0 0 $accent;
   }
+}
+
+.nav-icon,
+.submenu-icon,
+.submenu-arrow {
+  color: currentColor;
+  flex-shrink: 0;
 }
 
 .nav-icon {
   width: 18px;
   height: 18px;
-  margin-right: 12px;
-  color: $text-light;
-  transition: color 0.2s ease, margin $transition-speed ease;
-  flex-shrink: 0;
+  opacity: 0.92;
 }
 
-.nav-label {
-  flex: 1;
-  white-space: nowrap;
+.nav-label,
+.submenu-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-badge {
@@ -204,126 +166,85 @@ $accent: #44b4df;
   justify-content: center;
   min-width: 20px;
   height: 20px;
-  padding: 0 6px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 0 7px;
+  margin-left: 4px;
   color: #ffffff;
-  background-color: rgba(68, 180, 223, 0.15);
-  border-radius: 10px;
-  margin-left: 8px;
+  background: rgba(68, 180, 223, 0.22);
+  border: 1px solid rgba(68, 180, 223, 0.24);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .submenu-arrow {
-  position: absolute;
-  right: 12px;
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   color: $text-muted;
-  transition: transform 0.25s ease;
+  transition: transform $transition-speed ease, color $transition-speed ease;
 
   &.expanded {
+    color: $text-light;
     transform: rotate(180deg);
   }
 }
 
-// Submenu
 .submenu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height $transition-speed ease, margin $transition-speed ease;
 
   &.expanded {
-    max-height: 1000px;
-    margin-top: 2px;
-    margin-bottom: 4px;
+    max-height: 480px;
+    margin: 5px 0 8px;
   }
 }
 
 .submenu-item {
-  margin: 1px 0;
+  margin: 2px 0;
 }
 
 .submenu-link {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px 8px 42px;
-  color: $text-light;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 36px;
+  padding: 8px 12px 8px 47px;
+  color: $text-muted;
   font-size: 13px;
-  font-weight: 400;
-  border-radius: $radius-md;
-  transition: all 0.18s ease;
-  text-decoration: none;
+  font-weight: 500;
 
-  &:hover {
-    background: $hover-bg;
+  &:hover,
+  .submenu-item.active & {
     color: #ffffff;
-
-    .submenu-icon {
-      color: #ffffff;
-    }
+    background: $hover-bg;
   }
 }
 
 .submenu-icon {
   width: 15px;
   height: 15px;
-  margin-right: 10px;
+}
+
+.nav-group-title {
+  padding: 18px 12px 7px;
   color: $text-muted;
-  transition: color 0.2s ease;
-  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.submenu-label {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-// Animation submenu items
-@keyframes slideIn {
-  from { transform: translateX(-10px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-.submenu.expanded .submenu-item {
-  animation: slideIn 0.2s ease forwards;
-
-  @for $i from 1 through 10 {
-    &:nth-child(#{$i}) {
-      animation-delay: #{$i * 0.04}s;
-    }
+@media (max-width: 1023.98px) {
+  .sidebar {
+    width: $sidebar-mobile-width;
   }
-}
 
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  padding: 0 16px 0 56px; // 56px gauche = place pour le toggle fixe
-  border-bottom: 1px solid $sidebar-border;
-  height: 70px;
-  flex-shrink: 0;
-}
-
-.logo {
-  height: 200px;
-  width: auto;
-  max-width: 120px;
-  object-fit: contain;
-  margin-top: -20px;
-}
-
-.sidebar.collapsed {
   .sidebar-header {
-    padding: 0;
-    justify-content: center;
+    height: 68px;
   }
-  .logo {
-    height: 24px;
-    max-width: 24px;
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    box-shadow: none;
   }
 }

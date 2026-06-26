@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Inject, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { DOCUMENT } from '@angular/common';
@@ -37,6 +37,7 @@ export class SidebarComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
+    this.setExpanded(window.innerWidth >= 1024);
     this.roles = await this.authService.extractRoles();
 
     this.initializeSidebar();
@@ -66,8 +67,18 @@ export class SidebarComponent implements OnInit {
   }
 
   toggleSidebar() {
-    this.isExpanded = !this.isExpanded;
-    this.sidebarToggle.emit(this.isExpanded);
+    this.setExpanded(!this.isExpanded);
+  }
+
+  closeSidebar() {
+    this.setExpanded(false);
+  }
+
+  private setExpanded(isExpanded: boolean, emit = true) {
+    this.isExpanded = isExpanded;
+    if (emit) {
+      this.sidebarToggle.emit(this.isExpanded);
+    }
   }
 
   toggleSubmenu(event: Event, item: any): void {
@@ -95,5 +106,13 @@ export class SidebarComponent implements OnInit {
 
   trackByItem(index: number, item: RouteInfo) {
     return item.path;
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    const shouldBeExpanded = window.innerWidth >= 1024;
+    if (this.isExpanded !== shouldBeExpanded) {
+      this.setExpanded(shouldBeExpanded);
+    }
   }
 }

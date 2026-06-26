@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../../sidebar/sidebar.component';
 import { HeaderComponent } from '../../header/header.component';
@@ -22,6 +22,7 @@ import { LanguageService } from 'app/service/language.service';
 export class MainLayoutComponent implements OnInit {
   public config!: InConfiguration;
   isSidebarOpen = true;
+  @ViewChild('sidebar') sidebar?: SidebarComponent;
 
   constructor(
     private coachSettingsService: CoachSettingsService,
@@ -43,5 +44,13 @@ export class MainLayoutComponent implements OnInit {
 
   handleSidebarToggle(isOpen: boolean) {
     this.isSidebarOpen = isOpen;
+  }
+
+  closeSidebar() {
+    this.sidebar?.closeSidebar();
+  }
+
+  toggleSidebar() {
+    this.sidebar?.toggleSidebar();
   }
 }
