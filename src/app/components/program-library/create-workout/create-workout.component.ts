@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import {Component, OnInit, HostListener, ViewChild, ElementRef} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
@@ -24,7 +24,8 @@ export class CreateWorkoutComponent implements OnInit {
   isVisibleToOthers = false;
   private returnUrl: string | null = null;
   private assignOnly = false;
-
+  @ViewChild('mobileDaysScroller')
+  mobileDaysScroller?: ElementRef<HTMLElement>;
   constructor(
     public facade: WorkoutPlanFacade,
     private route: ActivatedRoute,
@@ -638,6 +639,23 @@ export class CreateWorkoutComponent implements OnInit {
     }
   }
 
+  openExerciseVideo(exercise: Exercise): void {
+    const videoUrl = this.getExerciseVideoLink(exercise);
+
+    if (!videoUrl) return;
+
+    const viewerUrl = this.router.serializeUrl(
+      this.router.createUrlTree(['/video-viewer'], {
+        queryParams: {
+          url: videoUrl,
+          title: exercise.name || 'Exercise Video',
+        },
+      }),
+    );
+
+    window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+  }
+
   savePlan() {
     this.facade.syncPlanDays();
 
@@ -687,5 +705,25 @@ export class CreateWorkoutComponent implements OnInit {
         error: (err) => console.error('Error creating workout plan:', err),
       });
     }
+  }
+  addDayFromMobile(): void {
+    this.addDay();
+
+    setTimeout(() => {
+      this.scrollMobileDaysToEnd();
+    }, 0);
+  }
+
+  private scrollMobileDaysToEnd(): void {
+    const el = this.mobileDaysScroller?.nativeElement;
+
+    if (!el) {
+      return;
+    }
+
+    el.scrollTo({
+      left: el.scrollWidth,
+      behavior: 'smooth'
+    });
   }
 }

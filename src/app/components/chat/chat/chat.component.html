@@ -65,7 +65,7 @@
     </ng-container>
 
     <ng-container *ngIf="selectedConv">
-      <div class="chat-header">
+      <div class="chat-header" *ngIf="!embeddedMode">
         <button *ngIf="isMobile" class="chat-icon-btn" type="button" (click)="backToList()">
           <i-feather name="arrow-left"></i-feather>
         </button>

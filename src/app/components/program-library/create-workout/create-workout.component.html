@@ -12,31 +12,40 @@
         (cdkDropListDropped)="onDropDay($event)"
       >
         <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
-          <button
-            *ngIf="i === 0; else otherDay"
+          <div
+            class="np-dayrow"
             cdkDrag
-            class="np-day"
             [class.is-active]="selectedDay?.id === d.id"
-            (click)="selectDay(d)"
-          >
-            <span>{{ d.title }}</span>
-          </button>
+          >            <button
+              type="button"
+              class="np-day"
+              [class.is-active]="selectedDay?.id === d.id"
+              (click)="selectDay(d)"
+            >
+              <span>{{ d.title }}</span>
+            </button>
 
-          <ng-template #otherDay>
-            <div class="np-dayrow" cdkDrag>
-              <button
-                class="np-day"
-                [class.is-active]="selectedDay?.id === d.id"
-                (click)="selectDay(d)"
-              >
-                <span>{{ d.title }}</span>
-              </button>
+            <button
+              *ngIf="i !== 0"
+              type="button"
+              class="np-iconbtn"
+              title="Delete"
+              aria-label="Delete day"
+              (click)="deleteDay(d, $event)"
+            >
+              <i-feather name="trash-2" class="np-ico"></i-feather>
+            </button>
 
-              <button class="np-iconbtn" title="Delete" (click)="deleteDay(d, $event)">
-                <i-feather name="trash-2" class="np-ico"></i-feather>
-              </button>
-            </div>
-          </ng-template>
+            <button
+              type="button"
+              class="np-iconbtn np-iconbtn--drag"
+              title="Move day"
+              aria-label="Move day"
+              cdkDragHandle
+            >
+              <i-feather name="menu" class="np-ico"></i-feather>
+            </button>
+          </div>
         </ng-container>
 
         <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
@@ -132,7 +141,66 @@
 
 
         <div class="np-sep"></div>
+        <!-- Mobile days tabs: shown only on mobile, placed just above selected Day -->
+        <div
+          #mobileDaysScroller
+          class="np-mobile-days"
+          cdkDropList
+          cdkDropListOrientation="horizontal"
+          [cdkDropListData]="days"
+          (cdkDropListDropped)="onDropDay($event)"
+        >
+          <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+            <div
+              class="np-mobile-day"
+              cdkDrag
+              [class.is-active]="selectedDay?.id === d.id"
+            >
+              <!-- Click ici = naviguer vers ce day -->
+              <button
+                type="button"
+                class="np-mobile-day__main"
+                (click)="selectDay(d)"
+              >
+        <span class="np-mobile-day__title">
+          {{ d.title }}
+        </span>
+              </button>
 
+              <!-- Delete seulement dans le day sélectionné -->
+              <button
+                *ngIf="i !== 0 && selectedDay?.id === d.id"
+                type="button"
+                class="np-mobile-day__delete"
+                title="Delete"
+                aria-label="Delete day"
+                (click)="deleteDay(d, $event)"
+              >
+                <i-feather name="trash-2" class="np-ico"></i-feather>
+              </button>
+
+              <!-- Drag seulement depuis cette petite poignée -->
+              <button
+                type="button"
+                class="np-mobile-day__drag"
+                cdkDragHandle
+                title="Move day"
+                aria-label="Move day"
+              >
+                <i-feather name="menu" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </ng-container>
+
+          <button
+            type="button"
+            class="np-mobile-add"
+            (click)="addDayFromMobile()"
+            aria-label="Add day"
+          >
+            <i-feather name="plus" class="np-ico"></i-feather>
+          </button>
+        </div>
         <div class="np-dayhead">
           <h3 class="np-h6">{{ selectedDay?.title }}</h3>
 
@@ -288,9 +356,6 @@
                           </div>
                         </ng-template>
 
-                        <div class="wkex-card__play" *ngIf="getExerciseVideoLink(exercise)">
-                          ▶
-                        </div>
                       </div>
 
                       <div class="wkex-card__titlewrap">
@@ -346,11 +411,24 @@
 
                       <div class="wkex-card__actions">
                         <button
+                          *ngIf="getExerciseVideoLink(exercise)"
+                          type="button"
+                          class="wkex-action wkex-action--video"
+                          title="Watch exercise video"
+                          aria-label="Watch exercise video"
+                          (click)="openExerciseVideo(exercise)"
+                        >
+                          <i-feather name="play-circle" class="wkex-action__icon"></i-feather>
+                        </button>
+
+                        <button
                           type="button"
                           class="wkex-action wkex-action--danger"
+                          title="Delete exercise"
+                          aria-label="Delete exercise"
                           (click)="handleRemoveExercise(exercise.id)"
                         >
-                          🗑️
+                          <i-feather name="trash-2" class="wkex-action__icon"></i-feather>
                         </button>
                       </div>
                     </div>
@@ -371,7 +449,7 @@
                           class="wkex-sets__row"
                           *ngFor="let set of exercise.sets; let si = index"
                         >
-                          <div class="wkex-sets__cell wkex-sets__cell--idx">
+                          <div class="wkex-sets__cell wkex-sets__cell--idx" data-label="Set">
                             <div class="wkex-settype">
                               <button
                                 type="button"
@@ -430,7 +508,11 @@
                             </div>
                           </div>
 
-                          <div class="wkex-sets__cell" *ngIf="facade.shouldShowWeightField()">
+                          <div
+                            class="wkex-sets__cell"
+                            data-label="Weight (kg)"
+                            *ngIf="facade.shouldShowWeightField()"
+                          >
                             <input
                               type="number"
                               class="wkex-input"
@@ -440,7 +522,10 @@
                             />
                           </div>
 
-                          <div class="wkex-sets__cell">
+                          <div
+                            class="wkex-sets__cell"
+                            [attr.data-label]="exercise.type === 'CARDIO' ? 'Minutes' : 'Reps'"
+                          >
                             <input
                               type="{{ exercise.type === 'CARDIO' ? 'number' : 'text' }}"
                               class="wkex-input"
@@ -456,7 +541,7 @@
                             />
                           </div>
 
-                          <div class="wkex-sets__cell wkex-sets__cell--rest">
+                          <div class="wkex-sets__cell wkex-sets__cell--rest" data-label="Rest">
                             <div class="wkex-restbox">
                               <span class="wkex-restbox__label">Min:</span>
                               <input
@@ -483,9 +568,11 @@
                               *ngIf="exercise.sets.length > 1"
                               type="button"
                               class="wkex-action wkex-action--danger"
+                              title="Delete set"
+                              aria-label="Delete set"
                               (click)="handleRemoveSet(exercise.id, si)"
                             >
-                              🗑️
+                              <i-feather name="trash-2" class="wkex-action__icon"></i-feather>
                             </button>
                           </div>
                         </div>

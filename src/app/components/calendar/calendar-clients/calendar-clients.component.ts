@@ -358,6 +358,14 @@ currentDate = new Date();
 
     const mode = String(plan?.workoutPlanMode || '').toUpperCase();
     const type = String(plan?.resourceType || '').toUpperCase();
+    const hasInteractiveDays =
+      Array.isArray(plan?.workoutDays) && plan.workoutDays.length > 0;
+
+    // Interactive programs can carry stale file metadata after being copied or
+    // assigned. Their workout days are the authoritative signal.
+    if (mode === 'NORMAL' || hasInteractiveDays) {
+      return false;
+    }
 
     return (
       mode === 'FILE' ||
@@ -464,6 +472,16 @@ currentDate = new Date();
 
   isFileWorkoutItem(item: WorkoutProgram | NutritionProgram): boolean {
     return this.calendarType === 'workout' && !!(item as WorkoutProgram).fileProgram;
+  }
+
+  hasFileRangeStarting(
+    items: (WorkoutProgram | NutritionProgram)[],
+    dateStr: string
+  ): boolean {
+    return items.some(
+      (item) =>
+        this.isFileWorkoutItem(item) && this.isFileRangeStart(item, dateStr)
+    );
   }
 
   getFileResourceType(item: WorkoutProgram | NutritionProgram): 'PDF' | 'EXCEL' {
@@ -884,20 +902,44 @@ currentDate = new Date();
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
     if (this.calendarType === 'workout') {
-      return this.workoutPrograms.filter((p: WorkoutProgram) => {
-        const matchesClient =
-          this.selectedClient === 'all' || p.clientId === this.selectedClient;
+      return this.workoutPrograms
+        .filter((p: WorkoutProgram) => {
+          const matchesClient =
+            this.selectedClient === 'all' || p.clientId === this.selectedClient;
 
-        if (!matchesClient) {
-          return false;
-        }
+          if (!matchesClient) {
+            return false;
+          }
 
-        if (p.fileProgram) {
-          return this.shouldRenderFileRangeOnDate(p, dateStr);
-        }
+          if (p.fileProgram) {
+            return this.shouldRenderFileRangeOnDate(p, dateStr);
+          }
 
-        return p.date === dateStr;
-      });
+          return p.date === dateStr;
+        })
+        .sort((a, b) => {
+          // File ranges must always reserve the first rows of every day cell.
+          // Interactive workout cards are then rendered underneath them.
+          const fileOrder = Number(!!b.fileProgram) - Number(!!a.fileProgram);
+
+          if (fileOrder !== 0) {
+            return fileOrder;
+          }
+
+          if (a.fileProgram && b.fileProgram) {
+            const startOrder = String(a.startDate || a.date).localeCompare(
+              String(b.startDate || b.date)
+            );
+
+            if (startOrder !== 0) {
+              return startOrder;
+            }
+
+            return a.title.localeCompare(b.title);
+          }
+
+          return 0;
+        });
     } else {
       return this.nutritionPrograms.filter(
         (p) =>
@@ -948,9 +990,8 @@ currentDate = new Date();
   }
 
   shouldRenderFileRangeOnDate(item: WorkoutProgram, dateStr: string): boolean {
-    // Render a segment inside every day of the file period.
-    // CSS makes adjacent segments look connected, without using a huge width
-    // that overlays normal workout cards on middle days.
+    // Keep the item in each covered month cell so its row is reserved and
+    // interactive workouts are placed below the spanning file bar.
     return !!item.fileProgram && this.isDateWithinFileRange(item, dateStr);
   }
 
@@ -995,6 +1036,10 @@ currentDate = new Date();
 
     if (this.currentView === 'day') {
       return true;
+    }
+
+    if (this.currentView === 'month') {
+      return this.isFileRangeStart(workoutItem, dateStr);
     }
 
     return (

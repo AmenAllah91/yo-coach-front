@@ -139,6 +139,40 @@ export class ProfilClientComponent {
     return items.length ? items[items.length - 1].value : null;
   }
 
+  get weightLost(): number | null {
+    if (this.startWeight === null || this.currentWeight === null) {
+      return null;
+    }
+
+    return Math.max(0, this.startWeight - this.currentWeight);
+  }
+
+  get weightToGoal(): number | null {
+    if (this.currentWeight === null || this.clientTargetWeight === null) {
+      return null;
+    }
+
+    return Math.max(0, this.currentWeight - this.clientTargetWeight);
+  }
+
+  get weightProgress(): number {
+    if (
+      this.startWeight === null ||
+      this.currentWeight === null ||
+      this.clientTargetWeight === null
+    ) {
+      return 0;
+    }
+
+    const total = this.startWeight - this.clientTargetWeight;
+    if (total <= 0) {
+      return 0;
+    }
+
+    const completed = this.startWeight - this.currentWeight;
+    return Math.min(100, Math.max(0, Math.round((completed / total) * 100)));
+  }
+
   get clientObjective(): string {
     return (
       (this.client as any)?.idealShapeDescription ||

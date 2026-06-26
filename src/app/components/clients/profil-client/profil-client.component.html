@@ -1,26 +1,29 @@
 <section class="main-content">
   <div class="profile-header">
     <img
-      src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
-      alt="Profile Photo"
+      [src]="client?.image || 'assets/images/photoprofilvierge.jpg'"
+      [alt]="fullName || 'Profile photo'"
       class="profile-picture"
     />
 
     <div class="profile-info">
       <h3 class="profile-name">{{ fullName }}</h3>
-      <p class="text-muted">
+      <p class="profile-email">
         {{ client?.email || "Not provided" }}
       </p>
-      <p class="text-muted">Last workout --------</p>
+      <p class="last-workout">
+        <span class="last-workout-dot"></span>
+        Last workout —
+      </p>
     </div>
 
     <div class="header-actions">
-      <button class="btn-send-message">
+      <button class="btn-send-message" type="button" (click)="setTab('chat')">
         <i class="far fa-comment"></i>
         <span>Send Message</span>
       </button>
 
-      <button class="btn-more">
+      <button class="btn-more" type="button" aria-label="More profile actions">
         <span class="dot"></span>
         <span class="dot"></span>
         <span class="dot"></span>
@@ -30,53 +33,67 @@
 
   <div class="client-stats-grid">
     <div class="client-stat-card">
-      <div class="stat-icon">
+      <div class="stat-icon stat-icon--start">
         <i class="fas fa-balance-scale"></i>
       </div>
-      <div class="stat-content">
-        <div class="stat-label">Start Weight</div>
-        <div class="stat-value">
-          {{ startWeight !== null ? (formatNumber(startWeight) + ' kg') : '--' }}
-        </div>
+      <div class="stat-label">Start Weight</div>
+      <div class="stat-value">
+        {{ startWeight !== null ? (formatNumber(startWeight) + ' kg') : '--' }}
       </div>
     </div>
 
     <div class="client-stat-card">
-      <div class="stat-icon">
+      <div class="stat-icon stat-icon--current">
         <i class="fas fa-balance-scale-right"></i>
       </div>
-      <div class="stat-content">
-        <div class="stat-label">Current Weight</div>
-        <div class="stat-value">
-          {{ currentWeight !== null ? (formatNumber(currentWeight) + ' kg') : '--' }}
-        </div>
+      <div class="stat-label">Current Weight</div>
+      <div class="stat-value">
+        {{ currentWeight !== null ? (formatNumber(currentWeight) + ' kg') : '--' }}
+      </div>
+      <div class="stat-detail stat-detail--success" *ngIf="weightLost !== null">
+        <i class="fas fa-arrow-trend-down"></i>
+        {{ formatNumber(weightLost) }} kg
       </div>
     </div>
 
     <div class="client-stat-card">
-      <div class="stat-icon">
-        <i class="fas fa-bullseye"></i>
+      <div class="stat-icon stat-icon--goal">
+        <i class="far fa-flag"></i>
       </div>
-      <div class="stat-content">
-        <div class="stat-label">Goal Weight</div>
-        <div class="stat-value">
-          {{ clientTargetWeight !== null ? (formatNumber(clientTargetWeight) + ' kg') : '--' }}
-        </div>
+      <div class="stat-label">Goal Weight</div>
+      <div class="stat-value">
+        {{ clientTargetWeight !== null ? (formatNumber(clientTargetWeight) + ' kg') : '--' }}
+      </div>
+      <div class="stat-detail" *ngIf="weightToGoal !== null">
+        {{ formatNumber(weightToGoal) }} kg to go
       </div>
     </div>
 
-    <div class="client-stat-card">
-      <div class="stat-icon">
+    <div class="client-stat-card client-stat-card--objective">
+      <div class="stat-icon stat-icon--objective">
         <i class="fas fa-bullseye"></i>
       </div>
-      <div class="stat-content">
-        <div class="stat-label">Objective</div>
-        <div class="stat-value stat-value--objective">
-          {{ clientObjective || '--' }}
-        </div>
+      <div class="stat-label">Objective</div>
+      <div class="stat-value stat-value--objective">
+        {{ clientObjective || '--' }}
       </div>
     </div>
   </div>
+
+  <section class="weight-progress-card">
+    <div class="weight-progress-heading">
+      <span>Weight Progress</span>
+      <strong>{{ weightProgress }}% to goal</strong>
+    </div>
+    <div class="weight-progress-track" aria-hidden="true">
+      <div class="weight-progress-fill" [style.width.%]="weightProgress"></div>
+    </div>
+    <div class="weight-progress-labels">
+      <span>Start {{ startWeight !== null ? formatNumber(startWeight) + ' kg' : '--' }}</span>
+      <strong>Now {{ currentWeight !== null ? formatNumber(currentWeight) + ' kg' : '--' }}</strong>
+      <span>Goal {{ clientTargetWeight !== null ? formatNumber(clientTargetWeight) + ' kg' : '--' }}</span>
+    </div>
+  </section>
 
   <nav class="profile-tabs">
     <button

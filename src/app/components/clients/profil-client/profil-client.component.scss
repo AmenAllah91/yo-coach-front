@@ -1,6 +1,9 @@
 .main-content {
-  font-family: Arial, sans-serif;
-  background-color: #f5f7fb;
+  min-height: 100%;
+  padding: 28px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #07152f;
+  background-color: #f7f9fc;
 }
 
 /* =========================================
@@ -10,16 +13,20 @@
   display: flex;
   align-items: center;
   background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 20px;
+  min-height: 122px;
+  padding: 24px 22px 24px 26px;
+  border: 1px solid #dce5ef;
+  border-radius: 15px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+  margin-bottom: 30px;
 }
 
 .profile-picture {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   border-radius: 50%;
+  border: 2px solid #060d18;
 }
 
 .profile-info {
@@ -29,36 +36,57 @@
 }
 
 .profile-name {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 0 0 4px;
+  color: #020d24;
+  font-size: 24px;
+  line-height: 29px;
+  font-weight: 700;
+  margin: 0 0 2px;
 }
 
-.text-muted {
-  color: #777;
-  margin: 2px 0;
+.profile-email {
+  color: #536887;
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+}
+
+.last-workout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8a9ab8;
+  font-size: 12px;
+  line-height: 20px;
+  margin: 2px 0 0;
+}
+
+.last-workout-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cbd5e1;
 }
 
 .header-actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 11px;
 }
 
 .btn-send-message {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 18px;
-  background-color: #000;
+  gap: 8px;
+  padding: 0 15px;
+  background-color: #071328;
   color: #fff;
   border: none;
-  border-radius: 7px;
-  font-size: 0.88rem;
-  font-weight: 500;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  height: 36px;
+  height: 39px;
   line-height: 1;
 }
 
@@ -72,10 +100,10 @@
 }
 
 .btn-more {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  border: 1px solid #d8e2ee;
   background-color: #fff;
   display: flex;
   align-items: center;
@@ -92,8 +120,8 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background-color: #555;
-  margin: 0 1px;
+  background-color: #7184a2;
+  margin: 0 1.5px;
 }
 
 /* =========================================
@@ -101,10 +129,10 @@
 ========================================= */
 .profile-tabs {
   display: flex;
-  gap: 24px;
-  border-bottom: 1px solid #e1e1e1;
-  margin-top: 15px;
-  padding-bottom: 2px;
+  gap: 30px;
+  border-bottom: 1px solid #dce5ef;
+  margin-top: 30px;
+  padding: 0 4px;
   overflow-x: auto;
 }
 
@@ -112,9 +140,10 @@
   position: relative;
   border: none;
   background: none;
-  padding: 8px 0;
-  font-size: 0.9rem;
-  color: #777;
+  padding: 15px 0 16px;
+  font-size: 13px;
+  line-height: 18px;
+  color: #405777;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -124,18 +153,18 @@
 }
 
 .tab-link.active {
-  color: #44b4df;
-  font-weight: 500;
+  color: #007cc7;
+  font-weight: 600;
 }
 
 .tab-link.active::after {
   content: '';
   position: absolute;
   left: 0;
-  bottom: -3px;
+  bottom: -1px;
   height: 2px;
   width: 100%;
-  background-color: #44b4df;
+  background-color: #00a8e8;
   border-radius: 999px;
 }
 
@@ -3953,4 +3982,231 @@
 .chat-profile-pane app-chat {
   display: block;
   width: 100%;
+}
+
+/* Reference-matched client profile summary */
+.main-content > .client-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 19px;
+  margin: 0 0 30px;
+}
+
+.main-content > .client-stats-grid > .client-stat-card {
+  position: relative;
+  display: block;
+  min-height: 142px;
+  padding: 68px 18px 18px;
+  background: #ffffff;
+  border: 1px solid #dce5ef;
+  border-radius: 15px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+}
+
+.main-content > .client-stats-grid .stat-icon {
+  position: absolute;
+  top: 19px;
+  left: 19px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  font-size: 16px;
+}
+
+.main-content > .client-stats-grid .stat-icon--start {
+  color: #60728d;
+  background: #f0f4f8;
+}
+
+.main-content > .client-stats-grid .stat-icon--current {
+  color: #008cd4;
+  background: #eef8fd;
+}
+
+.main-content > .client-stats-grid .stat-icon--goal {
+  color: #5b5cff;
+  background: #eff1ff;
+}
+
+.main-content > .client-stats-grid .stat-icon--objective {
+  color: #00a87a;
+  background: #eafaf4;
+}
+
+.main-content > .client-stats-grid .stat-label {
+  position: absolute;
+  top: 30px;
+  left: 68px;
+  color: #8b9bb8;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.main-content > .client-stats-grid .stat-value {
+  margin: 0;
+  color: #020c20;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.main-content > .client-stats-grid .stat-detail {
+  margin-top: 1px;
+  color: #91a0bb;
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 600;
+}
+
+.main-content > .client-stats-grid .stat-detail--success {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #00a875;
+}
+
+.main-content > .client-stats-grid .stat-value--objective {
+  max-width: 205px;
+  color: #07142a;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.weight-progress-card {
+  min-height: 109px;
+  padding: 23px 22px 18px;
+  background: #ffffff;
+  border: 1px solid #dce5ef;
+  border-radius: 15px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+}
+
+.weight-progress-heading,
+.weight-progress-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.weight-progress-heading {
+  color: #14213a;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.weight-progress-heading strong {
+  color: #007fc7;
+  font-weight: 700;
+}
+
+.weight-progress-track {
+  width: 100%;
+  height: 9px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f6;
+}
+
+.weight-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #12a9df;
+}
+
+.weight-progress-labels {
+  position: relative;
+  margin-top: 7px;
+  color: #8b9ab7;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.weight-progress-labels strong {
+  position: absolute;
+  left: 50%;
+  color: #007fc7;
+  font-weight: 700;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 1100px) {
+  .main-content > .client-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+
+  .profile-header {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 18px;
+    flex-wrap: wrap;
+  }
+
+  .profile-picture {
+    width: 60px;
+    height: 60px;
+  }
+
+  .profile-name {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .btn-send-message {
+    flex: 1;
+  }
+
+  .main-content > .client-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .main-content > .client-stats-grid > .client-stat-card {
+    min-height: 126px;
+    padding: 62px 14px 14px;
+  }
+
+  .main-content > .client-stats-grid .stat-icon {
+    top: 14px;
+    left: 14px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .main-content > .client-stats-grid .stat-label {
+    top: 23px;
+    left: 57px;
+    font-size: 10px;
+  }
+
+  .main-content > .client-stats-grid .stat-value {
+    font-size: 20px;
+  }
+
+  .main-content > .client-stats-grid .stat-value--objective {
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .profile-tabs {
+    gap: 24px;
+    margin-top: 20px;
+  }
 }

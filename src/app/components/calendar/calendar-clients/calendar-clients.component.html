@@ -95,6 +95,7 @@
         *ngFor="let day of monthDays"
         [class.is-today]="day.isToday"
         [class.is-copied]="copiedDate === day.dateString"
+        [class.has-file-range]="hasFileRangeStarting(day.items, day.dateString)"
       >
         <div class="cell-header">
           <span class="cell-day-number" [class.cell-day-today]="day.isToday">
@@ -131,10 +132,13 @@
             *ngFor="let item of day.items"
             class="card-wrapper"
             [class.file-range-wrapper]="isFileWorkoutItem(item)"
+            [class.file-range-placeholder]="isFileWorkoutItem(item) && !isFileRangeStart(item, day.dateString)"
             [ngClass]="getFileRangePositionClass(item, day.dateString)"
+            [style.--file-span]="isFileWorkoutItem(item) ? getFileRangeSpan(item, day.dateString) : null"
           >
             <ng-container *ngIf="calendarType === 'workout'; else nutritionCard">
               <div
+                *ngIf="!isFileWorkoutItem(item) || isFileRangeStart(item, day.dateString)"
                 class="card card-workout"
                 [class.card-program]="item.programId"
                 [class.file-range-card]="isFileWorkoutItem(item)"

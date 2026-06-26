@@ -170,10 +170,15 @@
   padding: 8px;
   background-color: #ffffff;
   position: relative;
+  z-index: 0;
   transition:
     background-color 0.15s ease,
     box-shadow 0.15s ease,
     border-color 0.15s ease;
+}
+
+.month-cell.has-file-range {
+  z-index: 3;
 }
 
 .month-cell:hover {
@@ -2090,16 +2095,24 @@
   overflow: visible;
 }
 
-.file-range-wrapper {
+.calendar-month .file-range-wrapper {
   position: relative;
   z-index: 5;
   overflow: visible;
 }
 
-.file-range-wrapper .file-range-card {
+.calendar-month .file-range-placeholder {
+  height: 50px;
+  min-height: 50px;
+  pointer-events: none;
+}
+
+.calendar-month .file-range-wrapper .file-range-card {
   position: relative;
   width: calc((100% + 16px) * var(--file-span, 1) - 16px);
+  height: 50px;
   min-height: 50px;
+  max-height: 50px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2107,9 +2120,16 @@
   border-radius: 10px;
   padding: 10px 12px;
   box-shadow: none;
+  overflow: hidden;
 }
 
-.file-range-wrapper .file-range-card:hover {
+.calendar-month .file-range-card .card-header {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.calendar-month .file-range-wrapper .file-range-card:hover {
   transform: none;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
@@ -2210,16 +2230,17 @@
 }
 
 
-/* ========= Connected segmented PDF / Excel bars - no overlap ========= */
-/* Each day cell owns its small segment, so normal workout cards on middle days are not covered. */
+/* Week/day views keep one file card inside each day column. */
 
-.file-range-wrapper {
+.calendar-week .file-range-wrapper,
+.calendar-day .file-range-wrapper {
   z-index: 2;
   overflow: visible;
   margin: 0 -1px 4px -1px;
 }
 
-.file-range-wrapper .file-range-card {
+.calendar-week .file-range-wrapper .file-range-card,
+.calendar-day .file-range-wrapper .file-range-card {
   width: 100% !important;
   min-height: 42px;
   height: 42px;
@@ -2229,19 +2250,24 @@
   overflow: hidden;
 }
 
-.file-range-start .file-range-card,
-.file-range-single .file-range-card {
+.calendar-week .file-range-start .file-range-card,
+.calendar-week .file-range-single .file-range-card,
+.calendar-day .file-range-start .file-range-card,
+.calendar-day .file-range-single .file-range-card {
   border-top-left-radius: 9px;
   border-bottom-left-radius: 9px;
 }
 
-.file-range-end .file-range-card,
-.file-range-single .file-range-card {
+.calendar-week .file-range-end .file-range-card,
+.calendar-week .file-range-single .file-range-card,
+.calendar-day .file-range-end .file-range-card,
+.calendar-day .file-range-single .file-range-card {
   border-top-right-radius: 9px;
   border-bottom-right-radius: 9px;
 }
 
-.file-range-middle .file-range-card {
+.calendar-week .file-range-middle .file-range-card,
+.calendar-day .file-range-middle .file-range-card {
   border-left-color: transparent !important;
   border-right-color: transparent !important;
 }
@@ -2262,7 +2288,8 @@
   text-overflow: ellipsis;
 }
 
-.file-range-middle .file-range-card .card-title {
+.calendar-week .file-range-middle .file-range-card .card-title,
+.calendar-day .file-range-middle .file-range-card .card-title {
   opacity: 0.35;
 }
 
@@ -2284,12 +2311,14 @@
   margin-left: 6px;
 }
 
-.file-range-wrapper .file-range-card:hover {
+.calendar-week .file-range-wrapper .file-range-card:hover,
+.calendar-day .file-range-wrapper .file-range-card:hover {
   transform: none;
 }
 
 @media (max-width: 900px) {
-  .file-range-wrapper .file-range-card {
+  .calendar-week .file-range-wrapper .file-range-card,
+  .calendar-day .file-range-wrapper .file-range-card {
     height: 38px;
     min-height: 38px;
     padding: 7px 8px;
