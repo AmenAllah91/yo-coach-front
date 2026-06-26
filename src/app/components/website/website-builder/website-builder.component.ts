@@ -10,7 +10,7 @@ import {UsersService} from "../../../service/users.service";
 
 type DescriptionBlockType = 'text' | 'heading' | 'image';
 
-type CoachThemeName = 'Élégance' | 'Dynamique' | 'Confiance' | 'Sérénité';
+type CoachThemeKey = 'elegance' | 'dynamic' | 'trust' | 'serenity';
 
 interface DescriptionBlock {
   id: string;
@@ -29,9 +29,13 @@ interface ThemeColors {
 }
 
 interface ThemePreset {
-  name: CoachThemeName;
+  name: string;
+  description?: string;
+  bestFor?: string;
+  mood?: string;
+  layoutLabel?: string;
   selected: boolean;
-  previewKey: 'elegance' | 'dynamic' | 'trust' | 'serenity';
+  previewKey: CoachThemeKey;
   colors: ThemeColors;
 }
 
@@ -140,10 +144,7 @@ export class WebsiteBuilderComponent implements OnInit{
   populateFromDraft(saved: any): void {
     this.siteSlug = saved.slug || this.siteSlug;
 
-    this.themes = this.themes.map(theme => ({
-      ...theme,
-      selected: theme.previewKey === saved.themeKey
-    }));
+    this.applySelectedTheme(saved.themeName, saved.themeKey);
 
     this.profile = saved.profile || this.profile;
     this.video.url = saved.videoUrl || '';
@@ -161,10 +162,7 @@ export class WebsiteBuilderComponent implements OnInit{
   populateFromWebsite(site: any): void {
     this.siteSlug = site.slug || this.siteSlug;
 
-    this.themes = this.themes.map(theme => ({
-      ...theme,
-      selected: theme.previewKey === site.themeKey
-    }));
+    this.applySelectedTheme(site.themeName, site.themeKey);
 
     this.profile = site.profile || this.profile;
     this.video.url = site.video?.url || '';
@@ -236,57 +234,145 @@ export class WebsiteBuilderComponent implements OnInit{
   themes: ThemePreset[] = [
     {
       name: 'Élégance',
+      description: 'Un site premium, calme et éditorial avec une forte mise en valeur du profil.',
+      bestFor: 'Coaching de vie, mindset, accompagnement haut de gamme',
+      mood: 'Raffiné, minimal, personnel',
+      layoutLabel: 'Portrait central + sections éditoriales',
       selected: true,
       previewKey: 'elegance',
       colors: {
-        primary: '#2c3e50',
-        secondary: '#e8f4f8',
-        accent: '#e67e22',
+        primary: '#26384a',
+        secondary: '#edf5f8',
+        accent: '#c9782f',
         background: '#ffffff',
-        text: '#333333',
-        announcementBg: '#1a1a2e',
+        text: '#27313f',
+        announcementBg: '#26384a',
         announcementText: '#ffffff'
       }
     },
     {
       name: 'Dynamique',
+      description: 'Une présentation impactante avec un hero fort et un appel à l action visible.',
+      bestFor: 'Fitness, performance, coaching business, programmes intensifs',
+      mood: 'Énergique, direct, moderne',
+      layoutLabel: 'Hero split + blocs puissants',
       selected: false,
       previewKey: 'dynamic',
       colors: {
-        primary: '#2c3e50',
-        secondary: '#e8f4f8',
-        accent: '#e67e22',
+        primary: '#151936',
+        secondary: '#eef4f8',
+        accent: '#f04a67',
         background: '#ffffff',
-        text: '#333333',
-        announcementBg: '#1a1a2e',
+        text: '#1f2937',
+        announcementBg: '#151936',
         announcementText: '#ffffff'
       }
     },
     {
       name: 'Confiance',
+      description: 'Une structure rassurante qui met les preuves, services et certifications en avant.',
+      bestFor: 'Coaching professionnel, reconversion, leadership, entreprise',
+      mood: 'Sérieux, crédible, structuré',
+      layoutLabel: 'Preuves + services détaillés',
       selected: false,
       previewKey: 'trust',
       colors: {
-        primary: '#0f4c75',
-        secondary: '#bbe1fa',
-        accent: '#3282b8',
+        primary: '#18314d',
+        secondary: '#e7eef4',
+        accent: '#d98732',
         background: '#f8fafc',
-        text: '#1f2937',
-        announcementBg: '#0f4c75',
+        text: '#243a55',
+        announcementBg: '#18314d',
         announcementText: '#ffffff'
       }
     },
     {
       name: 'Sérénité',
+      description: 'Une ambiance douce, respirante et centrée sur la relation coach-client.',
+      bestFor: 'Bien-être, nutrition, thérapie douce, coaching holistique',
+      mood: 'Apaisant, humain, naturel',
+      layoutLabel: 'Portrait doux + parcours fluide',
       selected: false,
       previewKey: 'serenity',
       colors: {
-        primary: '#557b83',
-        secondary: '#e5efc1',
-        accent: '#39aea9',
+        primary: '#4f6f75',
+        secondary: '#e7f1df',
+        accent: '#d99540',
+        background: '#fbfdfb',
+        text: '#34464a',
+        announcementBg: '#4f6f75',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Autorité',
+      description: 'Un thème sobre et institutionnel pour inspirer confiance dès le premier écran.',
+      bestFor: 'Executive coaching, consultants, dirigeants, B2B',
+      mood: 'Expert, premium, décisif',
+      layoutLabel: 'Structure confiance + palette executive',
+      selected: false,
+      previewKey: 'trust',
+      colors: {
+        primary: '#10233f',
+        secondary: '#edf2f7',
+        accent: '#b7791f',
+        background: '#f7fafc',
+        text: '#1f2937',
+        announcementBg: '#10233f',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Vitalité',
+      description: 'Un thème lumineux et actif pour vendre une transformation visible et motivante.',
+      bestFor: 'Sport, nutrition, énergie, coaching performance',
+      mood: 'Vif, positif, motivant',
+      layoutLabel: 'Layout dynamique + couleurs solaires',
+      selected: false,
+      previewKey: 'dynamic',
+      colors: {
+        primary: '#12343b',
+        secondary: '#e6f5f2',
+        accent: '#ef7b45',
         background: '#ffffff',
-        text: '#374151',
-        announcementBg: '#557b83',
+        text: '#1f2937',
+        announcementBg: '#12343b',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Clarté',
+      description: 'Un thème net et lisible pour expliquer une méthode et convertir sans distraction.',
+      bestFor: 'Coaching scolaire, organisation, productivité, accompagnement familial',
+      mood: 'Simple, clair, accessible',
+      layoutLabel: 'Layout élégance + lecture confortable',
+      selected: false,
+      previewKey: 'elegance',
+      colors: {
+        primary: '#24536b',
+        secondary: '#eaf6fb',
+        accent: '#2f9e8f',
+        background: '#ffffff',
+        text: '#243447',
+        announcementBg: '#24536b',
+        announcementText: '#ffffff'
+      }
+    },
+    {
+      name: 'Ancrage',
+      description: 'Un thème naturel et profond pour un positionnement calme, mature et authentique.',
+      bestFor: 'Coaching holistique, respiration, transitions de vie, accompagnement émotionnel',
+      mood: 'Naturel, stable, chaleureux',
+      layoutLabel: 'Layout sérénité + palette organique',
+      selected: false,
+      previewKey: 'serenity',
+      colors: {
+        primary: '#3f5f55',
+        secondary: '#edf3e8',
+        accent: '#c47c4a',
+        background: '#fbfcf8',
+        text: '#34433d',
+        announcementBg: '#3f5f55',
         announcementText: '#ffffff'
       }
     }
@@ -412,6 +498,14 @@ export class WebsiteBuilderComponent implements OnInit{
     return this.themes.find(t => t.selected) ?? this.themes[0];
   }
 
+  get normalizedSlug(): string {
+    return this.normalizeSlug(this.siteSlug) || 'monsite';
+  }
+
+  get publicSiteUrl(): string {
+    return `https://${this.normalizedSlug}.yocoach.co`;
+  }
+
   get videoEmbedUrl(): SafeResourceUrl | null {
     const embedUrl = this.toEmbedUrl(this.video.url);
     return embedUrl ? this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl) : null;
@@ -419,7 +513,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
   openPreview(): void {
     const data = {
-      slug: this.siteSlug,
+      slug: this.normalizedSlug,
       themeKey: this.selectedTheme.previewKey,
       themeName: this.selectedTheme.name,
       descriptionBlocks: this.descriptionBlocks,
@@ -465,7 +559,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
   saveWebsite(): void {
     const payload = {
-      slug: this.siteSlug,
+      slug: this.normalizedSlug,
       themeKey: this.selectedTheme.previewKey,
       themeName: this.selectedTheme.name,
       descriptionBlocks: this.descriptionBlocks,
@@ -522,6 +616,28 @@ export class WebsiteBuilderComponent implements OnInit{
 
   private generateId(): string {
     return Math.random().toString(36).substring(2, 11);
+  }
+
+  private applySelectedTheme(themeName?: string, themeKey?: CoachThemeKey): void {
+    const selectedIndex = this.themes.findIndex(theme => theme.name === themeName);
+    const fallbackIndex = this.themes.findIndex(theme => theme.previewKey === themeKey);
+    const index = selectedIndex >= 0 ? selectedIndex : fallbackIndex >= 0 ? fallbackIndex : 0;
+
+    this.themes = this.themes.map((theme, i) => ({
+      ...theme,
+      selected: i === index
+    }));
+  }
+
+  private normalizeSlug(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   addBlock(type: DescriptionBlockType): void {

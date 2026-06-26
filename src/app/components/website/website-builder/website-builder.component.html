@@ -38,15 +38,21 @@
     <div class="yc-builder__urlbar-inner">
       <div class="yc-builder__url-label">Adresse de votre site</div>
 
-      <div class="yc-builder__url-input-wrap">
-        <span class="yc-builder__url-prefix">https://</span>
-        <input
-          class="yc-builder__url-input"
-          type="text"
-          [(ngModel)]="siteSlug"
-          placeholder="monsite"
-        />
-        <span class="yc-builder__url-suffix">.yocoach.co</span>
+      <div class="yc-builder__url-content">
+        <div class="yc-builder__url-input-wrap">
+          <span class="yc-builder__url-prefix">https://</span>
+          <input
+            class="yc-builder__url-input"
+            type="text"
+            [(ngModel)]="siteSlug"
+            placeholder="monsite"
+          />
+          <span class="yc-builder__url-suffix">.yocoach.co</span>
+        </div>
+
+        <a class="yc-builder__public-link" [href]="publicSiteUrl" target="_blank" rel="noopener">
+          {{ publicSiteUrl }}
+        </a>
       </div>
     </div>
   </div>
@@ -66,62 +72,79 @@
         >
           <div class="yc-theme-card__name">{{ theme.name }}</div>
 
-          <div class="yc-theme-card__preview" [attr.data-theme]="theme.name">
-            <div class="yc-theme-skeleton yc-theme-skeleton--elegance" *ngIf="theme.name === 'Élégance'">
-              <div class="avatar"></div>
-              <div class="line line-lg"></div>
-              <div class="line line-sm"></div>
-              <div class="grid">
-                <div class="box"></div>
-                <div class="box"></div>
+          <div
+            class="yc-theme-card__preview"
+            [attr.data-theme]="theme.name"
+            [style.--preview-primary]="theme.colors.primary"
+            [style.--preview-secondary]="theme.colors.secondary"
+            [style.--preview-accent]="theme.colors.accent"
+            [style.--preview-bg]="theme.colors.background"
+          >
+            <div class="yc-theme-skeleton yc-theme-skeleton--elegance" *ngIf="theme.previewKey === 'elegance'">
+              <div class="elegance-avatar"></div>
+              <div class="elegance-title"></div>
+              <div class="elegance-subtitle"></div>
+              <div class="elegance-cta"></div>
+              <div class="elegance-section">
+                <div></div>
+                <div></div>
               </div>
             </div>
 
-            <div class="yc-theme-skeleton yc-theme-skeleton--dynamic" *ngIf="theme.name === 'Dynamique'">
-              <div class="left">
-                <div class="line white"></div>
-                <div class="line white short"></div>
-                <div class="line gray tiny"></div>
-                <div class="pill"></div>
+            <div class="yc-theme-skeleton yc-theme-skeleton--dynamic" *ngIf="theme.previewKey === 'dynamic'">
+              <div class="dynamic-panel">
+                <div class="dynamic-kicker"></div>
+                <div class="dynamic-title"></div>
+                <div class="dynamic-title dynamic-title--short"></div>
+                <div class="dynamic-copy"></div>
+                <div class="dynamic-cta"></div>
               </div>
-              <div class="right"></div>
-            </div>
-
-            <div class="yc-theme-skeleton yc-theme-skeleton--trust" *ngIf="theme.name === 'Confiance'">
-              <div class="top">
-                <div class="square"></div>
-                <div class="stack">
-                  <div class="line dark"></div>
-                  <div class="line gray short"></div>
-                </div>
-              </div>
-              <div class="grid four">
-                <div class="mini-box"></div>
-                <div class="mini-box"></div>
-                <div class="mini-box"></div>
-                <div class="mini-box"></div>
+              <div class="dynamic-media">
+                <div class="dynamic-photo"></div>
               </div>
             </div>
 
-            <div class="yc-theme-skeleton yc-theme-skeleton--serenity" *ngIf="theme.name === 'Sérénité'">
-              <div class="soft-bg"></div>
-              <div class="content">
-                <div class="avatar"></div>
-                <div class="line green"></div>
-                <div class="grid three">
-                  <div class="mini-box"></div>
-                  <div class="mini-box"></div>
-                  <div class="mini-box"></div>
+            <div class="yc-theme-skeleton yc-theme-skeleton--trust" *ngIf="theme.previewKey === 'trust'">
+              <div class="trust-photo-wrap">
+                <div class="trust-photo-shadow"></div>
+                <div class="trust-photo"></div>
+              </div>
+              <div class="trust-content">
+                <div class="trust-badge"></div>
+                <div class="trust-title"></div>
+                <div class="trust-title trust-title--short"></div>
+                <div class="trust-copy"></div>
+                <div class="trust-cta"></div>
+              </div>
+              <div class="trust-proof-row">
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+            </div>
+
+            <div class="yc-theme-skeleton yc-theme-skeleton--serenity" *ngIf="theme.previewKey === 'serenity'">
+              <div class="serenity-halo"></div>
+              <div class="serenity-content">
+                <div class="serenity-avatar"></div>
+                <div class="serenity-title"></div>
+                <div class="serenity-subtitle"></div>
+                <div class="serenity-cta"></div>
+                <div class="serenity-flow">
+                  <div></div>
+                  <div></div>
+                  <div></div>
                 </div>
               </div>
             </div>
 
             <div class="yc-theme-card__swatches">
-              <span></span>
-              <span></span>
-              <span></span>
+              <span [style.background]="theme.colors.primary"></span>
+              <span [style.background]="theme.colors.secondary"></span>
+              <span [style.background]="theme.colors.accent"></span>
             </div>
           </div>
+
         </div>
       </div>
     </div>
