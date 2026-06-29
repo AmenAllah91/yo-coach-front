@@ -13,54 +13,52 @@
         [cdkDropListData]="days"
         (cdkDropListDropped)="onDropDay($event)"
       >
-        <!-- Day list -->
-        <ng-container
-          *ngFor="let d of days; trackBy: trackByDay; let i = index"
-        >
-          <!-- First day (no trash icon) -->
-          <button
-            *ngIf="i === 0; else otherDay"
+        <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+          <div
+            class="np-dayrow"
             cdkDrag
-            class="np-day"
             [class.is-active]="selectedDay?.id === d.id"
-            (click)="selectDay(d)"
           >
-            <span>{{ d.title }}</span>
-            <small class="np-day__meta">
-              <span class="np-day__weekday">{{ d.dayOfWeek }} <span *ngIf="d.isRestDay || d.restDay">Rest Day</span></span>
-              <span class="np-day__dot">•</span>
-              <span class="np-day__date">{{
-                d.date | date : "MMM d, yyyy"
-              }}</span>
-            </small>
-          </button>
-
-          <!-- Other Days -->
-          <ng-template #otherDay>
-            <div class="np-dayrow" cdkDrag>
-              <button
-                class="np-day"
-                [class.is-active]="selectedDay?.id === d.id"
-                (click)="selectDay(d)"
-              >
+            <button
+              type="button"
+              class="np-day"
+              [class.is-active]="selectedDay?.id === d.id"
+              (click)="selectDay(d)"
+            >
+              <span class="np-day__title">
                 <span>{{ d.title }}</span>
-                <small class="np-day__meta">
-                  <span class="np-day__weekday">{{ d.dayOfWeek }}  <span *ngIf="d.isRestDay || d.restDay">Rest Day</span></span>
-                  <span class="np-day__dot">•</span>
-                  <span class="np-day__date">{{
-                    d.date | date : "MMM d, yyyy"
-                  }}</span>
-                </small>
-              </button>
-              <button
-                class="np-iconbtn"
-                title="Delete"
-                (click)="deleteDay(d, $event)"
-              >
-                <i-feather name="trash-2" class="np-ico"></i-feather>
-              </button>
-            </div>
-          </ng-template>
+                <span *ngIf="d.isRestDay || d.restDay" class="np-day__rest">Rest Day</span>
+              </span>
+              <small class="np-day__meta">
+                <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                <span class="np-day__dot">•</span>
+                <span class="np-day__date">{{
+                  d.date | date : "MMM d, yyyy"
+                }}</span>
+              </small>
+            </button>
+
+            <button
+              *ngIf="i !== 0"
+              type="button"
+              class="np-iconbtn"
+              title="Delete"
+              aria-label="Delete day"
+              (click)="deleteDay(d, $event)"
+            >
+              <i-feather name="trash-2" class="np-ico"></i-feather>
+            </button>
+
+            <button
+              type="button"
+              class="np-iconbtn np-iconbtn--drag"
+              title="Move day"
+              aria-label="Move day"
+              cdkDragHandle
+            >
+              <i-feather name="menu" class="np-ico"></i-feather>
+            </button>
+          </div>
         </ng-container>
 
         <!-- Add Day -->
@@ -406,7 +404,7 @@
         </ng-container>
 
         <!-- ==== EXERCISES ==== -->
-        <div class="wkex mb-6">
+        <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
           <h3 class="wkex__heading">Exercises</h3>
 
           <!-- If no exercises -->
@@ -440,7 +438,20 @@
                       <div *ngIf="isInSuperset(i)" class="wkex-card__drag is-disabled">
                         <i-feather name="menu" class="np-ico"></i-feather>
                       </div>
-                      <div class="wkex-card__media"></div>
+                      <div class="wkex-card__media">
+                        <img
+                          *ngIf="getExerciseThumbnail(exercise); else wkexMediaFallback"
+                          [src]="getExerciseThumbnail(exercise)"
+                          [alt]="exercise.name"
+                          loading="lazy"
+                        />
+
+                        <ng-template #wkexMediaFallback>
+                          <div class="wkex-card__mediaFallback">
+                            <i-feather name="activity" class="np-ico"></i-feather>
+                          </div>
+                        </ng-template>
+                      </div>
 
                       <div class="wkex-card__titlewrap">
                         <h4 class="wkex-card__title">
@@ -508,24 +519,46 @@
                         >
                           {{ exercise.description }}
                         </div>
+
+                        <div *ngIf="isExerciseVideoOpen(exercise)" class="wkex-video">
+                          <iframe
+                            [src]="getYouTubeEmbedUrl(exercise)"
+                            [title]="exercise.name + ' video'"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen
+                          ></iframe>
+                        </div>
                       </div>
 
-                      <!-- Remove exercise -->
                       <div class="wkex-card__actions">
                         <button
                           type="button"
+                          class="wkex-action wkex-action--video"
+                          [class.is-active]="isExerciseVideoOpen(exercise)"
+                          [disabled]="!getExerciseVideoLink(exercise)"
+                          title="Watch exercise video"
+                          aria-label="Watch exercise video"
+                          (click)="toggleExerciseVideo(exercise)"
+                        >
+                          <i-feather name="play-circle" class="wkex-action__icon"></i-feather>
+                        </button>
+
+                        <button
+                          type="button"
                           class="wkex-action wkex-action--danger"
+                          title="Delete exercise"
+                          aria-label="Delete exercise"
                           (click)="handleRemoveExercise(exercise.id)"
                         >
-                          🗑️
+                          <i-feather name="trash-2" class="wkex-action__icon"></i-feather>
                         </button>
                       </div>
                     </div>
 
-                    <div *ngIf="exercise.sets?.length" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField()">
+                    <div *ngIf="exercise.sets?.length" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField() || exercise.type === 'CARDIO'">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
-                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField()">Weight (kg)</div>
+                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">Weight (kg)</div>
                         <div class="wkex-sets__th">{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</div>
                         <div class="wkex-sets__th">Rest</div>
                         <div class="wkex-sets__th wkex-sets__th--empty"></div>
@@ -595,7 +628,7 @@
                             </div>
                           </div>
 
-                          <div class="wkex-sets__cell" *ngIf="facade.shouldShowWeightField()">
+                          <div class="wkex-sets__cell" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">
                             <input
                               type="number"
                               class="wkex-input"
@@ -657,9 +690,11 @@
                               *ngIf="exercise.sets.length > 1"
                               type="button"
                               class="wkex-action wkex-action--danger"
+                              title="Delete set"
+                              aria-label="Delete set"
                               (click)="handleRemoveSet(exercise.id, si)"
                             >
-                              🗑️
+                              <i-feather name="trash-2" class="wkex-action__icon"></i-feather>
                             </button>
                           </div>
                         </div>
@@ -830,7 +865,7 @@
               />
             </div>
 
-            <div *ngIf="facade.shouldShowWeightField()">
+            <div *ngIf="facade.shouldShowWeightField() && selectedExercise.type !== 'CARDIO'">
               <label class="np-label">Weight (kg)</label>
               <input
                 class="np-input"
@@ -1028,7 +1063,24 @@
           (mouseenter)="hoveringExerciseId = ex.id"
           (mouseleave)="hoveringExerciseId = null"
         >
-          <div class="wkdrawer__thumb"></div>
+          <div class="wkdrawer__thumb">
+            <img
+              *ngIf="getExerciseThumbnail(ex); else drawerThumbFallback"
+              [src]="getExerciseThumbnail(ex)"
+              [alt]="ex.name"
+              loading="lazy"
+            />
+
+            <ng-template #drawerThumbFallback>
+              <div class="wkdrawer__thumbFallback">
+                <i-feather name="activity" class="np-ico"></i-feather>
+              </div>
+            </ng-template>
+
+            <div class="wkdrawer__thumbPlay" *ngIf="getExerciseVideoLink(ex)">
+              <i-feather name="play" class="np-ico"></i-feather>
+            </div>
+          </div>
 
           <div class="wkdrawer__meta">
             <div class="wkdrawer__name">{{ ex.name }}</div>

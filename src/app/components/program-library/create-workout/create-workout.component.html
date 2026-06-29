@@ -313,7 +313,7 @@
           </ng-template>
         </ng-container>
 
-        <div class="wkex mb-6">
+        <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
           <h3 class="wkex__heading">Exercises</h3>
 
           <ng-container
@@ -407,16 +407,26 @@
                         >
                           {{ exercise.description }}
                         </div>
+
+                        <div *ngIf="isExerciseVideoOpen(exercise)" class="wkex-video">
+                          <iframe
+                            [src]="getYouTubeEmbedUrl(exercise)"
+                            [title]="exercise.name + ' video'"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen
+                          ></iframe>
+                        </div>
                       </div>
 
                       <div class="wkex-card__actions">
                         <button
-                          *ngIf="getExerciseVideoLink(exercise)"
                           type="button"
                           class="wkex-action wkex-action--video"
+                          [class.is-active]="isExerciseVideoOpen(exercise)"
+                          [disabled]="!getExerciseVideoLink(exercise)"
                           title="Watch exercise video"
                           aria-label="Watch exercise video"
-                          (click)="openExerciseVideo(exercise)"
+                          (click)="toggleExerciseVideo(exercise)"
                         >
                           <i-feather name="play-circle" class="wkex-action__icon"></i-feather>
                         </button>
@@ -433,10 +443,10 @@
                       </div>
                     </div>
 
-                    <div *ngIf="exercise.sets?.length > 0" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField()">
+                    <div *ngIf="exercise.sets?.length > 0" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField() || exercise.type === 'CARDIO'">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
-                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField()">Weight (kg)</div>
+                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">Weight (kg)</div>
                         <div class="wkex-sets__th">
                           {{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}
                         </div>
@@ -511,7 +521,7 @@
                           <div
                             class="wkex-sets__cell"
                             data-label="Weight (kg)"
-                            *ngIf="facade.shouldShowWeightField()"
+                            *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
                           >
                             <input
                               type="number"
@@ -732,7 +742,7 @@
               <input class="np-input" type="number" min="1" [(ngModel)]="selectedExercise.reps" />
             </div>
 
-            <div *ngIf="facade.shouldShowWeightField()">
+            <div *ngIf="facade.shouldShowWeightField() && selectedExercise.type !== 'CARDIO'">
               <label class="np-label">Weight (kg)</label>
               <input
                 class="np-input"

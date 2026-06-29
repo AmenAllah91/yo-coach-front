@@ -1,7 +1,6 @@
-<div>
-  <!-- ══ PAGE HEADER ══ -->
+<div class="forms-page">  <!-- ══ PAGE HEADER ══ -->
   <div class="page-header">
-    <button class="back-btn" type="button">
+    <button class="back-btn" type="button" (click)="goBack()">
       <i-feather name="arrow-left"></i-feather>
     </button>
 
@@ -10,6 +9,18 @@
       <p>Gérez vos formulaires et leurs versions.</p>
     </div>
 
+    <button
+      class="primary-btn header-actions"
+      type="button"
+      (click)="onAdd()"
+      *ngIf="viewMode() === 'active'"
+    >
+      <i-feather name="plus"></i-feather>
+      Ajouter
+    </button>
+  </div>
+
+  <div class="forms-view-toolbar">
     <!-- Segmented toggle Active / Unsaved / Archived -->
     <div class="view-toggle">
       <button
@@ -61,15 +72,6 @@
       </button>
     </div>
 
-    <button
-      class="primary-btn"
-      type="button"
-      (click)="onAdd()"
-      *ngIf="viewMode() === 'active'"
-    >
-      <i-feather name="plus"></i-feather>
-      Ajouter
-    </button>
   </div>
 
   <!-- Archived info banner -->
@@ -94,27 +96,6 @@
     </div>
 
     <div class="card">
-      <div class="toolbar">
-        <div class="meta">
-          <span class="meta__label">Total :</span>
-          <span class="meta__value">{{ totalElements() }}</span>
-        </div>
-
-        <div class="page-size">
-          <span class="page-size__label">Taille :</span>
-          <select
-            class="select"
-            [value]="pageSize()"
-            (change)="changePageSize(+($any($event.target).value))"
-          >
-            <option [value]="5">5</option>
-            <option [value]="10">10</option>
-            <option [value]="20">20</option>
-            <option [value]="50">50</option>
-          </select>
-        </div>
-      </div>
-
       <div *ngIf="error()" class="alert">{{ error() }}</div>
 
       <div class="table-wrap">
@@ -161,7 +142,8 @@
                   (click)="toggleActions(f.id, $event)"
                   aria-label="Actions"
                 >
-                  <i-feather name="more-horizontal"></i-feather>
+                  <span>Actions</span>
+                  <i-feather name="chevron-down"></i-feather>
                 </button>
 
                 <div
@@ -280,7 +262,7 @@
 
       <div class="pager" *ngIf="totalPages() > 0">
         <button
-          class="btn btn--ghost"
+          class="page-btn page-btn--prev"
           type="button"
           (click)="goToPrev()"
           [disabled]="pageIndex() === 0 || loading()"
@@ -294,7 +276,18 @@
         </div>
 
         <button
-          class="btn btn--ghost"
+          class="page-btn"
+          type="button"
+          *ngFor="let page of pagesArray()"
+          [class.active]="page === pageIndex()"
+          (click)="goToPage(page)"
+          [disabled]="loading()"
+        >
+          {{ page + 1 }}
+        </button>
+
+        <button
+          class="page-btn page-btn--next"
           type="button"
           (click)="goToNext()"
           [disabled]="pageIndex() >= totalPages() - 1 || loading()"

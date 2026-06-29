@@ -13,56 +13,50 @@
         [cdkDropListData]="days"
         (cdkDropListDropped)="onDropDay($event)"
       >
-        <!-- Day list -->
-        <ng-container
-          *ngFor="let d of days; trackBy: trackByDay; let i = index"
-        >
-          <!-- First day (no trash icon) -->
-          <button
-            *ngIf="i === 0; else otherDay"
+        <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+          <div
+            class="np-dayrow"
             cdkDrag
-            class="np-day"
             [class.is-active]="selectedDay?.id === d.id"
-            (click)="selectDay(d)"
           >
-            <span>{{ d.title }}</span>
-            <small class="np-day__meta">
-              <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
-              <span class="np-day__dot">•</span>
-              <span class="np-day__date">{{
-                d.date | date : "MMM d, yyyy"
-              }}</span>
-            </small>
-          </button>
+            <button
+              type="button"
+              class="np-day"
+              [class.is-active]="selectedDay?.id === d.id"
+              (click)="selectDay(d)"
+            >
+              <span class="np-day__title">{{ d.title }}</span>
+              <small class="np-day__meta">
+                <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                <span class="np-day__dot">&bull;</span>
+                <span class="np-day__date">{{
+                  d.date | date : "MMM d, yyyy"
+                }}</span>
+              </small>
+            </button>
 
-          <!-- Other Days -->
-          <ng-template #otherDay>
-            <div class="np-dayrow" cdkDrag>
-              <button
-                class="np-day"
-                [class.is-active]="selectedDay?.id === d.id"
-                (click)="selectDay(d)"
-              >
-                <span>{{ d.title }}</span>
-                <small class="np-day__meta">
-                  <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
-                  <span class="np-day__dot">•</span>
-                  <span class="np-day__date">{{
-                    d.date | date : "MMM d, yyyy"
-                  }}</span>
-                </small>
-              </button>
-              <button
-                class="np-iconbtn"
-                title="Delete"
-                (click)="deleteDay(d, $event)"
-              >
-                <i-feather name="trash-2" class="np-ico"></i-feather>
-              </button>
-            </div>
-          </ng-template>
+            <button
+              *ngIf="i !== 0"
+              type="button"
+              class="np-iconbtn"
+              title="Delete"
+              aria-label="Delete day"
+              (click)="deleteDay(d, $event)"
+            >
+              <i-feather name="trash-2" class="np-ico"></i-feather>
+            </button>
+
+            <button
+              type="button"
+              class="np-iconbtn np-iconbtn--drag"
+              title="Move day"
+              aria-label="Move day"
+              cdkDragHandle
+            >
+              <i-feather name="menu" class="np-ico"></i-feather>
+            </button>
+          </div>
         </ng-container>
-
         <!-- Add Day -->
         <button
           class="np-btn np-btn--dash np-btn--ghost np-btn--full"

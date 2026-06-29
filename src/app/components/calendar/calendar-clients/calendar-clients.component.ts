@@ -7,22 +7,26 @@ import {
   Input,
   OnChanges,
   SimpleChanges,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { ClientService } from 'app/service/client.service';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { ExerciseService, PageResponse } from 'app/service/exercise.service';
+import { Exercise as LibraryExercise } from '@shared/models/exercice.models';
 
 interface ExerciseSet {
   id: string;
   number: number;
   reps: string;
   rest: string;
+  weight?: number | null;
+  duration?: number;
+  type?: 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
 }
 
 interface Exercise {
@@ -33,10 +37,13 @@ interface Exercise {
   duration?: number;
   notes?: string;
   thumbnail?: string;
+  imageUrl?: string;
   youtubeUrl?: string;
+  videoLink?: string;
   showVideo?: boolean;
   videoUrl?: SafeResourceUrl;
   rawVideoUrl?: string;
+  supersetGroupId?: string | null;
 }
 
 interface WorkoutSession {
@@ -121,7 +128,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
 currentDate = new Date();
   currentView: CalendarViewMode = 'month';
   calendarType: CalendarType = 'workout';
-  selectedClient: string = 'all';
+  selectedClient: string = '';
   copiedDate: string | null = null;
 
   coachId: string | null = sessionStorage.getItem('userId');
@@ -140,6 +147,34 @@ currentDate = new Date();
 
   showExerciseSelector = false;
   exerciseSearchTerm = '';
+  exerciseMuscleFilter = '';
+  exerciseEquipmentFilter = '';
+  exerciseTypeFilter = '';
+  exerciseSelectorLoading = false;
+  openSetTypeKey: string | null = null;
+
+  muscleOptions = [
+    { value: 'CHEST', label: 'Chest' },
+    { value: 'BACK', label: 'Back' },
+    { value: 'SHOULDERS', label: 'Shoulders' },
+    { value: 'ARMS', label: 'Arms' },
+    { value: 'LEGS', label: 'Legs' },
+    { value: 'CORE', label: 'Core' },
+  ];
+
+  equipmentOptions = [
+    { value: 'BARBELL', label: 'Barbell' },
+    { value: 'DUMBBELL', label: 'Dumbbell' },
+    { value: 'CABLE', label: 'Cable' },
+    { value: 'MACHINE', label: 'Machine' },
+    { value: 'BODYWEIGHT', label: 'Bodyweight' },
+  ];
+
+  typeOptions = [
+    { value: 'CARDIO', label: 'Cardio' },
+    { value: 'MUSCULATION', label: 'Musculation' },
+    { value: 'STRENGTH', label: 'Strength' },
+  ];
 
   showDeleteModal = false;
   workoutToDelete: WorkoutProgram | null = null;
@@ -150,38 +185,7 @@ currentDate = new Date();
 
   private beforeToggleHandler: ((e: Event) => void) | null = null;
 
-  availableExercises: Exercise[] = [
-    {
-      id: 'lib-squat',
-      name: 'Squat (Barbell)',
-      type: 'strength',
-      youtubeUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
-      sets: [
-        { id: 'lib-squat-set-1', number: 1, reps: '8-12', rest: '90' },
-        { id: 'lib-squat-set-2', number: 2, reps: '8-12', rest: '90' },
-        { id: 'lib-squat-set-3', number: 3, reps: '8-12', rest: '90' },
-      ],
-    },
-    {
-      id: 'lib-bench',
-      name: 'Bench Press (Barbell)',
-      type: 'strength',
-      youtubeUrl: 'https://www.youtube.com/watch?v=SCVCLChPQFY',
-      sets: [
-        { id: 'lib-bench-set-1', number: 1, reps: '8-12', rest: '90' },
-        { id: 'lib-bench-set-2', number: 2, reps: '8-12', rest: '90' },
-        { id: 'lib-bench-set-3', number: 3, reps: '8-12', rest: '90' },
-      ],
-    },
-    {
-      id: 'lib-cardio',
-      name: 'Treadmill Run',
-      type: 'cardio',
-      youtubeUrl: 'https://www.youtube.com/watch?v=kZDvg92tTMc',
-      sets: [],
-      duration: 30,
-    },
-  ];
+  availableExercises: Exercise[] = [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workoutPrograms: any[] = [];
@@ -202,8 +206,14 @@ currentDate = new Date();
     private clientService: ClientService,
     private router: Router,
     private sanitizer: DomSanitizer,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private exerciseService: ExerciseService
   ) {}
+
+  @HostListener('document:click')
+  closeSetTypeMenuOnDocumentClick(): void {
+    this.openSetTypeKey = null;
+  }
 
   ngOnInit(): void {
     this.coachSettingsService.loadConfig().subscribe({
@@ -245,7 +255,7 @@ currentDate = new Date();
     }
 
     if (changes['embeddedClientId']) {
-      this.selectedClient = this.embeddedClientId || 'all';
+      this.selectedClient = this.embeddedClientId || '';
       this.getWorkout();
     }
   }
@@ -307,46 +317,8 @@ currentDate = new Date();
       return;
     }
 
-    if (!this.clients || this.clients.length === 0) {
-      this.workoutPrograms = [];
-      return;
-    }
-
-    const requests = this.clients.map((client) =>
-      this.workoutService
-        .getWorkoutByCoachIdAndClient(this.coachId!, client.id, 0, 500, 'ALL')
-        .pipe(
-          catchError((err) => {
-            console.error(
-              `Error loading assigned workout plans for client ${client.id}`,
-              err
-            );
-            return of({
-              content: [],
-              totalPages: 0,
-              totalElements: 0,
-              number: 0,
-              size: 0,
-            });
-          })
-        )
-    );
-
-    forkJoin(requests).subscribe({
-      next: (responses) => {
-        const allPlans = responses.flatMap((res) => res.content || []);
-        this.workoutPrograms = this.mapBackendToWorkoutPrograms(allPlans);
-        console.log(
-          'ALL CLIENTS ASSIGNED WORKOUT PROGRAMS',
-          this.workoutPrograms
-        );
-        this.updateMonthGrid();
-      },
-      error: (err) => {
-        console.error('Error loading all assigned workout plans', err);
-        this.workoutPrograms = [];
-      },
-    });
+    this.workoutPrograms = [];
+    this.updateMonthGrid();
   }
 
 
@@ -474,6 +446,17 @@ currentDate = new Date();
     return this.calendarType === 'workout' && !!(item as WorkoutProgram).fileProgram;
   }
 
+  hasFileWorkoutItems(items: (WorkoutProgram | NutritionProgram)[]): boolean {
+    return this.calendarType === 'workout' && items.some((item) => this.isFileWorkoutItem(item));
+  }
+
+  hasInteractiveWorkoutItems(items: (WorkoutProgram | NutritionProgram)[]): boolean {
+    return (
+      this.calendarType === 'workout' &&
+      items.some((item) => !this.isFileWorkoutItem(item))
+    );
+  }
+
   hasFileRangeStarting(
     items: (WorkoutProgram | NutritionProgram)[],
     dateStr: string
@@ -561,16 +544,6 @@ currentDate = new Date();
           : this.toCalendarDateOnly(day.date) || day.date;
 
         if (day.restDay) {
-          result.push({
-            id: day.id,
-            title: day.title || `Day ${day.dayNumber || ''}`.trim(),
-            date,
-            clientId: plan.client?.id,
-            programId: plan.id,
-            programName: plan.name,
-            sessions: [],
-            status: day.status || 'PENDING',
-          });
           return;
         }
 
@@ -583,13 +556,25 @@ currentDate = new Date();
                 id: ex.id || `${plan.id}-ex-${exIndex}`,
                 name: ex.name,
                 type: ex.type === 'CARDIO' ? 'cardio' : 'strength',
-                youtubeUrl: ex.youtubeUrl || ex.videoUrl || undefined,
+                youtubeUrl: ex.youtubeUrl || ex.videoUrl || ex.videoLink || undefined,
                 showVideo: false,
                 videoUrl: undefined,
                 rawVideoUrl: undefined,
+                supersetGroupId: ex.supersetGroupId || null,
+                duration:
+                  ex.duration ??
+                  ex.durationMin ??
+                  ex.durationMinutes ??
+                  (ex.sets || []).reduce(
+                    (sum: number, set: any) => sum + (Number(set.duration) || 0),
+                    0
+                  ),
                 sets: (ex.sets || []).map((set: any, setIndex: number) => ({
                   id: `${ex.id || plan.id}-set-${setIndex}`,
                   number: set.setNumber ?? setIndex + 1,
+                  duration: set.duration,
+                  weight: set.weight ?? 0,
+                  type: set.type || 'REGULAR',
                   reps:
                     set.reps !== undefined && set.reps !== null
                       ? String(set.reps)
@@ -901,11 +886,15 @@ currentDate = new Date();
   }
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
+    if (!this.selectedClient) {
+      return [];
+    }
+
     if (this.calendarType === 'workout') {
       return this.workoutPrograms
         .filter((p: WorkoutProgram) => {
           const matchesClient =
-            this.selectedClient === 'all' || p.clientId === this.selectedClient;
+            p.clientId === this.selectedClient;
 
           if (!matchesClient) {
             return false;
@@ -944,9 +933,42 @@ currentDate = new Date();
       return this.nutritionPrograms.filter(
         (p) =>
           p.date === dateStr &&
-          (this.selectedClient === 'all' || p.clientId === this.selectedClient)
+          p.clientId === this.selectedClient
       );
     }
+  }
+
+  hasSelectedClient(): boolean {
+    return this.hideClientFilter || !!this.selectedClient;
+  }
+
+  getExerciseSummary(exercise: Exercise): string {
+    const sets = exercise.sets || [];
+    const setCount = sets.length;
+    const firstSet = sets[0];
+    const reps = firstSet?.reps ? `${firstSet.reps} reps` : '';
+    const rest = firstSet?.rest ? `+ ${this.formatRestTime(firstSet.rest)} rest` : '';
+
+    if (exercise.type === 'cardio') {
+      const setDuration = Number(firstSet?.duration) || 0;
+      const durationValue =
+        setDuration ||
+        (setCount && exercise.duration
+          ? Math.round(Number(exercise.duration) / setCount)
+          : Number(exercise.duration) || 0);
+      const duration = durationValue ? `${durationValue} min` : '';
+      return [setCount ? `${setCount} set${setCount > 1 ? 's' : ''}` : '', duration]
+        .filter(Boolean)
+        .join(' x ');
+    }
+
+    return [
+      setCount ? `${setCount} x` : '',
+      reps,
+      rest,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 
 
@@ -1313,6 +1335,7 @@ currentDate = new Date();
       rawVideoUrl: undefined,
       sets: (ex.sets || []).map((set, setIndex) => ({
         ...set,
+        type: set.type || 'REGULAR',
         id: set.id || `cloned-set-${Date.now()}-${exIndex}-${setIndex}`,
       })),
     }));
@@ -1343,7 +1366,7 @@ currentDate = new Date();
     const sourcePrograms = this.workoutPrograms.filter(
       (p: WorkoutProgram) =>
         p.date === dateStr &&
-        (this.selectedClient === 'all' || p.clientId === this.selectedClient)
+        p.clientId === this.selectedClient
     );
 
     if (!sourcePrograms.length) {
@@ -1384,7 +1407,7 @@ currentDate = new Date();
       return;
     }
 
-    this.viewWorkout(workout);
+    this.openEditWorkoutModal(workout, event);
   }
 
   startWorkoutPointerDrag(
@@ -1515,9 +1538,13 @@ currentDate = new Date();
 
     const card = state.sourceElement.querySelector('.card') || state.sourceElement;
     const ghost = card.cloneNode(true) as HTMLElement;
+    const rect = card.getBoundingClientRect();
+    const ghostWidth = Math.max(rect.width, 190);
 
     ghost.classList.add('calendar-pointer-drag-ghost');
-    ghost.style.width = `${card.getBoundingClientRect().width}px`;
+    ghost.style.width = `${ghostWidth}px`;
+    ghost.style.minWidth = `${ghostWidth}px`;
+    ghost.style.maxWidth = `${ghostWidth}px`;
     ghost.style.transform = `translate3d(${state.currentX + 12}px, ${state.currentY + 12}px, 0)`;
 
     document.body.appendChild(ghost);
@@ -1539,7 +1566,19 @@ currentDate = new Date();
   }
 
   private getDropDateFromPoint(clientX: number, clientY: number): string | null {
+    const ghost = this.pointerDragState?.ghost;
+    const previousDisplay = ghost?.style.display;
+
+    if (ghost) {
+      ghost.style.display = 'none';
+    }
+
     const el = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+
+    if (ghost) {
+      ghost.style.display = previousDisplay || '';
+    }
+
     const dropTarget = el?.closest('[data-workout-drop-date]') as HTMLElement | null;
     return dropTarget?.dataset?.['workoutDropDate'] || null;
   }
@@ -1616,46 +1655,15 @@ currentDate = new Date();
     );
     this.updateMonthGrid();
 
-    this.workoutService.getWorkoutById(programId).subscribe({
-      next: (plan: any) => {
-        const workoutDays = [...(plan.workoutDays || [])];
-        const dayIndex = workoutDays.findIndex((d: any) => d.id === workout.id);
-
-        if (dayIndex === -1) {
-          alert('Workout day not found in plan.');
-          this.workoutPrograms = previousPrograms;
-          this.updateMonthGrid();
-          return;
-        }
-
-        workoutDays[dayIndex] = {
-          ...workoutDays[dayIndex],
-          date: targetDate,
-        };
-
-        const normalizedDays = this.normalizePlanDays(workoutDays);
-
-        const updatedPlan = {
-          ...plan,
-          workoutDays: normalizedDays,
-          endDate: normalizedDays.length
-            ? normalizedDays[normalizedDays.length - 1].date
-            : plan.endDate,
-        };
-
-        this.workoutService.updateWorkout(plan.id, updatedPlan).subscribe({
-          next: () => this.getWorkout(),
-          error: (err) => {
-            console.error('Error moving workout day', err);
-            alert('Failed to move workout day.');
-            this.workoutPrograms = previousPrograms;
-            this.updateMonthGrid();
-          },
-        });
-      },
+    this.workoutService.updateWorkoutDay(
+      programId,
+      workout.id,
+      this.buildWorkoutDayRequestFromCalendarProgram(workout, targetDate)
+    ).subscribe({
+      next: () => this.getWorkout(),
       error: (err) => {
-        console.error('Error loading plan for move', err);
-        alert('Failed to load workout plan.');
+        console.error('Error moving workout day', err);
+        alert('Failed to move workout day.');
         this.workoutPrograms = previousPrograms;
         this.updateMonthGrid();
       },
@@ -1677,55 +1685,34 @@ currentDate = new Date();
 
     if (!sourcePrograms.length) return;
 
-    const lastPlan = this.getLastWorkoutPlanForClient(this.selectedClient);
-    if (!lastPlan) {
-      alert('No assigned workout plan found for this client.');
+    const sourceProgram = sourcePrograms[0] as WorkoutProgram;
+
+    if (!sourceProgram?.programId) {
+      alert('No assigned workout day found for this client.');
       return;
     }
 
-    this.workoutService.getWorkoutById(lastPlan.programId).subscribe({
-      next: (plan: any) => {
-        const workoutDays = [...(plan.workoutDays || [])];
+    const exists = this.workoutPrograms.some(
+      (p: WorkoutProgram) =>
+        p.date === targetDate && p.clientId === this.selectedClient
+    );
 
-        sourcePrograms.forEach((program) => {
-          const exists = workoutDays.some((d: any) => d.date === targetDate);
-          if (exists) {
-            return;
-          }
+    if (exists) {
+      alert('A workout day already exists for this date.');
+      return;
+    }
 
-          workoutDays.push(
-            this.buildWorkoutDayFromCalendarProgram(
-              program,
-              targetDate,
-              workoutDays.length + 1
-            )
-          );
-        });
-
-        const normalizedDays = this.normalizePlanDays(workoutDays);
-
-        const updatedPlan = {
-          ...plan,
-          workoutDays: normalizedDays,
-          endDate: normalizedDays.length
-            ? normalizedDays[normalizedDays.length - 1].date
-            : plan.endDate,
-        };
-
-        this.workoutService.updateWorkout(plan.id, updatedPlan).subscribe({
-          next: () => {
-            this.cancelCopy();
-            this.getWorkout();
-          },
-          error: (err) => {
-            console.error('Error pasting workout day', err);
-            alert('Failed to paste workout day.');
-          },
-        });
+    this.workoutService.addWorkoutDay(
+      sourceProgram.programId,
+      this.buildWorkoutDayRequestFromCalendarProgram(sourceProgram, targetDate)
+    ).subscribe({
+      next: () => {
+        this.cancelCopy();
+        this.getWorkout();
       },
       error: (err) => {
-        console.error('Error loading plan for paste', err);
-        alert('Failed to load workout plan.');
+        console.error('Error pasting workout day', err);
+        alert('Failed to paste workout day.');
       },
     });
   }
@@ -1803,21 +1790,168 @@ currentDate = new Date();
     }
 
     this.showExerciseSelector = true;
+    this.loadAvailableExercises();
   }
 
   closeExerciseSelector(): void {
     this.showExerciseSelector = false;
     this.exerciseSearchTerm = '';
+    this.exerciseMuscleFilter = '';
+    this.exerciseEquipmentFilter = '';
+    this.exerciseTypeFilter = '';
   }
 
   getFilteredExercises(): Exercise[] {
-    const term = this.exerciseSearchTerm.trim().toLowerCase();
-    if (!term) {
-      return this.availableExercises;
+    return this.availableExercises;
+  }
+
+  onExerciseSearchChange(): void {
+    this.loadAvailableExercises();
+  }
+
+  shouldShowCalendarWeightField(): boolean {
+    return this.coachSettingsService.shouldShowExerciseWeight();
+  }
+
+  private getDefaultWeightForExercise(type: Exercise['type']): number | null {
+    return type === 'cardio' || !this.shouldShowCalendarWeightField() ? null : 0;
+  }
+
+  private loadAvailableExercises(): void {
+    this.exerciseSelectorLoading = true;
+
+    this.exerciseService
+      .getExercises(0, 50, {
+        name: this.exerciseSearchTerm.trim(),
+        muscle: this.exerciseMuscleFilter,
+        equipment: this.exerciseEquipmentFilter,
+        type: this.exerciseTypeFilter,
+      })
+      .subscribe({
+        next: (res: PageResponse<LibraryExercise>) => {
+          this.availableExercises = (res.content || []).map((exercise) =>
+            this.normalizeLibraryExercise(exercise)
+          );
+          this.exerciseSelectorLoading = false;
+        },
+        error: (err) => {
+          console.error('Error loading exercises for calendar modal', err);
+          this.availableExercises = [];
+          this.exerciseSelectorLoading = false;
+        },
+      });
+  }
+
+  private normalizeLibraryExercise(exercise: LibraryExercise): Exercise {
+    const type = String(exercise.type || '').toUpperCase() === 'CARDIO'
+      ? 'cardio'
+      : 'strength';
+    const videoLink = this.getExerciseVideoLink(exercise);
+    const thumbnail = this.getExerciseThumbnail(exercise);
+
+    return {
+      id: exercise.id || `library-ex-${Date.now()}-${Math.random()}`,
+      name: exercise.name || 'Untitled Exercise',
+      type,
+      youtubeUrl: videoLink || undefined,
+      videoLink: videoLink || undefined,
+      thumbnail: thumbnail || undefined,
+      imageUrl: thumbnail || undefined,
+      duration: type === 'cardio' ? Number(exercise.duration || 30) : undefined,
+      sets: this.buildInitialExerciseSets(type),
+    };
+  }
+
+  private buildInitialExerciseSets(type: Exercise['type']): ExerciseSet[] {
+    const autoFill = this.coachSettingsService.shouldAutoFillWorkoutDefaults();
+
+    if (type === 'cardio') {
+      const count = autoFill ? this.coachSettingsService.getCardioSets() : 1;
+      const minutes = autoFill ? this.coachSettingsService.getCardioMinutes() : 30;
+
+      return Array.from({ length: count }, (_, index) => ({
+          id: `library-cardio-set-${Date.now()}-${index}`,
+          number: index + 1,
+          reps: '',
+          rest: '60',
+          weight: null,
+          duration: minutes,
+          type: 'REGULAR',
+        }));
     }
-    return this.availableExercises.filter((e) =>
-      e.name.toLowerCase().includes(term)
+
+    const count = autoFill ? this.coachSettingsService.getWorkoutSets() : 1;
+    const reps = autoFill ? this.coachSettingsService.getWorkoutReps() : '8';
+
+    return Array.from({ length: count }, (_, index) => ({
+        id: `library-set-${Date.now()}-${index}`,
+        number: index + 1,
+        reps,
+        rest: '60',
+        weight: this.getDefaultWeightForExercise('strength'),
+        type: 'REGULAR',
+      }));
+  }
+
+  private cleanExerciseValue(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    const text = String(value).trim();
+    if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') {
+      return '';
+    }
+    return text;
+  }
+
+  private getExerciseRef(exercise: any): any {
+    return exercise?.exerciseRef || exercise?.ref || exercise?.exercise || null;
+  }
+
+  private getExerciseVideoLink(exercise: any): string {
+    const ref = this.getExerciseRef(exercise);
+
+    return (
+      this.cleanExerciseValue(exercise?.videoLink) ||
+      this.cleanExerciseValue(exercise?.videoUrl) ||
+      this.cleanExerciseValue(exercise?.youtubeUrl) ||
+      this.cleanExerciseValue(exercise?.video) ||
+      this.cleanExerciseValue(exercise?.url) ||
+      this.cleanExerciseValue(ref?.videoLink) ||
+      this.cleanExerciseValue(ref?.videoUrl) ||
+      this.cleanExerciseValue(ref?.youtubeUrl) ||
+      this.cleanExerciseValue(ref?.video) ||
+      this.cleanExerciseValue(ref?.url)
     );
+  }
+
+  private getExerciseImageUrl(exercise: any): string {
+    const ref = this.getExerciseRef(exercise);
+
+    return (
+      this.cleanExerciseValue(exercise?.imageUrl) ||
+      this.cleanExerciseValue(exercise?.image) ||
+      this.cleanExerciseValue(exercise?.thumbnailUrl) ||
+      this.cleanExerciseValue(exercise?.thumbnail) ||
+      this.cleanExerciseValue(exercise?.photoUrl) ||
+      this.cleanExerciseValue(exercise?.pictureUrl) ||
+      this.cleanExerciseValue(ref?.imageUrl) ||
+      this.cleanExerciseValue(ref?.image) ||
+      this.cleanExerciseValue(ref?.thumbnailUrl) ||
+      this.cleanExerciseValue(ref?.thumbnail) ||
+      this.cleanExerciseValue(ref?.photoUrl) ||
+      this.cleanExerciseValue(ref?.pictureUrl)
+    );
+  }
+
+  getExerciseThumbnail(exercise: any): string {
+    const imageUrl = this.getExerciseImageUrl(exercise);
+    if (imageUrl) return imageUrl;
+
+    const videoUrl =
+      this.getExerciseVideoLink(exercise) ||
+      this.cleanExerciseValue(exercise?.youtubeUrl);
+    const videoId = this.extractYoutubeId(videoUrl);
+
+    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
   }
 
   handleAddExerciseToWorkout(exercise: Exercise): void {
@@ -1829,15 +1963,32 @@ currentDate = new Date();
     const copy: Exercise = {
       ...exercise,
       id: `new-ex-${Date.now()}-${Math.random()}`,
+      thumbnail: exercise.thumbnail || this.getExerciseThumbnail(exercise),
+      imageUrl: exercise.imageUrl || exercise.thumbnail || this.getExerciseThumbnail(exercise),
       showVideo: false,
       videoUrl: undefined,
       rawVideoUrl: undefined,
-      sets: exercise.sets
+      sets: exercise.sets && exercise.sets.length
         ? exercise.sets.map((s, index) => ({
           ...s,
           id: `new-set-${Date.now()}-${index}`,
+          duration: s.duration ?? exercise.duration,
+          weight: s.weight ?? this.getDefaultWeightForExercise(exercise.type),
+          type: s.type || 'REGULAR',
         }))
-        : [],
+        : exercise.type === 'cardio'
+          ? [
+            {
+              id: `new-set-${Date.now()}-0`,
+              number: 1,
+              reps: '',
+              rest: '60',
+              weight: null,
+              duration: exercise.duration || 30,
+              type: 'REGULAR',
+            },
+          ]
+          : [],
     };
     this.newWorkoutExercises.push(copy);
     this.showExerciseSelector = false;
@@ -1845,9 +1996,14 @@ currentDate = new Date();
   }
 
   handleRemoveExerciseFromWorkout(exerciseId: string): void {
+    const exercise = this.newWorkoutExercises.find((e) => e.id === exerciseId);
+    const groupId = exercise?.supersetGroupId || null;
+
     this.newWorkoutExercises = this.newWorkoutExercises.filter(
       (e) => e.id !== exerciseId
     );
+
+    this.clearInvalidCalendarSupersetGroup(groupId);
   }
 
   addSetToExercise(exercise: Exercise): void {
@@ -1859,8 +2015,13 @@ currentDate = new Date();
     exercise.sets.push({
       id: `set-${Date.now()}`,
       number: nextNumber,
-      reps: lastSet ? lastSet.reps : '8-12',
+      reps: lastSet ? lastSet.reps : this.coachSettingsService.getWorkoutReps(),
       rest: lastSet ? lastSet.rest : '60',
+      weight: lastSet?.weight ?? this.getDefaultWeightForExercise(exercise.type),
+      duration: exercise.type === 'cardio'
+        ? Number(lastSet?.duration || exercise.duration || this.coachSettingsService.getCardioMinutes())
+        : undefined,
+      type: lastSet?.type || 'REGULAR',
     });
   }
 
@@ -1897,6 +2058,173 @@ currentDate = new Date();
     set.rest = String(m * 60 + sec);
   }
 
+  updateSetMainValue(exercise: Exercise, set: ExerciseSet, value: string | number): void {
+    if (exercise.type === 'cardio') {
+      set.duration = Number(value) || 0;
+      exercise.duration = (exercise.sets || []).reduce(
+        (sum, currentSet) => sum + (Number(currentSet.duration) || 0),
+        0
+      );
+      return;
+    }
+
+    set.reps = String(value ?? '');
+  }
+
+  getSetDisplayLabel(set: ExerciseSet, index: number): string {
+    switch (set.type || 'REGULAR') {
+      case 'WARM_UP':
+        return 'W';
+      case 'DROP_SET':
+        return 'D';
+      case 'FAILURE':
+        return 'F';
+      default:
+        return String(set.number || index + 1);
+    }
+  }
+
+  getSetTypeClass(type?: ExerciseSet['type']): string {
+    switch (type || 'REGULAR') {
+      case 'WARM_UP':
+        return 'set-type-warmup';
+      case 'DROP_SET':
+        return 'set-type-dropset';
+      case 'FAILURE':
+        return 'set-type-failure';
+      default:
+        return 'set-type-regular';
+    }
+  }
+
+  toggleSetTypeMenu(exerciseId: string, setIndex: number, event?: MouseEvent): void {
+    event?.stopPropagation();
+    const key = `${exerciseId}-${setIndex}`;
+    this.openSetTypeKey = this.openSetTypeKey === key ? null : key;
+  }
+
+  isSetTypeMenuOpen(exerciseId: string, setIndex: number): boolean {
+    return this.openSetTypeKey === `${exerciseId}-${setIndex}`;
+  }
+
+  selectSetType(
+    exercise: Exercise,
+    setIndex: number,
+    type: ExerciseSet['type'],
+    event?: MouseEvent
+  ): void {
+    event?.stopPropagation();
+    const set = exercise.sets?.[setIndex];
+    if (!set) return;
+
+    set.type = type;
+    set.number = setIndex + 1;
+    this.openSetTypeKey = null;
+  }
+
+  canToggleCalendarSuperset(index: number): boolean {
+    return index >= 0 && index < this.newWorkoutExercises.length - 1;
+  }
+
+  isCalendarSupersetPair(index: number): boolean {
+    const current = this.newWorkoutExercises[index];
+    const next = this.newWorkoutExercises[index + 1];
+    return !!current?.supersetGroupId && current.supersetGroupId === next?.supersetGroupId;
+  }
+
+  private getCalendarSupersetRun(groupId: string | null | undefined): Exercise[] {
+    if (!groupId) return [];
+
+    return this.newWorkoutExercises.filter(
+      (exercise) => exercise.supersetGroupId === groupId
+    );
+  }
+
+  private getContiguousCalendarSupersetRun(index: number): {
+    start: number;
+    end: number;
+    groupId: string | null;
+  } {
+    const list = this.newWorkoutExercises;
+    const groupId = list[index]?.supersetGroupId || null;
+
+    if (!groupId) {
+      return { start: index, end: index, groupId: null };
+    }
+
+    let start = index;
+    let end = index;
+
+    while (start > 0 && list[start - 1]?.supersetGroupId === groupId) {
+      start -= 1;
+    }
+
+    while (end < list.length - 1 && list[end + 1]?.supersetGroupId === groupId) {
+      end += 1;
+    }
+
+    return { start, end, groupId };
+  }
+
+  private clearInvalidCalendarSupersetGroup(groupId: string | null | undefined): void {
+    if (!groupId) return;
+
+    const group = this.getCalendarSupersetRun(groupId);
+
+    if (group.length < 2) {
+      group.forEach((exercise) => (exercise.supersetGroupId = null));
+    }
+  }
+
+  private getNewCalendarSupersetGroupId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+
+    return `calendar-superset-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  toggleCalendarSuperset(index: number): void {
+    if (!this.canToggleCalendarSuperset(index)) return;
+
+    const list = this.newWorkoutExercises;
+    const current = list[index];
+    const next = list[index + 1];
+
+    if (this.isCalendarSupersetPair(index)) {
+      const groupId = current.supersetGroupId;
+
+      const rightRun = this.getContiguousCalendarSupersetRun(index + 1);
+
+      for (let idx = index + 1; idx <= rightRun.end; idx += 1) {
+        if (list[idx]?.supersetGroupId === groupId) {
+          list[idx].supersetGroupId = null;
+        }
+      }
+
+      this.clearInvalidCalendarSupersetGroup(groupId);
+      return;
+    }
+
+    const groupId =
+      current.supersetGroupId ||
+      next.supersetGroupId ||
+      this.getNewCalendarSupersetGroupId();
+    const currentGroupId = current.supersetGroupId;
+    const nextGroupId = next.supersetGroupId;
+
+    list.forEach((exercise) => {
+      if (
+        exercise === current ||
+        exercise === next ||
+        (currentGroupId && exercise.supersetGroupId === currentGroupId) ||
+        (nextGroupId && exercise.supersetGroupId === nextGroupId)
+      ) {
+        exercise.supersetGroupId = groupId;
+      }
+    });
+  }
+
   toggleExerciseVideo(exercise: Exercise): void {
     exercise.showVideo = !exercise.showVideo;
     if (exercise.showVideo && !exercise.videoUrl) {
@@ -1912,8 +2240,8 @@ currentDate = new Date();
 
   extractYoutubeId(url: string): string | null {
     if (!url) return null;
-    const match = url.match(
-      /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+      const match = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
     );
     return match ? match[1] : null;
   }
@@ -1928,6 +2256,45 @@ currentDate = new Date();
       return;
     }
 
+    const targetDate = this.selectedDateString!;
+
+    if (this.editingWorkout) {
+      if (!this.editingWorkout.programId) {
+        alert('This workout day is not linked to a plan.');
+        return;
+      }
+
+      const duplicate = this.workoutPrograms.some(
+        (p: WorkoutProgram) =>
+          p.id !== this.editingWorkout?.id &&
+          p.clientId === this.selectedClient &&
+          p.date === targetDate
+      );
+
+      if (duplicate) {
+        alert('Another workout day already exists for this date.');
+        return;
+      }
+
+      this.workoutService
+        .updateWorkoutDay(
+          this.editingWorkout.programId,
+          this.editingWorkout.id,
+          this.buildWorkoutDayRequestFromForm(targetDate)
+        )
+        .subscribe({
+          next: () => {
+            this.closeAddWorkoutModal();
+            this.getWorkout();
+          },
+          error: (err) => {
+            console.error('Error updating workout day', err);
+            alert('Failed to update workout day.');
+          },
+        });
+      return;
+    }
+
     const lastPlan = this.getLastWorkoutPlanForClient(this.selectedClient);
 
     if (!lastPlan) {
@@ -1935,76 +2302,28 @@ currentDate = new Date();
       return;
     }
 
-    this.workoutService.getWorkoutById(lastPlan.programId).subscribe({
-      next: (plan: any) => {
-        const workoutDays = [...(plan.workoutDays || [])];
-        const targetDate = this.selectedDateString!;
-        const nextDayNumber = workoutDays.length + 1;
+    const exists = this.workoutPrograms.some(
+      (p: WorkoutProgram) =>
+        p.clientId === this.selectedClient && p.date === targetDate
+    );
 
-        if (this.editingWorkout) {
-          const existingIndex = workoutDays.findIndex(
-            (d: any) => d.id === this.editingWorkout?.id
-          );
+    if (exists) {
+      alert('A workout day already exists for this date.');
+      return;
+    }
 
-          if (existingIndex === -1) {
-            alert('Workout day not found in plan.');
-            return;
-          }
-
-          const duplicate = workoutDays.some(
-            (d: any) =>
-              d.id !== this.editingWorkout?.id && d.date === targetDate
-          );
-
-          if (duplicate) {
-            alert('Another workout day already exists for this date.');
-            return;
-          }
-
-          workoutDays[existingIndex] = this.buildWorkoutDayPayload(
-            targetDate,
-            nextDayNumber,
-            this.editingWorkout.id
-          );
-        } else {
-          const exists = workoutDays.some((d: any) => d.date === targetDate);
-
-          if (exists) {
-            alert('A workout day already exists for this date.');
-            return;
-          }
-
-          workoutDays.push(
-            this.buildWorkoutDayPayload(targetDate, nextDayNumber)
-          );
-        }
-
-        const normalizedDays = this.normalizePlanDays(workoutDays);
-
-        const updatedPlan = {
-          ...plan,
-          workoutDays: normalizedDays,
-          endDate: normalizedDays.length
-            ? normalizedDays[normalizedDays.length - 1].date
-            : plan.endDate,
-        };
-
-        this.workoutService.updateWorkout(plan.id, updatedPlan).subscribe({
-          next: () => {
-            this.closeAddWorkoutModal();
-            this.getWorkout();
-          },
-          error: (err) => {
-            console.error('Error saving workout day', err);
-            alert('Failed to save workout day.');
-          },
-        });
-      },
-      error: (err) => {
-        console.error('Error loading plan before save', err);
-        alert('Failed to load workout plan.');
-      },
-    });
+    this.workoutService
+      .addWorkoutDay(lastPlan.programId, this.buildWorkoutDayRequestFromForm(targetDate))
+      .subscribe({
+        next: () => {
+          this.closeAddWorkoutModal();
+          this.getWorkout();
+        },
+        error: (err) => {
+          console.error('Error saving workout day', err);
+          alert('Failed to save workout day.');
+        },
+      });
   }
 
   openDeleteModal(workout: WorkoutProgram, event?: Event): void {
@@ -2038,37 +2357,15 @@ currentDate = new Date();
     }
 
     this.workoutService
-      .getWorkoutById(this.workoutToDelete.programId)
+      .deleteWorkoutDay(this.workoutToDelete.programId, this.workoutToDelete.id)
       .subscribe({
-        next: (plan: any) => {
-          const workoutDays = [...(plan.workoutDays || [])].filter(
-            (d: any) => d.id !== this.workoutToDelete?.id
-          );
-
-          const normalizedDays = this.normalizePlanDays(workoutDays);
-
-          const updatedPlan = {
-            ...plan,
-            workoutDays: normalizedDays,
-            endDate: normalizedDays.length
-              ? normalizedDays[normalizedDays.length - 1].date
-              : plan.startDate,
-          };
-
-          this.workoutService.updateWorkout(plan.id, updatedPlan).subscribe({
-            next: () => {
-              this.closeDeleteModal();
-              this.getWorkout();
-            },
-            error: (err) => {
-              console.error('Error deleting workout day', err);
-              alert('Failed to delete workout day.');
-            },
-          });
+        next: () => {
+          this.closeDeleteModal();
+          this.getWorkout();
         },
         error: (err) => {
-          console.error('Error loading plan before delete', err);
-          alert('Failed to load workout plan.');
+          console.error('Error deleting workout day', err);
+          alert('Failed to delete workout day.');
         },
       });
   }
@@ -2158,6 +2455,7 @@ currentDate = new Date();
             id: ex.id || crypto.randomUUID(),
             name: ex.name,
             type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
+            supersetGroupId: ex.supersetGroupId || null,
             youtubeUrl: ex.youtubeUrl || null,
             sets:
               ex.type === 'strength'
@@ -2165,17 +2463,127 @@ currentDate = new Date();
                   const total = parseInt(set.rest, 10) || 0;
                   return {
                     setNumber: set.number ?? index + 1,
-                    reps: set.reps ? Number(set.reps) : null,
+                    reps: this.toNullableNumber(set.reps),
+                    weight: this.shouldShowCalendarWeightField()
+                      ? set.weight ?? 0
+                      : null,
                     restMin: Math.floor(total / 60),
                     restSec: total % 60,
+                    type: set.type || 'REGULAR',
                   };
                 })
-                : [],
+                : this.buildCardioSets(ex),
           })),
         },
       ],
       status: 'PENDING',
     };
+  }
+
+  private buildWorkoutDayRequestFromForm(date: string): any {
+    return {
+      title: this.isRestDay ? 'Rest Day' : this.newWorkoutTitle.trim(),
+      date,
+      restDay: this.isRestDay,
+      exercises: this.isRestDay
+        ? []
+        : this.newWorkoutExercises.map((ex) => ({
+          name: ex.name,
+          type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
+          supersetGroupId: ex.supersetGroupId || null,
+          videoLink: ex.youtubeUrl || undefined,
+          sets:
+            ex.type === 'cardio'
+              ? this.buildCardioSets(ex)
+              : (ex.sets || []).map((set, index) => {
+                const total = parseInt(set.rest, 10) || 0;
+                return {
+                  setNumber: set.number ?? index + 1,
+                  reps: this.toNullableNumber(set.reps),
+                  weight: this.shouldShowCalendarWeightField()
+                    ? set.weight ?? 0
+                    : null,
+                  restMin: Math.floor(total / 60),
+                  restSec: total % 60,
+                  type: set.type || 'REGULAR',
+                };
+              }),
+        })),
+    };
+  }
+
+  private buildWorkoutDayRequestFromCalendarProgram(
+    program: WorkoutProgram,
+    date: string
+  ): any {
+    return {
+      title: program.title,
+      date,
+      restDay: false,
+      exercises: (program.sessions || []).flatMap((session) =>
+        (session.exercises || []).map((ex) => ({
+          name: ex.name,
+          type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
+          supersetGroupId: ex.supersetGroupId || null,
+          videoLink: ex.youtubeUrl || undefined,
+          sets:
+            ex.type === 'cardio'
+              ? this.buildCardioSets(ex)
+              : (ex.sets || []).map((set, index) => {
+                const total = parseInt(set.rest, 10) || 0;
+                return {
+                  setNumber: set.number ?? index + 1,
+                reps: this.toNullableNumber(set.reps),
+                weight: this.shouldShowCalendarWeightField()
+                  ? set.weight ?? 0
+                  : null,
+                restMin: Math.floor(total / 60),
+                restSec: total % 60,
+                type: set.type || 'REGULAR',
+                };
+              }),
+        }))
+      ),
+    };
+  }
+
+  private buildCardioSets(ex: Exercise): any[] {
+    const sets = ex.sets || [];
+
+    if (sets.length) {
+      return sets.map((set, index) => {
+        const total = parseInt(set.rest, 10) || 0;
+
+        return {
+          setNumber: set.number ?? index + 1,
+          reps: null,
+          weight: null,
+          duration:
+            Number(set.duration) ||
+            (ex.duration ? Math.round(Number(ex.duration) / sets.length) : 0),
+          restMin: Math.floor(total / 60),
+          restSec: total % 60,
+          type: set.type || 'REGULAR',
+        };
+      });
+    }
+
+    return [
+      {
+        setNumber: 1,
+        reps: null,
+        weight: null,
+        duration: Number(ex.duration || 0),
+        restMin: 0,
+        restSec: 0,
+        type: 'REGULAR',
+      },
+    ];
+  }
+
+  private toNullableNumber(value: string): number | null {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private buildWorkoutDayFromCalendarProgram(
@@ -2203,6 +2611,7 @@ currentDate = new Date();
               id: crypto.randomUUID(),
               name: ex.name,
               type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
+              supersetGroupId: ex.supersetGroupId || null,
               youtubeUrl: ex.youtubeUrl || null,
               sets:
                 ex.type === 'strength'
@@ -2210,12 +2619,16 @@ currentDate = new Date();
                     const total = parseInt(set.rest, 10) || 0;
                     return {
                       setNumber: set.number ?? index + 1,
-                      reps: set.reps ? Number(set.reps) : null,
+                      reps: this.toNullableNumber(set.reps),
+                      weight: this.shouldShowCalendarWeightField()
+                        ? set.weight ?? 0
+                        : null,
                       restMin: Math.floor(total / 60),
                       restSec: total % 60,
+                      type: set.type || 'REGULAR',
                     };
                   })
-                  : [],
+                  : this.buildCardioSets(ex),
             })),
           })),
       status: 'PENDING',

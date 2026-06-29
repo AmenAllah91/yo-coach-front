@@ -306,3 +306,21 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Align header coordinates with the Clients page reference. */
+.meals-page {
+  padding: 0 !important;
+  background: #f8fafc;
+}
+
+.search-container,
+.plans-state,
+.meals-table,
+.app-pagination {
+  margin-left: clamp(1.5rem, 2vw, 2rem) !important;
+  margin-right: clamp(1.5rem, 2vw, 2rem) !important;
+}
+
+.search-container {
+  margin-top: clamp(1rem, 1.8vw, 1.35rem) !important;
+}

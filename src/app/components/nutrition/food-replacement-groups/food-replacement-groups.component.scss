@@ -209,6 +209,13 @@
   color: #dc2626;
 }
 
+.group-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 .info-box {
   margin-top: 22px;
   border: 1px solid #b7e3fb;
@@ -610,4 +617,22 @@
 .app-pagination .page-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* Align header coordinates with the Clients page reference. */
+.page-container {
+  padding: 0 !important;
+  background: #f8fafc;
+}
+
+.list-toolbar,
+.groups-list,
+.app-pagination,
+.empty-state {
+  margin-left: clamp(1.5rem, 2vw, 2rem) !important;
+  margin-right: clamp(1.5rem, 2vw, 2rem) !important;
+}
+
+.list-toolbar {
+  margin-top: clamp(1rem, 1.8vw, 1.35rem) !important;
 }

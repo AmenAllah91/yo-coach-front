@@ -1347,3 +1347,27 @@
 .np-aside__body.cdk-drop-list-dragging .np-dayrow {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
+
+/* Client profile nutrition editor: match template editor full-width layout. */
+:host,
+.np-root,
+.np-shell {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.np-shell {
+  margin: 0 !important;
+  min-width: 100%;
+}
+
+.np-main {
+  width: auto !important;
+  max-width: none !important;
+}
+
+.np-card,
+.np-main > .np-card:first-of-type {
+  width: auto !important;
+  max-width: none !important;
+}

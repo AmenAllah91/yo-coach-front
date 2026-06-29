@@ -820,7 +820,8 @@
 .table-header,
 .program-row {
   display: grid !important;
-  grid-template-columns: minmax(420px, 1fr) 180px 160px 160px 80px !important;
+  grid-template-columns: minmax(360px, 1fr) 190px 180px 190px 130px !important;
+  column-gap: 28px !important;
   align-items: center !important;
 }
 
@@ -1608,5 +1609,237 @@
 
   .nutrition-type-modal {
     width: min(100%, calc(100vw - 32px)) !important;
+  }
+}
+
+/* Unified app table look */
+.programs-table--cap {
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+}
+
+.programs-table--cap .table-header,
+.programs-table--cap .program-row {
+  grid-template-columns: minmax(360px, 1fr) 190px 180px 190px 130px !important;
+  column-gap: 28px !important;
+}
+
+.programs-table--cap .table-header {
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #dbe7f2 !important;
+  color: #1f2f46 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+.programs-table--cap .program-row {
+  min-height: 68px !important;
+  padding: 13px 24px !important;
+  border-bottom: 1px solid #edf2f7 !important;
+  background: #ffffff !important;
+}
+
+.programs-table--cap .program-row:hover {
+  background: #fbfdff !important;
+}
+
+.programs-table--cap .program-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+}
+
+.programs-table--cap .program-name {
+  color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+.programs-table--cap .program-meta {
+  color: #47627f !important;
+  font-size: 12px !important;
+}
+
+.programs-table--cap .type-badge {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.programs-table--cap .action-btn {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+  gap: 8px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.programs-table--cap .action-btn:hover {
+  background: #fbfdff !important;
+  border-color: #c8d8e8 !important;
+}
+
+.programs-table--cap .action-btn i-feather {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.app-pagination {
+  justify-content: center !important;
+  gap: 6px !important;
+  margin: 20px 0 8px !important;
+}
+
+@media (max-width: 1100px) {
+.programs-table--cap .table-header {
+  display: none !important;
+}
+
+  .programs-table--cap .program-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    column-gap: 12px !important;
+  }
+
+  .programs-table--cap .col-type,
+  .programs-table--cap .col-created,
+  .programs-table--cap .col-modified {
+    display: none !important;
+  }
+}
+
+/* Compact top controls to match the coach dashboard rhythm. */
+.page-container > .page-header {
+  align-items: flex-start !important;
+}
+
+.page-container > .page-header .header-content {
+  padding-top: 0 !important;
+}
+
+.content {
+  padding-top: clamp(1rem, 1.8vw, 1.35rem) !important;
+}
+
+.tabs {
+  gap: clamp(1.25rem, 2.2vw, 2rem) !important;
+  margin-bottom: clamp(1rem, 1.7vw, 1.35rem) !important;
+  padding-inline: 0 !important;
+}
+
+.tab {
+  padding-bottom: clamp(0.75rem, 1.1vw, 0.95rem) !important;
+  min-height: auto !important;
+}
+
+.program-toolbar {
+  align-items: stretch !important;
+  gap: clamp(0.65rem, 1.2vw, 0.9rem) !important;
+  margin-bottom: clamp(1rem, 1.8vw, 1.4rem) !important;
+}
+
+.search-box {
+  width: min(100%, 28rem) !important;
+  height: 2.75rem !important;
+}
+
+.search-box input {
+  height: 2.75rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.type-filters {
+  gap: clamp(0.45rem, 0.9vw, 0.7rem) !important;
+  flex-wrap: wrap !important;
+}
+
+.type-filter {
+  height: 2.75rem !important;
+  border-radius: 0.5rem !important;
+  padding-inline: clamp(0.8rem, 1.25vw, 1rem) !important;
+}
+
+@media (max-width: 48rem) {
+  .program-toolbar {
+    flex-direction: column !important;
+  }
+
+  .search-box,
+  .type-filters {
+    width: 100% !important;
+  }
+
+  .type-filter {
+    flex: 1 1 auto !important;
+  }
+}
+
+/* Align header coordinates with the Clients page reference. */
+.page-container {
+  padding: 0 !important;
+}
+
+.content {
+  padding:
+    clamp(1rem, 1.8vw, 1.35rem)
+    clamp(1.5rem, 2vw, 2rem)
+    clamp(2rem, 3vw, 3rem) !important;
+}
+
+.programs-table--cap .table-header,
+.programs-table--cap .program-row {
+  grid-template-columns: minmax(360px, 1fr) 190px 180px 190px 130px !important;
+  column-gap: 28px !important;
+}
+
+.programs-table--cap .col-type,
+.programs-table--cap .col-created,
+.programs-table--cap .col-modified,
+.programs-table--cap .col-actions {
+  min-width: 0 !important;
+}
+
+.programs-table--cap .col-created,
+.programs-table--cap .col-modified {
+  white-space: nowrap !important;
+}
+
+.programs-table--cap .col-actions {
+  grid-column: 5 !important;
+}
+
+@media (min-width: 901px) {
+  .programs-table--cap .table-header {
+    display: grid !important;
+  }
+
+  .programs-table--cap .col-type,
+  .programs-table--cap .col-created,
+  .programs-table--cap .col-modified {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .programs-table--cap .program-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .programs-table--cap .col-actions {
+    grid-column: 2 !important;
   }
 }

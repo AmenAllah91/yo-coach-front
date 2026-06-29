@@ -1,13 +1,21 @@
 
 :host {
   display: block;
+  min-height: 100%;
+  background: #f8fafc;
 }
 
-.page {
-  background: #f6f8fb;
+.forms-page {
   min-height: 100%;
-  margin: 0;
-  padding: 0;
+  background: #f8fafc;
+  padding: 18px 28px 32px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .forms-page {
+    padding: 12px;
+  }
 }
 
 /* ── Page Header ──────────────────────────────────── */
@@ -340,15 +348,16 @@
 }
 
 .table thead th {
-  text-align: left;
-  padding: 16px 24px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  height: auto;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #dbe7f2;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+  vertical-align: middle;
 }
 
 /* colonnes fixes desktop */
@@ -1005,4 +1014,139 @@ td.col-actions {
   background: #f3e8ff;
   color: #7e22ce;
   border-color: #e9d5ff;
+}
+
+/* Unified app table look */
+.card {
+  border: 1px solid #dbe7f2;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.toolbar {
+  background: #ffffff;
+  border-bottom: 1px solid #dbe7f2;
+}
+
+.table thead th {
+  height: 48px;
+  padding: 0 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #dbe7f2;
+  color: #1f2f46;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #edf2f7;
+}
+
+.table tbody tr:hover {
+  background: #fbfdff;
+}
+
+.table tbody td {
+  height: 68px;
+  padding: 13px 24px;
+}
+
+.action-btn {
+  width: auto;
+  min-width: 104px;
+  height: 38px;
+  padding: 0 14px;
+  gap: 8px;
+  border: 1px solid #dbe7f2;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.action-btn:hover {
+  background: #fbfdff;
+  color: #0f172a;
+  border-color: #c8d8e8;
+}
+
+.action-btn i-feather {
+  width: 15px;
+  height: 15px;
+}
+
+.pager {
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 24px 8px;
+  background: #f8fafc;
+  border-top: 1px solid #dbe7f2;
+}
+
+.pager__info {
+  display: none;
+}
+
+.pager .page-btn {
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d6dde8;
+  background: #ffffff;
+  color: #4b5563;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.pager .page-btn.active {
+  background: #49b8df;
+  border-color: #49b8df;
+  color: #ffffff;
+}
+
+.pager .page-btn:disabled {
+  color: #c4cbd6;
+  background: #f8fafc;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.pager .page-btn--prev,
+.pager .page-btn--next {
+  font-size: 0;
+}
+
+.pager .page-btn--prev::before,
+.pager .page-btn--next::before {
+  font-size: 14px;
+}
+
+.pager .page-btn--prev::before {
+  content: '<';
+}
+
+.pager .page-btn--next::before {
+  content: '>';
+}
+
+/* Align header coordinates with the Clients page reference. */
+.forms-page {
+  padding: 0 !important;
+}
+
+.forms-view-toolbar,
+.content {
+  padding-left: clamp(1.5rem, 2vw, 2rem) !important;
+  padding-right: clamp(1.5rem, 2vw, 2rem) !important;
+}
+
+.forms-view-toolbar {
+  padding-top: clamp(1rem, 1.8vw, 1.35rem) !important;
 }

@@ -63,6 +63,10 @@
             {{ plan.status | titlecase }}
           </span>
 
+          <span *ngIf="!isFilePlan(plan)" class="program-type-pill program-type-pill--app">
+            App Plan
+          </span>
+
           <span
             *ngIf="isFilePlan(plan)"
             class="file-type-pill"
@@ -93,11 +97,6 @@
           </span>
         </div>
 
-        <div *ngIf="isFilePlan(plan)" class="static-document-row">
-          <span></span>
-          <strong>STATIC DOCUMENT</strong>
-          <span></span>
-        </div>
       </div>
     </div>
 

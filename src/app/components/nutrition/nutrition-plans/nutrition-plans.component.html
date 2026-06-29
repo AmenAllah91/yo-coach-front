@@ -62,8 +62,8 @@
       <div class="table-header">
         <div class="col-program">PROGRAM</div>
         <div class="col-type">TYPE</div>
-        <div class="col-created">START</div>
-        <div class="col-modified">END</div>
+        <div class="col-created">CREATED</div>
+        <div class="col-modified">LAST MODIFIED</div>
         <div class="col-actions"></div>
       </div>
 
@@ -103,13 +103,14 @@
             </span>
           </div>
 
-          <div class="col-created" data-label="Start">{{ plan.startDate || '-' }}</div>
-          <div class="col-modified" data-label="End">{{ plan.endDate || '-' }}</div>
+          <div class="col-created" data-label="Created">{{ formatDate(getCreatedDate(plan)) || '-' }}</div>
+          <div class="col-modified" data-label="Last Modified">{{ formatDate(getModifiedDate(plan)) || '-' }}</div>
 
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === getProgramId(plan)">
               <button class="action-btn" type="button" (click)="toggleDropdown(getProgramId(plan), $event)">
-                <span class="three-dots">•••</span>
+                <span>Actions</span>
+                <i-feather name="chevron-down"></i-feather>
               </button>
 
               <div class="dropdown-menu dropdown-menu--side" *ngIf="openDropdownId === getProgramId(plan)" (click)="$event.stopPropagation()">

@@ -1268,6 +1268,74 @@
   font-size: 0.78rem;
   line-height: 1.35;
 }
+
+/* Final layout/accent override for create/edit nutrition pages. */
+:host {
+  display: block;
+  width: 100%;
+}
+
+.np-root,
+.np-shell,
+.np-card,
+.np-pagehead,
+.np-sticky {
+  width: 100%;
+}
+
+.np-shell {
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.np-card {
+  max-width: none !important;
+  margin: 16px 0 !important;
+}
+
+.np-main {
+  flex: 1 1 auto;
+  width: calc(100% - 256px);
+  min-width: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.np-aside {
+  flex: 0 0 256px;
+}
+
+.np-link,
+.np-link .np-ico,
+.np-btn--brandsoft,
+.np-btn--branddash,
+.np-day.is-active,
+.np-day.is-active .np-day__title,
+.np-meal__left .np-h6 {
+  color: #36b8e6;
+}
+
+.np-btn--brandsoft,
+.np-btn--branddash,
+.np-aside .np-btn--dash,
+.np-aside .np-btn--ghost {
+  background: #e7f8fe;
+  border-color: #9bddf2 !important;
+}
+
+.np-input:focus {
+  border-color: #36b8e6;
+  box-shadow: 0 0 0 3px rgba(54, 184, 230, 0.14);
+}
+
+.np-root {
+  overflow-x: hidden;
+}
+
+.np-main {
+  width: auto !important;
+  max-width: none !important;
+}
 /* Admin visibility checkbox - better spacing */
 .np-template-visibility,
 .np-field:has(.np-checkline) {

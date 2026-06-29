@@ -185,7 +185,9 @@ export class ProgramLibraryComponent implements OnInit {
 
     serviceCall.subscribe({
       next: (response: PageResponse<WorkoutPlan>) => {
-        this.allPrograms = response.content || [];
+        this.allPrograms = this.sortNewestFirst(
+          (response.content || []).filter((program) => this.isLibraryOnlyProgram(program))
+        );
         this.applyProgramFilters();
 
         if (this.activeTab === 'templates') {
@@ -216,6 +218,10 @@ export class ProgramLibraryComponent implements OnInit {
     const term = (this.searchTerm || '').trim().toLowerCase();
 
     const filtered = (this.allPrograms || []).filter((program) => {
+      if (!this.isLibraryOnlyProgram(program)) {
+        return false;
+      }
+
       if (!this.workoutFileEnabled && this.isFileProgram(program)) {
         return false;
       }
@@ -240,6 +246,50 @@ export class ProgramLibraryComponent implements OnInit {
     const start = this.currentPage * this.pageSize;
     this.programs = filtered.slice(start, start + this.pageSize);
     this.ensureSelectedLibraryFileProgram();
+  }
+
+  private sortNewestFirst(programs: WorkoutPlan[]): WorkoutPlan[] {
+    return [...programs].sort((a, b) => {
+      const bTime = this.toDateTime(this.getSortDate(b));
+      const aTime = this.toDateTime(this.getSortDate(a));
+
+      if (bTime !== aTime) {
+        return bTime - aTime;
+      }
+
+      return String((b as any).id || '').localeCompare(String((a as any).id || ''));
+    });
+  }
+
+  private getSortDate(program: WorkoutPlan): string | Date | undefined {
+    const anyProgram = program as any;
+
+    return (
+      anyProgram.updatedAt ||
+      anyProgram.createdAt ||
+      anyProgram.fileUploadedAt ||
+      anyProgram.uploadedAt
+    );
+  }
+
+  private toDateTime(value: string | Date | undefined): number {
+    if (!value) return 0;
+
+    const time = value instanceof Date ? value.getTime() : Date.parse(value);
+
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  private isLibraryOnlyProgram(program: WorkoutPlan): boolean {
+    const anyProgram = program as any;
+
+    return !(
+      anyProgram.startDate ||
+      anyProgram.endDate ||
+      anyProgram.client ||
+      anyProgram.clientId ||
+      anyProgram.clientIds?.length
+    );
   }
 
   toggleDropdown(programId: string | null, event?: Event) {
@@ -1166,6 +1216,26 @@ export class ProgramLibraryComponent implements OnInit {
     return days ? `${days}-day workout program` : 'In-app workout program';
   }
 
+  getCreatedDate(program: WorkoutPlan): string | Date | undefined {
+    const anyProgram = program as any;
+
+    return anyProgram.createdAt || anyProgram.createdDate || anyProgram.fileUploadedAt || anyProgram.uploadedAt;
+  }
+
+  getModifiedDate(program: WorkoutPlan): string | Date | undefined {
+    const anyProgram = program as any;
+
+    return (
+      anyProgram.updatedAt ||
+      anyProgram.lastModifiedDate ||
+      anyProgram.modifiedAt ||
+      anyProgram.createdAt ||
+      anyProgram.createdDate ||
+      anyProgram.fileUploadedAt ||
+      anyProgram.uploadedAt
+    );
+  }
+
   get filePrograms(): WorkoutPlan[] {
     return this.programs.filter((program) => this.isFileProgram(program));
   }
@@ -1462,12 +1532,31 @@ export class ProgramLibraryComponent implements OnInit {
     }
   }
 
-  formatDate(dateString: string): string {
+  get pagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index);
+  }
+
+  onPageChange(page: number) {
+    if (page < 0 || page >= this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.applyProgramFilters();
+  }
+
+  formatDate(dateString: string | Date | undefined): string {
+    if (!dateString) return '';
+
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '';
+
     return date.toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 

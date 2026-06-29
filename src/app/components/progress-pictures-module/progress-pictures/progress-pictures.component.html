@@ -1,8 +1,30 @@
 <div class="page">
   <div class="wrap">
     <div class="header">
-      <h1 class="h1">{{ 'PROGRESS_PICTURES_TITLE' | translate }}</h1>
-      <p class="sub">{{ 'PROGRESS_PICTURES_SUBTITLE' | translate }}</p>
+      <div class="header-content">
+        <h1 class="h1">{{ 'PROGRESS_PICTURES_TITLE' | translate }}</h1>
+        <p class="sub">{{ 'PROGRESS_PICTURES_SUBTITLE' | translate }}</p>
+      </div>
+
+      <div class="toolbar-actions header-actions">
+        <button
+          type="button"
+          class="action-btn action-btn--secondary"
+          (click)="openComparison()"
+          [disabled]="picturesCount === 0"
+        >
+          {{ 'COMPARE' | translate }}
+        </button>
+
+        <button
+          *ngIf="allowAddPicture"
+          type="button"
+          class="action-btn action-btn--primary"
+          (click)="openAddModal()"
+        >
+          {{ 'ADD_PICTURE' | translate }}
+        </button>
+      </div>
     </div>
 
     <div class="panel">
@@ -11,26 +33,6 @@
           <span class="toolbar-badge" *ngIf="picturesCount > 0">
             {{ picturesCount }} {{ 'PICTURES_ITEMS' | translate }}
           </span>
-        </div>
-
-        <div class="toolbar-actions">
-          <button
-            type="button"
-            class="action-btn action-btn--secondary"
-            (click)="openComparison()"
-            [disabled]="picturesCount === 0"
-          >
-            {{ 'COMPARE' | translate }}
-          </button>
-
-          <button
-            *ngIf="allowAddPicture"
-            type="button"
-            class="action-btn action-btn--primary"
-            (click)="openAddModal()"
-          >
-            {{ 'ADD_PICTURE' | translate }}
-          </button>
         </div>
       </div>
 

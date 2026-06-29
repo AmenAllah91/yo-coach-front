@@ -57,7 +57,8 @@ export class AssignFullPlanComponent implements OnInit {
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
     } else {
-      this.addDay();
+      this.ensureAtLeastOneDay();
+      this.updateAllDates();
     }
 
     if (clientId) {
@@ -83,9 +84,15 @@ export class AssignFullPlanComponent implements OnInit {
       day.date = current.toISOString().split('T')[0];
       day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
       day.title = `Day ${index + 1}`;
+      (day as MealDay & { dayNumber?: number }).dayNumber = index + 1;
     });
 
     // Calcule la date de fin
+    if (!this.days.length) {
+      this.endDate = this.startDate;
+      return;
+    }
+
     const end = new Date(start);
     end.setDate(start.getDate() + (this.days.length - 1));
     this.endDate = end.toISOString().split('T')[0];
@@ -99,11 +106,13 @@ export class AssignFullPlanComponent implements OnInit {
         this.planName = plan.name;
         this.planDescription = plan.details;
         this.days = plan.mealDays || [];
-        this.selectedDay = this.days[0];
+        this.ensureAtLeastOneDay();
 
         // recalcul si les macros ne sont pas pré-calculées
         this.days.forEach((d) => this.recalcDayTargets(d));
-        this.startDate = new Date(plan.startDate).toISOString().split('T')[0];
+        if (plan.startDate) {
+          this.startDate = new Date(plan.startDate).toISOString().split('T')[0];
+        }
         this.updateAllDates();
       });
   }
@@ -168,6 +177,17 @@ export class AssignFullPlanComponent implements OnInit {
     };
   }
 
+  private ensureAtLeastOneDay() {
+    if (!this.days.length) {
+      this.days = [this.makeEmptyDay()];
+    }
+
+    this.selectedDay = this.selectedDay && this.days.includes(this.selectedDay)
+      ? this.selectedDay
+      : this.days[0];
+    this.mealPlan.mealDays = this.days;
+  }
+
   addDay() {
     const newDay = this.makeEmptyDay();
     this.days.push(newDay);
@@ -188,10 +208,12 @@ export class AssignFullPlanComponent implements OnInit {
     const index = this.days.indexOf(day);
     this.days.splice(index, 1);
     this.selectedDay = this.days[Math.max(0, index - 1)];
+    this.updateAllDates();
   }
 
   onDropDay(event: CdkDragDrop<MealDay[]>) {
     moveItemInArray(this.days, event.previousIndex, event.currentIndex);
+    this.selectedDay = this.days[event.currentIndex] ?? this.selectedDay;
     this.updateAllDates();
   }
 
@@ -220,6 +242,7 @@ export class AssignFullPlanComponent implements OnInit {
     this.days.push(clone);
     this.selectedDay = clone;
     this.recalcDayTargets(clone);
+    this.updateAllDates();
   }
 
   togglePlanDescription() {

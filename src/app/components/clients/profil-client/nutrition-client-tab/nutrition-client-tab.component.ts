@@ -135,17 +135,54 @@ export class NutritionClientTabComponent implements OnInit {
           return program;
         });
 
-        this.mealPlan = plans;
+        const sortedPlans = [...plans].sort((a, b) => this.comparePlansByNewest(a, b));
+
+        this.mealPlan = sortedPlans;
         this.mealPlan = this.nutritionFileEnabled === false
-          ? plans.filter((plan: any) => !this.isFilePlan(plan))
-          : plans;
+          ? sortedPlans.filter((plan: any) => !this.isFilePlan(plan))
+          : sortedPlans;
         this.appPlans = this.activeTab === 'APP'
-          ? plans
-          : plans.filter((plan) => !this.isFilePlan(plan));
+          ? sortedPlans
+          : sortedPlans.filter((plan) => !this.isFilePlan(plan));
         this.filePlans = this.activeTab === 'FILES'
-          ? plans
-          : plans.filter((plan) => this.isFilePlan(plan));
+          ? sortedPlans
+          : sortedPlans.filter((plan) => this.isFilePlan(plan));
       });
+  }
+
+  private comparePlansByNewest(a: any, b: any): number {
+    const aNewest = this.getPlanNewestTime(a);
+    const bNewest = this.getPlanNewestTime(b);
+
+    if (aNewest !== bNewest) return bNewest - aNewest;
+
+    return this.toValidTime(b?.startDate) - this.toValidTime(a?.startDate);
+  }
+
+  private getPlanNewestTime(plan: any): number {
+    const candidates = [
+      plan?.createdAt,
+      plan?.creationDate,
+      plan?.assignedAt,
+      plan?.assignedDate,
+      plan?.fileUploadedAt,
+      plan?.updatedAt,
+      plan?.lastModifiedDate,
+      plan?.startDate,
+    ];
+
+    for (const value of candidates) {
+      const time = this.toValidTime(value);
+      if (time > -8640000000000000) return time;
+    }
+
+    return -8640000000000000;
+  }
+
+  private toValidTime(value: any): number {
+    if (!value) return -8640000000000000;
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : -8640000000000000;
   }
 
   decorateFilePlan(program: any): void {

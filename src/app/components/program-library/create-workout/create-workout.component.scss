@@ -2457,6 +2457,173 @@ color: #757272;
     overflow: hidden !important;
   }
 }
+
+/* Full-width editor and brighter blue accent, matching the app file/program design. */
+:host {
+  display: block;
+  width: 100%;
+}
+
+.np-root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.np-shell {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  align-items: stretch;
+}
+
+.np-aside {
+  width: 256px;
+  min-width: 256px;
+  flex: 0 0 256px;
+}
+
+.np-main {
+  flex: 1 1 auto;
+  width: calc(100% - 256px);
+  min-width: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.np-card {
+  width: 100%;
+  max-width: none !important;
+  margin: 16px 0 !important;
+}
+
+.np-pagehead {
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.np-btn--save:hover,
+.np-btn--brandsoft,
+.np-btn--branddash,
+.np-link,
+.np-link .np-ico,
+.wk-datepill,
+.np-day.is-active,
+.np-day.is-active .np-day__title {
+  color: #36b8e6;
+}
+
+.np-btn--brandsoft,
+.np-btn--branddash,
+.np-aside .np-btn--dash,
+.np-aside .np-btn--ghost {
+  background: #e7f8fe;
+  border-color: #9bddf2 !important;
+}
+
+.np-input:focus,
+.program-schedule-input:focus {
+  border-color: #36b8e6;
+  box-shadow: 0 0 0 3px rgba(54, 184, 230, 0.14);
+}
+
+.wkex-video {
+  margin: 10px 0 14px;
+  max-width: 720px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #d9edf7;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.wkex-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.wkex-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wkex-action--video.is-active {
+  background: #36b8e6;
+  border-color: #36b8e6;
+  color: #fff;
+}
+
+@media (max-width: 767px) {
+  .np-aside {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .np-main {
+    width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .wkex-video {
+    margin-left: 0;
+  }
+}
+
+/* Final zoom/layout cleanup for workout editor. */
+:host,
+.np-root,
+.np-shell {
+  max-width: none !important;
+}
+
+.np-root {
+  overflow-x: hidden;
+}
+
+.np-shell {
+  min-width: 100%;
+}
+
+.np-main {
+  width: auto !important;
+  max-width: none !important;
+}
+
+.np-main,
+.np-card,
+.np-sticky {
+  box-sizing: border-box;
+}
+
+.np-card {
+  max-width: none !important;
+}
+
+.wkex-card__inner {
+  position: relative;
+}
+
+.wkex-card__actions {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 5;
+}
+
+.wkex-card__actions .wkex-action {
+  display: inline-flex !important;
+}
+
+.wkex-action--video:disabled {
+  color: #94a3b8;
+  background: #f8fafc;
+  border-color: #e5e7eb;
+  opacity: 1;
+}
 /* ===== WEB DAYS: active blue frame includes icons ===== */
 
 @media (min-width: 768px) {

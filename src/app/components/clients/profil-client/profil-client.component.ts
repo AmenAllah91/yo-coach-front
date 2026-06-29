@@ -98,8 +98,14 @@ export interface ScheduledCheckIn {
 export class ProfilClientComponent {
 
   activeTab: TabId = 'dashboard';
+  showClientStats = true;
+
   setTab(tab: TabId) {
     this.activeTab = tab;
+  }
+
+  toggleClientStats(): void {
+    this.showClientStats = !this.showClientStats;
   }
 
   userid = sessionStorage.getItem('userId');

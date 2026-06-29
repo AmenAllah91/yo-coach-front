@@ -286,7 +286,7 @@ export class WorkoutsClientTabComponent implements OnInit {
         });
 
         const dedupedPrograms = this.dedupeWorkoutPrograms(programs)
-          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramsByPeriod(a, b));
+          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramsByNewest(a, b));
 
         this.workoutTotalPages = Math.max(1, Math.ceil((res.totalElements || dedupedPrograms.length) / this.workoutSize));
         this.workoutPagesArray = Array.from(
@@ -352,15 +352,35 @@ export class WorkoutsClientTabComponent implements OnInit {
       : 0;
   }
 
-  private compareProgramsByPeriod(a: WorkoutPlan, b: WorkoutPlan): number {
-    const aEnd = this.getProgramEndTime(a);
-    const bEnd = this.getProgramEndTime(b);
+  private compareProgramsByNewest(a: WorkoutPlan, b: WorkoutPlan): number {
+    const aNewest = this.getProgramNewestTime(a);
+    const bNewest = this.getProgramNewestTime(b);
 
-    if (aEnd !== bEnd) return bEnd - aEnd;
+    if (aNewest !== bNewest) return bNewest - aNewest;
 
     const aStart = this.getProgramStartTime(a);
     const bStart = this.getProgramStartTime(b);
     return bStart - aStart;
+  }
+
+  private getProgramNewestTime(program: any): number {
+    const candidates = [
+      program?.createdAt,
+      program?.creationDate,
+      program?.assignedAt,
+      program?.assignedDate,
+      program?.fileUploadedAt,
+      program?.updatedAt,
+      program?.lastModifiedDate,
+      program?.startDate,
+    ];
+
+    for (const value of candidates) {
+      const time = this.toValidTime(value);
+      if (time !== null) return time;
+    }
+
+    return -8640000000000000;
   }
 
 
@@ -424,6 +444,12 @@ export class WorkoutsClientTabComponent implements OnInit {
     if (!program?.startDate) return -8640000000000000;
     const time = new Date(program.startDate).getTime();
     return Number.isFinite(time) ? time : -8640000000000000;
+  }
+
+  private toValidTime(value: any): number | null {
+    if (!value) return null;
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : null;
   }
 
 

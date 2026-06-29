@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -49,6 +49,7 @@ export class FoodReplacementGroupsComponent implements OnInit {
   selectedFood: any | null = null;
   selectedQuantity = 100;
   selectedUnit = 'g';
+  openGroupActionsId: string | null = null;
 
   constructor(
     private replacementGroupsService: FoodReplacementGroupsService,
@@ -59,6 +60,25 @@ export class FoodReplacementGroupsComponent implements OnInit {
   ngOnInit(): void {
     this.loadGroups();
     this.loadFoods();
+  }
+
+  @HostListener('document:click')
+  closeGroupActions(): void {
+    this.openGroupActionsId = null;
+  }
+
+  getGroupActionsId(group: FoodReplacementGroup): string {
+    return String(group.id || group.name || '');
+  }
+
+  toggleGroupActions(group: FoodReplacementGroup, event: MouseEvent): void {
+    event.stopPropagation();
+    const id = this.getGroupActionsId(group);
+    this.openGroupActionsId = this.openGroupActionsId === id ? null : id;
+  }
+
+  isGroupActionsOpen(group: FoodReplacementGroup): boolean {
+    return this.openGroupActionsId === this.getGroupActionsId(group);
   }
 
   get filteredFoods(): any[] {

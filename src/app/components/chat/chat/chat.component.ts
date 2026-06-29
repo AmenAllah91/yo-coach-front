@@ -179,7 +179,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   // ── Load Conversations ────────────────────────────────────────────────────
   private loadConversations(): Observable<any> {
-    return this.chatService.getConversations(0, this.embeddedMode ? 100 : 20).pipe(
+    return this.chatService.getConversations(0, 100).pipe(
       takeUntil(this.destroy$),
       switchMap((pageDto) => {
         console.log('🔵 [loadConversations] RAW from backend:', JSON.parse(JSON.stringify(pageDto.content)));
@@ -188,8 +188,9 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         );
         return forkJoin(observables).pipe(tap(finalConvs => {
           console.log('🔵 [loadConversations] AFTER enrich:', JSON.parse(JSON.stringify(finalConvs)));
-          this.conversations = finalConvs;
-          this.filteredConversationsCache = finalConvs;
+          const uniqueConvs = this.dedupeConversations(finalConvs);
+          this.conversations = uniqueConvs;
+          this.filteredConversationsCache = uniqueConvs;
         }));
       }),
       catchError((err) => {
@@ -222,6 +223,40 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         return conv;
       }),
       catchError(() => of(conv))
+    );
+  }
+
+  private dedupeConversations(conversations: Conversation[]): Conversation[] {
+    const seen = new Set<string>();
+
+    return conversations.filter((conv) => {
+      const key = this.getConversationUniqueKey(conv);
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private getConversationUniqueKey(conv: Conversation): string {
+    if (conv.isGroup) {
+      return `group:${conv.id}`;
+    }
+
+    const participantIds = [conv.clientId, conv.coachId].filter(Boolean).sort();
+    return participantIds.length
+      ? `private:${participantIds.join(':')}`
+      : `private:${conv.id}`;
+  }
+
+  private findExistingPrivateConversation(clientId: string): Conversation | undefined {
+    return this.conversations.find((conv) =>
+      !conv.isGroup &&
+      ((conv.clientId === clientId && conv.coachId === this.currentUserId) ||
+       (conv.clientId === this.currentUserId && conv.coachId === clientId))
     );
   }
 
@@ -303,9 +338,12 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       .subscribe((conversation) => {
         if (!conversation) return;
 
-        const already = this.conversations.some((item) => item.id === conversation.id);
+        const already = this.conversations.some((item) =>
+          item.id === conversation.id ||
+          this.getConversationUniqueKey(item) === this.getConversationUniqueKey(conversation)
+        );
         if (!already) {
-          this.conversations = [conversation, ...this.conversations];
+          this.conversations = this.dedupeConversations([conversation, ...this.conversations]);
           this.filteredConversationsCache = this.conversations;
         }
 
@@ -714,6 +752,14 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   startPrivateChat(client: Client): void {
     console.log('🟡 [startPrivateChat] selected client:', client);
+    const existingConversation = this.findExistingPrivateConversation(client.id);
+
+    if (existingConversation) {
+      this.selectConversation(existingConversation);
+      this.closeModals();
+      return;
+    }
+
     const request = { coachId: this.currentUserId, clientId: client.id };
     console.log('🟡 [startPrivateChat] request:', request);
     this.chatService.createConversation(request).pipe(
@@ -725,8 +771,15 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     ).subscribe({
       next: (conv: Conversation) => {
         console.log('🟡 [startPrivateChat] enriched conv:', JSON.parse(JSON.stringify(conv)));
-        this.conversations = [conv, ...this.conversations];
-        this.selectConversation(conv);
+        const existingAfterCreate = this.findExistingPrivateConversation(client.id);
+        const conversationToOpen = existingAfterCreate || conv;
+
+        if (!existingAfterCreate) {
+          this.conversations = this.dedupeConversations([conv, ...this.conversations]);
+          this.filteredConversationsCache = this.conversations;
+        }
+
+        this.selectConversation(conversationToOpen);
         this.closeModals();
       },
       error: (err) => console.error('Error creating conversation:', err)
@@ -843,5 +896,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     const parts = cleanUrl.split('/').filter(Boolean);
     return decodeURIComponent(parts[parts.length - 1] || 'document');
   }
-
+  goBack(): void {
+    window.history.back();
+  }
 }

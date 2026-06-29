@@ -57,7 +57,8 @@
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === food.id">
               <button class="action-btn" (click)="toggleDropdown(food.id!, $event)">
-                <i-feather name="more-horizontal"></i-feather>
+                <span>Actions</span>
+                <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu">
                 <ng-container *ngIf="!food.isGeneral">

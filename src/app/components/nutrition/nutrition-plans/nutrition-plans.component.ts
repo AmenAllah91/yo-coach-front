@@ -145,8 +145,8 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     this.error = null;
 
     const request$ = this.activeTab === 'templates'
-      ? this.nutritionService.getNutritionPlansTemplates(this.currentPage, this.pageSize, this.searchTerm)
-      : this.nutritionService.getNutritionPlans(this.currentPage, this.pageSize, this.programTypeFilter, this.searchTerm);
+      ? this.nutritionService.getNutritionPlansTemplates(0, 500, this.searchTerm)
+      : this.nutritionService.getNutritionPlans(0, 500, this.programTypeFilter, this.searchTerm);
 
     request$
       .pipe(takeUntil(this.destroy$))
@@ -157,17 +157,20 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
           this.plans = this.sortNewestFirst(
             this.activeTab === 'templates'
               ? content
-                  .filter((plan: any) => !plan.isDemo)
+                  .filter((plan: any) => !plan.isDemo && this.isLibraryOnlyPlan(plan))
                   .map((plan) => ({
                     ...plan,
                     isMealPlanTemplate: true,
                   }))
-              : content
+              : content.filter((plan: any) => this.isLibraryOnlyPlan(plan))
           );
 
-          this.totalElements = page?.totalElements || this.plans.length;
-          this.totalPages = page?.totalPages || 0;
-          this.currentPage = page?.number ?? this.currentPage;
+          const matchingPlans = this.getMatchingPlans();
+          this.totalElements = matchingPlans.length;
+          this.totalPages = Math.ceil(matchingPlans.length / this.pageSize);
+          if (this.currentPage > this.totalPages - 1) {
+            this.currentPage = 0;
+          }
           this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
           this.loading = false;
         },
@@ -208,8 +211,8 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   private sortNewestFirst(plans: NutritionPlan[]): NutritionPlan[] {
     return [...plans].sort((a, b) => {
-      const bTime = this.toDateTime(b.updatedAt || b.createdAt || b.startDate);
-      const aTime = this.toDateTime(a.updatedAt || a.createdAt || a.startDate);
+      const bTime = this.toDateTime(this.getSortDate(b));
+      const aTime = this.toDateTime(this.getSortDate(a));
 
       if (bTime !== aTime) {
         return bTime - aTime;
@@ -225,6 +228,29 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     const time = value instanceof Date ? value.getTime() : Date.parse(value);
 
     return Number.isNaN(time) ? 0 : time;
+  }
+
+  private getSortDate(plan: NutritionPlan): string | Date | undefined {
+    const anyPlan = plan as any;
+
+    return (
+      anyPlan.updatedAt ||
+      anyPlan.createdAt ||
+      anyPlan.fileUploadedAt ||
+      anyPlan.uploadedAt
+    );
+  }
+
+  private isLibraryOnlyPlan(plan: NutritionPlan): boolean {
+    const anyPlan = plan as any;
+
+    return !(
+      anyPlan.startDate ||
+      anyPlan.endDate ||
+      anyPlan.client ||
+      anyPlan.clientId ||
+      anyPlan.clientIds?.length
+    );
   }
 
 
@@ -266,7 +292,6 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     }
 
     this.currentPage = page;
-    this.loadPlans();
   }
 
   previousPage(): void {
@@ -275,6 +300,26 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
 
   nextPage(): void {
     this.onPageChange(this.currentPage + 1);
+  }
+
+  getCreatedDate(plan: NutritionPlan): string | Date | undefined {
+    const anyPlan = plan as any;
+
+    return anyPlan.createdAt || anyPlan.createdDate || anyPlan.fileUploadedAt || anyPlan.uploadedAt;
+  }
+
+  getModifiedDate(plan: NutritionPlan): string | Date | undefined {
+    const anyPlan = plan as any;
+
+    return (
+      anyPlan.updatedAt ||
+      anyPlan.lastModifiedDate ||
+      anyPlan.modifiedAt ||
+      anyPlan.createdAt ||
+      anyPlan.createdDate ||
+      anyPlan.fileUploadedAt ||
+      anyPlan.uploadedAt
+    );
   }
 
   getProgramTypeKey(plan: NutritionPlan): 'APP' | 'PDF' | 'EXCEL' {
@@ -781,10 +826,14 @@ if (type === 'APP') {
       });
   }
 
-  get filteredPlans() {
+  private getMatchingPlans(): NutritionPlan[] {
     const query = this.searchTerm.trim().toLowerCase();
 
     return this.plans.filter((plan) => {
+      if (!this.isLibraryOnlyPlan(plan)) {
+        return false;
+      }
+
       const matchesTab = this.activeTab === 'templates'
         ? this.isTemplatePlan(plan)
         : !this.isTemplatePlan(plan);
@@ -824,6 +873,12 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
 
       return searchable.includes(query);
     });
+  }
+
+  get filteredPlans() {
+    const start = this.currentPage * this.pageSize;
+
+    return this.getMatchingPlans().slice(start, start + this.pageSize);
   }
 
   openChooseModal() {
@@ -1170,7 +1225,10 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
   formatDate(date: string | Date | undefined): string {
     if (!date) return '';
 
-    return new Date(date).toLocaleDateString('en-US', {
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) return '';
+
+    return parsedDate.toLocaleDateString('en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

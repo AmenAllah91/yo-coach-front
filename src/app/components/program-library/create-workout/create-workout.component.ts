@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
 import {
@@ -24,12 +25,14 @@ export class CreateWorkoutComponent implements OnInit {
   isVisibleToOthers = false;
   private returnUrl: string | null = null;
   private assignOnly = false;
+  activeVideoExerciseId: string | null = null;
   @ViewChild('mobileDaysScroller')
   mobileDaysScroller?: ElementRef<HTMLElement>;
   constructor(
     public facade: WorkoutPlanFacade,
     private route: ActivatedRoute,
     private router: Router,
+    private sanitizer: DomSanitizer,
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     this.assignOnly = this.route.snapshot.queryParamMap.get('assignOnly') === '1';
@@ -345,6 +348,8 @@ export class CreateWorkoutComponent implements OnInit {
     this.selectedDay.restDay = this.selectedDay.isRestDay;
 
     if (this.selectedDay.isRestDay) {
+      this.activeVideoExerciseId = null;
+      this.facade.showExerciseSelector = false;
       this.selectedDay.workoutSessions = [];
       this.selectedDay.session = null;
     } else {
@@ -430,6 +435,10 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   handleRemoveExercise(exId: string) {
+    if (this.activeVideoExerciseId === exId) {
+      this.activeVideoExerciseId = null;
+    }
+
     this.facade.handleRemoveExercise?.(exId);
   }
 
@@ -639,24 +648,39 @@ export class CreateWorkoutComponent implements OnInit {
     }
   }
 
-  openExerciseVideo(exercise: Exercise): void {
+  toggleExerciseVideo(exercise: Exercise): void {
     const videoUrl = this.getExerciseVideoLink(exercise);
 
     if (!videoUrl) return;
 
-    const viewerUrl = this.router.serializeUrl(
-      this.router.createUrlTree(['/video-viewer'], {
-        queryParams: {
-          url: videoUrl,
-          title: exercise.name || 'Exercise Video',
-        },
-      }),
-    );
+    this.activeVideoExerciseId = this.activeVideoExerciseId === exercise.id ? null : exercise.id;
+  }
 
-    window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+  isExerciseVideoOpen(exercise: Exercise): boolean {
+    return this.activeVideoExerciseId === exercise.id && !!this.getYouTubeEmbedUrl(exercise);
+  }
+
+  getYouTubeEmbedUrl(exercise: Exercise): SafeResourceUrl | null {
+    const videoId = this.getYouTubeVideoId(this.getExerciseVideoLink(exercise));
+
+    if (!videoId) return null;
+
+    return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${videoId}`);
+  }
+
+  private cleanRestDayWorkoutSessions(): void {
+    this.facade.days.forEach((day) => {
+      if (day.isRestDay || day.restDay) {
+        day.isRestDay = true;
+        day.restDay = true;
+        day.workoutSessions = [];
+        day.session = null;
+      }
+    });
   }
 
   savePlan() {
+    this.cleanRestDayWorkoutSessions();
     this.facade.syncPlanDays();
 
     const finalTemplateValue = this.assignOnly

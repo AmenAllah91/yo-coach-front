@@ -68,7 +68,7 @@
           <div class="col-client">
             <div class="client-info">
               <div class="client-avatar">
-                <img [src]="'https://ui-avatars.com/api/?name=' + client.firstName + '+' + client.lastName + '&background=0ea5e9&color=fff'"
+                <img [src]="'https://ui-avatars.com/api/?name=' + client.firstName + '+' + client.lastName + '&background=44b4df&color=fff'"
                      [alt]="client.firstName + ' ' + client.lastName">
               </div>
               <div class="client-details">
@@ -99,7 +99,8 @@
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === client.id">
               <button class="action-btn" (click)="toggleDropdown(client.id, $event); $event.stopPropagation()">
-                <i-feather name="more-horizontal"></i-feather>
+                <span>Actions</span>
+                <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu">
                 <button class="dropdown-item" (click)="viewProfile(client); $event.stopPropagation()">
@@ -144,9 +145,16 @@
       <app-scroll-loader [isLoading]="isLoading" loadingText="Loading clients..."></app-scroll-loader>
 
       <div class="pagination" *ngIf="totalPages > 1">
-        <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
-        <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-        <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next</button>
+        <button type="button" class="page-btn" (click)="previousPage()" [disabled]="currentPage === 0">&lt;</button>
+        <button
+          type="button"
+          class="page-btn"
+          *ngFor="let page of pagesArray"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page + 1 }}
+        </button>
+        <button type="button" class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages - 1">&gt;</button>
       </div>
 
       <div class="no-clients" *ngIf="filteredClients.length === 0 && !isLoading">

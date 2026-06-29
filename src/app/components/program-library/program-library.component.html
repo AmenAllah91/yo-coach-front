@@ -26,7 +26,7 @@
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search programs..." [(ngModel)]="searchTerm" />
+        <input type="text" placeholder="Search programs..." [(ngModel)]="searchTerm" (input)="onSearchChange()" />
       </div>
 
       <div class="type-filters" *ngIf="activeTab !== 'templates' && workoutFileEnabled">
@@ -50,8 +50,8 @@
       <div class="table-header">
         <div class="col-program">PROGRAM</div>
         <div class="col-type">TYPE</div>
-        <div class="col-created">START</div>
-        <div class="col-modified">END</div>
+        <div class="col-created">CREATED</div>
+        <div class="col-modified">LAST MODIFIED</div>
         <div class="col-actions"></div>
       </div>
 
@@ -84,13 +84,14 @@
             </span>
           </div>
 
-          <div class="col-created" data-label="Start">{{ program.startDate || '-' }}</div>
-          <div class="col-modified" data-label="End">{{ program.endDate || '-' }}</div>
+          <div class="col-created" data-label="Created">{{ formatDate(getCreatedDate(program)) || '-' }}</div>
+          <div class="col-modified" data-label="Last Modified">{{ formatDate(getModifiedDate(program)) || '-' }}</div>
 
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === program.id">
               <button class="action-btn" (click)="toggleDropdown(program.id!, $event); $event.stopPropagation()">
-                <i-feather name="more-horizontal"></i-feather>
+                <span>Actions</span>
+                <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu dropdown-menu--side" (click)="$event.stopPropagation()">
                 <ng-container *ngIf="isFileProgram(program); else appProgramMenu">
@@ -149,9 +150,16 @@
       <app-scroll-loader [isLoading]="isLoading" loadingText="Loading programs..."></app-scroll-loader>
 
       <div class="pagination" *ngIf="totalPages > 1">
-        <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
-        <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-        <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next</button>
+        <button type="button" class="page-btn" (click)="previousPage()" [disabled]="currentPage === 0">&lt;</button>
+        <button
+          type="button"
+          class="page-btn"
+          *ngFor="let page of pagesArray"
+          [class.active]="page === currentPage"
+          (click)="onPageChange(page)">
+          {{ page + 1 }}
+        </button>
+        <button type="button" class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages - 1">&gt;</button>
       </div>
 
       <div class="no-programs" *ngIf="filteredPrograms.length === 0 && !isLoading"><p>No programs found.</p></div>

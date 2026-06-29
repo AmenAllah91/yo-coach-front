@@ -2,10 +2,12 @@ import { ChangeDetectorRef, Component, OnInit, HostListener } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { Client, ClientService } from 'app/service/client.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
 import {
   WorkoutDay,
@@ -23,6 +25,7 @@ import { Exercise } from '@shared/models/exercice.models';
 })
 export class CreateAndAssignComponent implements OnInit {
   isEditMode = false;
+  activeVideoExerciseId: string | null = null;
 
   // assign-specific
   client: Client | null = null;
@@ -34,8 +37,11 @@ export class CreateAndAssignComponent implements OnInit {
   constructor(
     public facade: WorkoutPlanFacade,
     private route: ActivatedRoute,
+    private router: Router,
     private clientService: ClientService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private sanitizer: DomSanitizer,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
   // ====== PROPS utilisés par le template (alias facade) ======
@@ -85,6 +91,14 @@ export class CreateAndAssignComponent implements OnInit {
     return this.facade.totalPages;
   }
 
+  get hoveringExerciseId(): string | null {
+    return this.facade.hoveringExerciseId;
+  }
+
+  set hoveringExerciseId(value: string | null) {
+    this.facade.hoveringExerciseId = value;
+  }
+
   // filters
   get searchQuery(): string {
     return this.facade.searchQuery;
@@ -120,6 +134,13 @@ export class CreateAndAssignComponent implements OnInit {
 
   // ===== lifecycle =====
   ngOnInit() {
+    this.coachSettingsService.loadConfig().subscribe({
+      next: () => this.initializeEditor(),
+      error: () => this.initializeEditor(),
+    });
+  }
+
+  private initializeEditor() {
     const planId = this.route.snapshot.paramMap.get('id');
     const clientId = this.route.snapshot.paramMap.get('idClient');
 
@@ -162,49 +183,27 @@ export class CreateAndAssignComponent implements OnInit {
   // ===== schedule-specific =====
   updateAllDates() {
     if (!this.startDate) return;
+    this.updateDatesFromCurrentOrder();
+  }
+
+  private updateDatesFromCurrentOrder() {
+    if (!this.startDate) return;
 
     const start = new Date(this.startDate);
 
-    const sortedDays = [...this.facade.days].sort((a, b) => {
-      const aTime = a.date ? new Date(a.date).getTime() : Number.MAX_SAFE_INTEGER;
-      const bTime = b.date ? new Date(b.date).getTime() : Number.MAX_SAFE_INTEGER;
-      return aTime - bTime;
-    });
+    this.facade.days.forEach((day, index) => {
+      const current = new Date(start);
+      current.setDate(start.getDate() + index);
 
-    let lastAssignedDate: Date | null = null;
-
-    sortedDays.forEach((day, index) => {
-      let current: Date;
-
-      if (day.date) {
-        current = new Date(day.date);
-      } else if (lastAssignedDate) {
-        current = new Date(lastAssignedDate);
-        current.setDate(current.getDate() + 1);
-        day.date = current.toISOString().split('T')[0];
-      } else {
-        current = new Date(start);
-        day.date = current.toISOString().split('T')[0];
-      }
-
+      day.date = current.toISOString().split('T')[0];
       day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
       day.dayNumber = index + 1;
-      day.title = day.restDay ? 'Rest Day' : `Day ${index + 1}`;
+      day.title = `Day ${index + 1}`;
       day.name = day.title;
-
-      lastAssignedDate = new Date(current);
     });
 
-    // keep facade.days ordered by actual date
-    this.facade.days = sortedDays;
-
-    const validDates = sortedDays
-      .map((d) => d.date)
-      .filter((d): d is string => !!d)
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-
-    this.endDate = validDates.length
-      ? validDates[validDates.length - 1]
+    this.endDate = this.facade.days.length
+      ? this.facade.days[this.facade.days.length - 1].date || this.startDate
       : this.startDate;
   }
 
@@ -254,6 +253,8 @@ export class CreateAndAssignComponent implements OnInit {
     this.selectedDay.restDay = this.selectedDay.isRestDay;
 
     if (this.selectedDay.isRestDay) {
+      this.activeVideoExerciseId = null;
+      this.facade.showExerciseSelector = false;
       this.selectedDay.workoutSessions = [];
       this.selectedDay.session = null;
     } else {
@@ -372,6 +373,10 @@ export class CreateAndAssignComponent implements OnInit {
   }
 
   handleRemoveExercise(exId: string) {
+    if (this.activeVideoExerciseId === exId) {
+      this.activeVideoExerciseId = null;
+    }
+
     this.facade.handleRemoveExercise?.(exId);
   }
 
@@ -388,7 +393,7 @@ export class CreateAndAssignComponent implements OnInit {
 
   onDropDay(event: CdkDragDrop<WorkoutDay[]>) {
     moveItemInArray(this.days, event.previousIndex, event.currentIndex);
-    this.updateAllDates();
+    this.updateDatesFromCurrentOrder();
   }
 
   onDropExercise(event: CdkDragDrop<Exercise[]>) {
@@ -477,8 +482,129 @@ export class CreateAndAssignComponent implements OnInit {
     }
   }
 
+  getExerciseVideoLink(exercise: Exercise | null | undefined): string {
+    if (!exercise) return '';
+
+    return (
+      ((exercise as any).videoLink as string) ||
+      ((exercise as any).videoUrl as string) ||
+      ((exercise as any).exerciseRef?.videoLink as string) ||
+      ((exercise as any).exerciseRef?.videoUrl as string) ||
+      ''
+    ).trim();
+  }
+
+  getExerciseImageUrl(exercise: Exercise | null | undefined): string {
+    if (!exercise) return '';
+
+    return (
+      ((exercise as any).imageUrl as string) ||
+      ((exercise as any).image as string) ||
+      ((exercise as any).thumbnailUrl as string) ||
+      ((exercise as any).photoUrl as string) ||
+      ((exercise as any).exerciseRef?.imageUrl as string) ||
+      ((exercise as any).exerciseRef?.image as string) ||
+      ((exercise as any).exerciseRef?.thumbnailUrl as string) ||
+      ((exercise as any).exerciseRef?.photoUrl as string) ||
+      ''
+    ).trim();
+  }
+
+  getExerciseThumbnail(exercise: Exercise | null | undefined): string {
+    if (!exercise) return '';
+
+    const existingImage = this.getExerciseImageUrl(exercise);
+    if (existingImage) return existingImage;
+
+    const videoId = this.getYouTubeVideoId(this.getExerciseVideoLink(exercise));
+    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+  }
+
+  getYouTubeVideoId(url: string): string {
+    if (!url || !url.trim()) return '';
+
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      const segments = parsed.pathname.split('/').filter(Boolean);
+
+      let videoId = '';
+
+      if (host.includes('youtu.be')) {
+        videoId = segments[0] ?? '';
+      }
+
+      if (host.includes('youtube.com')) {
+        videoId = parsed.searchParams.get('v') ?? '';
+
+        if (!videoId && segments[0] === 'shorts') {
+          videoId = segments[1] ?? '';
+        }
+
+        if (!videoId && segments[0] === 'embed') {
+          videoId = segments[1] ?? '';
+        }
+      }
+
+      return videoId.split('?')[0].split('&')[0].trim();
+    } catch {
+      const regex =
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^"&?/\s]{6,})/;
+      const match = url.match(regex);
+      return match ? match[1] : '';
+    }
+  }
+
+  openExerciseVideo(exercise: Exercise): void {
+    const videoUrl = this.getExerciseVideoLink(exercise);
+    if (!videoUrl) return;
+
+    const viewerUrl = this.router.serializeUrl(
+      this.router.createUrlTree(['/video-viewer'], {
+        queryParams: {
+          url: videoUrl,
+          title: exercise.name || 'Exercise Video',
+        },
+      })
+    );
+
+    window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  toggleExerciseVideo(exercise: Exercise): void {
+    const videoUrl = this.getExerciseVideoLink(exercise);
+
+    if (!videoUrl) return;
+
+    this.activeVideoExerciseId = this.activeVideoExerciseId === exercise.id ? null : exercise.id;
+  }
+
+  isExerciseVideoOpen(exercise: Exercise): boolean {
+    return this.activeVideoExerciseId === exercise.id && !!this.getYouTubeEmbedUrl(exercise);
+  }
+
+  getYouTubeEmbedUrl(exercise: Exercise): SafeResourceUrl | null {
+    const videoId = this.getYouTubeVideoId(this.getExerciseVideoLink(exercise));
+
+    if (!videoId) return null;
+
+    return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${videoId}`);
+  }
+
+  private cleanRestDayWorkoutSessions(): void {
+    this.facade.days.forEach((day) => {
+      if (day.isRestDay || day.restDay) {
+        day.isRestDay = true;
+        day.restDay = true;
+        day.workoutSessions = [];
+        day.session = null;
+      }
+    });
+  }
+
   // ===== save (assign-specific) =====
   savePlan() {
+    this.cleanRestDayWorkoutSessions();
     this.facade.setPlan({
       ...this.facade.plan,
       startDate: this.startDate,

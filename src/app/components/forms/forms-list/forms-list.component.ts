@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsApiService, Form, FormStatus, PageResponse, UserDto } from '../services/forms-api.service';
@@ -96,7 +96,12 @@ export class FormsListComponent implements OnInit, OnDestroy {
     private clientService: ClientService,
     private router: Router,
     private toastr: ToastrService,
+    private location: Location,
   ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   ngOnInit(): void {
     this.loadCounts();
@@ -200,6 +205,19 @@ export class FormsListComponent implements OnInit, OnDestroy {
     if (this.pageIndex() >= this.totalPages() - 1) return;
 
     this.pageIndex.set(this.pageIndex() + 1);
+    this.loadPage();
+  }
+
+  pagesArray(): number[] {
+    return Array.from({ length: this.totalPages() }, (_, index) => index);
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages() || page === this.pageIndex()) {
+      return;
+    }
+
+    this.pageIndex.set(page);
     this.loadPage();
   }
 

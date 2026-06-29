@@ -1057,3 +1057,60 @@
 .np-aside__body.cdk-drop-list-dragging .np-dayrow {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
+
+.np-aside .np-dayrow {
+  padding: 0 12px;
+  min-height: 56px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.np-aside .np-dayrow.is-active {
+  background: #eaf7fd;
+  border-color: #9bd7ee;
+}
+
+.np-aside .np-dayrow .np-day {
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  background: transparent !important;
+  border: 0 !important;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.np-aside .np-dayrow .np-day.is-active {
+  background: transparent !important;
+  border: 0 !important;
+  color: #1ea2d2;
+  font-weight: 700;
+}
+
+.np-aside .np-day__meta {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.np-aside .np-dayrow.is-active .np-iconbtn .np-ico {
+  color: #8aa0b2;
+}
+
+.np-aside .np-dayrow.is-active .np-iconbtn:hover .np-ico {
+  color: #1ea2d2;
+}
+
+.np-aside .np-iconbtn--drag {
+  cursor: grab;
+}
+
+.np-aside .cdk-drag-preview,
+.np-dayrow.cdk-drag-preview {
+  overflow: hidden;
+}

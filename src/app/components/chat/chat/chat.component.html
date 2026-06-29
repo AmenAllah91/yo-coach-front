@@ -1,5 +1,17 @@
-<div class="chat-root" [class.chat-root--embedded]="embeddedMode" [class.chat-root--profile-open]="showClientProfile && !selectedConv?.isGroup">
+<div class="chat-page-header" *ngIf="!embeddedMode">
+  <div class="chat-page-header__left">
+    <button class="chat-page-header__back" type="button" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
 
+    <div class="chat-page-header__titles">
+      <h1>Chat</h1>
+      <p>Send messages, documents and voice notes to your clients</p>
+    </div>
+  </div>
+</div>
+
+<div class="chat-root" [class.chat-root--embedded]="embeddedMode" [class.chat-root--profile-open]="showClientProfile && !selectedConv?.isGroup">
   <!-- ═══════════════════════════════════════════
        SIDEBAR — liste des conversations
   ═══════════════════════════════════════════ -->

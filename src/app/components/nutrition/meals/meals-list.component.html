@@ -1,7 +1,14 @@
 <div class="meals-page">
   <div class="page-header">
-    <h1>Meals</h1>
-    <button class="btn-primary" routerLink="/nutrition/meals/create">
+    <button class="back-btn" type="button" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
+
+    <div class="header-content">
+      <h1>Meals</h1>
+      <p>Create, organize and manage your meals</p>
+    </div>
+    <button class="btn-primary header-actions" routerLink="/nutrition/meals/create">
       <i-feather name="plus"></i-feather>
       Add New Meal
     </button>

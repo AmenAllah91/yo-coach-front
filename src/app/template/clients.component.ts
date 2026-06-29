@@ -254,6 +254,19 @@ export class ClientsComponent implements OnInit {
     }
   }
 
+  get pagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index);
+  }
+
+  goToPage(page: number) {
+    if (page < 0 || page >= this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.loadClients();
+  }
+
   goBack() {
     window.history.back();
   }

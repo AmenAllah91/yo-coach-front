@@ -1,4 +1,4 @@
-<app-header (sidebarToggle)="toggleSidebar()"></app-header>
+<app-header [sidebarOpen]="isSidebarOpen" (sidebarToggle)="toggleSidebar()"></app-header>
 
 <div class="layout-body" [class.sidebar-open]="isSidebarOpen">
   <!-- Spacer fantôme qui pousse le contenu -->

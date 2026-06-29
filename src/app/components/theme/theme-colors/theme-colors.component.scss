@@ -1,10 +1,9 @@
 :host {
   display: block;
-  margin-top: -54px;
-  --theme-builder-height: calc(100dvh - 3.5rem + 54px);
-  --phone-scale: min(1, calc((100dvh - 150px) / 696));
-  --phone-frame-width: 384px;
-  --phone-frame-height: 696px;
+  --theme-builder-height: calc(100dvh - 3.5rem);
+  --phone-scale: min(1, calc((100dvh - 9.5rem) / 43.5));
+  --phone-frame-width: 24rem;
+  --phone-frame-height: 43.5rem;
 }
 
 .theme-builder-page {

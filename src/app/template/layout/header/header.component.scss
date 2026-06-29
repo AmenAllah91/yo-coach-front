@@ -38,13 +38,28 @@
   display: flex;
   border-bottom: none;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-  min-height: 40px;
+  min-height: 2.5rem;
   padding: 0.1rem 1rem;
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 52;
+  transition: padding-left 0.24s ease;
+
   .container-fluid {
     //max-width: 1400px;
     margin: 0 auto;
     height: 100%;
     gap: 1rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .navbar {
+    padding-left: 1rem;
+  }
+
+  .navbar.sidebar-expanded {
+    padding-left: 15rem;
   }
 }
   /* Agent Session Toggle */

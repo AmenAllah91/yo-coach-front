@@ -1,4 +1,4 @@
-<section class="main-content">
+<section class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <div class="profile-header">
     <img
       [src]="client?.image || 'assets/images/photoprofilvierge.jpg'"
@@ -31,6 +31,19 @@
     </div>
   </div>
 
+  <div class="stats-toggle-row">
+    <button
+      class="stats-toggle-btn"
+      type="button"
+      (click)="toggleClientStats()"
+      [attr.aria-expanded]="showClientStats"
+    >
+      <span>{{ showClientStats ? 'Hide progress summary' : 'Show progress summary' }}</span>
+      <i class="fas" [class.fa-chevron-up]="showClientStats" [class.fa-chevron-down]="!showClientStats"></i>
+    </button>
+  </div>
+
+  <ng-container *ngIf="showClientStats">
   <div class="client-stats-grid">
     <div class="client-stat-card">
       <div class="stat-icon stat-icon--start">
@@ -94,6 +107,7 @@
       <span>Goal {{ clientTargetWeight !== null ? formatNumber(clientTargetWeight) + ' kg' : '--' }}</span>
     </div>
   </section>
+  </ng-container>
 
   <nav class="profile-tabs">
     <button

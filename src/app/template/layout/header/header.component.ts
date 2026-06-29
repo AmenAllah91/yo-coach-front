@@ -4,7 +4,7 @@ import {
   ChangeDetectorRef,
   Component, ComponentFactoryResolver,
   ElementRef, EmbeddedViewRef, EventEmitter, Injector,
-  OnInit, Output,
+  Input, OnInit, Output,
 } from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
@@ -50,6 +50,7 @@ export class HeaderComponent implements OnInit,AfterViewInit {
   gender: string;
   @Output() toggleSideBar = new EventEmitter<void>();
   @Output() sidebarToggle = new EventEmitter<void>();
+  @Input() sidebarOpen = true;
 
   constructor(
     private cdRef: ChangeDetectorRef,

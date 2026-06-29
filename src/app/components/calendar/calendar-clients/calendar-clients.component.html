@@ -68,7 +68,7 @@
         [(ngModel)]="selectedClient"
         (ngModelChange)="onClientChange($event)"
       >
-        <option value="all">All Clients</option>
+        <option value="">Sélectionner un client</option>
         <option *ngFor="let c of clients" [value]="c.id">
           {{ c.firstName }} {{ c.lastName }}
         </option>
@@ -76,8 +76,13 @@
     </div>
   </div>
 
+  <div class="select-client-state" *ngIf="!hasSelectedClient()">
+    <span class="material-icons">person_search</span>
+    <p>Sélectionner un client pour afficher son calendrier.</p>
+  </div>
+
   <!-- ====== VUE MOIS ====== -->
-  <div class="calendar-month" *ngIf="currentView === 'month'">
+  <div class="calendar-month" *ngIf="hasSelectedClient() && currentView === 'month'">
     <div class="month-header-row">
       <div class="month-header-cell" *ngFor="let d of weekDays">
         {{ d }}
@@ -93,9 +98,13 @@
       <div
         class="month-cell"
         *ngFor="let day of monthDays"
+        [attr.data-workout-drop-date]="day.dateString"
         [class.is-today]="day.isToday"
         [class.is-copied]="copiedDate === day.dateString"
         [class.has-file-range]="hasFileRangeStarting(day.items, day.dateString)"
+        [class.has-file-items]="hasFileWorkoutItems(day.items)"
+        [class.has-workout-items]="hasInteractiveWorkoutItems(day.items)"
+        [class.has-mixed-workout-items]="hasFileWorkoutItems(day.items) && hasInteractiveWorkoutItems(day.items)"
       >
         <div class="cell-header">
           <span class="cell-day-number" [class.cell-day-today]="day.isToday">
@@ -109,7 +118,7 @@
               (click)="addItem(day.dateString)"
               title="Add workout / meal"
             >
-              +
+              <span class="material-icons">add</span>
             </button>
 
             <button
@@ -119,7 +128,7 @@
               (click)="copyDay(day.dateString)"
               title="Copy day"
             >
-              ⧉
+              <span class="material-icons">content_copy</span>
             </button>
           </div>
         </div>
@@ -132,6 +141,7 @@
             *ngFor="let item of day.items"
             class="card-wrapper"
             [class.file-range-wrapper]="isFileWorkoutItem(item)"
+            [class.workout-day-wrapper]="calendarType === 'workout' && !isFileWorkoutItem(item)"
             [class.file-range-placeholder]="isFileWorkoutItem(item) && !isFileRangeStart(item, day.dateString)"
             [ngClass]="getFileRangePositionClass(item, day.dateString)"
             [style.--file-span]="isFileWorkoutItem(item) ? getFileRangeSpan(item, day.dateString) : null"
@@ -141,6 +151,7 @@
                 *ngIf="!isFileWorkoutItem(item) || isFileRangeStart(item, day.dateString)"
                 class="card card-workout"
                 [class.card-program]="item.programId"
+                [class.card-rest-day]="!item.sessions || !item.sessions.length"
                 [class.file-range-card]="isFileWorkoutItem(item)"
                 [class.card-file-workout]="isFileWorkoutItem(item)"
                 [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
@@ -151,12 +162,9 @@
                   <div class="card-title-block">
                     <div class="card-title">
                       <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
-                        {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                        <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                       </span>
                       <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ item.title }}</ng-container>
-                    </div>
-                    <div *ngIf="item.programName" class="card-subtitle program-name">
-                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ isFileWorkoutItem(item) ? getFileProgramSubtitle(item) : item.programName }}</ng-container>
                     </div>
                   </div>
                   <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
@@ -165,14 +173,18 @@
                       title="Drag to move day"
                       (mousedown)="startWorkoutPointerDrag($event, item, day.dateString)"
                       (touchstart)="startWorkoutPointerDrag($event, item, day.dateString)"
-                    >⣿</span>
+                    ><span class="material-icons">drag_indicator</span></span>
                     <div *ngIf="item.programId" [ngClass]="{
                       'badge-circle-coche': item.status === 'COMPLETED',
                       'badge-failed': item.status === 'MISSED',
                       'badge-circle': item.status !== 'COMPLETED' && item.status !== 'MISSED'
                     }">{{ getBadgeText(item.status) }}</div>
-                    <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">✎</button>
-                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">🗑</button>
+                    <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">
+                      <span class="material-icons">delete_outline</span>
+                    </button>
                   </div>
                 </div>
 
@@ -188,18 +200,14 @@
                   <div
                     class="exercise-preview"
                     *ngFor="
-                      let ex of item.sessions[0].exercises | slice : 0 : 2
+                      let ex of item.sessions[0].exercises
                     "
                   >
                     <span class="exercise-dot"></span>
-                    <span class="exercise-name">{{ ex.name }}</span>
-                  </div>
-
-                  <div
-                    class="more-exercises"
-                    *ngIf="item.sessions[0].exercises.length > 2"
-                  >
-                    + {{ item.sessions[0].exercises.length - 2 }} more exercises
+                    <span class="exercise-info">
+                      <span class="exercise-name">{{ ex.name }}</span>
+                      <span class="exercise-summary">{{ getExerciseSummary(ex) }}</span>
+                    </span>
                   </div>
                 </div>
                 <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, day.dateString)">
@@ -268,11 +276,12 @@
   </div>
 
   <!-- ====== VUE SEMAINE ====== -->
-  <div class="calendar-week" *ngIf="currentView === 'week'">
+  <div class="calendar-week" *ngIf="hasSelectedClient() && currentView === 'week'">
     <div class="week-grid">
       <div
         class="week-column"
         *ngFor="let day of weekDaysData"
+        [attr.data-workout-drop-date]="day.dateString"
         [class.is-today]="day.isToday"
         [class.is-copied]="copiedDate === day.dateString"
       >
@@ -293,7 +302,7 @@
               (click)="addItem(day.dateString)"
               title="Add workout / meal"
             >
-              +
+              <span class="material-icons">add</span>
             </button>
 
             <button
@@ -303,7 +312,7 @@
               (click)="copyDay(day.dateString)"
               title="Copy day"
             >
-              ⧉
+              <span class="material-icons">content_copy</span>
             </button>
           </div>
         </div>
@@ -322,6 +331,7 @@
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
+                [class.card-rest-day]="!item.sessions || !item.sessions.length"
                 [class.file-range-card]="isFileWorkoutItem(item)"
                 [class.card-file-workout]="isFileWorkoutItem(item)"
                 [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
@@ -332,12 +342,9 @@
                   <div class="card-title-block">
                     <div class="card-title">
                       <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
-                        {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                        <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                       </span>
                       {{ item.title }}
-                    </div>
-                    <div *ngIf="item.programName" class="card-subtitle program-name">
-                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ isFileWorkoutItem(item) ? getFileProgramSubtitle(item) : item.programName }}</ng-container>
                     </div>
                   </div>
                   <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
@@ -346,14 +353,18 @@
                       title="Drag to move day"
                       (mousedown)="startWorkoutPointerDrag($event, item, day.dateString)"
                       (touchstart)="startWorkoutPointerDrag($event, item, day.dateString)"
-                    >⣿</span>
+                    ><span class="material-icons">drag_indicator</span></span>
                     <div *ngIf="item.programId" [ngClass]="{
                       'badge-circle-coche': item.status === 'COMPLETED',
                       'badge-failed': item.status === 'MISSED',
                       'badge-circle': item.status !== 'COMPLETED' && item.status !== 'MISSED'
                     }">{{ getBadgeText(item.status) }}</div>
-                    <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">✎</button>
-                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">🗑</button>
+                    <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">
+                      <span class="material-icons">delete_outline</span>
+                    </button>
                   </div>
                 </div>
 
@@ -369,18 +380,14 @@
                   <div
                     class="exercise-preview"
                     *ngFor="
-                      let ex of item.sessions[0].exercises | slice : 0 : 2
+                      let ex of item.sessions[0].exercises
                     "
                   >
                     <span class="exercise-dot"></span>
-                    <span class="exercise-name">{{ ex.name }}</span>
-                  </div>
-
-                  <div
-                    class="more-exercises"
-                    *ngIf="item.sessions[0].exercises.length > 2"
-                  >
-                    + {{ item.sessions[0].exercises.length - 2 }} more exercises
+                    <span class="exercise-info">
+                      <span class="exercise-name">{{ ex.name }}</span>
+                      <span class="exercise-summary">{{ getExerciseSummary(ex) }}</span>
+                    </span>
                   </div>
                 </div>
                 <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, day.dateString)">
@@ -453,7 +460,7 @@
   </div>
 
   <!-- ====== VUE JOUR ====== -->
-  <div class="calendar-day" *ngIf="currentView === 'day'">
+  <div class="calendar-day" *ngIf="hasSelectedClient() && currentView === 'day'">
     <div class="day-header">
       <div class="day-header-left">
         <div class="day-weekday">{{ dayLabelWeekday }}</div>
@@ -467,7 +474,7 @@
           (click)="addItem(currentDayString)"
           title="Add workout / meal"
         >
-          +
+          <span class="material-icons">add</span>
         </button>
 
         <button
@@ -477,7 +484,7 @@
           (click)="copyDay(currentDayString)"
           title="Copy day"
         >
-          ⧉
+          <span class="material-icons">content_copy</span>
         </button>
 
         <button
@@ -507,6 +514,7 @@
           <div
             class="card card-workout large"
             [class.card-program]="item.programId"
+            [class.card-rest-day]="!item.sessions || !item.sessions.length"
             [class.file-range-card]="isFileWorkoutItem(item)"
             [class.card-file-workout]="isFileWorkoutItem(item)"
             [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
@@ -517,15 +525,9 @@
               <div class="card-title-block">
                 <div class="card-title">
                   <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
-                    {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                    <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                   </span>
                   {{ item.title }}
-                </div>
-                <div
-                  *ngIf="item.programName"
-                  class="card-subtitle program-name"
-                >
-                  <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ isFileWorkoutItem(item) ? getFileProgramSubtitle(item) : item.programName }}</ng-container>
                 </div>
               </div>
               <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
@@ -534,7 +536,7 @@
                   title="Drag to move day"
                   (mousedown)="startWorkoutPointerDrag($event, item, currentDayString)"
                   (touchstart)="startWorkoutPointerDrag($event, item, currentDayString)"
-                >⣿</span>
+                ><span class="material-icons">drag_indicator</span></span>
 
                 <div
                   *ngIf="item.programId"
@@ -555,7 +557,7 @@
                   title="Edit day"
                   (click)="openEditWorkoutModal(item, $event)"
                 >
-                  ✎
+                  <span class="material-icons">edit</span>
                 </button>
 
                 <button
@@ -564,7 +566,7 @@
                   title="Delete day"
                   (click)="openDeleteModal(item, $event)"
                 >
-                  🗑
+                  <span class="material-icons">delete_outline</span>
                 </button>
               </div>
             </div>
@@ -581,21 +583,17 @@
               <div
                 class="exercise-preview"
                 *ngFor="
-                  let ex of item.sessions[0].exercises | slice : 0 : 4
+                  let ex of item.sessions[0].exercises
                 "
               >
                 <span class="exercise-dot"></span>
-                <span class="exercise-name">{{ ex.name }}</span>
-              </div>
-
-              <div
-                class="more-exercises"
-                *ngIf="item.sessions[0].exercises.length > 4"
-              >
-                + {{ item.sessions[0].exercises.length - 4 }} more exercises
+                <span class="exercise-info">
+                  <span class="exercise-name">{{ ex.name }}</span>
+                  <span class="exercise-summary">{{ getExerciseSummary(ex) }}</span>
+                </span>
               </div>
             </div>
-            <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, day.dateString)">
+            <div class="file-calendar-meta" *ngIf="isFileWorkoutItem(item) && shouldShowFileRangeEndDate(item, currentDayString)">
                   {{ item.startDate | date:'d MMM' }} → {{ getFileRangeEndLabel(item) | date:'d MMM' }}
                 </div>
           </div>
@@ -607,7 +605,7 @@
               <div class="card-title-block">
                 <div class="card-title">
                   <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
-                    {{ getFileResourceType(item) === 'EXCEL' ? '▦' : '▤' }}
+                    <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                   </span>
                   {{ item.title }}
                 </div>
@@ -719,13 +717,25 @@
             class="exercise-list"
             *ngIf="newWorkoutExercises.length > 0; else noExercisesBlock"
           >
+            <ng-container *ngFor="let exercise of newWorkoutExercises; let exIndex = index">
             <div
               class="exercise-card"
-              *ngFor="let exercise of newWorkoutExercises; let exIndex = index"
+              [class.is-superset]="exercise.supersetGroupId"
             >
-              <div class="exercise-card-header">
+                <div class="exercise-card-header">
                 <div class="exercise-header-left">
-                  <div class="exercise-thumbnail"></div>
+                  <div class="exercise-thumbnail">
+                    <img
+                      *ngIf="getExerciseThumbnail(exercise); else exerciseThumbFallback"
+                      [src]="getExerciseThumbnail(exercise)"
+                      [alt]="exercise.name"
+                      loading="lazy"
+                    />
+
+                    <ng-template #exerciseThumbFallback>
+                      <span class="material-icons">fitness_center</span>
+                    </ng-template>
+                  </div>
                   <div>
                     <div class="exercise-name">{{ exercise.name }}</div>
                     <div class="exercise-type">{{ exercise.type }}</div>
@@ -802,15 +812,23 @@
 
               <div
                 class="exercise-sets"
+                [class.exercise-sets--with-weight]="shouldShowCalendarWeightField() && exercise.type !== 'cardio'"
                 *ngIf="
-                  exercise.type === 'strength' &&
                   exercise.sets &&
                   exercise.sets.length
                 "
               >
                 <div class="sets-header-row">
                   <div class="sets-col sets-col-set">Set</div>
-                  <div class="sets-col sets-col-reps">Reps</div>
+                  <div
+                    class="sets-col sets-col-weight"
+                    *ngIf="shouldShowCalendarWeightField() && exercise.type !== 'cardio'"
+                  >
+                    Weight (kg)
+                  </div>
+                  <div class="sets-col sets-col-reps">
+                    {{ exercise.type === 'cardio' ? 'Minutes' : 'Reps' }}
+                  </div>
                   <div class="sets-col sets-col-rest">Rest Period</div>
                   <div class="sets-col sets-col-actions"></div>
                 </div>
@@ -820,14 +838,83 @@
                   *ngFor="let set of exercise.sets; let setIndex = index"
                 >
                   <div class="sets-col sets-col-set">
-                    <span class="set-number">{{ set.number }}</span>
+                    <div class="calendar-settype">
+                      <button
+                        type="button"
+                        class="calendar-settype__trigger"
+                        (click)="toggleSetTypeMenu(exercise.id, setIndex, $event)"
+                      >
+                        <span
+                          class="calendar-settype__value"
+                          [ngClass]="getSetTypeClass(set.type)"
+                        >
+                          {{ getSetDisplayLabel(set, setIndex) }}
+                        </span>
+                        <span class="calendar-settype__arrow">v</span>
+                      </button>
+
+                      <div
+                        class="calendar-settype__menu"
+                        *ngIf="isSetTypeMenuOpen(exercise.id, setIndex)"
+                        (click)="$event.stopPropagation()"
+                      >
+                        <button
+                          type="button"
+                          class="calendar-settype__item"
+                          (click)="selectSetType(exercise, setIndex, 'REGULAR', $event)"
+                        >
+                          <span class="calendar-settype__code calendar-settype__code--regular">R</span>
+                          Regular
+                        </button>
+
+                        <button
+                          type="button"
+                          class="calendar-settype__item"
+                          (click)="selectSetType(exercise, setIndex, 'WARM_UP', $event)"
+                        >
+                          <span class="calendar-settype__code calendar-settype__code--warmup">W</span>
+                          Warm up
+                        </button>
+
+                        <button
+                          type="button"
+                          class="calendar-settype__item"
+                          (click)="selectSetType(exercise, setIndex, 'DROP_SET', $event)"
+                        >
+                          <span class="calendar-settype__code calendar-settype__code--dropset">D</span>
+                          Drop set
+                        </button>
+
+                        <button
+                          type="button"
+                          class="calendar-settype__item"
+                          (click)="selectSetType(exercise, setIndex, 'FAILURE', $event)"
+                        >
+                          <span class="calendar-settype__code calendar-settype__code--failure">F</span>
+                          Failure
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="sets-col sets-col-weight"
+                    *ngIf="shouldShowCalendarWeightField() && exercise.type !== 'cardio'"
+                  >
+                    <input
+                      type="number"
+                      class="text-input"
+                      [(ngModel)]="set.weight"
+                      min="0"
+                      step="0.5"
+                    />
                   </div>
                   <div class="sets-col sets-col-reps">
                     <input
-                      type="text"
+                      [type]="exercise.type === 'cardio' ? 'number' : 'text'"
                       class="text-input"
-                      [(ngModel)]="set.reps"
-                      placeholder="8-12"
+                      [ngModel]="exercise.type === 'cardio' ? set.duration : set.reps"
+                      (ngModelChange)="updateSetMainValue(exercise, set, $event)"
+                      [placeholder]="exercise.type === 'cardio' ? '30' : '8-12'"
                     />
                   </div>
                   <div class="sets-col sets-col-rest">
@@ -887,21 +974,25 @@
                   class="button-outline-dashed"
                   (click)="addSetToExercise(exercise)"
                 >
-                  + Add Set
+                  Add Set
                 </button>
               </div>
-
-              <div class="exercise-cardio" *ngIf="exercise.type === 'cardio'">
-                <label class="form-label">Duration (minutes)</label>
-                <input
-                  type="number"
-                  class="text-input"
-                  [(ngModel)]="exercise.duration"
-                  min="1"
-                  placeholder="30"
-                />
-              </div>
             </div>
+
+            <div
+              class="calendar-supersetbar"
+              *ngIf="canToggleCalendarSuperset(exIndex)"
+            >
+              <button
+                type="button"
+                class="calendar-supersetbtn"
+                [class.is-active]="isCalendarSupersetPair(exIndex)"
+                (click)="toggleCalendarSuperset(exIndex)"
+              >
+                {{ isCalendarSupersetPair(exIndex) ? '- Superset' : '+ Superset' }}
+              </button>
+            </div>
+            </ng-container>
           </div>
 
           <ng-template #noExercisesBlock>
@@ -927,21 +1018,83 @@
                 </button>
               </div>
               <div class="search-wrapper">
+                <span class="material-icons search-icon">search</span>
                 <input
                   type="text"
                   class="text-input search-input"
-                  placeholder="Search exercises..."
+                  placeholder="Search by name..."
                   [(ngModel)]="exerciseSearchTerm"
+                  (ngModelChange)="onExerciseSearchChange()"
                 />
               </div>
+              <div class="exercise-selector-filters">
+                <div class="exercise-filter-select-wrap">
+                  <select
+                    class="exercise-filter-select"
+                    [(ngModel)]="exerciseMuscleFilter"
+                    (ngModelChange)="onExerciseSearchChange()"
+                  >
+                    <option value="">Muscles</option>
+                    <option *ngFor="let option of muscleOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <span class="material-icons exercise-filter-chevron">expand_more</span>
+                </div>
+
+                <div class="exercise-filter-select-wrap">
+                  <select
+                    class="exercise-filter-select"
+                    [(ngModel)]="exerciseEquipmentFilter"
+                    (ngModelChange)="onExerciseSearchChange()"
+                  >
+                    <option value="">Equipment</option>
+                    <option *ngFor="let option of equipmentOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <span class="material-icons exercise-filter-chevron">expand_more</span>
+                </div>
+
+                <div class="exercise-filter-select-wrap">
+                  <select
+                    class="exercise-filter-select"
+                    [(ngModel)]="exerciseTypeFilter"
+                    (ngModelChange)="onExerciseSearchChange()"
+                  >
+                    <option value="">All Types</option>
+                    <option *ngFor="let option of typeOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <span class="material-icons exercise-filter-chevron">expand_more</span>
+                </div>
+              </div>
               <div class="exercise-selector-list">
+                <div
+                  class="exercise-selector-empty"
+                  *ngIf="exerciseSelectorLoading"
+                >
+                  Loading exercises...
+                </div>
                 <button
                   type="button"
                   class="exercise-selector-item"
                   *ngFor="let exercise of getFilteredExercises()"
                   (click)="handleAddExerciseToWorkout(exercise)"
                 >
-                  <div class="exercise-selector-thumb"></div>
+                  <div class="exercise-selector-thumb">
+                    <img
+                      *ngIf="getExerciseThumbnail(exercise); else selectorThumbFallback"
+                      [src]="getExerciseThumbnail(exercise)"
+                      [alt]="exercise.name"
+                      loading="lazy"
+                    />
+
+                    <ng-template #selectorThumbFallback>
+                      <span class="material-icons">fitness_center</span>
+                    </ng-template>
+                  </div>
                   <div class="exercise-selector-text">
                     <div class="exercise-selector-name">{{ exercise.name }}</div>
                     <div class="exercise-selector-type">{{ exercise.type }}</div>
@@ -950,7 +1103,7 @@
                 </button>
                 <div
                   class="exercise-selector-empty"
-                  *ngIf="getFilteredExercises().length === 0"
+                  *ngIf="!exerciseSelectorLoading && getFilteredExercises().length === 0"
                 >
                   No exercises found
                 </div>

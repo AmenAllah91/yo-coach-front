@@ -1222,3 +1222,105 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Clean program type accents. Keep file documents close to the PDF/Excel design. */
+.program-card.program-card-app,
+.program-card.program-card-pdf,
+.program-card.program-card-excel {
+  border-left: 0;
+}
+
+.program-card.program-card-app::before {
+  background: #36b8e6;
+}
+
+.program-card.program-card-pdf::before {
+  background: #ef4444;
+}
+
+.program-card.program-card-excel::before {
+  background: #22c55e;
+}
+
+.program-card-app .program-icon-blue,
+.program-type-pill--app,
+.progress-bar-fill,
+.page-btn--active {
+  border-color: #36b8e6;
+}
+
+.program-card-app .program-icon-blue {
+  background: #e7f8fe;
+  color: #079bd2;
+}
+
+.program-type-pill--app {
+  background: #e7f8fe;
+  color: #079bd2;
+}
+
+.progress-bar-fill,
+.page-btn--active {
+  background: #36b8e6;
+}
+
+/* Match profile Check-in button style and keep file rows compact. */
+.btn-assign-black {
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 0 20px !important;
+  min-height: 45px !important;
+  height: 45px !important;
+  background: #000 !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  gap: 10px !important;
+}
+
+.btn-assign-black i {
+  font-size: 18px !important;
+  margin-right: 0 !important;
+}
+
+.btn-assign-black:hover {
+  background: #44b4df !important;
+}
+
+.program-card--file {
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+
+.static-document-row {
+  display: none !important;
+}
+
+.tab-section-header {
+  align-items: center !important;
+  margin-bottom: 18px !important;
+}
+
+.tab-section-header .section-title {
+  margin: 0 !important;
+  font-size: 22px !important;
+  line-height: 1.25 !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+}
+
+.tab-section-header .btn-assign-black {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 5px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  gap: 8px !important;
+}
+
+.tab-section-header .btn-assign-black i {
+  font-size: 14px !important;
+}

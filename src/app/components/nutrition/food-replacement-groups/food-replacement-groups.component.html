@@ -58,14 +58,26 @@
         {{ group.active ? 'Active' : 'Inactive' }}
       </span>
 
-      <button class="outline-btn" (click)="openEditGroup(group)">
-        <i-feather name="edit-2"></i-feather>
-        Edit
-      </button>
+      <div class="col-actions group-actions">
+        <div class="dropdown" [class.open]="isGroupActionsOpen(group)">
+          <button class="action-btn" type="button" (click)="toggleGroupActions(group, $event)">
+            <span>Actions</span>
+            <i-feather name="chevron-down"></i-feather>
+          </button>
 
-      <button class="icon-btn danger" (click)="deleteGroup(group)">
-        <i-feather name="trash-2"></i-feather>
-      </button>
+          <div class="dropdown-menu" *ngIf="isGroupActionsOpen(group)" (click)="$event.stopPropagation()">
+            <button class="dropdown-item" type="button" (click)="openEditGroup(group); closeGroupActions()">
+              <i-feather name="edit-2"></i-feather>
+              Edit
+            </button>
+
+            <button class="dropdown-item delete" type="button" (click)="deleteGroup(group); closeGroupActions()">
+              <i-feather name="trash-2"></i-feather>
+              Delete group
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="empty-state" *ngIf="!loading && groups.length === 0">

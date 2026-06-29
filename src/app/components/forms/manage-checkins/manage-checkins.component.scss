@@ -1428,6 +1428,26 @@
   background:#44b4df; /* bg-sky-500 */
   color:#fff;
 }
+
+/* Align header coordinates with the Clients page reference. */
+.page {
+  padding: 0 !important;
+  background: #f8fafc !important;
+}
+
+.container {
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  gap: 0 !important;
+}
+
+.card {
+  margin:
+    clamp(1rem, 1.8vw, 1.35rem)
+    clamp(1.5rem, 2vw, 2rem)
+    clamp(2rem, 3vw, 3rem) !important;
+}
 /* ===== ROW EXACT LIKE SCREENSHOT ===== */
 
 /* La row en grid : [left] [date] [badge] [actions] */
