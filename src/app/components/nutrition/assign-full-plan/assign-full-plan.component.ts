@@ -75,13 +75,13 @@ export class AssignFullPlanComponent implements OnInit {
   updateAllDates() {
     if (!this.startDate) return;
 
-    const start = new Date(this.startDate);
+    const start = this.parseDateOnly(this.startDate);
 
     this.days.forEach((day, index) => {
       const current = new Date(start);
       current.setDate(start.getDate() + index);
 
-      day.date = current.toISOString().split('T')[0];
+      day.date = this.toDateOnly(current);
       day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
       day.title = `Day ${index + 1}`;
       (day as MealDay & { dayNumber?: number }).dayNumber = index + 1;
@@ -95,7 +95,7 @@ export class AssignFullPlanComponent implements OnInit {
 
     const end = new Date(start);
     end.setDate(start.getDate() + (this.days.length - 1));
-    this.endDate = end.toISOString().split('T')[0];
+    this.endDate = this.toDateOnly(end);
   }
 
   loadPlanForEdit(id: string) {
@@ -105,16 +105,79 @@ export class AssignFullPlanComponent implements OnInit {
         this.mealPlan = plan;
         this.planName = plan.name;
         this.planDescription = plan.details;
-        this.days = plan.mealDays || [];
+        this.days = this.normalizeDaysForPlanRange(plan);
         this.ensureAtLeastOneDay();
 
         // recalcul si les macros ne sont pas pré-calculées
         this.days.forEach((d) => this.recalcDayTargets(d));
         if (plan.startDate) {
-          this.startDate = new Date(plan.startDate).toISOString().split('T')[0];
+          this.startDate = this.toDateOnly(this.parseDateOnly(plan.startDate));
+        }
+        if (plan.endDate) {
+          this.endDate = this.toDateOnly(this.parseDateOnly(plan.endDate));
         }
         this.updateAllDates();
       });
+  }
+
+  private normalizeDaysForPlanRange(plan: MealPlan): MealDay[] {
+    const sourceDays = [...(plan.mealDays || [])];
+    const expectedDays = this.getExpectedDayCount(plan.startDate, plan.endDate);
+
+    if (expectedDays <= sourceDays.length) {
+      return sourceDays;
+    }
+
+    while (sourceDays.length < expectedDays) {
+      const template = sourceDays[sourceDays.length - 1] || this.makeEmptyDay();
+      sourceDays.push(this.cloneDayForNewDate(template));
+    }
+
+    return sourceDays;
+  }
+
+  private getExpectedDayCount(startDate?: string, endDate?: string): number {
+    if (!startDate || !endDate) return 0;
+
+    const start = this.parseDateOnly(startDate);
+    const end = this.parseDateOnly(endDate);
+
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end < start
+    ) {
+      return 0;
+    }
+
+    return Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+  }
+
+  private cloneDayForNewDate(day: MealDay): MealDay {
+    return {
+      ...day,
+      id: crypto.randomUUID?.() ?? Date.now().toString(),
+      meals: (day.meals || []).map((meal) => ({
+        ...meal,
+        id: crypto.randomUUID?.() ?? Date.now().toString(),
+        foods: (meal.foods || []).map((food) => ({
+          ...food,
+          id: crypto.randomUUID?.() ?? Date.now().toString(),
+        })),
+      })),
+    };
+  }
+
+  private parseDateOnly(value: string): Date {
+    const [year, month, day] = value.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private toDateOnly(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   removeFood(food: Food, meal: Meal) {

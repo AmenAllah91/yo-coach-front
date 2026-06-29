@@ -247,12 +247,14 @@ currentDate = new Date();
     if (changes['embeddedClientId']) {
       this.selectedClient = this.embeddedClientId || 'all';
       this.getWorkout();
+      this.getNutrition();
     }
   }
 
   onClientChange(clientId: string): void {
     this.selectedClient = clientId;
     this.getWorkout();
+    this.getNutrition();
   }
 
   getClients(): void {
@@ -271,10 +273,30 @@ currentDate = new Date();
   }
 
   getAllLibrary(): void {
-    this.nutritionService.getNutritionPlans().subscribe((res) => {
-      this.nutritionPrograms = this.mapBackendToNutritionPrograms(res.content);
-      console.log('NUTRITION PROGRAMS', this.nutritionPrograms);
-    });
+    this.getNutrition();
+  }
+
+  getNutrition(): void {
+    if (!this.coachId || !this.selectedClient || this.selectedClient === 'all') {
+      this.nutritionPrograms = [];
+      this.updateMonthGrid();
+      return;
+    }
+
+    this.nutritionService
+      .getNutritionPlanByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL')
+      .subscribe({
+        next: (res) => {
+          this.nutritionPrograms = this.mapBackendToNutritionPrograms(res.content || []);
+          console.log('CLIENT ASSIGNED NUTRITION PROGRAMS', this.nutritionPrograms);
+          this.updateMonthGrid();
+        },
+        error: (err) => {
+          console.error('Error loading client assigned nutrition plans', err);
+          this.nutritionPrograms = [];
+          this.updateMonthGrid();
+        },
+      });
   }
 
   getWorkout(): void {
@@ -611,7 +633,7 @@ currentDate = new Date();
     const result: NutritionProgram[] = [];
 
     plans.forEach((plan) => {
-      (plan.mealDays || []).forEach((day: any) => {
+      this.expandNutritionDaysForRange(plan).forEach((day: any) => {
         const hasMeals = !!day.meals && day.meals.length > 0;
 
         const hasTargets =
@@ -677,6 +699,51 @@ currentDate = new Date();
     });
 
     return result;
+  }
+
+  private expandNutritionDaysForRange(plan: any): any[] {
+    const days = [...(plan?.mealDays || [])];
+    const startDate = this.toCalendarDateOnly(plan?.startDate);
+    const endDate = this.toCalendarDateOnly(plan?.endDate);
+
+    if (!startDate) {
+      return days;
+    }
+
+    const expectedDays = endDate
+      ? this.daysBetween(startDate, endDate) + 1
+      : days.length;
+
+    const normalizedDays = days.map((day, index) => ({
+      ...day,
+      date: this.toCalendarDateOnly(day?.date) || this.addDays(startDate, index),
+      dayNumber: day?.dayNumber || index + 1,
+    }));
+
+    while (normalizedDays.length < expectedDays) {
+      const index = normalizedDays.length;
+      const template = normalizedDays[normalizedDays.length - 1] || {};
+
+      normalizedDays.push({
+        ...template,
+        id: undefined,
+        date: this.addDays(startDate, index),
+        dayNumber: index + 1,
+      });
+    }
+
+    return normalizedDays;
+  }
+
+  private daysBetween(startDate: string, endDate: string): number {
+    const start = this.parseCalendarDate(startDate);
+    const end = this.parseCalendarDate(endDate);
+
+    if (!start || !end || end < start) {
+      return 0;
+    }
+
+    return Math.floor((end.getTime() - start.getTime()) / 86400000);
   }
 
   formatDateToYYYYMMDD(date: Date): string {

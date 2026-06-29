@@ -99,9 +99,11 @@ export class ProfilClientComponent {
 
   activeTab: TabId = 'dashboard';
   showClientStats = true;
+  private checkinsLoaded = false;
 
   setTab(tab: TabId) {
     this.activeTab = tab;
+    this.loadTabData(tab);
   }
 
   toggleClientStats(): void {
@@ -340,7 +342,10 @@ export class ProfilClientComponent {
 
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'] as TabId | undefined;
-      if (tab) this.activeTab = tab;
+      if (tab) {
+        this.activeTab = tab;
+        this.loadTabData(tab);
+      }
 
       const openAssign = params['openAssign'] === '1';
       const preselectFormId = params['preselectFormId'];
@@ -405,10 +410,18 @@ export class ProfilClientComponent {
 
   private loadClientData(): void {
     if (!this.clientId) return;
+    this.checkinsLoaded = false;
     this.getClientById(this.clientId);
-    this.loadClientAssignments();
     this.loadBodyMeasurements();
     this.loadDashboardPrograms();
+    this.loadTabData(this.activeTab);
+  }
+
+  private loadTabData(tab: TabId): void {
+    if (tab === 'checkins' && !this.checkinsLoaded) {
+      this.checkinsLoaded = true;
+      this.loadClientAssignments();
+    }
   }
 
   getLetter(index: number): string {

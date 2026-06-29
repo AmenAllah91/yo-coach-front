@@ -321,7 +321,7 @@
       </div>
     </div>
 
-    <div class="tab-pane" [class.active]="activeTab === 'workouts'">
+    <div class="tab-pane" *ngIf="activeTab === 'workouts'" [class.active]="true">
       <app-workouts-client-tab
         [clientId]="clientId"
         [coachId]="userid"
@@ -329,7 +329,7 @@
       />
     </div>
 
-    <div class="tab-pane" [class.active]="activeTab === 'nutrition'">
+    <div class="tab-pane" *ngIf="activeTab === 'nutrition'" [class.active]="true">
       <app-nutrition-client-tab
         [clientId]="clientId"
         [coachId]="userid"
@@ -339,7 +339,8 @@
 
     <section
       class="checkins-tab tab-pane"
-      [class.active]="activeTab === 'checkins'"
+      *ngIf="activeTab === 'checkins'"
+      [class.active]="true"
     >
       <div class="checkins-header">
         <nav class="checkins-subtabs">
@@ -602,7 +603,7 @@
       </div>
     </section>
 
-    <div class="tab-pane chat-profile-pane" [class.active]="activeTab === 'chat'">
+    <div class="tab-pane chat-profile-pane" *ngIf="activeTab === 'chat'" [class.active]="true">
       <app-chat
         [embeddedMode]="true"
         [embeddedClientId]="clientId"
@@ -612,7 +613,8 @@
 
     <div
       class="tab-pane measurements-pane"
-      [class.active]="activeTab === 'measurements'"
+      *ngIf="activeTab === 'measurements'"
+      [class.active]="true"
     >
       <app-body-measurements
         [clientId]="clientId"
@@ -623,7 +625,8 @@
 
     <div
       class="tab-pane progress-pictures-pane"
-      [class.active]="activeTab === 'pictures'"
+      *ngIf="activeTab === 'pictures'"
+      [class.active]="true"
     >
       <app-progress-pictures
         [clientId]="clientId"
@@ -631,7 +634,7 @@
       ></app-progress-pictures>
     </div>
 
-    <div class="tab-pane" [class.active]="activeTab === 'calendar'">
+    <div class="tab-pane" *ngIf="activeTab === 'calendar'" [class.active]="true">
       <app-calendar-clients
         [embeddedClientId]="clientId"
         [embeddedCoachId]="userid"
