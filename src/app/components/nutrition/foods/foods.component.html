@@ -1,8 +1,5 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="back-btn" (click)="goBack()">
-      <i-feather name="arrow-left"></i-feather>
-    </button>
     <div class="header-content">
       <h1>Foods</h1>
       <p>Manage your food database</p>
@@ -17,10 +14,10 @@
     <div class="search-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input 
-          type="text" 
-          placeholder="Search foods" 
-          [(ngModel)]="searchTerm" 
+        <input
+          type="text"
+          placeholder="Search foods"
+          [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
     </div>

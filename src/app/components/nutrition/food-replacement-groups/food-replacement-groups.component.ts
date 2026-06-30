@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { NutritionService } from '../../../service/nutrition.service';
@@ -54,7 +54,6 @@ export class FoodReplacementGroupsComponent implements OnInit {
   constructor(
     private replacementGroupsService: FoodReplacementGroupsService,
     private nutritionService: NutritionService,
-    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -164,15 +163,6 @@ export class FoodReplacementGroupsComponent implements OnInit {
 
   nextPage(): void {
     this.onPageChange(this.currentPage + 1);
-  }
-
-  goBack(): void {
-    if (this.view === 'EDITOR') {
-      this.closeEditor();
-      return;
-    }
-
-    this.location.back();
   }
 
   openCreateGroup(): void {

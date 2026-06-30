@@ -118,12 +118,15 @@ export class WorkoutService {
     clientId: string,
     page: number,
     size: number,
-    type: 'ALL' | 'APP' | 'FILES' = 'ALL'
+    type: 'ALL' | 'APP' | 'FILES' = 'ALL',
+    period: 'ALL' | 'ACTIVE' | 'NON_ACTIVE' = 'ALL',
+    statusFilter: 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP' = 'ALL',
+    sort: 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC' = 'RECOMMENDED'
   ) {
     return this.http.get<PageResponse<WorkoutPlan>>(
       `${this.apiUrl}client/${clientId}/coach/${coachId}`,
       {
-        params: { page, size, type },
+        params: { page, size, type, period, statusFilter, sort },
       }
     );
   }

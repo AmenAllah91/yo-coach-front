@@ -1,9 +1,5 @@
 <div class="page-container" *ngIf="view === 'LIST'">
   <div class="page-header">
-    <button class="back-btn" (click)="goBack()">
-      <i-feather name="arrow-left"></i-feather>
-    </button>
-
     <div class="header-content">
       <h1>Food Replacement Groups</h1>
       <p>Create reusable groups of foods that can replace each other in meal plans.</p>
@@ -121,10 +117,6 @@
 
 <div class="page-container" *ngIf="view === 'EDITOR'">
   <div class="page-header">
-    <button class="back-btn" (click)="goBack()">
-      <i-feather name="arrow-left"></i-feather>
-    </button>
-
     <div class="header-content">
       <h1>{{ editingGroup ? 'Edit Food Replacement Group' : 'Create Food Replacement Group' }}</h1>
       <p>Create one reusable group so any food inside it can suggest the others as replacements.</p>

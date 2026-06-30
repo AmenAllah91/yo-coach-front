@@ -267,10 +267,6 @@ export class ClientsComponent implements OnInit {
     this.loadClients();
   }
 
-  goBack() {
-    window.history.back();
-  }
-
   openAddModal() {
     this.resetForm();
     this.showAddModal = true;

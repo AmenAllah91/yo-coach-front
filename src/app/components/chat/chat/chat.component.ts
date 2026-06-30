@@ -896,7 +896,4 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     const parts = cleanUrl.split('/').filter(Boolean);
     return decodeURIComponent(parts[parts.length - 1] || 'document');
   }
-  goBack(): void {
-    window.history.back();
-  }
 }

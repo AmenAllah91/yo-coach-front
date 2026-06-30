@@ -1,8 +1,5 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="back-btn" (click)="goBack()">
-      <i-feather name="arrow-left"></i-feather>
-    </button>
     <div class="header-content">
       <h1>Program Library</h1>
       <p>Create, organize and manage your workout programs</p>
@@ -166,7 +163,17 @@
     </div>
   </div>
 
-  <app-modal-assign-toclient *ngIf="showAssignModal" [programName]="programToAssign?.name" [showEndDate]="programToAssign ? isFileProgram(programToAssign) : false" (closeModal)="closeAssignModal()" (cancel)="closeAssignModal()" (assignProgram)="onProgramAssigned($event)"></app-modal-assign-toclient>
+  <app-modal-assign-toclient
+    *ngIf="showAssignModal"
+    [programName]="programToAssign?.name"
+    [showEndDate]="programToAssign ? isFileProgram(programToAssign) : false"
+    [assignmentType]="'workout'"
+    [durationDays]="getProgramDurationDays(programToAssign)"
+    [includeFilePrograms]="workoutFileEnabled"
+    (closeModal)="closeAssignModal()"
+    (cancel)="closeAssignModal()"
+    (assignProgram)="onProgramAssigned($event)"
+  ></app-modal-assign-toclient>
 
   <div class="import-workout-overlay" *ngIf="showFileAssignModal" (click)="closeFileAssignModal()">
     <div class="import-workout-modal file-assign-modal" (click)="$event.stopPropagation()">

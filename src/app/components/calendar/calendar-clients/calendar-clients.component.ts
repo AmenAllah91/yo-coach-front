@@ -125,6 +125,7 @@ type CalendarType = 'workout' | 'nutrition';
 export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
 
   workoutFileEnabled = true;
+  nutritionFileEnabled = true;
 currentDate = new Date();
   currentView: CalendarViewMode = 'month';
   calendarType: CalendarType = 'workout';
@@ -219,10 +220,12 @@ currentDate = new Date();
     this.coachSettingsService.loadConfig().subscribe({
       next: () => {
         this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
         this.updateMonthGrid();
       },
       error: () => {
         this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+        this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
       },
     });
     if (this.embeddedCoachId) {
@@ -632,10 +635,28 @@ currentDate = new Date();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private isFileNutritionPlan(plan: any): boolean {
+    const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
+    const type = String(plan?.resourceType || '').toUpperCase();
+    return (
+      mode === 'FILE' ||
+      type === 'PDF' ||
+      type === 'EXCEL' ||
+      type === 'XLS' ||
+      type === 'XLSX' ||
+      !!plan?.fileName ||
+      !!plan?.originalFileName ||
+      !!plan?.fileUrl
+    );
+  }
+
   mapBackendToNutritionPrograms(plans: any[]): NutritionProgram[] {
     const result: NutritionProgram[] = [];
 
     plans.forEach((plan) => {
+      if (this.nutritionFileEnabled === false && this.isFileNutritionPlan(plan)) {
+        return;
+      }
       this.expandNutritionDaysForRange(plan).forEach((day: any) => {
         const hasMeals = !!day.meals && day.meals.length > 0;
 

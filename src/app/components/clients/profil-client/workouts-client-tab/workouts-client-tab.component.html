@@ -18,8 +18,54 @@
   </button>
 </div>
 
+<div class="program-section" *ngIf="hasActivePrograms()">
+  <h3 class="program-section-title">CURRENT ACTIVE PROGRAM</h3>
+  <ng-container *ngFor="let program of currentActivePrograms">
+    <ng-container *ngTemplateOutlet="programCardTemplate; context: { $implicit: program }"></ng-container>
+  </ng-container>
+</div>
+
+<div class="program-section">
+  <div class="all-programs-header">
+    <h3 class="program-section-title">ALL PROGRAMS</h3>
+
+    <div class="all-programs-controls">
+      <div class="program-status-filters" aria-label="Program status filters">
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'ALL'" (click)="setAllProgramsFilter('ALL')">
+          All
+        </button>
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'UPCOMING'" (click)="setAllProgramsFilter('UPCOMING')">
+          Upcoming
+        </button>
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'COMPLETED'" (click)="setAllProgramsFilter('COMPLETED')">
+          Completed
+        </button>
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'OVERLAP'" (click)="setAllProgramsFilter('OVERLAP')">
+          Overlap
+        </button>
+      </div>
+
+      <label class="program-sort-control">
+        <i class="fas fa-sort"></i>
+        <span>Sort:</span>
+        <select [ngModel]="allProgramsSort" (ngModelChange)="setAllProgramsSort($event)">
+          <option value="RECOMMENDED">Recommended</option>
+          <option value="START_ASC">Start date ↑</option>
+          <option value="START_DESC">Start date ↓</option>
+          <option value="END_ASC">End date ↑</option>
+          <option value="END_DESC">End date ↓</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <ng-container *ngFor="let program of allOtherPrograms">
+    <ng-container *ngTemplateOutlet="programCardTemplate; context: { $implicit: program }"></ng-container>
+  </ng-container>
+</div>
+
+<ng-template #programCardTemplate let-program>
 <div
-  *ngFor="let program of displayedPrograms"
   class="program-card"
   [class.program-card-app]="isNormalWorkoutProgram(program)"
   [class.program-card-pdf]="getWorkoutProgramCardType(program) === 'PDF'"
@@ -60,6 +106,7 @@
             </span>
             <span class="program-type-pill program-type-pill--app">App Program</span>
           </ng-container>
+          <span *ngIf="isProgramOverlap(program)" class="status-pill status-pill--overlap">Overlap</span>
 
           <ng-template #fileBadgeBlock>
             <span
@@ -180,6 +227,7 @@
     </div>
   </div>
 </div>
+</ng-template>
 
 <div class="pagination-wrapper">
   <button

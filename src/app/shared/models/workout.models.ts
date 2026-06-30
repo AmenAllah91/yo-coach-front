@@ -62,4 +62,5 @@ export interface WorkoutPlan {
   fileSizeBytes?: number;
   fileUploadedAt?: string;
   sourceWorkoutPlanId?: string;
+  overlap?: boolean;
 }

@@ -1,13 +1,14 @@
-import { Component, OnInit, Inject, Output, EventEmitter, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { DOCUMENT } from '@angular/common';
+import { Component, OnInit, OnDestroy, Inject, Output, EventEmitter, HostListener } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
 import { NgScrollbar } from 'ngx-scrollbar';
 import { AuthService } from '@config/auth.service';
 import { RouteInfo } from './sidebar.metadata';
 import { ROUTES } from './sidebar-items';
+import { filter } from 'rxjs/operators';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -22,18 +23,20 @@ import { ROUTES } from './sidebar-items';
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
   isExpanded = true;
   sidebarItems: RouteInfo[] = [];
   listMaxHeight = '100%';
   activeItem: any = null;
   activeSubItem: any = null;
   roles: string[] = [];
-  @Output() sidebarToggle = new EventEmitter<boolean>(); // Notify parent about toggle
+  private destroy$ = new Subject<void>();
+  @Output() sidebarToggle = new EventEmitter<boolean>();
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router,
   ) {}
 
   async ngOnInit() {
@@ -41,11 +44,70 @@ export class SidebarComponent implements OnInit {
     this.roles = await this.authService.extractRoles();
 
     this.initializeSidebar();
+
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.syncActiveState();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private syncActiveState(): void {
+    const currentUrl = this.router.url.split('?')[0].split('#')[0];
+
+    const normalizePath = (path: string): string =>
+      path.startsWith('/') ? path : '/' + path;
+
+    let matchedItem: RouteInfo | null = null;
+    let matchedSub: RouteInfo | null = null;
+
+    for (const item of this.sidebarItems) {
+      if (item.submenu?.length) {
+        const sub = item.submenu.find((s) => {
+          if (!s.path) return false;
+          const normalized = normalizePath(s.path);
+          return currentUrl === normalized || currentUrl.startsWith(normalized + '/');
+        });
+        if (sub) {
+          matchedItem = item;
+          matchedSub = sub;
+          break;
+        }
+      } else {
+        if (!item.path) continue;
+        const normalized = normalizePath(item.path);
+        if (currentUrl === normalized || currentUrl.startsWith(normalized + '/')) {
+          matchedItem = item;
+          break;
+        }
+      }
+    }
+
+    for (const item of this.sidebarItems) {
+      item.isActive = item === matchedItem && !matchedSub;
+      if (item.submenu?.length) {
+        const subActive = matchedSub && item === matchedItem;
+        item.isExpanded = !!subActive;
+        item.submenu.forEach((s) => (s.isActive = subActive && s === matchedSub));
+      }
+    }
+
+    this.activeItem = matchedItem;
+    this.activeSubItem = matchedSub;
   }
 
   async initializeSidebar() {
     this.sidebarItems = ROUTES;
     this.sidebarItems = this.filterSidebarItemsByRoles(ROUTES, this.roles);
+    this.syncActiveState();
   }
 
   filterSidebarItemsByRoles(

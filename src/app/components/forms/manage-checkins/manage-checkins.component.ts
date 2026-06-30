@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {CommonModule, Location} from "@angular/common";
+import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
 import {catchError, finalize, forkJoin, of} from 'rxjs';
@@ -100,12 +100,7 @@ export class ManageCheckinsComponent implements OnInit{
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private clientService: ClientService,
-    private location: Location
   ) {}
-
-  goBack(): void {
-    this.location.back();
-  }
 
   ngOnInit(): void {
     this.loadAssignments();

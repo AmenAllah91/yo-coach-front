@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
-import { forkJoin, Subject, takeUntil } from 'rxjs';
+import { forkJoin, Observable, of, Subject, switchMap, takeUntil } from 'rxjs';
 import {
   NutritionService,
   NutritionPlan,
@@ -29,11 +29,6 @@ import * as XLSX from 'xlsx';
   styleUrls: ['./nutrition-plans.component.scss'],
 })
 export class NutritionPlansComponent implements OnInit, OnDestroy {
-  goBack(): void {
-    window.history.back();
-  }
-
-
   nutritionFileEnabled = true;
 
 
@@ -1129,6 +1124,16 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     this.programToAssign = null;
   }
 
+  getProgramDurationDays(program?: NutritionPlan | null): number {
+    if (!program) return 1;
+
+    if (this.isFilePlan(program) && program.startDate && program.endDate) {
+      return this.daysBetweenInclusive(program.startDate, program.endDate);
+    }
+
+    return Math.max((program.mealDays || []).length, 1);
+  }
+
   onProgramAssigned(event: any) {
     if (!this.programToAssign || !event?.clients?.length || !event?.date) {
       this.showAssignModal = false;
@@ -1136,8 +1141,16 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     }
 
     for (const client of event.clients) {
+      const resolution = this.getConflictResolution(event, client);
+      const startDate = this.getResolvedStartDate(event.date, resolution);
+      const endDate = this.addDays(startDate, this.getProgramDurationDays(this.programToAssign) - 1);
+
+      const replace$ = resolution?.resolution === 'REPLACE'
+        ? this.stopExistingNutritionBefore(resolution.conflict, startDate)
+        : of(null);
+
       if (this.isFilePlan(this.programToAssign)) {
-        if (!event.endDate) {
+        if (!endDate) {
           this.error = 'End date is required for PDF / Excel nutrition plans.';
           return;
         }
@@ -1145,15 +1158,17 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
         const item = {
           ...this.programToAssign,
           client,
-          startDate: event.date,
-          endDate: event.endDate,
+          startDate,
+          endDate,
           mealDays: [],
           isMealPlanTemplate: false,
         };
 
-        this.nutritionService
-          .assignNutritionPlan(item)
-          .pipe(takeUntil(this.destroy$))
+        replace$
+          .pipe(
+            switchMap(() => this.nutritionService.assignNutritionPlan(item)),
+            takeUntil(this.destroy$)
+          )
           .subscribe({
             next: () => this.loadPlans(),
             error: (err) => console.error('Error assigning nutrition file:', err),
@@ -1164,12 +1179,12 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
 
       const mealDays = (this.programToAssign.mealDays || []).map(
         (day: any, index: number) => {
-          const current = new Date(event.date);
-          current.setDate(current.getDate() + index);
+          const date = this.addDays(startDate, index);
+          const current = new Date(`${date}T00:00:00`);
 
           return {
             ...day,
-            date: current.toISOString().split('T')[0],
+            date,
             dayOfWeek: current.toLocaleDateString('en-US', {
               weekday: 'long',
             }),
@@ -1180,17 +1195,19 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
       const item = {
         ...this.programToAssign,
         client,
-        startDate: event.date,
+        startDate,
         mealDays,
         endDate: mealDays.length
           ? mealDays[mealDays.length - 1].date
-          : event.date,
+          : startDate,
         isMealPlanTemplate: false,
       };
 
-      this.nutritionService
-        .assignNutritionPlan(item)
-        .pipe(takeUntil(this.destroy$))
+      replace$
+        .pipe(
+          switchMap(() => this.nutritionService.assignNutritionPlan(item)),
+          takeUntil(this.destroy$)
+        )
         .subscribe({
           next: () => {
             this.loadPlans();
@@ -1203,6 +1220,50 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
 
     this.showAssignModal = false;
     this.programToAssign = null;
+  }
+
+  private getConflictResolution(event: any, client: any): any | null {
+    if (!client?.id) return null;
+    return event?.conflictResolutions?.[client.id] || null;
+  }
+
+  private getResolvedStartDate(defaultStartDate: string, resolution: any | null): string {
+    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
+      return this.addDays(resolution.conflict.endDate, 1);
+    }
+
+    return defaultStartDate;
+  }
+
+  private stopExistingNutritionBefore(conflict: any, nextStartDate: string): Observable<unknown> {
+    if (!conflict?.id || !conflict.startDate) return of(null);
+
+    const replacementEndDate = this.addDays(nextStartDate, -1);
+    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
+      return this.nutritionService.deleteNutritionPlan(conflict.id);
+    }
+
+    return this.nutritionService.updateNutritionPlanDates(conflict.id, conflict.startDate, replacementEndDate);
+  }
+
+  private daysBetweenInclusive(startDate: string, endDate: string): number {
+    const start = new Date(`${startDate}T00:00:00`).getTime();
+    const end = new Date(`${endDate}T00:00:00`).getTime();
+    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 1;
+    return Math.floor((end - start) / 86400000) + 1;
+  }
+
+  private addDays(value: string, days: number): string {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + days);
+    return this.toDateInputValue(date);
+  }
+
+  private toDateInputValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   duplicatePlan(id: string | undefined) {

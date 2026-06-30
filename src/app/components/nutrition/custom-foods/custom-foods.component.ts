@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { NutritionService, Food } from '../../../service/nutrition.service';
-import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-custom-foods',
@@ -20,14 +19,14 @@ export class CustomFoodsComponent implements OnInit {
   editingFood: Food | null = null;
   foodToDelete: Food | null = null;
   openDropdownId: string | null = null;
-  
+
   // Pagination
   currentPage = 0;
   pageSize = 10;
   totalElements = 0;
   totalPages = 0;
   loading = false;
-  
+
   // Show all foods by default
   customOnly = false;
 
@@ -49,7 +48,6 @@ export class CustomFoodsComponent implements OnInit {
 
   constructor(
     private nutritionService: NutritionService,
-    private location: Location
   ) {}
 
   ngOnInit() {
@@ -86,10 +84,6 @@ export class CustomFoodsComponent implements OnInit {
     this.loadFoods();
   }
 
-  goBack() {
-    this.location.back();
-  }
-
   previousPage() {
     if (this.currentPage > 0) {
       this.currentPage--;
@@ -120,7 +114,7 @@ export class CustomFoodsComponent implements OnInit {
 
   editFood(food: Food) {
     // Allow editing general foods - backend will create a copy
-    
+
     this.editingFood = food;
     this.foodName = food.name;
     this.calories = food.calories;
@@ -172,7 +166,7 @@ export class CustomFoodsComponent implements OnInit {
         error: (error) => {
           console.error('Error updating food:', error);
           let errorMessage = 'Unable to update this food item.';
-          
+
           if (error.status === 403) {
             errorMessage = 'Cannot update this food item. It may be a general food or not owned by you.';
           } else if (error.status === 404) {
@@ -180,7 +174,7 @@ export class CustomFoodsComponent implements OnInit {
           } else if (error.status === 409) {
             errorMessage = 'Cannot update this food item as it is currently in use.';
           }
-          
+
           // You can replace this with a toast notification or other UI feedback
           console.error(errorMessage);
         }
@@ -202,7 +196,7 @@ export class CustomFoodsComponent implements OnInit {
       console.error('Cannot delete general food:', food.name);
       return;
     }
-    
+
     this.foodToDelete = food;
     this.showDeleteModal = true;
     this.openDropdownId = null;
@@ -218,7 +212,7 @@ export class CustomFoodsComponent implements OnInit {
         error: (error) => {
           console.error('Error deleting food:', error);
           let errorMessage = 'Unable to delete this food item.';
-          
+
           if (error.status === 403) {
             errorMessage = 'Cannot delete this food item. It may be a general food or not owned by you.';
           } else if (error.status === 404) {
@@ -226,7 +220,7 @@ export class CustomFoodsComponent implements OnInit {
           } else if (error.status === 409) {
             errorMessage = 'Cannot delete this food item as it is used in existing meal plans.';
           }
-          
+
           // You can replace this with a toast notification or other UI feedback
           console.error(errorMessage);
         }

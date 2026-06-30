@@ -1,9 +1,5 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="back-btn" type="button" (click)="goBack()">
-      <i-feather name="arrow-left"></i-feather>
-    </button>
-
     <div class="header-content">
       <h1>Nutrition Plans</h1>
       <p>Create, organize and manage your nutrition programs</p>
@@ -290,6 +286,9 @@
     *ngIf="showAssignModal"
     [programName]="programToAssign?.name"
     [showEndDate]="programToAssign ? isFilePlan(programToAssign) : false"
+    [assignmentType]="'nutrition'"
+    [durationDays]="getProgramDurationDays(programToAssign)"
+    [includeFilePrograms]="nutritionFileEnabled !== false"
     (closeModal)="closeAssignModal()"
     (cancel)="closeAssignModal()"
     (assignProgram)="onProgramAssigned($event)"

@@ -79,6 +79,7 @@ export interface NutritionPlan {
   fileContentType?: string;
   fileSizeBytes?: number;
   fileUploadedAt?: string;
+  overlap?: boolean;
 }
 export interface DayTargets {
   calories: number;
@@ -327,7 +328,10 @@ export class NutritionService {
     clientId: string,
     page: number,
     size: number,
-    planType: 'ALL' | 'APP' | 'FILES' = 'ALL'
+    planType: 'ALL' | 'APP' | 'FILES' = 'ALL',
+    period: 'ALL' | 'ACTIVE' | 'NON_ACTIVE' = 'ALL',
+    statusFilter: 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP' = 'ALL',
+    sort: 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC' = 'RECOMMENDED'
   ) {
     return this.http.get<any>(
       `${this.mealPlanUrl}client/${clientId}/coach/${coachId}/all`,
@@ -336,6 +340,9 @@ export class NutritionService {
           page,
           size,
           planType,
+          period,
+          statusFilter,
+          sort,
         },
       }
     );

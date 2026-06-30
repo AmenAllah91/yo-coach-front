@@ -22,7 +22,7 @@ export class FoodsComponent implements OnInit {
   foodToDelete: Food | null = null;
   openDropdownId: string | null = null;
   isLoading = false;
-  
+
   // Pagination
   currentPage = 0;
   pageSize = 10;
@@ -84,10 +84,6 @@ export class FoodsComponent implements OnInit {
       this.currentPage++;
       this.loadFoods();
     }
-  }
-
-  goBack() {
-    window.history.back();
   }
 
   openAddModal() {

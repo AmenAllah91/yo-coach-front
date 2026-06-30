@@ -2,8 +2,12 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+
+type NutritionStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
+type NutritionSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
 
 @Component({
   selector: 'app-nutrition-client-tab',
@@ -20,6 +24,7 @@ export class NutritionClientTabComponent implements OnInit {
   @Output() assignNew = new EventEmitter<void>();
 
   mealPlan: any[] = [];
+  activeMealPlans: any[] = [];
   appPlans: any[] = [];
   filePlans: any[] = [];
   activeTab: 'ALL' | 'APP' | 'FILES' = 'ALL';
@@ -35,6 +40,8 @@ export class NutritionClientTabComponent implements OnInit {
   size = 5;
   totalPages = 0;
   pagesArray: number[] = [];
+  allPlansFilter: NutritionStatusFilter = 'ALL';
+  allPlansSort: NutritionSortMode = 'RECOMMENDED';
 
   constructor(
     private nutritionService: NutritionService,
@@ -53,6 +60,18 @@ export class NutritionClientTabComponent implements OnInit {
     return this.mealPlan;
   }
 
+  get currentActivePlans(): any[] {
+    return this.activeMealPlans;
+  }
+
+  get allOtherPlans(): any[] {
+    return this.displayedPlans;
+  }
+
+  hasActivePlans(): boolean {
+    return this.currentActivePlans.length > 0;
+  }
+
   setActiveTab(tab: 'ALL' | 'APP' | 'FILES') {
     if (this.nutritionFileEnabled === false) {
       tab = 'APP';
@@ -67,6 +86,28 @@ export class NutritionClientTabComponent implements OnInit {
     this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
   }
 
+  setAllPlansFilter(filter: NutritionStatusFilter): void {
+    if (this.allPlansFilter === filter) {
+      return;
+    }
+
+    this.allPlansFilter = filter;
+    this.page = 0;
+    this.closeActions();
+    this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+  }
+
+  setAllPlansSort(sort: NutritionSortMode): void {
+    if (this.allPlansSort === sort) {
+      return;
+    }
+
+    this.allPlansSort = sort;
+    this.page = 0;
+    this.closeActions();
+    this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+  }
+
   changePage(newPage: number) {
     if (newPage < 0 || newPage >= this.totalPages) return;
     this.page = newPage;
@@ -77,19 +118,49 @@ export class NutritionClientTabComponent implements OnInit {
     if (this.nutritionFileEnabled === false) {
       this.activeTab = 'APP';
     }
-    this.nutritionService
-      .getNutritionPlanByCoachIdAndClient(
+    forkJoin({
+      active: this.nutritionService.getNutritionPlanByCoachIdAndClient(
+        idCoach,
+        idClient,
+        0,
+        100,
+        this.activeTab,
+        'ACTIVE',
+        'ALL',
+        'RECOMMENDED'
+      ),
+      allPlans: this.nutritionService.getNutritionPlanByCoachIdAndClient(
         idCoach,
         idClient,
         this.page,
         this.size,
-        this.activeTab
-      )
-      .subscribe((res) => {
-        this.totalPages = res.totalPages || 0;
+        this.activeTab,
+        'NON_ACTIVE',
+        this.allPlansFilter,
+        this.allPlansSort
+      ),
+    }).subscribe(({ active, allPlans }) => {
+        this.totalPages = allPlans.totalPages || 0;
         this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
 
-        const plans = (res.content || []).map((program: any) => {
+        const activePlans = this.decoratePlans(active.content || []);
+        const plans = this.decoratePlans(allPlans.content || []);
+
+        this.activeMealPlans = activePlans;
+        this.mealPlan = this.nutritionFileEnabled === false
+          ? plans.filter((plan: any) => !this.isFilePlan(plan))
+          : plans;
+        this.appPlans = this.activeTab === 'APP'
+          ? plans
+          : plans.filter((plan) => !this.isFilePlan(plan));
+        this.filePlans = this.activeTab === 'FILES'
+          ? plans
+          : plans.filter((plan) => this.isFilePlan(plan));
+      });
+  }
+
+  private decoratePlans(plans: any[]): any[] {
+    return (plans || []).map((program: any) => {
           const isFile = this.isFilePlan(program);
 
           if (isFile) {
@@ -134,20 +205,6 @@ export class NutritionClientTabComponent implements OnInit {
 
           return program;
         });
-
-        const sortedPlans = [...plans].sort((a, b) => this.comparePlansByNewest(a, b));
-
-        this.mealPlan = sortedPlans;
-        this.mealPlan = this.nutritionFileEnabled === false
-          ? sortedPlans.filter((plan: any) => !this.isFilePlan(plan))
-          : sortedPlans;
-        this.appPlans = this.activeTab === 'APP'
-          ? sortedPlans
-          : sortedPlans.filter((plan) => !this.isFilePlan(plan));
-        this.filePlans = this.activeTab === 'FILES'
-          ? sortedPlans
-          : sortedPlans.filter((plan) => this.isFilePlan(plan));
-      });
   }
 
   private comparePlansByNewest(a: any, b: any): number {
@@ -206,6 +263,35 @@ export class NutritionClientTabComponent implements OnInit {
       : 0;
   }
 
+  isPlanOverlap(plan: any): boolean {
+    return !!plan?.overlap || (this.isPlanActiveToday(plan) && this.currentActivePlans.length > 1);
+  }
+
+  private isPlanActiveToday(plan: any): boolean {
+    const start = this.toDateOnlyString(plan?.startDate);
+    const end = this.toDateOnlyString(plan?.endDate);
+    const today = this.toDateOnlyString(new Date());
+
+    return !!start && !!end && !!today && start <= today && today <= end;
+  }
+
+  private toDateOnlyString(value: any): string | null {
+    if (!value) return null;
+
+    if (typeof value === 'string') {
+      const match = value.match(/^\d{4}-\d{2}-\d{2}/);
+      if (match) return match[0];
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   isFilePlan(plan: any): boolean {
     const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
     const type = String(plan?.resourceType || '').toUpperCase();
@@ -257,7 +343,13 @@ export class NutritionClientTabComponent implements OnInit {
 
   removeProgram(plan: any): void {
     this.closeActions();
-    // Nutrition file removal will be wired to delete/unassign when backend endpoint is available.
+    if (!plan?.id) return;
+    this.nutritionService.deleteNutritionPlan(plan.id).subscribe({
+      next: () => {
+        this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+      },
+      error: (err) => console.error('Error removing nutrition plan:', err),
+    });
   }
 
   changeDates(plan: any): void {

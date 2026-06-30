@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { FeatherModule } from 'angular-feather';
@@ -86,7 +86,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   canCreateTemplate = false;
 
   constructor(
-    private location: Location,
     private exerciseService: ExerciseService,
     private authService: AuthService,
   ) {}
@@ -279,10 +278,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
 
   deselectExercise() {
     this.selectedExercise = null;
-  }
-
-  goBack() {
-    this.location.back();
   }
 
   getExerciseName(): string {

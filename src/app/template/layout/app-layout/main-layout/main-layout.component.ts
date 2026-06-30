@@ -6,6 +6,7 @@ import { InConfiguration } from '../../../core';
 import { NgClass } from '@angular/common';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { LanguageService } from 'app/service/language.service';
+import { BackButtonComponent } from 'app/shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -17,6 +18,7 @@ import { LanguageService } from 'app/service/language.service';
     SidebarComponent,
     RouterOutlet,
     NgClass,
+    BackButtonComponent,
   ],
 })
 export class MainLayoutComponent implements OnInit {

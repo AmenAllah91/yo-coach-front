@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
@@ -38,12 +38,7 @@ export class MealsListComponent implements OnInit, OnDestroy {
   constructor(
     private mealsService: MealsService,
     private router: Router,
-    private location: Location
   ) {}
-
-  goBack(): void {
-    this.location.back();
-  }
 
   ngOnInit(): void {
     this.load();

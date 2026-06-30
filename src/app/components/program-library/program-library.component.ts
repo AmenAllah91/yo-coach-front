@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable, of, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { Location } from '@angular/common';
 import { WorkoutService, PageResponse } from '../../service/workout.service';
 import {
   ExerciseService,
@@ -118,7 +117,6 @@ export class ProgramLibraryComponent implements OnInit {
     public workoutService: WorkoutService,
     private clientService: ClientService,
     private exerciseService: ExerciseService,
-    private location: Location,
     private authService: AuthService,
     private router: Router,
     private coachSettingsService: CoachSettingsService
@@ -360,6 +358,16 @@ export class ProgramLibraryComponent implements OnInit {
     this.fileAssignError = '';
   }
 
+  getProgramDurationDays(program?: WorkoutPlan | null): number {
+    if (!program) return 1;
+
+    if (this.isFileProgram(program) && program.startDate && program.endDate) {
+      return this.daysBetweenInclusive(program.startDate, program.endDate);
+    }
+
+    return Math.max((program.workoutDays || []).length, 1);
+  }
+
   onFileAssignClientSelection(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.selectedFileAssignClientIds = Array.from(select.selectedOptions).map((option) => option.value);
@@ -435,20 +443,19 @@ export class ProgramLibraryComponent implements OnInit {
     let hasError = false;
 
     for (const client of event.clients) {
-      const startDate = event.date;
-      const endDate = isFile
-        ? event.endDate
-        : undefined;
+      const resolution = this.getConflictResolution(event, client);
+      const startDate = this.getResolvedStartDate(event.date, resolution);
+      const endDate = this.addDays(startDate, this.getProgramDurationDays(this.programToAssign) - 1);
 
       const workoutDays = isFile
         ? []
         : (this.programToAssign.workoutDays || []).map((day: any, index: number) => {
-            const current = new Date(startDate);
-            current.setDate(current.getDate() + index);
+            const date = this.addDays(startDate, index);
+            const current = new Date(`${date}T00:00:00`);
 
             return {
               ...day,
-              date: current.toISOString().split('T')[0],
+              date,
               dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
               dayNumber: index + 1,
               title: day.restDay ? 'Rest Day' : `Day ${index + 1}`,
@@ -482,7 +489,13 @@ export class ProgramLibraryComponent implements OnInit {
         fileSizeBytes: this.programToAssign.fileSizeBytes,
       };
 
-      this.workoutService.assignWorkout(item.id!, item).subscribe({
+      const replace$ = resolution?.resolution === 'REPLACE'
+        ? this.stopExistingWorkoutBefore(resolution.conflict, startDate)
+        : of(null);
+
+      replace$.pipe(
+        switchMap(() => this.workoutService.assignWorkout(item.id!, item))
+      ).subscribe({
         next: () => {
           remaining -= 1;
           if (remaining === 0) {
@@ -509,6 +522,50 @@ export class ProgramLibraryComponent implements OnInit {
         },
       });
     }
+  }
+
+  private getConflictResolution(event: any, client: Client): any | null {
+    if (!client?.id) return null;
+    return event?.conflictResolutions?.[client.id] || null;
+  }
+
+  private getResolvedStartDate(defaultStartDate: string, resolution: any | null): string {
+    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
+      return this.addDays(resolution.conflict.endDate, 1);
+    }
+
+    return defaultStartDate;
+  }
+
+  private stopExistingWorkoutBefore(conflict: any, nextStartDate: string): Observable<unknown> {
+    if (!conflict?.id || !conflict.startDate) return of(null);
+
+    const replacementEndDate = this.addDays(nextStartDate, -1);
+    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
+      return this.workoutService.deleteWorkout(conflict.id);
+    }
+
+    return this.workoutService.updateWorkoutPlanDates(conflict.id, conflict.startDate, replacementEndDate);
+  }
+
+  private daysBetweenInclusive(startDate: string, endDate: string): number {
+    const start = new Date(`${startDate}T00:00:00`).getTime();
+    const end = new Date(`${endDate}T00:00:00`).getTime();
+    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 1;
+    return Math.floor((end - start) / 86400000) + 1;
+  }
+
+  private addDays(value: string, days: number): string {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + days);
+    return this.toDateInputValue(date);
+  }
+
+  private toDateInputValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
 
@@ -1681,7 +1738,4 @@ export class ProgramLibraryComponent implements OnInit {
     return program.id || index;
   }
 
-  goBack() {
-    this.location.back();
-  }
 }

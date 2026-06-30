@@ -2,9 +2,13 @@ import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+
+type ProgramStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
+type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
 
 @Component({
   selector: 'app-workouts-client-tab',
@@ -18,6 +22,7 @@ export class WorkoutsClientTabComponent implements OnInit {
   @Input() coachId!: string;
   @Output() assignNew = new EventEmitter<void>();
   workoutPlan: WorkoutPlan[] = [];
+  activeWorkoutPrograms: WorkoutPlan[] = [];
   activeTab: 'ALL' | 'APP' | 'FILES' = 'ALL';
   appPrograms: WorkoutPlan[] = [];
   uploadedFiles: WorkoutPlan[] = [];
@@ -50,6 +55,8 @@ export class WorkoutsClientTabComponent implements OnInit {
   workoutSize = 5;
   workoutTotalPages = 0;
   workoutPagesArray: number[] = [];
+  allProgramsFilter: ProgramStatusFilter = 'ALL';
+  allProgramsSort: ProgramSortMode = 'RECOMMENDED';
 
   constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService) {}
 
@@ -131,6 +138,19 @@ export class WorkoutsClientTabComponent implements OnInit {
     return this.workoutPlan;
   }
 
+  get currentActivePrograms(): WorkoutPlan[] {
+    return this.activeWorkoutPrograms
+      .sort((a, b) => this.compareProgramEndDateAsc(a, b));
+  }
+
+  get allOtherPrograms(): WorkoutPlan[] {
+    return this.displayedPrograms;
+  }
+
+  hasActivePrograms(): boolean {
+    return this.currentActivePrograms.length > 0;
+  }
+
   changeWorkoutPage(newPage: number) {
     if (newPage < 0 || newPage >= this.workoutTotalPages) return;
     this.workoutPage = newPage;
@@ -150,6 +170,28 @@ export class WorkoutsClientTabComponent implements OnInit {
     this.openedActionsId = null;
     this.isAssignMenuOpen = false;
     this.workoutPage = 0;
+    this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+  }
+
+  setAllProgramsFilter(filter: ProgramStatusFilter) {
+    if (this.allProgramsFilter === filter) {
+      return;
+    }
+
+    this.allProgramsFilter = filter;
+    this.workoutPage = 0;
+    this.openedActionsId = null;
+    this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+  }
+
+  setAllProgramsSort(sort: ProgramSortMode) {
+    if (this.allProgramsSort === sort) {
+      return;
+    }
+
+    this.allProgramsSort = sort;
+    this.workoutPage = 0;
+    this.openedActionsId = null;
     this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
   }
 
@@ -262,43 +304,63 @@ export class WorkoutsClientTabComponent implements OnInit {
   getWorkOutPlanByCoachAndClient(idCoach: string, idClient: string) {
     const backendType = this.workoutFileEnabled ? this.activeTab : 'APP';
 
-    this.workoutService
-      .getWorkoutByCoachIdAndClient(
+    forkJoin({
+      active: this.workoutService.getWorkoutByCoachIdAndClient(
+        idCoach,
+        idClient,
+        0,
+        100,
+        backendType,
+        'ACTIVE',
+        'ALL',
+        'RECOMMENDED'
+      ),
+      allPrograms: this.workoutService.getWorkoutByCoachIdAndClient(
         idCoach,
         idClient,
         this.workoutPage,
         this.workoutSize,
-        backendType
-      )
-      .subscribe((res) => {
-        const programs = (res.content || []).map((program: WorkoutPlan) => {
-          const isFile = this.isFileWorkout(program);
+        backendType,
+        'NON_ACTIVE',
+        this.allProgramsFilter,
+        this.allProgramsSort
+      ),
+    }).subscribe(({ active, allPrograms }) => {
+        const activePrograms = this.normalizeAndDedupeWorkoutPrograms(active.content || [])
+          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramEndDateAsc(a, b));
+        const dedupedPrograms = this.normalizeAndDedupeWorkoutPrograms(allPrograms.content || [])
+          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramsByBusinessStatus(a, b));
 
-          if (isFile) {
-            this.normalizeWorkoutProgramDates(program, 1, true);
-          } else {
-            const totalDays = program.workoutDays?.length || 0;
-            this.normalizeWorkoutProgramDates(program, totalDays, false);
-            this.applyProgramStatusAndProgress(program, totalDays);
-          }
-
-          return program;
-        });
-
-        const dedupedPrograms = this.dedupeWorkoutPrograms(programs)
-          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramsByNewest(a, b));
-
-        this.workoutTotalPages = Math.max(1, Math.ceil((res.totalElements || dedupedPrograms.length) / this.workoutSize));
+        this.workoutTotalPages = Math.max(1, allPrograms.totalPages || Math.ceil((allPrograms.totalElements || dedupedPrograms.length) / this.workoutSize));
         this.workoutPagesArray = Array.from(
           { length: this.workoutTotalPages },
           (_, i) => i
         );
 
+        this.activeWorkoutPrograms = activePrograms;
         this.allVisibleWorkoutPrograms = dedupedPrograms;
         this.appPrograms = dedupedPrograms.filter((program) => !this.isFileWorkout(program));
         this.uploadedFiles = dedupedPrograms.filter((program) => this.isFileWorkout(program));
         this.workoutPlan = dedupedPrograms;
       });
+  }
+
+  private normalizeAndDedupeWorkoutPrograms(programs: WorkoutPlan[]): WorkoutPlan[] {
+    const normalizedPrograms = (programs || []).map((program: WorkoutPlan) => {
+      const isFile = this.isFileWorkout(program);
+
+      if (isFile) {
+        this.normalizeWorkoutProgramDates(program, 1, true);
+      } else {
+        const totalDays = program.workoutDays?.length || 0;
+        this.normalizeWorkoutProgramDates(program, totalDays, false);
+        this.applyProgramStatusAndProgress(program, totalDays);
+      }
+
+      return program;
+    });
+
+    return this.dedupeWorkoutPrograms(normalizedPrograms);
   }
 
 
@@ -351,38 +413,6 @@ export class WorkoutsClientTabComponent implements OnInit {
       ? (program.currentDay / program.totalDays) * 100
       : 0;
   }
-
-  private compareProgramsByNewest(a: WorkoutPlan, b: WorkoutPlan): number {
-    const aNewest = this.getProgramNewestTime(a);
-    const bNewest = this.getProgramNewestTime(b);
-
-    if (aNewest !== bNewest) return bNewest - aNewest;
-
-    const aStart = this.getProgramStartTime(a);
-    const bStart = this.getProgramStartTime(b);
-    return bStart - aStart;
-  }
-
-  private getProgramNewestTime(program: any): number {
-    const candidates = [
-      program?.createdAt,
-      program?.creationDate,
-      program?.assignedAt,
-      program?.assignedDate,
-      program?.fileUploadedAt,
-      program?.updatedAt,
-      program?.lastModifiedDate,
-      program?.startDate,
-    ];
-
-    for (const value of candidates) {
-      const time = this.toValidTime(value);
-      if (time !== null) return time;
-    }
-
-    return -8640000000000000;
-  }
-
 
   private normalizeWorkoutProgramDates(program: WorkoutPlan, totalDays: number, isFile: boolean): void {
     const start = this.toDateOnlyString(program?.startDate);
@@ -450,6 +480,67 @@ export class WorkoutsClientTabComponent implements OnInit {
     if (!value) return null;
     const time = new Date(value).getTime();
     return Number.isFinite(time) ? time : null;
+  }
+
+  isProgramActiveToday(program: WorkoutPlan): boolean {
+    const start = this.toDateOnlyString(program?.startDate);
+    const end = this.toDateOnlyString(this.getDisplayEndDate(program)) || this.toDateOnlyString(program?.endDate);
+    const today = this.getTodayDateOnlyString();
+
+    return !!start && !!end && start <= today && today <= end;
+  }
+
+  isProgramOverlap(program: WorkoutPlan): boolean {
+    return !!program?.overlap || (this.isProgramActiveToday(program) && this.currentActivePrograms.length > 1);
+  }
+
+  private compareProgramsByBusinessStatus(a: WorkoutPlan, b: WorkoutPlan): number {
+    const aBucket = this.getBusinessStatusBucket(a);
+    const bBucket = this.getBusinessStatusBucket(b);
+
+    if (aBucket !== bBucket) return aBucket - bBucket;
+
+    if (aBucket === 0) return this.compareProgramEndDateAsc(a, b);
+    if (aBucket === 1) return this.compareProgramStartDateAsc(a, b);
+    return this.compareProgramEndDateDesc(a, b);
+  }
+
+  private getBusinessStatusBucket(program: WorkoutPlan): number {
+    if (this.isProgramActiveToday(program)) return 0;
+
+    const start = this.toDateOnlyString(program?.startDate);
+    const today = this.getTodayDateOnlyString();
+
+    if (start && start > today) return 1;
+    return 2;
+  }
+
+  private compareProgramEndDateAsc(a: WorkoutPlan, b: WorkoutPlan): number {
+    return this.compareDateValuesAsc(this.getDisplayEndDate(a) || a?.endDate, this.getDisplayEndDate(b) || b?.endDate);
+  }
+
+  private compareProgramStartDateAsc(a: WorkoutPlan, b: WorkoutPlan): number {
+    return this.compareDateValuesAsc(a?.startDate, b?.startDate);
+  }
+
+  private compareProgramEndDateDesc(a: WorkoutPlan, b: WorkoutPlan): number {
+    return this.compareDateValuesDesc(this.getDisplayEndDate(a) || a?.endDate, this.getDisplayEndDate(b) || b?.endDate);
+  }
+
+  private compareDateValuesAsc(a: any, b: any): number {
+    const aDate = this.toDateOnlyString(a) || '9999-12-31';
+    const bDate = this.toDateOnlyString(b) || '9999-12-31';
+    return aDate.localeCompare(bDate);
+  }
+
+  private compareDateValuesDesc(a: any, b: any): number {
+    const aDate = this.toDateOnlyString(a) || '0000-01-01';
+    const bDate = this.toDateOnlyString(b) || '0000-01-01';
+    return bDate.localeCompare(aDate);
+  }
+
+  private getTodayDateOnlyString(): string {
+    return this.toDateOnlyString(new Date()) || '';
   }
 
 

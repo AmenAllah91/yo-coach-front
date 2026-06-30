@@ -18,12 +18,58 @@
   </button>
 </div>
 
-<div *ngIf="displayedPlans.length === 0" class="empty-nutrition-state">
+<div *ngIf="!hasActivePlans() && allOtherPlans.length === 0" class="empty-nutrition-state">
   No nutrition plans assigned yet.
 </div>
 
+<div class="program-section" *ngIf="hasActivePlans()">
+  <h3 class="program-section-title">CURRENT ACTIVE PLAN</h3>
+  <ng-container *ngFor="let plan of currentActivePlans">
+    <ng-container *ngTemplateOutlet="planCardTemplate; context: { $implicit: plan }"></ng-container>
+  </ng-container>
+</div>
+
+<div class="program-section">
+  <div class="all-programs-header">
+    <h3 class="program-section-title">ALL PLANS</h3>
+
+    <div class="all-programs-controls">
+      <div class="program-status-filters" aria-label="Nutrition status filters">
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'ALL'" (click)="setAllPlansFilter('ALL')">
+          All
+        </button>
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'UPCOMING'" (click)="setAllPlansFilter('UPCOMING')">
+          Upcoming
+        </button>
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'COMPLETED'" (click)="setAllPlansFilter('COMPLETED')">
+          Completed
+        </button>
+        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'OVERLAP'" (click)="setAllPlansFilter('OVERLAP')">
+          Overlap
+        </button>
+      </div>
+
+      <label class="program-sort-control">
+        <i class="fas fa-sort"></i>
+        <span>Sort:</span>
+        <select [ngModel]="allPlansSort" (ngModelChange)="setAllPlansSort($event)">
+          <option value="RECOMMENDED">Recommended</option>
+          <option value="START_ASC">Start date ↑</option>
+          <option value="START_DESC">Start date ↓</option>
+          <option value="END_ASC">End date ↑</option>
+          <option value="END_DESC">End date ↓</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <ng-container *ngFor="let plan of allOtherPlans">
+    <ng-container *ngTemplateOutlet="planCardTemplate; context: { $implicit: plan }"></ng-container>
+  </ng-container>
+</div>
+
+<ng-template #planCardTemplate let-plan>
 <div
-  *ngFor="let plan of displayedPlans"
   class="program-card"
   [class.program-card-app]="!isFilePlan(plan)"
   [class.program-card-pdf]="isFilePlan(plan) && getFileKind(plan) === 'pdf'"
@@ -66,6 +112,7 @@
           <span *ngIf="!isFilePlan(plan)" class="program-type-pill program-type-pill--app">
             App Plan
           </span>
+          <span *ngIf="isPlanOverlap(plan)" class="status-pill status-pill--overlap">Overlap</span>
 
           <span
             *ngIf="isFilePlan(plan)"
@@ -178,6 +225,7 @@
     </div>
   </div>
 </div>
+</ng-template>
 
 <div class="pagination-wrapper" *ngIf="totalPages > 1">
   <button

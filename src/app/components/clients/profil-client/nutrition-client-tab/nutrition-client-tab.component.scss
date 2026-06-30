@@ -118,6 +118,12 @@
   border-color: #d1d5db;
 }
 
+.status-pill--overlap {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border-color: #d8b4fe;
+}
+
 .program-meta {
   display: flex;
   flex-wrap: wrap;
@@ -298,6 +304,31 @@
 }
 
 @media (max-width: 640px) {
+  .all-programs-header,
+  .all-programs-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .program-status-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .program-status-filter {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .program-sort-control {
+    width: 100%;
+  }
+
+  .program-sort-control select {
+    flex: 1;
+  }
+
   .program-card-top {
     flex-direction: column;
   }
@@ -349,6 +380,94 @@
 .workout-filter-tab--active {
   background: #f5f7fb;
   color: #111827;
+}
+
+.program-section {
+  margin-top: 18px;
+}
+
+.program-section-title {
+  margin: 0 0 12px;
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.all-programs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.all-programs-header .program-section-title {
+  margin-bottom: 0;
+}
+
+.all-programs-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.program-status-filters {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 4px;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.program-status-filter {
+  border: 0;
+  background: transparent;
+  color: #475467;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.program-status-filter--active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.program-sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.program-sort-control i {
+  color: #475467;
+}
+
+.program-sort-control select {
+  border: 0;
+  background: transparent;
+  color: #1f2937;
+  font: inherit;
+  outline: none;
+  cursor: pointer;
 }
 
 .empty-nutrition-state {
