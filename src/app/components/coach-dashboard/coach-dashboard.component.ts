@@ -10,6 +10,7 @@ import { CoachSettingsService } from '../../service/coach-settings.service';
 import {
   AssignmentsApiService,
   FormAssignment,
+  PageResponse,
 } from '../forms/services/assignments-api.service';
 import { FormsApiService } from '../forms/services/forms-api.service';
 import { AddClientModalComponent } from '../clients/add-client-modal/add-client-modal.component';
@@ -32,6 +33,7 @@ interface CheckInDisplay {
   overdue: boolean;
   submittedDate: string;
   answeredDate: string;
+  sortTimestamp: number;
 }
 
 type AssignType = 'workout' | 'nutrition' | 'checkin';
@@ -69,6 +71,7 @@ export class CoachDashboardComponent implements OnInit {
   readonly clientsPageSize = 4;
   checkInsPage = 1;
   readonly checkInsPageSize = 4;
+  totalCheckIns = 0;
 
   pendingAssign: PendingAssign | null = null;
   showPostCreatePrompt = false;
@@ -80,6 +83,7 @@ export class CoachDashboardComponent implements OnInit {
 
   private assignments: FormAssignment[] = [];
   private coachId = '';
+  private rawClients: any[] = [];
 
   get totalClientPages(): number {
     return Math.max(1, Math.ceil(this.clients.length / this.clientsPageSize));
@@ -103,12 +107,11 @@ export class CoachDashboardComponent implements OnInit {
   }
 
   get totalCheckInPages(): number {
-    return Math.max(1, Math.ceil(this.recentCheckIns.length / this.checkInsPageSize));
+    return Math.max(1, Math.ceil(this.totalCheckIns / this.checkInsPageSize));
   }
 
   get paginatedRecentCheckIns(): CheckInDisplay[] {
-    const start = (this.checkInsPage - 1) * this.checkInsPageSize;
-    return this.recentCheckIns.slice(start, start + this.checkInsPageSize);
+    return this.recentCheckIns;
   }
 
   get canGoPreviousCheckIns(): boolean {
@@ -169,8 +172,8 @@ export class CoachDashboardComponent implements OnInit {
         .pipe(catchError(() => of([]))),
 
       assignments: this.assignmentsApi
-        .pageOwnerAssignments(0, 100, 'dueAt', 'DESC')
-        .pipe(catchError(() => of({ content: [] }))),
+        .pageOwnerAssignments(0, this.checkInsPageSize, 'activityAt', 'DESC')
+        .pipe(catchError(() => of(this.emptyAssignmentsPage()))),
     })
       .pipe(
         finalize(() => {
@@ -180,6 +183,7 @@ export class CoachDashboardComponent implements OnInit {
       .subscribe({
         next: (result) => {
           const rawClients: any[] = result.clients || [];
+          this.rawClients = rawClients;
 
           this.clients = rawClients.map((client: any) => ({
             id: String(client.id),
@@ -190,9 +194,10 @@ export class CoachDashboardComponent implements OnInit {
           }));
 
           this.assignments = result.assignments?.content || [];
+          this.totalCheckIns = result.assignments?.totalElements || this.assignments.length;
           this.clientsPage = 1;
           this.checkInsPage = 1;
-          this.enrichCheckIns(rawClients);
+          this.enrichCheckIns(this.rawClients);
           this.clampClientsPage();
           this.clampCheckInsPage();
           this.openPendingAssignFromNavigationState();
@@ -202,6 +207,43 @@ export class CoachDashboardComponent implements OnInit {
           this.error = 'Failed to load dashboard data.';
         },
       });
+  }
+
+  private loadCheckInsPage(): void {
+    if (!this.coachId) return;
+
+    this.loading = true;
+    this.error = null;
+
+    this.assignmentsApi
+      .pageOwnerAssignments(
+        this.checkInsPage - 1,
+        this.checkInsPageSize,
+        'activityAt',
+        'DESC',
+      )
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
+        next: (result) => {
+          this.assignments = result.content || [];
+          this.totalCheckIns = result.totalElements || this.assignments.length;
+          this.enrichCheckIns(this.rawClients);
+          this.clampCheckInsPage();
+        },
+        error: () => {
+          this.error = 'Failed to load dashboard data.';
+        },
+      });
+  }
+
+  private emptyAssignmentsPage(): PageResponse<FormAssignment> {
+    return {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      number: 0,
+      size: this.checkInsPageSize,
+    };
   }
 
   private openPendingAssignFromNavigationState(): void {
@@ -268,6 +310,13 @@ export class CoachDashboardComponent implements OnInit {
 
       const status = assignment.status;
       const isSubmittedOrReviewed = status === 'SUBMITTED' || status === 'REVIEWED';
+      const displayDate = isSubmittedOrReviewed
+        ? (assignment as any).submittedAt
+        : (assignment as any).dueAt || (assignment as any).assignedAt;
+      const activityDate =
+        (assignment as any).submittedAt ||
+        (assignment as any).dueAt ||
+        (assignment as any).assignedAt;
 
       return {
         id: String(assignment.id),
@@ -276,16 +325,13 @@ export class CoachDashboardComponent implements OnInit {
         formName: assignment.formName || 'Check-in',
         status: this.mapStatus(status),
         overdue: this.isOverdue(assignment),
-        submittedDate: this.formatAssignmentDate(
-          isSubmittedOrReviewed
-            ? (assignment as any).submittedAt
-            : (assignment as any).dueAt || (assignment as any).assignedAt,
-        ),
+        submittedDate: this.formatAssignmentDate(displayDate),
         answeredDate: this.formatAssignmentDate(
           (assignment as any).reviewedAt,
         ),
+        sortTimestamp: this.toTimestamp(activityDate),
       };
-    });
+    }).sort((a, b) => b.sortTimestamp - a.sortTimestamp);
   }
 
   private getLastCheckInDate(client: any): string {
@@ -314,6 +360,14 @@ export class CoachDashboardComponent implements OnInit {
       month: 'short',
       year: 'numeric',
     });
+  }
+
+  private toTimestamp(value?: string | Date | null): number {
+    if (!value) return 0;
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
   private formatDate(date: Date): string {
@@ -411,6 +465,7 @@ export class CoachDashboardComponent implements OnInit {
     if (this.canGoPreviousCheckIns) {
       this.checkInsPage -= 1;
       this.clampCheckInsPage();
+      this.loadCheckInsPage();
     }
   }
 
@@ -420,6 +475,7 @@ export class CoachDashboardComponent implements OnInit {
     if (this.canGoNextCheckIns) {
       this.checkInsPage += 1;
       this.clampCheckInsPage();
+      this.loadCheckInsPage();
     }
   }
 
@@ -430,6 +486,7 @@ export class CoachDashboardComponent implements OnInit {
 
     this.checkInsPage = page;
     this.clampCheckInsPage();
+    this.loadCheckInsPage();
   }
 
   private clampCheckInsPage(): void {

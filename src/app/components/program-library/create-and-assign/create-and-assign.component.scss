@@ -2789,3 +2789,50 @@ input:checked + .slider:before {
   line-height: 1;
   white-space: nowrap;
 }
+
+.latest-client-programs {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  background: #f8fbff;
+}
+
+.latest-client-programs__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.latest-client-programs__title .np-ico {
+  color: #44b4df;
+}
+
+.latest-client-programs__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+  font-size: 13px;
+}
+
+.latest-client-programs__row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #334155;
+  font-weight: 700;
+}
+
+.latest-client-programs__row strong {
+  color: #0f172a;
+  font-weight: 800;
+  white-space: nowrap;
+}

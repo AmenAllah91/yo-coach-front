@@ -87,7 +87,7 @@
           <div class="schedule-field">
             <label>Start Date *</label>
             <div class="schedule-input">
-              <input type="date" [(ngModel)]="startDate" />
+              <input type="date" [(ngModel)]="startDate" (ngModelChange)="onStartDateChange()" />
             </div>
           </div>
 
@@ -105,12 +105,84 @@
                 *ngIf="isFileProgram(selectedProgram); else normalCalculatedEndDate"
                 type="date"
                 [(ngModel)]="endDate"
+                (ngModelChange)="onEndDateChange()"
               />
 
               <ng-template #normalCalculatedEndDate>
                 <input type="date" [value]="calculatedEndDate || ''" disabled />
               </ng-template>
             </div>
+          </div>
+        </div>
+
+        <div class="selected-client-card" [class.selected-client-card--checked]="selectedClientChecked" (click)="onToggleClient()">
+          <div class="selected-client-check" [class.selected-client-check--checked]="selectedClientChecked">
+            <span *ngIf="selectedClientChecked">&#10003;</span>
+          </div>
+          <div class="selected-client-info">
+            <div class="selected-client-name">
+              {{ clientDisplayName }}
+              <span class="conflict-badge" *ngIf="conflict">Conflict</span>
+            </div>
+            <div class="selected-client-email">{{ client?.email }}</div>
+          </div>
+        </div>
+
+        <div class="conflict-checking" *ngIf="checkingConflicts">
+          Checking schedule conflicts...
+        </div>
+
+        <div class="assign-conflicts" *ngIf="conflict">
+          <div class="conflict-heading">
+            <span class="conflict-heading-icon">!</span>
+            <span>Schedule Conflict Detected</span>
+          </div>
+
+          <div class="conflict-card">
+            <div class="conflict-client">{{ clientDisplayName }}</div>
+            <div class="conflict-program">
+              {{ getProgramName(conflict.program) }}
+              ({{ formatDate(conflict.program.startDate) }} - {{ formatDate(conflict.program.endDate) }})
+            </div>
+
+            <label class="resolution-option" [class.selected]="conflict.resolution === 'START_AFTER'">
+              <input
+                type="radio"
+                name="profile-nutrition-resolution"
+                [checked]="conflict.resolution === 'START_AFTER'"
+                (change)="setConflictResolution('START_AFTER')"
+              />
+              <span>
+                <strong>Start after current program</strong>
+                <small>Begin the new program after the existing program ends.</small>
+              </span>
+            </label>
+
+            <label class="resolution-option" [class.selected]="conflict.resolution === 'REPLACE'">
+              <input
+                type="radio"
+                name="profile-nutrition-resolution"
+                [checked]="conflict.resolution === 'REPLACE'"
+                (change)="setConflictResolution('REPLACE')"
+              />
+              <span>
+                <strong>Replace current program</strong>
+                <small>Stop the existing program before the new start date.</small>
+              </span>
+            </label>
+
+            <label class="resolution-option" [class.selected]="conflict.resolution === 'KEEP_BOTH'">
+              <input
+                type="radio"
+                name="profile-nutrition-resolution"
+                [checked]="conflict.resolution === 'KEEP_BOTH'"
+                (change)="setConflictResolution('KEEP_BOTH')"
+              />
+              <span>
+                <strong>Keep both anyway</strong>
+                <small>Assign on the overlapping dates. Both programs run at the same time.</small>
+              </span>
+            </label>
           </div>
         </div>
       </div>
@@ -125,7 +197,7 @@
         [disabled]="!canAssign"
         (click)="assign()"
       >
-        Assign Nutrition Program
+        {{ assignmentButtonLabel }}
       </button>
     </div>
   </div>

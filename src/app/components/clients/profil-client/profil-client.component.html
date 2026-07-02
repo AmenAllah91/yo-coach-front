@@ -987,6 +987,17 @@
     </div>
 
     <div class="workout-plan-type-body">
+      <div class="latest-programs-panel" *ngIf="latestWorkoutPrograms.length">
+        <div class="latest-programs-title">
+          <i class="far fa-clock"></i>
+          Derniers programmes workout de ce client
+        </div>
+        <div class="latest-program-row" *ngFor="let program of latestWorkoutPrograms">
+          <span>{{ getProgramDisplayName(program) }}</span>
+          <strong>{{ getProgramDateRange(program) }}</strong>
+        </div>
+      </div>
+
       <div class="workout-plan-type-card">
         <h4>Normal Workout Plan</h4>
         <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
@@ -1225,6 +1236,17 @@
     </div>
 
     <div class="workout-plan-type-body">
+      <div class="latest-programs-panel latest-programs-panel--nutrition" *ngIf="latestNutritionPrograms.length">
+        <div class="latest-programs-title">
+          <i class="far fa-clock"></i>
+          Derniers programmes nutrition de ce client
+        </div>
+        <div class="latest-program-row" *ngFor="let program of latestNutritionPrograms">
+          <span>{{ getProgramDisplayName(program) }}</span>
+          <strong>{{ getProgramDateRange(program) }}</strong>
+        </div>
+      </div>
+
       <div class="workout-plan-type-card">
         <h4>Normal Nutrition Plan</h4>
         <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
@@ -1256,6 +1278,7 @@
   [nutritionFileEnabled]="nutritionFileEnabled"
   [isOpen]="showNutritionSelectionModal"
   [fullName]="fullName"
+  [client]="client"
   [programs]="nutritionSelectionPrograms"
   (closeModal)="closeAssignFlow()"
   (backClick)="backToAssignModal()"

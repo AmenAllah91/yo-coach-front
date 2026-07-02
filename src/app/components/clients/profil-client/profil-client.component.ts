@@ -2,7 +2,7 @@ import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Client, ClientService } from 'app/service/client.service';
@@ -15,7 +15,7 @@ import { WorkoutProgramSelectionModalComponent } from './workout-program-selecti
 import { AssignSelectModalComponent } from './assign-select-modal/assign-select-modal.component';
 import { FormSelectionModalComponent } from './form-selection-modal/form-selection-modal.component';
 import { AssignmentsApiService, FormAssignment } from '../../forms/services/assignments-api.service';
-import { Subject, takeUntil, from } from 'rxjs';
+import { Subject, takeUntil, from, of, Observable } from 'rxjs';
 import { FormDetails, FormsApiService, Form } from '../../forms/services/forms-api.service';
 import { Answer, QuestionType } from '../../../models/forms.model';
 import { SubmissionsApiService } from '../../forms/services/submissions-api.service';
@@ -96,6 +96,8 @@ export interface ScheduledCheckIn {
   styleUrl: './profil-client.component.scss',
 })
 export class ProfilClientComponent {
+  @ViewChild(WorkoutsClientTabComponent) workoutsTab: WorkoutsClientTabComponent;
+  @ViewChild(NutritionClientTabComponent) nutritionTab: NutritionClientTabComponent;
 
   activeTab: TabId = 'dashboard';
   showClientStats = true;
@@ -293,6 +295,8 @@ export class ProfilClientComponent {
 
   todaysWorkout: TodaysWorkout | null = null;
   activeNutritionPlan: ActiveNutritionPlan | null = null;
+  assignedWorkoutPrograms: any[] = [];
+  assignedNutritionPrograms: any[] = [];
   private pendingCreatedWorkoutToAssign: any | null = null;
   loadingDashboardPrograms = false;
   dashboardProgramsError: string | null = null;
@@ -449,10 +453,12 @@ export class ProfilClientComponent {
       .subscribe({
         next: (res: any) => {
           const plans = res?.content || [];
+          this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
           this.todaysWorkout = this.extractTodaysWorkout(plans);
         },
         error: (err) => {
           console.error('Failed to load today workout:', err);
+          this.assignedWorkoutPrograms = [];
           this.todaysWorkout = null;
           this.dashboardProgramsError = 'Failed to load today workout.';
         },
@@ -463,11 +469,13 @@ export class ProfilClientComponent {
       .subscribe({
         next: (res: any) => {
           const plans = res?.content || [];
+          this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
           this.activeNutritionPlan = this.extractTodaysNutrition(plans);
           this.loadingDashboardPrograms = false;
         },
         error: (err) => {
           console.error('Failed to load active nutrition plan:', err);
+          this.assignedNutritionPrograms = [];
           this.activeNutritionPlan = null;
           this.loadingDashboardPrograms = false;
           this.dashboardProgramsError = 'Failed to load active nutrition plan.';
@@ -586,9 +594,43 @@ export class ProfilClientComponent {
 
   private sortPlansByStartDate(plans: any[]): any[] {
     return [...(plans || [])].sort((a, b) => {
-      const aDate = this.safeDate(a?.startDate)?.getTime() || 0;
-      const bDate = this.safeDate(b?.startDate)?.getTime() || 0;
+      const aDate = (this.safeDate(a?.endDate) || this.safeDate(a?.startDate))?.getTime() || 0;
+      const bDate = (this.safeDate(b?.endDate) || this.safeDate(b?.startDate))?.getTime() || 0;
       return bDate - aDate;
+    });
+  }
+
+  get latestWorkoutPrograms(): any[] {
+    return (this.assignedWorkoutPrograms || []).slice(0, 3);
+  }
+
+  get latestNutritionPrograms(): any[] {
+    return (this.assignedNutritionPrograms || []).slice(0, 3);
+  }
+
+  getProgramDisplayName(program: any): string {
+    return program?.name || program?.programName || 'Program';
+  }
+
+  getProgramDateRange(program: any): string {
+    const start = this.formatShortDate(program?.startDate);
+    const end = this.formatShortDate(program?.endDate);
+
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `From ${start}`;
+    if (end) return `Until ${end}`;
+
+    return 'No dates set';
+  }
+
+  private formatShortDate(value: any): string {
+    const date = this.safeDate(value);
+    if (!date) return '';
+
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   }
 
@@ -865,7 +907,7 @@ export class ProfilClientComponent {
   }
 
   getAllNutrition() {
-    this.nutritionService.getNutritionPlans().subscribe((res: any) => {
+    this.nutritionService.getNutritionPlans(0, 1000).subscribe((res: any) => {
       this.nutritionSelectionList = (res.content || [])
         .filter((plan: any) => !plan.client)
         .map((plan: any) => ({
@@ -947,10 +989,6 @@ export class ProfilClientComponent {
   }
 
   onCreateFromAssignModal() {
-    if (!this.workoutFileEnabled) {
-      this.createNormalWorkoutFromProfile();
-      return;
-    }
     this.showAssignSelectModal = false;
 
     if (this.assignType === 'CHECKIN') {
@@ -965,6 +1003,11 @@ export class ProfilClientComponent {
     }
 
     if (this.assignType === 'WORKOUT') {
+      if (!this.workoutFileEnabled) {
+        this.createNormalWorkoutFromProfile();
+        return;
+      }
+
       // Create New Program / Build a custom program => open the same type chooser as Workout Library.
       this.showWorkoutTypeModal = true;
       return;
@@ -1094,6 +1137,7 @@ export class ProfilClientComponent {
     this.showNutritionFileImportModal = false;
         this.closeAssignFlow();
         this.loadDashboardPrograms();
+        this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
       },
       error: (err) => {
         console.error('Failed to import and assign file workout:', err);
@@ -1192,6 +1236,7 @@ export class ProfilClientComponent {
             this.closeAssignFlow();
             this.getAllNutrition();
             this.loadDashboardPrograms();
+            this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
           },
           error: (err) => {
             console.error('Failed to assign imported nutrition file:', err);
@@ -1228,25 +1273,35 @@ export class ProfilClientComponent {
     program: any;
     startDate: string;
     endDate: string | null;
+    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH'; conflict: any }>;
   }) {
-    const { program, startDate, endDate } = payload;
+    const { program, startDate: requestedStartDate, endDate } = payload;
+    const resolution = this.getProfileConflictResolution(payload);
+    const startDate = this.getResolvedStartDate(requestedStartDate, resolution);
     const item = { ...program };
 
     item.startDate = startDate;
+    const replace$ = resolution?.resolution === 'REPLACE'
+      ? this.stopExistingNutritionBefore(resolution.conflict, startDate)
+      : of(null);
 
     if (this.isFileNutritionPlan(program)) {
       if (!endDate) {
         return;
       }
 
-      item.endDate = endDate;
+      const durationDays = this.daysBetweenInclusive(requestedStartDate, endDate);
+      item.endDate = this.addDays(startDate, durationDays - 1);
       item.mealDays = [];
       item.client = this.client;
       item.isMealPlanTemplate = false;
 
-      this.nutritionService.assignNutritionPlan(item).subscribe(() => {
+      replace$.pipe(
+        switchMap(() => this.nutritionService.assignNutritionPlan(item))
+      ).subscribe(() => {
         this.showNutritionSelectionModal = false;
         this.loadDashboardPrograms();
+        this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
       });
 
       return;
@@ -1276,10 +1331,59 @@ export class ProfilClientComponent {
 
     item.client = this.client;
 
-    this.nutritionService.assignNutritionPlan(item).subscribe(() => {
+    replace$.pipe(
+      switchMap(() => this.nutritionService.assignNutritionPlan(item))
+    ).subscribe(() => {
       this.showNutritionSelectionModal = false;
       this.loadDashboardPrograms();
+      this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
     });
+  }
+
+  private getProfileConflictResolution(payload: {
+    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH'; conflict: any }>;
+  }): { resolution: 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH'; conflict: any } | null {
+    if (!this.client?.id) return null;
+    return payload.conflictResolutions?.[this.client.id] || null;
+  }
+
+  private getResolvedStartDate(defaultStartDate: string, resolution: { resolution: string; conflict: any } | null): string {
+    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
+      return this.addDays(resolution.conflict.endDate, 1);
+    }
+
+    return defaultStartDate;
+  }
+
+  private stopExistingNutritionBefore(conflict: any, nextStartDate: string): Observable<unknown> {
+    if (!conflict?.id || !conflict.startDate) return of(null);
+
+    const replacementEndDate = this.addDays(nextStartDate, -1);
+    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
+      return this.nutritionService.deleteNutritionPlan(conflict.id);
+    }
+
+    return this.nutritionService.updateNutritionPlanDates(conflict.id, conflict.startDate, replacementEndDate);
+  }
+
+  private daysBetweenInclusive(startDate: string, endDate: string): number {
+    const start = new Date(`${startDate}T00:00:00`).getTime();
+    const end = new Date(`${endDate}T00:00:00`).getTime();
+    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 1;
+    return Math.floor((end - start) / 86400000) + 1;
+  }
+
+  private addDays(value: string, days: number): string {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + days);
+    return this.toDateInputValue(date);
+  }
+
+  private toDateInputValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   setSubTab(tab: 'submissions' | 'assigned' | 'scheduled') {
@@ -1352,8 +1456,14 @@ export class ProfilClientComponent {
         // Created from the client profile only to assign it.
         // Remove the source from Workout Library after the assigned copy is saved.
         this.workoutService.deleteWorkout(program.id).subscribe({
-          next: () => this.loadDashboardPrograms(),
-          error: () => this.loadDashboardPrograms(),
+          next: () => {
+            this.loadDashboardPrograms();
+            this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
+          },
+          error: () => {
+            this.loadDashboardPrograms();
+            this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
+          },
         });
       },
       error: (err) => {
@@ -1373,6 +1483,7 @@ export class ProfilClientComponent {
     if (payload?.result) {
       this.showProgramSelectionModal = false;
       this.loadDashboardPrograms();
+      this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
       return;
     }
 
@@ -1386,6 +1497,7 @@ export class ProfilClientComponent {
     this.workoutService.assignWorkout(item.id, item).subscribe(() => {
       this.showProgramSelectionModal = false;
       this.loadDashboardPrograms();
+      this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
     });
   }
 

@@ -135,7 +135,18 @@
           </div>
         </ng-template>
 
-               <div class="program-schedule-card">
+        <div class="latest-client-programs latest-client-programs--nutrition" *ngIf="latestAssignedPrograms.length">
+          <div class="latest-client-programs__title">
+            <i-feather name="clock" class="np-ico"></i-feather>
+            Derniers programmes nutrition de ce client
+          </div>
+          <div class="latest-client-programs__row" *ngFor="let program of latestAssignedPrograms">
+            <span>{{ getProgramDisplayName(program) }}</span>
+            <strong>{{ getProgramDateRange(program) }}</strong>
+          </div>
+        </div>
+
+        <div class="program-schedule-card">
           <h3 class="program-schedule-title">
             <span class="program-schedule-title-icon">
               <!-- Icône calendrier (SVG inline) -->

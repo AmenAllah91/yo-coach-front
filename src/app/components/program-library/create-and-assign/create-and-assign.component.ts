@@ -8,6 +8,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { Client, ClientService } from 'app/service/client.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
 import {
   WorkoutDay,
@@ -29,6 +30,7 @@ export class CreateAndAssignComponent implements OnInit {
 
   // assign-specific
   client: Client | null = null;
+  latestAssignedPrograms: WorkoutPlan[] = [];
 
   // schedule-specific
   startDate = new Date().toISOString().split('T')[0];
@@ -41,7 +43,8 @@ export class CreateAndAssignComponent implements OnInit {
     private clientService: ClientService,
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private workoutService: WorkoutService
   ) {}
 
   // ====== PROPS utilisés par le template (alias facade) ======
@@ -175,9 +178,66 @@ export class CreateAndAssignComponent implements OnInit {
         next: (res) => (this.client = res),
         error: (err) => console.error('Erreur chargement client :', err),
       });
+
+      this.loadLatestAssignedPrograms(clientId);
     }
 
     this.facade.loadExercisesFromAPI();
+  }
+
+  private loadLatestAssignedPrograms(clientId: string): void {
+    const coachId = sessionStorage.getItem('userId');
+    if (!coachId) return;
+
+    this.workoutService.getWorkoutByCoachIdAndClient(coachId, clientId, 0, 5, 'ALL', 'ALL', 'ALL', 'END_DESC').subscribe({
+      next: (res) => {
+        const programs = Array.isArray(res) ? res : (res?.content || []);
+        this.latestAssignedPrograms = this.sortProgramsByLatestDate(programs).slice(0, 3);
+      },
+      error: () => {
+        this.latestAssignedPrograms = [];
+      },
+    });
+  }
+
+  getProgramDisplayName(program: any): string {
+    return program?.name || program?.programName || 'Workout program';
+  }
+
+  getProgramDateRange(program: any): string {
+    const start = this.formatProgramDate(program?.startDate);
+    const end = this.formatProgramDate(program?.endDate);
+
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `From ${start}`;
+    if (end) return `Until ${end}`;
+    return 'No dates set';
+  }
+
+  private sortProgramsByLatestDate(programs: any[]): any[] {
+    return [...(programs || [])].sort((a, b) => {
+      const aDate = this.toDateTime(a?.endDate || a?.startDate);
+      const bDate = this.toDateTime(b?.endDate || b?.startDate);
+      return bDate - aDate;
+    });
+  }
+
+  private toDateTime(value: any): number {
+    if (!value) return 0;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+  }
+
+  private formatProgramDate(value: any): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   }
 
   // ===== schedule-specific =====

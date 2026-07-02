@@ -18,6 +18,7 @@ import { Client, ClientService } from 'app/service/client.service';
 export class AssignFullPlanComponent implements OnInit {
   userId = sessionStorage.getItem('userId');
   client: Client;
+  latestAssignedPrograms: any[] = [];
   startDate = new Date().toISOString().split('T')[0];
   endDate: string = '';
   mealPlan: MealPlan = {
@@ -63,12 +64,67 @@ export class AssignFullPlanComponent implements OnInit {
 
     if (clientId) {
       this.getClientById(clientId);
+      this.loadLatestAssignedPrograms(clientId);
     }
   }
 
   getClientById(id: string) {
     this.clientService.getClientById(id).subscribe((res) => {
       this.client = res;
+    });
+  }
+
+  private loadLatestAssignedPrograms(clientId: string): void {
+    if (!this.userId) return;
+
+    this.nutritionService.getNutritionPlanByCoachIdAndClient(this.userId, clientId, 0, 5, 'ALL', 'ALL', 'ALL', 'END_DESC').subscribe({
+      next: (res: any) => {
+        const programs = Array.isArray(res) ? res : (res?.content || []);
+        this.latestAssignedPrograms = this.sortProgramsByLatestDate(programs).slice(0, 3);
+      },
+      error: () => {
+        this.latestAssignedPrograms = [];
+      },
+    });
+  }
+
+  getProgramDisplayName(program: any): string {
+    return program?.name || program?.programName || 'Nutrition program';
+  }
+
+  getProgramDateRange(program: any): string {
+    const start = this.formatProgramDate(program?.startDate);
+    const end = this.formatProgramDate(program?.endDate);
+
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `From ${start}`;
+    if (end) return `Until ${end}`;
+    return 'No dates set';
+  }
+
+  private sortProgramsByLatestDate(programs: any[]): any[] {
+    return [...(programs || [])].sort((a, b) => {
+      const aDate = this.toProgramTime(a?.endDate || a?.startDate);
+      const bDate = this.toProgramTime(b?.endDate || b?.startDate);
+      return bDate - aDate;
+    });
+  }
+
+  private toProgramTime(value: any): number {
+    if (!value) return 0;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+  }
+
+  private formatProgramDate(value: any): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   }
 
