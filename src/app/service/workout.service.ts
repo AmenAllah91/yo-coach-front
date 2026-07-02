@@ -25,17 +25,26 @@ export interface SaveWorkoutSetRequest {
 export interface SaveWorkoutExerciseRequest {
   name: string;
   type: 'CARDIO' | 'STRENGTH';
+  duration?: number;
   description?: string;
   videoLink?: string;
+  exerciseRef?: string;
   supersetGroupId?: string | null;
   sets: SaveWorkoutSetRequest[];
+}
+
+export interface SaveWorkoutSessionRequest {
+  name: string;
+  exercises: SaveWorkoutExerciseRequest[];
 }
 
 export interface SaveWorkoutDayRequest {
   title: string;
   date: string;
   restDay: boolean;
-  exercises: SaveWorkoutExerciseRequest[];
+  description?: string;
+  dayNumber?: number;
+  workoutSessions: SaveWorkoutSessionRequest[];
 }
 
 export interface UpdateWorkoutDayRequest extends SaveWorkoutDayRequest {}
@@ -126,7 +135,7 @@ export class WorkoutService {
     return this.http.get<PageResponse<WorkoutPlan>>(
       `${this.apiUrl}client/${clientId}/coach/${coachId}`,
       {
-        params: { page, size, type, period, statusFilter, sort },
+        params: { page, size, type, period, statusFilter, sort, t: Date.now().toString() },
       }
     );
   }

@@ -62,6 +62,7 @@ interface WorkoutProgram {
   programId?: string;
   programName?: string;
   status?: 'COMPLETED' | 'MISSED' | 'PENDING';
+  restDay?: boolean;
 
   // Optional metadata for imported PDF / Excel workout programs.
   // Existing workout-day behavior stays untouched.
@@ -568,10 +569,6 @@ currentDate = new Date();
           ? this.addDays(startDate, (day.dayNumber ?? 1) - 1)
           : this.toCalendarDateOnly(day.date) || day.date;
 
-        if (day.restDay) {
-          return;
-        }
-
         const sessions: WorkoutSession[] = (day.workoutSessions || []).map(
           (session: any, sIndex: number) => ({
             id: session.id || `${plan.id}-session-${sIndex}`,
@@ -612,7 +609,7 @@ currentDate = new Date();
         );
 
         result.push({
-          id: day.id,
+          id: day.id || day._id,
           title: day.title || `Day ${day.dayNumber || ''}`.trim(),
           date,
           clientId: plan.client?.id,
@@ -620,6 +617,7 @@ currentDate = new Date();
           programName: plan.name,
           sessions,
           status: day.status || 'PENDING',
+          restDay: day.restDay,
         });
       });
     });
@@ -1838,7 +1836,7 @@ currentDate = new Date();
 
     this.editingWorkout = workout;
     this.selectedDateString = workout.date;
-    this.isRestDay = workout.sessions.length === 0;
+    this.isRestDay = workout.restDay ?? workout.sessions.length === 0;
     this.newWorkoutTitle = workout.title;
     this.newWorkoutExercises = this.cloneExercises(
       workout.sessions?.[0]?.exercises || []
@@ -1992,6 +1990,22 @@ currentDate = new Date();
 
   private getExerciseRef(exercise: any): any {
     return exercise?.exerciseRef || exercise?.ref || exercise?.exercise || null;
+  }
+
+  private getExerciseRefId(exercise: any): string {
+    const ref = this.getExerciseRef(exercise);
+    const rawId =
+      exercise?.exerciseRefId ||
+      exercise?.refId ||
+      ref?.id ||
+      ref?._id ||
+      ref?.['$oid'];
+
+    if (rawId && typeof rawId === 'object') {
+      return this.cleanExerciseValue(rawId.id || rawId._id || rawId['$oid']);
+    }
+
+    return this.cleanExerciseValue(rawId);
   }
 
   private getExerciseVideoLink(exercise: any): string {
@@ -2352,6 +2366,11 @@ currentDate = new Date();
         return;
       }
 
+      if (!this.editingWorkout.id) {
+        alert('This workout day is missing an identifier. Please refresh and try again.');
+        return;
+      }
+
       const duplicate = this.workoutPrograms.some(
         (p: WorkoutProgram) =>
           p.id !== this.editingWorkout?.id &&
@@ -2573,30 +2592,16 @@ currentDate = new Date();
       title: this.isRestDay ? 'Rest Day' : this.newWorkoutTitle.trim(),
       date,
       restDay: this.isRestDay,
-      exercises: this.isRestDay
+      workoutSessions: this.isRestDay
         ? []
-        : this.newWorkoutExercises.map((ex) => ({
-          name: ex.name,
-          type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
-          supersetGroupId: ex.supersetGroupId || null,
-          videoLink: ex.youtubeUrl || undefined,
-          sets:
-            ex.type === 'cardio'
-              ? this.buildCardioSets(ex)
-              : (ex.sets || []).map((set, index) => {
-                const total = parseInt(set.rest, 10) || 0;
-                return {
-                  setNumber: set.number ?? index + 1,
-                  reps: this.toNullableNumber(set.reps),
-                  weight: this.shouldShowCalendarWeightField()
-                    ? set.weight ?? 0
-                    : null,
-                  restMin: Math.floor(total / 60),
-                  restSec: total % 60,
-                  type: set.type || 'REGULAR',
-                };
-              }),
-        })),
+        : [
+          {
+            name: this.newWorkoutTitle.trim() || 'Main Session',
+            exercises: this.newWorkoutExercises.map((ex) =>
+              this.buildSaveWorkoutExerciseRequest(ex)
+            ),
+          },
+        ],
     };
   }
 
@@ -2608,30 +2613,46 @@ currentDate = new Date();
       title: program.title,
       date,
       restDay: false,
-      exercises: (program.sessions || []).flatMap((session) =>
-        (session.exercises || []).map((ex) => ({
-          name: ex.name,
-          type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
-          supersetGroupId: ex.supersetGroupId || null,
-          videoLink: ex.youtubeUrl || undefined,
-          sets:
-            ex.type === 'cardio'
-              ? this.buildCardioSets(ex)
-              : (ex.sets || []).map((set, index) => {
-                const total = parseInt(set.rest, 10) || 0;
-                return {
-                  setNumber: set.number ?? index + 1,
-                reps: this.toNullableNumber(set.reps),
-                weight: this.shouldShowCalendarWeightField()
-                  ? set.weight ?? 0
-                  : null,
-                restMin: Math.floor(total / 60),
-                restSec: total % 60,
-                type: set.type || 'REGULAR',
-                };
-              }),
-        }))
-      ),
+      workoutSessions: (program.sessions || []).map((session) => ({
+        name: session.notes || program.title || 'Main Session',
+        exercises: (session.exercises || []).map((ex) =>
+          this.buildSaveWorkoutExerciseRequest(ex)
+        ),
+      })),
+    };
+  }
+
+  private buildSaveWorkoutExerciseRequest(ex: Exercise): any {
+    const type = String(ex.type || '').toUpperCase() === 'CARDIO'
+      ? 'CARDIO'
+      : ex.type === 'cardio'
+        ? 'CARDIO'
+        : 'STRENGTH';
+
+    return {
+      name: ex.name,
+      type,
+      duration: type === 'CARDIO' ? Number(ex.duration || 0) : undefined,
+      description: ex.notes || undefined,
+      videoLink: ex.videoLink || ex.youtubeUrl || undefined,
+      exerciseRef: this.getExerciseRefId(ex) || undefined,
+      supersetGroupId: ex.supersetGroupId || null,
+      sets:
+        type === 'CARDIO'
+          ? this.buildCardioSets(ex)
+          : (ex.sets || []).map((set, index) => {
+            const total = parseInt(set.rest, 10) || 0;
+            return {
+              setNumber: set.number ?? index + 1,
+              reps: this.toNullableNumber(set.reps),
+              weight: this.shouldShowCalendarWeightField()
+                ? set.weight ?? 0
+                : null,
+              restMin: Math.floor(total / 60),
+              restSec: total % 60,
+              type: set.type || 'REGULAR',
+            };
+          }),
     };
   }
 

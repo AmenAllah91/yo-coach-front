@@ -1137,7 +1137,7 @@
         type="button"
         class="button-save"
         (click)="handleSaveWorkout()"
-        [disabled]="!isRestDay && newWorkoutExercises.length === 0"
+        [disabled]="!editingWorkout && !isRestDay && newWorkoutExercises.length === 0"
       >
         <span class="button-save-text">
           {{ editingWorkout ? 'Update Day' : 'Save Day' }}

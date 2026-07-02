@@ -91,21 +91,19 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    setTimeout(() => {
-      console.log('Exercise Library - Checking authentication status');
+    console.log('Exercise Library - Checking authentication status');
 
-      if (!this.authService.isLoggedIn()) {
-        console.log('Exercise Library - Not logged in, redirecting to login');
-        this.authService.login();
-        return;
-      }
+    if (!this.authService.isLoggedIn()) {
+      console.log('Exercise Library - Not logged in, redirecting to login');
+      this.authService.login();
+      return;
+    }
 
-      console.log('Exercise Library - User is logged in, loading data');
-      this.loadCurrentUserAccess();
-      this.loadEnums();
-      this.loadAllExercises();
-      this.loadAllCounts();
-    }, 1000);
+    console.log('Exercise Library - User is logged in, loading data');
+    this.loadCurrentUserAccess();
+    this.loadEnums();
+    this.loadAllExercises();
+    this.loadAllCounts();
   }
 
   loadCurrentUserAccess() {
@@ -422,8 +420,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   }
 
   private loadCurrentTabExercises() {
-    const startTime = Date.now();
-
     const serviceCall =
       this.activeTab === 'templates'
         ? this.exerciseService.getTemplateExercises(this.currentPage, this.pageSize)
@@ -431,15 +427,13 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
 
     serviceCall.subscribe({
       next: (response: PageResponse<Exercise>) => {
-        this.applyExerciseResponseWithDelay(response, startTime);
+        this.applyExerciseResponse(response);
       },
-      error: (error) => this.handleLoadErrorWithDelay(error, startTime),
+      error: (error) => this.handleLoadError(error),
     });
   }
 
   private loadTemplatesWithoutDuplicates() {
-    const startTime = Date.now();
-
     this.exerciseService.getMyExercises(0, 1000).subscribe({
       next: (myResponse: PageResponse<Exercise>) => {
         this.myExercisesForTemplateFilter = myResponse.content || [];
@@ -458,9 +452,9 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
                 totalElements: visibleTemplates.length,
               } as PageResponse<Exercise>;
 
-              this.applyExerciseResponseWithDelay(response, startTime);
+              this.applyExerciseResponse(response);
             },
-            error: (error) => this.handleLoadErrorWithDelay(error, startTime),
+            error: (error) => this.handleLoadError(error),
           });
       },
       error: () => {
@@ -470,30 +464,23 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
           .getTemplateExercises(this.currentPage, this.pageSize)
           .subscribe({
             next: (response: PageResponse<Exercise>) => {
-              this.applyExerciseResponseWithDelay(response, startTime);
+              this.applyExerciseResponse(response);
             },
-            error: (error) => this.handleLoadErrorWithDelay(error, startTime),
+            error: (error) => this.handleLoadError(error),
           });
       },
     });
   }
 
-  private applyExerciseResponseWithDelay(
+  private applyExerciseResponse(
     response: PageResponse<Exercise>,
-    startTime: number,
   ) {
-    const elapsed = Date.now() - startTime;
-    const minDelay = 800;
-    const remainingDelay = Math.max(0, minDelay - elapsed);
-
-    setTimeout(() => {
-      this.allExercises = response.content || [];
-      this.filteredExercises = response.content || [];
-      this.totalPages = response.totalPages;
-      this.totalElements = response.totalElements;
-      this.isLoading = false;
-      this.applyFilters();
-    }, remainingDelay);
+    this.allExercises = response.content || [];
+    this.filteredExercises = response.content || [];
+    this.totalPages = response.totalPages;
+    this.totalElements = response.totalElements;
+    this.isLoading = false;
+    this.applyFilters();
   }
 
   ngOnDestroy() {
@@ -513,15 +500,9 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
     this.videoPlayerHeight = height;
   }
 
-  private handleLoadErrorWithDelay(error: any, startTime: number) {
-    const elapsed = Date.now() - startTime;
-    const minDelay = 800;
-    const remainingDelay = Math.max(0, minDelay - elapsed);
-
-    setTimeout(() => {
-      console.error('Error loading exercises:', error);
-      this.isLoading = false;
-    }, remainingDelay);
+  private handleLoadError(error: any) {
+    console.error('Error loading exercises:', error);
+    this.isLoading = false;
   }
 
   loadAllCounts() {
