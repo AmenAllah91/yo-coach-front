@@ -8,6 +8,37 @@ import {ChatMessage} from "../components/chat/models/chat-message";
 import {PageDto} from "../models/pageDto";
 import {ChatWebsocketService} from "./chat-websocket.service";
 
+export interface AutoMessageSequenceDto {
+  id: string;
+  conversationId: string;
+  ownerId?: string;
+  name: string;
+  date: string;
+  time: string;
+  createdAt?: string;
+  messages: string[];
+  items?: AutoMessageItemDto[];
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+}
+
+export interface AutoMessageItemDto {
+  content: string;
+  type: 'TEXT' | 'DOCUMENT' | string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
+  attachmentSize?: number;
+}
+
+export interface AutoMessageSequenceRequest {
+  conversationId: string;
+  name: string;
+  date: string;
+  time: string;
+  messages: string[];
+  items?: AutoMessageItemDto[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -49,8 +80,13 @@ export class ChatService {
     this.selectedConversationSubject.next(conversation);
   }
 
-  sendMessage(conversationId: string, content: string, senderId: string) {
-    this.wsService.sendMessage(conversationId, content, senderId);
+  sendMessage(conversationId: string, content: string, senderId: string): Observable<ChatMessage> {
+    return this.http.post<ChatMessage>(`${this.apiUrl}/messages`, {
+      conversationId,
+      content,
+      senderId,
+      type: 'TEXT'
+    });
   }
 
   getConversations(page: number = 0, size: number = 10): Observable<PageDto<Conversation>> {
@@ -186,6 +222,32 @@ export class ChatService {
         return throwError(() => err);
       })
     );
+  }
+
+  getAutoMessageSequences(conversationId: string): Observable<AutoMessageSequenceDto[]> {
+    return this.http.get<AutoMessageSequenceDto[]>(
+      `${this.apiUrl}/conversations/${conversationId}/auto-messages`
+    );
+  }
+
+  createAutoMessageSequence(request: AutoMessageSequenceRequest): Observable<AutoMessageSequenceDto> {
+    return this.http.post<AutoMessageSequenceDto>(`${this.apiUrl}/auto-messages`, request);
+  }
+
+  updateAutoMessageSequence(id: string, request: AutoMessageSequenceRequest): Observable<AutoMessageSequenceDto> {
+    return this.http.put<AutoMessageSequenceDto>(`${this.apiUrl}/auto-messages/${id}`, request);
+  }
+
+  deleteAutoMessageSequence(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/auto-messages/${id}`);
+  }
+
+  uploadAutoMessageAttachment(file: File): Observable<AutoMessageItemDto> {
+    const formData = new FormData();
+    formData.append('type', 'DOCUMENT');
+    formData.append('file', file, file.name);
+
+    return this.http.post<AutoMessageItemDto>(`${this.apiUrl}/auto-messages/attachments`, formData);
   }
 
 }

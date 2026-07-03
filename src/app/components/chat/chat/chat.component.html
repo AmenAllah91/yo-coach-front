@@ -95,6 +95,15 @@
           </ng-template>
         </div>
         <button
+          class="chat-auto-btn"
+          type="button"
+          (click)="openAutoMessageModal()"
+          aria-label="Auto message"
+        >
+          <i-feather name="clock"></i-feather>
+          <span>Auto message</span>
+        </button>
+        <button
           *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode"
           class="chat-client-toggle"
           type="button"
@@ -107,52 +116,103 @@
         </button>
       </div>
 
-      <div class="chat-messages" #messagesContainer>
-        <div
-          *ngFor="let msg of displayMessages"
-          class="message"
-          [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
-        >
-          <span class="message-sender" *ngIf="selectedConv?.isGroup && msg.senderId !== currentUserId">{{ msg.sender?.name }}</span>
+      <div class="chat-auto-strip" *ngIf="currentAutoSequences.length">
+        <div class="chat-auto-strip__summary">
+          <i-feather name="clock"></i-feather>
+          <span>{{ currentAutoSequences.length }} message sequence(s) scheduled</span>
+        </div>
+        <button type="button" class="chat-auto-strip__manage" (click)="openManageAutoMessages()">Manage</button>
+      </div>
 
-          <ng-container [ngSwitch]="msg.type">
+      <div class="chat-messages" #messagesContainer>
+        <ng-container *ngFor="let entry of conversationTimeline">
+        <div
+          *ngIf="entry.kind === 'message'"
+          class="message"
+          [ngClass]="entry.message.senderId === currentUserId ? 'me' : 'other'"
+        >
+          <span class="message-sender" *ngIf="selectedConv?.isGroup && entry.message.senderId !== currentUserId">{{ entry.message.sender?.name }}</span>
+
+          <ng-container [ngSwitch]="entry.message.type">
             <div class="message-content" *ngSwitchCase="'TEXT'">
-              {{ msg.text }}
+              {{ entry.message.text }}
             </div>
 
             <div class="message-content message-content--voice" *ngSwitchCase="'VOICE'">
               <div class="voice-bubble">
                 <div class="voice-bubble__icon"><i-feather name="mic"></i-feather></div>
-                <audio class="voice-bubble__audio" [src]="msg.attachmentUrl" controls></audio>
-                <span class="voice-bubble__duration">{{ formatDuration(msg.durationSeconds) }}</span>
+                <audio class="voice-bubble__audio" [src]="entry.message.attachmentUrl" controls></audio>
+                <span class="voice-bubble__duration">{{ formatDuration(entry.message.durationSeconds) }}</span>
               </div>
             </div>
 
-            <button
-              type="button"
-              class="message-content message-content--doc"
-              *ngSwitchCase="'DOCUMENT'"
-              (click)="downloadDocument(msg, $event)"
-            >
-              <div class="doc-bubble">
-                <div class="doc-bubble__icon"><i-feather name="file-text"></i-feather></div>
-                <div class="doc-bubble__info">
-                  <div class="doc-bubble__name">{{ msg.attachmentName }}</div>
-                  <div class="doc-bubble__meta">{{ msg.attachmentType || 'Document' }} {{ formatFileSize(msg.attachmentSize) }}</div>
-                </div>
-                <div class="doc-bubble__download">⬇</div>
-              </div>
-            </button>
+            <ng-container *ngSwitchCase="'DOCUMENT'">
+              <button
+                *ngIf="isImageAttachment(entry.message); else documentBubble"
+                type="button"
+                class="message-content message-content--image"
+                (click)="downloadDocument(entry.message, $event)"
+              >
+                <img [src]="entry.message.attachmentUrl" [alt]="entry.message.attachmentName" />
+              </button>
+              <ng-template #documentBubble>
+                <button
+                  type="button"
+                  class="message-content message-content--doc"
+                  (click)="downloadDocument(entry.message, $event)"
+                >
+                  <div class="doc-bubble">
+                    <div class="doc-bubble__icon"><i-feather name="file-text"></i-feather></div>
+                    <div class="doc-bubble__info">
+                      <div class="doc-bubble__name">{{ entry.message.attachmentName }}</div>
+                      <div class="doc-bubble__meta">{{ entry.message.attachmentType || 'Document' }} {{ formatFileSize(entry.message.attachmentSize) }}</div>
+                    </div>
+                    <div class="doc-bubble__download">⬇</div>
+                  </div>
+                </button>
+              </ng-template>
+            </ng-container>
           </ng-container>
 
-          <div class="message-caption" *ngIf="msg.type === 'DOCUMENT' && msg.text">
-            {{ msg.text }}
+          <div class="message-caption" *ngIf="entry.message.type === 'DOCUMENT' && entry.message.text">
+            {{ entry.message.text }}
           </div>
 
           <div class="message-time">
-            {{ msg.timestamp }}
+            {{ entry.message.timestamp }}
           </div>
         </div>
+
+        <button
+          *ngIf="entry.kind === 'auto-sequence'"
+          type="button"
+          class="auto-sequence-card"
+          (click)="openAutoMessageModal(entry.sequence)"
+        >
+          <span class="auto-sequence-card__badge">
+            <i-feather name="clock"></i-feather>
+            Scheduled - {{ formatAutoSequenceSchedule(entry.sequence) }}
+          </span>
+          <span class="auto-sequence-card__message" *ngFor="let item of getAutoSequenceItems(entry.sequence)">
+            <ng-container [ngSwitch]="item.type">
+              <span *ngSwitchCase="'TEXT'">{{ item.content }}</span>
+              <span class="auto-sequence-card__image" *ngSwitchCase="'DOCUMENT'">
+                <img *ngIf="isImageAttachment(item); else scheduledDoc" [src]="resolveFileUrl(item.attachmentUrl || '')" [alt]="item.attachmentName || 'Image'" />
+                <ng-template #scheduledDoc>
+                  <span class="auto-sequence-card__attachment">
+                    <i-feather name="file-text"></i-feather>
+                    {{ item.attachmentName || 'Document' }}
+                  </span>
+                </ng-template>
+              </span>
+            </ng-container>
+          </span>
+          <span class="auto-sequence-card__footer">
+            <span>{{ entry.sequence.name }}</span>
+            <span>Edit sequence</span>
+          </span>
+        </button>
+        </ng-container>
       </div>
 
       <div class="chat-input-bar">
@@ -226,6 +286,170 @@
   <aside class="chat-profile" *ngIf="!embeddedMode" [class.chat-profile--open]="showClientProfile && !selectedConv?.isGroup">
     <app-profil-client *ngIf="selectedClientId" [clientIdInput]="selectedClientId"></app-profil-client>
   </aside>
+</div>
+
+<div class="am-overlay" *ngIf="showAutoMessageModal" (click)="closeAutoMessageModal()">
+  <div class="am-modal am-modal--schedule" (click)="$event.stopPropagation()">
+    <input #autoAttachmentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onAutoAttachmentSelected($event)" />
+    <div class="am-header">
+      <h3 class="am-title">{{ editingAutoMessage ? 'Edit Auto Message' : 'Schedule Auto Messages' }}</h3>
+      <button class="chat-icon-btn" type="button" (click)="closeAutoMessageModal()"><i-feather name="x"></i-feather></button>
+    </div>
+
+    <div class="am-body">
+      <label class="am-field">
+        <span>Sequence Name</span>
+        <input type="text" placeholder="e.g., Day 1 Onboarding" [(ngModel)]="autoSequenceName" />
+      </label>
+
+      <div class="am-grid">
+        <label class="am-field">
+          <span>Date</span>
+          <div class="am-input-icon">
+            <i-feather name="calendar"></i-feather>
+            <input type="date" [(ngModel)]="autoSequenceDate" />
+          </div>
+        </label>
+        <label class="am-field">
+          <span>Time (Client's local time)</span>
+          <div class="am-input-icon">
+            <i-feather name="clock"></i-feather>
+            <input type="time" [(ngModel)]="autoSequenceTime" />
+          </div>
+        </label>
+      </div>
+
+      <div class="am-sequence-box">
+        <div class="am-sequence-box__title">Messages in sequence ({{ autoSequenceItems.length }}/3)</div>
+
+        <div class="am-empty-state" *ngIf="autoSequenceItems.length === 0">
+          <div class="am-empty-state__icon"><i-feather name="clock"></i-feather></div>
+          <strong>No messages added yet.</strong>
+          <span>Create a sequence of up to 3 messages.</span>
+        </div>
+
+        <div class="am-added-list" *ngIf="autoSequenceItems.length">
+          <div class="am-added-item" *ngFor="let item of autoSequenceItems; let i = index">
+            <span class="am-added-item__number">{{ i + 1 }}</span>
+            <span class="am-added-item__text">
+              <ng-container [ngSwitch]="item.type">
+                <textarea
+                  *ngSwitchCase="'TEXT'"
+                  class="am-added-item__edit"
+                  rows="2"
+                  [(ngModel)]="item.content"
+                  (ngModelChange)="onAutoSequenceTextChanged()"
+                  placeholder="Edit scheduled message"
+                ></textarea>
+                <span *ngSwitchCase="'DOCUMENT'">{{ isImageAttachment(item) ? 'Photo' : 'Document' }} - {{ item.attachmentName }}</span>
+              </ng-container>
+            </span>
+            <button type="button" class="am-added-item__remove" (click)="removeAutoSequenceMessage(i)">
+              <i-feather name="x"></i-feather>
+            </button>
+          </div>
+        </div>
+
+        <div class="am-limit" *ngIf="autoSequenceItems.length >= 3">
+          You've hit the 3 message limit for this sequence. Try combining your messages.
+        </div>
+
+        <div class="am-composer" [class.am-composer--disabled]="autoSequenceItems.length >= 3">
+          <textarea
+            rows="4"
+            placeholder="Type a message here. Alt-Enter for a new line"
+            [(ngModel)]="autoMessageDraft"
+            [disabled]="autoSequenceItems.length >= 3"
+          ></textarea>
+          <div class="am-composer__footer">
+            <div class="am-composer__tools">
+              <button type="button" class="am-tool-btn" (click)="autoAttachmentInput.click()" [disabled]="autoSequenceItems.length >= 3 || isUploadingAutoAttachment">
+                <i-feather name="image"></i-feather>
+              </button>
+              <button type="button" class="am-tool-btn" (click)="autoAttachmentInput.click()" [disabled]="autoSequenceItems.length >= 3 || isUploadingAutoAttachment">
+                <i-feather name="file-text"></i-feather>
+              </button>
+              <i-feather name="lock"></i-feather>
+              <i-feather name="calendar"></i-feather>
+            </div>
+            <button
+              type="button"
+              class="am-add-btn"
+              (click)="addAutoSequenceMessage()"
+              [disabled]="!autoMessageDraft.trim() || autoSequenceItems.length >= 3 || isUploadingAutoAttachment"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="am-footer">
+      <button type="button" class="am-cancel-btn" (click)="closeAutoMessageModal()">Cancel</button>
+      <button type="button" class="am-primary-btn" (click)="saveAutoMessageSequence()" [disabled]="!canSaveAutoSequence()">
+        <i-feather name="clock"></i-feather>
+        <span>{{ editingAutoMessage ? 'Save Changes' : 'Schedule Sequence' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="am-overlay" *ngIf="showManageAutoMessages" (click)="closeManageAutoMessages()">
+  <div class="am-modal am-modal--manage" (click)="$event.stopPropagation()">
+    <div class="am-header am-header--compact">
+      <div>
+        <h3 class="am-title">Manage Scheduled Auto Messages</h3>
+        <p class="am-subtitle">Select a scheduled sequence to view and manage it.</p>
+      </div>
+      <button class="chat-icon-btn" type="button" (click)="closeManageAutoMessages()"><i-feather name="x"></i-feather></button>
+    </div>
+
+    <div class="am-manage-body">
+      <div class="am-search">
+        <i-feather name="search"></i-feather>
+        <input type="text" placeholder="Search a sequence..." [(ngModel)]="autoMessageManageSearch" />
+      </div>
+
+      <div class="am-manage-list">
+        <button
+          type="button"
+          class="am-manage-item"
+          *ngFor="let sequence of filteredAutoSequences; let i = index"
+          (click)="openAutoMessageModal(sequence)"
+        >
+          <span class="am-manage-item__number">{{ i + 1 }}</span>
+          <span class="am-manage-item__main">
+            <strong>{{ sequence.name }}</strong>
+            <small><i-feather name="clock"></i-feather>{{ formatAutoSequenceSchedule(sequence) }}</small>
+          </span>
+          <span class="am-status" [class.am-status--scheduled]="sequence.status === 'PAUSED'">{{ formatAutoSequenceStatus(sequence) }}</span>
+          <button
+            type="button"
+            class="am-manage-item__delete"
+            title="Delete scheduled message"
+            aria-label="Delete scheduled message"
+            (click)="deleteAutoMessageSequence(sequence, $event)"
+          >
+            <i-feather name="trash-2"></i-feather>
+          </button>
+          <i-feather name="chevron-right" class="am-manage-item__chevron"></i-feather>
+        </button>
+
+        <div class="am-empty-row" *ngIf="filteredAutoSequences.length === 0">No scheduled auto messages.</div>
+      </div>
+
+      <div class="am-manage-hint">
+        <i-feather name="info"></i-feather>
+        <span>Click a scheduled auto message to manage, edit, pause, or delete it.</span>
+      </div>
+    </div>
+
+    <div class="am-footer">
+      <button type="button" class="am-cancel-btn" (click)="closeManageAutoMessages()">Close</button>
+      <button type="button" class="am-primary-btn" (click)="openAutoMessageModal()">Create new</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════

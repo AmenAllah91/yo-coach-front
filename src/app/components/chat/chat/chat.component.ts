@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { ChatService } from '../../../service/chat.service';
+import { AutoMessageItemDto, AutoMessageSequenceDto, AutoMessageSequenceRequest, ChatService } from '../../../service/chat.service';
 import { ChatWebsocketService } from '../../../service/chat-websocket.service';
 import { UsersService } from '../../../service/users.service';
 import { Conversation } from '../models/conversation';
@@ -18,6 +18,7 @@ import { environment } from '@env/environment';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
+type AutoMessageSequence = AutoMessageSequenceDto;
 type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT';
 
 
@@ -52,6 +53,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   messageText = '';
   private scrollPending = false;
   displayMessages: any[] = [];
+  private optimisticMessageSeq = 0;
 
   // Attachments / voice messages
   showAttachmentMenu = false;
@@ -106,6 +108,18 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   showSelectClient = false;
   selectClientSearchTerm = '';
   showCreateGroup = false;
+  showAutoMessageModal = false;
+  showManageAutoMessages = false;
+  autoMessageManageSearch = '';
+  editingAutoMessage: AutoMessageSequence | null = null;
+  autoSequenceName = '';
+  autoSequenceDate = '';
+  autoSequenceTime = '05:00';
+  autoMessageDraft = '';
+  autoSequenceMessages: string[] = [];
+  autoSequenceItems: AutoMessageItemDto[] = [];
+  isUploadingAutoAttachment = false;
+  autoMessagesByConversation: Record<string, AutoMessageSequence[]> = {};
 
   // ── Create Group state ────────────────────────────────────────────────────
   groupName        = '';
@@ -118,6 +132,37 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   conversations: Conversation[] = [];
   currentUserId = sessionStorage.getItem('userId') || '';
   private destroy$ = new Subject<void>();
+
+  get currentAutoSequences(): AutoMessageSequence[] {
+    if (!this.selectedConv) return [];
+    return (this.autoMessagesByConversation[this.selectedConv.id] || [])
+      .filter((sequence) => sequence.status !== 'COMPLETED' && sequence.status !== 'CANCELLED');
+  }
+
+  get filteredAutoSequences(): AutoMessageSequence[] {
+    const term = this.autoMessageManageSearch.trim().toLowerCase();
+    if (!term) return this.currentAutoSequences;
+    return this.currentAutoSequences.filter((sequence) =>
+      sequence.name.toLowerCase().includes(term) ||
+      this.formatAutoSequenceSchedule(sequence).toLowerCase().includes(term)
+    );
+  }
+
+  get conversationTimeline(): any[] {
+    const messages = this.displayMessages.map((message: any) => ({
+      kind: 'message',
+      at: this.getTimelineTime(message.createdAtRaw),
+      message,
+    }));
+
+    const autoSequences = this.currentAutoSequences.map((sequence) => ({
+      kind: 'auto-sequence',
+      at: this.getTimelineTime(sequence.createdAt),
+      sequence,
+    }));
+
+    return [...messages, ...autoSequences].sort((a, b) => a.at - b.at);
+  }
 
   constructor(
     private chatService: ChatService,
@@ -148,9 +193,9 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       .pipe(takeUntil(this.destroy$))
       .subscribe((msg) => {
         if (!msg || !this.selectedConv || msg.conversationId !== this.selectedConv.id) return;
-        if (this.displayMessages.some((m: any) => m.id === msg.id)) return;
-        this.displayMessages = [...this.displayMessages, this.mapMessageToUi(msg)];
+        this.upsertDisplayMessage(msg);
         this.updateConversationPreview(msg);
+        this.loadAutoMessageSequences(this.selectedConv.id);
         this.scrollPending = true;
       });
   }
@@ -385,6 +430,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      this.displayMessages = [];
      this.wsService.subscribeToConversation(conv.id);
      this.loadMessages(conv.id);
+     this.loadAutoMessageSequences(conv.id);
      if (conv.isGroup && conv.memberIds?.length) {
        this.resolveGroupMembers(conv.memberIds);
      }
@@ -437,11 +483,12 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
        });
    }
 
-   private mapMessageToUi(msg: ChatMessage): any {
+   private mapMessageToUi(msg: ChatMessage, optimistic = false): any {
      const type = this.normalizeMessageType(msg.type);
 
      return {
        id: msg.id,
+       optimistic,
        senderId: msg.senderId,
        text: msg.content || '',
        type,
@@ -450,6 +497,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
        attachmentType: msg.attachmentType || '',
        attachmentSize: msg.attachmentSize || 0,
        durationSeconds: msg.durationSeconds || 0,
+       createdAtRaw: msg.createdAt || new Date().toISOString(),
        timestamp: this.formatTime(msg.createdAt),
        isRead: true,
        sender: {
@@ -460,6 +508,48 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      };
    }
 
+   private createOptimisticTextMessage(conversationId: string, content: string): ChatMessage {
+     const now = new Date().toISOString();
+     this.optimisticMessageSeq += 1;
+
+     return {
+       id: `tmp-${Date.now()}-${this.optimisticMessageSeq}`,
+       senderId: this.currentUserId,
+       content,
+       createdAt: now,
+       conversationId,
+       type: 'TEXT',
+     };
+   }
+
+   private upsertDisplayMessage(msg: ChatMessage): void {
+     const existingIndex = this.displayMessages.findIndex((message: any) => message.id === msg.id);
+     const mappedMessage = this.mapMessageToUi(msg);
+
+     if (existingIndex !== -1) {
+       this.displayMessages = this.displayMessages.map((message: any, index: number) =>
+         index === existingIndex ? mappedMessage : message
+       );
+       return;
+     }
+
+     const optimisticIndex = this.displayMessages.findIndex((message: any) =>
+       message.optimistic &&
+       message.senderId === msg.senderId &&
+       message.type === this.normalizeMessageType(msg.type) &&
+       message.text === (msg.content || '')
+     );
+
+     if (optimisticIndex !== -1) {
+       this.displayMessages = this.displayMessages.map((message: any, index: number) =>
+         index === optimisticIndex ? mappedMessage : message
+       );
+       return;
+     }
+
+     this.displayMessages = [...this.displayMessages, mappedMessage];
+   }
+
    private normalizeMessageType(type?: string): ChatUiMessageType {
      const value = (type || 'TEXT').toUpperCase();
      if (value === 'VOICE' || value === 'AUDIO') return 'VOICE';
@@ -467,7 +557,13 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      return 'TEXT';
    }
 
-   private resolveFileUrl(url: string): string {
+   isImageAttachment(item: { attachmentType?: string; attachmentName?: string; attachmentUrl?: string }): boolean {
+     const attachmentType = (item.attachmentType || '').toLowerCase();
+     const name = (item.attachmentName || item.attachmentUrl || '').toLowerCase();
+     return attachmentType.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)$/i.test(name);
+   }
+
+   resolveFileUrl(url: string): string {
      if (!url) return '';
      if (url.startsWith('http://') || url.startsWith('https://')) return url;
      return `${environment.baseApiUrl}${url}`;
@@ -545,8 +641,26 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     if (!content) return;
 
     this.messageText = '';
-    this.chatService.sendMessage(this.selectedConv.id, content, this.currentUserId);
+    const optimisticMessage = this.createOptimisticTextMessage(this.selectedConv.id, content);
+    this.displayMessages = [...this.displayMessages, this.mapMessageToUi(optimisticMessage, true)];
+    this.chatService
+      .sendMessage(this.selectedConv.id, content, this.currentUserId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (savedMessage) => {
+          this.upsertDisplayMessage(savedMessage);
+          this.updateConversationPreview(savedMessage);
+          this.scrollPending = true;
+        },
+        error: (err) => {
+          console.error('Message send failed:', err);
+          this.displayMessages = this.displayMessages.filter((message: any) => message.id !== optimisticMessage.id);
+          this.messageText = content;
+          this.loadMessages(this.selectedConv!.id);
+        }
+      });
     this.updateLocalConversationLastMessage(content);
+    this.scrollPending = true;
   }
 
   toggleAttachmentMenu(): void {
@@ -851,6 +965,228 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     this.groupSearchTerm = '';
     this.selectedClientIds = [];
     this.groupSelectAll  = false;
+  }
+
+  private loadAutoMessageSequences(conversationId: string): void {
+    this.chatService
+      .getAutoMessageSequences(conversationId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (sequences) => {
+          this.autoMessagesByConversation = {
+            ...this.autoMessagesByConversation,
+            [conversationId]: sequences || [],
+          };
+        },
+        error: (err) => {
+          console.error('Error loading auto message sequences:', err);
+          this.autoMessagesByConversation = {
+            ...this.autoMessagesByConversation,
+            [conversationId]: [],
+          };
+        }
+      });
+  }
+
+  openAutoMessageModal(sequence?: AutoMessageSequence): void {
+    if (!this.selectedConv) return;
+
+    this.showManageAutoMessages = false;
+    this.showAutoMessageModal = true;
+    this.editingAutoMessage = sequence || null;
+
+    if (sequence) {
+      this.autoSequenceName = sequence.name;
+      this.autoSequenceDate = sequence.date;
+      this.autoSequenceTime = sequence.time;
+      this.autoSequenceItems = this.getAutoSequenceItems(sequence).map((item) => ({ ...item }));
+      this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
+      this.autoMessageDraft = '';
+      return;
+    }
+
+    this.resetAutoMessageForm();
+  }
+
+  closeAutoMessageModal(): void {
+    this.showAutoMessageModal = false;
+    this.editingAutoMessage = null;
+    this.resetAutoMessageForm();
+  }
+
+  openManageAutoMessages(): void {
+    if (!this.selectedConv) return;
+    this.showAutoMessageModal = false;
+    this.showManageAutoMessages = true;
+    this.autoMessageManageSearch = '';
+  }
+
+  closeManageAutoMessages(): void {
+    this.showManageAutoMessages = false;
+    this.autoMessageManageSearch = '';
+  }
+
+  addAutoSequenceMessage(): void {
+    const message = this.autoMessageDraft.trim();
+    if (!message || this.autoSequenceItems.length >= 3) return;
+
+    this.autoSequenceItems = [...this.autoSequenceItems, { type: 'TEXT', content: message }];
+    this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
+    this.autoMessageDraft = '';
+  }
+
+  removeAutoSequenceMessage(index: number): void {
+    this.autoSequenceItems = this.autoSequenceItems.filter((_, i) => i !== index);
+    this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
+  }
+
+  onAutoSequenceTextChanged(): void {
+    this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
+  }
+
+  deleteAutoMessageSequence(sequence: AutoMessageSequence, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    if (!this.selectedConv) return;
+
+    const conversationId = this.selectedConv.id;
+    this.chatService
+      .deleteAutoMessageSequence(sequence.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.autoMessagesByConversation = {
+            ...this.autoMessagesByConversation,
+            [conversationId]: (this.autoMessagesByConversation[conversationId] || [])
+              .filter(item => item.id !== sequence.id),
+          };
+        },
+        error: (err) => {
+          console.error('Error deleting auto message sequence:', err);
+        }
+      });
+  }
+
+  onAutoAttachmentSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file || this.autoSequenceItems.length >= 3) return;
+
+    if (!this.isAcceptedDocument(file)) {
+      this.attachmentError = 'Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.';
+      return;
+    }
+
+    this.attachmentError = '';
+    this.uploadAutoAttachment(file);
+  }
+
+  private uploadAutoAttachment(file: File): void {
+    if (this.autoSequenceItems.length >= 3) return;
+
+    this.isUploadingAutoAttachment = true;
+    this.chatService
+      .uploadAutoMessageAttachment(file)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (item) => {
+          this.isUploadingAutoAttachment = false;
+          this.autoSequenceItems = [...this.autoSequenceItems, item];
+          this.autoSequenceMessages = this.autoSequenceItems.map(sequenceItem => sequenceItem.content).filter(Boolean);
+        },
+        error: (err) => {
+          this.isUploadingAutoAttachment = false;
+          console.error('Auto message attachment upload failed:', err);
+        }
+      });
+  }
+
+  saveAutoMessageSequence(): void {
+    if (!this.selectedConv || !this.canSaveAutoSequence()) return;
+
+    const conversationId = this.selectedConv.id;
+    const request: AutoMessageSequenceRequest = {
+      conversationId,
+      name: this.autoSequenceName.trim(),
+      date: this.autoSequenceDate,
+      time: this.autoSequenceTime,
+      messages: this.autoSequenceItems.map(item => item.content).filter(Boolean),
+      items: [...this.autoSequenceItems],
+    };
+
+    const save$ = this.editingAutoMessage
+      ? this.chatService.updateAutoMessageSequence(this.editingAutoMessage.id, request)
+      : this.chatService.createAutoMessageSequence(request);
+
+    save$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.closeAutoMessageModal();
+          this.loadAutoMessageSequences(conversationId);
+        },
+        error: (err) => {
+          console.error('Error saving auto message sequence:', err);
+        }
+      });
+  }
+
+  canSaveAutoSequence(): boolean {
+    return !!(
+      this.selectedConv &&
+      this.autoSequenceName.trim() &&
+      this.autoSequenceDate &&
+      this.autoSequenceTime &&
+      this.autoSequenceItems.length &&
+      this.autoSequenceItems.every(item => item.type !== 'TEXT' || !!item.content?.trim())
+    );
+  }
+
+  getAutoSequenceItems(sequence: AutoMessageSequence): AutoMessageItemDto[] {
+    if (sequence.items?.length) {
+      return sequence.items;
+    }
+    return (sequence.messages || []).map((message) => ({ type: 'TEXT', content: message }));
+  }
+
+  formatAutoSequenceSchedule(sequence: AutoMessageSequence): string {
+    const date = sequence.date ? new Date(`${sequence.date}T00:00:00`) : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let label = sequence.date;
+    if (date && !isNaN(date.getTime())) {
+      const diffDays = Math.round((date.getTime() - today.getTime()) / 86400000);
+      if (diffDays === 0) label = 'Today';
+      else if (diffDays === 1) label = 'Tomorrow';
+      else label = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    return `${label} - ${sequence.time}`;
+  }
+
+  formatAutoSequenceStatus(sequence: AutoMessageSequence): string {
+    const value = sequence.status || 'ACTIVE';
+    return value.charAt(0) + value.slice(1).toLowerCase();
+  }
+
+  private getTimelineTime(value?: string): number {
+    if (!value) return Date.now();
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? Date.now() : time;
+  }
+
+  private resetAutoMessageForm(): void {
+    this.autoSequenceName = '';
+    this.autoSequenceDate = '';
+    this.autoSequenceTime = '05:00';
+    this.autoMessageDraft = '';
+    this.autoSequenceMessages = [];
+    this.autoSequenceItems = [];
+    this.isUploadingAutoAttachment = false;
   }
 
   downloadDocument(msg: any, event?: Event): void {
