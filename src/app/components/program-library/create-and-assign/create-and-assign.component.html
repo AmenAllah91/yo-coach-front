@@ -4,7 +4,8 @@
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Days</h2>
+        <h2 class="np-h6">Program Structure</h2>
+        <p class="np-aside__sub">{{ workoutWeeks.length }} Weeks • {{ days.length }} Days</p>
       </div>
 
       <div
@@ -13,6 +14,63 @@
         [cdkDropListData]="days"
         (cdkDropListDropped)="onDropDay($event)"
       >
+        <div class="np-week-card" *ngFor="let week of workoutWeeks">
+          <div class="np-week-card__head">
+            <div>
+              <strong>{{ week.label }}</strong>
+              <small>{{ week.range }}</small>
+            </div>
+            <span>{{ week.days.length }} days</span>
+          </div>
+
+          <ng-container *ngFor="let d of week.days; trackBy: trackByDay">
+            <div
+              class="np-dayrow"
+              cdkDrag
+              [class.is-active]="selectedDay?.id === d.id"
+            >
+              <button
+                type="button"
+                class="np-day"
+                [class.is-active]="selectedDay?.id === d.id"
+                (click)="selectDay(d)"
+              >
+                <span class="np-day__title">
+                  <span>{{ d.title }}</span>
+                  <span *ngIf="d.isRestDay || d.restDay" class="np-day__rest">Rest Day</span>
+                </span>
+                <small class="np-day__meta">
+                  <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                  <span class="np-day__dot">•</span>
+                  <span class="np-day__date">{{ d.date | date : "MMM d, yyyy" }}</span>
+                </small>
+              </button>
+
+              <button
+                *ngIf="days.indexOf(d) !== 0"
+                type="button"
+                class="np-iconbtn"
+                title="Delete"
+                aria-label="Delete day"
+                (click)="deleteDay(d, $event)"
+              >
+                <i-feather name="trash-2" class="np-ico"></i-feather>
+              </button>
+
+              <button
+                type="button"
+                class="np-iconbtn np-iconbtn--drag"
+                title="Move day"
+                aria-label="Move day"
+                cdkDragHandle
+              >
+                <i-feather name="menu" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </ng-container>
+        </div>
+
+        <div *ngIf="false">
         <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
           <div
             class="np-dayrow"
@@ -60,6 +118,7 @@
             </button>
           </div>
         </ng-container>
+        </div>
 
         <!-- Add Day -->
         <button
@@ -219,6 +278,28 @@
                   name="startDate"
                   (ngModelChange)="updateAllDates()"
                 />
+              </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="program-schedule-field">
+              <label class="program-schedule-label">
+                Duration (Weeks) <span class="required">*</span>
+              </label>
+              <div class="program-schedule-input-wrapper">
+                <span class="program-schedule-input-icon">
+                  <i-feather name="clock" class="program-schedule-input-icon-svg"></i-feather>
+                </span>
+                <select
+                  class="program-schedule-input"
+                  [(ngModel)]="durationWeeks"
+                  name="durationWeeks"
+                  (ngModelChange)="onDurationWeeksChange()"
+                >
+                  <option *ngFor="let option of durationOptions" [ngValue]="option">
+                    {{ option }} {{ option === 1 ? "Week" : "Weeks" }} ({{ option * 7 }} Days)
+                  </option>
+                </select>
               </div>
             </div>
 

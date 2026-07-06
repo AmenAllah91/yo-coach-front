@@ -95,6 +95,10 @@ export class ProgramLibraryComponent implements OnInit {
   fileAssignError = '';
 
   showCreateTypeModal = false;
+  showWorkoutCreateModal = false;
+  createWorkoutName = '';
+  createWorkoutDurationWeeks = 4;
+  readonly workoutDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   showImportFileModal = false;
   importFile: File | null = null;
   importProgramName = '';
@@ -615,11 +619,6 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   createProgram() {
-    if (!this.workoutFileEnabled) {
-      this.createNormalWorkout();
-      return;
-    }
-
     this.showCreateTypeModal = true;
   }
 
@@ -629,15 +628,35 @@ export class ProgramLibraryComponent implements OnInit {
 
   createNormalWorkout() {
     this.showCreateTypeModal = false;
-    this.router.navigateByUrl('workout/create-workout');
+    this.openWorkoutCreateModal();
+  }
+
+  openWorkoutCreateModal() {
+    this.createWorkoutName = '';
+    this.createWorkoutDurationWeeks = 4;
+    this.showWorkoutCreateModal = true;
+  }
+
+  closeWorkoutCreateModal() {
+    this.showWorkoutCreateModal = false;
+  }
+
+  submitWorkoutCreateModal() {
+    const name = this.createWorkoutName.trim();
+    if (!name) return;
+
+    const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, 52));
+    this.showWorkoutCreateModal = false;
+    this.router.navigate(['/workout/create-workout'], {
+      queryParams: {
+        name,
+        durationWeeks,
+        template: this.activeTab === 'templates' ? 1 : 0,
+      },
+    });
   }
 
   openImportFileWorkout() {
-    if (!this.workoutFileEnabled) {
-      this.showCreateTypeModal = false;
-      return;
-    }
-
     this.showCreateTypeModal = false;
     this.showImportFileModal = true;
     this.importError = '';

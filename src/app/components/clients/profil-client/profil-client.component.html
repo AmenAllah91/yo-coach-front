@@ -987,17 +987,6 @@
     </div>
 
     <div class="workout-plan-type-body">
-      <div class="latest-programs-panel" *ngIf="latestWorkoutPrograms.length">
-        <div class="latest-programs-title">
-          <i class="far fa-clock"></i>
-          Derniers programmes workout de ce client
-        </div>
-        <div class="latest-program-row" *ngFor="let program of latestWorkoutPrograms">
-          <span>{{ getProgramDisplayName(program) }}</span>
-          <strong>{{ getProgramDateRange(program) }}</strong>
-        </div>
-      </div>
-
       <div class="workout-plan-type-card">
         <h4>Normal Workout Plan</h4>
         <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
@@ -1020,6 +1009,129 @@
     <div class="workout-plan-type-footer">
       <button type="button" class="workout-plan-type-cancel" (click)="closeWorkoutTypeModal()">
         Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<div *ngIf="showClientWorkoutCreateModal" class="client-workout-create-backdrop" (click)="closeClientWorkoutCreateModal()">
+  <div class="client-workout-create-modal" (click)="$event.stopPropagation()">
+    <div class="client-workout-create-header">
+      <div>
+        <h3>Create Client Workout Program</h3>
+        <p>For {{ fullName }}</p>
+      </div>
+
+      <button type="button" class="client-workout-create-close" (click)="closeClientWorkoutCreateModal()">×</button>
+    </div>
+
+    <div class="client-workout-create-body">
+      <label class="client-workout-create-field">
+        <span>Program Name <b>*</b></span>
+        <input
+          type="text"
+          [(ngModel)]="clientWorkoutProgramName"
+          placeholder="e.g. Summer Shred Phase 2"
+        />
+      </label>
+
+      <label class="client-workout-create-field">
+        <span>Duration <b>*</b></span>
+        <select [(ngModel)]="clientWorkoutDurationWeeks" (ngModelChange)="onClientWorkoutScheduleChange()">
+          <option *ngFor="let option of workoutDurationOptions" [ngValue]="option">
+            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+          </option>
+        </select>
+      </label>
+
+      <div class="client-workout-create-dates">
+        <label class="client-workout-create-field">
+          <span>Start Date <b>*</b></span>
+          <input type="date" [(ngModel)]="clientWorkoutStartDate" (ngModelChange)="onClientWorkoutScheduleChange()" />
+        </label>
+
+        <label class="client-workout-create-field">
+          <span>End Date</span>
+          <input type="date" [value]="clientWorkoutEndDate" disabled />
+        </label>
+      </div>
+
+      <div class="client-workout-duration-chip">
+        <i class="far fa-calendar"></i>
+        <span>{{ clientWorkoutDurationDays }} days</span>
+      </div>
+
+      <p class="client-workout-create-help">
+        End date is automatically calculated from start date and duration.
+      </p>
+
+      <div class="client-workout-create-info">
+        <i class="fas fa-info-circle"></i>
+        <span>This will create a {{ clientWorkoutDurationWeeks }}-week workout program for this client.</span>
+      </div>
+
+      <div class="client-workout-conflict" *ngIf="clientWorkoutConflict">
+        <div class="client-workout-conflict__heading">
+          <span>!</span>
+          <strong>Schedule Conflict Detected</strong>
+        </div>
+
+        <div class="client-workout-conflict__program">
+          {{ getProgramDisplayName(clientWorkoutConflict.program) }}
+          ({{ getProgramDateRange(clientWorkoutConflict.program) }})
+        </div>
+
+        <label class="client-workout-resolution" [class.selected]="clientWorkoutConflict.resolution === 'START_AFTER'">
+          <input
+            type="radio"
+            name="client-workout-conflict-resolution"
+            [checked]="clientWorkoutConflict.resolution === 'START_AFTER'"
+            (change)="setClientWorkoutConflictResolution('START_AFTER')"
+          />
+          <span>
+            <strong>Start after current program</strong>
+            <small>Begin this program after the existing program ends.</small>
+          </span>
+        </label>
+
+        <label class="client-workout-resolution" [class.selected]="clientWorkoutConflict.resolution === 'REPLACE'">
+          <input
+            type="radio"
+            name="client-workout-conflict-resolution"
+            [checked]="clientWorkoutConflict.resolution === 'REPLACE'"
+            (change)="setClientWorkoutConflictResolution('REPLACE')"
+          />
+          <span>
+            <strong>Replace current program</strong>
+            <small>Stop the existing program before the new start date when you create this plan.</small>
+          </span>
+        </label>
+
+        <label class="client-workout-resolution" [class.selected]="clientWorkoutConflict.resolution === 'KEEP_BOTH'">
+          <input
+            type="radio"
+            name="client-workout-conflict-resolution"
+            [checked]="clientWorkoutConflict.resolution === 'KEEP_BOTH'"
+            (change)="setClientWorkoutConflictResolution('KEEP_BOTH')"
+          />
+          <span>
+            <strong>Keep both anyway</strong>
+            <small>Create this program on the overlapping dates.</small>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="client-workout-create-footer">
+      <button type="button" class="client-workout-create-cancel" (click)="closeClientWorkoutCreateModal()">Cancel</button>
+      <button
+        type="button"
+        class="client-workout-create-submit"
+        [disabled]="!canCreateClientWorkoutProgram"
+        (click)="createClientWorkoutProgram()"
+      >
+        Create Program
       </button>
     </div>
   </div>

@@ -23,6 +23,7 @@ import { Exercise } from '@shared/models/exercice.models';
 export class CreateWorkoutComponent implements OnInit {
   isEditMode = false;
   isVisibleToOthers = false;
+  durationWeeks = 4;
   private returnUrl: string | null = null;
   private assignOnly = false;
   activeVideoExerciseId: string | null = null;
@@ -276,6 +277,10 @@ export class CreateWorkoutComponent implements OnInit {
 
   ngOnInit() {
     const planId = this.route.snapshot.paramMap.get('id');
+    const requestedName = (this.route.snapshot.queryParamMap.get('name') || '').trim();
+    const requestedDuration = Number(this.route.snapshot.queryParamMap.get('durationWeeks'));
+    const requestedTemplate = this.route.snapshot.queryParamMap.get('template') === '1';
+    this.durationWeeks = this.normalizeDurationWeeks(requestedDuration || this.durationWeeks);
 
     if (planId) {
       this.isEditMode = true;
@@ -296,14 +301,33 @@ export class CreateWorkoutComponent implements OnInit {
     } else {
       this.isEditMode = false;
       this.facade.initCreate();
-      this.isVisibleToOthers = false;
+      this.facade.setDurationWeeks(this.durationWeeks);
+      this.isVisibleToOthers = requestedTemplate && this.canCreateTemplate;
       this.facade.setPlan({
         ...this.facade.plan,
-        isWorkoutPlanTemplate: false,
+        name: requestedName || this.facade.plan.name,
+        isWorkoutPlanTemplate: this.isVisibleToOthers,
       });
     }
 
     this.facade.loadExercisesFromAPI();
+  }
+
+  get workoutWeeks(): { label: string; days: WorkoutDay[] }[] {
+    const weeks: { label: string; days: WorkoutDay[] }[] = [];
+
+    for (let index = 0; index < this.days.length; index += 7) {
+      weeks.push({
+        label: `WEEK ${Math.floor(index / 7) + 1}`,
+        days: this.days.slice(index, index + 7),
+      });
+    }
+
+    return weeks;
+  }
+
+  private normalizeDurationWeeks(value: number): number {
+    return Math.max(1, Math.min(Number(value) || 4, 52));
   }
 
   trackByDay = (index: number, d: WorkoutDay) => d.id;
@@ -681,6 +705,13 @@ export class CreateWorkoutComponent implements OnInit {
 
   savePlan() {
     this.cleanRestDayWorkoutSessions();
+    this.facade.days.forEach((day, index) => {
+      day.date = undefined;
+      day.dayOfWeek = undefined;
+      day.dayNumber = index + 1;
+      day.title = `Day ${index + 1}`;
+      day.name = day.title;
+    });
     this.facade.syncPlanDays();
 
     const finalTemplateValue = this.assignOnly

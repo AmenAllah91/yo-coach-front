@@ -187,6 +187,40 @@ export class WorkoutPlanFacade {
     this.syncPlanDays();
   }
 
+  setDurationWeeks(weeks: number) {
+    const safeWeeks = Math.max(1, Math.min(Number(weeks) || 1, 52));
+    const totalDays = safeWeeks * 7;
+    const currentDays = [...this.days];
+
+    this.days = Array.from({ length: totalDays }, (_, index) => {
+      const existing = currentDays[index];
+
+      if (existing) {
+        existing.dayNumber = index + 1;
+        existing.title = `Day ${index + 1}`;
+        existing.name = existing.title;
+        return existing;
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        name: `Day ${index + 1}`,
+        isRestDay: false,
+        showDescription: false,
+        title: `Day ${index + 1}`,
+        dayNumber: index + 1,
+        restDay: false,
+        workoutSessions: [],
+        session: null,
+        description: '',
+        status: 'PENDING',
+      };
+    });
+
+    this.selectedDay = this.days.find((day) => day.id === this.selectedDay?.id) || this.days[0] || null;
+    this.syncPlanDays();
+  }
+
   loadPlanForEdit(id: string) {
     return this.workoutService.getWorkoutById(id);
   }

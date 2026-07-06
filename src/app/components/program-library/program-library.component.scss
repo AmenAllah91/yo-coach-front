@@ -1388,6 +1388,151 @@
   .file-preview-modal { width: 100%; }
 }
 
+.workout-create-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.workout-create-modal {
+  width: min(560px, calc(100vw - 48px));
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.workout-create-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 34px 10px;
+}
+
+.workout-create-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.workout-create-close {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.workout-create-body {
+  padding: 14px 34px 24px;
+}
+
+.workout-create-field {
+  display: block;
+  margin-bottom: 22px;
+}
+
+.workout-create-field span {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.workout-create-field b {
+  color: #ef4444;
+}
+
+.workout-create-field input,
+.workout-create-field select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 15px;
+  padding: 0 14px;
+  outline: none;
+}
+
+.workout-create-field input:focus,
+.workout-create-field select:focus {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
+}
+
+.workout-create-copy {
+  margin: -10px 0 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.workout-create-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.workout-create-info i-feather {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.workout-create-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 20px 34px 28px;
+}
+
+.workout-create-cancel,
+.workout-create-submit {
+  min-width: 118px;
+  height: 46px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.workout-create-cancel {
+  border: 1px solid #dbe3ec;
+  background: #fff;
+  color: #0f172a;
+}
+
+.workout-create-submit {
+  border: 0;
+  background: #000;
+  color: #fff;
+}
+
+.workout-create-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 
 .coach-file-workspace {
   display: grid;

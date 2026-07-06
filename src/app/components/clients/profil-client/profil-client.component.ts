@@ -37,6 +37,13 @@ type TabId =
   | 'pictures'
   | 'calendar';
 
+type WorkoutConflictResolution = 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH';
+
+interface ClientWorkoutConflict {
+  program: any;
+  resolution?: WorkoutConflictResolution;
+}
+
 
 
 interface Exercise {
@@ -230,6 +237,12 @@ export class ProfilClientComponent {
   workoutFileEnabled = true;
   nutritionFileEnabled = true;
   showFileWorkoutImportModal = false;
+  showClientWorkoutCreateModal = false;
+  clientWorkoutProgramName = '';
+  clientWorkoutDurationWeeks = 4;
+  clientWorkoutStartDate = new Date().toISOString().slice(0, 10);
+  clientWorkoutConflict: ClientWorkoutConflict | null = null;
+  readonly workoutDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 
   profileImportWorkoutFile: File | null = null;
   profileImportWorkoutName = '';
@@ -1030,13 +1043,122 @@ export class ProfilClientComponent {
 
   createNormalWorkoutFromProfile(): void {
     this.showWorkoutTypeModal = false;
+    this.openClientWorkoutCreateModal();
+  }
+
+  isFileWorkoutPlan(plan: any): boolean {
+    const mode = String(plan?.workoutPlanMode || '').toUpperCase();
+    const type = String(plan?.resourceType || '').toUpperCase();
+
+    return (
+      mode === 'FILE' ||
+      type === 'PDF' ||
+      type === 'EXCEL' ||
+      type === 'XLS' ||
+      type === 'XLSX' ||
+      !!plan?.fileName ||
+      !!plan?.originalFileName ||
+      !!plan?.fileUrl
+    );
+  }
+
+  openClientWorkoutCreateModal(): void {
+    this.clientWorkoutProgramName = '';
+    this.clientWorkoutDurationWeeks = 4;
+    this.clientWorkoutStartDate = new Date().toISOString().slice(0, 10);
+    this.clientWorkoutConflict = null;
+    this.showClientWorkoutCreateModal = true;
+    this.refreshClientWorkoutConflict();
+  }
+
+  closeClientWorkoutCreateModal(): void {
+    this.showClientWorkoutCreateModal = false;
+    this.clientWorkoutConflict = null;
+  }
+
+  get clientWorkoutDurationDays(): number {
+    return this.clientWorkoutDurationWeeks * 7;
+  }
+
+  get clientWorkoutEndDate(): string {
+    return this.addDays(this.clientWorkoutStartDate, this.clientWorkoutDurationDays - 1);
+  }
+
+  get canCreateClientWorkoutProgram(): boolean {
+    return !!this.clientWorkoutProgramName.trim()
+      && !!this.clientWorkoutStartDate
+      && (!this.clientWorkoutConflict || !!this.clientWorkoutConflict.resolution);
+  }
+
+  onClientWorkoutScheduleChange(): void {
+    this.refreshClientWorkoutConflict();
+  }
+
+  setClientWorkoutConflictResolution(resolution: WorkoutConflictResolution): void {
+    if (this.clientWorkoutConflict) {
+      this.clientWorkoutConflict.resolution = resolution;
+    }
+  }
+
+  private refreshClientWorkoutConflict(): void {
+    if (!this.clientWorkoutStartDate || !this.clientWorkoutEndDate) {
+      this.clientWorkoutConflict = null;
+      return;
+    }
+
+    const previous = this.clientWorkoutConflict;
+    const conflictProgram = (this.assignedWorkoutPrograms || []).find((program: any) => {
+      if (!this.workoutFileEnabled && this.isFileWorkoutPlan(program)) {
+        return false;
+      }
+
+      return this.programOverlapsRange(program, this.clientWorkoutStartDate, this.clientWorkoutEndDate);
+    });
+
+    if (!conflictProgram) {
+      this.clientWorkoutConflict = null;
+      return;
+    }
+
+    this.clientWorkoutConflict = {
+      program: conflictProgram,
+      resolution: previous?.program?.id === conflictProgram.id ? previous.resolution : undefined,
+    };
+  }
+
+  private programOverlapsRange(program: any, startDate: string, endDate: string): boolean {
+    if (!program?.startDate || !program?.endDate) return false;
+
+    const existingStart = new Date(`${program.startDate}T00:00:00`).getTime();
+    const existingEnd = new Date(`${program.endDate}T00:00:00`).getTime();
+    const nextStart = new Date(`${startDate}T00:00:00`).getTime();
+    const nextEnd = new Date(`${endDate}T00:00:00`).getTime();
+
+    return existingStart <= nextEnd && nextStart <= existingEnd;
+  }
+
+  createClientWorkoutProgram(): void {
+    const name = this.clientWorkoutProgramName.trim();
+    if (!name || !this.canCreateClientWorkoutProgram) return;
 
     const returnUrl = this.router.url.split('?')[0] + '?tab=workouts';
+    const conflict = this.clientWorkoutConflict;
+    const resolution = conflict?.resolution;
+    const resolvedStartDate = resolution === 'START_AFTER' && conflict?.program?.endDate
+      ? this.addDays(conflict.program.endDate, 1)
+      : this.clientWorkoutStartDate;
 
     this.router.navigate(['clients/create-workout', this.clientId], {
       queryParams: {
         returnUrl,
         assignOnly: 1,
+        name,
+        durationWeeks: this.clientWorkoutDurationWeeks,
+        startDate: resolvedStartDate,
+        endDate: this.addDays(resolvedStartDate, this.clientWorkoutDurationDays - 1),
+        conflictResolution: resolution || '',
+        conflictId: conflict?.program?.id || '',
+        conflictStartDate: conflict?.program?.startDate || '',
       },
     });
   }

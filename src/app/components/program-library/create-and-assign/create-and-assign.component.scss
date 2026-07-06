@@ -71,8 +71,54 @@
   padding: 16px;
   border-bottom: 1px solid var(--np-border);
 }
+.np-aside__sub {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
 .np-aside__body {
   padding: 16px;
+}
+
+.np-week-card {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.np-week-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.np-week-card__head strong {
+  display: block;
+  color: #0ea5e9;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.np-week-card__head small {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.np-week-card__head span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Day list */
@@ -2439,7 +2485,7 @@ input:checked + .slider:before {
 
 @media (min-width: 768px) {
   .program-schedule-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

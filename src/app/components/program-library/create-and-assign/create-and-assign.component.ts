@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Observable, of, switchMap } from 'rxjs';
 
 import { Client, ClientService } from 'app/service/client.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
@@ -35,6 +36,11 @@ export class CreateAndAssignComponent implements OnInit {
   // schedule-specific
   startDate = new Date().toISOString().split('T')[0];
   endDate = '';
+  durationWeeks = 4;
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  private conflictResolution = '';
+  private conflictId = '';
+  private conflictStartDate = '';
 
   constructor(
     public facade: WorkoutPlanFacade,
@@ -146,6 +152,16 @@ export class CreateAndAssignComponent implements OnInit {
   private initializeEditor() {
     const planId = this.route.snapshot.paramMap.get('id');
     const clientId = this.route.snapshot.paramMap.get('idClient');
+    const requestedName = (this.route.snapshot.queryParamMap.get('name') || '').trim();
+    const requestedDuration = Number(this.route.snapshot.queryParamMap.get('durationWeeks'));
+    const requestedStartDate = this.route.snapshot.queryParamMap.get('startDate');
+    this.conflictResolution = this.route.snapshot.queryParamMap.get('conflictResolution') || '';
+    this.conflictId = this.route.snapshot.queryParamMap.get('conflictId') || '';
+    this.conflictStartDate = this.route.snapshot.queryParamMap.get('conflictStartDate') || '';
+    this.durationWeeks = this.normalizeDurationWeeks(requestedDuration || this.durationWeeks);
+    if (requestedStartDate) {
+      this.startDate = requestedStartDate;
+    }
 
     if (planId) {
       this.isEditMode = true;
@@ -158,6 +174,7 @@ export class CreateAndAssignComponent implements OnInit {
               .toISOString()
               .split('T')[0];
           }
+          this.durationWeeks = this.normalizeDurationWeeks(Math.ceil((plan.workoutDays?.length || 28) / 7));
 
           this.updateAllDates();
           this.facade.syncPlanDays();
@@ -170,6 +187,12 @@ export class CreateAndAssignComponent implements OnInit {
     } else {
       this.isEditMode = false;
       this.facade.initCreate();
+      this.facade.setDurationWeeks(this.durationWeeks);
+      this.facade.setPlan({
+        ...this.facade.plan,
+        name: requestedName || this.facade.plan.name,
+        isWorkoutPlanTemplate: false,
+      });
       this.updateAllDates();
     }
 
@@ -183,6 +206,47 @@ export class CreateAndAssignComponent implements OnInit {
     }
 
     this.facade.loadExercisesFromAPI();
+  }
+
+  get workoutWeeks(): { label: string; range: string; days: WorkoutDay[] }[] {
+    const weeks: { label: string; range: string; days: WorkoutDay[] }[] = [];
+
+    for (let index = 0; index < this.days.length; index += 7) {
+      const days = this.days.slice(index, index + 7);
+      weeks.push({
+        label: `WEEK ${Math.floor(index / 7) + 1}`,
+        range: this.getWeekRange(days),
+        days,
+      });
+    }
+
+    return weeks;
+  }
+
+  get durationDays(): number {
+    return this.durationWeeks * 7;
+  }
+
+  private normalizeDurationWeeks(value: number): number {
+    return Math.max(1, Math.min(Number(value) || 4, 52));
+  }
+
+  private getWeekRange(days: WorkoutDay[]): string {
+    const first = days[0]?.date ? this.formatShortDate(days[0].date) : '';
+    const last = days[days.length - 1]?.date ? this.formatShortDate(days[days.length - 1].date) : '';
+
+    if (first && last) return `${first} - ${last}`;
+    return `${days.length} days`;
+  }
+
+  private formatShortDate(value: string): string {
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
   }
 
   private loadLatestAssignedPrograms(clientId: string): void {
@@ -265,6 +329,12 @@ export class CreateAndAssignComponent implements OnInit {
     this.endDate = this.facade.days.length
       ? this.facade.days[this.facade.days.length - 1].date || this.startDate
       : this.startDate;
+  }
+
+  onDurationWeeksChange() {
+    this.durationWeeks = this.normalizeDurationWeeks(this.durationWeeks);
+    this.facade.setDurationWeeks(this.durationWeeks);
+    this.updateAllDates();
   }
 
   // ===== template functions (proxies) =====
@@ -662,6 +732,28 @@ export class CreateAndAssignComponent implements OnInit {
     });
   }
 
+  private resolveConflictBeforeSave(): Observable<unknown> {
+    if (this.conflictResolution !== 'REPLACE' || !this.conflictId || !this.conflictStartDate) {
+      return of(null);
+    }
+
+    const replacementEndDate = this.addDays(this.startDate, -1);
+    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${this.conflictStartDate}T00:00:00`).getTime()) {
+      return this.workoutService.deleteWorkout(this.conflictId);
+    }
+
+    return this.workoutService.updateWorkoutPlanDates(this.conflictId, this.conflictStartDate, replacementEndDate);
+  }
+
+  private addDays(value: string, days: number): string {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + days);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // ===== save (assign-specific) =====
   savePlan() {
     this.cleanRestDayWorkoutSessions();
@@ -674,21 +766,23 @@ export class CreateAndAssignComponent implements OnInit {
 
     this.facade.syncPlanDays();
 
-    if (this.facade.plan.id) {
-      this.facade.updatePlan().subscribe({
-        next: (res) => console.log('Workout plan updated:', res),
-        error: (err) => console.error('Error updating workout plan:', err),
-      });
-    } else {
-      this.facade.createPlan().subscribe({
-        next: (res) => {
+    const save$ = this.resolveConflictBeforeSave().pipe(
+      switchMap(() => this.facade.plan.id ? this.facade.updatePlan() : this.facade.createPlan())
+    );
+
+    save$.subscribe({
+      next: (res) => {
+        if (this.facade.plan.id) {
+          console.log('Workout plan updated:', res);
+        } else {
           console.log('Workout plan created:', res);
           this.facade.initCreate();
           this.startDate = new Date().toISOString().split('T')[0];
           this.updateAllDates();
-        },
-        error: (err) => console.error('Error creating workout plan:', err),
-      });
-    }
+        }
+      },
+      error: (err) => console.error('Error saving workout plan:', err),
+    });
+
   }
 }

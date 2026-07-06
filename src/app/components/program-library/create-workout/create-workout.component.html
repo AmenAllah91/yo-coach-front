@@ -2,7 +2,8 @@
   <div class="np-shell">
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Days</h2>
+        <h2 class="np-h6">Program Structure</h2>
+        <p class="np-aside__sub">{{ workoutWeeks.length }} Weeks • {{ days.length }} Days</p>
       </div>
 
       <div
@@ -11,42 +12,51 @@
         [cdkDropListData]="days"
         (cdkDropListDropped)="onDropDay($event)"
       >
-        <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
-          <div
-            class="np-dayrow"
-            cdkDrag
-            [class.is-active]="selectedDay?.id === d.id"
-          >            <button
-              type="button"
-              class="np-day"
-              [class.is-active]="selectedDay?.id === d.id"
-              (click)="selectDay(d)"
-            >
-              <span>{{ d.title }}</span>
-            </button>
-
-            <button
-              *ngIf="i !== 0"
-              type="button"
-              class="np-iconbtn"
-              title="Delete"
-              aria-label="Delete day"
-              (click)="deleteDay(d, $event)"
-            >
-              <i-feather name="trash-2" class="np-ico"></i-feather>
-            </button>
-
-            <button
-              type="button"
-              class="np-iconbtn np-iconbtn--drag"
-              title="Move day"
-              aria-label="Move day"
-              cdkDragHandle
-            >
-              <i-feather name="menu" class="np-ico"></i-feather>
-            </button>
+        <div class="np-week-card" *ngFor="let week of workoutWeeks">
+          <div class="np-week-card__head">
+            <strong>{{ week.label }}</strong>
+            <span>{{ week.days.length }} days</span>
           </div>
-        </ng-container>
+
+          <ng-container *ngFor="let d of week.days; trackBy: trackByDay; let i = index">
+            <div
+              class="np-dayrow"
+              cdkDrag
+              [class.is-active]="selectedDay?.id === d.id"
+            >
+              <button
+                type="button"
+                class="np-day"
+                [class.is-active]="selectedDay?.id === d.id"
+                (click)="selectDay(d)"
+              >
+                <span class="np-day__title">{{ d.title }}</span>
+                <small class="np-day__meta">{{ d.isRestDay || d.restDay ? 'Rest Day' : 'Empty Day' }}</small>
+              </button>
+
+              <button
+                *ngIf="days.indexOf(d) !== 0"
+                type="button"
+                class="np-iconbtn"
+                title="Delete"
+                aria-label="Delete day"
+                (click)="deleteDay(d, $event)"
+              >
+                <i-feather name="trash-2" class="np-ico"></i-feather>
+              </button>
+
+              <button
+                type="button"
+                class="np-iconbtn np-iconbtn--drag"
+                title="Move day"
+                aria-label="Move day"
+                cdkDragHandle
+              >
+                <i-feather name="menu" class="np-ico"></i-feather>
+              </button>
+            </div>
+          </ng-container>
+        </div>
 
         <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
           <i-feather name="plus" class="np-ico"></i-feather>

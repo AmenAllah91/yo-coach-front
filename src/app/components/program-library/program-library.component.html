@@ -270,7 +270,7 @@
           <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
           <button class="type-action" (click)="createNormalWorkout()">Create Normal Workout</button>
         </div>
-        <div class="workout-type-card" *ngIf="workoutFileEnabled">
+        <div class="workout-type-card">
           <h4>File Workout Plan</h4>
           <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
           <button class="type-action" (click)="openImportFileWorkout()">Import PDF / Excel</button>
@@ -282,7 +282,57 @@
     </div>
   </div>
 
-  <div class="import-workout-overlay" *ngIf="workoutFileEnabled && showImportFileModal" (click)="closeImportFileWorkout()">
+  <div class="workout-create-backdrop" *ngIf="showWorkoutCreateModal" (click)="closeWorkoutCreateModal()">
+    <div class="workout-create-modal" (click)="$event.stopPropagation()">
+      <div class="workout-create-header">
+        <h3>Create Workout Program</h3>
+        <button type="button" class="workout-create-close" (click)="closeWorkoutCreateModal()">×</button>
+      </div>
+
+      <div class="workout-create-body">
+        <label class="workout-create-field">
+          <span>Program Name <b>*</b></span>
+          <input
+            type="text"
+            [(ngModel)]="createWorkoutName"
+            placeholder="e.g. Summer Shred Program"
+          />
+        </label>
+
+        <label class="workout-create-field">
+          <span>Duration <b>*</b></span>
+          <select [(ngModel)]="createWorkoutDurationWeeks">
+            <option *ngFor="let option of workoutDurationOptions" [ngValue]="option">
+              {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+            </option>
+          </select>
+        </label>
+
+        <p class="workout-create-copy">
+          This will create a {{ createWorkoutDurationWeeks }}-week workout template.
+        </p>
+
+        <div class="workout-create-info">
+          <i-feather name="info"></i-feather>
+          <span>Template structure will be organized by weeks.</span>
+        </div>
+      </div>
+
+      <div class="workout-create-footer">
+        <button type="button" class="workout-create-cancel" (click)="closeWorkoutCreateModal()">Cancel</button>
+        <button
+          type="button"
+          class="workout-create-submit"
+          [disabled]="!createWorkoutName.trim()"
+          (click)="submitWorkoutCreateModal()"
+        >
+          Create Program
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="import-workout-overlay" *ngIf="showImportFileModal" (click)="closeImportFileWorkout()">
     <div class="import-workout-modal" (click)="$event.stopPropagation()">
       <div class="import-workout-head">
         <div>
