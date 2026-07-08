@@ -4,7 +4,8 @@
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Nutrition Days</h2>
+        <h2 class="np-h6">Program Structure</h2>
+        <p class="np-aside__sub">{{ nutritionWeeks?.length || 0 }} Weeks • {{ days?.length || 0 }} Days</p>
       </div>
 
       <div
@@ -84,25 +85,12 @@
 
     <!-- ===== Main ===== -->
     <main class="np-main">
-      <div class="np-pagehead">
-        <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </a>
-        <h1 class="np-h5">
-          {{ isEditMode ? "Update Nutrition Plan" : "Create Nutrition Plan" }}
-        </h1>
-      </div>
+      <section class="np-card np-card--settings">
+        <div class="np-settings-kicker">
+          <span class="np-settings-kicker__dot"></span>
+          <span>Global Plan Settings</span>
+        </div>
 
-      <section class="np-card">
         <!-- Plan Title -->
         <div class="np-field">
           <label class="np-label"
@@ -259,6 +247,23 @@
 
         <div class="np-sep"></div>
 
+        <div class="np-mobile-days">
+          <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+            <button
+              type="button"
+              class="np-mobile-day"
+              [class.is-active]="selectedDay?.id === d.id"
+              (click)="selectDay(d)"
+            >
+              <span class="np-mobile-day__title">{{ d.title || d.dayOfWeek || ('Day ' + (i + 1)) }}</span>
+            </button>
+          </ng-container>
+          <button type="button" class="np-mobile-add" (click)="addDay()" aria-label="Add day">
+            <i-feather name="plus" class="np-ico"></i-feather>
+          </button>
+        </div>
+
+
         <!-- Day Header -->
         <div class="np-dayhead">
           <h3 class="np-h6">{{ selectedDay?.dayOfWeek }}</h3>
@@ -272,18 +277,18 @@
           <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Day Description
+              Add Nutrition Description
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Day Description</label>
+              <label class="np-label">Nutrition Description</label>
               <div class="np-textareaWrap">
                 <textarea
                   class="np-input np-textarea"
                   rows="5"
-                  placeholder="Enter Day Description"
+                  placeholder="Enter Nutrition Description"
                   [(ngModel)]="selectedDay!.description"
                 ></textarea>
                 <button

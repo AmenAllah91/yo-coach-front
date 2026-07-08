@@ -39,6 +39,12 @@ export class CreateFullPlanComponent implements OnInit {
   selectedDay: MealDay | null = null;
 
   showPlanDescription = false;
+  durationWeeks = 4;
+  private scheduleStartDate = '';
+  private scheduleEndDate = '';
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  pendingDurationWeeks: number | null = null;
+  pendingDurationRemovedDays = 0;
 
   trackByDay = (_: number, d: MealDay) => d.id;
   trackByMeal = (_: number, m: Meal) => m.id;
@@ -166,12 +172,45 @@ export class CreateFullPlanComponent implements OnInit {
 
   ngOnInit() {
     this.planId = this.route.snapshot.paramMap.get('id');
+    this.durationWeeks = this.normalizeDurationWeeks(
+      Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || this.durationWeeks
+    );
+    this.planName = this.route.snapshot.queryParamMap.get('name') || '';
+    this.scheduleStartDate = this.route.snapshot.queryParamMap.get('startDate') || '';
+    this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
 
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
     } else {
+      this.createInitialDays();
+    }
+  }
+
+  private normalizeDurationWeeks(value: number): number {
+    return Math.max(1, Math.min(Number(value) || 4, 52));
+  }
+
+  private createInitialDays(): void {
+    const totalDays = this.durationWeeks * 7;
+    for (let index = 0; index < totalDays; index++) {
       this.addDay();
     }
+    this.selectedDay = this.days[0] || null;
+  }
+
+  get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
+    const weeks: Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> = [];
+
+    this.days.forEach((day, index) => {
+      const weekIndex = Math.floor(index / 7);
+      if (!weeks[weekIndex]) {
+        weeks[weekIndex] = { weekNumber: weekIndex + 1, days: [] };
+      }
+
+      weeks[weekIndex].days.push({ day, index });
+    });
+
+    return weeks;
   }
 
   loadPlanForEdit(id: string) {
@@ -185,6 +224,9 @@ export class CreateFullPlanComponent implements OnInit {
           ? Boolean((plan as any).isMealPlanTemplate)
           : false;
         this.days = plan.mealDays || [];
+        this.durationWeeks = this.normalizeDurationWeeks(
+          Math.ceil((this.days.length || 28) / 7)
+        );
         this.selectedDay = this.days[0] || null;
 
         this.recalcAllDays();
@@ -252,10 +294,56 @@ export class CreateFullPlanComponent implements OnInit {
 
   addDay() {
     const newDay = this.makeEmptyDay();
+    newDay.dayOfWeek = `Day ${this.days.length + 1}`;
     this.days.push(newDay);
     this.selectedDay = newDay;
     this.mealPlan.mealDays = this.days;
     this.recalcDayTargets(newDay);
+  }
+
+  onDurationWeeksChange(value: number) {
+    const nextWeeks = this.normalizeDurationWeeks(value);
+    const currentWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 1) / 7));
+    const targetDays = nextWeeks * 7;
+    const selectedId = this.selectedDay?.id;
+
+    if (targetDays < this.days.length) {
+      this.pendingDurationWeeks = nextWeeks;
+      this.pendingDurationRemovedDays = this.days.length - targetDays;
+      this.durationWeeks = currentWeeks;
+      return;
+    } else {
+      while (this.days.length < targetDays) {
+        this.addDay();
+      }
+    }
+
+    this.durationWeeks = nextWeeks;
+    this.days.forEach((day, index) => (day.dayOfWeek = `Day ${index + 1}`));
+    this.selectedDay = this.days.find((day) => day.id === selectedId) || this.days[0] || null;
+    this.mealPlan.mealDays = this.days;
+    this.recalcAllDays();
+  }
+
+  confirmDurationReduction() {
+    if (!this.pendingDurationWeeks) return;
+    const nextWeeks = this.pendingDurationWeeks;
+    const targetDays = nextWeeks * 7;
+    const selectedId = this.selectedDay?.id;
+
+    this.days = this.days.slice(0, targetDays);
+    this.durationWeeks = nextWeeks;
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
+    this.days.forEach((day, index) => (day.dayOfWeek = `Day ${index + 1}`));
+    this.selectedDay = this.days.find((day) => day.id === selectedId) || this.days[0] || null;
+    this.mealPlan.mealDays = this.days;
+    this.recalcAllDays();
+  }
+
+  cancelDurationReduction() {
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
   }
 
   selectDay(day: MealDay) {
@@ -613,6 +701,8 @@ export class CreateFullPlanComponent implements OnInit {
     this.mealPlan.details = this.planDescription;
     this.mealPlan.mealDays = this.days;
     this.mealPlan.coach = { id: this.userId };
+    this.mealPlan.startDate = this.scheduleStartDate;
+    this.mealPlan.endDate = this.scheduleEndDate;
     (this.mealPlan as any).isMealPlanTemplate = this.canCreateTemplate
       ? Boolean(this.isMealPlanTemplate)
       : false;

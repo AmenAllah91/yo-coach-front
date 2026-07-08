@@ -3752,7 +3752,7 @@
 }
 
 .client-workout-create-modal {
-  width: min(760px, calc(100vw - 48px));
+  width: min(740px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow: auto;
   background: #fff;
@@ -3832,9 +3832,13 @@
 }
 
 .client-workout-create-field input:disabled {
-  background: #f8fafc;
+  background: #f1f5f9;
   color: #64748b;
   cursor: not-allowed;
+}
+
+.client-workout-create-field select {
+  appearance: auto;
 }
 
 .client-workout-create-dates {

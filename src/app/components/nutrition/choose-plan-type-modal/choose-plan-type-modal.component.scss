@@ -329,6 +329,86 @@
   }
 }
 
+.choose-modal .nutrition-duration-field {
+  display: block !important;
+  margin-bottom: 12px !important;
+}
+
+.choose-modal .nutrition-duration-field span {
+  display: block !important;
+  margin-bottom: 8px !important;
+  color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+.choose-modal .nutrition-duration-field b {
+  color: #ef4444 !important;
+}
+
+.choose-modal .nutrition-duration-field input,
+.choose-modal .nutrition-duration-field select {
+  width: 100% !important;
+  height: 50px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-size: 15px !important;
+  padding: 0 14px !important;
+  outline: none !important;
+}
+
+.choose-modal .nutrition-duration-field select:focus {
+  border-color: #44b4df !important;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12) !important;
+}
+
+.choose-modal .nutrition-duration-field input:focus {
+  border-color: #44b4df !important;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12) !important;
+}
+
+.choose-modal .nutrition-duration-submit:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+.choose-modal .nutrition-duration-copy {
+  margin: 0 0 16px !important;
+  color: #64748b !important;
+  font-size: 14px !important;
+}
+
+.choose-modal .nutrition-duration-info {
+  min-height: 54px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0 18px !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 8px !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  font-size: 14px !important;
+}
+
+.choose-modal .nutrition-duration-info i-feather {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 auto !important;
+}
+
+.choose-modal .nutrition-duration-submit {
+  min-width: 132px !important;
+  min-height: 42px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: #000 !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+}
+
 
 
 /* =========================================================

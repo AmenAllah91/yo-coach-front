@@ -10,13 +10,24 @@
       </div>
 
       <button type="button" (click)="close()" class="assign-modal-close">
-        ✕
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
 
     <!-- Search -->
     <div class="select-program-search">
       <div class="select-search-input">
+        <i class="fas fa-search"></i>
         <input
           type="text"
           placeholder="Search nutrition programs..."
@@ -45,6 +56,10 @@
               ></span>
             </div>
 
+            <div class="select-program-type-icon" [class.select-program-type-icon--file]="isFileProgram(program)" [class.select-program-type-icon--app]="!isFileProgram(program)">
+              <i class="fas" [ngClass]="isFileProgram(program) ? 'fa-file-alt' : 'fa-utensils'"></i>
+            </div>
+
             <div class="select-program-text">
               <div class="select-program-title-row">
                 <span class="select-program-name">
@@ -52,10 +67,10 @@
                 </span>
 
                 <span
-                  class="select-program-type"
-                  [class.select-program-type--app]="!isFileProgram(program)"
-                  [class.select-program-type--pdf]="isFileProgram(program) && getFileKind(program) === 'PDF'"
-                  [class.select-program-type--excel]="isFileProgram(program) && getFileKind(program) === 'EXCEL'"
+                  class="mini-type-pill"
+                  [class.mini-type-pill--app]="!isFileProgram(program)"
+                  [class.mini-type-pill--file]="isFileProgram(program) && getFileKind(program) === 'PDF'"
+                  [class.mini-type-pill--file]="isFileProgram(program) && getFileKind(program) === 'EXCEL'"
                 >
                   {{ getProgramTypeLabel(program) }}
                 </span>

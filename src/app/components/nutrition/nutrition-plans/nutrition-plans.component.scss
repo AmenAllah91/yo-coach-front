@@ -895,6 +895,32 @@
   font-size: 12px !important;
 }
 
+.program-week-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-top: 7px !important;
+}
+
+.program-week-meta span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-height: 24px !important;
+  padding: 0 8px !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 999px !important;
+  background: #f0f9ff !important;
+  color: #0369a1 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.program-week-meta i-feather {
+  width: 13px !important;
+  height: 13px !important;
+}
+
 .type-badge {
   display: inline-flex !important;
   align-items: center !important;

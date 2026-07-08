@@ -81,6 +81,16 @@
               <div class="program-copy">
                 <div class="program-name">{{ plan.name || 'Unnamed Nutrition Plan' }}</div>
                 <div class="program-meta">{{ getProgramDescription(plan) }}</div>
+                <div class="program-week-meta" *ngIf="!isFilePlan(plan)">
+                  <span *ngIf="getPlanTotalWeeks(plan) > 0">
+                    <i-feather name="clock"></i-feather>
+                    {{ getPlanTotalWeeks(plan) }} {{ getPlanTotalWeeks(plan) === 1 ? 'week' : 'weeks' }}
+                  </span>
+                  <span>
+                    <i-feather name="calendar"></i-feather>
+                    {{ getProgramDurationDays(plan) }} days
+                  </span>
+                </div>
               </div>
             </div>
           </div>

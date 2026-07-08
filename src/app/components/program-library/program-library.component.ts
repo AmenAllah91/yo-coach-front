@@ -619,12 +619,7 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   createProgram() {
-    if (!this.workoutFileEnabled) {
-      this.createNormalWorkout();
-      return;
-    }
-
-    this.showCreateTypeModal = true;
+    this.openWorkoutCreateModal();
   }
 
   closeCreateTypeModal() {

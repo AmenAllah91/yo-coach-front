@@ -4,7 +4,8 @@
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Nutrition Days</h2>
+        <h2 class="np-h6">Program Structure</h2>
+        <p class="np-aside__sub">{{ nutritionWeeks?.length || 0 }} Weeks • {{ days?.length || 0 }} Days</p>
       </div>
 
       <div
@@ -13,50 +14,42 @@
         [cdkDropListData]="days"
         (cdkDropListDropped)="onDropDay($event)"
       >
-        <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+        <div class="np-week-card" *ngFor="let week of nutritionWeeks">
+          <div class="np-week-card__head">
+            <div>
+              <strong>WEEK {{ week.weekNumber }}</strong>
+              <small>{{ week.days[0].index + 1 }} - {{ week.days[week.days.length - 1].index + 1 }} days</small>
+            </div>
+            <span class="np-week-card__count">{{ week.days.length }} days</span>
+          </div>
+
           <div
             class="np-dayrow"
+            *ngFor="let item of week.days"
             cdkDrag
-            [class.is-active]="selectedDay?.id === d.id"
+            [class.is-active]="selectedDay?.id === item.day.id"
           >
             <button
               type="button"
               class="np-day"
-              [class.is-active]="selectedDay?.id === d.id"
-              (click)="selectDay(d)"
+              [class.is-active]="selectedDay?.id === item.day.id"
+              (click)="selectDay(item.day)"
             >
-              <span class="np-day__title">{{ d.title }}</span>
-              <small class="np-day__meta">
-                <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
-                <span class="np-day__dot">&bull;</span>
-                <span class="np-day__date">{{
-                  d.date | date : "MMM d, yyyy"
-                }}</span>
-              </small>
-            </button>
-
-            <button
-              *ngIf="i !== 0"
-              type="button"
-              class="np-iconbtn"
-              title="Delete"
-              aria-label="Delete day"
-              (click)="deleteDay(d, $event)"
-            >
-              <i-feather name="trash-2" class="np-ico"></i-feather>
+              <span class="np-day__title">{{ item.day.title || item.day.dayOfWeek || ('Day ' + (item.index + 1)) }}</span>
+              <small class="np-day__meta">{{ (item.day.meals?.length || 0) > 0 ? ((item.day.meals?.length || 0) + ' meals') : 'Empty Day' }}</small>
             </button>
 
             <button
               type="button"
-              class="np-iconbtn np-iconbtn--drag"
-              title="Move day"
-              aria-label="Move day"
-              cdkDragHandle
+              class="np-iconbtn np-iconbtn--add"
+              title="Select day"
+              aria-label="Select day"
+              (click)="selectDay(item.day); $event.stopPropagation()"
             >
-              <i-feather name="menu" class="np-ico"></i-feather>
+              <i-feather name="plus" class="np-ico"></i-feather>
             </button>
           </div>
-        </ng-container>
+        </div>
         <!-- Add Day -->
         <button
           class="np-btn np-btn--dash np-btn--ghost np-btn--full"
@@ -79,26 +72,12 @@
     <!-- ===== Main ===== -->
     <main class="np-main">
       <!-- Page title -->
-      <div class="np-pagehead">
-        <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </a>
-        <h1 class="np-h5">
-          {{ planId ? "Edit Nutrition Plan" : "Create Nutrition Plan" }}
-        </h1>
-      </div>
+      <section class="np-card np-card--settings">
+        <div class="np-settings-kicker">
+          <span class="np-settings-kicker__dot"></span>
+          <span>Global Plan Settings</span>
+        </div>
 
-      <!-- Main Card -->
-      <section class="np-card">
         <!-- Plan Title -->
         <div class="np-field">
           <label class="np-label"
@@ -260,6 +239,23 @@
         <!-- Day Header -->
         <div class="np-sep"></div>
 
+        <div class="np-mobile-days">
+          <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+            <button
+              type="button"
+              class="np-mobile-day"
+              [class.is-active]="selectedDay?.id === d.id"
+              (click)="selectDay(d)"
+            >
+              <span class="np-mobile-day__title">{{ d.title || d.dayOfWeek || ('Day ' + (i + 1)) }}</span>
+            </button>
+          </ng-container>
+          <button type="button" class="np-mobile-add" (click)="addDay()" aria-label="Add day">
+            <i-feather name="plus" class="np-ico"></i-feather>
+          </button>
+        </div>
+
+
         <div class="np-dayhead">
           <h3 class="np-h6">{{ getSelectedDayLabel() }}</h3>
           <button class="np-mini" (click)="toggleDayDescription()">
@@ -267,7 +263,7 @@
           </button>
         </div>
 
-        <!-- Day Description -->
+        <!-- Nutrition Description -->
         <ng-container *ngIf="selectedDay">
           <ng-container
             *ngIf="
@@ -277,18 +273,18 @@
           >
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Day Description
+              Add Nutrition Description
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Day Description</label>
+              <label class="np-label">Nutrition Description</label>
               <div class="np-textareaWrap">
                 <textarea
                   class="np-input np-textarea"
                   rows="5"
-                  placeholder="Enter Day Description"
+                  placeholder="Enter Nutrition Description"
                   [(ngModel)]="selectedDay.description"
                 ></textarea>
 

@@ -44,6 +44,20 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   userid = sessionStorage.getItem('userId');
   trackByDay = (_: number, d: MealDay) => d.id;
 
+  get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
+    const weeks: Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> = [];
+
+    this.days.forEach((day, index) => {
+      const weekIndex = Math.floor(index / 7);
+      if (!weeks[weekIndex]) {
+        weeks[weekIndex] = { weekNumber: weekIndex + 1, days: [] };
+      }
+      weeks[weekIndex].days.push({ day, index });
+    });
+
+    return weeks;
+  }
+
   constructor(
     private route: ActivatedRoute,
     private nutritionService: NutritionService,

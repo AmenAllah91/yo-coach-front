@@ -34,6 +34,12 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
   showDayDescription = false;
   viewMode: 'total' | 'meals' = 'total';
   showModeModal = true;
+  durationWeeks = 4;
+  private scheduleStartDate = '';
+  private scheduleEndDate = '';
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  pendingDurationWeeks: number | null = null;
+  pendingDurationRemovedDays = 0;
 
   isEditMode = false;
   userid = sessionStorage.getItem('userId');
@@ -160,16 +166,25 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
   ngOnInit() {
     const planId = this.route.snapshot.paramMap.get('id');
     const type = this.route.snapshot.queryParamMap.get('type');
+    this.durationWeeks = this.normalizeDurationWeeks(
+      Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || this.durationWeeks
+    );
+    this.planName = this.route.snapshot.queryParamMap.get('name') || '';
+    this.scheduleStartDate = this.route.snapshot.queryParamMap.get('startDate') || '';
+    this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
     this.isEditMode = !!planId;
 
     if (planId) {
       this.nutritionService.getNutritionPlanById(planId).subscribe((plan) => {
         this.planName = plan.name;
         this.planDescription = plan.details;
-        this.isMealPlanTemplate = this.canCreateTemplate
-          ? Boolean((plan as any).isMealPlanTemplate)
-          : false;
-        this.days = plan.mealDays;
+      this.isMealPlanTemplate = this.canCreateTemplate
+        ? Boolean((plan as any).isMealPlanTemplate)
+        : false;
+      this.days = plan.mealDays;
+      this.durationWeeks = this.normalizeDurationWeeks(
+        Math.ceil((this.days.length || 28) / 7)
+      );
 
         // Recalcul calories si nécessaire
         this.days.forEach((d) => this.updateCaloriesForDay(d));
@@ -184,11 +199,38 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     } else if (type === 'total' || type === 'each') {
       this.showModeModal = false;
       this.viewMode = type === 'total' ? 'total' : 'meals';
-      this.addDay();
+      this.createInitialDays();
     } else {
       this.showModeModal = true;
+      this.createInitialDays();
+    }
+  }
+
+  private normalizeDurationWeeks(value: number): number {
+    return Math.max(1, Math.min(Number(value) || 4, 52));
+  }
+
+  private createInitialDays(): void {
+    const totalDays = this.durationWeeks * 7;
+    for (let index = 0; index < totalDays; index++) {
       this.addDay();
     }
+    this.selectedDay = this.days[0] || null;
+  }
+
+  get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
+    const weeks: Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> = [];
+
+    this.days.forEach((day, index) => {
+      const weekIndex = Math.floor(index / 7);
+      if (!weeks[weekIndex]) {
+        weeks[weekIndex] = { weekNumber: weekIndex + 1, days: [] };
+      }
+
+      weeks[weekIndex].days.push({ day, index });
+    });
+
+    return weeks;
   }
 
   /* ----------------------------------------------
@@ -233,11 +275,60 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     (newDay as any).showDescription = false;
 
 
-    this.days.push(newDay);
-    this.selectedDay = newDay;
+  this.days.push(newDay);
+  this.selectedDay = newDay;
+}
+
+onDurationWeeksChange(value: number) {
+  const nextWeeks = this.normalizeDurationWeeks(value);
+  const currentWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 1) / 7));
+  const targetDays = nextWeeks * 7;
+  const selectedId = this.selectedDay?.id;
+
+  if (targetDays < this.days.length) {
+    this.pendingDurationWeeks = nextWeeks;
+    this.pendingDurationRemovedDays = this.days.length - targetDays;
+    this.durationWeeks = currentWeeks;
+    return;
+  } else {
+    while (this.days.length < targetDays) {
+      this.addDay();
+    }
   }
 
-  selectDay(day: MealDay) {
+  this.durationWeeks = nextWeeks;
+  this.days.forEach((day, index) => {
+    (day as any).name = `Day ${index + 1}`;
+    day.dayOfWeek = `Day ${index + 1}`;
+    this.updateCaloriesForDay(day);
+  });
+  this.selectedDay = this.days.find((day) => day.id === selectedId) || this.days[0] || null;
+}
+
+confirmDurationReduction() {
+  if (!this.pendingDurationWeeks) return;
+  const nextWeeks = this.pendingDurationWeeks;
+  const targetDays = nextWeeks * 7;
+  const selectedId = this.selectedDay?.id;
+
+  this.days = this.days.slice(0, targetDays);
+  this.durationWeeks = nextWeeks;
+  this.pendingDurationWeeks = null;
+  this.pendingDurationRemovedDays = 0;
+  this.days.forEach((day, index) => {
+    (day as any).name = `Day ${index + 1}`;
+    day.dayOfWeek = `Day ${index + 1}`;
+    this.updateCaloriesForDay(day);
+  });
+  this.selectedDay = this.days.find((day) => day.id === selectedId) || this.days[0] || null;
+}
+
+cancelDurationReduction() {
+  this.pendingDurationWeeks = null;
+  this.pendingDurationRemovedDays = 0;
+}
+
+selectDay(day: MealDay) {
     this.selectedDay = day;
   }
 
@@ -327,8 +418,8 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       details: this.planDescription,
       mealDays: this.days,
       trackingMode: 'TOTAL_FOR_DAY',
-      startDate: '',
-      endDate: '',
+      startDate: this.scheduleStartDate,
+      endDate: this.scheduleEndDate,
       coach: { id: this.userid },
       client: undefined,
       isMealPlanTemplate: this.canCreateTemplate ? Boolean(this.isMealPlanTemplate) : false,

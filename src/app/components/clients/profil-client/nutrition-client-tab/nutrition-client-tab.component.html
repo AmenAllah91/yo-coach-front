@@ -129,19 +129,32 @@
         <div class="program-meta">
           <span *ngIf="plan.startDate || plan.endDate">
             <i class="far fa-calendar-alt me-1"></i>
-            {{ plan.startDate | date : "MMM dd, y" }}
-            <ng-container *ngIf="plan.endDate"> - {{ plan.endDate | date : "MMM dd, y" }}</ng-container>
+            {{ formatPlanDate(plan.startDate) }}
+            <ng-container *ngIf="getDisplayEndDate(plan)"> - {{ formatPlanDate(getDisplayEndDate(plan)) }}</ng-container>
           </span>
 
-          <span *ngIf="isFilePlan(plan) && plan.fileUploadedAt">
-            <i class="far fa-calendar-alt me-1"></i>
-            Uploaded {{ plan.fileUploadedAt | date : "MMM dd, y" }}
-          </span>
+          <ng-container *ngIf="!isFilePlan(plan)">
+            <span *ngIf="getPlanTotalWeeks(plan) > 0">
+              <i class="far fa-clock me-1"></i>
+              {{ getPlanTotalWeeks(plan) }} {{ getPlanTotalWeeks(plan) === 1 ? 'week' : 'weeks' }}
+            </span>
+            <span *ngIf="getCurrentWeekNumber(plan) > 0" class="program-meta-highlight">
+              <i class="far fa-dot-circle me-1"></i>
+              Week {{ getCurrentWeekNumber(plan) }}
+            </span>
+          </ng-container>
 
-          <span *ngIf="isFilePlan(plan) && plan.fileSizeBytes">
-            <i class="far fa-file-alt me-1"></i>
-            {{ formatFileSize(plan.fileSizeBytes) }}
-          </span>
+          <ng-container *ngIf="isFilePlan(plan)">
+            <span *ngIf="plan.fileUploadedAt">
+              <i class="far fa-calendar-alt me-1"></i>
+              Uploaded {{ plan.fileUploadedAt | date : "MMM dd, y" }}
+            </span>
+
+            <span *ngIf="plan.fileSizeBytes">
+              <i class="far fa-file-alt me-1"></i>
+              {{ formatFileSize(plan.fileSizeBytes) }}
+            </span>
+          </ng-container>
         </div>
 
       </div>

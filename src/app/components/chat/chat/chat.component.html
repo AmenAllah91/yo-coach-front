@@ -73,6 +73,32 @@
     </ng-container>
 
     <ng-container *ngIf="selectedConv">
+      <div class="chat-embedded-toolbar" *ngIf="embeddedMode">
+        <div class="chat-embedded-toolbar__sub">
+          {{ currentAutoSequences.length || 'No' }} auto message sequence{{ currentAutoSequences.length === 1 ? '' : 's' }}
+        </div>
+
+        <div class="chat-embedded-toolbar__actions">
+          <button
+            class="chat-auto-btn"
+            type="button"
+            (click)="openAutoMessageModal()"
+            aria-label="Auto message"
+          >
+            <i-feather name="clock"></i-feather>
+            <span>Auto message</span>
+          </button>
+
+          <button
+            class="chat-auto-strip__manage"
+            type="button"
+            (click)="openManageAutoMessages()"
+          >
+            Manage
+          </button>
+        </div>
+      </div>
+
       <div class="chat-header" *ngIf="!embeddedMode">
         <button *ngIf="isMobile" class="chat-icon-btn" type="button" (click)="backToList()">
           <i-feather name="arrow-left"></i-feather>

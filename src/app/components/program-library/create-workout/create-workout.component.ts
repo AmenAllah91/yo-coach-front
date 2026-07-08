@@ -24,6 +24,9 @@ export class CreateWorkoutComponent implements OnInit {
   isEditMode = false;
   isVisibleToOthers = false;
   durationWeeks = 4;
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  pendingDurationWeeks: number | null = null;
+  pendingDurationRemovedDays = 0;
   private returnUrl: string | null = null;
   private assignOnly = false;
   activeVideoExerciseId: string | null = null;
@@ -57,6 +60,27 @@ export class CreateWorkoutComponent implements OnInit {
 
   set selectedDay(v: WorkoutDay | null) {
     this.facade.selectedDay = v;
+  }
+
+  get selectedWorkoutSession(): WorkoutSession | null {
+    if (!this.selectedDay || this.selectedDay.isRestDay || this.selectedDay.restDay) {
+      return null;
+    }
+
+    if (!this.selectedDay.workoutSessions?.length) {
+      const session: WorkoutSession = {
+        name: '',
+        exercises: [],
+        totalSets: 0,
+        totalReps: 0,
+        totalDurationMin: 0,
+      };
+
+      this.selectedDay.workoutSessions = [session];
+      this.selectedDay.session = session;
+    }
+
+    return this.selectedDay.workoutSessions[0];
   }
 
   get showPlanDescription(): boolean {
@@ -294,6 +318,9 @@ export class CreateWorkoutComponent implements OnInit {
             ...this.facade.plan,
             isWorkoutPlanTemplate: this.isVisibleToOthers,
           });
+          this.durationWeeks = this.normalizeDurationWeeks(
+            Math.ceil((this.days.length || 28) / 7)
+          );
         },
         error: (err) =>
           console.error('Erreur lors du chargement du plan :', err),
@@ -326,8 +353,60 @@ export class CreateWorkoutComponent implements OnInit {
     return weeks;
   }
 
+  getWeekWorkoutCount(days: WorkoutDay[]): number {
+    return days.filter((day) =>
+      (day.workoutSessions || []).some((session) => (session.exercises || []).length > 0)
+    ).length;
+  }
+
+  getSelectedDayDateLabel(): string {
+    if (!this.selectedDay?.date) return '';
+
+    const date = new Date(`${this.selectedDay.date}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
   private normalizeDurationWeeks(value: number): number {
     return Math.max(1, Math.min(Number(value) || 4, 52));
+  }
+
+  onDurationWeeksChange(value: number) {
+    const nextWeeks = this.normalizeDurationWeeks(value);
+    const currentWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 1) / 7));
+
+    if (nextWeeks < currentWeeks) {
+      this.pendingDurationWeeks = nextWeeks;
+      this.pendingDurationRemovedDays = this.days.length - nextWeeks * 7;
+      this.durationWeeks = currentWeeks;
+      return;
+    }
+
+    this.applyDurationWeeks(nextWeeks);
+  }
+
+  confirmDurationReduction() {
+    if (!this.pendingDurationWeeks) return;
+    const nextWeeks = this.pendingDurationWeeks;
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
+    this.applyDurationWeeks(nextWeeks);
+  }
+
+  cancelDurationReduction() {
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
+  }
+
+  private applyDurationWeeks(weeks: number) {
+    this.durationWeeks = this.normalizeDurationWeeks(weeks);
+    this.facade.setDurationWeeks(this.durationWeeks);
   }
 
   trackByDay = (index: number, d: WorkoutDay) => d.id;

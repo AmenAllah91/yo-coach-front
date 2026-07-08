@@ -14,8 +14,11 @@
       >
         <div class="np-week-card" *ngFor="let week of workoutWeeks">
           <div class="np-week-card__head">
-            <strong>{{ week.label }}</strong>
-            <span>{{ week.days.length }} days</span>
+            <div>
+              <strong>{{ week.label }}</strong>
+              <small>{{ week.days.length }} days</small>
+            </div>
+            <span class="np-week-card__count">{{ getWeekWorkoutCount(week.days) }} workouts</span>
           </div>
 
           <ng-container *ngFor="let d of week.days; trackBy: trackByDay; let i = index">
@@ -35,24 +38,13 @@
               </button>
 
               <button
-                *ngIf="days.indexOf(d) !== 0"
                 type="button"
-                class="np-iconbtn"
-                title="Delete"
-                aria-label="Delete day"
-                (click)="deleteDay(d, $event)"
+                class="np-iconbtn np-iconbtn--add"
+                title="Add workout"
+                aria-label="Add workout to day"
+                (click)="selectDay(d); $event.stopPropagation()"
               >
-                <i-feather name="trash-2" class="np-ico"></i-feather>
-              </button>
-
-              <button
-                type="button"
-                class="np-iconbtn np-iconbtn--drag"
-                title="Move day"
-                aria-label="Move day"
-                cdkDragHandle
-              >
-                <i-feather name="menu" class="np-ico"></i-feather>
+                <i-feather name="plus" class="np-ico"></i-feather>
               </button>
             </div>
           </ng-container>
@@ -92,7 +84,12 @@
         </h1>
       </div>
 
-      <section class="np-card">
+      <section class="np-card np-card--settings">
+        <div class="np-settings-kicker">
+          <span class="np-settings-kicker__dot"></span>
+          <span>Global Plan Settings</span>
+        </div>
+
         <div class="np-field">
           <label class="np-label">Plan Title <span class="np-danger">*</span></label>
           <input
@@ -133,6 +130,20 @@
             </div>
           </div>
         </ng-template>
+
+        <div class="np-field">
+          <label class="np-label">Duration (Weeks) <span class="np-danger">*</span></label>
+          <select
+            class="np-input"
+            [ngModel]="durationWeeks"
+            (ngModelChange)="onDurationWeeksChange($event)"
+            name="durationWeeks"
+          >
+            <option *ngFor="let option of durationOptions" [ngValue]="option">
+              {{ option }} {{ option === 1 ? "Week" : "Weeks" }} ({{ option * 7 }} Days)
+            </option>
+          </select>
+        </div>
 
         <div class="np-field np-template-visibility" *ngIf="canCreateTemplate">
           <label class="np-checkline">
@@ -211,43 +222,45 @@
             <i-feather name="plus" class="np-ico"></i-feather>
           </button>
         </div>
-        <div class="np-dayhead">
-          <h3 class="np-h6">{{ selectedDay?.title }}</h3>
-
-          <button class="np-mini" (click)="toggleDayDescription()">
-            <i-feather name="edit-2" class="np-ico"></i-feather>
-          </button>
-        </div>
-
-        <div class="wk-rest mb-6" *ngIf="selectedDay">
-          <div class="wk-rest__row">
-            <div class="wk-rest__left">
-              <div class="wk-icon" [class.wk-icon--on]="selectedDay.isRestDay">
-                <svg class="wk-icon__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
-                  />
-                </svg>
-              </div>
-
-              <div>
-                <h3 class="wk-rest__title">Rest Day</h3>
-                <p class="wk-rest__subtitle">Mark this day as a rest day</p>
-              </div>
+        <div class="builder-rail">
+        <div class="wk-day-editor" *ngIf="selectedDay">
+          <div class="wk-day-editor__head">
+            <div class="wk-day-editor__titleline">
+              <h3 class="wk-day-editor__title">{{ selectedDay.title }}</h3>
+              <span class="wk-day-editor__dot" *ngIf="getSelectedDayDateLabel()"></span>
+              <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel()">
+                {{ getSelectedDayDateLabel() }}
+              </span>
             </div>
 
-            <button
-              type="button"
-              class="wk-switch"
-              [class.is-on]="selectedDay.isRestDay"
-              (click)="toggleRestDay()"
-            >
-              <span class="wk-switch__knob"></span>
-            </button>
+            <div class="wk-day-editor__actions">
+              <button
+                type="button"
+                class="wk-restmark"
+                [class.is-active]="selectedDay.isRestDay"
+                (click)="toggleRestDay()"
+              >
+                <i-feather name="flag" class="wk-restmark__icon"></i-feather>
+                {{ selectedDay.isRestDay ? "Rest day" : "Set as rest" }}
+              </button>
+
+              <button type="button" class="wk-kebab" aria-label="Day options">
+                <i-feather name="more-vertical" class="wk-kebab__icon"></i-feather>
+              </button>
+            </div>
           </div>
+
+          <ng-container *ngIf="!selectedDay.isRestDay && selectedWorkoutSession as session">
+            <div class="np-field wk-workout-name">
+              <label class="np-label">Workout Name <span class="np-danger">*</span></label>
+              <input
+                class="np-input"
+                type="text"
+                [(ngModel)]="session.name"
+                placeholder="Workout name"
+              />
+            </div>
+          </ng-container>
         </div>
 
         <div *ngIf="selectedDay?.isRestDay" class="wk-restbox">
@@ -293,13 +306,13 @@
           <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Day Description
+              Add Workout Description
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Day Description</label>
+              <label class="np-label">Workout Description</label>
 
               <div class="np-textareaWrap">
                 <textarea
@@ -634,6 +647,7 @@
             Add an Exercise
           </button>
         </div>
+        </div>
       </section>
 
       <div class="np-sticky">
@@ -952,4 +966,33 @@
       </div>
     </div>
   </aside>
+</div>
+
+<div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
+  <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>
+  <section class="duration-confirm__card">
+    <button type="button" class="duration-confirm__close" aria-label="Close" (click)="cancelDurationReduction()">
+      <i-feather name="x" class="duration-confirm__closeIcon"></i-feather>
+    </button>
+    <div class="duration-confirm__icon">
+      <i-feather name="alert-triangle" class="duration-confirm__iconSvg"></i-feather>
+    </div>
+    <div>
+      <h2 class="duration-confirm__title">Delete days from this plan?</h2>
+      <p class="duration-confirm__text">
+        Changing the duration to {{ pendingDurationWeeks }} {{ pendingDurationWeeks === 1 ? "week" : "weeks" }}
+        will permanently remove the last {{ pendingDurationRemovedDays }}
+        {{ pendingDurationRemovedDays === 1 ? "day" : "days" }}.
+      </p>
+      <p class="duration-confirm__hint">This action cannot be undone after you confirm.</p>
+    </div>
+    <div class="duration-confirm__actions">
+      <button type="button" class="duration-confirm__btn duration-confirm__btn--ghost" (click)="cancelDurationReduction()">
+        Cancel
+      </button>
+      <button type="button" class="duration-confirm__btn duration-confirm__btn--danger" (click)="confirmDurationReduction()">
+        Delete days
+      </button>
+    </div>
+  </section>
 </div>

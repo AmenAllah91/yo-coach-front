@@ -7,6 +7,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
@@ -14,7 +15,7 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 @Component({
   selector: 'app-choose-macro-type-modal',
   standalone: true,
-  imports: [CommonModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './choose-macro-type-modal.component.html',
   styleUrls: ['./choose-macro-type-modal.component.scss'],
 })
@@ -27,6 +28,10 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
 
   @Output() close = new EventEmitter<void>();
 
+  durationWeeks = 4;
+  programName = '';
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  selectedMacroType: 'total' | 'each' | null = null;
   private autoSelectionDone = false;
 
   constructor(
@@ -63,21 +68,60 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
   }
 
   get shouldShowModal(): boolean {
-    return this.isVisible && this.enabledMacroCount !== 1;
+    return this.isVisible && this.enabledMacroCount !== 1 && !this.selectedMacroType;
+  }
+
+  get shouldShowDurationModal(): boolean {
+    return this.isVisible && !!this.selectedMacroType;
   }
 
   closeModal(): void {
+    this.selectedMacroType = null;
     this.close.emit();
   }
 
   selectTotalForDay(): void {
     if (!this.canCreateMacroDailyPlan) return;
 
+    this.selectedMacroType = 'total';
+  }
+
+  selectEachMeal(): void {
+    if (!this.canCreateMacroEachMealPlan) return;
+
+    this.selectedMacroType = 'each';
+  }
+
+  closeDurationModal(): void {
+    if (this.enabledMacroCount === 1) {
+      this.closeModal();
+      return;
+    }
+
+    this.selectedMacroType = null;
+  }
+
+  confirmDuration(): void {
+    if (!this.programName.trim()) return;
+
+    if (this.selectedMacroType === 'total') {
+      this.navigateToTotalForDay();
+      return;
+    }
+
+    if (this.selectedMacroType === 'each') {
+      this.navigateToEachMeal();
+    }
+  }
+
+  private navigateToTotalForDay(): void {
     this.closeModal();
 
     const queryParams: any = {
       type: 'total',
       assignAfterCreate: this.assignAfterCreate,
+      durationWeeks: this.normalizedDurationWeeks,
+      name: this.programName.trim(),
     };
 
     if (this.returnUrl) {
@@ -87,7 +131,7 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
     if (this.isAssign) {
       this.router.navigate([
         `/clients/create-macro-plan-total-day/${this.idClient}`,
-      ]);
+      ], { queryParams });
       return;
     }
 
@@ -96,14 +140,14 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
     });
   }
 
-  selectEachMeal(): void {
-    if (!this.canCreateMacroEachMealPlan) return;
-
+  private navigateToEachMeal(): void {
     this.closeModal();
 
     const queryParams: any = {
       type: 'each',
       assignAfterCreate: this.assignAfterCreate,
+      durationWeeks: this.normalizedDurationWeeks,
+      name: this.programName.trim(),
     };
 
     if (this.returnUrl) {
@@ -111,7 +155,7 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
     }
 
     if (this.isAssign) {
-      this.router.navigate([`/clients/create-macro-plan/${this.idClient}`]);
+      this.router.navigate([`/clients/create-macro-plan/${this.idClient}`], { queryParams });
       return;
     }
 
@@ -135,5 +179,10 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
     if (this.canCreateMacroEachMealPlan) {
       this.selectEachMeal();
     }
+  }
+
+  get normalizedDurationWeeks(): number {
+    const value = Number(this.durationWeeks) || 4;
+    return Math.max(1, Math.min(value, 52));
   }
 }

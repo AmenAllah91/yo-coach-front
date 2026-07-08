@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, HostListener } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
@@ -38,9 +38,13 @@ export class CreateAndAssignComponent implements OnInit {
   endDate = '';
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  pendingDurationWeeks: number | null = null;
+  pendingDurationRemovedDays = 0;
   private conflictResolution = '';
   private conflictId = '';
   private conflictStartDate = '';
+  @ViewChild('mobileDaysScroller')
+  mobileDaysScroller?: ElementRef<HTMLElement>;
 
   constructor(
     public facade: WorkoutPlanFacade,
@@ -70,6 +74,27 @@ export class CreateAndAssignComponent implements OnInit {
   }
   set selectedDay(v: WorkoutDay | null) {
     this.facade.selectedDay = v;
+  }
+
+  get selectedWorkoutSession(): WorkoutSession | null {
+    if (!this.selectedDay || this.selectedDay.isRestDay || this.selectedDay.restDay) {
+      return null;
+    }
+
+    if (!this.selectedDay.workoutSessions?.length) {
+      const session: WorkoutSession = {
+        name: '',
+        exercises: [],
+        totalSets: 0,
+        totalReps: 0,
+        totalDurationMin: 0,
+      };
+
+      this.selectedDay.workoutSessions = [session];
+      this.selectedDay.session = session;
+    }
+
+    return this.selectedDay.workoutSessions[0];
   }
 
   get showPlanDescription(): boolean {
@@ -227,6 +252,26 @@ export class CreateAndAssignComponent implements OnInit {
     return this.durationWeeks * 7;
   }
 
+  getWeekWorkoutCount(days: WorkoutDay[]): number {
+    return days.filter((day) =>
+      (day.workoutSessions || []).some((session) => (session.exercises || []).length > 0)
+    ).length;
+  }
+
+  getSelectedDayDateLabel(): string {
+    if (!this.selectedDay?.date) return '';
+
+    const date = new Date(`${this.selectedDay.date}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
   private normalizeDurationWeeks(value: number): number {
     return Math.max(1, Math.min(Number(value) || 4, 52));
   }
@@ -332,7 +377,34 @@ export class CreateAndAssignComponent implements OnInit {
   }
 
   onDurationWeeksChange() {
-    this.durationWeeks = this.normalizeDurationWeeks(this.durationWeeks);
+    const nextWeeks = this.normalizeDurationWeeks(this.durationWeeks);
+    const currentWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 1) / 7));
+
+    if (nextWeeks < currentWeeks) {
+      this.pendingDurationWeeks = nextWeeks;
+      this.pendingDurationRemovedDays = this.days.length - nextWeeks * 7;
+      this.durationWeeks = currentWeeks;
+      return;
+    }
+
+    this.applyDurationWeeks(nextWeeks);
+  }
+
+  confirmDurationReduction() {
+    if (!this.pendingDurationWeeks) return;
+    const nextWeeks = this.pendingDurationWeeks;
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
+    this.applyDurationWeeks(nextWeeks);
+  }
+
+  cancelDurationReduction() {
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
+  }
+
+  private applyDurationWeeks(weeks: number) {
+    this.durationWeeks = this.normalizeDurationWeeks(weeks);
     this.facade.setDurationWeeks(this.durationWeeks);
     this.updateAllDates();
   }
@@ -348,6 +420,25 @@ export class CreateAndAssignComponent implements OnInit {
   addDay() {
     this.facade.addDay();
     this.updateAllDates();
+  }
+
+  addDayFromMobile(): void {
+    this.addDay();
+
+    setTimeout(() => {
+      this.scrollMobileDaysToEnd();
+    }, 0);
+  }
+
+  private scrollMobileDaysToEnd(): void {
+    const el = this.mobileDaysScroller?.nativeElement;
+
+    if (!el) return;
+
+    el.scrollTo({
+      left: el.scrollWidth,
+      behavior: 'smooth',
+    });
   }
 
   duplicateSelectedDay() {

@@ -2836,6 +2836,208 @@ input:checked + .slider:before {
   white-space: nowrap;
 }
 
+.np-foodlist__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.np-foodlist__thumb {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #eaf8ff;
+  display: grid;
+  place-items: center;
+}
+
+.np-foodlist__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.np-foodlist__thumbFallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #0ea5e9;
+  background: #eaf8ff;
+}
+
+.np-foodlist__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.np-mobile-days {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .np-aside {
+    display: none !important;
+  }
+
+  .np-main {
+    border-left: 0 !important;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .np-card {
+    margin: 12px 0;
+  }
+
+  .np-mobile-days {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 0 12px;
+    margin: 0 0 14px;
+    border-bottom: 1px solid #eef2f6;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+
+  .np-mobile-days::-webkit-scrollbar {
+    display: none;
+  }
+
+  .np-mobile-day {
+    flex: 0 0 auto;
+    height: 36px;
+    min-width: 68px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #fff;
+    color: #1f2937;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .np-mobile-day.is-active {
+    min-width: 92px;
+    background: #eaf7fd;
+    border-color: #9bd7ee;
+    color: #1ea2d2;
+  }
+
+  .np-mobile-day__main {
+    border: 0;
+    background: transparent;
+    padding: 0 4px;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .np-mobile-day__title {
+    max-width: 46px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .np-mobile-day__delete,
+  .np-mobile-day__drag {
+    width: 18px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .np-mobile-day__delete .np-ico {
+    width: 13px;
+    height: 13px;
+    color: #94a3b8;
+  }
+
+  .np-mobile-day__drag .np-ico {
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+  }
+
+  .np-mobile-add {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px dashed #9bd7ee;
+    background: #eaf7fd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .np-mobile-add .np-ico {
+    width: 16px;
+    height: 16px;
+    color: #1ea2d2;
+  }
+
+  .np-mobile-day.cdk-drag-preview {
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+    border-color: #9bd7ee;
+    background: #eaf7fd;
+  }
+
+  .np-mobile-day.cdk-drag-placeholder {
+    opacity: 0.25;
+  }
+
+  .np-mobile-days.cdk-drop-list-dragging .np-mobile-day:not(.cdk-drag-placeholder) {
+    transition: transform 180ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .np-mobile-day {
+    min-width: 52px;
+    height: 31px;
+    padding: 0 4px;
+  }
+
+  .np-mobile-day.is-active {
+    min-width: 68px;
+  }
+
+  .np-mobile-day__main {
+    font-size: 12px;
+  }
+
+  .np-mobile-day__title {
+    max-width: 35px;
+  }
+
+  .np-mobile-day__delete,
+  .np-mobile-day__drag {
+    width: 13px;
+  }
+}
+
 .latest-client-programs {
   margin: 16px 0;
   padding: 14px 16px;
@@ -2881,4 +3083,557 @@ input:checked + .slider:before {
   color: #0f172a;
   font-weight: 800;
   white-space: nowrap;
+}
+
+/* Shared workout builder settings treatment. */
+.np-pagehead {
+  display: none !important;
+}
+
+.np-card--settings {
+  border-radius: 8px !important;
+}
+
+.np-settings-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: #7184a2;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.np-settings-kicker__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #8ecfff;
+  box-shadow: 0 0 0 4px rgba(142, 207, 255, 0.16);
+}
+
+/* Program structure sidebar like the reference capture. */
+@media (min-width: 768px) {
+  .np-aside {
+    width: 270px !important;
+    min-width: 270px;
+    margin: 16px;
+    border: 1px solid #dbe4ee !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 26px rgba(15, 23, 42, 0.035);
+  }
+
+  .np-aside__head {
+    padding: 18px 18px 14px !important;
+  }
+
+  .np-aside__body {
+    padding: 16px !important;
+  }
+
+  .np-aside .np-btn--full,
+  .np-aside .np-stack {
+    display: none !important;
+  }
+
+  .np-week-card {
+    margin: 0 0 14px !important;
+    padding: 14px !important;
+    border: 1px solid #d6e8fb !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .np-week-card__head {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 10px;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+  }
+
+  .np-week-card__head > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .np-week-card__head strong {
+    color: #0ea5e9;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+  }
+
+  .np-week-card__head small {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .np-week-card__count {
+    flex: 0 0 auto;
+    min-height: 22px;
+    padding: 4px 8px;
+    border: 1px solid #d8e3ef;
+    border-radius: 6px;
+    color: #475569;
+    background: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .np-dayrow {
+    position: relative;
+    min-height: 56px;
+    padding: 0 0 0 18px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  .np-dayrow::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: -8px;
+    bottom: -8px;
+    width: 1px;
+    background: #dbe7f3;
+  }
+
+  .np-dayrow::after {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 26px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #dbe7f3;
+    box-shadow: 0 0 0 3px #fff;
+  }
+
+  .np-week-card .np-dayrow:first-of-type::before {
+    top: 26px;
+  }
+
+  .np-week-card .np-dayrow:last-of-type::before {
+    bottom: 28px;
+  }
+
+  .np-dayrow.is-active {
+    padding-left: 18px !important;
+  }
+
+  .np-dayrow.is-active::after {
+    background: #44b4df;
+  }
+
+  .np-dayrow .np-day {
+    min-height: 48px;
+    width: calc(100% - 28px);
+    margin: 4px 0;
+    padding: 9px 12px !important;
+    border: 0 !important;
+    border-radius: 7px !important;
+    background: transparent !important;
+    text-align: left;
+  }
+
+  .np-dayrow .np-day.is-active {
+    background: #eaf7fd !important;
+    border: 1px solid #bde8f7 !important;
+    box-shadow: 0 6px 18px rgba(68, 180, 223, 0.08);
+  }
+
+  .np-day__title {
+    color: #0f172a !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  .np-day.is-active .np-day__title {
+    color: #0ea5e9 !important;
+  }
+
+  .np-day__meta {
+    display: block;
+    margin-top: 2px;
+    color: #64748b !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+  }
+
+  .np-iconbtn--add {
+    position: absolute;
+    right: 0;
+    top: 15px;
+    width: 24px !important;
+    height: 24px !important;
+    color: #0ea5e9 !important;
+    background: transparent !important;
+    border: 0 !important;
+    opacity: 1 !important;
+  }
+
+  .np-iconbtn--add .np-ico {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* Day editor header like the requested capture. */
+.wk-day-editor {
+  margin: 0 0 16px;
+  padding: 0 0 14px;
+  border-left: 3px solid #44b4df;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.wk-day-editor__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px 12px 18px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.wk-day-editor__titleline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wk-day-editor__title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.wk-day-editor__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #8fa2b8;
+}
+
+.wk-day-editor__date {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wk-day-editor__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.wk-restmark {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid #d7e2ee;
+  border-radius: 5px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wk-restmark.is-active {
+  color: #0ea5e9;
+  border-color: #a8dff4;
+  background: #eef9fe;
+}
+
+.wk-restmark__icon,
+.wk-kebab__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.wk-kebab {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #8fa2b8;
+  cursor: pointer;
+}
+
+.wk-workout-name {
+  padding: 14px 16px 0 18px;
+  margin: 0;
+}
+
+.wk-workout-name .np-input {
+  height: 36px;
+}
+
+.wk-day-editor + .wk-restbox {
+  margin-top: 0;
+}
+
+.wk-day-editor ~ .np-link,
+.wk-day-editor ~ ng-container .np-link,
+.wk-day-editor + ng-container .np-link {
+  margin-left: 18px;
+}
+
+@media (max-width: 767px) {
+  .wk-day-editor__head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .wk-day-editor__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Final builder section tint: keep Global Plan Settings white. */
+.np-card--settings {
+  background: #fff !important;
+}
+
+.np-card--settings > .np-mobile-days,
+.np-card--settings > .wk-day-editor,
+.np-card--settings > .wk-restbox,
+.np-card--settings > .wkex {
+  background: #f6fbff !important;
+  border: 1px solid #d9edf7 !important;
+  border-left: 3px solid #44b4df !important;
+  border-radius: 8px !important;
+  padding: 16px 18px !important;
+}
+
+.wk-day-editor__head,
+.wk-day-editor__titleline {
+  align-items: center !important;
+}
+
+.wk-day-editor__title,
+.wkex__heading {
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.duration-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.duration-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.duration-confirm__card {
+  position: relative;
+  width: min(520px, 100%);
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  padding: 28px;
+  display: grid;
+  gap: 18px;
+}
+
+.duration-confirm__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.duration-confirm__closeIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.duration-confirm__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.duration-confirm__iconSvg {
+  width: 24px;
+  height: 24px;
+}
+
+.duration-confirm__title {
+  margin: 0 32px 8px 0;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.duration-confirm__text {
+  margin: 0;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.duration-confirm__hint {
+  margin: 10px 0 0;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.duration-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.duration-confirm__btn {
+  border-radius: 8px;
+  padding: 11px 18px;
+  border: 1px solid transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.duration-confirm__btn--ghost {
+  background: #fff;
+  color: #0f172a;
+  border-color: #d7e2ef;
+}
+
+.duration-confirm__btn--danger {
+  background: #111827;
+  color: #fff;
+}
+
+/* Unified day builder rail: one continuous blue accent for the editable day area. */
+.np-card--settings > .wk-day-editor,
+.np-card--settings > .wk-restbox,
+.np-card--settings > .wkex,
+.wk-day-editor ~ .np-link {
+  background: #f6fbff !important;
+  border-left: 3px solid #44b4df !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.np-card--settings > .wk-day-editor {
+  border: 1px solid #d9edf7 !important;
+  border-left-width: 3px !important;
+  padding: 0 !important;
+}
+
+.wk-day-editor__head {
+  padding: 16px 18px 14px 24px !important;
+}
+
+.wk-workout-name {
+  padding: 14px 18px 16px 24px !important;
+}
+
+.wk-day-editor ~ .np-link {
+  display: flex !important;
+  width: 100%;
+  padding: 14px 18px 14px 24px !important;
+}
+
+.np-card--settings > .wkex,
+.np-card--settings > .wk-restbox {
+  border: 1px solid #d9edf7 !important;
+  border-left-width: 3px !important;
+  padding: 16px 18px 18px 24px !important;
+}
+
+.wk-day-editor__title,
+.wkex__heading {
+  letter-spacing: 0 !important;
+}
+
+.wk-restmark {
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+.builder-rail {
+  margin: 0 !important;
+  background: #f6fbff !important;
+  border: 1px solid #d9edf7 !important;
+  border-left: 3px solid #44b4df !important;
+  border-radius: 0 !important;
+  padding: 0 18px 18px 22px !important;
+}
+
+.builder-rail > .wk-day-editor,
+.builder-rail > .wk-restbox,
+.builder-rail > .wkex,
+.builder-rail > ng-container,
+.builder-rail .np-link {
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.builder-rail > .wk-day-editor {
+  border: 0 !important;
+  border-bottom: 1px solid #d9edf7 !important;
+}
+
+.builder-rail > .wkex,
+.builder-rail > .wk-restbox {
+  border: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.builder-rail .wk-day-editor__head,
+.builder-rail .wk-workout-name,
+.builder-rail > .np-link,
+.builder-rail ng-container > .np-link {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }

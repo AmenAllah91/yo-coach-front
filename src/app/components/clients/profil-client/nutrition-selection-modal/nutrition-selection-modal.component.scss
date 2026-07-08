@@ -56,11 +56,14 @@
   color: #9ca3af;
   cursor: pointer;
   padding: 0;
-  font-size: 1.1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+}
+
+.assign-modal-close svg {
+  width: 20px;
+  height: 20px;
 }
 
 .assign-modal-close:hover {
@@ -227,6 +230,12 @@
   color: #6b7280;
 }
 
+.schedule-help {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
 .select-program-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
@@ -271,47 +280,68 @@
   cursor: not-allowed;
 }
 
-
-/* Nutrition file plans in selection modal */
-.select-program-card--file {
-  border-left: 4px solid #94a3b8;
-}
-
-.select-program-card--pdf {
-  border-left-color: #ef4444;
-}
-
-.select-program-card--excel {
-  border-left-color: #16a34a;
-}
-
-.select-program-type {
+.status-pill {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 0.1rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-pill--active {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.status-pill--upcoming {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-pill--completed {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.select-program-type-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.select-program-type-icon--app {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.select-program-type-icon--file {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.mini-type-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-.select-program-type--app {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
+.mini-type-pill--app {
+  background: #e0f2fe;
+  color: #0284c7;
 }
 
-.select-program-type--pdf {
-  background: #fff1f2;
+.mini-type-pill--file {
+  background: #fee2e2;
   color: #dc2626;
-  border-color: #fecdd3;
-}
-
-.select-program-type--excel {
-  background: #ecfdf5;
-  color: #16a34a;
-  border-color: #bbf7d0;
 }
 
 .selected-client-card {
@@ -467,4 +497,14 @@
   margin-top: 0.15rem;
   color: #6b7280;
   font-size: 0.76rem;
+}
+
+/* Nutrition-specific aliases kept for existing HTML classes */
+.select-program-card--file,
+.select-program-card--pdf,
+.select-program-card--excel { }
+.select-program-card--selected.select-program-card--file,
+.select-program-card--selected.select-program-card--pdf,
+.select-program-card--selected.select-program-card--excel {
+  border-color: #44b4df;
 }

@@ -161,3 +161,81 @@
     }
   }
 }
+
+.nutrition-duration-field {
+  display: block;
+  margin-bottom: 12px;
+
+  span {
+    display: block;
+    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  b {
+    color: #ef4444;
+  }
+
+  input,
+  select {
+    width: 100%;
+    height: 50px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #0f172a;
+    font-size: 15px;
+    padding: 0 14px;
+    outline: none;
+
+  }
+
+  input:focus,
+  select:focus {
+    border-color: #44b4df;
+    box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
+  }
+}
+
+.nutrition-duration-copy {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.nutrition-duration-info {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+
+  i-feather {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+  }
+}
+
+.nutrition-duration-submit {
+  min-width: 132px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 6px;
+  background: #000;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}

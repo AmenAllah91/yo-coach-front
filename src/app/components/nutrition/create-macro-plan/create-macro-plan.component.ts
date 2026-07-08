@@ -27,6 +27,12 @@ export class CreateMacroPlanComponent implements OnInit {
   showDayDescription = false;
   viewMode: 'total' | 'meals' = 'meals';
   showModeModal = false;
+  durationWeeks = 4;
+  private scheduleStartDate = '';
+  private scheduleEndDate = '';
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  pendingDurationWeeks: number | null = null;
+  pendingDurationRemovedDays = 0;
 
   isEditMode = false;
   planId: string | null = null;
@@ -157,13 +163,46 @@ export class CreateMacroPlanComponent implements OnInit {
 
   ngOnInit() {
     this.planId = this.route.snapshot.paramMap.get('id');
+    this.durationWeeks = this.normalizeDurationWeeks(
+      Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || this.durationWeeks
+    );
+    this.planName = this.route.snapshot.queryParamMap.get('name') || '';
+    this.scheduleStartDate = this.route.snapshot.queryParamMap.get('startDate') || '';
+    this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
 
     if (this.planId) {
       this.isEditMode = true;
       this.loadPlanForEdit(this.planId);
     } else {
+      this.createInitialDays();
+    }
+  }
+
+  private normalizeDurationWeeks(value: number): number {
+    return Math.max(1, Math.min(Number(value) || 4, 52));
+  }
+
+  private createInitialDays(): void {
+    const totalDays = this.durationWeeks * 7;
+    for (let index = 0; index < totalDays; index++) {
       this.addDay();
     }
+    this.selectedDay = this.days[0] || null;
+  }
+
+  get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
+    const weeks: Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> = [];
+
+    this.days.forEach((day, index) => {
+      const weekIndex = Math.floor(index / 7);
+      if (!weeks[weekIndex]) {
+        weeks[weekIndex] = { weekNumber: weekIndex + 1, days: [] };
+      }
+
+      weeks[weekIndex].days.push({ day, index });
+    });
+
+    return weeks;
   }
 
   /* ===================================================
@@ -177,6 +216,9 @@ export class CreateMacroPlanComponent implements OnInit {
         ? Boolean((plan as any).isMealPlanTemplate)
         : false;
       this.days = plan.mealDays || [];
+      this.durationWeeks = this.normalizeDurationWeeks(
+        Math.ceil((this.days.length || 28) / 7)
+      );
 
       // Fix IDs if backend returns null
       this.days.forEach((d) => {
@@ -224,6 +266,53 @@ export class CreateMacroPlanComponent implements OnInit {
     } else {
       this.addMeal();
     }
+  }
+
+  onDurationWeeksChange(value: number) {
+    const nextWeeks = this.normalizeDurationWeeks(value);
+    const currentWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 1) / 7));
+    const targetDays = nextWeeks * 7;
+    const selectedId = this.selectedDay?.id;
+
+    if (targetDays < this.days.length) {
+      this.pendingDurationWeeks = nextWeeks;
+      this.pendingDurationRemovedDays = this.days.length - targetDays;
+      this.durationWeeks = currentWeeks;
+      return;
+    } else {
+      while (this.days.length < targetDays) {
+        this.addDay();
+      }
+    }
+
+    this.durationWeeks = nextWeeks;
+    this.days.forEach((day, index) => {
+      day.dayOfWeek = `Day ${index + 1}`;
+      this.updateDayTotals(day);
+    });
+    this.selectedDay = this.days.find((day) => day.id === selectedId) || this.days[0] || null;
+  }
+
+  confirmDurationReduction() {
+    if (!this.pendingDurationWeeks) return;
+    const nextWeeks = this.pendingDurationWeeks;
+    const targetDays = nextWeeks * 7;
+    const selectedId = this.selectedDay?.id;
+
+    this.days = this.days.slice(0, targetDays);
+    this.durationWeeks = nextWeeks;
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
+    this.days.forEach((day, index) => {
+      day.dayOfWeek = `Day ${index + 1}`;
+      this.updateDayTotals(day);
+    });
+    this.selectedDay = this.days.find((day) => day.id === selectedId) || this.days[0] || null;
+  }
+
+  cancelDurationReduction() {
+    this.pendingDurationWeeks = null;
+    this.pendingDurationRemovedDays = 0;
   }
 
   deleteDay(day: MealDay, event: Event) {
@@ -340,8 +429,8 @@ export class CreateMacroPlanComponent implements OnInit {
       name: this.planName,
       details: this.planDescription,
       trackingMode: 'EACH_MEAL',
-      startDate: new Date().toISOString(),
-      endDate: '',
+      startDate: this.scheduleStartDate || new Date().toISOString().slice(0, 10),
+      endDate: this.scheduleEndDate,
       mealDays: this.days,
       coach: { id: this.userId },
       client: null,

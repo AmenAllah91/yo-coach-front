@@ -243,6 +243,11 @@ export class ProfilClientComponent {
   clientWorkoutStartDate = new Date().toISOString().slice(0, 10);
   clientWorkoutConflict: ClientWorkoutConflict | null = null;
   readonly workoutDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  showClientNutritionCreateModal = false;
+  clientNutritionProgramName = '';
+  clientNutritionDurationWeeks = 4;
+  clientNutritionStartDate = new Date().toISOString().slice(0, 10);
+  clientNutritionConflict: ClientWorkoutConflict | null = null;
 
   profileImportWorkoutFile: File | null = null;
   profileImportWorkoutName = '';
@@ -311,6 +316,7 @@ export class ProfilClientComponent {
   assignedWorkoutPrograms: any[] = [];
   assignedNutritionPrograms: any[] = [];
   private pendingCreatedWorkoutToAssign: any | null = null;
+  private pendingCreatedNutritionToAssign: any | null = null;
   loadingDashboardPrograms = false;
   dashboardProgramsError: string | null = null;
 
@@ -393,6 +399,9 @@ export class ProfilClientComponent {
     if (assignAfterCreate?.type === 'workout' && assignAfterCreate?.item) {
       this.pendingCreatedWorkoutToAssign = assignAfterCreate.item;
     }
+    if (assignAfterCreate?.type === 'nutrition' && assignAfterCreate?.item) {
+      this.pendingCreatedNutritionToAssign = assignAfterCreate.item;
+    }
 
     this.getAllNutrition();
     this.loadWorkoutFileSetting();
@@ -449,6 +458,7 @@ export class ProfilClientComponent {
     this.clientService.getClientById(id).subscribe((res) => {
       this.client = res;
       this.assignPendingCreatedWorkoutIfNeeded();
+      this.assignPendingCreatedNutritionIfNeeded();
     });
   }
 
@@ -968,7 +978,7 @@ export class ProfilClientComponent {
 
   createNormalNutritionFromProfile(): void {
     this.showNutritionExistingTypeModal = false;
-    this.showChooseModal = true;
+    this.openClientNutritionCreateModal();
   }
 
   importFileNutritionFromProfile(): void {
@@ -1044,6 +1054,89 @@ export class ProfilClientComponent {
   createNormalWorkoutFromProfile(): void {
     this.showWorkoutTypeModal = false;
     this.openClientWorkoutCreateModal();
+  }
+
+  openClientNutritionCreateModal(): void {
+    this.clientNutritionProgramName = '';
+    this.clientNutritionDurationWeeks = 4;
+    this.clientNutritionStartDate = new Date().toISOString().slice(0, 10);
+    this.clientNutritionConflict = null;
+    this.showClientNutritionCreateModal = true;
+    this.refreshClientNutritionConflict();
+  }
+
+  closeClientNutritionCreateModal(): void {
+    this.showClientNutritionCreateModal = false;
+    this.clientNutritionConflict = null;
+  }
+
+  get clientNutritionDurationDays(): number {
+    return this.clientNutritionDurationWeeks * 7;
+  }
+
+  get clientNutritionEndDate(): string {
+    return this.addDays(this.clientNutritionStartDate, this.clientNutritionDurationDays - 1);
+  }
+
+  get canCreateClientNutritionProgram(): boolean {
+    return !!this.clientNutritionProgramName.trim()
+      && !!this.clientNutritionStartDate
+      && (!this.clientNutritionConflict || !!this.clientNutritionConflict.resolution);
+  }
+
+  get profileNutritionReturnUrl(): string {
+    return `${this.router.url.split('?')[0]}?tab=nutrition`;
+  }
+
+  onClientNutritionScheduleChange(): void {
+    this.refreshClientNutritionConflict();
+  }
+
+  setClientNutritionConflictResolution(resolution: WorkoutConflictResolution): void {
+    if (this.clientNutritionConflict) {
+      this.clientNutritionConflict.resolution = resolution;
+    }
+  }
+
+  private refreshClientNutritionConflict(): void {
+    if (!this.clientNutritionStartDate || !this.clientNutritionEndDate) {
+      this.clientNutritionConflict = null;
+      return;
+    }
+
+    const previous = this.clientNutritionConflict;
+    const conflictProgram = (this.assignedNutritionPrograms || []).find((program: any) => {
+      if (this.nutritionFileEnabled === false && this.isFileNutritionPlan(program)) {
+        return false;
+      }
+
+      return this.programOverlapsRange(program, this.clientNutritionStartDate, this.clientNutritionEndDate);
+    });
+
+    if (!conflictProgram) {
+      this.clientNutritionConflict = null;
+      return;
+    }
+
+    this.clientNutritionConflict = {
+      program: conflictProgram,
+      resolution: previous?.program?.id === conflictProgram.id ? previous.resolution : undefined,
+    };
+  }
+
+  createClientNutritionProgram(): void {
+    const name = this.clientNutritionProgramName.trim();
+    if (!name || !this.canCreateClientNutritionProgram) return;
+
+    const conflict = this.clientNutritionConflict;
+    const resolution = conflict?.resolution;
+    const resolvedStartDate = resolution === 'START_AFTER' && conflict?.program?.endDate
+      ? this.addDays(conflict.program.endDate, 1)
+      : this.clientNutritionStartDate;
+
+    this.showClientNutritionCreateModal = false;
+    this.showChooseModal = true;
+    this.clientNutritionStartDate = resolvedStartDate;
   }
 
   isFileWorkoutPlan(plan: any): boolean {
@@ -1594,6 +1687,66 @@ export class ProfilClientComponent {
     });
   }
 
+  private assignPendingCreatedNutritionIfNeeded(): void {
+    if (!this.pendingCreatedNutritionToAssign || !this.client) return;
+
+    const program = this.pendingCreatedNutritionToAssign;
+    this.pendingCreatedNutritionToAssign = null;
+
+    const startDate = program.startDate || this.clientNutritionStartDate || new Date().toISOString().slice(0, 10);
+    const mealDays = (program.mealDays || []).map((day: any, index: number) => {
+      const current = new Date(`${startDate}T00:00:00`);
+      current.setDate(current.getDate() + index);
+
+      return {
+        ...day,
+        date: current.toISOString().slice(0, 10),
+        dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
+      };
+    });
+
+    let endDate = program.endDate || startDate;
+    if (!program.endDate && mealDays.length) {
+      endDate = this.addDays(startDate, mealDays.length - 1);
+    }
+
+    const resolution = this.clientNutritionConflict?.resolution;
+    const replace$ = resolution === 'REPLACE'
+      ? this.stopExistingNutritionBefore(this.clientNutritionConflict?.program, startDate)
+      : of(null);
+
+    const item = {
+      ...program,
+      startDate,
+      endDate,
+      mealDays,
+      client: this.client,
+      isMealPlanTemplate: false,
+    };
+
+    replace$.pipe(
+      switchMap(() => this.nutritionService.assignNutritionPlan(item))
+    ).subscribe({
+      next: () => {
+        this.nutritionService.deleteNutritionPlan(program.id).subscribe({
+          next: () => {
+            this.clientNutritionConflict = null;
+            this.loadDashboardPrograms();
+            this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
+          },
+          error: () => {
+            this.clientNutritionConflict = null;
+            this.loadDashboardPrograms();
+            this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Failed to assign newly created nutrition plan:', err);
+      },
+    });
+  }
+
   onAssignWorkoutFromModal(payload: {
     program: any;
     startDate: string;
@@ -1630,6 +1783,7 @@ export class ProfilClientComponent {
       this.showProgramSelectionModal ||
       this.showNutritionSelectionModal ||
       this.showChooseModal ||
+      this.showClientNutritionCreateModal ||
       this.isModalOpen ||
       !!this.selectedSchedule
     );
@@ -1648,6 +1802,8 @@ export class ProfilClientComponent {
     this.showProgramSelectionModal = false;
     this.showNutritionSelectionModal = false;
     this.showChooseModal = false;
+    this.showClientNutritionCreateModal = false;
+    this.clientNutritionConflict = null;
     this.showWorkoutTypeModal = false;
     this.showFileWorkoutImportModal = false;
     this.showNutritionFileImportModal = false;

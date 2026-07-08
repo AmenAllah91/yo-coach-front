@@ -1138,6 +1138,129 @@
 </div>
 
 
+<div *ngIf="showClientNutritionCreateModal" class="client-workout-create-backdrop" (click)="closeClientNutritionCreateModal()">
+  <div class="client-workout-create-modal" (click)="$event.stopPropagation()">
+    <div class="client-workout-create-header">
+      <div>
+        <h3>Create Client Nutrition Program</h3>
+        <p>For {{ fullName }}</p>
+      </div>
+
+      <button type="button" class="client-workout-create-close" (click)="closeClientNutritionCreateModal()">×</button>
+    </div>
+
+    <div class="client-workout-create-body">
+      <label class="client-workout-create-field">
+        <span>Program Name <b>*</b></span>
+        <input
+          type="text"
+          [(ngModel)]="clientNutritionProgramName"
+          placeholder="e.g. Summer Nutrition Phase 2"
+        />
+      </label>
+
+      <label class="client-workout-create-field">
+        <span>Duration <b>*</b></span>
+        <select [(ngModel)]="clientNutritionDurationWeeks" (ngModelChange)="onClientNutritionScheduleChange()">
+          <option *ngFor="let option of workoutDurationOptions" [ngValue]="option">
+            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+          </option>
+        </select>
+      </label>
+
+      <div class="client-workout-create-dates">
+        <label class="client-workout-create-field">
+          <span>Start Date <b>*</b></span>
+          <input type="date" [(ngModel)]="clientNutritionStartDate" (ngModelChange)="onClientNutritionScheduleChange()" />
+        </label>
+
+        <label class="client-workout-create-field">
+          <span>End Date</span>
+          <input type="date" [value]="clientNutritionEndDate" disabled />
+        </label>
+      </div>
+
+      <div class="client-workout-duration-chip">
+        <i class="far fa-calendar"></i>
+        <span>{{ clientNutritionDurationDays }} days</span>
+      </div>
+
+      <p class="client-workout-create-help">
+        End date is automatically calculated from start date and duration.
+      </p>
+
+      <div class="client-workout-create-info">
+        <i class="fas fa-info-circle"></i>
+        <span>This will create a {{ clientNutritionDurationWeeks }}-week nutrition program for this client.</span>
+      </div>
+
+      <div class="client-workout-conflict" *ngIf="clientNutritionConflict">
+        <div class="client-workout-conflict__heading">
+          <span>!</span>
+          <strong>Schedule Conflict Detected</strong>
+        </div>
+
+        <div class="client-workout-conflict__program">
+          {{ getProgramDisplayName(clientNutritionConflict.program) }}
+          ({{ getProgramDateRange(clientNutritionConflict.program) }})
+        </div>
+
+        <label class="client-workout-resolution" [class.selected]="clientNutritionConflict.resolution === 'START_AFTER'">
+          <input
+            type="radio"
+            name="client-nutrition-conflict-resolution"
+            [checked]="clientNutritionConflict.resolution === 'START_AFTER'"
+            (change)="setClientNutritionConflictResolution('START_AFTER')"
+          />
+          <span>
+            <strong>Start after current program</strong>
+            <small>Begin this program after the existing program ends.</small>
+          </span>
+        </label>
+
+        <label class="client-workout-resolution" [class.selected]="clientNutritionConflict.resolution === 'REPLACE'">
+          <input
+            type="radio"
+            name="client-nutrition-conflict-resolution"
+            [checked]="clientNutritionConflict.resolution === 'REPLACE'"
+            (change)="setClientNutritionConflictResolution('REPLACE')"
+          />
+          <span>
+            <strong>Replace current program</strong>
+            <small>Stop the existing program before the new start date when you create this plan.</small>
+          </span>
+        </label>
+
+        <label class="client-workout-resolution" [class.selected]="clientNutritionConflict.resolution === 'KEEP_BOTH'">
+          <input
+            type="radio"
+            name="client-nutrition-conflict-resolution"
+            [checked]="clientNutritionConflict.resolution === 'KEEP_BOTH'"
+            (change)="setClientNutritionConflictResolution('KEEP_BOTH')"
+          />
+          <span>
+            <strong>Keep both anyway</strong>
+            <small>Create this program on the overlapping dates.</small>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="client-workout-create-footer">
+      <button type="button" class="client-workout-create-cancel" (click)="closeClientNutritionCreateModal()">Cancel</button>
+      <button
+        type="button"
+        class="client-workout-create-submit"
+        [disabled]="!canCreateClientNutritionProgram"
+        (click)="createClientNutritionProgram()"
+      >
+        Continue
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <div *ngIf="workoutFileEnabled && showFileWorkoutImportModal" class="profile-file-import-backdrop">
   <div class="profile-file-import-modal">
     <div class="profile-file-import-header">
@@ -1334,6 +1457,13 @@
   (onClose)="closeAssignFlow()"
   [isAssign]="true"
   [idClient]="this.clientId"
+  [returnUrl]="profileNutritionReturnUrl"
+  [assignAfterCreate]="true"
+  [presetProgramName]="clientNutritionProgramName"
+  [presetDurationWeeks]="clientNutritionDurationWeeks"
+  [presetStartDate]="clientNutritionStartDate"
+  [presetEndDate]="clientNutritionEndDate"
+  [skipDurationStep]="true"
 ></app-choose-plan-type-modal>
 
 

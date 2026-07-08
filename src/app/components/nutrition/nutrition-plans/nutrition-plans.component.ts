@@ -343,10 +343,30 @@ if (type === 'APP') {
 
     const days = plan.mealDays?.length || 0;
     if (days > 0) {
-      return `${days}-day nutrition program`;
+      const weeks = this.getPlanTotalWeeks(plan);
+      return weeks > 0
+        ? `${weeks}-week nutrition program`
+        : `${days}-day nutrition program`;
     }
 
     return (plan as any).details || 'Nutrition program';
+  }
+
+  getPlanTotalWeeks(plan: NutritionPlan): number {
+    if (this.isFilePlan(plan)) return 0;
+
+    const totalDays = this.getMealDaySpan(plan);
+    return totalDays > 0 ? Math.ceil(totalDays / 7) : 0;
+  }
+
+  private getMealDaySpan(plan: NutritionPlan): number {
+    const days = plan?.mealDays || [];
+    const maxDayNumber = days
+      .map((day: any) => Number(day?.dayNumber || 0))
+      .filter((dayNumber: number) => dayNumber > 0)
+      .reduce((max: number, dayNumber: number) => Math.max(max, dayNumber), 0);
+
+    return maxDayNumber || days.length || 1;
   }
 
   trackByProgram(_index: number, program: any): string {
@@ -1131,7 +1151,7 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
       return this.daysBetweenInclusive(program.startDate, program.endDate);
     }
 
-    return Math.max((program.mealDays || []).length, 1);
+    return this.getMealDaySpan(program);
   }
 
   onProgramAssigned(event: any) {

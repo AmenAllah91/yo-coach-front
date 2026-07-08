@@ -435,6 +435,77 @@ export class NutritionClientTabComponent implements OnInit {
         : 'FULL MEAL PLAN';
   }
 
+  getCurrentWeekNumber(plan: any): number {
+    if (this.isFilePlan(plan)) return 0;
+
+    const currentDay = Number(plan?.currentDay || 0);
+    if (currentDay > 0) {
+      return Math.max(1, Math.ceil(currentDay / 7));
+    }
+
+    if (!plan?.startDate) return 0;
+    const start = new Date(plan.startDate);
+    if (Number.isNaN(start.getTime())) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+
+    if (today < start) return 1;
+
+    const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.max(1, Math.ceil(diffDays / 7));
+  }
+
+  getPlanTotalWeeks(plan: any): number {
+    if (this.isFilePlan(plan)) return 0;
+
+    const totalDays = this.getMealDaySpan(plan);
+    return totalDays > 0 ? Math.ceil(totalDays / 7) : 0;
+  }
+
+  getDisplayEndDate(plan: any): any {
+    if (this.isFilePlan(plan)) {
+      return plan?.endDate;
+    }
+
+    const start = this.toDateOnlyString(plan?.startDate);
+    if (!start) return plan?.endDate;
+
+    const span = this.getMealDaySpan(plan);
+    return this.addDaysToDateOnly(start, Math.max(span - 1, 0));
+  }
+
+  private getMealDaySpan(plan: any): number {
+    const days = plan?.mealDays || [];
+    const maxDayNumber = days
+      .map((day: any) => Number(day?.dayNumber || 0))
+      .filter((dayNumber: number) => dayNumber > 0)
+      .reduce((max: number, dayNumber: number) => Math.max(max, dayNumber), 0);
+
+    return maxDayNumber || days.length || 1;
+  }
+
+  private addDaysToDateOnly(dateOnly: string, days: number): string {
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+    return this.toDateOnlyString(date) || dateOnly;
+  }
+
+  formatPlanDate(value: any): string {
+    const dateOnly = this.toDateOnlyString(value);
+    if (!dateOnly) return '-';
+
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    });
+  }
+
   getDays(start: string, end: string): number {
     if (!start || !end) return 0;
 

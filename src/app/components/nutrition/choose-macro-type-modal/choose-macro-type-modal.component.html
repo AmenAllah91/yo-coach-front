@@ -67,3 +67,65 @@
     </div>
   </div>
 </div>
+
+<div
+  class="modal-overlay"
+  [class.show]="shouldShowDurationModal"
+  *ngIf="shouldShowDurationModal"
+  (click)="closeDurationModal()"
+>
+  <div class="modal-content choose-modal macro-duration-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        {{ selectedMacroType === 'total' ? 'Create Macro Total Day Plan' : 'Create Macro Each Meal Plan' }}
+      </h2>
+
+      <button class="close-btn" type="button" (click)="closeDurationModal()">
+        <i-feather name="x"></i-feather>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <label class="nutrition-duration-field">
+        <span>Program Name <b>*</b></span>
+        <input
+          type="text"
+          [(ngModel)]="programName"
+          placeholder="e.g. Summer Shred Nutrition"
+        />
+      </label>
+
+      <label class="nutrition-duration-field">
+        <span>Duration <b>*</b></span>
+        <select [(ngModel)]="durationWeeks">
+          <option *ngFor="let option of durationOptions" [ngValue]="option">
+            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+          </option>
+        </select>
+      </label>
+
+      <p class="nutrition-duration-copy">
+        This will create a {{ normalizedDurationWeeks }}-week macro plan.
+      </p>
+
+      <div class="nutrition-duration-info">
+        <i-feather name="info"></i-feather>
+        <span>{{ normalizedDurationWeeks * 7 }} days will be generated.</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" type="button" (click)="closeDurationModal()">
+        Cancel
+      </button>
+      <button
+        class="btn-primary nutrition-duration-submit"
+        type="button"
+        [disabled]="!programName.trim()"
+        (click)="confirmDuration()"
+      >
+        Create Plan
+      </button>
+    </div>
+  </div>
+</div>

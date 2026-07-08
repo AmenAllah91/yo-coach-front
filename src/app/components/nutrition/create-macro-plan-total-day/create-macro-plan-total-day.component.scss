@@ -1577,3 +1577,300 @@
   width: auto !important;
   max-width: none !important;
 }
+
+/* Workout-style weekly sidebar for nutrition builders. */
+.np-week-card {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 10px;
+}
+
+.np-week-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.np-week-card__head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.np-week-card__head strong {
+  color: #0ea5e9;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.np-week-card__head small,
+.np-week-card__head span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.np-week-card .np-dayrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.np-week-card .np-dayrow:last-child {
+  margin-bottom: 0;
+}
+
+.np-week-card .np-day {
+  min-height: 52px;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.np-week-card .np-day span {
+  font-weight: 800;
+}
+
+.np-week-card .np-day small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Final builder section tint: keep Global Plan Settings white. */
+.np-card--settings {
+  background: #fff !important;
+}
+
+.np-card--settings > .np-mobile-days,
+.np-card--settings > .np-dayhead,
+.np-card--settings > .np-day-total,
+.np-card--settings > .np-meal,
+.np-card--settings > .np-grid-2,
+.np-card--settings > .np-addmeal,
+.np-card--settings > .np-totals,
+.np-card--settings > .np-macro-row {
+  background: #f6fbff !important;
+  border: 1px solid #d9edf7 !important;
+  border-left: 3px solid #44b4df !important;
+  border-radius: 8px !important;
+  padding: 16px 18px !important;
+}
+
+.np-dayhead {
+  align-items: center !important;
+  margin: 0 0 12px !important;
+}
+
+.np-dayhead .np-h6,
+.np-subtle {
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.duration-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.duration-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.duration-confirm__card {
+  position: relative;
+  width: min(520px, 100%);
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  padding: 28px;
+  display: grid;
+  gap: 18px;
+}
+
+.duration-confirm__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.duration-confirm__closeIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.duration-confirm__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.duration-confirm__iconSvg {
+  width: 24px;
+  height: 24px;
+}
+
+.duration-confirm__title {
+  margin: 0 32px 8px 0;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.duration-confirm__text {
+  margin: 0;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.duration-confirm__hint {
+  margin: 10px 0 0;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.duration-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.duration-confirm__btn {
+  border-radius: 8px;
+  padding: 11px 18px;
+  border: 1px solid transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.duration-confirm__btn--ghost {
+  background: #fff;
+  color: #0f172a;
+  border-color: #d7e2ef;
+}
+
+.duration-confirm__btn--danger {
+  background: #111827;
+  color: #fff;
+}
+
+/* Unified day builder rail: keep Global Plan Settings white, connect the editable day area. */
+.np-card--settings > .np-dayhead,
+.np-card--settings > .np-totals,
+.np-card--settings > .np-macro-row,
+.np-card--settings > .np-grid-2,
+.np-card--settings > .np-addmeal,
+.np-dayhead ~ .np-link {
+  background: #f6fbff !important;
+  border-left: 3px solid #44b4df !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.np-card--settings > .np-dayhead {
+  align-items: center !important;
+  padding: 16px 18px 12px 24px !important;
+}
+
+.np-dayhead ~ .np-link {
+  display: flex !important;
+  width: 100%;
+  padding: 12px 18px 14px 24px !important;
+}
+
+.np-card--settings > .np-totals,
+.np-card--settings > .np-macro-row,
+.np-card--settings > .np-grid-2,
+.np-card--settings > .np-addmeal {
+  border-left-width: 3px !important;
+  padding-left: 24px !important;
+  padding-right: 18px !important;
+}
+
+.np-dayhead .np-h6 {
+  margin: 0 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+}
+
+.builder-rail {
+  margin: 0 !important;
+  background: #f6fbff !important;
+  border: 1px solid #d9edf7 !important;
+  border-left: 3px solid #44b4df !important;
+  border-radius: 0 !important;
+  padding: 0 18px 18px 22px !important;
+}
+
+.builder-rail > .np-dayhead,
+.builder-rail > .np-totals,
+.builder-rail > .np-macro-row,
+.builder-rail > .np-grid-2,
+.builder-rail > .np-addmeal,
+.builder-rail .np-link {
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.builder-rail > .np-dayhead,
+.builder-rail > .np-totals,
+.builder-rail > .np-macro-row,
+.builder-rail > .np-grid-2,
+.builder-rail > .np-addmeal {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* PATCH 2026-07-08: nutrition builder top/left aligned with workout reference */
+.np-main > .np-card--settings { margin-top: 16px; }
+.np-pagehead { display: none !important; }
+.np-aside__head .np-h6::before { content: none !important; }
+.np-aside__head { padding: 16px; border-bottom: 1px solid #e6e9ee; }
+.np-aside__sub { margin: 6px 0 0; color: #64748b; font-size: 12px; font-weight: 600; }
+.np-week-card { border: 1px solid #dbeafe; border-radius: 8px; background: #f8fbff; padding: 10px; margin-bottom: 12px; }
+.np-week-card__head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; font-size:12px; }
+.np-week-card__head strong { color:#0ea5e9; font-size:12px; font-weight:800; }
+.np-week-card__head small { display:block; color:#64748b; font-size:11px; font-weight:700; margin-top:2px; }
+.np-week-card__count { color:#64748b; border:1px solid #d7e5f3; background:#fff; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:800; white-space:nowrap; }
+.np-dayrow { display:flex; align-items:center; gap:10px; }
+.np-day { flex:1; justify-content:flex-start; border:1px solid transparent; border-radius:8px; background:#fff; font-weight:700; color:#0f172a; }
+.np-day.is-active { background:#EAF7FD; border-color:#9BD7EE; color:#1EA2D2; }
+.np-day__title { display:block; }
+.np-day__meta { display:block; margin-top:4px; color:#64748b; font-size:11px; font-weight:600; }
+.np-day.is-active .np-day__meta { color:#64748b; }
+.np-aside .np-iconbtn { width:auto; height:auto; padding:0; border:none; background:transparent; }
+.np-aside .np-iconbtn .np-ico { color:#9AA9B8; }
+.np-settings-kicker { display:inline-flex; align-items:center; gap:8px; margin-bottom:16px; color:#64748b; font-size:12px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.np-settings-kicker__dot { width:10px; height:10px; border-radius:999px; background:#44b4df; box-shadow:0 0 0 4px rgba(68,180,223,.15); }

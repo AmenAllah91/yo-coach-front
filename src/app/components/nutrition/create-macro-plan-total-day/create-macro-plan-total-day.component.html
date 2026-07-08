@@ -4,50 +4,41 @@
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Nutrition Days</h2>
+        <h2 class="np-h6">Program Structure</h2>
+        <p class="np-aside__sub">{{ nutritionWeeks?.length || 0 }} Weeks • {{ days?.length || 0 }} Days</p>
       </div>
 
-      <div
-        class="np-aside__body"
-        cdkDropList
-        [cdkDropListData]="days"
-        (cdkDropListDropped)="onDropDay($event)"
-      >
+      <div class="np-aside__body">
         <!-- Liste des Days -->
-        <ng-container
-          *ngFor="let d of days; trackBy: trackByDay; let i = index"
-        >
+        <div class="np-week-card" *ngFor="let week of nutritionWeeks">
+          <div class="np-week-card__head">
+            <div>
+              <strong>WEEK {{ week.weekNumber }}</strong>
+              <small>{{ week.days[0].index + 1 }} - {{ week.days[week.days.length - 1].index + 1 }} days</small>
+            </div>
+            <span class="np-week-card__count">{{ week.days.length }} days</span>
+          </div>
           <!-- 1er day sans icône suppression -->
-          <button
-            *ngIf="i === 0; else otherDay"
-            cdkDrag
-            class="np-day"
-            [class.is-active]="selectedDay?.id === d.id"
-            (click)="selectDay(d)"
-          >
-            <span>{{ d.dayOfWeek }}</span>
-          </button>
+          <div class="np-dayrow" *ngFor="let item of week.days" [class.is-active]="selectedDay?.id === item.day.id">
+            <button
+              class="np-day"
+              [class.is-active]="selectedDay?.id === item.day.id"
+              (click)="selectDay(item.day)"
+            >
+              <span class="np-day__title">{{ item.day.dayOfWeek || ('Day ' + (item.index + 1)) }}</span>
+              <small class="np-day__meta">{{ (item.day.meals?.length || 0) > 0 ? ((item.day.meals?.length || 0) + ' meals') : 'Empty Day' }}</small>
+            </button>
 
           <!-- Day >= 2 avec icône trash -->
-          <ng-template #otherDay>
-            <div class="np-dayrow" cdkDrag>
-              <button
-                class="np-day"
-                [class.is-active]="selectedDay?.id === d.id"
-                (click)="selectDay(d)"
-              >
-                <span>{{ d.dayOfWeek }}</span>
-              </button>
-              <button
-                class="np-iconbtn"
-                title="Delete"
-                (click)="deleteDay(d, $event)"
-              >
-                <i-feather name="trash-2" class="np-ico"></i-feather>
-              </button>
-            </div>
-          </ng-template>
-        </ng-container>
+            <button
+              class="np-iconbtn np-iconbtn--add"
+              title="Select day"
+              (click)="selectDay(item.day); $event.stopPropagation()"
+            >
+              <i-feather name="plus" class="np-ico"></i-feather>
+            </button>
+          </div>
+        </div>
 
         <!-- Add Day -->
         <button
@@ -69,25 +60,12 @@
 
     <!-- ===== Main ===== -->
     <main class="np-main">
-      <div class="np-pagehead">
-        <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </a>
-        <h1 class="np-h5">
-          {{ isEditMode ? "Update Nutrition Plan" : "Create Nutrition Plan" }}
-        </h1>
-      </div>
+      <section class="np-card np-card--settings">
+        <div class="np-settings-kicker">
+          <span class="np-settings-kicker__dot"></span>
+          <span>Global Plan Settings</span>
+        </div>
 
-      <section class="np-card">
         <!-- Plan Title -->
         <div class="np-field">
           <label class="np-label"
@@ -125,6 +103,20 @@
           </div>
         </ng-template>
 
+        <div class="np-field">
+          <label class="np-label">Duration (Weeks) <span class="np-danger">*</span></label>
+          <select
+            class="np-input"
+            [ngModel]="durationWeeks"
+            (ngModelChange)="onDurationWeeksChange($event)"
+            name="durationWeeks"
+          >
+            <option *ngFor="let option of durationOptions" [ngValue]="option">
+              {{ option }} {{ option === 1 ? "Week" : "Weeks" }} ({{ option * 7 }} Days)
+            </option>
+          </select>
+        </div>
+
         <div class="np-field np-template-visibility" *ngIf="canCreateTemplate">
           <label class="np-checkline">
             <input
@@ -143,7 +135,25 @@
 
         <div class="np-sep"></div>
 
+        <div class="np-mobile-days">
+          <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
+            <button
+              type="button"
+              class="np-mobile-day"
+              [class.is-active]="selectedDay?.id === d.id"
+              (click)="selectDay(d)"
+            >
+              <span class="np-mobile-day__title">{{ d.title || d.dayOfWeek || ('Day ' + (i + 1)) }}</span>
+            </button>
+          </ng-container>
+          <button type="button" class="np-mobile-add" (click)="addDay()" aria-label="Add day">
+            <i-feather name="plus" class="np-ico"></i-feather>
+          </button>
+        </div>
+
+
         <!-- Day Header -->
+        <div class="builder-rail">
         <div class="np-dayhead">
           <h3 class="np-h6">{{ selectedDay?.dayOfWeek }}</h3>
           <button class="np-mini" (click)="toggleDayDescription()">
@@ -156,18 +166,18 @@
           <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Day Description
+              Add Nutrition Description
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Day Description</label>
+              <label class="np-label">Nutrition Description</label>
               <div class="np-textareaWrap">
                 <textarea
                   class="np-input np-textarea"
                   rows="5"
-                  placeholder="Enter Day Description"
+                  placeholder="Enter Nutrition Description"
                   [(ngModel)]="selectedDay!.description"
                 ></textarea>
                 <button
@@ -259,6 +269,7 @@
             </div>
           </div>
         </div>
+        </div>
       </section>
 
       <div class="np-sticky">
@@ -280,4 +291,33 @@
       </div>
     </main>
   </div>
+</div>
+
+<div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
+  <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>
+  <section class="duration-confirm__card">
+    <button type="button" class="duration-confirm__close" aria-label="Close" (click)="cancelDurationReduction()">
+      <i-feather name="x" class="duration-confirm__closeIcon"></i-feather>
+    </button>
+    <div class="duration-confirm__icon">
+      <i-feather name="alert-triangle" class="duration-confirm__iconSvg"></i-feather>
+    </div>
+    <div>
+      <h2 class="duration-confirm__title">Delete days from this plan?</h2>
+      <p class="duration-confirm__text">
+        Changing the duration to {{ pendingDurationWeeks }} {{ pendingDurationWeeks === 1 ? "week" : "weeks" }}
+        will permanently remove the last {{ pendingDurationRemovedDays }}
+        {{ pendingDurationRemovedDays === 1 ? "day" : "days" }}.
+      </p>
+      <p class="duration-confirm__hint">This action cannot be undone after you confirm.</p>
+    </div>
+    <div class="duration-confirm__actions">
+      <button type="button" class="duration-confirm__btn duration-confirm__btn--ghost" (click)="cancelDurationReduction()">
+        Cancel
+      </button>
+      <button type="button" class="duration-confirm__btn duration-confirm__btn--danger" (click)="confirmDurationReduction()">
+        Delete days
+      </button>
+    </div>
+  </section>
 </div>
