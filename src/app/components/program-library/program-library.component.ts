@@ -619,6 +619,11 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   createProgram() {
+    if (!this.workoutFileEnabled) {
+      this.createNormalWorkout();
+      return;
+    }
+
     this.showCreateTypeModal = true;
   }
 
@@ -657,6 +662,11 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   openImportFileWorkout() {
+    if (!this.workoutFileEnabled) {
+      this.showCreateTypeModal = false;
+      return;
+    }
+
     this.showCreateTypeModal = false;
     this.showImportFileModal = true;
     this.importError = '';

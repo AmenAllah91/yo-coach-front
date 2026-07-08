@@ -270,7 +270,7 @@
           <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
           <button class="type-action" (click)="createNormalWorkout()">Create Normal Workout</button>
         </div>
-        <div class="workout-type-card">
+        <div class="workout-type-card" *ngIf="workoutFileEnabled">
           <h4>File Workout Plan</h4>
           <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
           <button class="type-action" (click)="openImportFileWorkout()">Import PDF / Excel</button>
