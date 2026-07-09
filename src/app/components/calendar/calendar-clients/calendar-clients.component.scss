@@ -362,6 +362,11 @@
   color: #059669;
 }
 
+.workout-program {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 /* badge P / N */
 
 .badge-circle {
@@ -3132,4 +3137,209 @@
 .exercise-selector .exercise-selector-name,
 .exercise-selector .exercise-selector-type {
   text-align: left !important;
+}
+.drag-handle,
+.cell-copy-bar,
+.week-copy-bar {
+  display: none !important;
+}
+
+.card.card-empty-day {
+  border-style: dashed !important;
+  border-color: #c7d5ea !important;
+  background: #f8fbff !important;
+  color: #475569;
+  cursor: pointer;
+}
+
+.card.card-empty-day::after {
+  content: "Empty day";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-top: 10px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  color: #71809b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card.card-empty-day:hover {
+  border-color: #35afd8 !important;
+  background: #f8fdff !important;
+  box-shadow: none !important;
+}
+
+.card.card-empty-day:hover::after {
+  border-color: transparent;
+  color: #0f94bd;
+  font-weight: 900;
+}
+
+.card-workout.card-empty-day:hover::after {
+  content: "+ Add workout";
+}
+
+.card-nutrition.card-empty-day:hover::after {
+  content: "+ Add nutrition";
+}
+
+.card.card-empty-day .card-header-right,
+.card.card-empty-day .badge-circle,
+.card.card-empty-day .badge-circle-coche,
+.card.card-empty-day .badge-failed {
+  display: none !important;
+}
+
+.card.card-empty-day .card-body,
+.card.card-empty-day .nutrition-line {
+  display: none !important;
+}
+
+.card.card-rest-day {
+  border-color: #a7f3d0 !important;
+  background: #ecfdf5 !important;
+}
+
+.calendar-month .card-workout:not(.file-range-card) .card-header,
+.calendar-week .card-workout:not(.file-range-card) .card-header,
+.calendar-day .card-workout:not(.file-range-card) .card-header,
+.calendar-month .card-nutrition .card-header,
+.calendar-week .card-nutrition .card-header,
+.calendar-day .card-nutrition .card-header {
+  align-items: flex-start !important;
+}
+
+.calendar-month .card-workout:not(.file-range-card) .card-title,
+.calendar-week .card-workout:not(.file-range-card) .card-title,
+.calendar-day .card-workout:not(.file-range-card) .card-title,
+.calendar-month .card-nutrition .card-title,
+.calendar-week .card-nutrition .card-title,
+.calendar-day .card-nutrition .card-title {
+  color: #0284c7 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.calendar-month .card-workout:not(.file-range-card) .card-subtitle,
+.calendar-week .card-workout:not(.file-range-card) .card-subtitle,
+.calendar-day .card-workout:not(.file-range-card) .card-subtitle,
+.calendar-month .card-nutrition .card-subtitle,
+.calendar-week .card-nutrition .card-subtitle,
+.calendar-day .card-nutrition .card-subtitle {
+  margin-top: 2px;
+  color: #0f172a !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.calendar-month .card-workout:not(.file-range-card) .card-body,
+.calendar-week .card-workout:not(.file-range-card) .card-body,
+.calendar-day .card-workout:not(.file-range-card) .card-body {
+  margin-top: 8px;
+  padding: 10px 12px !important;
+  border: 1px solid #dbe7f1 !important;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.workout-day-name {
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.calendar-program-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #178fb1;
+  font-size: 15px !important;
+  line-height: 1;
+}
+
+.card.card-rest-day::after {
+  content: "Rest day";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-top: 10px;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #047857;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.card.card-rest-day .card-body {
+  display: none !important;
+}
+
+.calendar-create-program-modal {
+  width: min(640px, calc(100vw - 32px));
+}
+
+.calendar-create-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.calendar-create-duration-chip {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 6px 0 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.calendar-create-duration-chip .material-icons {
+  font-size: 18px;
+}
+
+.calendar-create-help {
+  margin: 0 0 16px;
+  color: #7a8799;
+  font-size: 13px;
+}
+
+.calendar-create-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.calendar-create-info .material-icons {
+  font-size: 20px;
+}
+
+@media (max-width: 640px) {
+  .calendar-create-date-grid {
+    grid-template-columns: 1fr;
+  }
 }

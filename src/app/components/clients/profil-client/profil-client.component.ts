@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Client, ClientService } from 'app/service/client.service';
 
-import { ChoosePlanTypeModalComponent } from 'app/components/nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
+import { ChoosePlanTypeModalComponent, NutritionPlanChoice } from 'app/components/nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
 import { WorkoutsClientTabComponent } from './workouts-client-tab/workouts-client-tab.component';
 import { NutritionClientTabComponent } from './nutrition-client-tab/nutrition-client-tab.component';
 import { NutritionSelectionModalComponent } from './nutrition-selection-modal/nutrition-selection-modal.component';
@@ -195,7 +195,7 @@ export class ProfilClientComponent {
       (this.client as any)?.idealShapeDescription ||
       (this.client as any)?.objective ||
       (this.client as any)?.goal ||
-      (this.clientTargetWeight ? `Goal weight ${this.formatNumber(this.clientTargetWeight)} kg` : '')
+      (this.clientTargetWeight ? `Goal weight ${this.formatWeight(this.clientTargetWeight)}` : '')
     );
   }
 
@@ -207,6 +207,10 @@ export class ProfilClientComponent {
     return Number(value).toLocaleString('fr-FR', {
       maximumFractionDigits: 1,
     });
+  }
+
+  formatWeight(valueKg: number | null | undefined): string {
+    return this.coachSettingsService.formatWeight(valueKg);
   }
 
   loadBodyMeasurements(): void {
@@ -248,6 +252,7 @@ export class ProfilClientComponent {
   clientNutritionDurationWeeks = 4;
   clientNutritionStartDate = new Date().toISOString().slice(0, 10);
   clientNutritionConflict: ClientWorkoutConflict | null = null;
+  selectedClientNutritionPlanType: NutritionPlanChoice | null = null;
 
   profileImportWorkoutFile: File | null = null;
   profileImportWorkoutName = '';
@@ -355,7 +360,7 @@ export class ProfilClientComponent {
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private bodyMeasurementsService: BodyMeasurementsService,
-    private coachSettingsService: CoachSettingsService
+    public coachSettingsService: CoachSettingsService
   ) {
     const routeId = this.route.snapshot.paramMap.get('id') || '';
     if (routeId) {
@@ -978,7 +983,8 @@ export class ProfilClientComponent {
 
   createNormalNutritionFromProfile(): void {
     this.showNutritionExistingTypeModal = false;
-    this.openClientNutritionCreateModal();
+    this.selectedClientNutritionPlanType = null;
+    this.showChooseModal = true;
   }
 
   importFileNutritionFromProfile(): void {
@@ -1065,9 +1071,16 @@ export class ProfilClientComponent {
     this.refreshClientNutritionConflict();
   }
 
+  onClientNutritionPlanTypeSelected(type: NutritionPlanChoice): void {
+    this.selectedClientNutritionPlanType = type;
+    this.showChooseModal = false;
+    this.openClientNutritionCreateModal();
+  }
+
   closeClientNutritionCreateModal(): void {
     this.showClientNutritionCreateModal = false;
     this.clientNutritionConflict = null;
+    this.selectedClientNutritionPlanType = null;
   }
 
   get clientNutritionDurationDays(): number {
@@ -1126,7 +1139,7 @@ export class ProfilClientComponent {
 
   createClientNutritionProgram(): void {
     const name = this.clientNutritionProgramName.trim();
-    if (!name || !this.canCreateClientNutritionProgram) return;
+    if (!name || !this.canCreateClientNutritionProgram || !this.selectedClientNutritionPlanType) return;
 
     const conflict = this.clientNutritionConflict;
     const resolution = conflict?.resolution;
@@ -1135,8 +1148,32 @@ export class ProfilClientComponent {
       : this.clientNutritionStartDate;
 
     this.showClientNutritionCreateModal = false;
-    this.showChooseModal = true;
     this.clientNutritionStartDate = resolvedStartDate;
+
+    const queryParams = {
+      name,
+      durationWeeks: this.clientNutritionDurationWeeks,
+      startDate: resolvedStartDate,
+      endDate: this.clientNutritionEndDate,
+      returnUrl: this.profileNutritionReturnUrl,
+      assignAfterCreate: true,
+    };
+
+    if (this.selectedClientNutritionPlanType === 'full') {
+      this.router.navigate([`/clients/create-full-plan/${this.clientId}`], { queryParams });
+      return;
+    }
+
+    if (this.selectedClientNutritionPlanType === 'macro-total') {
+      this.router.navigate([`/clients/create-macro-plan-total-day/${this.clientId}`], {
+        queryParams: { ...queryParams, type: 'total' },
+      });
+      return;
+    }
+
+    this.router.navigate([`/clients/create-macro-plan/${this.clientId}`], {
+      queryParams: { ...queryParams, type: 'each' },
+    });
   }
 
   isFileWorkoutPlan(plan: any): boolean {
@@ -1804,6 +1841,7 @@ export class ProfilClientComponent {
     this.showChooseModal = false;
     this.showClientNutritionCreateModal = false;
     this.clientNutritionConflict = null;
+    this.selectedClientNutritionPlanType = null;
     this.showWorkoutTypeModal = false;
     this.showFileWorkoutImportModal = false;
     this.showNutritionFileImportModal = false;

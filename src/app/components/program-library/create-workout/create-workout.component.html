@@ -469,7 +469,7 @@
                     <div *ngIf="exercise.sets?.length > 0" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField() || exercise.type === 'CARDIO'">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">Set</div>
-                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">Weight (kg)</div>
+                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">Weight ({{ facade.getWeightUnitLabel() }})</div>
                         <div class="wkex-sets__th">
                           {{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}
                         </div>
@@ -543,7 +543,7 @@
 
                           <div
                             class="wkex-sets__cell"
-                            data-label="Weight (kg)"
+                            [attr.data-label]="'Weight (' + facade.getWeightUnitLabel() + ')'"
                             *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
                           >
                             <input
@@ -767,7 +767,7 @@
             </div>
 
             <div *ngIf="facade.shouldShowWeightField() && selectedExercise.type !== 'CARDIO'">
-              <label class="np-label">Weight (kg)</label>
+              <label class="np-label">Weight ({{ facade.getWeightUnitLabel() }})</label>
               <input
                 class="np-input"
                 type="number"

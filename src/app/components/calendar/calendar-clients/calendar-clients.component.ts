@@ -18,6 +18,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ExerciseService, PageResponse } from 'app/service/exercise.service';
 import { Exercise as LibraryExercise } from '@shared/models/exercice.models';
+import { WorkoutPlan } from '@shared/models/workout.models';
+import { MealDay, MealPlan } from '@shared/models/MealPlan';
 
 interface ExerciseSet {
   id: string;
@@ -61,8 +63,10 @@ interface WorkoutProgram {
   sessions: WorkoutSession[];
   programId?: string;
   programName?: string;
+  dayNumber?: number;
   status?: 'COMPLETED' | 'MISSED' | 'PENDING';
   restDay?: boolean;
+  emptyDay?: boolean;
 
   // Optional metadata for imported PDF / Excel workout programs.
   // Existing workout-day behavior stays untouched.
@@ -106,11 +110,13 @@ interface NutritionProgram {
   dayId?: string;
   trackingMode?: string;
   programName?: string;
+  dayNumber?: number;
   totalCalories: number;
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
   meals: NutritionMeal[];
+  emptyDay?: boolean;
 }
 
 type CalendarViewMode = 'month' | 'week' | 'day';
@@ -141,6 +147,12 @@ currentDate = new Date();
   showNutritionDetails = false;
 
   showAddWorkoutModal = false;
+  showCreateProgramModal = false;
+  createProgramName = '';
+  createProgramDurationWeeks = 4;
+  createProgramStartDate = '';
+  readonly createProgramDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  createProgramSaving = false;
   isRestDay = false;
   selectedDateString: string | null = null;
 
@@ -501,6 +513,21 @@ currentDate = new Date();
     return this.getFileResourceType(item) === 'EXCEL' ? 'Programme Excel' : 'Programme PDF';
   }
 
+  getCalendarCardProgramName(item: WorkoutProgram | NutritionProgram): string {
+    return item.programName || item.title || 'Program';
+  }
+
+  getCalendarCardDayLabel(item: WorkoutProgram | NutritionProgram): string {
+    const dayNumber = Number((item as WorkoutProgram | NutritionProgram).dayNumber || this.extractDayNumber(item.title) || 1);
+    const weekNumber = Math.max(1, Math.ceil(dayNumber / 7));
+    return `Week ${weekNumber} · Day ${dayNumber}`;
+  }
+
+  private extractDayNumber(value: string | undefined): number | null {
+    const match = String(value || '').match(/day\s*(\d+)/i);
+    return match ? Number(match[1]) : null;
+  }
+
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private deduplicateBackendWorkoutPlans(plans: any[]): any[] {
@@ -615,9 +642,11 @@ currentDate = new Date();
           clientId: plan.client?.id,
           programId: plan.id,
           programName: plan.name,
+          dayNumber: day.dayNumber ?? 1,
           sessions,
           status: day.status || 'PENDING',
           restDay: day.restDay,
+          emptyDay: !day.restDay && sessions.length === 0,
         });
       });
     });
@@ -665,24 +694,26 @@ currentDate = new Date();
             (day.dayTargets.carbsG ?? 0) > 0 ||
             (day.dayTargets.fatG ?? 0) > 0);
 
-        const isRestDay =
+        const isEmptyDay =
           !hasMeals && !hasTargets && !day.cheatMeal && !day.refeedDay;
 
-        if (isRestDay) {
+        if (isEmptyDay) {
           result.push({
-            id: `${plan.id}-rest-${day.date}`,
-            title: 'Rest Day',
+            id: `${plan.id}-empty-${day.date}`,
+            title: plan.name,
             date: day.date,
             clientId: plan.client?.id,
             programId: plan.id,
             dayId: day.id,
             trackingMode: plan.trackingMode,
             programName: plan.name,
+            dayNumber: day.dayNumber ?? 1,
             totalCalories: 0,
             totalProtein: 0,
             totalCarbs: 0,
             totalFat: 0,
             meals: [],
+            emptyDay: true,
           });
           return;
         }
@@ -711,6 +742,7 @@ currentDate = new Date();
           dayId: day.id,
           trackingMode: plan.trackingMode,
           programName: plan.name,
+          dayNumber: day.dayNumber ?? 1,
           totalCalories: day.dayTargets?.calories ?? 0,
           totalProtein: day.dayTargets?.proteinG ?? 0,
           totalCarbs: day.dayTargets?.carbsG ?? 0,
@@ -1804,26 +1836,214 @@ currentDate = new Date();
   }
 
   addItem(dateStr: string): void {
-    if (this.calendarType !== 'workout') {
-      return;
-    }
-
     if (!this.canManageWorkoutDays()) {
       alert('Please select a client first.');
       return;
     }
 
+    const existingItems = this.getItemsForDay(dateStr);
+
+    if (existingItems.length === 0) {
+      this.openCreateProgramModal(dateStr);
+      return;
+    }
+
+    const emptyItem = existingItems.find((item: any) => item.emptyDay);
+    if (emptyItem) {
+      if (this.calendarType === 'nutrition') {
+        this.viewNutrition(emptyItem as NutritionProgram);
+        return;
+      }
+
+      this.openEditWorkoutModal(emptyItem as WorkoutProgram);
+      return;
+    }
+
+    if (this.calendarType !== 'workout') {
+      return;
+    }
+
     const lastPlan = this.getLastWorkoutPlanForClient(this.selectedClient);
     if (!lastPlan) {
-      alert(
-        'This client has no assigned workout plan yet. Please assign a workout plan first.'
-      );
+      this.openCreateProgramModal(dateStr);
       return;
     }
 
     this.selectedDateString = dateStr;
     this.resetWorkoutForm();
     this.showAddWorkoutModal = true;
+  }
+
+  openCreateProgramModal(dateStr: string): void {
+    if (!this.canManageWorkoutDays()) {
+      alert('Please select a client first.');
+      return;
+    }
+
+    this.createProgramName = '';
+    this.createProgramDurationWeeks = 4;
+    this.createProgramStartDate = dateStr;
+    this.createProgramSaving = false;
+    this.showCreateProgramModal = true;
+  }
+
+  closeCreateProgramModal(): void {
+    if (this.createProgramSaving) return;
+
+    this.showCreateProgramModal = false;
+    this.createProgramName = '';
+    this.createProgramDurationWeeks = 4;
+    this.createProgramStartDate = '';
+  }
+
+  get createProgramDurationDays(): number {
+    return this.normalizedCreateProgramDurationWeeks * 7;
+  }
+
+  get createProgramEndDate(): string {
+    if (!this.createProgramStartDate) return '';
+    return this.addDays(this.createProgramStartDate, this.createProgramDurationDays - 1);
+  }
+
+  get normalizedCreateProgramDurationWeeks(): number {
+    const weeks = Number(this.createProgramDurationWeeks) || 4;
+    return Math.max(1, Math.min(weeks, 52));
+  }
+
+  get canCreateCalendarProgram(): boolean {
+    return !!this.createProgramName.trim()
+      && !!this.createProgramStartDate
+      && !this.createProgramSaving;
+  }
+
+  submitCreateProgramModal(): void {
+    if (!this.canCreateCalendarProgram) return;
+
+    if (this.calendarType === 'nutrition') {
+      this.createEmptyNutritionProgram();
+      return;
+    }
+
+    this.createEmptyWorkoutProgram();
+  }
+
+  private getSelectedClientRef(): any {
+    const client = this.clients.find((item) => item.id === this.selectedClient);
+    return client || { id: this.selectedClient };
+  }
+
+  getSelectedClientName(): string {
+    const client = this.clients.find((item) => item.id === this.selectedClient);
+    if (!client) return 'selected client';
+
+    return `${client.firstName || ''} ${client.lastName || ''}`.trim()
+      || client.name
+      || 'selected client';
+  }
+
+  private createEmptyWorkoutProgram(): void {
+    const startDate = this.createProgramStartDate;
+    const days = Array.from({ length: this.createProgramDurationDays }, (_, index) =>
+      this.buildEmptyWorkoutDay(startDate, index)
+    );
+
+    const payload: WorkoutPlan = {
+      name: this.createProgramName.trim(),
+      details: '',
+      startDate,
+      endDate: this.createProgramEndDate,
+      client: this.getSelectedClientRef(),
+      workoutDays: days,
+      isWorkoutPlanTemplate: false,
+      workoutPlanMode: 'NORMAL',
+    };
+
+    this.createProgramSaving = true;
+    this.workoutService.createWorkout(payload).subscribe({
+      next: () => {
+        this.createProgramSaving = false;
+        this.closeCreateProgramModal();
+        this.getWorkout();
+      },
+      error: (err) => {
+        console.error('Error creating calendar workout program', err);
+        this.createProgramSaving = false;
+        alert('Failed to create workout program.');
+      },
+    });
+  }
+
+  private buildEmptyWorkoutDay(startDate: string, index: number): any {
+    const date = this.addDays(startDate, index);
+    const dateObject = new Date(`${date}T00:00:00`);
+
+    return {
+      id: crypto.randomUUID?.() || `${Date.now()}-${index}`,
+      date,
+      dayOfWeek: dateObject.toLocaleDateString('en-US', { weekday: 'long' }),
+      restDay: false,
+      dayNumber: index + 1,
+      title: `Day ${index + 1}`,
+      description: '',
+      workoutSessions: [],
+      status: 'PENDING',
+    };
+  }
+
+  private createEmptyNutritionProgram(): void {
+    const startDate = this.createProgramStartDate;
+    const mealDays = Array.from({ length: this.createProgramDurationDays }, (_, index) =>
+      this.buildEmptyNutritionDay(startDate, index)
+    );
+
+    const payload: MealPlan = {
+      name: this.createProgramName.trim(),
+      details: '',
+      startDate,
+      endDate: this.createProgramEndDate,
+      date: null,
+      trackingMode: null,
+      mealDays,
+      coach: null,
+      client: this.getSelectedClientRef(),
+    };
+
+    this.createProgramSaving = true;
+    this.nutritionService.createNutritionPlan(payload).subscribe({
+      next: () => {
+        this.createProgramSaving = false;
+        this.closeCreateProgramModal();
+        this.getNutrition();
+      },
+      error: (err) => {
+        console.error('Error creating calendar nutrition program', err);
+        this.createProgramSaving = false;
+        alert('Failed to create nutrition program.');
+      },
+    });
+  }
+
+  private buildEmptyNutritionDay(startDate: string, index: number): MealDay {
+    const date = this.addDays(startDate, index);
+    const dateObject = new Date(`${date}T00:00:00`);
+
+    return {
+      id: crypto.randomUUID?.() || `${Date.now()}-${index}`,
+      date,
+      dayOfWeek: dateObject.toLocaleDateString('en-US', { weekday: 'long' }),
+      cheatMeal: false,
+      refeedDay: false,
+      description: '',
+      title: `Day ${index + 1}`,
+      showDescription: false,
+      dayTargets: {
+        calories: 0,
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+      },
+      meals: [],
+    } as MealDay;
   }
 
   openEditWorkoutModal(workout: WorkoutProgram, event?: Event): void {
@@ -1897,6 +2117,10 @@ currentDate = new Date();
 
   shouldShowCalendarWeightField(): boolean {
     return this.coachSettingsService.shouldShowExerciseWeight();
+  }
+
+  get weightUnitLabel(): string {
+    return this.coachSettingsService.getWeightUnit();
   }
 
   private getDefaultWeightForExercise(type: Exercise['type']): number | null {

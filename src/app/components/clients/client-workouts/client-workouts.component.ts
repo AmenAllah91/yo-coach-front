@@ -68,6 +68,13 @@ interface Workout {
   groupedExercises: GroupedExercise[];
 }
 
+interface WorkoutExerciseDisplay {
+  badge: string;
+  name: string;
+  suffix: string;
+  isWarmUp: boolean;
+}
+
 interface FileProgram {
   id: string;
   name: string;
@@ -159,6 +166,15 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     return this.coachSettingsService.shouldShowExerciseWeight();
   }
 
+  get weightUnitLabel(): string {
+    return this.coachSettingsService.getWeightUnit();
+  }
+
+  formatExerciseWeight(value: number | null | undefined): string {
+    const converted = this.coachSettingsService.convertWeightFromKg(value);
+    return converted === null ? '-' : this.coachSettingsService.formatNumber(converted);
+  }
+
   get showWorkoutFiles(): boolean {
     return this.workoutFileEnabled;
   }
@@ -179,7 +195,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         }
       });
       this.coaches = Array.from(coachMap.values());
-      this.selectedCoachId = this.coaches.length === 1 ? this.coaches[0].id : 'all';
+      this.selectedCoachId = this.resolveCurrentCoachId(this.allPlans) || this.coaches[0]?.id || 'all';
       this.loadCoachWorkoutFileSettings();
     });
   }
@@ -269,6 +285,33 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   getPlanCoachId(plan: any): string | null {
     return plan?.coach?.id || plan?.coach?._id || plan?.createdBy || plan?.client?.coachId || null;
+  }
+
+  private resolveCurrentCoachId(plans: any[]): string | null {
+    const clientCoachId = (plans || [])
+      .map((plan) => plan?.client?.coachId || plan?.client?.coach?.id || plan?.client?.coach?._id)
+      .find((coachId) => !!coachId);
+
+    if (clientCoachId) {
+      return clientCoachId;
+    }
+
+    const activePlanCoachId = (plans || [])
+      .filter((plan) => this.isPlanCurrent(plan))
+      .map((plan) => this.getPlanCoachId(plan))
+      .find((coachId) => !!coachId);
+
+    return activePlanCoachId || null;
+  }
+
+  private isPlanCurrent(plan: any): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = plan?.startDate ? new Date(plan.startDate) : null;
+    const end = plan?.endDate ? new Date(plan.endDate) : null;
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(0, 0, 0, 0);
+    return (!start || start <= today) && (!end || end >= today);
   }
 
   onCoachChange(coachId: string | 'all') {
@@ -800,7 +843,73 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   getTotalExercises(workout: Workout): number {
-    return workout.groupedExercises.length;
+    return this.getWorkoutExerciseDisplay(workout).length;
+  }
+
+  getWorkoutExerciseDisplay(workout: Workout): WorkoutExerciseDisplay[] {
+    const exercises = (workout.rawSessions || []).flatMap((session) => session.exercises || []);
+    const display: WorkoutExerciseDisplay[] = [];
+    const groupLetters = new Map<string, string>();
+    let letterIndex = 0;
+
+    exercises.forEach((exercise) => {
+      if (this.isWarmUpExercise(exercise)) {
+        display.push({
+          badge: '',
+          name: 'Warm up',
+          suffix: '',
+          isWarmUp: true,
+        });
+        return;
+      }
+
+      const groupId = exercise.supersetGroupId || '';
+      let badgeLetter: string;
+      if (groupId) {
+        const existingLetter = groupLetters.get(groupId);
+        badgeLetter = existingLetter || this.indexToExerciseLetter(letterIndex++);
+        groupLetters.set(groupId, badgeLetter);
+      } else {
+        badgeLetter = this.indexToExerciseLetter(letterIndex++);
+      }
+      const sameGroupExercises = groupId
+        ? exercises.filter((item) => item.supersetGroupId === groupId)
+        : [];
+      const subIndex = sameGroupExercises.findIndex((item) => item === exercise || (!!item.id && item.id === exercise.id));
+      const badge = groupId && sameGroupExercises.length > 1
+        ? `${badgeLetter}${subIndex + 1}`
+        : badgeLetter;
+
+      display.push({
+        badge,
+        name: exercise.name || 'Exercise',
+        suffix: this.getExerciseSuffix(exercise),
+        isWarmUp: false,
+      });
+    });
+
+    return display;
+  }
+
+  private indexToExerciseLetter(index: number): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (index < alphabet.length) {
+      return alphabet[index];
+    }
+    return alphabet[index % alphabet.length] + Math.floor(index / alphabet.length + 1);
+  }
+
+  private isWarmUpExercise(exercise: RawExercise): boolean {
+    const normalizedName = (exercise.name || '').toLowerCase().replace(/[\s_-]+/g, '');
+    const setTypes = (exercise.sets || []).map((set) => this.normalizeSetType(set));
+    return normalizedName.includes('warmup') || (!!setTypes.length && setTypes.every((type) => type === 'WARM_UP'));
+  }
+
+  private getExerciseSuffix(exercise: RawExercise): string {
+    const setTypes = (exercise.sets || []).map((set) => this.normalizeSetType(set));
+    if (setTypes.includes('DROP_SET')) return '(Drop set)';
+    if (setTypes.includes('FAILURE')) return '(To failure)';
+    return '';
   }
 
   userName = 'Kolton';

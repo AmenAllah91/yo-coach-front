@@ -396,6 +396,75 @@
             </option>
           </select>
         </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-inner">
+      <div class="section-side">
+        <div class="section-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19V5"/>
+            <path d="M20 19V5"/>
+            <path d="M8 8h8"/>
+            <path d="M8 16h8"/>
+            <path d="M9 12h6"/>
+          </svg>
+        </div>
+        <h3 class="section-title">
+          5. Units
+        </h3>
+      </div>
+
+      <div class="section-body">
+        <div class="units-settings">
+          <div class="units-setting">
+            <label class="select-label">Weight</label>
+            <div class="unit-segment">
+              <button
+                type="button"
+                class="unit-segment__option"
+                [class.unit-segment__option--active]="config.defaults.weightUnit !== 'lbs'"
+                (click)="config.defaults.weightUnit = 'kg'"
+              >
+                Kg
+              </button>
+              <button
+                type="button"
+                class="unit-segment__option"
+                [class.unit-segment__option--active]="config.defaults.weightUnit === 'lbs'"
+                (click)="config.defaults.weightUnit = 'lbs'"
+              >
+                Lbs
+              </button>
+            </div>
+          </div>
+
+          <div class="units-setting">
+            <label class="select-label">Measurements</label>
+            <div class="unit-segment">
+              <button
+                type="button"
+                class="unit-segment__option"
+                [class.unit-segment__option--active]="config.defaults.measurementUnit !== 'in'"
+                (click)="config.defaults.measurementUnit = 'cm'"
+              >
+                Cm
+              </button>
+              <button
+                type="button"
+                class="unit-segment__option"
+                [class.unit-segment__option--active]="config.defaults.measurementUnit === 'in'"
+                (click)="config.defaults.measurementUnit = 'in'"
+              >
+                In
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -416,7 +485,7 @@
 
         <div>
           <h3 class="section-title">
-            5. Workspace demo
+            6. Workspace demo
           </h3>
           <p class="demo-workspace-side-text">
             Gérez les données de démonstration de votre espace de travail.
@@ -517,7 +586,7 @@
         </div>
         <div>
           <h3 class="section-title">
-            6. Champs des exercices
+            7. Champs des exercices
           </h3>
           <p class="demo-workspace-side-text">
             Contrôlez les champs affichés dans les exercices sur web et mobile.

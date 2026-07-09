@@ -168,11 +168,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
         this.coaches = Array.from(coachMap.values());
 
-        if (this.coaches.length === 1) {
-          this.selectedCoachId = this.coaches[0].id;
-        } else {
-          this.selectedCoachId = 'all';
-        }
+        this.selectedCoachId = this.resolveCurrentCoachId(plans) || this.coaches[0]?.id || 'all';
 
         this.applyCoachFilter(plans);
       });
@@ -201,6 +197,33 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       plan?.client?.coachId ||
       null
     );
+  }
+
+  private resolveCurrentCoachId(plans: any[]): string | null {
+    const clientCoachId = (plans || [])
+      .map((plan) => plan?.client?.coachId || plan?.client?.coach?.id || plan?.client?.coach?._id)
+      .find((coachId) => !!coachId);
+
+    if (clientCoachId) {
+      return clientCoachId;
+    }
+
+    const activePlanCoachId = (plans || [])
+      .filter((plan) => this.isPlanCurrent(plan))
+      .map((plan) => this.getPlanCoachId(plan))
+      .find((coachId) => !!coachId);
+
+    return activePlanCoachId || null;
+  }
+
+  private isPlanCurrent(plan: any): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = plan?.startDate ? new Date(plan.startDate) : null;
+    const end = plan?.endDate ? new Date(plan.endDate) : null;
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(0, 0, 0, 0);
+    return (!start || start <= today) && (!end || end >= today);
   }
 
 
@@ -281,38 +304,12 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       this.revokeSelectedFileBlob();
     }
 
-    this.setInitialMonth();
     this.selectedDay = null;
   }
 
   onCoachChange(coachId: string | 'all') {
     this.selectedCoachId = coachId;
     this.applyCoachFilter();
-  }
-
-  private setInitialMonth(): void {
-    if (this.nutritionDays.length === 0) {
-      const fileDate = this.filePrograms
-        .map((p) => p.startDate ? new Date(p.startDate) : null)
-        .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
-        .sort((a, b) => a.getTime() - b.getTime())[0];
-
-      if (fileDate) {
-        this.currentDate = new Date(fileDate.getFullYear(), fileDate.getMonth(), 1);
-      }
-
-      return;
-    }
-
-    const firstDate = this.nutritionDays
-      .map((d) => new Date(d.date))
-      .sort((a, b) => a.getTime() - b.getTime())[0];
-
-    this.currentDate = new Date(
-      firstDate.getFullYear(),
-      firstDate.getMonth(),
-      1
-    );
   }
 
   private mapApiResponseToNutritionDays(plans: any[]): NutritionDay[] {

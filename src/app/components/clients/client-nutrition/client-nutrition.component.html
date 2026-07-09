@@ -7,16 +7,6 @@
         <p class="client-header-subtitle">Your nutrition journey starts here</p>
       </header>
 
-      <div class="coach-filter-container" *ngIf="coaches.length > 1">
-        <label for="nutrition-coach-select" class="coach-filter-label">Coach:</label>
-        <select id="nutrition-coach-select" class="coach-select" [(ngModel)]="selectedCoachId" (ngModelChange)="onCoachChange($event)">
-          <option value="all">All coaches</option>
-          <option *ngFor="let coach of coaches" [ngValue]="coach.id">{{ coach.fullName }}</option>
-        </select>
-      </div>
-
-      <div class="coach-current" *ngIf="coaches.length === 1"><strong>Coach:</strong> {{ coaches[0].fullName }}</div>
-
       <div class="file-toggle-wrap" *ngIf="showNutritionFiles">
         <div class="file-mode-switch">
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'calendar'" (click)="setClientViewMode('calendar')">
@@ -167,20 +157,29 @@
             <div class="cn-day-meals-line">
               <span class="cn-utensils-icon">🍽️</span>
               <span class="cn-day-meals-text">{{ day.mealCount }} meals</span>
+              <span class="chevron-small">&rsaquo;</span>
             </div>
 
-            <div class="cn-day-macros">
-              <div class="cn-macro-card"><div class="cn-macro-value">{{ day.totalCalories }}</div><div class="cn-macro-label">kcal</div></div>
-              <div class="cn-macro-card"><div class="cn-macro-value">{{ day.totalProtein }}g</div><div class="cn-macro-label">protein</div></div>
-              <div class="cn-macro-card"><div class="cn-macro-value">{{ day.totalCarbs }}g</div><div class="cn-macro-label">carbs</div></div>
-              <div class="cn-macro-card"><div class="cn-macro-value">{{ day.totalFat }}g</div><div class="cn-macro-label">fat</div></div>
+            <div class="nutrition-meals-list">
+              <div class="nutrition-meal-line" *ngFor="let meal of day.meals; let mealIndex = index">
+                <span class="nutrition-meal-badge">{{ mealIndex + 1 }}</span>
+                <div class="nutrition-meal-copy">
+                  <div class="nutrition-meal-name">{{ meal.name }}</div>
+                  <div class="nutrition-foods-list" *ngIf="meal.foods.length > 0">
+                    <span class="nutrition-food-item" *ngFor="let food of meal.foods">
+                      {{ food.name }} <span class="nutrition-food-qty">{{ food.quantity }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </article>
 
           <div class="cn-empty" *ngIf="filteredDays.length === 0">
             <div class="cn-empty-icon">📅</div>
-            <h3 class="cn-empty-title">No nutrition plans found</h3>
-            <p class="cn-empty-text">{{ emptyStateMessage }}</p>
+            <h3 class="cn-empty-title">No nutrition scheduled yet</h3>
+            <p class="cn-empty-text">Looks like you don't have any {{ activeTab === 'upcoming' ? 'upcoming' : 'past' }} nutrition plans.</p>
+            <p class="cn-empty-text">Your coach will add nutrition to your program soon.</p>
           </div>
         </div>
       </ng-template>

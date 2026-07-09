@@ -6,6 +6,7 @@ import {
   BodyMeasurement,
   BodyMeasurementsService
 } from 'app/service/body-measurements.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 interface MeasurementTypeItem {
   key: string;
@@ -68,7 +69,8 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   constructor(
     private bodyMeasurementsService: BodyMeasurementsService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
   ngOnInit(): void {
@@ -169,7 +171,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     const payload: BodyMeasurement = {
       clientId: this.clientId,
       measurementType: this.selectedType,
-      value: Number(this.addForm.value),
+      value: this.toStoredValue(Number(this.addForm.value), type),
       unit: type.unit,
       date: this.addForm.date,
       note: this.addForm.note || '',
@@ -241,7 +243,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return '--';
     }
 
-    return `${this.formatValue(this.latestMeasurement.value)} ${this.latestMeasurement.unit || this.currentType.unit}`;
+    return `${this.formatValue(this.toDisplayValue(this.latestMeasurement.value, this.currentType))} ${this.getDisplayUnit(this.currentType)}`;
   }
 
   get normalizedTargetWeight(): number | null {
@@ -257,14 +259,14 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return '';
     }
 
-    return `Goal ${this.formatValue(this.normalizedTargetWeight)} kg`;
+    return `Goal ${this.formatValue(this.toDisplayWeight(this.normalizedTargetWeight))} ${this.coachSettingsService.getWeightUnit()}`;
   }
 
   get chartMin(): number {
-    const values = this.selectedMeasurements.map((item) => item.value);
+    const values = this.selectedMeasurements.map((item) => this.toDisplayValue(item.value, this.currentType));
 
     if (this.showGoalLine && this.normalizedTargetWeight !== null) {
-      values.push(this.normalizedTargetWeight);
+      values.push(this.toDisplayWeight(this.normalizedTargetWeight));
     }
 
     if (!values.length) {
@@ -279,10 +281,10 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   }
 
   get chartMax(): number {
-    const values = this.selectedMeasurements.map((item) => item.value);
+    const values = this.selectedMeasurements.map((item) => this.toDisplayValue(item.value, this.currentType));
 
     if (this.showGoalLine && this.normalizedTargetWeight !== null) {
-      values.push(this.normalizedTargetWeight);
+      values.push(this.toDisplayWeight(this.normalizedTargetWeight));
     }
 
     if (!values.length) {
@@ -304,7 +306,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     }
 
     if (items.length === 1) {
-      const y = this.valueToY(items[0].value);
+      const y = this.valueToY(this.toDisplayValue(items[0].value, this.currentType));
       return `30,${y.toFixed(1)} 650,${y.toFixed(1)}`;
     }
 
@@ -314,7 +316,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     return items
       .map((item, index) => {
         const x = left + (index / (items.length - 1)) * width;
-        const y = this.valueToY(item.value);
+        const y = this.valueToY(this.toDisplayValue(item.value, this.currentType));
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(' ');
@@ -329,7 +331,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return {
         x,
         y,
-        value: this.selectedMeasurements[index]?.value,
+        value: this.toDisplayValue(this.selectedMeasurements[index]?.value, this.currentType),
       };
     });
   }
@@ -339,7 +341,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return 0;
     }
 
-    return this.valueToY(this.normalizedTargetWeight);
+    return this.valueToY(this.toDisplayWeight(this.normalizedTargetWeight));
   }
 
   get goalLabelY(): number {
@@ -392,6 +394,28 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     const range = this.chartMax - this.chartMin || 1;
 
     return top + height - ((value - this.chartMin) / range) * height;
+  }
+
+  getDisplayUnit(type: MeasurementTypeItem): string {
+    if (type.key === 'BODYWEIGHT') return this.coachSettingsService.getWeightUnit();
+    if (type.unit === 'cm') return this.coachSettingsService.getMeasurementUnit();
+    return type.unit;
+  }
+
+  toDisplayValue(value: number | null | undefined, type: MeasurementTypeItem): number {
+    if (type.key === 'BODYWEIGHT') return this.toDisplayWeight(value);
+    if (type.unit === 'cm') return this.coachSettingsService.convertMeasurementFromCm(value) ?? 0;
+    return Number(value || 0);
+  }
+
+  private toStoredValue(value: number, type: MeasurementTypeItem): number {
+    if (type.key === 'BODYWEIGHT') return this.coachSettingsService.convertWeightToKg(value) ?? value;
+    if (type.unit === 'cm') return this.coachSettingsService.convertMeasurementToCm(value) ?? value;
+    return value;
+  }
+
+  private toDisplayWeight(value: number | null | undefined): number {
+    return this.coachSettingsService.convertWeightFromKg(value) ?? 0;
   }
 
   private toNullableNumber(value: unknown): number | null {

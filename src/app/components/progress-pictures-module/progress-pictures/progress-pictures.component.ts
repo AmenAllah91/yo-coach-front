@@ -13,6 +13,7 @@ import {
   AddProgressPictureModalComponent,
   AddProgressPicturePayload
 } from '../add-progress-picture-modal/add-progress-picture-modal.component';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
   selector: 'app-progress-pictures',
@@ -43,7 +44,8 @@ export class ProgressPicturesComponent implements OnInit {
 
   constructor(
     private progressPicturesService: ProgressPicturesService,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
   ngOnInit(): void {
@@ -152,7 +154,7 @@ export class ProgressPicturesComponent implements OnInit {
           const body: SaveProgressPictureRequest = {
             clientId: this.clientId,
             imageUrl: uploadedPath,
-            weight: payload.weight,
+            weight: this.coachSettingsService.convertWeightToKg(payload.weight) ?? payload.weight,
             date: payload.date
           };
 
@@ -248,6 +250,10 @@ export class ProgressPicturesComponent implements OnInit {
 
   get picturesCount(): number {
     return this.pictures.length;
+  }
+
+  formatWeight(weightKg: number | null | undefined): string {
+    return this.coachSettingsService.formatWeight(weightKg);
   }
 
   private extractFileName(pathOrUrl: string | null | undefined): string {

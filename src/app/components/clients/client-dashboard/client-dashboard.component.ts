@@ -4,6 +4,7 @@ import {CommonModule} from "@angular/common";
 import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
 import { WorkoutService } from 'app/service/workout.service';
 import { NutritionService } from 'app/service/nutrition.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 type Direction = 'prev' | 'next';
 interface Coach {
   name: string;
@@ -59,7 +60,8 @@ type CheckInQuestion =
 export class ClientDashboardComponent implements OnInit {
   constructor(
     private workoutService: WorkoutService,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private coachSettingsService: CoachSettingsService
   ) {}
   today = new Date()
   currentDate = new Date()
@@ -79,7 +81,7 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   checkInQuestions: CheckInQuestion[] = [
-    { id: 'weight', question: 'What is your current weight?', type: 'number', unit: 'kg' },
+    { id: 'weight', question: 'What is your current weight?', type: 'number', unit: this.coachSettingsService.getWeightUnit() },
     { id: 'energy', question: 'How would you rate your energy level today?', type: 'scale', min: 1, max: 10 },
     { id: 'sleep', question: 'How would you rate your sleep quality?', type: 'scale', min: 1, max: 10 },
     { id: 'stress', question: 'How would you rate your stress level?', type: 'scale', min: 1, max: 10 },

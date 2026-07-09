@@ -72,6 +72,7 @@ export class AssignFullPlanComponent implements OnInit {
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
     } else {
+      this.applyCreationQueryParams();
       this.ensureAtLeastOneDay();
       this.updateAllDates();
     }
@@ -318,6 +319,17 @@ export class AssignFullPlanComponent implements OnInit {
     this.selectedDay = this.selectedDay && this.days.includes(this.selectedDay)
       ? this.selectedDay
       : this.days[0];
+    this.mealPlan.mealDays = this.days;
+  }
+
+  private applyCreationQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    this.planName = params.get('name') || this.planName;
+    this.startDate = params.get('startDate') || this.startDate;
+
+    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 52));
+    const totalDays = durationWeeks * 7;
+    this.days = Array.from({ length: totalDays }, () => this.makeEmptyDay());
     this.mealPlan.mealDays = this.days;
   }
 

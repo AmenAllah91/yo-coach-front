@@ -58,7 +58,7 @@
 
               <div class="picture-card__meta">
                 <span class="meta-pill">
-                  {{ 'WEIGHT' | translate }}: {{ picture.weight }} kg
+                  {{ 'WEIGHT' | translate }}: {{ formatWeight(picture.weight) }}
                 </span>
               </div>
             </div>
@@ -135,7 +135,7 @@
           </div>
           <div class="thumb-card__meta">
             <div class="thumb-date">{{ picture.date | date:'dd MMM yyyy' }}</div>
-            <div class="thumb-weight">{{ picture.weight }} kg</div>
+            <div class="thumb-weight">{{ formatWeight(picture.weight) }}</div>
           </div>
         </div>
       </aside>
@@ -150,7 +150,7 @@
             <img [src]="selectedBeforePicture.imageUrl" alt="Before picture" />
             <div class="comparison-footer">
               <span>{{ selectedBeforePicture.date | date:'dd MMM yyyy' }}</span>
-              <span>{{ selectedBeforePicture.weight }} kg</span>
+              <span>{{ formatWeight(selectedBeforePicture.weight) }}</span>
             </div>
           </ng-container>
 
@@ -170,7 +170,7 @@
             <img [src]="selectedAfterPicture.imageUrl" alt="After picture" />
             <div class="comparison-footer">
               <span>{{ selectedAfterPicture.date | date:'dd MMM yyyy' }}</span>
-              <span>{{ selectedAfterPicture.weight }} kg</span>
+              <span>{{ formatWeight(selectedAfterPicture.weight) }}</span>
             </div>
           </ng-container>
 
@@ -192,7 +192,7 @@
             <img [src]="selectedSinglePicture.imageUrl" alt="Selected picture" />
             <div class="comparison-footer">
               <span>{{ selectedSinglePicture.date | date:'dd MMM yyyy' }}</span>
-              <span>{{ selectedSinglePicture.weight }} kg</span>
+              <span>{{ formatWeight(selectedSinglePicture.weight) }}</span>
             </div>
           </ng-container>
 

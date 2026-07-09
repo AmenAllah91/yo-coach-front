@@ -114,7 +114,7 @@
             </div>
 
             <div class="history-value">
-              {{ formatValue(item.value) }} {{ item.unit || currentType.unit }}
+              {{ formatValue(toDisplayValue(item.value, currentType)) }} {{ getDisplayUnit(currentType) }}
             </div>
 
             <div class="history-date">
@@ -156,7 +156,7 @@
 
     <div class="measurement-modal-body">
       <label>
-        Value ({{ currentType.unit }})
+        Value ({{ getDisplayUnit(currentType) }})
         <input
           type="number"
           step="0.1"

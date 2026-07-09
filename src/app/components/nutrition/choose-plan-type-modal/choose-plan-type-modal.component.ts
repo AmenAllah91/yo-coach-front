@@ -9,14 +9,15 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { ChooseMacroTypeModalComponent } from '../choose-macro-type-modal/choose-macro-type-modal.component';
 import { Router } from '@angular/router';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+
+export type NutritionPlanChoice = 'full' | 'macro-total' | 'macro-each';
 
 @Component({
   selector: 'app-choose-plan-type-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, ChooseMacroTypeModalComponent],
+  imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './choose-plan-type-modal.component.html',
   styleUrls: ['./choose-plan-type-modal.component.scss'],
 })
@@ -31,15 +32,16 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   @Input() presetStartDate = '';
   @Input() presetEndDate = '';
   @Input() skipDurationStep = false;
+  @Input() selectOnly = false;
 
   @Output() onClose = new EventEmitter<void>();
+  @Output() planTypeSelected = new EventEmitter<NutritionPlanChoice>();
 
-  showMacroTypeModal = false;
   showDurationModal = false;
   nutritionDurationWeeks = 4;
   nutritionProgramName = '';
   readonly nutritionDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
-  private openedDirectlyToMacro = false;
+  selectedPlanType: NutritionPlanChoice | null = null;
 
   constructor(
     private router: Router,
@@ -48,19 +50,17 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isVisible']?.currentValue === true) {
-      this.showMacroTypeModal = false;
       this.showDurationModal = false;
       this.nutritionProgramName = this.presetProgramName || '';
       this.nutritionDurationWeeks = this.normalizedPresetDurationWeeks;
-      this.openedDirectlyToMacro = false;
+      this.selectedPlanType = null;
 
       setTimeout(() => this.applyAutoSelectionRules());
     }
 
     if (changes['isVisible']?.currentValue === false) {
-      this.showMacroTypeModal = false;
       this.showDurationModal = false;
-      this.openedDirectlyToMacro = false;
+      this.selectedPlanType = null;
     }
   }
 
@@ -94,25 +94,47 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   }
 
   get shouldShowMainModal(): boolean {
-    return this.isVisible && !this.showMacroTypeModal && !this.showDurationModal;
+    return this.isVisible && !this.showDurationModal;
   }
 
   get shouldShowDurationModal(): boolean {
-    return this.isVisible && this.showDurationModal;
+    return this.isVisible && this.showDurationModal && !!this.selectedPlanType;
   }
 
   closeModal(): void {
-    this.showMacroTypeModal = false;
     this.showDurationModal = false;
-    this.openedDirectlyToMacro = false;
+    this.selectedPlanType = null;
     this.onClose.emit();
   }
 
   createFullMealPlan(): void {
     if (!this.canCreateFullMealPlan) return;
 
+    this.selectPlanType('full');
+  }
+
+  createMacroTotalPlan(): void {
+    if (!this.canCreateMacroDailyPlan) return;
+
+    this.selectPlanType('macro-total');
+  }
+
+  createMacroEachMealPlan(): void {
+    if (!this.canCreateMacroEachMealPlan) return;
+
+    this.selectPlanType('macro-each');
+  }
+
+  private selectPlanType(type: NutritionPlanChoice): void {
+    this.selectedPlanType = type;
+
+    if (this.selectOnly) {
+      this.planTypeSelected.emit(type);
+      return;
+    }
+
     if (this.skipDurationStep) {
-      this.confirmFullMealPlanDuration();
+      this.confirmNutritionPlanDetails();
       return;
     }
 
@@ -121,13 +143,29 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
 
   closeDurationModal(): void {
     this.showDurationModal = false;
+    this.selectedPlanType = null;
   }
 
-  confirmFullMealPlanDuration(): void {
+  confirmNutritionPlanDetails(): void {
     if (!this.nutritionProgramName.trim()) return;
 
-    this.closeModal();
+    if (this.selectedPlanType === 'full') {
+      this.navigateToFullMealPlan();
+      return;
+    }
 
+    if (this.selectedPlanType === 'macro-total') {
+      this.navigateToMacroDaily();
+      return;
+    }
+
+    if (this.selectedPlanType === 'macro-each') {
+      this.navigateToMacroEachMeal();
+    }
+  }
+
+  private navigateToFullMealPlan(): void {
+    this.closeModal();
     const queryParams: any = {
       type: 'each',
       assignAfterCreate: this.assignAfterCreate,
@@ -148,43 +186,21 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
     this.router.navigate(['/nutrition/create-full-plan'], { queryParams });
   }
 
-  createMacroOnlyPlan(): void {
-    if (!this.canCreateAnyMacroPlan) return;
-
-    if (this.enabledMacroCount === 1) {
-      this.openedDirectlyToMacro = true;
-      this.showMacroTypeModal = true;
-      return;
-    }
-
-    this.openedDirectlyToMacro = false;
-    this.showMacroTypeModal = true;
-  }
-
-  closeMacroTypeModal(): void {
-    this.showMacroTypeModal = false;
-
-    if (this.openedDirectlyToMacro) {
-      this.closeModal();
-    }
-  }
-
   private applyAutoSelectionRules(): void {
     if (!this.isVisible) return;
 
-    if (!this.canCreateFullMealPlan && this.canCreateAnyMacroPlan) {
-      if (this.enabledMacroCount === 1) {
-        this.openedDirectlyToMacro = true;
-        this.showMacroTypeModal = true;
-        return;
-      }
+    const enabledChoices: NutritionPlanChoice[] = [];
 
-      this.openedDirectlyToMacro = true;
-      this.showMacroTypeModal = true;
+    if (this.canCreateFullMealPlan) enabledChoices.push('full');
+    if (this.canCreateMacroDailyPlan) enabledChoices.push('macro-total');
+    if (this.canCreateMacroEachMealPlan) enabledChoices.push('macro-each');
+
+    if (enabledChoices.length === 1) {
+      this.selectPlanType(enabledChoices[0]);
     }
   }
 
-  private selectMacroDaily(): void {
+  private navigateToMacroDaily(): void {
     if (!this.canCreateMacroDailyPlan) return;
 
     this.closeModal();
@@ -213,7 +229,7 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
     });
   }
 
-  private selectMacroEachMeal(): void {
+  private navigateToMacroEachMeal(): void {
     if (!this.canCreateMacroEachMealPlan) return;
 
     this.closeModal();
@@ -238,6 +254,13 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
     this.router.navigate(['/nutrition/create-macro-plan'], {
       queryParams,
     });
+  }
+
+  get selectedPlanTypeLabel(): string {
+    if (this.selectedPlanType === 'full') return 'Full Meal Plan';
+    if (this.selectedPlanType === 'macro-total') return 'Macro Total Day Plan';
+    if (this.selectedPlanType === 'macro-each') return 'Macro Each Meal Plan';
+    return 'Nutrition Plan';
   }
 
   get normalizedDurationWeeks(): number {

@@ -66,7 +66,7 @@ export class AssignMacroPlanComponent implements OnInit {
       this.isEditMode = true;
       this.loadPlanForEdit(this.planId);
     } else {
-      this.addDay();
+      this.applyCreationQueryParams();
     }
 
     const clientId = this.route.snapshot.paramMap.get('idClient');
@@ -203,6 +203,20 @@ export class AssignMacroPlanComponent implements OnInit {
     this.selectedDay = newDay;
     this.addMeal();
     this.updateAllDates();
+  }
+
+  private applyCreationQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    this.planName = params.get('name') || this.planName;
+    this.startDate = params.get('startDate') || this.startDate;
+
+    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 52));
+    const totalDays = durationWeeks * 7;
+    this.days = [];
+
+    for (let i = 0; i < totalDays; i++) {
+      this.addDay();
+    }
   }
 
   deleteDay(day: MealDay, event: Event) {

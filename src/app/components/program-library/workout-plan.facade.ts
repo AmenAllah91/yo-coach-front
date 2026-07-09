@@ -84,6 +84,10 @@ export class WorkoutPlanFacade {
     return this.coachSettingsService.shouldShowExerciseWeight();
   }
 
+  getWeightUnitLabel(): string {
+    return this.coachSettingsService.getWeightUnit();
+  }
+
   private defaultWeightForSet(isCardio: boolean): number | null {
     return isCardio || !this.shouldShowWeightField() ? null : 0;
   }

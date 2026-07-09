@@ -27,15 +27,27 @@
           </button>
         </div>
 
-        <div class="plan-option" *ngIf="canCreateAnyMacroPlan">
-          <h3>Macro Only Meal Plan</h3>
+        <div class="plan-option" *ngIf="canCreateMacroDailyPlan">
+          <h3>Macro Total Day Plan</h3>
           <p>
-            Create a plan with macronutrient targets without specific foods.
-            Perfect for flexible dieting approaches.
+            Set daily calorie and macro targets for each day without meal-level
+            targets.
           </p>
 
-          <button class="btn-primary" type="button" (click)="createMacroOnlyPlan()">
-            Create Macro Only Plan
+          <button class="btn-primary" type="button" (click)="createMacroTotalPlan()">
+            Create Total Day Plan
+          </button>
+        </div>
+
+        <div class="plan-option" *ngIf="canCreateMacroEachMealPlan">
+          <h3>Macro Each Meal Plan</h3>
+          <p>
+            Set macro targets for each meal while keeping the plan flexible
+            without specific foods.
+          </p>
+
+          <button class="btn-primary" type="button" (click)="createMacroEachMealPlan()">
+            Create Each Meal Plan
           </button>
         </div>
       </div>
@@ -66,7 +78,7 @@
 >
   <div class="modal-content choose-modal nutrition-duration-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Create Full Meal Plan</h2>
+      <h2>Create {{ selectedPlanTypeLabel }}</h2>
 
       <button class="close-btn" type="button" (click)="closeDurationModal()">
         <i-feather name="x"></i-feather>
@@ -93,12 +105,12 @@
       </label>
 
       <p class="nutrition-duration-copy">
-        This will create a {{ normalizedDurationWeeks }}-week full meal plan.
+        This will create a {{ normalizedDurationWeeks }}-week nutrition program.
       </p>
 
       <div class="nutrition-duration-info">
         <i-feather name="info"></i-feather>
-        <span>{{ normalizedDurationWeeks * 7 }} days will be generated.</span>
+        <span>Program structure will be organized by weeks.</span>
       </div>
     </div>
 
@@ -110,20 +122,10 @@
         class="btn-primary nutrition-duration-submit"
         type="button"
         [disabled]="!nutritionProgramName.trim()"
-        (click)="confirmFullMealPlanDuration()"
+        (click)="confirmNutritionPlanDetails()"
       >
         Create Plan
       </button>
     </div>
   </div>
 </div>
-
-<app-choose-macro-type-modal
-  [isVisible]="isVisible && showMacroTypeModal"
-  [isAssign]="isAssign"
-  [idClient]="idClient"
-  [returnUrl]="returnUrl"
-  [assignAfterCreate]="assignAfterCreate"
-  (close)="closeMacroTypeModal()"
->
-</app-choose-macro-type-modal>

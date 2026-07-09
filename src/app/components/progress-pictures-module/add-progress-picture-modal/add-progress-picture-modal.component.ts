@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 export interface AddProgressPicturePayload {
   file: File;
@@ -27,6 +28,12 @@ export class AddProgressPictureModalComponent implements OnChanges {
   filePreviewUrl: string | ArrayBuffer | null = null;
   weight: number | null = null;
   date = this.getToday();
+
+  constructor(private coachSettingsService: CoachSettingsService) {}
+
+  get weightUnitLabel(): string {
+    return this.coachSettingsService.getWeightUnit();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']?.currentValue) {

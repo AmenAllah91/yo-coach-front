@@ -7,16 +7,6 @@
         <p class="client-header-subtitle">Your workout journey starts here</p>
       </header>
 
-      <div class="coach-filter-container" *ngIf="coaches.length > 1">
-        <label for="coach-select" class="coach-filter-label">Coach:</label>
-        <select id="coach-select" class="coach-select" [(ngModel)]="selectedCoachId" (ngModelChange)="onCoachChange($event)">
-          <option value="all">All coaches</option>
-          <option *ngFor="let coach of coaches" [ngValue]="coach.id">{{ coach.fullName }}</option>
-        </select>
-      </div>
-
-      <div class="coach-current" *ngIf="coaches.length === 1"><strong>Coach:</strong> {{ coaches[0].fullName }}</div>
-
       <div class="file-toggle-wrap" *ngIf="showWorkoutFiles">
         <div class="file-mode-switch">
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'calendar'" (click)="setClientViewMode('calendar')">
@@ -235,13 +225,29 @@
                 </ng-container>
               </div>
             </div>
+            <div class="workout-exercises">
+              <div class="workout-exercises-header">
+                <span>{{ getTotalExercises(workout) }} exercises</span>
+                <span class="chevron-small">&rsaquo;</span>
+              </div>
+              <div class="workout-exercises-list">
+                <div class="exercise-line" *ngFor="let exercise of getWorkoutExerciseDisplay(workout)">
+                  <span class="exercise-badge" [class.exercise-badge--warmup]="exercise.isWarmUp">
+                    <ng-container *ngIf="exercise.isWarmUp; else exerciseBadge">&#128293;</ng-container>
+                    <ng-template #exerciseBadge>{{ exercise.badge }}</ng-template>
+                  </span>
+                  <span class="exercise-name">{{ exercise.name }}<span *ngIf="exercise.suffix"> {{ exercise.suffix }}</span></span>
+                </div>
+              </div>
+            </div>
             <div class="cn-day-meals-line"><span class="cn-utensils-icon">🏋️</span><span class="cn-day-meals-text">{{ getTotalExercises(workout) + ' exercises' }}</span></div>
           </article>
 
           <div class="cn-empty" *ngIf="displayWorkouts.length === 0">
-            <div class="cn-empty-icon">🏋️‍♂️</div>
-            <h3 class="cn-empty-title">No workouts found</h3>
-            <p class="cn-empty-text">{{ activeTab === 'upcoming' ? 'No upcoming workouts scheduled' : 'No past workouts to display' }}</p>
+            <div class="cn-empty-icon">📅</div>
+            <h3 class="cn-empty-title">No workouts scheduled yet</h3>
+            <p class="cn-empty-text">Looks like you don't have any {{ activeTab === 'upcoming' ? 'upcoming' : 'past' }} workouts.</p>
+            <p class="cn-empty-text">Your coach will add workouts to your program soon.</p>
           </div>
         </div>
       </ng-template>
@@ -281,13 +287,13 @@
             <div class="cw-detail-sets" *ngIf="exercise.sets.length > 0">
               <div class="cw-detail-sets-header">
                 <div>Set</div>
-                <div *ngIf="showExerciseWeight">Weight (kg)</div>
+                <div *ngIf="showExerciseWeight">Weight ({{ weightUnitLabel }})</div>
                 <div>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</div>
                 <div>Rest</div>
               </div>
               <div class="cw-detail-set-row" *ngFor="let set of exercise.sets">
                 <div class="cw-detail-set-cell cw-detail-set-cell--index"><span class="cw-set-type-badge" [ngClass]="getSetTypeClass(set.type)">{{ set.displayLabel }}</span></div>
-                <div class="cw-detail-set-cell" *ngIf="showExerciseWeight">{{ set.weight ?? '-' }}</div>
+                <div class="cw-detail-set-cell" *ngIf="showExerciseWeight">{{ formatExerciseWeight(set.weight) }}</div>
                 <div class="cw-detail-set-cell">{{ exercise.type === 'CARDIO' ? (set.duration ?? '-') : set.reps }}</div>
                 <div class="cw-detail-set-cell">{{ set.rest }}</div>
               </div>

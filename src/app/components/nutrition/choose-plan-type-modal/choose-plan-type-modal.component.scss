@@ -237,8 +237,8 @@
 }
 
 .choose-modal {
-  width: min(760px, calc(100vw - 48px)) !important;
-  max-width: min(760px, calc(100vw - 48px)) !important;
+  width: min(980px, calc(100vw - 48px)) !important;
+  max-width: min(980px, calc(100vw - 48px)) !important;
   border-radius: 10px !important;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28) !important;
 }
@@ -261,7 +261,7 @@
 
 .choose-modal .plan-options {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 22px !important;
 }
 
@@ -327,6 +327,11 @@
   .choose-modal .plan-options {
     grid-template-columns: 1fr !important;
   }
+}
+
+.nutrition-duration-modal {
+  width: min(620px, calc(100vw - 48px)) !important;
+  max-width: min(620px, calc(100vw - 48px)) !important;
 }
 
 .choose-modal .nutrition-duration-field {
@@ -420,8 +425,8 @@
 }
 
 .choose-modal {
-  width: min(760px, calc(100vw - 48px)) !important;
-  max-width: min(760px, calc(100vw - 48px)) !important;
+  width: min(980px, calc(100vw - 48px)) !important;
+  max-width: min(980px, calc(100vw - 48px)) !important;
   border-radius: 10px !important;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28) !important;
 }
@@ -444,7 +449,7 @@
 
 .choose-modal .plan-options {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 22px !important;
 }
 

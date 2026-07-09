@@ -51,7 +51,7 @@
       </div>
       <div class="stat-label">Start Weight</div>
       <div class="stat-value">
-        {{ startWeight !== null ? (formatNumber(startWeight) + ' kg') : '--' }}
+        {{ startWeight !== null ? formatWeight(startWeight) : '--' }}
       </div>
     </div>
 
@@ -61,11 +61,11 @@
       </div>
       <div class="stat-label">Current Weight</div>
       <div class="stat-value">
-        {{ currentWeight !== null ? (formatNumber(currentWeight) + ' kg') : '--' }}
+        {{ currentWeight !== null ? formatWeight(currentWeight) : '--' }}
       </div>
       <div class="stat-detail stat-detail--success" *ngIf="weightLost !== null">
         <i class="fas fa-arrow-trend-down"></i>
-        {{ formatNumber(weightLost) }} kg
+        {{ formatWeight(weightLost) }}
       </div>
     </div>
 
@@ -75,10 +75,10 @@
       </div>
       <div class="stat-label">Goal Weight</div>
       <div class="stat-value">
-        {{ clientTargetWeight !== null ? (formatNumber(clientTargetWeight) + ' kg') : '--' }}
+        {{ clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--' }}
       </div>
       <div class="stat-detail" *ngIf="weightToGoal !== null">
-        {{ formatNumber(weightToGoal) }} kg to go
+        {{ formatWeight(weightToGoal) }} to go
       </div>
     </div>
 
@@ -102,9 +102,9 @@
       <div class="weight-progress-fill" [style.width.%]="weightProgress"></div>
     </div>
     <div class="weight-progress-labels">
-      <span>Start {{ startWeight !== null ? formatNumber(startWeight) + ' kg' : '--' }}</span>
-      <strong>Now {{ currentWeight !== null ? formatNumber(currentWeight) + ' kg' : '--' }}</strong>
-      <span>Goal {{ clientTargetWeight !== null ? formatNumber(clientTargetWeight) + ' kg' : '--' }}</span>
+      <span>Start {{ startWeight !== null ? formatWeight(startWeight) : '--' }}</span>
+      <strong>Now {{ currentWeight !== null ? formatWeight(currentWeight) : '--' }}</strong>
+      <span>Goal {{ clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--' }}</span>
     </div>
   </section>
   </ng-container>
@@ -1455,15 +1455,8 @@
 <app-choose-plan-type-modal
   [isVisible]="showChooseModal"
   (onClose)="closeAssignFlow()"
-  [isAssign]="true"
-  [idClient]="this.clientId"
-  [returnUrl]="profileNutritionReturnUrl"
-  [assignAfterCreate]="true"
-  [presetProgramName]="clientNutritionProgramName"
-  [presetDurationWeeks]="clientNutritionDurationWeeks"
-  [presetStartDate]="clientNutritionStartDate"
-  [presetEndDate]="clientNutritionEndDate"
-  [skipDurationStep]="true"
+  [selectOnly]="true"
+  (planTypeSelected)="onClientNutritionPlanTypeSelected($event)"
 ></app-choose-plan-type-modal>
 
 

@@ -95,10 +95,10 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     } else if (type === 'total' || type === 'each') {
       this.showModeModal = false;
       this.viewMode = type === 'total' ? 'total' : 'meals';
-      this.addDay();
+      this.applyCreationQueryParams();
     } else {
       this.showModeModal = true;
-      this.addDay();
+      this.applyCreationQueryParams();
     }
   }
 
@@ -227,6 +227,20 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     this.selectedDay = newDay;
 
     this.updateAllDates();
+  }
+
+  private applyCreationQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    this.planName = params.get('name') || this.planName;
+    this.startDate = params.get('startDate') || this.startDate;
+
+    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 52));
+    const totalDays = durationWeeks * 7;
+    this.days = [];
+
+    for (let i = 0; i < totalDays; i++) {
+      this.addDay();
+    }
   }
 
   selectDay(day: MealDay) {

@@ -121,15 +121,6 @@
               <span class="material-icons">add</span>
             </button>
 
-            <button
-              *ngIf="calendarType === 'workout' && day.items.length > 0"
-              type="button"
-              class="icon-button"
-              (click)="copyDay(day.dateString)"
-              title="Copy day"
-            >
-              <span class="material-icons">content_copy</span>
-            </button>
           </div>
         </div>
 
@@ -151,7 +142,8 @@
                 *ngIf="!isFileWorkoutItem(item) || isFileRangeStart(item, day.dateString)"
                 class="card card-workout"
                 [class.card-program]="item.programId"
-                [class.card-rest-day]="!item.sessions || !item.sessions.length"
+                [class.card-rest-day]="item.restDay"
+                [class.card-empty-day]="item.emptyDay"
                 [class.file-range-card]="isFileWorkoutItem(item)"
                 [class.card-file-workout]="isFileWorkoutItem(item)"
                 [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
@@ -164,26 +156,31 @@
                       <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
                         <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                       </span>
-                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ item.title }}</ng-container>
+                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">
+                        {{ isFileWorkoutItem(item) ? item.title : getCalendarCardProgramName(item) }}
+                      </ng-container>
+                    </div>
+                    <div
+                      *ngIf="!isFileWorkoutItem(item)"
+                      class="card-subtitle workout-program"
+                    >
+                      {{ getCalendarCardDayLabel(item) }}
                     </div>
                   </div>
                   <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
-                    <span
-                      class="drag-handle"
-                      title="Drag to move day"
-                      (mousedown)="startWorkoutPointerDrag($event, item, day.dateString)"
-                      (touchstart)="startWorkoutPointerDrag($event, item, day.dateString)"
-                    ><span class="material-icons">drag_indicator</span></span>
                     <div *ngIf="item.programId" [ngClass]="{
                       'badge-circle-coche': item.status === 'COMPLETED',
                       'badge-failed': item.status === 'MISSED',
                       'badge-circle': item.status !== 'COMPLETED' && item.status !== 'MISSED'
-                    }">{{ getBadgeText(item.status) }}</div>
+                    }">
+                      <span
+                        *ngIf="item.status !== 'COMPLETED' && item.status !== 'MISSED'; else workoutStatusTextMonth"
+                        class="material-icons calendar-program-icon"
+                      >drag_indicator</span>
+                      <ng-template #workoutStatusTextMonth>{{ getBadgeText(item.status) }}</ng-template>
+                    </div>
                     <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">
                       <span class="material-icons">edit</span>
-                    </button>
-                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">
-                      <span class="material-icons">delete_outline</span>
                     </button>
                   </div>
                 </div>
@@ -197,6 +194,7 @@
                     item.sessions[0].exercises.length
                   "
                 >
+                  <div class="workout-day-name">{{ item.title }}</div>
                   <div
                     class="exercise-preview"
                     *ngFor="
@@ -217,23 +215,30 @@
             </ng-container>
 
             <ng-template #nutritionCard>
-              <div class="card card-nutrition" (click)="viewNutrition(item)">
+              <div class="card card-nutrition" [class.card-empty-day]="item.emptyDay" (click)="viewNutrition(item)">
                 <div class="card-header">
                   <div class="card-title-block">
                     <div class="card-title">
-                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">{{ item.title }}</ng-container>
+                      <ng-container *ngIf="!isFileWorkoutItem(item) || shouldShowFileRangeText(item, day.dateString)">
+                        {{ getCalendarCardProgramName(item) }}
+                      </ng-container>
                     </div>
                     <div
                       *ngIf="item.programName"
                       class="card-subtitle nutrition-program"
                     >
-                      {{ item.programName }}
+                      {{ getCalendarCardDayLabel(item) }}
                     </div>
                   </div>
-                  <div class="badge-circle badge-nutrition">N</div>
+                  <div class="badge-circle badge-nutrition">
+                    <span class="material-icons calendar-program-icon">drag_indicator</span>
+                  </div>
                 </div>
 
                 <div class="card-body">
+                  <div class="empty-day-label" *ngIf="item.emptyDay">
+                    Empty day
+                  </div>
                   <div class="nutrition-line">
                     <span>Calories:</span>
                     <strong>{{ item.totalCalories }} kcal</strong>
@@ -256,21 +261,6 @@
           </div>
         </div>
 
-        <div
-          class="cell-copy-bar"
-          *ngIf="copiedDate && copiedDate !== day.dateString"
-        >
-          <button
-            type="button"
-            class="copy-primary"
-            (click)="pasteDay(day.dateString)"
-          >
-            Paste
-          </button>
-          <button type="button" class="copy-secondary" (click)="cancelCopy()">
-            X
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -305,15 +295,6 @@
               <span class="material-icons">add</span>
             </button>
 
-            <button
-              *ngIf="calendarType === 'workout' && day.items.length > 0"
-              type="button"
-              class="icon-button"
-              (click)="copyDay(day.dateString)"
-              title="Copy day"
-            >
-              <span class="material-icons">content_copy</span>
-            </button>
           </div>
         </div>
 
@@ -331,7 +312,8 @@
               <div
                 class="card card-workout"
                 [class.card-program]="item.programId"
-                [class.card-rest-day]="!item.sessions || !item.sessions.length"
+                [class.card-rest-day]="item.restDay"
+                [class.card-empty-day]="item.emptyDay"
                 [class.file-range-card]="isFileWorkoutItem(item)"
                 [class.card-file-workout]="isFileWorkoutItem(item)"
                 [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
@@ -344,26 +326,29 @@
                       <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
                         <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                       </span>
-                      {{ item.title }}
+                      {{ isFileWorkoutItem(item) ? item.title : getCalendarCardProgramName(item) }}
+                    </div>
+                    <div
+                      *ngIf="!isFileWorkoutItem(item)"
+                      class="card-subtitle workout-program"
+                    >
+                      {{ getCalendarCardDayLabel(item) }}
                     </div>
                   </div>
                   <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
-                    <span
-                      class="drag-handle"
-                      title="Drag to move day"
-                      (mousedown)="startWorkoutPointerDrag($event, item, day.dateString)"
-                      (touchstart)="startWorkoutPointerDrag($event, item, day.dateString)"
-                    ><span class="material-icons">drag_indicator</span></span>
                     <div *ngIf="item.programId" [ngClass]="{
                       'badge-circle-coche': item.status === 'COMPLETED',
                       'badge-failed': item.status === 'MISSED',
                       'badge-circle': item.status !== 'COMPLETED' && item.status !== 'MISSED'
-                    }">{{ getBadgeText(item.status) }}</div>
+                    }">
+                      <span
+                        *ngIf="item.status !== 'COMPLETED' && item.status !== 'MISSED'; else workoutStatusTextWeek"
+                        class="material-icons calendar-program-icon"
+                      >drag_indicator</span>
+                      <ng-template #workoutStatusTextWeek>{{ getBadgeText(item.status) }}</ng-template>
+                    </div>
                     <button type="button" class="icon-button" title="Edit day" (click)="openEditWorkoutModal(item, $event)">
                       <span class="material-icons">edit</span>
-                    </button>
-                    <button type="button" class="icon-button" title="Delete day" (click)="openDeleteModal(item, $event)">
-                      <span class="material-icons">delete_outline</span>
                     </button>
                   </div>
                 </div>
@@ -377,6 +362,7 @@
                     item.sessions[0].exercises.length
                   "
                 >
+                  <div class="workout-day-name">{{ item.title }}</div>
                   <div
                     class="exercise-preview"
                     *ngFor="
@@ -397,20 +383,22 @@
             </ng-container>
 
             <ng-template #nutritionCardWeek>
-              <div class="card card-nutrition" (click)="viewNutrition(item)">
+              <div class="card card-nutrition" [class.card-empty-day]="item.emptyDay" (click)="viewNutrition(item)">
                 <div class="card-header">
                   <div class="card-title-block">
                     <div class="card-title">
-                      {{ item.title }}
+                      {{ getCalendarCardProgramName(item) }}
                     </div>
                     <div
                       *ngIf="item.programName"
                       class="card-subtitle nutrition-program"
                     >
-                      {{ item.programName }}
+                      {{ getCalendarCardDayLabel(item) }}
                     </div>
                   </div>
-                  <div class="badge-circle badge-nutrition">N</div>
+                  <div class="badge-circle badge-nutrition">
+                    <span class="material-icons calendar-program-icon">drag_indicator</span>
+                  </div>
                 </div>
 
                 <div class="card-body">
@@ -440,21 +428,6 @@
           </div>
         </div>
 
-        <div
-          class="week-copy-bar"
-          *ngIf="copiedDate && copiedDate !== day.dateString"
-        >
-          <button
-            type="button"
-            class="copy-primary"
-            (click)="pasteDay(day.dateString)"
-          >
-            Paste
-          </button>
-          <button type="button" class="copy-secondary" (click)="cancelCopy()">
-            X
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -477,24 +450,6 @@
           <span class="material-icons">add</span>
         </button>
 
-        <button
-          *ngIf="calendarType === 'workout' && dayItems.length > 0"
-          type="button"
-          class="icon-button"
-          (click)="copyDay(currentDayString)"
-          title="Copy day"
-        >
-          <span class="material-icons">content_copy</span>
-        </button>
-
-        <button
-          *ngIf="copiedDate"
-          type="button"
-          class="copy-secondary"
-          (click)="cancelCopy()"
-        >
-          X
-        </button>
       </div>
     </div>
 
@@ -514,7 +469,8 @@
           <div
             class="card card-workout large"
             [class.card-program]="item.programId"
-            [class.card-rest-day]="!item.sessions || !item.sessions.length"
+            [class.card-rest-day]="item.restDay"
+            [class.card-empty-day]="item.emptyDay"
             [class.file-range-card]="isFileWorkoutItem(item)"
             [class.card-file-workout]="isFileWorkoutItem(item)"
             [class.card-file-pdf]="isFileWorkoutItem(item) && getFileResourceType(item) === 'PDF'"
@@ -527,17 +483,16 @@
                   <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
                     <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                   </span>
-                  {{ item.title }}
+                  {{ isFileWorkoutItem(item) ? item.title : getCalendarCardProgramName(item) }}
+                </div>
+                <div
+                  *ngIf="!isFileWorkoutItem(item)"
+                  class="card-subtitle workout-program"
+                >
+                  {{ getCalendarCardDayLabel(item) }}
                 </div>
               </div>
               <div class="card-header-right" *ngIf="!isFileWorkoutItem(item)">
-                <span
-                  class="drag-handle"
-                  title="Drag to move day"
-                  (mousedown)="startWorkoutPointerDrag($event, item, currentDayString)"
-                  (touchstart)="startWorkoutPointerDrag($event, item, currentDayString)"
-                ><span class="material-icons">drag_indicator</span></span>
-
                 <div
                   *ngIf="item.programId"
                   [ngClass]="{
@@ -548,7 +503,11 @@
                       item.status !== 'MISSED'
                   }"
                 >
-                  {{ getBadgeText(item.status) }}
+                  <span
+                    *ngIf="item.status !== 'COMPLETED' && item.status !== 'MISSED'; else workoutStatusTextDay"
+                    class="material-icons calendar-program-icon"
+                  >drag_indicator</span>
+                  <ng-template #workoutStatusTextDay>{{ getBadgeText(item.status) }}</ng-template>
                 </div>
 
                 <button
@@ -558,15 +517,6 @@
                   (click)="openEditWorkoutModal(item, $event)"
                 >
                   <span class="material-icons">edit</span>
-                </button>
-
-                <button
-                  type="button"
-                  class="icon-button"
-                  title="Delete day"
-                  (click)="openDeleteModal(item, $event)"
-                >
-                  <span class="material-icons">delete_outline</span>
                 </button>
               </div>
             </div>
@@ -580,6 +530,7 @@
                 item.sessions[0].exercises.length
               "
             >
+              <div class="workout-day-name">{{ item.title }}</div>
               <div
                 class="exercise-preview"
                 *ngFor="
@@ -600,23 +551,25 @@
         </ng-container>
 
         <ng-template #nutritionCardDay>
-          <div class="card card-nutrition large" (click)="viewNutrition(item)">
+          <div class="card card-nutrition large" [class.card-empty-day]="item.emptyDay" (click)="viewNutrition(item)">
             <div class="card-header">
               <div class="card-title-block">
                 <div class="card-title">
                   <span *ngIf="isFileWorkoutItem(item)" class="file-card-inline-icon">
                     <span class="material-icons">{{ getFileResourceType(item) === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>
                   </span>
-                  {{ item.title }}
+                  {{ getCalendarCardProgramName(item) }}
                 </div>
                 <div
                   *ngIf="item.programName"
                   class="card-subtitle nutrition-program"
                 >
-                  {{ item.programName }}
+                  {{ getCalendarCardDayLabel(item) }}
                 </div>
               </div>
-              <div class="badge-circle badge-nutrition">N</div>
+              <div class="badge-circle badge-nutrition">
+                <span class="material-icons calendar-program-icon">drag_indicator</span>
+              </div>
             </div>
 
             <div class="card-body">
@@ -824,7 +777,7 @@
                     class="sets-col sets-col-weight"
                     *ngIf="shouldShowCalendarWeightField() && exercise.type !== 'cardio'"
                   >
-                    Weight (kg)
+                    Weight ({{ weightUnitLabel }})
                   </div>
                   <div class="sets-col sets-col-reps">
                     {{ exercise.type === 'cardio' ? 'Minutes' : 'Reps' }}
@@ -1141,6 +1094,100 @@
       >
         <span class="button-save-text">
           {{ editingWorkout ? 'Update Day' : 'Save Day' }}
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showCreateProgramModal">
+  <div class="modal-container calendar-create-program-modal">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">
+          Create Client {{ calendarType === 'workout' ? 'Workout' : 'Nutrition' }} Program
+        </h2>
+        <p class="modal-date">
+          For {{ getSelectedClientName() }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="icon-button-circle"
+        (click)="closeCreateProgramModal()"
+      >
+        âœ•
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Program Name *</label>
+        <input
+          type="text"
+          class="text-input"
+          [(ngModel)]="createProgramName"
+          [placeholder]="calendarType === 'workout' ? 'e.g. Summer Shred Phase 2' : 'e.g. Summer Nutrition Phase 2'"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Duration *</label>
+        <select class="text-input" [(ngModel)]="createProgramDurationWeeks">
+          <option *ngFor="let option of createProgramDurationOptions" [ngValue]="option">
+            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+          </option>
+        </select>
+      </div>
+
+      <div class="calendar-create-date-grid">
+        <div class="form-group">
+          <label class="form-label">Start Date *</label>
+          <input type="date" class="text-input" [(ngModel)]="createProgramStartDate" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input type="date" class="text-input" [value]="createProgramEndDate" disabled />
+        </div>
+      </div>
+
+      <div class="calendar-create-duration-chip">
+        <span class="material-icons">calendar_today</span>
+        <span>{{ createProgramDurationDays }} days</span>
+      </div>
+
+      <p class="calendar-create-help">
+        End date is automatically calculated from start date and duration.
+      </p>
+
+      <div class="calendar-create-info">
+        <span class="material-icons">info</span>
+        <span>
+          This will create a {{ normalizedCreateProgramDurationWeeks }}-week
+          {{ calendarType === 'workout' ? 'workout' : 'nutrition' }} program with empty days for this client.
+        </span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="button-secondary"
+        (click)="closeCreateProgramModal()"
+        [disabled]="createProgramSaving"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="button-save"
+        (click)="submitCreateProgramModal()"
+        [disabled]="!canCreateCalendarProgram"
+      >
+        <span class="button-save-text">
+          {{ createProgramSaving ? 'Creating...' : 'Create Program' }}
         </span>
       </button>
     </div>

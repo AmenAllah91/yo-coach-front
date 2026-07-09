@@ -40,6 +40,8 @@ export interface CoachSettingsConfig {
 
   defaults: {
     language: string;
+    weightUnit?: 'kg' | 'lbs';
+    measurementUnit?: 'cm' | 'in';
   };
 }
 
@@ -138,8 +140,53 @@ export class CoachSettingsService {
       },
       defaults: {
         language: 'French',
+        weightUnit: 'kg',
+        measurementUnit: 'cm',
       },
     };
+  }
+
+  getWeightUnit(): 'kg' | 'lbs' {
+    return this.getConfig().defaults.weightUnit === 'lbs' ? 'lbs' : 'kg';
+  }
+
+  getMeasurementUnit(): 'cm' | 'in' {
+    return this.getConfig().defaults.measurementUnit === 'in' ? 'in' : 'cm';
+  }
+
+  convertWeightFromKg(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.getWeightUnit() === 'lbs' ? Number(value) * 2.2046226218 : Number(value);
+  }
+
+  convertWeightToKg(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.getWeightUnit() === 'lbs' ? Number(value) / 2.2046226218 : Number(value);
+  }
+
+  convertMeasurementFromCm(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.getMeasurementUnit() === 'in' ? Number(value) / 2.54 : Number(value);
+  }
+
+  convertMeasurementToCm(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.getMeasurementUnit() === 'in' ? Number(value) * 2.54 : Number(value);
+  }
+
+  formatNumber(value: number | null | undefined): string {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
+    return Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  }
+
+  formatWeight(valueKg: number | null | undefined): string {
+    const converted = this.convertWeightFromKg(valueKg);
+    return converted === null ? '--' : `${this.formatNumber(converted)} ${this.getWeightUnit()}`;
+  }
+
+  formatMeasurement(valueCm: number | null | undefined): string {
+    const converted = this.convertMeasurementFromCm(valueCm);
+    return converted === null ? '--' : `${this.formatNumber(converted)} ${this.getMeasurementUnit()}`;
   }
 
   getDefaultMealsCount(): number {
@@ -237,6 +284,8 @@ export class CoachSettingsService {
       defaults: {
         ...defaults.defaults,
         ...(config.defaults || {}),
+        weightUnit: (config.defaults as any)?.weightUnit === 'lbs' ? 'lbs' : 'kg',
+        measurementUnit: (config.defaults as any)?.measurementUnit === 'in' ? 'in' : 'cm',
       },
     };
   }

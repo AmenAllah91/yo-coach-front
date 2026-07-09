@@ -2670,3 +2670,155 @@
     z-index: 6 !important;
   }
 }
+
+.client-list .cn-day-card > .cn-day-meals-line {
+  display: none;
+}
+
+.client-list .workout-exercises {
+  padding: 0 20px 22px;
+  margin-top: 0;
+}
+
+.client-list .workout-exercises-header {
+  margin: 18px 0 16px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.client-list .workout-exercises-list {
+  gap: 12px;
+}
+
+.client-list .exercise-line {
+  gap: 12px;
+}
+
+.client-list .exercise-badge {
+  width: 32px;
+  height: 32px;
+  margin-right: 0;
+  background-color: #eaf7fd;
+  color: #020617;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.client-list .exercise-badge--warmup {
+  background-color: #fff3ed;
+}
+
+.client-list .exercise-name {
+  font-size: 16px;
+  color: #020617;
+  line-height: 1.35;
+}
+
+.client-list .cn-day-card {
+  border-radius: 8px;
+  border-color: #e8edf2;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.client-list .cn-day-header {
+  padding: 20px 20px 0;
+  background: #ffffff;
+  border-bottom: 0;
+}
+
+.client-list .cn-day-chip-date {
+  padding: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 12px;
+}
+
+.client-list .cn-day-title {
+  color: #020617;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.client-list .cn-day-subtitle {
+  color: #38ace0;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.client-list .cn-empty {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 46px 16px;
+}
+
+.cw-root .client-tabs {
+  display: flex;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid #e5e7eb;
+  background: transparent;
+  box-shadow: none;
+  gap: 0;
+}
+
+.cw-root .client-tab {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 14px 0 12px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cw-root .client-tab--active {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #38ace0 !important;
+}
+
+.cw-root .client-tab--active::after {
+  height: 2px;
+  bottom: -1px;
+  background-color: #38ace0;
+}
+
+.cw-root .client-month-nav {
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+}
+
+.cw-root .month-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cw-root .month-nav-btn {
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  border-radius: 999px;
+}
