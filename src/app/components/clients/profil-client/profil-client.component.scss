@@ -173,7 +173,12 @@
 }
 
 .tab-pane {
+  display: none;
   padding-top: 16px;
+}
+
+.tab-pane.active {
+  display: block;
 }
 
 /* =========================================
@@ -4552,12 +4557,43 @@
 }
 
 .progress-summary-collapsed .stats-toggle-row {
-  margin-top: clamp(0.55rem, 1vw, 0.75rem);
   margin-bottom: 0;
 }
 
 .progress-summary-collapsed .profile-tabs {
-  margin-top: clamp(0.75rem, 1.2vw, 1rem);
+  margin-top: 16px;
+}
+
+.progress-summary-collapsed .profile-header {
+  margin-bottom: 18px;
+}
+
+.progress-summary-collapsed .tab-content {
+  margin-top: 0;
+}
+
+.progress-summary-collapsed .tab-pane {
+  padding-top: 8px;
+}
+
+.progress-summary-collapsed .progress-pictures-pane,
+.progress-summary-collapsed .calendar-profile-pane,
+.progress-summary-collapsed .chat-profile-pane {
+  padding-top: 0;
+}
+
+.progress-summary-collapsed .chat-profile-pane {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.progress-summary-collapsed .progress-pictures-pane ::ng-deep .page,
+.progress-summary-collapsed .calendar-profile-pane ::ng-deep .calendar-wrapper {
+  padding-top: 0;
+}
+
+.progress-summary-collapsed .progress-pictures-pane ::ng-deep .header {
+  padding-top: 0;
 }
 
 .profile-tabs {
@@ -4577,6 +4613,15 @@
   .profile-tabs {
     overflow-x: visible;
   }
+
+  .progress-summary-collapsed .stats-toggle-row {
+    float: right;
+    margin-top: 0;
+  }
+
+  .progress-summary-collapsed .profile-tabs {
+    padding-right: 280px;
+  }
 }
 
 @media (max-width: 48rem) {
@@ -4586,5 +4631,12 @@
 
   .stats-toggle-btn {
     width: 100%;
+  }
+
+  .progress-summary-collapsed .profile-tabs {
+    width: 100%;
+    min-width: 0;
+    padding-right: 0;
+    margin-top: 12px;
   }
 }

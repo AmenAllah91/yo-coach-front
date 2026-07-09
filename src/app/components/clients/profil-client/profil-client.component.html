@@ -603,7 +603,7 @@
       </div>
     </section>
 
-    <div class="tab-pane chat-profile-pane" *ngIf="activeTab === 'chat'" [class.active]="true">
+    <div class="tab-pane chat-profile-pane" [class.active]="activeTab === 'chat'">
       <app-chat
         [embeddedMode]="true"
         [embeddedClientId]="clientId"
