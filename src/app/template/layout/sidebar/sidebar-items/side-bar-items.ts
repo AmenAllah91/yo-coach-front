@@ -221,7 +221,7 @@ export const items: RouteInfo[] = [
     badge: '',
     badgeClass: '',
     submenu: [],
-    roles: ['ROLE_COACH'],
+    roles: ['ROLE_COACH', 'ROLE_CLIENT'],
   },
   {
     path: 'assignments/me',

@@ -18,6 +18,26 @@ import { AuthService } from 'app/config/auth.service';
   styleUrl: './configuration-coachng.component.scss',
 })
 export class ConfigurationCoachngComponent implements OnInit {
+  activeTab: 'profile' | 'plan' | 'notifications' | 'preferences' = 'profile';
+
+  profile = {
+    username: localStorage.getItem('username') || '',
+    firstName: localStorage.getItem('firstName') || '',
+    lastName: localStorage.getItem('lastName') || '',
+    email: localStorage.getItem('email') || '',
+    photoName: '',
+  };
+
+  browserNotificationsEnabled =
+    typeof Notification !== 'undefined' && Notification.permission === 'granted';
+
+  emailNotifications = [
+    { key: 'workout', label: 'Client completes a workout', enabled: false },
+    { key: 'measurement', label: 'Client adds a new measurement', enabled: false },
+    { key: 'message', label: 'Client sends you a message', enabled: false },
+    { key: 'programEnding', label: 'Programs finishing next week', enabled: false },
+  ];
+
   config: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
   savedConfig: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
 
@@ -246,6 +266,49 @@ export class ConfigurationCoachngComponent implements OnInit {
       this.config.nutrition.nutritionFileEnabled === false;
   }
 
+
+  setActiveTab(tab: 'profile' | 'plan' | 'notifications' | 'preferences'): void {
+    this.activeTab = tab;
+  }
+
+  saveProfile(): void {
+    localStorage.setItem('username', this.profile.username.trim());
+    localStorage.setItem('firstName', this.profile.firstName.trim());
+    localStorage.setItem('lastName', this.profile.lastName.trim());
+    localStorage.setItem('email', this.profile.email.trim());
+    this.showPopup('success');
+  }
+
+  onProfilePhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.profile.photoName = input.files?.[0]?.name || '';
+  }
+
+  async enableBrowserNotifications(): Promise<void> {
+    if (typeof Notification === 'undefined') {
+      this.showPopup('error');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    this.browserNotificationsEnabled = permission === 'granted';
+
+    if (!this.browserNotificationsEnabled) {
+      this.showPopup('error');
+    }
+  }
+
+  logout(): void {
+    sessionStorage.clear();
+    window.location.href = '/';
+  }
+
+  requestDeleteAccount(): void {
+    const confirmed = confirm('Delete your account? This action cannot be undone.');
+    if (confirmed) {
+      console.warn('[ACCOUNT] Delete account confirmed. Connect this action to the account deletion endpoint.');
+    }
+  }
 
   private handleDemoActionSuccess(status: DemoWorkspaceStatus): void {
     this.demoStatus = this.normalizeDemoStatus(status);

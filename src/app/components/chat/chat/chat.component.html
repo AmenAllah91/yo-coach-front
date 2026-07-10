@@ -18,7 +18,7 @@
         <i-feather name="search" class="chat-search__ico"></i-feather>
         <input class="chat-search__input" type="text" placeholder="Search" [(ngModel)]="searchTerm" />
       </div>
-      <button class="chat-icon-btn" type="button" (click)="openNewChatModal()" aria-label="Nouveau chat">
+      <button *ngIf="canCreateChats" class="chat-icon-btn" type="button" (click)="openNewChatModal()" aria-label="Nouveau chat">
         <i-feather name="edit-2"></i-feather>
       </button>
     </div>
@@ -51,7 +51,7 @@
           <div class="chat-item__preview">{{ conv.lastMessage }}</div>
         </div>
 
-        <button class="chat-item__more" type="button" (click)="$event.stopPropagation()">
+        <button *ngIf="canCreateChats" class="chat-item__more" type="button" (click)="$event.stopPropagation()">
           <i-feather name="more-vertical"></i-feather>
         </button>
       </div>
@@ -68,12 +68,12 @@
         <div class="chat-empty__ico"><i-feather name="message-circle"></i-feather></div>
         <h2 class="chat-empty__title">No Conversation Selected</h2>
         <p class="chat-empty__sub">Select a conversation or create a new chat.</p>
-        <button class="chat-empty__btn" type="button" (click)="openNewChatModal()">New Chat</button>
+        <button *ngIf="canCreateChats" class="chat-empty__btn" type="button" (click)="openNewChatModal()">New Chat</button>
       </div>
     </ng-container>
 
     <ng-container *ngIf="selectedConv">
-      <div class="chat-embedded-toolbar" *ngIf="embeddedMode">
+      <div class="chat-embedded-toolbar" *ngIf="embeddedMode && canCreateChats">
         <div class="chat-embedded-toolbar__sub">
           {{ currentAutoSequences.length || 'No' }} auto message sequence{{ currentAutoSequences.length === 1 ? '' : 's' }}
         </div>
@@ -121,6 +121,7 @@
           </ng-template>
         </div>
         <button
+          *ngIf="canCreateChats"
           class="chat-auto-btn"
           type="button"
           (click)="openAutoMessageModal()"
@@ -130,7 +131,7 @@
           <span>Auto message</span>
         </button>
         <button
-          *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode"
+          *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode && canCreateChats"
           class="chat-client-toggle"
           type="button"
           (click)="toggleClientProfile()"
@@ -142,7 +143,7 @@
         </button>
       </div>
 
-      <div class="chat-auto-strip" *ngIf="currentAutoSequences.length">
+      <div class="chat-auto-strip" *ngIf="canCreateChats && currentAutoSequences.length">
         <div class="chat-auto-strip__summary">
           <i-feather name="clock"></i-feather>
           <span>{{ currentAutoSequences.length }} message sequence(s) scheduled</span>
@@ -210,7 +211,7 @@
         </div>
 
         <button
-          *ngIf="entry.kind === 'auto-sequence'"
+          *ngIf="canCreateChats && entry.kind === 'auto-sequence'"
           type="button"
           class="auto-sequence-card"
           (click)="openAutoMessageModal(entry.sequence)"

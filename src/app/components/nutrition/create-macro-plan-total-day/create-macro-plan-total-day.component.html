@@ -11,15 +11,16 @@
       <div class="np-aside__body">
         <!-- Liste des Days -->
         <div class="np-week-card" *ngFor="let week of nutritionWeeks">
-          <div class="np-week-card__head">
+          <button type="button" class="np-week-card__head" (click)="toggleWeek(week.weekNumber)" [attr.aria-expanded]="!isWeekCollapsed(week.weekNumber)">
             <div>
               <strong>WEEK {{ week.weekNumber }}</strong>
               <small>{{ week.days[0].index + 1 }} - {{ week.days[week.days.length - 1].index + 1 }} days</small>
             </div>
             <span class="np-week-card__count">{{ week.days.length }} days</span>
-          </div>
+            <i-feather [name]="isWeekCollapsed(week.weekNumber) ? 'chevron-down' : 'chevron-up'" class="np-week-card__chevron"></i-feather>
+          </button>
           <!-- 1er day sans icône suppression -->
-          <div class="np-dayrow" *ngFor="let item of week.days" [class.is-active]="selectedDay?.id === item.day.id">
+          <div class="np-dayrow" *ngFor="let item of week.days" [class.is-active]="selectedDay?.id === item.day.id" [hidden]="isWeekCollapsed(week.weekNumber)">
             <button
               class="np-day"
               [class.is-active]="selectedDay?.id === item.day.id"
@@ -30,13 +31,6 @@
             </button>
 
           <!-- Day >= 2 avec icône trash -->
-            <button
-              class="np-iconbtn np-iconbtn--add"
-              title="Select day"
-              (click)="selectDay(item.day); $event.stopPropagation()"
-            >
-              <i-feather name="plus" class="np-ico"></i-feather>
-            </button>
           </div>
         </div>
 

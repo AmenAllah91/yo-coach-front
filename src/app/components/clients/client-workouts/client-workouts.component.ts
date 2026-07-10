@@ -2,6 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { FeatherModule } from 'angular-feather';
 import { WorkoutService } from 'app/service/workout.service';
 import { ModalConfirmComponent } from '../modal-confirm/modal-confirm.component';
 import { WorkoutDayService } from 'app/service/workout-day.service';
@@ -27,6 +28,13 @@ interface RawExercise {
   id: string;
   name: string;
   type: 'CARDIO' | 'MUSCULATION';
+  label?: string;
+  category?: string;
+  setType?: string;
+  workoutType?: string;
+  isWarmUp?: boolean;
+  warmUp?: boolean;
+  warmup?: boolean;
   supersetGroupId: string | null;
   sets: ExerciseSet[];
   duration?: number;
@@ -94,7 +102,7 @@ interface FileProgram {
 @Component({
   selector: 'app-client-workouts',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalConfirmComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, ModalConfirmComponent],
   templateUrl: './client-workouts.component.html',
   styleUrl: './client-workouts.component.scss',
 })
@@ -900,9 +908,22 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   private isWarmUpExercise(exercise: RawExercise): boolean {
-    const normalizedName = (exercise.name || '').toLowerCase().replace(/[\s_-]+/g, '');
+    if (exercise.isWarmUp || exercise.warmUp || exercise.warmup) return true;
+
+    const warmUpFields = [
+      exercise.name,
+      exercise.label,
+      exercise.category,
+      exercise.setType,
+      exercise.workoutType,
+      exercise.type,
+    ];
+    const hasWarmUpField = warmUpFields.some((value) => {
+      const normalized = (value || '').toString().toLowerCase().replace(/[\s_-]+/g, '');
+      return normalized === 'warmup' || normalized.includes('warmup');
+    });
     const setTypes = (exercise.sets || []).map((set) => this.normalizeSetType(set));
-    return normalizedName.includes('warmup') || (!!setTypes.length && setTypes.every((type) => type === 'WARM_UP'));
+    return hasWarmUpField || (!!setTypes.length && setTypes.every((type) => type === 'WARM_UP'));
   }
 
   private getExerciseSuffix(exercise: RawExercise): string {

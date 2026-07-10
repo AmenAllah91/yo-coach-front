@@ -9,6 +9,7 @@ import { FeatherModule } from 'angular-feather';
 import { AutoMessageItemDto, AutoMessageSequenceDto, AutoMessageSequenceRequest, ChatService } from '../../../service/chat.service';
 import { ChatWebsocketService } from '../../../service/chat-websocket.service';
 import { UsersService } from '../../../service/users.service';
+import { ClientService } from '../../../service/client.service';
 import { Conversation } from '../models/conversation';
 import { ChatMessage } from '../models/chat-message';
 import { ProfilClientComponent } from '../../clients/profil-client/profil-client.component';
@@ -133,6 +134,16 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   currentUserId = sessionStorage.getItem('userId') || '';
   private destroy$ = new Subject<void>();
 
+  get isClientUser(): boolean {
+    const roles = this.getCurrentRoles();
+    return roles.includes('ROLE_CLIENT') && !roles.includes('ROLE_COACH');
+  }
+
+  get canCreateChats(): boolean {
+    const roles = this.getCurrentRoles();
+    return roles.includes('ROLE_COACH') || roles.includes('ROLE_ADMIN');
+  }
+
   get currentAutoSequences(): AutoMessageSequence[] {
     if (!this.selectedConv) return [];
     return (this.autoMessagesByConversation[this.selectedConv.id] || [])
@@ -167,6 +178,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   constructor(
     private chatService: ChatService,
     private userService: UsersService,
+    private clientService: ClientService,
     private wsService: ChatWebsocketService,
     private router: Router
   ) {}
@@ -187,6 +199,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       this.addMissingConvClients();
       this.tryOpenEmbeddedConversation();
       this.openExpandedConversation();
+      this.openDefaultClientConversation();
     });
 
     this.wsService.messages$
@@ -228,9 +241,14 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       takeUntil(this.destroy$),
       switchMap((pageDto) => {
         console.log('🔵 [loadConversations] RAW from backend:', JSON.parse(JSON.stringify(pageDto.content)));
-        const observables = pageDto.content.map(conv =>
+        const observables = (pageDto.content || []).map(conv =>
           this.enrichConversation(conv)
         );
+        if (!observables.length) {
+          this.conversations = [];
+          this.filteredConversationsCache = [];
+          return of([]);
+        }
         return forkJoin(observables).pipe(tap(finalConvs => {
           console.log('🔵 [loadConversations] AFTER enrich:', JSON.parse(JSON.stringify(finalConvs)));
           const uniqueConvs = this.dedupeConversations(finalConvs);
@@ -412,6 +430,68 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   // ── Conversations ─────────────────────────────────────────────────────────
+  private openDefaultClientConversation(): void {
+    if (this.embeddedMode || !this.isClientUser || this.selectedConv) return;
+
+    const coachConversation = this.conversations.find((conv) =>
+      !conv.isGroup &&
+      conv.clientId === this.currentUserId &&
+      !!conv.coachId
+    );
+
+    if (coachConversation) {
+      this.selectConversation(coachConversation);
+      return;
+    }
+
+    this.clientService.getClientById(this.currentUserId).pipe(
+      take(1),
+      switchMap((client: any) => {
+        const coachId = client?.coachId || client?.coach?.id || client?.coach?._id;
+        if (!coachId) return of(null);
+
+        return this.chatService.createConversation({
+          coachId,
+          clientId: this.currentUserId,
+        }).pipe(
+          switchMap((conversation) => this.enrichConversation(conversation)),
+          catchError((error) => {
+            console.error('Error creating default client conversation:', error);
+            return of(null);
+          })
+        );
+      }),
+      takeUntil(this.destroy$),
+      catchError((error) => {
+        console.error('Error loading client coach for chat:', error);
+        return of(null);
+      })
+    ).subscribe((conversation) => {
+      if (!conversation || this.selectedConv) return;
+
+      const already = this.conversations.some((item) =>
+        item.id === conversation.id ||
+        this.getConversationUniqueKey(item) === this.getConversationUniqueKey(conversation)
+      );
+
+      if (!already) {
+        this.conversations = this.dedupeConversations([conversation, ...this.conversations]);
+        this.filteredConversationsCache = this.conversations;
+      }
+
+      this.selectConversation(conversation);
+    });
+  }
+
+  private getCurrentRoles(): string[] {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem('roles') || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
   filteredConversations(): Conversation[] {
     const t = this.searchTerm.trim().toLowerCase();
     if (!t) return this.conversations;
@@ -832,6 +912,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   // ── Modals navigation ─────────────────────────────────────────────────────
   openNewChatModal(): void {
+    if (!this.canCreateChats) return;
+
     this.showNewChat = true;
     this.showCreateGroup = false;
     this.showSelectClient = false;
@@ -989,6 +1071,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   openAutoMessageModal(sequence?: AutoMessageSequence): void {
+    if (!this.canCreateChats) return;
     if (!this.selectedConv) return;
 
     this.showManageAutoMessages = false;
@@ -1015,6 +1098,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   openManageAutoMessages(): void {
+    if (!this.canCreateChats) return;
     if (!this.selectedConv) return;
     this.showAutoMessageModal = false;
     this.showManageAutoMessages = true;

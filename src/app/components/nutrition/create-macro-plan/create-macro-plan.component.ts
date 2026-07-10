@@ -33,6 +33,7 @@ export class CreateMacroPlanComponent implements OnInit {
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
+  collapsedWeeks = new Set<number>();
 
   isEditMode = false;
   planId: string | null = null;
@@ -203,6 +204,18 @@ export class CreateMacroPlanComponent implements OnInit {
     });
 
     return weeks;
+  }
+
+  isWeekCollapsed(weekNumber: number): boolean {
+    return this.collapsedWeeks.has(weekNumber);
+  }
+
+  toggleWeek(weekNumber: number): void {
+    if (this.collapsedWeeks.has(weekNumber)) {
+      this.collapsedWeeks.delete(weekNumber);
+    } else {
+      this.collapsedWeeks.add(weekNumber);
+    }
   }
 
   /* ===================================================

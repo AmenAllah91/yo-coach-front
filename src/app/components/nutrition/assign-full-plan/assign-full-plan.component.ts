@@ -39,6 +39,7 @@ export class AssignFullPlanComponent implements OnInit {
 
   days: MealDay[] = [];
   selectedDay: MealDay | null = null;
+  collapsedWeeks = new Set<number>();
 
   showPlanDescription = false;
 
@@ -57,6 +58,18 @@ export class AssignFullPlanComponent implements OnInit {
     });
 
     return weeks;
+  }
+
+  isWeekCollapsed(weekNumber: number): boolean {
+    return this.collapsedWeeks.has(weekNumber);
+  }
+
+  toggleWeek(weekNumber: number): void {
+    if (this.collapsedWeeks.has(weekNumber)) {
+      this.collapsedWeeks.delete(weekNumber);
+    } else {
+      this.collapsedWeeks.add(weekNumber);
+    }
   }
   planId: string | null = null;
   constructor(

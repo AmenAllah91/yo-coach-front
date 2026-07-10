@@ -3637,3 +3637,22 @@ input:checked + .slider:before {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
+.np-week-card__head {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.np-week-card__chevron {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  flex: 0 0 auto;
+}
+
+.np-dayrow .np-day {
+  width: 100% !important;
+}

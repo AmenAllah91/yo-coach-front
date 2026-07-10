@@ -40,6 +40,7 @@ export class CreateAndAssignComponent implements OnInit {
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
+  collapsedWeeks = new Set<number>();
   private conflictResolution = '';
   private conflictId = '';
   private conflictStartDate = '';
@@ -256,6 +257,19 @@ export class CreateAndAssignComponent implements OnInit {
     return days.filter((day) =>
       (day.workoutSessions || []).some((session) => (session.exercises || []).length > 0)
     ).length;
+  }
+
+  isWeekCollapsed(weekLabel: string): boolean {
+    return this.collapsedWeeks.has(Number(weekLabel.replace(/\D/g, '')));
+  }
+
+  toggleWeek(weekLabel: string): void {
+    const weekNumber = Number(weekLabel.replace(/\D/g, ''));
+    if (this.collapsedWeeks.has(weekNumber)) {
+      this.collapsedWeeks.delete(weekNumber);
+    } else {
+      this.collapsedWeeks.add(weekNumber);
+    }
   }
 
   getSelectedDayDateLabel(): string {

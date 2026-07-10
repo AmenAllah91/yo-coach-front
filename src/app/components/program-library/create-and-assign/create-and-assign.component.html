@@ -15,14 +15,24 @@
         (cdkDropListDropped)="onDropDay($event)"
       >
         <div class="np-week-card" *ngFor="let week of workoutWeeks">
-          <div class="np-week-card__head">
+          <button
+            type="button"
+            class="np-week-card__head"
+            (click)="toggleWeek(week.label)"
+            [attr.aria-expanded]="!isWeekCollapsed(week.label)"
+          >
             <div>
               <strong>{{ week.label }}</strong>
               <small>{{ week.range }}</small>
             </div>
             <span class="np-week-card__count">{{ getWeekWorkoutCount(week.days) }} workouts</span>
-          </div>
+            <i-feather
+              [name]="isWeekCollapsed(week.label) ? 'chevron-down' : 'chevron-up'"
+              class="np-week-card__chevron"
+            ></i-feather>
+          </button>
 
+          <ng-container *ngIf="!isWeekCollapsed(week.label)">
           <ng-container *ngFor="let d of week.days; trackBy: trackByDay">
             <div
               class="np-dayrow"
@@ -45,17 +55,8 @@
                   <span class="np-day__date">{{ d.date | date : "MMM d, yyyy" }}</span>
                 </small>
               </button>
-
-              <button
-                type="button"
-                class="np-iconbtn np-iconbtn--add"
-                title="Add workout"
-                aria-label="Add workout to day"
-                (click)="selectDay(d); $event.stopPropagation()"
-              >
-                <i-feather name="plus" class="np-ico"></i-feather>
-              </button>
             </div>
+          </ng-container>
           </ng-container>
         </div>
 

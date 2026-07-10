@@ -27,6 +27,7 @@ export class CreateWorkoutComponent implements OnInit {
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
+  collapsedWeeks = new Set<number>();
   private returnUrl: string | null = null;
   private assignOnly = false;
   activeVideoExerciseId: string | null = null;
@@ -357,6 +358,19 @@ export class CreateWorkoutComponent implements OnInit {
     return days.filter((day) =>
       (day.workoutSessions || []).some((session) => (session.exercises || []).length > 0)
     ).length;
+  }
+
+  isWeekCollapsed(weekLabel: string): boolean {
+    return this.collapsedWeeks.has(Number(weekLabel.replace(/\D/g, '')));
+  }
+
+  toggleWeek(weekLabel: string): void {
+    const weekNumber = Number(weekLabel.replace(/\D/g, ''));
+    if (this.collapsedWeeks.has(weekNumber)) {
+      this.collapsedWeeks.delete(weekNumber);
+    } else {
+      this.collapsedWeeks.add(weekNumber);
+    }
   }
 
   getSelectedDayDateLabel(): string {

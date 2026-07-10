@@ -26,6 +26,7 @@ export class AssignMacroPlanComponent implements OnInit {
 
   days: MealDay[] = [];
   selectedDay: MealDay | null = null;
+  collapsedWeeks = new Set<number>();
 
   showDayDescription = false;
   viewMode: 'total' | 'meals' = 'meals';
@@ -51,6 +52,18 @@ export class AssignMacroPlanComponent implements OnInit {
     });
 
     return weeks;
+  }
+
+  isWeekCollapsed(weekNumber: number): boolean {
+    return this.collapsedWeeks.has(weekNumber);
+  }
+
+  toggleWeek(weekNumber: number): void {
+    if (this.collapsedWeeks.has(weekNumber)) {
+      this.collapsedWeeks.delete(weekNumber);
+    } else {
+      this.collapsedWeeks.add(weekNumber);
+    }
   }
 
   constructor(

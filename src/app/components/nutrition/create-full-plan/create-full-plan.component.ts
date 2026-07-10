@@ -45,6 +45,7 @@ export class CreateFullPlanComponent implements OnInit {
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
+  collapsedWeeks = new Set<number>();
 
   trackByDay = (_: number, d: MealDay) => d.id;
   trackByMeal = (_: number, m: Meal) => m.id;
@@ -211,6 +212,18 @@ export class CreateFullPlanComponent implements OnInit {
     });
 
     return weeks;
+  }
+
+  isWeekCollapsed(weekNumber: number): boolean {
+    return this.collapsedWeeks.has(weekNumber);
+  }
+
+  toggleWeek(weekNumber: number): void {
+    if (this.collapsedWeeks.has(weekNumber)) {
+      this.collapsedWeeks.delete(weekNumber);
+    } else {
+      this.collapsedWeeks.add(weekNumber);
+    }
   }
 
   loadPlanForEdit(id: string) {

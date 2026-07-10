@@ -1,35 +1,114 @@
 <div class="coach-settings">
-  <div class="cs-header">
-    <div class="cs-header__text">
-      <h1 class="cs-header__title">
-        {{ 'COACH_SETTINGS.TITLE' | translate }}
-      </h1>
-      <p class="cs-header__sub">
-        {{ 'COACH_SETTINGS.SUBTITLE' | translate }}
-      </p>
-    </div>
-
-    <div class="cs-header__actions">
-      <button
-        class="btn btn--outline"
-        type="button"
-        [disabled]="saving || loading"
-        (click)="onCancel()"
-      >
-        {{ 'COACH_SETTINGS.CANCEL' | translate }}
-      </button>
-
-      <button
-        class="btn btn--accent"
-        type="button"
-        [disabled]="saving || loading"
-        (click)="onSave()"
-      >
-        {{ saving ? ('COACH_SETTINGS.SAVING' | translate) : ('COACH_SETTINGS.SAVE_CHANGES' | translate) }}
-      </button>
-    </div>
+  <div class="settings-page-header">
+    <h1>Settings</h1>
+    <p>Update personal details and manage your plan</p>
   </div>
 
+  <nav class="settings-tabs" aria-label="Settings sections">
+    <button type="button" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">Profile</button>
+    <button type="button" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">Plan &amp; Billing</button>
+    <button type="button" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">Notifications</button>
+    <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">Preferences</button>
+  </nav>
+
+  <section class="settings-tab-panel" *ngIf="activeTab === 'profile'">
+    <h2>Profile</h2>
+    <div class="settings-card profile-card">
+      <div class="form-row">
+        <label for="profileUsername">Username</label>
+        <input id="profileUsername" type="text" [(ngModel)]="profile.username" />
+      </div>
+      <div class="form-row form-row--name">
+        <label>Name</label>
+        <div class="stacked-inputs">
+          <input type="text" placeholder="First name" [(ngModel)]="profile.firstName" />
+          <input type="text" placeholder="Last name" [(ngModel)]="profile.lastName" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="profileEmail">Email address</label>
+        <input id="profileEmail" type="email" [(ngModel)]="profile.email" />
+      </div>
+      <div class="form-row photo-row">
+        <label>Your profile photo</label>
+        <div class="photo-control">
+          <div class="avatar-placeholder" aria-hidden="true">👤</div>
+          <div>
+            <label class="btn btn--accent upload-button">
+              Upload photo
+              <input type="file" accept="image/png,image/jpeg,image/svg+xml" hidden (change)="onProfilePhotoSelected($event)" />
+            </label>
+            <small>SVG, PNG, JPG or GIF (max. 1000×1000px)</small>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer-actions">
+        <button class="btn btn--accent" type="button" (click)="saveProfile()">Save changes</button>
+      </div>
+    </div>
+
+    <div class="account-section">
+      <h2>Account</h2>
+      <button class="btn btn--outline" type="button" (click)="logout()">↪ Log out</button>
+      <button class="danger-link" type="button" (click)="requestDeleteAccount()">Delete Account</button>
+    </div>
+  </section>
+
+  <section class="settings-tab-panel" *ngIf="activeTab === 'plan'">
+    <h2>Plan</h2>
+    <div class="settings-card plan-card">
+      <div class="plan-content">
+        <div>
+          <p class="plan-name">30 Day Free Trial</p>
+          <strong class="plan-price">0,00 $US</strong>
+          <p class="muted-text">Free trial ends on Aug 6, 2026</p>
+        </div>
+        <div class="plan-usage">
+          <p><strong>0</strong> clients on the Unlimited Trial</p>
+          <div class="usage-track"><span style="width: 2%"></span></div>
+        </div>
+      </div>
+      <div class="card-footer-actions card-footer-actions--right">
+        <button class="btn btn--accent" type="button">Change Plan</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-tab-panel" *ngIf="activeTab === 'notifications'">
+    <div class="browser-notification-card">
+      <div class="notification-icon">♧</div>
+      <h2>Enable Browser Notifications</h2>
+      <p>Get notified when clients complete workouts, add measurements, or send you messages.</p>
+      <button class="btn btn--accent" type="button" [disabled]="browserNotificationsEnabled" (click)="enableBrowserNotifications()">
+        {{ browserNotificationsEnabled ? 'Notifications Enabled' : 'Enable Notifications' }}
+      </button>
+    </div>
+
+    <div class="email-notifications-section">
+      <h2>Email Notifications</h2>
+      <p class="muted-text">Get an email when this happens:</p>
+      <div class="settings-card notification-list">
+        <div class="notification-row" *ngFor="let item of emailNotifications">
+          <span>{{ item.label }}</span>
+          <button class="toggle" type="button" [class.toggle--on]="item.enabled" (click)="item.enabled = !item.enabled">
+            <span class="toggle__thumb" [class.toggle__thumb--on]="item.enabled"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences'">
+    <div class="preferences-heading">
+      <div>
+        <h2>Preferences</h2>
+        <p>Configure workout, nutrition, language and workspace preferences.</p>
+      </div>
+      <div class="cs-header__actions">
+        <button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">{{ 'COACH_SETTINGS.CANCEL' | translate }}</button>
+        <button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ saving ? ('COACH_SETTINGS.SAVING' | translate) : ('COACH_SETTINGS.SAVE_CHANGES' | translate) }}</button>
+      </div>
+    </div>
   <div class="section-card">
     <div class="section-inner">
       <div class="section-side">
@@ -631,7 +710,9 @@
       {{ 'COACH_SETTINGS.INFO' | translate }}
     </p>
   </div>
+  </section>
 </div>
+
 
 <div
   class="coach-settings-toast-layer"

@@ -244,7 +244,9 @@
           </article>
 
           <div class="cn-empty" *ngIf="displayWorkouts.length === 0">
-            <div class="cn-empty-icon">📅</div>
+            <div class="cn-empty-icon">
+              <i-feather name="calendar"></i-feather>
+            </div>
             <h3 class="cn-empty-title">No workouts scheduled yet</h3>
             <p class="cn-empty-text">Looks like you don't have any {{ activeTab === 'upcoming' ? 'upcoming' : 'past' }} workouts.</p>
             <p class="cn-empty-text">Your coach will add workouts to your program soon.</p>

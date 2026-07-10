@@ -289,7 +289,14 @@
   align-items: center;
   justify-content: center;
   margin: 0 auto 8px;
-  font-size: 26px;
+  color: #1d8fe3;
+}
+
+.cn-empty-icon i-feather {
+  width: 26px;
+  height: 26px;
+  display: block;
+  stroke-width: 2.2;
 }
 
 .cn-empty-title {
@@ -2757,6 +2764,13 @@
   box-shadow: none;
   background: transparent;
   padding: 46px 16px;
+}
+
+.client-list .cn-empty-icon {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 14px;
+  background: #eaf7fd;
 }
 
 .cw-root .client-tabs {
