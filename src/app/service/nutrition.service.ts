@@ -137,7 +137,8 @@ export class NutritionService {
     page: number = 0,
     size: number = 20,
     search?: string,
-    customOnly: boolean = false
+    customOnly: boolean = false,
+    skipLoader: boolean = false,
   ): Observable<any> {
     let params = `page=${page}&size=${size}`;
     if (search) {
@@ -147,7 +148,8 @@ export class NutritionService {
       params += `&customOnly=true`;
     }
     return this.http.get<any>(
-      `${environment.baseApiUrl}/api/food-ref?${params}`
+      `${environment.baseApiUrl}/api/food-ref?${params}`,
+      { headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} },
     );
   }
 

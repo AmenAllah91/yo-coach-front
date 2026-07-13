@@ -1,4 +1,4 @@
-<div class="np-root" [class.editing]="isEditMode">
+<div class="np-root" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector">
   <div class="np-shell">
     <aside class="np-aside">
       <div class="np-aside__head">
@@ -948,9 +948,20 @@
             <div class="wkdrawer__sub">{{ ex.type || "Exercise" }}</div>
           </div>
 
-          <button class="wkdrawer__add" (click)="handleSelectExercise(ex)">
+          <button
+            *ngIf="!isExerciseAdded(ex)"
+            type="button"
+            class="wkdrawer__add"
+            title="Add exercise"
+            [attr.aria-label]="'Add ' + ex.name"
+            (click)="handleSelectExercise(ex)"
+          >
             ＋
           </button>
+          <span class="wkdrawer__added" *ngIf="isExerciseAdded(ex)">
+            <i-feather name="check"></i-feather>
+            Added
+          </span>
         </li>
       </ul>
 

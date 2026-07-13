@@ -13,24 +13,6 @@
 
   <div class="content">
     <div class="left-panel" [class.mobile-hidden]="selectedExercise">
-      <div class="tabs">
-        <button
-          class="tab"
-          [class.active]="activeTab === 'templates'"
-          (click)="setActiveTab('templates')"
-        >
-          Templates ({{ templatesCount }})
-        </button>
-
-        <button
-          class="tab"
-          [class.active]="activeTab === 'my-exercises'"
-          (click)="setActiveTab('my-exercises')"
-        >
-          My Exercises ({{ myExercisesCount }})
-        </button>
-      </div>
-
       <div class="filters">
         <select
           class="filter-select"
@@ -107,7 +89,12 @@
 
             <div class="exercise-info">
               <h4>{{ exercise.name }}</h4>
-              <p>{{ exercise.muscle }} &bull; {{ exercise.equipment }}</p>
+              <div class="exercise-meta">
+                <span>{{ exercise.muscle }} &bull; {{ exercise.equipment }}</span>
+                <span class="custom-badge" *ngIf="isCustomExercise(exercise)">
+                  Custom
+                </span>
+              </div>
             </div>
 
             <div class="exercise-actions" *ngIf="canShowExerciseActions(exercise)">
@@ -133,20 +120,6 @@
           loadingText="Loading exercises..."
         ></app-scroll-loader>
 
-        <div class="pagination" *ngIf="totalPages > 1">
-          <button (click)="previousPage()" [disabled]="currentPage === 0">
-            Previous
-          </button>
-
-          <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-
-          <button
-            (click)="nextPage()"
-            [disabled]="currentPage === totalPages - 1"
-          >
-            Next
-          </button>
-        </div>
       </div>
 
       <div class="no-exercises" *ngIf="filteredExercises.length === 0 && !isLoading">

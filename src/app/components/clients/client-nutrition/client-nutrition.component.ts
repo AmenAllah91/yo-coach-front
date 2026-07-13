@@ -5,8 +5,8 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { ModalConfirmComponent } from '../modal-confirm/modal-confirm.component';
 import { ModalReplaceFoodComponent } from '../modal-replace-food/modal-replace-food.component';
 import { FoodReplacementGroupsService } from 'app/service/food-replacement-groups.service';
@@ -85,7 +85,9 @@ interface NutritionFileProgram {
 })
 export class ClientNutritionComponent implements OnInit, OnDestroy {
   coachNutritionFileEnabled = new Map<string, boolean>();
-  nutritionFileEnabled = true;
+  nutritionFileEnabled = false;
+  fileSettingsResolved = false;
+  private allPlans: any[] = [];
 
   userid = sessionStorage.getItem('userId');
   nutritionDays: NutritionDay[] = [];
@@ -151,6 +153,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       .getNutritionPlanByClientId(this.userid)
       .subscribe((response: any) => {
         const plans: any[] = Array.isArray(response) ? response : (response?.content || []);
+        this.allPlans = plans;
         const coachMap = new Map<string, any>();
         plans.forEach((plan) => {
           if (plan.coach && plan.coach.id) {
@@ -170,21 +173,18 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
         this.selectedCoachId = this.resolveCurrentCoachId(plans) || this.coaches[0]?.id || 'all';
 
-        this.applyCoachFilter(plans);
+        this.fileSettingsResolved = false;
+        this.nutritionFileEnabled = false;
+        this.coachNutritionFileEnabled.clear();
+        // Show regular nutrition days immediately. File plans stay hidden until
+        // the selected coach's permission has been resolved.
+        this.processPlansWithFilter(plans);
+        this.loadCoachNutritionFileSettings(plans);
       });
   }
 
   private applyCoachFilter(plans?: any[]) {
-    if (!plans) {
-      this.nutritionService
-        .getNutritionPlanByClientId(this.userid)
-        .subscribe((freshResponse: any) => {
-          const freshPlans: any[] = Array.isArray(freshResponse) ? freshResponse : (freshResponse?.content || []);
-          this.processPlansWithFilter(freshPlans);
-        });
-    } else {
-      this.loadCoachNutritionFileSettings(plans);
-    }
+    this.processPlansWithFilter(plans || this.allPlans);
   }
 
 
@@ -228,36 +228,44 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
 
   private loadCoachNutritionFileSettings(plans: any[]): void {
-    const coachIds = Array.from(
-      new Set(
-        (plans || [])
-          .map((plan) => this.getPlanCoachId(plan))
-          .filter((id): id is string => !!id)
-      )
-    );
+    const coachIds = this.selectedCoachId !== 'all'
+      ? [this.selectedCoachId]
+      : Array.from(
+          new Set(
+            (plans || [])
+              .map((plan) => this.getPlanCoachId(plan))
+              .filter((id): id is string => !!id)
+          )
+        );
 
     if (!coachIds.length) {
+      this.fileSettingsResolved = true;
       this.processPlansWithFilter(plans);
       return;
     }
 
-    let remaining = coachIds.length;
-
-    coachIds.forEach((coachId) => {
-      this.coachSettingsService.getConfigForCoach(coachId).subscribe({
-        next: (config) => {
-          this.coachNutritionFileEnabled.set(coachId, config.nutrition?.nutritionFileEnabled !== false);
-        },
-        error: () => {
-          this.coachNutritionFileEnabled.set(coachId, true);
-        },
-        complete: () => {
-          remaining -= 1;
-          if (remaining === 0) {
-            this.processPlansWithFilter(plans);
-          }
-        },
-      });
+    forkJoin(
+      coachIds.map((coachId) =>
+        this.coachSettingsService.getConfigForCoach(coachId, true).pipe(
+          map((config) => ({
+            coachId,
+            enabled: config.nutrition?.nutritionFileEnabled !== false,
+          })),
+          catchError(() => of({ coachId, enabled: false }))
+        )
+      )
+    ).subscribe({
+      next: (items) => {
+        items.forEach((item) => {
+          this.coachNutritionFileEnabled.set(item.coachId, item.enabled);
+        });
+        this.fileSettingsResolved = true;
+        this.processPlansWithFilter(plans);
+      },
+      error: () => {
+        this.fileSettingsResolved = true;
+        this.processPlansWithFilter(plans);
+      },
     });
   }
 
@@ -267,7 +275,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     }
 
     if (!this.coachNutritionFileEnabled.has(coachId)) {
-      return true;
+      return false;
     }
 
     return this.coachNutritionFileEnabled.get(coachId) !== false;
@@ -285,6 +293,10 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
     const appPlans = filteredPlans.filter((plan) => !this.isFilePlan(plan));
     const filePlans = filteredPlans.filter((plan) => this.isFilePlan(plan) && this.isNutritionFileEnabledForCoach(this.getPlanCoachId(plan)));
+
+    this.nutritionFileEnabled = this.fileSettingsResolved && (this.selectedCoachId === 'all'
+      ? this.coaches.some((coach) => this.isNutritionFileEnabledForCoach(coach.id))
+      : this.isNutritionFileEnabledForCoach(this.selectedCoachId));
 
     this.nutritionDays = this.mapApiResponseToNutritionDays(appPlans);
     this.filePrograms = this.mapPlansToFilePrograms(filePlans);
@@ -309,7 +321,10 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   onCoachChange(coachId: string | 'all') {
     this.selectedCoachId = coachId;
+    this.fileSettingsResolved = false;
+    this.nutritionFileEnabled = false;
     this.applyCoachFilter();
+    this.loadCoachNutritionFileSettings(this.allPlans);
   }
 
   private mapApiResponseToNutritionDays(plans: any[]): NutritionDay[] {
@@ -552,7 +567,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   get showNutritionFiles(): boolean {
-    return this.filePrograms.length > 0;
+    return this.fileSettingsResolved && this.nutritionFileEnabled && this.filePrograms.length > 0;
   }
 
   get calendarCountLabel(): string {

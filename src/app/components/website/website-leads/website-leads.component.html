@@ -1,123 +1,58 @@
-<div class="website-leads-container">
-  <div class="page-header">
-    <h1>Website Leads</h1>
-    <button class="btn-primary" type="button">
-      <i-feather name="users"></i-feather>
-      {{ totalElements }} Leads
-    </button>
-  </div>
+<section class="leads-page" [class.leads-page--embedded]="embedded">
+  <header class="leads-header">
+    <div class="title-row"><h1>Leads</h1><span class="count">{{ totalElements }}</span></div>
+    <label class="search-box">
+      <i-feather name="search"></i-feather>
+      <input type="search" placeholder="Search leads" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
+    </label>
+  </header>
 
-  <div class="search-container">
-    <div class="search-box">
-      <i-feather name="search" class="search-icon"></i-feather>
-      <input
-        type="text"
-        placeholder="Search leads..."
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="onSearchChange()"
-        class="search-input"
-      />
-    </div>
-  </div>
+  <div class="notice notice--success" *ngIf="actionMessage">{{ actionMessage }}</div>
+  <div class="notice notice--error" *ngIf="actionError">{{ actionError }}</div>
 
-  <div class="plans-table">
-    <div class="table-header">
-      <div class="col-title">LEAD</div>
-      <div class="col-updated">DATE</div>
-      <div class="col-macros">CONTACT</div>
-      <div class="col-calories">SOURCE</div>
-      <div class="col-actions">ACTIONS</div>
-    </div>
-
-    <div class="table-row" *ngFor="let lead of leads">
-      <div class="col-title">
-        <div class="plan-name">{{ getLeadFullName(lead) }}</div>
-        <div class="plan-type">{{ getElapsedTime(lead.createdAt) }}</div>
-      </div>
-
-      <div class="col-updated">
-        {{ formatDate(lead.createdAt) }}
-      </div>
-
-      <div class="col-macros">
-        <div class="macro-item">{{ lead.email }}</div>
-        <div class="macro-item">{{ lead.phone || 'No phone' }}</div>
-      </div>
-
-      <div class="col-calories">
-        {{ lead.sourceTheme || '—' }}
-      </div>
-
-      <div class="col-actions">
-        <div class="dropdown" [class.open]="openDropdownId === lead.id">
-          <button
-            class="actions-btn"
-            (click)="toggleDropdown(lead.id, $event)"
-            type="button"
-          >
-            Actions
-            <i-feather name="chevron-down"></i-feather>
-          </button>
-
-          <div class="dropdown-menu" *ngIf="openDropdownId === lead.id">
-            <button
-              class="dropdown-item"
-              [disabled]="!lead.email"
-              type="button"
-              (click)="copyEmail(lead.email); $event.stopPropagation()"
-            >
-              <i-feather name="copy"></i-feather>
-              Copy email
-            </button>
-
-            <button
-              class="dropdown-item"
-              type="button"
-              [disabled]="!lead.phone"
-              (click)="copyPhone(lead.phone); $event.stopPropagation()"
-            >
-              <i-feather name="phone"></i-feather>
-              Copy phone
-            </button>
-
-            <a
-              class="dropdown-item"
-              [href]="'mailto:' + lead.email"
-              (click)="$event.stopPropagation()"
-            >
-              <i-feather name="mail"></i-feather>
-              Send email
-            </a>
+  <div class="lead-list" *ngIf="!loading">
+    <article class="lead-card" *ngFor="let lead of leads">
+      <div class="lead-main">
+        <div class="avatar"><i-feather name="user"></i-feather></div>
+        <div class="identity">
+          <div class="name-line">
+            <strong>{{ getLeadFullName(lead) }}</strong>
+            <a [href]="'mailto:' + lead.email">({{ lead.email }})</a>
           </div>
+          <div class="time"><i-feather name="clock"></i-feather>{{ getElapsedTime(lead.createdAt) }}</div>
         </div>
       </div>
-    </div>
 
-    <div class="empty-state" *ngIf="!loading && leads.length === 0">
-      No leads found.
-    </div>
+      <div class="lead-type">
+        <span class="type-label">Type</span>
+        <span class="type-pill">{{ lead.sourceType === 'CONTACT_FORM' ? 'Contact Form' : 'Coach Website' }}</span>
+      </div>
 
-    <div class="loading-state" *ngIf="loading">
-      Loading leads...
-    </div>
+      <div class="lead-actions" *ngIf="lead.status !== 'INVITED' && lead.status !== 'DECLINED'">
+        <button class="button button--secondary" type="button" (click)="decline(lead)" [disabled]="!!processingLeadId">
+          <i-feather name="x"></i-feather>
+          <span>Decline</span>
+        </button>
+        <button class="button button--primary" type="button" (click)="invite(lead)" [disabled]="!!processingLeadId">
+          <i-feather [name]="processingLeadId === lead.id ? 'loader' : 'user-plus'" [class.spinning]="processingLeadId === lead.id"></i-feather>
+          <span>{{ processingLeadId === lead.id ? 'Sending...' : 'Invite' }}</span>
+        </button>
+      </div>
+      <div class="lead-status" *ngIf="lead.status === 'INVITED' || lead.status === 'DECLINED'" [class.declined]="lead.status === 'DECLINED'">
+        {{ lead.status === 'INVITED' ? 'Invited' : 'Declined' }}
+      </div>
+
+      <div class="message" *ngIf="lead.message">{{ lead.message }}</div>
+    </article>
+
+    <div class="empty-state" *ngIf="leads.length === 0">No leads found.</div>
   </div>
 
-  <div class="pagination" *ngIf="totalPages > 1">
-    <button class="page-btn" [disabled]="page === 0" (click)="goToPage(page - 1)">
-      Previous
-    </button>
+  <div class="loading-state" *ngIf="loading">Loading leads...</div>
 
-    <button
-      class="page-btn"
-      *ngFor="let p of pages"
-      [class.active]="p === page"
-      (click)="goToPage(p)"
-    >
-      {{ p + 1 }}
-    </button>
-
-    <button class="page-btn" [disabled]="page === totalPages - 1" (click)="goToPage(page + 1)">
-      Next
-    </button>
-  </div>
-</div>
+  <nav class="pagination" *ngIf="totalPages > 1">
+    <button [disabled]="page === 0" (click)="goToPage(page - 1)">Previous</button>
+    <button *ngFor="let p of pages" [class.active]="p === page" (click)="goToPage(p)">{{ p + 1 }}</button>
+    <button [disabled]="page === totalPages - 1" (click)="goToPage(page + 1)">Next</button>
+  </nav>
+</section>

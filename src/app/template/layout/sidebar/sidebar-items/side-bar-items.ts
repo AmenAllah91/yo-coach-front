@@ -308,7 +308,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Websites',
+    title: 'Grow',
     iconType: 'feather',
     icon: 'layout',
     class: '',
@@ -318,8 +318,19 @@ export const items: RouteInfo[] = [
     roles: ['ROLE_COACH'],
     submenu: [
       {
+        path: '/grow/contact-form',
+        title: 'Contact Form',
+        iconType: 'feather',
+        icon: 'file-text',
+        class: '',
+        groupTitle: false,
+        badge: '',
+        badgeClass: '',
+        submenu: [],
+      },
+      {
         path: '/websites/create',
-        title: 'Create Website',
+        title: 'Coach Website',
         iconType: 'feather',
         icon: 'edit-3',
         class: '',
@@ -330,7 +341,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/websites/leads',
-        title: 'Website Leads',
+        title: 'Leads',
         iconType: 'feather',
         icon: 'inbox',
         class: '',

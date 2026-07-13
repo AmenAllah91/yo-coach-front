@@ -1,0 +1,110 @@
+<section class="grow-page">
+  <header class="grow-header">
+    <div>
+      <h1>Grow</h1>
+      <p>Expand your coaching business</p>
+    </div>
+  </header>
+
+  <div class="section-heading">
+    <h2>Contact Form</h2>
+    <div class="heading-actions">
+      <button class="button button--light" type="button" (click)="openCustomize()" [disabled]="!form">
+        <i-feather name="edit-3"></i-feather> Customize
+      </button>
+      <button class="button button--light" type="button" (click)="previewSaved()" [disabled]="!form">
+        <i-feather name="external-link"></i-feather> Preview
+      </button>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="loading">Loading contact form...</div>
+  <div class="alert" *ngIf="error">{{ error }}</div>
+
+  <div class="contact-overview" *ngIf="form && !loading">
+    <div class="overview-copy">
+      <p class="description">
+        Get leads by pasting the link on your webpage or social media bio. Your potential clients will be
+        directed to a customized contact form with your graphics and personal touch. Responses from users
+        filling out the form will be conveniently displayed in the Leads section.
+      </p>
+
+      <div class="link-label">Link</div>
+      <div class="link-row">
+        <div class="link-field"><i-feather name="link-2"></i-feather><span>{{ publicUrl }}</span></div>
+        <button class="button button--primary" type="button" (click)="copyLink()">
+          <i-feather [name]="copied ? 'check' : 'link-2'"></i-feather>
+          {{ copied ? 'Copied' : 'Copy Link' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="overview-preview">
+      <div class="browser-frame">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="mini-form">
+          <div class="mini-cover" [style.backgroundImage]="form.coverImage ? 'url(' + form.coverImage + ')' : ''">
+            <span *ngIf="!form.coverImage">Your Cover Image will be here</span>
+          </div>
+          <div class="mini-avatar"><i-feather name="user"></i-feather></div>
+          <p>{{ form.message }}</p>
+          <small>{{ form.coachName }}</small>
+          <div class="mini-line"></div><div class="mini-line"></div><div class="mini-box"></div>
+          <div class="mini-button">Send</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <app-website-leads *ngIf="form && !loading" [embedded]="true"></app-website-leads>
+</section>
+
+<div class="modal-backdrop" *ngIf="modalOpen" (mousedown)="closeCustomize()">
+  <section class="customize-modal" (mousedown)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="modal-header">
+      <h2>Customize Contact Form</h2>
+      <button type="button" class="icon-button" (click)="closeCustomize()" aria-label="Close"><i-feather name="x"></i-feather></button>
+    </header>
+
+    <div class="modal-preview">
+      <div class="browser-frame browser-frame--large">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="mini-form">
+          <div class="mini-cover" [style.backgroundImage]="draft.coverImage ? 'url(' + draft.coverImage + ')' : ''">
+            <span *ngIf="!draft.coverImage">Your Cover Image will be here</span>
+          </div>
+          <div class="mini-avatar"><i-feather name="user"></i-feather></div>
+          <p>{{ draft.message }}</p>
+          <small>{{ form?.coachName }}</small>
+          <div class="mini-line"></div><div class="mini-line"></div><div class="mini-box"></div>
+          <div class="mini-button">Send</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fields">
+      <label class="field-title">Cover Image</label>
+      <p class="field-help">Your image will appear at the top of the form. JPG or PNG format, with dimensions of 740 × 180 pixels and a maximum file size of 5 MB.</p>
+      <input #coverInput hidden type="file" accept="image/jpeg,image/png" (change)="onCoverSelected($event)" />
+      <button class="upload-zone" type="button" (click)="triggerUpload()">
+        <i-feather name="image"></i-feather>
+        {{ draft.coverImage ? 'Change Image' : 'Upload Image' }}
+      </button>
+      <div class="field-error" *ngIf="uploadError">{{ uploadError }}</div>
+
+      <label class="field-title field-title--message" for="contactMessage">Message</label>
+      <p class="field-help">Your message will be displayed below your profile picture.</p>
+      <textarea id="contactMessage" rows="3" maxlength="240" [(ngModel)]="draft.message"></textarea>
+    </div>
+
+    <footer class="modal-footer">
+      <button class="button button--light" type="button" (click)="previewDraft()"><i-feather name="external-link"></i-feather> Preview</button>
+      <div class="footer-actions">
+        <button class="button button--light" type="button" (click)="closeCustomize()">Cancel</button>
+        <button class="button button--primary" type="button" (click)="save()" [disabled]="saving || !draft.message.trim()">
+          {{ saving ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

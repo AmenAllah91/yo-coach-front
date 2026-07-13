@@ -187,12 +187,15 @@ export class WebsiteBuilderComponent implements OnInit{
         this.profile.bio = 'Parlez de vous ici...';
         this.siteSlug = `${user.firstName}-${user.lastName}`;
 
-        if (user.avatarUrl) {
+        const avatarUrl = user.avatarUrl?.trim();
+        if (avatarUrl && avatarUrl.toLowerCase() !== 'not found') {
           try {
-            this.profile.image = await this.convertImageToBase64(user.avatarUrl);
+            this.profile.image = await this.convertImageToBase64(avatarUrl);
           } catch {
             this.profile.image = '';
           }
+        } else {
+          this.profile.image = '';
         }
       },
       error: () => {}
@@ -200,7 +203,10 @@ export class WebsiteBuilderComponent implements OnInit{
   }
   private convertImageToBase64(url: string): Promise<string> {
     return fetch(url)
-      .then(res => res.blob())
+      .then(res => {
+        if (!res.ok) throw new Error(`Image request failed with ${res.status}`);
+        return res.blob();
+      })
       .then(blob => new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);

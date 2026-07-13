@@ -12,6 +12,7 @@
     "src/custom-polyfills.ts"
   ],
   "include": [
+    "src/app/components/website/website-leads/website-leads.component.ts",
     "src/**/*.d.ts"
   ]
 }

@@ -53,6 +53,8 @@ import {
 } from "./components/nutrition/food-replacement-groups/food-replacement-groups.component";
 import {ConfigurationCoachngComponent} from "./components/configuration-coachng/configuration-coachng.component";
 import { ThemeColorsComponent } from './components/theme/theme-colors/theme-colors.component';
+import { ContactFormManagerComponent } from './components/website/contact-form-manager/contact-form-manager.component';
+import { PublicContactFormComponent } from './components/website/public-contact-form/public-contact-form.component';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
@@ -195,6 +197,10 @@ export const APP_ROUTE: Route[] = [
         component: CreateFullPlanComponent,
       },
       {
+        path: 'grow/contact-form',
+        component: ContactFormManagerComponent,
+      },
+      {
         path: 'websites/create',
         component: WebsiteBuilderComponent,
       },
@@ -268,6 +274,10 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'site',
     component: PublicWebsiteComponent
+  },
+  {
+    path: 'contact/:slug',
+    component: PublicContactFormComponent,
   },
   {
     path: 'video-viewer',

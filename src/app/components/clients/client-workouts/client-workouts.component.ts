@@ -143,7 +143,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   selectedCoachId: string | 'all' = 'all';
   searchProgram = '';
   allPlans: any[] = [];
-  workoutFileEnabled = true;
+  workoutFileEnabled = false;
+  fileSettingsResolved = false;
   coachWorkoutFileEnabled = new Map<string, boolean>();
 
   constructor(
@@ -154,15 +155,11 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.coachSettingsService.loadConfig().subscribe({
-      next: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        this.getWorkoutDay();
-      },
-      error: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        this.getWorkoutDay();
-      },
+    // Programs are the page's critical data. Settings are refreshed silently in
+    // parallel so they no longer delay the initial workout rendering.
+    this.getWorkoutDay();
+    this.coachSettingsService.loadConfig(true).subscribe({
+      error: () => undefined,
     });
   }
 
@@ -184,7 +181,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get showWorkoutFiles(): boolean {
-    return this.workoutFileEnabled;
+    return this.fileSettingsResolved && this.workoutFileEnabled;
   }
 
   getWorkoutDay() {
@@ -204,27 +201,35 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       });
       this.coaches = Array.from(coachMap.values());
       this.selectedCoachId = this.resolveCurrentCoachId(this.allPlans) || this.coaches[0]?.id || 'all';
+      this.fileSettingsResolved = false;
+      this.workoutFileEnabled = false;
+      this.coachWorkoutFileEnabled.clear();
+      // Render regular workouts immediately while file permissions load.
+      this.applyCoachFilter();
       this.loadCoachWorkoutFileSettings();
     });
   }
 
 
   loadCoachWorkoutFileSettings() {
-    const coachIds = this.coaches.map((coach) => coach.id).filter(Boolean);
+    const coachIds = this.selectedCoachId !== 'all'
+      ? [this.selectedCoachId]
+      : this.coaches.map((coach) => coach.id).filter(Boolean);
 
     if (!coachIds.length) {
+      this.fileSettingsResolved = true;
       this.applyCoachFilter();
       return;
     }
 
     forkJoin(
       coachIds.map((coachId) =>
-        this.coachSettingsService.getConfigForCoach(coachId).pipe(
+        this.coachSettingsService.getConfigForCoach(coachId, true).pipe(
           map((config) => ({
             coachId,
             enabled: config.workout?.workoutFileEnabled !== false,
           })),
-          catchError(() => of({ coachId, enabled: true }))
+          catchError(() => of({ coachId, enabled: false }))
         )
       )
     ).subscribe({
@@ -233,9 +238,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         items.forEach((item) => {
           this.coachWorkoutFileEnabled.set(item.coachId, item.enabled);
         });
+        this.fileSettingsResolved = true;
         this.applyCoachFilter();
       },
-      error: () => this.applyCoachFilter(),
+      error: () => {
+        this.fileSettingsResolved = true;
+        this.applyCoachFilter();
+      },
     });
   }
 
@@ -245,7 +254,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     }
 
     if (!this.coachWorkoutFileEnabled.has(coachId)) {
-      return this.workoutFileEnabled;
+      return false;
     }
 
     return this.coachWorkoutFileEnabled.get(coachId) !== false;
@@ -258,9 +267,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       filteredPlans = filteredPlans.filter((plan: any) => this.getPlanCoachId(plan) === this.selectedCoachId);
     }
 
-    const selectedCoachSettingEnabled = this.selectedCoachId === 'all'
+    const selectedCoachSettingEnabled = this.fileSettingsResolved && (this.selectedCoachId === 'all'
       ? this.coaches.some((coach) => this.isWorkoutFileEnabledForCoach(coach.id))
-      : this.isWorkoutFileEnabledForCoach(this.selectedCoachId);
+      : this.isWorkoutFileEnabledForCoach(this.selectedCoachId));
 
     this.workoutFileEnabled = selectedCoachSettingEnabled;
 
@@ -324,7 +333,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   onCoachChange(coachId: string | 'all') {
     this.selectedCoachId = coachId;
+    this.fileSettingsResolved = false;
+    this.workoutFileEnabled = false;
     this.applyCoachFilter();
+    this.loadCoachWorkoutFileSettings();
   }
 
   get currentMonth(): string {

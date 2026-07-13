@@ -250,6 +250,39 @@
   font-size: 14px;
 }
 
+.history-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.delete-measurement-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: #8b95a5;
+  background: #ffffff;
+  border: 1px solid #e1e7ef;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.delete-measurement-btn:hover:not(:disabled) {
+  color: #d33f4f;
+  background: #fff5f6;
+  border-color: #f0b7be;
+  transform: translateY(-1px);
+}
+
+.delete-measurement-btn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
 .load-more-history-btn {
   justify-self: center;
   min-width: 132px;
@@ -425,8 +458,9 @@
     padding: 12px;
   }
 
-  .history-date {
+  .history-actions {
     grid-column: 2;
+    justify-content: space-between;
   }
 
   .measurements-topbar {

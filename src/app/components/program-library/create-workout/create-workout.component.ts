@@ -531,6 +531,10 @@ export class CreateWorkoutComponent implements OnInit {
     this.facade.handleSelectExercise(ex);
   }
 
+  isExerciseAdded(ex: Exercise): boolean {
+    return this.facade.isExerciseAdded(ex);
+  }
+
   isInSuperset(i: number) {
     return this.facade.isInSuperset?.(i) ?? false;
   }

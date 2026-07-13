@@ -12,6 +12,9 @@ export interface CoachWebsiteLead {
   lastName?: string;
   email: string;
   phone?: string;
+  message?: string;
+  sourceType?: 'COACH_WEBSITE' | 'CONTACT_FORM';
+  status?: 'NEW' | 'INVITED' | 'DECLINED';
   sourceTheme?: string;
   createdAt: string;
 }
@@ -42,6 +45,9 @@ export interface CoachWebsiteLead {
   lastName?: string;
   email: string;
   phone?: string;
+  message?: string;
+  sourceType?: 'COACH_WEBSITE' | 'CONTACT_FORM';
+  status?: 'NEW' | 'INVITED' | 'DECLINED';
   sourceTheme?: string;
   createdAt: string;
 }
@@ -155,6 +161,13 @@ export class WebsiteService {
   getMyLeads(search = '', page = 0, size = 10): Observable<PageResponse<CoachWebsiteLead>> {
     return this.http.get<PageResponse<CoachWebsiteLead>>(
       `${this.leadsUrl}/me?search=${encodeURIComponent(search)}&page=${page}&size=${size}`
+    );
+  }
+
+  updateLeadStatus(id: string, status: 'NEW' | 'INVITED' | 'DECLINED'): Observable<CoachWebsiteLead> {
+    return this.http.patch<CoachWebsiteLead>(
+      `${this.leadsUrl}/${encodeURIComponent(id)}/status?status=${status}`,
+      {},
     );
   }
 }

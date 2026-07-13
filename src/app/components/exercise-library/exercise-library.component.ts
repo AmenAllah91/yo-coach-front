@@ -63,18 +63,11 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   allExercises: Exercise[] = [];
   filteredExercises: Exercise[] = [];
   myExercisesForTemplateFilter: Exercise[] = [];
+  private customExercises = new Set<Exercise>();
   isLoading = false;
   enums: EnumResponse | null = null;
 
-  currentPage = 0;
-  pageSize = 10;
-  totalPages = 0;
-  totalElements = 0;
-
   editingExercise: Exercise | null = null;
-  activeTab = 'templates';
-  templatesCount = 0;
-  myExercisesCount = 0;
   isTemplate = false;
 
   selectedEquipment = '';
@@ -103,7 +96,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
     this.loadCurrentUserAccess();
     this.loadEnums();
     this.loadAllExercises();
-    this.loadAllCounts();
   }
 
   loadCurrentUserAccess() {
@@ -410,61 +402,38 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
 
   loadAllExercises() {
     this.isLoading = true;
-
-    if (this.activeTab === 'templates') {
-      this.loadTemplatesWithoutDuplicates();
-      return;
-    }
-
-    this.loadCurrentTabExercises();
-  }
-
-  private loadCurrentTabExercises() {
-    const serviceCall =
-      this.activeTab === 'templates'
-        ? this.exerciseService.getTemplateExercises(this.currentPage, this.pageSize)
-        : this.exerciseService.getMyExercises(this.currentPage, this.pageSize);
-
-    serviceCall.subscribe({
-      next: (response: PageResponse<Exercise>) => {
-        this.applyExerciseResponse(response);
-      },
-      error: (error) => this.handleLoadError(error),
-    });
-  }
-
-  private loadTemplatesWithoutDuplicates() {
     this.exerciseService.getMyExercises(0, 1000).subscribe({
       next: (myResponse: PageResponse<Exercise>) => {
         this.myExercisesForTemplateFilter = myResponse.content || [];
+        this.customExercises = new Set(this.myExercisesForTemplateFilter);
 
         this.exerciseService
-          .getTemplateExercises(this.currentPage, this.pageSize)
+          .getTemplateExercises(0, 1000)
           .subscribe({
             next: (templateResponse: PageResponse<Exercise>) => {
               const visibleTemplates = (templateResponse.content || []).filter(
                 (template) => !this.templateAlreadyInMyExercises(template),
               );
-
-              const response = {
-                ...templateResponse,
-                content: visibleTemplates,
-                totalElements: visibleTemplates.length,
-              } as PageResponse<Exercise>;
-
-              this.applyExerciseResponse(response);
+              this.applyExercises([
+                ...visibleTemplates,
+                ...this.myExercisesForTemplateFilter,
+              ]);
             },
-            error: (error) => this.handleLoadError(error),
+            error: (error) => {
+              console.error('Error loading template exercises:', error);
+              this.applyExercises(this.myExercisesForTemplateFilter);
+            },
           });
       },
       error: () => {
         this.myExercisesForTemplateFilter = [];
+        this.customExercises.clear();
 
         this.exerciseService
-          .getTemplateExercises(this.currentPage, this.pageSize)
+          .getTemplateExercises(0, 1000)
           .subscribe({
             next: (response: PageResponse<Exercise>) => {
-              this.applyExerciseResponse(response);
+              this.applyExercises(response.content || []);
             },
             error: (error) => this.handleLoadError(error),
           });
@@ -472,13 +441,9 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
     });
   }
 
-  private applyExerciseResponse(
-    response: PageResponse<Exercise>,
-  ) {
-    this.allExercises = response.content || [];
-    this.filteredExercises = response.content || [];
-    this.totalPages = response.totalPages;
-    this.totalElements = response.totalElements;
+  private applyExercises(exercises: Exercise[]) {
+    this.allExercises = exercises;
+    this.filteredExercises = exercises;
     this.isLoading = false;
     this.applyFilters();
   }
@@ -503,29 +468,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   private handleLoadError(error: any) {
     console.error('Error loading exercises:', error);
     this.isLoading = false;
-  }
-
-  loadAllCounts() {
-    this.exerciseService.getTemplateExercises(0, 1).subscribe({
-      next: (response: PageResponse<Exercise>) => {
-        this.templatesCount = response.totalElements || 0;
-      },
-      error: (error) => console.error('Error loading templates count:', error),
-    });
-
-    this.exerciseService.getMyExercises(0, 1).subscribe({
-      next: (response: PageResponse<Exercise>) => {
-        this.myExercisesCount = response.totalElements || 0;
-      },
-      error: (error) => console.error('Error loading my exercises count:', error),
-    });
-  }
-
-  setActiveTab(tab: string) {
-    this.activeTab = tab;
-    this.currentPage = 0;
-    this.selectedExercise = null;
-    this.loadAllExercises();
   }
 
   createExercise() {
@@ -561,7 +503,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
       this.exerciseService.updateExercise(this.editingExercise.id!, exercise).subscribe({
         next: () => {
           this.loadAllExercises();
-          this.loadAllCounts();
           this.resetForm();
           this.closeCreateModal();
         },
@@ -571,7 +512,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
       this.exerciseService.createExercise(exercise).subscribe({
         next: () => {
           this.loadAllExercises();
-          this.loadAllCounts();
           this.resetForm();
           this.closeCreateModal();
         },
@@ -629,7 +569,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
       this.exerciseService.deleteExercise(this.exerciseToDelete.id!).subscribe({
         next: () => {
           this.loadAllExercises();
-          this.loadAllCounts();
           this.closeDeleteModal();
         },
         error: (error) => console.error('Error deleting exercise:', error),
@@ -640,22 +579,6 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.exerciseToDelete = null;
-  }
-
-  nextPage() {
-    if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
-      this.selectedExercise = null;
-      this.loadAllExercises();
-    }
-  }
-
-  previousPage() {
-    if (this.currentPage > 0) {
-      this.currentPage--;
-      this.selectedExercise = null;
-      this.loadAllExercises();
-    }
   }
 
   applyFilters() {
@@ -692,32 +615,16 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   }
 
   canShowExerciseActions(exercise: Exercise): boolean {
-    // The /my-exercises endpoint already returns exercises owned by the connected coach.
-    // We show edit/delete only in this tab. Templates never show edit/delete.
-    return this.activeTab === 'my-exercises';
+    return this.isCustomExercise(exercise);
   }
 
   canManageExercise(exercise: Exercise | null): boolean {
     if (!exercise) return false;
-
-    // On the My Exercises tab, the backend already filtered by current coach.
-    // This avoids hiding actions when token sub/email does not match ExerciseRef.createdBy Mongo id.
-    if (this.activeTab === 'my-exercises') {
-      return true;
-    }
-
-    const ownerId = this.getExerciseOwnerId(exercise);
-    if (!ownerId || !this.currentUserId) return false;
-
-    return ownerId === this.currentUserId;
+    return this.isCustomExercise(exercise);
   }
 
-  private getExerciseOwnerId(exercise: Exercise): string {
-    return String(
-      (exercise as any).createdBy ||
-      (exercise as any).exerciseRef?.createdBy ||
-      '',
-    ).trim();
+  isCustomExercise(exercise: Exercise): boolean {
+    return this.customExercises.has(exercise);
   }
 
   private clearSelectionIfFilteredOut() {

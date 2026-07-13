@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -8,6 +8,7 @@ import {
   FoodReplacementGroupItem,
   FoodReplacementGroupsService
 } from "../../../service/food-replacement-groups.service";
+import { Subscription } from 'rxjs';
 
 
 type ViewMode = 'LIST' | 'EDITOR';
@@ -20,15 +21,21 @@ type StatusFilter = 'all' | 'active' | 'inactive';
   templateUrl: './food-replacement-groups.component.html',
   styleUrls: ['./food-replacement-groups.component.scss'],
 })
-export class FoodReplacementGroupsComponent implements OnInit {
+export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   view: ViewMode = 'LIST';
 
   groups: FoodReplacementGroup[] = [];
   foods: any[] = [];
+  foodsLoading = false;
+  private foodsLoaded = false;
 
   searchTerm = '';
   statusFilter: StatusFilter = 'all';
   loading = false;
+  loadingRows = [1, 2, 3, 4, 5, 6];
+  groupFoodSearchTerm = '';
+  private groupsRequest?: Subscription;
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
   currentPage = 0;
   pageSize = 10;
@@ -58,7 +65,11 @@ export class FoodReplacementGroupsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadGroups();
-    this.loadFoods();
+  }
+
+  ngOnDestroy(): void {
+    this.groupsRequest?.unsubscribe();
+    if (this.searchTimer) clearTimeout(this.searchTimer);
   }
 
   @HostListener('document:click')
@@ -103,6 +114,13 @@ export class FoodReplacementGroupsComponent implements OnInit {
     return this.groupFoods.slice(1);
   }
 
+  get filteredGroupFoods(): FoodReplacementGroupItem[] {
+    const search = this.groupFoodSearchTerm.trim().toLowerCase();
+    return search
+      ? this.groupFoods.filter((food) => (food.name || '').toLowerCase().includes(search))
+      : this.groupFoods;
+  }
+
   loadGroups(): void {
     this.loading = true;
 
@@ -111,8 +129,9 @@ export class FoodReplacementGroupsComponent implements OnInit {
         ? undefined
         : this.statusFilter === 'active';
 
-    this.replacementGroupsService
-      .getGroups(this.currentPage, this.pageSize, this.searchTerm, active)
+    this.groupsRequest?.unsubscribe();
+    this.groupsRequest = this.replacementGroupsService
+      .getGroups(this.currentPage, this.pageSize, this.searchTerm, active, true)
       .subscribe({
         next: (page) => {
           this.groups = page.content || [];
@@ -130,17 +149,27 @@ export class FoodReplacementGroupsComponent implements OnInit {
   }
 
   loadFoods(): void {
-    this.nutritionService.getFoods(0, 100).subscribe({
+    if (this.foodsLoaded || this.foodsLoading) return;
+    this.foodsLoading = true;
+    this.nutritionService.getFoods(0, 100, undefined, false, true).subscribe({
       next: (response) => {
         this.foods = response.content || [];
+        this.foodsLoaded = true;
+        this.foodsLoading = false;
       },
-      error: (error) => console.error('Error loading foods:', error),
+      error: (error) => {
+        this.foodsLoading = false;
+        console.error('Error loading foods:', error);
+      },
     });
   }
 
   onSearch(): void {
-    this.currentPage = 0;
-    this.loadGroups();
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => {
+      this.currentPage = 0;
+      this.loadGroups();
+    }, 300);
   }
 
   onStatusChange(): void {
@@ -171,6 +200,7 @@ export class FoodReplacementGroupsComponent implements OnInit {
     this.groupDescription = '';
     this.clientNote = '';
     this.groupFoods = [];
+    this.groupFoodSearchTerm = '';
     this.view = 'EDITOR';
   }
 
@@ -180,6 +210,7 @@ export class FoodReplacementGroupsComponent implements OnInit {
     this.groupDescription = group.description || '';
     this.clientNote = group.clientNote || '';
     this.groupFoods = (group.foods || []).map((food) => ({ ...food }));
+    this.groupFoodSearchTerm = '';
     this.view = 'EDITOR';
   }
 
@@ -230,6 +261,7 @@ export class FoodReplacementGroupsComponent implements OnInit {
   }
 
   openAddFoodModal(): void {
+    this.loadFoods();
     this.foodSearchTerm = '';
     this.foodTab = 'all';
     this.selectedFood = null;
@@ -279,6 +311,7 @@ export class FoodReplacementGroupsComponent implements OnInit {
   }
 
   editGroupFood(food: FoodReplacementGroupItem): void {
+    this.loadFoods();
     this.selectedFood = {
       id: food.foodRefId,
       name: food.name,

@@ -1,68 +1,57 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { Subject, debounceTime, distinctUntilChanged, interval, takeUntil } from 'rxjs';
-import { WebsiteService, CoachWebsiteLead, PageResponse } from '../../../service/website.service';
+import { Subject, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs';
+import { InvitationService } from 'app/service/invitation.service';
+import { CoachWebsiteLead, PageResponse, WebsiteService } from 'app/service/website.service';
 
 @Component({
   selector: 'app-website-leads',
   standalone: true,
   imports: [CommonModule, FormsModule, FeatherModule],
   templateUrl: './website-leads.component.html',
-  styleUrls: ['./website-leads.component.scss']
+  styleUrls: ['./website-leads.component.scss'],
 })
 export class WebsiteLeadsComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
-  private searchSubject = new Subject<string>();
+  @Input() embedded = false;
+
+  private readonly destroy$ = new Subject<void>();
+  private readonly searchSubject = new Subject<string>();
 
   leads: CoachWebsiteLead[] = [];
   searchTerm = '';
   loading = false;
-
   page = 0;
   size = 10;
   totalElements = 0;
   totalPages = 0;
+  processingLeadId: string | null = null;
+  actionMessage = '';
+  actionError = '';
 
-  openDropdownId: string | null = null;
-
-  constructor(private websiteService: WebsiteService) {}
+  constructor(
+    private websiteService: WebsiteService,
+    private invitationService: InvitationService,
+  ) {}
 
   ngOnInit(): void {
     this.loadLeads();
-
     this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe(() => {
         this.page = 0;
         this.loadLeads();
       });
-
-    document.addEventListener('click', this.handleOutsideClick);
-    interval(60000)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.leads = [...this.leads];
-      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    document.removeEventListener('click', this.handleOutsideClick);
   }
-
-  handleOutsideClick = (event: Event) => {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      this.openDropdownId = null;
-    }
-  };
 
   loadLeads(): void {
     this.loading = true;
-
     this.websiteService.getMyLeads(this.searchTerm, this.page, this.size).subscribe({
       next: (res: PageResponse<CoachWebsiteLead>) => {
         this.leads = res.content;
@@ -71,10 +60,10 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
         this.page = res.number;
         this.loading = false;
       },
-      error: (err) => {
-        console.error('Erreur chargement leads', err);
+      error: () => {
+        this.actionError = 'Unable to load leads.';
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -82,9 +71,42 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     this.searchSubject.next(this.searchTerm);
   }
 
-  toggleDropdown(id: string, event: Event): void {
-    event.stopPropagation();
-    this.openDropdownId = this.openDropdownId === id ? null : id;
+  invite(lead: CoachWebsiteLead): void {
+    if (!lead.email || this.processingLeadId) return;
+    const coachId = sessionStorage.getItem('userId') || lead.coachId;
+    if (!coachId) {
+      this.actionError = 'Coach account not found.';
+      return;
+    }
+
+    this.startAction(lead.id);
+    this.invitationService.generateInvitation({ email: lead.email, idCoach: coachId }).pipe(
+      switchMap((invitation) =>
+        this.invitationService.sendInvitation(invitation.invitationLink, coachId, lead.email),
+      ),
+      switchMap(() => this.websiteService.updateLeadStatus(lead.id, 'INVITED')),
+      finalize(() => (this.processingLeadId = null)),
+    ).subscribe({
+      next: (updated) => {
+        this.replaceLead(updated);
+        this.actionMessage = `Invitation sent to ${lead.email}.`;
+      },
+      error: () => (this.actionError = 'The invitation could not be sent.'),
+    });
+  }
+
+  decline(lead: CoachWebsiteLead): void {
+    if (this.processingLeadId) return;
+    this.startAction(lead.id);
+    this.websiteService.updateLeadStatus(lead.id, 'DECLINED')
+      .pipe(finalize(() => (this.processingLeadId = null)))
+      .subscribe({
+        next: (updated) => {
+          this.replaceLead(updated);
+          this.actionMessage = 'Lead declined.';
+        },
+        error: () => (this.actionError = 'The lead could not be declined.'),
+      });
   }
 
   goToPage(page: number): void {
@@ -93,85 +115,33 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     this.loadLeads();
   }
 
-  getLeadFullName(lead: CoachWebsiteLead): string {
-    return [lead.firstName, lead.lastName].filter(Boolean).join(' ').trim() || '—';
-  }
-
-  formatDate(date: string | undefined): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  copyEmail(email: string): void {
-    navigator.clipboard.writeText(email);
-    this.openDropdownId = null;
-  }
-
-  copyPhone(phone?: string): void {
-    if (!phone) return;
-    navigator.clipboard.writeText(phone);
-    this.openDropdownId = null;
-  }
-
   get pages(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
-  getElapsedTime(date: string | undefined): string {
-    if (!date) return '—';
+  getLeadFullName(lead: CoachWebsiteLead): string {
+    return [lead.firstName, lead.lastName].filter(Boolean).join(' ').trim() || 'Unknown lead';
+  }
 
-    const createdAt = new Date(date).getTime();
-    const now = Date.now();
+  getElapsedTime(date?: string): string {
+    if (!date) return '';
+    const diff = Math.max(0, Date.now() - new Date(date).getTime());
+    const minute = 60000;
+    const day = 86400000;
+    if (diff < minute) return 'Just now';
+    if (diff < day && new Date(date).toDateString() === new Date().toDateString()) return 'Today';
+    const days = Math.floor(diff / day);
+    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
 
-    const diffMs = now - createdAt;
+  private startAction(id: string): void {
+    this.processingLeadId = id;
+    this.actionMessage = '';
+    this.actionError = '';
+  }
 
-    if (diffMs < 0) {
-      return 'À l’instant';
-    }
-
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-    const week = 7 * day;
-    const month = 30 * day;
-    const year = 365 * day;
-
-    if (diffMs < minute) {
-      return 'À l’instant';
-    }
-
-    if (diffMs < hour) {
-      const minutes = Math.floor(diffMs / minute);
-      return `Il y a ${minutes} min`;
-    }
-
-    if (diffMs < day) {
-      const hours = Math.floor(diffMs / hour);
-      return `Il y a ${hours} h`;
-    }
-
-    if (diffMs < week) {
-      const days = Math.floor(diffMs / day);
-      return `Il y a ${days} j`;
-    }
-
-    if (diffMs < month) {
-      const weeks = Math.floor(diffMs / week);
-      return `Il y a ${weeks} sem`;
-    }
-
-    if (diffMs < year) {
-      const months = Math.floor(diffMs / month);
-      return `Il y a ${months} mois`;
-    }
-
-    const years = Math.floor(diffMs / year);
-    return `Il y a ${years} an${years > 1 ? 's' : ''}`;
+  private replaceLead(updated: CoachWebsiteLead): void {
+    this.leads = this.leads.map((lead) => lead.id === updated.id ? updated : lead);
   }
 }

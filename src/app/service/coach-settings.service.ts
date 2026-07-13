@@ -68,8 +68,11 @@ export class CoachSettingsService {
 
   constructor(private http: HttpClient) {}
 
-  loadConfig(): Observable<CoachSettingsConfig> {
-    return this.http.get<CoachSettingsConfig>(this.baseUrl).pipe(
+  loadConfig(skipLoader = false): Observable<CoachSettingsConfig> {
+    return this.http.get<CoachSettingsConfig>(
+      this.baseUrl,
+      skipLoader ? { headers: { 'X-Skip-Loader': 'true' } } : {},
+    ).pipe(
       tap((config) => {
         this.cachedConfig = this.mergeWithDefaults(config);
         localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
@@ -77,9 +80,12 @@ export class CoachSettingsService {
     );
   }
 
-  getConfigForCoach(coachId: string): Observable<CoachSettingsConfig> {
+  getConfigForCoach(coachId: string, skipLoader = false): Observable<CoachSettingsConfig> {
     return this.http
-      .get<CoachSettingsConfig>(`${this.baseUrl}/coach/${coachId}`)
+      .get<CoachSettingsConfig>(
+        `${this.baseUrl}/coach/${coachId}`,
+        skipLoader ? { headers: { 'X-Skip-Loader': 'true' } } : {},
+      )
       .pipe(tap((config) => this.mergeWithDefaults(config)));
   }
 

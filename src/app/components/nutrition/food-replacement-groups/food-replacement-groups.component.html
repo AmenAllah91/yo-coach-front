@@ -30,29 +30,48 @@
     </select>
   </div>
 
-  <div class="groups-list">
+  <div class="groups-loading" *ngIf="loading" aria-live="polite" aria-label="Loading food replacement groups">
+    <div class="loading-label"><span class="loading-spinner"></span>Loading groups...</div>
+    <div class="group-skeleton" *ngFor="let row of loadingRows">
+      <span class="skeleton-circle"></span>
+      <span class="skeleton-line skeleton-line--name"></span>
+      <span class="skeleton-line skeleton-line--description"></span>
+      <span class="skeleton-line skeleton-line--short"></span>
+      <span class="skeleton-line skeleton-line--short"></span>
+    </div>
+  </div>
+
+  <div class="groups-list" *ngIf="!loading && groups.length > 0">
+    <div class="groups-head" aria-hidden="true">
+      <span>GROUP NAME</span>
+      <span>DESCRIPTION</span>
+      <span>FOODS</span>
+      <span>STATUS</span>
+      <span>ACTIONS</span>
+    </div>
+
     <div class="group-card" *ngFor="let group of groups">
-      <div class="group-icon">
-        <i-feather [name]="iconForGroup(group)"></i-feather>
-      </div>
-
-      <div class="group-info">
-        <h3>{{ group.name }}</h3>
-        <p>{{ group.description }}</p>
-
-        <div class="group-meta">
-          <span>
-            <i-feather name="shopping-bag"></i-feather>
-            {{ group.foods?.length || 0 }} foods
-          </span>
-          <span class="divider"></span>
-          <span>Client note: {{ group.clientNote }}</span>
+      <div class="group-name-cell">
+        <div class="group-icon">
+          <i-feather [name]="iconForGroup(group)"></i-feather>
+        </div>
+        <div class="group-info">
+          <h3>{{ group.name }}</h3>
+          <span class="group-description-chip" *ngIf="group.description">{{ group.description }}</span>
         </div>
       </div>
 
-      <span class="status-pill" [class.inactive]="!group.active">
-        {{ group.active ? 'Active' : 'Inactive' }}
-      </span>
+      <div class="group-description-cell">
+        <p>{{ group.description || '—' }}</p>
+        <small>Client note: {{ group.clientNote || '—' }}</small>
+      </div>
+
+      <div class="group-food-count">
+        <i-feather name="shopping-bag"></i-feather>
+        {{ group.foods?.length || 0 }} foods
+      </div>
+
+      <div><span class="status-pill" [class.inactive]="!group.active">{{ group.active ? 'Active' : 'Inactive' }}</span></div>
 
       <div class="col-actions group-actions">
         <div class="dropdown" [class.open]="isGroupActionsOpen(group)">
@@ -66,7 +85,6 @@
               <i-feather name="edit-2"></i-feather>
               Edit
             </button>
-
             <button class="dropdown-item delete" type="button" (click)="deleteGroup(group); closeGroupActions()">
               <i-feather name="trash-2"></i-feather>
               Delete group
@@ -76,12 +94,13 @@
       </div>
     </div>
 
-    <div class="empty-state" *ngIf="!loading && groups.length === 0">
-      <i-feather name="shuffle"></i-feather>
-      <h3>No replacement groups found</h3>
-      <p>Create your first reusable group of interchangeable foods.</p>
-      <button class="primary-btn" (click)="openCreateGroup()">Create Group</button>
-    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && groups.length === 0">
+    <i-feather name="shuffle"></i-feather>
+    <h3>No replacement groups found</h3>
+    <p>Create your first reusable group of interchangeable foods.</p>
+    <button class="primary-btn" (click)="openCreateGroup()">Create Group</button>
   </div>
 
   <div class="app-pagination" *ngIf="totalPages > 1">
@@ -116,10 +135,10 @@
 </div>
 
 <div class="page-container" *ngIf="view === 'EDITOR'">
-  <div class="page-header">
+  <div class="page-header editor-header">
     <div class="header-content">
-      <h1>{{ editingGroup ? 'Edit Food Replacement Group' : 'Create Food Replacement Group' }}</h1>
-      <p>Create one reusable group so any food inside it can suggest the others as replacements.</p>
+      <h1>{{ editingGroup ? 'Edit replacement group' : 'Create replacement group' }}</h1>
+      <p>{{ editingGroup ? 'Manage the foods clients can swap in a meal plan.' : 'Create a reusable group of foods clients can swap in a meal plan.' }}</p>
     </div>
 
     <div class="header-actions">
@@ -129,77 +148,73 @@
         [disabled]="!groupName.trim() || groupFoods.length < 2"
         (click)="saveGroup()"
       >
-        {{ editingGroup ? 'Update Group' : 'Create Group' }}
+        Save
       </button>
     </div>
   </div>
 
-  <div class="editor-grid">
-    <section class="panel details-panel">
-      <h2>Group Details</h2>
+  <section class="panel group-information-panel">
+    <div class="section-heading">
+      <h2>Group information</h2>
+      <p>Internal label and client-facing guidance.</p>
+    </div>
 
-      <label>Group Name</label>
-      <input
-        type="text"
-        placeholder="Lean Proteins"
-        [(ngModel)]="groupName"
-      />
+    <div class="group-information-fields">
+      <div class="form-field">
+        <label>GROUP NAME</label>
+        <input type="text" placeholder="Protein-rich foods" [(ngModel)]="groupName" />
+      </div>
+      <div class="form-field">
+        <label>CLIENT GUIDANCE</label>
+        <input type="text" placeholder="Flexible options clients can swap in their meal plans." [(ngModel)]="groupDescription" />
+      </div>
+    </div>
+  </section>
 
-      <label>Description</label>
-      <textarea
-        rows="4"
-        placeholder="Foods that can replace each other in meal plans."
-        [(ngModel)]="groupDescription"
-      ></textarea>
-
-<!--      <label>Client Note</label>-->
-<!--      <textarea-->
-<!--        rows="4"-->
-<!--        placeholder="Choose any alternative if you do not want the food shown in your plan."-->
-<!--        [(ngModel)]="clientNote"-->
-<!--      ></textarea>-->
-    </section>
-
-    <section class="panel foods-panel">
-      <div class="panel-header">
-        <h2>Foods in this Group</h2>
+  <section class="panel foods-panel editor-foods-panel">
+      <div class="panel-header editor-foods-header">
+        <div class="section-heading">
+          <div class="title-with-count">
+            <h2>Foods in this group</h2>
+            <span>{{ groupFoods.length }}</span>
+          </div>
+          <p>These are the choices clients will see when they swap.</p>
+        </div>
         <button class="outline-blue-btn" (click)="openAddFoodModal()">
           <i-feather name="plus"></i-feather>
           Add Food
         </button>
       </div>
 
+      <div class="group-food-search search-box small">
+        <i-feather name="search" class="search-icon"></i-feather>
+        <input type="text" placeholder="Search foods in this group" [(ngModel)]="groupFoodSearchTerm" />
+      </div>
+
       <div class="foods-table" *ngIf="groupFoods.length > 0">
         <div class="table-head">
           <span>FOOD</span>
-          <span>QUANTITY</span>
-          <span>UNIT</span>
+          <span>SERVING</span>
           <span>CALORIES</span>
           <span>ACTIONS</span>
         </div>
 
-        <div class="table-row" *ngFor="let food of groupFoods">
-          <span>{{ food.name }}</span>
-          <span>{{ food.quantity }}</span>
-          <span>{{ food.unit }}</span>
+        <div class="table-row" *ngFor="let food of filteredGroupFoods">
+          <span class="food-name-cell"><span class="food-initial">{{ (food.name || '?').charAt(0) }}</span><strong>{{ food.name }}</strong></span>
+          <span>{{ food.quantity }} {{ food.unit }}</span>
           <span>{{ food.energy }} kcal</span>
           <span class="row-actions">
-            <button (click)="editGroupFood(food)">
+            <button title="Edit food" (click)="editGroupFood(food)">
               <i-feather name="edit-2"></i-feather>
             </button>
-            <button (click)="removeGroupFood(food.foodRefId)">
+            <button title="Remove food" (click)="removeGroupFood(food.foodRefId)">
               <i-feather name="trash-2"></i-feather>
             </button>
           </span>
         </div>
+        <div class="table-no-results" *ngIf="filteredGroupFoods.length === 0">No foods match this search.</div>
       </div>
-
-      <button class="dashed-add" (click)="openAddFoodModal()">
-        <i-feather name="plus"></i-feather>
-        Add another food
-      </button>
-    </section>
-  </div>
+  </section>
 
   <section class="panel preview-panel">
     <div class="preview-copy">
@@ -288,6 +303,15 @@
             <h4>{{ getFoodName(food) }}</h4>
             <p>{{ foodMacroLabel(food) }}</p>
           </div>
+        </div>
+
+        <div class="food-picker-loading" *ngIf="foodsLoading">
+          <span class="loading-spinner"></span>
+          Loading foods...
+        </div>
+
+        <div class="food-picker-empty" *ngIf="!foodsLoading && filteredFoods.length === 0">
+          No foods found.
         </div>
 
         <div class="modal-info">

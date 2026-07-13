@@ -117,8 +117,21 @@
               {{ formatValue(toDisplayValue(item.value, currentType)) }} {{ getDisplayUnit(currentType) }}
             </div>
 
-            <div class="history-date">
-              {{ formatDate(item.date) }}
+            <div class="history-actions">
+              <div class="history-date">
+                {{ formatDate(item.date) }}
+              </div>
+              <button
+                *ngIf="allowDelete"
+                type="button"
+                class="delete-measurement-btn"
+                [disabled]="deletingId === item.id"
+                (click)="deleteMeasurement(item)"
+                aria-label="Delete measurement"
+                title="Delete measurement"
+              >
+                <i class="fas" [class.fa-trash-can]="deletingId !== item.id" [class.fa-spinner]="deletingId === item.id" [class.fa-spin]="deletingId === item.id"></i>
+              </button>
             </div>
           </div>
 

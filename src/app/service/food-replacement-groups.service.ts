@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { concat, Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 export interface FoodReplacementGroupItem {
@@ -44,6 +45,7 @@ export interface Page<T> {
 })
 export class FoodReplacementGroupsService {
   private readonly baseUrl = `${environment.baseApiUrl}/api/food-replacement-groups`;
+  private readonly groupsCache = new Map<string, Page<FoodReplacementGroup>>();
 
   constructor(private http: HttpClient) {}
 
@@ -51,7 +53,8 @@ export class FoodReplacementGroupsService {
     page = 0,
     size = 20,
     search?: string,
-    active?: boolean
+    active?: boolean,
+    skipLoader = false,
   ): Observable<Page<FoodReplacementGroup>> {
     let params = new HttpParams()
       .set('page', page)
@@ -65,7 +68,16 @@ export class FoodReplacementGroupsService {
       params = params.set('active', active);
     }
 
-    return this.http.get<Page<FoodReplacementGroup>>(this.baseUrl, { params });
+    const cacheKey = `${page}|${size}|${search?.trim() || ''}|${active ?? 'all'}`;
+    const request = this.http.get<Page<FoodReplacementGroup>>(this.baseUrl, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    }).pipe(tap((result) => this.groupsCache.set(cacheKey, result)));
+    const cached = this.groupsCache.get(cacheKey);
+
+    // Returning cached data first makes revisits instant; the HTTP response then
+    // refreshes the list without blocking the interface.
+    return cached ? concat(of(cached), request) : request;
   }
 
   getGroup(id: string): Observable<FoodReplacementGroup> {
@@ -73,15 +85,21 @@ export class FoodReplacementGroupsService {
   }
 
   createGroup(group: FoodReplacementGroup): Observable<FoodReplacementGroup> {
-    return this.http.post<FoodReplacementGroup>(this.baseUrl, group);
+    return this.http.post<FoodReplacementGroup>(this.baseUrl, group).pipe(
+      tap(() => this.groupsCache.clear()),
+    );
   }
 
   updateGroup(id: string, group: FoodReplacementGroup): Observable<FoodReplacementGroup> {
-    return this.http.put<FoodReplacementGroup>(`${this.baseUrl}/${id}`, group);
+    return this.http.put<FoodReplacementGroup>(`${this.baseUrl}/${id}`, group).pipe(
+      tap(() => this.groupsCache.clear()),
+    );
   }
 
   deleteGroup(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`).pipe(
+      tap(() => this.groupsCache.clear()),
+    );
   }
 
   getGroupsByFood(foodRefId: string): Observable<FoodReplacementGroup[]> {

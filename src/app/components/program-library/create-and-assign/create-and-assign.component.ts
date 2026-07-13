@@ -538,6 +538,10 @@ export class CreateAndAssignComponent implements OnInit {
     this.facade.handleSelectExercise(ex);
   }
 
+  isExerciseAdded(ex: Exercise): boolean {
+    return this.facade.isExerciseAdded(ex);
+  }
+
   // ===== Modal bindings (Common Exercises) =====
   get isExerciseModalOpen(): boolean {
     return this.facade.isExerciseModalOpen;

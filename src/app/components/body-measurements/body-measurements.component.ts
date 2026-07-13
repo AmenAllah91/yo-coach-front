@@ -7,6 +7,7 @@ import {
   BodyMeasurementsService
 } from 'app/service/body-measurements.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { ClientService } from 'app/service/client.service';
 
 interface MeasurementTypeItem {
   key: string;
@@ -27,6 +28,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   @Input() clientId = '';
   @Input() allowAdd = true;
+  @Input() allowDelete = true;
 
   /**
    * Goal body weight from the client profile.
@@ -37,6 +39,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   loading = false;
   saving = false;
+  deletingId: string | null = null;
   error: string | null = null;
 
   search = '';
@@ -52,6 +55,8 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   };
 
   measurements: BodyMeasurement[] = [];
+  weightUnit: 'kg' | 'lbs' = 'kg';
+  measurementUnit: 'cm' | 'in' = 'cm';
 
   measurementTypes: MeasurementTypeItem[] = [
     { key: 'BODYWEIGHT', label: 'Bodyweight', unit: 'kg', icon: 'fa-weight-scale' },
@@ -70,7 +75,8 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   constructor(
     private bodyMeasurementsService: BodyMeasurementsService,
     private route: ActivatedRoute,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private clientService: ClientService
   ) {}
 
   ngOnInit(): void {
@@ -81,12 +87,15 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
         '';
     }
 
+    this.syncCachedUnitPreferences();
+    this.loadUnitPreferences();
     this.loadTargetWeightIfNeeded();
     this.loadMeasurements();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['clientId'] && !changes['clientId'].firstChange) {
+      this.loadUnitPreferences();
       this.loadTargetWeightIfNeeded();
       this.loadMeasurements();
     }
@@ -259,7 +268,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return '';
     }
 
-    return `Goal ${this.formatValue(this.toDisplayWeight(this.normalizedTargetWeight))} ${this.coachSettingsService.getWeightUnit()}`;
+    return `Goal ${this.formatValue(this.toDisplayWeight(this.normalizedTargetWeight))} ${this.weightUnit}`;
   }
 
   get chartMin(): number {
@@ -397,25 +406,89 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   }
 
   getDisplayUnit(type: MeasurementTypeItem): string {
-    if (type.key === 'BODYWEIGHT') return this.coachSettingsService.getWeightUnit();
-    if (type.unit === 'cm') return this.coachSettingsService.getMeasurementUnit();
+    if (type.key === 'BODYWEIGHT') return this.weightUnit;
+    if (type.unit === 'cm') return this.measurementUnit;
     return type.unit;
+  }
+
+  deleteMeasurement(item: BodyMeasurement): void {
+    if (!this.allowDelete || !item.id || this.deletingId) return;
+
+    const confirmed = window.confirm(
+      `Delete this ${this.currentType.label.toLowerCase()} measurement? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    this.deletingId = item.id;
+    this.error = null;
+    this.bodyMeasurementsService.delete(item.id).subscribe({
+      next: () => {
+        this.measurements = this.measurements.filter((measurement) => measurement.id !== item.id);
+        this.deletingId = null;
+      },
+      error: (err) => {
+        console.error('deleteMeasurement failed:', err);
+        this.error = 'Failed to delete measurement';
+        this.deletingId = null;
+      },
+    });
   }
 
   toDisplayValue(value: number | null | undefined, type: MeasurementTypeItem): number {
     if (type.key === 'BODYWEIGHT') return this.toDisplayWeight(value);
-    if (type.unit === 'cm') return this.coachSettingsService.convertMeasurementFromCm(value) ?? 0;
+    if (type.unit === 'cm') return this.convertMeasurementFromCm(value) ?? 0;
     return Number(value || 0);
   }
 
   private toStoredValue(value: number, type: MeasurementTypeItem): number {
-    if (type.key === 'BODYWEIGHT') return this.coachSettingsService.convertWeightToKg(value) ?? value;
-    if (type.unit === 'cm') return this.coachSettingsService.convertMeasurementToCm(value) ?? value;
+    if (type.key === 'BODYWEIGHT') return this.convertWeightToKg(value) ?? value;
+    if (type.unit === 'cm') return this.convertMeasurementToCm(value) ?? value;
     return value;
   }
 
   private toDisplayWeight(value: number | null | undefined): number {
-    return this.coachSettingsService.convertWeightFromKg(value) ?? 0;
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return 0;
+    return this.weightUnit === 'lbs' ? Number(value) * 2.2046226218 : Number(value);
+  }
+
+  private convertWeightToKg(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.weightUnit === 'lbs' ? Number(value) / 2.2046226218 : Number(value);
+  }
+
+  private convertMeasurementFromCm(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.measurementUnit === 'in' ? Number(value) / 2.54 : Number(value);
+  }
+
+  private convertMeasurementToCm(value: number | null | undefined): number | null {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+    return this.measurementUnit === 'in' ? Number(value) * 2.54 : Number(value);
+  }
+
+  private syncCachedUnitPreferences(): void {
+    this.weightUnit = this.coachSettingsService.getWeightUnit();
+    this.measurementUnit = this.coachSettingsService.getMeasurementUnit();
+  }
+
+  private loadUnitPreferences(): void {
+    if (!this.clientId) return;
+
+    this.clientService.getClientById(this.clientId).subscribe({
+      next: (client) => {
+        const coachId = client.coachId || client.coach?.id;
+        if (!coachId) return;
+
+        this.coachSettingsService.getConfigForCoach(coachId).subscribe({
+          next: (config) => {
+            this.weightUnit = config.defaults?.weightUnit === 'lbs' ? 'lbs' : 'kg';
+            this.measurementUnit = config.defaults?.measurementUnit === 'in' ? 'in' : 'cm';
+          },
+          error: (err) => console.warn('Could not load coach unit preferences:', err),
+        });
+      },
+      error: (err) => console.warn('Could not resolve client coach for unit preferences:', err),
+    });
   }
 
   private toNullableNumber(value: unknown): number | null {

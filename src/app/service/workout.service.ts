@@ -231,9 +231,7 @@ export class WorkoutService {
   }
 
   getWorkoutPlansByClient(clientId: string): Observable<WorkoutPlan[]> {
-    return this.http.get<WorkoutPlan[]>(`${this.apiUrl}client/${clientId}`, {
-      params: { t: Date.now().toString() },
-    });
+    return this.http.get<WorkoutPlan[]>(`${this.apiUrl}client/${clientId}`);
   }
   addWorkoutDay(programId: string, body: SaveWorkoutDayRequest) {
     return this.http.post(`${this.apiUrl}${programId}/days`, body);

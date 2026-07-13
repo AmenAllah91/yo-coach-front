@@ -492,6 +492,7 @@ export class WorkoutPlanFacade {
       ...(ex as any),
 
       id: crypto.randomUUID(),
+      sourceExerciseId: this.getExerciseIdentity(ex),
       name: ex.name,
       type: ex.type,
       exerciseRef: (ex as any).exerciseRef,
@@ -790,13 +791,36 @@ export class WorkoutPlanFacade {
   handleSelectExercise(ex: Exercise) {
     const session = this.currentSession;
 
-    if (!session) return;
+    if (!session || this.isExerciseAdded(ex)) return;
 
     const copy = this.normalizeExerciseForSession(ex);
 
     session.exercises.push(copy);
     this.recomputeSession(session);
-    this.closeExerciseSelector();
+  }
+
+  isExerciseAdded(exercise: Exercise): boolean {
+    const candidateId = this.getExerciseIdentity(exercise);
+    const candidateName = this.clean(exercise?.name).toLowerCase();
+
+    return this.exList.some((added) => {
+      const addedId = this.getExerciseIdentity(added);
+      if (candidateId && addedId && candidateId === addedId) return true;
+
+      return !!candidateName &&
+        this.clean(added?.name).toLowerCase() === candidateName &&
+        this.clean(added?.type).toLowerCase() === this.clean(exercise?.type).toLowerCase();
+    });
+  }
+
+  private getExerciseIdentity(exercise: any): string {
+    const ref = this.getExerciseRef(exercise);
+    return this.clean(
+      exercise?.sourceExerciseId ||
+      (typeof ref === 'string' ? ref : ref?.id) ||
+      exercise?.exerciseRefId ||
+      exercise?.id,
+    );
   }
 
   addExerciseToSession() {
