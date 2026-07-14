@@ -519,6 +519,9 @@ export class CreateFullPlanComponent implements OnInit {
 
   filteredFoods: FoodRef[] = [];
   foodSearch = '';
+  foodPage = 0;
+  readonly foodPageSize = 3;
+  foodTotalPages = 0;
 
   foodStep: 'list' | 'detail' = 'list';
   selectedFood: FoodRef | null = null;
@@ -540,12 +543,18 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   filterFoods() {
+    this.foodPage = 0;
     this.nutritionService
-      .filteredFoods(0, 3, this.foodSearch || '')
+      .filteredFoods(0, 100, this.foodSearch || '')
       .subscribe((res) => {
-        this.filteredFoods = res.content;
+        this.filteredFoods = [...res.content].sort((a, b) => Number(a.general) - Number(b.general));
+        this.foodTotalPages = Math.ceil(this.filteredFoods.length / this.foodPageSize);
       });
   }
+
+  get pagedModalFoods(): FoodRef[] { return this.filteredFoods.slice(this.foodPage * 3, this.foodPage * 3 + 3); }
+  changeFoodPage(page: number) { if (page >= 0 && page < this.foodTotalPages) this.foodPage = page; }
+  foodImage(food: FoodRef): string { return food.imageUrl || ''; }
 
   showFoodDetail(food: FoodRef) {
     this.selectedFood = food;

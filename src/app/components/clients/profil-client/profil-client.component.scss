@@ -4640,3 +4640,39 @@
     margin-top: 12px;
   }
 }
+
+.profile-back { display: none; }
+.mobile-more-tab { display: none; }
+
+/* Compact mobile profile composition. */
+@media (max-width: 900px) {
+  .main-content { padding: 10px 6px 24px; background: #f7f9fc; }
+  .profile-header {
+    display: grid; grid-template-columns: 30px 54px minmax(0, 1fr) auto; gap: 10px;
+    align-items: center; padding: 10px; margin-bottom: 10px; border-radius: 10px; flex-wrap: nowrap;
+  }
+  .profile-back {
+    display: grid; place-items: center; width: 28px; height: 28px; padding: 0;
+    border: 1px solid #dce5ef; border-radius: 6px; background: #fff; color: #536887;
+  }
+  .profile-picture { width: 54px; height: 54px; }
+  .profile-info { margin-left: 0; min-width: 0; }
+  .profile-name { font-size: 14px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .profile-email, .last-workout { font-size: 9px; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-actions { width: auto; margin: 0; gap: 8px; }
+  .btn-send-message { width: auto; flex: none; height: 30px; padding: 0 10px; font-size: 9px; }
+  .btn-send-message i { font-size: 10px; }
+  .btn-more { width: 30px; height: 30px; border-radius: 7px; }
+  .stats-toggle-row { margin: 0 0 8px; }
+  .stats-toggle-btn { min-height: 30px; padding: 0 10px; font-size: 9px; border-radius: 6px; }
+  .progress-summary-collapsed .profile-header { margin-bottom: 10px; }
+  .profile-tabs, .progress-summary-collapsed .profile-tabs {
+    gap: 28px; margin-top: 0; padding: 0 10px; background: #fff; border-radius: 0;
+  }
+  .tab-link { padding: 12px 0 11px; font-size: 10px; }
+  .profile-tabs .tab-link:first-child,
+  .profile-tabs .tab-link:nth-child(n + 7) { display: none; }
+  .profile-tabs .mobile-more-tab { display: inline-flex; align-items: center; gap: 4px; }
+  .tab-content { margin-top: 4px; }
+  .tab-pane, .progress-summary-collapsed .tab-pane { padding-top: 6px; }
+}

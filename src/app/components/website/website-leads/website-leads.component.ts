@@ -1,15 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { Subject, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs';
+import { Subject, catchError, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil, throwError } from 'rxjs';
 import { InvitationService } from 'app/service/invitation.service';
 import { CoachWebsiteLead, PageResponse, WebsiteService } from 'app/service/website.service';
+import { AddClientModalComponent } from '../../clients/add-client-modal/add-client-modal.component';
 
 @Component({
   selector: 'app-website-leads',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, AddClientModalComponent],
   templateUrl: './website-leads.component.html',
   styleUrls: ['./website-leads.component.scss'],
 })
@@ -29,6 +30,8 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
   processingLeadId: string | null = null;
   actionMessage = '';
   actionError = '';
+  openDropdownId: string | null = null;
+  showInviteModal = false;
 
   constructor(
     private websiteService: WebsiteService,
@@ -71,6 +74,49 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     this.searchSubject.next(this.searchTerm);
   }
 
+  @HostListener('document:click', ['$event'])
+  closeDropdownOnOutsideClick(event: Event): void {
+    if (!(event.target as HTMLElement).closest('.dropdown')) this.openDropdownId = null;
+  }
+
+  toggleDropdown(id: string, event: Event): void {
+    event.stopPropagation();
+    this.openDropdownId = this.openDropdownId === id ? null : id;
+  }
+
+  formatDate(date?: string): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('fr-FR', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  copyEmail(email: string): void {
+    navigator.clipboard.writeText(email).catch(() => undefined);
+    this.openDropdownId = null;
+  }
+
+  copyPhone(phone?: string): void {
+    if (!phone) return;
+    navigator.clipboard.writeText(phone).catch(() => undefined);
+    this.openDropdownId = null;
+  }
+
+  openInviteModal(): void {
+    this.actionMessage = '';
+    this.actionError = '';
+    this.showInviteModal = true;
+  }
+
+  closeInviteModal(): void {
+    this.showInviteModal = false;
+  }
+
+  onNewLeadInvited(event: { email: string }): void {
+    this.showInviteModal = false;
+    this.actionMessage = `Invitation sent to ${event.email}.`;
+  }
+
   invite(lead: CoachWebsiteLead): void {
     if (!lead.email || this.processingLeadId) return;
     const coachId = sessionStorage.getItem('userId') || lead.coachId;
@@ -80,16 +126,22 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     }
 
     this.startAction(lead.id);
-    this.invitationService.generateInvitation({ email: lead.email, idCoach: coachId }).pipe(
+    const email = lead.email.trim();
+    this.invitationService.generateInvitation({ email, idCoach: coachId }).pipe(
       switchMap((invitation) =>
-        this.invitationService.sendInvitation(invitation.invitationLink, coachId, lead.email),
+        this.invitationService.sendInvitation(invitation.invitationLink, coachId, email).pipe(
+          catchError((error) => this.invitationService.deleteInvitationByToken(invitation.invitationLink).pipe(
+            catchError(() => throwError(() => error)),
+            switchMap(() => throwError(() => error)),
+          )),
+        ),
       ),
       switchMap(() => this.websiteService.updateLeadStatus(lead.id, 'INVITED')),
       finalize(() => (this.processingLeadId = null)),
     ).subscribe({
       next: (updated) => {
         this.replaceLead(updated);
-        this.actionMessage = `Invitation sent to ${lead.email}.`;
+        this.actionMessage = `Invitation sent to ${email}.`;
       },
       error: () => (this.actionError = 'The invitation could not be sent.'),
     });

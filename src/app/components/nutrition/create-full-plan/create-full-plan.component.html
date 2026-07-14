@@ -564,17 +564,19 @@
 
         <ul class="np-foodlist">
           <li
-            *ngFor="let f of filteredFoods"
+            *ngFor="let f of pagedModalFoods"
             class="np-foodlist__item"
             (click)="showFoodDetail(f)"
           >
-            <div class="np-foodlist__name">{{ f.name }}</div>
+            <span class="np-foodlist__thumb"><img *ngIf="foodImage(f)" [src]="foodImage(f)" [alt]="f.name" /><span *ngIf="!foodImage(f)">{{ f.name.charAt(0).toUpperCase() }}</span></span>
+            <div class="np-foodlist__copy"><div class="np-foodlist__name">{{ f.name }} <span class="np-foodlist__custom" *ngIf="!f.general">Personnalisé</span></div>
             <div class="np-foodlist__meta">
               {{ f.protein }}g Protein | {{ f.carbohydrates }}g Carbs |
               {{ f.fat }}g Fat
-            </div>
+            </div></div>
           </li>
         </ul>
+        <div class="np-foodpager" *ngIf="foodTotalPages > 1"><button [disabled]="foodPage === 0" (click)="changeFoodPage(foodPage - 1)">‹</button><button *ngFor="let p of [].constructor(foodTotalPages); let i=index" [class.active]="i === foodPage" (click)="changeFoodPage(i)">{{ i + 1 }}</button><button [disabled]="foodPage >= foodTotalPages - 1" (click)="changeFoodPage(foodPage + 1)">›</button></div>
       </ng-container>
 
       <ng-container *ngIf="foodStep === 'detail' && selectedFood">

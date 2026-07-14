@@ -807,6 +807,16 @@
   color:#fff !important;
   box-shadow:0 0 0 3px rgba(68,180,223,.20);
 }
+
+.np-foodlist__item { display:flex; align-items:center; gap:12px; }
+.np-foodlist__copy { min-width:0; flex:1; }
+.np-foodlist__thumb { display:flex; align-items:center; justify-content:center; overflow:hidden; width:38px; height:38px; flex:0 0 38px; border-radius:8px; background:#e8f7fc; color:#1596c5; font-size:12px; font-weight:700; }
+.np-foodlist__thumb img { width:100%; height:100%; object-fit:cover; }
+.np-foodlist__custom { margin-left:6px; padding:2px 6px; border-radius:4px; background:#e5f7fc; color:#1189b7; font-size:10px; }
+.np-foodpager { display:flex; justify-content:flex-end; gap:5px; margin-top:14px; }
+.np-foodpager button { min-width:30px; height:30px; border:0; border-radius:6px; background:transparent; color:#17324d; cursor:pointer; }
+.np-foodpager button.active { background:#08243f; color:#fff; }
+.np-foodpager button:disabled { opacity:.35; }
 .np-main > .np-card:first-of-type{
   border-top: 0 !important;
 }

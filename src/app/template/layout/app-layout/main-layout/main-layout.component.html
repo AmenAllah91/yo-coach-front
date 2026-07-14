@@ -15,7 +15,7 @@
   <app-sidebar #sidebar (sidebarToggle)="handleSidebarToggle($event)"></app-sidebar>
 
   <div class="content">
-    <app-back-button></app-back-button>
+    <app-back-button *ngIf="!isClientsArea"></app-back-button>
     <router-outlet></router-outlet>
   </div>
 </div>

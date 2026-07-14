@@ -1443,3 +1443,31 @@
 .tab-section-header .btn-assign-black i {
   font-size: 14px !important;
 }
+
+@media (max-width: 900px) {
+  :host { display: block; color: #07152f; }
+  .tab-section-header { flex-direction: row; align-items: center !important; gap: 8px; margin: 6px 0 14px !important; }
+  .tab-section-header .section-title { font-size: 17px !important; }
+  .tab-section-header .btn-assign-black { width: auto; margin-left: auto; height: 34px !important; min-height: 34px !important; padding: 0 12px !important; font-size: 10px !important; background: #fff !important; color: #07152f !important; border: 1px solid #dce5ef !important; }
+  .workout-filter-tabs { display: none; }
+  .program-section { margin-bottom: 16px; }
+  .program-section-title { margin: 0 0 9px; font-size: 9px; color: #667892; }
+  .all-programs-header { display: block; }
+  .all-programs-controls { gap: 8px; }
+  .program-status-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .program-status-filter { min-height: 30px; padding: 0 7px; font-size: 9px; }
+  .program-sort-control { min-height: 32px; font-size: 9px; }
+  .program-card { padding: 12px 9px; margin-bottom: 8px; border-radius: 9px; background: #f5f7fa; border-color: #e7ebf0; }
+  .program-card::before { border-radius: 9px 0 0 9px; width: 2px; }
+  .program-card-top { grid-template-columns: minmax(0, 1fr) auto; gap: 7px; align-items: center; }
+  .program-main { align-items: center; gap: 9px; }
+  .program-icon { width: 34px; height: 34px; border-radius: 8px; font-size: 14px; }
+  .program-title-row { gap: 5px; margin-bottom: 6px; }
+  .program-name { font-size: 10px; }
+  .status-pill, .program-type-pill, .file-type-pill { height: 19px; padding: 0 6px; font-size: 7px; }
+  .program-meta { gap: 8px; font-size: 8px; }
+  .program-actions { width: auto; }
+  .file-action-btn, .program-card:not(.program-card--file) .file-action-btn { min-width: 61px; min-height: 31px; padding: 0 8px; border-radius: 6px; font-size: 8px; }
+  .program-progress { margin-top: 9px; padding-left: 43px; }
+  .progress-bar-bg { height: 3px; }
+}

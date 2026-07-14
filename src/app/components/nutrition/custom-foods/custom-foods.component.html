@@ -35,6 +35,10 @@
         <div class="food-row" *ngFor="let food of filteredFoods">
           <div class="col-name">
             <div class="food-info">
+              <span class="food-avatar">
+                <img *ngIf="food.imageUrl; else listInitial" [src]="food.imageUrl" [alt]="food.name" />
+                <ng-template #listInitial>{{ food.name.charAt(0).toUpperCase() }}</ng-template>
+              </span>
               <h4>{{ food.name }}</h4>
             </div>
           </div>
@@ -126,6 +130,17 @@
       </div>
 
       <div class="modal-body">
+        <div class="form-group food-image-field">
+          <label>Food image:</label>
+          <div class="food-image-control">
+            <span class="food-image-preview">
+              <img *ngIf="foodImageUrl; else formInitial" [src]="foodImageUrl" alt="Food preview" />
+              <ng-template #formInitial>{{ (foodName || '?').charAt(0).toUpperCase() }}</ng-template>
+            </span>
+            <label class="image-upload-btn">Choose image<input type="file" accept="image/*" (change)="onImageSelected($event)" /></label>
+            <button *ngIf="foodImageUrl" type="button" class="image-remove-btn" (click)="removeSelectedImage()">Remove</button>
+          </div>
+        </div>
         <div class="form-group">
           <label>Name:</label>
           <input type="text" [(ngModel)]="foodName" placeholder="Enter food name">

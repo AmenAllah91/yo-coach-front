@@ -56,6 +56,8 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   selectedFood: any | null = null;
   selectedQuantity = 100;
   selectedUnit = 'g';
+  foodPage = 0;
+  readonly foodPageSize = 3;
   openGroupActionsId: string | null = null;
 
   constructor(
@@ -103,7 +105,22 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       return !alreadyAdded &&
         (!search || name.includes(search)) &&
         (this.foodTab === 'all' || isCustom);
-    });
+    }).sort((a, b) => Number(this.isGeneralFood(a)) - Number(this.isGeneralFood(b)));
+  }
+
+  get pagedFoods(): any[] {
+    const start = this.foodPage * this.foodPageSize;
+    return this.filteredFoods.slice(start, start + this.foodPageSize);
+  }
+
+  get foodTotalPages(): number {
+    return Math.ceil(this.filteredFoods.length / this.foodPageSize);
+  }
+
+  onFoodSearch(): void { this.foodPage = 0; }
+
+  changeFoodPage(page: number): void {
+    if (page >= 0 && page < this.foodTotalPages) this.foodPage = page;
   }
 
   get previewSourceFood(): FoodReplacementGroupItem | null {
@@ -263,6 +280,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   openAddFoodModal(): void {
     this.loadFoods();
     this.foodSearchTerm = '';
+    this.foodPage = 0;
     this.foodTab = 'all';
     this.selectedFood = null;
     this.selectedQuantity = 100;
@@ -384,5 +402,9 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
 
   foodMacroLabel(food: any): string {
     return `${this.getCalories(food)} kcal • ${this.getProtein(food)}g P • ${this.getFat(food)}g F • ${this.getCarbs(food)}g C`;
+  }
+
+  getFoodImage(food: any): string {
+    return food?.imageUrl || food?.image || food?.photoUrl || '';
   }
 }

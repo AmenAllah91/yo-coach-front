@@ -926,3 +926,31 @@
 .client-month-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0;}.month-title{font-weight:900;color:#0f172a;}.month-nav-btn{width:34px;height:34px;border:1px solid #dbe4ee;border-radius:999px;background:#fff;}
 .client-list{display:grid;gap:12px;}.cn-day-card{padding:14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}.cn-day-card:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(15,23,42,.07)!important;}.cn-day-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}.cn-day-chip-date{display:inline-flex;height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#eaf7fd;color:#0ea5e9;font-size:11px;font-weight:900;}.cn-day-title{margin:8px 0 2px;font-size:16px;font-weight:900;color:#0f172a;}.cn-day-subtitle{margin:0;color:#64748b;font-size:12px;font-weight:700;}.cn-day-meals-line{display:flex;align-items:center;gap:8px;margin:12px 0;color:#475569;font-weight:800;}.cn-day-macros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}.cn-macro-card{border:1px solid #e6e9ee;border-radius:8px;background:#fbfdff;padding:9px;text-align:center;}.cn-macro-value{font-weight:900;color:#0f172a;}.cn-macro-label{font-size:11px;color:#8a94a6;font-weight:800;text-transform:uppercase;}
 @media(max-width:767px){.file-client-layout{grid-template-columns:1fr;}.file-sidebar{order:2;}.file-main{order:1;padding:12px;}.file-card-header{flex-direction:column;}.cn-day-macros{grid-template-columns:repeat(2,minmax(0,1fr));}.pdf-iframe{min-height:520px;}.file-mode-switch,.client-tabs{width:100%;}.file-mode-btn,.client-tab{flex:1;}}
+
+@media (max-width: 900px) {
+  :host { display: block; color: #07152f; }
+  .tab-section-header { flex-direction: row; align-items: center !important; gap: 8px; margin: 6px 0 14px !important; }
+  .tab-section-header .section-title { font-size: 17px !important; }
+  .tab-section-header .btn-assign-black { width: auto; margin-left: auto; height: 34px !important; min-height: 34px !important; padding: 0 12px !important; font-size: 10px !important; background: #fff !important; color: #07152f !important; border: 1px solid #dce5ef !important; }
+  .workout-filter-tabs { display: none; }
+  .program-section { margin-bottom: 16px; }
+  .program-section-title { margin: 0 0 9px; font-size: 9px; color: #667892; }
+  .all-programs-header { display: block; }
+  .all-programs-controls { gap: 8px; }
+  .program-status-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .program-status-filter { min-height: 30px; padding: 0 7px; font-size: 9px; }
+  .program-sort-control { min-height: 32px; font-size: 9px; }
+  .program-card { padding: 12px 9px; margin-bottom: 8px; border-radius: 9px; background: #f5f7fa; border-color: #e7ebf0; }
+  .program-card::before { border-radius: 9px 0 0 9px; width: 2px; }
+  .program-card-top { grid-template-columns: minmax(0, 1fr) auto; gap: 7px; align-items: center; }
+  .program-main { align-items: center; gap: 9px; }
+  .program-icon { width: 34px; height: 34px; border-radius: 8px; font-size: 14px; }
+  .program-title-row { gap: 5px; margin-bottom: 6px; }
+  .program-name { font-size: 10px; }
+  .status-pill, .program-type-pill, .file-type-pill { height: 19px; padding: 0 6px; font-size: 7px; }
+  .program-meta { gap: 8px; font-size: 8px; }
+  .program-actions { width: auto; }
+  .file-action-btn { min-width: 61px; min-height: 31px; padding: 0 8px; border-radius: 6px; font-size: 8px; }
+  .program-progress { margin-top: 9px; padding-left: 43px; }
+  .progress-bar-bg { height: 3px; }
+}

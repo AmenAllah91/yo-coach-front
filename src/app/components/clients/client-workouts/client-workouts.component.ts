@@ -62,6 +62,7 @@ interface GroupedExercise {
     duration?: number;
   }[];
   duration?: number;
+  isWarmUp: boolean;
 }
 
 interface Workout {
@@ -824,6 +825,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
             };
           }) || [],
           duration: totalDuration,
+          isWarmUp: this.isWarmUpExercise(ex),
         });
       });
       globalIndex++;
@@ -854,6 +856,33 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       case 'FAILURE': return 'cw-set-type--failure';
       default: return 'cw-set-type--regular';
     }
+  }
+
+  getSetTypeText(type?: WorkoutSetType): string {
+    if (type === 'DROP_SET') return 'Dropset';
+    if (type === 'FAILURE') return 'Failure';
+    if (type === 'WARM_UP') return 'Warm up';
+    return '';
+  }
+
+  isSingleCardioWarmUp(exercise: GroupedExercise): boolean {
+    return exercise.isWarmUp && exercise.type === 'CARDIO' && exercise.sets.length <= 1;
+  }
+
+  cardioMinutes(exercise: GroupedExercise): number {
+    return Number(exercise.sets[0]?.duration ?? exercise.duration ?? 0);
+  }
+
+  hasExerciseWeight(exercise: GroupedExercise): boolean {
+    return exercise.sets.some((set) => set.weight !== null && set.weight !== undefined);
+  }
+
+  isSelectedWorkoutToday(): boolean {
+    if (!this.selectedWorkout?.date) return false;
+    const workoutDate = new Date(this.selectedWorkout.date);
+    const today = new Date();
+    return workoutDate.getFullYear() === today.getFullYear() &&
+      workoutDate.getMonth() === today.getMonth() && workoutDate.getDate() === today.getDate();
   }
 
   formatRest(restMin: number, restSec: number): string {

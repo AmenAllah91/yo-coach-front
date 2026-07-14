@@ -274,6 +274,15 @@
   }
 }
 
+.food-info { display:flex; align-items:center; gap:12px; }
+.food-avatar, .food-image-preview { display:inline-flex; align-items:center; justify-content:center; overflow:hidden; flex:0 0 auto; width:38px; height:38px; border-radius:8px; background:#e8f7fc; color:#1596c5; font-size:12px; font-weight:700; }
+.food-avatar img, .food-image-preview img { width:100%; height:100%; object-fit:cover; }
+.food-image-preview { width:64px; height:64px; font-size:18px; }
+.food-image-control { display:flex; align-items:center; gap:12px; }
+.image-upload-btn { display:inline-flex; align-items:center; height:38px; padding:0 14px; border:1px solid #cbd8e6; border-radius:7px; background:#fff; color:#17324d; cursor:pointer; font-weight:600; }
+.image-upload-btn input { display:none; }
+.image-remove-btn { border:0; background:transparent; color:#d14343; cursor:pointer; }
+
 .modal-content {
   position: absolute;
   top: 0;

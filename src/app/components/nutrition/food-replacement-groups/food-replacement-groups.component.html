@@ -272,37 +272,37 @@
               type="text"
               placeholder="Search foods"
               [(ngModel)]="foodSearchTerm"
+              (input)="onFoodSearch()"
             />
           </div>
+        </div>
 
-          <div class="toggle">
-            <button
-              [class.active]="foodTab === 'all'"
-              (click)="foodTab = 'all'"
-            >
-              All Foods
-            </button>
-            <button
-              [class.active]="foodTab === 'custom'"
-              (click)="foodTab = 'custom'"
-            >
-              Custom Foods
-            </button>
-          </div>
+        <div class="picker-heading">
+          <div><h3>Available foods</h3><p>Custom foods first, followed by the public catalogue.</p></div>
+          <span>{{ filteredFoods.length }} foods</span>
         </div>
 
         <div
           class="food-choice"
-          *ngFor="let food of filteredFoods"
+          *ngFor="let food of pagedFoods"
           [class.selected]="getFoodId(food) === getFoodId(selectedFood || {})"
           (click)="selectFood(food)"
         >
           <span class="radio-dot"></span>
-          <span class="food-thumb">🥩</span>
+          <span class="food-thumb">
+            <img *ngIf="getFoodImage(food); else foodInitial" [src]="getFoodImage(food)" [alt]="getFoodName(food)" />
+            <ng-template #foodInitial>{{ getFoodName(food).charAt(0).toUpperCase() }}</ng-template>
+          </span>
           <div>
-            <h4>{{ getFoodName(food) }}</h4>
+            <h4>{{ getFoodName(food) }} <span class="custom-badge" *ngIf="!isGeneralFood(food)">Personnalisé</span></h4>
             <p>{{ foodMacroLabel(food) }}</p>
           </div>
+        </div>
+
+        <div class="food-pagination" *ngIf="foodTotalPages > 1">
+          <button [disabled]="foodPage === 0" (click)="changeFoodPage(foodPage - 1)">&lsaquo;</button>
+          <button *ngFor="let page of [].constructor(foodTotalPages); let i = index" [class.active]="i === foodPage" (click)="changeFoodPage(i)">{{ i + 1 }}</button>
+          <button [disabled]="foodPage >= foodTotalPages - 1" (click)="changeFoodPage(foodPage + 1)">&rsaquo;</button>
         </div>
 
         <div class="food-picker-loading" *ngIf="foodsLoading">
@@ -325,7 +325,10 @@
 
         <label>Selected Food</label>
         <div class="selected-food" *ngIf="selectedFood; else noFoodSelected">
-          <span class="food-thumb">🥩</span>
+          <span class="food-thumb">
+            <img *ngIf="getFoodImage(selectedFood); else selectedInitial" [src]="getFoodImage(selectedFood)" [alt]="getFoodName(selectedFood)" />
+            <ng-template #selectedInitial>{{ getFoodName(selectedFood).charAt(0).toUpperCase() }}</ng-template>
+          </span>
           <strong>{{ getFoodName(selectedFood) }}</strong>
         </div>
 

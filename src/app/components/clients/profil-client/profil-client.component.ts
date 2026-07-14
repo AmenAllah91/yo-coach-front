@@ -103,6 +103,10 @@ export interface ScheduledCheckIn {
   styleUrl: './profil-client.component.scss',
 })
 export class ProfilClientComponent {
+  backToClients(): void {
+    this.router.navigate(['/clients']);
+  }
+
   @ViewChild(WorkoutsClientTabComponent) workoutsTab: WorkoutsClientTabComponent;
   @ViewChild(NutritionClientTabComponent) nutritionTab: NutritionClientTabComponent;
 

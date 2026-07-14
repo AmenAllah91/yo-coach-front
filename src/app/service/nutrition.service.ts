@@ -24,6 +24,7 @@ export interface Food {
   isGeneral?: boolean;
   createdDate?: string;
   lastModifiedDate?: string;
+  imageUrl?: string;
 }
 
 export interface FoodRef {
@@ -54,6 +55,7 @@ export interface FoodRef {
   createdDate: Date | null;
   lastModifiedDate: Date | null;
   general: boolean;
+  imageUrl?: string;
 }
 
 export interface NutritionPlan {
@@ -181,6 +183,16 @@ export class NutritionService {
       `${environment.baseApiUrl}/api/food-ref/${id}`,
       food
     );
+  }
+
+  uploadFoodImage(id: string, file: File): Observable<Food> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/image`, formData);
+  }
+
+  removeFoodImage(id: string): Observable<Food> {
+    return this.http.delete<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/image`);
   }
 
   deleteFood(id: string): Observable<void> {

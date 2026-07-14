@@ -45,6 +45,9 @@ export class CustomFoodsComponent implements OnInit {
   salt = 0;
   servingSize = 100;
   servingDescription = 'Grams';
+  foodImageUrl = '';
+  selectedImageFile: File | null = null;
+  private hadExistingImage = false;
 
   constructor(
     private nutritionService: NutritionService,
@@ -130,6 +133,8 @@ export class CustomFoodsComponent implements OnInit {
     this.salt = food.sodium || 0;
     this.servingSize = food.servingSize;
     this.servingDescription = food.servingUnit;
+    this.foodImageUrl = food.imageUrl || '';
+    this.hadExistingImage = Boolean(food.imageUrl);
     this.showAddModal = true;
     this.openDropdownId = null;
   }
@@ -160,8 +165,7 @@ export class CustomFoodsComponent implements OnInit {
           if (updatedFood.id !== this.editingFood!.id) {
             this.editingFood!.id = updatedFood.id;
           }
-          this.loadFoods();
-          this.closeAddModal();
+          this.saveFoodImage(updatedFood);
         },
         error: (error) => {
           console.error('Error updating food:', error);
@@ -181,13 +185,48 @@ export class CustomFoodsComponent implements OnInit {
       });
     } else {
       this.nutritionService.createFood(food).subscribe({
-        next: () => {
-          this.loadFoods();
-          this.closeAddModal();
+        next: (createdFood) => {
+          this.saveFoodImage(createdFood);
         },
         error: (error) => console.error('Error creating food:', error)
       });
     }
+  }
+
+  onImageSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.selectedImageFile = file;
+    const reader = new FileReader();
+    reader.onload = () => this.foodImageUrl = String(reader.result || '');
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage() {
+    this.selectedImageFile = null;
+    this.foodImageUrl = '';
+  }
+
+  private saveFoodImage(food: Food) {
+    if (!food.id) return this.finishSave();
+    if (this.selectedImageFile) {
+      this.nutritionService.uploadFoodImage(food.id, this.selectedImageFile).subscribe({
+        next: () => this.finishSave(),
+        error: (error) => console.error('Error uploading food image:', error),
+      });
+    } else if (this.hadExistingImage && !this.foodImageUrl) {
+      this.nutritionService.removeFoodImage(food.id).subscribe({
+        next: () => this.finishSave(),
+        error: (error) => console.error('Error removing food image:', error),
+      });
+    } else {
+      this.finishSave();
+    }
+  }
+
+  private finishSave() {
+    this.loadFoods();
+    this.closeAddModal();
   }
 
   deleteFood(food: Food) {
@@ -253,6 +292,9 @@ export class CustomFoodsComponent implements OnInit {
     this.salt = 0;
     this.servingSize = 100;
     this.servingDescription = 'Grams';
+    this.foodImageUrl = '';
+    this.selectedImageFile = null;
+    this.hadExistingImage = false;
     this.editingFood = null;
   }
 }

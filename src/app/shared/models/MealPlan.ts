@@ -12,6 +12,7 @@ export interface MacroTargets {
    FoodRef
 =================================*/
 export interface FoodRef {
+  imageUrl?: string;
   id?: string;
   name: string;
   energy: number;

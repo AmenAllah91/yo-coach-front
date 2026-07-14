@@ -1224,3 +1224,44 @@
   background: #44b4df !important;
   border-color: #44b4df !important;
 }
+
+/* Mobile card layout matched to the compact client-list reference. */
+@media (max-width: 900px) {
+  .page-container { background: #f7f9fc; }
+  .page-header { padding: 18px 12px 14px !important; align-items: flex-start !important; flex-wrap: nowrap !important; }
+  .page-header .header-content { min-width: 0; }
+  .page-header h1 { font-size: 28px !important; line-height: 1.1; }
+  .page-header p { display: block !important; margin-top: 7px; font-size: 13px; }
+  .page-header .primary-btn { order: initial !important; width: auto !important; min-height: 42px; height: 42px; margin: 0 0 0 auto !important; padding: 0 14px !important; border-radius: 8px; white-space: nowrap; }
+  .content { padding: 8px 12px 24px !important; }
+  .filters-section { margin-bottom: 14px; }
+  .filters-section .search-box input { height: 48px; border-radius: 11px; }
+  .status-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-bottom: 12px; }
+  .status-tabs .status-tab { height: 48px; border-radius: 0; font-size: 13px; }
+  .status-tabs .status-tab:first-child { border-radius: 11px 0 0 11px; }
+  .status-tabs .status-tab:last-child { border-radius: 0 11px 11px 0; }
+  .helper-line { align-items: flex-start; line-height: 1.45; margin: 0 2px 14px; }
+  .clients-table { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+  .clients-table .table-header { display: none !important; }
+  .clients-table .table-body { display: grid; gap: 9px; }
+  .clients-table .table-body .client-row {
+    display: flex !important; min-height: 82px; flex-direction: row; align-items: center; padding: 13px 12px !important;
+    border: 1px solid #e3e9f1; border-radius: 12px; background: #fff;
+  }
+  .clients-table .table-body .client-row .col-client { width: 100%; padding: 0 100px 0 0 !important; min-width: 0; }
+  .clients-table .table-body .client-row .col-client .client-info { min-width: 0; }
+  .clients-table .table-body .client-row .col-client .client-details { min-width: 0; }
+  .clients-table .table-body .client-row .col-client .client-details h4,
+  .clients-table .table-body .client-row .col-client .client-details p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .clients-table .table-body .client-row .col-client .client-avatar { width: 46px; height: 46px; border-radius: 10px; }
+  .clients-table .table-body .client-row .col-client .client-details h4 { font-size: 14px; color: #07152f; }
+  .clients-table .table-body .client-row .col-client .client-details p { font-size: 12px; }
+  .clients-table .table-body .client-row .col-status,
+  .clients-table .table-body .client-row .col-workouts { display: none !important; }
+  .clients-table .table-body .client-row .col-actions { top: 50%; right: 12px; transform: translateY(-50%); }
+  .clients-table .col-actions .action-btn {
+    display: inline-flex; align-items: center; gap: 7px; min-width: 88px; height: 39px;
+    padding: 0 12px; border: 1px solid #dce5ef; border-radius: 9px; background: #fff; color: #07152f;
+  }
+  .clients-table .col-actions .action-btn i-feather { width: 14px; height: 14px; }
+}

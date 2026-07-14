@@ -259,50 +259,33 @@
 
 <!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page" *ngIf="selectedWorkout">
-  <div class="client-page-inner">
-    <div class="cn-detail-root cn-detail-container">
-      <header class="cn-detail-header">
-        <button class="cn-back-btn" (click)="backToList()">‹</button>
-        <div class="cn-detail-header-main">
-          <h1 class="cn-detail-title">{{ selectedWorkout.title }}</h1>
-          <p class="cn-detail-program-line"><span class="cn-calendar-icon">📅</span>{{ selectedWorkout.date | date : 'fullDate' }}<span *ngIf="selectedWorkout.program"> • {{ selectedWorkout.program }}</span></p>
-        </div>
-        <div class="cn-detail-status-actions">
-          <button class="cn-detail-status-btn" [class.cn-detail-status-btn--completed]="selectedWorkout.status === 'COMPLETED'" (click)="updateWorkoutStatus(selectedWorkout!, 'COMPLETED')">✓</button>
-          <button class="cn-detail-status-btn" [class.cn-detail-status-btn--missed]="selectedWorkout.status === 'MISSED'" (click)="updateWorkoutStatus(selectedWorkout!, 'MISSED')">✕</button>
-        </div>
-      </header>
-
-      <main class="cn-detail-main">
-        <div class="cn-meals-section" *ngIf="selectedWorkout!.groupedExercises.length > 0">
-          <div class="cn-meal-card" *ngFor="let exercise of selectedWorkout!.groupedExercises">
-            <div class="cn-meal-header">
-              <div class="cn-meal-header-left">
-                <div class="cn-meal-index">{{ exercise.displayNumber }}</div>
-                <h3 class="cn-meal-name">{{ exercise.name }}</h3>
-              </div>
-              <div class="cn-meal-macros-grid" style="justify-content: flex-end">
-                <div class="cn-meal-macro-card"><div class="cn-meal-macro-value">{{ exercise.sets.length }}</div><div class="cn-meal-macro-label">sets</div></div>
-                <div class="cn-meal-macro-card"><div class="cn-meal-macro-value">{{ exercise.duration }}</div><div class="cn-meal-macro-label">min</div></div>
-              </div>
-            </div>
-            <div class="cw-detail-sets" *ngIf="exercise.sets.length > 0">
-              <div class="cw-detail-sets-header">
-                <div>Set</div>
-                <div *ngIf="showExerciseWeight">Weight ({{ weightUnitLabel }})</div>
-                <div>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</div>
-                <div>Rest</div>
-              </div>
-              <div class="cw-detail-set-row" *ngFor="let set of exercise.sets">
-                <div class="cw-detail-set-cell cw-detail-set-cell--index"><span class="cw-set-type-badge" [ngClass]="getSetTypeClass(set.type)">{{ set.displayLabel }}</span></div>
-                <div class="cw-detail-set-cell" *ngIf="showExerciseWeight">{{ formatExerciseWeight(set.weight) }}</div>
-                <div class="cw-detail-set-cell">{{ exercise.type === 'CARDIO' ? (set.duration ?? '-') : set.reps }}</div>
-                <div class="cw-detail-set-cell">{{ set.rest }}</div>
-              </div>
-            </div>
+  <div class="workout-sheet">
+    <header class="workout-sheet__topbar">
+      <button class="workout-sheet__back" (click)="backToList()">←</button>
+      <h1>{{ selectedWorkout.title }}</h1>
+      <div class="workout-sheet__actions"><button (click)="updateWorkoutStatus(selectedWorkout!, 'COMPLETED')">✓</button><button (click)="updateWorkoutStatus(selectedWorkout!, 'MISSED')">×</button></div>
+    </header>
+    <section class="workout-sheet__info">
+      <div><span>{{ isSelectedWorkoutToday() ? 'Today' : (selectedWorkout.date | date:'EEEE, MMMM d') }}</span><strong>{{ selectedWorkout.program }}</strong></div>
+      <span class="workout-status" [class.completed]="selectedWorkout.status === 'COMPLETED'"><i></i>{{ selectedWorkout.status | titlecase }}</span>
+    </section>
+    <main class="workout-sheet__body">
+      <article class="workout-exercise" *ngFor="let exercise of selectedWorkout.groupedExercises">
+        <header class="workout-exercise__header">
+          <span class="workout-exercise__badge" [class.fire]="isSingleCardioWarmUp(exercise)">{{ isSingleCardioWarmUp(exercise) ? '🔥' : exercise.displayNumber }}</span>
+          <div><h2>{{ exercise.name }} <small *ngIf="exercise.isWarmUp">(Warm up)</small></h2><p>⌘ {{ isSingleCardioWarmUp(exercise) ? cardioMinutes(exercise) + ' min' : exercise.sets.length + ' sets' }}</p></div>
+          <span class="workout-exercise__play" *ngIf="!exercise.isWarmUp">▷</span>
+        </header>
+        <div class="workout-cardio-duration" *ngIf="isSingleCardioWarmUp(exercise)"><span>◷</span>{{ cardioMinutes(exercise) }} minutes</div>
+        <div class="workout-sets" *ngIf="!isSingleCardioWarmUp(exercise) && exercise.sets.length">
+          <div class="workout-sets__row workout-sets__head" [class.with-weight]="hasExerciseWeight(exercise)"><span>Set</span><span>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</span><span *ngIf="hasExerciseWeight(exercise)">Weight ({{ weightUnitLabel }})</span><span>Rest</span></div>
+          <div class="workout-sets__row" [class.with-weight]="hasExerciseWeight(exercise)" *ngFor="let set of exercise.sets">
+            <span class="set-number">{{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)">{{ getSetTypeText(set.type) }}</em></span>
+            <span>{{ exercise.type === 'CARDIO' ? (set.duration ?? '-') : set.reps }}</span>
+            <span *ngIf="hasExerciseWeight(exercise)">{{ formatExerciseWeight(set.weight) }}</span><span>{{ set.rest }}</span>
           </div>
         </div>
-      </main>
-    </div>
+      </article>
+    </main>
   </div>
 </div>

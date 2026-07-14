@@ -1,5 +1,8 @@
 <section class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <div class="profile-header">
+    <button class="profile-back" type="button" aria-label="Back to clients" (click)="backToClients()">
+      <i class="fas fa-chevron-left"></i>
+    </button>
     <img
       [src]="client?.image || 'assets/images/photoprofilvierge.jpg'"
       [alt]="fullName || 'Profile photo'"
@@ -145,6 +148,9 @@
       (click)="setTab('measurements')"
     >
       Measurements
+    </button>
+    <button class="tab-link mobile-more-tab" type="button">
+      More <i class="fas fa-chevron-down"></i>
     </button>
     <button
       class="tab-link"

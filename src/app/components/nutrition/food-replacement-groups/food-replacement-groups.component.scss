@@ -426,6 +426,18 @@
   padding: 28px;
 }
 
+.picker-heading { display:flex; align-items:flex-end; justify-content:space-between; margin:18px 0 10px; }
+.picker-heading h3 { margin:0 0 4px; color:#071b35; font-size:15px; }
+.picker-heading p { margin:0; color:#71829c; font-size:12px; }
+.picker-heading > span { color:#71829c; font-size:12px; }
+.food-thumb { overflow:hidden; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:8px; background:#e9f7fc; color:#1598ca; font-weight:700; }
+.food-thumb img { width:100%; height:100%; object-fit:cover; }
+.custom-badge { display:inline-flex; margin-left:7px; padding:2px 6px; border-radius:4px; background:#e5f7fc; color:#1189b7; font-size:10px; font-weight:700; vertical-align:middle; }
+.food-pagination { display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-top:14px; }
+.food-pagination button { min-width:30px; height:30px; padding:0 8px; border:0; border-radius:6px; background:transparent; color:#18334f; cursor:pointer; }
+.food-pagination button.active { background:#08243f; color:#fff; }
+.food-pagination button:disabled { opacity:.35; cursor:not-allowed; }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
