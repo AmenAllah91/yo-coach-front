@@ -103,6 +103,8 @@ export interface ScheduledCheckIn {
   styleUrl: './profil-client.component.scss',
 })
 export class ProfilClientComponent {
+  mobileMoreOpen = false;
+
   backToClients(): void {
     this.router.navigate(['/clients']);
   }
@@ -117,6 +119,7 @@ export class ProfilClientComponent {
   setTab(tab: TabId) {
     this.activeTab = tab;
     this.loadTabData(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   toggleClientStats(): void {
@@ -289,7 +292,7 @@ export class ProfilClientComponent {
 
   assignedPage = 0;
   assignedTotalPages = 0;
-  assignedPagesArray: number[] = [];
+  assignedPagesArray: Array<number | 'ellipsis'> = [];
 
   scheduledPage = 0;
   scheduledPageSize = 5;
@@ -768,7 +771,7 @@ export class ProfilClientComponent {
           await this.attachFormNames(this.assignedAssignments);
           this.assignedTotalPages = res.totalPages || 0;
           this.assignedPage = res.number ?? this.assignedPage;
-          this.assignedPagesArray = Array.from({ length: this.assignedTotalPages }, (_, i) => i);
+          this.assignedPagesArray = this.buildCompactPages(this.assignedPage, this.assignedTotalPages);
           this.syncAssignmentsCache();
           this.loadingAssignments = false;
         },
@@ -795,6 +798,23 @@ export class ProfilClientComponent {
   changeAssignedPage(page: number): void {
     if (page < 0 || page >= this.assignedTotalPages || page === this.assignedPage) return;
     this.loadAssignedPage(page);
+  }
+
+  private buildCompactPages(current: number, total: number): Array<number | 'ellipsis'> {
+    if (total <= 5) return Array.from({ length: total }, (_, index) => index);
+
+    const pages = new Set<number>([0, total - 1, current - 1, current, current + 1]);
+    const visible = Array.from(pages)
+      .filter(page => page >= 0 && page < total)
+      .sort((a, b) => a - b);
+    const result: Array<number | 'ellipsis'> = [];
+
+    visible.forEach((page, index) => {
+      if (index > 0 && page - visible[index - 1] > 1) result.push('ellipsis');
+      result.push(page);
+    });
+
+    return result;
   }
 
   private syncAssignmentsCache(): void {
@@ -1890,7 +1910,7 @@ export class ProfilClientComponent {
           await this.attachFormNames(items);
           this.assignedTotalPages = res.totalPages || 0;
           this.assignedPage = res.number ?? 0;
-          this.assignedPagesArray = Array.from({ length: this.assignedTotalPages }, (_, i) => i);
+          this.assignedPagesArray = this.buildCompactPages(this.assignedPage, this.assignedTotalPages);
           return items;
         })())
       ),

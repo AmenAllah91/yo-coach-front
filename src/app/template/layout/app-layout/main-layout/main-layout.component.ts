@@ -34,7 +34,12 @@ export class MainLayoutComponent implements OnInit {
   ) {}
 
   get isClientsArea(): boolean {
-    return this.router.url.startsWith('/clients');
+    return this.router.url.startsWith('/clients') ||
+      this.router.url.startsWith('/workout/program-library') ||
+      this.router.url.startsWith('/nutrition/plans') ||
+      this.router.url.startsWith('/nutrition/custom-foods') ||
+      this.router.url.startsWith('/nutrition/food-replacement-groups') ||
+      this.router.url.startsWith('/nutrition/meals');
   }
 
   ngOnInit(): void {

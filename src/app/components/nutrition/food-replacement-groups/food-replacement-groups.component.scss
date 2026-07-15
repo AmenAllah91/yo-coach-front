@@ -5,6 +5,46 @@
   color: #111827;
 }
 
+.mobile-page-back { display: none; }
+@media (max-width: 900px) {
+  .page-container { padding: 0 10px 24px !important; background: #f7f9fc; }
+  .page-header { display: grid !important; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 16px 0 !important; }
+  .mobile-page-back { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; }
+  .page-header h1 { font-size: 17px !important; }
+  .page-header p { font-size: 9px !important; line-height: 13px; }
+  .page-header .primary-btn, .editor-header .primary-btn { min-height: 34px; padding: 0 12px; font-size: 9px; }
+  .list-toolbar { display: grid !important; grid-template-columns: 1fr 120px; gap: 9px; margin: 8px 0 12px !important; }
+  .list-toolbar input, .status-select { height: 42px !important; border-radius: 8px !important; font-size: 10px; }
+  .groups-list { display: grid; gap: 9px; }
+  .groups-head { display: none !important; }
+  .group-card { position: relative; display: grid !important; grid-template-columns: 48px minmax(0,1fr) auto !important; grid-template-areas: 'name name status' 'foods description actions'; min-height: 100px; padding: 14px 10px !important; border: 1px solid #e1e8f0 !important; border-radius: 10px; background: #fff; }
+  .group-name-cell { grid-area: name; }
+  .group-icon { width: 44px !important; height: 44px !important; }
+  .group-info h3 { font-size: 12px !important; }
+  .group-description-chip { font-size: 9px !important; }
+  .group-food-count { display: flex !important; grid-area: foods; padding-left: 54px; font-size: 8px; }
+  .group-description-cell { grid-area: description; font-size: 8px; }
+  .group-description-cell p { display: none; }
+  .group-card > div:nth-child(4) { display: block !important; grid-area: status; }
+  .status-pill { font-size: 8px !important; padding: 5px 9px !important; }
+  .group-actions { grid-area: actions; }
+  .group-actions .action-btn { min-width: 75px !important; height: 34px !important; font-size: 9px; }
+  .editor-header .secondary-btn { display: none; }
+  .editor-header .header-actions { display: block; }
+  .panel { margin: 10px 0 !important; padding: 14px !important; border-radius: 10px !important; }
+  .section-heading h2 { font-size: 14px !important; }
+  .section-heading p { font-size: 9px !important; }
+  .form-field input { min-height: 42px; font-size: 10px; }
+  .editor-foods-header { align-items: center !important; }
+  .outline-blue-btn { min-height: 34px; padding: 0 11px; font-size: 9px; }
+  .editor-foods-panel .table-head { display: none !important; }
+  .editor-foods-panel .table-row { position: relative; display: grid !important; grid-template-columns: 34px 1fr auto !important; min-height: 54px; padding: 8px !important; }
+  .food-name-cell { grid-column: 1 / 3; }
+  .editor-foods-panel .table-row > span:nth-child(2) { position: absolute; left: 50px; top: 30px; font-size: 8px; }
+  .row-actions { grid-column: 3; }
+  .preview-panel { display: none; }
+}
+
 .page-container {
   padding: 28px 32px;
 }
@@ -1062,4 +1102,35 @@
   .editor-foods-panel .table-row { grid-template-columns: minmax(160px, 1.5fr) 90px 70px; }
   .editor-foods-panel .table-head span:nth-child(3),
   .editor-foods-panel .table-row > span:nth-child(3) { display: none; }
+}
+
+/* Final mobile composition matching the replacement-groups reference. */
+@media (max-width: 900px) {
+  .page-container { padding: 0 10px 24px !important; }
+  .page-header { grid-template-columns: 32px minmax(0, 1fr) auto !important; gap: 8px !important; padding: 16px 0 12px !important; }
+  .page-header h1 { font-size: 15px !important; line-height: 18px !important; white-space: normal; }
+  .page-header p { margin-top: 4px !important; font-size: 8px !important; line-height: 12px !important; }
+  .page-header .primary-btn { min-height: 34px !important; padding: 0 10px !important; font-size: 8px !important; white-space: nowrap; }
+  .list-toolbar { display: grid !important; grid-template-columns: minmax(0, 1fr) 104px !important; gap: 8px !important; width: 100%; margin: 6px 0 12px !important; }
+  .list-toolbar .search-box, .list-toolbar .status-select { width: 100% !important; min-width: 0 !important; }
+  .list-toolbar input, .status-select { height: 40px !important; font-size: 9px !important; }
+  .groups-list { display: grid !important; gap: 9px !important; }
+  .group-card {
+    position: relative; display: block !important; min-height: 100px !important;
+    padding: 15px 92px 12px 64px !important; border: 1px solid #e1e8f0 !important;
+    border-radius: 10px !important; background: #fff !important;
+  }
+  .group-name-cell { display: block !important; }
+  .group-icon { position: absolute; left: 11px; top: 15px; width: 42px !important; height: 42px !important; border-radius: 50% !important; }
+  .group-info h3 { margin: 0 !important; font-size: 11px !important; line-height: 15px !important; }
+  .group-description-chip { display: block !important; margin-top: 4px; padding: 0 !important; background: transparent !important; font-size: 8px !important; line-height: 11px; }
+  .group-food-count { display: flex !important; position: static !important; margin-top: 12px; padding: 0 !important; gap: 5px; font-size: 8px !important; white-space: nowrap; }
+  .group-food-count i-feather { width: 11px !important; height: 11px !important; }
+  .group-description-cell { display: block !important; margin-top: 5px; font-size: 8px !important; line-height: 11px; }
+  .group-description-cell p { display: none !important; }
+  .group-description-cell small { font-size: inherit !important; }
+  .group-card > div:nth-child(4) { display: block !important; position: absolute; right: 91px; top: 16px; }
+  .status-pill { padding: 4px 7px !important; font-size: 7px !important; white-space: nowrap; }
+  .group-actions { position: absolute !important; right: 10px; top: 14px; }
+  .group-actions .action-btn { min-width: 72px !important; width: 72px !important; height: 32px !important; padding: 0 8px !important; font-size: 8px !important; }
 }

@@ -15,6 +15,8 @@ import { DeleteMealModalComponent } from './delete-meal-modal/delete-meal-modal.
   styleUrls: ['./meals-list.component.scss'],
 })
 export class MealsListComponent implements OnInit, OnDestroy {
+  goBack(): void { window.history.back(); }
+
   meals: any[] = [];
   search = '';
   activeMealMenuId: string | null = null;

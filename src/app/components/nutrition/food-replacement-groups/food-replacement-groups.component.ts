@@ -22,6 +22,8 @@ type StatusFilter = 'all' | 'active' | 'inactive';
   styleUrls: ['./food-replacement-groups.component.scss'],
 })
 export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
+  goBack(): void { window.history.back(); }
+
   view: ViewMode = 'LIST';
 
   groups: FoodReplacementGroup[] = [];

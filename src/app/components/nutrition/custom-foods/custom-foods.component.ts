@@ -12,6 +12,18 @@ import { NutritionService, Food } from '../../../service/nutrition.service';
   styleUrls: ['./custom-foods.component.scss']
 })
 export class CustomFoodsComponent implements OnInit {
+  goBack(): void { window.history.back(); }
+
+  getFoodIcon(name: string): string {
+    const value = (name || '').toLowerCase();
+    if (value.includes('egg') || value.includes('oeuf')) return 'fa-egg';
+    if (value.includes('fish') || value.includes('poisson') || value.includes('tuna') || value.includes('thon')) return 'fa-fish';
+    if (value.includes('chicken') || value.includes('poulet') || value.includes('nugget')) return 'fa-drumstick-bite';
+    if (value.includes('rice') || value.includes('riz') || value.includes('couscous')) return 'fa-bowl-rice';
+    if (value.includes('potato') || value.includes('patate')) return 'fa-seedling';
+    return 'fa-apple-whole';
+  }
+
   foods: Food[] = [];
   searchTerm = '';
   showAddModal = false;

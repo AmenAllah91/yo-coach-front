@@ -1,11 +1,12 @@
 <div class="page-container" *ngIf="view === 'LIST'">
   <div class="page-header">
+    <button class="mobile-page-back" type="button" aria-label="Back" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
     <div class="header-content">
       <h1>Food Replacement Groups</h1>
       <p>Create reusable groups of foods that can replace each other in meal plans.</p>
     </div>
 
-    <button class="primary-btn" (click)="openCreateGroup()">Create Group</button>
+    <button class="primary-btn" (click)="openCreateGroup()"><i-feather name="plus"></i-feather> Create Group</button>
   </div>
 
   <div class="list-toolbar">
@@ -136,6 +137,7 @@
 
 <div class="page-container" *ngIf="view === 'EDITOR'">
   <div class="page-header editor-header">
+    <button class="mobile-page-back" type="button" aria-label="Back" (click)="closeEditor()"><i-feather name="chevron-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ editingGroup ? 'Edit replacement group' : 'Create replacement group' }}</h1>
       <p>{{ editingGroup ? 'Manage the foods clients can swap in a meal plan.' : 'Create a reusable group of foods clients can swap in a meal plan.' }}</p>

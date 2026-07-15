@@ -4284,6 +4284,13 @@
   cursor: not-allowed;
 }
 
+.profile-page-btn.ellipsis {
+  border-color: transparent;
+  background: transparent;
+  color: #64748b;
+  opacity: 1;
+}
+
 
 .chat-profile-pane {
   padding: 18px 8px 28px;
@@ -4643,6 +4650,7 @@
 
 .profile-back { display: none; }
 .mobile-more-tab { display: none; }
+.mobile-more-wrap { display: none; position: relative; flex: 0 0 auto; }
 
 /* Compact mobile profile composition. */
 @media (max-width: 900px) {
@@ -4670,9 +4678,90 @@
     gap: 28px; margin-top: 0; padding: 0 10px; background: #fff; border-radius: 0;
   }
   .tab-link { padding: 12px 0 11px; font-size: 10px; }
-  .profile-tabs .tab-link:first-child,
-  .profile-tabs .tab-link:nth-child(n + 7) { display: none; }
+  .profile-tabs .calendar-tab { display: none; }
+  .profile-tabs .pictures-tab,
+  .profile-tabs .chat-tab { display: none; }
+  .profile-tabs .pictures-tab.active,
+  .profile-tabs .chat-tab.active { display: block; order: 6; }
+  .profile-tabs .mobile-more-wrap { display: block; order: 7; }
   .profile-tabs .mobile-more-tab { display: inline-flex; align-items: center; gap: 4px; }
+  .mobile-more-menu {
+    position: fixed; right: 12px; top: 148px; z-index: 100;
+    width: 154px; padding: 6px; border: 1px solid #dce5ef; border-radius: 9px;
+    background: #fff; box-shadow: 0 12px 30px rgba(15, 23, 42, .15);
+  }
+  .mobile-more-menu button { width: 100%; padding: 10px; border: 0; border-radius: 6px; background: #fff; color: #334155; font-size: 11px; text-align: left; }
+  .mobile-more-menu button:hover { background: #f1f7fb; }
   .tab-content { margin-top: 4px; }
   .tab-pane, .progress-summary-collapsed .tab-pane { padding-top: 6px; }
+
+  /* Assigned check-ins mobile cards. */
+  .checkins-subtabs { gap: 24px; overflow-x: auto; }
+  .checkins-subtabs .tab-link { font-size: 10px; padding: 10px 0; }
+  .checkins-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin: 10px 0 14px; }
+  .search-input-wrapper { width: 100%; }
+  .search-input-wrapper input { height: 38px; font-size: 10px; border-radius: 999px; }
+  .btn-add-checkin { height: 38px; padding: 0 13px; font-size: 10px; white-space: nowrap; }
+  .assigned-table { display: grid; gap: 9px; border: 0; background: transparent; overflow: visible; }
+  .assigned-header-row { display: none; }
+  .assigned-row {
+    position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-areas: 'icon name status' 'icon dates action'; gap: 5px 10px;
+    min-height: 76px; padding: 12px 10px; border: 1px solid #e3e9f1 !important;
+    border-radius: 9px; background: #fff;
+  }
+  .assigned-row::before { content: '\f46d'; grid-area: icon; width: 34px; height: 42px; display: grid; place-items: center; align-self: center; border-radius: 7px; background: #eef7ff; color: #159ee4; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+  .assigned-name { grid-area: name; align-self: end; font-size: 11px; font-weight: 700; }
+  .assigned-date { grid-area: dates; display: inline-flex; margin-right: 12px; font-size: 8px; }
+  .assigned-date:nth-of-type(3) { margin-left: 88px; }
+  .assigned-row > div:nth-child(4) { grid-area: status; }
+  .assigned-row .status-pill { padding: 4px 8px; font-size: 8px; }
+  .assigned-row .actions-cell { grid-area: action; }
+  .assigned-row .link-view { font-size: 8px; }
+  .checkins-tab .profile-pagination { gap: 7px; margin: 14px 0 5px; flex-wrap: nowrap; }
+  .checkins-tab .profile-page-btn { min-width: 30px; width: 30px; height: 30px; padding: 0; font-size: 10px; }
+
+  /* Embedded mobile tabs fill the profile width. */
+  .measurements-pane, .progress-pictures-pane, .chat-profile-pane { padding-left: 0 !important; padding-right: 0 !important; }
+  .measurements-pane ::ng-deep .measurements-page { padding: 0; }
+  .measurements-pane ::ng-deep .measurements-shell { display: block; }
+  .measurements-pane ::ng-deep .measurements-sidebar { display: grid; grid-template-columns: repeat(12, max-content); gap: 7px; overflow-x: auto; padding-bottom: 7px; border: 0; background: transparent; }
+  .measurements-pane ::ng-deep .measurement-search { grid-column: 1 / 13; width: calc(100vw - 24px); padding: 0; border: 0; }
+  .measurements-pane ::ng-deep .measurement-search i { left: 14px; }
+  .measurements-pane ::ng-deep .measurement-search input { height: 38px; border-radius: 999px; }
+  .measurements-pane ::ng-deep .measurement-type { flex: 0 0 auto; min-width: 82px; height: 30px; padding: 0 11px; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; justify-content: center; }
+  .measurements-pane ::ng-deep .measurement-type.active { border-color: #159ee4; background: #eef8ff; color: #159ee4; }
+  .measurements-pane ::ng-deep .add-measurement-btn { display: none; }
+  .measurements-pane ::ng-deep .chart-card { min-height: 0; padding: 10px; border-radius: 9px; }
+  .measurements-pane ::ng-deep .chart-wrap { height: 190px; }
+  .measurements-pane ::ng-deep .history-row { min-height: 42px; padding: 8px 10px; border-radius: 7px; }
+  .measurements-pane ::ng-deep .load-more-history-btn { width: 46%; min-width: 150px; margin: 10px auto 0; }
+
+  .progress-pictures-pane ::ng-deep .page { padding: 8px 0 0; }
+  .progress-pictures-pane ::ng-deep .header { align-items: flex-start; margin-bottom: 12px; }
+  .progress-pictures-pane ::ng-deep .h1 { font-size: 17px; }
+  .progress-pictures-pane ::ng-deep .sub { max-width: 260px; font-size: 9px; }
+  .progress-pictures-pane ::ng-deep .action-btn { min-height: 30px; padding: 0 10px; font-size: 9px; }
+  .progress-pictures-pane ::ng-deep .panel { border: 0; box-shadow: none; background: transparent; }
+  .progress-pictures-pane ::ng-deep .toolbar { padding: 0 0 10px; border: 0; }
+  .progress-pictures-pane ::ng-deep .content { padding: 0 !important; background: transparent; }
+  .progress-pictures-pane ::ng-deep .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .progress-pictures-pane ::ng-deep .picture-card { border-radius: 8px; }
+  .progress-pictures-pane ::ng-deep .picture-card__body { padding: 8px; }
+  .progress-pictures-pane ::ng-deep .picture-card__title { font-size: 8px; }
+  .progress-pictures-pane ::ng-deep .meta-pill { padding: 3px 6px; font-size: 7px; }
+
+  .chat-profile-pane { min-height: 510px; }
+  .chat-profile-pane ::ng-deep .chat-root { min-height: 500px; height: 500px; border: 1px solid #dce5ef; border-radius: 10px; overflow: hidden; }
+  .chat-profile-pane ::ng-deep .chat-sidebar { display: none !important; }
+  .chat-profile-pane ::ng-deep .chat-main { width: 100%; min-width: 0; }
+  .chat-profile-pane ::ng-deep .chat-auto-strip { min-height: 42px; padding: 7px 10px; }
+  .chat-profile-pane ::ng-deep .chat-embedded-toolbar { min-height: 42px; padding: 7px 10px; flex-direction: row; align-items: center; }
+  .chat-profile-pane ::ng-deep .chat-embedded-toolbar__actions { width: auto; justify-content: flex-end; }
+  .chat-profile-pane ::ng-deep .chat-auto-btn span { display: inline !important; }
+  .chat-profile-pane ::ng-deep .chat-auto-btn { min-height: 30px; padding: 0 10px; font-size: 9px; }
+  .chat-profile-pane ::ng-deep .chat-auto-strip__manage { min-height: 30px; font-size: 9px; }
+  .chat-profile-pane ::ng-deep .chat-messages { padding: 12px 10px; }
+  .chat-profile-pane ::ng-deep .message { max-width: 82%; font-size: 10px; }
+  .chat-profile-pane ::ng-deep .chat-input-bar { padding: 9px; }
 }

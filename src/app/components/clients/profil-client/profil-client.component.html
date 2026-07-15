@@ -149,25 +149,36 @@
     >
       Measurements
     </button>
-    <button class="tab-link mobile-more-tab" type="button">
-      More <i class="fas fa-chevron-down"></i>
-    </button>
+    <div class="mobile-more-wrap">
+      <button
+        class="tab-link mobile-more-tab"
+        type="button"
+        (click)="mobileMoreOpen = !mobileMoreOpen"
+      >
+        More
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="mobile-more-menu" *ngIf="mobileMoreOpen">
+        <button type="button" (click)="setTab('pictures'); mobileMoreOpen = false">Progress Pictures</button>
+        <button type="button" (click)="setTab('chat'); mobileMoreOpen = false">Chat</button>
+      </div>
+    </div>
     <button
-      class="tab-link"
+      class="tab-link pictures-tab"
       [class.active]="activeTab === 'pictures'"
       (click)="setTab('pictures')"
     >
       Progress Pictures
     </button>
     <button
-      class="tab-link"
+      class="tab-link calendar-tab"
       [class.active]="activeTab === 'calendar'"
       (click)="setTab('calendar')"
     >
       Calendar
     </button>
     <button
-      class="tab-link"
+      class="tab-link chat-tab"
       [class.active]="activeTab === 'chat'"
       (click)="setTab('chat')"
     >
@@ -498,10 +509,12 @@
             type="button"
             class="profile-page-btn"
             *ngFor="let page of assignedPagesArray"
-            [class.active]="page === assignedPage"
-            (click)="changeAssignedPage(page)"
+            [class.active]="page !== 'ellipsis' && page === assignedPage"
+            [class.ellipsis]="page === 'ellipsis'"
+            [disabled]="page === 'ellipsis'"
+            (click)="page !== 'ellipsis' && changeAssignedPage(page)"
           >
-            {{ page + 1 }}
+            {{ page === 'ellipsis' ? '…' : page + 1 }}
           </button>
           <button type="button" class="profile-page-btn" [disabled]="assignedPage >= assignedTotalPages - 1" (click)="changeAssignedPage(assignedPage + 1)">&gt;</button>
         </div>

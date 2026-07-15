@@ -499,3 +499,32 @@
 .pagination {
   display: none !important;
 }
+
+.mobile-page-back { display: none; }
+@media (max-width: 900px) {
+  .page-header { display: grid !important; grid-template-columns: 34px 1fr auto; gap: 10px; padding: 16px 10px !important; align-items: center; }
+  .mobile-page-back { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; }
+  .mobile-page-back i-feather { width: 15px; }
+  .page-header h1 { font-size: 17px !important; }
+  .page-header p { display: block !important; font-size: 9px !important; }
+  .page-header .primary-btn { width: auto !important; min-height: 34px !important; margin: 0 !important; padding: 0 12px !important; font-size: 9px; }
+  .content { padding: 10px !important; }
+  .search-box input { height: 42px; border-radius: 9px; }
+  .foods-table { border: 0 !important; background: transparent !important; box-shadow: none !important; }
+  .foods-table .table-header { display: none !important; }
+  .foods-table .table-body { display: grid; gap: 8px; }
+  .foods-table .food-row { position: relative; display: block !important; min-height: 78px; padding: 11px 76px 10px 11px !important; border: 1px solid #e1e8f0 !important; border-radius: 9px; background: #fff; }
+  .foods-table .col-name { grid-area: name; }
+  .foods-table .food-avatar { width: 38px !important; height: 44px !important; border-radius: 9px !important; background: #eef7ff !important; color: #159ee4 !important; }
+  .foods-table .food-avatar i { font-size: 18px; font-weight: 900; }
+  .foods-table .food-info h4 { font-size: 11px; }
+  .foods-table .col-weight { position: absolute; left: 54px; top: 31px; font-size: 8px; color: #64748b; }
+  .foods-table .col-macros { margin-top: 7px; padding-left: 43px; }
+  .foods-table .macro-info { gap: 5px; }
+  .foods-table .macro { padding: 3px 6px; font-size: 7px; }
+  .foods-table .col-calories { position: absolute; right: 34px; top: 50%; transform: translateY(-50%); color: #00a66a; font-size: 9px; font-weight: 700; white-space: nowrap; }
+  .foods-table .col-actions { position: absolute; right: 7px; top: 8px; }
+  .foods-table .action-btn { display: grid !important; place-items: center; min-width: 26px !important; width: 26px !important; height: 30px !important; border: 0 !important; padding: 0 !important; background: transparent !important; }
+  .foods-table .action-btn i-feather { width: 15px !important; height: 15px !important; color: #516986; }
+  .foods-table .action-btn span { display: none; }
+}

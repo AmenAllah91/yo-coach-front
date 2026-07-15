@@ -101,6 +101,10 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     private coachSettingsService: CoachSettingsService
   ) {}
 
+  goBack(): void {
+    window.history.back();
+  }
+
   ngOnInit() {
     this.loadNutritionFileSetting();
     this.loadPlans();

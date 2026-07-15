@@ -126,6 +126,10 @@ export class ProgramLibraryComponent implements OnInit {
     private coachSettingsService: CoachSettingsService
   ) {}
 
+  goBack(): void {
+    window.history.back();
+  }
+
   ngOnInit() {
     // Wait a bit for Keycloak to initialize
 

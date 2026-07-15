@@ -1,5 +1,8 @@
 <div class="page-container">
   <div class="page-header">
+    <button class="library-back-btn" type="button" aria-label="Back" (click)="goBack()">
+      <i-feather name="chevron-left"></i-feather>
+    </button>
     <div class="header-content">
       <h1>Program Library</h1>
       <p>Create, organize and manage your workout programs</p>
@@ -11,15 +14,6 @@
   </div>
 
   <div class="content">
-    <div class="tabs">
-      <button class="tab" [class.active]="activeTab === 'my-library'" (click)="setActiveTab('my-library')">
-        My Library <span class="count">{{ myLibraryCount }}</span>
-      </button>
-      <button class="tab" [class.active]="activeTab === 'templates'" (click)="setActiveTab('templates')">
-        YoCoach Templates <span class="count">{{ templatesCount }}</span>
-      </button>
-    </div>
-
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
@@ -70,7 +64,7 @@
             </div>
           </div>
 
-          <div class="col-type" data-label="Type">
+          <div class="col-type" data-label="Type" *ngIf="workoutFileEnabled">
             <span class="type-badge" [ngClass]="{
               'type-badge--app': getProgramTypeKey(program) === 'APP',
               'type-badge--pdf': getProgramTypeKey(program) === 'PDF',

@@ -2930,3 +2930,38 @@
     grid-column: 2 !important;
   }
 }
+
+.library-back-btn { display: none; }
+
+@media (max-width: 900px) {
+  .page-container { min-height: 100%; height: auto; background: #f7f9fc; }
+  .page-container > .page-header { display: grid !important; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center !important; gap: 12px !important; min-height: 82px; padding: 18px 14px !important; border-bottom: 1px solid #e5eaf0; }
+  .library-back-btn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; color: #536887; }
+  .library-back-btn i-feather { width: 15px; height: 15px; }
+  .page-header .header-content { min-width: 0; }
+  .page-header .header-content h1 { margin: 0; font-size: 18px !important; line-height: 22px; }
+  .page-header .header-content p { display: block !important; margin: 5px 0 0; font-size: 9px !important; line-height: 13px; white-space: normal; }
+  .page-header .primary-btn { order: initial !important; width: auto !important; min-height: 34px !important; height: 34px !important; margin: 0 !important; padding: 0 11px !important; border-radius: 7px !important; font-size: 9px !important; white-space: nowrap; }
+  .page-header .primary-btn i-feather { width: 13px; height: 13px; }
+  .content { padding: 18px 10px 24px !important; }
+  .program-toolbar { margin-bottom: 12px !important; }
+  .search-box { max-width: none !important; width: 100% !important; height: 44px !important; }
+  .search-box input { height: 44px !important; border-radius: 10px !important; font-size: 11px !important; }
+  .type-filters { display: flex; gap: 6px !important; overflow-x: auto; flex-wrap: nowrap !important; }
+  .type-filter { flex: 0 0 auto !important; height: 32px !important; padding: 0 10px !important; font-size: 9px !important; }
+  .programs-table--cap { border: 0 !important; background: transparent !important; overflow: visible !important; }
+  .programs-table--cap .table-body { display: grid; gap: 9px; }
+  .programs-table--cap .program-row { position: relative; display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; min-height: 102px !important; padding: 14px 10px !important; border: 1px solid #e1e8f0 !important; border-radius: 10px !important; background: #fff !important; }
+  .programs-table--cap .program-info { align-items: flex-start !important; gap: 10px !important; }
+  .programs-table--cap .program-icon { width: 44px !important; height: 44px !important; border-radius: 9px !important; }
+  .programs-table--cap .program-icon i-feather { width: 20px !important; height: 20px !important; }
+  .programs-table--cap .program-name { padding-right: 86px; font-size: 12px !important; line-height: 16px; }
+  .programs-table--cap .program-meta { margin-top: 5px; font-size: 9px !important; color: #158fe0 !important; }
+  .programs-table--cap .col-created, .programs-table--cap .col-modified { display: none !important; }
+  .programs-table--cap .col-type { display: flex !important; position: absolute; left: 64px; bottom: 11px; }
+  .programs-table--cap .type-badge { min-height: 22px !important; height: 22px !important; padding: 0 7px !important; border-radius: 5px !important; font-size: 8px !important; }
+  .programs-table--cap .type-badge i-feather { width: 10px !important; height: 10px !important; }
+  .programs-table--cap .col-actions { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+  .programs-table--cap .action-btn { min-width: 75px !important; height: 34px !important; padding: 0 10px !important; border-radius: 7px !important; font-size: 10px !important; }
+  .pagination { background: transparent !important; border: 0 !important; }
+}

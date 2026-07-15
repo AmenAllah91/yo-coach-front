@@ -1,5 +1,6 @@
 <div class="page-container">
   <div class="page-header">
+    <button class="mobile-page-back" type="button" aria-label="Back" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
     <div class="header-content">
       <h1>Custom Foods</h1>
       <p>Manage your custom food items</p>
@@ -36,8 +37,10 @@
           <div class="col-name">
             <div class="food-info">
               <span class="food-avatar">
-                <img *ngIf="food.imageUrl; else listInitial" [src]="food.imageUrl" [alt]="food.name" />
-                <ng-template #listInitial>{{ food.name.charAt(0).toUpperCase() }}</ng-template>
+                <img *ngIf="food.imageUrl; else foodIconFallback" [src]="food.imageUrl" [alt]="food.name" />
+                <ng-template #foodIconFallback>
+                  <i class="fas" [ngClass]="getFoodIcon(food.name)"></i>
+                </ng-template>
               </span>
               <h4>{{ food.name }}</h4>
             </div>
@@ -59,7 +62,7 @@
             <div class="dropdown" [class.open]="openDropdownId === food.id">
               <button class="action-btn" (click)="toggleDropdown(food.id!, $event)">
                 <span>Actions</span>
-                <i-feather name="chevron-down"></i-feather>
+                <i-feather name="more-vertical"></i-feather>
               </button>
               <div class="dropdown-menu">
                 <ng-container *ngIf="!food.isGeneral">
