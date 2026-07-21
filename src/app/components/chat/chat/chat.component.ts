@@ -14,7 +14,7 @@ import { Conversation } from '../models/conversation';
 import { ChatMessage } from '../models/chat-message';
 import { ProfilClientComponent } from '../../clients/profil-client/profil-client.component';
 import { Subject, Observable, take, takeUntil, forkJoin, of } from 'rxjs';
-import { switchMap, catchError, map, tap } from 'rxjs/operators';
+import { switchMap, catchError, debounceTime, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 export interface Client { id: string; name: string; avatar: string; }
@@ -211,13 +211,29 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         this.loadAutoMessageSequences(this.selectedConv.id);
         this.scrollPending = true;
       });
+
+    this.chatService.conversationRefresh$
+      .pipe(debounceTime(250), takeUntil(this.destroy$))
+      .subscribe((conversationId) => {
+        if (this.selectedConv?.id === conversationId) {
+          this.loadMessages(conversationId);
+        }
+      });
+
   }
 
   ngAfterViewChecked(): void {
-    if (this.scrollPending) { this.scrollToBottom(); this.scrollPending = false; }
+    if (this.scrollPending) {
+      this.scrollPending = false;
+      requestAnimationFrame(() => {
+        this.scrollToBottom();
+        setTimeout(() => this.scrollToBottom(), 0);
+      });
+    }
   }
 
   ngOnDestroy(): void {
+    this.chatService.notifyConversationOpened(null);
     this.cancelVoiceRecording();
     this.destroy$.next();
     this.destroy$.complete();
@@ -505,6 +521,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
    selectConversation(conv: Conversation): void {
      console.log('🟣 [selectConversation] conv:', JSON.parse(JSON.stringify(conv)));
      this.selectedConv = conv;
+     this.chatService.notifyConversationOpened(conv.id);
      this.selectedConvMembers = [];
      this.showAllMembers = false;
      this.displayMessages = [];
@@ -543,16 +560,20 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      this.chatService.getMessages(conversationId, 0, 50)
        .pipe(takeUntil(this.destroy$))
        .subscribe({
-         next: (pageDto) => {
-           console.log('Messages loaded:', pageDto);
-           if (!pageDto.content || pageDto.content.length === 0) {
-             console.log('No messages received');
-             this.displayMessages = [];
-             return;
-           }
-            this.displayMessages = pageDto.content
+          next: (pageDto) => {
+            if (this.selectedConv?.id !== conversationId) return;
+            console.log('Messages loaded:', pageDto);
+            if (!pageDto.content || pageDto.content.length === 0) {
+              console.log('No stored messages received');
+              return;
+            }
+            const loadedMessages = pageDto.content
              .reverse()
              .map((msg: ChatMessage) => this.mapMessageToUi(msg));
+            const loadedIds = new Set(loadedMessages.map((message: any) => message.id));
+            const liveMessages = this.displayMessages.filter((message: any) => !loadedIds.has(message.id));
+            this.displayMessages = [...loadedMessages, ...liveMessages]
+              .sort((a: any, b: any) => this.getTimelineTime(a.createdAtRaw) - this.getTimelineTime(b.createdAtRaw));
            console.log('🟣 [loadMessages] displayMessages:', this.displayMessages.map((m: any) => ({ id: m.id, senderId: m.senderId, text: m.text })));
            this.scrollPending = true;
          },
@@ -603,7 +624,9 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
    }
 
    private upsertDisplayMessage(msg: ChatMessage): void {
-     const existingIndex = this.displayMessages.findIndex((message: any) => message.id === msg.id);
+      const existingIndex = msg.id
+        ? this.displayMessages.findIndex((message: any) => !!message.id && message.id === msg.id)
+        : -1;
      const mappedMessage = this.mapMessageToUi(msg);
 
      if (existingIndex !== -1) {
@@ -1259,7 +1282,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   private getTimelineTime(value?: string): number {
     if (!value) return Date.now();
-    const time = new Date(value).getTime();
+    const numericValue = Number(value);
+    const time = !Number.isNaN(numericValue) && /^\d+(\.\d+)?$/.test(String(value))
+      ? (numericValue < 1_000_000_000_000 ? numericValue * 1000 : numericValue)
+      : new Date(value).getTime();
     return Number.isNaN(time) ? Date.now() : time;
   }
 

@@ -146,9 +146,17 @@ export class ProgressPicturesComponent implements OnInit {
     this.error = null;
 
     const folderPath = `${this.progressPicturesDirectory}/${this.clientId}`;
+    const extension = payload.file.name.includes('.')
+      ? `.${payload.file.name.split('.').pop()}`
+      : '';
+    const uniqueFile = new File(
+      [payload.file],
+      `progress-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${extension}`,
+      { type: payload.file.type, lastModified: payload.file.lastModified }
+    );
 
     this.documentService
-      .uploadFileInPath(payload.file, folderPath)
+      .uploadFileInPath(uniqueFile, folderPath)
       .subscribe({
         next: (uploadedPath: string) => {
           const body: SaveProgressPictureRequest = {
@@ -262,6 +270,11 @@ export class ProgressPicturesComponent implements OnInit {
     const withoutQuery = pathOrUrl.split('?')[0];
     const parts = withoutQuery.split('/');
 
-    return parts.length ? parts[parts.length - 1] : '';
+    const fileName = parts.length ? parts[parts.length - 1] : '';
+    try {
+      return decodeURIComponent(fileName).toLowerCase();
+    } catch {
+      return fileName.toLowerCase();
+    }
   }
 }

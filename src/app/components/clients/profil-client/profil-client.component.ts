@@ -342,6 +342,7 @@ export class ProfilClientComponent {
 
   activeSubTab: 'submissions' | 'assigned' | 'scheduled' = 'submissions';
   submissionSearch = '';
+  private notificationAssignmentId: string | null = null;
   assignedSearch = '';
 
   showCheckinModal = false;
@@ -381,6 +382,7 @@ export class ProfilClientComponent {
         this.activeTab = tab;
         this.loadTabData(tab);
       }
+      this.notificationAssignmentId = params['assignmentId'] || null;
 
       const openAssign = params['openAssign'] === '1';
       const preselectFormId = params['preselectFormId'];
@@ -740,11 +742,43 @@ export class ProfilClientComponent {
           this.submissionsPagesArray = Array.from({ length: this.submissionsTotalPages }, (_, i) => i);
           this.syncAssignmentsCache();
           this.loadingAssignments = false;
+          if (this.notificationAssignmentId) {
+            const assignment = this.submissionAssignments.find(item => item.id === this.notificationAssignmentId);
+            if (assignment) {
+              this.activeSubTab = 'submissions';
+              this.openAssignmentModal(assignment);
+              this.notificationAssignmentId = null;
+              this.router.navigate([], { relativeTo: this.route, queryParams: { assignmentId: null }, queryParamsHandling: 'merge', replaceUrl: true });
+            } else {
+              this.openNotificationAssignmentById(this.notificationAssignmentId);
+            }
+          }
         },
         error: () => {
           this.assignmentsError = 'Failed to load submissions';
           this.loadingAssignments = false;
         },
+      });
+  }
+
+  private openNotificationAssignmentById(assignmentId: string): void {
+    this.assignmentsApi.getById(assignmentId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: assignment => {
+          if (assignment.assigneeId !== this.clientId) return;
+          this.activeTab = 'checkins';
+          this.activeSubTab = 'submissions';
+          this.openAssignmentModal(assignment);
+          this.notificationAssignmentId = null;
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { assignmentId: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
+        },
+        error: err => console.error('Failed to open notification check-in:', err)
       });
   }
 

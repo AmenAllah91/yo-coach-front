@@ -515,6 +515,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (res: any) => {
+          this.assigning.set(false);
           const createdCount = res?.created?.length ?? 0;
           const errors = res?.errors ?? [];
 
@@ -530,13 +531,23 @@ export class FormsListComponent implements OnInit, OnDestroy {
             this.usersError.set(msg);
 
             if (createdCount > 0) {
+              this.toastr.success(
+                `${createdCount} affectation${createdCount > 1 ? 's' : ''} créée${createdCount > 1 ? 's' : ''}.`,
+                'Check-in affecté'
+              );
               this.closeAssign();
             }
           } else {
+            const scheduled = hasSchedule || (this.scheduleEnabled && !!this.scheduledDateValue);
+            this.toastr.success(
+              scheduled
+                ? `Le check-in a été programmé pour ${ids.length} client${ids.length > 1 ? 's' : ''}.`
+                : `Le check-in a été affecté à ${ids.length} client${ids.length > 1 ? 's' : ''}.`,
+              scheduled ? 'Programmation enregistrée' : 'Check-in affecté'
+            );
             this.closeAssign();
           }
 
-          this.assigning.set(false);
           this.loadCounts();
           this.loadPage();
         },
@@ -553,7 +564,15 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   toggleActions(formId: string | number, event: MouseEvent): void {
     event.stopPropagation();
-    this.openedActionsId.set(this.openedActionsId() === formId ? null : formId);
+    const nextId = this.openedActionsId() === formId ? null : formId;
+    this.openedActionsId.set(nextId);
+
+    if (nextId !== null) {
+      const button = event.currentTarget as HTMLElement;
+      requestAnimationFrame(() =>
+        this.positionDropdown(String(nextId), button)
+      );
+    }
   }
 
   closeActions(): void {

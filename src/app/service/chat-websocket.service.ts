@@ -73,12 +73,16 @@ export class ChatWebsocketService {
         `/topic/conversation/${conversationId}`,
         frame => {
           const backendMessage = JSON.parse(frame.body);
+          const createdAt = this.normalizeCreatedAt(backendMessage.createdAt);
+          const messageId = backendMessage.id
+            || backendMessage._id
+            || `ws-${conversationId}-${backendMessage.senderId}-${createdAt}-${backendMessage.content || ''}`;
 
           const chatMessage: ChatMessage = {
-            id: backendMessage.id,
+            id: messageId,
             senderId: backendMessage.senderId,
             content: backendMessage.content,
-            createdAt: backendMessage.createdAt,
+            createdAt,
             conversationId: backendMessage.conversationId || conversationId,
             type: backendMessage.type || 'TEXT',
             attachmentUrl: backendMessage.attachmentUrl,
@@ -89,13 +93,38 @@ export class ChatWebsocketService {
           };
 
           this.ngZone.run(() => {
-            console.log('[CHAT SERVICE] emitting message:', chatMessage);
+            console.log('[CHAT SERVICE] emitting message:', JSON.stringify(chatMessage));
             this.messageSubject.next(chatMessage);
           });
         }
       );
 
 
+  }
+
+  private normalizeCreatedAt(value: unknown): string {
+    if (typeof value === 'number') {
+      const milliseconds = value < 1_000_000_000_000 ? value * 1000 : value;
+      return new Date(milliseconds).toISOString();
+    }
+
+    if (Array.isArray(value) && value.length >= 3) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value.map(Number);
+      return new Date(year, month - 1, day, hour, minute, second).toISOString();
+    }
+
+    if (typeof value === 'string' && value) {
+      const numericValue = Number(value);
+      if (!Number.isNaN(numericValue) && /^\d+(\.\d+)?$/.test(value)) {
+        const milliseconds = numericValue < 1_000_000_000_000 ? numericValue * 1000 : numericValue;
+        return new Date(milliseconds).toISOString();
+      }
+
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+    }
+
+    return new Date().toISOString();
   }
 
   sendMessage(conversationId: string, content: string, senderId: string): void {

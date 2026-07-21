@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, Observable, throwError} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, throwError} from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {Conversation} from "../components/chat/models/conversation";
-import {HttpClient, HttpParams} from "@angular/common/http";
+import {HttpClient, HttpHeaders, HttpParams} from "@angular/common/http";
 import {environment} from "@env/environment";
 import {ChatMessage} from "../components/chat/models/chat-message";
 import {PageDto} from "../models/pageDto";
@@ -52,6 +52,13 @@ export class ChatService {
   selectedConversation$ =
     this.selectedConversationSubject.asObservable();
 
+  private conversationRefreshSubject = new Subject<string>();
+  conversationRefresh$ = this.conversationRefreshSubject.asObservable();
+
+  private conversationOpenedSubject = new BehaviorSubject<string | null>(null);
+  conversationOpened$ = this.conversationOpenedSubject.asObservable();
+
+
   constructor(private wsService: ChatWebsocketService,
               private http: HttpClient) {
 
@@ -78,6 +85,18 @@ export class ChatService {
 
   openConversation(conversation: Conversation) {
     this.selectedConversationSubject.next(conversation);
+  }
+
+  requestConversationRefresh(conversationId?: string): void {
+    if (conversationId) this.conversationRefreshSubject.next(conversationId);
+  }
+
+  notifyConversationOpened(conversationId: string | null): void {
+    this.conversationOpenedSubject.next(conversationId);
+  }
+
+  getActiveConversationId(): string | null {
+    return this.conversationOpenedSubject.value;
   }
 
   sendMessage(conversationId: string, content: string, senderId: string): Observable<ChatMessage> {
@@ -123,9 +142,20 @@ export class ChatService {
     page: number,
     size = 20
   ): Observable<PageDto<ChatMessage>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('_ts', Date.now().toString());
+
     return this.http.get<PageDto<ChatMessage>>(
       `${this.apiUrl}/messages/${conversationId}`,
-      { params: { page, size } }
+      {
+        params,
+        headers: new HttpHeaders({
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        })
+      }
     );
   }
 

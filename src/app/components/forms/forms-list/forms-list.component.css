@@ -461,9 +461,7 @@ td.col-actions {
 }
 
 .dropdown-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
   display: block;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -472,16 +470,6 @@ td.col-actions {
   min-width: 180px;
   z-index: 9999;
   padding: 6px 0;
-}
-
-.dropdown-backdrop {
-  position: fixed;
-  inset: 0;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  z-index: 1500;
 }
 
 .dropdown-item {

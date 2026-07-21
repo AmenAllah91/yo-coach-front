@@ -4,9 +4,9 @@ import {
   ChangeDetectorRef,
   Component, ComponentFactoryResolver,
   ElementRef, EmbeddedViewRef, EventEmitter, Injector,
-  Input, OnInit, Output,
+  Input, OnDestroy, OnInit, Output,
 } from '@angular/core';
-import {RouterLink} from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {NgbDropdown, NgbDropdownMenu, NgbDropdownToggle} from '@ng-bootstrap/ng-bootstrap';
 import {FormsModule} from '@angular/forms';
@@ -20,6 +20,10 @@ import {ChatPanelComponent} from "../../../components/chat/chat-panel/chat-panel
 import {WebsocketService} from "../../../service/websocket.service";
 import {ChatWebsocketService} from "../../../service/chat-websocket.service";
 import {NotificationService} from "../../../service/notification.service";
+import {ChatService} from "../../../service/chat.service";
+import {getTimeAgo} from "../../../models/notification";
+import {Subject, timer} from "rxjs";
+import {takeUntil} from "rxjs/operators";
 
 @Component({
   selector: 'app-header',
@@ -39,7 +43,7 @@ import {NotificationService} from "../../../service/notification.service";
   ],
   providers: []
 })
-export class HeaderComponent implements OnInit,AfterViewInit {
+export class HeaderComponent implements OnInit, OnDestroy, AfterViewInit {
   public config!: InConfiguration;
   flagvalue: string | string[] | undefined = "assets/images/flags/french.jpg";
   countryName: string | string[] = [];
@@ -64,6 +68,8 @@ export class HeaderComponent implements OnInit,AfterViewInit {
     private appRef: ApplicationRef,
     private webSocketService: WebsocketService,
     private notificationService: NotificationService,
+    private router: Router,
+    private chatService: ChatService,
   ) {
 const lang = localStorage.getItem('lang') || 'fr';
 this.translate.use(lang);}
@@ -79,6 +85,8 @@ this.translate.use(lang);}
   conversations: Conversation[] = [];
   unreadConversations = 0;
   notificationsMessages: Notification[] =[];
+  notifications: Notification[] = [];
+  private readonly destroy$ = new Subject<void>();
 
 
 
@@ -110,31 +118,43 @@ this.translate.use(lang);}
       this.flagvalue = val.map((element) => element.flag);
     }
     this.getMessagesNotifs();
-    this.webSocketService.notification$.subscribe((data) => {
+    timer(5000, 5000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.getMessagesNotifs());
+    this.webSocketService.notification$.pipe(takeUntil(this.destroy$)).subscribe((data) => {
       if (!data) return;
 
       setTimeout(() => {
         const notif = new Notification(data);
+        this.notifications = [notif, ...this.notifications.filter(item => item.id !== notif.id)];
         if (notif.notificationType === 'PUSH_NOTIF_MESSAGE') {
+          this.chatService.requestConversationRefresh(notif.entityId);
           if (this.chatPanelOpen) {
             this.webSocketService.markNotificationsAsSeen([notif.id]);
+            notif.seen = true;
+            this.syncMessageNotifications();
             return;
           }
-          if (!notif.seen) {
-            this.unreadConversations++;
-            this.notificationsMessages = [notif, ...this.notificationsMessages];
-          }
         }
+
+        this.syncMessageNotifications();
 
         this.cdRef.detectChanges();
       }, 0);
     });
 
-    this.chatwsService.messages$.subscribe((msg: ChatMessage) => {
+    this.chatwsService.messages$.pipe(takeUntil(this.destroy$)).subscribe((msg: ChatMessage) => {
       if (!msg) return;
       const conv = this.conversations.find(c => c.id === msg.conversationId);
       if (conv) conv.lastMessage = msg.content;
+      this.getMessagesNotifs();
     });
+
+    this.chatService.conversationOpened$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(conversationId => {
+        if (conversationId) this.markConversationNotificationsRead(conversationId);
+      });
 
   }
 
@@ -175,12 +195,11 @@ this.translate.use(lang);}
       .map(n => n.id);
 
     if (ids.length === 0) return;
-    this.webSocketService.markNotificationsAsSeen(ids);
-    this.notificationsMessages.forEach(n => {
+    this.notificationService.markNotificationsAsSeen(ids).subscribe();
+    this.notifications.forEach(n => {
       if (ids.includes(n.id)) n.seen = true;
     });
-
-    this.unreadConversations = 0;
+    this.syncMessageNotifications();
   }
 
   openConversationList() {
@@ -204,22 +223,188 @@ this.translate.use(lang);}
       componentRef.destroy();
     });
 
-    setTimeout(() => {
-      this.clearUnreadNotificationsMessages();
-    }, 200);
   }
 
   getMessagesNotifs() {
-    this.notificationService.getMessagesNotifs(this.userId).subscribe((notifications) => {
+    this.notificationService.getMessagesNotifs(this.userId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+      next: (notifications) => {
       const converted = notifications.map(n => new Notification(n));
-      converted.forEach((notif) => {
-        if(notif.notificationType == 'PUSH_NOTIF_MESSAGE')
-          this.notificationsMessages.push(notif);
-
-      })
+      this.notifications = converted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      this.notificationsMessages = converted.filter(
+        notif => notif.notificationType === 'PUSH_NOTIF_MESSAGE'
+      );
       const notifsMessagesNbr=this.notificationsMessages.filter((notif)=>  notif!=null && notif.seen==false).length;
-      this.unreadConversations += notifsMessagesNbr;
-    })
+      this.unreadConversations = notifsMessagesNbr;
+      const activeConversationId = this.chatService.getActiveConversationId();
+      if (activeConversationId) this.markConversationNotificationsRead(activeConversationId);
+      },
+      error: err => console.warn('Notification synchronization unavailable:', err?.status || err)
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private syncMessageNotifications(): void {
+    this.notificationsMessages = this.notifications
+      .filter(item => item.notificationType === 'PUSH_NOTIF_MESSAGE');
+    this.unreadConversations = this.notificationsMessages
+      .filter(item => !item.seen).length;
+  }
+
+  private markConversationNotificationsRead(conversationId: string): void {
+    const relatedIds = this.notifications
+      .filter(item =>
+        !item.seen &&
+        item.notificationType === 'PUSH_NOTIF_MESSAGE' &&
+        item.entityId === conversationId &&
+        !!item.id
+      )
+      .map(item => item.id as string);
+
+    if (!relatedIds.length) return;
+
+    this.notificationService.markNotificationsAsSeen(relatedIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.notifications.forEach(item => {
+            if (item.id && relatedIds.includes(item.id)) item.seen = true;
+          });
+          this.syncMessageNotifications();
+          this.cdRef.detectChanges();
+        },
+        error: err => console.error('Failed to mark conversation notifications as read:', err)
+      });
+  }
+
+  get unreadNotifications(): Notification[] {
+    return this.notifications.filter(item => !item.seen);
+  }
+
+  get olderNotifications(): Notification[] {
+    return this.notifications.filter(item => item.seen);
+  }
+
+  get unreadNotificationCount(): number {
+    return this.unreadNotifications.length;
+  }
+
+  notificationTime(item: Notification): string {
+    const elapsedSeconds = Math.floor((Date.now() - item.createdAt.getTime()) / 1000);
+    if (elapsedSeconds < 60) return "à l'instant";
+    return getTimeAgo(item.createdAt)
+      .replace('minutes ago', 'min').replace('hours ago', 'h').replace('days ago', 'j');
+  }
+
+  notificationIcon(type: string): string {
+    const icons: Record<string, string> = {
+      PUSH_NOTIF_MESSAGE: 'message-square', NEW_LEAD: 'user-plus', CHECK_IN_SUBMITTED: 'clipboard',
+      WORKOUT_COMPLETED: 'activity', WORKOUT_MISSED: 'alert-circle', PROGRESS_ADDED: 'trending-up',
+      BODY_MEASUREMENTS_UPDATED: 'maximize-2', PROGRAM_ENDING_SOON: 'calendar',
+      PROGRAM_ASSIGNED: 'clipboard', PROGRAM_UPDATED: 'edit-3', WORKOUT_DUE_TODAY: 'activity',
+      CHECK_IN_DUE: 'check-square'
+    };
+    return icons[type] || 'bell';
+  }
+
+  notificationSourceLabel(source?: string): string {
+    const labels: Record<string, string> = {
+      FORMULAIRE_CONTACT: 'Depuis le formulaire de contact',
+      SITE_WEB: 'Depuis le site web'
+    };
+    return source ? labels[source] || '' : '';
+  }
+
+  notificationInitials(item: Notification): string {
+    const message = (item.message || '').trim();
+    const sender = message
+      .split(/\s+(?:vous\s+)?a\s+/i)[0]
+      .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '')
+      .trim();
+    const words = sender.split(/\s+/).filter(Boolean);
+
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+    if (words.length === 1) {
+      return words[0].slice(0, 2).toUpperCase();
+    }
+    return 'YO';
+  }
+
+  markAllNotificationsRead(event: Event): void {
+    event.stopPropagation();
+    this.markVisibleNotificationsRead();
+  }
+
+  markVisibleNotificationsRead(): void {
+    const ids = this.unreadNotifications.map(item => item.id).filter(Boolean) as string[];
+    if (!ids.length) return;
+
+    this.notifications.forEach(item => {
+      if (item.id && ids.includes(item.id)) item.seen = true;
+    });
+    this.syncMessageNotifications();
+    this.cdRef.detectChanges();
+
+    this.notificationService.markNotificationsAsSeen(ids).subscribe({
+      error: err => console.error('Failed to mark notifications as read:', err)
+    });
+  }
+
+  openNotification(item: Notification): void {
+    if (!item.seen && item.id) {
+      this.notificationService.markNotificationsAsSeen([item.id]).subscribe();
+      item.seen = true;
+      this.syncMessageNotifications();
+    }
+
+    if (item.notificationType === 'PUSH_NOTIF_MESSAGE' && item.entityId) {
+      this.chatService.getConversations(0, 100).subscribe(page => {
+        const conversation = page.content.find(conv => conv.id === item.entityId);
+        if (conversation) this.openConversation(conversation);
+      });
+      return;
+    }
+
+    if (item.notificationType === 'PROGRAM_ASSIGNED' || item.notificationType === 'PROGRAM_UPDATED') {
+      const programId = item.entityId || this.getNotificationQueryParam(item.redirectUrl, 'programId');
+      this.router.navigate(['/clients/client-workouts'], {
+        queryParams: programId ? { programId } : undefined,
+      });
+      return;
+    }
+
+    if (item.redirectUrl) this.router.navigateByUrl(item.redirectUrl);
+  }
+
+  private getNotificationQueryParam(url: string | undefined, name: string): string | null {
+    if (!url) return null;
+
+    const query = url.split('?')[1];
+    return query ? new URLSearchParams(query).get(name) : null;
+  }
+
+  private openConversation(conversation: Conversation): void {
+    if (this.chatPanelOpen) return;
+    this.chatPanelOpen = true;
+    const factory = this.componentFactoryResolver.resolveComponentFactory(ChatPanelComponent);
+    const componentRef = factory.create(this.injector);
+    componentRef.instance.openConversation(conversation);
+    this.appRef.attachView(componentRef.hostView);
+    const domElem = (componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
+    document.body.appendChild(domElem);
+    componentRef.instance.closed.subscribe(() => {
+      this.chatPanelOpen = false;
+      this.appRef.detachView(componentRef.hostView);
+      domElem.remove();
+      componentRef.destroy();
+    });
   }
 
   protected readonly sessionStorage = sessionStorage;

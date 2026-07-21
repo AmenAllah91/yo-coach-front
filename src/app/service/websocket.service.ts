@@ -4,13 +4,14 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { AuthService } from '@config/auth.service';
 import { environment } from "@env/environment";
+import {Notification} from "../models/notification";
 
 @Injectable({
   providedIn: 'root',
 })
 export class WebsocketService {
 
-  private WEBSOCKET_URL = environment.baseApiUrl + "/ws";
+  private WEBSOCKET_URL = environment.notificationApiUrl + "/ws";
   private stompClient: Client | null = null;
 
   private notificationSubject = new BehaviorSubject<Notification | null>(null);
@@ -50,7 +51,19 @@ export class WebsocketService {
     };
 
     this.stompClient.onStompError = (frame) => {
-      console.error('STOMP error:', frame);
+      console.error('Notification STOMP error:', frame.headers['message'], frame.body, frame);
+      if (this.stompClient) {
+        this.stompClient.reconnectDelay = 0;
+        void this.stompClient.deactivate();
+      }
+    };
+
+    this.stompClient.onWebSocketClose = (event) => {
+      console.warn('Notification WebSocket closed:', event.code, event.reason);
+    };
+
+    this.stompClient.onWebSocketError = (event) => {
+      console.error('Notification WebSocket transport error:', event);
     };
 
     this.stompClient.activate();
@@ -58,7 +71,11 @@ export class WebsocketService {
 
   private subscribeToNotifications(): void {
     const userId = sessionStorage.getItem('userId');
-    const endpoint = `/user/${userId}/queue/notifications`;
+    if (!userId) {
+      console.warn('Notification WebSocket subscription skipped: missing userId');
+      return;
+    }
+    const endpoint = `/topic/notifications/${userId}`;
 
     this.stompClient?.subscribe(endpoint, message => {
       const notification: Notification = JSON.parse(message.body);

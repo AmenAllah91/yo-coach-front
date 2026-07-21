@@ -36,21 +36,43 @@
         <a class="nav-link position-relative" id="conversationsDropdown" (click)="openConversationList()">
           <i-feather name="message-circle" class="bell"></i-feather>
           @if(unreadConversations > 0) {
-            <span class="badge badge-notification">{{unreadConversations}}</span>
+            <span class="badge badge-notification notification-pulse">{{unreadConversations}}</span>
           }
         </a>
       </div>
 
     <div class="dropdown me-3">
-      <a class="nav-link position-relative" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+      <a class="nav-link position-relative notification-trigger" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         <i-feather name="bell" class="bell"></i-feather>
+        @if(unreadNotificationCount > 0) {
+          <span class="badge badge-notification notification-pulse">{{unreadNotificationCount}}</span>
+        }
       </a>
-      <ul class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationsDropdown">
-        <div class="notification-header">All Notifications</div>
-        <div class="dropdown-footer text-center">
-          <a href="#" >Voir plus <i class="fas fa-chevron-right"></i></a>
+      <div class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationsDropdown">
+        <div class="notification-header">
+          <strong>Notifications <span class="header-count">{{unreadNotificationCount}}</span></strong>
+          <button type="button" (click)="markAllNotificationsRead($event)"><i-feather name="check"></i-feather> Tout marquer comme lu</button>
         </div>
-      </ul>
+        <div class="notification-scroll">
+          @if(unreadNotifications.length) { <div class="notification-section-title">NON LUES</div> }
+          @for(item of unreadNotifications; track item.id) {
+            <button class="notification-item unread" type="button" (click)="openNotification(item)">
+              <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
+              <span class="notification-copy"><strong>{{item.title}}</strong><span>{{item.message}}</span><small class="notification-author">{{notificationInitials(item)}}</small>@if(notificationSourceLabel(item.source); as sourceLabel) { <small class="notification-source">{{sourceLabel}}</small> }</span>
+              <span class="notification-meta">{{notificationTime(item)}}<i></i></span>
+            </button>
+          }
+          @if(olderNotifications.length) { <div class="notification-section-title">PLUS ANCIENNES</div> }
+          @for(item of olderNotifications; track item.id) {
+            <button class="notification-item" type="button" (click)="openNotification(item)">
+              <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
+              <span class="notification-copy"><strong>{{item.title}}</strong><span>{{item.message}}</span><small class="notification-author">{{notificationInitials(item)}}</small>@if(notificationSourceLabel(item.source); as sourceLabel) { <small class="notification-source">{{sourceLabel}}</small> }</span>
+              <span class="notification-meta">{{notificationTime(item)}}</span>
+            </button>
+          }
+          @if(!notifications.length) { <div class="notification-empty">Aucune notification</div> }
+        </div>
+      </div>
     </div>
 
     <div class="dropdown">

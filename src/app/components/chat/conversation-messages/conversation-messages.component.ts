@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {Conversation} from "../models/conversation";
 import {ChatMessage} from "../models/chat-message";
 import {ChatService} from "../../../service/chat.service";
@@ -9,8 +9,8 @@ import {DatePipe, NgClass, NgForOf, NgIf, NgSwitch, NgSwitchCase, NgSwitchDefaul
 import {NotificationService} from "../../../service/notification.service";
 import {Router} from "@angular/router";
 import {UsersService} from "../../../service/users.service";
-import {forkJoin, of} from "rxjs";
-import {catchError, map} from "rxjs/operators";
+import {forkJoin, of, Subject} from "rxjs";
+import {catchError, debounceTime, map, takeUntil} from "rxjs/operators";
 import { environment } from "@env/environment";
 import {FeatherModule} from "angular-feather";
 
@@ -33,7 +33,7 @@ export interface Member { id: string; name: string; avatar: string; }
   templateUrl: './conversation-messages.component.html',
   styleUrl: './conversation-messages.component.scss'
 })
-export class ConversationMessagesComponent implements OnInit{
+export class ConversationMessagesComponent implements OnInit, OnDestroy{
   @Input() selectedConversation!: Conversation;
   @Output() back = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
@@ -63,6 +63,8 @@ export class ConversationMessagesComponent implements OnInit{
   private mediaRecorder?: MediaRecorder;
   private recordedChunks: Blob[] = [];
   private recordingStartedAt = 0;
+  private readonly destroy$ = new Subject<void>();
+  private optimisticMessageSequence = 0;
 
   constructor(private chatService: ChatService,
               private wsService: ChatWebsocketService,
@@ -77,22 +79,37 @@ export class ConversationMessagesComponent implements OnInit{
     this.hasMore = true;
     this.groupMembers = [];
     this.wsService.subscribeToConversation(this.selectedConversation.id);
+    this.chatService.notifyConversationOpened(this.selectedConversation.id);
     this.loadInitialMessages();
     if (this.selectedConversation.isGroup && this.selectedConversation.memberIds?.length) {
       this.resolveGroupMembers(this.selectedConversation.memberIds);
     }
 
-    this.wsService.messages$.subscribe(msg => {
+    this.wsService.messages$.pipe(takeUntil(this.destroy$)).subscribe(msg => {
       if (!msg || !this.selectedConversation) return;
       if (msg.conversationId !== this.selectedConversation.id) return;
 
-      const exists = this.messages.some(m => m.id === msg.id);
+      const exists = !!msg.id && this.messages.some(m => !!m.id && m.id === msg.id);
       if (!exists) {
         this.messages.push(msg);
         setTimeout(() => this.scrollToBottomIfNeeded(), 0);
       }
     });
 
+    this.chatService.conversationRefresh$
+      .pipe(debounceTime(250), takeUntil(this.destroy$))
+      .subscribe(conversationId => {
+        if (conversationId === this.selectedConversation.id) {
+          this.loadInitialMessages();
+        }
+      });
+
+  }
+
+  ngOnDestroy(): void {
+    this.chatService.notifyConversationOpened(null);
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleSidebar() {
@@ -103,7 +120,11 @@ export class ConversationMessagesComponent implements OnInit{
   loadInitialMessages() {
     this.loading = true;
     this.chatService.getMessages(this.selectedConversation.id, 0).subscribe(res => {
-      this.messages = res.content.reverse();
+      const loadedMessages = res.content.reverse();
+      const loadedIds = new Set(loadedMessages.map(message => message.id));
+      const liveMessages = this.messages.filter(message => !loadedIds.has(message.id));
+      this.messages = [...loadedMessages, ...liveMessages]
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       this.loading = false;
       setTimeout(() => this.scrollToBottom(), 0);
     });
@@ -146,10 +167,40 @@ export class ConversationMessagesComponent implements OnInit{
 
     if (!text) return;
 
-    this.chatService.sendMessage(this.selectedConversation.id, text, this.currentUserId);
-    this.sendNotificationMessage([this.selectedConversation.clientId,this.selectedConversation.coachId]);
-
     this.messageText = '';
+
+    const optimisticMessage: ChatMessage = {
+      id: `tmp-${Date.now()}-${++this.optimisticMessageSequence}`,
+      senderId: this.currentUserId,
+      content: text,
+      createdAt: new Date().toISOString(),
+      conversationId: this.selectedConversation.id,
+      type: 'TEXT'
+    };
+    this.messages = [...this.messages, optimisticMessage];
+
+    this.chatService.sendMessage(this.selectedConversation.id, text, this.currentUserId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: savedMessage => {
+          const alreadyReceived = this.messages.some(message => message.id === savedMessage.id);
+          this.messages = alreadyReceived
+            ? this.messages.filter(message => message.id !== optimisticMessage.id)
+            : this.messages.map(message => message.id === optimisticMessage.id ? savedMessage : message);
+
+          this.selectedConversation = {
+            ...this.selectedConversation,
+            lastMessage: savedMessage.content,
+            messages: [...(this.selectedConversation.messages || []).filter(message => message.id !== optimisticMessage.id), savedMessage]
+          };
+          setTimeout(() => this.scrollToBottom(), 0);
+        },
+        error: err => {
+          console.error('Message send failed:', err);
+          this.messages = this.messages.filter(message => message.id !== optimisticMessage.id);
+          this.messageText = text;
+        }
+      });
 
     setTimeout(() => {
       const container = document.querySelector('.chat-messages');
@@ -158,19 +209,6 @@ export class ConversationMessagesComponent implements OnInit{
       }
     }, 0);
   }
-
-  sendNotificationMessage(userIds: string[]) {
-    userIds = userIds.filter(id => id !== this.currentUserId);
-    const notificationRequest = {
-      notification: {
-        notificationType: 'PUSH_NOTIF_MESSAGE',
-        authorId: this.currentUserId
-      },
-      users: userIds,
-    };
-    this.notificationService.sendNotification(notificationRequest).subscribe();
-  }
-
 
   onScroll(event: Event) {
     const el = event.target as HTMLElement;
@@ -384,7 +422,6 @@ export class ConversationMessagesComponent implements OnInit{
             setTimeout(() => this.scrollToBottom(), 0);
           }
 
-          this.sendNotificationMessage([this.selectedConversation.clientId, this.selectedConversation.coachId]);
         },
         error: (err) => {
           this.isUploadingAttachment = false;

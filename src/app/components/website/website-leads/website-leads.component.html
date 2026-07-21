@@ -35,7 +35,7 @@
       <div class="col-actions">ACTIONS</div>
     </div>
 
-    <div class="table-row" *ngFor="let lead of leads">
+    <div class="table-row" *ngFor="let lead of leads" [id]="'lead-' + lead.id" [class.notification-target]="highlightedLeadId === lead.id">
       <div class="col-title">
         <div class="plan-name">{{ getLeadFullName(lead) }}</div>
         <div class="plan-type">{{ getElapsedTime(lead.createdAt) }}</div>

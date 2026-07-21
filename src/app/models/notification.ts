@@ -1,15 +1,27 @@
 export class Notification {
   id?: string;
   message: string;
+  title: string;
   createdAt: Date;
   seen: boolean;
-  notificationType: 'EMAIL_NOTIF' | 'PUSH_NOTIF' | 'SMS_NOTIF' | 'PUSH_NOTIF_MESSAGE'
+  notificationType: string;
+  redirectUrl?: string;
+  entityId?: string;
+  clientId?: string;
+  source?: string;
+  authorId?: string;
 
   constructor(data: any) {
     this.id = data.id;
     this.message = data.message;
+    this.title = data.title || this.defaultTitle(data.notificationType);
     this.notificationType = data.notificationType;
     this.seen = data.seen ?? false;
+    this.redirectUrl = data.redirectUrl;
+    this.entityId = data.entityId;
+    this.clientId = data.clientId;
+    this.source = data.source;
+    this.authorId = data.authorId;
 
     if (data.createdAt) {
       if (typeof data.createdAt === 'number') {
@@ -24,6 +36,10 @@ export class Notification {
     } else {
       this.createdAt = new Date();
     }
+  }
+
+  private defaultTitle(type: string): string {
+    return type === 'PUSH_NOTIF_MESSAGE' ? 'Nouveau message' : 'Notification';
   }
 
 }

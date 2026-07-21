@@ -3,6 +3,7 @@ import { Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Subject, catchError, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { InvitationService } from 'app/service/invitation.service';
 import { CoachWebsiteLead, PageResponse, WebsiteService } from 'app/service/website.service';
 import { AddClientModalComponent } from '../../clients/add-client-modal/add-client-modal.component';
@@ -31,14 +32,17 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
   actionMessage = '';
   actionError = '';
   openDropdownId: string | null = null;
+  highlightedLeadId: string | null = null;
   showInviteModal = false;
 
   constructor(
     private websiteService: WebsiteService,
     private invitationService: InvitationService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.highlightedLeadId = this.route.snapshot.queryParamMap.get('leadId');
     this.loadLeads();
     this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
@@ -62,6 +66,9 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
         this.totalPages = res.totalPages;
         this.page = res.number;
         this.loading = false;
+        if (this.highlightedLeadId) {
+          setTimeout(() => document.getElementById(`lead-${this.highlightedLeadId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+        }
       },
       error: () => {
         this.actionError = 'Unable to load leads.';
