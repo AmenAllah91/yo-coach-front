@@ -12,6 +12,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING';
+type WorkoutRunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
 type WorkoutSetType = 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
 
 interface ExerciseSet {
@@ -38,6 +39,15 @@ interface RawExercise {
   supersetGroupId: string | null;
   sets: ExerciseSet[];
   duration?: number;
+  description?: string;
+  instructions?: string | string[];
+  videoLink?: string;
+  imageUrl?: string;
+  equipment?: string;
+  primaryMuscle?: string;
+  coachNote?: string;
+  muscle?: string;
+  exerciseRef?: any;
 }
 
 interface WorkoutSession {
@@ -46,6 +56,7 @@ interface WorkoutSession {
 }
 
 interface GroupedExercise {
+  sourceExerciseId?: string;
   groupIndex: number;
   subIndex?: number;
   displayNumber: string;
@@ -56,13 +67,23 @@ interface GroupedExercise {
     setNumber: number;
     type: WorkoutSetType;
     displayLabel: string;
-    reps: string;
+    reps: string | number;
     weight: number | null;
     rest: string;
     duration?: number;
   }[];
   duration?: number;
   isWarmUp: boolean;
+  completed?: boolean;
+  skipped?: boolean;
+  note?: string;
+  description?: string;
+  instructions?: string[];
+  videoLink?: string;
+  imageUrl?: string;
+  equipment?: string;
+  primaryMuscle?: string;
+  coachNote?: string;
 }
 
 interface Workout {
@@ -75,6 +96,8 @@ interface Workout {
   status: WorkoutStatus;
   rawSessions: WorkoutSession[];
   groupedExercises: GroupedExercise[];
+  workoutElapsedSeconds?: number;
+  clientCompletionMode?: 'TRACKED' | 'ALREADY_COMPLETED';
 }
 
 interface WorkoutExerciseDisplay {
@@ -113,6 +136,14 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   currentMonthDate = new Date();
   userid = sessionStorage.getItem('userId');
   selectedWorkout: Workout | null = null;
+  workoutRunStatus: WorkoutRunStatus = 'NOT_STARTED';
+  elapsedSeconds = 0;
+  showWorkoutMenu = false;
+  selectedExercise: GroupedExercise | null = null;
+  showExerciseVideo = false;
+  exerciseEmbedUrl: SafeResourceUrl | null = null;
+  noteExercise: GroupedExercise | null = null;
+  private timerId: ReturnType<typeof setInterval> | null = null;
   selectedFileProgram: FileProgram | null = null;
   selectedFileSafeUrl: SafeResourceUrl | null = null;
   selectedFileBlobUrl: string | null = null;
@@ -165,7 +196,131 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopTimer();
     this.revokeSelectedFileBlob();
+  }
+
+  get formattedWorkoutTime(): string {
+    const hours = Math.floor(this.elapsedSeconds / 3600);
+    const minutes = Math.floor((this.elapsedSeconds % 3600) / 60);
+    const seconds = this.elapsedSeconds % 60;
+    return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
+  }
+
+  get workoutStatusLabel(): string {
+    const labels: Record<WorkoutRunStatus, string> = {
+      NOT_STARTED: 'Not started', IN_PROGRESS: 'In progress', PAUSED: 'Paused',
+      LOG_WORKOUT: 'Log workout',
+      COMPLETED: 'Completed', ALREADY_COMPLETED: 'Already completed',
+    };
+    return labels[this.workoutRunStatus];
+  }
+
+  get reviewedExerciseCount(): number {
+    return this.selectedWorkout?.groupedExercises.filter((exercise) => exercise.completed || exercise.skipped).length || 0;
+  }
+
+  get reviewableExerciseCount(): number {
+    return this.selectedWorkout?.groupedExercises.length || 0;
+  }
+
+  startWorkout(): void {
+    this.workoutRunStatus = 'IN_PROGRESS';
+    this.startTimer();
+  }
+
+  pauseWorkout(): void {
+    this.workoutRunStatus = 'PAUSED';
+    this.stopTimer();
+  }
+
+  resumeWorkout(): void {
+    this.workoutRunStatus = 'IN_PROGRESS';
+    this.startTimer();
+  }
+
+  cancelWorkout(): void {
+    this.stopTimer();
+    this.elapsedSeconds = 0;
+    this.workoutRunStatus = 'NOT_STARTED';
+    this.showWorkoutMenu = false;
+    this.selectedWorkout?.groupedExercises.forEach((exercise) => {
+      exercise.completed = false;
+      exercise.skipped = false;
+    });
+  }
+
+  logCompletedWorkout(): void {
+    this.stopTimer();
+    this.elapsedSeconds = 0;
+    this.workoutRunStatus = 'LOG_WORKOUT';
+  }
+
+  finishWorkout(alreadyCompleted = false): void {
+    if (!this.selectedWorkout) return;
+    this.stopTimer();
+    this.workoutRunStatus = alreadyCompleted ? 'ALREADY_COMPLETED' : 'COMPLETED';
+    this.selectedWorkout.groupedExercises
+      .filter((exercise) => this.isSingleCardioWarmUp(exercise))
+      .forEach((exercise) => exercise.completed = true);
+    this.selectedWorkout.workoutElapsedSeconds = this.elapsedSeconds;
+    this.selectedWorkout.clientCompletionMode = alreadyCompleted ? 'ALREADY_COMPLETED' : 'TRACKED';
+    this.updateWorkoutStatus(this.selectedWorkout, 'COMPLETED', true);
+  }
+
+  markExercise(exercise: GroupedExercise, skipped: boolean): void {
+    exercise.skipped = skipped;
+    exercise.completed = !skipped;
+  }
+
+  openExercise(exercise: GroupedExercise): void { this.selectedExercise = exercise; this.showExerciseVideo = false; this.exerciseEmbedUrl = null; }
+  closeExercise(): void { this.selectedExercise = null; this.showExerciseVideo = false; this.exerciseEmbedUrl = null; }
+  openNote(exercise: GroupedExercise): void { this.noteExercise = this.noteExercise === exercise ? null : exercise; }
+  closeNote(): void { this.noteExercise = null; }
+
+  playExerciseVideo(): void {
+    this.exerciseEmbedUrl = this.getExerciseEmbedUrl(this.selectedExercise?.videoLink);
+    this.showExerciseVideo = true;
+  }
+
+  isYouTubeExerciseVideo(url?: string): boolean {
+    return !!url && /(?:youtube\.com|youtu\.be)/i.test(url);
+  }
+
+  getExercisePreviewImage(exercise?: GroupedExercise | null): string {
+    const videoId = this.getYouTubeVideoId(exercise?.videoLink);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : (exercise?.imageUrl || '');
+  }
+
+  private getYouTubeVideoId(url?: string): string {
+    if (!url) return '';
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.includes('youtu.be')) return parsed.pathname.split('/').filter(Boolean)[0] || '';
+      if (parsed.pathname.includes('/shorts/')) return parsed.pathname.split('/shorts/')[1]?.split('/')[0] || '';
+      if (parsed.pathname.includes('/embed/')) return parsed.pathname.split('/embed/')[1]?.split('/')[0] || '';
+      return parsed.searchParams.get('v') || '';
+    } catch {
+      return '';
+    }
+  }
+
+  getExerciseEmbedUrl(url?: string): SafeResourceUrl | null {
+    if (!url) return null;
+    const videoId = this.getYouTubeVideoId(url);
+    return videoId
+      ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`)
+      : null;
+  }
+
+  private startTimer(): void {
+    this.stopTimer();
+    this.timerId = setInterval(() => this.elapsedSeconds++, 1000);
+  }
+
+  private stopTimer(): void {
+    if (this.timerId) clearInterval(this.timerId);
+    this.timerId = null;
   }
 
   get showExerciseWeight(): boolean {
@@ -379,6 +534,11 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         const workoutDate = new Date(planStart);
         workoutDate.setDate(planStart.getDate() + (day.dayNumber - 1));
         const dateStr = workoutDate.toISOString().split('T')[0];
+        const groupedExercises = this.groupExercisesBySuperset(day.workoutSessions || []);
+        this.applyClientExerciseLogs(groupedExercises, day.clientExerciseLogs || []);
+        if (day.status === 'COMPLETED' && !(day.clientExerciseLogs || []).length) {
+          groupedExercises.forEach((exercise) => exercise.completed = true);
+        }
         workouts.push({
           id: day.id,
           planId: plan.id,
@@ -388,7 +548,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           dayNumber: day.dayNumber,
           status: day.status ?? 'PENDING',
           rawSessions: day.workoutSessions || [],
-          groupedExercises: this.groupExercisesBySuperset(day.workoutSessions || []),
+          groupedExercises,
+          workoutElapsedSeconds: Number(day.workoutElapsedSeconds || 0),
+          clientCompletionMode: day.clientCompletionMode,
         });
       });
     });
@@ -801,10 +963,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     let globalIndex = 1;
     Object.values(groups).forEach((groupExercises: RawExercise[]) => {
       groupExercises.forEach((ex, subIndex) => {
+        const exerciseRef = ex.exerciseRef || {};
         const isSuperset = groupExercises.length > 1;
         const displayNumber = isSuperset ? `${globalIndex}.${subIndex + 1}` : `${globalIndex}`;
         const totalDuration = ex.sets?.reduce((sum, s) => sum + (s.duration || 0), 0) ?? ex.duration;
         groupedExercises.push({
+          sourceExerciseId: ex.id,
           groupIndex: globalIndex,
           subIndex: isSuperset ? subIndex + 1 : undefined,
           displayNumber,
@@ -826,6 +990,15 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           }) || [],
           duration: totalDuration,
           isWarmUp: this.isWarmUpExercise(ex),
+          description: ex.description || exerciseRef.description,
+          instructions: Array.isArray(ex.instructions || exerciseRef.instructions)
+            ? (ex.instructions || exerciseRef.instructions)
+            : (ex.instructions || exerciseRef.instructions || '').split(/\r?\n/).filter(Boolean),
+          videoLink: ex.videoLink || exerciseRef.videoLink || exerciseRef.videoUrl,
+          imageUrl: ex.imageUrl || exerciseRef.imageUrl || exerciseRef.image || exerciseRef.thumbnailUrl || exerciseRef.photoUrl,
+          equipment: ex.equipment || exerciseRef.equipment,
+          primaryMuscle: ex.primaryMuscle || ex.muscle || ex.category || exerciseRef.muscle,
+          coachNote: ex.coachNote || exerciseRef.coachNote || ex.description,
         });
       });
       globalIndex++;
@@ -866,7 +1039,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   isSingleCardioWarmUp(exercise: GroupedExercise): boolean {
-    return exercise.isWarmUp && exercise.type === 'CARDIO' && exercise.sets.length <= 1;
+    return exercise.isWarmUp && exercise.type === 'CARDIO' && exercise.sets.length === 1;
   }
 
   cardioMinutes(exercise: GroupedExercise): number {
@@ -874,7 +1047,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   hasExerciseWeight(exercise: GroupedExercise): boolean {
-    return exercise.sets.some((set) => set.weight !== null && set.weight !== undefined);
+    return true;
   }
 
   isSelectedWorkoutToday(): boolean {
@@ -996,10 +1169,21 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   onSelectWorkout(workout: Workout): void {
-    this.selectedWorkout = { ...workout };
+    this.stopTimer();
+    this.elapsedSeconds = Number(workout.workoutElapsedSeconds || 0);
+    this.workoutRunStatus = workout.status === 'COMPLETED'
+      ? (workout.clientCompletionMode === 'ALREADY_COMPLETED' ? 'ALREADY_COMPLETED' : 'COMPLETED')
+      : 'NOT_STARTED';
+    this.selectedWorkout = {
+      ...workout,
+      groupedExercises: workout.groupedExercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((set) => ({ ...set })),
+      })),
+    };
   }
 
-  backToList() { this.selectedWorkout = null; }
+  backToList() { this.stopTimer(); this.selectedWorkout = null; }
 
   showConfirmModal = false;
   pendingStatus: WorkoutStatus | null = null;
@@ -1011,12 +1195,51 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.closeConfirmModal();
   }
 
-  updateWorkoutStatus(workout: Workout, status: WorkoutStatus): void {
+  private applyClientExerciseLogs(exercises: GroupedExercise[], logs: any[]): void {
+    exercises.forEach((exercise) => {
+      const log = logs.find((item) =>
+        (exercise.sourceExerciseId && item.exerciseId === exercise.sourceExerciseId) ||
+        item.displayNumber === exercise.displayNumber
+      );
+      if (!log) return;
+      exercise.completed = !!log.completed;
+      exercise.skipped = !!log.skipped;
+      exercise.note = log.note || '';
+      exercise.sets.forEach((set) => {
+        const savedSet = (log.sets || []).find((item: any) => Number(item.setNumber) === set.setNumber);
+        if (!savedSet) return;
+        if (savedSet.reps !== undefined && savedSet.reps !== null) set.reps = savedSet.reps;
+        if (savedSet.weight !== undefined) set.weight = savedSet.weight;
+        if (savedSet.duration !== undefined && savedSet.duration !== null) set.duration = savedSet.duration;
+      });
+    });
+  }
+
+  updateWorkoutStatus(workout: Workout, status: WorkoutStatus, saveClientLog = false): void {
     workout.status = status;
-    this.workoutDayService.updateWorkoutDay({ id: workout.id, dayNumber: workout.dayNumber, status }, workout.planId).subscribe({
+    const payload: any = { id: workout.id, dayNumber: workout.dayNumber, status };
+    if (saveClientLog) {
+      payload.workoutElapsedSeconds = workout.workoutElapsedSeconds || 0;
+      payload.clientCompletionMode = workout.clientCompletionMode || 'TRACKED';
+      payload.clientExerciseLogs = workout.groupedExercises.map((exercise) => ({
+        exerciseId: exercise.sourceExerciseId,
+        displayNumber: exercise.displayNumber,
+        completed: !!exercise.completed,
+        skipped: !!exercise.skipped,
+        note: exercise.note || '',
+        sets: exercise.sets.map((set) => ({
+          setNumber: set.setNumber,
+          reps: set.reps,
+          weight: set.weight,
+          duration: set.duration,
+        })),
+      }));
+    }
+    this.workoutDayService.updateWorkoutDay(payload, workout.planId).subscribe({
       next: () => {
         this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        this.getWorkoutDay();
+        const listedWorkout = this.workouts.find((item) => item.id === workout.id && item.planId === workout.planId);
+        if (listedWorkout) Object.assign(listedWorkout, workout);
       },
       error: (err) => {
         console.error('Update failed:', err);

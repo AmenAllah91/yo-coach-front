@@ -258,34 +258,76 @@
 </div>
 
 <!-- ===================== DETAIL VIEW ===================== -->
-<div class="client-page" *ngIf="selectedWorkout">
-  <div class="workout-sheet">
-    <header class="workout-sheet__topbar">
-      <button class="workout-sheet__back" (click)="backToList()">←</button>
-      <h1>{{ selectedWorkout.title }}</h1>
-      <div class="workout-sheet__actions"><button (click)="updateWorkoutStatus(selectedWorkout!, 'COMPLETED')">✓</button><button (click)="updateWorkoutStatus(selectedWorkout!, 'MISSED')">×</button></div>
-    </header>
-    <section class="workout-sheet__info">
-      <div><span>{{ isSelectedWorkoutToday() ? 'Today' : (selectedWorkout.date | date:'EEEE, MMMM d') }}</span><strong>{{ selectedWorkout.program }}</strong></div>
-      <span class="workout-status" [class.completed]="selectedWorkout.status === 'COMPLETED'"><i></i>{{ selectedWorkout.status | titlecase }}</span>
-    </section>
-    <main class="workout-sheet__body">
-      <article class="workout-exercise" *ngFor="let exercise of selectedWorkout.groupedExercises">
-        <header class="workout-exercise__header">
-          <span class="workout-exercise__badge" [class.fire]="isSingleCardioWarmUp(exercise)">{{ isSingleCardioWarmUp(exercise) ? '🔥' : exercise.displayNumber }}</span>
-          <div><h2>{{ exercise.name }} <small *ngIf="exercise.isWarmUp">(Warm up)</small></h2><p>⌘ {{ isSingleCardioWarmUp(exercise) ? cardioMinutes(exercise) + ' min' : exercise.sets.length + ' sets' }}</p></div>
-          <span class="workout-exercise__play" *ngIf="!exercise.isWarmUp">▷</span>
-        </header>
-        <div class="workout-cardio-duration" *ngIf="isSingleCardioWarmUp(exercise)"><span>◷</span>{{ cardioMinutes(exercise) }} minutes</div>
-        <div class="workout-sets" *ngIf="!isSingleCardioWarmUp(exercise) && exercise.sets.length">
-          <div class="workout-sets__row workout-sets__head" [class.with-weight]="hasExerciseWeight(exercise)"><span>Set</span><span>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</span><span *ngIf="hasExerciseWeight(exercise)">Weight ({{ weightUnitLabel }})</span><span>Rest</span></div>
-          <div class="workout-sets__row" [class.with-weight]="hasExerciseWeight(exercise)" *ngFor="let set of exercise.sets">
-            <span class="set-number">{{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)">{{ getSetTypeText(set.type) }}</em></span>
-            <span>{{ exercise.type === 'CARDIO' ? (set.duration ?? '-') : set.reps }}</span>
-            <span *ngIf="hasExerciseWeight(exercise)">{{ formatExerciseWeight(set.weight) }}</span><span>{{ set.rest }}</span>
-          </div>
+<div class="client-page workout-day" *ngIf="selectedWorkout">
+  <header class="workout-day__topbar">
+    <div class="workout-day__title"><button aria-label="Back" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span></div>
+    <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ workoutRunStatus === 'LOG_WORKOUT' ? 'NO TIMER' : 'WORKOUT TIMER' }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
+    <div class="workout-day__actions">
+      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()">Log a completed workout</button>
+      <button class="primary-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="startWorkout()"><i-feather name="play"></i-feather> Start workout</button>
+      <ng-container *ngIf="workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED'">
+        <div class="workout-menu"><button class="icon-action" aria-label="Workout menu" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button><button class="cancel-action" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">Cancel workout</button></div>
+        <button class="secondary-action" *ngIf="workoutRunStatus === 'IN_PROGRESS'" (click)="pauseWorkout()"><i-feather name="pause"></i-feather> Pause</button>
+        <button class="secondary-action" *ngIf="workoutRunStatus === 'PAUSED'" (click)="resumeWorkout()"><i-feather name="play"></i-feather> Resume</button>
+        <button class="primary-action finish-workout-action" (click)="finishWorkout()"><i-feather name="check"></i-feather> Finish workout</button>
+      </ng-container>
+      <button class="primary-action save-completed-action" *ngIf="workoutRunStatus === 'LOG_WORKOUT'" (click)="finishWorkout(true)"><i-feather name="check"></i-feather> Save completed workout</button>
+    </div>
+  </header>
+
+  <section class="workout-day__summary"><span>{{ selectedWorkout.date | date:'EEEE, MMMM d' }}<small *ngIf="workoutRunStatus === 'LOG_WORKOUT'">Workout duration will not be recorded.</small></span><strong>{{ reviewedExerciseCount }} of {{ reviewableExerciseCount }} exercises reviewed</strong><div><i [style.width.%]="reviewableExerciseCount ? reviewedExerciseCount * 100 / reviewableExerciseCount : 0"></i></div></section>
+
+  <main class="workout-day__body">
+    <article class="exercise-card" *ngFor="let exercise of selectedWorkout.groupedExercises" [class.exercise-card--simple-warmup]="isSingleCardioWarmUp(exercise)" [class.is-complete]="exercise.completed" [class.is-skipped]="exercise.skipped">
+      <div class="simple-warmup" *ngIf="isSingleCardioWarmUp(exercise)">
+        <div class="simple-warmup__heading"><span class="simple-warmup__fire">🔥</span><span><strong>Warm up</strong><small><i-feather name="clock"></i-feather> {{ cardioMinutes(exercise) }} min</small></span></div>
+        <div class="simple-warmup__duration"><i-feather name="clock"></i-feather><span>{{ cardioMinutes(exercise) }} minutes</span></div>
+      </div>
+      <button class="exercise-card__header" *ngIf="!isSingleCardioWarmUp(exercise)" (click)="openExercise(exercise)">
+        <span class="exercise-index" [class.exercise-index--warmup]="!exercise.completed && isSingleCardioWarmUp(exercise)"><ng-container *ngIf="exercise.completed; else pendingExercise">✓</ng-container><ng-template #pendingExercise><span *ngIf="isSingleCardioWarmUp(exercise); else exerciseNumber" class="exercise-index__fire" aria-label="Warm up">🔥</span><ng-template #exerciseNumber>{{ exercise.displayNumber }}</ng-template></ng-template></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><i-feather name="chevron-right"></i-feather></span><small>{{ exercise.sets.length }} sets &nbsp;·&nbsp; {{ exercise.primaryMuscle || exercise.label }} <em class="exercise-state exercise-state--complete" *ngIf="exercise.completed">Completed</em><em class="exercise-state exercise-state--skipped" *ngIf="exercise.skipped">Skipped</em></small></span>
+      </button>
+      <div class="exercise-table" *ngIf="exercise.sets.length && !isSingleCardioWarmUp(exercise)">
+        <div class="exercise-row exercise-row--head"><span>SET</span><span>{{ exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS' }}</span><span>WEIGHT ({{ weightUnitLabel }})</span><span>REST</span></div>
+        <div class="exercise-row" *ngFor="let set of exercise.sets">
+          <span class="set-number">{{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span>
+          <input *ngIf="exercise.type !== 'CARDIO'" type="number" min="0" [(ngModel)]="set.reps" aria-label="Reps">
+          <input *ngIf="exercise.type === 'CARDIO'" type="number" min="0" [(ngModel)]="set.duration" aria-label="Minutes">
+          <input type="number" min="0" step="0.5" [(ngModel)]="set.weight" aria-label="Weight">
+          <span class="rest-value">{{ set.rest }}</span>
         </div>
-      </article>
-    </main>
-  </div>
+      </div>
+      <div class="exercise-note-editor" [class.exercise-note-editor--saved]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED'" *ngIf="!isSingleCardioWarmUp(exercise) && (noteExercise === exercise || ((workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED') && exercise.note))">
+        <label [for]="'exercise-note-' + exercise.displayNumber">Note</label>
+        <textarea
+          [id]="'exercise-note-' + exercise.displayNumber"
+          [(ngModel)]="exercise.note"
+          [readOnly]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED'"
+          rows="2"
+          placeholder="Write a note for your coach..."
+        ></textarea>
+      </div>
+      <footer class="exercise-card__footer" *ngIf="!isSingleCardioWarmUp(exercise) && (workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED' || workoutRunStatus === 'LOG_WORKOUT')">
+        <button class="note-action" (click)="openNote(exercise)"><i-feather name="file-text"></i-feather> {{ exercise.note ? 'Edit note' : 'Add note' }}</button>
+        <span></span><button class="secondary-action exercise-skip-action" (click)="markExercise(exercise, true)"><i-feather name="skip-forward"></i-feather> Skip</button><button class="primary-action exercise-complete-action" (click)="markExercise(exercise, false)"><i-feather name="check"></i-feather> {{ exercise.completed ? 'Completed' : 'Mark complete' }}</button>
+      </footer>
+    </article>
+  </main>
+</div>
+
+<div class="exercise-modal-backdrop" *ngIf="selectedExercise" (click)="closeExercise()">
+  <article class="exercise-modal" (click)="$event.stopPropagation()">
+    <button class="exercise-modal__close" aria-label="Close" (click)="closeExercise()">×</button>
+    <div class="exercise-modal__media" [style.background-image]="!showExerciseVideo && getExercisePreviewImage(selectedExercise) ? 'url(' + getExercisePreviewImage(selectedExercise) + ')' : null">
+      <video class="exercise-modal__video-preview" *ngIf="selectedExercise.videoLink && !isYouTubeExerciseVideo(selectedExercise.videoLink) && !showExerciseVideo" [src]="selectedExercise.videoLink" preload="metadata" muted playsinline></video>
+      <button class="watch-demo-action" *ngIf="selectedExercise.videoLink && !showExerciseVideo" (click)="playExerciseVideo()"><i-feather name="play-circle"></i-feather> Watch demo</button>
+      <iframe *ngIf="showExerciseVideo && isYouTubeExerciseVideo(selectedExercise.videoLink)" [src]="exerciseEmbedUrl" title="Exercise demonstration" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      <video *ngIf="showExerciseVideo && !isYouTubeExerciseVideo(selectedExercise.videoLink)" [src]="selectedExercise.videoLink" controls autoplay playsinline></video>
+    </div>
+    <div class="exercise-modal__content"><small>ISOLATION</small><h2>{{ selectedExercise.name }}</h2>
+      <div class="exercise-facts"><span><i-feather name="activity"></i-feather><span><small>Equipment</small><strong>{{ selectedExercise.equipment || '—' }}</strong></span></span><span><i-feather name="target"></i-feather><span><small>Primary muscle</small><strong>{{ selectedExercise.primaryMuscle || selectedExercise.label || '—' }}</strong></span></span><span><i-feather name="layers"></i-feather><span><small>Planned</small><strong>{{ selectedExercise.sets.length }} sets × {{ selectedExercise.sets[0]?.reps || '—' }} reps</strong></span></span><span><i-feather name="clock"></i-feather><span><small>Rest time</small><strong>{{ selectedExercise.sets[0]?.rest || '—' }}</strong></span></span></div>
+      <h3>Planned sets</h3><div class="modal-set" *ngFor="let set of selectedExercise.sets"><span>Set {{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span><strong>⇄ {{ set.reps }} reps &nbsp;&nbsp; ◷ {{ set.rest }}</strong></div>
+      <div class="coach-note" *ngIf="selectedExercise.coachNote"><strong>Coach note</strong><p>{{ selectedExercise.coachNote }}</p></div>
+      <h3 *ngIf="selectedExercise.instructions?.length">Instructions</h3><ol><li *ngFor="let instruction of selectedExercise.instructions">{{ instruction }}</li></ol>
+    </div>
+  </article>
 </div>
