@@ -9,6 +9,7 @@ import {
 } from 'app/service/coach-settings.service';
 import { LanguageService } from 'app/service/language.service';
 import { AuthService } from 'app/config/auth.service';
+import { UsersService } from 'app/service/users.service';
 
 @Component({
   selector: 'app-configuration-coachng',
@@ -18,7 +19,8 @@ import { AuthService } from 'app/config/auth.service';
   styleUrl: './configuration-coachng.component.scss',
 })
 export class ConfigurationCoachngComponent implements OnInit {
-  activeTab: 'profile' | 'plan' | 'notifications' | 'preferences' = 'profile';
+  activeTab: 'profile' | 'password' | 'plan' | 'notifications' | 'preferences' = 'profile';
+  isClient = false;
 
   profile = {
     username: localStorage.getItem('username') || '',
@@ -28,15 +30,20 @@ export class ConfigurationCoachngComponent implements OnInit {
     photoName: '',
   };
 
-  browserNotificationsEnabled =
-    typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  browserNotificationsEnabled = false;
 
   emailNotifications = [
-    { key: 'workout', label: 'Client completes a workout', enabled: false },
-    { key: 'measurement', label: 'Client adds a new measurement', enabled: false },
-    { key: 'message', label: 'Client sends you a message', enabled: false },
-    { key: 'programEnding', label: 'Programs finishing next week', enabled: false },
+    { key: 'workoutCompleted', label: 'Client completes a workout', enabled: true },
+    { key: 'measurementAdded', label: 'Client adds a new measurement', enabled: true },
+    { key: 'progressPictureAdded', label: 'Client adds a progress picture', enabled: true },
+    { key: 'messageReceived', label: 'Client sends you a message', enabled: true },
+    { key: 'checkInSubmitted', label: 'Client responds to a check-in', enabled: true },
+    { key: 'programEndingSoon', label: 'Programs finishing next week', enabled: true },
   ];
+  passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
+  passwordError = '';
+  passwordSuccess = '';
+  isChangingPassword = false;
 
   config: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
   savedConfig: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
@@ -65,13 +72,27 @@ export class ConfigurationCoachngComponent implements OnInit {
     private coachSettingsService: CoachSettingsService,
     private languageService: LanguageService,
     private authService: AuthService,
+    private usersService: UsersService,
   ) {}
 
   ngOnInit(): void {
     this.loading = true;
+    const currentUserId = sessionStorage.getItem('userId') || '';
+    if (currentUserId) {
+      this.usersService.getUserById(currentUserId).subscribe({
+        next: (user: any) => {
+          this.profile.username = user.login || user.username || '';
+          this.profile.firstName = user.firstName || '';
+          this.profile.lastName = user.lastName || '';
+          this.profile.email = user.email || '';
+        },
+        error: () => undefined,
+      });
+    }
 
     this.authService.extractRoles().then((roles) => {
       this.isAdmin = roles.includes('ROLE_ADMIN');
+      this.isClient = roles.includes('ROLE_CLIENT') && !roles.includes('ROLE_COACH');
     });
 
     this.loadDemoWorkspaceStatus();
@@ -80,6 +101,7 @@ export class ConfigurationCoachngComponent implements OnInit {
       next: (config) => {
         this.config = this.clone(config);
         this.savedConfig = this.clone(config);
+        this.syncNotificationToggles();
 
         const langCode = this.languageService.languageNameToCode(
           this.config.defaults.language,
@@ -93,6 +115,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
         this.config = this.clone(fallback);
         this.savedConfig = this.clone(fallback);
+        this.syncNotificationToggles();
 
         const langCode = this.languageService.languageNameToCode(
           this.config.defaults.language,
@@ -267,16 +290,68 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
 
-  setActiveTab(tab: 'profile' | 'plan' | 'notifications' | 'preferences'): void {
+  setActiveTab(tab: 'profile' | 'password' | 'plan' | 'notifications' | 'preferences'): void {
     this.activeTab = tab;
+    this.passwordError = '';
+    this.passwordSuccess = '';
+  }
+
+  toggleNotification(item: { key: string; enabled: boolean }): void {
+    item.enabled = !item.enabled;
+    (this.config.notifications as any)[item.key] = item.enabled;
+    this.onSave();
+  }
+
+  private syncNotificationToggles(): void {
+    this.browserNotificationsEnabled = this.config.notifications.enabled === true;
+    this.emailNotifications.forEach((item) => {
+      item.enabled = (this.config.notifications as any)[item.key] !== false;
+    });
+  }
+
+  changePassword(): void {
+    this.passwordError = '';
+    this.passwordSuccess = '';
+    if (!this.passwordFormModel.oldPassword || !this.passwordFormModel.newPassword || !this.passwordFormModel.confirmPassword) {
+      this.passwordError = 'All fields are required.';
+      return;
+    }
+    if (this.passwordFormModel.newPassword !== this.passwordFormModel.confirmPassword) {
+      this.passwordError = 'Password confirmation does not match.';
+      return;
+    }
+    this.isChangingPassword = true;
+    this.usersService.updateMyPassword(this.passwordFormModel).subscribe({
+      next: () => {
+        this.isChangingPassword = false;
+        this.passwordSuccess = 'Password updated successfully.';
+        this.passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
+      },
+      error: () => {
+        this.isChangingPassword = false;
+        this.passwordError = 'Unable to update password.';
+      },
+    });
   }
 
   saveProfile(): void {
-    localStorage.setItem('username', this.profile.username.trim());
-    localStorage.setItem('firstName', this.profile.firstName.trim());
-    localStorage.setItem('lastName', this.profile.lastName.trim());
-    localStorage.setItem('email', this.profile.email.trim());
-    this.showPopup('success');
+    const currentUserId = sessionStorage.getItem('userId') || '';
+    if (!currentUserId) return;
+    this.usersService.updateUser(currentUserId, {
+      login: this.profile.username.trim(),
+      firstName: this.profile.firstName.trim(),
+      lastName: this.profile.lastName.trim(),
+      email: this.profile.email.trim(),
+    } as any).subscribe({
+      next: () => {
+        localStorage.setItem('username', this.profile.username.trim());
+        localStorage.setItem('firstName', this.profile.firstName.trim());
+        localStorage.setItem('lastName', this.profile.lastName.trim());
+        localStorage.setItem('email', this.profile.email.trim());
+        this.showPopup('success');
+      },
+      error: () => this.showPopup('error'),
+    });
   }
 
   onProfilePhotoSelected(event: Event): void {
@@ -284,18 +359,17 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.profile.photoName = input.files?.[0]?.name || '';
   }
 
-  async enableBrowserNotifications(): Promise<void> {
-    if (typeof Notification === 'undefined') {
-      this.showPopup('error');
+  enableBrowserNotifications(): void {
+    if (this.browserNotificationsEnabled) {
+      this.browserNotificationsEnabled = false;
+      this.config.notifications.enabled = false;
+      this.onSave();
       return;
     }
 
-    const permission = await Notification.requestPermission();
-    this.browserNotificationsEnabled = permission === 'granted';
-
-    if (!this.browserNotificationsEnabled) {
-      this.showPopup('error');
-    }
+    this.browserNotificationsEnabled = true;
+    this.config.notifications.enabled = true;
+    this.onSave();
   }
 
   logout(): void {

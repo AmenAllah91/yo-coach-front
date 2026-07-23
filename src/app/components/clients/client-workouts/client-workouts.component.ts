@@ -983,7 +983,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
               type: setType,
               displayLabel: this.getSetDisplayLabel(setType, displaySetNumber),
               reps: s.reps != null ? `${s.reps}` : '-',
-              weight: s.weight ?? null,
+              weight: this.coachSettingsService.convertWeightFromKg(s.weight),
               rest: this.formatRest(s.restMin ?? 0, s.restSec ?? 0),
               duration: s.duration,
             };
@@ -1209,7 +1209,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         const savedSet = (log.sets || []).find((item: any) => Number(item.setNumber) === set.setNumber);
         if (!savedSet) return;
         if (savedSet.reps !== undefined && savedSet.reps !== null) set.reps = savedSet.reps;
-        if (savedSet.weight !== undefined) set.weight = savedSet.weight;
+        if (savedSet.weight !== undefined) set.weight = this.coachSettingsService.convertWeightFromKg(savedSet.weight);
         if (savedSet.duration !== undefined && savedSet.duration !== null) set.duration = savedSet.duration;
       });
     });
@@ -1230,7 +1230,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         sets: exercise.sets.map((set) => ({
           setNumber: set.setNumber,
           reps: set.reps,
-          weight: set.weight,
+          weight: this.coachSettingsService.convertWeightToKg(set.weight),
           duration: set.duration,
         })),
       }));

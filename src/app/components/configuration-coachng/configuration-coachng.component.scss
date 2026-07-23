@@ -928,3 +928,10 @@ $lg: 768px;
   .preferences-heading { flex-direction: column; }
   .preferences-heading .cs-header__actions { width: 100%; }
 }
+.password-card { padding:22px; }
+.password-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.form-message { margin:12px 0 0; font-size:13px; }
+.form-message--error { color:#d92d20; }
+.form-message--success { color:#079455; }
+@media (max-width:760px) { .password-grid { grid-template-columns:1fr; gap:0; } }
+.notification-row .toggle:disabled { opacity:.45; cursor:not-allowed; }

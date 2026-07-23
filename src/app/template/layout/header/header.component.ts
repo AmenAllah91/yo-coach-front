@@ -20,6 +20,7 @@ import {ChatPanelComponent} from "../../../components/chat/chat-panel/chat-panel
 import {WebsocketService} from "../../../service/websocket.service";
 import {ChatWebsocketService} from "../../../service/chat-websocket.service";
 import {NotificationService} from "../../../service/notification.service";
+import {CoachSettingsService} from "../../../service/coach-settings.service";
 import {ChatService} from "../../../service/chat.service";
 import {getTimeAgo} from "../../../models/notification";
 import {Subject, timer} from "rxjs";
@@ -70,6 +71,7 @@ export class HeaderComponent implements OnInit, OnDestroy, AfterViewInit {
     private notificationService: NotificationService,
     private router: Router,
     private chatService: ChatService,
+    private coachSettingsService: CoachSettingsService,
   ) {
 const lang = localStorage.getItem('lang') || 'fr';
 this.translate.use(lang);}
@@ -86,6 +88,9 @@ this.translate.use(lang);}
   unreadConversations = 0;
   notificationsMessages: Notification[] =[];
   notifications: Notification[] = [];
+  notificationsEnabled = true;
+  private notificationPreferences: any = null;
+  private isCoach = false;
   private readonly destroy$ = new Subject<void>();
 
 
@@ -103,6 +108,16 @@ this.translate.use(lang);}
 
 
   ngOnInit() {
+    this.authService.extractRoles().then((roles) => {
+      this.isCoach = roles.includes('ROLE_COACH');
+      if (!this.isCoach) return;
+      this.coachSettingsService.configChanges$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((config) => this.applyNotificationSetting(config.notifications));
+      this.coachSettingsService.loadConfig(true).subscribe({
+        error: () => this.applyNotificationSetting({ enabled: false }),
+      });
+    });
 
     const savedLang = localStorage.getItem('lang')?localStorage.getItem('lang'):'fr';
     const langItem = this.listLang.find(item => item.lang===savedLang)
@@ -122,11 +137,23 @@ this.translate.use(lang);}
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.getMessagesNotifs());
     this.webSocketService.notification$.pipe(takeUntil(this.destroy$)).subscribe((data) => {
-      if (!data) return;
+      if (!data || !this.notificationTypeEnabled(data.notificationType)) return;
 
       setTimeout(() => {
         const notif = new Notification(data);
         this.notifications = [notif, ...this.notifications.filter(item => item.id !== notif.id)];
+        if (typeof window.Notification !== 'undefined' && window.Notification.permission === 'granted') {
+          const browserNotification = new window.Notification(notif.title || 'Yo Coach', {
+            body: notif.message || '',
+          });
+          browserNotification.onclick = () => {
+            window.focus();
+            if (notif.redirectUrl) {
+              this.router.navigateByUrl(notif.redirectUrl);
+            }
+            browserNotification.close();
+          };
+        }
         if (notif.notificationType === 'PUSH_NOTIF_MESSAGE') {
           this.chatService.requestConversationRefresh(notif.entityId);
           if (this.chatPanelOpen) {
@@ -147,7 +174,7 @@ this.translate.use(lang);}
       if (!msg) return;
       const conv = this.conversations.find(c => c.id === msg.conversationId);
       if (conv) conv.lastMessage = msg.content;
-      this.getMessagesNotifs();
+      if (this.notificationsEnabled) this.getMessagesNotifs();
     });
 
     this.chatService.conversationOpened$
@@ -226,11 +253,17 @@ this.translate.use(lang);}
   }
 
   getMessagesNotifs() {
+    if (!this.notificationsEnabled) {
+      this.clearHeaderNotifications();
+      return;
+    }
     this.notificationService.getMessagesNotifs(this.userId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
       next: (notifications) => {
-      const converted = notifications.map(n => new Notification(n));
+      const converted = notifications
+        .map(n => new Notification(n))
+        .filter(n => this.notificationTypeEnabled(n.notificationType));
       this.notifications = converted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       this.notificationsMessages = converted.filter(
         notif => notif.notificationType === 'PUSH_NOTIF_MESSAGE'
@@ -250,10 +283,46 @@ this.translate.use(lang);}
   }
 
   private syncMessageNotifications(): void {
+    if (!this.notificationsEnabled) {
+      this.notificationsMessages = [];
+      this.unreadConversations = 0;
+      return;
+    }
     this.notificationsMessages = this.notifications
       .filter(item => item.notificationType === 'PUSH_NOTIF_MESSAGE');
     this.unreadConversations = this.notificationsMessages
       .filter(item => !item.seen).length;
+  }
+
+  private applyNotificationSetting(preferences: any): void {
+    this.notificationPreferences = preferences || { enabled: false };
+    this.notificationsEnabled = this.notificationPreferences.enabled === true;
+    if (!this.notificationsEnabled) {
+      this.clearHeaderNotifications();
+    } else {
+      this.getMessagesNotifs();
+    }
+    this.cdRef.detectChanges();
+  }
+
+  private clearHeaderNotifications(): void {
+    this.notifications = [];
+    this.notificationsMessages = [];
+    this.unreadConversations = 0;
+  }
+
+  private notificationTypeEnabled(type: string): boolean {
+    if (!this.notificationsEnabled) return false;
+    const keyByType: Record<string, string> = {
+      WORKOUT_COMPLETED: 'workoutCompleted',
+      BODY_MEASUREMENTS_UPDATED: 'measurementAdded',
+      PROGRESS_ADDED: 'progressPictureAdded',
+      PUSH_NOTIF_MESSAGE: 'messageReceived',
+      CHECK_IN_SUBMITTED: 'checkInSubmitted',
+      PROGRAM_ENDING_SOON: 'programEndingSoon',
+    };
+    const preferenceKey = keyByType[type];
+    return !preferenceKey || this.notificationPreferences?.[preferenceKey] !== false;
   }
 
   private markConversationNotificationsRead(conversationId: string): void {

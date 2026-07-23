@@ -6,8 +6,9 @@
 
   <nav class="settings-tabs" aria-label="Settings sections">
     <button type="button" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">Profile</button>
-    <button type="button" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">Plan &amp; Billing</button>
-    <button type="button" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">Notifications</button>
+    <button type="button" [class.active]="activeTab === 'password'" (click)="setActiveTab('password')">Password</button>
+    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">Plan &amp; Billing</button>
+    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">Notifications</button>
     <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">Preferences</button>
   </nav>
 
@@ -50,7 +51,21 @@
     <div class="account-section">
       <h2>Account</h2>
       <button class="btn btn--outline" type="button" (click)="logout()">↪ Log out</button>
-      <button class="danger-link" type="button" (click)="requestDeleteAccount()">Delete Account</button>
+<!--      <button class="danger-link" *ngIf="!isClient" type="button" (click)="requestDeleteAccount()">Delete Account</button>-->
+    </div>
+  </section>
+
+  <section class="settings-tab-panel" *ngIf="activeTab === 'password'">
+    <h2>Change Password</h2>
+    <div class="settings-card password-card">
+      <div class="form-row"><label for="currentPassword">Current Password</label><input id="currentPassword" type="password" autocomplete="current-password" [(ngModel)]="passwordFormModel.oldPassword" /></div>
+      <div class="password-grid">
+        <div class="form-row"><label for="newPassword">New Password</label><input id="newPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.newPassword" /></div>
+        <div class="form-row"><label for="confirmPassword">Confirm New Password</label><input id="confirmPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.confirmPassword" /></div>
+      </div>
+      <p class="form-message form-message--error" *ngIf="passwordError">{{ passwordError }}</p>
+      <p class="form-message form-message--success" *ngIf="passwordSuccess">{{ passwordSuccess }}</p>
+      <div class="card-footer-actions card-footer-actions--right"><button class="btn btn--accent" type="button" [disabled]="isChangingPassword" (click)="changePassword()">{{ isChangingPassword ? 'Updating...' : 'Update Password' }}</button></div>
     </div>
   </section>
 
@@ -77,20 +92,20 @@
   <section class="settings-tab-panel" *ngIf="activeTab === 'notifications'">
     <div class="browser-notification-card">
       <div class="notification-icon">♧</div>
-      <h2>Enable Browser Notifications</h2>
-      <p>Get notified when clients complete workouts, add measurements, or send you messages.</p>
-      <button class="btn btn--accent" type="button" [disabled]="browserNotificationsEnabled" (click)="enableBrowserNotifications()">
-        {{ browserNotificationsEnabled ? 'Notifications Enabled' : 'Enable Notifications' }}
+      <h2>Enable Notifications</h2>
+      <p>Receive notifications when your clients complete important activities.</p>
+      <button class="btn" [class.btn--accent]="!browserNotificationsEnabled" [class.btn--outline]="browserNotificationsEnabled" type="button" (click)="enableBrowserNotifications()">
+        {{ browserNotificationsEnabled ? 'Disable Notifications' : 'Enable Notifications' }}
       </button>
     </div>
 
     <div class="email-notifications-section">
-      <h2>Email Notifications</h2>
-      <p class="muted-text">Get an email when this happens:</p>
+      <h2>Notification Preferences</h2>
+      <p class="muted-text">Receive a notification when this happens:</p>
       <div class="settings-card notification-list">
         <div class="notification-row" *ngFor="let item of emailNotifications">
           <span>{{ item.label }}</span>
-          <button class="toggle" type="button" [class.toggle--on]="item.enabled" (click)="item.enabled = !item.enabled">
+          <button class="toggle" type="button" [disabled]="!browserNotificationsEnabled" [class.toggle--on]="item.enabled && browserNotificationsEnabled" (click)="toggleNotification(item)">
             <span class="toggle__thumb" [class.toggle__thumb--on]="item.enabled"></span>
           </button>
         </div>
@@ -98,7 +113,7 @@
     </div>
   </section>
 
-  <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences'">
+  <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences' && !isClient">
     <div class="preferences-heading">
       <div>
         <h2>Preferences</h2>
@@ -710,6 +725,66 @@
       {{ 'COACH_SETTINGS.INFO' | translate }}
     </p>
   </div>
+  </section>
+
+  <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences' && isClient">
+    <div class="preferences-heading">
+      <div><h2>Preferences</h2><p>Choose your language and display units.</p></div>
+      <div class="cs-header__actions"><button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">Cancel</button><button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ saving ? 'Saving...' : 'Save changes' }}</button></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-inner">
+        <div class="section-side">
+          <div class="section-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <h3 class="section-title">4. {{ 'COACH_SETTINGS.DEFAULTS_TITLE' | translate }}</h3>
+        </div>
+        <div class="section-body">
+          <div class="select-group">
+            <label class="select-label">{{ 'COACH_SETTINGS.DEFAULT_LANGUAGE' | translate }}</label>
+            <select id="clientLanguage" [(ngModel)]="config.defaults.language" class="select select--lg" (ngModelChange)="onLanguageChange()">
+              <option value="English">{{ 'COACH_SETTINGS.LANGUAGE_ENGLISH' | translate }}</option>
+              <option value="French">{{ 'COACH_SETTINGS.LANGUAGE_FRENCH' | translate }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-inner">
+        <div class="section-side">
+          <div class="section-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#44b4df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19V5"/><path d="M20 19V5"/><path d="M8 8h8"/><path d="M8 16h8"/><path d="M9 12h6"/>
+            </svg>
+          </div>
+          <h3 class="section-title">5. Units</h3>
+        </div>
+        <div class="section-body">
+          <div class="units-settings">
+            <div class="units-setting">
+              <label class="select-label">Weight</label>
+              <div class="unit-segment">
+                <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.weightUnit !== 'lbs'" (click)="config.defaults.weightUnit = 'kg'">Kg</button>
+                <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.weightUnit === 'lbs'" (click)="config.defaults.weightUnit = 'lbs'">Lbs</button>
+              </div>
+            </div>
+            <div class="units-setting">
+              <label class="select-label">Measurements</label>
+              <div class="unit-segment">
+                <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.measurementUnit !== 'in'" (click)="config.defaults.measurementUnit = 'cm'">Cm</button>
+                <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.measurementUnit === 'in'" (click)="config.defaults.measurementUnit = 'in'">In</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </div>
 

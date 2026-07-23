@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '@env/environment';
 
 export interface CoachSettingsConfig {
@@ -43,6 +43,15 @@ export interface CoachSettingsConfig {
     weightUnit?: 'kg' | 'lbs';
     measurementUnit?: 'cm' | 'in';
   };
+  notifications: {
+    enabled: boolean;
+    workoutCompleted: boolean;
+    measurementAdded: boolean;
+    progressPictureAdded: boolean;
+    messageReceived: boolean;
+    checkInSubmitted: boolean;
+    programEndingSoon: boolean;
+  };
 }
 
 export interface DemoWorkspaceStatus {
@@ -65,6 +74,8 @@ export class CoachSettingsService {
   private readonly cacheKey = 'coach-settings-config-cache';
 
   private cachedConfig: CoachSettingsConfig = this.loadCachedOrDefault();
+  private readonly configSubject = new BehaviorSubject<CoachSettingsConfig>(this.cachedConfig);
+  readonly configChanges$ = this.configSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -76,6 +87,7 @@ export class CoachSettingsService {
       tap((config) => {
         this.cachedConfig = this.mergeWithDefaults(config);
         localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
+        this.configSubject.next(this.cachedConfig);
       }),
     );
   }
@@ -96,6 +108,7 @@ export class CoachSettingsService {
       tap((saved) => {
         this.cachedConfig = this.mergeWithDefaults(saved);
         localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
+        this.configSubject.next(this.cachedConfig);
       }),
     );
   }
@@ -148,6 +161,15 @@ export class CoachSettingsService {
         language: 'French',
         weightUnit: 'kg',
         measurementUnit: 'cm',
+      },
+      notifications: {
+        enabled: false,
+        workoutCompleted: true,
+        measurementAdded: true,
+        progressPictureAdded: true,
+        messageReceived: true,
+        checkInSubmitted: true,
+        programEndingSoon: true,
       },
     };
   }
@@ -292,6 +314,10 @@ export class CoachSettingsService {
         ...(config.defaults || {}),
         weightUnit: (config.defaults as any)?.weightUnit === 'lbs' ? 'lbs' : 'kg',
         measurementUnit: (config.defaults as any)?.measurementUnit === 'in' ? 'in' : 'cm',
+      },
+      notifications: {
+        ...defaults.notifications,
+        ...(config.notifications || {}),
       },
     };
   }

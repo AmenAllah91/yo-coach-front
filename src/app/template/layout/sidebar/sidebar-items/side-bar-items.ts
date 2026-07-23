@@ -304,7 +304,7 @@ export const items: RouteInfo[] = [
     badge: '',
     badgeClass: '',
     submenu: [],
-    roles: ['ROLE_COACH', 'ROLE_ADMIN'],
+    roles: ['ROLE_COACH', 'ROLE_CLIENT', 'ROLE_ADMIN'],
   },
   {
     path: '',

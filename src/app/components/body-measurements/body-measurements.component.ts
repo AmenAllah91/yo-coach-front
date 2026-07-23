@@ -474,6 +474,17 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   private loadUnitPreferences(): void {
     if (!this.clientId) return;
 
+    if (this.clientId === sessionStorage.getItem('userId')) {
+      this.coachSettingsService.loadConfig().subscribe({
+        next: (config) => {
+          this.weightUnit = config.defaults?.weightUnit === 'lbs' ? 'lbs' : 'kg';
+          this.measurementUnit = config.defaults?.measurementUnit === 'in' ? 'in' : 'cm';
+        },
+        error: (err) => console.warn('Could not load client unit preferences:', err),
+      });
+      return;
+    }
+
     this.clientService.getClientById(this.clientId).subscribe({
       next: (client) => {
         const coachId = client.coachId || client.coach?.id;
