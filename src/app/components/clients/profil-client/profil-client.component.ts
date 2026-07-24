@@ -60,6 +60,33 @@ interface TodaysWorkout {
   exercises: Exercise[];
 }
 
+type WorkoutActivityStatus =
+  | 'COMPLETED'
+  | 'COMPLETED_AFTER_WORKOUT'
+  | 'IN_PROGRESS'
+  | 'MISSED'
+  | 'NOT_STARTED'
+  | 'UPCOMING';
+
+interface WorkoutActivity {
+  id: string;
+  planId: string;
+  programName: string;
+  week: number;
+  dayInWeek: number;
+  workoutName: string;
+  scheduledDate: Date;
+  status: WorkoutActivityStatus;
+  durationSeconds: number | null;
+  completedCount: number;
+  skippedCount: number;
+  totalExercises: number;
+  overallNote: string;
+  missedReason: string;
+  exercises: any[];
+  exerciseLogs: any[];
+}
+
 interface ActiveNutritionPlan {
   name: string;
   dailyCalories: number;
@@ -326,6 +353,11 @@ export class ProfilClientComponent {
   todaysWorkout: TodaysWorkout | null = null;
   activeNutritionPlan: ActiveNutritionPlan | null = null;
   assignedWorkoutPrograms: any[] = [];
+  workoutActivities: WorkoutActivity[] = [];
+  workoutActivityFilter: 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'MISSED' | 'UPCOMING' = 'ALL';
+  workoutActivityVisibleCount = 10;
+  showAllWorkoutActivity = false;
+  selectedWorkoutActivity: WorkoutActivity | null = null;
   assignedNutritionPrograms: any[] = [];
   private pendingCreatedWorkoutToAssign: any | null = null;
   private pendingCreatedNutritionToAssign: any | null = null;
@@ -338,6 +370,37 @@ export class ProfilClientComponent {
 
   get hasActiveNutritionPlan(): boolean {
     return !!this.activeNutritionPlan;
+  }
+
+  get latestWorkoutActivities(): WorkoutActivity[] {
+    const today = this.startOfDay(new Date()).getTime();
+    return this.workoutActivities
+      .filter(activity =>
+        activity.scheduledDate.getTime() <= today &&
+        activity.status !== 'UPCOMING'
+      )
+      .slice(0, 5);
+  }
+
+  get filteredWorkoutActivities(): WorkoutActivity[] {
+    return this.workoutActivities.filter(activity => {
+      if (this.workoutActivityFilter === 'ALL') return true;
+      if (this.workoutActivityFilter === 'COMPLETED') {
+        return activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT';
+      }
+      if (this.workoutActivityFilter === 'UPCOMING') {
+        return activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED';
+      }
+      return activity.status === this.workoutActivityFilter;
+    });
+  }
+
+  get visibleWorkoutActivities(): WorkoutActivity[] {
+    return this.filteredWorkoutActivities.slice(0, this.workoutActivityVisibleCount);
+  }
+
+  get canViewMoreWorkoutActivities(): boolean {
+    return this.workoutActivityVisibleCount < this.filteredWorkoutActivities.length;
   }
 
   activeSubTab: 'submissions' | 'assigned' | 'scheduled' = 'submissions';
@@ -484,6 +547,7 @@ export class ProfilClientComponent {
     this.dashboardProgramsError = null;
     this.todaysWorkout = null;
     this.activeNutritionPlan = null;
+    this.workoutActivities = [];
 
     this.workoutService
       .getWorkoutByCoachIdAndClient(this.userid, this.clientId, 0, 100)
@@ -492,11 +556,13 @@ export class ProfilClientComponent {
           const plans = res?.content || [];
           this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
           this.todaysWorkout = this.extractTodaysWorkout(plans);
+          this.workoutActivities = this.buildWorkoutActivities(plans);
         },
         error: (err) => {
           console.error('Failed to load today workout:', err);
           this.assignedWorkoutPrograms = [];
           this.todaysWorkout = null;
+          this.workoutActivities = [];
           this.dashboardProgramsError = 'Failed to load today workout.';
         },
       });
@@ -759,6 +825,196 @@ export class ProfilClientComponent {
           this.loadingAssignments = false;
         },
       });
+  }
+
+  private buildWorkoutActivities(plans: any[]): WorkoutActivity[] {
+    const today = this.startOfDay(new Date()).getTime();
+    const activities: WorkoutActivity[] = [];
+
+    for (const plan of plans || []) {
+      const days = plan?.workoutDays || [];
+      const planStart = this.safeDate(plan?.startDate);
+      days.forEach((day: any, index: number) => {
+        if (day?.restDay === true) return;
+        const scheduledDate = this.resolveProgramDayDate(day, planStart, index);
+        if (!scheduledDate) return;
+        const exercises = (day?.workoutSessions || [])
+          .flatMap((session: any) => session?.exercises || []);
+        if (!exercises.length) return;
+
+        const logs = day?.clientExerciseLogs || [];
+        let completedCount = logs.filter((log: any) => log?.completed === true).length;
+        const skippedCount = logs.filter((log: any) => log?.skipped === true).length;
+        const rawStatus = String(day?.status || '').toUpperCase();
+        const completionMode = String(day?.clientCompletionMode || '').toUpperCase();
+        let status: WorkoutActivityStatus;
+
+        if (rawStatus === 'COMPLETED' && completionMode === 'ALREADY_COMPLETED') {
+          status = 'COMPLETED_AFTER_WORKOUT';
+        } else if (rawStatus === 'COMPLETED') {
+          status = 'COMPLETED';
+        } else if (rawStatus === 'IN_PROGRESS' || rawStatus === 'PAUSED') {
+          status = 'IN_PROGRESS';
+        } else if (rawStatus === 'MISSED') {
+          status = 'MISSED';
+        } else if (scheduledDate.getTime() > today) {
+          status = 'UPCOMING';
+        } else {
+          status = 'NOT_STARTED';
+        }
+        if (status === 'COMPLETED_AFTER_WORKOUT') {
+          completedCount = Math.max(0, exercises.length - skippedCount);
+        } else if (status === 'COMPLETED' && !logs.length) {
+          completedCount = exercises.length;
+        }
+
+        const dayNumber = Number(day?.dayNumber || index + 1);
+        activities.push({
+          id: day?.id || `${plan?.id || 'plan'}-${dayNumber}`,
+          planId: plan?.id || '',
+          programName: plan?.name || 'Workout program',
+          week: Math.max(1, Math.ceil(dayNumber / 7)),
+          dayInWeek: ((dayNumber - 1) % 7) + 1,
+          workoutName: day?.title || day?.name || day?.dayOfWeek || `Day ${dayNumber}`,
+          scheduledDate,
+          status,
+          durationSeconds: status === 'COMPLETED_AFTER_WORKOUT'
+            ? null
+            : Number(day?.workoutElapsedSeconds || 0) || null,
+          completedCount,
+          skippedCount,
+          totalExercises: exercises.length,
+          overallNote: day?.overallWorkoutNote || '',
+          missedReason: day?.missedReason || day?.statusReason || '',
+          exercises,
+          exerciseLogs: logs,
+        });
+      });
+    }
+
+    return activities.sort(
+      (a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime()
+    );
+  }
+
+  openAllWorkoutActivity(): void {
+    this.workoutActivityFilter = 'ALL';
+    this.workoutActivityVisibleCount = 10;
+    this.showAllWorkoutActivity = true;
+  }
+
+  closeAllWorkoutActivity(): void {
+    this.showAllWorkoutActivity = false;
+    this.selectedWorkoutActivity = null;
+  }
+
+  setWorkoutActivityFilter(
+    filter: 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'MISSED' | 'UPCOMING'
+  ): void {
+    this.workoutActivityFilter = filter;
+    this.workoutActivityVisibleCount = 10;
+  }
+
+  viewMoreWorkoutActivities(): void {
+    this.workoutActivityVisibleCount += 10;
+  }
+
+  openWorkoutActivity(activity: WorkoutActivity): void {
+    this.selectedWorkoutActivity = activity;
+  }
+
+  closeWorkoutActivity(): void {
+    this.selectedWorkoutActivity = null;
+  }
+
+  workoutActivityAction(activity: WorkoutActivity): string {
+    if (activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT') {
+      return 'View results';
+    }
+    if (activity.status === 'IN_PROGRESS') return 'View progress';
+    if (activity.status === 'MISSED') return 'View details';
+    return 'View workout';
+  }
+
+  workoutActivityDetailTitle(activity: WorkoutActivity): string {
+    const dayLabel = `Day ${activity.dayInWeek}`;
+    return activity.workoutName.trim().toLowerCase() === dayLabel.toLowerCase()
+      ? dayLabel
+      : `${dayLabel} – ${activity.workoutName}`;
+  }
+
+  workoutActivityStatusLabel(activity: WorkoutActivity): string {
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Completed';
+    if (activity.status === 'NOT_STARTED') return 'Upcoming';
+    return activity.status.toLowerCase().replace('_', ' ').replace(/\b\w/g, value => value.toUpperCase());
+  }
+
+  workoutActivityMode(activity: WorkoutActivity): string {
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'After workout';
+    if (activity.status === 'COMPLETED') return 'Live workout';
+    if (activity.status === 'IN_PROGRESS') return 'Ongoing';
+    if (activity.status === 'MISSED') return 'Workout missed';
+    return 'Not started';
+  }
+
+  workoutActivityDuration(activity: WorkoutActivity): string {
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Not recorded';
+    if (activity.durationSeconds === null) return '—';
+    const minutes = Math.floor(activity.durationSeconds / 60);
+    const seconds = activity.durationSeconds % 60;
+    return minutes ? `${minutes} min${seconds ? ` ${seconds}s` : ''}` : `${seconds}s`;
+  }
+
+  workoutActivityLog(activity: WorkoutActivity, exercise: any, index: number): any {
+    return activity.exerciseLogs.find((log: any) =>
+      (!!exercise?.id && log?.exerciseId === exercise.id) ||
+      log?.displayNumber === this.getLetter(index) ||
+      String(log?.displayNumber || '') === String(index + 1)
+    ) || activity.exerciseLogs[index] || null;
+  }
+
+  performedSet(log: any, plannedSet: any, index: number): any {
+    return (log?.sets || []).find(
+      (set: any) => Number(set?.setNumber) === Number(plannedSet?.setNumber || index + 1)
+    ) || null;
+  }
+
+  exerciseActivityState(activity: WorkoutActivity, exercise: any, index: number): string {
+    const log = this.workoutActivityLog(activity, exercise, index);
+    if (log?.skipped) return 'Skipped';
+    if (log?.completed) return 'Completed';
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Completed';
+    if (activity.status === 'COMPLETED' && !activity.exerciseLogs.length) return 'Completed';
+    if (activity.status === 'IN_PROGRESS' && log) return 'In progress';
+    return 'Pending';
+  }
+
+  formatActivityDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  formatActivityRest(set: any): string {
+    const min = Number(set?.restMin || 0);
+    const sec = Number(set?.restSec || 0);
+    return `${min}:${String(sec).padStart(2, '0')}`;
+  }
+
+  formatActivityWeight(value: any): string {
+    const converted = this.coachSettingsService.convertWeightFromKg(value);
+    return converted === null ? '—' : this.coachSettingsService.formatNumber(converted);
+  }
+
+  workoutSetTypeLabel(type: any): string {
+    const value = String(type || 'REGULAR').toUpperCase();
+    if (value === 'WARM_UP') return 'Warm-up';
+    if (value === 'DROP_SET') return 'Drop set';
+    if (value === 'FAILURE') return 'To failure';
+    return '—';
   }
 
   private openNotificationAssignmentById(assignmentId: string): void {

@@ -279,12 +279,23 @@
 
   <main class="workout-day__body">
     <article class="exercise-card" *ngFor="let exercise of selectedWorkout.groupedExercises" [class.exercise-card--simple-warmup]="isSingleCardioWarmUp(exercise)" [class.is-complete]="exercise.completed" [class.is-skipped]="exercise.skipped">
+      <button
+        type="button"
+        class="exercise-video-action"
+        [class.exercise-video-action--disabled]="!exercise.videoLink"
+        [disabled]="!exercise.videoLink"
+        [attr.aria-label]="exercise.videoLink ? 'Play exercise video' : 'No exercise video available'"
+        [title]="exercise.videoLink ? 'Play exercise video' : 'No video available'"
+        (click)="openExerciseVideo(exercise)"
+      >
+        <i-feather name="video"></i-feather>
+      </button>
       <div class="simple-warmup" *ngIf="isSingleCardioWarmUp(exercise)">
         <div class="simple-warmup__heading"><span class="simple-warmup__fire">🔥</span><span><strong>Warm up</strong><small><i-feather name="clock"></i-feather> {{ cardioMinutes(exercise) }} min</small></span></div>
         <div class="simple-warmup__duration"><i-feather name="clock"></i-feather><span>{{ cardioMinutes(exercise) }} minutes</span></div>
       </div>
       <button class="exercise-card__header" *ngIf="!isSingleCardioWarmUp(exercise)" (click)="openExercise(exercise)">
-        <span class="exercise-index" [class.exercise-index--warmup]="!exercise.completed && isSingleCardioWarmUp(exercise)"><ng-container *ngIf="exercise.completed; else pendingExercise">✓</ng-container><ng-template #pendingExercise><span *ngIf="isSingleCardioWarmUp(exercise); else exerciseNumber" class="exercise-index__fire" aria-label="Warm up">🔥</span><ng-template #exerciseNumber>{{ exercise.displayNumber }}</ng-template></ng-template></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><i-feather name="chevron-right"></i-feather></span><small>{{ exercise.sets.length }} sets &nbsp;·&nbsp; {{ exercise.primaryMuscle || exercise.label }} <em class="exercise-state exercise-state--complete" *ngIf="exercise.completed">Completed</em><em class="exercise-state exercise-state--skipped" *ngIf="exercise.skipped">Skipped</em></small></span>
+        <span class="exercise-index" [class.exercise-index--warmup]="!exercise.completed && isSingleCardioWarmUp(exercise)"><ng-container *ngIf="exercise.completed; else pendingExercise">✓</ng-container><ng-template #pendingExercise><span *ngIf="isSingleCardioWarmUp(exercise); else exerciseNumber" class="exercise-index__fire" aria-label="Warm up">🔥</span><ng-template #exerciseNumber>{{ exercise.displayNumber }}</ng-template></ng-template></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><em class="exercise-superset-label" *ngIf="exercise.isSuperset">SUPERSET</em><i-feather name="chevron-right"></i-feather></span><small>{{ exercise.sets.length }} sets &nbsp;·&nbsp; {{ exercise.primaryMuscle || exercise.label }} <em class="exercise-state exercise-state--complete" *ngIf="exercise.completed">Completed</em><em class="exercise-state exercise-state--skipped" *ngIf="exercise.skipped">Skipped</em></small></span>
       </button>
       <div class="exercise-table" *ngIf="exercise.sets.length && !isSingleCardioWarmUp(exercise)">
         <div class="exercise-row exercise-row--head"><span>SET</span><span>{{ exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS' }}</span><span>WEIGHT ({{ weightUnitLabel }})</span><span>REST</span></div>
@@ -311,6 +322,16 @@
         <span></span><button class="secondary-action exercise-skip-action" (click)="markExercise(exercise, true)"><i-feather name="skip-forward"></i-feather> Skip</button><button class="primary-action exercise-complete-action" (click)="markExercise(exercise, false)"><i-feather name="check"></i-feather> {{ exercise.completed ? 'Completed' : 'Mark complete' }}</button>
       </footer>
     </article>
+    <section class="overall-workout-note">
+      <label for="overall-workout-note"><i-feather name="clipboard"></i-feather> Overall workout note</label>
+      <textarea
+        id="overall-workout-note"
+        [(ngModel)]="selectedWorkout.overallWorkoutNote"
+        [readOnly]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED'"
+        rows="3"
+        placeholder="Share how the overall workout felt with your coach..."
+      ></textarea>
+    </section>
   </main>
 </div>
 

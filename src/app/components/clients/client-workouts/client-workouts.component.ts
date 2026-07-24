@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING';
+type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS';
 type WorkoutRunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
 type WorkoutSetType = 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
 
@@ -60,6 +60,7 @@ interface GroupedExercise {
   groupIndex: number;
   subIndex?: number;
   displayNumber: string;
+  isSuperset: boolean;
   label: string;
   name: string;
   type: string;
@@ -98,6 +99,7 @@ interface Workout {
   groupedExercises: GroupedExercise[];
   workoutElapsedSeconds?: number;
   clientCompletionMode?: 'TRACKED' | 'ALREADY_COMPLETED';
+  overallWorkoutNote?: string;
 }
 
 interface WorkoutExerciseDisplay {
@@ -227,11 +229,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   startWorkout(): void {
     this.workoutRunStatus = 'IN_PROGRESS';
     this.startTimer();
+    this.saveWorkoutProgress();
   }
 
   pauseWorkout(): void {
     this.workoutRunStatus = 'PAUSED';
     this.stopTimer();
+    this.saveWorkoutProgress();
   }
 
   resumeWorkout(): void {
@@ -271,9 +275,22 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   markExercise(exercise: GroupedExercise, skipped: boolean): void {
     exercise.skipped = skipped;
     exercise.completed = !skipped;
+    this.saveWorkoutProgress();
+  }
+
+  private saveWorkoutProgress(): void {
+    if (!this.selectedWorkout) return;
+    this.selectedWorkout.workoutElapsedSeconds = this.elapsedSeconds;
+    this.selectedWorkout.clientCompletionMode = 'TRACKED';
+    this.updateWorkoutStatus(this.selectedWorkout, 'IN_PROGRESS', true);
   }
 
   openExercise(exercise: GroupedExercise): void { this.selectedExercise = exercise; this.showExerciseVideo = false; this.exerciseEmbedUrl = null; }
+  openExerciseVideo(exercise: GroupedExercise): void {
+    if (!exercise.videoLink) return;
+    this.openExercise(exercise);
+    this.playExerciseVideo();
+  }
   closeExercise(): void { this.selectedExercise = null; this.showExerciseVideo = false; this.exerciseEmbedUrl = null; }
   openNote(exercise: GroupedExercise): void { this.noteExercise = this.noteExercise === exercise ? null : exercise; }
   closeNote(): void { this.noteExercise = null; }
@@ -551,6 +568,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           groupedExercises,
           workoutElapsedSeconds: Number(day.workoutElapsedSeconds || 0),
           clientCompletionMode: day.clientCompletionMode,
+          overallWorkoutNote: day.overallWorkoutNote || '',
         });
       });
     });
@@ -960,18 +978,20 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     });
 
     const groupedExercises: GroupedExercise[] = [];
-    let globalIndex = 1;
+    let globalIndex = 0;
     Object.values(groups).forEach((groupExercises: RawExercise[]) => {
       groupExercises.forEach((ex, subIndex) => {
         const exerciseRef = ex.exerciseRef || {};
         const isSuperset = groupExercises.length > 1;
-        const displayNumber = isSuperset ? `${globalIndex}.${subIndex + 1}` : `${globalIndex}`;
+        const groupLetter = this.indexToExerciseLetter(globalIndex);
+        const displayNumber = isSuperset ? `${groupLetter}${subIndex + 1}` : groupLetter;
         const totalDuration = ex.sets?.reduce((sum, s) => sum + (s.duration || 0), 0) ?? ex.duration;
         groupedExercises.push({
           sourceExerciseId: ex.id,
           groupIndex: globalIndex,
           subIndex: isSuperset ? subIndex + 1 : undefined,
           displayNumber,
+          isSuperset,
           label: ex.type,
           name: ex.name,
           type: ex.type,
@@ -1221,6 +1241,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     if (saveClientLog) {
       payload.workoutElapsedSeconds = workout.workoutElapsedSeconds || 0;
       payload.clientCompletionMode = workout.clientCompletionMode || 'TRACKED';
+      payload.overallWorkoutNote = workout.overallWorkoutNote?.trim() || '';
       payload.clientExerciseLogs = workout.groupedExercises.map((exercise) => ({
         exerciseId: exercise.sourceExerciseId,
         displayNumber: exercise.displayNumber,
@@ -1232,6 +1253,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           reps: set.reps,
           weight: this.coachSettingsService.convertWeightToKg(set.weight),
           duration: set.duration,
+          rest: set.rest,
+          type: set.type,
         })),
       }));
     }
