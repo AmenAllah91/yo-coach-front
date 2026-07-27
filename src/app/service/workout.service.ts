@@ -211,10 +211,10 @@ export class WorkoutService {
 
     // Fallback only when we do not have an id.
     if (plan.fileName) {
-      return `${this.apiUrl}file/${encodeURIComponent(plan.fileName)}`;
+      return `${this.apiUrl}file/download?objectPath=${encodeURIComponent(plan.fileName)}`;
     }
 
-    // Relative backend URL saved in DB, ex: /api/workout-plan/file/xxx.pdf
+    // Relative stable backend URL saved in DB; backend redirects to a short-lived MinIO URL.
     // Keep it last because it can also contain an old filename.
     if (direct && direct.startsWith('/api/')) {
       return `${environment.baseApiUrl}${direct}`;

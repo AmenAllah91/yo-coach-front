@@ -364,8 +364,11 @@
             <div class="workout-activity__workout">
               <span class="workout-activity__dumbbell"><i class="fas fa-dumbbell"></i></span>
               <span>
-                <strong>{{ activity.workoutName }}</strong>
-                <small>{{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</small>
+                <strong>{{ activity.programName }}</strong>
+                <small>
+                  {{ activity.programDescription || activity.workoutName }}
+                  · Week {{ activity.week }} · Day {{ activity.dayInWeek }}
+                </small>
               </span>
             </div>
             <div class="workout-activity__status">
@@ -397,7 +400,10 @@
     <div class="activity-modal-backdrop" *ngIf="showAllWorkoutActivity" (click)="closeAllWorkoutActivity()">
       <section class="activity-modal activity-modal--all" (click)="$event.stopPropagation()">
         <header class="activity-modal__header">
-          <span><strong>All Workout Activity</strong><small>Complete client workout history</small></span>
+          <span class="activity-modal__heading">
+            <span class="activity-modal__heading-icon"><i class="fas fa-dumbbell"></i></span>
+            <span><strong>All Workout Activity</strong><small>Full history of {{ fullName }}'s sessions</small></span>
+          </span>
           <button type="button" aria-label="Close" (click)="closeAllWorkoutActivity()">×</button>
         </header>
         <nav class="activity-filters">
@@ -409,17 +415,41 @@
           </button>
         </nav>
         <div class="activity-modal__body">
+          <div class="activity-history-columns">
+            <span>Date</span>
+            <span>Workout</span>
+            <span>Status</span>
+            <span>Duration</span>
+            <span>Exercises</span>
+            <span>Action</span>
+          </div>
           <div class="activity-history-card" *ngFor="let activity of visibleWorkoutActivities">
-            <div>
-              <small>{{ formatActivityDate(activity.scheduledDate) }}</small>
-              <strong>{{ activity.workoutName }}</strong>
-              <span>{{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</span>
+            <div class="activity-history-card__date">
+              <small>{{ activity.scheduledDate | date:'EEE' }}</small>
+              <strong>{{ activity.scheduledDate | date:'dd' }}</strong>
+              <small>{{ activity.scheduledDate | date:'MMM' }}</small>
+            </div>
+            <div class="activity-history-card__workout">
+              <span class="activity-history-card__workout-icon"><i class="fas fa-dumbbell"></i></span>
+              <span class="activity-history-card__workout-copy">
+                <strong>{{ activity.programName }}</strong>
+                <span>
+                  {{ activity.programDescription || activity.workoutName }}
+                  · Week {{ activity.week }} · Day {{ activity.dayInWeek }}
+                </span>
+              </span>
             </div>
             <div class="activity-history-card__stats">
-              <span class="activity-status" [attr.data-status]="activity.status"><i></i>{{ workoutActivityStatusLabel(activity) }}</span>
-              <span><i class="far fa-clock"></i> {{ workoutActivityDuration(activity) }}</span>
-              <span>{{ activity.completedCount }}/{{ activity.totalExercises }} exercises</span>
-              <span>{{ activity.skippedCount }} skipped</span>
+              <span class="activity-history-card__status">
+                <span class="activity-status" [attr.data-status]="activity.status"><i></i>{{ workoutActivityStatusLabel(activity) }}</span>
+                <small>{{ workoutActivityMode(activity) }}</small>
+              </span>
+              <span class="activity-history-card__duration"><i class="far fa-clock"></i> {{ workoutActivityDuration(activity) }}</span>
+              <span class="activity-history-card__exercise">
+                <strong>{{ activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED' ? '–' : activity.completedCount }} / {{ activity.totalExercises }}</strong>
+                <i><b [style.width.%]="activity.totalExercises ? activity.completedCount * 100 / activity.totalExercises : 0"></b></i>
+                <small *ngIf="activity.skippedCount">{{ activity.skippedCount }} {{ activity.status === 'MISSED' ? 'missed' : 'skipped' }}</small>
+              </span>
             </div>
             <button type="button" (click)="openWorkoutActivity(activity)">{{ workoutActivityAction(activity) }}</button>
           </div>
@@ -449,19 +479,24 @@
           </span>
         </header>
         <div class="activity-modal__body">
-          <div class="activity-detail-summary">
+          <div class="activity-detail-summary" *ngIf="activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">
             <div><i class="far fa-clock"></i><span><strong>{{ workoutActivityDuration(activity) }}</strong><small>Duration</small></span></div>
             <div><i class="far fa-check-circle"></i><span><strong>{{ activity.completedCount }} of {{ activity.totalExercises }}</strong><small>Exercises completed</small></span></div>
-            <div><i class="fas fa-minus-circle"></i><span><strong>{{ activity.skippedCount }}</strong><small>Skipped</small></span></div>
-            <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'After workout' : activity.status === 'COMPLETED' ? 'Live workout' : workoutActivityMode(activity) }}</strong><small>Completion mode</small></span></div>
+            <div><i class="fas fa-minus-circle"></i><span><strong>{{ activity.status === 'MISSED' ? activity.totalExercises : activity.skippedCount }}</strong><small>{{ activity.status === 'MISSED' ? 'Missed' : 'Skipped' }}</small></span></div>
+            <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'MISSED' ? 'No activity' : activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'After workout' : activity.status === 'COMPLETED' ? 'Live workout' : workoutActivityMode(activity) }}</strong><small>Completion mode</small></span></div>
           </div>
 
           <div class="activity-note" *ngIf="activity.status !== 'MISSED' && activity.overallNote">
             <i class="far fa-file-alt"></i>
             <span><strong>Client note</strong><p>{{ activity.overallNote }}</p></span>
           </div>
-          <div class="activity-note activity-note--missed" *ngIf="activity.status === 'MISSED' && activity.missedReason">
-            <strong>Reason</strong><p>{{ activity.missedReason }}</p>
+          <div class="activity-note activity-note--missed" *ngIf="activity.status === 'MISSED'">
+            <i class="fas fa-info-circle"></i>
+            <span>
+              <strong>Workout missed</strong>
+              <p>No performance data was recorded.</p>
+              <p *ngIf="activity.missedReason">Reason: {{ activity.missedReason }}</p>
+            </span>
           </div>
 
           <article class="activity-exercise" *ngFor="let exercise of activity.exercises; let exerciseIndex = index">
@@ -480,12 +515,19 @@
               </p>
             </ng-container>
             <div class="activity-set-table" *ngIf="exerciseActivityState(activity, exercise, exerciseIndex) !== 'Skipped'">
-              <div class="activity-set-row activity-set-row--head">
+              <div
+                class="activity-set-row activity-set-row--head"
+                [class.activity-set-row--planned-only]="activity.status === 'MISSED' || activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED'"
+              >
                 <span>Set</span><span>Type</span><span>Planned</span>
                 <span *ngIf="activity.status !== 'MISSED' && activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">Actual</span>
                 <span>Rest</span>
               </div>
-              <div class="activity-set-row" *ngFor="let set of exercise.sets || []; let setIndex = index">
+              <div
+                class="activity-set-row"
+                *ngFor="let set of exercise.sets || []; let setIndex = index"
+                [class.activity-set-row--planned-only]="activity.status === 'MISSED' || activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED'"
+              >
                 <span>{{ set.setNumber || setIndex + 1 }}</span>
                 <span><em [attr.data-type]="set.type || 'REGULAR'">{{ workoutSetTypeLabel(set.type) }}</em></span>
                 <span>{{ set.reps || '—' }} reps · {{ formatActivityWeight(set.weight) }} {{ coachSettingsService.getWeightUnit() }}</span>

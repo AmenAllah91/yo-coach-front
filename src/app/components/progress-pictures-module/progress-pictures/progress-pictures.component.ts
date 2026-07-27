@@ -158,10 +158,13 @@ export class ProgressPicturesComponent implements OnInit {
     this.documentService
       .uploadFileInPath(uniqueFile, folderPath)
       .subscribe({
-        next: (uploadedPath: string) => {
+        next: () => {
+          // The upload endpoint may return a display URL (or no usable value).
+          // Persist the stable MinIO object path and generate fresh signed URLs on read.
+          const objectPath = `${folderPath}/${uniqueFile.name}`;
           const body: SaveProgressPictureRequest = {
             clientId: this.clientId,
-            imageUrl: uploadedPath,
+            imageUrl: objectPath,
             weight: this.coachSettingsService.convertWeightToKg(payload.weight) ?? payload.weight,
             date: payload.date
           };

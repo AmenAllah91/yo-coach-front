@@ -308,7 +308,7 @@ export class NutritionService {
     }
 
     if (plan.fileName) {
-      return `${this.mealPlanUrl}file/${encodeURIComponent(plan.fileName)}`;
+      return `${this.mealPlanUrl}file/download?objectPath=${encodeURIComponent(plan.fileName)}`;
     }
 
     if (direct && direct.startsWith('/api/')) {

@@ -8,6 +8,7 @@ import {
   ContactFormService,
 } from 'app/service/contact-form.service';
 import { WebsiteLeadsComponent } from '../website-leads/website-leads.component';
+import { DocumentService } from 'app/service/document.service';
 
 @Component({
   selector: 'app-contact-form-manager',
@@ -28,7 +29,10 @@ export class ContactFormManagerComponent implements OnInit {
   error = '';
   uploadError = '';
 
-  constructor(private contactFormService: ContactFormService) {}
+  constructor(
+    private contactFormService: ContactFormService,
+    private documentService: DocumentService
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -90,7 +94,18 @@ export class ContactFormManagerComponent implements OnInit {
     }
 
     const reader = new FileReader();
-    reader.onload = () => (this.draft.coverImage = String(reader.result || ''));
+    reader.onload = () => {
+      const extension = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';
+      const storedFile = new File([file], `contact-cover-${Date.now()}${extension}`, {
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      const ownerId = sessionStorage.getItem('userId') || 'coach';
+      this.documentService.uploadFileInPath(storedFile, `contact-form-images/${ownerId}`).subscribe({
+        next: url => this.draft.coverImage = url,
+        error: () => this.uploadError = 'Unable to upload the image.'
+      });
+    };
     reader.readAsDataURL(file);
     input.value = '';
   }

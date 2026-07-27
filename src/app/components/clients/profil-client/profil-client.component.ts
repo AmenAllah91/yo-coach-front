@@ -72,6 +72,7 @@ interface WorkoutActivity {
   id: string;
   planId: string;
   programName: string;
+  programDescription: string;
   week: number;
   dayInWeek: number;
   workoutName: string;
@@ -377,14 +378,17 @@ export class ProfilClientComponent {
     return this.workoutActivities
       .filter(activity =>
         activity.scheduledDate.getTime() <= today &&
-        activity.status !== 'UPCOMING'
+        activity.status !== 'UPCOMING' &&
+        activity.status !== 'NOT_STARTED'
       )
       .slice(0, 5);
   }
 
   get filteredWorkoutActivities(): WorkoutActivity[] {
     return this.workoutActivities.filter(activity => {
-      if (this.workoutActivityFilter === 'ALL') return true;
+      if (this.workoutActivityFilter === 'ALL') {
+        return activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED';
+      }
       if (this.workoutActivityFilter === 'COMPLETED') {
         return activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT';
       }
@@ -838,12 +842,14 @@ export class ProfilClientComponent {
         if (day?.restDay === true) return;
         const scheduledDate = this.resolveProgramDayDate(day, planStart, index);
         if (!scheduledDate) return;
-        const exercises = (day?.workoutSessions || [])
-          .flatMap((session: any) => session?.exercises || []);
+        const sessions = day?.workoutSessions || [];
+        const exercises = sessions.flatMap((session: any) => session?.exercises || []);
         if (!exercises.length) return;
 
         const logs = day?.clientExerciseLogs || [];
-        let completedCount = logs.filter((log: any) => log?.completed === true).length;
+        let completedCount = logs.filter(
+          (log: any) => log?.completed === true && log?.skipped !== true
+        ).length;
         const skippedCount = logs.filter((log: any) => log?.skipped === true).length;
         const rawStatus = String(day?.status || '').toUpperCase();
         const completionMode = String(day?.clientCompletionMode || '').toUpperCase();
@@ -873,9 +879,15 @@ export class ProfilClientComponent {
           id: day?.id || `${plan?.id || 'plan'}-${dayNumber}`,
           planId: plan?.id || '',
           programName: plan?.name || 'Workout program',
+          programDescription: plan?.details || plan?.description || '',
           week: Math.max(1, Math.ceil(dayNumber / 7)),
           dayInWeek: ((dayNumber - 1) % 7) + 1,
-          workoutName: day?.title || day?.name || day?.dayOfWeek || `Day ${dayNumber}`,
+          workoutName:
+            sessions.find((session: any) => String(session?.name || '').trim())?.name ||
+            day?.name ||
+            day?.title ||
+            day?.dayOfWeek ||
+            `Day ${dayNumber}`,
           scheduledDate,
           status,
           durationSeconds: status === 'COMPLETED_AFTER_WORKOUT'
@@ -958,7 +970,7 @@ export class ProfilClientComponent {
   }
 
   workoutActivityDuration(activity: WorkoutActivity): string {
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Not recorded';
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT' || activity.status === 'MISSED') return 'Not recorded';
     if (activity.durationSeconds === null) return '—';
     const minutes = Math.floor(activity.durationSeconds / 60);
     const seconds = activity.durationSeconds % 60;

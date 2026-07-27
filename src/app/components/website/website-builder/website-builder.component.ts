@@ -7,6 +7,7 @@ import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
 import {WebsiteService} from "../../../service/website.service";
 import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
 import {UsersService} from "../../../service/users.service";
+import {DocumentService} from "../../../service/document.service";
 
 type DescriptionBlockType = 'text' | 'heading' | 'image';
 
@@ -112,7 +113,8 @@ export class WebsiteBuilderComponent implements OnInit{
     private sanitizer: DomSanitizer,
     private websiteService: WebsiteService,
     private builderState: WebsiteBuilderStateService,
-    private userService: UsersService
+    private userService: UsersService,
+    private documentService: DocumentService
   ) {}
 
 
@@ -188,31 +190,10 @@ export class WebsiteBuilderComponent implements OnInit{
         this.siteSlug = `${user.firstName}-${user.lastName}`;
 
         const avatarUrl = user.avatarUrl?.trim();
-        if (avatarUrl && avatarUrl.toLowerCase() !== 'not found') {
-          try {
-            this.profile.image = await this.convertImageToBase64(avatarUrl);
-          } catch {
-            this.profile.image = '';
-          }
-        } else {
-          this.profile.image = '';
-        }
+        this.profile.image = avatarUrl && avatarUrl.toLowerCase() !== 'not found' ? avatarUrl : '';
       },
       error: () => {}
     });
-  }
-  private convertImageToBase64(url: string): Promise<string> {
-    return fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error(`Image request failed with ${res.status}`);
-        return res.blob();
-      })
-      .then(blob => new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      }));
   }
 
   descriptionBlocks: DescriptionBlock[] = [
@@ -610,7 +591,7 @@ export class WebsiteBuilderComponent implements OnInit{
     const reader = new FileReader();
 
     reader.onload = () => {
-      this.profile.image = reader.result as string;
+      this.uploadWebsiteImage(file, url => this.profile.image = url);
     };
 
     reader.onerror = () => {
@@ -741,7 +722,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
     const reader = new FileReader();
     reader.onload = () => {
-      this.updateBlock(id, { content: reader.result as string });
+      this.uploadWebsiteImage(file, url => this.updateBlock(id, { content: url }));
     };
     reader.readAsDataURL(file);
   }
@@ -753,7 +734,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
     const reader = new FileReader();
     reader.onload = () => {
-      this.services[index].image = reader.result as string;
+      this.uploadWebsiteImage(file, url => this.services[index].image = url);
     };
     reader.readAsDataURL(file);
   }
@@ -765,7 +746,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
     const reader = new FileReader();
     reader.onload = () => {
-      this.certificates[index].image = reader.result as string;
+      this.uploadWebsiteImage(file, url => this.certificates[index].image = url);
     };
     reader.readAsDataURL(file);
   }
@@ -778,9 +759,9 @@ export class WebsiteBuilderComponent implements OnInit{
     const reader = new FileReader();
     reader.onload = () => {
       if (type === 'before') {
-        this.results[index].beforeImage = reader.result as string;
+        this.uploadWebsiteImage(file, url => this.results[index].beforeImage = url);
       } else {
-        this.results[index].afterImage = reader.result as string;
+        this.uploadWebsiteImage(file, url => this.results[index].afterImage = url);
       }
     };
     reader.readAsDataURL(file);
@@ -788,5 +769,19 @@ export class WebsiteBuilderComponent implements OnInit{
 
   trackByBlockId(index: number, block: DescriptionBlock): string {
     return block.id;
+  }
+
+  private uploadWebsiteImage(file: File, onUploaded: (url: string) => void): void {
+    const extension = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';
+    const storedFile = new File(
+      [file],
+      `website-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${extension}`,
+      { type: file.type, lastModified: file.lastModified }
+    );
+    const ownerId = sessionStorage.getItem('userId') || 'coach';
+    this.documentService.uploadFileInPath(storedFile, `coach-websites/${ownerId}`).subscribe({
+      next: onUploaded,
+      error: err => console.error('Erreur upload image MinIO', err)
+    });
   }
 }
