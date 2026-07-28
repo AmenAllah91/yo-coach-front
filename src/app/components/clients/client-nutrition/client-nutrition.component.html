@@ -188,7 +188,7 @@
 </div>
 
 <!-- ===================== DETAIL VIEW ===================== -->
-<div class="client-page" *ngIf="selectedDay">
+<div class="client-page" *ngIf="false">
   <div class="client-page-inner">
     <div class="cn-detail-root cn-detail-container">
       <!-- HEADER -->
@@ -374,6 +374,109 @@
       </footer>
     </div>
   </div>
+</div>
+
+<!-- Client meal-plan dashboard -->
+<div class="meal-day-page" *ngIf="selectedDay as day">
+  <header class="meal-day-header">
+    <button class="meal-day-back" type="button" (click)="backToList()">←</button>
+    <div class="meal-day-heading">
+      <div><h1>{{ day.programName }}</h1><span [attr.data-status]="day.status">{{ nutritionDayStatusLabel(day) }}</span></div>
+      <p>▣ &nbsp;{{ day.displayDate }} &nbsp;•&nbsp; Nutrition day</p>
+    </div>
+    <button class="extract-nutrition-pdf" type="button" (click)="extractNutritionPdf()">▧&nbsp; Extract PDF</button>
+  </header>
+
+  <main class="meal-day-content">
+    <section class="meal-day-totals">
+      <h2>Daily totals</h2>
+      <div>
+        <article><strong>{{ day.totalCalories }}</strong><small>Calories</small></article>
+        <article><strong>{{ day.totalProtein }}g</strong><small>Protein</small></article>
+        <article><strong>{{ day.totalCarbs }}g</strong><small>Carbs</small></article>
+        <article><strong>{{ day.totalFat }}g</strong><small>Fat</small></article>
+      </div>
+    </section>
+
+    <article class="meal-plan-card" *ngFor="let meal of day.meals; let mealIndex = index">
+      <header>
+        <div class="meal-plan-name">
+          <b>{{ mealIndex + 1 }}</b><h2>Meal {{ mealIndex + 1 }} · {{ meal.name }}</h2>
+          <em *ngIf="meal.reportStatus" [attr.data-status]="meal.reportStatus">{{ mealStatusLabel(meal.reportStatus) }}</em>
+        </div>
+        <div class="meal-card-actions">
+          <label class="upload-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ uploadingMealId === meal.id ? 'Uploading…' : 'Upload photo' }}</label>
+          <button type="button" (click)="openMealReport(meal, mealIndex)">▣&nbsp; Report meal</button>
+        </div>
+      </header>
+      <div class="meal-plan-macros">
+        <div><strong>{{ meal.mealTargets?.calories || 0 }}</strong><small>Kcal</small></div>
+        <div><strong>{{ meal.mealTargets?.proteinG || 0 }}g</strong><small>Protein</small></div>
+        <div><strong>{{ meal.mealTargets?.carbsG || 0 }}g</strong><small>Carbs</small></div>
+        <div><strong>{{ meal.mealTargets?.fatG || 0 }}g</strong><small>Fat</small></div>
+      </div>
+      <div class="meal-food-row" *ngFor="let food of meal.foods">
+        <div class="meal-food-image"><img *ngIf="food.imageUrl; else noFoodImage" [src]="food.imageUrl" [alt]="food.name"><ng-template #noFoodImage><span>▧</span></ng-template></div>
+        <div class="meal-food-name"><div><strong>{{ food.name }}</strong><em>{{ food.category }}</em></div><small>{{ food.quantity }}</small></div>
+        <div class="meal-food-macros">
+          <div class="food-calories"><strong>{{ food.calories }}</strong><small>Kcal</small></div>
+          <div><strong>{{ food.protein }}g</strong><small>P</small></div>
+          <div><strong>{{ food.carbs }}g</strong><small>C</small></div>
+          <div><strong>{{ food.fat }}g</strong><small>F</small></div>
+        </div>
+        <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)">⇄&nbsp; Replace</button>
+      </div>
+      <div class="meal-photo-preview" *ngIf="meal.photoUrl"><img [src]="meal.photoUrl" alt="Meal photo"><span>Meal photo</span></div>
+      <label class="meal-note">
+        <span>▱ &nbsp;{{ meal.note ? ('Note for meal ' + (mealIndex + 1)) : 'Add a note' }}</span>
+        <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" placeholder="Anything your coach should know about this meal..."></textarea>
+        <button *ngIf="!meal.note" type="button" (click)="meal.note = ' '">Add a note</button>
+      </label>
+    </article>
+
+    <section class="meal-day-empty" *ngIf="!day.meals.length"><span>🍽</span><h2>No meals planned</h2><p>This day has no meals scheduled yet.</p></section>
+
+    <section class="daily-feedback-card">
+      <header><h2>▱ &nbsp;Daily feedback for your coach</h2><p>Rate each area from left (low) to right (high) so your coach can adjust.</p></header>
+      <div class="feedback-grid">
+        <div class="feedback-group"><h3>🍴 <span>Hunger<small>How hungry did you feel overall?</small></span></h3><div>
+          <button [class.selected]="day.hunger === 'Low'" (click)="day.hunger = 'Low'"><strong>Low</strong><small>Rarely hungry</small></button>
+          <button [class.selected]="day.hunger === 'Good'" (click)="day.hunger = 'Good'"><strong>Good</strong><small>Well balanced</small></button>
+          <button [class.selected]="day.hunger === 'High'" (click)="day.hunger = 'High'"><strong>High</strong><small>Often hungry</small></button>
+        </div></div>
+        <div class="feedback-group"><h3>⚡ <span>Energy<small>How were your energy levels?</small></span></h3><div>
+          <button [class.selected]="day.energy === 'Low'" (click)="day.energy = 'Low'"><strong>Low</strong><small>Sluggish</small></button>
+          <button [class.selected]="day.energy === 'Good'" (click)="day.energy = 'Good'"><strong>Good</strong><small>Steady</small></button>
+          <button [class.selected]="day.energy === 'High'" (click)="day.energy = 'High'"><strong>High</strong><small>Energized</small></button>
+        </div></div>
+        <div class="feedback-group"><h3>〰 <span>Digestion<small>How did digestion feel?</small></span></h3><div>
+          <button [class.selected]="day.digestion === 'Poor'" (click)="day.digestion = 'Poor'"><strong>Poor</strong><small>Uncomfortable</small></button>
+          <button [class.selected]="day.digestion === 'Good'" (click)="day.digestion = 'Good'"><strong>Good</strong><small>Fine</small></button>
+          <button [class.selected]="day.digestion === 'Great'" (click)="day.digestion = 'Great'"><strong>Great</strong><small>No issues</small></button>
+        </div></div>
+      </div>
+      <label class="overall-note"><strong>Overall note</strong><textarea [(ngModel)]="day.overallNote" rows="3" placeholder="How did the day feel overall? Share anything useful for your coach..."></textarea></label>
+    </section>
+  </main>
+  <footer class="meal-day-footer">
+    <button class="off-plan-action" type="button" (click)="markDayOffPlan()">⊗&nbsp; Off-plan</button>
+    <span *ngIf="dailySaveMessage">{{ dailySaveMessage }}</span>
+    <button class="complete-day-action" type="button" (click)="completeNutritionDay()">✓&nbsp; Complete nutrition day</button>
+  </footer>
+</div>
+
+<div class="meal-report-backdrop" *ngIf="showMealReportModal && reportMeal" (click)="closeMealReport()">
+  <section class="meal-report-modal" (click)="$event.stopPropagation()">
+    <button class="meal-report-close" type="button" (click)="closeMealReport()">×</button>
+    <header><h2>Report Meal {{ reportMealIndex + 1 }}</h2><p>Tell your coach how this meal went.</p></header>
+    <div class="meal-report-options">
+      <button [class.selected]="reportStatus === 'AS_PLANNED'" (click)="reportStatus = 'AS_PLANNED'"><span>✓</span><strong>As planned<small>I ate this meal exactly as prescribed.</small></strong></button>
+      <button [class.selected]="reportStatus === 'MODIFIED'" (click)="reportStatus = 'MODIFIED'"><span>✎</span><strong>Modified<small>I swapped or adjusted something.</small></strong></button>
+      <button [class.selected]="reportStatus === 'SKIPPED'" (click)="reportStatus = 'SKIPPED'"><span>−</span><strong>Skipped<small>I did not eat this meal.</small></strong></button>
+    </div>
+    <label class="meal-report-note"><strong>Note <em>(optional)</em></strong><textarea [(ngModel)]="reportNote" rows="4" placeholder="Anything your coach should know about this meal..."></textarea></label>
+    <footer><button class="report-cancel" type="button" (click)="closeMealReport()">Cancel</button><button class="report-save" type="button" [disabled]="savingMealReport" (click)="saveMealReport()">{{ savingMealReport ? 'Saving…' : 'Save report' }}</button></footer>
+  </section>
 </div>
 
 <!-- Modal de confirmation -->

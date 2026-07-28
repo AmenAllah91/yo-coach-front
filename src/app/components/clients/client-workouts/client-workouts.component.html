@@ -221,6 +221,7 @@
                 <ng-container [ngSwitch]="workout.status">
                   <div *ngSwitchCase="'COMPLETED'" class="status-icon status-icon--completed"></div>
                   <div *ngSwitchCase="'MISSED'" class="status-icon status-icon--missed"></div>
+                  <div *ngSwitchCase="'OVERDUE'" class="status-icon status-icon--overdue" title="Overdue"></div>
                   <div *ngSwitchDefault class="status-icon status-icon--pending"></div>
                 </ng-container>
               </div>
@@ -263,6 +264,8 @@
     <div class="workout-day__title"><button aria-label="Back" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span></div>
     <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ workoutRunStatus === 'LOG_WORKOUT' ? 'NO TIMER' : 'WORKOUT TIMER' }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
+      <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> Log as completed</button>
+      <button class="secondary-action missed-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> Mark as missed</button>
       <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()">Log a completed workout</button>
       <button class="primary-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="startWorkout()"><i-feather name="play"></i-feather> Start workout</button>
       <ng-container *ngIf="workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED'">
@@ -272,12 +275,25 @@
         <button class="primary-action finish-workout-action" (click)="finishWorkout()"><i-feather name="check"></i-feather> Finish workout</button>
       </ng-container>
       <button class="primary-action save-completed-action" *ngIf="workoutRunStatus === 'LOG_WORKOUT'" (click)="finishWorkout(true)"><i-feather name="check"></i-feather> Save completed workout</button>
+      <button class="primary-action start-next-action" *ngIf="(workoutRunStatus === 'ALREADY_COMPLETED' || workoutRunStatus === 'COMPLETED') && nextWorkoutAfterResolution" (click)="startNextWorkout()"><i-feather name="play"></i-feather> Start next workout</button>
     </div>
   </header>
 
   <section class="workout-day__summary"><span>{{ selectedWorkout.date | date:'EEEE, MMMM d' }}<small *ngIf="workoutRunStatus === 'LOG_WORKOUT'">Workout duration will not be recorded.</small></span><strong>{{ reviewedExerciseCount }} of {{ reviewableExerciseCount }} exercises reviewed</strong><div><i [style.width.%]="reviewableExerciseCount ? reviewedExerciseCount * 100 / reviewableExerciseCount : 0"></i></div></section>
+  <p class="overdue-workout-inline-message" *ngIf="overdueWorkoutNotice">
+    <i-feather name="info"></i-feather>
+    <span><strong>Previous workouts not resolved.</strong> {{ overdueWorkoutNotice }}</span>
+  </p>
 
   <main class="workout-day__body">
+    <div class="overdue-workout-alert" *ngIf="workoutRunStatus === 'OVERDUE'">
+      <i-feather name="alert-circle"></i-feather>
+      This workout is overdue. Please log it as completed if it was done, or mark it as missed if it was skipped.
+    </div>
+    <div class="missed-workout-alert" *ngIf="workoutRunStatus === 'MISSED'">
+      <i-feather name="x-circle"></i-feather>
+      <span><strong>This workout was marked as missed.</strong><small *ngIf="selectedWorkout.missedReason || selectedWorkout.overallWorkoutNote">{{ selectedWorkout.missedReason || selectedWorkout.overallWorkoutNote }}</small></span>
+    </div>
     <article class="exercise-card" *ngFor="let exercise of selectedWorkout.groupedExercises" [class.exercise-card--simple-warmup]="isSingleCardioWarmUp(exercise)" [class.is-complete]="exercise.completed" [class.is-skipped]="exercise.skipped">
       <button
         type="button"
@@ -323,16 +339,68 @@
       </footer>
     </article>
     <section class="overall-workout-note">
-      <label for="overall-workout-note"><i-feather name="clipboard"></i-feather> Overall workout note</label>
+      <label for="overall-workout-note"><i-feather name="clipboard"></i-feather> {{ workoutRunStatus === 'MISSED' ? 'Reason or note' : 'Overall workout note' }}</label>
       <textarea
         id="overall-workout-note"
         [(ngModel)]="selectedWorkout.overallWorkoutNote"
-        [readOnly]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED'"
+        [readOnly]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED' || workoutRunStatus === 'MISSED'"
         rows="3"
-        placeholder="Share how the overall workout felt with your coach..."
+        [placeholder]="workoutRunStatus === 'MISSED' ? 'No reason was provided.' : 'Share how the overall workout felt with your coach...'"
       ></textarea>
     </section>
   </main>
+</div>
+
+<div class="workout-resolution-backdrop" *ngIf="showMissedWorkoutModal" (click)="closeMissedWorkoutModal()">
+  <section class="workout-resolution-modal workout-resolution-modal--missed" (click)="$event.stopPropagation()">
+    <button class="workout-resolution-modal__close" type="button" aria-label="Close" (click)="closeMissedWorkoutModal()">×</button>
+    <header><span><i-feather name="alert-triangle"></i-feather></span><h2>Mark workout as missed</h2></header>
+    <p>Let your coach know why you could not complete this workout.</p>
+    <div class="workout-resolution-info" *ngIf="unresolvedPreviousWorkout as workout">
+      <div><i-feather name="activity"></i-feather><span><small>Workout name</small><strong>{{ workout.title }}</strong></span></div>
+      <div><i-feather name="layers"></i-feather><span><small>Program name</small><strong>{{ workout.program }}</strong></span></div>
+      <div><i-feather name="calendar"></i-feather><span><small>Scheduled date</small><strong>{{ workout.date | date:'EEEE, MMMM d' }}</strong></span></div>
+    </div>
+    <label>Reason or note <small>(optional)</small></label>
+    <textarea [(ngModel)]="missedWorkoutReason" rows="4" placeholder="Tell your coach why you could not complete this workout..."></textarea>
+    <footer><button type="button" class="resolution-cancel" (click)="closeMissedWorkoutModal()">Cancel</button><button type="button" class="resolution-primary" (click)="confirmWorkoutAsMissed()">Confirm as missed</button></footer>
+  </section>
+</div>
+
+<div class="workout-resolution-backdrop" *ngIf="showPreviousOverdueModal" (click)="closePreviousOverdueModal()">
+  <section class="workout-resolution-modal workout-resolution-modal--previous" (click)="$event.stopPropagation()">
+    <button class="workout-resolution-modal__close" type="button" aria-label="Close" (click)="closePreviousOverdueModal()">×</button>
+    <header><h2>Previous workout not resolved</h2></header>
+    <p>You need to resolve the overdue workout before starting this workout.</p>
+    <div class="previous-workout-card" *ngIf="unresolvedPreviousWorkout as workout">
+      <span><i-feather name="calendar"></i-feather></span>
+      <div><small>Program</small><strong>{{ workout.program }}</strong><small>Workout</small><strong>{{ workout.title }}</strong><small>Scheduled date</small><strong>{{ workout.date | date:'EEEE, MMMM d' }}</strong><small>Status</small><em><i-feather name="clock"></i-feather> Overdue</em></div>
+    </div>
+    <label>Reason or note <small>(optional)</small></label>
+    <textarea [(ngModel)]="previousWorkoutReason" rows="4" placeholder="Tell your coach why this workout was not completed..."></textarea>
+    <small class="resolution-help">This note will be visible to your coach.</small>
+    <footer class="previous-resolution-actions">
+      <div class="previous-resolution-option previous-resolution-option--cancel">
+        <button type="button" class="resolution-link" (click)="closePreviousOverdueModal()">Cancel</button>
+      </div>
+      <div class="previous-resolution-option">
+        <button type="button" class="resolution-secondary" (click)="logPreviousAsCompleted()">Log as completed</button>
+        <small>Open the previous workout<br>and save it after completion</small>
+      </div>
+      <div class="previous-resolution-option">
+        <button type="button" class="resolution-primary" (click)="markPreviousAsMissedAndContinue()">Mark as missed and continue</button>
+        <small>The overdue workout will be<br>marked as missed</small>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div class="workout-resolution-backdrop" *ngIf="showNoExercisesCompletedModal">
+  <section class="workout-resolution-modal workout-resolution-modal--empty">
+    <header><span><i-feather name="alert-triangle"></i-feather></span><h2>No exercises were completed</h2></header>
+    <p>All exercises were skipped. This workout cannot be marked as completed.</p>
+    <footer><button type="button" class="resolution-secondary" (click)="showNoExercisesCompletedModal = false">Return to workout</button><button type="button" class="resolution-primary" (click)="openMissedWorkoutModal()">Mark as missed</button></footer>
+  </section>
 </div>
 
 <div class="exercise-modal-backdrop" *ngIf="selectedExercise" (click)="closeExercise()">

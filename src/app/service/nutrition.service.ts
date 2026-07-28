@@ -205,6 +205,10 @@ export class NutritionService {
     return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/${id}`);
   }
 
+  getFoodForClient(id: string): Observable<Food> {
+    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`);
+  }
+
   // Nutrition plan management
   getNutritionPlans(
     page: number = 0,

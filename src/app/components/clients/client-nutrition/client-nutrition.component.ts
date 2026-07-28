@@ -11,8 +11,10 @@ import { ModalConfirmComponent } from '../modal-confirm/modal-confirm.component'
 import { ModalReplaceFoodComponent } from '../modal-replace-food/modal-replace-food.component';
 import { FoodReplacementGroupsService } from 'app/service/food-replacement-groups.service';
 import * as XLSX from 'xlsx';
+import { environment } from '@env/environment';
 
-type PlanStatus = 'COMPLETED' | 'MISSED' | 'PENDING';
+type PlanStatus = 'COMPLETED' | 'OFF_PLAN' | 'IN_PROGRESS' | 'PENDING';
+type MealReportStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
 
 interface Food {
   id: string;
@@ -23,6 +25,8 @@ interface Food {
   fat: number;
   calories: number;
   foodRefId?: string;
+  imageUrl?: string;
+  category?: string;
 }
 
 interface Meal {
@@ -35,6 +39,9 @@ interface Meal {
     fatG: number;
     calories: number;
   };
+  reportStatus?: MealReportStatus;
+  note?: string;
+  photoUrl?: string;
 }
 
 interface NutritionDay {
@@ -57,6 +64,10 @@ interface NutritionDay {
     fatG: number;
     calories: number;
   };
+  hunger?: string;
+  energy?: string;
+  digestion?: string;
+  overallNote?: string;
 }
 
 
@@ -126,6 +137,14 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   coaches: any[] = [];
 
   selectedCoachId: string | 'all' = 'all';
+  showMealReportModal = false;
+  reportMeal: Meal | null = null;
+  reportMealIndex = 0;
+  reportStatus: MealReportStatus = 'AS_PLANNED';
+  reportNote = '';
+  savingMealReport = false;
+  uploadingMealId: string | null = null;
+  dailySaveMessage = '';
 
   constructor(
     private mealplanDayService: MealplanDayService,
@@ -153,34 +172,74 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       .getNutritionPlanByClientId(this.userid)
       .subscribe((response: any) => {
         const plans: any[] = Array.isArray(response) ? response : (response?.content || []);
-        this.allPlans = plans;
-        const coachMap = new Map<string, any>();
-        plans.forEach((plan) => {
-          if (plan.coach && plan.coach.id) {
-            const fullName = `${plan.coach.firstName || 'Coach'} ${
-              plan.coach.lastName || ''
-            }`.trim();
-            coachMap.set(plan.coach.id, {
-              id: plan.coach.id,
-              firstName: plan.coach.firstName || 'Coach',
-              lastName: plan.coach.lastName || '',
-              fullName: fullName || 'Unknown Coach',
-            });
-          }
+        this.hydrateNutritionPlans(plans).subscribe((hydratedPlans) => {
+          this.applyLoadedPlans(hydratedPlans);
         });
-
-        this.coaches = Array.from(coachMap.values());
-
-        this.selectedCoachId = this.resolveCurrentCoachId(plans) || this.coaches[0]?.id || 'all';
-
-        this.fileSettingsResolved = false;
-        this.nutritionFileEnabled = false;
-        this.coachNutritionFileEnabled.clear();
-        // Show regular nutrition days immediately. File plans stay hidden until
-        // the selected coach's permission has been resolved.
-        this.processPlansWithFilter(plans);
-        this.loadCoachNutritionFileSettings(plans);
       });
+  }
+
+  private hydrateNutritionPlans(plans: any[]) {
+    if (!plans.length) return of([] as any[]);
+
+    return forkJoin(plans.map((summary) => {
+      if (!summary?.id || this.isFilePlan(summary)) return of(summary);
+      return this.nutritionService.getNutritionPlanById(summary.id).pipe(
+        map((detail: any) => ({
+          ...detail,
+          ...summary,
+          coach: detail?.coach || summary?.coach,
+          client: detail?.client || summary?.client,
+          mealDays: this.mergeMealDays(summary?.mealDays || [], detail?.mealDays || []),
+        })),
+        catchError(() => of(summary))
+      );
+    }));
+  }
+
+  private mergeMealDays(summaryDays: any[], detailDays: any[]): any[] {
+    if (!summaryDays.length) return detailDays;
+
+    return summaryDays.map((summaryDay, index) => {
+      const detailDay = detailDays.find((candidate: any) =>
+        (summaryDay?.id && candidate?.id === summaryDay.id) ||
+        (summaryDay?.dayNumber && candidate?.dayNumber === summaryDay.dayNumber)
+      ) || detailDays[index] || {};
+
+      return {
+        ...detailDay,
+        ...summaryDay,
+        meals: summaryDay?.meals?.length ? summaryDay.meals : (detailDay?.meals || []),
+        dayTargets: Object.keys(summaryDay?.dayTargets || {}).length
+          ? summaryDay.dayTargets
+          : (detailDay?.dayTargets || {}),
+      };
+    });
+  }
+
+  private applyLoadedPlans(plans: any[]): void {
+    this.allPlans = plans;
+    const coachMap = new Map<string, any>();
+    plans.forEach((plan) => {
+      if (plan.coach && plan.coach.id) {
+        const fullName = `${plan.coach.firstName || 'Coach'} ${
+          plan.coach.lastName || ''
+        }`.trim();
+        coachMap.set(plan.coach.id, {
+          id: plan.coach.id,
+          firstName: plan.coach.firstName || 'Coach',
+          lastName: plan.coach.lastName || '',
+          fullName: fullName || 'Unknown Coach',
+        });
+      }
+    });
+
+    this.coaches = Array.from(coachMap.values());
+    this.selectedCoachId = this.resolveCurrentCoachId(plans) || this.coaches[0]?.id || 'all';
+    this.fileSettingsResolved = false;
+    this.nutritionFileEnabled = false;
+    this.coachNutritionFileEnabled.clear();
+    this.processPlansWithFilter(plans);
+    this.loadCoachNutritionFileSettings(plans);
   }
 
   private applyCoachFilter(plans?: any[]) {
@@ -334,16 +393,20 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
     plans.forEach((plan) => {
       if (this.isFilePlan(plan) || !plan.mealDays?.length) return;
-      const planStart = new Date(plan.startDate);
+      const planStart = this.parseCalendarDate(plan.startDate);
 
-      plan.mealDays.forEach((mealDay: any) => {
-        const dayOffset = mealDay.dayNumber ? mealDay.dayNumber - 1 : 0;
-        const mealDate = new Date(planStart);
-        mealDate.setDate(planStart.getDate() + dayOffset);
+      plan.mealDays.forEach((mealDay: any, index: number) => {
+        const explicitDate = this.parseCalendarDate(mealDay?.date);
+        const dayOffset = Number(mealDay?.dayNumber || index + 1) - 1;
+        const mealDate = explicitDate || (planStart ? new Date(planStart) : null);
+        if (!mealDate) return;
+        if (!explicitDate) {
+          mealDate.setDate(planStart!.getDate() + Math.max(0, dayOffset));
+        }
 
         const totals = mealDay.dayTargets || {};
 
-        const dateStr = mealDate.toISOString().split('T')[0];
+        const dateStr = this.toCalendarDate(mealDate);
 
         days.push({
           id: mealDay.id,
@@ -360,11 +423,49 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
           totalCalories: totals.calories || 0,
           dayTargets: totals,
           meals: this.mapMeals(mealDay.meals || []),
+          hunger: mealDay.hunger || '',
+          energy: mealDay.energy || '',
+          digestion: mealDay.digestion || '',
+          overallNote: mealDay.overallNote || '',
+        });
+        const mappedDay = days[days.length - 1];
+        (mealDay.clientMealLogs || []).forEach((log: any) => {
+          const meal = mappedDay.meals.find(item => item.id === log.mealId);
+          if (!meal) return;
+          meal.reportStatus = log.status;
+          meal.note = log.note || '';
+          if (log.photoPath) {
+            meal.photoUrl = `${environment.baseApiUrl}/api/meal-day/${plan.id}/days/${mealDay.id}/meals/${meal.id}/photo`;
+          }
         });
       });
     });
 
     return days;
+  }
+
+  private parseCalendarDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime())
+        ? null
+        : new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+
+    const text = String(value);
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+    const date = dateOnly
+      ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+      : new Date(text);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private toCalendarDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private calculateStatus(dateStr: string): PlanStatus {
@@ -373,8 +474,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     today.setHours(0, 0, 0, 0);
     dayDate.setHours(0, 0, 0, 0);
 
-    if (dayDate < today) return 'MISSED';
-    return 'PENDING';
+    return dayDate <= today ? 'IN_PROGRESS' : 'PENDING';
   }
 
   private getDisplayDate(dateStr: string): string {
@@ -414,6 +514,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
           fat: Math.round(Number(foodRef.fat || 0) * ratio),
           calories: Math.round(Number(foodRef.energy || 0) * ratio),
           foodRefId: foodRef.id,
+          imageUrl: foodRef.imageUrl || food.imageUrl || '',
+          category: this.foodCategory(foodRef, food),
         };
       }),
       mealTargets: meal.mealTargets || {
@@ -432,7 +534,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         if (this.activeTab === 'upcoming') {
           return day.status === 'PENDING';
         }
-        return day.status === 'COMPLETED' || day.status === 'MISSED';
+        return day.status === 'COMPLETED' || day.status === 'OFF_PLAN' || day.status === 'IN_PROGRESS';
       });
   }
 
@@ -477,8 +579,157 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   selectDay(day: NutritionDay): void {
-    this.selectedDay = { ...day };
+    this.selectedDay = {
+      ...day,
+      meals: day.meals.map(meal => ({
+        ...meal,
+        foods: meal.foods.map(food => ({ ...food })),
+      })),
+    };
     this.checkFoodReplacements(day);
+    this.loadFoodImages();
+    this.loadMealPhotoUrls();
+  }
+
+  private loadFoodImages(): void {
+    if (!this.selectedDay) return;
+    const foods = this.selectedDay.meals.flatMap(meal => meal.foods)
+      .filter(food => !food.imageUrl && !!food.foodRefId);
+    foods.forEach(food => {
+      this.nutritionService.getFoodForClient(food.foodRefId!).pipe(catchError(() => of(null))).subscribe((detail: any) => {
+        if (detail?.imageUrl) food.imageUrl = detail.imageUrl;
+      });
+    });
+  }
+
+  private loadMealPhotoUrls(): void {
+    if (!this.selectedDay) return;
+    const day = this.selectedDay;
+    day.meals.filter(meal => !!meal.photoUrl).forEach(meal => {
+      this.mealplanDayService.getMealPhotoUrl(day.planId, day.id, meal.id)
+        .pipe(catchError(() => of(null)))
+        .subscribe(result => {
+          if (result?.photoUrl) meal.photoUrl = result.photoUrl;
+        });
+    });
+  }
+
+  private foodCategory(foodRef: any, food: any): string {
+    const value = String(foodRef?.category || foodRef?.foodCategory || food?.category || '').trim();
+    if (value) return value;
+    const protein = Number(foodRef?.protein || 0);
+    const carbs = Number(foodRef?.carbohydrates || 0);
+    const fat = Number(foodRef?.fat || 0);
+    if (protein >= carbs && protein >= fat) return 'Protein';
+    if (fat > carbs) return 'Fat';
+    return 'Carb';
+  }
+
+  openMealReport(meal: Meal, index: number): void {
+    this.reportMeal = meal;
+    this.reportMealIndex = index;
+    this.reportStatus = meal.reportStatus || 'AS_PLANNED';
+    this.reportNote = meal.note || '';
+    this.showMealReportModal = true;
+  }
+
+  closeMealReport(): void {
+    this.showMealReportModal = false;
+    this.reportMeal = null;
+    this.savingMealReport = false;
+  }
+
+  saveMealReport(): void {
+    if (!this.selectedDay || !this.reportMeal || this.savingMealReport) return;
+    this.reportMeal.reportStatus = this.reportStatus;
+    this.reportMeal.note = this.reportNote.trim();
+    this.savingMealReport = true;
+    this.persistNutritionDay('IN_PROGRESS', () => this.closeMealReport());
+  }
+
+  saveMealNote(meal: Meal): void {
+    if (!this.selectedDay) return;
+    this.persistNutritionDay(this.selectedDay.status === 'PENDING' ? 'IN_PROGRESS' : this.selectedDay.status);
+  }
+
+  uploadMealPhoto(event: Event, meal: Meal): void {
+    if (!this.selectedDay) return;
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.uploadingMealId = meal.id;
+    this.mealplanDayService.uploadMealPhoto(this.selectedDay.planId, this.selectedDay.id, meal.id, file).subscribe({
+      next: (result) => {
+        meal.photoUrl = result.photoUrl.startsWith('http')
+          ? result.photoUrl
+          : `${environment.baseApiUrl}${result.photoUrl}`;
+        this.uploadingMealId = null;
+      },
+      error: () => this.uploadingMealId = null,
+    });
+  }
+
+  completeNutritionDay(): void {
+    if (!this.selectedDay) return;
+    this.persistNutritionDay('COMPLETED', () => {
+      this.dailySaveMessage = 'Daily feedback saved.';
+      setTimeout(() => this.dailySaveMessage = '', 3000);
+    });
+  }
+
+  markDayOffPlan(): void {
+    if (!this.selectedDay) return;
+    this.selectedDay.meals.forEach(meal => meal.reportStatus = 'SKIPPED');
+    this.persistNutritionDay('OFF_PLAN');
+  }
+
+  private persistNutritionDay(status: PlanStatus, onSuccess?: () => void): void {
+    if (!this.selectedDay) return;
+    const day = this.selectedDay;
+    const previousStatus = day.status;
+    day.status = status;
+    const clientMealLogs = day.meals.map(meal => ({
+      mealId: meal.id,
+      status: meal.reportStatus || null,
+      note: meal.note?.trim() || '',
+    }));
+    this.mealplanDayService.updatePlanDay({
+      id: day.id,
+      status,
+      clientMealLogs,
+      hunger: day.hunger || '',
+      energy: day.energy || '',
+      digestion: day.digestion || '',
+      overallNote: day.overallNote?.trim() || '',
+    }, day.planId).subscribe({
+      next: () => {
+        const listed = this.nutritionDays.find(item => item.id === day.id && item.planId === day.planId);
+        if (listed) Object.assign(listed, day);
+        onSuccess?.();
+      },
+      error: () => {
+        day.status = previousStatus;
+        this.savingMealReport = false;
+      },
+    });
+  }
+
+  nutritionDayStatusLabel(day: NutritionDay): string {
+    if (day.status === 'OFF_PLAN') return 'Off-plan';
+    if (day.status === 'COMPLETED') return 'Completed';
+    return 'In progress';
+  }
+
+  mealStatusLabel(status?: MealReportStatus): string {
+    if (status === 'AS_PLANNED') return 'As planned';
+    if (status === 'MODIFIED') return 'Modified';
+    if (status === 'SKIPPED') return 'Skipped';
+    return '';
+  }
+
+  extractNutritionPdf(): void {
+    window.print();
   }
 
   private checkFoodReplacements(day: NutritionDay): void {

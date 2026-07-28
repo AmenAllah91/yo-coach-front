@@ -96,6 +96,33 @@ interface ActiveNutritionPlan {
   fat: number;
   mealCount?: number;
 }
+
+type NutritionActivityStatus = 'COMPLETED' | 'IN_PROGRESS' | 'NOT_LOGGED' | 'OFF_PLAN';
+
+interface NutritionActivity {
+  id: string;
+  planId: string;
+  programName: string;
+  week: number;
+  dayInWeek: number;
+  dayName: string;
+  scheduledDate: Date;
+  status: NutritionActivityStatus;
+  meals: any[];
+  mealLogs: any[];
+  plannedMeals: number;
+  loggedMeals: number;
+  asPlannedMeals: number;
+  modifiedMeals: number;
+  skippedMeals: number;
+  hunger: string;
+  energy: string;
+  digestion: string;
+  overallNote: string;
+  loggedAt: any;
+  totals: { calories: number; protein: number; carbs: number; fat: number };
+  photos: Array<{ url: string; label: string; time: string }>;
+}
 export interface ScheduledCheckIn {
   id: string;
   formName: string;
@@ -359,6 +386,11 @@ export class ProfilClientComponent {
   workoutActivityVisibleCount = 10;
   showAllWorkoutActivity = false;
   selectedWorkoutActivity: WorkoutActivity | null = null;
+  nutritionActivities: NutritionActivity[] = [];
+  selectedNutritionActivity: NutritionActivity | null = null;
+  showAllNutritionActivity = false;
+  nutritionActivityFilter: 'ALL' | NutritionActivityStatus = 'ALL';
+  nutritionActivityVisibleCount = 10;
   assignedNutritionPrograms: any[] = [];
   private pendingCreatedWorkoutToAssign: any | null = null;
   private pendingCreatedNutritionToAssign: any | null = null;
@@ -405,6 +437,27 @@ export class ProfilClientComponent {
 
   get canViewMoreWorkoutActivities(): boolean {
     return this.workoutActivityVisibleCount < this.filteredWorkoutActivities.length;
+  }
+
+  get latestNutritionActivities(): NutritionActivity[] {
+    const today = this.startOfDay(new Date()).getTime();
+    return this.nutritionActivities
+      .filter(activity => activity.scheduledDate.getTime() <= today)
+      .slice(0, 6);
+  }
+
+  get filteredNutritionActivities(): NutritionActivity[] {
+    return this.nutritionActivities.filter(activity =>
+      this.nutritionActivityFilter === 'ALL' || activity.status === this.nutritionActivityFilter
+    );
+  }
+
+  get visibleNutritionActivities(): NutritionActivity[] {
+    return this.filteredNutritionActivities.slice(0, this.nutritionActivityVisibleCount);
+  }
+
+  get canViewMoreNutritionActivities(): boolean {
+    return this.nutritionActivityVisibleCount < this.filteredNutritionActivities.length;
   }
 
   activeSubTab: 'submissions' | 'assigned' | 'scheduled' = 'submissions';
@@ -552,6 +605,7 @@ export class ProfilClientComponent {
     this.todaysWorkout = null;
     this.activeNutritionPlan = null;
     this.workoutActivities = [];
+    this.nutritionActivities = [];
 
     this.workoutService
       .getWorkoutByCoachIdAndClient(this.userid, this.clientId, 0, 100)
@@ -578,12 +632,14 @@ export class ProfilClientComponent {
           const plans = res?.content || [];
           this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
           this.activeNutritionPlan = this.extractTodaysNutrition(plans);
+          this.nutritionActivities = this.buildNutritionActivities(plans);
           this.loadingDashboardPrograms = false;
         },
         error: (err) => {
           console.error('Failed to load active nutrition plan:', err);
           this.assignedNutritionPrograms = [];
           this.activeNutritionPlan = null;
+          this.nutritionActivities = [];
           this.loadingDashboardPrograms = false;
           this.dashboardProgramsError = 'Failed to load active nutrition plan.';
         },
@@ -897,7 +953,7 @@ export class ProfilClientComponent {
           skippedCount,
           totalExercises: exercises.length,
           overallNote: day?.overallWorkoutNote || '',
-          missedReason: day?.missedReason || day?.statusReason || '',
+          missedReason: day?.missedReason || day?.statusReason || day?.overallWorkoutNote || '',
           exercises,
           exerciseLogs: logs,
         });
@@ -907,6 +963,159 @@ export class ProfilClientComponent {
     return activities.sort(
       (a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime()
     );
+  }
+
+  private buildNutritionActivities(plans: any[]): NutritionActivity[] {
+    const today = this.startOfDay(new Date()).getTime();
+    const activities: NutritionActivity[] = [];
+
+    for (const plan of plans || []) {
+      const planStart = this.safeDate(plan?.startDate);
+      (plan?.mealDays || []).forEach((day: any, index: number) => {
+        const scheduledDate = this.resolveProgramDayDate(day, planStart, index);
+        if (!scheduledDate || scheduledDate.getTime() > today) return;
+
+        const meals = day?.meals || [];
+        const mealLogs = day?.clientMealLogs || day?.mealLogs || day?.loggedMeals || [];
+        const rawStatus = String(
+          day?.nutritionStatus || day?.clientStatus || day?.status || ''
+        ).toUpperCase().replace('-', '_');
+        const offPlan = rawStatus === 'OFF_PLAN' || rawStatus === 'OFFPLAN' ||
+          day?.offPlan === true || day?.followedPlan === false;
+        const loggedMeals = mealLogs.filter((log: any) =>
+          log?.logged !== false && log?.status !== 'NOT_LOGGED'
+        ).length;
+        let status: NutritionActivityStatus;
+
+        if (offPlan) status = 'OFF_PLAN';
+        else if (scheduledDate.getTime() === today) status = 'IN_PROGRESS';
+        else if (rawStatus === 'COMPLETED' || loggedMeals > 0) status = 'COMPLETED';
+        else status = 'NOT_LOGGED';
+
+        const asPlannedMeals = mealLogs.filter((log: any) => {
+          const value = String(log?.status || log?.completionMode || '').toUpperCase();
+          return value === 'AS_PLANNED' || value === 'COMPLETED' || log?.asPlanned === true;
+        }).length;
+        const modifiedMeals = mealLogs.filter((log: any) => {
+          const value = String(log?.status || log?.completionMode || '').toUpperCase();
+          return value === 'MODIFIED' || log?.modified === true;
+        }).length;
+        const skippedMeals = mealLogs.filter((log: any) => {
+          const value = String(log?.status || log?.completionMode || '').toUpperCase();
+          return value === 'SKIPPED' || log?.skipped === true;
+        }).length;
+        const totals = mealLogs.reduce((sum: any, log: any) => ({
+          calories: sum.calories + Number(log?.calories ?? log?.totalCalories ?? 0),
+          protein: sum.protein + Number(log?.protein ?? log?.proteinG ?? 0),
+          carbs: sum.carbs + Number(log?.carbs ?? log?.carbsG ?? 0),
+          fat: sum.fat + Number(log?.fat ?? log?.fatG ?? 0),
+        }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        const photos = mealLogs.flatMap((log: any, logIndex: number) => {
+          const urls = [log?.photoUrl, log?.imageUrl, ...(log?.photos || [])]
+            .map((photo: any) => typeof photo === 'string' ? photo : photo?.url)
+            .filter(Boolean);
+          return urls.map((url: string) => ({
+            url,
+            label: log?.mealName || meals[logIndex]?.name || `Meal ${logIndex + 1}`,
+            time: log?.loggedAt || log?.createdAt || '',
+          }));
+        });
+        const dayNumber = Number(day?.dayNumber || index + 1);
+
+        activities.push({
+          id: day?.id || `${plan?.id || 'nutrition'}-${dayNumber}`,
+          planId: plan?.id || '',
+          programName: plan?.name || 'Nutrition plan',
+          week: Math.max(1, Math.ceil(dayNumber / 7)),
+          dayInWeek: ((dayNumber - 1) % 7) + 1,
+          dayName: day?.name || `Day ${dayNumber}`,
+          scheduledDate,
+          status,
+          meals,
+          mealLogs,
+          plannedMeals: meals.length,
+          loggedMeals,
+          asPlannedMeals,
+          modifiedMeals,
+          skippedMeals,
+          hunger: day?.hunger || day?.dailyFeedback?.hunger || '',
+          energy: day?.energy || day?.dailyFeedback?.energy || '',
+          digestion: day?.digestion || day?.dailyFeedback?.digestion || '',
+          overallNote: day?.overallNote || day?.clientNote || day?.dailyFeedback?.note || '',
+          loggedAt: day?.loggedAt || day?.updatedAt || '',
+          totals,
+          photos,
+        });
+      });
+    }
+
+    return activities.sort((a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime());
+  }
+
+  openNutritionActivity(activity: NutritionActivity): void {
+    this.selectedNutritionActivity = activity;
+  }
+
+  closeNutritionActivity(): void {
+    this.selectedNutritionActivity = null;
+  }
+
+  openAllNutritionActivity(): void {
+    this.nutritionActivityFilter = 'ALL';
+    this.nutritionActivityVisibleCount = 10;
+    this.showAllNutritionActivity = true;
+  }
+
+  closeAllNutritionActivity(): void {
+    this.showAllNutritionActivity = false;
+  }
+
+  setNutritionActivityFilter(filter: 'ALL' | NutritionActivityStatus): void {
+    this.nutritionActivityFilter = filter;
+    this.nutritionActivityVisibleCount = 10;
+  }
+
+  viewMoreNutritionActivities(): void {
+    this.nutritionActivityVisibleCount += 10;
+  }
+
+  nutritionActivityStatusLabel(status: NutritionActivityStatus): string {
+    if (status === 'IN_PROGRESS') return 'In progress';
+    if (status === 'NOT_LOGGED') return 'Not logged';
+    if (status === 'OFF_PLAN') return 'Off-plan';
+    return 'Completed';
+  }
+
+  nutritionActivityAction(status: NutritionActivityStatus): string {
+    if (status === 'COMPLETED') return 'View report';
+    if (status === 'NOT_LOGGED') return 'View nutrition day';
+    return 'Review log';
+  }
+
+  nutritionReportTitle(activity: NutritionActivity): string {
+    return activity.status === 'IN_PROGRESS' || activity.status === 'OFF_PLAN'
+      ? `Review log · ${activity.dayName}`
+      : `Nutrition report · ${activity.dayName}`;
+  }
+
+  nutritionActivityDescription(activity: NutritionActivity): string {
+    if (activity.status === 'COMPLETED') return 'All meals logged';
+    if (activity.status === 'IN_PROGRESS') return activity.loggedMeals ? 'Some meals logged' : 'Day in progress';
+    if (activity.status === 'OFF_PLAN') return 'Logged as off-plan';
+    return 'No meals reported';
+  }
+
+  nutritionMealLog(activity: NutritionActivity, index: number): any {
+    return activity.mealLogs[index] || null;
+  }
+
+  nutritionMealState(log: any): string {
+    if (!log) return 'Not logged';
+    const value = String(log?.status || log?.completionMode || '').toUpperCase();
+    if (value === 'SKIPPED' || log?.skipped) return 'Skipped';
+    if (value === 'MODIFIED' || log?.modified) return 'Modified';
+    if (value === 'OFF_PLAN' || log?.offPlan) return 'Off-plan';
+    return 'As planned';
   }
 
   openAllWorkoutActivity(): void {

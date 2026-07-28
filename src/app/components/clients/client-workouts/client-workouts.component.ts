@@ -11,8 +11,8 @@ import * as XLSX from 'xlsx';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS';
-type WorkoutRunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
+type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS' | 'OVERDUE';
+type WorkoutRunStatus = 'NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
 type WorkoutSetType = 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
 
 interface ExerciseSet {
@@ -100,6 +100,7 @@ interface Workout {
   workoutElapsedSeconds?: number;
   clientCompletionMode?: 'TRACKED' | 'ALREADY_COMPLETED';
   overallWorkoutNote?: string;
+  missedReason?: string;
 }
 
 interface WorkoutExerciseDisplay {
@@ -180,6 +181,16 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   workoutFileEnabled = false;
   fileSettingsResolved = false;
   coachWorkoutFileEnabled = new Map<string, boolean>();
+  showMissedWorkoutModal = false;
+  showPreviousOverdueModal = false;
+  showNoExercisesCompletedModal = false;
+  missedWorkoutReason = '';
+  previousWorkoutReason = '';
+  unresolvedPreviousWorkout: Workout | null = null;
+  pendingWorkoutToStart: Workout | null = null;
+  nextWorkoutAfterResolution: Workout | null = null;
+  overdueWorkoutNotice = '';
+  private overdueNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     public workoutService: WorkoutService,
@@ -199,6 +210,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopTimer();
+    if (this.overdueNoticeTimer) clearTimeout(this.overdueNoticeTimer);
     this.revokeSelectedFileBlob();
   }
 
@@ -212,6 +224,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   get workoutStatusLabel(): string {
     const labels: Record<WorkoutRunStatus, string> = {
       NOT_STARTED: 'Not started', IN_PROGRESS: 'In progress', PAUSED: 'Paused',
+      OVERDUE: 'Overdue',
+      MISSED: 'Missed',
       LOG_WORKOUT: 'Log workout',
       COMPLETED: 'Completed', ALREADY_COMPLETED: 'Already completed',
     };
@@ -227,6 +241,39 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   startWorkout(): void {
+    if (!this.selectedWorkout) return;
+    const previous = this.findPreviousOverdueWorkout(this.selectedWorkout);
+    if (previous) {
+      this.unresolvedPreviousWorkout = previous;
+      this.pendingWorkoutToStart = this.selectedWorkout;
+      this.previousWorkoutReason = '';
+      this.showPreviousOverdueModal = true;
+      return;
+    }
+    this.showNonBlockingOverdueNotice(this.selectedWorkout);
+    this.startSelectedWorkout();
+  }
+
+  private showNonBlockingOverdueNotice(workout: Workout): void {
+    const unresolvedCount = this.workouts.filter(candidate =>
+      candidate.status === 'OVERDUE' &&
+      candidate.id !== workout.id &&
+      candidate.planId !== workout.planId &&
+      this.workoutDateValue(candidate.date) < this.workoutDateValue(workout.date)
+    ).length;
+    if (!unresolvedCount) return;
+
+    this.overdueWorkoutNotice = unresolvedCount === 1
+      ? 'You have 1 unresolved workout in another program. This workout has started normally.'
+      : `You have ${unresolvedCount} unresolved workouts in other programs. This workout has started normally.`;
+    if (this.overdueNoticeTimer) clearTimeout(this.overdueNoticeTimer);
+    this.overdueNoticeTimer = setTimeout(() => {
+      this.overdueWorkoutNotice = '';
+      this.overdueNoticeTimer = null;
+    }, 5000);
+  }
+
+  private startSelectedWorkout(): void {
     this.workoutRunStatus = 'IN_PROGRESS';
     this.startTimer();
     this.saveWorkoutProgress();
@@ -255,6 +302,21 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   logCompletedWorkout(): void {
+    if (!this.selectedWorkout) return;
+    if (this.selectedWorkout.status !== 'OVERDUE') {
+      const previous = this.findPreviousOverdueWorkout(this.selectedWorkout);
+      if (previous) {
+        this.unresolvedPreviousWorkout = previous;
+        this.pendingWorkoutToStart = this.selectedWorkout;
+        this.previousWorkoutReason = '';
+        this.showPreviousOverdueModal = true;
+        return;
+      }
+    }
+    this.enterCompletedWorkoutMode();
+  }
+
+  private enterCompletedWorkoutMode(): void {
     this.stopTimer();
     this.elapsedSeconds = 0;
     this.workoutRunStatus = 'LOG_WORKOUT';
@@ -262,6 +324,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   finishWorkout(alreadyCompleted = false): void {
     if (!this.selectedWorkout) return;
+    if (!alreadyCompleted && this.hasNoCompletedExercises()) {
+      this.showNoExercisesCompletedModal = true;
+      return;
+    }
     this.stopTimer();
     this.workoutRunStatus = alreadyCompleted ? 'ALREADY_COMPLETED' : 'COMPLETED';
     this.selectedWorkout.groupedExercises
@@ -270,6 +336,102 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.selectedWorkout.workoutElapsedSeconds = this.elapsedSeconds;
     this.selectedWorkout.clientCompletionMode = alreadyCompleted ? 'ALREADY_COMPLETED' : 'TRACKED';
     this.updateWorkoutStatus(this.selectedWorkout, 'COMPLETED', true);
+  }
+
+  private hasNoCompletedExercises(): boolean {
+    const exercises = this.selectedWorkout?.groupedExercises.filter(
+      exercise => !this.isSingleCardioWarmUp(exercise)
+    ) || [];
+    return exercises.length > 0 &&
+      exercises.every(exercise => exercise.skipped === true && exercise.completed !== true);
+  }
+
+  openMissedWorkoutModal(workout: Workout = this.selectedWorkout!): void {
+    if (!workout) return;
+    this.unresolvedPreviousWorkout = workout;
+    this.missedWorkoutReason = workout.missedReason || workout.overallWorkoutNote || '';
+    this.showNoExercisesCompletedModal = false;
+    this.showMissedWorkoutModal = true;
+  }
+
+  closeMissedWorkoutModal(): void {
+    this.showMissedWorkoutModal = false;
+    this.missedWorkoutReason = '';
+    if (!this.showPreviousOverdueModal) this.unresolvedPreviousWorkout = null;
+  }
+
+  confirmWorkoutAsMissed(): void {
+    const workout = this.unresolvedPreviousWorkout || this.selectedWorkout;
+    if (!workout) return;
+    workout.missedReason = this.missedWorkoutReason.trim();
+    workout.overallWorkoutNote = workout.missedReason;
+    this.updateWorkoutStatus(workout, 'MISSED', true, () => {
+      if (this.selectedWorkout?.id === workout.id) {
+        this.selectedWorkout.status = 'MISSED';
+        this.backToList();
+      }
+      this.closeMissedWorkoutModal();
+    });
+  }
+
+  markPreviousAsMissedAndContinue(): void {
+    const previous = this.unresolvedPreviousWorkout;
+    const next = this.pendingWorkoutToStart;
+    if (!previous || !next) return;
+    previous.missedReason = this.previousWorkoutReason.trim();
+    previous.overallWorkoutNote = previous.missedReason;
+    this.updateWorkoutStatus(previous, 'MISSED', true, () => {
+      this.closePreviousOverdueModal();
+      this.onSelectWorkout(next);
+      // Re-run the guard: another older workout may still be overdue.
+      this.startWorkout();
+    });
+  }
+
+  logPreviousAsCompleted(): void {
+    const previous = this.unresolvedPreviousWorkout;
+    if (!previous) return;
+    this.nextWorkoutAfterResolution = this.pendingWorkoutToStart;
+    this.showPreviousOverdueModal = false;
+    this.unresolvedPreviousWorkout = null;
+    this.pendingWorkoutToStart = null;
+    this.onSelectWorkout(previous);
+    this.enterCompletedWorkoutMode();
+  }
+
+  closePreviousOverdueModal(): void {
+    this.showPreviousOverdueModal = false;
+    this.unresolvedPreviousWorkout = null;
+    this.pendingWorkoutToStart = null;
+    this.previousWorkoutReason = '';
+  }
+
+  startNextWorkout(): void {
+    const next = this.nextWorkoutAfterResolution;
+    if (!next) return;
+    this.nextWorkoutAfterResolution = null;
+    this.onSelectWorkout(next);
+    // Re-run the guard before starting in case several workouts are overdue.
+    this.startWorkout();
+  }
+
+  private findPreviousOverdueWorkout(workout: Workout): Workout | null {
+    const selectedDate = this.workoutDateValue(workout.date);
+    return this.workouts
+      .filter(candidate =>
+        candidate.status === 'OVERDUE' &&
+        candidate.id !== workout.id &&
+        candidate.planId === workout.planId &&
+        this.workoutDateValue(candidate.date) < selectedDate
+      )
+      .sort((a, b) => this.workoutDateValue(b.date) - this.workoutDateValue(a.date))[0] || null;
+  }
+
+  private workoutDateValue(value: string): number {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '');
+    return match
+      ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime()
+      : new Date(value).getTime();
   }
 
   markExercise(exercise: GroupedExercise, skipped: boolean): void {
@@ -543,36 +705,59 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   mapPlansToWorkouts(plans: any[]): Workout[] {
     const workouts: Workout[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     plans.forEach((plan) => {
       if (!plan.startDate || !plan.workoutDays?.length) return;
-      const planStart = new Date(plan.startDate);
-      plan.workoutDays.forEach((day: any) => {
-        if (!day.dayNumber) return;
-        const workoutDate = new Date(planStart);
-        workoutDate.setDate(planStart.getDate() + (day.dayNumber - 1));
-        const dateStr = workoutDate.toISOString().split('T')[0];
+      const planStart = this.parseWorkoutDate(plan.startDate);
+      plan.workoutDays.forEach((day: any, index: number) => {
+        const explicitDate = this.parseWorkoutDate(day?.date);
+        const workoutDate = explicitDate || (planStart ? new Date(planStart) : null);
+        if (!workoutDate) return;
+        const dayNumber = Number(day?.dayNumber || index + 1);
+        if (!explicitDate) workoutDate.setDate(planStart!.getDate() + Math.max(0, dayNumber - 1));
+        const dateStr = this.toWorkoutDate(workoutDate);
         const groupedExercises = this.groupExercisesBySuperset(day.workoutSessions || []);
         this.applyClientExerciseLogs(groupedExercises, day.clientExerciseLogs || []);
         if (day.status === 'COMPLETED' && !(day.clientExerciseLogs || []).length) {
           groupedExercises.forEach((exercise) => exercise.completed = true);
         }
+        const persistedStatus = (day.status ?? 'PENDING') as WorkoutStatus;
+        const status: WorkoutStatus = persistedStatus === 'PENDING' && workoutDate < today
+          ? 'OVERDUE'
+          : persistedStatus;
         workouts.push({
           id: day.id,
           planId: plan.id,
           date: dateStr,
           title: day.title || `Day ${day.dayNumber}`,
           program: plan.name,
-          dayNumber: day.dayNumber,
-          status: day.status ?? 'PENDING',
+          dayNumber,
+          status,
           rawSessions: day.workoutSessions || [],
           groupedExercises,
           workoutElapsedSeconds: Number(day.workoutElapsedSeconds || 0),
           clientCompletionMode: day.clientCompletionMode,
           overallWorkoutNote: day.overallWorkoutNote || '',
+          missedReason: day.missedReason || day.statusReason || '',
         });
       });
     });
     return workouts;
+  }
+
+  private parseWorkoutDate(value: any): Date | null {
+    if (!value) return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+    const date = match
+      ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+      : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private toWorkoutDate(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
 
   mapPlansToFilePrograms(plans: any[]): FileProgram[] {
@@ -1193,6 +1378,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.elapsedSeconds = Number(workout.workoutElapsedSeconds || 0);
     this.workoutRunStatus = workout.status === 'COMPLETED'
       ? (workout.clientCompletionMode === 'ALREADY_COMPLETED' ? 'ALREADY_COMPLETED' : 'COMPLETED')
+      : workout.status === 'OVERDUE' ? 'OVERDUE'
+      : workout.status === 'MISSED' ? 'MISSED'
+      : workout.status === 'IN_PROGRESS' ? 'IN_PROGRESS'
       : 'NOT_STARTED';
     this.selectedWorkout = {
       ...workout,
@@ -1235,38 +1423,48 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     });
   }
 
-  updateWorkoutStatus(workout: Workout, status: WorkoutStatus, saveClientLog = false): void {
+  updateWorkoutStatus(
+    workout: Workout,
+    status: WorkoutStatus,
+    saveClientLog = false,
+    onSuccess?: () => void
+  ): void {
+    const previousStatus = workout.status;
     workout.status = status;
     const payload: any = { id: workout.id, dayNumber: workout.dayNumber, status };
     if (saveClientLog) {
-      payload.workoutElapsedSeconds = workout.workoutElapsedSeconds || 0;
-      payload.clientCompletionMode = workout.clientCompletionMode || 'TRACKED';
       payload.overallWorkoutNote = workout.overallWorkoutNote?.trim() || '';
-      payload.clientExerciseLogs = workout.groupedExercises.map((exercise) => ({
-        exerciseId: exercise.sourceExerciseId,
-        displayNumber: exercise.displayNumber,
-        completed: !!exercise.completed,
-        skipped: !!exercise.skipped,
-        note: exercise.note || '',
-        sets: exercise.sets.map((set) => ({
-          setNumber: set.setNumber,
-          reps: set.reps,
-          weight: this.coachSettingsService.convertWeightToKg(set.weight),
-          duration: set.duration,
-          rest: set.rest,
-          type: set.type,
-        })),
-      }));
+      payload.missedReason = workout.missedReason?.trim() || '';
+      if (status !== 'MISSED') {
+        payload.workoutElapsedSeconds = workout.workoutElapsedSeconds || 0;
+        payload.clientCompletionMode = workout.clientCompletionMode || 'TRACKED';
+        payload.clientExerciseLogs = workout.groupedExercises.map((exercise) => ({
+          exerciseId: exercise.sourceExerciseId,
+          displayNumber: exercise.displayNumber,
+          completed: !!exercise.completed,
+          skipped: !!exercise.skipped,
+          note: exercise.note || '',
+          sets: exercise.sets.map((set) => ({
+            setNumber: set.setNumber,
+            reps: set.reps,
+            weight: this.coachSettingsService.convertWeightToKg(set.weight),
+            duration: set.duration,
+            rest: set.rest,
+            type: set.type,
+          })),
+        }));
+      }
     }
     this.workoutDayService.updateWorkoutDay(payload, workout.planId).subscribe({
       next: () => {
         this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
         const listedWorkout = this.workouts.find((item) => item.id === workout.id && item.planId === workout.planId);
         if (listedWorkout) Object.assign(listedWorkout, workout);
+        onSuccess?.();
       },
       error: (err) => {
         console.error('Update failed:', err);
-        workout.status = 'PENDING';
+        workout.status = previousStatus;
       },
     });
   }

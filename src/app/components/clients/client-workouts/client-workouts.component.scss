@@ -2901,6 +2901,39 @@
 .workout-day__title h1 { margin:0; font-size:27px; line-height:1; font-weight:800; }
 .run-status { padding:4px 10px; border-radius:99px; background:#f0f3f6; color:#3f5368; font-size:11px; font-weight:700; }
 .run-status[data-status='IN_PROGRESS'] { background:#e5f5fd; color:#0879b7; }
+.run-status[data-status='OVERDUE'] { background:#fff0ea; color:#f04b20; }
+.run-status[data-status='MISSED'] { background:#fff0f3; color:#df3455; }
+.status-icon--overdue { border:2px solid #f25a38 !important; background:#fff0eb !important; }
+.status-icon--overdue::after { content:"!"; color:#ef4b26; font-size:10px; font-weight:900; }
+.missed-action { border-color:#172033 !important; color:#172033 !important; background:#fff !important; }
+.start-next-action { background:#0a1222 !important; }
+.overdue-workout-alert { margin:0 0 18px; padding:13px 16px; display:flex; align-items:center; gap:10px; border:1px solid #ffd4c8; border-radius:8px; background:#fff4ef; color:#85331e; font-size:12px; }.overdue-workout-alert i-feather { width:16px; color:#f04b20; }
+.missed-workout-alert { margin:0 0 18px; padding:13px 16px; display:flex; align-items:center; gap:10px; border:1px solid #ffc9d2; border-radius:8px; background:#fff2f4; color:#a9243c; }.missed-workout-alert i-feather { width:17px; }.missed-workout-alert span { display:flex; flex-direction:column; }.missed-workout-alert small { margin-top:3px; color:#8f5260; }
+.overdue-workout-inline-message { margin:14px 32px 0; display:flex; align-items:center; gap:10px; color:#516b82; font-size:15px; line-height:1.5; }.overdue-workout-inline-message i-feather { width:19px; height:19px; flex:0 0 19px; color:#079bd8; }.overdue-workout-inline-message strong { color:#233b52; font-size:15px; }
+
+.workout-resolution-backdrop { position:fixed; z-index:3000; inset:0; display:grid; place-items:center; padding:16px; background:rgba(19,31,46,.58); }
+.workout-resolution-modal { position:relative; width:min(555px,calc(100vw - 32px)); max-height:94vh; padding:28px; overflow:auto; border-radius:13px; background:#fff; color:#132238; box-shadow:0 28px 80px rgba(0,0,0,.3); }
+.workout-resolution-modal__close { position:absolute; top:17px; right:20px; border:0; background:transparent; color:#62758c; font-size:25px; cursor:pointer; }
+.workout-resolution-modal > header { display:flex; align-items:center; gap:16px; }.workout-resolution-modal > header > span { width:48px; height:48px; flex:0 0 48px; display:grid; place-items:center; border-radius:50%; background:#fff1eb; color:#f04b20; }.workout-resolution-modal h2 { margin:0; color:#0c1a2c; font-size:22px; }.workout-resolution-modal > p { margin:18px 0; color:#3d526a; font-size:12px; line-height:1.5; }
+.workout-resolution-info { margin:0 0 20px; padding:4px 14px; border:1px solid #dbe5ef; border-radius:10px; background:#f8fbfe; }.workout-resolution-info > div { min-height:66px; display:flex; align-items:center; gap:14px; border-bottom:1px solid #e5ebf1; }.workout-resolution-info > div:last-child { border:0; }.workout-resolution-info > div > i-feather { width:38px; height:38px; padding:10px; border-radius:9px; background:#eaf4ff; color:#167fd1; }.workout-resolution-info span { display:flex; flex-direction:column; }.workout-resolution-info small,.previous-workout-card small { color:#667b92; font-size:10px; }.workout-resolution-info strong { margin-top:3px; font-size:12px; }
+.workout-resolution-modal > label { display:block; margin:0 0 7px; font-size:11px; font-weight:700; }.workout-resolution-modal > label small { font-weight:400; }.workout-resolution-modal > textarea { width:100%; min-height:82px; padding:12px; resize:vertical; border:1px solid #d5e0ea; border-radius:8px; color:#283c53; font:inherit; font-size:11px; box-sizing:border-box; outline:none; }.workout-resolution-modal > textarea:focus { border-color:#249ed6; box-shadow:0 0 0 3px rgba(36,158,214,.1); }
+.workout-resolution-modal > footer { margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }.workout-resolution-modal footer button { min-height:40px; padding:0 22px; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; }.resolution-cancel,.resolution-secondary { border:1px solid #cfdae5; background:#fff; color:#20334a; }.resolution-primary { border:0; background:#070b12; color:#fff; }.resolution-link { border:0; background:transparent; color:#078dcc; }
+.workout-resolution-modal--previous { width:min(600px,calc(100vw - 32px)); text-align:center; }.workout-resolution-modal--previous > header { justify-content:center; }.workout-resolution-modal--previous > p { margin:8px 0 20px; }.previous-workout-card { padding:18px 22px; display:grid; grid-template-columns:72px 1fr; align-items:center; gap:20px; border:1px solid #d8e4ee; border-radius:9px; background:#f9fbfd; text-align:left; }.previous-workout-card > span { width:50px; height:50px; display:grid; place-items:center; border-right:1px solid #d8e4ee; color:#0c9bd8; }.previous-workout-card > span i-feather { width:25px; }.previous-workout-card > div { display:grid; grid-template-columns:105px 1fr; align-items:center; row-gap:8px; }.previous-workout-card strong { font-size:11px; }.previous-workout-card em { width:max-content; padding:4px 8px; display:flex; align-items:center; gap:5px; border:1px solid #ffc4cf; border-radius:6px; background:#fff0f3; color:#e73554; font-size:9px; font-style:normal; }.previous-workout-card em i-feather { width:11px; height:11px; }.workout-resolution-modal--previous > label { margin-top:20px; text-align:left; }.resolution-help { display:block; margin-top:6px; color:#71859b; font-size:9px; text-align:left; }
+.previous-resolution-actions { margin-top:24px !important; display:grid !important; grid-template-columns:.72fr 1.18fr 1.28fr; align-items:start; gap:16px !important; }
+.previous-resolution-option { min-width:0; display:flex; align-items:center; flex-direction:column; }
+.previous-resolution-option button { width:100%; min-height:46px !important; padding:0 14px !important; border-radius:8px !important; font-size:10px !important; white-space:nowrap; }
+.previous-resolution-option > small { min-height:28px; margin-top:8px; color:#71859b; font-size:8px; font-weight:400; line-height:1.45; text-align:center; }
+.previous-resolution-option--cancel { justify-content:flex-start; padding-top:1px; }
+.previous-resolution-option--cancel button { width:auto; border:0; color:#078dcc; background:transparent; }
+.previous-resolution-actions .resolution-secondary { border:1.5px solid #28384d; color:#17283b; background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+.previous-resolution-actions .resolution-primary { border:1.5px solid #070b12; background:#070b12; color:#fff; box-shadow:0 5px 12px rgba(7,11,18,.18); }
+.previous-resolution-actions .resolution-secondary:hover { background:#f7f9fb; }
+.previous-resolution-actions .resolution-primary:hover { background:#172033; }
+.workout-resolution-modal--empty { width:min(470px,calc(100vw - 32px)); text-align:center; }.workout-resolution-modal--empty > header { justify-content:center; flex-direction:column; }.workout-resolution-modal--empty > footer { justify-content:center; }
+
+@media (max-width: 620px) {
+  .workout-resolution-modal { padding:22px 16px; }.previous-workout-card { grid-template-columns:1fr; }.previous-workout-card > span { border:0; }.previous-resolution-actions { grid-template-columns:1fr; }.previous-resolution-option--cancel { order:3; }.workout-day__actions { flex-wrap:wrap; }
+}
 .run-status[data-status='PAUSED'] { background:#fff5d9; color:#996600; }
 .run-status[data-status='COMPLETED'], .run-status[data-status='ALREADY_COMPLETED'] { background:#e7f8ef; color:#16834b; }
 .workout-timer { width:213px; height:75px; display:flex; align-items:center; justify-content:center; gap:12px; padding:9px 14px; border:1px solid #d8ecf8; border-radius:14px; background:#eef8fe; }

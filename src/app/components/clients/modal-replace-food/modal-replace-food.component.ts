@@ -15,13 +15,14 @@ export interface Food {
   fat: number;
   calories: number;
   foodRefId?: string;
+  category?: string;
 }
 
 @Component({
   selector: 'app-modal-replace-food',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './modal-replace-food.component.html',
+  templateUrl: './modal-replace-food.template.html',
   styleUrl: './modal-replace-food.component.scss',
 })
 export class ModalReplaceFoodComponent implements OnChanges {
@@ -46,6 +47,25 @@ export class ModalReplaceFoodComponent implements OnChanges {
   error: string | null = null;
 
   constructor(private foodGroupService: FoodReplacementGroupsService) {}
+
+  get alternatives(): Array<{ food: FoodReplacementGroupItem; group: FoodReplacementGroup }> {
+    const seen = new Set<string>();
+    return this.groups.flatMap(group =>
+      group.foods
+        .filter(food => {
+          if (seen.has(food.foodRefId)) return false;
+          seen.add(food.foodRefId);
+          return true;
+        })
+        .map(food => ({ food, group }))
+    );
+  }
+
+  get replacementGroupLabel(): string {
+    const category = (this.originalFood?.category || '').trim();
+    if (!category) return 'same';
+    return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['show']?.currentValue && this.originalFood) {

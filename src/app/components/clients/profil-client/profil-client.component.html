@@ -395,6 +395,197 @@
           View all workout activity <i class="fas fa-arrow-right"></i>
         </button>
       </section>
+
+      <section class="nutrition-activity">
+        <header class="nutrition-activity__header">
+          <span class="nutrition-activity__icon"><i class="fas fa-apple-alt"></i></span>
+          <span>
+            <strong>Nutrition Activity</strong>
+            <small>Latest nutrition days at a glance</small>
+          </span>
+        </header>
+
+        <div class="nutrition-activity__empty" *ngIf="!latestNutritionActivities.length">
+          No past nutrition activity yet.
+        </div>
+
+        <div class="nutrition-activity__table" *ngIf="latestNutritionActivities.length">
+          <div class="nutrition-activity__columns">
+            <span>Date</span><span>Nutrition day</span><span>Status</span>
+            <span>Meals</span><span>Day summary</span><span>Action</span>
+          </div>
+          <div class="nutrition-activity__row" *ngFor="let activity of latestNutritionActivities">
+            <div class="nutrition-activity__date">
+              <small>{{ activity.scheduledDate | date:'EEE' }}</small>
+              <strong>{{ activity.scheduledDate | date:'dd' }}</strong>
+              <small>{{ activity.scheduledDate | date:'MMM' }}</small>
+            </div>
+            <div class="nutrition-activity__day">
+              <span class="nutrition-activity__calendar"><i class="far fa-calendar"></i></span>
+              <span>
+                <strong>{{ activity.dayName }}</strong>
+                <small>{{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</small>
+                <small><i class="far fa-calendar-alt"></i> Nutrition day</small>
+              </span>
+            </div>
+            <div class="nutrition-activity__status">
+              <span class="nutrition-status-pill" [attr.data-status]="activity.status">
+                <i></i>{{ nutritionActivityStatusLabel(activity.status) }}
+              </span>
+              <small>{{ nutritionActivityDescription(activity) }}</small>
+            </div>
+            <div class="nutrition-activity__meals">
+              <strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong>
+              <span><i [style.width.%]="activity.plannedMeals ? activity.loggedMeals * 100 / activity.plannedMeals : 0"></i></span>
+              <small *ngIf="activity.status === 'NOT_LOGGED'">No meals reported</small>
+              <small *ngIf="activity.status === 'OFF_PLAN'">Off-plan meals logged</small>
+              <small *ngIf="activity.status !== 'NOT_LOGGED' && activity.status !== 'OFF_PLAN'">
+                {{ activity.asPlannedMeals }} as planned<span *ngIf="activity.skippedMeals"> · {{ activity.skippedMeals }} skipped</span>
+              </small>
+            </div>
+            <div class="nutrition-activity__summary">
+              <div class="nutrition-feedback">
+                <span><small>Hunger</small><strong>{{ activity.hunger || '—' }}</strong></span>
+                <span><small>Energy</small><strong>{{ activity.energy || '—' }}</strong></span>
+                <span><small>Digestion</small><strong>{{ activity.digestion || '—' }}</strong></span>
+              </div>
+              <small>{{ activity.overallNote || (activity.status === 'NOT_LOGGED' ? 'No overall note.' : 'No note added.') }}</small>
+            </div>
+            <button class="nutrition-activity__action" type="button" (click)="openNutritionActivity(activity)">
+              {{ nutritionActivityAction(activity.status) }}
+            </button>
+          </div>
+        </div>
+        <button class="nutrition-activity__all" type="button" (click)="openAllNutritionActivity()">
+          View all nutrition activity <i class="fas fa-arrow-right"></i>
+        </button>
+      </section>
+    </div>
+
+    <div class="activity-modal-backdrop" *ngIf="showAllNutritionActivity" (click)="closeAllNutritionActivity()">
+      <section class="activity-modal activity-modal--all nutrition-history" (click)="$event.stopPropagation()">
+        <header class="activity-modal__header">
+          <span class="activity-modal__heading">
+            <span class="activity-modal__heading-icon"><i class="fas fa-apple-alt"></i></span>
+            <span><strong>All Nutrition Activity</strong><small>Full history of {{ fullName }}'s nutrition days</small></span>
+          </span>
+          <button type="button" aria-label="Close" (click)="closeAllNutritionActivity()">×</button>
+        </header>
+        <nav class="activity-filters">
+          <button *ngFor="let filter of ['ALL','COMPLETED','IN_PROGRESS','NOT_LOGGED','OFF_PLAN']"
+                  type="button"
+                  [class.active]="nutritionActivityFilter === filter"
+                  (click)="setNutritionActivityFilter($any(filter))">
+            {{ filter === 'ALL' ? 'All' : filter === 'IN_PROGRESS' ? 'In progress' : filter === 'NOT_LOGGED' ? 'Not logged' : filter === 'OFF_PLAN' ? 'Off-plan' : 'Completed' }}
+          </button>
+        </nav>
+        <div class="activity-modal__body">
+          <div class="nutrition-history__columns">
+            <span>Date</span><span>Nutrition day</span><span>Status</span><span>Meals</span><span>Day summary</span><span>Action</span>
+          </div>
+          <div class="nutrition-history__row" *ngFor="let activity of visibleNutritionActivities">
+            <div class="nutrition-activity__date"><small>{{ activity.scheduledDate | date:'EEE' }}</small><strong>{{ activity.scheduledDate | date:'dd' }}</strong><small>{{ activity.scheduledDate | date:'MMM' }}</small></div>
+            <div class="nutrition-activity__day"><span class="nutrition-activity__calendar"><i class="far fa-calendar"></i></span><span><strong>{{ activity.dayName }}</strong><small>{{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</small></span></div>
+            <div class="nutrition-activity__status"><span class="nutrition-status-pill" [attr.data-status]="activity.status"><i></i>{{ nutritionActivityStatusLabel(activity.status) }}</span><small>{{ nutritionActivityDescription(activity) }}</small></div>
+            <div class="nutrition-activity__meals"><strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong><span><i [style.width.%]="activity.plannedMeals ? activity.loggedMeals * 100 / activity.plannedMeals : 0"></i></span></div>
+            <div class="nutrition-feedback"><span><small>Hunger</small><strong>{{ activity.hunger || '—' }}</strong></span><span><small>Energy</small><strong>{{ activity.energy || '—' }}</strong></span><span><small>Digestion</small><strong>{{ activity.digestion || '—' }}</strong></span></div>
+            <button type="button" (click)="openNutritionActivity(activity)">{{ nutritionActivityAction(activity.status) }}</button>
+          </div>
+          <div class="workout-activity__empty" *ngIf="!visibleNutritionActivities.length">No activities match this filter.</div>
+          <button class="activity-view-more" type="button" *ngIf="canViewMoreNutritionActivities" (click)="viewMoreNutritionActivities()">View more</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="nutrition-report-backdrop" *ngIf="selectedNutritionActivity as activity" (click)="closeNutritionActivity()">
+      <section class="nutrition-report" role="dialog" [attr.aria-label]="'Nutrition report for ' + activity.dayName" (click)="$event.stopPropagation()">
+        <header class="nutrition-report__header">
+          <div>
+            <span class="nutrition-report__title">
+              <strong>{{ nutritionReportTitle(activity) }}</strong>
+              <span class="nutrition-status-pill" [attr.data-status]="activity.status"><i></i>{{ nutritionActivityStatusLabel(activity.status) }}</span>
+            </span>
+            <small><i class="far fa-calendar"></i> {{ activity.scheduledDate | date:'EEEE, MMMM d' }} · Week {{ activity.week }} · {{ activity.programName }}</small>
+          </div>
+          <span class="nutrition-report__actions">
+            <button class="nutrition-report__message" type="button" (click)="closeNutritionActivity(); setTab('chat')">
+              <i class="far fa-comment"></i> Message client
+            </button>
+            <button class="nutrition-report__close" type="button" aria-label="Close" (click)="closeNutritionActivity()">×</button>
+          </span>
+        </header>
+
+        <div class="nutrition-report__body">
+          <div class="nutrition-report__metrics">
+            <section>
+              <small>Meal logging</small>
+              <div class="nutrition-report__metric-cards">
+                <span><i class="fas fa-utensils"></i><b><small>Logged</small><strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong></b></span>
+                <span><i class="far fa-check-circle"></i><b><small>As planned</small><strong>{{ activity.asPlannedMeals }}</strong></b></span>
+                <span><i class="fas fa-pencil-alt"></i><b><small>Modified</small><strong>{{ activity.modifiedMeals }}</strong></b></span>
+                <span><i class="far fa-dot-circle"></i><b><small>Skipped</small><strong>{{ activity.skippedMeals }}</strong></b></span>
+              </div>
+            </section>
+            <section>
+              <small>Day totals</small>
+              <div><span><small>Calories</small><strong>{{ activity.totals.calories | number:'1.0-0' }} <em>kcal</em></strong></span>
+                <span><small>Protein</small><strong>{{ activity.totals.protein | number:'1.0-0' }} <em>g</em></strong></span>
+                <span><small>Carbs</small><strong>{{ activity.totals.carbs | number:'1.0-0' }} <em>g</em></strong></span>
+                <span><small>Fat</small><strong>{{ activity.totals.fat | number:'1.0-0' }} <em>g</em></strong></span></div>
+            </section>
+          </div>
+
+          <div class="nutrition-report__nothing" *ngIf="activity.status === 'NOT_LOGGED'">
+            <span><i class="fas fa-utensils"></i></span>
+            <strong>Nothing logged yet</strong>
+            <p>The client has not reported any meals or feedback for this nutrition day.</p>
+          </div>
+
+          <div class="nutrition-report__grid" *ngIf="activity.status !== 'NOT_LOGGED'">
+            <section class="nutrition-report__meals">
+              <h3>Meal reports</h3>
+              <div class="nutrition-report__empty" *ngIf="!activity.meals.length">No planned meals for this day.</div>
+              <article *ngFor="let meal of activity.meals; let mealIndex = index">
+                <ng-container *ngIf="nutritionMealLog(activity, mealIndex) as mealLog; else unloggedMeal">
+                  <header>
+                    <b>{{ mealIndex + 1 }}</b><strong>Meal {{ mealIndex + 1 }} · {{ meal.name || 'Meal' }}</strong>
+                    <em [attr.data-state]="nutritionMealState(mealLog)">{{ nutritionMealState(mealLog) }}</em>
+                    <span>{{ mealLog.calories || meal.calories || 0 }} kcal</span>
+                    <span>{{ mealLog.protein || meal.protein || 0 }} g protein</span>
+                    <span>{{ mealLog.carbs || meal.carbs || 0 }} g carbs</span>
+                    <span>{{ mealLog.fat || meal.fat || 0 }} g fat</span>
+                  </header>
+                  <div class="nutrition-meal__content">
+                    <div><small>Items</small><ul><li *ngFor="let food of mealLog.items || mealLog.foods || meal.foods || []">{{ food.name }}<span *ngIf="food.quantity"> ({{ food.quantity }} {{ food.unit }})</span></li></ul></div>
+                    <div><small><i class="far fa-comment-alt"></i> Client note</small><p [class.is-empty]="!mealLog.note && !mealLog.clientNote">{{ mealLog.note || mealLog.clientNote || 'No note' }}</p></div>
+                    <figure *ngIf="mealLog.photoUrl || mealLog.imageUrl; else noMealPhoto"><img [src]="mealLog.photoUrl || mealLog.imageUrl" [alt]="meal.name || 'Meal photo'"><figcaption><i class="far fa-image"></i> Meal photo</figcaption></figure>
+                    <ng-template #noMealPhoto><div class="nutrition-meal__no-photo"><i class="far fa-camera"></i><small>No photo</small></div></ng-template>
+                  </div>
+                </ng-container>
+                <ng-template #unloggedMeal>
+                  <header class="is-unlogged"><b>{{ mealIndex + 1 }}</b><strong>Meal {{ mealIndex + 1 }} · {{ meal.name || 'Meal' }}</strong><em data-state="Not logged">Not logged</em></header>
+                  <p class="nutrition-meal__missing">No client entry was recorded for this meal.</p>
+                </ng-template>
+              </article>
+              <footer *ngIf="activity.loggedAt"><i class="far fa-clock"></i> Logged on {{ activity.loggedAt | date:'MMM d, y, h:mm a' }}</footer>
+            </section>
+
+            <aside class="nutrition-report__aside">
+              <section>
+                <h3>Daily feedback <i class="far fa-info-circle"></i></h3>
+                <div class="nutrition-daily-feedback"><span><i class="fas fa-fire"></i><b>Hunger<small>How hungry did you feel?</small></b><strong>{{ activity.hunger || '—' }}</strong></span>
+                  <span><i class="fas fa-bolt"></i><b>Energy<small>How were your energy levels?</small></b><strong>{{ activity.energy || '—' }}</strong></span>
+                  <span><i class="far fa-heart"></i><b>Digestion<small>How did digestion feel?</small></b><strong>{{ activity.digestion || '—' }}</strong></span></div>
+              </section>
+              <section><h3><i class="far fa-file-alt"></i> Overall note</h3><p>{{ activity.overallNote || 'No overall note.' }}</p></section>
+              <section><h3><i class="far fa-image"></i> Attached photos <small>{{ activity.photos.length }} photo{{ activity.photos.length === 1 ? '' : 's' }}</small></h3>
+                <div class="nutrition-report__photos" *ngIf="activity.photos.length; else noAttachedPhotos"><figure *ngFor="let photo of activity.photos"><img [src]="photo.url" [alt]="photo.label"><figcaption>{{ photo.label }}</figcaption></figure></div>
+                <ng-template #noAttachedPhotos><p class="is-empty">No photos attached.</p></ng-template>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div class="activity-modal-backdrop" *ngIf="showAllWorkoutActivity" (click)="closeAllWorkoutActivity()">
