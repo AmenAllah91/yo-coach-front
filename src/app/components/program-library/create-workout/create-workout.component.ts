@@ -356,8 +356,18 @@ export class CreateWorkoutComponent implements OnInit {
 
   getWeekWorkoutCount(days: WorkoutDay[]): number {
     return days.filter((day) =>
-      (day.workoutSessions || []).some((session) => (session.exercises || []).length > 0)
+      this.getDayExerciseCount(day) > 0
     ).length;
+  }
+
+  getDayExerciseCount(day: WorkoutDay): number {
+    const sessions = day.workoutSessions?.length
+      ? day.workoutSessions
+      : (day.session ? [day.session] : []);
+    return sessions.reduce(
+      (total, session) => total + (session.exercises?.length || 0),
+      0
+    );
   }
 
   isWeekCollapsed(weekLabel: string): boolean {

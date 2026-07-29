@@ -15,17 +15,18 @@ import { WorkoutProgramSelectionModalComponent } from './workout-program-selecti
 import { AssignSelectModalComponent } from './assign-select-modal/assign-select-modal.component';
 import { FormSelectionModalComponent } from './form-selection-modal/form-selection-modal.component';
 import { AssignmentsApiService, FormAssignment } from '../../forms/services/assignments-api.service';
-import { Subject, takeUntil, from, of, Observable } from 'rxjs';
+import { Subject, takeUntil, from, of, Observable, forkJoin } from 'rxjs';
 import { FormDetails, FormsApiService, Form } from '../../forms/services/forms-api.service';
 import { Answer, QuestionType } from '../../../models/forms.model';
 import { SubmissionsApiService } from '../../forms/services/submissions-api.service';
-import { switchMap, finalize, map } from 'rxjs/operators';
+import { switchMap, finalize, map, catchError } from 'rxjs/operators';
 import { ClientScheduleItemDto } from '../../../models/client-schedule.model';
 import { CalendarClientsComponent } from '../../calendar/calendar-clients/calendar-clients.component';
 import { ProgressPicturesComponent } from 'app/components/progress-pictures-module/progress-pictures/progress-pictures.component';
 import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
 import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
 import { ChatComponent } from '../../chat/chat/chat.component';
+import { MealplanDayService } from 'app/service/mealplan-day.service';
 
 type TabId =
   | 'dashboard'
@@ -64,6 +65,7 @@ type WorkoutActivityStatus =
   | 'COMPLETED'
   | 'COMPLETED_AFTER_WORKOUT'
   | 'IN_PROGRESS'
+  | 'OVERDUE'
   | 'MISSED'
   | 'NOT_STARTED'
   | 'UPCOMING';
@@ -121,7 +123,7 @@ interface NutritionActivity {
   overallNote: string;
   loggedAt: any;
   totals: { calories: number; protein: number; carbs: number; fat: number };
-  photos: Array<{ url: string; label: string; time: string }>;
+  photos: Array<{ url: string; label: string; time: string; mealId?: string }>;
 }
 export interface ScheduledCheckIn {
   id: string;
@@ -488,6 +490,7 @@ export class ProfilClientComponent {
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private bodyMeasurementsService: BodyMeasurementsService,
+    private mealplanDayService: MealplanDayService,
     public coachSettingsService: CoachSettingsService
   ) {
     const routeId = this.route.snapshot.paramMap.get('id') || '';
@@ -627,9 +630,16 @@ export class ProfilClientComponent {
 
     this.nutritionService
       .getNutritionPlanByCoachIdAndClient(this.userid, this.clientId, 0, 100)
+      .pipe(
+        switchMap((res: any) => {
+          const summaries = res?.content || [];
+          return this.hydrateNutritionDashboardPlans(summaries).pipe(
+            map((plans) => ({ res, plans }))
+          );
+        })
+      )
       .subscribe({
-        next: (res: any) => {
-          const plans = res?.content || [];
+        next: ({ plans }) => {
           this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
           this.activeNutritionPlan = this.extractTodaysNutrition(plans);
           this.nutritionActivities = this.buildNutritionActivities(plans);
@@ -644,6 +654,53 @@ export class ProfilClientComponent {
           this.dashboardProgramsError = 'Failed to load active nutrition plan.';
         },
       });
+  }
+
+  /**
+   * Assignment list responses can contain only a summary of each meal day.
+   * Daily client feedback and meal reports live on the full assigned plan, so
+   * use that as the source for the activity table while preserving assignment
+   * metadata returned by the list endpoint.
+   */
+  private hydrateNutritionDashboardPlans(summaries: any[]): Observable<any[]> {
+    if (!summaries.length) return of([]);
+
+    return forkJoin(summaries.map((summary: any) => {
+      if (!summary?.id || this.isFileNutritionPlan(summary)) return of(summary);
+
+      return this.nutritionService.getNutritionPlanById(summary.id).pipe(
+        map((detail: any) => ({
+          ...summary,
+          ...detail,
+          mealDays: this.mergeNutritionDashboardDays(
+            summary?.mealDays || [],
+            detail?.mealDays || []
+          ),
+        })),
+        catchError(() => of(summary))
+      );
+    }));
+  }
+
+  private mergeNutritionDashboardDays(summaryDays: any[], detailDays: any[]): any[] {
+    if (!detailDays.length) return summaryDays;
+
+    return detailDays.map((detailDay: any, index: number) => {
+      const summaryDay = summaryDays.find((candidate: any) =>
+        (detailDay?.id && candidate?.id === detailDay.id) ||
+        (detailDay?.dayNumber && candidate?.dayNumber === detailDay.dayNumber)
+      ) || summaryDays[index] || {};
+
+      return {
+        ...summaryDay,
+        ...detailDay,
+        meals: detailDay?.meals?.length ? detailDay.meals : (summaryDay?.meals || []),
+        clientMealLogs: detailDay?.clientMealLogs ?? summaryDay?.clientMealLogs ?? [],
+        dayTargets: Object.keys(detailDay?.dayTargets || {}).length
+          ? detailDay.dayTargets
+          : (summaryDay?.dayTargets || {}),
+      };
+    });
   }
 
   private extractTodaysWorkout(plans: any[]): TodaysWorkout | null {
@@ -915,10 +972,14 @@ export class ProfilClientComponent {
           status = 'COMPLETED_AFTER_WORKOUT';
         } else if (rawStatus === 'COMPLETED') {
           status = 'COMPLETED';
-        } else if (rawStatus === 'IN_PROGRESS' || rawStatus === 'PAUSED') {
-          status = 'IN_PROGRESS';
         } else if (rawStatus === 'MISSED') {
           status = 'MISSED';
+        } else if (scheduledDate.getTime() < today) {
+          // A workout cannot remain active once its scheduled day has passed.
+          // This also turns old pending workouts into items that need resolution.
+          status = 'OVERDUE';
+        } else if (rawStatus === 'IN_PROGRESS' || rawStatus === 'PAUSED') {
+          status = 'IN_PROGRESS';
         } else if (scheduledDate.getTime() > today) {
           status = 'UPCOMING';
         } else {
@@ -975,21 +1036,36 @@ export class ProfilClientComponent {
         const scheduledDate = this.resolveProgramDayDate(day, planStart, index);
         if (!scheduledDate || scheduledDate.getTime() > today) return;
 
-        const meals = day?.meals || [];
-        const mealLogs = day?.clientMealLogs || day?.mealLogs || day?.loggedMeals || [];
+        const meals = (day?.meals || []).map((meal: any) => {
+          const macros = this.resolveNutritionMealMacros(meal);
+          return { ...meal, ...macros };
+        });
+        const rawMealLogs = day?.clientMealLogs || day?.mealLogs || day?.loggedMeals || [];
+        const mealLogs = rawMealLogs.map((log: any, logIndex: number) => {
+          const mealId = log?.mealId || meals[logIndex]?.id;
+          const photoUrl = log?.photoUrl || log?.imageUrl || '';
+
+          return {
+            ...log,
+            mealId,
+            photoUrl,
+          };
+        });
         const rawStatus = String(
           day?.nutritionStatus || day?.clientStatus || day?.status || ''
         ).toUpperCase().replace('-', '_');
         const offPlan = rawStatus === 'OFF_PLAN' || rawStatus === 'OFFPLAN' ||
           day?.offPlan === true || day?.followedPlan === false;
-        const loggedMeals = mealLogs.filter((log: any) =>
-          log?.logged !== false && log?.status !== 'NOT_LOGGED'
-        ).length;
+        const loggedMeals = mealLogs.filter((log: any) => {
+          const logStatus = String(log?.status || log?.completionMode || '').toUpperCase();
+          return log?.logged === true ||
+            ['AS_PLANNED', 'COMPLETED', 'MODIFIED', 'SKIPPED'].includes(logStatus);
+        }).length;
         let status: NutritionActivityStatus;
 
         if (offPlan) status = 'OFF_PLAN';
-        else if (scheduledDate.getTime() === today) status = 'IN_PROGRESS';
-        else if (rawStatus === 'COMPLETED' || loggedMeals > 0) status = 'COMPLETED';
+        else if (rawStatus === 'COMPLETED') status = 'COMPLETED';
+        else if (rawStatus === 'IN_PROGRESS' || loggedMeals > 0) status = 'IN_PROGRESS';
         else status = 'NOT_LOGGED';
 
         const asPlannedMeals = mealLogs.filter((log: any) => {
@@ -1004,20 +1080,45 @@ export class ProfilClientComponent {
           const value = String(log?.status || log?.completionMode || '').toUpperCase();
           return value === 'SKIPPED' || log?.skipped === true;
         }).length;
-        const totals = mealLogs.reduce((sum: any, log: any) => ({
-          calories: sum.calories + Number(log?.calories ?? log?.totalCalories ?? 0),
-          protein: sum.protein + Number(log?.protein ?? log?.proteinG ?? 0),
-          carbs: sum.carbs + Number(log?.carbs ?? log?.carbsG ?? 0),
-          fat: sum.fat + Number(log?.fat ?? log?.fatG ?? 0),
+        const mealTotals = meals.reduce((sum: any, meal: any) => ({
+          calories: sum.calories + meal.calories,
+          protein: sum.protein + meal.protein,
+          carbs: sum.carbs + meal.carbs,
+          fat: sum.fat + meal.fat,
         }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        const dayTargets = day?.dayTargets || {};
+        const totals = {
+          calories: this.firstNutritionNumber(
+            dayTargets?.calories,
+            day?.totalCalories,
+            mealTotals.calories
+          ),
+          protein: this.firstNutritionNumber(
+            dayTargets?.proteinG,
+            day?.totalProtein,
+            mealTotals.protein
+          ),
+          carbs: this.firstNutritionNumber(
+            dayTargets?.carbsG,
+            day?.totalCarbs,
+            mealTotals.carbs
+          ),
+          fat: this.firstNutritionNumber(
+            dayTargets?.fatG,
+            day?.totalFat,
+            mealTotals.fat
+          ),
+        };
         const photos = mealLogs.flatMap((log: any, logIndex: number) => {
           const urls = [log?.photoUrl, log?.imageUrl, ...(log?.photos || [])]
             .map((photo: any) => typeof photo === 'string' ? photo : photo?.url)
             .filter(Boolean);
+          const mealIndex = meals.findIndex((meal: any) => meal?.id === log?.mealId);
           return urls.map((url: string) => ({
             url,
-            label: log?.mealName || meals[logIndex]?.name || `Meal ${logIndex + 1}`,
+            label: log?.mealName || meals[mealIndex >= 0 ? mealIndex : logIndex]?.name || `Meal ${logIndex + 1}`,
             time: log?.loggedAt || log?.createdAt || '',
+            mealId: log?.mealId,
           }));
         });
         const dayNumber = Number(day?.dayNumber || index + 1);
@@ -1038,10 +1139,10 @@ export class ProfilClientComponent {
           asPlannedMeals,
           modifiedMeals,
           skippedMeals,
-          hunger: day?.hunger || day?.dailyFeedback?.hunger || '',
-          energy: day?.energy || day?.dailyFeedback?.energy || '',
-          digestion: day?.digestion || day?.dailyFeedback?.digestion || '',
-          overallNote: day?.overallNote || day?.clientNote || day?.dailyFeedback?.note || '',
+          hunger: day?.hunger ?? day?.dailyFeedback?.hunger ?? '',
+          energy: day?.energy ?? day?.dailyFeedback?.energy ?? '',
+          digestion: day?.digestion ?? day?.dailyFeedback?.digestion ?? '',
+          overallNote: day?.overallNote ?? day?.clientNote ?? day?.dailyFeedback?.note ?? '',
           loggedAt: day?.loggedAt || day?.updatedAt || '',
           totals,
           photos,
@@ -1052,8 +1153,82 @@ export class ProfilClientComponent {
     return activities.sort((a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime());
   }
 
+  private resolveNutritionMealMacros(meal: any): {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  } {
+    const targets = meal?.mealTargets || {};
+    const foodTotals = (meal?.foods || []).reduce((sum: any, food: any) => {
+      const foodRef = food?.foodRef || {};
+      const quantity = Number(food?.quantity ?? foodRef?.servingSize ?? 100);
+      const servingSize = Number(foodRef?.servingSize ?? 100);
+      const ratio = servingSize > 0 ? quantity / servingSize : 1;
+      return {
+        calories: sum.calories + Number(food?.calories ?? foodRef?.energy ?? 0) * ratio,
+        protein: sum.protein + Number(food?.protein ?? foodRef?.protein ?? 0) * ratio,
+        carbs: sum.carbs + Number(
+          food?.carbs ?? food?.carbohydrates ?? foodRef?.carbohydrates ?? 0
+        ) * ratio,
+        fat: sum.fat + Number(food?.fat ?? foodRef?.fat ?? 0) * ratio,
+      };
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+    return {
+      calories: this.firstNutritionNumber(meal?.calories, targets?.calories, foodTotals.calories),
+      protein: this.firstNutritionNumber(meal?.protein, targets?.proteinG, foodTotals.protein),
+      carbs: this.firstNutritionNumber(meal?.carbs, targets?.carbsG, foodTotals.carbs),
+      fat: this.firstNutritionNumber(meal?.fat, targets?.fatG, foodTotals.fat),
+    };
+  }
+
+  private firstNutritionNumber(...values: any[]): number {
+    for (const value of values) {
+      if (value === null || value === undefined || value === '') continue;
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return 0;
+  }
+
   openNutritionActivity(activity: NutritionActivity): void {
     this.selectedNutritionActivity = activity;
+    this.loadNutritionActivityPhotoUrls(activity);
+  }
+
+  private loadNutritionActivityPhotoUrls(activity: NutritionActivity): void {
+    activity.mealLogs.forEach((log: any, logIndex: number) => {
+      const hasStoredPhoto = log?.photoPath && String(log.photoPath) !== 'null';
+      const mealIndex = activity.meals.findIndex((meal: any) => meal?.id === log?.mealId);
+      const resolvedMealIndex = mealIndex >= 0 ? mealIndex : logIndex;
+      const meal = activity.meals[resolvedMealIndex];
+      const mealId = log?.mealId || meal?.id;
+
+      if (!hasStoredPhoto || !activity.planId || !activity.id || !mealId) return;
+
+      this.mealplanDayService
+        .getMealPhotoUrl(activity.planId, activity.id, mealId)
+        .pipe(catchError(() => of(null)))
+        .subscribe((result) => {
+          if (!result?.photoUrl) return;
+
+          log.photoUrl = result.photoUrl;
+          const existingPhoto = activity.photos.find((photo) =>
+            photo.mealId === mealId
+          );
+          if (existingPhoto) {
+            existingPhoto.url = result.photoUrl;
+          } else {
+            activity.photos.push({
+              url: result.photoUrl,
+              label: log?.mealName || meal?.name || `Meal ${resolvedMealIndex + 1}`,
+              time: log?.loggedAt || log?.createdAt || '',
+              mealId,
+            });
+          }
+        });
+    });
   }
 
   closeNutritionActivity(): void {
@@ -1106,7 +1281,10 @@ export class ProfilClientComponent {
   }
 
   nutritionMealLog(activity: NutritionActivity, index: number): any {
-    return activity.mealLogs[index] || null;
+    const meal = activity.meals[index];
+    return activity.mealLogs.find((log: any) =>
+      meal?.id && log?.mealId === meal.id
+    ) || activity.mealLogs[index] || null;
   }
 
   nutritionMealState(log: any): string {
@@ -1153,6 +1331,7 @@ export class ProfilClientComponent {
       return 'View results';
     }
     if (activity.status === 'IN_PROGRESS') return 'View progress';
+    if (activity.status === 'OVERDUE') return 'Resolve workout';
     if (activity.status === 'MISSED') return 'View details';
     return 'View workout';
   }
@@ -1174,6 +1353,7 @@ export class ProfilClientComponent {
     if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'After workout';
     if (activity.status === 'COMPLETED') return 'Live workout';
     if (activity.status === 'IN_PROGRESS') return 'Ongoing';
+    if (activity.status === 'OVERDUE') return 'Needs resolution';
     if (activity.status === 'MISSED') return 'Workout missed';
     return 'Not started';
   }

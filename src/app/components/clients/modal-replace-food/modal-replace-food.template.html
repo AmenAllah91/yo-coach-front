@@ -16,7 +16,7 @@
           <span>{{ originalFood.quantity }}</span>
         </div>
         <div class="replacing-calories">
-          <strong>{{ originalFood.calories }}</strong>
+          <strong>{{ displayMacro(originalFood.calories) }}</strong>
           <span>kcal</span>
         </div>
       </article>
@@ -44,10 +44,10 @@
               <small>{{ option.food.quantity || 100 }} {{ option.food.unit || 'g' }}</small>
             </div>
             <div class="swap-macros">
-              <div class="swap-kcal"><strong>{{ option.food.energy || 0 }}</strong><small>Kcal</small></div>
-              <div><strong>{{ option.food.protein || 0 }}g</strong><small>P</small></div>
-              <div><strong>{{ option.food.carbohydrates || 0 }}g</strong><small>C</small></div>
-              <div><strong>{{ option.food.fat || 0 }}g</strong><small>F</small></div>
+              <div class="swap-kcal"><strong>{{ displayMacro(option.food.energy) }}</strong><small>Kcal</small></div>
+              <div><strong>{{ displayMacro(option.food.protein) }}g</strong><small>P</small></div>
+              <div><strong>{{ displayMacro(option.food.carbohydrates) }}g</strong><small>C</small></div>
+              <div><strong>{{ displayMacro(option.food.fat) }}g</strong><small>F</small></div>
             </div>
           </button>
         </div>

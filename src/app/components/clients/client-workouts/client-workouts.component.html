@@ -264,9 +264,10 @@
     <div class="workout-day__title"><button aria-label="Back" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span></div>
     <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ workoutRunStatus === 'LOG_WORKOUT' ? 'NO TIMER' : 'WORKOUT TIMER' }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
-      <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> Log as completed</button>
+      <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> Extract PDF</button>
+      <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> Mark as completed</button>
       <button class="secondary-action missed-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> Mark as missed</button>
-      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()">Log a completed workout</button>
+      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()"><i-feather name="check-circle"></i-feather> Already completed</button>
       <button class="primary-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="startWorkout()"><i-feather name="play"></i-feather> Start workout</button>
       <ng-container *ngIf="workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED'">
         <div class="workout-menu"><button class="icon-action" aria-label="Workout menu" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button><button class="cancel-action" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">Cancel workout</button></div>
@@ -323,12 +324,12 @@
           <span class="rest-value">{{ set.rest }}</span>
         </div>
       </div>
-      <div class="exercise-note-editor" [class.exercise-note-editor--saved]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED'" *ngIf="!isSingleCardioWarmUp(exercise) && (noteExercise === exercise || ((workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED') && exercise.note))">
+      <div class="exercise-note-editor" [class.exercise-note-editor--saved]="workoutRunStatus !== 'IN_PROGRESS' && workoutRunStatus !== 'PAUSED' && workoutRunStatus !== 'LOG_WORKOUT'" *ngIf="!isSingleCardioWarmUp(exercise)">
         <label [for]="'exercise-note-' + exercise.displayNumber">Note</label>
         <textarea
           [id]="'exercise-note-' + exercise.displayNumber"
           [(ngModel)]="exercise.note"
-          [readOnly]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED'"
+          [readOnly]="workoutRunStatus !== 'IN_PROGRESS' && workoutRunStatus !== 'PAUSED' && workoutRunStatus !== 'LOG_WORKOUT'"
           rows="2"
           placeholder="Write a note for your coach..."
         ></textarea>
@@ -349,6 +350,53 @@
       ></textarea>
     </section>
   </main>
+</div>
+
+<div class="workout-pdf-backdrop" *ngIf="showWorkoutPdfPreview" (click)="closeWorkoutPdfPreview()">
+  <section class="workout-pdf-modal" role="dialog" aria-modal="true" aria-labelledby="workout-pdf-title" (click)="$event.stopPropagation()">
+    <header class="workout-pdf-modal__header">
+      <div><h2 id="workout-pdf-title">Workout PDF preview</h2><p>Review your complete training program before downloading.</p></div>
+      <div class="workout-pdf-modal__actions">
+        <button type="button" class="workout-pdf-download" (click)="downloadWorkoutPdf()"><i-feather name="download"></i-feather> Download PDF</button>
+        <button type="button" class="workout-pdf-close" aria-label="Close preview" (click)="closeWorkoutPdfPreview()">×</button>
+      </div>
+    </header>
+    <div class="workout-pdf-scroll">
+      <article class="workout-pdf-document">
+        <section class="workout-pdf-cover">
+          <div class="workout-pdf-brand"><span class="workout-pdf-brand-mark"><i-feather name="activity"></i-feather></span><span><strong>Training program</strong><small>Powered by Yo Coach</small></span></div>
+          <h1>{{ selectedWorkout?.program }}</h1>
+          <p class="workout-pdf-description">{{ selectedWorkoutPlan?.description || 'Your complete training program. Follow every session and respect the prescribed recovery time.' }}</p>
+          <div class="workout-pdf-meta">
+            <div><small>Client</small><strong>{{ pdfClientName }}</strong></div>
+            <div><small>Coach</small><strong>{{ pdfCoachName }}</strong></div>
+            <div><small>Start date</small><strong>{{ selectedWorkoutPlan?.startDate | date:'EEEE, MMM d, y' }}</strong></div>
+            <div><small>End date</small><strong>{{ selectedWorkoutPlan?.endDate | date:'EEEE, MMM d, y' }}</strong></div>
+          </div>
+          <div class="workout-pdf-stats">
+            <div><strong>{{ pdfTotalWeeks }}</strong><small>WEEKS</small></div>
+            <div><strong>{{ pdfTotalDays }}</strong><small>TOTAL DAYS</small></div>
+            <div><strong>{{ pdfActiveWorkoutCount }}</strong><small>WORKOUTS</small></div>
+          </div>
+        </section>
+        <section class="workout-pdf-week" *ngFor="let week of pdfProgramWeeks">
+          <header class="workout-pdf-week-header"><div><small>{{ selectedWorkout?.program }}</small><h2>Week {{ week.number }}</h2></div><div><small>Schedule</small><strong>{{ week.workouts[0]?.date | date:'MMM d' }} - {{ week.workouts[week.workouts.length - 1]?.date | date:'MMM d' }}</strong></div></header>
+          <article class="workout-pdf-day" *ngFor="let workout of week.workouts" [class.rest]="!workout.groupedExercises.length">
+            <div class="workout-pdf-day-head"><span>Day {{ workout.dayNumber }} &nbsp;•&nbsp; {{ workout.date | date:'EEEE, MMM d, y' }}</span><em>{{ pdfWorkoutLabel(workout) }}</em></div>
+            <p class="workout-pdf-rest" *ngIf="!workout.groupedExercises.length">Rest and recovery. No exercises scheduled.</p>
+            <p class="workout-pdf-day-note" *ngIf="workout.groupedExercises.length">Complete each set with controlled technique. Respect the prescribed rest times.</p>
+            <section class="workout-pdf-exercise" *ngFor="let exercise of workout.groupedExercises">
+              <div class="workout-pdf-exercise-head"><strong><b>{{ exercise.displayNumber }}</b> {{ exercise.name }} <em *ngIf="exercise.isSuperset">SUPERSET</em></strong><span>{{ exercise.sets.length }} sets · {{ exercise.primaryMuscle || exercise.label }}</span></div>
+              <p class="workout-pdf-exercise-description" *ngIf="exercise.description">{{ exercise.description }}</p>
+              <table><thead><tr><th>Set</th><th>Type</th><th>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</th><th>Weight ({{ weightUnitLabel }})</th><th>Rest</th></tr></thead>
+                <tbody><tr *ngFor="let set of exercise.sets"><td>{{ set.setNumber }}</td><td><span class="workout-pdf-set-type" [attr.data-type]="set.type">{{ getSetTypeText(set.type) || 'Regular' }}</span></td><td>{{ exercise.type === 'CARDIO' ? set.duration : set.reps }}</td><td>{{ formatExerciseWeight(set.weight) }}</td><td>{{ set.rest }}</td></tr></tbody>
+              </table>
+            </section>
+          </article>
+        </section>
+      </article>
+    </div>
+  </section>
 </div>
 
 <div class="workout-resolution-backdrop" *ngIf="showMissedWorkoutModal" (click)="closeMissedWorkoutModal()">

@@ -44,7 +44,14 @@
                 (click)="selectDay(d)"
               >
                 <span class="np-day__title">{{ d.title }}</span>
-                <small class="np-day__meta">{{ d.isRestDay || d.restDay ? 'Rest Day' : 'Empty Day' }}</small>
+                <small class="np-day__meta">
+                  <ng-container *ngIf="d.isRestDay || d.restDay; else exerciseCount">Rest Day</ng-container>
+                  <ng-template #exerciseCount>
+                    {{ getDayExerciseCount(d) > 0
+                      ? (getDayExerciseCount(d) + (getDayExerciseCount(d) === 1 ? ' exercise' : ' exercises'))
+                      : 'Empty Day' }}
+                  </ng-template>
+                </small>
               </button>
             </div>
           </ng-container>

@@ -190,6 +190,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   pendingWorkoutToStart: Workout | null = null;
   nextWorkoutAfterResolution: Workout | null = null;
   overdueWorkoutNotice = '';
+  showWorkoutPdfPreview = false;
   private overdueNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -240,32 +241,121 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     return this.selectedWorkout?.groupedExercises.length || 0;
   }
 
+  get selectedWorkoutPlan(): any {
+    return this.allPlans.find((plan: any) => plan.id === this.selectedWorkout?.planId) || null;
+  }
+
+  get pdfProgramWorkouts(): Workout[] {
+    if (!this.selectedWorkout) return [];
+    return this.workouts
+      .filter(workout => workout.planId === this.selectedWorkout!.planId)
+      .sort((a, b) => a.dayNumber - b.dayNumber);
+  }
+
+  get pdfProgramWeeks(): { number: number; workouts: Workout[] }[] {
+    const weeks = new Map<number, Workout[]>();
+    this.pdfProgramWorkouts.forEach(workout => {
+      const weekNumber = Math.floor(Math.max(0, workout.dayNumber - 1) / 7) + 1;
+      weeks.set(weekNumber, [...(weeks.get(weekNumber) || []), workout]);
+    });
+    return Array.from(weeks, ([number, workouts]) => ({ number, workouts }));
+  }
+
+  get pdfClientName(): string {
+    const client = this.selectedWorkoutPlan?.client || {};
+    return `${client.firstName || client.firstname || ''} ${client.lastName || client.lastname || ''}`.trim() || 'Client';
+  }
+
+  get pdfCoachName(): string {
+    const coach = this.selectedWorkoutPlan?.coach || {};
+    return `${coach.firstName || ''} ${coach.lastName || ''}`.trim() || 'Coach';
+  }
+
+  get pdfTotalDays(): number {
+    const plan = this.selectedWorkoutPlan;
+    const start = this.parseWorkoutDate(plan?.startDate);
+    const end = this.parseWorkoutDate(plan?.endDate);
+    return start && end ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1) : this.pdfProgramWorkouts.length;
+  }
+
+  get pdfTotalWeeks(): number {
+    return Math.max(1, Math.ceil(this.pdfTotalDays / 7));
+  }
+
+  get pdfActiveWorkoutCount(): number {
+    return this.pdfProgramWorkouts.filter(workout => workout.groupedExercises.length > 0).length;
+  }
+
+  openWorkoutPdfPreview(): void {
+    this.showWorkoutPdfPreview = true;
+  }
+
+  closeWorkoutPdfPreview(): void {
+    this.showWorkoutPdfPreview = false;
+  }
+
+  downloadWorkoutPdf(): void {
+    const preview = document.querySelector('.workout-pdf-document');
+    if (!preview) return;
+    const printWindow = window.open('', '_blank', 'width=960,height=800');
+    if (!printWindow) return;
+    printWindow.document.write(`<!doctype html><html><head><title>${this.escapeHtml(this.selectedWorkout?.program || 'workout-program')}</title>
+      <style>${this.workoutPdfPrintStyles()}</style></head><body>${preview.outerHTML}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    window.setTimeout(() => printWindow.print(), 250);
+  }
+
+  pdfWorkoutLabel(workout: Workout): string {
+    return workout.groupedExercises.length ? (workout.title || 'Main session') : 'Rest day';
+  }
+
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+    }[character] || character));
+  }
+
+  private workoutPdfPrintStyles(): string {
+    return `
+      @page{size:A4;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}body{margin:0;background:#fff;color:#07172b;font-family:Arial,sans-serif}
+      .workout-pdf-document{width:100%;background:#fff}.workout-pdf-cover{min-height:270mm;padding:18mm 10mm}
+      .workout-pdf-brand{display:flex;align-items:center;gap:12px;color:#078fc9;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase}.workout-pdf-brand>span:last-child{display:flex;flex-direction:column}.workout-pdf-brand strong{font:inherit}.workout-pdf-brand small{margin-top:3px;color:#8ba0b5;font-size:8px;letter-spacing:0;text-transform:none;font-weight:500}
+      .workout-pdf-brand-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:#12a7e5!important;color:#fff;font-size:22px}.workout-pdf-brand-mark svg{width:22px;height:22px}
+      .workout-pdf-cover h1{margin:35px 0 10px;font-size:32px}.workout-pdf-description{color:#52677e;line-height:1.6}
+      .workout-pdf-meta{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.workout-pdf-meta div{padding:13px;border:1px solid #d8e2ec;border-radius:8px}
+      .workout-pdf-meta small{display:block;color:#8295aa;font-size:9px;text-transform:uppercase}.workout-pdf-meta strong{display:block;margin-top:7px;font-size:12px}
+      .workout-pdf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.workout-pdf-stats div{padding:14px;border-radius:8px;background:#12a7e5!important;color:#fff!important}
+      .workout-pdf-stats strong{display:block;font-size:23px}.workout-pdf-stats small{font-size:9px;font-weight:700}.workout-pdf-week{break-before:page;padding:4mm 2mm}
+      .workout-pdf-week-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:1px solid #d9e3ec}.workout-pdf-week-header>div:last-child{display:flex;align-items:flex-end;flex-direction:column;gap:3px}.workout-pdf-week-header h2{margin:3px 0 0;font-size:22px}.workout-pdf-week-header small{color:#7890a8;font-size:8px;text-transform:uppercase}.workout-pdf-week-header strong{color:#34495f;font-size:9px}
+      .workout-pdf-day{margin-top:14px;border:1px solid #cad8e4;border-radius:7px;overflow:hidden;break-inside:avoid}.workout-pdf-day-head{display:flex;justify-content:space-between;padding:9px 12px;background:#12a7e5;color:#fff;font-size:11px;font-weight:700}
+      .workout-pdf-day.rest .workout-pdf-day-head{background:#f4f7fa!important;color:#17283b!important}.workout-pdf-day-head em{padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.25);font-size:8px;font-style:normal;text-transform:uppercase}.workout-pdf-day.rest em{border:1px solid #bdcbd8;background:#fff!important}
+      .workout-pdf-rest{padding:18px;text-align:center;color:#8a9bb0;font-size:10px;font-style:italic}.workout-pdf-day-note{margin:0;padding:7px 12px;border-bottom:1px solid #e4ebf1;color:#778ba0;font-size:8px;font-style:italic}.workout-pdf-exercise{margin:9px;border:1px solid #dce5ed;border-radius:5px;overflow:hidden;break-inside:avoid}
+      .workout-pdf-exercise-head{display:flex;justify-content:space-between;padding:7px 9px;background:#f7fafc!important;font-size:9px}.workout-pdf-exercise-head strong{display:flex;align-items:center;gap:5px;font-size:10px}.workout-pdf-exercise-head strong b{padding:2px 5px;border-radius:3px;background:#dff4fd!important;color:#087fae;font-size:7px}.workout-pdf-exercise-head strong em{padding:1px 4px;border:1px solid #20a9e0;border-radius:4px;background:#fff;color:#078fc9;font-size:6px;font-style:normal}.workout-pdf-exercise-description{margin:0;padding:5px 9px;color:#63778c;font-size:7px;line-height:1.35}.workout-pdf-exercise table{width:100%;border-collapse:collapse;font-size:8px}
+      .workout-pdf-exercise th,.workout-pdf-exercise td{padding:5px 8px;border-top:1px solid #e6edf3;text-align:left}.workout-pdf-exercise th{color:#8093a8;font-size:7px;text-transform:uppercase}.workout-pdf-exercise th:last-child,.workout-pdf-exercise td:last-child{text-align:right}.workout-pdf-set-type{padding:2px 5px;border-radius:3px;background:#edf2f7!important;color:#42576c;font-size:6px}.workout-pdf-set-type[data-type='WARM_UP']{background:#fff2ca!important;color:#c97c00}.workout-pdf-set-type[data-type='DROP_SET']{background:#f1eaff!important;color:#6844d6}.workout-pdf-set-type[data-type='FAILURE']{background:#ffe8ed!important;color:#d83452}
+      @media print{.workout-pdf-document{box-shadow:none}.workout-pdf-week:first-of-type{break-before:page}}
+    `;
+  }
+
   startWorkout(): void {
     if (!this.selectedWorkout) return;
-    const previous = this.findPreviousOverdueWorkout(this.selectedWorkout);
-    if (previous) {
-      this.unresolvedPreviousWorkout = previous;
+    const previousWorkouts = this.findPreviousOverdueWorkouts(this.selectedWorkout);
+    if (previousWorkouts.length === 1) {
+      this.unresolvedPreviousWorkout = previousWorkouts[0];
       this.pendingWorkoutToStart = this.selectedWorkout;
       this.previousWorkoutReason = '';
       this.showPreviousOverdueModal = true;
       return;
     }
-    this.showNonBlockingOverdueNotice(this.selectedWorkout);
+    if (previousWorkouts.length > 1) {
+      this.showNonBlockingOverdueNotice(previousWorkouts.length);
+    }
     this.startSelectedWorkout();
   }
 
-  private showNonBlockingOverdueNotice(workout: Workout): void {
-    const unresolvedCount = this.workouts.filter(candidate =>
-      candidate.status === 'OVERDUE' &&
-      candidate.id !== workout.id &&
-      candidate.planId !== workout.planId &&
-      this.workoutDateValue(candidate.date) < this.workoutDateValue(workout.date)
-    ).length;
-    if (!unresolvedCount) return;
-
-    this.overdueWorkoutNotice = unresolvedCount === 1
-      ? 'You have 1 unresolved workout in another program. This workout has started normally.'
-      : `You have ${unresolvedCount} unresolved workouts in other programs. This workout has started normally.`;
+  private showNonBlockingOverdueNotice(unresolvedCount: number): void {
+    this.overdueWorkoutNotice =
+      `You have ${unresolvedCount} unresolved workouts. This workout has started normally.`;
     if (this.overdueNoticeTimer) clearTimeout(this.overdueNoticeTimer);
     this.overdueNoticeTimer = setTimeout(() => {
       this.overdueWorkoutNotice = '';
@@ -291,13 +381,68 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   cancelWorkout(): void {
+    if (!this.selectedWorkout) return;
+    const workout = this.selectedWorkout;
+    const previousStatus = workout.status;
+    const previousElapsedSeconds = this.elapsedSeconds;
+    const previousExercises = workout.groupedExercises.map(exercise => ({
+      exercise,
+      completed: exercise.completed,
+      skipped: exercise.skipped,
+      note: exercise.note,
+    }));
+
     this.stopTimer();
     this.elapsedSeconds = 0;
     this.workoutRunStatus = 'NOT_STARTED';
-    this.showWorkoutMenu = false;
-    this.selectedWorkout?.groupedExercises.forEach((exercise) => {
+    workout.status = 'PENDING';
+    workout.workoutElapsedSeconds = 0;
+    workout.clientCompletionMode = undefined;
+    workout.overallWorkoutNote = '';
+    workout.groupedExercises.forEach((exercise) => {
       exercise.completed = false;
       exercise.skipped = false;
+      exercise.note = '';
+    });
+    this.showWorkoutMenu = false;
+
+    this.workoutDayService.updateWorkoutDay({
+      id: workout.id,
+      dayNumber: workout.dayNumber,
+      status: 'PENDING',
+      workoutElapsedSeconds: 0,
+      clientCompletionMode: null,
+      clientExerciseLogs: [],
+      overallWorkoutNote: '',
+    }, workout.planId).subscribe({
+      next: () => {
+        const listedWorkout = this.workouts.find(item =>
+          item.id === workout.id && item.planId === workout.planId
+        );
+        if (listedWorkout) {
+          listedWorkout.status = 'PENDING';
+          listedWorkout.workoutElapsedSeconds = 0;
+          listedWorkout.clientCompletionMode = undefined;
+          listedWorkout.overallWorkoutNote = '';
+          listedWorkout.groupedExercises.forEach(exercise => {
+            exercise.completed = false;
+            exercise.skipped = false;
+            exercise.note = '';
+          });
+        }
+      },
+      error: () => {
+        workout.status = previousStatus;
+        workout.workoutElapsedSeconds = previousElapsedSeconds;
+        this.elapsedSeconds = previousElapsedSeconds;
+        this.workoutRunStatus = 'IN_PROGRESS';
+        previousExercises.forEach(snapshot => {
+          snapshot.exercise.completed = snapshot.completed;
+          snapshot.exercise.skipped = snapshot.skipped;
+          snapshot.exercise.note = snapshot.note;
+        });
+        this.startTimer();
+      },
     });
   }
 
@@ -416,15 +561,19 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   private findPreviousOverdueWorkout(workout: Workout): Workout | null {
+    const previousWorkouts = this.findPreviousOverdueWorkouts(workout);
+    return previousWorkouts.length === 1 ? previousWorkouts[0] : null;
+  }
+
+  private findPreviousOverdueWorkouts(workout: Workout): Workout[] {
     const selectedDate = this.workoutDateValue(workout.date);
     return this.workouts
       .filter(candidate =>
         candidate.status === 'OVERDUE' &&
         candidate.id !== workout.id &&
-        candidate.planId === workout.planId &&
         this.workoutDateValue(candidate.date) < selectedDate
       )
-      .sort((a, b) => this.workoutDateValue(b.date) - this.workoutDateValue(a.date))[0] || null;
+      .sort((a, b) => this.workoutDateValue(b.date) - this.workoutDateValue(a.date));
   }
 
   private workoutDateValue(value: string): number {
@@ -723,7 +872,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           groupedExercises.forEach((exercise) => exercise.completed = true);
         }
         const persistedStatus = (day.status ?? 'PENDING') as WorkoutStatus;
-        const status: WorkoutStatus = persistedStatus === 'PENDING' && workoutDate < today
+        const status: WorkoutStatus = (persistedStatus === 'PENDING' || persistedStatus === 'IN_PROGRESS') && workoutDate < today
           ? 'OVERDUE'
           : persistedStatus;
         workouts.push({
@@ -1168,8 +1317,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       groupExercises.forEach((ex, subIndex) => {
         const exerciseRef = ex.exerciseRef || {};
         const isSuperset = groupExercises.length > 1;
-        const groupLetter = this.indexToExerciseLetter(globalIndex);
-        const displayNumber = isSuperset ? `${groupLetter}${subIndex + 1}` : groupLetter;
+        const groupNumber = globalIndex + 1;
+        const displayNumber = isSuperset ? `${groupNumber}.${subIndex + 1}` : `${groupNumber}`;
         const totalDuration = ex.sets?.reduce((sum, s) => sum + (s.duration || 0), 0) ?? ex.duration;
         groupedExercises.push({
           sourceExerciseId: ex.id,
@@ -1276,11 +1425,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   getWorkoutExerciseDisplay(workout: Workout): WorkoutExerciseDisplay[] {
     const exercises = (workout.rawSessions || []).flatMap((session) => session.exercises || []);
     const display: WorkoutExerciseDisplay[] = [];
-    const groupLetters = new Map<string, string>();
-    let letterIndex = 0;
+    const groupNumbers = new Map<string, number>();
+    let groupIndex = 0;
 
     exercises.forEach((exercise) => {
       if (this.isWarmUpExercise(exercise)) {
+        groupIndex++;
         display.push({
           badge: '',
           name: 'Warm up',
@@ -1291,21 +1441,21 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       }
 
       const groupId = exercise.supersetGroupId || '';
-      let badgeLetter: string;
+      let badgeGroupNumber: number;
       if (groupId) {
-        const existingLetter = groupLetters.get(groupId);
-        badgeLetter = existingLetter || this.indexToExerciseLetter(letterIndex++);
-        groupLetters.set(groupId, badgeLetter);
+        const existingNumber = groupNumbers.get(groupId);
+        badgeGroupNumber = existingNumber || ++groupIndex;
+        groupNumbers.set(groupId, badgeGroupNumber);
       } else {
-        badgeLetter = this.indexToExerciseLetter(letterIndex++);
+        badgeGroupNumber = ++groupIndex;
       }
       const sameGroupExercises = groupId
         ? exercises.filter((item) => item.supersetGroupId === groupId)
         : [];
       const subIndex = sameGroupExercises.findIndex((item) => item === exercise || (!!item.id && item.id === exercise.id));
       const badge = groupId && sameGroupExercises.length > 1
-        ? `${badgeLetter}${subIndex + 1}`
-        : badgeLetter;
+        ? `${badgeGroupNumber}.${subIndex + 1}`
+        : `${badgeGroupNumber}`;
 
       display.push({
         badge,

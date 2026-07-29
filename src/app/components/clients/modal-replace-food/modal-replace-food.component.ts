@@ -67,6 +67,14 @@ export class ModalReplaceFoodComponent implements OnChanges {
     return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
   }
 
+  displayMacro(value: unknown): string {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return '0';
+
+    const rounded = Math.round(numericValue * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  }
+
   ngOnChanges(changes: SimpleChanges) {
     if (changes['show']?.currentValue && this.originalFood) {
       this.loadReplacementGroups();
