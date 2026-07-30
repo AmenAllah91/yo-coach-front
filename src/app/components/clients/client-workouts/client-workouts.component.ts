@@ -14,6 +14,8 @@ import { catchError, map } from 'rxjs/operators';
 type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS' | 'OVERDUE';
 type WorkoutRunStatus = 'NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
 type WorkoutSetType = 'REGULAR' | 'WARM_UP' | 'DROP_SET' | 'FAILURE';
+type WorkoutSetStatus = 'PENDING' | 'COMPLETED' | 'MISSED';
+type ExerciseStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'MISSED' | 'PARTIALLY_COMPLETED';
 
 interface ExerciseSet {
   setNumber?: number;
@@ -72,11 +74,13 @@ interface GroupedExercise {
     weight: number | null;
     rest: string;
     duration?: number;
+    status: WorkoutSetStatus;
   }[];
   duration?: number;
   isWarmUp: boolean;
   completed?: boolean;
   skipped?: boolean;
+  exerciseStatus?: ExerciseStatus;
   note?: string;
   description?: string;
   instructions?: string[];
@@ -191,6 +195,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   nextWorkoutAfterResolution: Workout | null = null;
   overdueWorkoutNotice = '';
   showWorkoutPdfPreview = false;
+  pendingExerciseStatusAction: { exercise: GroupedExercise; status: 'COMPLETED' | 'MISSED' } | null = null;
   private overdueNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -213,6 +218,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.stopTimer();
     if (this.overdueNoticeTimer) clearTimeout(this.overdueNoticeTimer);
     this.revokeSelectedFileBlob();
+    document.body.classList.remove('client-workout-detail-open');
   }
 
   get formattedWorkoutTime(): string {
@@ -234,11 +240,35 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get reviewedExerciseCount(): number {
-    return this.selectedWorkout?.groupedExercises.filter((exercise) => exercise.completed || exercise.skipped).length || 0;
+    return this.selectedWorkout?.groupedExercises.filter((exercise) =>
+      ['COMPLETED', 'MISSED', 'PARTIALLY_COMPLETED'].includes(this.getExerciseStatus(exercise))
+    ).length || 0;
   }
 
   get reviewableExerciseCount(): number {
     return this.selectedWorkout?.groupedExercises.length || 0;
+  }
+
+  get totalWorkoutSetCount(): number {
+    return this.selectedWorkout?.groupedExercises.reduce(
+      (total, exercise) => total + exercise.sets.length,
+      0
+    ) || 0;
+  }
+
+  get completedWorkoutSetCount(): number {
+    return this.selectedWorkout?.groupedExercises.reduce(
+      (total, exercise) => total +
+        this.getSetStatusCount(exercise, 'COMPLETED') +
+        this.getSetStatusCount(exercise, 'MISSED'),
+      0
+    ) || 0;
+  }
+
+  get canEditWorkoutSets(): boolean {
+    return this.workoutRunStatus === 'IN_PROGRESS' ||
+      this.workoutRunStatus === 'PAUSED' ||
+      this.workoutRunStatus === 'LOG_WORKOUT';
   }
 
   get selectedWorkoutPlan(): any {
@@ -390,6 +420,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       completed: exercise.completed,
       skipped: exercise.skipped,
       note: exercise.note,
+      setStatuses: exercise.sets.map(set => set.status),
     }));
 
     this.stopTimer();
@@ -402,6 +433,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     workout.groupedExercises.forEach((exercise) => {
       exercise.completed = false;
       exercise.skipped = false;
+      exercise.exerciseStatus = 'PENDING';
+      exercise.sets.forEach(set => set.status = 'PENDING');
       exercise.note = '';
     });
     this.showWorkoutMenu = false;
@@ -427,6 +460,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           listedWorkout.groupedExercises.forEach(exercise => {
             exercise.completed = false;
             exercise.skipped = false;
+            exercise.exerciseStatus = 'PENDING';
+            exercise.sets.forEach(set => set.status = 'PENDING');
             exercise.note = '';
           });
         }
@@ -440,6 +475,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           snapshot.exercise.completed = snapshot.completed;
           snapshot.exercise.skipped = snapshot.skipped;
           snapshot.exercise.note = snapshot.note;
+          snapshot.exercise.sets.forEach((set, index) => set.status = snapshot.setStatuses[index] || 'PENDING');
+          this.recalculateExerciseStatus(snapshot.exercise);
         });
         this.startTimer();
       },
@@ -477,7 +514,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.workoutRunStatus = alreadyCompleted ? 'ALREADY_COMPLETED' : 'COMPLETED';
     this.selectedWorkout.groupedExercises
       .filter((exercise) => this.isSingleCardioWarmUp(exercise))
-      .forEach((exercise) => exercise.completed = true);
+      .forEach((exercise) => {
+        exercise.sets.forEach(set => set.status = 'COMPLETED');
+        this.recalculateExerciseStatus(exercise);
+      });
     this.selectedWorkout.workoutElapsedSeconds = this.elapsedSeconds;
     this.selectedWorkout.clientCompletionMode = alreadyCompleted ? 'ALREADY_COMPLETED' : 'TRACKED';
     this.updateWorkoutStatus(this.selectedWorkout, 'COMPLETED', true);
@@ -584,9 +624,76 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   markExercise(exercise: GroupedExercise, skipped: boolean): void {
-    exercise.skipped = skipped;
-    exercise.completed = !skipped;
+    const targetStatus = skipped ? 'MISSED' : 'COMPLETED';
+    const oppositeStatus = skipped ? 'COMPLETED' : 'MISSED';
+    if (exercise.sets.some(set => set.status === oppositeStatus)) {
+      this.pendingExerciseStatusAction = { exercise, status: targetStatus };
+      return;
+    }
+    this.applyStatusToAllSets(exercise, targetStatus);
+  }
+
+  confirmExerciseStatusAction(): void {
+    const action = this.pendingExerciseStatusAction;
+    if (!action) return;
+    this.pendingExerciseStatusAction = null;
+    this.applyStatusToAllSets(action.exercise, action.status);
+  }
+
+  cancelExerciseStatusAction(): void {
+    this.pendingExerciseStatusAction = null;
+  }
+
+  setWorkoutSetStatus(exercise: GroupedExercise, set: GroupedExercise['sets'][number], status: WorkoutSetStatus): void {
+    if (!this.canEditWorkoutSets) return;
+    set.status = status;
+    this.recalculateExerciseStatus(exercise);
     this.saveWorkoutProgress();
+  }
+
+  private applyStatusToAllSets(exercise: GroupedExercise, status: 'COMPLETED' | 'MISSED'): void {
+    exercise.sets.forEach(set => set.status = status);
+    exercise.completed = status === 'COMPLETED';
+    exercise.skipped = status === 'MISSED';
+    exercise.exerciseStatus = status;
+    this.saveWorkoutProgress();
+  }
+
+  getExerciseStatus(exercise: GroupedExercise): ExerciseStatus {
+    if (!exercise.sets.length) {
+      return exercise.completed ? 'COMPLETED' : exercise.skipped ? 'MISSED' : 'PENDING';
+    }
+    const completed = this.getSetStatusCount(exercise, 'COMPLETED');
+    const missed = this.getSetStatusCount(exercise, 'MISSED');
+    const pending = this.getSetStatusCount(exercise, 'PENDING');
+    if (pending === exercise.sets.length) return 'PENDING';
+    if (completed === exercise.sets.length) return 'COMPLETED';
+    if (missed === exercise.sets.length) return 'MISSED';
+    if (pending > 0) return 'IN_PROGRESS';
+    return 'PARTIALLY_COMPLETED';
+  }
+
+  getSetStatusCount(exercise: GroupedExercise, status: WorkoutSetStatus): number {
+    return exercise.sets.filter(set => set.status === status).length;
+  }
+
+  getExerciseActionHint(exercise: GroupedExercise): string {
+    const pending = this.getSetStatusCount(exercise, 'PENDING');
+    const missed = this.getSetStatusCount(exercise, 'MISSED');
+    const completed = this.getSetStatusCount(exercise, 'COMPLETED');
+    if (missed > 0) {
+      return 'Marking complete changes all sets, including missed sets, to Done.';
+    }
+    if (completed > 0) {
+      return `Marking complete sets the ${pending} pending ${pending === 1 ? 'set' : 'sets'} to Done.`;
+    }
+    return `Marking complete sets the ${pending} pending ${pending === 1 ? 'set' : 'sets'} to Done.`;
+  }
+
+  private recalculateExerciseStatus(exercise: GroupedExercise): void {
+    exercise.exerciseStatus = this.getExerciseStatus(exercise);
+    exercise.completed = exercise.exerciseStatus === 'COMPLETED';
+    exercise.skipped = exercise.exerciseStatus === 'MISSED';
   }
 
   private saveWorkoutProgress(): void {
@@ -869,7 +976,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         const groupedExercises = this.groupExercisesBySuperset(day.workoutSessions || []);
         this.applyClientExerciseLogs(groupedExercises, day.clientExerciseLogs || []);
         if (day.status === 'COMPLETED' && !(day.clientExerciseLogs || []).length) {
-          groupedExercises.forEach((exercise) => exercise.completed = true);
+          groupedExercises.forEach((exercise) => {
+            exercise.sets.forEach(set => set.status = 'COMPLETED');
+            this.recalculateExerciseStatus(exercise);
+          });
         }
         const persistedStatus = (day.status ?? 'PENDING') as WorkoutStatus;
         const status: WorkoutStatus = (persistedStatus === 'PENDING' || persistedStatus === 'IN_PROGRESS') && workoutDate < today
@@ -1340,6 +1450,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
               weight: this.coachSettingsService.convertWeightFromKg(s.weight),
               rest: this.formatRest(s.restMin ?? 0, s.restSec ?? 0),
               duration: s.duration,
+              status: 'PENDING',
             };
           }) || [],
           duration: totalDuration,
@@ -1502,7 +1613,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  userName = 'Kolton';
+  userName = sessionStorage.getItem('username') || 'Athlete';
   get greeting(): string {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -1525,6 +1636,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   onSelectWorkout(workout: Workout): void {
     this.stopTimer();
+    document.body.classList.add('client-workout-detail-open');
     this.elapsedSeconds = Number(workout.workoutElapsedSeconds || 0);
     this.workoutRunStatus = workout.status === 'COMPLETED'
       ? (workout.clientCompletionMode === 'ALREADY_COMPLETED' ? 'ALREADY_COMPLETED' : 'COMPLETED')
@@ -1541,7 +1653,11 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     };
   }
 
-  backToList() { this.stopTimer(); this.selectedWorkout = null; }
+  backToList() {
+    this.stopTimer();
+    this.selectedWorkout = null;
+    document.body.classList.remove('client-workout-detail-open');
+  }
 
   showConfirmModal = false;
   pendingStatus: WorkoutStatus | null = null;
@@ -1563,14 +1679,25 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       exercise.completed = !!log.completed;
       exercise.skipped = !!log.skipped;
       exercise.note = log.note || '';
+      const legacyStatus: WorkoutSetStatus = exercise.completed
+        ? 'COMPLETED'
+        : exercise.skipped ? 'MISSED' : 'PENDING';
       exercise.sets.forEach((set) => {
         const savedSet = (log.sets || []).find((item: any) => Number(item.setNumber) === set.setNumber);
-        if (!savedSet) return;
-        if (savedSet.reps !== undefined && savedSet.reps !== null) set.reps = savedSet.reps;
-        if (savedSet.weight !== undefined) set.weight = this.coachSettingsService.convertWeightFromKg(savedSet.weight);
-        if (savedSet.duration !== undefined && savedSet.duration !== null) set.duration = savedSet.duration;
+        set.status = this.normalizeWorkoutSetStatus(savedSet?.status || legacyStatus);
+        if (savedSet) {
+          if (savedSet.reps !== undefined && savedSet.reps !== null) set.reps = savedSet.reps;
+          if (savedSet.weight !== undefined) set.weight = this.coachSettingsService.convertWeightFromKg(savedSet.weight);
+          if (savedSet.duration !== undefined && savedSet.duration !== null) set.duration = savedSet.duration;
+        }
       });
+      this.recalculateExerciseStatus(exercise);
     });
+  }
+
+  private normalizeWorkoutSetStatus(value: any): WorkoutSetStatus {
+    const status = String(value || '').trim().toUpperCase();
+    return status === 'COMPLETED' || status === 'MISSED' ? status : 'PENDING';
   }
 
   updateWorkoutStatus(
@@ -1593,6 +1720,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           displayNumber: exercise.displayNumber,
           completed: !!exercise.completed,
           skipped: !!exercise.skipped,
+          exerciseStatus: this.getExerciseStatus(exercise),
           note: exercise.note || '',
           sets: exercise.sets.map((set) => ({
             setNumber: set.setNumber,
@@ -1601,6 +1729,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
             duration: set.duration,
             rest: set.rest,
             type: set.type,
+            status: set.status,
           })),
         }));
       }

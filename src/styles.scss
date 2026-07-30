@@ -562,3 +562,25 @@ body .table-wrap .dropdown-item.delete:hover {
   border-radius: 8px;
   transition: background-color 0.2s ease;
 }
+
+@media (max-width: 760px) {
+  body.client-workout-detail-open app-header,
+  body.client-workout-detail-open app-sidebar,
+  body.client-workout-detail-open .sidebar-spacer {
+    display: none !important;
+  }
+
+  body.client-workout-detail-open .layout-body {
+    min-height: 100vh !important;
+    margin-top: 0 !important;
+  }
+
+  body.client-workout-detail-open #app,
+  body.client-workout-detail-open .layout-main,
+  body.client-workout-detail-open .layout-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

@@ -2944,6 +2944,7 @@
 .workout-timer--disabled { border-color:#e1e4eb; background:#f5f5f8; color:#667085; }
 .workout-timer--disabled small { color:#667085; }
 .workout-day__actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+.workout-mobile-actions { display:none; }
 .workout-day button { font:inherit; cursor:pointer; }
 .primary-action,.secondary-action,.icon-action { min-height:45px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:0 18px; border-radius:10px; font-size:16px; font-weight:750; }
 .primary-action { border:1px solid #000; background:#000; color:#fff; }
@@ -3068,11 +3069,11 @@
 .note-modal { width:min(430px,100%); padding:22px; border-radius:14px; background:#fff; }.note-modal h2 { margin:0 0 14px; font-size:18px; }.note-modal textarea { width:100%; resize:vertical; padding:12px; border:1px solid #d8e1e9; border-radius:9px; }.note-modal > div { margin-top:12px; display:flex; justify-content:flex-end; gap:8px; }
 
 @media (max-width: 760px) {
-  .workout-day { padding-bottom:56px; }
+  .workout-day { padding-bottom:68px; }
   .workout-day__topbar { padding:10px 12px 12px; grid-template-columns:1fr; gap:9px; }
   .workout-day__title { min-width:0; gap:7px; }.workout-day__title h1 { font-size:16px; }.run-status { font-size:9px; padding:3px 7px; }
   .workout-timer { width:100%; padding:8px 9px; justify-content:center; }.workout-timer small { display:block; font-size:7px; }.workout-timer strong { font-size:12px; }
-  .workout-day__actions { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; }.workout-day .workout-day__actions .log-completed-action { min-height:36px; padding:5px 8px; font-size:10px; line-height:1.25; white-space:normal; }.workout-day__actions > .primary-action:only-child { grid-column:auto; }
+  .workout-day__actions { display:none; }
   .workout-day__actions .workout-menu { justify-self:start; }.workout-day__actions .secondary-action { justify-self:start; }.workout-day__actions .save-completed-action { position:fixed; z-index:20; left:8px; right:8px; bottom:8px; width:calc(100% - 16px); }
   .workout-day__actions .finish-workout-action { position:fixed; z-index:20; left:8px; right:8px; bottom:8px; width:calc(100% - 16px); box-shadow:0 7px 24px rgba(0,0,0,.22); }
   .workout-day__summary { padding:10px 12px 9px; font-size:10px; }.workout-day__summary strong { font-size:9px; }.workout-day__summary > span small { font-size:9px; }
@@ -3091,9 +3092,295 @@
   .exercise-modal__content > small { font-size:10px; }.exercise-modal__content h2 { margin:5px 0 16px; font-size:18px; }.exercise-modal__content h3 { margin:18px 0 10px; font-size:14px; }
   .exercise-facts { grid-template-columns:1fr; gap:8px; }.exercise-facts > span { min-height:77px; padding:12px 15px; gap:14px; border-radius:12px; }.exercise-facts > span > i-feather { width:45px; height:45px; flex-basis:45px; padding:12px; }.exercise-facts small { font-size:12px; }.exercise-facts strong { font-size:14px; }
   .modal-set { min-height:53px; padding:0 16px; font-size:12px; }.modal-set em { padding:3px 7px; font-size:8px; }.coach-note { margin-top:16px; padding:14px; border-radius:10px; font-size:12px; }
+  .workout-mobile-actions { position:fixed;z-index:40;left:0;right:0;bottom:0;min-height:62px;padding:7px 8px 9px;display:flex;align-items:center;gap:7px;border-top:1px solid #dce5ed;background:#fff;box-shadow:0 -5px 18px rgba(15,23,42,.08); }
+  .workout-mobile-actions > button { min-width:0;flex:1;height:42px;min-height:42px;padding:0 9px;border-radius:8px;font-size:11px;white-space:nowrap; }
+  .workout-mobile-actions > .primary-action:last-child { flex:1.08; }
+  .workout-mobile-actions .workout-menu { position:relative;flex:0 0 50px; }
+  .workout-mobile-actions .icon-action { width:50px;height:42px;min-height:42px;padding:0;border-radius:8px;font-size:16px; }
+  .workout-mobile-actions .cancel-action { top:auto;right:auto;left:0;bottom:49px;width:116px;padding:12px 14px;font-size:10px; }
+  .workout-mobile-actions .workout-menu + .secondary-action { flex:.9; }
+  .workout-mobile-actions .workout-menu ~ .primary-action { flex:1.35; }
+  .workout-mobile-actions i-feather { width:14px;height:14px;flex:0 0 14px;display:inline-flex;align-items:center;justify-content:center;line-height:0; }
+}
+
+.workout-day .exercise-set-summary {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:5px;
+  color:#718096;
+  font-size:11px;
+}
+.workout-day .exercise-set-summary span::before {
+  content:"";
+  width:7px;
+  height:7px;
+  margin-right:5px;
+  display:inline-block;
+  border-radius:50%;
+}
+.workout-day .set-summary-completed::before { background:#25a8f0; }
+.workout-day .set-summary-missed::before { background:#ed3e5c; }
+.workout-day .set-summary-pending::before { background:#a9b4c3; }
+
+.workout-day .exercise-row {
+  grid-template-columns:1.1fr 1fr 1fr 70px 126px;
+}
+.workout-day .set-status-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap:5px;
+}
+.workout-day .set-status-actions button {
+  width:34px;
+  height:34px;
+  padding:0;
+  border:1px solid #d7e1ea;
+  border-radius:8px;
+  background:#fff;
+  color:#8a9ab0;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+}
+.workout-day .set-status-actions button:hover { border-color:#8eb9d2; background:#f7fbfd; }
+.workout-day .set-status-actions button:disabled { cursor:not-allowed; opacity:.65; }
+.workout-day .set-status-actions .set-status-completed { border-color:#1caf72; background:#eaf9f2; color:#138757; }
+.workout-day .set-status-actions .set-status-missed { border-color:#eb4b67; background:#fff0f3; color:#d92f4d; }
+.workout-day .set-status-actions .set-status-pending { border-color:#249fe5; background:#eef8ff; color:#172b43; }
+
+.set-status-confirm-backdrop {
+  position:fixed;
+  z-index:1200;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(8,22,38,.55);
+}
+.set-status-confirm-modal {
+  width:min(500px,100%);
+  padding:25px;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 24px 70px rgba(0,0,0,.22);
+}
+.set-status-confirm-modal h2 { margin:0 0 12px; color:#10243a; font-size:21px; }
+.set-status-confirm-modal p { margin:0; color:#53677d; font-size:15px; line-height:1.55; }
+.set-status-confirm-modal footer { margin-top:24px; display:flex; justify-content:flex-end; gap:10px; }
+.set-status-confirm-modal footer button { min-height:42px; padding:0 17px; border-radius:9px; font-weight:700; cursor:pointer; }
+.set-status-confirm-cancel { border:1px solid #cad6e1; background:#fff; color:#24384d; }
+.set-status-confirm-primary { border:0; background:#101d30; color:#fff; }
+.set-status-confirm-primary.is-destructive { background:#df3455; }
+
+@media (max-width:700px) {
+  .workout-day .exercise-row {
+    padding:6px 8px;
+    grid-template-columns:minmax(38px,.7fr) minmax(46px,.85fr) minmax(52px,.9fr) 38px 87px;
+    gap:4px;
+  }
+  .workout-day .set-status-actions { gap:2px; }
+  .workout-day .set-status-actions button { width:27px; height:30px; border-radius:6px; font-size:15px; }
+  .workout-day .exercise-set-summary { gap:8px; font-size:9px; }
+  .set-status-confirm-modal { padding:20px; }
+  .set-status-confirm-modal footer { flex-direction:column-reverse; }
+  .set-status-confirm-modal footer button { width:100%; }
+}
+
+.workout-day .mobile-set-prefix,
+.workout-day .set-value-field > small,
+.workout-day .rest-value > small,
+.workout-day .set-status-actions button::after {
+  display:none;
+}
+.workout-day .set-value-field { display:contents; }
+.workout-day .workout-set-progress {
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  color:#8a9ab0;
+  font-size:12px;
+}
+.workout-day .workout-set-progress span::before {
+  content:"";
+  width:8px;
+  height:8px;
+  margin-right:5px;
+  display:inline-block;
+  border-radius:50%;
+}
+.workout-day .workout-set-progress .done::before { background:#25a8f0; }
+.workout-day .workout-set-progress .missed::before { background:#ed3e5c; }
+.workout-day .workout-set-progress .pending::before { background:#c5cfda; }
+.workout-day .exercise-action-hint {
+  grid-column:1 / -1;
+  color:#8a9ab0;
+  font-size:11px;
+}
+
+@media (max-width:700px) {
+  .workout-day .exercise-table { overflow:visible; }
+  .workout-day .exercise-row--head { display:none; }
+  .workout-day .exercise-row {
+    min-height:0;
+    padding:18px 20px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-areas:
+      "set rest"
+      "value weight"
+      "status status";
+    gap:13px 14px;
+    border-bottom:1px solid #e7edf3;
+    font-size:13px;
+  }
+  .workout-day .exercise-row .set-number {
+    grid-area:set;
+    font-size:14px;
+  }
+  .workout-day .mobile-set-prefix { display:inline; }
+  .workout-day .exercise-row .rest-value {
+    grid-area:rest;
+    justify-self:end;
+    color:#8a9ab0;
+    font-size:12px;
+    font-weight:700;
+  }
+  .workout-day .rest-value > small { display:inline; font:inherit; }
+  .workout-day .set-value-field {
+    display:flex;
+    min-width:0;
+    flex-direction:column;
+    gap:7px;
+  }
+  .workout-day .set-value-field:first-of-type { grid-area:value; }
+  .workout-day .set-value-field:last-of-type { grid-area:weight; }
+  .workout-day .set-value-field > small {
+    display:block;
+    color:#91a0b5;
+    font-size:10px;
+    font-weight:800;
+  }
+  .workout-day .exercise-row .set-value-field input {
+    width:100%;
+    height:50px;
+    padding:0 14px;
+    font-size:15px;
+  }
+  .workout-day .set-status-actions {
+    grid-area:status;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:0;
+    padding:2px;
+    border:1px solid #d8e1eb;
+    border-radius:9px;
+    background:#f8fafc;
+  }
+  .workout-day .set-status-actions button {
+    width:100%;
+    height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border:0;
+    background:transparent;
+    font-size:16px;
+  }
+  .workout-day .set-status-actions button::after {
+    display:inline;
+    font-size:11px;
+    font-weight:700;
+  }
+  .workout-day .set-status-actions button:nth-child(1)::after { content:"Done"; }
+  .workout-day .set-status-actions button:nth-child(2)::after { content:"Missed"; }
+  .workout-day .set-status-actions button:nth-child(3)::after { content:"Pending"; }
+  .workout-day .set-status-actions button.is-active {
+    border:1px solid #c6d2df;
+    border-radius:7px;
+    background:#e7edf4;
+  }
+  .workout-day .workout-set-progress {
+    overflow:hidden;
+    gap:8px;
+    white-space:nowrap;
+    font-size:10px;
+  }
+  .workout-day .workout-set-progress span { display:none; }
+  .workout-day .exercise-card__footer {
+    grid-template-columns:1fr 1fr;
+  }
+  .workout-day .exercise-card__footer .note-action,
+  .workout-day .exercise-card__footer > span,
+  .workout-day .exercise-action-hint {
+    grid-column:1 / -1;
+  }
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
   .workout-day__topbar { grid-template-columns:1fr 180px 1fr; padding-left:24px; padding-right:24px; }.workout-timer { width:180px; }.workout-day__title h1 { font-size:22px; }.workout-day .log-completed-action { padding:10px 12px; font-size:16px; line-height:24px; }.primary-action,.secondary-action,.icon-action { padding:0 13px; font-size:13px; }
   .workout-day__body { padding-left:24px; padding-right:24px; }
+}
+
+/* Final responsive overrides matching the workout tracking mock-up. */
+@media (max-width: 760px) {
+  .workout-day {
+    width:100%;
+    min-height:100vh;
+    margin:0;
+    background:#f5f8fb;
+  }
+  .workout-day .exercise-row.exercise-row--head {
+    display:none !important;
+  }
+  .workout-day__body {
+    padding:20px 22px 88px !important;
+  }
+  .workout-day .exercise-card {
+    margin:0 0 14px;
+    overflow:hidden;
+    border:1px solid #dce5ed;
+    border-radius:14px;
+    background:#fff;
+    box-shadow:none;
+  }
+  .workout-day .exercise-card__header {
+    min-height:82px;
+    padding:16px 62px 16px 20px;
+    gap:14px;
+  }
+  .workout-day .exercise-index {
+    width:46px;
+    height:46px;
+    flex:0 0 46px;
+    border-radius:50%;
+    font-size:14px;
+    font-weight:800;
+  }
+  .workout-day .exercise-card__header strong {
+    font-size:15px;
+  }
+  .workout-day .exercise-card__header small {
+    max-width:210px;
+    overflow:hidden;
+    font-size:10px;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+  }
+  .workout-day .exercise-video-action {
+    top:15px;
+    right:15px;
+    width:42px;
+    height:42px;
+    border-radius:9px;
+  }
+  .workout-day .exercise-video-action i-feather {
+    width:20px;
+    height:20px;
+  }
+  .workout-day .exercise-row {
+    padding:18px 20px;
+  }
 }

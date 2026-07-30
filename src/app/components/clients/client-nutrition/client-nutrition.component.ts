@@ -138,6 +138,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   selectedCoachId: string | 'all' = 'all';
   showMealReportModal = false;
+  showNutritionPdfPreview = false;
   reportMeal: Meal | null = null;
   reportMealIndex = 0;
   reportStatus: MealReportStatus = 'AS_PLANNED';
@@ -729,7 +730,80 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   extractNutritionPdf(): void {
-    window.print();
+    this.showNutritionPdfPreview = true;
+  }
+
+  closeNutritionPdfPreview(): void {
+    this.showNutritionPdfPreview = false;
+  }
+
+  get selectedNutritionPlan(): any {
+    return this.allPlans.find(plan => plan.id === this.selectedDay?.planId) || null;
+  }
+
+  get pdfNutritionDays(): NutritionDay[] {
+    if (!this.selectedDay) return [];
+    return this.nutritionDays
+      .filter(day => day.planId === this.selectedDay!.planId)
+      .sort((a, b) => this.parseCalendarDate(a.date)!.getTime() - this.parseCalendarDate(b.date)!.getTime());
+  }
+
+  get pdfNutritionWeeks(): { number: number; days: NutritionDay[] }[] {
+    const weeks = new Map<number, NutritionDay[]>();
+    this.pdfNutritionDays.forEach((day, index) => {
+      const number = Math.floor(index / 7) + 1;
+      weeks.set(number, [...(weeks.get(number) || []), day]);
+    });
+    return Array.from(weeks, ([number, days]) => ({ number, days }));
+  }
+
+  get pdfNutritionClientName(): string {
+    const client = this.selectedNutritionPlan?.client || {};
+    return `${client.firstName || client.firstname || ''} ${client.lastName || client.lastname || ''}`.trim() || 'Client';
+  }
+
+  get pdfNutritionCoachName(): string {
+    const coach = this.selectedNutritionPlan?.coach || {};
+    return `${coach.firstName || ''} ${coach.lastName || ''}`.trim() || 'Coach';
+  }
+
+  get pdfNutritionMealCount(): number {
+    return this.pdfNutritionDays.reduce((total, day) => total + day.meals.length, 0);
+  }
+
+  downloadNutritionPdf(): void {
+    const preview = document.querySelector('.nutrition-pdf-document');
+    if (!preview) return;
+    const printWindow = window.open('', '_blank', 'width=960,height=800');
+    if (!printWindow) return;
+    const title = this.escapeNutritionPdfHtml(this.selectedDay?.programName || 'nutrition-program');
+    printWindow.document.write(
+      `<!doctype html><html><head><title>${title}</title><style>${this.nutritionPdfPrintStyles()}</style></head><body>${preview.outerHTML}</body></html>`
+    );
+    printWindow.document.close();
+    printWindow.focus();
+    window.setTimeout(() => printWindow.print(), 250);
+  }
+
+  private escapeNutritionPdfHtml(value: string): string {
+    return value.replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+    }[character] || character));
+  }
+
+  private nutritionPdfPrintStyles(): string {
+    return `
+      @page{size:A4;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+      body{margin:0;background:#fff;color:#07172b;font-family:Arial,sans-serif}.nutrition-pdf-document{width:100%;background:#fff}.nutrition-pdf-cover{min-height:270mm;padding:18mm 10mm}
+      .nutrition-pdf-brand{display:flex;align-items:center;gap:12px;color:#078fc9;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase}.nutrition-pdf-brand>span:last-child{display:flex;flex-direction:column}.nutrition-pdf-brand strong{font:inherit}.nutrition-pdf-brand small{margin-top:3px;color:#8ba0b5;font-size:8px;letter-spacing:0;text-transform:none;font-weight:500}.nutrition-pdf-brand-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:#12a7e5!important;color:#fff;font-size:21px}
+      .nutrition-pdf-cover h1{margin:35px 0 10px;font-size:32px}.nutrition-pdf-description{color:#52677e;line-height:1.6}.nutrition-pdf-meta{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.nutrition-pdf-meta div{padding:13px;border:1px solid #d8e2ec;border-radius:8px}.nutrition-pdf-meta small{display:block;color:#8295aa;font-size:9px;text-transform:uppercase}.nutrition-pdf-meta strong{display:block;margin-top:7px;font-size:12px}
+      .nutrition-pdf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.nutrition-pdf-stats div{padding:14px;border-radius:8px;background:#12a7e5!important;color:#fff!important}.nutrition-pdf-stats strong{display:block;font-size:23px}.nutrition-pdf-stats small{font-size:9px;font-weight:700}
+      .nutrition-pdf-week{break-before:page;padding:4mm 2mm}.nutrition-pdf-week-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:1px solid #d9e3ec}.nutrition-pdf-week-header>div:last-child{display:flex;align-items:flex-end;flex-direction:column;gap:3px}.nutrition-pdf-week-header h2{margin:3px 0 0;font-size:22px}.nutrition-pdf-week-header small{color:#7890a8;font-size:8px;text-transform:uppercase}.nutrition-pdf-week-header strong{color:#34495f;font-size:9px}
+      .nutrition-pdf-day{margin-top:14px;border:1px solid #cad8e4;border-radius:7px;overflow:hidden;break-inside:avoid}.nutrition-pdf-day-head{display:flex;justify-content:space-between;padding:9px 12px;background:#12a7e5!important;color:#fff!important;font-size:10px;font-weight:700}.nutrition-pdf-day-head em{padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.25)!important;font-size:7px;font-style:normal;text-transform:uppercase}
+      .nutrition-pdf-totals{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #e3eaf0}.nutrition-pdf-totals span{padding:7px 9px;border-right:1px solid #e3eaf0}.nutrition-pdf-totals span:last-child{border:0}.nutrition-pdf-totals strong,.nutrition-pdf-totals small{display:block}.nutrition-pdf-totals strong{font-size:9px}.nutrition-pdf-totals small{margin-top:2px;color:#8293a5;font-size:6px;text-transform:uppercase}
+      .nutrition-pdf-meal{margin:9px;border:1px solid #dce5ed;border-radius:5px;overflow:hidden;break-inside:avoid}.nutrition-pdf-meal-head{display:flex;justify-content:space-between;align-items:center;padding:7px 9px;background:#f7fafc!important;font-size:8px}.nutrition-pdf-meal-head strong{font-size:9px}.nutrition-pdf-meal-head em{padding:2px 5px;border-radius:4px;background:#e7f6fd!important;color:#087fae;font-size:6px;font-style:normal}.nutrition-pdf-meal table{width:100%;border-collapse:collapse;font-size:8px}.nutrition-pdf-meal th,.nutrition-pdf-meal td{padding:5px 8px;border-top:1px solid #e6edf3;text-align:left}.nutrition-pdf-meal th{color:#8093a8;font-size:7px;text-transform:uppercase}.nutrition-pdf-meal th:not(:first-child),.nutrition-pdf-meal td:not(:first-child){text-align:right}
+      .nutrition-pdf-empty{padding:18px;text-align:center;color:#8a9bb0;font-size:9px;font-style:italic}
+    `;
   }
 
   private checkFoodReplacements(day: NutritionDay): void {

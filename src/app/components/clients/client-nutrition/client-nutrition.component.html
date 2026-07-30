@@ -465,6 +465,62 @@
   </footer>
 </div>
 
+<div class="nutrition-pdf-backdrop" *ngIf="showNutritionPdfPreview" (click)="closeNutritionPdfPreview()">
+  <section class="nutrition-pdf-modal" role="dialog" aria-modal="true" aria-labelledby="nutrition-pdf-title" (click)="$event.stopPropagation()">
+    <header class="nutrition-pdf-modal__header">
+      <div><h2 id="nutrition-pdf-title">Nutrition PDF preview</h2><p>Review your complete nutrition program before downloading.</p></div>
+      <div class="nutrition-pdf-modal__actions">
+        <button type="button" class="nutrition-pdf-download" (click)="downloadNutritionPdf()">↓&nbsp; Download PDF</button>
+        <button type="button" class="nutrition-pdf-close" aria-label="Close preview" (click)="closeNutritionPdfPreview()">×</button>
+      </div>
+    </header>
+    <div class="nutrition-pdf-scroll">
+      <article class="nutrition-pdf-document">
+        <section class="nutrition-pdf-cover">
+          <div class="nutrition-pdf-brand"><span class="nutrition-pdf-brand-mark">♡</span><span><strong>Nutrition program</strong><small>Powered by Yo Coach</small></span></div>
+          <h1>{{ selectedDay?.programName }}</h1>
+          <p class="nutrition-pdf-description">{{ selectedNutritionPlan?.description || selectedNutritionPlan?.details || 'Your complete nutrition program. Follow the planned meals and daily nutritional targets.' }}</p>
+          <div class="nutrition-pdf-meta">
+            <div><small>Client</small><strong>{{ pdfNutritionClientName }}</strong></div>
+            <div><small>Coach</small><strong>{{ pdfNutritionCoachName }}</strong></div>
+            <div><small>Start date</small><strong>{{ selectedNutritionPlan?.startDate | date:'EEEE, MMM d, y' }}</strong></div>
+            <div><small>End date</small><strong>{{ selectedNutritionPlan?.endDate | date:'EEEE, MMM d, y' }}</strong></div>
+          </div>
+          <div class="nutrition-pdf-stats">
+            <div><strong>{{ pdfNutritionWeeks.length }}</strong><small>WEEKS</small></div>
+            <div><strong>{{ pdfNutritionDays.length }}</strong><small>TOTAL DAYS</small></div>
+            <div><strong>{{ pdfNutritionMealCount }}</strong><small>MEALS</small></div>
+          </div>
+        </section>
+
+        <section class="nutrition-pdf-week" *ngFor="let week of pdfNutritionWeeks">
+          <header class="nutrition-pdf-week-header">
+            <div><small>{{ selectedDay?.programName }}</small><h2>Week {{ week.number }}</h2></div>
+            <div><small>Schedule</small><strong>{{ week.days[0]?.date | date:'MMM d' }} - {{ week.days[week.days.length - 1]?.date | date:'MMM d' }}</strong></div>
+          </header>
+          <article class="nutrition-pdf-day" *ngFor="let nutritionDay of week.days; let dayIndex = index">
+            <div class="nutrition-pdf-day-head"><span>Day {{ ((week.number - 1) * 7) + dayIndex + 1 }} &nbsp;•&nbsp; {{ nutritionDay.date | date:'EEEE, MMM d, y' }}</span><em>{{ nutritionDay.meals.length }} meals</em></div>
+            <div class="nutrition-pdf-totals">
+              <span><strong>{{ nutritionDay.totalCalories }}</strong><small>Calories</small></span>
+              <span><strong>{{ nutritionDay.totalProtein }}g</strong><small>Protein</small></span>
+              <span><strong>{{ nutritionDay.totalCarbs }}g</strong><small>Carbs</small></span>
+              <span><strong>{{ nutritionDay.totalFat }}g</strong><small>Fat</small></span>
+            </div>
+            <p class="nutrition-pdf-empty" *ngIf="!nutritionDay.meals.length">No meals planned for this day.</p>
+            <section class="nutrition-pdf-meal" *ngFor="let meal of nutritionDay.meals; let mealIndex = index">
+              <div class="nutrition-pdf-meal-head"><strong>Meal {{ mealIndex + 1 }} · {{ meal.name }}</strong><em>{{ meal.mealTargets?.calories || 0 }} kcal</em></div>
+              <table>
+                <thead><tr><th>Food</th><th>Quantity</th><th>Kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr></thead>
+                <tbody><tr *ngFor="let food of meal.foods"><td>{{ food.name }}</td><td>{{ food.quantity }}</td><td>{{ food.calories }}</td><td>{{ food.protein }}g</td><td>{{ food.carbs }}g</td><td>{{ food.fat }}g</td></tr></tbody>
+              </table>
+            </section>
+          </article>
+        </section>
+      </article>
+    </div>
+  </section>
+</div>
+
 <div class="meal-report-backdrop" *ngIf="showMealReportModal && reportMeal" (click)="closeMealReport()">
   <section class="meal-report-modal" (click)="$event.stopPropagation()">
     <button class="meal-report-close" type="button" (click)="closeMealReport()">×</button>
