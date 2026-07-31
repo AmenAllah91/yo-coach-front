@@ -84,6 +84,11 @@ interface WorkoutActivity {
   completedCount: number;
   skippedCount: number;
   totalExercises: number;
+  partialCount: number;
+  completedSets: number;
+  missedSets: number;
+  pendingSets: number;
+  totalSets: number;
   overallNote: string;
   missedReason: string;
   exercises: any[];
@@ -612,9 +617,14 @@ export class ProfilClientComponent {
 
     this.workoutService
       .getWorkoutByCoachIdAndClient(this.userid, this.clientId, 0, 100)
+      .pipe(
+        switchMap((res: any) => {
+          const summaries = res?.content || [];
+          return this.hydrateWorkoutDashboardPlans(summaries);
+        })
+      )
       .subscribe({
-        next: (res: any) => {
-          const plans = res?.content || [];
+        next: (plans: any[]) => {
           this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
           this.todaysWorkout = this.extractTodaysWorkout(plans);
           this.workoutActivities = this.buildWorkoutActivities(plans);
@@ -654,6 +664,48 @@ export class ProfilClientComponent {
           this.dashboardProgramsError = 'Failed to load active nutrition plan.';
         },
       });
+  }
+
+  private hydrateWorkoutDashboardPlans(summaries: any[]): Observable<any[]> {
+    if (!summaries.length) return of([]);
+
+    return forkJoin(summaries.map((summary: any) => {
+      if (!summary?.id || this.isFileWorkoutPlan(summary)) return of(summary);
+
+      return this.workoutService.getWorkoutById(summary.id).pipe(
+        map((detail: any) => ({
+          ...summary,
+          ...detail,
+          workoutDays: this.mergeWorkoutDashboardDays(
+            summary?.workoutDays || [],
+            detail?.workoutDays || []
+          ),
+        })),
+        catchError(() => of(summary))
+      );
+    }));
+  }
+
+  private mergeWorkoutDashboardDays(summaryDays: any[], detailDays: any[]): any[] {
+    if (!detailDays.length) return summaryDays;
+
+    return detailDays.map((detailDay: any, index: number) => {
+      const summaryDay = summaryDays.find((candidate: any) =>
+        (detailDay?.id && candidate?.id === detailDay.id) ||
+        (detailDay?.dayNumber && candidate?.dayNumber === detailDay.dayNumber)
+      ) || summaryDays[index] || {};
+
+      return {
+        ...detailDay,
+        ...summaryDay,
+        workoutSessions: detailDay?.workoutSessions?.length
+          ? detailDay.workoutSessions
+          : (summaryDay?.workoutSessions || []),
+        clientExerciseLogs: summaryDay?.clientExerciseLogs
+          ?? detailDay?.clientExerciseLogs
+          ?? [],
+      };
+    });
   }
 
   /**
@@ -964,6 +1016,37 @@ export class ProfilClientComponent {
           (log: any) => log?.completed === true && log?.skipped !== true
         ).length;
         const skippedCount = logs.filter((log: any) => log?.skipped === true).length;
+        let partialCount = 0;
+        let completedSets = 0;
+        let missedSets = 0;
+        let pendingSets = 0;
+        let totalSets = 0;
+        exercises.forEach((exercise: any, exerciseIndex: number) => {
+          const log = logs.find((item: any) =>
+            (!!exercise?.id && item?.exerciseId === exercise.id) ||
+            String(item?.displayNumber || '') === String(exerciseIndex + 1)
+          ) || logs[exerciseIndex];
+          const plannedSets = exercise?.sets || [];
+          totalSets += plannedSets.length;
+          let exerciseDone = 0;
+          let exerciseMissed = 0;
+          plannedSets.forEach((set: any, setIndex: number) => {
+            const actual = (log?.sets || []).find((item: any) =>
+              Number(item?.setNumber) === Number(set?.setNumber || setIndex + 1)
+            );
+            const setStatus = String(actual?.status || '').toUpperCase();
+            if (setStatus === 'MISSED' || actual?.missed === true) {
+              missedSets++;
+              exerciseMissed++;
+            } else if (setStatus === 'COMPLETED' || setStatus === 'DONE' || actual?.completed === true || (actual && setStatus !== 'PENDING')) {
+              completedSets++;
+              exerciseDone++;
+            } else {
+              pendingSets++;
+            }
+          });
+          if (!log?.skipped && exerciseDone > 0 && exerciseMissed > 0) partialCount++;
+        });
         const rawStatus = String(day?.status || '').toUpperCase();
         const completionMode = String(day?.clientCompletionMode || '').toUpperCase();
         let status: WorkoutActivityStatus;
@@ -987,8 +1070,16 @@ export class ProfilClientComponent {
         }
         if (status === 'COMPLETED_AFTER_WORKOUT') {
           completedCount = Math.max(0, exercises.length - skippedCount);
+          completedSets = Math.max(0, totalSets - missedSets);
+          pendingSets = 0;
         } else if (status === 'COMPLETED' && !logs.length) {
           completedCount = exercises.length;
+          completedSets = totalSets;
+          pendingSets = 0;
+        } else if (status === 'MISSED') {
+          missedSets = totalSets;
+          completedSets = 0;
+          pendingSets = 0;
         }
 
         const dayNumber = Number(day?.dayNumber || index + 1);
@@ -1010,9 +1101,14 @@ export class ProfilClientComponent {
           durationSeconds: status === 'COMPLETED_AFTER_WORKOUT'
             ? null
             : Number(day?.workoutElapsedSeconds || 0) || null,
-          completedCount,
+          completedCount: Math.min(exercises.length, completedCount + partialCount),
           skippedCount,
           totalExercises: exercises.length,
+          partialCount,
+          completedSets,
+          missedSets,
+          pendingSets,
+          totalSets,
           overallNote: day?.overallWorkoutNote || '',
           missedReason: day?.missedReason || day?.statusReason || day?.overallWorkoutNote || '',
           exercises,
@@ -1383,11 +1479,33 @@ export class ProfilClientComponent {
   exerciseActivityState(activity: WorkoutActivity, exercise: any, index: number): string {
     const log = this.workoutActivityLog(activity, exercise, index);
     if (log?.skipped) return 'Skipped';
+    const statuses = (exercise?.sets || []).map((set: any, setIndex: number) =>
+      this.workoutSetStatus(activity, exercise, index, set, setIndex)
+    );
+    if (statuses.includes('Done') && statuses.includes('Missed')) return 'Partially completed';
     if (log?.completed) return 'Completed';
     if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Completed';
     if (activity.status === 'COMPLETED' && !activity.exerciseLogs.length) return 'Completed';
     if (activity.status === 'IN_PROGRESS' && log) return 'In progress';
     return 'Pending';
+  }
+
+  workoutSetStatus(activity: WorkoutActivity, exercise: any, exerciseIndex: number, set: any, setIndex: number): string {
+    const log = this.workoutActivityLog(activity, exercise, exerciseIndex);
+    const actual = this.performedSet(log, set, setIndex);
+    const status = String(actual?.status || '').toUpperCase();
+    if (status === 'MISSED' || actual?.missed === true) return 'Missed';
+    if (status === 'COMPLETED' || status === 'DONE' || actual?.completed === true || (actual && status !== 'PENDING')) return 'Done';
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT' || (activity.status === 'COMPLETED' && !activity.exerciseLogs.length)) return 'Done';
+    if (activity.status === 'MISSED' || log?.skipped) return 'Missed';
+    return 'Pending';
+  }
+
+  exerciseSetSummary(activity: WorkoutActivity, exercise: any, index: number): string {
+    const sets = exercise?.sets || [];
+    const done = sets.filter((set: any, setIndex: number) => this.workoutSetStatus(activity, exercise, index, set, setIndex) === 'Done').length;
+    const missed = sets.filter((set: any, setIndex: number) => this.workoutSetStatus(activity, exercise, index, set, setIndex) === 'Missed').length;
+    return `${sets.length} ${sets.length === 1 ? 'set' : 'sets'} · ${done} done · ${missed} missed`;
   }
 
   formatActivityDate(date: Date): string {

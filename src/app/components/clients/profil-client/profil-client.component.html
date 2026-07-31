@@ -353,7 +353,7 @@
         <div class="workout-activity__table" *ngIf="latestWorkoutActivities.length">
           <div class="workout-activity__columns">
             <span>Date</span><span>Workout</span><span>Status</span>
-            <span>Duration</span><span>Exercises</span><span>Action</span>
+            <span>Duration</span><span>Exercises</span><span>Sets</span><span>Action</span>
           </div>
           <div class="workout-activity__row" *ngFor="let activity of latestWorkoutActivities">
             <div class="workout-activity__date">
@@ -384,6 +384,11 @@
               <strong>{{ activity.completedCount }} / {{ activity.totalExercises }}</strong>
               <span><i [style.width.%]="activity.totalExercises ? activity.completedCount * 100 / activity.totalExercises : 0"></i></span>
               <small *ngIf="activity.skippedCount">{{ activity.skippedCount }} skipped</small>
+            </div>
+            <div class="workout-activity__sets">
+              <strong>{{ activity.completedSets }} / {{ activity.totalSets }} <small>sets completed</small></strong>
+              <span><i [style.width.%]="activity.totalSets ? activity.completedSets * 100 / activity.totalSets : 0"></i></span>
+              <small *ngIf="activity.missedSets || activity.pendingSets">{{ activity.missedSets || activity.pendingSets }} {{ activity.missedSets ? 'missed' : 'pending' }}</small>
             </div>
             <button class="workout-activity__action" type="button" (click)="openWorkoutActivity(activity)">
               {{ workoutActivityAction(activity) }}
@@ -611,7 +616,7 @@
             <span>Workout</span>
             <span>Status</span>
             <span>Duration</span>
-            <span>Exercises</span>
+            <span>Exercises</span><span>Sets</span>
             <span>Action</span>
           </div>
           <div class="activity-history-card" *ngFor="let activity of visibleWorkoutActivities">
@@ -641,6 +646,11 @@
                 <i><b [style.width.%]="activity.totalExercises ? activity.completedCount * 100 / activity.totalExercises : 0"></b></i>
                 <small *ngIf="activity.skippedCount">{{ activity.skippedCount }} {{ activity.status === 'MISSED' ? 'missed' : 'skipped' }}</small>
               </span>
+              <span class="activity-history-card__sets">
+                <strong>{{ activity.completedSets }} / {{ activity.totalSets }} <small>sets completed</small></strong>
+                <i><b [style.width.%]="activity.totalSets ? activity.completedSets * 100 / activity.totalSets : 0"></b></i>
+                <small *ngIf="activity.missedSets || activity.pendingSets">{{ activity.missedSets || activity.pendingSets }} {{ activity.missedSets ? 'missed' : 'pending' }}</small>
+              </span>
             </div>
             <button type="button" (click)="openWorkoutActivity(activity)">{{ workoutActivityAction(activity) }}</button>
           </div>
@@ -658,7 +668,7 @@
           <span class="activity-detail-title">
             <span><strong class="activity-detail-name">{{ workoutActivityDetailTitle(activity) }}</strong>
               <span class="activity-status activity-detail-status" [attr.data-status]="activity.status"><i></i>{{ workoutActivityStatusLabel(activity) }}</span>
-              <small class="activity-detail-mode">{{ workoutActivityMode(activity) }}</small>
+              <small class="activity-detail-mode"><i class="fas fa-wave-square"></i>{{ workoutActivityMode(activity) }}</small>
             </span>
             <small><i class="far fa-user"></i> {{ fullName }} &nbsp; <i class="far fa-calendar"></i> {{ formatActivityDate(activity.scheduledDate) }} · {{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</small>
           </span>
@@ -672,8 +682,9 @@
         <div class="activity-modal__body">
           <div class="activity-detail-summary" *ngIf="activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">
             <div><i class="far fa-clock"></i><span><strong>{{ workoutActivityDuration(activity) }}</strong><small>Duration</small></span></div>
-            <div><i class="far fa-check-circle"></i><span><strong>{{ activity.completedCount }} of {{ activity.totalExercises }}</strong><small>Exercises completed</small></span></div>
+            <div><i class="far fa-check-circle"></i><span><strong>{{ activity.completedCount }} of {{ activity.totalExercises }}</strong><small>Exercises completed</small><small class="summary-detail">{{ activity.completedCount - activity.partialCount }} completed · {{ activity.partialCount }} partial</small></span></div>
             <div><i class="fas fa-minus-circle"></i><span><strong>{{ activity.status === 'MISSED' ? activity.totalExercises : activity.skippedCount }}</strong><small>{{ activity.status === 'MISSED' ? 'Missed' : 'Skipped' }}</small></span></div>
+            <div><i class="fas fa-dumbbell"></i><span><strong>{{ activity.completedSets }} / {{ activity.totalSets }}</strong><small>Sets completed</small><small class="summary-detail">{{ activity.missedSets }} missed · {{ activity.totalSets ? (activity.completedSets * 100 / activity.totalSets | number:'1.0-0') : 0 }}% adherence</small></span></div>
             <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'MISSED' ? 'No activity' : activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'After workout' : activity.status === 'COMPLETED' ? 'Live workout' : workoutActivityMode(activity) }}</strong><small>Completion mode</small></span></div>
           </div>
 
@@ -690,12 +701,25 @@
             </span>
           </div>
 
+          <div class="activity-exercises-heading">
+            <strong>Exercises</strong>
+            <span><i class="legend-dot legend-dot--done"></i>Completed</span>
+            <span><i class="legend-dot legend-dot--partial"></i>Partially completed</span>
+            <span><i class="legend-dot legend-dot--missed"></i>Skipped</span>
+            <i class="fas fa-chevron-up"></i>
+          </div>
+
           <article class="activity-exercise" *ngFor="let exercise of activity.exercises; let exerciseIndex = index">
             <header>
               <span class="exercise-letter">{{ exerciseIndex + 1 }}</span>
-              <strong>{{ exercise.name || exercise.exerciseRef?.name || 'Exercise' }}</strong>
+              <img class="activity-exercise-image" *ngIf="exercise.imageUrl || exercise.exerciseRef?.imageUrl || exercise.exerciseRef?.image || exercise.exerciseRef?.thumbnailUrl" [src]="exercise.imageUrl || exercise.exerciseRef?.imageUrl || exercise.exerciseRef?.image || exercise.exerciseRef?.thumbnailUrl" alt="">
+              <span class="activity-exercise-copy">
+                <strong>{{ exercise.name || exercise.exerciseRef?.name || 'Exercise' }}</strong>
+                <small>{{ exercise.type || exercise.exerciseRef?.type || '' }} <em *ngIf="exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">{{ exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle }}</em></small>
+              </span>
               <span class="activity-exercise-state" [attr.data-state]="exerciseActivityState(activity, exercise, exerciseIndex)">
                 <i class="far fa-check-circle"></i>{{ exerciseActivityState(activity, exercise, exerciseIndex) }}
+                <small>{{ exerciseSetSummary(activity, exercise, exerciseIndex) }}</small>
               </span>
               <i class="fas fa-chevron-up activity-exercise-chevron"></i>
             </header>
@@ -712,7 +736,7 @@
               >
                 <span>Set</span><span>Type</span><span>Planned</span>
                 <span *ngIf="activity.status !== 'MISSED' && activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">Actual</span>
-                <span>Rest</span>
+                <span>Rest</span><span>Status</span>
               </div>
               <div
                 class="activity-set-row"
@@ -729,6 +753,10 @@
                   <ng-template #noActual>—</ng-template>
                 </span>
                 <span>{{ formatActivityRest(set) }}</span>
+                <span class="activity-set-status" [attr.data-status]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex)">
+                  <i class="far" [class.fa-check-circle]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) === 'Done'" [class.fa-minus-circle]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) !== 'Done'"></i>
+                  {{ workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) }}
+                </span>
               </div>
             </div>
             <p class="activity-coach-note" *ngIf="exercise.notes || exercise.description">

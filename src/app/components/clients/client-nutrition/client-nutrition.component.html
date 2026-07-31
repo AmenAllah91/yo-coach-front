@@ -405,7 +405,7 @@
           <em *ngIf="meal.reportStatus" [attr.data-status]="meal.reportStatus">{{ mealStatusLabel(meal.reportStatus) }}</em>
         </div>
         <div class="meal-card-actions">
-          <label class="upload-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ uploadingMealId === meal.id ? 'Uploading…' : 'Upload photo' }}</label>
+          <label class="upload-meal-photo" *ngIf="!meal.photoUrl"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ uploadingMealId === meal.id ? 'Uploading…' : 'Upload photo' }}</label>
           <button type="button" (click)="openMealReport(meal, mealIndex)">▣&nbsp; Report meal</button>
         </div>
       </header>
@@ -424,9 +424,16 @@
           <div><strong>{{ food.carbs }}g</strong><small>C</small></div>
           <div><strong>{{ food.fat }}g</strong><small>F</small></div>
         </div>
-        <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)">⇄&nbsp; Replace</button>
+        <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)" aria-label="Replace {{ food.name }}"><span aria-hidden="true">⇄</span><span class="meal-food-replace-label">&nbsp; Replace</span></button>
       </div>
-      <div class="meal-photo-preview" *ngIf="meal.photoUrl"><img [src]="meal.photoUrl" alt="Meal photo"><span>Meal photo</span></div>
+      <div class="meal-photo-preview" *ngIf="meal.photoUrl">
+        <strong><i class="far fa-image"></i> Client meal photo</strong>
+        <div class="meal-photo-preview__content">
+          <img [src]="meal.photoUrl" alt="Client meal photo">
+          <span><b>Uploaded by client</b><small>Meal photo</small><a [href]="meal.photoUrl" target="_blank" rel="noopener"><i class="far fa-eye"></i> View</a></span>
+          <label class="replace-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)"><i class="far fa-image"></i> {{ uploadingMealId === meal.id ? 'Uploading…' : 'Replace photo' }}</label>
+        </div>
+      </div>
       <label class="meal-note">
         <span>▱ &nbsp;{{ meal.note ? ('Note for meal ' + (mealIndex + 1)) : 'Add a note' }}</span>
         <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" placeholder="Anything your coach should know about this meal..."></textarea>

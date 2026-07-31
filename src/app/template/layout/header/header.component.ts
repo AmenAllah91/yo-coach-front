@@ -376,7 +376,8 @@ this.translate.use(lang);}
       WORKOUT_COMPLETED: 'activity', WORKOUT_MISSED: 'alert-circle', PROGRESS_ADDED: 'trending-up',
       BODY_MEASUREMENTS_UPDATED: 'maximize-2', PROGRAM_ENDING_SOON: 'calendar',
       PROGRAM_ASSIGNED: 'clipboard', PROGRAM_UPDATED: 'edit-3', WORKOUT_DUE_TODAY: 'activity',
-      CHECK_IN_DUE: 'check-square'
+      CHECK_IN_DUE: 'check-square', WORKOUT_OVERDUE: 'alert-circle',
+      NUTRITION_DAY_OVERDUE: 'calendar', CHECK_IN_OVERDUE: 'alert-circle'
     };
     return icons[type] || 'bell';
   }
