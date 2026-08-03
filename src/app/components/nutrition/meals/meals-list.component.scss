@@ -349,3 +349,21 @@
   .col-actions { position: absolute; right: 8px; top: 9px; }
   .actions-btn { width: 28px !important; min-width: 28px !important; padding: 0 !important; border: 0 !important; font-size: 0 !important; }
 }
+
+.meal-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1550;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, .24);
+}
+
+.meal-loading-card {
+  padding: 14px 20px;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-weight: 600;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, .18);
+}

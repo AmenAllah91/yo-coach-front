@@ -166,6 +166,10 @@ export interface ScheduledCheckIn {
 })
 export class ProfilClientComponent {
   mobileMoreOpen = false;
+  clientPickerOpen = false;
+  clientSearch = '';
+  coachClients: Client[] = [];
+  loadingCoachClients = false;
 
   backToClients(): void {
     this.router.navigate(['/clients']);
@@ -194,6 +198,75 @@ export class ProfilClientComponent {
 
   get fullName(): string {
     return `${this.client?.firstName} ${this.client?.lastName}`;
+  }
+
+  get filteredCoachClients(): Client[] {
+    const search = this.clientSearch.trim().toLowerCase();
+    if (!search) return this.coachClients;
+
+    return this.coachClients.filter((client) =>
+      `${client.firstName || ''} ${client.lastName || ''} ${client.email || ''}`
+        .toLowerCase()
+        .includes(search)
+    );
+  }
+
+  get clientInitials(): string {
+    return `${this.client?.firstName?.[0] || ''}${this.client?.lastName?.[0] || ''}`.toUpperCase() || '--';
+  }
+
+  getClientInitials(client: Client): string {
+    return `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`.toUpperCase() || '--';
+  }
+
+  isSelectedClient(client: Client): boolean {
+    return !!client.id && client.id === this.clientId;
+  }
+
+  clientPresenceClass(client: Client): string {
+    const status = String(client.clientStatus || '').toUpperCase();
+    if (status === 'PAUSED') return 'client-presence--away';
+    if (status === 'ARCHIVED' || client.activated === false) return 'client-presence--offline';
+    return 'client-presence--online';
+  }
+
+  toggleClientPicker(event: Event): void {
+    event.stopPropagation();
+    this.clientPickerOpen = !this.clientPickerOpen;
+    if (this.clientPickerOpen) {
+      this.clientSearch = '';
+      this.loadCoachClients();
+    }
+  }
+
+  selectProfileClient(client: Client): void {
+    if (!client.id || client.id === this.clientId) {
+      this.clientPickerOpen = false;
+      return;
+    }
+
+    this.clientPickerOpen = false;
+    this.clientSearch = '';
+    this.router.navigate(['/clients/profil-client', client.id], {
+      queryParams: { tab: this.activeTab === 'dashboard' ? null : this.activeTab },
+    });
+  }
+
+  private loadCoachClients(): void {
+    if (this.loadingCoachClients || !this.userid) return;
+
+    this.loadingCoachClients = true;
+    this.clientService.getListClientsByCoachWithoutPagination(this.userid).subscribe({
+      next: (response) => {
+        const clients = Array.isArray(response) ? response : response?.content || [];
+        this.coachClients = clients.filter((client: Client) => !!client.id);
+        this.loadingCoachClients = false;
+      },
+      error: () => {
+        this.coachClients = [];
+        this.loadingCoachClients = false;
+      },
+    });
   }
 
   get clientTargetWeight(): number | null {
@@ -498,11 +571,13 @@ export class ProfilClientComponent {
     private mealplanDayService: MealplanDayService,
     public coachSettingsService: CoachSettingsService
   ) {
-    const routeId = this.route.snapshot.paramMap.get('id') || '';
-    if (routeId) {
-      this.clientId = routeId;
-      this.loadClientData();
-    }
+    this.route.paramMap.subscribe((params) => {
+      const routeId = params.get('id') || '';
+      if (routeId && routeId !== this.clientId) {
+        this.clientId = routeId;
+        this.loadClientData();
+      }
+    });
 
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'] as TabId | undefined;

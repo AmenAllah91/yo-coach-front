@@ -4945,6 +4945,72 @@
   .activity-modal--detail .activity-set-row em { padding:2px 4px; font-size:6px; }
 }
 
+/* The selector becomes the first, full-width control on phones, as in the mobile reference. */
+@media (max-width: 900px) {
+  .profile-header { grid-template-rows: 40px 54px; }
+  .header-actions { display: contents; }
+  .client-picker { grid-column: 1 / -1; grid-row: 1; width: 100%; }
+  .client-picker__trigger { width: 100%; min-width: 0; height: 40px; padding: 4px 10px; border-radius: 8px; gap: 8px; }
+  .client-picker__avatar { width: 28px; height: 28px; border-radius: 7px; font-size: 9px; }
+  .client-picker__selected { gap: 0; }
+  .client-picker__selected small { font-size: 8px; line-height: 10px; }
+  .client-picker__selected strong { font-size: 10px; line-height: 13px; }
+  .client-picker__chevron { font-size: 9px; }
+  .client-picker__menu { top: calc(100% + 8px); right: auto; left: 0; width: 100%; border-radius: 9px; }
+  .client-picker__search { height: 38px; margin: 6px; padding: 0 9px; border-width: 2px; border-radius: 8px; gap: 7px; }
+  .client-picker__search i { font-size: 11px; }
+  .client-picker__search input { font-size: 10px; }
+  .client-picker__list { max-height: min(300px, calc(100vh - 170px)); padding: 0 6px 6px; }
+  .client-picker__option { min-height: 48px; padding: 5px 26px 5px 7px; gap: 8px; border-radius: 7px; }
+  .client-picker__option-avatar { width: 32px; height: 32px; font-size: 9px; }
+  .client-picker__option-copy { gap: 0; }
+  .client-picker__option-copy strong { font-size: 10px; line-height: 13px; }
+  .client-picker__option-copy small { font-size: 9px; line-height: 12px; }
+  .client-presence { left: 30px; bottom: 6px; width: 7px; height: 7px; border-width: 1px; }
+  .client-picker__check { right: 8px; font-size: 9px; }
+  .profile-back, .profile-picture, .profile-info, .btn-send-message, .btn-more { grid-row: 2; }
+  .btn-more { display: none; }
+  .btn-send-message { grid-column: 4; width: 30px; padding: 0; justify-content: center; }
+  .btn-send-message span { display: none; }
+}
+
+/* Client switcher in the profile header. */
+.client-picker { position: relative; z-index: 20; }
+.client-picker__trigger {
+  min-width: 275px; height: 68px; padding: 8px 14px 8px 10px; border: 1px solid #dce5ef;
+  border-radius: 13px; background: #fff; display: flex; align-items: center; gap: 10px;
+  color: #07152f; text-align: left; cursor: pointer;
+}
+.client-picker__trigger:hover, .client-picker__trigger[aria-expanded='true'] { border-color: #26aceb; }
+.client-picker__avatar, .client-picker__option-avatar {
+  display: grid; place-items: center; flex: 0 0 auto; border-radius: 10px; background: #e1f3ff; color: #007fc7; font-weight: 700;
+}
+.client-picker__avatar { width: 40px; height: 40px; font-size: 13px; }
+.client-picker__selected { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.client-picker__selected small { color: #8a9ab8; font-size: 11px; font-weight: 700; line-height: 13px; text-transform: uppercase; }
+.client-picker__selected small i { margin-right: 4px; }
+.client-picker__selected strong { overflow: hidden; font-size: 15px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.client-picker__chevron { color: #079ee1; font-size: 12px; }
+.client-picker__menu {
+  position: absolute; top: calc(100% + 9px); right: 0; width: 400px; overflow: hidden; border: 1px solid #dce5ef;
+  border-radius: 15px; background: #fff; box-shadow: 0 16px 30px rgba(15, 23, 42, .18);
+}
+.client-picker__search { height: 58px; margin: 8px; padding: 0 13px; border: 2px solid #26aceb; border-radius: 12px; display: flex; align-items: center; gap: 10px; color: #9aabc2; }
+.client-picker__search i { font-size: 15px; }
+.client-picker__search input { width: 100%; border: 0; outline: 0; color: #41556f; font-size: 14px; }
+.client-picker__search input::placeholder { color: #9aabc2; }
+.client-picker__list { max-height: 356px; overflow-y: auto; padding: 0 8px 8px; }
+.client-picker__option { position: relative; width: 100%; min-height: 64px; padding: 8px 32px 8px 10px; border: 0; border-radius: 10px; background: #fff; display: flex; align-items: center; gap: 10px; color: #07152f; text-align: left; cursor: pointer; }
+.client-picker__option:hover, .client-picker__option--selected { background: #edf8ff; }
+.client-picker__option-avatar { width: 44px; height: 44px; border-radius: 50%; background: #f2f4f7; color: #42576e; font-size: 12px; }
+.client-picker__option-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.client-picker__option-copy strong { overflow: hidden; font-size: 15px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.client-picker__option-copy small { overflow: hidden; color: #8a9ab8; font-size: 13px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.client-presence { position: absolute; left: 42px; bottom: 10px; width: 9px; height: 9px; border: 2px solid #fff; border-radius: 50%; }
+.client-presence--online { background: #10bf86; }.client-presence--away { background: #f8bc29; }.client-presence--offline { background: #cbd5e1; }
+.client-picker__check { position: absolute; right: 10px; color: #079ee1; font-size: 12px; }
+.client-picker__empty { margin: 8px 0; padding: 18px 10px; color: #8a9ab8; font-size: 13px; text-align: center; }
+
 /* Workout result modal — desktop and responsive reference layout */
 .activity-modal.activity-modal--detail { width:min(960px,calc(100vw - 28px)); border-radius:12px; }
 .activity-modal--detail .activity-modal__header { min-height:70px; padding:14px 20px; flex:0 0 auto; }
@@ -4995,4 +5061,37 @@
   .activity-modal--detail .activity-set-row { min-width:520px; grid-template-columns:34px 72px 110px 110px 55px 68px; padding:6px 10px; gap:6px; font-size:8px; }
   .activity-modal--detail .activity-set-row--planned-only { min-width:410px; grid-template-columns:34px 72px 160px 55px 68px; }
   .activity-modal--detail .activity-coach-note,.activity-modal--detail .activity-client-note { margin:7px; font-size:9px; }
+}
+
+/* Final mobile composition for the client switcher: keep controls readable on narrow screens. */
+@media (max-width: 900px) {
+  .main-content { padding: 10px 10px 24px; }
+  .profile-header { grid-template-columns: 48px minmax(0, 1fr) auto; grid-template-rows: 42px 54px; gap: 10px; padding: 10px; }
+  .header-actions { display: contents; }
+  .client-picker { grid-column: 1 / -1; grid-row: 1; width: 100%; }
+  .client-picker__trigger { width: 100%; min-width: 0; height: 42px; padding: 5px 10px; border-radius: 9px; gap: 8px; }
+  .client-picker__avatar { width: 28px; height: 28px; border-radius: 7px; font-size: 9px; }
+  .client-picker__selected { gap: 0; }
+  .client-picker__selected small { font-size: 8px; line-height: 10px; }
+  .client-picker__selected strong { font-size: 11px; line-height: 14px; }
+  .client-picker__chevron { font-size: 9px; }
+  .client-picker__menu { top: calc(100% + 8px); right: auto; left: 0; width: 100%; border-radius: 9px; }
+  .client-picker__search { height: 38px; margin: 6px; padding: 0 9px; border-width: 2px; border-radius: 8px; gap: 7px; }
+  .client-picker__search i { font-size: 11px; }
+  .client-picker__search input { font-size: 10px; }
+  .client-picker__list { max-height: min(300px, calc(100vh - 170px)); padding: 0 6px 6px; }
+  .client-picker__option { min-height: 48px; padding: 5px 26px 5px 7px; gap: 8px; border-radius: 7px; }
+  .client-picker__option-avatar { width: 32px; height: 32px; font-size: 9px; }
+  .client-picker__option-copy { gap: 0; }
+  .client-picker__option-copy strong { font-size: 10px; line-height: 13px; }
+  .client-picker__option-copy small { font-size: 9px; line-height: 12px; }
+  .client-presence { left: 30px; bottom: 6px; width: 7px; height: 7px; border-width: 1px; }
+  .client-picker__check { right: 8px; font-size: 9px; }
+  .profile-back { display: none; }
+  .profile-picture { grid-column: 1; grid-row: 2; width: 48px; height: 48px; }
+  .profile-info { display: none; }
+  .btn-send-message { grid-column: 3; grid-row: 2; width: auto; height: 32px; padding: 0 11px; justify-content: center; border-radius: 6px; font-size: 10px; }
+  .btn-send-message span { display: inline; }
+  .btn-send-message i { font-size: 10px; }
+  .btn-more { display: none; }
 }

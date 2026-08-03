@@ -7,50 +7,54 @@ import { environment } from '@env/environment';
 export interface MealTemplateDto {
   id?: string;
   name: string;
+  mealType?: string;
+  servings?: number;
+  totalTimeMinutes?: number | null;
+  coverImage?: string | null;
+  directions?: string[];
   foods: any[];
-  tags?: string[];
+  template?: boolean;
+  draft?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class MealsService {
-  private base = `${environment.baseApiUrl}/api/meals`;
-  private tpl = `${environment.baseApiUrl}/api/meal-templates`;
+  private readonly base = `${environment.baseApiUrl}/api/meals`;
+  private readonly templatesBase = `${environment.baseApiUrl}/api/meal-templates`;
 
   constructor(private http: HttpClient) {}
 
-  getMeals(page: number = 0, size: number = 10, search?: string): Observable<any> {
-    const params: any = { page, size };
-    if (search) params.search = search;
+  getMeals(page = 0, size = 10, search?: string): Observable<any> {
+    const params: Record<string, string | number> = { page, size };
+    if (search?.trim()) params['search'] = search.trim();
     return this.http.get<any>(this.base, { params });
   }
 
-  getMeal(id: string) {
+  getMeal(id: string): Observable<any> {
     return this.http.get<any>(`${this.base}/${id}`);
   }
 
-  createMeal(payload: any) {
+  createMeal(payload: any): Observable<any> {
     return this.http.post<any>(this.base, payload);
   }
 
-  updateMeal(id: string, payload: any) {
+  updateMeal(id: string, payload: any): Observable<any> {
     return this.http.put<any>(`${this.base}/${id}`, payload);
   }
 
-  deleteMeal(id: string) {
+  deleteMeal(id: string): Observable<any> {
     return this.http.delete<any>(`${this.base}/${id}`);
   }
 
-  duplicateMeal(id: string) {
+  duplicateMeal(id: string): Observable<any> {
     return this.http.post<any>(`${this.base}/${id}/duplicate`, {});
   }
 
   getTemplates(): Observable<MealTemplateDto[]> {
-    return this.http.get<MealTemplateDto[]>(this.tpl);
+    return this.http.get<MealTemplateDto[]>(this.templatesBase);
   }
 
-  saveTemplate(payload: MealTemplateDto) {
-    return this.http.post<any>(this.tpl, payload);
+  saveTemplate(payload: MealTemplateDto): Observable<any> {
+    return this.http.post<any>(this.templatesBase, payload);
   }
 }
-
-

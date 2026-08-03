@@ -1,0 +1,636 @@
+<div class="meal-modal" *ngIf="isVisible" (click)="close()">
+  <section
+    class="meal-modal__panel"
+    [class.meal-modal__panel--choice]="step === 'choice'"
+    [class.meal-modal__panel--foods]="step === 'foods'"
+    [class.meal-modal__panel--recipe]="step === 'recipe'"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="modalTitle"
+  >
+    <header class="meal-modal__header">
+      <div class="meal-modal__heading">
+        <button
+          *ngIf="step !== 'choice' && !isEditing"
+          class="meal-modal__back"
+          type="button"
+          aria-label="Back to meal type selection"
+          (click)="backToChoice()"
+        >
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div>
+          <h2>{{ modalTitle }}</h2>
+          <p *ngIf="step !== 'foods'">{{ modalSubtitle }}</p>
+        </div>
+      </div>
+      <button class="meal-modal__close" type="button" aria-label="Close" (click)="close()">
+        <i-feather name="x"></i-feather>
+      </button>
+    </header>
+
+    <main class="choice-grid" *ngIf="step === 'choice'">
+      <article class="choice-card choice-card--recipe">
+        <span class="choice-card__icon" aria-hidden="true">
+          <svg class="choice-card__svg choice-card__svg--recipe" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="27" y="18" width="42" height="58" rx="6" stroke="currentColor" stroke-width="4"/>
+            <path d="M48 24c-2.1-6.3-11.2-7.4-14.6-1.8-5.6-.6-9.4 2.5-9.4 7.2 0 5 4 8.4 9 8.4h30c5 0 9-3.4 9-8.4 0-4.7-3.8-7.8-9.4-7.2C59.2 16.6 50.1 17.7 48 24Z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M42 47h12M37 55h22M40 63h16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <h3>Meal Recipes</h3>
+        <p>
+          Create reusable recipes made from multiple ingredients with serving sizes,
+          nutrition values, and preparation instructions.
+        </p>
+        <div class="choice-card__benefit">
+          <i-feather name="check-circle"></i-feather>
+          <span>Perfect for structured meal planning</span>
+        </div>
+        <button type="button" (click)="choose('recipe')">Create Meal Recipes</button>
+      </article>
+
+      <article class="choice-card choice-card--foods">
+        <span class="choice-card__icon" aria-hidden="true">
+          <svg class="choice-card__svg choice-card__svg--foods" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M26 55c0-3.3 2.7-6 6-6h32c3.3 0 6 2.7 6 6v2c0 9.9-8.1 18-18 18H44c-9.9 0-18-8.1-18-18v-2Z" stroke="currentColor" stroke-width="4"/>
+            <path d="M35 49c1.1-10.2 7.3-18 13-18s11.9 7.8 13 18" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <path d="M56 22h10v23H56c-3.3 0-6-2.7-6-6V28c0-3.3 2.7-6 6-6Z" stroke="currentColor" stroke-width="4"/>
+            <path d="M66 27c4.4 0 8 3.6 8 8v10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <path d="M35 38c1.5-3.5 4.4-6 7.8-6 3.4 0 6.3 2.4 7.8 5.8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <path d="M27 35c2.1 0 3.8 1.7 3.8 3.8S29.1 42.5 27 42.5s-3.8-1.7-3.8-3.8S24.9 35 27 35Z" fill="currentColor"/>
+            <path d="M38 28c1.8 0 3.2 1.4 3.2 3.2S39.8 34.4 38 34.4 34.8 33 34.8 31.2 36.2 28 38 28Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <h3>Meals with Foods</h3>
+        <p>
+          Build meals by adding individual foods from your food database. Ideal for
+          flexible meal planning without creating reusable recipes.
+        </p>
+        <div class="choice-card__benefit">
+          <i-feather name="check-circle"></i-feather>
+          <span>Great for quick and flexible plans</span>
+        </div>
+        <button type="button" (click)="choose('foods')">Create Meals with Foods</button>
+      </article>
+    </main>
+
+    <main class="foods-builder" *ngIf="step === 'foods'">
+      <section class="foods-editor">
+        <div class="foods-title-row">
+          <label class="foods-field foods-field--title">
+            <span>Meal Title</span>
+            <input
+              type="text"
+              [(ngModel)]="name"
+              [class.foods-control--invalid]="submitted && !name.trim()"
+              placeholder="E.g., Breakfast Bowl"
+            />
+            <small *ngIf="submitted && !name.trim()">A title is required.</small>
+          </label>
+
+          <label class="foods-field foods-field--type">
+            <span>Meal Type</span>
+            <select [(ngModel)]="mealType">
+              <option *ngFor="let type of mealTypes" [value]="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <div class="foods-divider"></div>
+        <h3 class="foods-count">Foods ({{ ingredients.length }})</h3>
+
+        <section class="foods-box">
+          <header class="foods-box__header">
+            <div class="foods-macros">
+              <article>
+                <span>CALORIES</span>
+                <strong>{{ nutritionTotal('calories') | number:'1.0-0' }} Kcal</strong>
+              </article>
+              <article>
+                <span>PROTEIN</span>
+                <strong>{{ nutritionTotal('protein') | number:'1.0-1' }} g</strong>
+              </article>
+              <article>
+                <span>CARBS</span>
+                <strong>{{ nutritionTotal('carbs') | number:'1.0-1' }} g</strong>
+              </article>
+              <article>
+                <span>FAT</span>
+                <strong>{{ nutritionTotal('fat') | number:'1.0-1' }} g</strong>
+              </article>
+            </div>
+          </header>
+
+          <div class="foods-box__body">
+            <div class="foods-table-wrap" *ngIf="ingredients.length">
+              <table class="foods-table">
+                <thead>
+                  <tr>
+                    <th>Food</th>
+                    <th>Quantity</th>
+                    <th>Protein</th>
+                    <th>Carbs</th>
+                    <th>Fat</th>
+                    <th>Calories</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
+                    <td>
+                      <div class="foods-table__food">
+                        <span class="foods-table__thumb">
+                          <img
+                            *ngIf="ingredient.foodRef?.image || ingredient.foodRef?.imageUrl"
+                            [src]="ingredient.foodRef.image || ingredient.foodRef.imageUrl"
+                            alt=""
+                          />
+                          <i-feather
+                            *ngIf="!ingredient.foodRef?.image && !ingredient.foodRef?.imageUrl"
+                            name="package"
+                          ></i-feather>
+                        </span>
+                        <strong>{{ ingredient.name }}</strong>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="foods-table__quantity">
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="any"
+                          [(ngModel)]="ingredient.quantity"
+                          [class.foods-control--invalid]="submitted && !(ingredient.quantity && ingredient.quantity > 0)"
+                        />
+                        <select
+                          [(ngModel)]="ingredient.unit"
+                          [class.foods-control--invalid]="submitted && !ingredient.unit"
+                        >
+                          <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td><strong>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}</strong> <span>g</span></td>
+                    <td><strong>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}</strong> <span>g</span></td>
+                    <td><strong>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}</strong> <span>g</span></td>
+                    <td><strong>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</strong> <span>Kcal</span></td>
+                    <td>
+                      <button class="foods-table__delete" type="button" aria-label="Remove food" (click)="removeIngredient(i)">
+                        <i-feather name="trash-2"></i-feather>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="foods-empty" *ngIf="!ingredients.length">
+              <strong>Meal looking empty?</strong>
+              <span>Add an item using the button below</span>
+            </div>
+
+            <div class="foods-add-wrap">
+              <button class="foods-add-button" type="button" (click)="openIngredientPicker()">
+                <i-feather name="plus"></i-feather>
+                Add Food
+              </button>
+            </div>
+
+            <div class="food-picker food-picker--foods" *ngIf="ingredientPickerOpen">
+              <div class="food-picker__search">
+                <i-feather name="search"></i-feather>
+                <input
+                  [(ngModel)]="foodSearch"
+                  (input)="searchFoods()"
+                  placeholder="Search the foods database..."
+                  autofocus
+                />
+                <button type="button" aria-label="Close food search" (click)="closeIngredientPicker()">
+                  <i-feather name="x"></i-feather>
+                </button>
+              </div>
+
+              <div class="food-picker__results">
+                <div class="food-picker__state" *ngIf="searchingFoods">Searching foods...</div>
+                <button
+                  class="food-result"
+                  type="button"
+                  *ngFor="let food of foods; trackBy: trackByFood"
+                  (click)="addFood(food)"
+                >
+                  <span class="food-result__thumb">
+                    <img *ngIf="food.image || food.imageUrl" [src]="food.image || food.imageUrl" alt="" />
+                    <i-feather *ngIf="!food.image && !food.imageUrl" name="package"></i-feather>
+                  </span>
+                  <span class="food-result__identity">
+                    <strong>{{ food.name }}</strong>
+                    <small>{{ food.category || food.foodGroup || 'Food' }}</small>
+                  </span>
+                  <span class="food-result__energy">
+                    {{ (food.energy || food.calories || 0) | number:'1.0-0' }} kcal /
+                    {{ food.servingSize || 100 }}{{ food.servingUnit || 'g' }}
+                  </span>
+                </button>
+
+                <div class="food-picker__state" *ngIf="!searchingFoods && !foods.length">
+                  No database foods found.
+                </div>
+              </div>
+            </div>
+
+            <div class="ingredient-validation" *ngIf="submitted && ingredients.length === 0">
+              Add at least one food.
+            </div>
+          </div>
+        </section>
+
+        <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
+      </section>
+    </main>
+
+    <main class="builder" *ngIf="step === 'recipe'">
+      <section class="builder-card recipe-information">
+        <div class="section-heading">
+          <span class="section-heading__icon"><i-feather name="image"></i-feather></span>
+          <div>
+            <h3>{{ isRecipe ? 'Recipe information' : 'Meal information' }}</h3>
+            <p *ngIf="!isRecipe">Give the meal a title and select when it is usually eaten.</p>
+          </div>
+        </div>
+
+        <div class="information-grid" [class.information-grid--meal]="!isRecipe">
+          <label class="field field--name">
+            <span>{{ isRecipe ? 'Recipe name' : 'Meal title' }}</span>
+            <input
+              [(ngModel)]="name"
+              [class.field-control--invalid]="submitted && !name.trim()"
+              [placeholder]="isRecipe ? 'E.g., Breakfast hash' : 'E.g., Breakfast Bowl'"
+            />
+            <small *ngIf="submitted && !name.trim()">A title is required.</small>
+          </label>
+
+          <label class="field">
+            <span>Meal type</span>
+            <select [(ngModel)]="mealType">
+              <option *ngFor="let type of mealTypes" [value]="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+          </label>
+
+          <label class="field" *ngIf="isRecipe">
+            <span>Servings</span>
+            <select [(ngModel)]="servings">
+              <option *ngFor="let count of [1,2,3,4,5,6,8,10,12]" [ngValue]="count">
+                {{ count }} {{ count === 1 ? 'serving' : 'servings' }}
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <div class="cover-upload" *ngIf="isRecipe">
+          <label class="cover-upload__drop" [class.cover-upload__drop--with-image]="coverImage">
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              (change)="onCoverImageSelected($event)"
+            />
+            <ng-container *ngIf="!coverImage">
+              <i-feather name="upload-cloud"></i-feather>
+              <strong>Upload cover image</strong>
+              <span>JPG or PNG, up to 5 MB</span>
+            </ng-container>
+            <ng-container *ngIf="coverImage">
+              <i-feather name="refresh-cw"></i-feather>
+              <strong>Replace cover image</strong>
+              <span>{{ coverImageName }}</span>
+            </ng-container>
+          </label>
+
+          <div class="cover-preview" *ngIf="coverImage">
+            <img [src]="coverImage" alt="Recipe cover preview" />
+            <div class="cover-preview__actions">
+              <label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  (change)="onCoverImageSelected($event)"
+                />
+                <i-feather name="refresh-cw"></i-feather>
+                Replace
+              </label>
+              <button type="button" aria-label="Delete cover image" (click)="removeCoverImage()">
+                <i-feather name="trash-2"></i-feather>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="inline-error" *ngIf="imageError">{{ imageError }}</p>
+
+        <div class="time-metrics" *ngIf="isRecipe">
+          <article class="time-metric-card">
+            <span class="time-metric-card__icon"><i-feather name="clock"></i-feather></span>
+            <div>
+              <small>Total time</small>
+              <strong>{{ totalTimeMinutes || 0 }}</strong>
+              <em>min</em>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="builder-card ingredients-card">
+        <div class="section-heading section-heading--actions">
+          <div class="section-heading__group">
+            <span class="section-heading__icon section-heading__icon--blue">
+              <i-feather name="edit-3"></i-feather>
+            </span>
+            <div>
+              <h3>Ingredients</h3>
+              <p>Search your foods database or add anything manually.</p>
+            </div>
+          </div>
+          <button class="blue-button" type="button" (click)="openIngredientPicker()">
+            <i-feather name="plus"></i-feather>
+            Add ingredients
+          </button>
+        </div>
+
+        <div class="food-picker" *ngIf="ingredientPickerOpen">
+          <div class="food-picker__search">
+            <i-feather name="search"></i-feather>
+            <input
+              [(ngModel)]="foodSearch"
+              (input)="searchFoods()"
+              placeholder="Search the foods database..."
+              autofocus
+            />
+            <button type="button" aria-label="Close food search" (click)="closeIngredientPicker()">
+              <i-feather name="x"></i-feather>
+            </button>
+          </div>
+
+          <div class="food-picker__results">
+            <div class="food-picker__state" *ngIf="searchingFoods">Searching foods...</div>
+            <button
+              class="food-result"
+              type="button"
+              *ngFor="let food of foods; trackBy: trackByFood"
+              (click)="addFood(food)"
+            >
+              <span class="food-result__thumb">
+                <img *ngIf="food.image || food.imageUrl" [src]="food.image || food.imageUrl" alt="" />
+                <i-feather *ngIf="!food.image && !food.imageUrl" name="package"></i-feather>
+              </span>
+              <span class="food-result__identity">
+                <strong>{{ food.name }}</strong>
+                <small>{{ food.category || food.foodGroup || 'Food' }}</small>
+              </span>
+              <span class="food-result__energy">
+                {{ (food.energy || food.calories || 0) | number:'1.0-0' }} kcal /
+                {{ food.servingSize || 100 }}{{ food.servingUnit || 'g' }}
+              </span>
+            </button>
+
+            <div class="food-picker__state" *ngIf="!searchingFoods && !foods.length">
+              No database foods found.
+            </div>
+          </div>
+
+          <button class="manual-result" *ngIf="isRecipe" type="button" (click)="addManualIngredient()">
+            <span><i-feather name="edit-2"></i-feather></span>
+            <span>
+              <strong>Add a manual ingredient</strong>
+              <small>Not in the database — enter nutrition yourself</small>
+            </span>
+          </button>
+        </div>
+
+        <div class="ingredient-empty" *ngIf="!ingredients.length && !ingredientPickerOpen">
+          <i-feather name="shopping-bag"></i-feather>
+          <strong>Meal looking empty?</strong>
+          <span>Add an item using the button above.</span>
+        </div>
+
+        <div class="ingredient-list" *ngIf="ingredients.length">
+          <article
+            class="ingredient-row"
+            *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient"
+            draggable="true"
+            (dragstart)="onIngredientDragStart(i)"
+            (dragover)="$event.preventDefault()"
+            (drop)="onIngredientDrop(i)"
+          >
+            <span class="drag-handle" title="Drag to reorder">
+              <i-feather name="more-vertical"></i-feather>
+            </span>
+
+            <span class="ingredient-row__thumb">
+              <img
+                *ngIf="!ingredient.manual && (ingredient.foodRef?.image || ingredient.foodRef?.imageUrl)"
+                [src]="ingredient.foodRef.image || ingredient.foodRef.imageUrl"
+                alt=""
+              />
+              <i-feather
+                *ngIf="ingredient.manual || (!ingredient.foodRef?.image && !ingredient.foodRef?.imageUrl)"
+                [name]="ingredient.manual ? 'edit-2' : 'package'"
+              ></i-feather>
+            </span>
+
+            <div class="ingredient-row__identity">
+              <input
+                *ngIf="ingredient.manual"
+                [(ngModel)]="ingredient.name"
+                [class.field-control--invalid]="submitted && !ingredient.name.trim()"
+                placeholder="Ingredient name"
+              />
+              <strong *ngIf="!ingredient.manual">{{ ingredient.name }}</strong>
+              <small>{{ ingredient.category }}</small>
+            </div>
+
+            <label class="compact-field">
+              <span class="sr-only">Quantity</span>
+              <input
+                type="number"
+                min="0.01"
+                step="any"
+                [(ngModel)]="ingredient.quantity"
+                [class.field-control--invalid]="submitted && !(ingredient.quantity && ingredient.quantity > 0)"
+                placeholder="Qty"
+              />
+            </label>
+
+            <label class="compact-field">
+              <span class="sr-only">Unit</span>
+              <select
+                [(ngModel)]="ingredient.unit"
+                [class.field-control--invalid]="submitted && !ingredient.unit"
+              >
+                <option value="" disabled>Unit</option>
+                <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+              </select>
+            </label>
+
+            <div class="ingredient-row__macros" *ngIf="!ingredient.manual">
+              <span><strong>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</strong>KCAL</span>
+              <span><strong>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}g</strong>P</span>
+              <span><strong>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}g</strong>C</span>
+              <span><strong>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}g</strong>F</span>
+            </div>
+
+            <div class="manual-macros" *ngIf="ingredient.manual">
+              <label><span>Kcal</span><input type="number" min="0" [(ngModel)]="ingredient.calories" placeholder="—" /></label>
+              <label><span>Protein</span><input type="number" min="0" [(ngModel)]="ingredient.protein" placeholder="—" /></label>
+              <label><span>Carbs</span><input type="number" min="0" [(ngModel)]="ingredient.carbs" placeholder="—" /></label>
+              <label><span>Fat</span><input type="number" min="0" [(ngModel)]="ingredient.fat" placeholder="—" /></label>
+            </div>
+
+            <button
+              class="row-delete"
+              type="button"
+              aria-label="Remove ingredient"
+              (click)="removeIngredient(i)"
+            >
+              <i-feather name="trash-2"></i-feather>
+            </button>
+          </article>
+        </div>
+
+        <div class="ingredient-validation" *ngIf="submitted && ingredients.length === 0">
+          Add at least one ingredient.
+        </div>
+        <div class="ingredient-validation" *ngIf="submitted && ingredients.length && !formIsValid">
+          Every ingredient needs a name, quantity, and unit. Nutrition values for manual
+          ingredients may stay empty.
+        </div>
+
+        <div class="ingredients-note" *ngIf="isRecipe">
+          <span>Nutrition (manual)</span>
+          <small>empty fields count as 0</small>
+        </div>
+      </section>
+
+      <section class="builder-card directions-card" *ngIf="isRecipe">
+        <div class="section-heading">
+          <span class="section-heading__icon"><i-feather name="list"></i-feather></span>
+          <div>
+            <h3>Directions</h3>
+            <p>Add the preparation steps in the correct order.</p>
+          </div>
+        </div>
+
+        <div class="direction-list">
+          <div
+            class="direction-row"
+            *ngFor="let direction of directions; let i = index; trackBy: trackByDirection"
+            draggable="true"
+            (dragstart)="onDirectionDragStart(i)"
+            (dragover)="$event.preventDefault()"
+            (drop)="onDirectionDrop(i)"
+          >
+            <span class="drag-handle"><i-feather name="more-vertical"></i-feather></span>
+            <b>{{ i + 1 }}</b>
+            <input [(ngModel)]="directions[i]" placeholder="Describe this preparation step" />
+            <button type="button" aria-label="Remove step" (click)="removeStep(i)">
+              <i-feather name="trash-2"></i-feather>
+            </button>
+          </div>
+        </div>
+
+        <button class="add-step" type="button" (click)="addStep()">
+          <i-feather name="plus"></i-feather>
+          Add step
+        </button>
+      </section>
+
+      <section class="nutrition-section">
+        <div class="nutrition-section__header">
+          <h3>Nutrition</h3>
+        </div>
+
+        <div class="nutrition-cards">
+          <article>
+            <span><i-feather name="zap"></i-feather></span>
+            <strong>{{ nutritionTotal('calories') | number:'1.0-0' }}</strong>
+            <small>Calories</small>
+          </article>
+          <article>
+            <span><i-feather name="target"></i-feather></span>
+            <strong>{{ nutritionTotal('protein') | number:'1.0-1' }}<em>g</em></strong>
+            <small>Protein</small>
+          </article>
+          <article>
+            <span><i-feather name="grid"></i-feather></span>
+            <strong>{{ nutritionTotal('carbs') | number:'1.0-1' }}<em>g</em></strong>
+            <small>Carbs</small>
+          </article>
+          <article>
+            <span><i-feather name="droplet"></i-feather></span>
+            <strong>{{ nutritionTotal('fat') | number:'1.0-1' }}<em>g</em></strong>
+            <small>Fat</small>
+          </article>
+        </div>
+      </section>
+
+      <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
+    </main>
+
+    <footer
+      class="meal-modal__footer"
+      [class.meal-modal__footer--choice]="step === 'choice'"
+      [class.meal-modal__footer--recipe]="isRecipe"
+      [class.meal-modal__footer--foods]="step === 'foods'"
+    >
+      <ng-container *ngIf="step === 'choice'">
+        <button class="button button--secondary" type="button" (click)="close()">
+          Cancel
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="isRecipe">
+        <button class="button button--secondary" type="button" (click)="close()">
+          Cancel
+        </button>
+        <span class="meal-modal__footer-spacer"></span>
+        <div class="meal-modal__footer-actions">
+          <button
+            class="button button--secondary"
+            type="button"
+            [disabled]="saving"
+            (click)="save(true)"
+          >
+            Save draft
+          </button>
+          <button
+            class="button button--primary"
+            type="button"
+            [disabled]="saving"
+            (click)="save(false)"
+          >
+            {{ saving ? 'Saving...' : 'Save recipe' }}
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="step === 'foods'">
+        <div class="meal-modal__footer-actions">
+          <button
+            class="button button--primary"
+            type="button"
+            [disabled]="saving"
+            (click)="save(false)"
+          >
+            {{ saving ? 'Saving...' : 'Save Meal' }}
+          </button>
+          <button class="button button--secondary" type="button" (click)="close()">
+            Cancel
+          </button>
+        </div>
+      </ng-container>
+    </footer>
+  </section>
+</div>

@@ -5,7 +5,7 @@
       <h1>Meals</h1>
       <p>Create, organize and manage your meals</p>
     </div>
-    <button class="btn-primary header-actions" routerLink="/nutrition/meals/create">
+    <button class="btn-primary header-actions" type="button" (click)="openAddMealModal()">
       <i-feather name="plus"></i-feather>
       Add New Meal
     </button>
@@ -116,9 +116,20 @@
   </div>
 </div>
 
+<div class="meal-loading-overlay" *ngIf="loadingMealToEdit">
+  <div class="meal-loading-card">Loading meal...</div>
+</div>
+
 <app-delete-meal-modal
   [isVisible]="showDeleteModal"
   [mealName]="mealToDelete?.name || ''"
   (onClose)="closeDeleteModal()"
   (onConfirm)="confirmDeleteMeal()"
 ></app-delete-meal-modal>
+
+<app-add-meal-modal
+  [isVisible]="showAddMealModal"
+  [meal]="mealToEdit"
+  (closed)="closeAddMealModal()"
+  (saved)="onMealSaved()"
+></app-add-meal-modal>

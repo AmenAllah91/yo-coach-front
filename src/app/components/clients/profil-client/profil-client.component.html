@@ -21,6 +21,58 @@
     </div>
 
     <div class="header-actions">
+      <div class="client-picker" (click)="$event.stopPropagation()">
+        <button
+          class="client-picker__trigger"
+          type="button"
+          [attr.aria-expanded]="clientPickerOpen"
+          aria-haspopup="listbox"
+          (click)="toggleClientPicker($event)"
+        >
+          <span class="client-picker__avatar">{{ clientInitials }}</span>
+          <span class="client-picker__selected">
+            <small><i class="far fa-user"></i> Client</small>
+            <strong>{{ fullName }}</strong>
+          </span>
+          <i class="fas client-picker__chevron" [class.fa-chevron-up]="clientPickerOpen" [class.fa-chevron-down]="!clientPickerOpen"></i>
+        </button>
+
+        <div class="client-picker__menu" *ngIf="clientPickerOpen">
+          <label class="client-picker__search">
+            <i class="fas fa-search"></i>
+            <input
+              type="search"
+              [(ngModel)]="clientSearch"
+              placeholder="Search clients..."
+              aria-label="Search clients"
+              (click)="$event.stopPropagation()"
+            />
+          </label>
+
+          <div class="client-picker__list" role="listbox" aria-label="Clients">
+            <button
+              *ngFor="let profileClient of filteredCoachClients"
+              class="client-picker__option"
+              type="button"
+              role="option"
+              [attr.aria-selected]="isSelectedClient(profileClient)"
+              [class.client-picker__option--selected]="isSelectedClient(profileClient)"
+              (click)="selectProfileClient(profileClient)"
+            >
+              <span class="client-picker__option-avatar">{{ getClientInitials(profileClient) }}</span>
+              <span class="client-picker__option-copy">
+                <strong>{{ profileClient.firstName }} {{ profileClient.lastName }}</strong>
+                <small>{{ profileClient.email || 'Not provided' }}</small>
+              </span>
+              <span class="client-presence" [ngClass]="clientPresenceClass(profileClient)"></span>
+              <i *ngIf="isSelectedClient(profileClient)" class="fas fa-check client-picker__check"></i>
+            </button>
+            <p class="client-picker__empty" *ngIf="!loadingCoachClients && filteredCoachClients.length === 0">No clients found</p>
+            <p class="client-picker__empty" *ngIf="loadingCoachClients">Loading clients...</p>
+          </div>
+        </div>
+      </div>
+
       <button class="btn-send-message" type="button" (click)="setTab('chat')">
         <i class="far fa-comment"></i>
         <span>Send Message</span>
