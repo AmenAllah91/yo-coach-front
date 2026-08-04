@@ -13,6 +13,7 @@ export interface MacroTargets {
 =================================*/
 export interface FoodRef {
   imageUrl?: string;
+  general?: boolean | number;
   id?: string;
   name: string;
   energy: number;
@@ -34,6 +35,11 @@ export interface FoodRef {
   iron: number;
   omega3: number;
   zinc: number;
+  servingSize?: number;
+  servingDescription?: string;
+  servingUnit?: string;
+  calories?: number;
+  image?: string;
 }
 
 /* ================================
@@ -44,7 +50,13 @@ export interface Food {
   name: string;
   quantity: number;
   unit: string;
-  foodRef: FoodRef;
+  foodRef?: FoodRef | null;
+  manual?: boolean;
+  calories?: number | null;
+  protein?: number | null;
+  carbohydrates?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
 }
 
 /* ================================
@@ -53,6 +65,14 @@ export interface Food {
 export interface Meal {
   id?: string;
   name: string;
+  mealType?: string;
+  mealTime?: string;
+  servings?: number;
+  totalTimeMinutes?: number | null;
+  coverImage?: string | null;
+  directions?: string[];
+  template?: boolean;
+  draft?: boolean;
   mealTargets?: MacroTargets | null;
   foods: Food[];
 }
@@ -85,13 +105,13 @@ export interface MealPlan {
   details?: string;
   startDate: string;
   endDate: string;
-  trackingMode: MacroTrackingMode;
+  trackingMode: MacroTrackingMode | null;
   mealDays: MealDay[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   coach: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any;
-  date?: string;
+  date?: string | null;
   title?: string;
   nutritionPlanMode?: 'APP' | 'FILE' | string;
   resourceType?: 'PDF' | 'EXCEL' | string;

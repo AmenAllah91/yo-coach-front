@@ -8,11 +8,12 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { MealsService } from 'app/service/meals.service';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
+import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
 
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss'],
 })
@@ -232,11 +233,12 @@ export class CreateFullPlanComponent implements OnInit {
       .subscribe((plan: MealPlan) => {
         this.mealPlan = plan;
         this.planName = plan.name;
-        this.planDescription = plan.details;
+        this.planDescription = plan.details || '';
         this.isMealPlanTemplate = this.canCreateTemplate
           ? Boolean((plan as any).isMealPlanTemplate)
           : false;
         this.days = plan.mealDays || [];
+        this.days.forEach((day) => this.ensureMealUiDefaults(day));
         this.durationWeeks = this.normalizeDurationWeeks(
           Math.ceil((this.days.length || 28) / 7)
         );
@@ -262,10 +264,11 @@ export class CreateFullPlanComponent implements OnInit {
     );
   }
 
-  private makeEmptyMeal(): Meal {
+  private makeEmptyMeal(index = 0): Meal {
     return {
-      id: crypto.randomUUID?.() ?? Date.now().toString(),
+      id: this.newLocalId(),
       name: 'New Meal',
+      mealTime: this.defaultMealTime(index),
       mealTargets: {
         calories: 0,
         proteinG: 0,
@@ -276,16 +279,43 @@ export class CreateFullPlanComponent implements OnInit {
     };
   }
 
+  private defaultMealTime(index: number): string {
+    const times = ['08:00', '10:00', '12:30', '16:00', '19:30', '22:00'];
+    return times[index] || times[times.length - 1];
+  }
+
+  private ensureMealUiDefaults(day: MealDay): void {
+    day.meals = day.meals || [];
+    day.meals.forEach((meal, index) => {
+      meal.id = meal.id || this.newLocalId();
+      meal.name = meal.name || `Meal ${index + 1}`;
+      meal.mealTime = meal.mealTime || this.defaultMealTime(index);
+      meal.foods = meal.foods || [];
+      meal.directions = meal.directions || [];
+      meal.mealTargets = meal.mealTargets || {
+        calories: 0,
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+      };
+    });
+  }
+
+  private newLocalId(): string {
+    return globalThis.crypto?.randomUUID?.()
+      || `meal-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
   private makeEmptyDay(): MealDay {
     const defaultMealsCount = this.coachSettingsService.getDefaultMealsCount();
     const autoCreateMeals = this.coachSettingsService.getConfig().nutrition.autoCreateMeals;
 
     const meals = autoCreateMeals
       ? Array.from({ length: defaultMealsCount }, (_, index) => ({
-          ...this.makeEmptyMeal(),
+          ...this.makeEmptyMeal(index),
           name: `Meal ${index + 1}`,
         }))
-      : [this.makeEmptyMeal()];
+      : [this.makeEmptyMeal(0)];
 
     return {
       id: crypto.randomUUID?.() ?? Date.now().toString(),
@@ -431,7 +461,7 @@ export class CreateFullPlanComponent implements OnInit {
   addMeal() {
     if (!this.selectedDay) return;
 
-    this.selectedDay.meals.push(this.makeEmptyMeal());
+    this.selectedDay.meals.push(this.makeEmptyMeal(this.selectedDay.meals.length));
     this.recalcDayTargets(this.selectedDay);
   }
 
@@ -447,67 +477,158 @@ export class CreateFullPlanComponent implements OnInit {
     meal.name = newName.trim() || meal.name;
   }
 
+  promptRenameMeal(meal: Meal): void {
+    const nextName = window.prompt('Meal name', meal.name);
+    if (nextName !== null) this.renameMeal(meal, nextName);
+  }
+
   /* ============================================
             MEAL TEMPLATES / DUPLICATION
   ==============================================*/
 
-  templates: any[] = [];
   isTemplateModalOpen = false;
   activeMealMenuId: string | null = null;
+  templateReplacementMealId: string | null = null;
+  expandedRecipeMealIds = new Set<string>();
 
-  openTemplateModal() {
+  openTemplateModal(replaceMeal?: Meal) {
+    this.templateReplacementMealId = replaceMeal?.id || null;
     this.isTemplateModalOpen = true;
-    this.loadTemplates();
   }
 
   closeTemplateModal() {
     this.isTemplateModalOpen = false;
+    this.templateReplacementMealId = null;
   }
 
-  loadTemplates() {
-    this.mealsService.getTemplates().subscribe({
-      next: (res: any) => {
-        this.templates = Array.isArray(res) ? res : res.content || [];
-        console.log('Templates loaded:', this.templates.length);
-      },
-      error: (err: any) => {
-        console.error('Failed to load templates', err);
-      },
+  addMealFromTemplate(selection: MealTemplateSelection): void {
+    if (!this.selectedDay || !selection?.meal) return;
+
+    const source = selection.meal;
+    const multiplier = Math.max(1, Math.floor(Number(selection.servings) || 1));
+    const cloned: Meal = JSON.parse(JSON.stringify(source));
+    cloned.id = this.newLocalId();
+    cloned.servings = multiplier;
+    cloned.draft = false;
+    cloned.foods = (source.foods || []).map((food: any) => {
+      const copy: any = JSON.parse(JSON.stringify(food));
+      copy.id = this.newLocalId();
+      copy.quantity = this.multiplyNumber(
+        food.quantity ?? food.foodRef?.servingSize ?? 100,
+        multiplier,
+      );
+
+      // Manual ingredient macros are stored as totals, so they must also scale.
+      if (food.manual || !food.foodRef) {
+        copy.calories = this.multiplyNullable(food.calories, multiplier);
+        copy.protein = this.multiplyNullable(food.protein, multiplier);
+        copy.carbohydrates = this.multiplyNullable(food.carbohydrates ?? food.carbs, multiplier);
+        copy.fat = this.multiplyNullable(food.fat, multiplier);
+      }
+      return copy;
     });
-  }
 
-  applyTemplateToSelectedDay(tpl: any) {
-    if (!this.selectedDay) return;
+    delete (cloned as any).mealPlanId;
+    delete (cloned as any).mealDayId;
 
-    const cloned = JSON.parse(JSON.stringify(tpl));
-    // ensure unique ids for local plan
-    cloned.id = crypto.randomUUID?.() ?? Date.now().toString();
-    cloned.foods = (cloned.foods || []).map((f: any) => ({ ...f, id: crypto.randomUUID?.() ?? Date.now().toString() }));
+    let targetIndex = -1;
+    if (this.templateReplacementMealId) {
+      targetIndex = this.selectedDay.meals.findIndex(
+        (meal) => meal.id === this.templateReplacementMealId,
+      );
+    }
+    if (targetIndex < 0) {
+      targetIndex = this.selectedDay.meals.findIndex((meal) => this.isEmptyMeal(meal));
+    }
 
-    this.selectedDay.meals.push(cloned);
+    if (targetIndex >= 0) {
+      cloned.mealTime = this.selectedDay.meals[targetIndex].mealTime
+        || this.defaultMealTime(targetIndex);
+      this.selectedDay.meals.splice(targetIndex, 1, cloned);
+    } else {
+      cloned.mealTime = cloned.mealTime || this.defaultMealTime(this.selectedDay.meals.length);
+      this.selectedDay.meals.push(cloned);
+    }
+
+    this.recalcMealTargets(cloned);
     this.recalcDayTargets(this.selectedDay);
     this.closeTemplateModal();
+  }
+
+  isEmptyMeal(meal: Meal): boolean {
+    return !(meal.foods || []).length;
+  }
+
+  isRecipeMeal(meal: Meal): boolean {
+    return Boolean(
+      meal?.template
+      || meal?.coverImage
+      || meal?.totalTimeMinutes != null
+      || (meal?.directions || []).length,
+    );
+  }
+
+  toggleRecipeDetails(meal: Meal): void {
+    const id = String(meal.id || '');
+    if (!id) return;
+    if (this.expandedRecipeMealIds.has(id)) this.expandedRecipeMealIds.delete(id);
+    else this.expandedRecipeMealIds.add(id);
+  }
+
+  recipeDetailsVisible(meal: Meal): boolean {
+    return this.expandedRecipeMealIds.has(String(meal.id || ''));
+  }
+
+  mealTypeLabel(meal: Meal): string {
+    const value = String(meal.mealType || 'Meal').replace(/_/g, ' ').toLowerCase();
+    return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  recipeDescription(meal: Meal): string {
+    return (meal.foods || [])
+      .map((food) => food.name || food.foodRef?.name)
+      .filter(Boolean)
+      .slice(0, 5)
+      .join(', ');
   }
 
   saveMealAsTemplate(meal: Meal) {
     const payload = {
       name: meal.name,
+      mealType: meal.mealType,
+      servings: meal.servings || 1,
+      totalTimeMinutes: meal.totalTimeMinutes,
+      coverImage: meal.coverImage,
+      directions: meal.directions || [],
       foods: meal.foods || [],
     };
 
     this.mealsService.saveTemplate(payload).subscribe(() => {
       alert('Template saved');
-      this.loadTemplates();
     });
   }
 
   duplicateMealInDay(meal: Meal) {
     if (!this.selectedDay) return;
     const clone: Meal = JSON.parse(JSON.stringify(meal));
-    clone.id = crypto.randomUUID?.() ?? Date.now().toString();
-    clone.foods = (clone.foods || []).map((f: any) => ({ ...f, id: crypto.randomUUID?.() ?? Date.now().toString() }));
+    clone.id = this.newLocalId();
+    clone.mealTime = this.defaultMealTime(this.selectedDay.meals.length);
+    clone.foods = (clone.foods || []).map((food: any) => ({
+      ...food,
+      id: this.newLocalId(),
+    }));
     this.selectedDay.meals.push(clone);
     this.recalcDayTargets(this.selectedDay);
+  }
+
+  private multiplyNumber(value: unknown, multiplier: number): number {
+    const result = (Number(value) || 0) * multiplier;
+    return Math.round(result * 1000) / 1000;
+  }
+
+  private multiplyNullable(value: unknown, multiplier: number): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    return this.multiplyNumber(value, multiplier);
   }
 
   /* ============================================
@@ -610,17 +731,29 @@ export class CreateFullPlanComponent implements OnInit {
   ==============================================*/
 
   computeFoodMacros(food: Food) {
-    const factor = food.quantity / 100;
+    if (food.manual || !food.foodRef) {
+      return {
+        calories: Number(food.calories) || 0,
+        protein: Number(food.protein) || 0,
+        carbs: Number(food.carbohydrates ?? food.carbs) || 0,
+        fat: Number(food.fat) || 0,
+      };
+    }
 
-    const p = food.foodRef.protein * factor;
-    const c = food.foodRef.carbohydrates * factor;
-    const f = food.foodRef.fat * factor;
+    const servingSize = Number(food.foodRef.servingSize) || 100;
+    const factor = (Number(food.quantity) || servingSize) / servingSize;
+    const protein = (Number(food.foodRef.protein) || 0) * factor;
+    const carbs = (Number(food.foodRef.carbohydrates) || 0) * factor;
+    const fat = (Number(food.foodRef.fat) || 0) * factor;
+    const declaredCalories = Number(food.foodRef.energy ?? food.foodRef.calories);
 
     return {
-      calories: p * 4 + c * 4 + f * 9,
-      protein: p,
-      carbs: c,
-      fat: f,
+      calories: Number.isFinite(declaredCalories)
+        ? declaredCalories * factor
+        : protein * 4 + carbs * 4 + fat * 9,
+      protein,
+      carbs,
+      fat,
     };
   }
 
@@ -681,19 +814,19 @@ export class CreateFullPlanComponent implements OnInit {
   ==============================================*/
 
   getMealCalories(m: Meal) {
-    return m.mealTargets.calories;
+    return Number(m.mealTargets?.calories) || 0;
   }
 
   getMealProtein(m: Meal) {
-    return m.mealTargets.proteinG;
+    return Number(m.mealTargets?.proteinG) || 0;
   }
 
   getMealCarbs(m: Meal) {
-    return m.mealTargets.carbsG;
+    return Number(m.mealTargets?.carbsG) || 0;
   }
 
   getMealFat(m: Meal) {
-    return m.mealTargets.fatG;
+    return Number(m.mealTargets?.fatG) || 0;
   }
 
   getFoodCalories(food: Food) {

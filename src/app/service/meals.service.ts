@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 
@@ -28,6 +28,20 @@ export class MealsService {
     const params: Record<string, string | number> = { page, size };
     if (search?.trim()) params['search'] = search.trim();
     return this.http.get<any>(this.base, { params });
+  }
+
+
+  getMealLibrary(recipe: boolean, page = 0, size = 3, search = ''): Observable<any> {
+    let params = new HttpParams()
+      .set('recipe', String(recipe))
+      .set('page', String(page))
+      .set('size', String(size));
+
+    if (search.trim()) {
+      params = params.set('search', search.trim());
+    }
+
+    return this.http.get<any>(`${this.base}/library`, { params });
   }
 
   getMeal(id: string): Observable<any> {

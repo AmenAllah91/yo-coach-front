@@ -3384,3 +3384,450 @@
     padding:18px 20px;
   }
 }
+
+/* ===== Compact client calendar cards (nutrition + workout) ===== */
+.client-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cn-day-card.client-schedule-card {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  display: grid !important;
+  grid-template-columns: 70px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 14px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 13px !important;
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgba(15, 35, 55, .05) !important;
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.cn-day-card.client-schedule-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: #cfe1ed !important;
+  box-shadow: 0 5px 14px rgba(15, 35, 55, .08) !important;
+}
+
+.client-date-tile {
+  width: 70px;
+  min-height: 70px;
+  padding: 7px 5px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e1e8ef;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #16253a;
+  text-align: center;
+  line-height: 1;
+}
+
+.client-date-tile__weekday,
+.client-date-tile__month {
+  display: block;
+  color: #687b91;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.client-date-tile__day {
+  display: block;
+  margin: 4px 0 3px;
+  color: #10233d;
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.client-schedule-card__content {
+  min-width: 0;
+}
+
+.client-schedule-card__top {
+  min-height: 70px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.client-schedule-card__title-block {
+  min-width: 0;
+}
+
+.client-schedule-card .cn-day-title {
+  margin: 1px 0 2px !important;
+  color: #10233d !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
+.client-schedule-card .cn-day-subtitle {
+  margin: 0 !important;
+  color: #109fda !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+.client-schedule-card__meta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #61758c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.client-schedule-card__meta > span:first-child {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.client-schedule-card__state {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 7px;
+}
+
+.client-day-status {
+  min-height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dfe7ef;
+  border-radius: 999px;
+  background: #f6f8fb;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.client-day-status__icon {
+  width: 15px;
+  height: 15px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.client-day-status[data-status='COMPLETED'] {
+  border-color: #cfeeda;
+  background: #edf9f1;
+  color: #20a85b;
+}
+.client-day-status[data-status='COMPLETED'] .client-day-status__icon {
+  background: #34c76f;
+  color: #fff;
+}
+
+.client-day-status[data-status='UPCOMING'],
+.client-day-status[data-status='IN_PROGRESS'] {
+  border-color: #cfe8f8;
+  background: #eef8fe;
+  color: #078fd0;
+}
+.client-day-status[data-status='UPCOMING'] .client-day-status__icon,
+.client-day-status[data-status='IN_PROGRESS'] .client-day-status__icon {
+  color: #078fd0;
+}
+
+.client-day-status[data-status='PENDING'],
+.client-day-status[data-status='PLANNED'],
+.client-day-status[data-status='NOT_STARTED'] {
+  border-color: #e0e6ed;
+  background: #f7f9fb;
+  color: #718096;
+}
+
+.client-day-status[data-status='MISSED'],
+.client-day-status[data-status='OFF_PLAN'] {
+  border-color: #f4d5d9;
+  background: #fff3f4;
+  color: #d44352;
+}
+.client-day-status[data-status='MISSED'] .client-day-status__icon,
+.client-day-status[data-status='OFF_PLAN'] .client-day-status__icon {
+  background: #e55361;
+  color: #fff;
+}
+
+.client-day-status[data-status='OVERDUE'] {
+  border-color: #f2dfb9;
+  background: #fff8e9;
+  color: #bb7a10;
+}
+.client-day-status[data-status='OVERDUE'] .client-day-status__icon {
+  background: #d7992d;
+  color: #fff;
+}
+
+.client-card-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #079fdb;
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* Compact nutrition rows */
+.client-schedule-card .nutrition-meals-list {
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid #e8edf2;
+}
+
+.client-schedule-card .nutrition-meal-line {
+  min-height: 40px !important;
+  padding: 6px 0 !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border-bottom: 1px solid #edf1f5 !important;
+}
+
+.client-schedule-card .nutrition-meal-line:last-child {
+  border-bottom: 0 !important;
+}
+
+.client-schedule-card .nutrition-meal-badge {
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #eef8fd !important;
+  color: #119ed7 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+.client-schedule-card .nutrition-meal-name {
+  color: #1a2b40 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.client-schedule-card .nutrition-foods-list {
+  margin-top: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0 !important;
+  color: #6d7f94 !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+}
+
+.client-schedule-card .nutrition-food-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap;
+}
+
+.client-schedule-card .nutrition-food-item:not(:last-child)::after {
+  content: '•';
+  margin: 0 8px;
+  color: #a3b1bf;
+}
+
+.client-schedule-card .nutrition-food-qty {
+  margin-left: 3px !important;
+  color: #718399 !important;
+}
+
+/* Compact workout rows */
+.client-schedule-card .workout-exercises,
+.client-schedule-card .client-schedule-card__list {
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid #e8edf2 !important;
+  background: transparent !important;
+}
+
+.client-schedule-card .workout-exercises-header,
+.client-schedule-card .cn-day-meals-line {
+  display: none !important;
+}
+
+.client-schedule-card .workout-exercises-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.client-schedule-card .exercise-line {
+  min-height: 38px !important;
+  padding: 5px 0 !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border-bottom: 1px solid #edf1f5 !important;
+}
+
+.client-schedule-card .exercise-line:last-child {
+  border-bottom: 0 !important;
+}
+
+.client-schedule-card .exercise-badge {
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #eef8fd !important;
+  color: #119ed7 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+.client-schedule-card .exercise-name {
+  color: #1a2b40 !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+@media (max-width: 700px) {
+  .client-list {
+    gap: 8px !important;
+  }
+
+  .cn-day-card.client-schedule-card {
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .client-date-tile {
+    width: 58px;
+    min-height: 64px;
+    padding: 6px 4px;
+    border-radius: 9px;
+  }
+
+  .client-date-tile__weekday,
+  .client-date-tile__month {
+    font-size: 9px;
+  }
+
+  .client-date-tile__day {
+    margin: 4px 0 3px;
+    font-size: 21px;
+  }
+
+  .client-schedule-card__top {
+    min-height: 64px;
+    gap: 8px;
+  }
+
+  .client-schedule-card .cn-day-title {
+    font-size: 14px !important;
+  }
+
+  .client-schedule-card .cn-day-subtitle {
+    font-size: 11px !important;
+  }
+
+  .client-schedule-card__meta {
+    margin-top: 5px;
+    font-size: 10px;
+  }
+
+  .client-schedule-card__state {
+    gap: 7px;
+    padding-top: 2px;
+  }
+
+  .client-day-status {
+    min-height: 27px;
+    padding: 0 9px;
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .client-day-status__icon {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+  }
+
+  .client-card-chevron {
+    font-size: 25px;
+  }
+
+  .client-schedule-card .nutrition-meal-line,
+  .client-schedule-card .exercise-line {
+    min-height: 36px !important;
+    padding: 5px 0 !important;
+    grid-template-columns: 25px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .client-schedule-card .nutrition-meal-badge,
+  .client-schedule-card .exercise-badge {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    font-size: 10px !important;
+  }
+
+  .client-schedule-card .nutrition-meal-name,
+  .client-schedule-card .exercise-name {
+    font-size: 11px !important;
+  }
+
+  .client-schedule-card .nutrition-foods-list {
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .cn-day-card.client-schedule-card {
+    grid-template-columns: 54px minmax(0, 1fr) !important;
+    gap: 9px !important;
+    padding: 9px !important;
+  }
+
+  .client-date-tile {
+    width: 54px;
+    min-height: 60px;
+  }
+
+  .client-schedule-card__state {
+    gap: 4px;
+  }
+
+  .client-day-status {
+    padding: 0 7px;
+  }
+
+  .client-day-status__icon {
+    display: none;
+  }
+}

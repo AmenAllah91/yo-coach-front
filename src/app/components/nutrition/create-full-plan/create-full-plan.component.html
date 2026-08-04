@@ -244,23 +244,22 @@
           >
             <header class="np-meal__head">
               <div class="np-meal__left">
-                <h4 class="np-h6 np-brand">{{ meal.name }}</h4>
+                <div class="np-meal-title-row">
+                  <h4 class="np-h6 np-brand">{{ meal.name }}</h4>
+                  <button
+                    class="np-mini"
+                    type="button"
+                    (click)="promptRenameMeal(meal)"
+                    aria-label="Rename meal"
+                  >
+                    <i-feather name="edit-2" class="np-ico"></i-feather>
+                  </button>
+                </div>
 
-                <button
-                  class="np-mini"
-                  (click)="renameMeal(meal, prompt('Meal name', meal.name) || meal.name)"
-                >
-                  <svg viewBox="0 0 24 24" class="np-ico">
-                    <path
-                      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM14.06 4.94l3.75 3.75"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      fill="none"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </button>
+                <label class="np-meal-time">
+                  <span><i-feather name="clock"></i-feather> MEAL TIME</span>
+                  <input type="time" [(ngModel)]="meal.mealTime" />
+                </label>
               </div>
 
               <div class="np-meal__right">
@@ -316,6 +315,44 @@
             </header>
 
             <div class="np-meal__body">
+              <section class="np-recipe-overview" *ngIf="isRecipeMeal(meal) && meal.foods?.length">
+                <div class="np-recipe-overview__top">
+                  <span class="np-recipe-chip">MEAL RECIPE</span>
+                  <button type="button" class="np-recipe-change" (click)="openTemplateModal(meal)">
+                    <i-feather name="repeat"></i-feather>
+                    Choose Another Meal Template
+                  </button>
+                </div>
+
+                <div class="np-recipe-overview__content">
+                  <div class="np-recipe-image" [class.has-image]="meal.coverImage">
+                    <img *ngIf="meal.coverImage" [src]="meal.coverImage" [alt]="meal.name" />
+                    <i-feather *ngIf="!meal.coverImage" name="image"></i-feather>
+                  </div>
+                  <div class="np-recipe-copy">
+                    <h5>{{ meal.name }}</h5>
+                    <p>{{ recipeDescription(meal) }}</p>
+                    <div class="np-recipe-stats">
+                      <div><span>SERVINGS</span><strong>{{ meal.servings || 1 }}</strong></div>
+                      <div><span>TOTAL TIME</span><strong>{{ meal.totalTimeMinutes || 0 }} min</strong></div>
+                      <div><span>TOTAL CALORIES</span><strong>{{ getMealCalories(meal) }} Kcal</strong></div>
+                      <div><span>PROTEIN</span><strong>{{ getMealProtein(meal) }} g</strong></div>
+                      <div><span>CARBS</span><strong>{{ getMealCarbs(meal) }} g</strong></div>
+                      <div><span>FAT</span><strong>{{ getMealFat(meal) }} g</strong></div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="np-recipe-toggle" (click)="toggleRecipeDetails(meal)">
+                  <i-feather name="eye"></i-feather>
+                  {{ recipeDetailsVisible(meal) ? 'Hide Recipe Details' : 'View Full Recipe Details' }}
+                </button>
+              </section>
+
+              <div class="np-ingredients-title" *ngIf="meal.foods?.length">
+                {{ isRecipeMeal(meal) ? 'Ingredients' : 'Foods' }}
+              </div>
+
               <table class="np-table" *ngIf="meal.foods?.length">
                 <thead>
                 <tr>
@@ -331,34 +368,34 @@
 
                 <tbody>
                 <tr *ngFor="let food of meal.foods">
-                  <td>{{ food.name }}</td>
+                  <td data-label="Ingredient">{{ food.name }}</td>
 
-                  <td>
+                  <td data-label="Quantity">
                     <span class="np-num">{{ food.quantity }}</span>
                     <span class="np-unit">{{ food.unit }}</span>
                   </td>
 
-                  <td>
+                  <td data-label="Protein">
                     <span class="np-num">{{ getFoodProtein(food) }}</span>
                     <span class="np-unit">g</span>
                   </td>
 
-                  <td>
+                  <td data-label="Carbs">
                     <span class="np-num">{{ getFoodCarbs(food) }}</span>
                     <span class="np-unit">g</span>
                   </td>
 
-                  <td>
+                  <td data-label="Fat">
                     <span class="np-num">{{ getFoodFat(food) }}</span>
                     <span class="np-unit">g</span>
                   </td>
 
-                  <td>
+                  <td data-label="Calories">
                     <span class="np-num">{{ getFoodCalories(food) }}</span>
                     <span class="np-unit">Kcal</span>
                   </td>
 
-                  <td class="np-actions">
+                  <td class="np-actions" data-label="Actions">
                     <button
                       class="np-iconbtn"
                       (click)="removeFood(food, meal)"
@@ -391,9 +428,24 @@
                       stroke-linecap="round"
                     />
                   </svg>
-                  Add Food
+                  {{ isRecipeMeal(meal) ? 'Add Ingredient' : 'Add Food' }}
                 </button>
               </div>
+
+              <section class="np-recipe-directions" *ngIf="isRecipeMeal(meal) && recipeDetailsVisible(meal)">
+                <div>
+                  <h6>Directions (Summary)</h6>
+                  <ol *ngIf="meal.directions?.length; else noDirections">
+                    <li *ngFor="let direction of meal.directions">{{ direction }}</li>
+                  </ol>
+                  <ng-template #noDirections><p>No directions were added to this recipe.</p></ng-template>
+                </div>
+                <div class="np-recipe-prep-time">
+                  <i-feather name="clock"></i-feather>
+                  <span>Total Preparation Time</span>
+                  <strong>{{ meal.totalTimeMinutes || 0 }} min</strong>
+                </div>
+              </section>
             </div>
           </article>
           </div>
@@ -409,7 +461,7 @@
                 fill="none"
               />
             </svg>
-            Add Another Meal
+            Add Empty Meal
           </button>
 
            <button class="np-btn np-btn--branddash" (click)="openTemplateModal()">
@@ -427,33 +479,11 @@
         </div>
       </section>
 
-      <!-- Template picker modal -->
-      <div class="np-modal" *ngIf="isTemplateModalOpen" role="dialog" aria-modal="true">
-        <div class="np-modal__backdrop" (click)="closeTemplateModal()"></div>
-        <div class="np-modal__panel" tabindex="-1">
-          <div class="np-modal__head">
-            <h3 class="np-modal__title">Select Meal Template</h3>
-            <button class="np-modal__close" (click)="closeTemplateModal()">✕</button>
-          </div>
-          <div class="np-modal__body">
-            <div class="np-emptystate" *ngIf="!templates?.length" style="border:none; margin:0; padding:24px">
-              <div class="np-emptystate__title">No templates available</div>
-            </div>
-            <ul *ngIf="templates?.length" class="np-foodlist">
-              <li *ngFor="let t of templates" class="np-foodlist__item" style="display:flex; justify-content:space-between; align-items:center; cursor:default">
-                <div>
-                  <div class="np-foodlist__name">{{ t.name }}</div>
-                  <div class="np-foodlist__meta">{{ t.foods?.length || 0 }} foods</div>
-                </div>
-                <button class="np-btn np-btn--brandsoft" style="border-radius:8px; padding:8px 14px; font-size:13px" (click)="applyTemplateToSelectedDay(t)">Use</button>
-              </li>
-            </ul>
-          </div>
-          <div class="np-modal__foot">
-            <button class="np-btn np-btn--ghost" (click)="closeTemplateModal()">Close</button>
-          </div>
-        </div>
-      </div>
+      <app-meal-template-picker
+        [visible]="isTemplateModalOpen"
+        (closed)="closeTemplateModal()"
+        (selected)="addMealFromTemplate($event)"
+      ></app-meal-template-picker>
 
       <div class="np-sticky">
         <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">

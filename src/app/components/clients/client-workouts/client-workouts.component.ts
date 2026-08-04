@@ -934,6 +934,31 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     return this.currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }
 
+  listStatusLabel(status: unknown): string {
+    switch (String(status || '').toUpperCase()) {
+      case 'COMPLETED': return 'Completed';
+      case 'UPCOMING': return 'Upcoming';
+      case 'IN_PROGRESS': return 'In progress';
+      case 'PENDING':
+      case 'PLANNED':
+      case 'NOT_STARTED': return 'Planned';
+      case 'MISSED': return 'Missed';
+      case 'OVERDUE': return 'Overdue';
+      default: return 'Planned';
+    }
+  }
+
+  listStatusIcon(status: unknown): string {
+    switch (String(status || '').toUpperCase()) {
+      case 'COMPLETED': return '✓';
+      case 'MISSED': return '×';
+      case 'OVERDUE': return '!';
+      case 'UPCOMING':
+      case 'IN_PROGRESS': return '◷';
+      default: return '▣';
+    }
+  }
+
   get displayWorkouts(): Workout[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

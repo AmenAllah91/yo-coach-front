@@ -5557,3 +5557,1141 @@
   .meal-day-page { background:#fff; padding:0; }
   .meal-day-content, .meal-day-header { max-width:none; padding-left:0; padding-right:0; }
 }
+
+/* ===== Client meal cards redesign ===== */
+.meal-plan-card {
+  overflow: hidden;
+}
+
+.meal-plan-card > .meal-plan-card__header {
+  display: block;
+  min-height: auto;
+}
+
+.meal-plan-card__header {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e6edf4;
+}
+
+.meal-plan-card__header-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.meal-plan-title-wrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.meal-plan-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.meal-plan-submeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: #7f93aa;
+  font-size: 12px;
+}
+
+.meal-plan-kind,
+.meal-plan-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.meal-plan-toggle {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8e1eb;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #72859c;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: .16s ease;
+}
+
+.meal-plan-toggle:hover {
+  border-color: #27afe0;
+  color: #078fc7;
+  background: #f4fbfe;
+}
+
+.meal-plan-card__body {
+  display: block;
+}
+
+.meal-plan-card__body .meal-plan-macros {
+  margin: 0 18px;
+  border: 1px solid #e6edf4;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.meal-recipe-preview {
+  margin: 12px 18px 0;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid #e6edf4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.meal-recipe-preview__image {
+  width: 100%;
+  height: 130px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f0f4f8;
+  display: grid;
+  place-items: center;
+  color: #b5c4d5;
+  font-size: 28px;
+}
+
+.meal-recipe-preview__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meal-recipe-preview__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.meal-recipe-preview__copy h3 {
+  margin: 0;
+  color: #10233d;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.meal-recipe-preview__facts {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: #647b95;
+  font-size: 14px;
+}
+
+.meal-foods-panel {
+  margin-top: 12px;
+}
+
+.meal-foods-head {
+  margin: 0 18px;
+  padding: 0 0 8px;
+  display: grid;
+  grid-template-columns: 62px minmax(180px, 1fr) 270px 92px;
+  align-items: center;
+  gap: 13px;
+  color: #8fa2b8;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.meal-foods-head span:first-child {
+  grid-column: 1 / span 2;
+}
+
+.meal-foods-head span:nth-child(2) {
+  margin-left: 10px;
+}
+
+.meal-foods-head span:nth-child(3),
+.meal-foods-head span:nth-child(4),
+.meal-foods-head span:nth-child(5) {
+  justify-self: center;
+}
+
+.meal-foods-head span:last-child {
+  justify-self: end;
+}
+
+.meal-card-actions--footer {
+  padding: 0 18px 18px;
+  justify-content: stretch;
+}
+
+.meal-card-actions--footer > * {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.meal-card-actions__ghost {
+  border: 1px solid #d6e0eb !important;
+  background: #fff !important;
+  color: #425d78 !important;
+}
+
+.meal-card-actions__ghost:hover {
+  border-color: #27afe0 !important;
+  background: #f4fbfe !important;
+  color: #078fc7 !important;
+}
+
+/* View meal modal */
+.meal-view-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  padding: 18px;
+  display: grid;
+  place-items: center;
+  background: rgba(19, 38, 58, .56);
+  backdrop-filter: blur(4px);
+}
+
+.meal-view-modal {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 94vh;
+  overflow: auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 28px 90px rgba(7, 24, 42, .32);
+}
+
+.meal-view-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  color: #8396ad;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.meal-view-cover {
+  height: 240px;
+  background: #f1f5f8;
+}
+
+.meal-view-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meal-view-body {
+  padding: 18px;
+}
+
+.meal-view-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.meal-view-head h2 {
+  margin: 0;
+  color: #10233d;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.meal-view-head p {
+  margin: 8px 0 0;
+  color: #7b8fa7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.meal-view-timebox {
+  min-width: 178px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.meal-view-timebox small {
+  color: #7d92aa;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.meal-view-timebox label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #cfe3ef;
+  border-radius: 10px;
+  background: #f8fcff;
+}
+
+.meal-view-timebox label span {
+  color: #28a9df;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.meal-view-timebox input {
+  border: 0;
+  background: transparent;
+  color: #24506e;
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+}
+
+.meal-view-stats {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid #e3ebf2;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.meal-view-stats article {
+  min-height: 78px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-right: 1px solid #e3ebf2;
+}
+
+.meal-view-stats article:last-child {
+  border-right: 0;
+}
+
+.meal-view-stats small {
+  color: #8ba0b6;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.meal-view-stats strong {
+  color: #10233d;
+  font-size: 18px;
+}
+
+.meal-view-stats article:nth-child(2) strong {
+  color: #079bd8;
+}
+
+.meal-view-section {
+  margin-top: 18px;
+}
+
+.meal-view-section h3 {
+  margin: 0 0 10px;
+  color: #1c334d;
+  font-size: 14px;
+}
+
+.meal-view-servings {
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid #e0e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #61778f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.meal-view-ingredients {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.meal-view-ingredient {
+  min-height: 54px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #e1e9f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.meal-view-ingredient span,
+.meal-view-ingredient strong {
+  display: block;
+}
+
+.meal-view-ingredient span {
+  color: #30abdf;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.meal-view-ingredient strong {
+  margin-top: 4px;
+  color: #233d58;
+  font-size: 13px;
+}
+
+.meal-view-replace {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #d6e0eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #49627c;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.meal-view-replace:hover {
+  border-color: #27afe0;
+  color: #078fc7;
+  background: #f4fbfe;
+}
+
+.meal-view-directions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.meal-view-directions li {
+  position: relative;
+  min-height: 42px;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #dfe7ef;
+  border-radius: 10px;
+  background: #fbfdff;
+  color: #3b536d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.meal-view-directions li::before {
+  content: counter(list-item);
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #25afe1;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.meal-view-note {
+  display: block;
+  margin-top: 20px;
+}
+
+.meal-view-note strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #1b334c;
+  font-size: 13px;
+}
+
+.meal-view-note textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 13px 14px;
+  border: 1px solid #d6e0eb;
+  border-radius: 10px;
+  color: #314b67;
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.meal-view-note textarea:focus {
+  border-color: #27afe0;
+  box-shadow: 0 0 0 3px rgba(39,175,224,.1);
+}
+
+@media (max-width: 700px) {
+  .meal-plan-card__header {
+    padding: 14px 14px 12px;
+  }
+
+  .meal-plan-card__header-main {
+    align-items: flex-start;
+  }
+
+  .meal-plan-name {
+    align-items: flex-start;
+    flex-wrap: nowrap;
+  }
+
+  .meal-plan-title-line {
+    gap: 8px;
+  }
+
+  .meal-plan-name h2 {
+    font-size: 13px;
+    white-space: normal;
+  }
+
+  .meal-plan-submeta {
+    gap: 10px;
+    font-size: 11px;
+  }
+
+  .meal-plan-toggle {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    font-size: 16px;
+    border-radius: 9px;
+  }
+
+  .meal-plan-card__body .meal-plan-macros {
+    margin: 0 10px;
+  }
+
+  .meal-recipe-preview {
+    margin: 8px 10px 0;
+    padding: 10px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .meal-recipe-preview__image {
+    height: 128px;
+  }
+
+  .meal-recipe-preview__copy h3 {
+    font-size: 14px;
+  }
+
+  .meal-recipe-preview__facts {
+    margin-top: 8px;
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .meal-foods-head {
+    display: none;
+  }
+
+  .meal-foods-panel {
+    margin-top: 8px;
+  }
+
+  .meal-food-row {
+    grid-template-columns: 57px minmax(82px,1fr) 132px auto;
+  }
+
+  .meal-card-actions--footer {
+    padding: 0 10px 12px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .meal-card-actions--footer > * {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .meal-note {
+    padding: 11px 10px 12px;
+  }
+
+  .meal-view-backdrop {
+    padding: 0;
+    align-items: end;
+  }
+
+  .meal-view-modal {
+    width: 100%;
+    max-height: 96vh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .meal-view-cover {
+    height: 170px;
+  }
+
+  .meal-view-body {
+    padding: 14px;
+  }
+
+  .meal-view-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .meal-view-head h2 {
+    font-size: 18px;
+  }
+
+  .meal-view-timebox {
+    min-width: 0;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .meal-view-timebox label {
+    width: 100%;
+  }
+
+  .meal-view-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .meal-view-stats article {
+    min-height: 70px;
+    border-bottom: 1px solid #e3ebf2;
+  }
+
+  .meal-view-stats article:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .meal-view-stats article:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .meal-view-ingredients {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-view-ingredient {
+    align-items: flex-start;
+  }
+
+  .meal-view-replace {
+    min-width: 70px;
+  }
+}
+
+/* ===== Compact client calendar cards (nutrition + workout) ===== */
+.client-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.cn-day-card.client-schedule-card {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  display: grid !important;
+  grid-template-columns: 70px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 14px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 13px !important;
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgba(15, 35, 55, .05) !important;
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.cn-day-card.client-schedule-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: #cfe1ed !important;
+  box-shadow: 0 5px 14px rgba(15, 35, 55, .08) !important;
+}
+
+.client-date-tile {
+  width: 70px;
+  min-height: 70px;
+  padding: 7px 5px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e1e8ef;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #16253a;
+  text-align: center;
+  line-height: 1;
+}
+
+.client-date-tile__weekday,
+.client-date-tile__month {
+  display: block;
+  color: #687b91;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.client-date-tile__day {
+  display: block;
+  margin: 4px 0 3px;
+  color: #10233d;
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.client-schedule-card__content {
+  min-width: 0;
+}
+
+.client-schedule-card__top {
+  min-height: 70px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.client-schedule-card__title-block {
+  min-width: 0;
+}
+
+.client-schedule-card .cn-day-title {
+  margin: 1px 0 2px !important;
+  color: #10233d !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
+.client-schedule-card .cn-day-subtitle {
+  margin: 0 !important;
+  color: #109fda !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+.client-schedule-card__meta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #61758c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.client-schedule-card__meta > span:first-child {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.client-schedule-card__state {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 7px;
+}
+
+.client-day-status {
+  min-height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dfe7ef;
+  border-radius: 999px;
+  background: #f6f8fb;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.client-day-status__icon {
+  width: 15px;
+  height: 15px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.client-day-status[data-status='COMPLETED'] {
+  border-color: #cfeeda;
+  background: #edf9f1;
+  color: #20a85b;
+}
+.client-day-status[data-status='COMPLETED'] .client-day-status__icon {
+  background: #34c76f;
+  color: #fff;
+}
+
+.client-day-status[data-status='UPCOMING'],
+.client-day-status[data-status='IN_PROGRESS'] {
+  border-color: #cfe8f8;
+  background: #eef8fe;
+  color: #078fd0;
+}
+.client-day-status[data-status='UPCOMING'] .client-day-status__icon,
+.client-day-status[data-status='IN_PROGRESS'] .client-day-status__icon {
+  color: #078fd0;
+}
+
+.client-day-status[data-status='PENDING'],
+.client-day-status[data-status='PLANNED'],
+.client-day-status[data-status='NOT_STARTED'] {
+  border-color: #e0e6ed;
+  background: #f7f9fb;
+  color: #718096;
+}
+
+.client-day-status[data-status='MISSED'],
+.client-day-status[data-status='OFF_PLAN'] {
+  border-color: #f4d5d9;
+  background: #fff3f4;
+  color: #d44352;
+}
+.client-day-status[data-status='MISSED'] .client-day-status__icon,
+.client-day-status[data-status='OFF_PLAN'] .client-day-status__icon {
+  background: #e55361;
+  color: #fff;
+}
+
+.client-day-status[data-status='OVERDUE'] {
+  border-color: #f2dfb9;
+  background: #fff8e9;
+  color: #bb7a10;
+}
+.client-day-status[data-status='OVERDUE'] .client-day-status__icon {
+  background: #d7992d;
+  color: #fff;
+}
+
+.client-card-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #079fdb;
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* Compact nutrition rows */
+.client-schedule-card .nutrition-meals-list {
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid #e8edf2;
+}
+
+.client-schedule-card .nutrition-meal-line {
+  min-height: 40px !important;
+  padding: 6px 0 !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border-bottom: 1px solid #edf1f5 !important;
+}
+
+.client-schedule-card .nutrition-meal-line:last-child {
+  border-bottom: 0 !important;
+}
+
+.client-schedule-card .nutrition-meal-badge {
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #eef8fd !important;
+  color: #119ed7 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+.client-schedule-card .nutrition-meal-name {
+  color: #1a2b40 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.client-schedule-card .nutrition-foods-list {
+  margin-top: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0 !important;
+  color: #6d7f94 !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+}
+
+.client-schedule-card .nutrition-food-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap;
+}
+
+.client-schedule-card .nutrition-food-item:not(:last-child)::after {
+  content: '•';
+  margin: 0 8px;
+  color: #a3b1bf;
+}
+
+.client-schedule-card .nutrition-food-qty {
+  margin-left: 3px !important;
+  color: #718399 !important;
+}
+
+/* Compact workout rows */
+.client-schedule-card .workout-exercises,
+.client-schedule-card .client-schedule-card__list {
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid #e8edf2 !important;
+  background: transparent !important;
+}
+
+.client-schedule-card .workout-exercises-header,
+.client-schedule-card .cn-day-meals-line {
+  display: none !important;
+}
+
+.client-schedule-card .workout-exercises-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.client-schedule-card .exercise-line {
+  min-height: 38px !important;
+  padding: 5px 0 !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border-bottom: 1px solid #edf1f5 !important;
+}
+
+.client-schedule-card .exercise-line:last-child {
+  border-bottom: 0 !important;
+}
+
+.client-schedule-card .exercise-badge {
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #eef8fd !important;
+  color: #119ed7 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+.client-schedule-card .exercise-name {
+  color: #1a2b40 !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+@media (max-width: 700px) {
+  .client-list {
+    gap: 8px !important;
+  }
+
+  .cn-day-card.client-schedule-card {
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .client-date-tile {
+    width: 58px;
+    min-height: 64px;
+    padding: 6px 4px;
+    border-radius: 9px;
+  }
+
+  .client-date-tile__weekday,
+  .client-date-tile__month {
+    font-size: 9px;
+  }
+
+  .client-date-tile__day {
+    margin: 4px 0 3px;
+    font-size: 21px;
+  }
+
+  .client-schedule-card__top {
+    min-height: 64px;
+    gap: 8px;
+  }
+
+  .client-schedule-card .cn-day-title {
+    font-size: 14px !important;
+  }
+
+  .client-schedule-card .cn-day-subtitle {
+    font-size: 11px !important;
+  }
+
+  .client-schedule-card__meta {
+    margin-top: 5px;
+    font-size: 10px;
+  }
+
+  .client-schedule-card__state {
+    gap: 7px;
+    padding-top: 2px;
+  }
+
+  .client-day-status {
+    min-height: 27px;
+    padding: 0 9px;
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .client-day-status__icon {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+  }
+
+  .client-card-chevron {
+    font-size: 25px;
+  }
+
+  .client-schedule-card .nutrition-meal-line,
+  .client-schedule-card .exercise-line {
+    min-height: 36px !important;
+    padding: 5px 0 !important;
+    grid-template-columns: 25px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .client-schedule-card .nutrition-meal-badge,
+  .client-schedule-card .exercise-badge {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    font-size: 10px !important;
+  }
+
+  .client-schedule-card .nutrition-meal-name,
+  .client-schedule-card .exercise-name {
+    font-size: 11px !important;
+  }
+
+  .client-schedule-card .nutrition-foods-list {
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .cn-day-card.client-schedule-card {
+    grid-template-columns: 54px minmax(0, 1fr) !important;
+    gap: 9px !important;
+    padding: 9px !important;
+  }
+
+  .client-date-tile {
+    width: 54px;
+    min-height: 60px;
+  }
+
+  .client-schedule-card__state {
+    gap: 4px;
+  }
+
+  .client-day-status {
+    padding: 0 7px;
+  }
+
+  .client-day-status__icon {
+    display: none;
+  }
+}
+
+/* ===== Nutrition detail: use the available desktop workspace ===== */
+@media (min-width: 701px) {
+  .meal-day-page {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .meal-day-header,
+  .meal-day-content {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .meal-day-header {
+    padding: 14px 20px 12px;
+  }
+
+  .meal-day-content {
+    padding: 0 20px 24px;
+  }
+
+  .meal-day-footer {
+    padding: 10px 20px;
+  }
+}
+
+@media (min-width: 1500px) {
+  .meal-day-header {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .meal-day-content,
+  .meal-day-footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}

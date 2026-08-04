@@ -138,37 +138,43 @@
         </div>
 
         <div class="client-list">
-          <article class="cn-day-card" *ngFor="let day of filteredDays" (click)="selectDay(day)">
-            <div class="cn-day-header">
-              <div class="cn-day-header-left">
-                <div class="cn-day-chip-date">{{ day.displayDate }}</div>
-                <h3 class="cn-day-title">{{ day.programName }}</h3>
-                <p class="cn-day-subtitle">{{ day.programType }}</p>
-              </div>
-              <div class="cn-day-status-icon">
-                <ng-container [ngSwitch]="day.status">
-                  <div *ngSwitchCase="'COMPLETED'" class="status-icon status-icon--completed"></div>
-                  <div *ngSwitchCase="'MISSED'" class="status-icon status-icon--missed"></div>
-                  <div *ngSwitchDefault class="status-icon status-icon--pending"></div>
-                </ng-container>
-              </div>
-            </div>
+          <article class="cn-day-card client-schedule-card" *ngFor="let day of filteredDays" (click)="selectDay(day)">
+            <time class="client-date-tile" [attr.datetime]="day.date">
+              <span class="client-date-tile__weekday">{{ day.date | date:'EEE' }}</span>
+              <strong class="client-date-tile__day">{{ day.date | date:'dd' }}</strong>
+              <span class="client-date-tile__month">{{ day.date | date:'MMM' }}</span>
+            </time>
 
-            <div class="cn-day-meals-line">
-              <span class="cn-utensils-icon">🍽️</span>
-              <span class="cn-day-meals-text">{{ day.mealCount }} meals</span>
-              <span class="chevron-small">&rsaquo;</span>
-            </div>
+            <div class="client-schedule-card__content">
+              <div class="client-schedule-card__top">
+                <div class="client-schedule-card__title-block">
+                  <h3 class="cn-day-title">{{ day.programName }}</h3>
+                  <p class="cn-day-subtitle">{{ day.programType }}</p>
+                  <div class="client-schedule-card__meta">
+                    <span aria-hidden="true">🍽️</span>
+                    <span>{{ day.mealCount }} meals</span>
+                  </div>
+                </div>
 
-            <div class="nutrition-meals-list">
-              <div class="nutrition-meal-line" *ngFor="let meal of day.meals; let mealIndex = index">
-                <span class="nutrition-meal-badge">{{ mealIndex + 1 }}</span>
-                <div class="nutrition-meal-copy">
-                  <div class="nutrition-meal-name">{{ meal.name }}</div>
-                  <div class="nutrition-foods-list" *ngIf="meal.foods.length > 0">
-                    <span class="nutrition-food-item" *ngFor="let food of meal.foods">
-                      {{ food.name }} <span class="nutrition-food-qty">{{ food.quantity }}</span>
-                    </span>
+                <div class="client-schedule-card__state">
+                  <span class="client-day-status" [attr.data-status]="day.status">
+                    <span class="client-day-status__icon">{{ listStatusIcon(day.status) }}</span>
+                    {{ listStatusLabel(day.status) }}
+                  </span>
+                  <span class="client-card-chevron" aria-hidden="true">›</span>
+                </div>
+              </div>
+
+              <div class="nutrition-meals-list">
+                <div class="nutrition-meal-line" *ngFor="let meal of day.meals; let mealIndex = index">
+                  <span class="nutrition-meal-badge">{{ mealIndex + 1 }}</span>
+                  <div class="nutrition-meal-copy">
+                    <div class="nutrition-meal-name">{{ meal.name }}</div>
+                    <div class="nutrition-foods-list" *ngIf="meal.foods.length > 0">
+                      <span class="nutrition-food-item" *ngFor="let food of meal.foods">
+                        {{ food.name }} <span class="nutrition-food-qty">{{ food.quantity }}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -399,46 +405,100 @@
     </section>
 
     <article class="meal-plan-card" *ngFor="let meal of day.meals; let mealIndex = index">
-      <header>
-        <div class="meal-plan-name">
-          <b>{{ mealIndex + 1 }}</b><h2>Meal {{ mealIndex + 1 }} · {{ meal.name }}</h2>
-          <em *ngIf="meal.reportStatus" [attr.data-status]="meal.reportStatus">{{ mealStatusLabel(meal.reportStatus) }}</em>
-        </div>
-        <div class="meal-card-actions">
-          <label class="upload-meal-photo" *ngIf="!meal.photoUrl"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ uploadingMealId === meal.id ? 'Uploading…' : 'Upload photo' }}</label>
-          <button type="button" (click)="openMealReport(meal, mealIndex)">▣&nbsp; Report meal</button>
+      <header class="meal-plan-card__header">
+        <div class="meal-plan-card__header-main">
+          <div class="meal-plan-name">
+            <b>{{ mealIndex + 1 }}</b>
+            <div class="meal-plan-title-wrap">
+              <div class="meal-plan-title-line">
+                <h2>{{ mealHeaderTitle(meal, mealIndex) }}</h2>
+                <em [attr.data-status]="meal.reportStatus || 'AS_PLANNED'">{{ mealStatusLabel(meal.reportStatus || 'AS_PLANNED') }}</em>
+              </div>
+              <div class="meal-plan-submeta">
+                <span class="meal-plan-kind">◌ {{ mealVariantLabel(meal) }}</span>
+                <span class="meal-plan-meta" *ngIf="mealMetaLine(meal)">◷ {{ mealMetaLine(meal) }}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            class="meal-plan-toggle"
+            type="button"
+            (click)="toggleMealCard(meal)"
+            [attr.aria-expanded]="meal.expanded !== false"
+            [attr.aria-label]="(meal.expanded !== false ? 'Collapse' : 'Expand') + ' meal'"
+          >
+            {{ meal.expanded !== false ? '⌃' : '›' }}
+          </button>
         </div>
       </header>
-      <div class="meal-plan-macros">
-        <div><strong>{{ meal.mealTargets?.calories || 0 }}</strong><small>Kcal</small></div>
-        <div><strong>{{ meal.mealTargets?.proteinG || 0 }}g</strong><small>Protein</small></div>
-        <div><strong>{{ meal.mealTargets?.carbsG || 0 }}g</strong><small>Carbs</small></div>
-        <div><strong>{{ meal.mealTargets?.fatG || 0 }}g</strong><small>Fat</small></div>
-      </div>
-      <div class="meal-food-row" *ngFor="let food of meal.foods">
-        <div class="meal-food-image"><img *ngIf="food.imageUrl; else noFoodImage" [src]="food.imageUrl" [alt]="food.name"><ng-template #noFoodImage><span>▧</span></ng-template></div>
-        <div class="meal-food-name"><div><strong>{{ food.name }}</strong><em>{{ food.category }}</em></div><small>{{ food.quantity }}</small></div>
-        <div class="meal-food-macros">
-          <div class="food-calories"><strong>{{ food.calories }}</strong><small>Kcal</small></div>
-          <div><strong>{{ food.protein }}g</strong><small>P</small></div>
-          <div><strong>{{ food.carbs }}g</strong><small>C</small></div>
-          <div><strong>{{ food.fat }}g</strong><small>F</small></div>
+
+      <div class="meal-plan-card__body" *ngIf="meal.expanded !== false">
+        <div class="meal-plan-macros">
+          <div><strong>{{ meal.mealTargets?.calories || 0 }}</strong><small>Kcal</small></div>
+          <div><strong>{{ meal.mealTargets?.proteinG || 0 }}g</strong><small>Protein</small></div>
+          <div><strong>{{ meal.mealTargets?.carbsG || 0 }}g</strong><small>Carbs</small></div>
+          <div><strong>{{ meal.mealTargets?.fatG || 0 }}g</strong><small>Fat</small></div>
         </div>
-        <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)" aria-label="Replace {{ food.name }}"><span aria-hidden="true">⇄</span><span class="meal-food-replace-label">&nbsp; Replace</span></button>
-      </div>
-      <div class="meal-photo-preview" *ngIf="meal.photoUrl">
-        <strong><i class="far fa-image"></i> Client meal photo</strong>
-        <div class="meal-photo-preview__content">
-          <img [src]="meal.photoUrl" alt="Client meal photo">
-          <span><b>Uploaded by client</b><small>Meal photo</small><a [href]="meal.photoUrl" target="_blank" rel="noopener"><i class="far fa-eye"></i> View</a></span>
-          <label class="replace-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)"><i class="far fa-image"></i> {{ uploadingMealId === meal.id ? 'Uploading…' : 'Replace photo' }}</label>
+
+        <section class="meal-recipe-preview" *ngIf="isRecipeMeal(meal)">
+          <div class="meal-recipe-preview__image">
+            <img *ngIf="meal.coverImage; else noMealPreviewImage" [src]="meal.coverImage" [alt]="meal.name">
+            <ng-template #noMealPreviewImage><span>▧</span></ng-template>
+          </div>
+          <div class="meal-recipe-preview__copy">
+            <h3>{{ meal.name }}</h3>
+            <div class="meal-recipe-preview__facts">
+              <span>◔ {{ meal.servings || 1 }} {{ (meal.servings || 1) > 1 ? 'servings' : 'serving' }}</span>
+              <span *ngIf="meal.totalTimeMinutes">◷ {{ meal.totalTimeMinutes }} min prep</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="meal-foods-panel" *ngIf="!isRecipeMeal(meal)">
+          <div class="meal-foods-head">
+            <span>Food</span>
+            <span>Kcal</span>
+            <span>Protein</span>
+            <span>Carbs</span>
+            <span>Fat</span>
+            <span></span>
+          </div>
+          <div class="meal-food-row" *ngFor="let food of meal.foods">
+            <div class="meal-food-image"><img *ngIf="food.imageUrl; else noFoodImage" [src]="food.imageUrl" [alt]="food.name"><ng-template #noFoodImage><span>▧</span></ng-template></div>
+            <div class="meal-food-name"><div><strong>{{ food.name }}</strong><em>{{ food.category }}</em></div><small>{{ food.quantity }}</small></div>
+            <div class="meal-food-macros">
+              <div class="food-calories"><strong>{{ food.calories }}</strong><small>Kcal</small></div>
+              <div><strong>{{ food.protein }}g</strong><small>P</small></div>
+              <div><strong>{{ food.carbs }}g</strong><small>C</small></div>
+              <div><strong>{{ food.fat }}g</strong><small>F</small></div>
+            </div>
+            <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)" aria-label="Replace {{ food.name }}"><span aria-hidden="true">⇄</span><span class="meal-food-replace-label">&nbsp; Replace</span></button>
+          </div>
+        </section>
+
+        <div class="meal-photo-preview" *ngIf="meal.photoUrl">
+          <strong><i class="far fa-image"></i> Client meal photo</strong>
+          <div class="meal-photo-preview__content">
+            <img [src]="meal.photoUrl" alt="Client meal photo">
+            <span><b>Uploaded by client</b><small>Meal photo</small><a [href]="meal.photoUrl" target="_blank" rel="noopener"><i class="far fa-eye"></i> View</a></span>
+            <label class="replace-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)"><i class="far fa-image"></i> {{ uploadingMealId === meal.id ? 'Uploading…' : 'Replace photo' }}</label>
+          </div>
+        </div>
+
+        <label class="meal-note">
+          <span>▱ &nbsp;{{ meal.note ? ('Note for meal ' + (mealIndex + 1)) : 'Add a note' }}</span>
+          <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" placeholder="Anything your coach should know about this meal..."></textarea>
+          <button *ngIf="!meal.note" type="button" (click)="meal.note = ' '">Add a note</button>
+        </label>
+
+        <div class="meal-card-actions meal-card-actions--footer">
+          <button type="button" class="meal-card-actions__ghost" (click)="openMealView(meal, mealIndex)">
+            {{ isRecipeMeal(meal) ? '▦ View recipe' : '☰ View foods' }}
+          </button>
+          <label class="upload-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ uploadingMealId === meal.id ? 'Uploading…' : (meal.photoUrl ? 'Replace photo' : 'Upload photo') }}</label>
+          <button type="button" (click)="openMealReport(meal, mealIndex)">▣&nbsp; Report meal</button>
         </div>
       </div>
-      <label class="meal-note">
-        <span>▱ &nbsp;{{ meal.note ? ('Note for meal ' + (mealIndex + 1)) : 'Add a note' }}</span>
-        <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" placeholder="Anything your coach should know about this meal..."></textarea>
-        <button *ngIf="!meal.note" type="button" (click)="meal.note = ' '">Add a note</button>
-      </label>
     </article>
 
     <section class="meal-day-empty" *ngIf="!day.meals.length"><span>🍽</span><h2>No meals planned</h2><p>This day has no meals scheduled yet.</p></section>
@@ -470,6 +530,73 @@
     <span *ngIf="dailySaveMessage">{{ dailySaveMessage }}</span>
     <button class="complete-day-action" type="button" (click)="completeNutritionDay()">✓&nbsp; Complete nutrition day</button>
   </footer>
+</div>
+
+<div class="meal-view-backdrop" *ngIf="showMealViewModal && viewedMeal" (click)="closeMealView()">
+  <section class="meal-view-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <button class="meal-view-close" type="button" (click)="closeMealView()">×</button>
+    <div class="meal-view-cover" *ngIf="viewedMeal.coverImage">
+      <img [src]="viewedMeal.coverImage" [alt]="viewedMeal.name">
+    </div>
+    <div class="meal-view-body">
+      <div class="meal-view-head">
+        <div>
+          <h2>{{ viewedMeal.name }}</h2>
+          <p>{{ mealVariantLabel(viewedMeal) }}</p>
+        </div>
+        <div class="meal-view-timebox">
+          <small *ngIf="viewedMeal.mealTime">Coach planned {{ formatMealTime(viewedMeal.mealTime) }}</small>
+          <label>
+            <span>Eaten at</span>
+            <input
+              type="time"
+              [ngModel]="viewedMeal.actualMealTime || viewedMeal.mealTime"
+              (ngModelChange)="updateActualMealTime(viewedMeal, $event)"
+              (change)="saveMealTiming(viewedMeal)"
+            >
+          </label>
+        </div>
+      </div>
+
+      <div class="meal-view-stats">
+        <article *ngIf="viewedMeal.totalTimeMinutes"><small>Total prep time</small><strong>{{ viewedMeal.totalTimeMinutes }} minutes</strong></article>
+        <article><small>Calories</small><strong>{{ viewedMeal.mealTargets?.calories || 0 }}</strong></article>
+        <article><small>Protein</small><strong>{{ viewedMeal.mealTargets?.proteinG || 0 }}g</strong></article>
+        <article><small>Carbs</small><strong>{{ viewedMeal.mealTargets?.carbsG || 0 }}g</strong></article>
+        <article><small>Fat</small><strong>{{ viewedMeal.mealTargets?.fatG || 0 }}g</strong></article>
+      </div>
+
+      <section class="meal-view-section">
+        <h3>Serving size</h3>
+        <div class="meal-view-servings">{{ viewedMeal.servings || 1 }} serving{{ (viewedMeal.servings || 1) > 1 ? 's' : '' }}</div>
+      </section>
+
+      <section class="meal-view-section" *ngIf="viewedMeal.foods?.length">
+        <h3>Ingredients for {{ viewedMeal.servings || 1 }} serving{{ (viewedMeal.servings || 1) > 1 ? 's' : '' }}</h3>
+        <div class="meal-view-ingredients">
+          <div class="meal-view-ingredient" *ngFor="let food of viewedMeal.foods">
+            <div>
+              <span>{{ food.quantity }}</span>
+              <strong>{{ food.name }}</strong>
+            </div>
+            <button class="meal-view-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, viewedMeal)">Replace</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="meal-view-section" *ngIf="viewedMeal.directions?.length">
+        <h3>Directions</h3>
+        <ol class="meal-view-directions">
+          <li *ngFor="let direction of viewedMeal.directions">{{ direction }}</li>
+        </ol>
+      </section>
+
+      <label class="meal-view-note">
+        <strong>Note for this meal</strong>
+        <textarea [(ngModel)]="viewedMeal.note" (blur)="saveMealNote(viewedMeal)" rows="3" placeholder="e.g. felt full quickly, swapped the rice..."></textarea>
+      </label>
+    </div>
+  </section>
 </div>
 
 <div class="nutrition-pdf-backdrop" *ngIf="showNutritionPdfPreview" (click)="closeNutritionPdfPreview()">

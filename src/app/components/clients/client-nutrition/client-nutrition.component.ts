@@ -33,6 +33,15 @@ interface Meal {
   id: string;
   name: string;
   foods: Food[];
+  mealType?: string;
+  mealTime?: string;
+  actualMealTime?: string;
+  servings?: number;
+  totalTimeMinutes?: number;
+  coverImage?: string;
+  directions?: string[];
+  tags?: string[];
+  expanded?: boolean;
   mealTargets?: {
     proteinG: number;
     carbsG: number;
@@ -138,8 +147,11 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   selectedCoachId: string | 'all' = 'all';
   showMealReportModal = false;
+  showMealViewModal = false;
   showNutritionPdfPreview = false;
   reportMeal: Meal | null = null;
+  viewedMeal: Meal | null = null;
+  viewedMealIndex = 0;
   reportMealIndex = 0;
   reportStatus: MealReportStatus = 'AS_PLANNED';
   reportNote = '';
@@ -435,6 +447,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
           if (!meal) return;
           meal.reportStatus = log.status;
           meal.note = log.note || '';
+          meal.actualMealTime = log.actualMealTime || log.eatenTime || log.mealTime || '';
           if (log.photoPath) {
             meal.photoUrl = `${environment.baseApiUrl}/api/meal-day/${plan.id}/days/${mealDay.id}/meals/${meal.id}/photo`;
           }
@@ -499,6 +512,15 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     return meals.map((meal) => ({
       id: meal.id,
       name: meal.name,
+      mealType: meal.mealType || '',
+      mealTime: meal.mealTime || '',
+      actualMealTime: '',
+      servings: meal.servings || 1,
+      totalTimeMinutes: meal.totalTimeMinutes || 0,
+      coverImage: meal.coverImage || '',
+      directions: Array.isArray(meal.directions) ? meal.directions : [],
+      tags: Array.isArray(meal.tags) ? meal.tags : [],
+      expanded: true,
       foods: (meal.foods || []).map((food: any) => {
         const foodRef = food.foodRef || {};
         const quantity = Number(food.quantity ?? foodRef.servingSize ?? 100);
@@ -528,6 +550,71 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     }));
   }
 
+  isRecipeMeal(meal: Meal): boolean {
+    return !!(meal?.coverImage || meal?.directions?.length || meal?.totalTimeMinutes || meal?.tags?.length);
+  }
+
+  mealVariantLabel(meal: Meal): string {
+    return this.isRecipeMeal(meal) ? 'Recipe meal' : 'With foods';
+  }
+
+  toggleMealCard(meal: Meal): void {
+    meal.expanded = meal.expanded === false;
+  }
+
+  openMealView(meal: Meal, index: number): void {
+    this.viewedMeal = meal;
+    this.viewedMealIndex = index;
+    this.showMealViewModal = true;
+  }
+
+  closeMealView(): void {
+    this.showMealViewModal = false;
+    this.viewedMeal = null;
+  }
+
+  updateActualMealTime(meal: Meal, value: string): void {
+    meal.actualMealTime = value;
+  }
+
+  saveMealTiming(meal: Meal): void {
+    if (!this.selectedDay) return;
+    if (!meal.actualMealTime && meal.mealTime) {
+      meal.actualMealTime = meal.mealTime;
+    }
+    this.persistNutritionDay(this.selectedDay.status === 'PENDING' ? 'IN_PROGRESS' : this.selectedDay.status);
+  }
+
+  formatMealTime(value?: string): string {
+    const raw = String(value || '').trim();
+    if (!raw) return 'No time';
+    const match = raw.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return raw;
+    let hours = Number(match[1]);
+    const minutes = match[2];
+    const suffix = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${suffix}`;
+  }
+
+  mealHeaderTitle(meal: Meal, index: number): string {
+    const type = String(meal.mealType || '').trim();
+    return type ? `Meal ${index + 1} · ${type.charAt(0).toUpperCase() + type.slice(1)}` : `Meal ${index + 1} · ${meal.name}`;
+  }
+
+  mealMetaLine(meal: Meal): string {
+    const parts = [];
+    if (meal.actualMealTime) {
+      parts.push(this.formatMealTime(meal.actualMealTime));
+    } else if (meal.mealTime) {
+      parts.push(this.formatMealTime(meal.mealTime));
+    }
+    if (meal.mealTargets?.calories || meal.mealTargets?.calories === 0) {
+      parts.push(`${meal.mealTargets?.calories || 0} kcal`);
+    }
+    return parts.join(' · ');
+  }
+
   get filteredDays(): NutritionDay[] {
     return this.nutritionDays
       .filter((day) => this.isSameMonthAndYear(day.date, this.currentDate))
@@ -549,6 +636,33 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   formatMonthYear(date: Date): string {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  listStatusLabel(status: unknown): string {
+    switch (String(status || '').toUpperCase()) {
+      case 'COMPLETED': return 'Completed';
+      case 'UPCOMING': return 'Upcoming';
+      case 'IN_PROGRESS': return 'In progress';
+      case 'PENDING':
+      case 'PLANNED':
+      case 'NOT_STARTED': return 'Planned';
+      case 'MISSED': return 'Missed';
+      case 'OFF_PLAN': return 'Off-plan';
+      case 'OVERDUE': return 'Overdue';
+      default: return 'Planned';
+    }
+  }
+
+  listStatusIcon(status: unknown): string {
+    switch (String(status || '').toUpperCase()) {
+      case 'COMPLETED': return '✓';
+      case 'MISSED':
+      case 'OFF_PLAN': return '×';
+      case 'OVERDUE': return '!';
+      case 'UPCOMING':
+      case 'IN_PROGRESS': return '◷';
+      default: return '▣';
+    }
   }
 
   get emptyStateMessage(): string {
@@ -694,6 +808,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       mealId: meal.id,
       status: meal.reportStatus || null,
       note: meal.note?.trim() || '',
+      actualMealTime: meal.actualMealTime || '',
     }));
     this.mealplanDayService.updatePlanDay({
       id: day.id,

@@ -210,38 +210,45 @@
         </div>
 
         <div class="client-list">
-          <article class="cn-day-card" *ngFor="let workout of displayWorkouts" (click)="onSelectWorkout(workout)">
-            <div class="cn-day-header">
-              <div class="cn-day-header-left">
-                <div class="cn-day-chip-date">{{ workout.date | date : 'mediumDate' }}</div>
-                <h3 class="cn-day-title">{{ workout.title }}</h3>
-                <p class="cn-day-subtitle" *ngIf="workout.program">{{ workout.program }}</p>
-              </div>
-              <div class="cn-day-status-icon">
-                <ng-container [ngSwitch]="workout.status">
-                  <div *ngSwitchCase="'COMPLETED'" class="status-icon status-icon--completed"></div>
-                  <div *ngSwitchCase="'MISSED'" class="status-icon status-icon--missed"></div>
-                  <div *ngSwitchCase="'OVERDUE'" class="status-icon status-icon--overdue" title="Overdue"></div>
-                  <div *ngSwitchDefault class="status-icon status-icon--pending"></div>
-                </ng-container>
-              </div>
-            </div>
-            <div class="workout-exercises">
-              <div class="workout-exercises-header">
-                <span>{{ getTotalExercises(workout) }} exercises</span>
-                <span class="chevron-small">&rsaquo;</span>
-              </div>
-              <div class="workout-exercises-list">
-                <div class="exercise-line" *ngFor="let exercise of getWorkoutExerciseDisplay(workout)">
-                  <span class="exercise-badge" [class.exercise-badge--warmup]="exercise.isWarmUp">
-                    <ng-container *ngIf="exercise.isWarmUp; else exerciseBadge">&#128293;</ng-container>
-                    <ng-template #exerciseBadge>{{ exercise.badge }}</ng-template>
+          <article class="cn-day-card client-schedule-card" *ngFor="let workout of displayWorkouts" (click)="onSelectWorkout(workout)">
+            <time class="client-date-tile" [attr.datetime]="workout.date">
+              <span class="client-date-tile__weekday">{{ workout.date | date:'EEE' }}</span>
+              <strong class="client-date-tile__day">{{ workout.date | date:'dd' }}</strong>
+              <span class="client-date-tile__month">{{ workout.date | date:'MMM' }}</span>
+            </time>
+
+            <div class="client-schedule-card__content">
+              <div class="client-schedule-card__top">
+                <div class="client-schedule-card__title-block">
+                  <h3 class="cn-day-title">{{ workout.title }}</h3>
+                  <p class="cn-day-subtitle" *ngIf="workout.program">{{ workout.program }}</p>
+                  <div class="client-schedule-card__meta">
+                    <span aria-hidden="true">🏋️</span>
+                    <span>{{ getTotalExercises(workout) }} exercises</span>
+                  </div>
+                </div>
+
+                <div class="client-schedule-card__state">
+                  <span class="client-day-status" [attr.data-status]="workout.status">
+                    <span class="client-day-status__icon">{{ listStatusIcon(workout.status) }}</span>
+                    {{ listStatusLabel(workout.status) }}
                   </span>
-                  <span class="exercise-name">{{ exercise.name }}<span *ngIf="exercise.suffix"> {{ exercise.suffix }}</span></span>
+                  <span class="client-card-chevron" aria-hidden="true">›</span>
+                </div>
+              </div>
+
+              <div class="workout-exercises client-schedule-card__list">
+                <div class="workout-exercises-list">
+                  <div class="exercise-line" *ngFor="let exercise of getWorkoutExerciseDisplay(workout)">
+                    <span class="exercise-badge" [class.exercise-badge--warmup]="exercise.isWarmUp">
+                      <ng-container *ngIf="exercise.isWarmUp; else exerciseBadge">&#128293;</ng-container>
+                      <ng-template #exerciseBadge>{{ exercise.badge }}</ng-template>
+                    </span>
+                    <span class="exercise-name">{{ exercise.name }}<span *ngIf="exercise.suffix"> {{ exercise.suffix }}</span></span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="cn-day-meals-line"><span class="cn-utensils-icon">🏋️</span><span class="cn-day-meals-text">{{ getTotalExercises(workout) + ' exercises' }}</span></div>
           </article>
 
           <div class="cn-empty" *ngIf="displayWorkouts.length === 0">
