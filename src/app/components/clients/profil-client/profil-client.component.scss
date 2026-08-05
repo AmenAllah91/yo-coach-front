@@ -4648,7 +4648,17 @@
   }
 }
 
-.profile-back { display: none; }
+.profile-back {
+  width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+  margin-right: 18px; padding: 0; border: 0; border-radius: 50%;
+  background: #eef0f3; color: #536173; display: grid; place-items: center;
+  cursor: pointer; transition: background-color .18s ease, color .18s ease, transform .18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.profile-back:hover { background: #dfe4ea; color: #071426; }
+.profile-back:active { transform: scale(.96); }
+.profile-back:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+.profile-back i { font-size: 15px; }
 .mobile-more-tab { display: none; }
 .mobile-more-wrap { display: none; position: relative; flex: 0 0 auto; }
 
@@ -4660,8 +4670,8 @@
     align-items: center; padding: 10px; margin-bottom: 10px; border-radius: 10px; flex-wrap: nowrap;
   }
   .profile-back {
-    display: grid; place-items: center; width: 28px; height: 28px; padding: 0;
-    border: 1px solid #dce5ef; border-radius: 6px; background: #fff; color: #536887;
+    display: grid; place-items: center; width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+    margin-right: 0; padding: 0; border: 0; border-radius: 50%; background: #eef0f3; color: #536173;
   }
   .profile-picture { width: 54px; height: 54px; }
   .profile-info { margin-left: 0; min-width: 0; }
@@ -5066,7 +5076,7 @@
 /* Final mobile composition for the client switcher: keep controls readable on narrow screens. */
 @media (max-width: 900px) {
   .main-content { padding: 10px 10px 24px; }
-  .profile-header { grid-template-columns: 48px minmax(0, 1fr) auto; grid-template-rows: 42px 54px; gap: 10px; padding: 10px; }
+  .profile-header { grid-template-columns: 36px 48px minmax(0, 1fr) auto; grid-template-rows: 42px 48px; gap: 8px; padding: 10px; }
   .header-actions { display: contents; }
   .client-picker { grid-column: 1 / -1; grid-row: 1; width: 100%; }
   .client-picker__trigger { width: 100%; min-width: 0; height: 42px; padding: 5px 10px; border-radius: 9px; gap: 8px; }
@@ -5087,10 +5097,10 @@
   .client-picker__option-copy small { font-size: 9px; line-height: 12px; }
   .client-presence { left: 30px; bottom: 6px; width: 7px; height: 7px; border-width: 1px; }
   .client-picker__check { right: 8px; font-size: 9px; }
-  .profile-back { display: none; }
-  .profile-picture { grid-column: 1; grid-row: 2; width: 48px; height: 48px; }
+  .profile-back { display: grid; grid-column: 1; grid-row: 2; margin: 0; }
+  .profile-picture { grid-column: 2; grid-row: 2; width: 48px; height: 48px; }
   .profile-info { display: none; }
-  .btn-send-message { grid-column: 3; grid-row: 2; width: auto; height: 32px; padding: 0 11px; justify-content: center; border-radius: 6px; font-size: 10px; }
+  .btn-send-message { grid-column: 4; grid-row: 2; width: auto; height: 32px; padding: 0 11px; justify-content: center; border-radius: 6px; font-size: 10px; }
   .btn-send-message span { display: inline; }
   .btn-send-message i { font-size: 10px; }
   .btn-more { display: none; }

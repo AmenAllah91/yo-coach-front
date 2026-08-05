@@ -132,9 +132,9 @@
         </nav>
 
         <div class="client-month-nav">
-          <button class="month-nav-btn" (click)="handlePrevMonth()"><i class="chevron chevron-left"></i></button>
+          <button class="month-nav-btn" [disabled]="!canGoPrevMonth" (click)="handlePrevMonth()"><i class="chevron chevron-left"></i></button>
           <div class="month-title">{{ formatMonthYear(currentDate) }}</div>
-          <button class="month-nav-btn" (click)="handleNextMonth()"><i class="chevron chevron-right"></i></button>
+          <button class="month-nav-btn" [disabled]="!canGoNextMonth" (click)="handleNextMonth()"><i class="chevron chevron-right"></i></button>
         </div>
 
         <div class="client-list">

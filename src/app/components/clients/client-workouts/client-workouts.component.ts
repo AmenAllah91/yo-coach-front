@@ -1649,13 +1649,43 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   setActiveTab(tab: 'upcoming' | 'past') {
     this.activeTab = tab;
     this.selectedWorkout = null;
+    if (!this.isMonthValidForTab()) {
+      this.currentMonthDate = new Date();
+    }
+  }
+
+  get canGoPrevMonth(): boolean {
+    if (this.activeTab === 'upcoming') return !this.isCurrentMonth();
+    return true;
+  }
+
+  get canGoNextMonth(): boolean {
+    if (this.activeTab === 'past') return !this.isCurrentMonth();
+    return true;
+  }
+
+  private isCurrentMonth(): boolean {
+    const now = new Date();
+    return (
+      this.currentMonthDate.getMonth() === now.getMonth() &&
+      this.currentMonthDate.getFullYear() === now.getFullYear()
+    );
+  }
+
+  private isMonthValidForTab(): boolean {
+    const now = new Date();
+    const nowIndex = now.getFullYear() * 12 + now.getMonth();
+    const viewIndex = this.currentMonthDate.getFullYear() * 12 + this.currentMonthDate.getMonth();
+    return this.activeTab === 'upcoming' ? viewIndex >= nowIndex : viewIndex <= nowIndex;
   }
 
   prevMonth(): void {
+    if (!this.canGoPrevMonth) return;
     this.currentMonthDate = new Date(this.currentMonthDate.getFullYear(), this.currentMonthDate.getMonth() - 1, 1);
   }
 
   nextMonth(): void {
+    if (!this.canGoNextMonth) return;
     this.currentMonthDate = new Date(this.currentMonthDate.getFullYear(), this.currentMonthDate.getMonth() + 1, 1);
   }
 

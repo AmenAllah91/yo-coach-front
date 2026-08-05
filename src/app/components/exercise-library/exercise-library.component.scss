@@ -7,8 +7,40 @@
 }
 
 .page-container > .page-header .header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
   padding-top: 0.1rem;
 }
+
+.header-copy { min-width: 0; }
+
+.page-back-btn,
+.exercise-header .back-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #eef0f3;
+  color: #536173;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.page-back-btn:hover,
+.exercise-header .back-btn:hover { background: #dfe4ea; color: #071426; }
+.page-back-btn:active,
+.exercise-header .back-btn:active { transform: scale(0.96); }
+.page-back-btn:focus-visible,
+.exercise-header .back-btn:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+.page-back-btn i-feather,
+.exercise-header .back-btn i-feather { width: 18px; height: 18px; }
 
 .page-container > .page-header .primary-btn {
   margin-top: 0.1rem;
@@ -332,18 +364,11 @@
       }
 
       .back-btn {
-        background: none;
-        border: none;
-        padding: 0.5rem;
-        cursor: pointer;
-        border-radius: 6px;
-
-        &:hover {
-          background-color: #f3f4f6;
-        }
-
         @media (max-width: 768px) {
-          padding: 0.375rem;
+          width: 36px;
+          height: 36px;
+          min-width: 36px;
+          min-height: 36px;
         }
       }
 
@@ -763,9 +788,8 @@
       border-bottom: 1px solid #edf0f4;
 
       .back-btn {
-        min-width: 40px;
-        min-height: 40px;
-        padding: 0.375rem;
+        min-width: 36px;
+        min-height: 36px;
       }
 
       h2 {
@@ -790,3 +814,5 @@
     }
   }
 }
+
+@import './exercise-mobile-exact';

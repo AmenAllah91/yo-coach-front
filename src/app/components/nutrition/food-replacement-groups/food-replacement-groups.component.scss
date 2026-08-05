@@ -10,6 +10,7 @@
   .page-container { padding: 0 10px 24px !important; background: #f7f9fc; }
   .page-header { display: grid !important; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 16px 0 !important; }
   .mobile-page-back { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; }
+  .page-back { margin-right: 8px; padding: 5px 10px; font-size: 0.85rem; }
   .page-header h1 { font-size: 17px !important; }
   .page-header p { font-size: 9px !important; line-height: 13px; }
   .page-header .primary-btn, .editor-header .primary-btn { min-height: 34px; padding: 0 12px; font-size: 9px; }
@@ -45,13 +46,240 @@
   .preview-panel { display: none; }
 }
 
+/* Final add/edit replacement layout. */
+.editor-page {
+  min-height: 100vh;
+  padding: 16px 10px 28px !important;
+  background: #f7f9fc;
+}
+
+.editor-page .editor-header {
+  min-height: 40px;
+  margin: 0 8px 14px;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
+}
+
+.editor-back-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #eef0f3;
+  color: #536173;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.editor-back-btn:hover { background: #dfe4ea; color: #071426; }
+.editor-back-btn:active { transform: scale(.96); }
+.editor-back-btn:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+.editor-back-btn i-feather { width: 18px; height: 18px; }
+
+.editor-page .editor-header .header-content h1 {
+  margin: 0;
+  color: #071426;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+}
+
+.editor-page .editor-header .header-actions {
+  margin-left: auto;
+  gap: 14px;
+}
+
+.editor-page .editor-header .secondary-btn,
+.editor-page .editor-header .primary-btn {
+  min-width: 68px;
+  min-height: 34px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.editor-page .editor-header .primary-btn {
+  border: 0;
+  background: #071a36;
+  color: #fff;
+}
+
+.editor-page .panel {
+  margin: 0 0 16px;
+  padding: 18px;
+  border: 1px solid #dce5ef;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+}
+
+.editor-page .section-heading h2,
+.editor-page .preview-copy h2 {
+  margin: 0;
+  color: #071426;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 800;
+}
+
+.editor-page .group-information-fields {
+  margin-top: 14px;
+  gap: 18px;
+}
+
+.editor-page .form-field label {
+  margin: 0 0 7px;
+  color: #52657f;
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.editor-page .form-field input {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #cfdbe8;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.editor-page .editor-foods-panel { padding: 14px 18px 0; }
+.editor-page .editor-foods-header { align-items: center; }
+
+.editor-page .title-with-count { gap: 8px; }
+.editor-page .title-with-count > span {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e7f6ff;
+  color: #159fe6;
+  font-size: 11px;
+}
+
+.editor-page .outline-blue-btn {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #159fe6;
+  border-radius: 6px;
+  color: #078bc4;
+  font-size: 11px;
+}
+.editor-page .outline-blue-btn i-feather { width: 16px; height: 16px; }
+
+.editor-page .group-food-search {
+  width: 182px !important;
+  margin: 8px 0 8px;
+}
+.editor-page .group-food-search input { height: 32px; padding-left: 34px; border-radius: 5px; font-size: 10px; }
+.editor-page .group-food-search .search-icon { left: 10px; top: 8px; width: 15px; height: 15px; }
+
+.editor-page .editor-foods-panel .foods-table {
+  margin: 0 -18px;
+  border-width: 1px 0 0;
+  border-radius: 0 0 9px 9px;
+}
+
+.editor-page .editor-foods-panel .table-head,
+.editor-page .editor-foods-panel .table-row {
+  grid-template-columns: 1.8fr .9fr .9fr 80px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.editor-page .editor-foods-panel .table-head {
+  min-height: 34px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 9px;
+}
+
+.editor-page .editor-foods-panel .table-row {
+  min-height: 46px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 10px;
+}
+
+.editor-page .food-initial { width: 24px; height: 24px; font-size: 9px; }
+.editor-page .editor-foods-panel .row-actions { gap: 12px; }
+.editor-page .editor-foods-panel .row-actions button:last-child { color: #ef2b2d; }
+
+.editor-page .preview-panel {
+  display: block;
+  padding: 18px;
+}
+
+.editor-page .preview-copy { min-width: 0; margin-bottom: 14px; }
+.editor-page .preview-flow { width: 100%; gap: 10px; }
+
+.editor-page .preview-food {
+  width: auto;
+  min-width: 0;
+  min-height: 56px;
+  flex: 1 1 0;
+  padding: 8px 12px;
+  border: 1px solid #dce5ef;
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.editor-page .food-emoji { width: 30px; height: 30px; font-size: 15px; background: #f8fafc; }
+.editor-page .preview-copy-block strong { font-size: 11px; line-height: 15px; }
+.editor-page .preview-copy-block span { font-size: 10px; line-height: 14px; }
+
+.editor-page .preview-connect {
+  min-width: 230px;
+  padding: 0;
+  flex-direction: row;
+  gap: 10px;
+}
+.editor-page .preview-connect .connector { width: auto; flex: 1; }
+.editor-page .replace-link { flex: 0 0 auto; font-size: 10px; }
+.editor-page .replace-link i-feather { width: 14px; height: 14px; }
+
+@media (max-width: 720px) {
+  .editor-page { padding: 10px 8px 20px !important; }
+  .editor-page .editor-header { margin: 0 0 10px; }
+  .editor-page .editor-header .header-content h1 { font-size: 15px !important; line-height: 19px !important; }
+  .editor-page .editor-header .secondary-btn { display: none; }
+  .editor-page .editor-header .primary-btn { min-width: 58px; padding: 0 12px !important; }
+  .editor-page .panel { margin-bottom: 10px !important; padding: 13px !important; }
+  .editor-page .group-information-fields { grid-template-columns: 1fr; gap: 10px; }
+  .editor-page .editor-foods-panel { padding-bottom: 0 !important; }
+  .editor-page .group-food-search { width: 100% !important; }
+  .editor-page .editor-foods-panel .foods-table { margin: 0 -13px; }
+  .editor-page .editor-foods-panel .table-head { display: none; }
+  .editor-page .editor-foods-panel .table-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 5px 10px;
+    padding: 9px 13px !important;
+  }
+  .editor-page .editor-foods-panel .table-row > span:nth-child(2) { position: static; grid-column: 1; margin-left: 35px; font-size: 9px; }
+  .editor-page .editor-foods-panel .table-row > span:nth-child(3) { display: block; grid-column: 1; margin-left: 35px; font-size: 9px; }
+  .editor-page .editor-foods-panel .row-actions { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+  .editor-page .preview-panel { display: block; }
+  .editor-page .preview-flow { flex-direction: column; }
+  .editor-page .preview-food { width: 100%; }
+  .editor-page .preview-connect { width: 100%; min-width: 0; }
+}
+
 .page-container {
   padding: 28px 32px;
 }
 
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -84,6 +312,12 @@
 .list-toolbar {
   display: flex;
   gap: 14px;
+}
+
+.page-header .header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
 }
 
 .primary-btn,
@@ -704,8 +938,13 @@
 }
 
 .page-header {
-  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
 }
+
+/* ...existing code... */
 
 .page-container > .page-header > .primary-btn {
   min-height: 38px;
@@ -714,7 +953,7 @@
 
 .list-toolbar {
   margin-top: 0 !important;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 
   .search-box input,
   .status-select {
@@ -727,7 +966,7 @@
 }
 
 .groups-list {
-  gap: 5px;
+  gap: 2px;
   border: 1px solid #e1e8f1;
   border-radius: 10px;
   background: #ffffff;
@@ -756,9 +995,9 @@
 }
 
 .group-card {
-  min-height: 64px;
+  min-height: 60px;
   gap: 14px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   border: 0;
   border-top: 1px solid #edf1f6;
   border-radius: 0;
@@ -820,24 +1059,14 @@
 .group-description-cell {
   min-width: 0;
 
-  p,
-  small {
+  p {
     display: block;
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  p {
     color: #46566c;
     font-size: 12px;
-  }
-
-  small {
-    margin-top: 4px;
-    color: #8795a8;
-    font-size: 11px;
   }
 }
 
@@ -931,6 +1160,53 @@
     background: #071a36;
   }
 }
+
+.page-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 6px 12px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #071426;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: all 0.12s ease;
+  margin-right: 12px;
+
+  i-feather {
+    width: 16px;
+    height: 16px;
+    color: inherit;
+  }
+
+  span {
+    display: inline;
+  }
+
+  &:hover {
+    background-color: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  }
+}
+
+/* Preview center replace control */
+.preview-food, .replacement-menu { min-width:260px; }
+.preview-food { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:10px; background:#fff; border:1px solid #eef4f8; }
+
+.preview-source .preview-copy-block,
+.preview-target .preview-copy-block { display:flex; flex-direction:column; }
+.preview-source .preview-copy-block strong,
+.preview-target .preview-copy-block strong { font-weight:800; color:#071b35; }
+.preview-source .preview-copy-block span,
+.preview-target .preview-copy-block span { color:#6b7280; font-size:13px; }
+
+.preview-connect { display:flex; flex-direction:column; align-items:center; gap:8px; padding:0 12px; }
+.preview-connect .connector { width:140px; height:1px; border-top:1px dashed #cfeaf8; }
+.replace-link { background:transparent; border:0; color:#0b84d1; font-weight:700; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
 
 .group-information-panel,
 .editor-foods-panel {
@@ -1107,7 +1383,8 @@
 /* Final mobile composition matching the replacement-groups reference. */
 @media (max-width: 900px) {
   .page-container { padding: 0 10px 24px !important; }
-  .page-header { grid-template-columns: 32px minmax(0, 1fr) auto !important; gap: 8px !important; padding: 16px 0 12px !important; }
+  .page-header { grid-template-columns: auto minmax(0, 1fr) auto !important; gap: 8px !important; padding: 12px 0 !important; }
+  .page-back { display: inline-flex; padding: 4px 8px; font-size: 0.8rem; margin: 0; i-feather { width: 14px; height: 14px; } span { display: none; } }
   .page-header h1 { font-size: 15px !important; line-height: 18px !important; white-space: normal; }
   .page-header p { margin-top: 4px !important; font-size: 8px !important; line-height: 12px !important; }
   .page-header .primary-btn { min-height: 34px !important; padding: 0 10px !important; font-size: 8px !important; white-space: nowrap; }
@@ -1134,3 +1411,5 @@
   .group-actions { position: absolute !important; right: 10px; top: 14px; }
   .group-actions .action-btn { min-width: 72px !important; width: 72px !important; height: 32px !important; padding: 0 8px !important; font-size: 8px !important; }
 }
+
+@import './replacement-editor-exact';

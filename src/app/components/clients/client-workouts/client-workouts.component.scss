@@ -154,6 +154,11 @@
   background-color: rgba(68, 180, 223, 0.08);
 }
 
+.month-nav-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 /* Petites flèches custom */
 
 .chevron {

@@ -329,6 +329,21 @@
   }
 }
 
+/* Adapt the grid to the number of enabled plan types so cards fill the row. */
+.choose-modal .plan-options.plan-options--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.choose-modal .plan-options.plan-options--one {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+@media (max-width: 760px) {
+  .choose-modal .plan-options.plan-options--two,
+  .choose-modal .plan-options.plan-options--one {
+    grid-template-columns: 1fr !important;
+  }
+}
 .nutrition-duration-modal {
   width: min(620px, calc(100vw - 48px)) !important;
   max-width: min(620px, calc(100vw - 48px)) !important;

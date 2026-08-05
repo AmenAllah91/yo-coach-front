@@ -673,6 +673,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   handlePrevMonth(): void {
+    if (!this.canGoPrevMonth) return;
     this.currentDate = new Date(
       this.currentDate.getFullYear(),
       this.currentDate.getMonth() - 1,
@@ -681,6 +682,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   handleNextMonth(): void {
+    if (!this.canGoNextMonth) return;
     this.currentDate = new Date(
       this.currentDate.getFullYear(),
       this.currentDate.getMonth() + 1,
@@ -691,6 +693,34 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   setActiveTab(tab: 'upcoming' | 'past'): void {
     this.activeTab = tab;
     this.selectedDay = null;
+    if (!this.isMonthValidForTab()) {
+      this.currentDate = new Date();
+    }
+  }
+
+  get canGoPrevMonth(): boolean {
+    if (this.activeTab === 'upcoming') return !this.isCurrentMonth();
+    return true;
+  }
+
+  get canGoNextMonth(): boolean {
+    if (this.activeTab === 'past') return !this.isCurrentMonth();
+    return true;
+  }
+
+  private isCurrentMonth(): boolean {
+    const now = new Date();
+    return (
+      this.currentDate.getMonth() === now.getMonth() &&
+      this.currentDate.getFullYear() === now.getFullYear()
+    );
+  }
+
+  private isMonthValidForTab(): boolean {
+    const now = new Date();
+    const nowIndex = now.getFullYear() * 12 + now.getMonth();
+    const viewIndex = this.currentDate.getFullYear() * 12 + this.currentDate.getMonth();
+    return this.activeTab === 'upcoming' ? viewIndex >= nowIndex : viewIndex <= nowIndex;
   }
 
   selectDay(day: NutritionDay): void {

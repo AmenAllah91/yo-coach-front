@@ -170,6 +170,7 @@ export class ProfilClientComponent {
   clientSearch = '';
   coachClients: Client[] = [];
   loadingCoachClients = false;
+  private coachClientsLoaded = false;
 
   backToClients(): void {
     this.router.navigate(['/clients']);
@@ -253,13 +254,14 @@ export class ProfilClientComponent {
   }
 
   private loadCoachClients(): void {
-    if (this.loadingCoachClients || !this.userid) return;
+    if (this.coachClientsLoaded || this.loadingCoachClients || !this.userid) return;
 
     this.loadingCoachClients = true;
     this.clientService.getListClientsByCoachWithoutPagination(this.userid).subscribe({
       next: (response) => {
         const clients = Array.isArray(response) ? response : response?.content || [];
         this.coachClients = clients.filter((client: Client) => !!client.id);
+        this.coachClientsLoaded = true;
         this.loadingCoachClients = false;
       },
       error: () => {
@@ -622,6 +624,7 @@ export class ProfilClientComponent {
 
     this.getAllNutrition();
     this.loadWorkoutFileSetting();
+    this.loadCoachClients();
   }
 
 

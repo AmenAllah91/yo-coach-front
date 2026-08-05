@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -38,6 +38,8 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   groupFoodSearchTerm = '';
   private groupsRequest?: Subscription;
   private searchTimer?: ReturnType<typeof setTimeout>;
+  private layoutBackButton: HTMLElement | null = null;
+  private layoutBackButtonDisplay = '';
 
   currentPage = 0;
   pageSize = 10;
@@ -65,6 +67,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   constructor(
     private replacementGroupsService: FoodReplacementGroupsService,
     private nutritionService: NutritionService,
+    private hostElement: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -72,6 +75,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.restoreLayoutBackButton();
     this.groupsRequest?.unsubscribe();
     if (this.searchTimer) clearTimeout(this.searchTimer);
   }
@@ -221,6 +225,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.groupFoods = [];
     this.groupFoodSearchTerm = '';
     this.view = 'EDITOR';
+    setTimeout(() => this.hideLayoutBackButton());
   }
 
   openEditGroup(group: FoodReplacementGroup): void {
@@ -231,12 +236,33 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.groupFoods = (group.foods || []).map((food) => ({ ...food }));
     this.groupFoodSearchTerm = '';
     this.view = 'EDITOR';
+    setTimeout(() => this.hideLayoutBackButton());
   }
 
   closeEditor(): void {
+    this.restoreLayoutBackButton();
     this.view = 'LIST';
     this.showAddFoodModal = false;
     this.editingGroup = null;
+  }
+
+  private hideLayoutBackButton(): void {
+    const host = this.hostElement.nativeElement;
+    const button = Array.from(document.querySelectorAll<HTMLElement>('button')).find(
+      (candidate) =>
+        !host.contains(candidate) && candidate.textContent?.trim().toLowerCase() === 'back',
+    );
+
+    if (!button) return;
+    this.layoutBackButton = button;
+    this.layoutBackButtonDisplay = button.style.display;
+    button.style.setProperty('display', 'none', 'important');
+  }
+
+  private restoreLayoutBackButton(): void {
+    if (!this.layoutBackButton) return;
+    this.layoutBackButton.style.display = this.layoutBackButtonDisplay;
+    this.layoutBackButton = null;
   }
 
   saveGroup(): void {

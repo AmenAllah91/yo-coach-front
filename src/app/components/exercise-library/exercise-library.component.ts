@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { FeatherModule } from 'angular-feather';
@@ -29,11 +29,15 @@ import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   selectedExercise: string | null = null;
   showCreateModal = false;
+  showExerciseSelectModal = false;
   showDeleteModal = false;
   exerciseToDelete: Exercise | null = null;
   videoPlayerWidth = 640;
   videoPlayerHeight = 360;
   private videoResizeObserver: ResizeObserver | null = null;
+  private layoutBackButton: HTMLElement | null = null;
+  private layoutBackButtonDisplay = '';
+  private layoutBackButtonTimer: ReturnType<typeof setTimeout> | null = null;
 
   @ViewChild('videoWrapper')
   set videoWrapper(element: ElementRef<HTMLElement> | undefined) {
@@ -81,9 +85,12 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   constructor(
     private exerciseService: ExerciseService,
     private authService: AuthService,
+    private location: Location,
+    private hostElement: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit() {
+    this.layoutBackButtonTimer = setTimeout(() => this.hideLayoutBackButton());
     console.log('Exercise Library - Checking authentication status');
 
     if (!this.authService.isLoggedIn()) {
@@ -270,6 +277,14 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
     this.selectedExercise = null;
   }
 
+  openExerciseSelectModal(): void {
+    this.showExerciseSelectModal = true;
+  }
+
+  closeExerciseSelectModal(): void {
+    this.showExerciseSelectModal = false;
+  }
+
   getExerciseName(): string {
     const exercise = this.allExercises.find(
       (item) => item.id === this.selectedExercise,
@@ -449,7 +464,31 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.layoutBackButtonTimer) {
+      clearTimeout(this.layoutBackButtonTimer);
+    }
+    if (this.layoutBackButton) {
+      this.layoutBackButton.style.display = this.layoutBackButtonDisplay;
+    }
     this.videoResizeObserver?.disconnect();
+  }
+
+  goBack(): void {
+    this.location.back();
+  }
+
+  private hideLayoutBackButton(): void {
+    const host = this.hostElement.nativeElement;
+    const button = Array.from(document.querySelectorAll<HTMLElement>('button')).find(
+      (candidate) =>
+        !host.contains(candidate) && candidate.textContent?.trim().toLowerCase() === 'back',
+    );
+
+    if (!button) return;
+
+    this.layoutBackButton = button;
+    this.layoutBackButtonDisplay = button.style.display;
+    button.style.setProperty('display', 'none', 'important');
   }
 
   private updateVideoPlayerSize(wrapper: HTMLElement) {

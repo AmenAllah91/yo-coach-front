@@ -89,6 +89,16 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
     return count;
   }
 
+  get enabledPlanCount(): number {
+    let count = 0;
+
+    if (this.canCreateFullMealPlan) count++;
+    if (this.canCreateMacroDailyPlan) count++;
+    if (this.canCreateMacroEachMealPlan) count++;
+
+    return count;
+  }
+
   get hasAnyPlanType(): boolean {
     return this.canCreateFullMealPlan || this.canCreateAnyMacroPlan;
   }

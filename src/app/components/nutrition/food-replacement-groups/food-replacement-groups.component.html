@@ -64,7 +64,6 @@
 
       <div class="group-description-cell">
         <p>{{ group.description || '—' }}</p>
-        <small>Client note: {{ group.clientNote || '—' }}</small>
       </div>
 
       <div class="group-food-count">
@@ -135,12 +134,11 @@
   </div>
 </div>
 
-<div class="page-container" *ngIf="view === 'EDITOR'">
+<div class="page-container editor-page" *ngIf="view === 'EDITOR'">
   <div class="page-header editor-header">
-    <button class="mobile-page-back" type="button" aria-label="Back" (click)="closeEditor()"><i-feather name="chevron-left"></i-feather></button>
+    <button class="editor-back-btn" type="button" aria-label="Back" (click)="closeEditor()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ editingGroup ? 'Edit replacement group' : 'Create replacement group' }}</h1>
-      <p>{{ editingGroup ? 'Manage the foods clients can swap in a meal plan.' : 'Create a reusable group of foods clients can swap in a meal plan.' }}</p>
     </div>
 
     <div class="header-actions">
@@ -157,17 +155,16 @@
 
   <section class="panel group-information-panel">
     <div class="section-heading">
-      <h2>Group information</h2>
-      <p>Internal label and client-facing guidance.</p>
+      <h2>Group</h2>
     </div>
 
     <div class="group-information-fields">
       <div class="form-field">
-        <label>GROUP NAME</label>
+        <label>Group Name</label>
         <input type="text" placeholder="Protein-rich foods" [(ngModel)]="groupName" />
       </div>
       <div class="form-field">
-        <label>CLIENT GUIDANCE</label>
+        <label>Client Guidance</label>
         <input type="text" placeholder="Flexible options clients can swap in their meal plans." [(ngModel)]="groupDescription" />
       </div>
     </div>
@@ -177,10 +174,9 @@
       <div class="panel-header editor-foods-header">
         <div class="section-heading">
           <div class="title-with-count">
-            <h2>Foods in this group</h2>
+            <h2>Foods</h2>
             <span>{{ groupFoods.length }}</span>
           </div>
-          <p>These are the choices clients will see when they swap.</p>
         </div>
         <button class="outline-blue-btn" (click)="openAddFoodModal()">
           <i-feather name="plus"></i-feather>
@@ -190,7 +186,7 @@
 
       <div class="group-food-search search-box small">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search foods in this group" [(ngModel)]="groupFoodSearchTerm" />
+        <input type="text" placeholder="Search..." [(ngModel)]="groupFoodSearchTerm" />
       </div>
 
       <div class="foods-table" *ngIf="groupFoods.length > 0">
@@ -221,23 +217,28 @@
   <section class="panel preview-panel">
     <div class="preview-copy">
       <h2>Client Preview</h2>
-      <p>If a plan contains any food in this group, the client can replace it with the others.</p>
     </div>
 
     <div class="preview-flow" *ngIf="previewSourceFood as source">
-      <div class="preview-food">
+      <div class="preview-food preview-source">
         <div class="food-emoji">🥚</div>
-        <strong>{{ source.name }}</strong>
-        <span>— {{ source.quantity }} {{ source.unit }}</span>
-        <button>Replace</button>
+        <div class="preview-copy-block">
+          <strong>{{ source.name }}</strong>
+          <span>{{ source.quantity }} {{ source.unit }}</span>
+        </div>
       </div>
 
-      <div class="preview-arrow"></div>
+      <div class="preview-connect">
+        <div class="connector left"></div>
+        <button class="replace-link" type="button"><i-feather name="chevron-left"></i-feather> Replace <i-feather name="chevron-right"></i-feather></button>
+        <div class="connector right"></div>
+      </div>
 
-      <div class="replacement-menu">
-        <div class="replacement-option" *ngFor="let food of previewReplacementFoods">
-          <div class="food-emoji">🍗</div>
-          <span>{{ food.name }} — {{ food.quantity }} {{ food.unit }}</span>
+      <div class="preview-food preview-target" *ngIf="previewReplacementFoods.length">
+        <div class="food-emoji">🍗</div>
+        <div class="preview-copy-block">
+          <strong>{{ previewReplacementFoods[0].name }}</strong>
+          <span>{{ previewReplacementFoods[0].quantity }} {{ previewReplacementFoods[0].unit }}</span>
         </div>
       </div>
     </div>

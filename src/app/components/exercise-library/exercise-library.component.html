@@ -1,13 +1,28 @@
 <div class="page-container" [class.detail-open]="selectedExercise">
   <div class="page-header">
     <div class="header-content">
-      <h1>Exercise Library</h1>
-      <p>Search for existing exercises, and create your own custom exercises</p>
+      <button class="page-back-btn" type="button" aria-label="Go back" (click)="goBack()">
+        <i-feather name="arrow-left"></i-feather>
+      </button>
+      <div class="header-copy">
+        <h1>Exercise Library</h1>
+        <p>Search for existing exercises, and create your own custom exercises</p>
+      </div>
     </div>
 
     <button class="primary-btn" (click)="openCreateModal()">
       <i-feather name="plus"></i-feather>
       Custom Exercise
+    </button>
+  </div>
+
+  <div class="mobile-library-actions">
+    <button class="mobile-custom-btn" type="button" (click)="openCreateModal()">
+      <i-feather name="plus"></i-feather>
+      Custom Exercise
+    </button>
+    <button class="mobile-select-btn" type="button" (click)="openExerciseSelectModal()">
+      Select Exercise
     </button>
   </div>
 
@@ -221,6 +236,49 @@
             </ul>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mobile-exercise-picker" [class.show]="showExerciseSelectModal" (click)="closeExerciseSelectModal()">
+    <div class="mobile-exercise-picker__dialog" role="dialog" aria-modal="true" aria-label="Select Exercise" (click)="$event.stopPropagation()">
+      <div class="mobile-exercise-picker__header">
+        <h2>Select Exercise</h2>
+        <button type="button" aria-label="Close" (click)="closeExerciseSelectModal()"><i-feather name="x"></i-feather></button>
+      </div>
+      <div class="mobile-exercise-picker__filters">
+        <select [(ngModel)]="selectedEquipment" (change)="onFilterChange()">
+          <option value="">Equipment</option>
+          <option *ngFor="let eq of enums?.equipment" [value]="eq">{{ eq }}</option>
+        </select>
+        <select [(ngModel)]="selectedMuscle" (change)="onFilterChange()">
+          <option value="">Muscles</option>
+          <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">{{ muscle }}</option>
+        </select>
+      </div>
+      <div class="mobile-exercise-picker__search">
+        <i-feather name="search"></i-feather>
+        <input type="text" placeholder="Search exercises" [(ngModel)]="searchTerm" (input)="onSearch()" />
+      </div>
+      <div class="mobile-exercise-picker__label">All Exercises</div>
+      <div class="mobile-exercise-picker__list">
+        <button
+          class="mobile-exercise-option"
+          type="button"
+          *ngFor="let exercise of filteredExercises"
+          [class.selected]="selectedExercise === exercise.id"
+          (click)="selectExercise(exercise.id!); closeExerciseSelectModal()"
+        >
+          <span class="mobile-exercise-option__thumb">
+            <img *ngIf="getExerciseThumbnail(exercise); else pickerIcon" [src]="getExerciseThumbnail(exercise)" [alt]="exercise.name" />
+            <ng-template #pickerIcon><i-feather name="activity"></i-feather></ng-template>
+          </span>
+          <span class="mobile-exercise-option__copy">
+            <strong>{{ exercise.name }}</strong>
+            <small>{{ exercise.muscle || exercise.type }}</small>
+          </span>
+        </button>
+        <p class="mobile-exercise-picker__empty" *ngIf="!isLoading && filteredExercises.length === 0">No exercises found.</p>
       </div>
     </div>
   </div>

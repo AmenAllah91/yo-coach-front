@@ -14,7 +14,12 @@
     </div>
 
     <div class="modal-body">
-      <div class="plan-options" *ngIf="hasAnyPlanType; else noPlanTypes">
+      <div
+        class="plan-options"
+        [class.plan-options--two]="enabledPlanCount === 2"
+        [class.plan-options--one]="enabledPlanCount === 1"
+        *ngIf="hasAnyPlanType; else noPlanTypes"
+      >
         <div class="plan-option" *ngIf="canCreateFullMealPlan">
           <h3>Full Meal Plan</h3>
           <p>
