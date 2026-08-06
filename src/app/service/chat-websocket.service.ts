@@ -17,8 +17,8 @@ export class ChatWebsocketService {
   private CHAT_WS_URL = environment.baseApiUrl + '/ws';
 
   private stompClient!: Client;
-  private conversationSubscription?: StompSubscription;
-  private pendingConversationId: string | null = null;
+  private conversationSubscriptions = new Map<string, StompSubscription>();
+  private trackedConversationIds = new Set<string>();
 
   private messageSubject = new BehaviorSubject<ChatMessage | null>(null);
   public readonly messages$: Observable<ChatMessage | null> =
@@ -46,60 +46,78 @@ export class ChatWebsocketService {
 
     this.stompClient.onConnect = () => {
       console.log('[CHAT] STOMP connected');
-
-      if (this.pendingConversationId) {
-        this.subscribeToConversation(this.pendingConversationId);
-        this.pendingConversationId = null;
-      }
+      this.subscribeTrackedConversations();
     };
 
     this.stompClient.activate();
   }
 
   subscribeToConversation(conversationId: string): void {
+    if (!conversationId) return;
 
-    if (!this.stompClient.connected) {
+    this.trackedConversationIds.add(conversationId);
+
+    if (!this.stompClient?.connected) {
       console.log('[CHAT SERVICE] STOMP not connected, pending subscription for conversation:', conversationId);
-      this.pendingConversationId = conversationId;
       return;
     }
 
+    if (this.conversationSubscriptions.has(conversationId)) return;
+
     console.log('[CHAT SERVICE] subscribing to conversation:', conversationId);
 
-    this.conversationSubscription?.unsubscribe();
-
-    this.conversationSubscription =
+    this.conversationSubscriptions.set(
+      conversationId,
       this.stompClient.subscribe(
         `/topic/conversation/${conversationId}`,
-        frame => {
-          const backendMessage = JSON.parse(frame.body);
-          const createdAt = this.normalizeCreatedAt(backendMessage.createdAt);
-          const messageId = backendMessage.id
-            || backendMessage._id
-            || `ws-${conversationId}-${backendMessage.senderId}-${createdAt}-${backendMessage.content || ''}`;
+        frame => this.handleFrame(conversationId, frame)
+      )
+    );
+  }
 
-          const chatMessage: ChatMessage = {
-            id: messageId,
-            senderId: backendMessage.senderId,
-            content: backendMessage.content,
-            createdAt,
-            conversationId: backendMessage.conversationId || conversationId,
-            type: backendMessage.type || 'TEXT',
-            attachmentUrl: backendMessage.attachmentUrl,
-            attachmentName: backendMessage.attachmentName,
-            attachmentType: backendMessage.attachmentType,
-            attachmentSize: backendMessage.attachmentSize,
-            durationSeconds: backendMessage.durationSeconds
-          };
+  private subscribeTrackedConversations(): void {
+    if (!this.stompClient?.connected) return;
 
-          this.ngZone.run(() => {
-            console.log('[CHAT SERVICE] emitting message:', JSON.stringify(chatMessage));
-            this.messageSubject.next(chatMessage);
-          });
-        }
+    for (const conversationId of this.trackedConversationIds) {
+      if (this.conversationSubscriptions.has(conversationId)) continue;
+
+      console.log('[CHAT SERVICE] subscribing to conversation:', conversationId);
+
+      this.conversationSubscriptions.set(
+        conversationId,
+        this.stompClient.subscribe(
+          `/topic/conversation/${conversationId}`,
+          frame => this.handleFrame(conversationId, frame)
+        )
       );
+    }
+  }
 
+  private handleFrame(conversationId: string, frame: any): void {
+    const backendMessage = JSON.parse(frame.body);
+    const createdAt = this.normalizeCreatedAt(backendMessage.createdAt);
+    const messageId = backendMessage.id
+      || backendMessage._id
+      || `ws-${conversationId}-${backendMessage.senderId}-${createdAt}-${backendMessage.content || ''}`;
 
+    const chatMessage: ChatMessage = {
+      id: messageId,
+      senderId: backendMessage.senderId,
+      content: backendMessage.content,
+      createdAt,
+      conversationId: backendMessage.conversationId || conversationId,
+      type: backendMessage.type || 'TEXT',
+      attachmentUrl: backendMessage.attachmentUrl,
+      attachmentName: backendMessage.attachmentName,
+      attachmentType: backendMessage.attachmentType,
+      attachmentSize: backendMessage.attachmentSize,
+      durationSeconds: backendMessage.durationSeconds
+    };
+
+    this.ngZone.run(() => {
+      console.log('[CHAT SERVICE] emitting message:', JSON.stringify(chatMessage));
+      this.messageSubject.next(chatMessage);
+    });
   }
 
   private normalizeCreatedAt(value: unknown): string {
@@ -137,7 +155,8 @@ export class ChatWebsocketService {
   }
 
   disconnect(): void {
-    this.conversationSubscription?.unsubscribe();
+    this.conversationSubscriptions.forEach(subscription => subscription?.unsubscribe());
+    this.conversationSubscriptions.clear();
     this.stompClient?.deactivate();
   }
 }

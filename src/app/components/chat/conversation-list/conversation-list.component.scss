@@ -180,6 +180,16 @@
   text-overflow: ellipsis;
 }
 
+/* when conversation has unread messages, make name/preview bold */
+.conversation-card.conversation-unread .conversation-last {
+  color: #0f2340;
+  font-weight: 700;
+}
+.conversation-card.conversation-unread .conversation-name {
+  color: #0f2340;
+  font-weight: 800;
+}
+
 .badge {
   min-width: 20px;
   padding: 3px 6px;

@@ -173,7 +173,17 @@ this.translate.use(lang);}
     this.chatwsService.messages$.pipe(takeUntil(this.destroy$)).subscribe((msg: ChatMessage) => {
       if (!msg) return;
       const conv = this.conversations.find(c => c.id === msg.conversationId);
-      if (conv) conv.lastMessage = msg.content;
+      if (conv) {
+        // update last message preview
+        conv.lastMessage = msg.content;
+        // update timestamp if present on message
+        try { (conv as any).timestamp = msg.createdAt || (conv as any).timestamp; } catch {}
+        // if the incoming message was sent by someone else, increment unreadCount
+        const currentUserId = sessionStorage.getItem('userId');
+        if (msg.senderId && msg.senderId !== currentUserId) {
+          conv.unreadCount = (conv.unreadCount || 0) + 1;
+        }
+      }
       if (this.notificationsEnabled) this.getMessagesNotifs();
     });
 

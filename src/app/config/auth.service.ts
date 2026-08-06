@@ -104,6 +104,33 @@ export class AuthService {
     return this.keycloak.getKeycloakInstance()?.profile?.username as string;
   }
 
+  async getCurrentUserDetails(): Promise<{
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null> {
+    try {
+      const token = await this.getToken();
+      if (!token) return null;
+
+      const decoded: any = jwtDecode(token);
+      const profile: any = this.keycloak.getKeycloakInstance()?.profile || {};
+
+      return {
+        id: decoded.sub || '',
+        username: decoded.preferred_username || profile.username || '',
+        firstName: decoded.given_name || profile.firstName || '',
+        lastName: decoded.family_name || profile.lastName || '',
+        email: decoded.email || profile.email || '',
+      };
+    } catch (err) {
+      console.error('Failed to load current user details', err);
+      return null;
+    }
+  }
+
   public async getId(): Promise<string | null> {
     try {
       const token = await this.keycloak.getToken();

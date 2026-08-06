@@ -28,6 +28,7 @@
         *ngFor="let conv of filteredConversations()"
         class="chat-item"
         [class.chat-item--active]="selectedConv?.id === conv.id"
+        [ngClass]="{'chat-item--unread': isConversationUnread(conv)}"
         (click)="selectConversation(conv)"
       >
         <div class="chat-item__avatar">
@@ -37,18 +38,17 @@
           <ng-template #singleAvatar>
             <img class="chat-avatar chat-avatar--img" [src]="conv.avatar" [alt]="conv.name" />
           </ng-template>
-          <span class="chat-item__unread-dot" *ngIf="conv.unread"></span>
-          <span class="chat-item__unread-dot" *ngIf="conv.unread"></span>
+          <span class="chat-item__unread-dot" *ngIf="isConversationUnread(conv)"></span>
         </div>
 
         <div class="chat-item__body">
           <div class="chat-item__top">
             <span class="chat-item__name">{{ conv.name }}</span>
             <span class="chat-item__members" *ngIf="conv.isGroup">{{ conv.memberIds?.length || 0 }} members</span>
-            <span class="chat-item__unread-badge" *ngIf="conv.unread"></span>
+            <span class="chat-item__unread-badge" *ngIf="isConversationUnread(conv)"></span>
           </div>
-          <div class="chat-item__timestamp">{{ conv.timestamp }}</div>
-          <div class="chat-item__preview">{{ conv.lastMessage }}</div>
+           <div class="chat-item__timestamp">{{ getConversationTimestamp(conv) }}</div>
+           <div class="chat-item__preview">{{ getLastMessageText(conv) }}</div>
         </div>
 
         <button *ngIf="canCreateChats" class="chat-item__more" type="button" (click)="$event.stopPropagation()">

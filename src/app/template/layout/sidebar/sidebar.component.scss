@@ -80,6 +80,7 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   padding: 0 18px 0 52px;
   border-bottom: 1px solid $sidebar-border;
   flex-shrink: 0;
+  background: $sidebar-bg !important;
 }
 
 .logo {
@@ -95,6 +96,7 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   flex: 1;
   min-height: 0;
   padding: 14px 10px 18px;
+  background: $sidebar-bg !important;
 }
 
 .nav-list,
@@ -105,7 +107,7 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 }
 
 .nav-item {
-  margin: 3px 0;
+  margin: 2px 0;
 }
 
 .nav-link,
@@ -113,8 +115,9 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   display: grid;
   align-items: center;
   min-height: 42px;
-  color: $text-light;
-  border-radius: 8px;
+  color: $text-muted !important;
+  background: transparent !important;
+  border-radius: 0 !important;
   text-decoration: none;
   transition: background $transition-speed ease, color $transition-speed ease, box-shadow $transition-speed ease;
 }
@@ -212,10 +215,15 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   font-size: 13px;
   font-weight: 500;
 
-  &:hover,
-  .submenu-item.active & {
+  &:hover {
     color: #ffffff;
     background: $hover-bg;
+  }
+
+  .submenu-item.active & {
+    color: #ffffff;
+    background: $active-bg;
+    box-shadow: inset 3px 0 0 $accent;
   }
 }
 
@@ -231,6 +239,23 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+// Force the reference palette over any legacy/global navigation theme.
+.sidebar .nav-link:hover,
+.sidebar .submenu-link:hover {
+  color: #ffffff !important;
+  background: $hover-bg !important;
+}
+
+.sidebar .nav-link.active,
+.sidebar .nav-item.active > .nav-link,
+.sidebar .submenu-item.active > .submenu-link,
+.sidebar a.router-link-active {
+  color: #ffffff !important;
+  background: $active-bg !important;
+  border-radius: 0 !important;
+  box-shadow: inset 3px 0 0 $accent !important;
 }
 
 @media (max-width: 1023.98px) {

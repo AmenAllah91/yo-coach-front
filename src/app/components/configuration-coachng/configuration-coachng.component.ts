@@ -23,7 +23,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   isClient = false;
 
   profile = {
-    username: localStorage.getItem('username') || '',
+    username: sessionStorage.getItem('username') || localStorage.getItem('username') || '',
     firstName: localStorage.getItem('firstName') || '',
     lastName: localStorage.getItem('lastName') || '',
     email: localStorage.getItem('email') || '',
@@ -77,18 +77,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   ngOnInit(): void {
     this.loading = true;
-    const currentUserId = sessionStorage.getItem('userId') || '';
-    if (currentUserId) {
-      this.usersService.getUserById(currentUserId).subscribe({
-        next: (user: any) => {
-          this.profile.username = user.login || user.username || '';
-          this.profile.firstName = user.firstName || '';
-          this.profile.lastName = user.lastName || '';
-          this.profile.email = user.email || '';
-        },
-        error: () => undefined,
-      });
-    }
+    this.loadCurrentUserProfile();
 
     this.authService.extractRoles().then((roles) => {
       this.isAdmin = roles.includes('ROLE_ADMIN');
@@ -124,6 +113,34 @@ export class ConfigurationCoachngComponent implements OnInit {
         this.languageService.setLanguage(langCode);
         this.loading = false;
       },
+    });
+  }
+
+  private async loadCurrentUserProfile(): Promise<void> {
+    const account = await this.authService.getCurrentUserDetails();
+
+    if (account) {
+      this.profile.username = account.username || this.profile.username;
+      this.profile.firstName = account.firstName || this.profile.firstName;
+      this.profile.lastName = account.lastName || this.profile.lastName;
+      this.profile.email = account.email || this.profile.email;
+
+      if (account.id) {
+        sessionStorage.setItem('userId', account.id);
+      }
+    }
+
+    const currentUserId = account?.id || sessionStorage.getItem('userId') || '';
+    if (!currentUserId) return;
+
+    this.usersService.getUserById(currentUserId).subscribe({
+      next: (user: any) => {
+        this.profile.username = user.login || user.username || this.profile.username;
+        this.profile.firstName = user.firstName || this.profile.firstName;
+        this.profile.lastName = user.lastName || this.profile.lastName;
+        this.profile.email = user.email || this.profile.email;
+      },
+      error: () => undefined,
     });
   }
 

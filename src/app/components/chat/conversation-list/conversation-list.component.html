@@ -33,6 +33,7 @@
         class="conversation-card"
         *ngFor="let conv of conversations"
         (click)="select(conv)"
+        [ngClass]="{'conversation-unread': isLastMessageUnread(conv)}"
       >
         <img *ngIf="conv.avatar" [src]="conv.avatar" alt="" />
 
@@ -49,11 +50,11 @@
             <span *ngIf="conv.isGroup; else lastMsg">
               {{ conv.memberIds?.length || 0 }} members
             </span>
-            <ng-template #lastMsg>{{ conv.lastMessage }}</ng-template>
+            <ng-template #lastMsg>{{ getLastMessageText(conv) }}</ng-template>
           </div>
         </div>
 
-        <span class="badge" *ngIf="conv.unreadCount">{{ conv.unreadCount }}</span>
+        <span class="badge" *ngIf="getUnreadBadgeCount(conv) > 0">{{ getUnreadBadgeCount(conv) }}</span>
       </button>
     </div>
   </div>

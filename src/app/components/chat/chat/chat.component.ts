@@ -16,6 +16,7 @@ import { ProfilClientComponent } from '../../clients/profil-client/profil-client
 import { Subject, Observable, take, takeUntil, forkJoin, of } from 'rxjs';
 import { switchMap, catchError, debounceTime, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
+import { ChatUnreadService } from '../../../service/chat-unread.service';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
@@ -132,6 +133,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   // ── Real data ─────────────────────────────────────────────────────────────
   conversations: Conversation[] = [];
   currentUserId = sessionStorage.getItem('userId') || '';
+  unreadCounts = new Map<string, number>();
   private destroy$ = new Subject<void>();
 
   get isClientUser(): boolean {
@@ -180,6 +182,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     private userService: UsersService,
     private clientService: ClientService,
     private wsService: ChatWebsocketService,
+    private chatUnreadService: ChatUnreadService,
     private router: Router
   ) {}
 
@@ -205,11 +208,58 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     this.wsService.messages$
       .pipe(takeUntil(this.destroy$))
       .subscribe((msg) => {
+        if (!msg) return;
+
+        const targetIdx = this.conversations.findIndex(c => c.id === msg.conversationId);
+        if (targetIdx !== -1) {
+          const target = this.conversations[targetIdx];
+          const preview = this.normalizeMessageType(msg.type) === 'VOICE'
+            ? '🎤 Voice message'
+            : this.normalizeMessageType(msg.type) === 'DOCUMENT'
+              ? `📎 ${msg.attachmentName || 'Document'}`
+              : (msg.content || '');
+          const isOpen = this.selectedConv?.id === msg.conversationId;
+          this.conversations[targetIdx] = {
+            ...target,
+            lastMessage: preview,
+            unreadCount: (!isOpen && msg.senderId !== this.currentUserId)
+              ? (target.unreadCount || 0) + 1
+              : target.unreadCount || 0
+          } as Conversation;
+          this.conversations = [...this.conversations];
+        }
+
         if (!msg || !this.selectedConv || msg.conversationId !== this.selectedConv.id) return;
         this.upsertDisplayMessage(msg);
         this.updateConversationPreview(msg);
         this.loadAutoMessageSequences(this.selectedConv.id);
         this.scrollPending = true;
+      });
+
+    // Keep conversation previews in sync when another component updates the active
+    // conversation (for example `ConversationMessagesComponent` updates its
+    // `selectedConversation.lastMessage`). Subscribe to the shared selected
+    // conversation stream and apply preview updates to the conversations list.
+    this.chatService.selectedConversation$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((sharedConv) => {
+        if (!sharedConv) return;
+        try {
+          const keyOfShared = this.getConversationUniqueKey(sharedConv as Conversation);
+          const idx = this.conversations.findIndex(c => this.getConversationUniqueKey(c) === keyOfShared);
+          if (idx !== -1) {
+            // update lastMessage (and keep other fields intact)
+            this.conversations[idx] = {
+              ...this.conversations[idx],
+              lastMessage: (sharedConv as Conversation).lastMessage || this.conversations[idx].lastMessage
+            } as Conversation;
+            // trigger change detection by replacing the array reference
+            this.conversations = [...this.conversations];
+          }
+        } catch (e) {
+          // defensive: do not break on unexpected data
+          console.error('Error syncing shared conversation preview:', e, sharedConv);
+        }
       });
 
     this.chatService.conversationRefresh$
@@ -218,6 +268,13 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         if (this.selectedConv?.id === conversationId) {
           this.loadMessages(conversationId);
         }
+      });
+
+    // Follow unread state tracked from the (reliable) notification system
+    this.chatUnreadService.unreadCounts$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(counts => {
+        this.unreadCounts = counts;
       });
 
   }
@@ -270,6 +327,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
           const uniqueConvs = this.dedupeConversations(finalConvs);
           this.conversations = uniqueConvs;
           this.filteredConversationsCache = uniqueConvs;
+          this.subscribeToAllConversations(uniqueConvs);
         }));
       }),
       catchError((err) => {
@@ -337,6 +395,12 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       ((conv.clientId === clientId && conv.coachId === this.currentUserId) ||
        (conv.clientId === this.currentUserId && conv.coachId === clientId))
     );
+  }
+
+  private subscribeToAllConversations(convs: Conversation[]): void {
+    for (const conv of convs) {
+      if (conv.id) this.wsService.subscribeToConversation(conv.id);
+    }
   }
 
   private loadUserSuggestions(): Observable<any> {
@@ -522,6 +586,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      console.log('🟣 [selectConversation] conv:', JSON.parse(JSON.stringify(conv)));
      this.selectedConv = conv;
      this.chatService.notifyConversationOpened(conv.id);
+     conv.unreadCount = 0;
+     this.chatUnreadService.markConversationRead(conv.id);
+     const idx = this.conversations.findIndex(c => c.id === conv.id);
+     if (idx !== -1) this.conversations = [...this.conversations];
      this.selectedConvMembers = [];
      this.showAllMembers = false;
      this.displayMessages = [];
@@ -840,6 +908,56 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     } catch (err) {
       console.error('Microphone permission denied or unavailable:', err);
       this.cleanupRecording();
+    }
+  }
+
+  // --- Helpers for conversation preview / unread state used by sidebar template ---
+  getLastMessageText(conv: Conversation): string {
+    try {
+      const msgs = conv.messages || [];
+      if (msgs.length > 0) {
+        msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        return msgs[msgs.length - 1].content || '';
+      }
+      // fallback to server-provided lastMessage string
+      return conv.lastMessage || '';
+    } catch (e) {
+      console.error('getLastMessageText error', e);
+      return conv.lastMessage || '';
+    }
+  }
+
+  isConversationUnread(conv: Conversation): boolean {
+    try {
+      const fromNotifications = (this.unreadCounts.get(conv.id) || 0) > 0;
+      if (fromNotifications) return true;
+
+      if (conv.unreadCount != null && conv.unreadCount > 0) return true;
+
+      const msgs = conv.messages || [];
+      if (msgs.length === 0) return false;
+      msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      const last = msgs[msgs.length - 1];
+      return !!(last && last.senderId && last.senderId !== this.currentUserId);
+    } catch (e) {
+      console.error('isConversationUnread error', e);
+      return false;
+    }
+  }
+
+  getConversationTimestamp(conv: Conversation): string {
+    try {
+      const msgs = conv.messages || [];
+      if (msgs.length > 0) {
+        msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        return this.formatTime(msgs[msgs.length - 1].createdAt);
+      }
+      // fallback if server provided a timestamp-like field
+      // try to use conv['timestamp'] if present
+      const ts = (conv as any).timestamp;
+      return this.formatTime(ts);
+    } catch (e) {
+      return '';
     }
   }
 

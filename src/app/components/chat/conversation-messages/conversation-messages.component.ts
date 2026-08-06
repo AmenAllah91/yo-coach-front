@@ -193,6 +193,8 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
             lastMessage: savedMessage.content,
             messages: [...(this.selectedConversation.messages || []).filter(message => message.id !== optimisticMessage.id), savedMessage]
           };
+          // inform shared service so other views (conversation list) can sync preview
+          try { this.chatService.openConversation(this.selectedConversation); } catch (e) { /* ignore */ }
           setTimeout(() => this.scrollToBottom(), 0);
         },
         error: err => {
@@ -419,6 +421,8 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
                 ? (content || `📎 ${normalizedMsg.attachmentName || 'Document'}`)
                 : '🎤 Voice message',
             } as Conversation;
+            // inform shared service about the updated conversation preview
+            try { this.chatService.openConversation(this.selectedConversation); } catch (e) { /* ignore */ }
             setTimeout(() => this.scrollToBottom(), 0);
           }
 

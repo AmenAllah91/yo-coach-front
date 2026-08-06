@@ -209,6 +209,16 @@
   text-overflow: ellipsis;
 }
 
+/* unread conversation styling */
+.chat-item--unread .chat-item__preview {
+  color: #0f2340;
+  font-weight: 700;
+}
+.chat-item--unread .chat-item__name {
+  color: #0f2340;
+  font-weight: 800;
+}
+
 /* Bouton "..." */
 .chat-item__more {
   flex-shrink: 0;
