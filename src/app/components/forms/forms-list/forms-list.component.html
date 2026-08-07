@@ -17,6 +17,13 @@
   </div>
 
   <div class="forms-view-toolbar">
+    <div class="search-section">
+      <div class="search-box">
+        <i-feather name="search" class="search-icon"></i-feather>
+        <input type="text" placeholder="Search clients" />
+      </div>
+    </div>
+
     <!-- Segmented toggle Active / Unsaved / Archived -->
     <div class="view-toggle">
       <button
@@ -84,15 +91,49 @@
 
   <!-- ══ CONTENT ══ -->
   <div class="content">
-    <div class="search-section">
-      <div class="search-box">
-        <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search clients" />
-      </div>
-    </div>
-
     <div class="card">
       <div *ngIf="error()" class="alert">{{ error() }}</div>
+
+      <div class="mobile-form-list" aria-label="Forms list">
+        <div class="mobile-form-state" *ngIf="loading()">Chargement...</div>
+        <div class="mobile-form-state" *ngIf="!loading() && forms().length === 0">Aucun form trouvé.</div>
+
+        <article class="mobile-form-row" *ngFor="let f of forms(); trackBy: trackById">
+          <div class="mobile-form-copy">
+            <div class="mobile-form-heading">
+              <div class="mobile-form-title">{{ f.title || '(Sans titre)' }}</div>
+              <span [class]="badgeClass(f.status)">{{ f.status }}</span>
+            </div>
+            <div class="mobile-form-description" *ngIf="f.description">{{ f.description }}</div>
+          </div>
+
+          <div class="dropdown" [class.open]="openedActionsId() === f.id">
+            <button class="mobile-menu-btn" type="button" (click)="toggleActions(f.id, $event)" aria-label="Actions">
+              <i-feather name="more-vertical"></i-feather>
+            </button>
+
+            <div class="dropdown-menu" [id]="'mobile-dropdown-' + f.id" *ngIf="openedActionsId() === f.id">
+              <ng-container [ngSwitch]="viewMode()">
+                <ng-container *ngSwitchCase="'active'">
+                  <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()"><i-feather name="edit-2"></i-feather>Modifier</button>
+                  <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()"><i-feather name="users"></i-feather>Affecter</button>
+                  <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>Dupliquer</button>
+                  <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()"><i-feather name="archive"></i-feather>Archiver</button>
+                  <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>Supprimer</button>
+                </ng-container>
+                <ng-container *ngSwitchCase="'unsaved'">
+                  <button class="dropdown-item" type="button" (click)="continueCreating(f); closeActions()"><i-feather name="play"></i-feather>Continuer la création</button>
+                  <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>Dupliquer</button>
+                  <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>Supprimer</button>
+                </ng-container>
+                <ng-container *ngSwitchCase="'archived'">
+                  <button class="dropdown-item" type="button" (click)="unarchiveForm(f, $event); closeActions()"><i-feather name="rotate-ccw"></i-feather>Désarchiver</button>
+                </ng-container>
+              </ng-container>
+            </div>
+          </div>
+        </article>
+      </div>
 
       <div class="table-wrap">
         <table class="table" aria-label="Forms table">
@@ -139,7 +180,8 @@
                   aria-label="Actions"
                 >
                   <span>Actions</span>
-                  <i-feather name="chevron-down"></i-feather>
+                  <i-feather name="chevron-down" class="desktop-actions-icon"></i-feather>
+                  <i-feather name="more-vertical" class="mobile-actions-icon"></i-feather>
                 </button>
 
                 <div

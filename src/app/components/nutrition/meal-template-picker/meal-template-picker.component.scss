@@ -132,10 +132,10 @@
 .template-row__identity strong { overflow: hidden; color: #172033; font-size: 13px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
 .template-row__identity span { overflow: hidden; color: #718198; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .template-row__identity small { width: max-content; padding: 3px 8px; border-radius: 5px; color: #149fdc; background: #e9f7ff; font-size: 10px; font-weight: 700; }
-.template-row__macros { display: grid; grid-template-columns: repeat(4, 76px); gap: 10px; }
-.template-row__macros > div { min-height: 56px; display: grid; place-content: center; gap: 3px; border: 1px solid #e0e7ef; border-radius: 7px; background: #fff; text-align: center; }
-.template-row__macros strong { color: #162033; font-size: 12px; font-weight: 850; }
-.template-row__macros span { color: #7b899c; font-size: 9px; }
+.template-row__macros { display: grid; grid-template-columns: repeat(4, 82px); gap: 10px; }
+.template-row__macros > div { min-height: 62px; display: grid; place-content: center; gap: 4px; padding: 7px; border: 1px solid #dce6ef; border-radius: 10px; background: linear-gradient(180deg, #fff, #f9fcfe); text-align: center; box-shadow: 0 2px 6px rgba(15, 23, 42, .04); }
+.template-row__macros strong { color: #172033; font-size: 14px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
+.template-row__macros span { color: #7b899c; font-size: 9px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; }
 .template-row__actions { display: grid; justify-items: stretch; gap: 6px; min-width: 78px; }
 .template-add { height: 34px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #bcdff3; border-radius: 7px; color: #149ddb; background: #f8fdff; font-size: 12px; font-weight: 750; cursor: pointer; }
 .template-add i-feather { width: 14px; height: 14px; }

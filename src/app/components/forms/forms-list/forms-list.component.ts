@@ -592,7 +592,10 @@ export class FormsListComponent implements OnInit, OnDestroy {
   }
 
   private positionDropdown(formId: string, buttonEl: HTMLElement | null): void {
-    const menu = document.getElementById(`dropdown-${formId}`) as HTMLElement | null;
+    const menuId = buttonEl?.closest('.mobile-form-list')
+      ? `mobile-dropdown-${formId}`
+      : `dropdown-${formId}`;
+    const menu = document.getElementById(menuId) as HTMLElement | null;
     if (!menu || !buttonEl) return;
 
     const rect = buttonEl.getBoundingClientRect();
@@ -600,11 +603,12 @@ export class FormsListComponent implements OnInit, OnDestroy {
     const menuW = menu.offsetWidth || 180;
     const menuH = menu.offsetHeight || 200;
 
-    const top = rect.bottom + menuH > window.innerHeight
+    const preferredTop = rect.bottom + menuH > window.innerHeight
       ? rect.top - menuH - 6
       : rect.bottom + 6;
 
-    const left = Math.max(8, rect.right - menuW);
+    const top = Math.max(8, Math.min(preferredTop, window.innerHeight - menuH - 8));
+    const left = Math.max(8, Math.min(rect.right - menuW, window.innerWidth - menuW - 8));
 
     menu.style.top = `${top}px`;
     menu.style.left = `${left}px`;

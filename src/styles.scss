@@ -3,6 +3,11 @@
   opacity: 0.5 !important;
 }
 
+body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
 .modal.show {
   z-index: 1055 !important;
   display: block !important;

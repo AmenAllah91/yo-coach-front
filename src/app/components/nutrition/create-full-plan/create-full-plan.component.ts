@@ -239,6 +239,7 @@ export class CreateFullPlanComponent implements OnInit {
           : false;
         this.days = plan.mealDays || [];
         this.days.forEach((day) => this.ensureMealUiDefaults(day));
+        this.hydrateMissingFoodImages();
         this.durationWeeks = this.normalizeDurationWeeks(
           Math.ceil((this.days.length || 28) / 7)
         );
@@ -477,9 +478,23 @@ export class CreateFullPlanComponent implements OnInit {
     meal.name = newName.trim() || meal.name;
   }
 
+  renamingMeal: Meal | null = null;
+  mealNameDraft = '';
+
   promptRenameMeal(meal: Meal): void {
-    const nextName = window.prompt('Meal name', meal.name);
-    if (nextName !== null) this.renameMeal(meal, nextName);
+    this.renamingMeal = meal;
+    this.mealNameDraft = meal.name;
+  }
+
+  closeRenameMealModal(): void {
+    this.renamingMeal = null;
+    this.mealNameDraft = '';
+  }
+
+  confirmRenameMeal(): void {
+    if (!this.renamingMeal || !this.mealNameDraft.trim()) return;
+    this.renameMeal(this.renamingMeal, this.mealNameDraft);
+    this.closeRenameMealModal();
   }
 
   /* ============================================
@@ -552,6 +567,7 @@ export class CreateFullPlanComponent implements OnInit {
 
     this.recalcMealTargets(cloned);
     this.recalcDayTargets(this.selectedDay);
+    this.hydrateMissingFoodImages(cloned.foods || []);
     this.closeTemplateModal();
   }
 
@@ -675,7 +691,67 @@ export class CreateFullPlanComponent implements OnInit {
 
   get pagedModalFoods(): FoodRef[] { return this.filteredFoods.slice(this.foodPage * 3, this.foodPage * 3 + 3); }
   changeFoodPage(page: number) { if (page >= 0 && page < this.foodTotalPages) this.foodPage = page; }
-  foodImage(food: FoodRef): string { return food.imageUrl || ''; }
+  foodImage(food: FoodRef | Food): string {
+    const value = food as any;
+    return value?.imageUrl
+      || value?.image
+      || value?.photoUrl
+      || value?.foodRef?.imageUrl
+      || value?.foodRef?.image
+      || value?.foodRef?.photoUrl
+      || '';
+  }
+
+  private readonly foodImageCache = new Map<string, string>();
+  private readonly pendingFoodImages = new Set<string>();
+
+  private hydrateMissingFoodImages(foods?: Food[]): void {
+    const candidates = foods || this.days.flatMap((day) =>
+      (day.meals || []).flatMap((meal) => meal.foods || [])
+    );
+
+    candidates.forEach((food: any) => {
+      if (this.foodImage(food) || food?.manual) return;
+      const ref = food?.foodRef;
+      const foodId = String(food?.foodRefId || ref?.id || (typeof ref === 'string' ? ref : '')).trim();
+      if (!foodId) return;
+
+      const cached = this.foodImageCache.get(foodId);
+      if (cached) {
+        food.imageUrl = cached;
+        return;
+      }
+      if (this.pendingFoodImages.has(foodId)) return;
+
+      this.pendingFoodImages.add(foodId);
+      this.nutritionService.getFoodForClient(foodId).subscribe({
+        next: (detail: any) => {
+          const imageUrl = detail?.imageUrl || detail?.image || detail?.photoUrl || '';
+          if (imageUrl) {
+            this.foodImageCache.set(foodId, imageUrl);
+            this.applyFoodImage(foodId, imageUrl);
+          }
+          this.pendingFoodImages.delete(foodId);
+        },
+        error: () => this.pendingFoodImages.delete(foodId),
+      });
+    });
+  }
+
+  private applyFoodImage(foodId: string, imageUrl: string): void {
+    this.days.forEach((day) => (day.meals || []).forEach((meal) =>
+      (meal.foods || []).forEach((item: any) => {
+        const ref = item?.foodRef;
+        const itemId = String(item?.foodRefId || ref?.id || (typeof ref === 'string' ? ref : '')).trim();
+        if (itemId === foodId) item.imageUrl = imageUrl;
+      })
+    ));
+  }
+
+  toggleCheatMeal(): void {
+    if (!this.selectedDay) return;
+    this.selectedDay.cheatMeal = !this.selectedDay.cheatMeal;
+  }
 
   showFoodDetail(food: FoodRef) {
     this.selectedFood = food;

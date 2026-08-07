@@ -250,9 +250,21 @@
 
 
         <div class="np-dayhead">
-          <h3 class="np-h6">{{ getSelectedDayLabel() }}</h3>
-          <button class="np-mini" (click)="toggleDayDescription()">
-            <i-feather name="edit-2" class="np-ico"></i-feather>
+          <div class="np-dayhead__title">
+            <h3 class="np-h6">{{ getSelectedDayLabel() }}</h3>
+            <button class="np-mini" (click)="toggleDayDescription()">
+              <i-feather name="edit-2" class="np-ico"></i-feather>
+            </button>
+          </div>
+          <button
+            type="button"
+            class="np-cheat-btn"
+            [class.is-active]="selectedDay?.cheatMeal"
+            [attr.aria-pressed]="selectedDay?.cheatMeal"
+            (click)="toggleCheatMeal()"
+          >
+            <i-feather name="star" class="np-ico"></i-feather>
+            {{ selectedDay?.cheatMeal ? 'Cheat meal' : 'Set as cheat meal' }}
           </button>
         </div>
 
@@ -300,6 +312,7 @@
         <!-- ===== Meal Cards ===== -->
         <ng-container *ngIf="selectedDay">
           <div
+            class="np-meals-list"
             cdkDropList
             [cdkDropListData]="selectedDay.meals"
             (cdkDropListDropped)="onDropMeal($event)"
@@ -431,7 +444,15 @@
 
                 <tbody>
                   <tr *ngFor="let food of meal.foods">
-                    <td data-label="Ingredient">{{ food.name }}</td>
+                    <td data-label="Ingredient">
+                      <div class="np-food-cell">
+                        <span class="np-food-cell__image">
+                          <img *ngIf="foodImage(food); else foodImageFallback" [src]="foodImage(food)" [alt]="food.name" />
+                          <ng-template #foodImageFallback><i-feather name="image"></i-feather></ng-template>
+                        </span>
+                        <span>{{ food.name }}</span>
+                      </div>
+                    </td>
 
                     <td data-label="Quantity">
                       <span class="np-num">{{ food.quantity }}</span>
@@ -512,6 +533,27 @@
           </article>
           </div>
         </ng-container>
+
+        <div class="np-rename-modal" *ngIf="renamingMeal" role="dialog" aria-modal="true" aria-labelledby="editMealNameTitle">
+          <button type="button" class="np-rename-modal__backdrop" aria-label="Close edit meal name dialog" (click)="closeRenameMealModal()"></button>
+          <form class="np-rename-modal__panel" (ngSubmit)="confirmRenameMeal()">
+            <header class="np-rename-modal__header">
+              <div>
+                <h2 id="editMealNameTitle">Edit Meal Name</h2>
+                <p>Update the name of this meal. This change will only affect the meal name.</p>
+              </div>
+              <button type="button" class="np-rename-modal__close" aria-label="Close" (click)="closeRenameMealModal()"><i-feather name="x"></i-feather></button>
+            </header>
+            <div class="np-rename-modal__body">
+              <label for="newMealName">New Meal Name</label>
+              <input id="newMealName" name="newMealName" type="text" maxlength="100" required autofocus [(ngModel)]="mealNameDraft" />
+            </div>
+            <footer class="np-rename-modal__footer">
+              <button type="button" class="np-rename-modal__cancel" (click)="closeRenameMealModal()">Cancel</button>
+              <button type="submit" class="np-rename-modal__update" [disabled]="!mealNameDraft.trim()">Update</button>
+            </footer>
+          </form>
+        </div>
 
         <!-- Add Meal Buttons -->
         <div class="np-grid-2">
