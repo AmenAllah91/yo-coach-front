@@ -81,7 +81,7 @@ export class ConversationListComponent implements OnInit {
 
 
   loadConversations() {
-    this.chatService.getConversations().subscribe({
+    this.chatService.getConversations(0, 100).subscribe({
       next: (pageDto) => {
 
         const observables = pageDto.content.map(conv =>

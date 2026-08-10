@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, Observable, Subject, throwError} from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import {BehaviorSubject, Observable, of, Subject, throwError} from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import {Conversation} from "../components/chat/models/conversation";
 import {HttpClient, HttpHeaders, HttpParams} from "@angular/common/http";
 import {environment} from "@env/environment";
 import {ChatMessage} from "../components/chat/models/chat-message";
 import {PageDto} from "../models/pageDto";
 import {ChatWebsocketService} from "./chat-websocket.service";
+import {ClientService} from "./client.service";
 
 export interface AutoMessageSequenceDto {
   id: string;
@@ -60,7 +61,8 @@ export class ChatService {
 
 
   constructor(private wsService: ChatWebsocketService,
-              private http: HttpClient) {
+              private http: HttpClient,
+              private clientService: ClientService) {
 
     this.wsService.messages$.subscribe(data => {
       if (!data) return;
@@ -113,7 +115,52 @@ export class ChatService {
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<PageDto<Conversation>>(`${this.apiUrl}/conversations`, { params });
+    const conversations$ = this.http.get<PageDto<Conversation>>(`${this.apiUrl}/conversations`, { params });
+    if (!this.isClientUser()) return conversations$;
+
+    const clientId = sessionStorage.getItem('userId') || '';
+    if (!clientId) return of(this.emptyConversationPage(page, size));
+
+    return this.clientService.getClientById(clientId).pipe(
+      switchMap(client => {
+        const coachId = client.coachId || client.coach?.id || '';
+        if (!coachId) return of(this.emptyConversationPage(page, size));
+
+        return conversations$.pipe(
+          map(result => {
+            const content = (result.content || []).filter(conversation =>
+              conversation.isGroup
+                ? conversation.coachId === coachId && !!conversation.memberIds?.includes(clientId)
+                : conversation.clientId === clientId && conversation.coachId === coachId
+            );
+
+            return {
+              ...result,
+              content,
+              totalElements: content.length,
+              totalPages: content.length ? 1 : 0,
+            };
+          })
+        );
+      }),
+      catchError(error => {
+        console.error('Unable to scope client conversations to the current coach:', error);
+        return of(this.emptyConversationPage(page, size));
+      })
+    );
+  }
+
+  private isClientUser(): boolean {
+    try {
+      const roles = JSON.parse(sessionStorage.getItem('roles') || '[]');
+      return Array.isArray(roles) && roles.includes('ROLE_CLIENT') && !roles.includes('ROLE_COACH');
+    } catch {
+      return false;
+    }
+  }
+
+  private emptyConversationPage(page: number, size: number): PageDto<Conversation> {
+    return { content: [], totalElements: 0, totalPages: 0, number: page, size };
   }
   getGroupConversations(page: number = 0, size: number = 10): Observable<PageDto<Conversation>> {
     const params = new HttpParams()

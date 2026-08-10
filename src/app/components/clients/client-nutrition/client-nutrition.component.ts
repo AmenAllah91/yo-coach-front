@@ -12,6 +12,8 @@ import { ModalReplaceFoodComponent } from '../modal-replace-food/modal-replace-f
 import { FoodReplacementGroupsService } from 'app/service/food-replacement-groups.service';
 import * as XLSX from 'xlsx';
 import { environment } from '@env/environment';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AuthService } from '@config/auth.service';
 
 type PlanStatus = 'COMPLETED' | 'OFF_PLAN' | 'IN_PROGRESS' | 'PENDING';
 type MealReportStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
@@ -99,7 +101,7 @@ interface NutritionFileProgram {
 @Component({
   selector: 'app-client-nutrition',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalConfirmComponent, ModalReplaceFoodComponent],
+  imports: [CommonModule, FormsModule, ModalConfirmComponent, ModalReplaceFoodComponent, TranslateModule],
   templateUrl: './client-nutrition.component.html',
   styleUrl: './client-nutrition.component.scss',
 })
@@ -141,7 +143,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   private replacementCache = new Map<string, boolean>();
 
-  userName = 'Kolton';
+  userName = sessionStorage.getItem('username') || '';
 
   coaches: any[] = [];
 
@@ -164,11 +166,20 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     private nutritionService: NutritionService,
     private foodReplacementGroupsService: FoodReplacementGroupsService,
     private sanitizer: DomSanitizer,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private translate: TranslateService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.loadCurrentUserName();
     this.getMealPlan();
+  }
+
+  private async loadCurrentUserName(): Promise<void> {
+    const user = await this.authService.getCurrentUserDetails();
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+    this.userName = fullName || user?.username || sessionStorage.getItem('username') || this.translate.instant('ATHLETE');
   }
 
   ngOnDestroy(): void {
@@ -499,9 +510,9 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear()
     ) {
-      return 'Today';
+      return this.translate.instant('TODAY');
     }
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -530,7 +541,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
         return {
           id: food.id,
-          name: food.name || foodRef.name || 'Food',
+          name: food.name || foodRef.name || this.translate.instant('FOOD'),
           quantity: `${quantity} ${unit}`,
           protein: Math.round(Number(foodRef.protein || 0) * ratio),
           carbs: Math.round(Number(foodRef.carbohydrates || 0) * ratio),
@@ -555,7 +566,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   mealVariantLabel(meal: Meal): string {
-    return this.isRecipeMeal(meal) ? 'Recipe meal' : 'With foods';
+    return this.translate.instant(this.isRecipeMeal(meal) ? 'RECIPE_MEAL' : 'WITH_FOODS');
   }
 
   toggleMealCard(meal: Meal): void {
@@ -587,7 +598,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   formatMealTime(value?: string): string {
     const raw = String(value || '').trim();
-    if (!raw) return 'No time';
+    if (!raw) return this.translate.instant('NO_TIME');
     const match = raw.match(/^(\d{1,2}):(\d{2})/);
     if (!match) return raw;
     let hours = Number(match[1]);
@@ -599,7 +610,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   mealHeaderTitle(meal: Meal, index: number): string {
     const type = String(meal.mealType || '').trim();
-    return type ? `Meal ${index + 1} · ${type.charAt(0).toUpperCase() + type.slice(1)}` : `Meal ${index + 1} · ${meal.name}`;
+    const prefix = `${this.translate.instant('MEAL')} ${index + 1}`;
+    return type ? `${prefix} · ${type.charAt(0).toUpperCase() + type.slice(1)}` : `${prefix} · ${meal.name}`;
   }
 
   mealMetaLine(meal: Meal): string {
@@ -635,22 +647,23 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   formatMonthYear(date: Date): string {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { month: 'long', year: 'numeric' });
   }
 
   listStatusLabel(status: unknown): string {
+    let key = 'PLANNED_LABEL';
     switch (String(status || '').toUpperCase()) {
-      case 'COMPLETED': return 'Completed';
-      case 'UPCOMING': return 'Upcoming';
-      case 'IN_PROGRESS': return 'In progress';
+      case 'COMPLETED': key = 'COMPLETED_LABEL'; break;
+      case 'UPCOMING': key = 'UPCOMING'; break;
+      case 'IN_PROGRESS': key = 'IN_PROGRESS_LABEL'; break;
       case 'PENDING':
       case 'PLANNED':
-      case 'NOT_STARTED': return 'Planned';
-      case 'MISSED': return 'Missed';
-      case 'OFF_PLAN': return 'Off-plan';
-      case 'OVERDUE': return 'Overdue';
-      default: return 'Planned';
+      case 'NOT_STARTED': key = 'PLANNED_LABEL'; break;
+      case 'MISSED': key = 'MISSED_LABEL'; break;
+      case 'OFF_PLAN': key = 'OFF_PLAN'; break;
+      case 'OVERDUE': key = 'OVERDUE_LABEL'; break;
     }
+    return this.translate.instant(key);
   }
 
   listStatusIcon(status: unknown): string {
@@ -818,7 +831,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   completeNutritionDay(): void {
     if (!this.selectedDay) return;
     this.persistNutritionDay('COMPLETED', () => {
-      this.dailySaveMessage = 'Daily feedback saved.';
+      this.dailySaveMessage = this.translate.instant('DAILY_FEEDBACK_SAVED');
       setTimeout(() => this.dailySaveMessage = '', 3000);
     });
   }
@@ -862,15 +875,15 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   nutritionDayStatusLabel(day: NutritionDay): string {
-    if (day.status === 'OFF_PLAN') return 'Off-plan';
-    if (day.status === 'COMPLETED') return 'Completed';
-    return 'In progress';
+    if (day.status === 'OFF_PLAN') return this.translate.instant('OFF_PLAN');
+    if (day.status === 'COMPLETED') return this.translate.instant('COMPLETED_LABEL');
+    return this.translate.instant('IN_PROGRESS_LABEL');
   }
 
   mealStatusLabel(status?: MealReportStatus): string {
-    if (status === 'AS_PLANNED') return 'As planned';
-    if (status === 'MODIFIED') return 'Modified';
-    if (status === 'SKIPPED') return 'Skipped';
+    if (status === 'AS_PLANNED') return this.translate.instant('AS_PLANNED');
+    if (status === 'MODIFIED') return this.translate.instant('MODIFIED');
+    if (status === 'SKIPPED') return this.translate.instant('SKIPPED');
     return '';
   }
 
@@ -984,9 +997,9 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   get greeting(): string {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return this.translate.instant('GOOD_MORNING');
+    if (hour < 18) return this.translate.instant('GOOD_AFTERNOON');
+    return this.translate.instant('GOOD_EVENING');
   }
 
   openConfirmModal(status: PlanStatus): void {
@@ -1042,7 +1055,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   get calendarCountLabel(): string {
     const count = this.filteredDays.length;
-    return `${count} jour${count > 1 ? 's' : ''} ce mois`;
+    return this.translate.instant(count === 1 ? 'ONE_DAY_THIS_MONTH' : 'DAYS_THIS_MONTH', { count });
   }
 
   get currentPrograms(): NutritionFileProgram[] {
@@ -1201,13 +1214,13 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
           this.selectedFileLoading = false;
         } catch (error) {
           console.error('Error preparing PDF preview:', error);
-          this.selectedFileError = 'Impossible d\'afficher l\'aperçu du PDF. Téléchargez le fichier pour l\'ouvrir.';
+          this.selectedFileError = this.translate.instant('PDF_PREVIEW_ERROR');
           this.selectedFileLoading = false;
         }
       },
       error: (error) => {
         console.error('Error loading PDF preview:', error);
-        this.selectedFileError = 'Impossible d\'afficher l\'aperçu du PDF. Téléchargez le fichier pour l\'ouvrir.';
+        this.selectedFileError = this.translate.instant('PDF_PREVIEW_ERROR');
         this.selectedFileLoading = false;
       },
     });
@@ -1236,7 +1249,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
             this.parseExcelSheet(workbook, this.selectedExcelSheetName);
           } catch (err) {
             console.error('Excel parse error:', err);
-            this.selectedFileError = 'Impossible de lire le fichier Excel.';
+            this.selectedFileError = this.translate.instant('EXCEL_READ_ERROR');
           }
           this.excelLoading = false;
           this.selectedFileLoading = false;
@@ -1244,7 +1257,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         reader.onerror = () => {
           this.excelLoading = false;
           this.selectedFileLoading = false;
-          this.selectedFileError = 'Erreur de lecture du fichier.';
+          this.selectedFileError = this.translate.instant('FILE_READ_ERROR');
         };
         reader.readAsArrayBuffer(blob);
       },
@@ -1252,7 +1265,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         console.error('Error loading Excel preview:', error);
         this.excelLoading = false;
         this.selectedFileLoading = false;
-        this.selectedFileError = 'Impossible de charger l\'aperçu du fichier.';
+        this.selectedFileError = this.translate.instant('FILE_PREVIEW_LOAD_ERROR');
       },
     });
   }
@@ -1328,7 +1341,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   private formatFrenchDate(dateStr: string): string {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   replaceFood(replacement: {

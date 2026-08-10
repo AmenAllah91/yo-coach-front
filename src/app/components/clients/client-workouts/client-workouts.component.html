@@ -3,33 +3,33 @@
   <div class="client-page-inner">
     <div class="cw-root">
       <header class="client-header">
-        <h1 class="client-header-title">{{ greeting }}, {{ userName }}</h1>
-        <p class="client-header-subtitle">Your workout journey starts here</p>
+        <h1 class="client-header-title">{{ greeting }}, {{ currentUserName }}</h1>
+        <p class="client-header-subtitle">{{ 'WORKOUT_JOURNEY_STARTS' | translate }}</p>
       </header>
 
       <div class="file-toggle-wrap" *ngIf="showWorkoutFiles">
         <div class="file-mode-switch">
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'calendar'" (click)="setClientViewMode('calendar')">
-            <span>Calendrier</span>
+            <span>{{ 'CALENDAR' | translate }}</span>
             <small>{{ calendarCountLabel }}</small>
           </button>
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'file'" (click)="setClientViewMode('file')">
-            <span>Fichier</span>
+            <span>{{ 'FILE' | translate }}</span>
             <small *ngIf="selectedFileProgram">{{ selectedFileProgram.resourceType }}<span *ngIf="selectedFileProgram.fileSizeBytes"> · {{ formatFileSize(selectedFileProgram.fileSizeBytes) }}</span></small>
           </button>
         </div>
-        <p class="file-mode-hint">Votre coach utilise les deux formats — choisissez la vue qui vous convient.</p>
+        <p class="file-mode-hint">{{ 'WORKOUT_FORMAT_VIEW_HINT' | translate }}</p>
       </div>
 
       <ng-container *ngIf="showWorkoutFiles && clientViewMode === 'file'; else calendarArea">
         <div class="file-client-layout">
           <aside class="file-sidebar">
             <div class="file-search-box">
-              <input type="text" placeholder="Rechercher un programme" [(ngModel)]="searchProgram" (ngModelChange)="applyFileSearch()" />
+              <input type="text" [placeholder]="'SEARCH_PROGRAM' | translate" [(ngModel)]="searchProgram" (ngModelChange)="applyFileSearch()" />
             </div>
 
             <div class="sidebar-section">
-              <div class="sidebar-heading">PROGRAMME ACTUEL <span>{{ currentPrograms.length }}</span></div>
+              <div class="sidebar-heading">{{ 'CURRENT_PROGRAM' | translate }} <span>{{ currentPrograms.length }}</span></div>
               <button class="sidebar-program" *ngFor="let program of currentPrograms" [class.sidebar-program--active]="selectedFileProgram?.id === program.id" (click)="selectFileProgram(program)">
                 <div class="sidebar-icon">📄</div>
                 <div class="sidebar-copy">
@@ -41,7 +41,7 @@
             </div>
 
             <div class="sidebar-section">
-              <div class="sidebar-heading">HISTORIQUE <span>{{ historyPrograms.length }}</span></div>
+              <div class="sidebar-heading">{{ 'HISTORY' | translate }} <span>{{ historyPrograms.length }}</span></div>
               <button class="sidebar-program sidebar-program--history" *ngFor="let program of historyPrograms" [class.sidebar-program--active]="selectedFileProgram?.id === program.id" (click)="selectFileProgram(program)">
                 <div class="sidebar-icon">📄</div>
                 <div class="sidebar-copy">
@@ -55,8 +55,8 @@
           <section class="file-main file-main--empty" *ngIf="!selectedFileProgram">
             <div class="file-empty-state">
               <div class="file-empty-icon">📄</div>
-              <h2>Aucun programme fichier assigné</h2>
-              <p>Quand votre coach assigne un workout PDF ou Excel, il apparaîtra ici avec l’aperçu, l’historique et les actions de téléchargement.</p>
+              <h2>{{ 'NO_FILE_PROGRAM_ASSIGNED' | translate }}</h2>
+              <p>{{ 'FILE_PROGRAM_EMPTY_HINT' | translate }}</p>
             </div>
           </section>
 
@@ -67,10 +67,10 @@
                 <div>
                   <div class="file-card-title-row">
                     <h2>{{ currentFile.name }}</h2>
-                    <span class="active-pill">ACTIF</span>
+                    <span class="active-pill">{{ 'ACTIVE' | translate }}</span>
                   </div>
                   <div class="file-card-meta-row">
-                    <span>Ajouté le {{ currentFile.addedLabel }}</span>
+                    <span>{{ 'ADDED_ON' | translate }} {{ currentFile.addedLabel }}</span>
                     <span>{{ currentFile.coachName }}</span>
                     <span *ngIf="currentFile.fileSizeBytes">{{ formatFileSize(currentFile.fileSizeBytes) }}</span>
                     <span>{{ currentFile.pageCountLabel }}</span>
@@ -84,15 +84,15 @@
 
             <div class="file-preview-shell yo-pdf-card" [class.yo-pdf-card--fullscreen]="isPdfFullscreen">
               <div class="file-preview-topbar">
-                <span>Aperçu du document {{ currentFile.resourceType }}</span>
-                <small *ngIf="currentFile.resourceType === 'PDF'">Page {{ pdfCurrentPage }} / {{ pdfTotalPages || currentFile.pageCountLabel || '—' }}</small>
+                <span>{{ 'DOCUMENT_PREVIEW' | translate }} {{ currentFile.resourceType }}</span>
+                <small *ngIf="currentFile.resourceType === 'PDF'">{{ 'PAGE' | translate }} {{ pdfCurrentPage }} / {{ pdfTotalPages || currentFile.pageCountLabel || '—' }}</small>
               </div>
 
               <div class="yo-pdf-stage" *ngIf="currentFile.resourceType === 'PDF'">
                 <div class="file-preview-empty" *ngIf="selectedFileLoading">
                   <div class="file-preview-empty-icon">⏳</div>
-                  <h3>Chargement du PDF...</h3>
-                  <p>Préparation de l’aperçu sécurisé.</p>
+                  <h3>{{ 'LOADING_PDF' | translate }}</h3>
+                  <p>{{ 'PREPARING_SECURE_PREVIEW' | translate }}</p>
                 </div>
 
                 <div
@@ -103,7 +103,7 @@
 
                 <div class="file-preview-empty" *ngIf="!selectedFileLoading && selectedFileError">
                   <div class="file-preview-empty-icon">📄</div>
-                  <h3>Aperçu indisponible</h3>
+                  <h3>{{ 'PREVIEW_UNAVAILABLE' | translate }}</h3>
                   <p>{{ selectedFileError }}</p>
                 </div>
               </div>
@@ -111,13 +111,13 @@
               <div class="yo-excel-stage" *ngIf="currentFile.resourceType !== 'PDF'">
                 <div class="file-preview-empty" *ngIf="excelLoading || selectedFileLoading">
                   <div class="file-preview-empty-icon">⏳</div>
-                  <h3>Chargement du fichier Excel...</h3>
-                  <p>Préparation de l’aperçu sécurisé.</p>
+                  <h3>{{ 'LOADING_EXCEL' | translate }}</h3>
+                  <p>{{ 'PREPARING_SECURE_PREVIEW' | translate }}</p>
                 </div>
 
                 <div class="file-preview-empty" *ngIf="!excelLoading && !selectedFileLoading && selectedFileError">
                   <div class="file-preview-empty-icon">📊</div>
-                  <h3>Aperçu Excel indisponible</h3>
+                  <h3>{{ 'EXCEL_PREVIEW_UNAVAILABLE' | translate }}</h3>
                   <p>{{ selectedFileError }}</p>
                 </div>
 
@@ -160,8 +160,8 @@
                   <ng-template #emptyExcelSheet>
                     <div class="file-preview-empty">
                       <div class="file-preview-empty-icon">📊</div>
-                      <h3>Feuille vide</h3>
-                      <p>Cette feuille ne contient aucune donnée affichable.</p>
+                      <h3>{{ 'EMPTY_SHEET' | translate }}</h3>
+                      <p>{{ 'EMPTY_SHEET_HINT' | translate }}</p>
                     </div>
                   </ng-template>
                 </div>
@@ -170,7 +170,7 @@
               <div class="yo-pdf-bottom-bar">
                 <div class="yo-pdf-nav-group" *ngIf="currentFile.resourceType === 'PDF'">
                   <button class="yo-pdf-icon-btn" (click)="pdfPreviousPage()" [disabled]="pdfCurrentPage <= 1">‹</button>
-                  <span class="yo-pdf-page-label">Page {{ pdfCurrentPage }} / {{ pdfTotalPages || '—' }}</span>
+                  <span class="yo-pdf-page-label">{{ 'PAGE' | translate }} {{ pdfCurrentPage }} / {{ pdfTotalPages || '—' }}</span>
                   <button class="yo-pdf-icon-btn" (click)="pdfNextPage()" [disabled]="pdfTotalPages > 0 && pdfCurrentPage >= pdfTotalPages">›</button>
                 </div>
 
@@ -180,7 +180,7 @@
                   <button class="yo-pdf-icon-btn" (click)="pdfZoomIn()">+</button>
                 </div>
 
-                <button class="yo-pdf-scroll-btn" *ngIf="currentFile.resourceType === 'PDF'" (click)="scrollPdfToBottom()" title="Aller en bas">
+                <button class="yo-pdf-scroll-btn" *ngIf="currentFile.resourceType === 'PDF'" (click)="scrollPdfToBottom()" [title]="'GO_TO_BOTTOM' | translate">
                   <span>⌄</span>
                 </button>
 
@@ -188,7 +188,7 @@
                   <button class="ghost-action" *ngIf="currentFile.resourceType === 'PDF'" (click)="togglePdfFullscreen()">
                     {{ isPdfFullscreen ? 'Quitter plein écran' : 'Plein écran' }}
                   </button>
-                  <button class="primary-action" (click)="downloadSelectedFile()">Télécharger</button>
+                  <button class="primary-action" (click)="downloadSelectedFile()">{{ 'DOWNLOAD' | translate }}</button>
                 </div>
               </div>
             </div>
@@ -199,8 +199,8 @@
 
       <ng-template #calendarArea>
         <nav class="client-tabs">
-          <button class="client-tab" [class.client-tab--active]="activeTab === 'upcoming'" (click)="setActiveTab('upcoming')">Upcoming</button>
-          <button class="client-tab" [class.client-tab--active]="activeTab === 'past'" (click)="setActiveTab('past')">Past</button>
+          <button class="client-tab" [class.client-tab--active]="activeTab === 'upcoming'" (click)="setActiveTab('upcoming')">{{ 'UPCOMING' | translate }}</button>
+          <button class="client-tab" [class.client-tab--active]="activeTab === 'past'" (click)="setActiveTab('past')">{{ 'PAST' | translate }}</button>
         </nav>
 
         <div class="client-month-nav">
@@ -212,9 +212,9 @@
         <div class="client-list">
           <article class="cn-day-card client-schedule-card" *ngFor="let workout of displayWorkouts" (click)="onSelectWorkout(workout)">
             <time class="client-date-tile" [attr.datetime]="workout.date">
-              <span class="client-date-tile__weekday">{{ workout.date | date:'EEE' }}</span>
+              <span class="client-date-tile__weekday">{{ formatWorkoutDatePart(workout.date, 'weekday') }}</span>
               <strong class="client-date-tile__day">{{ workout.date | date:'dd' }}</strong>
-              <span class="client-date-tile__month">{{ workout.date | date:'MMM' }}</span>
+              <span class="client-date-tile__month">{{ formatWorkoutDatePart(workout.date, 'month') }}</span>
             </time>
 
             <div class="client-schedule-card__content">
@@ -224,7 +224,7 @@
                   <p class="cn-day-subtitle" *ngIf="workout.program">{{ workout.program }}</p>
                   <div class="client-schedule-card__meta">
                     <span aria-hidden="true">🏋️</span>
-                    <span>{{ getTotalExercises(workout) }} exercises</span>
+                    <span>{{ getTotalExercises(workout) }} {{ 'EXERCISES' | translate }}</span>
                   </div>
                 </div>
 
@@ -255,9 +255,9 @@
             <div class="cn-empty-icon">
               <i-feather name="calendar"></i-feather>
             </div>
-            <h3 class="cn-empty-title">No workouts scheduled yet</h3>
-            <p class="cn-empty-text">Looks like you don't have any {{ activeTab === 'upcoming' ? 'upcoming' : 'past' }} workouts.</p>
-            <p class="cn-empty-text">Your coach will add workouts to your program soon.</p>
+            <h3 class="cn-empty-title">{{ 'NO_WORKOUTS_SCHEDULED' | translate }}</h3>
+            <p class="cn-empty-text">{{ (activeTab === 'upcoming' ? 'NO_UPCOMING_WORKOUTS' : 'NO_PAST_WORKOUTS') | translate }}</p>
+            <p class="cn-empty-text">{{ 'COACH_WILL_ADD_WORKOUTS' | translate }}</p>
           </div>
         </div>
       </ng-template>
@@ -268,39 +268,39 @@
 <!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page workout-day" *ngIf="selectedWorkout">
   <header class="workout-day__topbar">
-    <div class="workout-day__title"><button aria-label="Back" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span></div>
-    <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ workoutRunStatus === 'LOG_WORKOUT' ? 'NO TIMER' : 'WORKOUT TIMER' }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
+    <div class="workout-day__title"><button [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span></div>
+    <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ (workoutRunStatus === 'LOG_WORKOUT' ? 'NO_TIMER' : 'WORKOUT_TIMER') | translate }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
-      <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> Extract PDF</button>
-      <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> Mark as completed</button>
-      <button class="secondary-action missed-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> Mark as missed</button>
-      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()"><i-feather name="check-circle"></i-feather> Already completed</button>
-      <button class="primary-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="startWorkout()"><i-feather name="play"></i-feather> Start workout</button>
+      <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> {{ 'EXTRACT_PDF' | translate }}</button>
+      <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> {{ 'MARK_AS_COMPLETED' | translate }}</button>
+      <button class="secondary-action missed-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> {{ 'MARK_AS_MISSED' | translate }}</button>
+      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()"><i-feather name="check-circle"></i-feather> {{ 'ALREADY_COMPLETED' | translate }}</button>
+      <button class="primary-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="startWorkout()"><i-feather name="play"></i-feather> {{ 'START_WORKOUT' | translate }}</button>
       <ng-container *ngIf="workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED'">
-        <div class="workout-menu"><button class="icon-action" aria-label="Workout menu" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button><button class="cancel-action" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">Cancel workout</button></div>
-        <button class="secondary-action" *ngIf="workoutRunStatus === 'IN_PROGRESS'" (click)="pauseWorkout()"><i-feather name="pause"></i-feather> Pause</button>
-        <button class="secondary-action" *ngIf="workoutRunStatus === 'PAUSED'" (click)="resumeWorkout()"><i-feather name="play"></i-feather> Resume</button>
-        <button class="primary-action finish-workout-action" (click)="finishWorkout()"><i-feather name="check"></i-feather> Finish workout</button>
+        <div class="workout-menu"><button class="icon-action" [attr.aria-label]="'WORKOUT_MENU' | translate" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button><button class="cancel-action" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">{{ 'CANCEL_WORKOUT' | translate }}</button></div>
+        <button class="secondary-action" *ngIf="workoutRunStatus === 'IN_PROGRESS'" (click)="pauseWorkout()"><i-feather name="pause"></i-feather> {{ 'PAUSE' | translate }}</button>
+        <button class="secondary-action" *ngIf="workoutRunStatus === 'PAUSED'" (click)="resumeWorkout()"><i-feather name="play"></i-feather> {{ 'RESUME' | translate }}</button>
+        <button class="primary-action finish-workout-action" (click)="finishWorkout()"><i-feather name="check"></i-feather> {{ 'FINISH_WORKOUT' | translate }}</button>
       </ng-container>
-      <button class="primary-action save-completed-action" *ngIf="workoutRunStatus === 'LOG_WORKOUT'" (click)="finishWorkout(true)"><i-feather name="check"></i-feather> Save completed workout</button>
-      <button class="primary-action start-next-action" *ngIf="(workoutRunStatus === 'ALREADY_COMPLETED' || workoutRunStatus === 'COMPLETED') && nextWorkoutAfterResolution" (click)="startNextWorkout()"><i-feather name="play"></i-feather> Start next workout</button>
+      <button class="primary-action save-completed-action" *ngIf="workoutRunStatus === 'LOG_WORKOUT'" (click)="finishWorkout(true)"><i-feather name="check"></i-feather> {{ 'SAVE_COMPLETED_WORKOUT' | translate }}</button>
+      <button class="primary-action start-next-action" *ngIf="(workoutRunStatus === 'ALREADY_COMPLETED' || workoutRunStatus === 'COMPLETED') && nextWorkoutAfterResolution" (click)="startNextWorkout()"><i-feather name="play"></i-feather> {{ 'START_NEXT_WORKOUT' | translate }}</button>
     </div>
   </header>
 
-  <section class="workout-day__summary"><span>{{ selectedWorkout.date | date:'EEEE, MMMM d' }}<small *ngIf="workoutRunStatus === 'LOG_WORKOUT'">Workout duration will not be recorded.</small></span><strong>{{ reviewedExerciseCount }} of {{ reviewableExerciseCount }} exercises reviewed</strong><div><i [style.width.%]="reviewableExerciseCount ? reviewedExerciseCount * 100 / reviewableExerciseCount : 0"></i></div><small class="workout-set-progress">{{ completedWorkoutSetCount }} of {{ totalWorkoutSetCount }} sets logged <span class="done">Done</span><span class="missed">Missed</span><span class="pending">Pending</span></small></section>
+  <section class="workout-day__summary"><span>{{ formatWorkoutDate(selectedWorkout.date) }}<small *ngIf="workoutRunStatus === 'LOG_WORKOUT'">{{ 'WORKOUT_DURATION_NOT_RECORDED' | translate }}</small></span><strong>{{ reviewedExerciseCount }} {{ 'OF' | translate }} {{ reviewableExerciseCount }} {{ 'EXERCISES_REVIEWED' | translate }}</strong><div><i [style.width.%]="reviewableExerciseCount ? reviewedExerciseCount * 100 / reviewableExerciseCount : 0"></i></div><small class="workout-set-progress">{{ completedWorkoutSetCount }} {{ 'OF' | translate }} {{ totalWorkoutSetCount }} {{ 'SETS_LOGGED' | translate }} <span class="done">{{ 'DONE' | translate }}</span><span class="missed">{{ 'MISSED_LABEL' | translate }}</span><span class="pending">{{ 'PENDING_LABEL' | translate }}</span></small></section>
   <p class="overdue-workout-inline-message" *ngIf="overdueWorkoutNotice">
     <i-feather name="info"></i-feather>
-    <span><strong>Previous workouts not resolved.</strong> {{ overdueWorkoutNotice }}</span>
+    <span><strong>{{ 'PREVIOUS_WORKOUTS_NOT_RESOLVED' | translate }}</strong> {{ overdueWorkoutNotice }}</span>
   </p>
 
   <main class="workout-day__body">
     <div class="overdue-workout-alert" *ngIf="workoutRunStatus === 'OVERDUE'">
       <i-feather name="alert-circle"></i-feather>
-      This workout is overdue. Please log it as completed if it was done, or mark it as missed if it was skipped.
+      {{ 'WORKOUT_OVERDUE_INSTRUCTIONS' | translate }}
     </div>
     <div class="missed-workout-alert" *ngIf="workoutRunStatus === 'MISSED'">
       <i-feather name="x-circle"></i-feather>
-      <span><strong>This workout was marked as missed.</strong><small *ngIf="selectedWorkout.missedReason || selectedWorkout.overallWorkoutNote">{{ selectedWorkout.missedReason || selectedWorkout.overallWorkoutNote }}</small></span>
+      <span><strong>{{ 'WORKOUT_MARKED_MISSED' | translate }}</strong><small *ngIf="selectedWorkout.missedReason || selectedWorkout.overallWorkoutNote">{{ selectedWorkout.missedReason || selectedWorkout.overallWorkoutNote }}</small></span>
     </div>
     <article class="exercise-card" *ngFor="let exercise of selectedWorkout.groupedExercises" [class.exercise-card--simple-warmup]="isSingleCardioWarmUp(exercise)" [class.is-complete]="exercise.completed" [class.is-skipped]="exercise.skipped">
       <button
@@ -308,89 +308,89 @@
         class="exercise-video-action"
         [class.exercise-video-action--disabled]="!exercise.videoLink"
         [disabled]="!exercise.videoLink"
-        [attr.aria-label]="exercise.videoLink ? 'Play exercise video' : 'No exercise video available'"
-        [title]="exercise.videoLink ? 'Play exercise video' : 'No video available'"
+        [attr.aria-label]="(exercise.videoLink ? 'PLAY_EXERCISE_VIDEO' : 'NO_EXERCISE_VIDEO') | translate"
+        [title]="(exercise.videoLink ? 'PLAY_EXERCISE_VIDEO' : 'NO_VIDEO_AVAILABLE') | translate"
         (click)="openExerciseVideo(exercise)"
       >
         <i-feather name="video"></i-feather>
       </button>
       <div class="simple-warmup" *ngIf="isSingleCardioWarmUp(exercise)">
-        <div class="simple-warmup__heading"><span class="simple-warmup__fire">🔥</span><span><strong>Warm up</strong><small><i-feather name="clock"></i-feather> {{ cardioMinutes(exercise) }} min</small></span></div>
-        <div class="simple-warmup__duration"><i-feather name="clock"></i-feather><span>{{ cardioMinutes(exercise) }} minutes</span></div>
+        <div class="simple-warmup__heading"><span class="simple-warmup__fire">🔥</span><span><strong>{{ 'WARM_UP' | translate }}</strong><small><i-feather name="clock"></i-feather> {{ cardioMinutes(exercise) }} min</small></span></div>
+        <div class="simple-warmup__duration"><i-feather name="clock"></i-feather><span>{{ cardioMinutes(exercise) }} {{ 'MINUTES_LABEL' | translate }}</span></div>
       </div>
       <button class="exercise-card__header" *ngIf="!isSingleCardioWarmUp(exercise)" (click)="openExercise(exercise)">
-        <span class="exercise-index" [class.exercise-index--warmup]="!exercise.completed && isSingleCardioWarmUp(exercise)"><ng-container *ngIf="exercise.completed; else pendingExercise">✓</ng-container><ng-template #pendingExercise><span *ngIf="isSingleCardioWarmUp(exercise); else exerciseNumber" class="exercise-index__fire" aria-label="Warm up">🔥</span><ng-template #exerciseNumber>{{ exercise.displayNumber }}</ng-template></ng-template></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><em class="exercise-superset-label" *ngIf="exercise.isSuperset">SUPERSET</em><i-feather name="chevron-right"></i-feather></span><small class="exercise-set-summary"><span class="set-summary-completed">{{ getSetStatusCount(exercise, 'COMPLETED') }}/{{ exercise.sets.length }} completed</span><span class="set-summary-missed">{{ getSetStatusCount(exercise, 'MISSED') }} missed</span><span class="set-summary-pending">{{ getSetStatusCount(exercise, 'PENDING') }} pending</span></small></span>
+        <span class="exercise-index" [class.exercise-index--warmup]="!exercise.completed && isSingleCardioWarmUp(exercise)"><ng-container *ngIf="exercise.completed; else pendingExercise">✓</ng-container><ng-template #pendingExercise><span *ngIf="isSingleCardioWarmUp(exercise); else exerciseNumber" class="exercise-index__fire" [attr.aria-label]="'WARM_UP' | translate">🔥</span><ng-template #exerciseNumber>{{ exercise.displayNumber }}</ng-template></ng-template></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><em class="exercise-superset-label" *ngIf="exercise.isSuperset">{{ 'SUPERSET' | translate }}</em><i-feather name="chevron-right"></i-feather></span><small class="exercise-set-summary"><span class="set-summary-completed">{{ getSetStatusCount(exercise, 'COMPLETED') }}/{{ exercise.sets.length }} {{ 'COMPLETED_LOWER' | translate }}</span><span class="set-summary-missed">{{ getSetStatusCount(exercise, 'MISSED') }} {{ 'MISSED_LOWER' | translate }}</span><span class="set-summary-pending">{{ getSetStatusCount(exercise, 'PENDING') }} {{ 'PENDING_LOWER' | translate }}</span></small></span>
       </button>
       <div class="exercise-table" *ngIf="exercise.sets.length && !isSingleCardioWarmUp(exercise)">
-        <div class="exercise-row exercise-row--head"><span>SET</span><span>{{ exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS' }}</span><span>WEIGHT ({{ weightUnitLabel }})</span><span>REST</span><span>STATUS</span></div>
+        <div class="exercise-row exercise-row--head"><span>{{ 'SET' | translate }}</span><span>{{ (exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }}</span><span>{{ 'WEIGHT' | translate }} ({{ weightUnitLabel }})</span><span>{{ 'REST' | translate }}</span><span>{{ 'STATUS' | translate }}</span></div>
         <div class="exercise-row" *ngFor="let set of exercise.sets">
-          <span class="set-number"><b class="mobile-set-prefix">Set </b>{{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span>
-          <label class="set-value-field"><small>{{ exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS' }}</small><input *ngIf="exercise.type !== 'CARDIO'" type="number" min="0" [(ngModel)]="set.reps" aria-label="Reps"><input *ngIf="exercise.type === 'CARDIO'" type="number" min="0" [(ngModel)]="set.duration" aria-label="Minutes"></label>
-          <label class="set-value-field"><small>WEIGHT ({{ weightUnitLabel }})</small><input type="number" min="0" step="0.5" [(ngModel)]="set.weight" aria-label="Weight"></label>
-          <span class="rest-value"><small>Rest </small>{{ set.rest }}</span>
+          <span class="set-number"><b class="mobile-set-prefix">{{ 'SET' | translate }} </b>{{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span>
+          <label class="set-value-field"><small>{{ (exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }}</small><input *ngIf="exercise.type !== 'CARDIO'" type="number" min="0" [(ngModel)]="set.reps" [attr.aria-label]="'REPS' | translate"><input *ngIf="exercise.type === 'CARDIO'" type="number" min="0" [(ngModel)]="set.duration" [attr.aria-label]="'MINUTES' | translate"></label>
+          <label class="set-value-field"><small>{{ 'WEIGHT' | translate }} ({{ weightUnitLabel }})</small><input type="number" min="0" step="0.5" [(ngModel)]="set.weight" [attr.aria-label]="'WEIGHT' | translate"></label>
+          <span class="rest-value"><small>{{ 'REST' | translate }} </small>{{ set.rest }}</span>
           <span class="set-status-actions">
-            <button type="button" title="Completed" aria-label="Mark set completed" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'COMPLETED'" [class.set-status-completed]="set.status === 'COMPLETED'" (click)="setWorkoutSetStatus(exercise, set, 'COMPLETED')">✓</button>
-            <button type="button" title="Missed" aria-label="Mark set missed" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'MISSED'" [class.set-status-missed]="set.status === 'MISSED'" (click)="setWorkoutSetStatus(exercise, set, 'MISSED')">×</button>
-            <button type="button" title="Pending" aria-label="Reset set to pending" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'PENDING'" [class.set-status-pending]="set.status === 'PENDING'" (click)="setWorkoutSetStatus(exercise, set, 'PENDING')">−</button>
+            <button type="button" [title]="'COMPLETED_LABEL' | translate" [attr.aria-label]="'MARK_SET_COMPLETED' | translate" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'COMPLETED'" [class.set-status-completed]="set.status === 'COMPLETED'" (click)="setWorkoutSetStatus(exercise, set, 'COMPLETED')">✓</button>
+            <button type="button" [title]="'MISSED_LABEL' | translate" [attr.aria-label]="'MARK_SET_MISSED' | translate" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'MISSED'" [class.set-status-missed]="set.status === 'MISSED'" (click)="setWorkoutSetStatus(exercise, set, 'MISSED')">×</button>
+            <button type="button" [title]="'PENDING_LABEL' | translate" [attr.aria-label]="'RESET_SET_PENDING' | translate" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'PENDING'" [class.set-status-pending]="set.status === 'PENDING'" (click)="setWorkoutSetStatus(exercise, set, 'PENDING')">−</button>
           </span>
         </div>
       </div>
       <div class="exercise-note-editor" [class.exercise-note-editor--saved]="workoutRunStatus !== 'IN_PROGRESS' && workoutRunStatus !== 'PAUSED' && workoutRunStatus !== 'LOG_WORKOUT'" *ngIf="!isSingleCardioWarmUp(exercise)">
-        <label [for]="'exercise-note-' + exercise.displayNumber">Note</label>
+        <label [for]="'exercise-note-' + exercise.displayNumber">{{ 'NOTE' | translate }}</label>
         <textarea
           [id]="'exercise-note-' + exercise.displayNumber"
           [(ngModel)]="exercise.note"
           [readOnly]="workoutRunStatus !== 'IN_PROGRESS' && workoutRunStatus !== 'PAUSED' && workoutRunStatus !== 'LOG_WORKOUT'"
           rows="2"
-          placeholder="Write a note for your coach..."
+          [placeholder]="'WRITE_NOTE_FOR_COACH' | translate"
         ></textarea>
       </div>
       <footer class="exercise-card__footer" *ngIf="!isSingleCardioWarmUp(exercise) && (workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED' || workoutRunStatus === 'LOG_WORKOUT')">
-        <button class="note-action" (click)="openNote(exercise)"><i-feather name="file-text"></i-feather> {{ exercise.note ? 'Edit note' : 'Add note' }}</button>
-        <span></span><button class="secondary-action exercise-skip-action" (click)="markExercise(exercise, true)"><i-feather name="skip-forward"></i-feather> Skip exercise</button><button class="primary-action exercise-complete-action" (click)="markExercise(exercise, false)"><i-feather name="check"></i-feather> Mark exercise complete</button><small class="exercise-action-hint">{{ getExerciseActionHint(exercise) }}</small>
+        <button class="note-action" (click)="openNote(exercise)"><i-feather name="file-text"></i-feather> {{ (exercise.note ? 'EDIT_NOTE' : 'ADD_NOTE') | translate }}</button>
+        <span></span><button class="secondary-action exercise-skip-action" (click)="markExercise(exercise, true)"><i-feather name="skip-forward"></i-feather> {{ 'SKIP_EXERCISE' | translate }}</button><button class="primary-action exercise-complete-action" (click)="markExercise(exercise, false)"><i-feather name="check"></i-feather> {{ 'MARK_EXERCISE_COMPLETE' | translate }}</button><small class="exercise-action-hint">{{ getExerciseActionHint(exercise) }}</small>
       </footer>
     </article>
     <section class="overall-workout-note">
-      <label for="overall-workout-note"><i-feather name="clipboard"></i-feather> {{ workoutRunStatus === 'MISSED' ? 'Reason or note' : 'Overall workout note' }}</label>
+      <label for="overall-workout-note"><i-feather name="clipboard"></i-feather> {{ (workoutRunStatus === 'MISSED' ? 'REASON_OR_NOTE' : 'OVERALL_WORKOUT_NOTE') | translate }}</label>
       <textarea
         id="overall-workout-note"
         [(ngModel)]="selectedWorkout.overallWorkoutNote"
         [readOnly]="workoutRunStatus === 'COMPLETED' || workoutRunStatus === 'ALREADY_COMPLETED' || workoutRunStatus === 'MISSED'"
         rows="3"
-        [placeholder]="workoutRunStatus === 'MISSED' ? 'No reason was provided.' : 'Share how the overall workout felt with your coach...'"
+        [placeholder]="(workoutRunStatus === 'MISSED' ? 'NO_REASON_PROVIDED' : 'SHARE_WORKOUT_FEELING') | translate"
       ></textarea>
     </section>
   </main>
   <footer class="workout-mobile-actions">
     <ng-container *ngIf="workoutRunStatus === 'NOT_STARTED'">
-      <button class="secondary-action" type="button" (click)="logCompletedWorkout()"><i-feather name="clipboard"></i-feather> Log completed</button>
-      <button class="primary-action" type="button" (click)="startWorkout()"><i-feather name="play"></i-feather> Start workout</button>
+      <button class="secondary-action" type="button" (click)="logCompletedWorkout()"><i-feather name="clipboard"></i-feather> {{ 'LOG_COMPLETED' | translate }}</button>
+      <button class="primary-action" type="button" (click)="startWorkout()"><i-feather name="play"></i-feather> {{ 'START_WORKOUT' | translate }}</button>
     </ng-container>
     <ng-container *ngIf="workoutRunStatus === 'OVERDUE'">
-      <button class="secondary-action missed-action" type="button" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> Mark as missed</button>
-      <button class="primary-action" type="button" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> Log as completed</button>
+      <button class="secondary-action missed-action" type="button" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> {{ 'MARK_AS_MISSED' | translate }}</button>
+      <button class="primary-action" type="button" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> {{ 'LOG_AS_COMPLETED' | translate }}</button>
     </ng-container>
     <ng-container *ngIf="workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED'">
       <div class="workout-menu">
-        <button class="icon-action" type="button" aria-label="Workout menu" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button>
-        <button class="cancel-action" type="button" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">Cancel workout</button>
+        <button class="icon-action" type="button" [attr.aria-label]="'WORKOUT_MENU' | translate" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button>
+        <button class="cancel-action" type="button" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">{{ 'CANCEL_WORKOUT' | translate }}</button>
       </div>
-      <button class="secondary-action" type="button" *ngIf="workoutRunStatus === 'IN_PROGRESS'" (click)="pauseWorkout()"><i-feather name="pause"></i-feather> Pause</button>
-      <button class="secondary-action" type="button" *ngIf="workoutRunStatus === 'PAUSED'" (click)="resumeWorkout()"><i-feather name="play"></i-feather> Resume</button>
-      <button class="primary-action" type="button" (click)="finishWorkout()"><i-feather name="check"></i-feather> Finish workout</button>
+      <button class="secondary-action" type="button" *ngIf="workoutRunStatus === 'IN_PROGRESS'" (click)="pauseWorkout()"><i-feather name="pause"></i-feather> {{ 'PAUSE' | translate }}</button>
+      <button class="secondary-action" type="button" *ngIf="workoutRunStatus === 'PAUSED'" (click)="resumeWorkout()"><i-feather name="play"></i-feather> {{ 'RESUME' | translate }}</button>
+      <button class="primary-action" type="button" (click)="finishWorkout()"><i-feather name="check"></i-feather> {{ 'FINISH_WORKOUT' | translate }}</button>
     </ng-container>
-    <button class="primary-action" type="button" *ngIf="workoutRunStatus === 'LOG_WORKOUT'" (click)="finishWorkout(true)"><i-feather name="check"></i-feather> Save completed workout</button>
+    <button class="primary-action" type="button" *ngIf="workoutRunStatus === 'LOG_WORKOUT'" (click)="finishWorkout(true)"><i-feather name="check"></i-feather> {{ 'SAVE_COMPLETED_WORKOUT' | translate }}</button>
   </footer>
 </div>
 
 <div class="set-status-confirm-backdrop" *ngIf="pendingExerciseStatusAction as action" (click)="cancelExerciseStatusAction()">
   <section class="set-status-confirm-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <h2>Update set statuses</h2>
-    <p *ngIf="action.status === 'COMPLETED'">Some sets are marked as missed. Marking this exercise as complete will change all sets to done. Continue?</p>
-    <p *ngIf="action.status === 'MISSED'">You already marked some sets as done. Skipping this exercise will mark all sets as missed. Continue?</p>
+    <h2>{{ 'UPDATE_SET_STATUSES' | translate }}</h2>
+    <p *ngIf="action.status === 'COMPLETED'">{{ 'CONFIRM_CHANGE_MISSED_SETS' | translate }}</p>
+    <p *ngIf="action.status === 'MISSED'">{{ 'CONFIRM_SKIP_COMPLETED_SETS' | translate }}</p>
     <footer>
-      <button type="button" class="set-status-confirm-cancel" (click)="cancelExerciseStatusAction()">Cancel</button>
-      <button type="button" class="set-status-confirm-primary" [class.is-destructive]="action.status === 'MISSED'" (click)="confirmExerciseStatusAction()">{{ action.status === 'MISSED' ? 'Skip exercise' : 'Mark as complete' }}</button>
+      <button type="button" class="set-status-confirm-cancel" (click)="cancelExerciseStatusAction()">{{ 'CANCEL' | translate }}</button>
+      <button type="button" class="set-status-confirm-primary" [class.is-destructive]="action.status === 'MISSED'" (click)="confirmExerciseStatusAction()">{{ (action.status === 'MISSED' ? 'SKIP_EXERCISE' : 'MARK_AS_COMPLETE') | translate }}</button>
     </footer>
   </section>
 </div>
@@ -398,41 +398,41 @@
 <div class="workout-pdf-backdrop" *ngIf="showWorkoutPdfPreview" (click)="closeWorkoutPdfPreview()">
   <section class="workout-pdf-modal" role="dialog" aria-modal="true" aria-labelledby="workout-pdf-title" (click)="$event.stopPropagation()">
     <header class="workout-pdf-modal__header">
-      <div><h2 id="workout-pdf-title">Workout PDF preview</h2><p>Review your complete training program before downloading.</p></div>
+      <div><h2 id="workout-pdf-title">{{ 'WORKOUT_PDF_PREVIEW' | translate }}</h2><p>{{ 'REVIEW_PROGRAM_BEFORE_DOWNLOAD' | translate }}</p></div>
       <div class="workout-pdf-modal__actions">
-        <button type="button" class="workout-pdf-download" (click)="downloadWorkoutPdf()"><i-feather name="download"></i-feather> Download PDF</button>
-        <button type="button" class="workout-pdf-close" aria-label="Close preview" (click)="closeWorkoutPdfPreview()">×</button>
+        <button type="button" class="workout-pdf-download" (click)="downloadWorkoutPdf()"><i-feather name="download"></i-feather> {{ 'DOWNLOAD_PDF' | translate }}</button>
+        <button type="button" class="workout-pdf-close" [attr.aria-label]="'CLOSE_PREVIEW' | translate" (click)="closeWorkoutPdfPreview()">×</button>
       </div>
     </header>
     <div class="workout-pdf-scroll">
       <article class="workout-pdf-document">
         <section class="workout-pdf-cover">
-          <div class="workout-pdf-brand"><span class="workout-pdf-brand-mark"><i-feather name="activity"></i-feather></span><span><strong>Training program</strong><small>Powered by Yo Coach</small></span></div>
+          <div class="workout-pdf-brand"><span class="workout-pdf-brand-mark"><i-feather name="activity"></i-feather></span><span><strong>{{ 'TRAINING_PROGRAM' | translate }}</strong><small>{{ 'POWERED_BY_YO_COACH' | translate }}</small></span></div>
           <h1>{{ selectedWorkout?.program }}</h1>
-          <p class="workout-pdf-description">{{ selectedWorkoutPlan?.description || 'Your complete training program. Follow every session and respect the prescribed recovery time.' }}</p>
+          <p class="workout-pdf-description">{{ selectedWorkoutPlan?.description || ('DEFAULT_TRAINING_PROGRAM_DESCRIPTION' | translate) }}</p>
           <div class="workout-pdf-meta">
-            <div><small>Client</small><strong>{{ pdfClientName }}</strong></div>
-            <div><small>Coach</small><strong>{{ pdfCoachName }}</strong></div>
-            <div><small>Start date</small><strong>{{ selectedWorkoutPlan?.startDate | date:'EEEE, MMM d, y' }}</strong></div>
-            <div><small>End date</small><strong>{{ selectedWorkoutPlan?.endDate | date:'EEEE, MMM d, y' }}</strong></div>
+            <div><small>{{ 'CLIENT' | translate }}</small><strong>{{ pdfClientName }}</strong></div>
+            <div><small>{{ 'COACH' | translate }}</small><strong>{{ pdfCoachName }}</strong></div>
+            <div><small>{{ 'START_DATE' | translate }}</small><strong>{{ formatWorkoutDateWithYear(selectedWorkoutPlan?.startDate) }}</strong></div>
+            <div><small>{{ 'END_DATE' | translate }}</small><strong>{{ formatWorkoutDateWithYear(selectedWorkoutPlan?.endDate) }}</strong></div>
           </div>
           <div class="workout-pdf-stats">
-            <div><strong>{{ pdfTotalWeeks }}</strong><small>WEEKS</small></div>
-            <div><strong>{{ pdfTotalDays }}</strong><small>TOTAL DAYS</small></div>
-            <div><strong>{{ pdfActiveWorkoutCount }}</strong><small>WORKOUTS</small></div>
+            <div><strong>{{ pdfTotalWeeks }}</strong><small>{{ 'WEEKS' | translate }}</small></div>
+            <div><strong>{{ pdfTotalDays }}</strong><small>{{ 'TOTAL_DAYS' | translate }}</small></div>
+            <div><strong>{{ pdfActiveWorkoutCount }}</strong><small>{{ 'WORKOUTS' | translate }}</small></div>
           </div>
         </section>
         <section class="workout-pdf-week" *ngFor="let week of pdfProgramWeeks">
-          <header class="workout-pdf-week-header"><div><small>{{ selectedWorkout?.program }}</small><h2>Week {{ week.number }}</h2></div><div><small>Schedule</small><strong>{{ week.workouts[0]?.date | date:'MMM d' }} - {{ week.workouts[week.workouts.length - 1]?.date | date:'MMM d' }}</strong></div></header>
+          <header class="workout-pdf-week-header"><div><small>{{ selectedWorkout?.program }}</small><h2>{{ 'WEEK' | translate }} {{ week.number }}</h2></div><div><small>{{ 'SCHEDULE' | translate }}</small><strong>{{ formatWorkoutShortDate(week.workouts[0]?.date) }} - {{ formatWorkoutShortDate(week.workouts[week.workouts.length - 1]?.date) }}</strong></div></header>
           <article class="workout-pdf-day" *ngFor="let workout of week.workouts" [class.rest]="!workout.groupedExercises.length">
-            <div class="workout-pdf-day-head"><span>Day {{ workout.dayNumber }} &nbsp;•&nbsp; {{ workout.date | date:'EEEE, MMM d, y' }}</span><em>{{ pdfWorkoutLabel(workout) }}</em></div>
-            <p class="workout-pdf-rest" *ngIf="!workout.groupedExercises.length">Rest and recovery. No exercises scheduled.</p>
-            <p class="workout-pdf-day-note" *ngIf="workout.groupedExercises.length">Complete each set with controlled technique. Respect the prescribed rest times.</p>
+            <div class="workout-pdf-day-head"><span>{{ 'DAY' | translate }} {{ workout.dayNumber }} &nbsp;•&nbsp; {{ formatWorkoutDateWithYear(workout.date) }}</span><em>{{ pdfWorkoutLabel(workout) }}</em></div>
+            <p class="workout-pdf-rest" *ngIf="!workout.groupedExercises.length">{{ 'REST_RECOVERY_NO_EXERCISES' | translate }}</p>
+            <p class="workout-pdf-day-note" *ngIf="workout.groupedExercises.length">{{ 'CONTROLLED_TECHNIQUE_HINT' | translate }}</p>
             <section class="workout-pdf-exercise" *ngFor="let exercise of workout.groupedExercises">
-              <div class="workout-pdf-exercise-head"><strong><b>{{ exercise.displayNumber }}</b> {{ exercise.name }} <em *ngIf="exercise.isSuperset">SUPERSET</em></strong><span>{{ exercise.sets.length }} sets · {{ exercise.primaryMuscle || exercise.label }}</span></div>
+              <div class="workout-pdf-exercise-head"><strong><b>{{ exercise.displayNumber }}</b> {{ exercise.name }} <em *ngIf="exercise.isSuperset">{{ 'SUPERSET' | translate }}</em></strong><span>{{ exercise.sets.length }} {{ 'SETS' | translate }} · {{ exercise.primaryMuscle || exercise.label }}</span></div>
               <p class="workout-pdf-exercise-description" *ngIf="exercise.description">{{ exercise.description }}</p>
-              <table><thead><tr><th>Set</th><th>Type</th><th>{{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}</th><th>Weight ({{ weightUnitLabel }})</th><th>Rest</th></tr></thead>
-                <tbody><tr *ngFor="let set of exercise.sets"><td>{{ set.setNumber }}</td><td><span class="workout-pdf-set-type" [attr.data-type]="set.type">{{ getSetTypeText(set.type) || 'Regular' }}</span></td><td>{{ exercise.type === 'CARDIO' ? set.duration : set.reps }}</td><td>{{ formatExerciseWeight(set.weight) }}</td><td>{{ set.rest }}</td></tr></tbody>
+              <table><thead><tr><th>{{ 'SET' | translate }}</th><th>{{ 'TYPE' | translate }}</th><th>{{ (exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }}</th><th>{{ 'WEIGHT' | translate }} ({{ weightUnitLabel }})</th><th>{{ 'REST' | translate }}</th></tr></thead>
+                <tbody><tr *ngFor="let set of exercise.sets"><td>{{ set.setNumber }}</td><td><span class="workout-pdf-set-type" [attr.data-type]="set.type">{{ getSetTypeText(set.type) || ('REGULAR' | translate) }}</span></td><td>{{ exercise.type === 'CARDIO' ? set.duration : set.reps }}</td><td>{{ formatExerciseWeight(set.weight) }}</td><td>{{ set.rest }}</td></tr></tbody>
               </table>
             </section>
           </article>
@@ -444,43 +444,43 @@
 
 <div class="workout-resolution-backdrop" *ngIf="showMissedWorkoutModal" (click)="closeMissedWorkoutModal()">
   <section class="workout-resolution-modal workout-resolution-modal--missed" (click)="$event.stopPropagation()">
-    <button class="workout-resolution-modal__close" type="button" aria-label="Close" (click)="closeMissedWorkoutModal()">×</button>
-    <header><span><i-feather name="alert-triangle"></i-feather></span><h2>Mark workout as missed</h2></header>
-    <p>Let your coach know why you could not complete this workout.</p>
+    <button class="workout-resolution-modal__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeMissedWorkoutModal()">×</button>
+    <header><span><i-feather name="alert-triangle"></i-feather></span><h2>{{ 'MARK_WORKOUT_AS_MISSED' | translate }}</h2></header>
+    <p>{{ 'EXPLAIN_MISSED_WORKOUT' | translate }}</p>
     <div class="workout-resolution-info" *ngIf="unresolvedPreviousWorkout as workout">
-      <div><i-feather name="activity"></i-feather><span><small>Workout name</small><strong>{{ workout.title }}</strong></span></div>
-      <div><i-feather name="layers"></i-feather><span><small>Program name</small><strong>{{ workout.program }}</strong></span></div>
-      <div><i-feather name="calendar"></i-feather><span><small>Scheduled date</small><strong>{{ workout.date | date:'EEEE, MMMM d' }}</strong></span></div>
+      <div><i-feather name="activity"></i-feather><span><small>{{ 'WORKOUT_NAME' | translate }}</small><strong>{{ workout.title }}</strong></span></div>
+      <div><i-feather name="layers"></i-feather><span><small>{{ 'PROGRAM_NAME' | translate }}</small><strong>{{ workout.program }}</strong></span></div>
+      <div><i-feather name="calendar"></i-feather><span><small>{{ 'SCHEDULED_DATE' | translate }}</small><strong>{{ formatWorkoutDate(workout.date) }}</strong></span></div>
     </div>
-    <label>Reason or note <small>(optional)</small></label>
-    <textarea [(ngModel)]="missedWorkoutReason" rows="4" placeholder="Tell your coach why you could not complete this workout..."></textarea>
-    <footer><button type="button" class="resolution-cancel" (click)="closeMissedWorkoutModal()">Cancel</button><button type="button" class="resolution-primary" (click)="confirmWorkoutAsMissed()">Confirm as missed</button></footer>
+    <label>{{ 'REASON_OR_NOTE' | translate }} <small>({{ 'OPTIONAL' | translate }})</small></label>
+    <textarea [(ngModel)]="missedWorkoutReason" rows="4" [placeholder]="'EXPLAIN_WORKOUT_NOT_COMPLETED' | translate"></textarea>
+    <footer><button type="button" class="resolution-cancel" (click)="closeMissedWorkoutModal()">{{ 'CANCEL' | translate }}</button><button type="button" class="resolution-primary" (click)="confirmWorkoutAsMissed()">{{ 'CONFIRM_AS_MISSED' | translate }}</button></footer>
   </section>
 </div>
 
 <div class="workout-resolution-backdrop" *ngIf="showPreviousOverdueModal" (click)="closePreviousOverdueModal()">
   <section class="workout-resolution-modal workout-resolution-modal--previous" (click)="$event.stopPropagation()">
-    <button class="workout-resolution-modal__close" type="button" aria-label="Close" (click)="closePreviousOverdueModal()">×</button>
-    <header><h2>Previous workout not resolved</h2></header>
-    <p>You need to resolve the overdue workout before starting this workout.</p>
+    <button class="workout-resolution-modal__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closePreviousOverdueModal()">×</button>
+    <header><h2>{{ 'PREVIOUS_WORKOUT_NOT_RESOLVED' | translate }}</h2></header>
+    <p>{{ 'RESOLVE_OVERDUE_BEFORE_STARTING' | translate }}</p>
     <div class="previous-workout-card" *ngIf="unresolvedPreviousWorkout as workout">
       <span><i-feather name="calendar"></i-feather></span>
-      <div><small>Program</small><strong>{{ workout.program }}</strong><small>Workout</small><strong>{{ workout.title }}</strong><small>Scheduled date</small><strong>{{ workout.date | date:'EEEE, MMMM d' }}</strong><small>Status</small><em><i-feather name="clock"></i-feather> Overdue</em></div>
+      <div><small>{{ 'PROGRAM' | translate }}</small><strong>{{ workout.program }}</strong><small>{{ 'WORKOUT' | translate }}</small><strong>{{ workout.title }}</strong><small>{{ 'SCHEDULED_DATE' | translate }}</small><strong>{{ formatWorkoutDate(workout.date) }}</strong><small>{{ 'STATUS' | translate }}</small><em><i-feather name="clock"></i-feather> {{ 'OVERDUE_LABEL' | translate }}</em></div>
     </div>
-    <label>Reason or note <small>(optional)</small></label>
-    <textarea [(ngModel)]="previousWorkoutReason" rows="4" placeholder="Tell your coach why this workout was not completed..."></textarea>
-    <small class="resolution-help">This note will be visible to your coach.</small>
+    <label>{{ 'REASON_OR_NOTE' | translate }} <small>({{ 'OPTIONAL' | translate }})</small></label>
+    <textarea [(ngModel)]="previousWorkoutReason" rows="4" [placeholder]="'EXPLAIN_WORKOUT_NOT_COMPLETED' | translate"></textarea>
+    <small class="resolution-help">{{ 'NOTE_VISIBLE_TO_COACH' | translate }}</small>
     <footer class="previous-resolution-actions">
       <div class="previous-resolution-option previous-resolution-option--cancel">
-        <button type="button" class="resolution-link" (click)="closePreviousOverdueModal()">Cancel</button>
+        <button type="button" class="resolution-link" (click)="closePreviousOverdueModal()">{{ 'CANCEL' | translate }}</button>
       </div>
       <div class="previous-resolution-option">
-        <button type="button" class="resolution-secondary" (click)="logPreviousAsCompleted()">Log as completed</button>
-        <small>Open the previous workout<br>and save it after completion</small>
+        <button type="button" class="resolution-secondary" (click)="logPreviousAsCompleted()">{{ 'LOG_AS_COMPLETED' | translate }}</button>
+        <small>{{ 'OPEN_PREVIOUS_AND_SAVE' | translate }}</small>
       </div>
       <div class="previous-resolution-option">
-        <button type="button" class="resolution-primary" (click)="markPreviousAsMissedAndContinue()">Mark as missed and continue</button>
-        <small>The overdue workout will be<br>marked as missed</small>
+        <button type="button" class="resolution-primary" (click)="markPreviousAsMissedAndContinue()">{{ 'MARK_MISSED_AND_CONTINUE' | translate }}</button>
+        <small>{{ 'OVERDUE_WILL_BE_MISSED' | translate }}</small>
       </div>
     </footer>
   </section>
@@ -488,26 +488,26 @@
 
 <div class="workout-resolution-backdrop" *ngIf="showNoExercisesCompletedModal">
   <section class="workout-resolution-modal workout-resolution-modal--empty">
-    <header><span><i-feather name="alert-triangle"></i-feather></span><h2>No exercises were completed</h2></header>
-    <p>All exercises were skipped. This workout cannot be marked as completed.</p>
-    <footer><button type="button" class="resolution-secondary" (click)="showNoExercisesCompletedModal = false">Return to workout</button><button type="button" class="resolution-primary" (click)="openMissedWorkoutModal()">Mark as missed</button></footer>
+    <header><span><i-feather name="alert-triangle"></i-feather></span><h2>{{ 'NO_EXERCISES_COMPLETED' | translate }}</h2></header>
+    <p>{{ 'ALL_EXERCISES_SKIPPED' | translate }}</p>
+    <footer><button type="button" class="resolution-secondary" (click)="showNoExercisesCompletedModal = false">{{ 'RETURN_TO_WORKOUT' | translate }}</button><button type="button" class="resolution-primary" (click)="openMissedWorkoutModal()">{{ 'MARK_AS_MISSED' | translate }}</button></footer>
   </section>
 </div>
 
 <div class="exercise-modal-backdrop" *ngIf="selectedExercise" (click)="closeExercise()">
   <article class="exercise-modal" (click)="$event.stopPropagation()">
-    <button class="exercise-modal__close" aria-label="Close" (click)="closeExercise()">×</button>
+    <button class="exercise-modal__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeExercise()">×</button>
     <div class="exercise-modal__media" [style.background-image]="!showExerciseVideo && getExercisePreviewImage(selectedExercise) ? 'url(' + getExercisePreviewImage(selectedExercise) + ')' : null">
       <video class="exercise-modal__video-preview" *ngIf="selectedExercise.videoLink && !isYouTubeExerciseVideo(selectedExercise.videoLink) && !showExerciseVideo" [src]="selectedExercise.videoLink" preload="metadata" muted playsinline></video>
-      <button class="watch-demo-action" *ngIf="selectedExercise.videoLink && !showExerciseVideo" (click)="playExerciseVideo()"><i-feather name="play-circle"></i-feather> Watch demo</button>
-      <iframe *ngIf="showExerciseVideo && isYouTubeExerciseVideo(selectedExercise.videoLink)" [src]="exerciseEmbedUrl" title="Exercise demonstration" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      <button class="watch-demo-action" *ngIf="selectedExercise.videoLink && !showExerciseVideo" (click)="playExerciseVideo()"><i-feather name="play-circle"></i-feather> {{ 'WATCH_DEMO' | translate }}</button>
+      <iframe *ngIf="showExerciseVideo && isYouTubeExerciseVideo(selectedExercise.videoLink)" [src]="exerciseEmbedUrl" [title]="'EXERCISE_DEMONSTRATION' | translate" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
       <video *ngIf="showExerciseVideo && !isYouTubeExerciseVideo(selectedExercise.videoLink)" [src]="selectedExercise.videoLink" controls autoplay playsinline></video>
     </div>
-    <div class="exercise-modal__content"><small>ISOLATION</small><h2>{{ selectedExercise.name }}</h2>
-      <div class="exercise-facts"><span><i-feather name="activity"></i-feather><span><small>Equipment</small><strong>{{ selectedExercise.equipment || '—' }}</strong></span></span><span><i-feather name="target"></i-feather><span><small>Primary muscle</small><strong>{{ selectedExercise.primaryMuscle || selectedExercise.label || '—' }}</strong></span></span><span><i-feather name="layers"></i-feather><span><small>Planned</small><strong>{{ selectedExercise.sets.length }} sets × {{ selectedExercise.sets[0]?.reps || '—' }} reps</strong></span></span><span><i-feather name="clock"></i-feather><span><small>Rest time</small><strong>{{ selectedExercise.sets[0]?.rest || '—' }}</strong></span></span></div>
-      <h3>Planned sets</h3><div class="modal-set" *ngFor="let set of selectedExercise.sets"><span>Set {{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span><strong>⇄ {{ set.reps }} reps &nbsp;&nbsp; ◷ {{ set.rest }}</strong></div>
-      <div class="coach-note" *ngIf="selectedExercise.coachNote"><strong>Coach note</strong><p>{{ selectedExercise.coachNote }}</p></div>
-      <h3 *ngIf="selectedExercise.instructions?.length">Instructions</h3><ol><li *ngFor="let instruction of selectedExercise.instructions">{{ instruction }}</li></ol>
+    <div class="exercise-modal__content"><small>{{ 'ISOLATION' | translate }}</small><h2>{{ selectedExercise.name }}</h2>
+      <div class="exercise-facts"><span><i-feather name="activity"></i-feather><span><small>{{ 'EQUIPMENT' | translate }}</small><strong>{{ selectedExercise.equipment || '—' }}</strong></span></span><span><i-feather name="target"></i-feather><span><small>{{ 'PRIMARY_MUSCLE' | translate }}</small><strong>{{ selectedExercise.primaryMuscle || selectedExercise.label || '—' }}</strong></span></span><span><i-feather name="layers"></i-feather><span><small>{{ 'PLANNED_LABEL' | translate }}</small><strong>{{ selectedExercise.sets.length }} {{ 'SETS' | translate }} × {{ selectedExercise.sets[0]?.reps || '—' }} {{ 'REPS_LOWER' | translate }}</strong></span></span><span><i-feather name="clock"></i-feather><span><small>{{ 'REST_TIME' | translate }}</small><strong>{{ selectedExercise.sets[0]?.rest || '—' }}</strong></span></span></div>
+      <h3>{{ 'PLANNED_SETS' | translate }}</h3><div class="modal-set" *ngFor="let set of selectedExercise.sets"><span>{{ 'SET' | translate }} {{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span><strong>⇄ {{ set.reps }} {{ 'REPS_LOWER' | translate }} &nbsp;&nbsp; ◷ {{ set.rest }}</strong></div>
+      <div class="coach-note" *ngIf="selectedExercise.coachNote"><strong>{{ 'COACH_NOTE' | translate }}</strong><p>{{ selectedExercise.coachNote }}</p></div>
+      <h3 *ngIf="selectedExercise.instructions?.length">{{ 'INSTRUCTIONS' | translate }}</h3><ol><li *ngFor="let instruction of selectedExercise.instructions">{{ instruction }}</li></ol>
     </div>
   </article>
 </div>

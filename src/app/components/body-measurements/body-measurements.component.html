@@ -6,7 +6,7 @@
         <input
           type="text"
           [(ngModel)]="search"
-          placeholder="Search measurement"
+          [placeholder]="'SEARCH_MEASUREMENT' | translate"
         />
       </div>
 
@@ -18,16 +18,16 @@
         (click)="selectType(type.key)"
       >
         <i class="fas" [ngClass]="type.icon"></i>
-        <span>{{ type.label }}</span>
+        <span>{{ type.label | translate }}</span>
       </button>
     </aside>
 
     <section class="measurements-content">
       <div class="measurements-topbar">
         <div>
-          <h2>{{ currentType.label }}</h2>
-          <p *ngIf="latestMeasurement">Latest record from {{ latestMeasurement.date | date:'mediumDate' }}</p>
-          <p *ngIf="!latestMeasurement">No records yet</p>
+          <h2>{{ currentType.label | translate }}</h2>
+          <p *ngIf="latestMeasurement">{{ 'LATEST_RECORD_FROM' | translate }} {{ formatDate(latestMeasurement.date) }}</p>
+          <p *ngIf="!latestMeasurement">{{ 'NO_RECORDS_YET' | translate }}</p>
         </div>
 
         <button
@@ -37,13 +37,13 @@
           (click)="openAddModal()"
         >
           <i class="fas fa-plus"></i>
-          Add Measurement
+          {{ 'ADD_MEASUREMENT' | translate }}
         </button>
       </div>
 
       <div class="chart-card">
         <div class="chart-header">
-          <span>Last</span>
+          <span>{{ 'LAST' | translate }}</span>
           <strong>{{ latestValue }}</strong>
           <div class="goal-summary" *ngIf="showGoalLine">
             {{ goalLabel }}
@@ -96,13 +96,13 @@
 
         <div class="empty-chart" *ngIf="selectedMeasurements.length === 0">
           <i class="fas fa-chart-line"></i>
-          <span>No data yet for {{ currentType.label }}</span>
+          <span>{{ 'NO_DATA_YET_FOR' | translate }} {{ currentType.label | translate }}</span>
           <small *ngIf="showGoalLine">{{ goalLabel }}</small>
         </div>
       </div>
 
       <div class="history-section">
-        <h3>History</h3>
+        <h3>{{ 'HISTORY_TITLE' | translate }}</h3>
 
         <div class="history-list" *ngIf="history.length > 0">
           <div
@@ -127,8 +127,8 @@
                 class="delete-measurement-btn"
                 [disabled]="deletingId === item.id"
                 (click)="deleteMeasurement(item)"
-                aria-label="Delete measurement"
-                title="Delete measurement"
+                [attr.aria-label]="'DELETE_MEASUREMENT' | translate"
+                [title]="'DELETE_MEASUREMENT' | translate"
               >
                 <i class="fas" [class.fa-trash-can]="deletingId !== item.id" [class.fa-spinner]="deletingId === item.id" [class.fa-spin]="deletingId === item.id"></i>
               </button>
@@ -141,12 +141,12 @@
             *ngIf="hasMoreHistory"
             (click)="loadMoreHistory()"
           >
-            Load more
+            {{ 'LOAD_MORE' | translate }}
           </button>
         </div>
 
         <div class="history-empty" *ngIf="history.length === 0">
-          No history for this measurement yet.
+          {{ 'NO_MEASUREMENT_HISTORY' | translate }}
         </div>
       </div>
     </section>
@@ -161,25 +161,25 @@
   <div class="measurement-modal" (click)="$event.stopPropagation()">
     <div class="measurement-modal-header">
       <div>
-        <h3>Add {{ currentType.label }}</h3>
-        <p>Track a new body measurement record.</p>
+        <h3>{{ 'ADD' | translate }} {{ currentType.label | translate }}</h3>
+        <p>{{ 'TRACK_NEW_MEASUREMENT' | translate }}</p>
       </div>
-      <button type="button" class="modal-close" (click)="closeAddModal()">×</button>
+      <button type="button" class="modal-close" [attr.aria-label]="'CLOSE' | translate" (click)="closeAddModal()">×</button>
     </div>
 
     <div class="measurement-modal-body">
       <label>
-        Value ({{ getDisplayUnit(currentType) }})
+        {{ 'VALUE' | translate }} ({{ getDisplayUnit(currentType) }})
         <input
           type="number"
           step="0.1"
           [(ngModel)]="addForm.value"
-          placeholder="Enter value"
+          [placeholder]="'ENTER_VALUE' | translate"
         />
       </label>
 
       <label>
-        Date
+        {{ 'DATE' | translate }}
         <input
           type="date"
           [(ngModel)]="addForm.date"
@@ -187,24 +187,24 @@
       </label>
 
       <label>
-        Note
+        {{ 'NOTE' | translate }}
         <textarea
           rows="3"
           [(ngModel)]="addForm.note"
-          placeholder="Optional note"
+          [placeholder]="'OPTIONAL_NOTE' | translate"
         ></textarea>
       </label>
     </div>
 
     <div class="measurement-modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeAddModal()">Cancel</button>
+      <button type="button" class="btn-cancel" (click)="closeAddModal()">{{ 'CANCEL' | translate }}</button>
       <button
         type="button"
         class="btn-save"
         (click)="saveMeasurement()"
         [disabled]="saving || addForm.value === null || addForm.value === undefined"
       >
-        {{ saving ? 'Saving...' : 'Save Measurement' }}
+        {{ (saving ? 'SAVING' : 'SAVE_MEASUREMENT') | translate }}
       </button>
     </div>
   </div>

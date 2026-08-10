@@ -4,7 +4,7 @@
       <i-feather name="message-circle"></i-feather>
       <span>{{ 'MESSAGING' | translate }}</span>
     </div>
-    <button class="header-action" type="button" (click)="closeChat()" aria-label="Close messaging">
+    <button class="header-action" type="button" (click)="closeChat()" [attr.aria-label]="'CLOSE_MESSAGING' | translate">
       <i-feather name="x"></i-feather>
     </button>
   </div>
@@ -14,7 +14,7 @@
   <div class="section">
     <div class="section-header">
       <span>{{ 'CONVERSATIONS' | translate }}</span>
-      <button class="header-action header-action--small" type="button" (click)="switchToAdd()" aria-label="Start conversation">
+      <button class="header-action header-action--small" type="button" (click)="switchToAdd()" [attr.aria-label]="'START_CONVERSATION' | translate">
         <i-feather name="plus"></i-feather>
       </button>
     </div>
@@ -44,11 +44,11 @@
         <div class="conversation-info">
           <div class="conversation-name">
             {{ conv.name }}
-            <span class="badge-group" *ngIf="conv.isGroup">Group</span>
+            <span class="badge-group" *ngIf="conv.isGroup">{{ 'GROUP' | translate }}</span>
           </div>
           <div class="conversation-last">
             <span *ngIf="conv.isGroup; else lastMsg">
-              {{ conv.memberIds?.length || 0 }} members
+              {{ conv.memberIds?.length || 0 }} {{ 'MEMBERS' | translate }}
             </span>
             <ng-template #lastMsg>{{ getLastMessageText(conv) }}</ng-template>
           </div>
@@ -64,7 +64,7 @@
   <div class="section">
     <div class="section-header">
       <span>{{ 'START_CONVERSATION' | translate }}</span>
-      <button class="header-action header-action--small" type="button" (click)="switchToList()" aria-label="Back to conversations">
+      <button class="header-action header-action--small" type="button" (click)="switchToList()" [attr.aria-label]="'BACK_TO_CONVERSATIONS' | translate">
         <i-feather name="x"></i-feather>
       </button>
     </div>

@@ -15,7 +15,7 @@
             <img
               *ngIf="userData.avatarUrl"
               [src]="userData.avatarUrl"
-              alt="Profile"
+              [alt]="'PROFILE' | translate"
               class="avatar-img"
               (error)="onImageError($event)"
             />
@@ -32,7 +32,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
               </svg>
-              <span>Change Photo</span>
+              <span>{{ 'CHANGE_PHOTO' | translate }}</span>
             </div>
           </div>
           <input
@@ -72,7 +72,7 @@
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-value stat-value-blue">{{ profileCompletion }}%</div>
-              <div class="stat-label">Profile Complete</div>
+              <div class="stat-label">{{ 'PROFILE_COMPLETE' | translate }}</div>
             </div>
           </div>
 
@@ -92,7 +92,7 @@
       [class.active]="activeTab === tab.id"
       (click)="setActiveTab(tab.id)"
     >
-      {{ tab.label }}
+      {{ tab.labelKey | translate }}
     </button>
   </div>
 
@@ -100,20 +100,20 @@
   <div *ngIf="activeTab === 'overview'" class="tab-content">
     <div class="card">
       <div class="card-header">
-        <h2>Profile Details</h2>
+        <h2>{{ 'PROFILE_DETAILS' | translate }}</h2>
 
         <div *ngIf="!isEditing">
           <button class="btn-dark" (click)="handleEditStart()">
-            Edit Profile
+            {{ 'EDIT_PROFILE' | translate }}
           </button>
         </div>
 
         <div *ngIf="isEditing" class="action-btns">
           <button class="btn-outline" (click)="handleEditCancel()">
-            Cancel
+            {{ 'CANCEL' | translate }}
           </button>
           <button class="btn-blue" (click)="handleEditSave()" [disabled]="isSaving">
-            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+            {{ isSaving ? ('SAVING' | translate) : ('SAVE_CHANGES' | translate) }}
           </button>
         </div>
       </div>
@@ -122,45 +122,45 @@
         <!-- View -->
         <div *ngIf="!isEditing" class="fields-grid">
           <div class="field-group">
-            <label class="field-label">Full Name</label>
+            <label class="field-label">{{ 'FULL_NAME' | translate }}</label>
             <div class="field-value">{{ userData.firstName }} {{ userData.lastName }}</div>
           </div>
 
           <div class="field-group">
-            <label class="field-label">Username</label>
+            <label class="field-label">{{ 'USERNAME' | translate }}</label>
             <div class="field-value">{{ userData.login }}</div>
           </div>
 
           <div class="field-group">
-            <label class="field-label">Email</label>
+            <label class="field-label">{{ 'EMAIL' | translate }}</label>
             <div class="field-value">{{ userData.email }}</div>
           </div>
 
           <div class="field-group">
-            <label class="field-label">Phone</label>
+            <label class="field-label">{{ 'PHONE' | translate }}</label>
             <div class="field-value" [class.text-muted]="!userData.phoneNumber">
-              {{ userData.phoneNumber || 'Not provided' }}
+              {{ userData.phoneNumber || ('NOT_PROVIDED' | translate) }}
             </div>
           </div>
 
           <div class="field-group">
-            <label class="field-label">Target Weight</label>
+            <label class="field-label">{{ 'TARGET_WEIGHT' | translate }}</label>
             <div class="field-value" [class.text-muted]="!userData.targetWeight">
-              {{ userData.targetWeight ? (userData.targetWeight + ' kg') : 'Not provided' }}
+              {{ userData.targetWeight ? (userData.targetWeight + ' kg') : ('NOT_PROVIDED' | translate) }}
             </div>
           </div>
 
           <div class="field-group">
-            <label class="field-label">Ideal Shape Description</label>
+            <label class="field-label">{{ 'IDEAL_SHAPE_DESCRIPTION' | translate }}</label>
             <div class="field-value" [class.text-muted]="!userData.idealShapeDescription">
-              {{ userData.idealShapeDescription || 'No ideal shape description added yet' }}
+              {{ userData.idealShapeDescription || ('NO_IDEAL_SHAPE_DESCRIPTION' | translate) }}
             </div>
           </div>
 
           <div class="field-group field-full">
-            <label class="field-label">Bio</label>
+            <label class="field-label">{{ 'BIO' | translate }}</label>
             <div class="field-value" [class.text-muted]="!userData.bio">
-              {{ userData.bio || 'No bio added yet' }}
+              {{ userData.bio || ('NO_BIO_ADDED' | translate) }}
             </div>
           </div>
         </div>
@@ -168,27 +168,27 @@
         <!-- Edit -->
         <div *ngIf="isEditing" class="fields-grid">
           <div class="field-group">
-            <label class="field-label-dark">First Name</label>
+            <label class="field-label-dark">{{ 'FIRST_NAME' | translate }}</label>
             <input type="text" class="form-input" [(ngModel)]="editData.firstName" />
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Last Name</label>
+            <label class="field-label-dark">{{ 'LAST_NAME' | translate }}</label>
             <input type="text" class="form-input" [(ngModel)]="editData.lastName" />
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Username</label>
+            <label class="field-label-dark">{{ 'USERNAME' | translate }}</label>
             <input type="text" class="form-input" [(ngModel)]="editData.login" />
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Phone</label>
+            <label class="field-label-dark">{{ 'PHONE' | translate }}</label>
             <input type="text" class="form-input" [(ngModel)]="editData.phoneNumber" />
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Target Weight (kg)</label>
+            <label class="field-label-dark">{{ 'TARGET_WEIGHT_KG' | translate }}</label>
             <input
               type="number"
               min="0"
@@ -200,24 +200,24 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Ideal Shape Description</label>
+            <label class="field-label-dark">{{ 'IDEAL_SHAPE_DESCRIPTION' | translate }}</label>
             <textarea
               class="form-input form-textarea"
               [(ngModel)]="editData.idealShapeDescription"
               name="idealShapeDescription"
               rows="3"
-              placeholder="Describe the ideal shape or physique goal"
+              [placeholder]="'IDEAL_SHAPE_PLACEHOLDER' | translate"
             ></textarea>
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Email</label>
+            <label class="field-label-dark">{{ 'EMAIL' | translate }}</label>
             <input type="email" class="form-input form-input-disabled" [value]="editData.email" disabled />
-            <p class="hint-text">Email cannot be changed</p>
+            <p class="hint-text">{{ 'EMAIL_CANNOT_BE_CHANGED' | translate }}</p>
           </div>
 
           <div class="field-group field-full">
-            <label class="field-label-dark">Bio</label>
+            <label class="field-label-dark">{{ 'BIO' | translate }}</label>
             <textarea
               class="form-input form-textarea"
               [(ngModel)]="editData.bio"
@@ -233,13 +233,13 @@
   <div *ngIf="activeTab === 'settings'" class="tab-content">
     <div class="card">
       <div class="card-header">
-        <h2>Change Password</h2>
+        <h2>{{ 'CHANGE_PASSWORD' | translate }}</h2>
       </div>
 
       <div class="card-body">
         <form #passwordFormRef="ngForm" (ngSubmit)="onSubmitNewPassword()" class="fields-grid">
           <div class="field-group field-full">
-            <label class="field-label-dark">Current Password</label>
+            <label class="field-label-dark">{{ 'CURRENT_PASSWORD' | translate }}</label>
             <input
               type="password"
               class="form-input"
@@ -250,7 +250,7 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">New Password</label>
+            <label class="field-label-dark">{{ 'NEW_PASSWORD' | translate }}</label>
             <input
               type="password"
               class="form-input"
@@ -261,7 +261,7 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">Confirm New Password</label>
+            <label class="field-label-dark">{{ 'CONFIRM_NEW_PASSWORD' | translate }}</label>
             <input
               type="password"
               class="form-input"
@@ -285,7 +285,7 @@
               class="btn-blue"
               [disabled]="isChangingPassword"
             >
-              {{ isChangingPassword ? 'Updating...' : 'Update Password' }}
+              {{ isChangingPassword ? ('UPDATING' | translate) : ('UPDATE_PASSWORD' | translate) }}
             </button>
           </div>
         </form>

@@ -2949,6 +2949,7 @@
 .workout-timer--disabled { border-color:#e1e4eb; background:#f5f5f8; color:#667085; }
 .workout-timer--disabled small { color:#667085; }
 .workout-day__actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+.workout-day__actions button { white-space:nowrap; }
 .workout-mobile-actions { display:none; }
 .workout-day button { font:inherit; cursor:pointer; }
 .primary-action,.secondary-action,.icon-action { min-height:45px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:0 18px; border-radius:10px; font-size:16px; font-weight:750; }
@@ -3325,7 +3326,7 @@
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
-  .workout-day__topbar { grid-template-columns:1fr 180px 1fr; padding-left:24px; padding-right:24px; }.workout-timer { width:180px; }.workout-day__title h1 { font-size:22px; }.workout-day .log-completed-action { padding:10px 12px; font-size:16px; line-height:24px; }.primary-action,.secondary-action,.icon-action { padding:0 13px; font-size:13px; }
+  .workout-day__topbar { grid-template-columns:minmax(105px,.7fr) 160px minmax(390px,2fr); gap:10px; padding-left:12px; padding-right:12px; }.workout-timer { width:160px; }.workout-day__title { gap:7px; }.workout-day__title h1 { font-size:22px; }.workout-day .log-completed-action,.workout-day .extract-workout-pdf { padding:0 10px; font-size:12px; line-height:18px; }.primary-action,.secondary-action,.icon-action { padding:0 10px; font-size:12px; }
   .workout-day__body { padding-left:24px; padding-right:24px; }
 }
 

@@ -1,8 +1,8 @@
 <div class="chat-page-header" *ngIf="!embeddedMode">
   <div class="chat-page-header__left">
     <div class="chat-page-header__titles">
-      <h1>Chat</h1>
-      <p>Send messages, documents and voice notes to your clients</p>
+      <h1>{{ 'CHAT_TITLE' | translate }}</h1>
+      <p>{{ 'CHAT_SUBTITLE' | translate }}</p>
     </div>
   </div>
 </div>
@@ -16,9 +16,9 @@
     <div class="chat-sidebar__header">
       <div class="chat-search">
         <i-feather name="search" class="chat-search__ico"></i-feather>
-        <input class="chat-search__input" type="text" placeholder="Search" [(ngModel)]="searchTerm" />
+        <input class="chat-search__input" type="text" [placeholder]="'SEARCH' | translate" [(ngModel)]="searchTerm" />
       </div>
-      <button *ngIf="canCreateChats" class="chat-icon-btn" type="button" (click)="openNewChatModal()" aria-label="Nouveau chat">
+      <button *ngIf="canCreateChats" class="chat-icon-btn" type="button" (click)="openNewChatModal()" [attr.aria-label]="'NEW_CHAT' | translate">
         <i-feather name="edit-2"></i-feather>
       </button>
     </div>
@@ -44,7 +44,7 @@
         <div class="chat-item__body">
           <div class="chat-item__top">
             <span class="chat-item__name">{{ conv.name }}</span>
-            <span class="chat-item__members" *ngIf="conv.isGroup">{{ conv.memberIds?.length || 0 }} members</span>
+            <span class="chat-item__members" *ngIf="conv.isGroup">{{ conv.memberIds?.length || 0 }} {{ 'MEMBERS' | translate }}</span>
             <span class="chat-item__unread-badge" *ngIf="isConversationUnread(conv)"></span>
           </div>
            <div class="chat-item__timestamp">{{ getConversationTimestamp(conv) }}</div>
@@ -66,16 +66,16 @@
     <ng-container *ngIf="!selectedConv">
       <div class="chat-empty">
         <div class="chat-empty__ico"><i-feather name="message-circle"></i-feather></div>
-        <h2 class="chat-empty__title">No Conversation Selected</h2>
-        <p class="chat-empty__sub">Select a conversation or create a new chat.</p>
-        <button *ngIf="canCreateChats" class="chat-empty__btn" type="button" (click)="openNewChatModal()">New Chat</button>
+        <h2 class="chat-empty__title">{{ 'NO_CONVERSATION_SELECTED' | translate }}</h2>
+        <p class="chat-empty__sub">{{ 'SELECT_OR_CREATE_CONVERSATION' | translate }}</p>
+        <button *ngIf="canCreateChats" class="chat-empty__btn" type="button" (click)="openNewChatModal()">{{ 'NEW_CHAT' | translate }}</button>
       </div>
     </ng-container>
 
     <ng-container *ngIf="selectedConv">
       <div class="chat-embedded-toolbar" *ngIf="embeddedMode && canCreateChats">
         <div class="chat-embedded-toolbar__sub">
-          {{ currentAutoSequences.length || 'No' }} auto message sequence{{ currentAutoSequences.length === 1 ? '' : 's' }}
+          {{ currentAutoSequences.length || 0 }} {{ 'AUTO_MESSAGE_SEQUENCES' | translate }}
         </div>
 
         <div class="chat-embedded-toolbar__actions">
@@ -83,10 +83,10 @@
             class="chat-auto-btn"
             type="button"
             (click)="openAutoMessageModal()"
-            aria-label="Auto message"
+            [attr.aria-label]="'AUTO_MESSAGE' | translate"
           >
             <i-feather name="clock"></i-feather>
-            <span>Auto message</span>
+            <span>{{ 'AUTO_MESSAGE' | translate }}</span>
           </button>
 
           <button
@@ -94,7 +94,7 @@
             type="button"
             (click)="openManageAutoMessages()"
           >
-            Manage
+            {{ 'MANAGE' | translate }}
           </button>
         </div>
       </div>
@@ -108,10 +108,10 @@
             <div class="chat-avatar chat-avatar--group chat-avatar--sm"><i-feather name="users"></i-feather></div>
             <div>
               <div class="chat-header__name">{{ selectedConv.name }}</div>
-              <div class="chat-header__sub">{{ selectedConv.memberIds?.length || 0 }} members</div>
+              <div class="chat-header__sub">{{ selectedConv.memberIds?.length || 0 }} {{ 'MEMBERS' | translate }}</div>
               <div class="chat-header__members" *ngIf="selectedConvMembers.length">
                 <span *ngFor="let m of (showAllMembers ? selectedConvMembers : selectedConvMembers.slice(0, 3))" class="chat-header__member-chip">{{ m.name }}</span>
-                <span *ngIf="!showAllMembers && selectedConvMembers.length > 3" class="chat-header__member-chip chat-header__member-chip--more" (click)="showAllMembers = true; $event.stopPropagation()">+{{ selectedConvMembers.length - 3 }} more</span>
+                <span *ngIf="!showAllMembers && selectedConvMembers.length > 3" class="chat-header__member-chip chat-header__member-chip--more" (click)="showAllMembers = true; $event.stopPropagation()">+{{ selectedConvMembers.length - 3 }} {{ 'MORE' | translate }}</span>
               </div>
             </div>
           </ng-container>
@@ -125,10 +125,10 @@
           class="chat-auto-btn"
           type="button"
           (click)="openAutoMessageModal()"
-          aria-label="Auto message"
+          [attr.aria-label]="'AUTO_MESSAGE' | translate"
         >
           <i-feather name="clock"></i-feather>
-          <span>Auto message</span>
+          <span>{{ 'AUTO_MESSAGE' | translate }}</span>
         </button>
         <button
           *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode && canCreateChats"
@@ -136,19 +136,19 @@
           type="button"
           (click)="toggleClientProfile()"
           [attr.aria-pressed]="showClientProfile"
-          [attr.aria-label]="showClientProfile ? 'Hide client' : 'Show client'"
+          [attr.aria-label]="(showClientProfile ? 'HIDE_CLIENT' : 'SHOW_CLIENT') | translate"
         >
           <i-feather name="arrow-left"></i-feather>
-          <span>{{ showClientProfile ? 'Hide client' : 'Show client' }}</span>
+          <span>{{ (showClientProfile ? 'HIDE_CLIENT' : 'SHOW_CLIENT') | translate }}</span>
         </button>
       </div>
 
       <div class="chat-auto-strip" *ngIf="canCreateChats && currentAutoSequences.length">
         <div class="chat-auto-strip__summary">
           <i-feather name="clock"></i-feather>
-          <span>{{ currentAutoSequences.length }} message sequence(s) scheduled</span>
+          <span>{{ currentAutoSequences.length }} {{ 'MESSAGE_SEQUENCES_SCHEDULED' | translate }}</span>
         </div>
-        <button type="button" class="chat-auto-strip__manage" (click)="openManageAutoMessages()">Manage</button>
+        <button type="button" class="chat-auto-strip__manage" (click)="openManageAutoMessages()">{{ 'MANAGE' | translate }}</button>
       </div>
 
       <div class="chat-messages" #messagesContainer>
@@ -192,7 +192,7 @@
                     <div class="doc-bubble__icon"><i-feather name="file-text"></i-feather></div>
                     <div class="doc-bubble__info">
                       <div class="doc-bubble__name">{{ entry.message.attachmentName }}</div>
-                      <div class="doc-bubble__meta">{{ entry.message.attachmentType || 'Document' }} {{ formatFileSize(entry.message.attachmentSize) }}</div>
+                      <div class="doc-bubble__meta">{{ entry.message.attachmentType || ('DOCUMENT_LABEL' | translate) }} {{ formatFileSize(entry.message.attachmentSize) }}</div>
                     </div>
                     <div class="doc-bubble__download">⬇</div>
                   </div>
@@ -218,7 +218,7 @@
         >
           <span class="auto-sequence-card__badge">
             <i-feather name="clock"></i-feather>
-            Scheduled - {{ formatAutoSequenceSchedule(entry.sequence) }}
+            {{ 'SCHEDULED' | translate }} - {{ formatAutoSequenceSchedule(entry.sequence) }}
           </span>
           <span class="auto-sequence-card__message" *ngFor="let item of getAutoSequenceItems(entry.sequence)">
             <ng-container [ngSwitch]="item.type">
@@ -228,7 +228,7 @@
                 <ng-template #scheduledDoc>
                   <span class="auto-sequence-card__attachment">
                     <i-feather name="file-text"></i-feather>
-                    {{ item.attachmentName || 'Document' }}
+                    {{ item.attachmentName || ('DOCUMENT_LABEL' | translate) }}
                   </span>
                 </ng-template>
               </span>
@@ -236,7 +236,7 @@
           </span>
           <span class="auto-sequence-card__footer">
             <span>{{ entry.sequence.name }}</span>
-            <span>Edit sequence</span>
+            <span>{{ 'EDIT_SEQUENCE' | translate }}</span>
           </span>
         </button>
         </ng-container>
@@ -265,7 +265,7 @@
             <div class="chat-attach-menu" *ngIf="showAttachmentMenu">
               <button type="button" class="chat-attach-menu__item" (click)="documentInput.click(); showAttachmentMenu = false">
                 <i-feather name="file-text"></i-feather>
-                <span>Document</span>
+                <span>{{ 'DOCUMENT_LABEL' | translate }}</span>
               </button>
             </div>
           </div>
@@ -288,7 +288,7 @@
           <input
             class="chat-input"
             type="text"
-            [placeholder]="pendingDocument ? 'Ajouter un message...' : (isRecording ? 'Recording voice message...' : 'Chat with ' + selectedConv.name)"
+            [placeholder]="pendingDocument ? ('ADD_A_MESSAGE' | translate) : (isRecording ? ('RECORDING_VOICE_MESSAGE' | translate) : ('CHAT_WITH' | translate) + ' ' + selectedConv.name)"
             [(ngModel)]="messageText"
             (keydown.enter)="sendMessage()"
             [disabled]="isRecording || isUploadingAttachment"
@@ -319,26 +319,26 @@
   <div class="am-modal am-modal--schedule" (click)="$event.stopPropagation()">
     <input #autoAttachmentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onAutoAttachmentSelected($event)" />
     <div class="am-header">
-      <h3 class="am-title">{{ editingAutoMessage ? 'Edit Auto Message' : 'Schedule Auto Messages' }}</h3>
+      <h3 class="am-title">{{ (editingAutoMessage ? 'EDIT_AUTO_MESSAGE' : 'SCHEDULE_AUTO_MESSAGES') | translate }}</h3>
       <button class="chat-icon-btn" type="button" (click)="closeAutoMessageModal()"><i-feather name="x"></i-feather></button>
     </div>
 
     <div class="am-body">
       <label class="am-field">
-        <span>Sequence Name</span>
-        <input type="text" placeholder="e.g., Day 1 Onboarding" [(ngModel)]="autoSequenceName" />
+        <span>{{ 'SEQUENCE_NAME' | translate }}</span>
+        <input type="text" [placeholder]="'SEQUENCE_NAME_EXAMPLE' | translate" [(ngModel)]="autoSequenceName" />
       </label>
 
       <div class="am-grid">
         <label class="am-field">
-          <span>Date</span>
+          <span>{{ 'DATE' | translate }}</span>
           <div class="am-input-icon">
             <i-feather name="calendar"></i-feather>
             <input type="date" [(ngModel)]="autoSequenceDate" />
           </div>
         </label>
         <label class="am-field">
-          <span>Time (Client's local time)</span>
+          <span>{{ 'CLIENT_LOCAL_TIME' | translate }}</span>
           <div class="am-input-icon">
             <i-feather name="clock"></i-feather>
             <input type="time" [(ngModel)]="autoSequenceTime" />
@@ -347,12 +347,12 @@
       </div>
 
       <div class="am-sequence-box">
-        <div class="am-sequence-box__title">Messages in sequence ({{ autoSequenceItems.length }}/3)</div>
+        <div class="am-sequence-box__title">{{ 'MESSAGES_IN_SEQUENCE' | translate }} ({{ autoSequenceItems.length }}/3)</div>
 
         <div class="am-empty-state" *ngIf="autoSequenceItems.length === 0">
           <div class="am-empty-state__icon"><i-feather name="clock"></i-feather></div>
-          <strong>No messages added yet.</strong>
-          <span>Create a sequence of up to 3 messages.</span>
+          <strong>{{ 'NO_MESSAGES_ADDED' | translate }}</strong>
+          <span>{{ 'CREATE_SEQUENCE_UP_TO_THREE' | translate }}</span>
         </div>
 
         <div class="am-added-list" *ngIf="autoSequenceItems.length">
@@ -366,9 +366,9 @@
                   rows="2"
                   [(ngModel)]="item.content"
                   (ngModelChange)="onAutoSequenceTextChanged()"
-                  placeholder="Edit scheduled message"
+                  [placeholder]="'EDIT_SCHEDULED_MESSAGE' | translate"
                 ></textarea>
-                <span *ngSwitchCase="'DOCUMENT'">{{ isImageAttachment(item) ? 'Photo' : 'Document' }} - {{ item.attachmentName }}</span>
+                <span *ngSwitchCase="'DOCUMENT'">{{ (isImageAttachment(item) ? 'PHOTO' : 'DOCUMENT_LABEL') | translate }} - {{ item.attachmentName }}</span>
               </ng-container>
             </span>
             <button type="button" class="am-added-item__remove" (click)="removeAutoSequenceMessage(i)">
@@ -378,13 +378,13 @@
         </div>
 
         <div class="am-limit" *ngIf="autoSequenceItems.length >= 3">
-          You've hit the 3 message limit for this sequence. Try combining your messages.
+          {{ 'THREE_MESSAGE_LIMIT' | translate }}
         </div>
 
         <div class="am-composer" [class.am-composer--disabled]="autoSequenceItems.length >= 3">
           <textarea
             rows="4"
-            placeholder="Type a message here. Alt-Enter for a new line"
+            [placeholder]="'TYPE_MESSAGE_ALT_ENTER' | translate"
             [(ngModel)]="autoMessageDraft"
             [disabled]="autoSequenceItems.length >= 3"
           ></textarea>
@@ -405,7 +405,7 @@
               (click)="addAutoSequenceMessage()"
               [disabled]="!autoMessageDraft.trim() || autoSequenceItems.length >= 3 || isUploadingAutoAttachment"
             >
-              Add
+              {{ 'ADD' | translate }}
             </button>
           </div>
         </div>
@@ -413,10 +413,10 @@
     </div>
 
     <div class="am-footer">
-      <button type="button" class="am-cancel-btn" (click)="closeAutoMessageModal()">Cancel</button>
+      <button type="button" class="am-cancel-btn" (click)="closeAutoMessageModal()">{{ 'CANCEL' | translate }}</button>
       <button type="button" class="am-primary-btn" (click)="saveAutoMessageSequence()" [disabled]="!canSaveAutoSequence()">
         <i-feather name="clock"></i-feather>
-        <span>{{ editingAutoMessage ? 'Save Changes' : 'Schedule Sequence' }}</span>
+        <span>{{ (editingAutoMessage ? 'SAVE_CHANGES' : 'SCHEDULE_SEQUENCE') | translate }}</span>
       </button>
     </div>
   </div>
@@ -426,8 +426,8 @@
   <div class="am-modal am-modal--manage" (click)="$event.stopPropagation()">
     <div class="am-header am-header--compact">
       <div>
-        <h3 class="am-title">Manage Scheduled Auto Messages</h3>
-        <p class="am-subtitle">Select a scheduled sequence to view and manage it.</p>
+        <h3 class="am-title">{{ 'MANAGE_SCHEDULED_AUTO_MESSAGES' | translate }}</h3>
+        <p class="am-subtitle">{{ 'SELECT_SCHEDULED_SEQUENCE' | translate }}</p>
       </div>
       <button class="chat-icon-btn" type="button" (click)="closeManageAutoMessages()"><i-feather name="x"></i-feather></button>
     </div>
@@ -435,7 +435,7 @@
     <div class="am-manage-body">
       <div class="am-search">
         <i-feather name="search"></i-feather>
-        <input type="text" placeholder="Search a sequence..." [(ngModel)]="autoMessageManageSearch" />
+        <input type="text" [placeholder]="'SEARCH_SEQUENCE' | translate" [(ngModel)]="autoMessageManageSearch" />
       </div>
 
       <div class="am-manage-list">
@@ -454,8 +454,8 @@
           <button
             type="button"
             class="am-manage-item__delete"
-            title="Delete scheduled message"
-            aria-label="Delete scheduled message"
+            [title]="'DELETE_SCHEDULED_MESSAGE' | translate"
+            [attr.aria-label]="'DELETE_SCHEDULED_MESSAGE' | translate"
             (click)="deleteAutoMessageSequence(sequence, $event)"
           >
             <i-feather name="trash-2"></i-feather>
@@ -463,18 +463,18 @@
           <i-feather name="chevron-right" class="am-manage-item__chevron"></i-feather>
         </button>
 
-        <div class="am-empty-row" *ngIf="filteredAutoSequences.length === 0">No scheduled auto messages.</div>
+        <div class="am-empty-row" *ngIf="filteredAutoSequences.length === 0">{{ 'NO_SCHEDULED_AUTO_MESSAGES' | translate }}</div>
       </div>
 
       <div class="am-manage-hint">
         <i-feather name="info"></i-feather>
-        <span>Click a scheduled auto message to manage, edit, pause, or delete it.</span>
+        <span>{{ 'MANAGE_AUTO_MESSAGE_HINT' | translate }}</span>
       </div>
     </div>
 
     <div class="am-footer">
-      <button type="button" class="am-cancel-btn" (click)="closeManageAutoMessages()">Close</button>
-      <button type="button" class="am-primary-btn" (click)="openAutoMessageModal()">Create new</button>
+      <button type="button" class="am-cancel-btn" (click)="closeManageAutoMessages()">{{ 'CLOSE' | translate }}</button>
+      <button type="button" class="am-primary-btn" (click)="openAutoMessageModal()">{{ 'CREATE_NEW' | translate }}</button>
     </div>
   </div>
 </div>
@@ -485,23 +485,23 @@
 <div class="cm-overlay" *ngIf="showNewChat" (click)="closeModals()">
   <div class="cm-modal" (click)="$event.stopPropagation()">
     <div class="cm-header">
-      <span class="cm-title">New Chat</span>
+      <span class="cm-title">{{ 'NEW_CHAT' | translate }}</span>
       <button class="chat-icon-btn" type="button" (click)="closeModals()"><i-feather name="x"></i-feather></button>
     </div>
     <div class="cm-body">
       <button class="cm-option" type="button" (click)="goToSelectClient()">
         <div class="cm-option__ico"><i-feather name="user"></i-feather></div>
         <div>
-          <div class="cm-option__title">Private Chat</div>
-          <div class="cm-option__sub">Message a single client</div>
+          <div class="cm-option__title">{{ 'PRIVATE_CHAT' | translate }}</div>
+          <div class="cm-option__sub">{{ 'MESSAGE_SINGLE_CLIENT' | translate }}</div>
         </div>
         <i-feather name="chevron-right" class="cm-option__chev"></i-feather>
       </button>
       <button class="cm-option" type="button" (click)="goToCreateGroup()">
         <div class="cm-option__ico"><i-feather name="users"></i-feather></div>
         <div>
-          <div class="cm-option__title">Group Chat</div>
-          <div class="cm-option__sub">Create a group with multiple clients</div>
+          <div class="cm-option__title">{{ 'GROUP_CHAT' | translate }}</div>
+          <div class="cm-option__sub">{{ 'CREATE_GROUP_MULTIPLE_CLIENTS' | translate }}</div>
         </div>
         <i-feather name="chevron-right" class="cm-option__chev"></i-feather>
       </button>
@@ -516,8 +516,8 @@
   <div class="cm-modal cm-modal--lg" (click)="$event.stopPropagation()">
     <div class="cm-header">
       <div>
-        <h3 class="cm-title">Select Client</h3>
-        <p class="cm-subtitle">Choose a client to message</p>
+        <h3 class="cm-title">{{ 'SELECT_CLIENT' | translate }}</h3>
+        <p class="cm-subtitle">{{ 'CHOOSE_CLIENT_TO_MESSAGE' | translate }}</p>
       </div>
       <button class="chat-icon-btn" type="button" (click)="closeModals()"><i-feather name="x"></i-feather></button>
     </div>
@@ -527,7 +527,7 @@
         <input
           class="cm-search-input"
           type="text"
-          placeholder="Search clients..."
+          [placeholder]="'SEARCH_CLIENTS' | translate"
           [(ngModel)]="selectClientSearchTerm"
         />
       </div>
@@ -543,7 +543,7 @@
           <img class="cm-client-item__avatar" [src]="c.avatar" [alt]="c.name" />
           <span class="cm-client-item__name">{{ c.name }}</span>
         </div>
-        <div class="cm-empty-row" *ngIf="filteredSelectClients().length === 0">No clients found.</div>
+        <div class="cm-empty-row" *ngIf="filteredSelectClients().length === 0">{{ 'NO_CLIENTS_FOUND' | translate }}</div>
       </div>
     </div>
   </div>
@@ -558,8 +558,8 @@
     <!-- Header -->
     <div class="cm-header">
       <div>
-        <h3 class="cm-title">Create Group Chat</h3>
-        <p class="cm-subtitle">Select at least 2 members</p>
+        <h3 class="cm-title">{{ 'CREATE_GROUP_CHAT' | translate }}</h3>
+        <p class="cm-subtitle">{{ 'SELECT_AT_LEAST_TWO_MEMBERS' | translate }}</p>
       </div>
       <button class="chat-icon-btn" type="button" (click)="closeModals()"><i-feather name="x"></i-feather></button>
     </div>
@@ -569,7 +569,7 @@
       <input
         class="cm-group-name"
         type="text"
-        placeholder="Group name..."
+        [placeholder]="'GROUP_NAME' | translate"
         [(ngModel)]="groupName"
       />
     </div>
@@ -581,7 +581,7 @@
         <input
           class="cm-search-input"
           type="text"
-          placeholder="Search clients..."
+          [placeholder]="'SEARCH_CLIENTS' | translate"
           [(ngModel)]="groupSearchTerm"
         />
       </div>
@@ -596,7 +596,7 @@
         <span class="cm-checkbox" [class.cm-checkbox--checked]="groupSelectAll">
           <i-feather *ngIf="groupSelectAll" name="check" class="cm-check-ico"></i-feather>
         </span>
-        <span class="cm-client-item__name cm-client-item__name--all">Select All ({{ allClients.length }})</span>
+        <span class="cm-client-item__name cm-client-item__name--all">{{ 'SELECT_ALL' | translate }} ({{ allClients.length }})</span>
       </label>
 
       <!-- Individual clients -->
@@ -614,7 +614,7 @@
           <span class="cm-client-item__name">{{ c.name }}</span>
         </label>
 
-        <div class="cm-empty-row" *ngIf="filteredGroupClients().length === 0">Aucun client trouvé.</div>
+        <div class="cm-empty-row" *ngIf="filteredGroupClients().length === 0">{{ 'NO_CLIENTS_FOUND' | translate }}</div>
       </div>
     </div>
 
@@ -632,25 +632,25 @@
           </span>
         </ng-container>
         <span class="cm-chip cm-chip--more" *ngIf="selectedClientIds.length > 4">
-          +{{ selectedClientIds.length - 4 }} more
+          +{{ selectedClientIds.length - 4 }} {{ 'MORE' | translate }}
         </span>
       </div>
 
       <!-- Actions -->
       <div class="cm-footer-actions">
         <span class="cm-footer-count">
-          {{ selectedClientIds.length }} member{{ selectedClientIds.length !== 1 ? 's' : '' }} selected
-          <span class="cm-footer-warn" *ngIf="selectedClientIds.length === 1">(need at least 2)</span>
+          {{ selectedClientIds.length }} {{ 'MEMBERS_SELECTED' | translate }}
+          <span class="cm-footer-warn" *ngIf="selectedClientIds.length === 1">({{ 'NEED_AT_LEAST_TWO' | translate }})</span>
         </span>
         <div class="cm-footer-btns">
-          <button class="cm-btn cm-btn--ghost" type="button" (click)="backToNewChat()">Back</button>
+          <button class="cm-btn cm-btn--ghost" type="button" (click)="backToNewChat()">{{ 'BACK' | translate }}</button>
           <button
             class="cm-btn cm-btn--primary"
             type="button"
             (click)="createGroup()"
             [disabled]="!groupName.trim() || selectedClientIds.length < 2"
           >
-            Create Group
+            {{ 'CREATE_GROUP' | translate }}
           </button>
         </div>
       </div>

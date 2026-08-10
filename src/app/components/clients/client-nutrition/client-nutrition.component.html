@@ -4,32 +4,32 @@
     <div class="cw-root">
       <header class="client-header">
         <h1 class="client-header-title">{{ greeting }}, {{ userName }}</h1>
-        <p class="client-header-subtitle">Your nutrition journey starts here</p>
+        <p class="client-header-subtitle">{{ 'NUTRITION_JOURNEY_STARTS' | translate }}</p>
       </header>
 
       <div class="file-toggle-wrap" *ngIf="showNutritionFiles">
         <div class="file-mode-switch">
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'calendar'" (click)="setClientViewMode('calendar')">
-            <span>Calendrier</span>
+            <span>{{ 'CALENDAR' | translate }}</span>
             <small>{{ calendarCountLabel }}</small>
           </button>
           <button class="file-mode-btn" [class.file-mode-btn--active]="clientViewMode === 'file'" (click)="setClientViewMode('file')">
-            <span>Fichier</span>
+            <span>{{ 'FILE' | translate }}</span>
             <small *ngIf="selectedFileProgram">{{ selectedFileProgram.resourceType }}<span *ngIf="selectedFileProgram.fileSizeBytes"> · {{ formatFileSize(selectedFileProgram.fileSizeBytes) }}</span></small>
           </button>
         </div>
-        <p class="file-mode-hint">Votre coach utilise les deux formats — choisissez la vue qui vous convient.</p>
+        <p class="file-mode-hint">{{ 'NUTRITION_FORMAT_VIEW_HINT' | translate }}</p>
       </div>
 
       <ng-container *ngIf="showNutritionFiles && clientViewMode === 'file'; else calendarArea">
         <div class="file-client-layout">
           <aside class="file-sidebar">
             <div class="file-search-box">
-              <input type="text" placeholder="Rechercher un plan nutrition" [(ngModel)]="searchProgram" (ngModelChange)="applyFileSearch()" />
+              <input type="text" [placeholder]="'SEARCH_NUTRITION_PLAN' | translate" [(ngModel)]="searchProgram" (ngModelChange)="applyFileSearch()" />
             </div>
 
             <div class="sidebar-section">
-              <div class="sidebar-heading">PROGRAMME ACTUEL <span>{{ currentPrograms.length }}</span></div>
+              <div class="sidebar-heading">{{ 'CURRENT_PROGRAM' | translate }} <span>{{ currentPrograms.length }}</span></div>
               <button class="sidebar-program" *ngFor="let program of currentPrograms" [class.sidebar-program--active]="selectedFileProgram?.id === program.id" (click)="selectFileProgram(program)">
                 <div class="sidebar-icon">📄</div>
                 <div class="sidebar-copy">
@@ -41,7 +41,7 @@
             </div>
 
             <div class="sidebar-section">
-              <div class="sidebar-heading">HISTORIQUE <span>{{ historyPrograms.length }}</span></div>
+              <div class="sidebar-heading">{{ 'HISTORY' | translate }} <span>{{ historyPrograms.length }}</span></div>
               <button class="sidebar-program sidebar-program--history" *ngFor="let program of historyPrograms" [class.sidebar-program--active]="selectedFileProgram?.id === program.id" (click)="selectFileProgram(program)">
                 <div class="sidebar-icon">📄</div>
                 <div class="sidebar-copy">
@@ -55,8 +55,8 @@
           <section class="file-main file-main--empty" *ngIf="!selectedFileProgram">
             <div class="file-empty-state">
               <div class="file-empty-icon">📄</div>
-              <h2>Aucun fichier sélectionné</h2>
-              <p>Quand votre coach assigne un plan nutrition PDF ou Excel, il apparaîtra ici avec l’aperçu, l’historique et les actions de téléchargement.</p>
+              <h2>{{ 'NO_FILE_SELECTED' | translate }}</h2>
+              <p>{{ 'NUTRITION_FILE_EMPTY_HINT' | translate }}</p>
             </div>
           </section>
 
@@ -67,10 +67,10 @@
                 <div>
                   <div class="file-card-title-row">
                     <h2>{{ currentFile.name }}</h2>
-                    <span class="active-pill" *ngIf="currentFile.isCurrent">ACTIF</span>
+                    <span class="active-pill" *ngIf="currentFile.isCurrent">{{ 'ACTIVE' | translate }}</span>
                   </div>
                   <div class="file-card-meta-row">
-                    <span>Ajouté le {{ currentFile.addedLabel }}</span>
+                    <span>{{ 'ADDED_ON' | translate }} {{ currentFile.addedLabel }}</span>
                     <span>{{ currentFile.coachName }}</span>
                     <span *ngIf="currentFile.fileSizeBytes">{{ formatFileSize(currentFile.fileSizeBytes) }}</span>
                     <span>{{ currentFile.pageCountLabel }}</span>
@@ -83,9 +83,9 @@
             </div>
 
             <div class="file-preview-panel">
-              <div class="file-preview-title">Aperçu du document {{ currentFile.resourceType }}</div>
+              <div class="file-preview-title">{{ 'DOCUMENT_PREVIEW' | translate }} {{ currentFile.resourceType }}</div>
 
-              <div class="file-preview-loading" *ngIf="selectedFileLoading">Chargement de l’aperçu...</div>
+              <div class="file-preview-loading" *ngIf="selectedFileLoading">{{ 'LOADING_PREVIEW' | translate }}</div>
               <div class="file-preview-error" *ngIf="selectedFileError">{{ selectedFileError }}</div>
 
               <div class="file-preview-content" *ngIf="!selectedFileLoading && !selectedFileError">
@@ -112,14 +112,14 @@
                         </tr>
                       </tbody>
                     </table>
-                    <div class="file-preview-empty" *ngIf="excelRows.length === 0 && !excelLoading">Aucune donnée trouvée dans ce fichier Excel.</div>
+                    <div class="file-preview-empty" *ngIf="excelRows.length === 0 && !excelLoading">{{ 'NO_EXCEL_DATA' | translate }}</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="file-actions-row">
-              <button class="file-download-btn" (click)="downloadFile(currentFile)">Télécharger</button>
+              <button class="file-download-btn" (click)="downloadFile(currentFile)">{{ 'DOWNLOAD' | translate }}</button>
             </div>
           </section>
         </div>
@@ -127,8 +127,8 @@
 
       <ng-template #calendarArea>
         <nav class="client-tabs">
-          <button class="client-tab" [class.client-tab--active]="activeTab === 'upcoming'" (click)="setActiveTab('upcoming')">Upcoming</button>
-          <button class="client-tab" [class.client-tab--active]="activeTab === 'past'" (click)="setActiveTab('past')">Past</button>
+          <button class="client-tab" [class.client-tab--active]="activeTab === 'upcoming'" (click)="setActiveTab('upcoming')">{{ 'UPCOMING' | translate }}</button>
+          <button class="client-tab" [class.client-tab--active]="activeTab === 'past'" (click)="setActiveTab('past')">{{ 'PAST' | translate }}</button>
         </nav>
 
         <div class="client-month-nav">
@@ -183,9 +183,9 @@
 
           <div class="cn-empty" *ngIf="filteredDays.length === 0">
             <div class="cn-empty-icon">📅</div>
-            <h3 class="cn-empty-title">No nutrition scheduled yet</h3>
-            <p class="cn-empty-text">Looks like you don't have any {{ activeTab === 'upcoming' ? 'upcoming' : 'past' }} nutrition plans.</p>
-            <p class="cn-empty-text">Your coach will add nutrition to your program soon.</p>
+            <h3 class="cn-empty-title">{{ 'NO_NUTRITION_SCHEDULED' | translate }}</h3>
+            <p class="cn-empty-text">{{ (activeTab === 'upcoming' ? 'NO_UPCOMING_NUTRITION' : 'NO_PAST_NUTRITION') | translate }}</p>
+            <p class="cn-empty-text">{{ 'COACH_WILL_ADD_NUTRITION' | translate }}</p>
           </div>
         </div>
       </ng-template>
@@ -236,28 +236,28 @@
       <main class="cn-detail-main">
         <!-- Carte des totaux journaliers -->
         <div class="cn-totals-card">
-          <div class="cn-totals-card-header">Daily Totals</div>
+          <div class="cn-totals-card-header">{{ 'DAILY_TOTALS' | translate }}</div>
           <div class="cn-totals-card-body">
             <div class="cn-totals-grid">
               <div class="cn-total-box cn-total-box--orange">
                 <div class="cn-total-value">
                   {{ selectedDay.totalCalories }}
                 </div>
-                <div class="cn-total-label">Calories</div>
+                <div class="cn-total-label">{{ 'CALORIES' | translate }}</div>
               </div>
               <div class="cn-total-box cn-total-box--green">
                 <div class="cn-total-value">
                   {{ selectedDay.totalProtein }}g
                 </div>
-                <div class="cn-total-label">Protein</div>
+                <div class="cn-total-label">{{ 'PROTEIN' | translate }}</div>
               </div>
               <div class="cn-total-box cn-total-box--yellow">
                 <div class="cn-total-value">{{ selectedDay.totalCarbs }}g</div>
-                <div class="cn-total-label">Carbs</div>
+                <div class="cn-total-label">{{ 'CARBS' | translate }}</div>
               </div>
               <div class="cn-total-box cn-total-box--red">
                 <div class="cn-total-value">{{ selectedDay.totalFat }}g</div>
-                <div class="cn-total-label">Fat</div>
+                <div class="cn-total-label">{{ 'FAT' | translate }}</div>
               </div>
             </div>
           </div>
@@ -290,19 +290,19 @@
                     <div class="cn-meal-macro-value">
                       {{ meal.mealTargets?.proteinG }}g
                     </div>
-                    <div class="cn-meal-macro-label">protein</div>
+                    <div class="cn-meal-macro-label">{{ 'PROTEIN_LOWER' | translate }}</div>
                   </div>
                   <div class="cn-meal-macro-card">
                     <div class="cn-meal-macro-value">
                       {{ meal.mealTargets?.carbsG }}g
                     </div>
-                    <div class="cn-meal-macro-label">carbs</div>
+                    <div class="cn-meal-macro-label">{{ 'CARBS_LOWER' | translate }}</div>
                   </div>
                   <div class="cn-meal-macro-card">
                     <div class="cn-meal-macro-value">
                       {{ meal.mealTargets?.fatG }}g
                     </div>
-                    <div class="cn-meal-macro-label">fat</div>
+                    <div class="cn-meal-macro-label">{{ 'FAT_LOWER' | translate }}</div>
                   </div>
                 </div>
               </div>
@@ -334,15 +334,15 @@
                     </div>
                     <div class="cn-food-macro">
                       <div class="cn-food-macro-value">{{ food.protein }}g</div>
-                      <div class="cn-food-macro-label">P</div>
+                      <div class="cn-food-macro-label">{{ 'PROTEIN_SHORT' | translate }}</div>
                     </div>
                     <div class="cn-food-macro">
                       <div class="cn-food-macro-value">{{ food.carbs }}g</div>
-                      <div class="cn-food-macro-label">C</div>
+                      <div class="cn-food-macro-label">{{ 'CARBS_SHORT' | translate }}</div>
                     </div>
                     <div class="cn-food-macro">
                       <div class="cn-food-macro-value">{{ food.fat }}g</div>
-                      <div class="cn-food-macro-label">F</div>
+                      <div class="cn-food-macro-label">{{ 'FAT_SHORT' | translate }}</div>
                     </div>
                   </div>
                 </div>
@@ -355,8 +355,8 @@
         <ng-template #noMeals>
           <div class="cn-empty" style="margin-top: 32px">
             <div class="cn-empty-icon">🍽️</div>
-            <h3 class="cn-empty-title">No meals planned</h3>
-            <p class="cn-empty-text">This day has no meals scheduled yet.</p>
+            <h3 class="cn-empty-title">{{ 'NO_MEALS_PLANNED' | translate }}</h3>
+            <p class="cn-empty-text">{{ 'NO_MEALS_SCHEDULED_DAY' | translate }}</p>
           </div>
         </ng-template>
       </main>
@@ -395,12 +395,12 @@
 
   <main class="meal-day-content">
     <section class="meal-day-totals">
-      <h2>Daily totals</h2>
+      <h2>{{ 'DAILY_TOTALS' | translate }}</h2>
       <div>
-        <article><strong>{{ day.totalCalories }}</strong><small>Calories</small></article>
-        <article><strong>{{ day.totalProtein }}g</strong><small>Protein</small></article>
-        <article><strong>{{ day.totalCarbs }}g</strong><small>Carbs</small></article>
-        <article><strong>{{ day.totalFat }}g</strong><small>Fat</small></article>
+        <article><strong>{{ day.totalCalories }}</strong><small>{{ 'CALORIES' | translate }}</small></article>
+        <article><strong>{{ day.totalProtein }}g</strong><small>{{ 'PROTEIN' | translate }}</small></article>
+        <article><strong>{{ day.totalCarbs }}g</strong><small>{{ 'CARBS' | translate }}</small></article>
+        <article><strong>{{ day.totalFat }}g</strong><small>{{ 'FAT' | translate }}</small></article>
       </div>
     </section>
 
@@ -435,9 +435,9 @@
       <div class="meal-plan-card__body" *ngIf="meal.expanded !== false">
         <div class="meal-plan-macros">
           <div><strong>{{ meal.mealTargets?.calories || 0 }}</strong><small>Kcal</small></div>
-          <div><strong>{{ meal.mealTargets?.proteinG || 0 }}g</strong><small>Protein</small></div>
-          <div><strong>{{ meal.mealTargets?.carbsG || 0 }}g</strong><small>Carbs</small></div>
-          <div><strong>{{ meal.mealTargets?.fatG || 0 }}g</strong><small>Fat</small></div>
+          <div><strong>{{ meal.mealTargets?.proteinG || 0 }}g</strong><small>{{ 'PROTEIN' | translate }}</small></div>
+          <div><strong>{{ meal.mealTargets?.carbsG || 0 }}g</strong><small>{{ 'CARBS' | translate }}</small></div>
+          <div><strong>{{ meal.mealTargets?.fatG || 0 }}g</strong><small>{{ 'FAT' | translate }}</small></div>
         </div>
 
         <section class="meal-recipe-preview" *ngIf="isRecipeMeal(meal)">
@@ -456,11 +456,11 @@
 
         <section class="meal-foods-panel" *ngIf="!isRecipeMeal(meal)">
           <div class="meal-foods-head">
-            <span>Food</span>
+            <span>{{ 'FOOD' | translate }}</span>
             <span>Kcal</span>
-            <span>Protein</span>
-            <span>Carbs</span>
-            <span>Fat</span>
+            <span>{{ 'PROTEIN' | translate }}</span>
+            <span>{{ 'CARBS' | translate }}</span>
+            <span>{{ 'FAT' | translate }}</span>
             <span></span>
           </div>
           <div class="meal-food-row" *ngFor="let food of meal.foods">
@@ -468,27 +468,27 @@
             <div class="meal-food-name"><div><strong>{{ food.name }}</strong><em>{{ food.category }}</em></div><small>{{ food.quantity }}</small></div>
             <div class="meal-food-macros">
               <div class="food-calories"><strong>{{ food.calories }}</strong><small>Kcal</small></div>
-              <div><strong>{{ food.protein }}g</strong><small>P</small></div>
-              <div><strong>{{ food.carbs }}g</strong><small>C</small></div>
-              <div><strong>{{ food.fat }}g</strong><small>F</small></div>
+              <div><strong>{{ food.protein }}g</strong><small>{{ 'PROTEIN_SHORT' | translate }}</small></div>
+              <div><strong>{{ food.carbs }}g</strong><small>{{ 'CARBS_SHORT' | translate }}</small></div>
+              <div><strong>{{ food.fat }}g</strong><small>{{ 'FAT_SHORT' | translate }}</small></div>
             </div>
-            <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)" aria-label="Replace {{ food.name }}"><span aria-hidden="true">⇄</span><span class="meal-food-replace-label">&nbsp; Replace</span></button>
+            <button class="meal-food-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, meal)" [attr.aria-label]="('REPLACE' | translate) + ' ' + food.name"><span aria-hidden="true">⇄</span><span class="meal-food-replace-label">&nbsp; {{ 'REPLACE' | translate }}</span></button>
           </div>
         </section>
 
         <div class="meal-photo-preview" *ngIf="meal.photoUrl">
-          <strong><i class="far fa-image"></i> Client meal photo</strong>
+          <strong><i class="far fa-image"></i> {{ 'CLIENT_MEAL_PHOTO' | translate }}</strong>
           <div class="meal-photo-preview__content">
             <img [src]="meal.photoUrl" alt="Client meal photo">
-            <span><b>Uploaded by client</b><small>Meal photo</small><a [href]="meal.photoUrl" target="_blank" rel="noopener"><i class="far fa-eye"></i> View</a></span>
+            <span><b>{{ 'UPLOADED_BY_CLIENT' | translate }}</b><small>{{ 'MEAL_PHOTO' | translate }}</small><a [href]="meal.photoUrl" target="_blank" rel="noopener"><i class="far fa-eye"></i> {{ 'VIEW' | translate }}</a></span>
             <label class="replace-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)"><i class="far fa-image"></i> {{ uploadingMealId === meal.id ? 'Uploading…' : 'Replace photo' }}</label>
           </div>
         </div>
 
         <label class="meal-note">
           <span>▱ &nbsp;{{ meal.note ? ('Note for meal ' + (mealIndex + 1)) : 'Add a note' }}</span>
-          <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" placeholder="Anything your coach should know about this meal..."></textarea>
-          <button *ngIf="!meal.note" type="button" (click)="meal.note = ' '">Add a note</button>
+          <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" [placeholder]="'MEAL_NOTE_PLACEHOLDER' | translate"></textarea>
+          <button *ngIf="!meal.note" type="button" (click)="meal.note = ' '">{{ 'ADD_NOTE' | translate }}</button>
         </label>
 
         <div class="meal-card-actions meal-card-actions--footer">
@@ -501,28 +501,28 @@
       </div>
     </article>
 
-    <section class="meal-day-empty" *ngIf="!day.meals.length"><span>🍽</span><h2>No meals planned</h2><p>This day has no meals scheduled yet.</p></section>
+    <section class="meal-day-empty" *ngIf="!day.meals.length"><span>🍽</span><h2>{{ 'NO_MEALS_PLANNED' | translate }}</h2><p>{{ 'NO_MEALS_SCHEDULED_DAY' | translate }}</p></section>
 
     <section class="daily-feedback-card">
-      <header><h2>▱ &nbsp;Daily feedback for your coach</h2><p>Rate each area from left (low) to right (high) so your coach can adjust.</p></header>
+      <header><h2>▱ &nbsp;{{ 'DAILY_FEEDBACK' | translate }}</h2><p>{{ 'DAILY_FEEDBACK_HINT' | translate }}</p></header>
       <div class="feedback-grid">
-        <div class="feedback-group"><h3>🍴 <span>Hunger<small>How hungry did you feel overall?</small></span></h3><div>
-          <button [class.selected]="day.hunger === 'Low'" (click)="day.hunger = 'Low'"><strong>Low</strong><small>Rarely hungry</small></button>
-          <button [class.selected]="day.hunger === 'Good'" (click)="day.hunger = 'Good'"><strong>Good</strong><small>Well balanced</small></button>
-          <button [class.selected]="day.hunger === 'High'" (click)="day.hunger = 'High'"><strong>High</strong><small>Often hungry</small></button>
+        <div class="feedback-group"><h3>🍴 <span>{{ 'HUNGER' | translate }}<small>{{ 'HUNGER_QUESTION' | translate }}</small></span></h3><div>
+          <button [class.selected]="day.hunger === 'Low'" (click)="day.hunger = 'Low'"><strong>{{ 'LOW' | translate }}</strong><small>{{ 'RARELY_HUNGRY' | translate }}</small></button>
+          <button [class.selected]="day.hunger === 'Good'" (click)="day.hunger = 'Good'"><strong>{{ 'GOOD' | translate }}</strong><small>{{ 'WELL_BALANCED' | translate }}</small></button>
+          <button [class.selected]="day.hunger === 'High'" (click)="day.hunger = 'High'"><strong>{{ 'HIGH' | translate }}</strong><small>{{ 'OFTEN_HUNGRY' | translate }}</small></button>
         </div></div>
-        <div class="feedback-group"><h3>⚡ <span>Energy<small>How were your energy levels?</small></span></h3><div>
-          <button [class.selected]="day.energy === 'Low'" (click)="day.energy = 'Low'"><strong>Low</strong><small>Sluggish</small></button>
-          <button [class.selected]="day.energy === 'Good'" (click)="day.energy = 'Good'"><strong>Good</strong><small>Steady</small></button>
-          <button [class.selected]="day.energy === 'High'" (click)="day.energy = 'High'"><strong>High</strong><small>Energized</small></button>
+        <div class="feedback-group"><h3>⚡ <span>{{ 'ENERGY' | translate }}<small>{{ 'ENERGY_QUESTION' | translate }}</small></span></h3><div>
+          <button [class.selected]="day.energy === 'Low'" (click)="day.energy = 'Low'"><strong>{{ 'LOW' | translate }}</strong><small>{{ 'SLUGGISH' | translate }}</small></button>
+          <button [class.selected]="day.energy === 'Good'" (click)="day.energy = 'Good'"><strong>{{ 'GOOD' | translate }}</strong><small>{{ 'STEADY' | translate }}</small></button>
+          <button [class.selected]="day.energy === 'High'" (click)="day.energy = 'High'"><strong>{{ 'HIGH' | translate }}</strong><small>{{ 'ENERGIZED' | translate }}</small></button>
         </div></div>
-        <div class="feedback-group"><h3>〰 <span>Digestion<small>How did digestion feel?</small></span></h3><div>
-          <button [class.selected]="day.digestion === 'Poor'" (click)="day.digestion = 'Poor'"><strong>Poor</strong><small>Uncomfortable</small></button>
-          <button [class.selected]="day.digestion === 'Good'" (click)="day.digestion = 'Good'"><strong>Good</strong><small>Fine</small></button>
-          <button [class.selected]="day.digestion === 'Great'" (click)="day.digestion = 'Great'"><strong>Great</strong><small>No issues</small></button>
+        <div class="feedback-group"><h3>〰 <span>{{ 'DIGESTION' | translate }}<small>{{ 'DIGESTION_QUESTION' | translate }}</small></span></h3><div>
+          <button [class.selected]="day.digestion === 'Poor'" (click)="day.digestion = 'Poor'"><strong>{{ 'POOR' | translate }}</strong><small>{{ 'UNCOMFORTABLE' | translate }}</small></button>
+          <button [class.selected]="day.digestion === 'Good'" (click)="day.digestion = 'Good'"><strong>{{ 'GOOD' | translate }}</strong><small>{{ 'FINE' | translate }}</small></button>
+          <button [class.selected]="day.digestion === 'Great'" (click)="day.digestion = 'Great'"><strong>{{ 'GREAT' | translate }}</strong><small>{{ 'NO_ISSUES' | translate }}</small></button>
         </div></div>
       </div>
-      <label class="overall-note"><strong>Overall note</strong><textarea [(ngModel)]="day.overallNote" rows="3" placeholder="How did the day feel overall? Share anything useful for your coach..."></textarea></label>
+      <label class="overall-note"><strong>{{ 'OVERALL_NOTE' | translate }}</strong><textarea [(ngModel)]="day.overallNote" rows="3" [placeholder]="'OVERALL_DAY_NOTE_PLACEHOLDER' | translate"></textarea></label>
     </section>
   </main>
   <footer class="meal-day-footer">
@@ -534,7 +534,7 @@
 
 <div class="meal-view-backdrop" *ngIf="showMealViewModal && viewedMeal" (click)="closeMealView()">
   <section class="meal-view-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <button class="meal-view-close" type="button" (click)="closeMealView()">×</button>
+    <button class="meal-view-close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeMealView()">×</button>
     <div class="meal-view-cover" *ngIf="viewedMeal.coverImage">
       <img [src]="viewedMeal.coverImage" [alt]="viewedMeal.name">
     </div>
@@ -545,9 +545,9 @@
           <p>{{ mealVariantLabel(viewedMeal) }}</p>
         </div>
         <div class="meal-view-timebox">
-          <small *ngIf="viewedMeal.mealTime">Coach planned {{ formatMealTime(viewedMeal.mealTime) }}</small>
+          <small *ngIf="viewedMeal.mealTime">{{ 'COACH_PLANNED' | translate }} {{ formatMealTime(viewedMeal.mealTime) }}</small>
           <label>
-            <span>Eaten at</span>
+            <span>{{ 'EATEN_AT' | translate }}</span>
             <input
               type="time"
               [ngModel]="viewedMeal.actualMealTime || viewedMeal.mealTime"
@@ -559,41 +559,41 @@
       </div>
 
       <div class="meal-view-stats">
-        <article *ngIf="viewedMeal.totalTimeMinutes"><small>Total prep time</small><strong>{{ viewedMeal.totalTimeMinutes }} minutes</strong></article>
-        <article><small>Calories</small><strong>{{ viewedMeal.mealTargets?.calories || 0 }}</strong></article>
-        <article><small>Protein</small><strong>{{ viewedMeal.mealTargets?.proteinG || 0 }}g</strong></article>
-        <article><small>Carbs</small><strong>{{ viewedMeal.mealTargets?.carbsG || 0 }}g</strong></article>
-        <article><small>Fat</small><strong>{{ viewedMeal.mealTargets?.fatG || 0 }}g</strong></article>
+        <article *ngIf="viewedMeal.totalTimeMinutes"><small>{{ 'TOTAL_PREP_TIME' | translate }}</small><strong>{{ viewedMeal.totalTimeMinutes }} {{ 'MINUTES_LABEL' | translate }}</strong></article>
+        <article><small>{{ 'CALORIES' | translate }}</small><strong>{{ viewedMeal.mealTargets?.calories || 0 }}</strong></article>
+        <article><small>{{ 'PROTEIN' | translate }}</small><strong>{{ viewedMeal.mealTargets?.proteinG || 0 }}g</strong></article>
+        <article><small>{{ 'CARBS' | translate }}</small><strong>{{ viewedMeal.mealTargets?.carbsG || 0 }}g</strong></article>
+        <article><small>{{ 'FAT' | translate }}</small><strong>{{ viewedMeal.mealTargets?.fatG || 0 }}g</strong></article>
       </div>
 
       <section class="meal-view-section">
-        <h3>Serving size</h3>
+        <h3>{{ 'SERVING_SIZE' | translate }}</h3>
         <div class="meal-view-servings">{{ viewedMeal.servings || 1 }} serving{{ (viewedMeal.servings || 1) > 1 ? 's' : '' }}</div>
       </section>
 
       <section class="meal-view-section" *ngIf="viewedMeal.foods?.length">
-        <h3>Ingredients for {{ viewedMeal.servings || 1 }} serving{{ (viewedMeal.servings || 1) > 1 ? 's' : '' }}</h3>
+        <h3>{{ 'INGREDIENTS_FOR' | translate }} {{ viewedMeal.servings || 1 }} {{ 'SERVINGS' | translate }}</h3>
         <div class="meal-view-ingredients">
           <div class="meal-view-ingredient" *ngFor="let food of viewedMeal.foods">
             <div>
               <span>{{ food.quantity }}</span>
               <strong>{{ food.name }}</strong>
             </div>
-            <button class="meal-view-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, viewedMeal)">Replace</button>
+            <button class="meal-view-replace" type="button" *ngIf="hasReplacementGroup(food)" (click)="openReplaceModal(food, viewedMeal)">{{ 'REPLACE' | translate }}</button>
           </div>
         </div>
       </section>
 
       <section class="meal-view-section" *ngIf="viewedMeal.directions?.length">
-        <h3>Directions</h3>
+        <h3>{{ 'DIRECTIONS' | translate }}</h3>
         <ol class="meal-view-directions">
           <li *ngFor="let direction of viewedMeal.directions">{{ direction }}</li>
         </ol>
       </section>
 
       <label class="meal-view-note">
-        <strong>Note for this meal</strong>
-        <textarea [(ngModel)]="viewedMeal.note" (blur)="saveMealNote(viewedMeal)" rows="3" placeholder="e.g. felt full quickly, swapped the rice..."></textarea>
+        <strong>{{ 'NOTE_FOR_MEAL' | translate }}</strong>
+        <textarea [(ngModel)]="viewedMeal.note" (blur)="saveMealNote(viewedMeal)" rows="3" [placeholder]="'MEAL_NOTE_EXAMPLE' | translate"></textarea>
       </label>
     </div>
   </section>
@@ -602,49 +602,49 @@
 <div class="nutrition-pdf-backdrop" *ngIf="showNutritionPdfPreview" (click)="closeNutritionPdfPreview()">
   <section class="nutrition-pdf-modal" role="dialog" aria-modal="true" aria-labelledby="nutrition-pdf-title" (click)="$event.stopPropagation()">
     <header class="nutrition-pdf-modal__header">
-      <div><h2 id="nutrition-pdf-title">Nutrition PDF preview</h2><p>Review your complete nutrition program before downloading.</p></div>
+      <div><h2 id="nutrition-pdf-title">{{ 'NUTRITION_PDF_PREVIEW' | translate }}</h2><p>{{ 'REVIEW_NUTRITION_BEFORE_DOWNLOAD' | translate }}</p></div>
       <div class="nutrition-pdf-modal__actions">
         <button type="button" class="nutrition-pdf-download" (click)="downloadNutritionPdf()">↓&nbsp; Download PDF</button>
-        <button type="button" class="nutrition-pdf-close" aria-label="Close preview" (click)="closeNutritionPdfPreview()">×</button>
+        <button type="button" class="nutrition-pdf-close" [attr.aria-label]="'CLOSE_PREVIEW' | translate" (click)="closeNutritionPdfPreview()">×</button>
       </div>
     </header>
     <div class="nutrition-pdf-scroll">
       <article class="nutrition-pdf-document">
         <section class="nutrition-pdf-cover">
-          <div class="nutrition-pdf-brand"><span class="nutrition-pdf-brand-mark">♡</span><span><strong>Nutrition program</strong><small>Powered by Yo Coach</small></span></div>
+          <div class="nutrition-pdf-brand"><span class="nutrition-pdf-brand-mark">♡</span><span><strong>{{ 'NUTRITION_PROGRAM' | translate }}</strong><small>{{ 'POWERED_BY_YO_COACH' | translate }}</small></span></div>
           <h1>{{ selectedDay?.programName }}</h1>
           <p class="nutrition-pdf-description">{{ selectedNutritionPlan?.description || selectedNutritionPlan?.details || 'Your complete nutrition program. Follow the planned meals and daily nutritional targets.' }}</p>
           <div class="nutrition-pdf-meta">
-            <div><small>Client</small><strong>{{ pdfNutritionClientName }}</strong></div>
-            <div><small>Coach</small><strong>{{ pdfNutritionCoachName }}</strong></div>
-            <div><small>Start date</small><strong>{{ selectedNutritionPlan?.startDate | date:'EEEE, MMM d, y' }}</strong></div>
-            <div><small>End date</small><strong>{{ selectedNutritionPlan?.endDate | date:'EEEE, MMM d, y' }}</strong></div>
+            <div><small>{{ 'CLIENT' | translate }}</small><strong>{{ pdfNutritionClientName }}</strong></div>
+            <div><small>{{ 'COACH' | translate }}</small><strong>{{ pdfNutritionCoachName }}</strong></div>
+            <div><small>{{ 'START_DATE' | translate }}</small><strong>{{ selectedNutritionPlan?.startDate | date:'EEEE, MMM d, y' }}</strong></div>
+            <div><small>{{ 'END_DATE' | translate }}</small><strong>{{ selectedNutritionPlan?.endDate | date:'EEEE, MMM d, y' }}</strong></div>
           </div>
           <div class="nutrition-pdf-stats">
-            <div><strong>{{ pdfNutritionWeeks.length }}</strong><small>WEEKS</small></div>
-            <div><strong>{{ pdfNutritionDays.length }}</strong><small>TOTAL DAYS</small></div>
-            <div><strong>{{ pdfNutritionMealCount }}</strong><small>MEALS</small></div>
+            <div><strong>{{ pdfNutritionWeeks.length }}</strong><small>{{ 'WEEKS' | translate }}</small></div>
+            <div><strong>{{ pdfNutritionDays.length }}</strong><small>{{ 'TOTAL_DAYS' | translate }}</small></div>
+            <div><strong>{{ pdfNutritionMealCount }}</strong><small>{{ 'MEALS' | translate }}</small></div>
           </div>
         </section>
 
         <section class="nutrition-pdf-week" *ngFor="let week of pdfNutritionWeeks">
           <header class="nutrition-pdf-week-header">
-            <div><small>{{ selectedDay?.programName }}</small><h2>Week {{ week.number }}</h2></div>
-            <div><small>Schedule</small><strong>{{ week.days[0]?.date | date:'MMM d' }} - {{ week.days[week.days.length - 1]?.date | date:'MMM d' }}</strong></div>
+            <div><small>{{ selectedDay?.programName }}</small><h2>{{ 'WEEK' | translate }} {{ week.number }}</h2></div>
+            <div><small>{{ 'SCHEDULE' | translate }}</small><strong>{{ week.days[0]?.date | date:'MMM d' }} - {{ week.days[week.days.length - 1]?.date | date:'MMM d' }}</strong></div>
           </header>
           <article class="nutrition-pdf-day" *ngFor="let nutritionDay of week.days; let dayIndex = index">
-            <div class="nutrition-pdf-day-head"><span>Day {{ ((week.number - 1) * 7) + dayIndex + 1 }} &nbsp;•&nbsp; {{ nutritionDay.date | date:'EEEE, MMM d, y' }}</span><em>{{ nutritionDay.meals.length }} meals</em></div>
+            <div class="nutrition-pdf-day-head"><span>{{ 'DAY' | translate }} {{ ((week.number - 1) * 7) + dayIndex + 1 }} &nbsp;•&nbsp; {{ nutritionDay.date | date:'EEEE, MMM d, y' }}</span><em>{{ nutritionDay.meals.length }} {{ 'MEALS_LOWER' | translate }}</em></div>
             <div class="nutrition-pdf-totals">
-              <span><strong>{{ nutritionDay.totalCalories }}</strong><small>Calories</small></span>
-              <span><strong>{{ nutritionDay.totalProtein }}g</strong><small>Protein</small></span>
-              <span><strong>{{ nutritionDay.totalCarbs }}g</strong><small>Carbs</small></span>
-              <span><strong>{{ nutritionDay.totalFat }}g</strong><small>Fat</small></span>
+              <span><strong>{{ nutritionDay.totalCalories }}</strong><small>{{ 'CALORIES' | translate }}</small></span>
+              <span><strong>{{ nutritionDay.totalProtein }}g</strong><small>{{ 'PROTEIN' | translate }}</small></span>
+              <span><strong>{{ nutritionDay.totalCarbs }}g</strong><small>{{ 'CARBS' | translate }}</small></span>
+              <span><strong>{{ nutritionDay.totalFat }}g</strong><small>{{ 'FAT' | translate }}</small></span>
             </div>
-            <p class="nutrition-pdf-empty" *ngIf="!nutritionDay.meals.length">No meals planned for this day.</p>
+            <p class="nutrition-pdf-empty" *ngIf="!nutritionDay.meals.length">{{ 'NO_MEALS_PLANNED_FOR_DAY' | translate }}</p>
             <section class="nutrition-pdf-meal" *ngFor="let meal of nutritionDay.meals; let mealIndex = index">
-              <div class="nutrition-pdf-meal-head"><strong>Meal {{ mealIndex + 1 }} · {{ meal.name }}</strong><em>{{ meal.mealTargets?.calories || 0 }} kcal</em></div>
+              <div class="nutrition-pdf-meal-head"><strong>{{ 'MEAL' | translate }} {{ mealIndex + 1 }} · {{ meal.name }}</strong><em>{{ meal.mealTargets?.calories || 0 }} kcal</em></div>
               <table>
-                <thead><tr><th>Food</th><th>Quantity</th><th>Kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr></thead>
+                <thead><tr><th>{{ 'FOOD' | translate }}</th><th>{{ 'QUANTITY' | translate }}</th><th>Kcal</th><th>{{ 'PROTEIN' | translate }}</th><th>{{ 'CARBS' | translate }}</th><th>{{ 'FAT' | translate }}</th></tr></thead>
                 <tbody><tr *ngFor="let food of meal.foods"><td>{{ food.name }}</td><td>{{ food.quantity }}</td><td>{{ food.calories }}</td><td>{{ food.protein }}g</td><td>{{ food.carbs }}g</td><td>{{ food.fat }}g</td></tr></tbody>
               </table>
             </section>
@@ -657,15 +657,15 @@
 
 <div class="meal-report-backdrop" *ngIf="showMealReportModal && reportMeal" (click)="closeMealReport()">
   <section class="meal-report-modal" (click)="$event.stopPropagation()">
-    <button class="meal-report-close" type="button" (click)="closeMealReport()">×</button>
-    <header><h2>Report Meal {{ reportMealIndex + 1 }}</h2><p>Tell your coach how this meal went.</p></header>
+    <button class="meal-report-close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeMealReport()">×</button>
+    <header><h2>{{ 'REPORT_MEAL' | translate }} {{ reportMealIndex + 1 }}</h2><p>{{ 'REPORT_MEAL_HINT' | translate }}</p></header>
     <div class="meal-report-options">
-      <button [class.selected]="reportStatus === 'AS_PLANNED'" (click)="reportStatus = 'AS_PLANNED'"><span>✓</span><strong>As planned<small>I ate this meal exactly as prescribed.</small></strong></button>
-      <button [class.selected]="reportStatus === 'MODIFIED'" (click)="reportStatus = 'MODIFIED'"><span>✎</span><strong>Modified<small>I swapped or adjusted something.</small></strong></button>
-      <button [class.selected]="reportStatus === 'SKIPPED'" (click)="reportStatus = 'SKIPPED'"><span>−</span><strong>Skipped<small>I did not eat this meal.</small></strong></button>
+      <button [class.selected]="reportStatus === 'AS_PLANNED'" (click)="reportStatus = 'AS_PLANNED'"><span>✓</span><strong>{{ 'AS_PLANNED' | translate }}<small>{{ 'ATE_AS_PRESCRIBED' | translate }}</small></strong></button>
+      <button [class.selected]="reportStatus === 'MODIFIED'" (click)="reportStatus = 'MODIFIED'"><span>✎</span><strong>{{ 'MODIFIED' | translate }}<small>{{ 'SWAPPED_OR_ADJUSTED' | translate }}</small></strong></button>
+      <button [class.selected]="reportStatus === 'SKIPPED'" (click)="reportStatus = 'SKIPPED'"><span>−</span><strong>{{ 'SKIPPED' | translate }}<small>{{ 'DID_NOT_EAT_MEAL' | translate }}</small></strong></button>
     </div>
-    <label class="meal-report-note"><strong>Note <em>(optional)</em></strong><textarea [(ngModel)]="reportNote" rows="4" placeholder="Anything your coach should know about this meal..."></textarea></label>
-    <footer><button class="report-cancel" type="button" (click)="closeMealReport()">Cancel</button><button class="report-save" type="button" [disabled]="savingMealReport" (click)="saveMealReport()">{{ savingMealReport ? 'Saving…' : 'Save report' }}</button></footer>
+    <label class="meal-report-note"><strong>{{ 'NOTE' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></strong><textarea [(ngModel)]="reportNote" rows="4" [placeholder]="'MEAL_NOTE_PLACEHOLDER' | translate"></textarea></label>
+    <footer><button class="report-cancel" type="button" (click)="closeMealReport()">{{ 'CANCEL' | translate }}</button><button class="report-save" type="button" [disabled]="savingMealReport" (click)="saveMealReport()">{{ (savingMealReport ? 'SAVING' : 'SAVE_REPORT') | translate }}</button></footer>
   </section>
 </div>
 

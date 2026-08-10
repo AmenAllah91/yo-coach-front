@@ -8,6 +8,7 @@ import {
 } from 'app/service/body-measurements.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ClientService } from 'app/service/client.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface MeasurementTypeItem {
   key: string;
@@ -19,7 +20,7 @@ interface MeasurementTypeItem {
 @Component({
   selector: 'app-body-measurements',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './body-measurements.component.html',
   styleUrls: ['./body-measurements.component.scss'],
 })
@@ -59,24 +60,25 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   measurementUnit: 'cm' | 'in' = 'cm';
 
   measurementTypes: MeasurementTypeItem[] = [
-    { key: 'BODYWEIGHT', label: 'Bodyweight', unit: 'kg', icon: 'fa-weight-scale' },
+    { key: 'BODYWEIGHT', label: 'BODYWEIGHT', unit: 'kg', icon: 'fa-weight-scale' },
     { key: 'BMI', label: 'BMI', unit: '%', icon: 'fa-person' },
-    { key: 'BODY_FAT_INDEX', label: 'Body Fat Index', unit: '%', icon: 'fa-person' },
-    { key: 'WAIST', label: 'Waist', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'CHEST', label: 'Chest', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'SHOULDERS', label: 'Shoulders', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'BICEPS_RIGHT', label: 'Biceps (Right)', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'BICEPS_LEFT', label: 'Biceps (Left)', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'QUADRICEPS_RIGHT', label: 'Quadriceps (Right)', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'QUADRICEPS_LEFT', label: 'Quadriceps (Left)', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'NECK', label: 'Neck', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'BODY_FAT_INDEX', label: 'BODY_FAT_INDEX', unit: '%', icon: 'fa-person' },
+    { key: 'WAIST', label: 'WAIST', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'CHEST', label: 'CHEST', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'SHOULDERS', label: 'SHOULDERS', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'BICEPS_RIGHT', label: 'BICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'BICEPS_LEFT', label: 'BICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'QUADRICEPS_RIGHT', label: 'QUADRICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'QUADRICEPS_LEFT', label: 'QUADRICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'NECK', label: 'NECK', unit: 'cm', icon: 'fa-ruler-horizontal' },
   ];
 
   constructor(
     private bodyMeasurementsService: BodyMeasurementsService,
     private route: ActivatedRoute,
     private coachSettingsService: CoachSettingsService,
-    private clientService: ClientService
+    private clientService: ClientService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -107,7 +109,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   loadMeasurements(): void {
     if (!this.clientId) {
-      this.error = 'Client id is missing';
+      this.error = this.translate.instant('CLIENT_ID_MISSING');
       return;
     }
 
@@ -121,7 +123,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         console.error('loadMeasurements failed:', err);
-        this.error = 'Failed to load measurements';
+        this.error = this.translate.instant('LOAD_MEASUREMENTS_ERROR');
         this.loading = false;
       },
     });
@@ -196,7 +198,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         console.error('saveMeasurement failed:', err);
-        this.error = 'Failed to save measurement';
+        this.error = this.translate.instant('SAVE_MEASUREMENT_ERROR');
         this.saving = false;
       },
     });
@@ -210,7 +212,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     }
 
     return this.measurementTypes.filter((type) =>
-      type.label.toLowerCase().includes(q)
+      this.translate.instant(type.label).toLowerCase().includes(q)
     );
   }
 
@@ -268,7 +270,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return '';
     }
 
-    return `Goal ${this.formatValue(this.toDisplayWeight(this.normalizedTargetWeight))} ${this.weightUnit}`;
+    return `${this.translate.instant('GOAL')} ${this.formatValue(this.toDisplayWeight(this.normalizedTargetWeight))} ${this.weightUnit}`;
   }
 
   get chartMin(): number {
@@ -381,7 +383,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   }
 
   formatDate(value: string): string {
-    return new Date(value).toLocaleDateString('en-US', {
+    return new Date(value).toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: '2-digit',
@@ -415,7 +417,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     if (!this.allowDelete || !item.id || this.deletingId) return;
 
     const confirmed = window.confirm(
-      `Delete this ${this.currentType.label.toLowerCase()} measurement? This action cannot be undone.`
+      this.translate.instant('DELETE_MEASUREMENT_CONFIRM', { measurement: this.translate.instant(this.currentType.label).toLowerCase() })
     );
     if (!confirmed) return;
 
@@ -428,7 +430,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         console.error('deleteMeasurement failed:', err);
-        this.error = 'Failed to delete measurement';
+        this.error = this.translate.instant('DELETE_MEASUREMENT_ERROR');
         this.deletingId = null;
       },
     });

@@ -13,6 +13,7 @@ import {forkJoin, of, Subject} from "rxjs";
 import {catchError, debounceTime, map, takeUntil} from "rxjs/operators";
 import { environment } from "@env/environment";
 import {FeatherModule} from "angular-feather";
+import {TranslateModule} from "@ngx-translate/core";
 
 export interface Member { id: string; name: string; avatar: string; }
 
@@ -28,7 +29,8 @@ export interface Member { id: string; name: string; avatar: string; }
     NgSwitch,
     NgSwitchCase,
     NgSwitchDefault,
-    FeatherModule
+    FeatherModule,
+    TranslateModule
   ],
   templateUrl: './conversation-messages.component.html',
   styleUrl: './conversation-messages.component.scss'

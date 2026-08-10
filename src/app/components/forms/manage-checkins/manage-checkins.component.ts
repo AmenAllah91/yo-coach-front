@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
 import {catchError, finalize, forkJoin, of} from 'rxjs';
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
@@ -62,7 +63,7 @@ const ITEMS_PER_PAGE = 5;
 @Component({
   selector: 'app-manage-checkins',
   standalone: true,
-  imports: [CommonModule,FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './manage-checkins.component.html',
   styleUrl: './manage-checkins.component.scss'
 })
@@ -81,12 +82,12 @@ export class ManageCheckinsComponent implements OnInit{
   coachFeedback = '';
 
   // tabs config
-  tabs: { id: ClientStatus; label: string }[] = [
-    { id: 'due_today', label: 'Due Today' },
-    { id: 'overdue', label: 'Overdue' },
-    { id: 'to_review', label: 'To Be Reviewed' },
-    { id: 'reviewed', label: 'Reviewed' },
-    { id: 'upcoming', label: 'Upcoming' },
+  tabs: { id: ClientStatus; labelKey: string }[] = [
+    { id: 'due_today', labelKey: 'DUE_TODAY' },
+    { id: 'overdue', labelKey: 'OVERDUE_LABEL' },
+    { id: 'to_review', labelKey: 'TO_BE_REVIEWED' },
+    { id: 'reviewed', labelKey: 'REVIEWED_STATUS' },
+    { id: 'upcoming', labelKey: 'UPCOMING_STATUS' },
   ];
 
   clients: ClientData[];
@@ -100,6 +101,7 @@ export class ManageCheckinsComponent implements OnInit{
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private clientService: ClientService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -121,7 +123,7 @@ export class ManageCheckinsComponent implements OnInit{
           this.enrichClients(this.assignments);
         },
         error: (err) => {
-          this.error = err?.error?.message ?? 'Failed to load assignments.';
+          this.error = err?.error?.message ?? this.translate.instant('LOAD_ASSIGNMENTS_ERROR');
         }
       });
   }
@@ -229,7 +231,7 @@ export class ManageCheckinsComponent implements OnInit{
 
   private formatDate(iso: string): string {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+    return d.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { year: 'numeric', month: 'short', day: '2-digit' });
   }
 
 
@@ -397,7 +399,7 @@ export class ManageCheckinsComponent implements OnInit{
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to mark as reviewed.';
+        this.error = err?.error?.message ?? this.translate.instant('MARK_REVIEWED_ERROR');
       }
     });
   }
@@ -406,15 +408,15 @@ export class ManageCheckinsComponent implements OnInit{
   statusLabel(status: ClientStatus): string {
     switch (status) {
       case 'due_today':
-        return 'Due Today';
+        return this.translate.instant('DUE_TODAY');
       case 'overdue':
-        return 'Overdue';
+        return this.translate.instant('OVERDUE_LABEL');
       case 'to_review':
-        return 'To Review';
+        return this.translate.instant('TO_REVIEW');
       case 'reviewed':
-        return 'Reviewed';
+        return this.translate.instant('REVIEWED_STATUS');
       case 'upcoming':
-        return 'Upcoming';
+        return this.translate.instant('UPCOMING_STATUS');
     }
   }
 

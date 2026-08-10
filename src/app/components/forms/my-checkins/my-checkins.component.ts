@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type Tab = 'pending' | 'completed';
 
@@ -68,11 +69,12 @@ interface CheckInItem {
 @Component({
   selector: 'app-my-checkins',
   standalone: true,
-  imports: [CommonModule,FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './my-checkins.component.html',
   styleUrl: './my-checkins.component.scss'
 })
 export class MyCheckinsComponent {
+  constructor(private translate: TranslateService) {}
   activeTab: Tab = 'pending';
   selectedCheckIn: CheckInItem | null = null;
   isModalOpen = false;
@@ -85,35 +87,35 @@ export class MyCheckinsComponent {
     {
       id: 'q1',
       type: QuestionType.TEXT,
-      label: 'What was your biggest win this week?',
+      label: 'BIGGEST_WIN_QUESTION',
       required: true,
       order: 1,
-      helpText: 'Share your most significant achievement'
+      helpText: 'BIGGEST_WIN_HELP'
     },
     {
       id: 'q2',
       type: QuestionType.MULTIPLE_CHOICE,
-      label: 'Which area of fitness routine do you feel improved the most this week?',
+      label: 'MOST_IMPROVED_AREA_QUESTION',
       required: true,
       order: 2,
       options: [
-        { id: 'opt1', label: 'Strength Training' },
-        { id: 'opt2', label: 'Cardio Endurance' },
-        { id: 'opt3', label: 'Flexibility' },
-        { id: 'opt4', label: 'Nutrition' }
+        { id: 'opt1', label: 'STRENGTH_TRAINING' },
+        { id: 'opt2', label: 'CARDIO_ENDURANCE' },
+        { id: 'opt3', label: 'FLEXIBILITY' },
+        { id: 'opt4', label: 'NUTRITION' }
       ]
     },
     {
       id: 'q3',
       type: QuestionType.YES_NO,
-      label: 'Did you achieve your target weight or body composition for the week?',
+      label: 'TARGET_WEIGHT_ACHIEVED_QUESTION',
       required: true,
       order: 3
     },
     {
       id: 'q4',
       type: QuestionType.STAR_RATING,
-      label: "Rate your overall satisfaction with this week's progress",
+      label: 'WEEKLY_PROGRESS_RATING_QUESTION',
       required: true,
       order: 4,
       minStars: 1,
@@ -122,7 +124,7 @@ export class MyCheckinsComponent {
     {
       id: 'q5',
       type: QuestionType.DATE,
-      label: 'On which date this week did you feel most energized and productive?',
+      label: 'MOST_ENERGIZED_DATE_QUESTION',
       required: false,
       order: 5
     }
@@ -133,7 +135,7 @@ export class MyCheckinsComponent {
     {
       questionId: 'q1',
       type: QuestionType.TEXT,
-      text: 'I managed to complete all 5 of my scheduled workouts, which is a first for me! Also improved my diet consistency.'
+      text: 'MOCK_CHECK_IN_ANSWER'
     },
     {
       questionId: 'q2',
@@ -160,41 +162,41 @@ export class MyCheckinsComponent {
   checkIns: CheckInItem[] = [
     {
       id: '1',
-      formName: 'Weekly Progress Check-in',
-      dueDate: 'January 18, 2025',
-      assignedDate: 'January 15, 2025',
+      formName: 'WEEKLY_PROGRESS_CHECK_IN',
+      dueDate: '2025-01-18',
+      assignedDate: '2025-01-15',
       status: 'pending',
       questions: this.mockQuestions
     },
     {
       id: '2',
-      formName: 'Nutrition Assessment',
-      dueDate: 'January 20, 2025',
-      assignedDate: 'January 15, 2025',
+      formName: 'NUTRITION_ASSESSMENT',
+      dueDate: '2025-01-20',
+      assignedDate: '2025-01-15',
       status: 'pending',
       questions: this.mockQuestions
     },
     {
       id: '3',
-      formName: 'Weekly Progress Check-in',
-      dueDate: 'January 11, 2025',
-      assignedDate: 'January 8, 2025',
+      formName: 'WEEKLY_PROGRESS_CHECK_IN',
+      dueDate: '2025-01-11',
+      assignedDate: '2025-01-08',
       status: 'completed',
-      submittedDate: 'January 10, 2025',
+      submittedDate: '2025-01-10',
       questions: this.mockQuestions,
       answers: this.mockCompletedAnswers,
-      coachFeedback: 'Great progress this week! Keep up the good work. Your consistency with workouts is impressive!'
+      coachFeedback: 'MOCK_COACH_FEEDBACK_WEEK'
     },
     {
       id: '4',
-      formName: 'Monthly Review',
-      dueDate: 'January 5, 2025',
-      assignedDate: 'January 1, 2025',
+      formName: 'MONTHLY_REVIEW',
+      dueDate: '2025-01-05',
+      assignedDate: '2025-01-01',
       status: 'completed',
-      submittedDate: 'January 4, 2025',
+      submittedDate: '2025-01-04',
       questions: this.mockQuestions,
       answers: this.mockCompletedAnswers,
-      coachFeedback: 'Excellent work this month! You\'ve shown remarkable dedication.'
+      coachFeedback: 'MOCK_COACH_FEEDBACK_MONTH'
     },
   ];
 
@@ -216,6 +218,14 @@ export class MyCheckinsComponent {
 
   isOverdue(dueDate: string): boolean {
     return new Date(dueDate) < new Date();
+  }
+
+  formatDate(value?: string): string {
+    if (!value) return '-';
+    return new Date(`${value}T00:00:00`).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      { year: 'numeric', month: 'long', day: 'numeric' }
+    );
   }
 
   onOpenCheckIn(checkIn: CheckInItem) {

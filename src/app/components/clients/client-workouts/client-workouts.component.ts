@@ -10,6 +10,8 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 import * as XLSX from 'xlsx';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AuthService } from '@config/auth.service';
 
 type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS' | 'OVERDUE';
 type WorkoutRunStatus = 'NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
@@ -133,7 +135,7 @@ interface FileProgram {
 @Component({
   selector: 'app-client-workouts',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, ModalConfirmComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, ModalConfirmComponent, TranslateModule],
   templateUrl: './client-workouts.component.html',
   styleUrl: './client-workouts.component.scss',
 })
@@ -180,6 +182,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   filteredFilePrograms: FileProgram[] = [];
   coaches: any[] = [];
   selectedCoachId: string | 'all' = 'all';
+  currentUserName = sessionStorage.getItem('username') || '';
   searchProgram = '';
   allPlans: any[] = [];
   workoutFileEnabled = false;
@@ -202,10 +205,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     public workoutService: WorkoutService,
     private workoutDayService: WorkoutDayService,
     private coachSettingsService: CoachSettingsService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private translate: TranslateService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.loadCurrentUserName();
     // Programs are the page's critical data. Settings are refreshed silently in
     // parallel so they no longer delay the initial workout rendering.
     this.getWorkoutDay();
@@ -229,14 +235,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get workoutStatusLabel(): string {
-    const labels: Record<WorkoutRunStatus, string> = {
-      NOT_STARTED: 'Not started', IN_PROGRESS: 'In progress', PAUSED: 'Paused',
-      OVERDUE: 'Overdue',
-      MISSED: 'Missed',
-      LOG_WORKOUT: 'Log workout',
-      COMPLETED: 'Completed', ALREADY_COMPLETED: 'Already completed',
+    const keys: Record<WorkoutRunStatus, string> = {
+      NOT_STARTED: 'NOT_STARTED_LABEL', IN_PROGRESS: 'IN_PROGRESS_LABEL', PAUSED: 'PAUSED_LABEL',
+      OVERDUE: 'OVERDUE_LABEL', MISSED: 'MISSED_LABEL', LOG_WORKOUT: 'LOG_WORKOUT',
+      COMPLETED: 'COMPLETED_LABEL', ALREADY_COMPLETED: 'ALREADY_COMPLETED',
     };
-    return labels[this.workoutRunStatus];
+    return this.translate.instant(keys[this.workoutRunStatus]);
   }
 
   get reviewedExerciseCount(): number {
@@ -293,12 +297,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   get pdfClientName(): string {
     const client = this.selectedWorkoutPlan?.client || {};
-    return `${client.firstName || client.firstname || ''} ${client.lastName || client.lastname || ''}`.trim() || 'Client';
+    return `${client.firstName || client.firstname || ''} ${client.lastName || client.lastname || ''}`.trim() || this.translate.instant('CLIENT');
   }
 
   get pdfCoachName(): string {
     const coach = this.selectedWorkoutPlan?.coach || {};
-    return `${coach.firstName || ''} ${coach.lastName || ''}`.trim() || 'Coach';
+    return `${coach.firstName || ''} ${coach.lastName || ''}`.trim() || this.translate.instant('COACH');
   }
 
   get pdfTotalDays(): number {
@@ -337,7 +341,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   pdfWorkoutLabel(workout: Workout): string {
-    return workout.groupedExercises.length ? (workout.title || 'Main session') : 'Rest day';
+    return workout.groupedExercises.length
+      ? (workout.title || this.translate.instant('MAIN_SESSION'))
+      : this.translate.instant('REST_DAY');
   }
 
   private escapeHtml(value: string): string {
@@ -384,8 +390,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   private showNonBlockingOverdueNotice(unresolvedCount: number): void {
-    this.overdueWorkoutNotice =
-      `You have ${unresolvedCount} unresolved workouts. This workout has started normally.`;
+    this.overdueWorkoutNotice = this.translate.instant('UNRESOLVED_WORKOUTS_STARTED', { count: unresolvedCount });
     if (this.overdueNoticeTimer) clearTimeout(this.overdueNoticeTimer);
     this.overdueNoticeTimer = setTimeout(() => {
       this.overdueWorkoutNotice = '';
@@ -682,12 +687,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const missed = this.getSetStatusCount(exercise, 'MISSED');
     const completed = this.getSetStatusCount(exercise, 'COMPLETED');
     if (missed > 0) {
-      return 'Marking complete changes all sets, including missed sets, to Done.';
+      return this.translate.instant('COMPLETE_CHANGES_ALL_SETS');
     }
     if (completed > 0) {
-      return `Marking complete sets the ${pending} pending ${pending === 1 ? 'set' : 'sets'} to Done.`;
+      return this.translate.instant('COMPLETE_PENDING_SETS', { count: pending });
     }
-    return `Marking complete sets the ${pending} pending ${pending === 1 ? 'set' : 'sets'} to Done.`;
+    return this.translate.instant('COMPLETE_PENDING_SETS', { count: pending });
   }
 
   private recalculateExerciseStatus(exercise: GroupedExercise): void {
@@ -931,21 +936,22 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get currentMonth(): string {
-    return this.currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return this.currentMonthDate.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { month: 'long', year: 'numeric' });
   }
 
   listStatusLabel(status: unknown): string {
+    let key = 'PLANNED_LABEL';
     switch (String(status || '').toUpperCase()) {
-      case 'COMPLETED': return 'Completed';
-      case 'UPCOMING': return 'Upcoming';
-      case 'IN_PROGRESS': return 'In progress';
+      case 'COMPLETED': key = 'COMPLETED_LABEL'; break;
+      case 'UPCOMING': key = 'UPCOMING'; break;
+      case 'IN_PROGRESS': key = 'IN_PROGRESS_LABEL'; break;
       case 'PENDING':
       case 'PLANNED':
-      case 'NOT_STARTED': return 'Planned';
-      case 'MISSED': return 'Missed';
-      case 'OVERDUE': return 'Overdue';
-      default: return 'Planned';
+      case 'NOT_STARTED': key = 'PLANNED_LABEL'; break;
+      case 'MISSED': key = 'MISSED_LABEL'; break;
+      case 'OVERDUE': key = 'OVERDUE_LABEL'; break;
     }
+    return this.translate.instant(key);
   }
 
   listStatusIcon(status: unknown): string {
@@ -973,7 +979,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   get calendarCountLabel(): string {
     const count = this.displayWorkouts.length;
-    return `${count} séance${count > 1 ? 's' : ''} ce mois`;
+    return this.translate.instant(count === 1 ? 'ONE_SESSION_THIS_MONTH' : 'SESSIONS_THIS_MONTH', { count });
   }
 
   get currentPrograms(): FileProgram[] {
@@ -1229,13 +1235,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           setTimeout(() => this.renderPdfPage(), 0);
         } catch (error) {
           console.error('Error preparing PDF preview:', error);
-          this.selectedFileError = 'Impossible d’afficher l’aperçu du PDF. Téléchargez le fichier pour l’ouvrir.';
+          this.selectedFileError = this.translate.instant('PDF_PREVIEW_ERROR');
           this.selectedFileLoading = false;
         }
       },
       error: (error) => {
         console.error('Error loading PDF preview:', error);
-        this.selectedFileError = 'Impossible d’afficher l’aperçu du PDF. Téléchargez le fichier pour l’ouvrir.';
+        this.selectedFileError = this.translate.instant('PDF_PREVIEW_ERROR');
         this.selectedFileLoading = false;
       },
     });
@@ -1263,14 +1269,14 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           this.selectedFileLoading = false;
         } catch (error) {
           console.error('Error loading Excel preview:', error);
-          this.selectedFileError = 'Impossible d’afficher l’aperçu Excel. Téléchargez le fichier pour l’ouvrir.';
+          this.selectedFileError = this.translate.instant('EXCEL_PREVIEW_ERROR');
           this.excelLoading = false;
           this.selectedFileLoading = false;
         }
       },
       error: (error) => {
         console.error('Error loading Excel preview:', error);
-        this.selectedFileError = 'Impossible d’afficher l’aperçu Excel. Téléchargez le fichier pour l’ouvrir.';
+        this.selectedFileError = this.translate.instant('EXCEL_PREVIEW_ERROR');
         this.excelLoading = false;
         this.selectedFileLoading = false;
       },
@@ -1407,7 +1413,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get pdfZoomLabel(): string {
-    return this.pdfZoom === 100 ? 'Page width' : `${this.pdfZoom}%`;
+    return this.pdfZoom === 100 ? this.translate.instant('PAGE_WIDTH') : `${this.pdfZoom}%`;
   }
 
   togglePdfFullscreen() {
@@ -1434,7 +1440,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   formatFrenchDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(dateString).toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   private groupExercisesBySuperset(sessions: any[]): GroupedExercise[] {
@@ -1522,9 +1528,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   getSetTypeText(type?: WorkoutSetType): string {
-    if (type === 'DROP_SET') return 'Dropset';
-    if (type === 'FAILURE') return 'Failure';
-    if (type === 'WARM_UP') return 'Warm up';
+    if (type === 'DROP_SET') return this.translate.instant('DROPSET');
+    if (type === 'FAILURE') return this.translate.instant('FAILURE');
+    if (type === 'WARM_UP') return this.translate.instant('WARM_UP');
     return '';
   }
 
@@ -1569,7 +1575,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         groupIndex++;
         display.push({
           badge: '',
-          name: 'Warm up',
+          name: this.translate.instant('WARM_UP'),
           suffix: '',
           isWarmUp: true,
         });
@@ -1595,7 +1601,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
       display.push({
         badge,
-        name: exercise.name || 'Exercise',
+        name: exercise.name || this.translate.instant('EXERCISE'),
         suffix: this.getExerciseSuffix(exercise),
         isWarmUp: false,
       });
@@ -1633,17 +1639,53 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   private getExerciseSuffix(exercise: RawExercise): string {
     const setTypes = (exercise.sets || []).map((set) => this.normalizeSetType(set));
-    if (setTypes.includes('DROP_SET')) return '(Drop set)';
-    if (setTypes.includes('FAILURE')) return '(To failure)';
+    if (setTypes.includes('DROP_SET')) return `(${this.translate.instant('DROP_SET_LABEL')})`;
+    if (setTypes.includes('FAILURE')) return `(${this.translate.instant('TO_FAILURE')})`;
     return '';
   }
 
-  userName = sessionStorage.getItem('username') || 'Athlete';
+  get userName(): string {
+    return sessionStorage.getItem('username') || this.translate.instant('ATHLETE');
+  }
+
+  private async loadCurrentUserName(): Promise<void> {
+    const user = await this.authService.getCurrentUserDetails();
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+    this.currentUserName = fullName || user?.username || sessionStorage.getItem('username') || this.translate.instant('ATHLETE');
+  }
   get greeting(): string {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return this.translate.instant('GOOD_MORNING');
+    if (hour < 18) return this.translate.instant('GOOD_AFTERNOON');
+    return this.translate.instant('GOOD_EVENING');
+  }
+
+  formatWorkoutDate(date: string | Date): string {
+    return new Date(date).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      { weekday: 'long', month: 'long', day: 'numeric' }
+    );
+  }
+
+  formatWorkoutDatePart(date: string | Date, part: 'weekday' | 'month'): string {
+    return new Date(date).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      part === 'weekday' ? { weekday: 'short' } : { month: 'short' }
+    );
+  }
+
+  formatWorkoutDateWithYear(date: string | Date): string {
+    return new Date(date).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }
+    );
+  }
+
+  formatWorkoutShortDate(date: string | Date): string {
+    return new Date(date).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      { month: 'short', day: 'numeric' }
+    );
   }
 
   setActiveTab(tab: 'upcoming' | 'past') {

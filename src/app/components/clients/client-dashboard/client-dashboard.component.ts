@@ -5,6 +5,7 @@ import { BodyMeasurementsComponent } from 'app/components/body-measurements/body
 import { WorkoutService } from 'app/service/workout.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 type Direction = 'prev' | 'next';
 interface Coach {
   name: string;
@@ -47,13 +48,13 @@ interface TasksDayData {
 }
 
 type CheckInQuestion =
-  | { id: string; question: string; type: 'number'; unit?: string }
-  | { id: string; question: string; type: 'scale'; min: number; max: number }
-  | { id: string; question: string; type: 'textarea' }
+  | { id: string; questionKey: string; type: 'number'; unit?: string }
+  | { id: string; questionKey: string; type: 'scale'; min: number; max: number }
+  | { id: string; questionKey: string; type: 'textarea' }
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [FormsModule, CommonModule, BodyMeasurementsComponent],
+  imports: [FormsModule, CommonModule, BodyMeasurementsComponent, TranslateModule],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss'
 })
@@ -61,7 +62,8 @@ export class ClientDashboardComponent implements OnInit {
   constructor(
     private workoutService: WorkoutService,
     private nutritionService: NutritionService,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private translate: TranslateService
   ) {}
   today = new Date()
   currentDate = new Date()
@@ -81,11 +83,11 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   checkInQuestions: CheckInQuestion[] = [
-    { id: 'weight', question: 'What is your current weight?', type: 'number', unit: this.coachSettingsService.getWeightUnit() },
-    { id: 'energy', question: 'How would you rate your energy level today?', type: 'scale', min: 1, max: 10 },
-    { id: 'sleep', question: 'How would you rate your sleep quality?', type: 'scale', min: 1, max: 10 },
-    { id: 'stress', question: 'How would you rate your stress level?', type: 'scale', min: 1, max: 10 },
-    { id: 'notes', question: 'Any additional notes or comments?', type: 'textarea' },
+    { id: 'weight', questionKey: 'CURRENT_WEIGHT_QUESTION', type: 'number', unit: this.coachSettingsService.getWeightUnit() },
+    { id: 'energy', questionKey: 'ENERGY_LEVEL_QUESTION', type: 'scale', min: 1, max: 10 },
+    { id: 'sleep', questionKey: 'SLEEP_QUALITY_QUESTION', type: 'scale', min: 1, max: 10 },
+    { id: 'stress', questionKey: 'STRESS_LEVEL_QUESTION', type: 'scale', min: 1, max: 10 },
+    { id: 'notes', questionKey: 'ADDITIONAL_NOTES_QUESTION', type: 'textarea' },
   ]
 
   tasksData: Record<string, any> = {
@@ -243,11 +245,30 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   formatDayName(date: Date): string {
-    return date.toLocaleDateString('en-US', { weekday: 'short' })
+    return date.toLocaleDateString(this.dateLocale, { weekday: 'short' })
   }
 
   formatMonthYear(date: Date): string {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    return date.toLocaleDateString(this.dateLocale, { month: 'long', year: 'numeric' })
+  }
+
+  private get dateLocale(): string {
+    return this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US'
+  }
+
+  get coachName(): string {
+    const coach = this.todayWorkout?.plan?.coach || this.todayNutrition?.plan?.coach
+    return `${coach?.firstName || ''} ${coach?.lastName || ''}`.trim() || this.translate.instant('YOUR_COACH')
+  }
+
+  get coachImage(): string {
+    const coach = this.todayWorkout?.plan?.coach || this.todayNutrition?.plan?.coach
+    return coach?.profilePicture || coach?.image || 'assets/images/avatar-placeholder.png'
+  }
+
+  get coachSpecialty(): string {
+    const coach = this.todayWorkout?.plan?.coach || this.todayNutrition?.plan?.coach
+    return coach?.specialty || this.translate.instant('FITNESS_COACH')
   }
 
   getDateKey(date: Date): string {
@@ -365,8 +386,8 @@ export class ClientDashboardComponent implements OnInit {
   private toWorkoutTask(item: any): any {
     if (!item) {
       return {
-        name: 'No workout planned',
-        program: 'No session scheduled for this day',
+        name: this.translate.instant('NO_WORKOUT_PLANNED_DAY'),
+        program: this.translate.instant('NO_SESSION_SCHEDULED'),
         exercises: [],
         totalExercises: 0,
       }
@@ -378,11 +399,11 @@ export class ClientDashboardComponent implements OnInit {
     const exercises = sessions.flatMap((session: any) => session?.exercises || [])
 
     return {
-      name: day.title || day.name || plan.name || 'Workout',
-      program: plan.name || 'Programme d’entraînement',
+      name: day.title || day.name || plan.name || this.translate.instant('WORKOUT'),
+      program: plan.name || this.translate.instant('WORKOUT_PROGRAM'),
       exercises: exercises.map((ex: any, index: number) => ({
         label: ex?.type === 'CARDIO' ? '🔥' : String(index + 1),
-        name: ex?.name || ex?.exerciseName || 'Exercise',
+        name: ex?.name || ex?.exerciseName || this.translate.instant('EXERCISE'),
       })),
       totalExercises: exercises.length,
     }
@@ -391,8 +412,8 @@ export class ClientDashboardComponent implements OnInit {
   private toNutritionTask(item: any): any {
     if (!item) {
       return {
-        planName: 'No nutrition plan',
-        program: 'No active nutrition plan for this day',
+        planName: this.translate.instant('NO_NUTRITION_PLAN'),
+        program: this.translate.instant('NO_ACTIVE_NUTRITION_DAY'),
         meals: 0,
         calories: 0,
         protein: 0,
@@ -408,8 +429,8 @@ export class ClientDashboardComponent implements OnInit {
     const sum = (field: string) => meals.reduce((total: number, meal: any) => total + Number(meal?.[field] || 0), 0)
 
     return {
-      planName: day.name || plan.name || 'Nutrition plan',
-      program: plan.name || 'Objectif nutritionnel quotidien',
+      planName: day.name || plan.name || this.translate.instant('NUTRITION_PLAN'),
+      program: plan.name || this.translate.instant('DAILY_NUTRITION_GOAL'),
       meals: meals.length,
       calories: day.totalCalories || sum('calories') || targets.calories || 0,
       protein: day.totalProtein || sum('protein') || targets.proteinG || 0,

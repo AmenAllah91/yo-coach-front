@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { catchError, forkJoin, of, Subject, takeUntil } from 'rxjs';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { FormDetails, FormsApiService, PageResponse } from "../services/forms-api.service";
 import { AssignmentsApiService, AssignmentStatus, FormAssignment } from "../services/assignments-api.service";
@@ -13,7 +14,7 @@ type Tab = 'pending' | 'submitted';
 @Component({
   selector: 'app-my-assignments',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './my-assignments.component.html',
   styleUrls: ['./my-assignments.component.css'],
 })
@@ -78,6 +79,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -110,7 +112,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(err?.error?.message ?? 'Erreur lors du chargement des affectations.');
+          this.error.set(err?.error?.message ?? this.translate.instant('LOAD_ASSIGNMENTS_ERROR'));
         },
       });
   }
@@ -188,13 +190,13 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
   statusLabel(status: AssignmentStatus): string {
     switch (status) {
       case 'ASSIGNED':
-        return 'Assigné';
+        return this.translate.instant('ASSIGNED_STATUS');
       case 'OPENED':
-        return 'Ouvert';
+        return this.translate.instant('OPENED_STATUS');
       case 'SUBMITTED':
-        return 'Soumis';
+        return this.translate.instant('SUBMITTED_STATUS');
       case 'CANCELED':
-        return 'Annulé';
+        return this.translate.instant('CANCELED_STATUS');
       default:
         return status;
     }
@@ -236,7 +238,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
             },
             error: () => {
               this.modalLoading.set(false);
-              this.modalError.set('Impossible de charger les réponses.');
+              this.modalError.set(this.translate.instant('LOAD_ANSWERS_ERROR'));
             },
           });
         } else {
@@ -284,7 +286,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.modalLoading.set(false);
-        this.modalError.set('Impossible de charger le formulaire.');
+        this.modalError.set(this.translate.instant('LOAD_FORM_ERROR'));
       },
     });
   }
@@ -322,7 +324,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
 
   submitModal(): void {
     if (!this.selectedAssignment || !this.isValid()) {
-      this.modalError.set('Veuillez répondre à toutes les questions obligatoires.');
+      this.modalError.set(this.translate.instant('REQUIRED_QUESTIONS_ERROR'));
       return;
     }
 
@@ -381,7 +383,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
         this.modalError.set(
           err?.error?.error ??
           err?.error?.message ??
-          'Erreur lors de la soumission.'
+          this.translate.instant('SUBMISSION_ERROR')
         );
       },
     });

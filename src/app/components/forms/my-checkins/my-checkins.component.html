@@ -3,8 +3,8 @@
 
     <!-- Header -->
     <div class="header">
-      <h1 class="h1">Check-ins</h1>
-      <p class="sub">Complete your check-ins to track your progress</p>
+      <h1 class="h1">{{ 'CHECK_INS' | translate }}</h1>
+      <p class="sub">{{ 'CHECK_INS_PROGRESS_SUBTITLE' | translate }}</p>
     </div>
 
     <!-- Panel -->
@@ -21,7 +21,7 @@
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
           </svg>
-          <span class="tab-label">To Complete</span>
+          <span class="tab-label">{{ 'TO_COMPLETE' | translate }}</span>
           <span class="tab-pill" *ngIf="pendingCount > 0">{{ pendingCount }}</span>
           <span class="tab-underline" *ngIf="activeTab === 'pending'"></span>
         </button>
@@ -36,7 +36,7 @@
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
           </svg>
-          <span class="tab-label">Completed</span>
+          <span class="tab-label">{{ 'COMPLETED_STATUS' | translate }}</span>
           <span class="tab-underline" *ngIf="activeTab === 'completed'"></span>
         </button>
       </div>
@@ -55,7 +55,7 @@
               <div class="card-body">
                 <div class="card-header-row">
                   <div class="card-title-group">
-                    <h3 class="card-title">{{ c.formName }}</h3>
+                    <h3 class="card-title">{{ c.formName | translate }}</h3>
                     <span class="badge" [class.badge-overdue]="isOverdue(c.dueDate)" [class.badge-pending]="!isOverdue(c.dueDate)">
                       <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" *ngIf="isOverdue(c.dueDate)">
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
@@ -65,7 +65,7 @@
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
                       </svg>
-                      {{ isOverdue(c.dueDate) ? 'Overdue' : 'Pending' }}
+                      {{ isOverdue(c.dueDate) ? ('OVERDUE_LABEL' | translate) : ('PENDING_STATUS' | translate) }}
                     </span>
                   </div>
                   <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -79,7 +79,7 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
                   </svg>
-                  <span class="meta-text">Due: {{ c.dueDate }}</span>
+                  <span class="meta-text">{{ 'DUE_DATE' | translate }}: {{ formatDate(c.dueDate) }}</span>
                 </div>
               </div>
             </button>
@@ -93,8 +93,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
                 </svg>
               </div>
-              <div class="empty-title">All caught up!</div>
-              <div class="empty-sub">You have no pending check-ins at the moment.</div>
+              <div class="empty-title">{{ 'ALL_CAUGHT_UP' | translate }}</div>
+              <div class="empty-sub">{{ 'NO_PENDING_CHECK_INS' | translate }}</div>
             </div>
           </ng-template>
         </ng-container>
@@ -111,13 +111,13 @@
               <div class="card-body">
                 <div class="card-header-row">
                   <div class="card-title-group">
-                    <h3 class="card-title">{{ c.formName }}</h3>
+                    <h3 class="card-title">{{ c.formName | translate }}</h3>
                     <span class="badge badge-completed">
                       <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
                       </svg>
-                      Completed
+                      {{ 'COMPLETED_STATUS' | translate }}
                     </span>
                   </div>
                   <svg class="chevron chevron--gray" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -131,7 +131,7 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
                   </svg>
-                  <span class="meta-text">Submitted: {{ c.submittedDate || '-' }}</span>
+                  <span class="meta-text">{{ 'SUBMITTED_STATUS' | translate }}: {{ formatDate(c.submittedDate) }}</span>
                 </div>
               </div>
             </button>
@@ -145,8 +145,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
                 </svg>
               </div>
-              <div class="empty-title">No completed check-ins yet</div>
-              <div class="empty-sub">Your completed check-ins will appear here.</div>
+              <div class="empty-title">{{ 'NO_COMPLETED_CHECK_INS' | translate }}</div>
+              <div class="empty-sub">{{ 'COMPLETED_CHECK_INS_APPEAR_HERE' | translate }}</div>
             </div>
           </ng-template>
         </ng-container>
@@ -163,7 +163,7 @@
     <!-- Header -->
     <div class="modal-header">
       <div>
-        <h2 class="modal-title">{{ selectedCheckIn.formName }}</h2>
+        <h2 class="modal-title">{{ selectedCheckIn.formName | translate }}</h2>
         <p class="modal-subtitle" *ngIf="!isViewMode">
           <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
@@ -171,7 +171,7 @@
             <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
             <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
           </svg>
-          Due: {{ selectedCheckIn.dueDate }}
+          {{ 'DUE_DATE' | translate }}: {{ formatDate(selectedCheckIn.dueDate) }}
         </p>
         <p class="modal-subtitle" *ngIf="isViewMode">
           <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -180,7 +180,7 @@
             <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
             <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
           </svg>
-          Submitted: {{ selectedCheckIn.submittedDate }}
+          {{ 'SUBMITTED_STATUS' | translate }}: {{ formatDate(selectedCheckIn.submittedDate) }}
         </p>
       </div>
       <button class="close-button" (click)="closeModal()" type="button">
@@ -201,8 +201,8 @@
           </svg>
         </div>
         <div class="feedback-content">
-          <h4 class="feedback-title">Reviewed by Coach</h4>
-          <p class="feedback-text">{{ selectedCheckIn.coachFeedback }}</p>
+          <h4 class="feedback-title">{{ 'REVIEWED_BY_COACH' | translate }}</h4>
+          <p class="feedback-text">{{ selectedCheckIn.coachFeedback | translate }}</p>
         </div>
       </div>
 
@@ -211,12 +211,12 @@
 
           <!-- Question Label -->
           <label class="question-label">
-            {{ i + 1 }}. {{ question.label }}
+            {{ i + 1 }}. {{ question.label | translate }}
             <span *ngIf="question.required && !isViewMode" class="required-mark">*</span>
           </label>
 
           <!-- Help Text -->
-          <p *ngIf="question.helpText && !isViewMode" class="help-text">{{ question.helpText }}</p>
+          <p *ngIf="question.helpText && !isViewMode" class="help-text">{{ question.helpText | translate }}</p>
 
           <!-- MODE COMPLETION -->
           <ng-container *ngIf="!isViewMode">
@@ -227,7 +227,7 @@
               (input)="handleAnswerChange(question.id, $any($event.target).value)"
               class="input-textarea"
               rows="3"
-              placeholder="Type your answer here...">
+              [placeholder]="'TYPE_YOUR_ANSWER' | translate">
             </textarea>
 
             <!-- MULTIPLE_CHOICE -->
@@ -238,7 +238,7 @@
                 (click)="handleAnswerChange(question.id, option.id)"
                 [class.selected]="getAnswerValue(question.id) === option.id"
                 class="option-button">
-                {{ option.label }}
+                {{ option.label | translate }}
               </button>
             </div>
 
@@ -249,14 +249,14 @@
                 (click)="handleAnswerChange(question.id, 'Yes')"
                 [class.selected]="getAnswerValue(question.id) === 'Yes'"
                 class="yes-no-button">
-                Yes
+                {{ 'YES' | translate }}
               </button>
               <button
                 type="button"
                 (click)="handleAnswerChange(question.id, 'No')"
                 [class.selected]="getAnswerValue(question.id) === 'No'"
                 class="yes-no-button">
-                No
+                {{ 'NO' | translate }}
               </button>
             </div>
 
@@ -291,18 +291,18 @@
             <ng-container *ngIf="getSubmittedAnswer(question.id) as answer">
               <!-- TEXT -->
               <div *ngIf="question.type === QuestionType.TEXT" class="answer-display">
-                {{ answer.text }}
+                {{ answer.text | translate }}
               </div>
 
               <!-- MULTIPLE_CHOICE -->
               <div *ngIf="question.type === QuestionType.MULTIPLE_CHOICE" class="answer-display answer-badge">
-                {{ getOptionLabel(question, answer.selectedOptionId || '') }}
+                {{ getOptionLabel(question, answer.selectedOptionId || '') | translate }}
               </div>
 
               <!-- YES_NO -->
               <div *ngIf="question.type === QuestionType.YES_NO" class="answer-display">
                 <span class="yes-no-display" [class.yes]="answer.yes" [class.no]="!answer.yes">
-                  {{ answer.yes ? 'Yes' : 'No' }}
+                  {{ answer.yes ? ('YES' | translate) : ('NO' | translate) }}
                 </span>
               </div>
 
@@ -320,7 +320,7 @@
 
               <!-- DATE -->
               <div *ngIf="question.type === QuestionType.DATE" class="answer-display">
-                {{ answer.date }}
+                {{ formatDate(answer.date) }}
               </div>
             </ng-container>
           </ng-container>
@@ -335,13 +335,13 @@
         <svg class="icon-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
         </svg>
-        Submit Check-in
+        {{ 'SUBMIT_CHECK_IN' | translate }}
       </button>
     </div>
 
     <div *ngIf="isViewMode" class="modal-footer modal-footer--view">
       <button type="button" (click)="closeModal()" class="close-view-button">
-        Close
+        {{ 'CLOSE' | translate }}
       </button>
     </div>
 

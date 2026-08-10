@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { UsersService } from '../../../service/users.service';
 import { DocumentService } from '../../../service/document.service';
@@ -14,7 +15,7 @@ type ProfileUser = Partial<User> & {
 @Component({
   selector: 'app-edit-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './edit-profile.component.html',
   styleUrl: './edit-profile.component.scss',
 })
@@ -33,8 +34,8 @@ export class EditProfileComponent implements OnInit {
   selectedFile: File | null = null;
 
   tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'settings', label: 'Settings' },
+    { id: 'overview', labelKey: 'OVERVIEW' },
+    { id: 'settings', labelKey: 'SETTINGS' },
   ];
 
   userData: ProfileUser = {
@@ -75,6 +76,7 @@ export class EditProfileComponent implements OnInit {
   constructor(
     private usersService: UsersService,
     private documentService: DocumentService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -241,12 +243,12 @@ export class EditProfileComponent implements OnInit {
       !this.passwordFormModel.newPassword ||
       !this.passwordFormModel.confirmPassword
     ) {
-      this.passwordError = 'Tous les champs sont obligatoires.';
+      this.passwordError = this.translate.instant('ALL_FIELDS_REQUIRED');
       return;
     }
 
     if (this.passwordFormModel.newPassword !== this.passwordFormModel.confirmPassword) {
-      this.passwordError = 'La confirmation du mot de passe est incorrecte.';
+      this.passwordError = this.translate.instant('PASSWORD_CONFIRMATION_MISMATCH');
       return;
     }
 
@@ -254,7 +256,7 @@ export class EditProfileComponent implements OnInit {
 
     this.usersService.updateMyPassword(this.passwordFormModel).subscribe({
       next: () => {
-        this.passwordSuccess = 'Mot de passe modifié avec succès.';
+        this.passwordSuccess = this.translate.instant('PASSWORD_UPDATED_SUCCESS');
         this.passwordError = '';
         this.isChangingPassword = false;
 
@@ -270,7 +272,7 @@ export class EditProfileComponent implements OnInit {
       },
       error: () => {
         this.passwordSuccess = '';
-        this.passwordError = 'Échec de la modification du mot de passe.';
+        this.passwordError = this.translate.instant('PASSWORD_UPDATE_FAILED');
         this.isChangingPassword = false;
       }
     });

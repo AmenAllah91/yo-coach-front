@@ -2,8 +2,8 @@
   <div class="wrap">
 
     <div class="header">
-      <h1 class="h1">Mes affectations</h1>
-      <p class="sub">Les formulaires qui vous sont affectés</p>
+      <h1 class="h1">{{ 'MY_CHECK_INS' | translate }}</h1>
+      <p class="sub">{{ 'ASSIGNED_FORMS_SUBTITLE' | translate }}</p>
     </div>
 
     <div class="panel">
@@ -19,7 +19,7 @@
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
           </svg>
-          <span class="tab-label">À compléter</span>
+          <span class="tab-label">{{ 'TO_COMPLETE' | translate }}</span>
           <span class="tab-pill" *ngIf="pendingCount() > 0">{{ pendingCount() }}</span>
           <span class="tab-underline" *ngIf="activeTab === 'pending'"></span>
         </button>
@@ -34,7 +34,7 @@
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
           </svg>
-          <span class="tab-label">Soumis</span>
+          <span class="tab-label">{{ 'SUBMITTED_STATUS' | translate }}</span>
           <span class="tab-underline" *ngIf="activeTab === 'submitted'"></span>
         </button>
       </div>
@@ -43,13 +43,13 @@
       <div class="filters-bar">
         <div class="filters-left">
           <span class="total-label">
-            Total : <strong>{{ totalElements() }}</strong>
+            {{ 'TOTAL' | translate }} : <strong>{{ totalElements() }}</strong>
           </span>
         </div>
 
         <div class="filters-right">
           <div class="filter-group">
-            <label class="filter-label">Taille :</label>
+            <label class="filter-label">{{ 'PAGE_SIZE' | translate }} :</label>
             <select
               class="select"
               [value]="pageSize()"
@@ -78,7 +78,7 @@
 
         <div class="loading-state" *ngIf="loading()">
           <div class="spinner"></div>
-          <span>Chargement...</span>
+          <span>{{ 'LOADING' | translate }}</span>
         </div>
 
         <!-- Pending -->
@@ -122,7 +122,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
                       </svg>
 
-                      {{ isOverdue(a.dueDate) ? 'En retard' : statusLabel(a.status) }}
+                      {{ isOverdue(a.dueDate) ? ('OVERDUE_LABEL' | translate) : statusLabel(a.status) }}
                     </span>
                   </div>
 
@@ -140,13 +140,13 @@
                   </svg>
 
                   <span class="meta-text">
-                    Affecté le : {{ a.assignedAt | date:'dd/MM/yyyy' }}
+                    {{ 'ASSIGNED_ON' | translate }} : {{ a.assignedAt | date:'dd/MM/yyyy' }}
                   </span>
 
                   <span class="meta-sep" *ngIf="a.dueDate">·</span>
 
                   <span class="meta-text meta-text--due" *ngIf="a.dueDate">
-                    Échéance : {{ a.dueDate | date:'dd/MM/yyyy' }}
+                    {{ 'DUE_DATE' | translate }} : {{ a.dueDate | date:'dd/MM/yyyy' }}
                   </span>
                 </div>
               </div>
@@ -161,8 +161,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
                 </svg>
               </div>
-              <div class="empty-title">Tout est à jour !</div>
-              <div class="empty-sub">Vous n'avez aucune affectation en attente.</div>
+              <div class="empty-title">{{ 'ALL_UP_TO_DATE' | translate }}</div>
+              <div class="empty-sub">{{ 'NO_PENDING_ASSIGNMENTS' | translate }}</div>
             </div>
           </ng-template>
         </ng-container>
@@ -186,7 +186,7 @@
                         <circle cx="12" cy="12" r="10" stroke-width="2"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
                       </svg>
-                      Soumis
+                      {{ 'SUBMITTED_STATUS' | translate }}
                     </span>
                   </div>
 
@@ -204,7 +204,7 @@
                   </svg>
 
                   <span class="meta-text">
-                    Soumis le : {{ a.submittedAt ? (a.submittedAt | date:'dd/MM/yyyy') : '-' }}
+                    {{ 'SUBMITTED_ON' | translate }} : {{ a.submittedAt ? (a.submittedAt | date:'dd/MM/yyyy') : '-' }}
                   </span>
                 </div>
               </div>
@@ -219,8 +219,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
                 </svg>
               </div>
-              <div class="empty-title">Aucun formulaire soumis</div>
-              <div class="empty-sub">Vos formulaires soumis apparaîtront ici.</div>
+              <div class="empty-title">{{ 'NO_SUBMITTED_FORMS' | translate }}</div>
+              <div class="empty-sub">{{ 'SUBMITTED_FORMS_APPEAR_HERE' | translate }}</div>
             </div>
           </ng-template>
         </ng-container>
@@ -235,11 +235,11 @@
           (click)="goToPrev()"
           [disabled]="pageIndex() === 0 || loading()"
         >
-          ← Précédent
+          ← {{ 'PREVIOUS' | translate }}
         </button>
 
         <div class="pager__info">
-          Page <span class="mono">{{ pageIndex() + 1 }}</span> /
+          {{ 'PAGE' | translate }} <span class="mono">{{ pageIndex() + 1 }}</span> /
           <span class="mono">{{ totalPages() }}</span>
         </div>
 
@@ -249,7 +249,7 @@
           (click)="goToNext()"
           [disabled]="pageIndex() >= totalPages() - 1 || loading()"
         >
-          Suivant →
+          {{ 'NEXT' | translate }} →
         </button>
       </div>
     </div>
@@ -276,15 +276,15 @@
           </svg>
 
           <ng-container *ngIf="!isViewMode && selectedAssignment.dueDate">
-            Échéance : {{ selectedAssignment.dueDate | date:'dd/MM/yyyy' }}
+            {{ 'DUE_DATE' | translate }} : {{ selectedAssignment.dueDate | date:'dd/MM/yyyy' }}
           </ng-container>
 
           <ng-container *ngIf="!isViewMode && !selectedAssignment.dueDate">
-            Affecté le : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}
+            {{ 'ASSIGNED_ON' | translate }} : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}
           </ng-container>
 
           <ng-container *ngIf="isViewMode">
-            Soumis le : {{ selectedAssignment.submittedAt ? (selectedAssignment.submittedAt | date:'dd/MM/yyyy') : '—' }}
+            {{ 'SUBMITTED_ON' | translate }} : {{ selectedAssignment.submittedAt ? (selectedAssignment.submittedAt | date:'dd/MM/yyyy') : '—' }}
           </ng-container>
         </p>
       </div>
@@ -302,7 +302,7 @@
       <!-- Loading -->
       <div class="modal-loading" *ngIf="modalLoading()">
         <div class="spinner"></div>
-        <span>Chargement du formulaire...</span>
+        <span>{{ 'LOADING_FORM' | translate }}</span>
       </div>
 
       <!-- Modal level error -->
@@ -348,7 +348,7 @@
                   [class.yes]="ans.yes === true"
                   [class.no]="ans.yes === false"
                 >
-                  {{ ans.yes === true ? 'Oui' : 'Non' }}
+                  {{ ans.yes === true ? ('YES' | translate) : ('NO' | translate) }}
                 </span>
               </div>
 
@@ -387,7 +387,7 @@
               [(ngModel)]="modalAnswers[i].text"
               class="input-textarea"
               rows="3"
-              placeholder="Votre réponse..."
+              [placeholder]="'YOUR_ANSWER' | translate"
             ></textarea>
 
             <!-- MULTIPLE_CHOICE -->
@@ -411,7 +411,7 @@
                 [class.selected]="modalAnswers[i].yes === true"
                 class="yes-no-button"
               >
-                Oui
+                {{ 'YES' | translate }}
               </button>
 
               <button
@@ -420,7 +420,7 @@
                 [class.selected]="modalAnswers[i].yes === false"
                 class="yes-no-button"
               >
-                Non
+                {{ 'NO' | translate }}
               </button>
             </div>
 
@@ -481,14 +481,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
         </svg>
 
-        {{ submitting() ? 'Envoi en cours...' : 'Soumettre' }}
+        {{ submitting() ? ('SUBMITTING' | translate) : ('SUBMIT' | translate) }}
       </button>
     </div>
 
     <!-- Footer: view mode -->
     <div class="modal-footer modal-footer--view" *ngIf="!modalLoading() && currentForm && isViewMode">
       <button type="button" (click)="closeModal()" class="close-view-button">
-        Fermer
+        {{ 'CLOSE' | translate }}
       </button>
     </div>
 

@@ -17,6 +17,7 @@ import { Subject, Observable, take, takeUntil, forkJoin, of } from 'rxjs';
 import { switchMap, catchError, debounceTime, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { ChatUnreadService } from '../../../service/chat-unread.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
@@ -27,7 +28,7 @@ type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT';
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, forwardRef(() => ProfilClientComponent)],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, forwardRef(() => ProfilClientComponent)],
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss'],
 })

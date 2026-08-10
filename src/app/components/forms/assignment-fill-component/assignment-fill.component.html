@@ -25,7 +25,7 @@
         [name]="'q' + i"
         required
       >
-        <option [ngValue]="null">-- choisir --</option>
+        <option [ngValue]="null">-- {{ 'CHOOSE_OPTION' | translate }} --</option>
         <option *ngFor="let o of (q.options || [])" [ngValue]="o.id">{{ o.label }}</option>
       </select>
 
@@ -37,9 +37,9 @@
         [name]="'q' + i"
         required
       >
-        <option [ngValue]="null">-- choisir --</option>
-        <option [ngValue]="true">Oui</option>
-        <option [ngValue]="false">Non</option>
+        <option [ngValue]="null">-- {{ 'CHOOSE_OPTION' | translate }} --</option>
+        <option [ngValue]="true">{{ 'YES' | translate }}</option>
+        <option [ngValue]="false">{{ 'NO' | translate }}</option>
       </select>
 
       <!-- DATE -->
@@ -60,17 +60,17 @@
         [name]="'q' + i"
         required
       >
-        <option [ngValue]="null">-- choisir --</option>
+        <option [ngValue]="null">-- {{ 'CHOOSE_OPTION' | translate }} --</option>
         <option *ngFor="let s of [1,2,3,4,5]" [ngValue]="s">{{ s }}</option>
       </select>
     </div>
 
     <button class="btn" type="submit" [disabled]="submitting()">
-      {{ submitting() ? 'Envoi...' : 'Soumettre' }}
+      {{ submitting() ? ('SENDING' | translate) : ('SUBMIT' | translate) }}
     </button>
   </form>
 </div>
 
 <ng-template #loadingTpl>
-  <div class="loading">Chargement...</div>
+  <div class="loading">{{ 'LOADING' | translate }}</div>
 </ng-template>

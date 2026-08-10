@@ -1,5 +1,5 @@
 <div class="chat-header">
-  <button class="header-action" type="button" (click)="back.emit()" aria-label="Back to conversations">
+  <button class="header-action" type="button" (click)="back.emit()" [attr.aria-label]="'BACK_TO_CONVERSATIONS' | translate">
     <i-feather name="arrow-left"></i-feather>
   </button>
 
@@ -20,16 +20,16 @@
     <div class="chat-user__info">
       <span class="chat-user__name">{{ selectedConversation?.name }}</span>
       <span class="chat-user__members" *ngIf="selectedConversation?.isGroup">
-        {{ selectedConversation?.memberIds?.length || 0 }} members
+        {{ selectedConversation?.memberIds?.length || 0 }} {{ 'MEMBERS' | translate }}
       </span>
     </div>
   </button>
 
   <div class="chat-header__actions">
-    <button class="header-action" type="button" (click)="expanded.emit()" aria-label="Open full page chat">
+    <button class="header-action" type="button" (click)="expanded.emit()" [attr.aria-label]="'OPEN_FULL_PAGE_CHAT' | translate">
       <i-feather name="maximize-2"></i-feather>
     </button>
-    <button class="header-action" type="button" (click)="closed.emit()" aria-label="Close conversation">
+    <button class="header-action" type="button" (click)="closed.emit()" [attr.aria-label]="'CLOSE_CONVERSATION' | translate">
       <i-feather name="x"></i-feather>
     </button>
   </div>
@@ -65,15 +65,15 @@
         <div class="doc-bubble">
           <span class="doc-bubble__icon"><i-feather name="paperclip"></i-feather></span>
           <span class="doc-bubble__info">
-            <strong>{{ msg.attachmentName || 'Document' }}</strong>
-            <small>{{ msg.attachmentType || 'Document' }} {{ formatFileSize(msg.attachmentSize) }}</small>
+            <strong>{{ msg.attachmentName || ('DOCUMENT_LABEL' | translate) }}</strong>
+            <small>{{ msg.attachmentType || ('DOCUMENT_LABEL' | translate) }} {{ formatFileSize(msg.attachmentSize) }}</small>
           </span>
           <i-feather name="download"></i-feather>
         </div>
       </button>
 
       <div class="message-content" *ngSwitchDefault>
-        {{ msg.content || msg.attachmentName || 'Message' }}
+        {{ msg.content || msg.attachmentName || ('MESSAGE' | translate) }}
       </div>
     </ng-container>
 
@@ -100,7 +100,7 @@
       <strong>{{ pendingDocument.name }}</strong>
       <small>{{ formatFileSize(pendingDocument.size) }}</small>
     </span>
-    <button type="button" class="pending-attachment__remove" (click)="removePendingDocument()" aria-label="Remove attachment">
+    <button type="button" class="pending-attachment__remove" (click)="removePendingDocument()" [attr.aria-label]="'REMOVE_ATTACHMENT' | translate">
       <i-feather name="x"></i-feather>
     </button>
   </div>
@@ -111,7 +111,7 @@
     <input
       class="message-field"
       type="text"
-      [placeholder]="pendingDocument ? 'Add a message...' : 'Write a message...'"
+      [placeholder]="(pendingDocument ? 'ADD_A_MESSAGE' : 'WRITE_A_MESSAGE') | translate"
       [(ngModel)]="messageText"
       (keyup.enter)="sendMessage()"
     />
@@ -120,7 +120,7 @@
       <button
         type="button"
         class="composer-icon"
-        title="Send document"
+        [title]="'SEND_DOCUMENT' | translate"
         (click)="documentInput.click()"
         [disabled]="isUploadingAttachment"
       >
@@ -130,7 +130,7 @@
       <button
         type="button"
         class="composer-icon"
-        title="Voice message"
+        [title]="'VOICE_MESSAGE' | translate"
         (click)="toggleVoiceRecording()"
         [class.is-recording]="isRecordingVoice"
         [disabled]="isUploadingAttachment"
@@ -144,7 +144,7 @@
         (click)="sendMessage()"
         [disabled]="isUploadingAttachment || (!messageText.trim() && !pendingDocument)"
       >
-        Send
+        {{ 'SEND' | translate }}
       </button>
     </div>
   </div>

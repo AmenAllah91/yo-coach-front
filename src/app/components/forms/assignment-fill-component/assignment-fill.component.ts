@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import {FormDetails, FormsApiService} from "../services/forms-api.service";
 import {SubmissionsApiService} from "../services/submissions-api.service";
 import {AssignmentsApiService} from "../services/assignments-api.service";
@@ -14,7 +15,7 @@ function assertNever(x: never): never {
 @Component({
   selector: 'app-assignment-fill',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './assignment-fill.component.html',
   styleUrls: ['./assignment-fill.component.css'],
 })
@@ -34,7 +35,8 @@ export class AssignmentFillComponent implements OnInit {
     private router: Router,
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
-    private assignmentsApi: AssignmentsApiService
+    private assignmentsApi: AssignmentsApiService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -77,16 +79,16 @@ export class AssignmentFillComponent implements OnInit {
               });
             this.loading.set(false);
           },
-          error: () => this.fail('Impossible de charger le formulaire'),
+          error: () => this.fail(this.translate.instant('LOAD_FORM_ERROR')),
         });
       },
-      error: () => this.fail('Affectation introuvable'),
+      error: () => this.fail(this.translate.instant('ASSIGNMENT_NOT_FOUND')),
     });
   }
 
   submit(): void {
     if (!this.isValid()) {
-      this.error.set('Tous les champs sont obligatoires.');
+      this.error.set(this.translate.instant('ALL_FIELDS_REQUIRED'));
       return;
     }
 
@@ -121,7 +123,7 @@ export class AssignmentFillComponent implements OnInit {
       next: () => this.router.navigate(['/assignments/me']),
       error: (err) => {
         this.submitting.set(false);
-        this.error.set(err?.error?.error ?? err?.error?.message ?? 'Erreur lors de la soumission.');
+        this.error.set(err?.error?.error ?? err?.error?.message ?? this.translate.instant('SUBMISSION_ERROR'));
       },
     });
   }
