@@ -20,6 +20,7 @@ import { ExerciseService, PageResponse } from 'app/service/exercise.service';
 import { Exercise as LibraryExercise } from '@shared/models/exercice.models';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface ExerciseSet {
   id: string;
@@ -125,7 +126,7 @@ type CalendarType = 'workout' | 'nutrition';
 @Component({
   selector: 'app-calendar-clients',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule],
+  imports: [CommonModule, FormsModule, DragDropModule, TranslateModule],
   templateUrl: './calendar-clients.component.html',
   styleUrl: './calendar-clients.component.scss',
 })
@@ -221,7 +222,8 @@ currentDate = new Date();
     private router: Router,
     private sanitizer: DomSanitizer,
     private coachSettingsService: CoachSettingsService,
-    private exerciseService: ExerciseService
+    private exerciseService: ExerciseService,
+    private translate: TranslateService
   ) {}
 
   @HostListener('document:click')
@@ -510,17 +512,17 @@ currentDate = new Date();
   }
 
   getFileProgramSubtitle(item: WorkoutProgram | NutritionProgram): string {
-    return this.getFileResourceType(item) === 'EXCEL' ? 'Programme Excel' : 'Programme PDF';
+    return this.translate.instant(this.getFileResourceType(item) === 'EXCEL' ? 'EXCEL_PROGRAM' : 'PDF_PROGRAM');
   }
 
   getCalendarCardProgramName(item: WorkoutProgram | NutritionProgram): string {
-    return item.programName || item.title || 'Program';
+    return item.programName || item.title || this.translate.instant('PROGRAM');
   }
 
   getCalendarCardDayLabel(item: WorkoutProgram | NutritionProgram): string {
     const dayNumber = Number((item as WorkoutProgram | NutritionProgram).dayNumber || this.extractDayNumber(item.title) || 1);
     const weekNumber = Math.max(1, Math.ceil(dayNumber / 7));
-    return `Week ${weekNumber} · Day ${dayNumber}`;
+    return this.translate.instant('WEEK_DAY_LABEL', { week: weekNumber, day: dayNumber });
   }
 
   private extractDayNumber(value: string | undefined): number | null {
@@ -832,7 +834,7 @@ currentDate = new Date();
   }
 
   getMonthLabel(): string {
-    return this.currentDate.toLocaleDateString('fr-FR', {
+    return this.currentDate.toLocaleDateString(this.calendarLocale, {
       month: 'long',
       year: 'numeric',
     });
@@ -843,26 +845,30 @@ currentDate = new Date();
     const first = days[0];
     const last = days[6];
 
-    const startStr = first.toLocaleDateString('fr-FR', {
+    const startStr = first.toLocaleDateString(this.calendarLocale, {
       day: 'numeric',
       month: 'short',
     });
-    const endStr = last.toLocaleDateString('fr-FR', {
+    const endStr = last.toLocaleDateString(this.calendarLocale, {
       day: 'numeric',
       month: 'short',
       year: first.getFullYear() === last.getFullYear() ? undefined : 'numeric',
     });
 
-    return `Semaine du ${startStr} au ${endStr}`;
+    return this.translate.instant('CALENDAR_WEEK_RANGE', { start: startStr, end: endStr });
   }
 
   getDayLabel(): string {
-    return this.currentDate.toLocaleDateString('fr-FR', {
+    return this.currentDate.toLocaleDateString(this.calendarLocale, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
+  }
+
+  private get calendarLocale(): string {
+    return this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US';
   }
 
   getWeekDates(): Date[] {
@@ -1064,8 +1070,8 @@ currentDate = new Date();
     const sets = exercise.sets || [];
     const setCount = sets.length;
     const firstSet = sets[0];
-    const reps = firstSet?.reps ? `${firstSet.reps} reps` : '';
-    const rest = firstSet?.rest ? `+ ${this.formatRestTime(firstSet.rest)} rest` : '';
+    const reps = firstSet?.reps ? this.translate.instant('REPS_COUNT', { count: firstSet.reps }) : '';
+    const rest = firstSet?.rest ? this.translate.instant('REST_DURATION', { duration: this.formatRestTime(firstSet.rest) }) : '';
 
     if (exercise.type === 'cardio') {
       const setDuration = Number(firstSet?.duration) || 0;
@@ -1074,8 +1080,8 @@ currentDate = new Date();
         (setCount && exercise.duration
           ? Math.round(Number(exercise.duration) / setCount)
           : Number(exercise.duration) || 0);
-      const duration = durationValue ? `${durationValue} min` : '';
-      return [setCount ? `${setCount} set${setCount > 1 ? 's' : ''}` : '', duration]
+      const duration = durationValue ? this.translate.instant('MINUTES_COUNT', { count: durationValue }) : '';
+      return [setCount ? this.translate.instant(setCount > 1 ? 'SETS_COUNT' : 'SET_COUNT', { count: setCount }) : '', duration]
         .filter(Boolean)
         .join(' x ');
     }
@@ -1360,7 +1366,7 @@ currentDate = new Date();
   }
 
   get weekDays(): string[] {
-    return ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+    return ['WEEKDAY_MON', 'WEEKDAY_TUE', 'WEEKDAY_WED', 'WEEKDAY_THU', 'WEEKDAY_FRI', 'WEEKDAY_SAT', 'WEEKDAY_SUN'];
   }
 
   get monthLeadingEmptyCells(): any[] {
@@ -1415,7 +1421,7 @@ currentDate = new Date();
         dayNumber: date.getDate(),
         isToday: this.isToday(date),
         weekdayLabel: date
-          .toLocaleDateString('fr-FR', { weekday: 'short' })
+          .toLocaleDateString(this.calendarLocale, { weekday: 'short' })
           .toUpperCase(),
         items: this.getItemsForDay(dateString),
       };
@@ -1536,12 +1542,12 @@ currentDate = new Date();
     if (this.calendarType !== 'workout') return;
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select one client first, then drag the workout day.');
+      alert(this.translate.instant('SELECT_ONE_CLIENT_DRAG_WORKOUT'));
       return;
     }
 
     if (!workout?.programId) {
-      alert('This workout day is not associated with a program.');
+      alert(this.translate.instant('WORKOUT_DAY_NO_PROGRAM'));
       return;
     }
 
@@ -1741,14 +1747,14 @@ currentDate = new Date();
     if (this.calendarType !== 'workout') return;
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select one client first, then drag the workout day.');
+      alert(this.translate.instant('SELECT_ONE_CLIENT_DRAG_WORKOUT'));
       this.getWorkout();
       return;
     }
 
     const programId = workout.programId;
     if (!programId) {
-      alert('This workout day is not associated with a program.');
+      alert(this.translate.instant('WORKOUT_DAY_NO_PROGRAM'));
       return;
     }
 
@@ -1762,7 +1768,7 @@ currentDate = new Date();
     );
 
     if (exists) {
-      alert('Target date already has a workout day.');
+      alert(this.translate.instant('TARGET_DATE_HAS_WORKOUT'));
       return;
     }
 
@@ -1781,7 +1787,7 @@ currentDate = new Date();
       next: () => this.getWorkout(),
       error: (err) => {
         console.error('Error moving workout day', err);
-        alert('Failed to move workout day.');
+        alert(this.translate.instant('MOVE_WORKOUT_DAY_ERROR'));
         this.workoutPrograms = previousPrograms;
         this.updateMonthGrid();
       },
@@ -1792,7 +1798,7 @@ currentDate = new Date();
     if (!this.copiedDate) return;
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -1806,7 +1812,7 @@ currentDate = new Date();
     const sourceProgram = sourcePrograms[0] as WorkoutProgram;
 
     if (!sourceProgram?.programId) {
-      alert('No assigned workout day found for this client.');
+      alert(this.translate.instant('NO_ASSIGNED_WORKOUT_DAY'));
       return;
     }
 
@@ -1816,7 +1822,7 @@ currentDate = new Date();
     );
 
     if (exists) {
-      alert('A workout day already exists for this date.');
+      alert(this.translate.instant('WORKOUT_DAY_ALREADY_EXISTS'));
       return;
     }
 
@@ -1830,14 +1836,14 @@ currentDate = new Date();
       },
       error: (err) => {
         console.error('Error pasting workout day', err);
-        alert('Failed to paste workout day.');
+        alert(this.translate.instant('PASTE_WORKOUT_DAY_ERROR'));
       },
     });
   }
 
   addItem(dateStr: string): void {
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -1876,7 +1882,7 @@ currentDate = new Date();
 
   openCreateProgramModal(dateStr: string): void {
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -1968,7 +1974,7 @@ currentDate = new Date();
       error: (err) => {
         console.error('Error creating calendar workout program', err);
         this.createProgramSaving = false;
-        alert('Failed to create workout program.');
+        alert(this.translate.instant('CREATE_WORKOUT_PROGRAM_ERROR'));
       },
     });
   }
@@ -2018,7 +2024,7 @@ currentDate = new Date();
       error: (err) => {
         console.error('Error creating calendar nutrition program', err);
         this.createProgramSaving = false;
-        alert('Failed to create nutrition program.');
+        alert(this.translate.instant('CREATE_NUTRITION_PROGRAM_ERROR'));
       },
     });
   }
@@ -2050,7 +2056,7 @@ currentDate = new Date();
     event?.stopPropagation();
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -2091,7 +2097,7 @@ currentDate = new Date();
 
   openExerciseSelector(): void {
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -2282,7 +2288,7 @@ currentDate = new Date();
 
   handleAddExerciseToWorkout(exercise: Exercise): void {
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -2578,7 +2584,7 @@ currentDate = new Date();
     }
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -2586,12 +2592,12 @@ currentDate = new Date();
 
     if (this.editingWorkout) {
       if (!this.editingWorkout.programId) {
-        alert('This workout day is not linked to a plan.');
+        alert(this.translate.instant('WORKOUT_DAY_NOT_LINKED'));
         return;
       }
 
       if (!this.editingWorkout.id) {
-        alert('This workout day is missing an identifier. Please refresh and try again.');
+        alert(this.translate.instant('WORKOUT_DAY_ID_MISSING'));
         return;
       }
 
@@ -2603,7 +2609,7 @@ currentDate = new Date();
       );
 
       if (duplicate) {
-        alert('Another workout day already exists for this date.');
+        alert(this.translate.instant('ANOTHER_WORKOUT_DAY_EXISTS'));
         return;
       }
 
@@ -2620,7 +2626,7 @@ currentDate = new Date();
           },
           error: (err) => {
             console.error('Error updating workout day', err);
-            alert('Failed to update workout day.');
+            alert(this.translate.instant('UPDATE_WORKOUT_DAY_ERROR'));
           },
         });
       return;
@@ -2629,7 +2635,7 @@ currentDate = new Date();
     const lastPlan = this.getLastWorkoutPlanForClient(this.selectedClient);
 
     if (!lastPlan) {
-      alert('No assigned workout plan found for this client.');
+      alert(this.translate.instant('NO_ASSIGNED_WORKOUT_PLAN'));
       return;
     }
 
@@ -2639,7 +2645,7 @@ currentDate = new Date();
     );
 
     if (exists) {
-      alert('A workout day already exists for this date.');
+      alert(this.translate.instant('WORKOUT_DAY_ALREADY_EXISTS'));
       return;
     }
 
@@ -2652,7 +2658,7 @@ currentDate = new Date();
         },
         error: (err) => {
           console.error('Error saving workout day', err);
-          alert('Failed to save workout day.');
+          alert(this.translate.instant('SAVE_WORKOUT_DAY_ERROR'));
         },
       });
   }
@@ -2661,7 +2667,7 @@ currentDate = new Date();
     event?.stopPropagation();
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
@@ -2678,12 +2684,12 @@ currentDate = new Date();
     if (!this.workoutToDelete) return;
 
     if (!this.canManageWorkoutDays()) {
-      alert('Please select a client first.');
+      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
     if (!this.workoutToDelete.programId) {
-      alert('This workout day is not linked to a plan.');
+      alert(this.translate.instant('WORKOUT_DAY_NOT_LINKED'));
       return;
     }
 
@@ -2696,7 +2702,7 @@ currentDate = new Date();
         },
         error: (err) => {
           console.error('Error deleting workout day', err);
-          alert('Failed to delete workout day.');
+          alert(this.translate.instant('DELETE_WORKOUT_DAY_ERROR'));
         },
       });
   }

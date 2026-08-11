@@ -1,28 +1,28 @@
 <div class="page-container" [class.detail-open]="selectedExercise">
   <div class="page-header">
     <div class="header-content">
-      <button class="page-back-btn" type="button" aria-label="Go back" (click)="goBack()">
+      <button class="page-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
         <i-feather name="arrow-left"></i-feather>
       </button>
       <div class="header-copy">
-        <h1>Exercise Library</h1>
-        <p>Search for existing exercises, and create your own custom exercises</p>
+        <h1>{{ 'EXERCISE_LIBRARY' | translate }}</h1>
+        <p>{{ 'EXERCISE_LIBRARY_SUBTITLE' | translate }}</p>
       </div>
     </div>
 
     <button class="primary-btn" (click)="openCreateModal()">
       <i-feather name="plus"></i-feather>
-      Custom Exercise
+      {{ 'CUSTOM_EXERCISE' | translate }}
     </button>
   </div>
 
   <div class="mobile-library-actions">
     <button class="mobile-custom-btn" type="button" (click)="openCreateModal()">
       <i-feather name="plus"></i-feather>
-      Custom Exercise
+      {{ 'CUSTOM_EXERCISE' | translate }}
     </button>
     <button class="mobile-select-btn" type="button" (click)="openExerciseSelectModal()">
-      Select Exercise
+      {{ 'SELECT_EXERCISE' | translate }}
     </button>
   </div>
 
@@ -34,9 +34,9 @@
           [(ngModel)]="selectedEquipment"
           (change)="onFilterChange()"
         >
-          <option value="">All Equipment</option>
+          <option value="">{{ 'ALL_EQUIPMENT' | translate }}</option>
           <option *ngFor="let eq of enums?.equipment" [value]="eq">
-            {{ eq }}
+            {{ getEquipmentTranslationKey(eq) | translate }}
           </option>
         </select>
 
@@ -45,9 +45,9 @@
           [(ngModel)]="selectedMuscle"
           (change)="onFilterChange()"
         >
-          <option value="">All Muscles</option>
+          <option value="">{{ 'ALL_MUSCLES' | translate }}</option>
           <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">
-            {{ muscle }}
+            {{ getMuscleTranslationKey(muscle) | translate }}
           </option>
         </select>
 
@@ -56,9 +56,9 @@
           [(ngModel)]="selectedType"
           (change)="onFilterChange()"
         >
-          <option value="">All Types</option>
+          <option value="">{{ 'ALL_TYPES' | translate }}</option>
           <option *ngFor="let type of enums?.typeExercise" [value]="type">
-            {{ type }}
+            {{ getTypeTranslationKey(type) | translate }}
           </option>
         </select>
       </div>
@@ -67,14 +67,14 @@
         <i-feather name="search" class="search-icon"></i-feather>
         <input
           type="text"
-          placeholder="Search exercises"
+          [placeholder]="'SEARCH_EXERCISES' | translate"
           [(ngModel)]="searchTerm"
           (input)="onSearch()"
         />
       </div>
 
       <div class="exercises-section" *ngIf="filteredExercises.length > 0">
-        <h3>Exercises ({{ filteredExercises.length }})</h3>
+        <h3>{{ 'EXERCISES' | translate }} ({{ filteredExercises.length }})</h3>
 
         <div class="exercise-list">
           <div
@@ -105,9 +105,9 @@
             <div class="exercise-info">
               <h4>{{ exercise.name }}</h4>
               <div class="exercise-meta">
-                <span>{{ exercise.muscle }} &bull; {{ exercise.equipment }}</span>
+                <span>{{ getMuscleTranslationKey(exercise.muscle) | translate }} &bull; {{ getEquipmentTranslationKey(exercise.equipment) | translate }}</span>
                 <span class="custom-badge" *ngIf="isCustomExercise(exercise)">
-                  Custom
+                  {{ 'CUSTOM' | translate }}
                 </span>
               </div>
             </div>
@@ -132,13 +132,13 @@
 
         <app-scroll-loader
           [isLoading]="isLoading"
-          loadingText="Loading exercises..."
+          [loadingText]="'LOADING_EXERCISES' | translate"
         ></app-scroll-loader>
 
       </div>
 
       <div class="no-exercises" *ngIf="filteredExercises.length === 0 && !isLoading">
-        <p>No exercises found matching your filters.</p>
+        <p>{{ 'NO_EXERCISES_MATCHING_FILTERS' | translate }}</p>
       </div>
     </div>
 
@@ -147,8 +147,8 @@
         <div class="play-icon">
           <i-feather name="play-circle" size="64"></i-feather>
         </div>
-        <h3>Select Exercise</h3>
-        <p>Start by selecting an exercise from the library</p>
+        <h3>{{ 'SELECT_EXERCISE' | translate }}</h3>
+        <p>{{ 'SELECT_EXERCISE_HINT' | translate }}</p>
       </div>
 
       <div *ngIf="selectedExercise" class="exercise-detail">
@@ -162,13 +162,13 @@
 
             <div class="exercise-meta-section">
               <span class="meta-tag type" *ngIf="getSelectedExercise()?.type">
-                {{ getSelectedExercise()?.type }}
+                {{ getTypeTranslationKey(getSelectedExercise()?.type) | translate }}
               </span>
               <span class="meta-tag" *ngIf="getSelectedExercise()?.equipment">
-                {{ getSelectedExercise()?.equipment }}
+                {{ getEquipmentTranslationKey(getSelectedExercise()?.equipment) | translate }}
               </span>
               <span class="meta-tag" *ngIf="getSelectedExercise()?.muscle">
-                {{ getSelectedExercise()?.muscle }}
+                {{ getMuscleTranslationKey(getSelectedExercise()?.muscle) | translate }}
               </span>
             </div>
           </div>
@@ -219,7 +219,7 @@
             class="notes-column"
             *ngIf="getInstructionLines(getSelectedExercise()).length"
           >
-            <h3>INSTRUCTIONS</h3>
+            <h3>{{ 'INSTRUCTIONS' | translate }}</h3>
             <ol>
               <li *ngFor="let instruction of getInstructionLines(getSelectedExercise())">
                 {{ instruction }}
@@ -228,7 +228,7 @@
           </div>
 
           <div class="notes-column" *ngIf="getTipLines(getSelectedExercise()).length">
-            <h3>TIPS</h3>
+            <h3>{{ 'TIPS' | translate }}</h3>
             <ul>
               <li *ngFor="let tip of getTipLines(getSelectedExercise())">
                 {{ tip }}
@@ -241,26 +241,26 @@
   </div>
 
   <div class="mobile-exercise-picker" [class.show]="showExerciseSelectModal" (click)="closeExerciseSelectModal()">
-    <div class="mobile-exercise-picker__dialog" role="dialog" aria-modal="true" aria-label="Select Exercise" (click)="$event.stopPropagation()">
+    <div class="mobile-exercise-picker__dialog" role="dialog" aria-modal="true" [attr.aria-label]="'SELECT_EXERCISE' | translate" (click)="$event.stopPropagation()">
       <div class="mobile-exercise-picker__header">
-        <h2>Select Exercise</h2>
-        <button type="button" aria-label="Close" (click)="closeExerciseSelectModal()"><i-feather name="x"></i-feather></button>
+        <h2>{{ 'SELECT_EXERCISE' | translate }}</h2>
+        <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeExerciseSelectModal()"><i-feather name="x"></i-feather></button>
       </div>
       <div class="mobile-exercise-picker__filters">
         <select [(ngModel)]="selectedEquipment" (change)="onFilterChange()">
-          <option value="">Equipment</option>
-          <option *ngFor="let eq of enums?.equipment" [value]="eq">{{ eq }}</option>
+          <option value="">{{ 'EQUIPMENT' | translate }}</option>
+          <option *ngFor="let eq of enums?.equipment" [value]="eq">{{ getEquipmentTranslationKey(eq) | translate }}</option>
         </select>
         <select [(ngModel)]="selectedMuscle" (change)="onFilterChange()">
-          <option value="">Muscles</option>
-          <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">{{ muscle }}</option>
+          <option value="">{{ 'MUSCLES' | translate }}</option>
+          <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">{{ getMuscleTranslationKey(muscle) | translate }}</option>
         </select>
       </div>
       <div class="mobile-exercise-picker__search">
         <i-feather name="search"></i-feather>
-        <input type="text" placeholder="Search exercises" [(ngModel)]="searchTerm" (input)="onSearch()" />
+        <input type="text" [placeholder]="'SEARCH_EXERCISES' | translate" [(ngModel)]="searchTerm" (input)="onSearch()" />
       </div>
-      <div class="mobile-exercise-picker__label">All Exercises</div>
+      <div class="mobile-exercise-picker__label">{{ 'ALL_EXERCISES' | translate }}</div>
       <div class="mobile-exercise-picker__list">
         <button
           class="mobile-exercise-option"
@@ -275,10 +275,10 @@
           </span>
           <span class="mobile-exercise-option__copy">
             <strong>{{ exercise.name }}</strong>
-            <small>{{ exercise.muscle || exercise.type }}</small>
+            <small>{{ exercise.muscle ? (getMuscleTranslationKey(exercise.muscle) | translate) : (getTypeTranslationKey(exercise.type) | translate) }}</small>
           </span>
         </button>
-        <p class="mobile-exercise-picker__empty" *ngIf="!isLoading && filteredExercises.length === 0">No exercises found.</p>
+        <p class="mobile-exercise-picker__empty" *ngIf="!isLoading && filteredExercises.length === 0">{{ 'NO_EXERCISES_FOUND' | translate }}</p>
       </div>
     </div>
   </div>
@@ -290,7 +290,7 @@
   >
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ editingExercise ? 'Edit' : 'Create' }} Custom Exercise</h2>
+        <h2>{{ (editingExercise ? 'EDIT_CUSTOM_EXERCISE' : 'CREATE_CUSTOM_EXERCISE') | translate }}</h2>
 
         <button class="close-btn" (click)="closeCreateModal()">
           <i-feather name="x"></i-feather>
@@ -306,30 +306,30 @@
             <img
               *ngIf="getModalPreviewImage(); else addImagePlaceholder"
               [src]="getModalPreviewImage()"
-              alt="Exercise preview"
+              [alt]="'EXERCISE_PREVIEW' | translate"
             />
 
             <ng-template #addImagePlaceholder>
               <i-feather name="image" size="24"></i-feather>
-              <span>Add Image</span>
+              <span>{{ 'ADD_IMAGE' | translate }}</span>
             </ng-template>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Exercise Name</label>
+          <label>{{ 'EXERCISE_NAME' | translate }}</label>
           <input
             type="text"
-            placeholder="Enter exercise name"
+            [placeholder]="'ENTER_EXERCISE_NAME' | translate"
             [(ngModel)]="exerciseName"
           />
         </div>
 
         <div class="form-group">
-          <label>Exercise Type</label>
+          <label>{{ 'EXERCISE_TYPE' | translate }}</label>
           <select [(ngModel)]="exerciseType">
             <option *ngFor="let type of enums?.typeExercise" [value]="type">
-              {{ type }}
+              {{ getTypeTranslationKey(type) | translate }}
             </option>
           </select>
         </div>
@@ -338,57 +338,57 @@
           <label class="checkbox-label">
             <input type="checkbox" [(ngModel)]="isTemplate" />
             <span class="checkmark"></span>
-            Make this a template exercise (available to all coaches)
+            {{ 'MAKE_TEMPLATE_EXERCISE' | translate }}
           </label>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Equipment</label>
+            <label>{{ 'EQUIPMENT' | translate }}</label>
             <select [(ngModel)]="equipment">
               <option *ngFor="let eq of enums?.equipment" [value]="eq">
-                {{ eq }}
+                {{ getEquipmentTranslationKey(eq) | translate }}
               </option>
             </select>
           </div>
 
           <div class="form-group">
-            <label>Primary Muscle Group</label>
+            <label>{{ 'PRIMARY_MUSCLE_GROUP' | translate }}</label>
             <select [(ngModel)]="muscle">
               <option *ngFor="let mg of enums?.muscleGroup" [value]="mg">
-                {{ mg }}
+                {{ getMuscleTranslationKey(mg) | translate }}
               </option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Video attachment</label>
+          <label>{{ 'VIDEO_ATTACHMENT' | translate }}</label>
 
           <div class="video-upload">
             <div class="upload-area">
               <i-feather name="plus" size="24"></i-feather>
 
               <div class="upload-text">
-                <p>Drop a video attachment here</p>
-                <small>You can upload MP4 videos with a maximum size of 100 MB</small>
+                <p>{{ 'DROP_VIDEO_ATTACHMENT' | translate }}</p>
+                <small>{{ 'VIDEO_UPLOAD_REQUIREMENTS' | translate }}</small>
               </div>
             </div>
 
-            <div class="or-divider">or</div>
+            <div class="or-divider">{{ 'OR' | translate }}</div>
 
             <input
               type="text"
-              placeholder="Paste a YouTube video link"
+              [placeholder]="'PASTE_YOUTUBE_LINK' | translate"
               [(ngModel)]="videoLink"
             />
           </div>
         </div>
 
         <div class="form-group">
-          <label>Description</label>
+          <label>{{ 'DESCRIPTION' | translate }}</label>
           <textarea
-            placeholder="Enter exercise description"
+            [placeholder]="'ENTER_EXERCISE_DESCRIPTION' | translate"
             [(ngModel)]="exerciseDescription"
             rows="3"
           ></textarea>
@@ -396,10 +396,10 @@
       </div>
 
       <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeCreateModal()">Cancel</button>
+        <button class="cancel-btn" (click)="closeCreateModal()">{{ 'CANCEL' | translate }}</button>
 
         <button class="create-btn primary" (click)="createExercise()">
-          {{ editingExercise ? 'Update' : 'Create' }} Exercise
+          {{ (editingExercise ? 'UPDATE_EXERCISE' : 'CREATE_EXERCISE') | translate }}
         </button>
       </div>
     </div>
@@ -412,7 +412,7 @@
   >
     <div class="modal-content delete" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Delete Exercise</h2>
+        <h2>{{ 'DELETE_EXERCISE' | translate }}</h2>
 
         <button class="close-btn" (click)="closeDeleteModal()">
           <i-feather name="x"></i-feather>
@@ -424,17 +424,16 @@
           <i-feather name="trash-2" size="24"></i-feather>
         </div>
 
-        <h3>Are you sure?</h3>
+        <h3>{{ 'ARE_YOU_SURE' | translate }}</h3>
 
         <p>
-          This action cannot be undone. This will permanently delete the
-          exercise "{{ exerciseToDelete?.name }}".
+          {{ 'DELETE_EXERCISE_CONFIRMATION' | translate:{ name: exerciseToDelete?.name } }}
         </p>
       </div>
 
       <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeDeleteModal()">Cancel</button>
-        <button class="confirm-btn danger" (click)="confirmDelete()">Delete</button>
+        <button class="cancel-btn" (click)="closeDeleteModal()">{{ 'CANCEL' | translate }}</button>
+        <button class="confirm-btn danger" (click)="confirmDelete()">{{ 'DELETE' | translate }}</button>
       </div>
     </div>
   </div>

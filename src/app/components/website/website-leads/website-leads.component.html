@@ -1,11 +1,11 @@
 <div class="website-leads-container">
   <div class="page-header">
-    <h1>Website Leads</h1>
+    <h1>{{ 'WEBSITE_LEADS' | translate }}</h1>
     <div class="page-header-actions">
-      <span class="leads-count"><i-feather name="users"></i-feather>{{ totalElements }} Leads</span>
+      <span class="leads-count"><i-feather name="users"></i-feather>{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</span>
       <button class="btn-primary" type="button" (click)="openInviteModal()">
         <i-feather name="user-plus"></i-feather>
-        Invite new lead
+        {{ 'INVITE_NEW_LEAD' | translate }}
       </button>
     </div>
   </div>
@@ -15,7 +15,7 @@
       <i-feather name="search" class="search-icon"></i-feather>
       <input
         type="text"
-        placeholder="Search leads..."
+        [placeholder]="'SEARCH_LEADS' | translate"
         [(ngModel)]="searchTerm"
         (ngModelChange)="onSearchChange()"
         class="search-input"
@@ -28,11 +28,11 @@
 
   <div class="plans-table">
     <div class="table-header">
-      <div class="col-title">LEAD</div>
-      <div class="col-updated">DATE</div>
-      <div class="col-macros">CONTACT</div>
-      <div class="col-calories">SOURCE</div>
-      <div class="col-actions">ACTIONS</div>
+      <div class="col-title">{{ 'LEAD' | translate }}</div>
+      <div class="col-updated">{{ 'DATE' | translate }}</div>
+      <div class="col-macros">{{ 'CONTACT' | translate }}</div>
+      <div class="col-calories">{{ 'SOURCE' | translate }}</div>
+      <div class="col-actions">{{ 'ACTIONS' | translate }}</div>
     </div>
 
     <div class="table-row" *ngFor="let lead of leads" [id]="'lead-' + lead.id" [class.notification-target]="highlightedLeadId === lead.id">
@@ -47,7 +47,7 @@
 
       <div class="col-macros">
         <div class="macro-item">{{ lead.email }}</div>
-        <div class="macro-item">{{ lead.phone || 'No phone' }}</div>
+        <div class="macro-item">{{ lead.phone || ('NO_PHONE' | translate) }}</div>
       </div>
 
       <div class="col-calories">
@@ -62,9 +62,9 @@
           (click)="invite(lead); $event.stopPropagation()"
         >
           <i-feather [name]="processingLeadId === lead.id ? 'loader' : 'mail'"></i-feather>
-          {{ processingLeadId === lead.id
-            ? 'Sending...'
-            : (lead.status === 'INVITED' ? 'Invitation sent' : 'Invite by email') }}
+          {{ (processingLeadId === lead.id
+            ? 'SENDING'
+            : (lead.status === 'INVITED' ? 'INVITATION_SENT' : 'INVITE_BY_EMAIL')) | translate }}
         </button>
 
         <div class="dropdown" [class.open]="openDropdownId === lead.id">
@@ -73,7 +73,7 @@
             (click)="toggleDropdown(lead.id, $event)"
             type="button"
           >
-            Actions
+            {{ 'ACTIONS' | translate }}
             <i-feather name="chevron-down"></i-feather>
           </button>
 
@@ -85,7 +85,7 @@
               (click)="copyEmail(lead.email); $event.stopPropagation()"
             >
               <i-feather name="copy"></i-feather>
-              Copy email
+              {{ 'COPY_EMAIL' | translate }}
             </button>
 
             <button
@@ -95,7 +95,7 @@
               (click)="copyPhone(lead.phone); $event.stopPropagation()"
             >
               <i-feather name="phone"></i-feather>
-              Copy phone
+              {{ 'COPY_PHONE' | translate }}
             </button>
 
             <a
@@ -104,7 +104,7 @@
               (click)="$event.stopPropagation()"
             >
               <i-feather name="mail"></i-feather>
-              Send email
+              {{ 'SEND_EMAIL' | translate }}
             </a>
           </div>
         </div>
@@ -112,17 +112,17 @@
     </div>
 
     <div class="empty-state" *ngIf="!loading && leads.length === 0">
-      No leads found.
+      {{ 'NO_LEADS_FOUND' | translate }}
     </div>
 
     <div class="loading-state" *ngIf="loading">
-      Loading leads...
+      {{ 'LOADING_LEADS' | translate }}
     </div>
   </div>
 
   <div class="pagination" *ngIf="totalPages > 1">
     <button class="page-btn" [disabled]="page === 0" (click)="goToPage(page - 1)">
-      Previous
+      {{ 'PREVIOUS' | translate }}
     </button>
 
     <button
@@ -135,7 +135,7 @@
     </button>
 
     <button class="page-btn" [disabled]="page === totalPages - 1" (click)="goToPage(page + 1)">
-      Next
+      {{ 'NEXT' | translate }}
     </button>
   </div>
 </div>

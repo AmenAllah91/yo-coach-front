@@ -1,8 +1,8 @@
 <div class="forms-page">  <!-- ══ PAGE HEADER ══ -->
   <div class="page-header">
     <div class="header-content">
-      <h1>Forms</h1>
-      <p>Gérez vos formulaires et leurs versions.</p>
+      <h1>{{ 'FORMS' | translate }}</h1>
+      <p>{{ 'MANAGE_FORMS_SUBTITLE' | translate }}</p>
     </div>
 
     <button
@@ -12,7 +12,7 @@
       *ngIf="viewMode() === 'active'"
     >
       <i-feather name="plus"></i-feather>
-      Ajouter
+      {{ 'ADD' | translate }}
     </button>
   </div>
 
@@ -20,7 +20,7 @@
     <div class="search-section">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search clients" />
+        <input type="text" [placeholder]="'SEARCH_FORMS' | translate" />
       </div>
     </div>
 
@@ -32,7 +32,7 @@
         type="button"
         (click)="setViewMode('active')"
       >
-        Active
+        {{ 'ACTIVE_STATUS' | translate }}
         <span
           class="view-toggle__badge"
           [class.view-toggle__badge--blue]="viewMode() === 'active'"
@@ -48,7 +48,7 @@
         type="button"
         (click)="setViewMode('unsaved')"
       >
-        Unsaved
+        {{ 'UNSAVED_STATUS' | translate }}
         <span
           class="view-toggle__badge"
           [class.view-toggle__badge--purple]="viewMode() === 'unsaved'"
@@ -64,7 +64,7 @@
         type="button"
         (click)="setViewMode('archived')"
       >
-        Archived
+        {{ 'ARCHIVED_STATUS' | translate }}
         <span
           class="view-toggle__badge"
           [class.view-toggle__badge--amber]="viewMode() === 'archived'"
@@ -80,13 +80,13 @@
   <!-- Archived info banner -->
   <div class="archived-banner" *ngIf="viewMode() === 'archived'">
     <i-feather name="archive" class="archived-banner__icon"></i-feather>
-    <span>Les formulaires archivés sont masqués des clients. Restaurez-en un pour le réactiver.</span>
+    <span>{{ 'ARCHIVED_FORMS_EXPLANATION' | translate }}</span>
   </div>
 
   <!-- Unsaved info banner -->
   <div class="unsaved-banner" *ngIf="viewMode() === 'unsaved'">
     <i-feather name="edit-3" class="unsaved-banner__icon"></i-feather>
-    <span>Unsaved forms are persisted in the backend. Click Save Form to move them into Active as real saved forms.</span>
+    <span>{{ 'UNSAVED_FORMS_EXPLANATION' | translate }}</span>
   </div>
 
   <!-- ══ CONTENT ══ -->
@@ -94,40 +94,40 @@
     <div class="card">
       <div *ngIf="error()" class="alert">{{ error() }}</div>
 
-      <div class="mobile-form-list" aria-label="Forms list">
-        <div class="mobile-form-state" *ngIf="loading()">Chargement...</div>
-        <div class="mobile-form-state" *ngIf="!loading() && forms().length === 0">Aucun form trouvé.</div>
+      <div class="mobile-form-list" [attr.aria-label]="'FORMS_LIST' | translate">
+        <div class="mobile-form-state" *ngIf="loading()">{{ 'LOADING' | translate }}</div>
+        <div class="mobile-form-state" *ngIf="!loading() && forms().length === 0">{{ 'NO_FORMS_FOUND' | translate }}</div>
 
         <article class="mobile-form-row" *ngFor="let f of forms(); trackBy: trackById">
           <div class="mobile-form-copy">
             <div class="mobile-form-heading">
-              <div class="mobile-form-title">{{ f.title || '(Sans titre)' }}</div>
-              <span [class]="badgeClass(f.status)">{{ f.status }}</span>
+              <div class="mobile-form-title">{{ f.title || ('UNTITLED' | translate) }}</div>
+              <span [class]="badgeClass(f.status)">{{ statusLabel(f.status) }}</span>
             </div>
             <div class="mobile-form-description" *ngIf="f.description">{{ f.description }}</div>
           </div>
 
           <div class="dropdown" [class.open]="openedActionsId() === f.id">
-            <button class="mobile-menu-btn" type="button" (click)="toggleActions(f.id, $event)" aria-label="Actions">
+            <button class="mobile-menu-btn" type="button" (click)="toggleActions(f.id, $event)" [attr.aria-label]="'ACTIONS' | translate">
               <i-feather name="more-vertical"></i-feather>
             </button>
 
             <div class="dropdown-menu" [id]="'mobile-dropdown-' + f.id" *ngIf="openedActionsId() === f.id">
               <ng-container [ngSwitch]="viewMode()">
                 <ng-container *ngSwitchCase="'active'">
-                  <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()"><i-feather name="edit-2"></i-feather>Modifier</button>
-                  <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()"><i-feather name="users"></i-feather>Affecter</button>
-                  <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>Dupliquer</button>
-                  <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()"><i-feather name="archive"></i-feather>Archiver</button>
-                  <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>Supprimer</button>
+                  <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()"><i-feather name="edit-2"></i-feather>{{ 'EDIT' | translate }}</button>
+                  <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()"><i-feather name="users"></i-feather>{{ 'ASSIGN' | translate }}</button>
+                  <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>{{ 'DUPLICATE' | translate }}</button>
+                  <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()"><i-feather name="archive"></i-feather>{{ 'ARCHIVE' | translate }}</button>
+                  <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'unsaved'">
-                  <button class="dropdown-item" type="button" (click)="continueCreating(f); closeActions()"><i-feather name="play"></i-feather>Continuer la création</button>
-                  <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>Dupliquer</button>
-                  <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>Supprimer</button>
+                   <button class="dropdown-item" type="button" (click)="continueCreating(f); closeActions()"><i-feather name="play"></i-feather>{{ 'CONTINUE_CREATING' | translate }}</button>
+                   <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>{{ 'DUPLICATE' | translate }}</button>
+                   <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'archived'">
-                  <button class="dropdown-item" type="button" (click)="unarchiveForm(f, $event); closeActions()"><i-feather name="rotate-ccw"></i-feather>Désarchiver</button>
+                   <button class="dropdown-item" type="button" (click)="unarchiveForm(f, $event); closeActions()"><i-feather name="rotate-ccw"></i-feather>{{ 'UNARCHIVE' | translate }}</button>
                 </ng-container>
               </ng-container>
             </div>
@@ -136,33 +136,33 @@
       </div>
 
       <div class="table-wrap">
-        <table class="table" aria-label="Forms table">
+        <table class="table" [attr.aria-label]="'FORMS_TABLE' | translate">
           <thead>
           <tr>
-            <th>Titre</th>
-            <th class="col-status">Statut</th>
-            <th class="col-date">Dernière mise à jour</th>
-            <th class="col-actions">Actions</th>
+            <th>{{ 'TITLE' | translate }}</th>
+            <th class="col-status">{{ 'STATUS' | translate }}</th>
+            <th class="col-date">{{ 'LAST_UPDATED' | translate }}</th>
+            <th class="col-actions">{{ 'ACTIONS' | translate }}</th>
           </tr>
           </thead>
 
           <tbody>
           <tr *ngIf="loading()">
-            <td colspan="4" class="loading-row">Chargement...</td>
+            <td colspan="4" class="loading-row">{{ 'LOADING' | translate }}</td>
           </tr>
 
           <tr *ngIf="!loading() && forms().length === 0">
-            <td colspan="4" class="empty-row">Aucun form trouvé.</td>
+            <td colspan="4" class="empty-row">{{ 'NO_FORMS_FOUND' | translate }}</td>
           </tr>
 
           <tr *ngFor="let f of forms(); trackBy: trackById">
             <td>
-              <div class="form-title">{{ f.title || '(Sans titre)' }}</div>
+              <div class="form-title">{{ f.title || ('UNTITLED' | translate) }}</div>
               <div class="form-desc" *ngIf="f.description">{{ f.description }}</div>
             </td>
 
             <td class="col-status">
-              <span [class]="badgeClass(f.status)">{{ f.status }}</span>
+              <span [class]="badgeClass(f.status)">{{ statusLabel(f.status) }}</span>
             </td>
 
             <td class="col-date">
@@ -177,9 +177,9 @@
                   class="action-btn"
                   type="button"
                   (click)="toggleActions(f.id, $event)"
-                  aria-label="Actions"
+                  [attr.aria-label]="'ACTIONS' | translate"
                 >
-                  <span>Actions</span>
+                  <span>{{ 'ACTIONS' | translate }}</span>
                   <i-feather name="chevron-down" class="desktop-actions-icon"></i-feather>
                   <i-feather name="more-vertical" class="mobile-actions-icon"></i-feather>
                 </button>
@@ -198,7 +198,7 @@
                         (click)="onEditGuarded(f); closeActions()"
                       >
                         <i-feather name="edit-2"></i-feather>
-                        Modifier
+                        {{ 'EDIT' | translate }}
                       </button>
 
                       <button
@@ -207,7 +207,7 @@
                         (click)="openAssign(f); closeActions()"
                       >
                         <i-feather name="users"></i-feather>
-                        Affecter
+                        {{ 'ASSIGN' | translate }}
                       </button>
 
                       <button
@@ -217,7 +217,7 @@
                         [disabled]="duplicating()"
                       >
                         <i-feather name="copy"></i-feather>
-                        Dupliquer
+                        {{ 'DUPLICATE' | translate }}
                       </button>
 
                       <button
@@ -226,7 +226,7 @@
                         (click)="archiveForm(f, $event); closeActions()"
                       >
                         <i-feather name="archive"></i-feather>
-                        Archiver
+                        {{ 'ARCHIVE' | translate }}
                       </button>
 
                       <button
@@ -235,7 +235,7 @@
                         (click)="onDeleteGuarded(f); closeActions()"
                       >
                         <i-feather name="trash-2"></i-feather>
-                        Supprimer
+                        {{ 'DELETE' | translate }}
                       </button>
                     </ng-container>
 
@@ -247,7 +247,7 @@
                         (click)="continueCreating(f); closeActions()"
                       >
                         <i-feather name="play"></i-feather>
-                        Continuer la création
+                        {{ 'CONTINUE_CREATING' | translate }}
                       </button>
 
                       <button
@@ -257,7 +257,7 @@
                         [disabled]="duplicating()"
                       >
                         <i-feather name="copy"></i-feather>
-                        Dupliquer
+                        {{ 'DUPLICATE' | translate }}
                       </button>
 
                       <button
@@ -266,7 +266,7 @@
                         (click)="onDeleteGuarded(f); closeActions()"
                       >
                         <i-feather name="trash-2"></i-feather>
-                        Supprimer
+                        {{ 'DELETE' | translate }}
                       </button>
                     </ng-container>
 
@@ -278,7 +278,7 @@
                         (click)="unarchiveForm(f, $event); closeActions()"
                       >
                         <i-feather name="rotate-ccw"></i-feather>
-                        Désarchiver
+                        {{ 'UNARCHIVE' | translate }}
                       </button>
                     </ng-container>
                   </ng-container>
@@ -298,11 +298,11 @@
           (click)="goToPrev()"
           [disabled]="pageIndex() === 0 || loading()"
         >
-          ← Précédent
+          ← {{ 'PREVIOUS' | translate }}
         </button>
 
         <div class="pager__info">
-          Page <span class="mono">{{ pageIndex() + 1 }}</span> /
+          {{ 'PAGE' | translate }} <span class="mono">{{ pageIndex() + 1 }}</span> /
           <span class="mono">{{ totalPages() }}</span>
         </div>
 
@@ -323,7 +323,7 @@
           (click)="goToNext()"
           [disabled]="pageIndex() >= totalPages() - 1 || loading()"
         >
-          Suivant →
+          {{ 'NEXT' | translate }} →
         </button>
       </div>
     </div>
@@ -333,12 +333,11 @@
 
     <div class="modal" *ngIf="confirmOpen()" role="dialog" aria-modal="true">
       <div class="modal__content">
-        <div class="modal__title">Confirmer la suppression</div>
+        <div class="modal__title">{{ 'CONFIRM_DELETION' | translate }}</div>
 
         <div class="modal__text">
-          Voulez-vous vraiment supprimer le form
-          <strong>{{ selectedToDelete()?.title || '(Sans titre)' }}</strong> ?
-          <div class="modal__hint">Cette action est irréversible.</div>
+          {{ 'DELETE_FORM_CONFIRMATION' | translate:{ title: (selectedToDelete()?.title || ('UNTITLED' | translate)) } }}
+          <div class="modal__hint">{{ 'ACTION_IRREVERSIBLE' | translate }}</div>
         </div>
 
         <div class="modal__actions">
@@ -348,7 +347,7 @@
             (click)="closeDelete()"
             [disabled]="deleting()"
           >
-            Annuler
+            {{ 'CANCEL' | translate }}
           </button>
 
           <button
@@ -357,8 +356,8 @@
             (click)="confirmDelete()"
             [disabled]="deleting()"
           >
-            <span *ngIf="!deleting()">Supprimer</span>
-            <span *ngIf="deleting()">Suppression...</span>
+            <span *ngIf="!deleting()">{{ 'DELETE' | translate }}</span>
+            <span *ngIf="deleting()">{{ 'DELETING' | translate }}</span>
           </button>
         </div>
       </div>
@@ -370,11 +369,11 @@
     <div class="am-modal" role="dialog" aria-modal="true" aria-labelledby="am-title">
       <div class="am-header">
         <div>
-          <h3 class="am-title" id="am-title">Assign Form to Clients</h3>
-          <p class="am-subtitle">{{ selectedToAssign()?.title || '(Sans titre)' }}</p>
+          <h3 class="am-title" id="am-title">{{ 'ASSIGN_FORM_TO_CLIENTS' | translate }}</h3>
+          <p class="am-subtitle">{{ selectedToAssign()?.title || ('UNTITLED' | translate) }}</p>
         </div>
 
-        <button class="am-close" type="button" (click)="closeAssign()" aria-label="Fermer">
+        <button class="am-close" type="button" (click)="closeAssign()" [attr.aria-label]="'CLOSE' | translate">
           <i-feather name="x"></i-feather>
         </button>
       </div>
@@ -385,7 +384,7 @@
           <input
             class="am-search-input"
             type="text"
-            placeholder="Search clients..."
+            [placeholder]="'SEARCH_CLIENTS' | translate"
             [value]="searchTerm()"
             (input)="onUserSearch($event)"
           />
@@ -394,7 +393,7 @@
 
       <div class="am-body">
         <ng-container *ngIf="usersLoading()">
-          <div class="am-state-row">Chargement des utilisateurs...</div>
+          <div class="am-state-row">{{ 'LOADING_USERS' | translate }}</div>
         </ng-container>
 
         <ng-container *ngIf="!usersLoading()">
@@ -413,7 +412,7 @@
               <i-feather *ngIf="assignSelectAll" name="check" class="am-check-icon"></i-feather>
             </span>
 
-            <span class="am-select-all-label">Select All Clients ({{ allUsers().length }})</span>
+            <span class="am-select-all-label">{{ 'SELECT_ALL_CLIENTS' | translate }} ({{ allUsers().length }})</span>
           </label>
 
           <div class="am-list">
@@ -442,7 +441,7 @@
             </label>
 
             <div class="am-state-row" *ngIf="filteredUsers().length === 0 && !usersError()">
-              Aucun utilisateur trouvé.
+              {{ 'NO_USERS_FOUND' | translate }}
             </div>
           </div>
         </ng-container>
@@ -458,7 +457,7 @@
                 type="button"
                 class="am-chip__remove"
                 (click)="toggleUser(u)"
-                aria-label="Retirer"
+                [attr.aria-label]="'REMOVE' | translate"
               >
                 <i-feather name="x" class="am-chip-x"></i-feather>
               </button>
@@ -481,7 +480,7 @@
               <i-feather *ngIf="scheduleEnabled" name="check" class="am-check-icon"></i-feather>
             </span>
 
-            <span class="am-schedule__label">Schedule send for a specific date</span>
+            <span class="am-schedule__label">{{ 'SCHEDULE_SPECIFIC_DATE' | translate }}</span>
           </label>
 
           <div class="am-date-wrap" *ngIf="scheduleEnabled">
@@ -497,13 +496,13 @@
           </div>
 
           <div class="am-hint" style="margin-top: 6px; font-size: 12px; opacity: .8;">
-            End Date (required): after this date, no more assignments will be generated.
+            {{ 'END_DATE_ASSIGNMENT_HINT' | translate }}
           </div>
         </div>
 
         <div class="am-actions">
           <span class="am-count">
-            {{ selectedCount() }} client{{ selectedCount() !== 1 ? 's' : '' }} selected
+            {{ selectedCount() }} {{ selectedCount() !== 1 ? ('CLIENTS_SELECTED' | translate) : ('CLIENT_SELECTED' | translate) }}
           </span>
 
           <div class="am-btns">
@@ -513,7 +512,7 @@
               (click)="closeAssign()"
               [disabled]="assigning()"
             >
-              Cancel
+              {{ 'CANCEL' | translate }}
             </button>
 
             <button
@@ -523,9 +522,9 @@
               [disabled]="assigning()"
             >
               <span *ngIf="!assigning()">
-                {{ scheduleEnabled && scheduledDateValue ? 'Schedule' : 'Assign Form' }}
+                {{ scheduleEnabled && scheduledDateValue ? ('SCHEDULE' | translate) : ('ASSIGN_FORM' | translate) }}
               </span>
-              <span *ngIf="assigning()">Envoi...</span>
+              <span *ngIf="assigning()">{{ 'ASSIGNING' | translate }}</span>
             </button>
           </div>
         </div>

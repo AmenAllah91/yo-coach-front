@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { ClientService } from '../../service/client.service';
 import { WorkoutService } from '../../service/workout.service';
@@ -51,6 +52,7 @@ interface PendingAssign {
     CommonModule,
     AddClientModalComponent,
     ChoosePlanTypeModalComponent,
+    TranslateModule,
   ],
   templateUrl: './coach-dashboard.component.html',
   styleUrl: './coach-dashboard.component.scss',
@@ -134,6 +136,7 @@ export class CoachDashboardComponent implements OnInit {
     private coachSettingsService: CoachSettingsService,
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -159,7 +162,7 @@ export class CoachDashboardComponent implements OnInit {
 
   loadData(): void {
     if (!this.coachId) {
-      this.error = 'Coach not found.';
+      this.error = this.translate.instant('COACH_NOT_FOUND');
       return;
     }
 
@@ -188,7 +191,7 @@ export class CoachDashboardComponent implements OnInit {
           this.clients = rawClients.map((client: any) => ({
             id: String(client.id),
             name: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
-            package: 'Online Coaching',
+            package: 'ONLINE_COACHING',
             status: 'active' as const,
             lastCheckIn: this.getLastCheckInDate(client),
           }));
@@ -204,7 +207,7 @@ export class CoachDashboardComponent implements OnInit {
         },
 
         error: () => {
-          this.error = 'Failed to load dashboard data.';
+          this.error = this.translate.instant('LOAD_DASHBOARD_ERROR');
         },
       });
   }
@@ -231,7 +234,7 @@ export class CoachDashboardComponent implements OnInit {
           this.clampCheckInsPage();
         },
         error: () => {
-          this.error = 'Failed to load dashboard data.';
+          this.error = this.translate.instant('LOAD_DASHBOARD_ERROR');
         },
       });
   }
@@ -322,13 +325,11 @@ export class CoachDashboardComponent implements OnInit {
         id: String(assignment.id),
         clientId: String(assignment.assigneeId),
         clientName: fullName || String(assignment.assigneeId),
-        formName: assignment.formName || 'Check-in',
+        formName: assignment.formName || this.translate.instant('CHECK_IN'),
         status: this.mapStatus(status),
         overdue: this.isOverdue(assignment),
-        submittedDate: this.formatAssignmentDate(displayDate),
-        answeredDate: this.formatAssignmentDate(
-          (assignment as any).reviewedAt,
-        ),
+        submittedDate: displayDate ? String(displayDate) : '',
+        answeredDate: (assignment as any).reviewedAt ? String((assignment as any).reviewedAt) : '',
         sortTimestamp: this.toTimestamp(activityDate),
       };
     }).sort((a, b) => b.sortTimestamp - a.sortTimestamp);
@@ -345,21 +346,27 @@ export class CoachDashboardComponent implements OnInit {
       return this.formatDate(latest);
     }
 
-    return 'Niveau';
+    return this.translate.instant('NO_RECENT_CHECK_IN');
   }
 
-  private formatAssignmentDate(value?: string | Date | null): string {
+  formatAssignmentDate(value?: string | Date | null): string {
     if (!value) return '-';
 
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) return '-';
 
-    return date.toLocaleDateString('en-GB', {
+    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
+  }
+
+  getCheckInActivityLabel(checkIn: CheckInDisplay): string {
+    return checkIn.status === 'SUBMITTED_STATUS' || checkIn.status === 'REVIEWED_STATUS'
+      ? 'SUBMITTED_STATUS'
+      : 'DUE_DATE';
   }
 
   private toTimestamp(value?: string | Date | null): number {
@@ -375,27 +382,27 @@ export class CoachDashboardComponent implements OnInit {
     const diffMs = now.getTime() - date.getTime();
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
+    if (days === 0) return this.translate.instant('TODAY');
+    if (days === 1) return this.translate.instant('YESTERDAY');
+    if (days < 7) return this.translate.instant('DAYS_AGO', { count: days });
 
-    return `${Math.floor(days / 7)} weeks ago`;
+    return this.translate.instant('WEEKS_AGO', { count: Math.floor(days / 7) });
   }
 
   private mapStatus(status: string): string {
     switch (status) {
       case 'ASSIGNED':
-        return 'Pending';
+        return 'PENDING_STATUS';
       case 'OPENED':
-        return 'Opened';
+        return 'OPENED_STATUS';
       case 'SUBMITTED':
-        return 'Submitted';
+        return 'SUBMITTED_STATUS';
       case 'REVIEWED':
-        return 'Reviewed';
+        return 'REVIEWED_STATUS';
       case 'CANCELED':
-        return 'Canceled';
+        return 'CANCELED_STATUS';
       default:
-        return status || 'Pending';
+        return status || 'PENDING_STATUS';
     }
   }
 
@@ -531,11 +538,11 @@ export class CoachDashboardComponent implements OnInit {
 
   getStatusClass(status?: string): string {
     switch (status) {
-      case 'Submitted':
+      case 'SUBMITTED_STATUS':
         return 'status submitted';
-      case 'Opened':
+      case 'OPENED_STATUS':
         return 'status opened';
-      case 'Reviewed':
+      case 'REVIEWED_STATUS':
         return 'status reviewed';
       default:
         return 'status pending';
@@ -546,7 +553,7 @@ export class CoachDashboardComponent implements OnInit {
     const assignment = this.assignments.find((item) => item.id === checkIn.id);
 
     if (!assignment?.dueAt) {
-      return checkIn.overdue ? 'Overdue' : '';
+      return checkIn.overdue ? this.translate.instant('OVERDUE_LABEL') : '';
     }
 
     const date = new Date(assignment.dueAt);
@@ -564,10 +571,10 @@ export class CoachDashboardComponent implements OnInit {
       (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (diff < 0) return 'Overdue';
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Tomorrow';
-    if (diff < 7) return `In ${diff} days`;
+    if (diff < 0) return this.translate.instant('OVERDUE_LABEL');
+    if (diff === 0) return this.translate.instant('TODAY');
+    if (diff === 1) return this.translate.instant('TOMORROW');
+    if (diff < 7) return this.translate.instant('IN_DAYS', { count: diff });
 
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   }
@@ -617,22 +624,22 @@ export class CoachDashboardComponent implements OnInit {
   get pendingAssignTitle(): string {
     if (!this.pendingAssign) return '';
     if (this.pendingAssign.type === 'checkin') {
-      return this.pendingAssign.item?.title || 'Check-in';
+      return this.pendingAssign.item?.title || this.translate.instant('CHECK_IN');
     }
 
-    return this.pendingAssign.item?.name || 'Plan';
+    return this.pendingAssign.item?.name || this.translate.instant('PLAN');
   }
 
   get pendingAssignLabel(): string {
     switch (this.pendingAssign?.type) {
       case 'workout':
-        return 'Workout created';
+        return this.translate.instant('WORKOUT_CREATED');
       case 'nutrition':
-        return 'Nutrition plan created';
+        return this.translate.instant('NUTRITION_PLAN_CREATED');
       case 'checkin':
-        return 'Check-in created';
+        return this.translate.instant('CHECK_IN_CREATED');
       default:
-        return 'Created';
+        return this.translate.instant('CREATED_STATUS');
     }
   }
 
@@ -650,7 +657,7 @@ export class CoachDashboardComponent implements OnInit {
   }
 
   get assignDateLabel(): string {
-    return this.pendingAssign?.type === 'checkin' ? 'Due date' : 'Start date';
+    return this.translate.instant(this.pendingAssign?.type === 'checkin' ? 'DUE_DATE' : 'START_DATE');
   }
 
   notNowAssign(): void {
@@ -678,7 +685,7 @@ export class CoachDashboardComponent implements OnInit {
 
   confirmAssign(): void {
     if (!this.pendingAssign || !this.assignClientId) {
-      this.assignError = 'Please select a client.';
+      this.assignError = this.translate.instant('PLEASE_SELECT_CLIENT');
       return;
     }
 
@@ -703,7 +710,7 @@ export class CoachDashboardComponent implements OnInit {
 
     if (!workout?.id) {
       this.assignSaving = false;
-      this.assignError = 'Workout was created, but its id was not returned by the server.';
+      this.assignError = this.translate.instant('WORKOUT_ID_NOT_RETURNED');
       return;
     }
 
@@ -736,7 +743,7 @@ export class CoachDashboardComponent implements OnInit {
         next: () => this.finishAssignSuccess(),
         error: (err) => {
           console.error('Workout assign failed:', err, payload);
-          this.assignError = this.readBackendError(err, 'Failed to assign workout.');
+          this.assignError = this.readBackendError(err, this.translate.instant('ASSIGN_WORKOUT_ERROR'));
         },
       });
   }
@@ -746,7 +753,7 @@ export class CoachDashboardComponent implements OnInit {
 
     if (!plan?.id) {
       this.assignSaving = false;
-      this.assignError = 'Nutrition plan was created, but its id was not returned by the server.';
+      this.assignError = this.translate.instant('NUTRITION_ID_NOT_RETURNED');
       return;
     }
 
@@ -780,7 +787,7 @@ export class CoachDashboardComponent implements OnInit {
         next: () => this.finishAssignSuccess(),
         error: (err) => {
           console.error('Nutrition assign failed:', err, payload);
-          this.assignError = this.readBackendError(err, 'Failed to assign nutrition plan.');
+          this.assignError = this.readBackendError(err, this.translate.instant('ASSIGN_NUTRITION_ERROR'));
         },
       });
   }
@@ -791,7 +798,7 @@ export class CoachDashboardComponent implements OnInit {
 
     if (!formId) {
       this.assignSaving = false;
-      this.assignError = 'Form not found.';
+      this.assignError = this.translate.instant('FORM_NOT_FOUND');
       return;
     }
 
@@ -811,7 +818,7 @@ export class CoachDashboardComponent implements OnInit {
         next: () => this.finishAssignSuccess(),
         error: (err) => {
           console.error('Check-in assign failed:', err);
-          this.assignError = this.readBackendError(err, 'Failed to assign check-in.');
+          this.assignError = this.readBackendError(err, this.translate.instant('ASSIGN_CHECK_IN_ERROR'));
         },
       });
   }
@@ -888,7 +895,7 @@ export class CoachDashboardComponent implements OnInit {
   }
 
   private weekday(date: Date): string {
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
+    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long' });
   }
 
   trackByClientId(index: number, client: ClientDisplay): string {

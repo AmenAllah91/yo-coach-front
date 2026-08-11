@@ -17,6 +17,7 @@ import { WorkoutPlan } from '@shared/models/workout.models';
 import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 import * as XLSX from 'xlsx';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-program-library',
@@ -27,6 +28,7 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
     FeatherModule,
     ScrollLoaderComponent,
     ModalAssignToclientComponent,
+    TranslateModule,
   ],
   templateUrl: './program-library.component.html',
   styleUrls: [
@@ -123,7 +125,8 @@ export class ProgramLibraryComponent implements OnInit {
     private exerciseService: ExerciseService,
     private authService: AuthService,
     private router: Router,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private translate: TranslateService
   ) {}
 
   goBack(): void {
@@ -393,7 +396,7 @@ export class ProgramLibraryComponent implements OnInit {
     const clientsToAssign = this.getSelectedFileAssignClients();
 
     if (!clientsToAssign.length) {
-      this.fileAssignError = 'Sélectionnez au moins un client.';
+      this.fileAssignError = this.translate.instant('SELECT_AT_LEAST_ONE_CLIENT');
       return;
     }
 
@@ -424,7 +427,7 @@ export class ProgramLibraryComponent implements OnInit {
         error: (error) => {
           console.error('Error assigning file workout program:', error);
           remaining -= 1;
-          this.fileAssignError = 'Une erreur est survenue pendant l’assignation.';
+          this.fileAssignError = this.translate.instant('ASSIGN_PROGRAM_ERROR');
           if (remaining === 0) {
             this.fileAssignSaving = false;
           }
@@ -704,12 +707,12 @@ export class ProgramLibraryComponent implements OnInit {
   setImportFile(file: File) {
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     if (!['pdf', 'xls', 'xlsx'].includes(ext)) {
-      this.importError = 'Only PDF, XLS, and XLSX files are allowed.';
+      this.importError = this.translate.instant('WORKOUT_FILE_TYPE_ERROR');
       this.importFile = null;
       return;
     }
     if (file.size > 25 * 1024 * 1024) {
-      this.importError = 'File is too large. Maximum size is 25 MB.';
+      this.importError = this.translate.instant('WORKOUT_FILE_SIZE_ERROR');
       this.importFile = null;
       return;
     }
@@ -771,7 +774,7 @@ export class ProgramLibraryComponent implements OnInit {
 
   saveImportedFileWorkout() {
     if (!this.importFile || !this.importProgramName.trim()) {
-      this.importError = 'Please choose a file and enter a program name.';
+      this.importError = this.translate.instant('SELECT_FILE_AND_PROGRAM_NAME');
       return;
     }
 
@@ -832,7 +835,7 @@ export class ProgramLibraryComponent implements OnInit {
         error: (error) => {
           console.error('Error saving file workout:', error);
           this.importSaving = false;
-          this.importError = 'Upload failed. Please try again.';
+          this.importError = this.translate.instant('WORKOUT_FILE_UPLOAD_ERROR');
         },
       });
   }
@@ -1133,18 +1136,20 @@ export class ProgramLibraryComponent implements OnInit {
 
           return `<tr><th class="row-index">${rowIndex + 1}</th>${cells}</tr>`;
         }).join('')
-      : `<tr><td colspan="${maxColumns + 1}" class="empty">Feuille vide</td></tr>`;
+      : `<tr><td colspan="${maxColumns + 1}" class="empty">${this.translate.instant('EMPTY_SHEET')}</td></tr>`;
 
     const title = program.originalFileName || program.fileName || program.name || 'Workout Excel';
-    const subtitle = `${program.name || 'Workout program'} · ${sheetName || 'Excel'} · ${rows.length} lignes affichées`;
+    const displayedRows = this.translate.instant('ROWS_DISPLAYED', { count: rows.length });
+    const sheetsInFile = this.translate.instant('SHEETS_IN_FILE', { count: workbook.SheetNames?.length || 0 });
+    const subtitle = `${program.name || this.translate.instant('WORKOUT_PROGRAM')} · ${sheetName || 'Excel'} · ${displayedRows}`;
 
     const table = `
       <div class="excel-toolbar">
         <div class="excel-info">
-          <strong>${this.escapeHtml(sheetName || 'Sheet 1')}</strong>
-          <span>${rows.length} lignes affichées${workbook.SheetNames?.length > 1 ? ' · ' + workbook.SheetNames.length + ' feuilles dans le fichier' : ''}</span>
+          <strong>${this.escapeHtml(sheetName || this.translate.instant('SHEET_ONE'))}</strong>
+          <span>${displayedRows}${workbook.SheetNames?.length > 1 ? ' · ' + sheetsInFile : ''}</span>
         </div>
-        <span class="viewer-badge">Excel Preview</span>
+        <span class="viewer-badge">${this.translate.instant('EXCEL_PREVIEW')}</span>
       </div>
       <div class="excel-table-wrap">
         <table>
@@ -1167,7 +1172,7 @@ export class ProgramLibraryComponent implements OnInit {
     const popup = window.open('', '_blank');
 
     if (!popup) {
-      alert('Le navigateur a bloqué la nouvelle fenêtre. Autorisez les popups puis réessayez.');
+      alert(this.translate.instant('POPUP_BLOCKED_ERROR'));
       return;
     }
 
@@ -1177,7 +1182,7 @@ export class ProgramLibraryComponent implements OnInit {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Chargement du fichier...</title>
+        <title>${this.translate.instant('LOADING_FILE')}</title>
         <style>
           body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:36px;color:#111827;background:#fff}
           .loader{font-size:20px;font-weight:500}
@@ -1185,8 +1190,8 @@ export class ProgramLibraryComponent implements OnInit {
         </style>
       </head>
       <body>
-        <div class="loader">Chargement du fichier...</div>
-        <div class="hint">Préparation de l’aperçu sécurisé.</div>
+        <div class="loader">${this.translate.instant('LOADING_FILE')}</div>
+        <div class="hint">${this.translate.instant('PREPARING_SECURE_PREVIEW')}</div>
       </body>
       </html>
     `);
@@ -1217,7 +1222,7 @@ export class ProgramLibraryComponent implements OnInit {
         <html>
         <head>
           <meta charset="utf-8">
-          <title>Impossible d’ouvrir le fichier</title>
+          <title>${this.translate.instant('FILE_OPEN_ERROR_TITLE')}</title>
           <style>
             body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:36px;color:#111827;background:#fff}
             .box{max-width:560px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:14px;padding:22px}
@@ -1227,15 +1232,15 @@ export class ProgramLibraryComponent implements OnInit {
         </head>
         <body>
           <div class="box">
-            <h1>Impossible d’ouvrir le fichier</h1>
-            <p>Vérifiez que le fichier existe dans le dossier d’upload, que votre session est valide, puis réessayez.</p>
+            <h1>${this.translate.instant('FILE_OPEN_ERROR_TITLE')}</h1>
+            <p>${this.translate.instant('FILE_OPEN_ERROR_DETAILS')}</p>
           </div>
         </body>
         </html>
       `);
       popup.document.close();
 
-      alert('Impossible d’ouvrir le fichier. Vérifiez votre session puis réessayez.');
+      alert(this.translate.instant('FILE_OPEN_ERROR'));
     }
   }
 
@@ -1254,7 +1259,7 @@ export class ProgramLibraryComponent implements OnInit {
       setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
     } catch (error) {
       console.error('Error downloading workout file:', error);
-      alert('Impossible de télécharger le fichier. Vérifiez votre session puis réessayez.');
+      alert(this.translate.instant('FILE_DOWNLOAD_ERROR'));
     }
   }
 
@@ -1282,7 +1287,7 @@ export class ProgramLibraryComponent implements OnInit {
 
   getProgramTypeLabel(program: WorkoutPlan): string {
     const key = this.getProgramTypeKey(program);
-    if (key === 'APP') return 'App Program';
+    if (key === 'APP') return this.translate.instant('APP_PROGRAM');
     return key === 'EXCEL' ? 'Excel' : 'PDF';
   }
 
@@ -1298,7 +1303,9 @@ export class ProgramLibraryComponent implements OnInit {
         .join(' · ');
     }
     const days = program.workoutDays?.length || 0;
-    return days ? `${days}-day workout program` : 'In-app workout program';
+    return days
+      ? this.translate.instant('WORKOUT_PROGRAM_DAYS', { count: days })
+      : this.translate.instant('IN_APP_WORKOUT_PROGRAM');
   }
 
   getCreatedDate(program: WorkoutPlan): string | Date | undefined {
@@ -1636,7 +1643,7 @@ export class ProgramLibraryComponent implements OnInit {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return '';
 
-    return date.toLocaleDateString('en-GB', {
+    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-GB', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

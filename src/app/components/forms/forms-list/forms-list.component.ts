@@ -7,6 +7,7 @@ import { ClientService } from '../../../service/client.service';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ToastrService } from 'ngx-toastr';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, exhaustMap, finalize, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -22,6 +23,7 @@ type FormsViewMode = 'active' | 'unsaved' | 'archived';
     ReactiveFormsModule,
     FormsModule,
     OverlayModule,
+    TranslateModule,
   ],
   templateUrl: './forms-list.component.html',
   styleUrls: ['./forms-list.component.css'],
@@ -96,6 +98,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
     private clientService: ClientService,
     private router: Router,
     private toastr: ToastrService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -119,7 +122,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
               this.loadPage();
             }),
             catchError((err) => {
-              this.error.set(this.extractError(err) ?? 'Erreur lors de la duplication.');
+              this.error.set(this.extractError(err) ?? this.translate.instant('DUPLICATE_FORM_ERROR'));
               return EMPTY;
             })
           );
@@ -167,7 +170,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(this.extractError(err) ?? 'Erreur lors du chargement des forms.');
+          this.error.set(this.extractError(err) ?? this.translate.instant('LOAD_FORMS_ERROR'));
         },
       });
   }
@@ -241,8 +244,8 @@ export class FormsListComponent implements OnInit, OnDestroy {
   onEditGuarded(form: Form): void {
     if (this.isPublished(form)) {
       this.toastr.warning(
-        'Ce formulaire est publié. Vous ne pouvez pas le modifier.',
-        'Action impossible',
+        this.translate.instant('PUBLISHED_FORM_EDIT_FORBIDDEN'),
+        this.translate.instant('ACTION_NOT_ALLOWED'),
         {
           timeOut: 2500,
           closeButton: true,
@@ -258,8 +261,8 @@ export class FormsListComponent implements OnInit, OnDestroy {
   onDeleteGuarded(form: Form): void {
     if (this.isPublished(form)) {
       this.toastr.warning(
-        'Ce formulaire est publié. Vous ne pouvez pas le supprimer.',
-        'Action impossible',
+        this.translate.instant('PUBLISHED_FORM_DELETE_FORBIDDEN'),
+        this.translate.instant('ACTION_NOT_ALLOWED'),
         {
           timeOut: 2500,
           closeButton: true,
@@ -309,14 +312,14 @@ export class FormsListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.deleting.set(false);
-          this.error.set(this.extractError(err) ?? 'Suppression impossible.');
+          this.error.set(this.extractError(err) ?? this.translate.instant('DELETE_FORM_ERROR'));
         },
       });
   }
 
   private duplicatePayloadFromDetails(details: any): any {
     return {
-      title: `${details.title ?? 'Form Title'} (copie)`,
+      title: `${details.title ?? this.translate.instant('FORM_TITLE')} (${this.translate.instant('COPY')})`,
       description: details.description ?? '',
       questions: (details.questions ?? []).map((q: any, idx: number) => ({
         type: q.type,
@@ -351,7 +354,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
           this.loadPage();
         },
         error: (err) => {
-          this.error.set(this.extractError(err) ?? "Erreur lors de l'archivage.");
+          this.error.set(this.extractError(err) ?? this.translate.instant('ARCHIVE_FORM_ERROR'));
         },
       });
   }
@@ -368,7 +371,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
           this.loadPage();
         },
         error: (err) => {
-          this.error.set(this.extractError(err) ?? 'Erreur lors de la restauration.');
+          this.error.set(this.extractError(err) ?? this.translate.instant('RESTORE_FORM_ERROR'));
         },
       });
   }
@@ -415,7 +418,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.usersLoading.set(false);
-          this.usersError.set(this.extractError(err) ?? 'Erreur lors du chargement des utilisateurs.');
+          this.usersError.set(this.extractError(err) ?? this.translate.instant('LOAD_USERS_ERROR'));
         },
       });
   }
@@ -427,7 +430,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   userLabel(user: UserDto): string {
     const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-    return full || user.login || user.email || '(Sans nom)';
+    return full || user.login || user.email || this.translate.instant('UNNAMED');
   }
 
   getUserFirstName(user: UserDto): string {
@@ -478,14 +481,14 @@ export class FormsListComponent implements OnInit, OnDestroy {
     const ids = Array.from(this.selectedUserIds());
 
     if (ids.length === 0) {
-      this.usersError.set('Sélectionne au moins un utilisateur.');
+      this.usersError.set(this.translate.instant('SELECT_AT_LEAST_ONE_CLIENT'));
       return;
     }
 
     const hasSchedule = !!form.schedule;
 
     if (hasSchedule && !this.endDateValue) {
-      this.usersError.set('Sélectionne une date de fin.');
+      this.usersError.set(this.translate.instant('SELECT_END_DATE'));
       return;
     }
 
@@ -523,17 +526,17 @@ export class FormsListComponent implements OnInit, OnDestroy {
             const already = errors.filter((e: any) => e.reason === 'ALREADY_ASSIGNED').length;
             const other = errors.length - already;
 
-            let msg = `Affectation partielle : ${createdCount} succès`;
+            let msg = this.translate.instant('PARTIAL_ASSIGNMENT_SUCCESS', { count: createdCount });
 
-            if (already > 0) msg += ` • ${already} déjà affecté(s)`;
-            if (other > 0) msg += ` • ${other} erreur(s)`;
+            if (already > 0) msg += ` • ${this.translate.instant('ALREADY_ASSIGNED_COUNT', { count: already })}`;
+            if (other > 0) msg += ` • ${this.translate.instant('ERROR_COUNT', { count: other })}`;
 
             this.usersError.set(msg);
 
             if (createdCount > 0) {
               this.toastr.success(
-                `${createdCount} affectation${createdCount > 1 ? 's' : ''} créée${createdCount > 1 ? 's' : ''}.`,
-                'Check-in affecté'
+                this.translate.instant('ASSIGNMENTS_CREATED', { count: createdCount }),
+                this.translate.instant('CHECK_IN_ASSIGNED')
               );
               this.closeAssign();
             }
@@ -541,9 +544,9 @@ export class FormsListComponent implements OnInit, OnDestroy {
             const scheduled = hasSchedule || (this.scheduleEnabled && !!this.scheduledDateValue);
             this.toastr.success(
               scheduled
-                ? `Le check-in a été programmé pour ${ids.length} client${ids.length > 1 ? 's' : ''}.`
-                : `Le check-in a été affecté à ${ids.length} client${ids.length > 1 ? 's' : ''}.`,
-              scheduled ? 'Programmation enregistrée' : 'Check-in affecté'
+                ? this.translate.instant('CHECK_IN_SCHEDULED_FOR_CLIENTS', { count: ids.length })
+                : this.translate.instant('CHECK_IN_ASSIGNED_TO_CLIENTS', { count: ids.length }),
+              scheduled ? this.translate.instant('SCHEDULE_SAVED') : this.translate.instant('CHECK_IN_ASSIGNED')
             );
             this.closeAssign();
           }
@@ -553,7 +556,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.assigning.set(false);
-          this.usersError.set(err?.error?.message ?? "Erreur lors de l'affectation.");
+          this.usersError.set(err?.error?.message ?? this.translate.instant('ASSIGN_FORM_ERROR'));
         },
       });
   }
@@ -645,6 +648,11 @@ export class FormsListComponent implements OnInit, OnDestroy {
       default:
         return 'badge';
     }
+  }
+
+  statusLabel(status: string): string {
+    const key = `${(status || 'DRAFT').toUpperCase()}_FORM_STATUS`;
+    return this.translate.instant(key);
   }
 
   private extractError(err: any): string | null {

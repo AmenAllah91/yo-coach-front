@@ -8,6 +8,7 @@ import { ExerciseService, PageResponse } from '../../service/exercise.service';
 import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
 import { EnumResponse, Exercise } from '@shared/models/exercice.models';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-exercise-library',
@@ -19,6 +20,7 @@ import { EnumResponse, Exercise } from '@shared/models/exercice.models';
     FeatherModule,
     YouTubePlayerModule,
     ScrollLoaderComponent,
+    TranslateModule,
   ],
   templateUrl: './exercise-library.component.html',
   styleUrls: [
@@ -618,6 +620,18 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.exerciseToDelete = null;
+  }
+
+  getEquipmentTranslationKey(value: string | null | undefined): string {
+    return value ? `EXERCISE_EQUIPMENT_${value}` : '';
+  }
+
+  getMuscleTranslationKey(value: string | null | undefined): string {
+    return value ? `EXERCISE_MUSCLE_${value}` : '';
+  }
+
+  getTypeTranslationKey(value: string | null | undefined): string {
+    return value ? `EXERCISE_TYPE_${value}` : '';
   }
 
   applyFilters() {

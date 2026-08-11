@@ -1,15 +1,15 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="library-back-btn" type="button" aria-label="Back" (click)="goBack()">
+    <button class="library-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
       <i-feather name="chevron-left"></i-feather>
     </button>
     <div class="header-content">
-      <h1>Program Library</h1>
-      <p>Create, organize and manage your workout programs</p>
+      <h1>{{ 'PROGRAM_LIBRARY' | translate }}</h1>
+      <p>{{ 'PROGRAM_LIBRARY_SUBTITLE' | translate }}</p>
     </div>
     <button class="primary-btn" (click)="createProgram()">
       <i-feather name="plus"></i-feather>
-      Create Program
+      {{ 'CREATE_PROGRAM' | translate }}
     </button>
   </div>
 
@@ -17,14 +17,14 @@
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search programs..." [(ngModel)]="searchTerm" (input)="onSearchChange()" />
+        <input type="text" [placeholder]="'SEARCH_PROGRAMS' | translate" [(ngModel)]="searchTerm" (input)="onSearchChange()" />
       </div>
 
       <div class="type-filters" *ngIf="activeTab !== 'templates' && workoutFileEnabled">
-        <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">All</button>
+        <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">{{ 'ALL' | translate }}</button>
         <button class="type-filter" [class.active]="programTypeFilter === 'APP'" (click)="setProgramTypeFilter('APP')">
           <i-feather name="grid"></i-feather>
-          App Programs
+          {{ 'APP_PROGRAMS' | translate }}
         </button>
         <button class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'PDF'" (click)="setProgramTypeFilter('PDF')">
           <i-feather name="file-text"></i-feather>
@@ -39,10 +39,10 @@
 
     <div class="programs-table programs-table--cap">
       <div class="table-header">
-        <div class="col-program">PROGRAM</div>
-        <div class="col-type">TYPE</div>
-        <div class="col-created">CREATED</div>
-        <div class="col-modified">LAST MODIFIED</div>
+        <div class="col-program">{{ 'PROGRAM' | translate }}</div>
+        <div class="col-type">{{ 'TYPE' | translate }}</div>
+        <div class="col-created">{{ 'CREATED' | translate }}</div>
+        <div class="col-modified">{{ 'LAST_MODIFIED' | translate }}</div>
         <div class="col-actions"></div>
       </div>
 
@@ -58,7 +58,7 @@
                 <i-feather [name]="getProgramIconName(program)"></i-feather>
               </div>
               <div class="program-copy">
-                <div class="program-name">{{ program.name || 'Unnamed Program' }}</div>
+                <div class="program-name">{{ program.name || ('UNNAMED_PROGRAM' | translate) }}</div>
                 <div class="program-meta">{{ getProgramDescription(program) }}</div>
               </div>
             </div>
@@ -81,56 +81,56 @@
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === program.id">
               <button class="action-btn" (click)="toggleDropdown(program.id!, $event); $event.stopPropagation()">
-                <span>Actions</span>
+                <span>{{ 'ACTIONS' | translate }}</span>
                 <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu dropdown-menu--side" (click)="$event.stopPropagation()">
                 <ng-container *ngIf="isFileProgram(program); else appProgramMenu">
                   <button class="dropdown-item" (click)="assignToClients(program)">
                     <i-feather name="users"></i-feather>
-                    Assign to Clients
+                    {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
 
                   <button class="dropdown-item" (click)="openProgramFile(program)">
                     <i-feather name="eye"></i-feather>
-                    Open File
+                    {{ 'OPEN_FILE' | translate }}
                   </button>
 
                   <button class="dropdown-item" (click)="downloadProgramFile(program)">
                     <i-feather name="download"></i-feather>
-                    Download File
+                    {{ 'DOWNLOAD_FILE' | translate }}
                   </button>
 
                   <button class="dropdown-item delete" (click)="deleteProgram(program)">
                     <i-feather name="trash-2"></i-feather>
-                    Delete Program
+                    {{ 'DELETE_PROGRAM' | translate }}
                   </button>
                 </ng-container>
 
                 <ng-template #appProgramMenu>
                   <button class="dropdown-item" (click)="assignToClients(program)">
                     <i-feather name="users"></i-feather>
-                    Assign to Clients
+                    {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
 
                   <button class="dropdown-item" (click)="editProgram(program.id)">
                     <i-feather name="edit"></i-feather>
-                    Edit Program
+                    {{ 'EDIT_PROGRAM' | translate }}
                   </button>
 
                   <button class="dropdown-item" (click)="duplicateProgram(program)">
                     <i-feather name="copy"></i-feather>
-                    Duplicate
+                    {{ 'DUPLICATE' | translate }}
                   </button>
 
                   <button class="dropdown-item" (click)="copyToCalendar(program)">
                     <i-feather name="calendar"></i-feather>
-                    Copy to Calendar
+                    {{ 'COPY_TO_CALENDAR' | translate }}
                   </button>
 
                   <button class="dropdown-item delete" (click)="deleteProgram(program)">
                     <i-feather name="trash-2"></i-feather>
-                    Delete Program
+                    {{ 'DELETE_PROGRAM' | translate }}
                   </button>
                 </ng-template>
               </div>
@@ -138,7 +138,7 @@
           </div>
       </div>
 
-      <app-scroll-loader [isLoading]="isLoading" loadingText="Loading programs..."></app-scroll-loader>
+      <app-scroll-loader [isLoading]="isLoading" [loadingText]="'LOADING_PROGRAMS' | translate"></app-scroll-loader>
 
       <div class="pagination" *ngIf="totalPages > 1">
         <button type="button" class="page-btn" (click)="previousPage()" [disabled]="currentPage === 0">&lt;</button>
@@ -153,7 +153,7 @@
         <button type="button" class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages - 1">&gt;</button>
       </div>
 
-      <div class="no-programs" *ngIf="filteredPrograms.length === 0 && !isLoading"><p>No programs found.</p></div>
+      <div class="no-programs" *ngIf="filteredPrograms.length === 0 && !isLoading"><p>{{ 'NO_PROGRAMS_FOUND' | translate }}</p></div>
     </div>
   </div>
 
@@ -173,8 +173,8 @@
     <div class="import-workout-modal file-assign-modal" (click)="$event.stopPropagation()">
       <div class="import-workout-head">
         <div>
-          <h3>Assigner le programme</h3>
-          <p>Envoyez ce programme fichier à un ou plusieurs clients avec les mêmes informations que lors de la création.</p>
+          <h3>{{ 'ASSIGN_PROGRAM' | translate }}</h3>
+          <p>{{ 'ASSIGN_FILE_PROGRAM_HINT' | translate }}</p>
         </div>
         <button type="button" class="modal-x" (click)="closeFileAssignModal()">×</button>
       </div>
@@ -193,16 +193,16 @@
         <div class="import-assign-section import-assign-section--standalone">
           <div class="assign-section-head">
             <div>
-              <h4>Assigner à des clients</h4>
-              <p>Envoyez directement ce programme à un ou plusieurs clients.</p>
+              <h4>{{ 'ASSIGN_TO_CLIENTS' | translate }}</h4>
+              <p>{{ 'ASSIGN_PROGRAM_CLIENTS_HINT' | translate }}</p>
             </div>
           </div>
 
           <div class="assign-section-body">
             <label class="import-field">
-              <span>Client(s)</span>
+              <span>{{ 'CLIENTS' | translate }}</span>
               <select multiple [ngModel]="selectedFileAssignClientIds" (change)="onFileAssignClientSelection($event)">
-                <option *ngIf="importClientsLoading" disabled>Chargement des clients...</option>
+                <option *ngIf="importClientsLoading" disabled>{{ 'LOADING_CLIENTS' | translate }}</option>
                 <option *ngFor="let client of importClients" [value]="client.id">
                   {{ client.firstName }} {{ client.lastName }}
                 </option>
@@ -211,20 +211,20 @@
 
             <div class="assign-date-grid">
               <label class="import-field">
-                <span>Date de début <em>(optionnelle)</em></span>
+                <span>{{ 'START_DATE' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></span>
                 <input type="date" [(ngModel)]="fileAssignStartDate" />
               </label>
 
               <label class="import-field">
-                <span>Date de fin <em>(optionnelle)</em></span>
+                <span>{{ 'END_DATE' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></span>
                 <input type="date" [(ngModel)]="fileAssignEndDate" />
               </label>
             </div>
 
             <div class="notify-row">
               <div>
-                <strong>Notifier le client</strong>
-                <p>Envoyer une notification push/email</p>
+                <strong>{{ 'NOTIFY_CLIENT' | translate }}</strong>
+                <p>{{ 'SEND_PUSH_EMAIL_NOTIFICATION' | translate }}</p>
               </div>
 
               <label class="switch-control">
@@ -239,13 +239,13 @@
       </div>
 
       <div class="import-workout-footer">
-        <button class="btn-cancel" (click)="closeFileAssignModal()" [disabled]="fileAssignSaving">Annuler</button>
+        <button class="btn-cancel" (click)="closeFileAssignModal()" [disabled]="fileAssignSaving">{{ 'CANCEL' | translate }}</button>
         <button
           class="save-template-btn"
           [disabled]="fileAssignSaving || selectedFileAssignClientIds.length === 0"
           (click)="confirmFileAssign()">
           <i-feather name="send"></i-feather>
-          {{ fileAssignSaving ? 'Assignation...' : 'Assigner le programme' }}
+          {{ (fileAssignSaving ? 'ASSIGNING' : 'ASSIGN_PROGRAM') | translate }}
         </button>
       </div>
     </div>
@@ -255,23 +255,23 @@
   <div class="workout-type-overlay" *ngIf="showCreateTypeModal" (click)="closeCreateTypeModal()">
     <div class="workout-type-modal" (click)="$event.stopPropagation()">
       <div class="workout-type-header">
-        <h3>Choose a workout plan type</h3>
+        <h3>{{ 'CHOOSE_WORKOUT_PLAN_TYPE' | translate }}</h3>
         <button type="button" class="modal-x" (click)="closeCreateTypeModal()">×</button>
       </div>
       <div class="workout-type-body">
         <div class="workout-type-card">
-          <h4>Normal Workout Plan</h4>
-          <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
-          <button class="type-action" (click)="createNormalWorkout()">Create Normal Workout</button>
+          <h4>{{ 'NORMAL_WORKOUT_PLAN' | translate }}</h4>
+          <p>{{ 'NORMAL_WORKOUT_PLAN_DESCRIPTION' | translate }}</p>
+          <button class="type-action" (click)="createNormalWorkout()">{{ 'CREATE_NORMAL_WORKOUT' | translate }}</button>
         </div>
         <div class="workout-type-card" *ngIf="workoutFileEnabled">
-          <h4>File Workout Plan</h4>
-          <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
-          <button class="type-action" (click)="openImportFileWorkout()">Import PDF / Excel</button>
+          <h4>{{ 'FILE_WORKOUT_PLAN' | translate }}</h4>
+          <p>{{ 'FILE_WORKOUT_PLAN_DESCRIPTION' | translate }}</p>
+          <button class="type-action" (click)="openImportFileWorkout()">{{ 'IMPORT_PDF_EXCEL' | translate }}</button>
         </div>
       </div>
       <div class="workout-type-footer">
-        <button class="btn-cancel" (click)="closeCreateTypeModal()">Cancel</button>
+        <button class="btn-cancel" (click)="closeCreateTypeModal()">{{ 'CANCEL' | translate }}</button>
       </div>
     </div>
   </div>
@@ -279,48 +279,48 @@
   <div class="workout-create-backdrop" *ngIf="showWorkoutCreateModal" (click)="closeWorkoutCreateModal()">
     <div class="workout-create-modal" (click)="$event.stopPropagation()">
       <div class="workout-create-header">
-        <h3>Create Workout Program</h3>
+        <h3>{{ 'CREATE_WORKOUT_PROGRAM' | translate }}</h3>
         <button type="button" class="workout-create-close" (click)="closeWorkoutCreateModal()">×</button>
       </div>
 
       <div class="workout-create-body">
         <label class="workout-create-field">
-          <span>Program Name <b>*</b></span>
+          <span>{{ 'PROGRAM_NAME' | translate }} <b>*</b></span>
           <input
             type="text"
             [(ngModel)]="createWorkoutName"
-            placeholder="e.g. Summer Shred Program"
+            [placeholder]="'WORKOUT_PROGRAM_NAME_EXAMPLE' | translate"
           />
         </label>
 
         <label class="workout-create-field">
-          <span>Duration <b>*</b></span>
+          <span>{{ 'DURATION' | translate }} <b>*</b></span>
           <select [(ngModel)]="createWorkoutDurationWeeks">
             <option *ngFor="let option of workoutDurationOptions" [ngValue]="option">
-              {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+              {{ option }} {{ (option === 1 ? 'WEEK' : 'WEEKS') | translate }}
             </option>
           </select>
         </label>
 
         <p class="workout-create-copy">
-          This will create a {{ createWorkoutDurationWeeks }}-week workout template.
+          {{ 'CREATE_WORKOUT_TEMPLATE_INFO' | translate:{ weeks: createWorkoutDurationWeeks } }}
         </p>
 
         <div class="workout-create-info">
           <i-feather name="info"></i-feather>
-          <span>Template structure will be organized by weeks.</span>
+          <span>{{ 'TEMPLATE_ORGANIZED_BY_WEEKS' | translate }}</span>
         </div>
       </div>
 
       <div class="workout-create-footer">
-        <button type="button" class="workout-create-cancel" (click)="closeWorkoutCreateModal()">Cancel</button>
+        <button type="button" class="workout-create-cancel" (click)="closeWorkoutCreateModal()">{{ 'CANCEL' | translate }}</button>
         <button
           type="button"
           class="workout-create-submit"
           [disabled]="!createWorkoutName.trim()"
           (click)="submitWorkoutCreateModal()"
         >
-          Create Program
+          {{ 'CREATE_PROGRAM' | translate }}
         </button>
       </div>
     </div>
@@ -330,8 +330,8 @@
     <div class="import-workout-modal" (click)="$event.stopPropagation()">
       <div class="import-workout-head">
         <div>
-          <h3>Importer un programme</h3>
-          <p>Importez un fichier PDF ou Excel, puis enregistrez-le dans votre bibliothèque ou envoyez-le à vos clients.</p>
+          <h3>{{ 'IMPORT_PROGRAM' | translate }}</h3>
+          <p>{{ 'IMPORT_PROGRAM_DESCRIPTION' | translate }}</p>
         </div>
         <button type="button" class="modal-x" (click)="closeImportFileWorkout()">×</button>
       </div>
@@ -339,32 +339,32 @@
         <label class="upload-zone" (drop)="onImportDrop($event)" (dragover)="onImportDragOver($event)">
           <input type="file" accept=".pdf,.xls,.xlsx" (change)="onImportFileSelected($event)" hidden />
           <div class="upload-icon"><i-feather name="upload-cloud"></i-feather></div>
-          <strong>{{ importFile ? importFile.name : 'Glissez votre fichier ici ou parcourez' }}</strong>
-          <span>PDF, XLS, XLSX · jusqu'à 25 MB</span>
+          <strong>{{ importFile ? importFile.name : ('DROP_OR_BROWSE_FILE' | translate) }}</strong>
+          <span>{{ 'WORKOUT_FILE_REQUIREMENTS' | translate }}</span>
         </label>
 
         <div class="import-error" *ngIf="importError">{{ importError }}</div>
 
         <label class="import-field">
-          <span>Nom du programme <b>*</b></span>
-          <input type="text" [(ngModel)]="importProgramName" placeholder="Ex: Programme Hypertrophie - Phase 1" />
+          <span>{{ 'PROGRAM_NAME' | translate }} <b>*</b></span>
+          <input type="text" [(ngModel)]="importProgramName" [placeholder]="'IMPORT_PROGRAM_NAME_EXAMPLE' | translate" />
         </label>
 
         <label class="import-field">
-          <span>Description <em>(optionnelle)</em></span>
-          <textarea rows="3" [(ngModel)]="importProgramDescription" placeholder="Ex: Programme complet de 6 semaines..."></textarea>
+          <span>{{ 'DESCRIPTION' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></span>
+          <textarea rows="3" [(ngModel)]="importProgramDescription" [placeholder]="'IMPORT_PROGRAM_DESCRIPTION_EXAMPLE' | translate"></textarea>
         </label>
 
         <div class="import-info">
           <i-feather name="info"></i-feather>
-          <span>Le programme sera enregistré comme programme fichier dans votre bibliothèque.</span>
+          <span>{{ 'FILE_PROGRAM_SAVED_TO_LIBRARY' | translate }}</span>
         </div>
       </div>
       <div class="import-workout-footer">
-        <button class="btn-cancel" (click)="closeImportFileWorkout()">Annuler</button>
+        <button class="btn-cancel" (click)="closeImportFileWorkout()">{{ 'CANCEL' | translate }}</button>
         <button class="save-template-btn" [disabled]="!importFile || !importProgramName.trim() || importSaving" (click)="saveImportedFileWorkout()">
           <i-feather name="save"></i-feather>
-          {{ importSaving ? 'Enregistrement...' : (assignImportedProgram ? 'Enregistrer et assigner' : 'Enregistrer le programme') }}
+          {{ (importSaving ? 'SAVING' : (assignImportedProgram ? 'SAVE_AND_ASSIGN' : 'SAVE_PROGRAM')) | translate }}
         </button>
       </div>
     </div>
@@ -378,16 +378,16 @@
           <p>{{ getProgramResourceLabel(previewProgram!) }} <span *ngIf="previewProgram?.fileSizeBytes">· {{ formatFileSize(previewProgram?.fileSizeBytes) }}</span></p>
         </div>
         <div class="file-preview-actions">
-          <button class="btn-cancel" (click)="closeFilePreviewModal()">Close</button>
-          <button class="save-template-btn" (click)="downloadProgramFile(previewProgram!)">Open / Download</button>
+          <button class="btn-cancel" (click)="closeFilePreviewModal()">{{ 'CLOSE' | translate }}</button>
+          <button class="save-template-btn" (click)="downloadProgramFile(previewProgram!)">{{ 'OPEN_DOWNLOAD' | translate }}</button>
         </div>
       </div>
       <div class="file-preview-body">
-        <iframe *ngIf="previewProgram?.resourceType === 'PDF'" [src]="workoutService.getWorkoutFileUrl(previewProgram)" title="File preview"></iframe>
+        <iframe *ngIf="previewProgram?.resourceType === 'PDF'" [src]="workoutService.getWorkoutFileUrl(previewProgram)" [attr.title]="'FILE_PREVIEW' | translate"></iframe>
         <div class="excel-placeholder" *ngIf="previewProgram?.resourceType !== 'PDF'">
           <i-feather name="file-text"></i-feather>
           <h4>{{ previewProgram?.originalFileName || previewProgram?.name }}</h4>
-          <p>Excel preview is not available in browser. Open or download the file.</p>
+          <p>{{ 'EXCEL_PREVIEW_BROWSER_UNAVAILABLE' | translate }}</p>
         </div>
       </div>
     </div>

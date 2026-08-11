@@ -6,6 +6,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, filter, finalize, takeUntil, catchError } from 'rxjs/operators';
 import { BehaviorSubject, Subject, of } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import {
   FormDetails,
@@ -44,7 +45,7 @@ type SaveStatus = 'UNSAVED' | 'DRAFT' | 'PUBLISHED';
 @Component({
   selector: 'app-create-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss'
 })
@@ -53,6 +54,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private location = inject(Location);
+  private translate = inject(TranslateService);
 
   private destroy$ = new Subject<void>();
   private autoSaveSubject = new BehaviorSubject<void>(undefined);
@@ -72,18 +74,18 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   showQuestionSidebar = false;
   showInSignup = false;
 
-  formTitle = 'Form Title';
-  detailsTitle = 'Form Title';
+  formTitle = '';
+  detailsTitle = '';
   description = '';
 
   questions: QuestionItem[] = [];
 
   scheduleFrequency: ScheduleFrequency | null = null;
   scheduleFrequencyOptions = [
-    { id: 'daily' as ScheduleFrequency, label: 'Daily' },
-    { id: 'weekly' as ScheduleFrequency, label: 'Weekly' },
-    { id: 'biweekly' as ScheduleFrequency, label: 'Biweekly' },
-    { id: 'monthly' as ScheduleFrequency, label: 'Monthly' },
+    { id: 'daily' as ScheduleFrequency, label: 'DAILY' },
+    { id: 'weekly' as ScheduleFrequency, label: 'WEEKLY' },
+    { id: 'biweekly' as ScheduleFrequency, label: 'BIWEEKLY' },
+    { id: 'monthly' as ScheduleFrequency, label: 'MONTHLY' },
   ];
 
   scheduleWeekDays: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -101,11 +103,11 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   addToLibrary = true;
 
   questionTypes = [
-    { id: 'multiple-choice' as QuestionType, label: 'Multiple Choice' },
-    { id: 'star-rating' as QuestionType, label: 'Star Rating' },
-    { id: 'yes-no' as QuestionType, label: 'Yes/No' },
-    { id: 'input-text' as QuestionType, label: 'Text Input' },
-    { id: 'date' as QuestionType, label: 'Date' },
+    { id: 'multiple-choice' as QuestionType, label: 'MULTIPLE_CHOICE_LABEL' },
+    { id: 'star-rating' as QuestionType, label: 'STAR_RATING_LABEL' },
+    { id: 'yes-no' as QuestionType, label: 'YES_NO_LABEL' },
+    { id: 'input-text' as QuestionType, label: 'TEXT_INPUT_LABEL' },
+    { id: 'date' as QuestionType, label: 'DATE' },
   ];
 
   ngOnInit(): void {
@@ -131,8 +133,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
           error: () => this.router.navigate(['/forms'])
         });
     } else {
-      this.formTitle = 'Form Title';
-      this.detailsTitle = 'Form Title';
+      this.formTitle = '';
+      this.detailsTitle = '';
       this.questions = [];
       this.hasLoadedInitialData = true;
     }
@@ -219,7 +221,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.isEditingTitle = false;
 
     if (!this.detailsTitle || !this.detailsTitle.trim()) {
-      this.detailsTitle = this.formTitle || 'Form Title';
+      this.detailsTitle = this.formTitle || this.translate.instant('FORM_TITLE');
     }
 
     this.triggerAutoSave();
@@ -274,7 +276,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       type,
       text: '',
       isRequired: true,
-      options: type === 'multiple-choice' ? ['New Option'] : undefined,
+      options: type === 'multiple-choice' ? [this.translate.instant('NEW_OPTION')] : undefined,
     };
 
     this.questions = [...this.questions, newQuestion];
@@ -298,7 +300,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
 
   addOption(q: QuestionItem): void {
     q.options = q.options || [];
-    q.options.push('New Option');
+    q.options.push(this.translate.instant('NEW_OPTION'));
     this.triggerAutoSave();
   }
 
@@ -358,8 +360,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   private patchFromBackend(form: FormDetails): void {
-    this.formTitle = form.title || 'Form Title';
-    this.detailsTitle = form.title || 'Form Title';
+    this.formTitle = form.title || this.translate.instant('FORM_TITLE');
+    this.detailsTitle = form.title || this.translate.instant('FORM_TITLE');
     this.description = form.description ?? '';
     this.showInSignup = !!(form as any).showInSignup;
 
@@ -444,7 +446,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   private buildPayload(status: SaveStatus = 'UNSAVED'): any {
-    const title = this.detailsTitle?.trim() || this.formTitle?.trim() || 'Form Title';
+    const title = this.detailsTitle?.trim() || this.formTitle?.trim() || this.translate.instant('FORM_TITLE');
 
     const questionsBE: QuestionBE[] = this.questions.map((q, idx) => ({
       id: q.id,
@@ -553,7 +555,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.hasUnsavedChanges = true;
           console.error(err);
-          alert("Erreur lors de l'enregistrement.");
+          alert(this.translate.instant('SAVE_FORM_ERROR'));
         }
       });
   }
@@ -596,8 +598,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   get daySectionTitle(): string {
-    if (this.scheduleFrequency === 'daily') return 'Select Days';
-    if (this.scheduleFrequency === 'weekly' || this.scheduleFrequency === 'biweekly') return 'Day of Week';
+    if (this.scheduleFrequency === 'daily') return 'SELECT_DAYS';
+    if (this.scheduleFrequency === 'weekly' || this.scheduleFrequency === 'biweekly') return 'DAY_OF_WEEK';
     return '';
   }
 
@@ -633,6 +635,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   ordinal(n: number): string {
+    if (this.translate.currentLang === 'fr') return `${n}${n === 1 ? 'er' : 'e'}`;
     const v = n % 100;
     if (v >= 11 && v <= 13) return `${n}th`;
 
@@ -651,17 +654,17 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   uiTypeLabel(t: QuestionType): string {
     switch (t) {
       case 'multiple-choice':
-        return 'MULTIPLE CHOICE';
+        return 'MULTIPLE_CHOICE_LABEL';
       case 'yes-no':
-        return 'YES / NO';
+        return 'YES_NO_LABEL';
       case 'star-rating':
-        return 'STAR RATING';
+        return 'STAR_RATING_LABEL';
       case 'scale':
-        return 'SCALE';
+        return 'SCALE_LABEL';
       case 'date':
         return 'DATE';
       case 'input-text':
-        return 'TEXT INPUT';
+        return 'TEXT_INPUT_LABEL';
       default:
         return 'QUESTION';
     }

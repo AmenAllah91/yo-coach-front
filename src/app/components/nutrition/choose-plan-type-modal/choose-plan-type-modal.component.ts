@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 export type NutritionPlanChoice = 'full' | 'macro-total' | 'macro-each';
@@ -17,7 +18,7 @@ export type NutritionPlanChoice = 'full' | 'macro-total' | 'macro-each';
 @Component({
   selector: 'app-choose-plan-type-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './choose-plan-type-modal.component.html',
   styleUrls: ['./choose-plan-type-modal.component.scss'],
 })
@@ -46,6 +47,7 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   constructor(
     private router: Router,
     private coachSettingsService: CoachSettingsService,
+    private translate: TranslateService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -267,10 +269,10 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   }
 
   get selectedPlanTypeLabel(): string {
-    if (this.selectedPlanType === 'full') return 'Full Meal Plan';
-    if (this.selectedPlanType === 'macro-total') return 'Macro Total Day Plan';
-    if (this.selectedPlanType === 'macro-each') return 'Macro Each Meal Plan';
-    return 'Nutrition Plan';
+    if (this.selectedPlanType === 'full') return this.translate.instant('FULL_MEAL_PLAN');
+    if (this.selectedPlanType === 'macro-total') return this.translate.instant('MACRO_TOTAL_DAY_PLAN');
+    if (this.selectedPlanType === 'macro-each') return this.translate.instant('MACRO_EACH_MEAL_PLAN');
+    return this.translate.instant('NUTRITION_PLAN');
   }
 
   get normalizedDurationWeeks(): number {

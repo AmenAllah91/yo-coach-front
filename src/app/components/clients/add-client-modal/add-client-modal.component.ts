@@ -1,6 +1,7 @@
 import {Component, Input, Output, EventEmitter, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
 import {InvitationService} from "../../../service/invitation.service";
 import {AuthService} from "@config/auth.service";
@@ -9,7 +10,7 @@ import {environment} from "@env/environment";
 @Component({
   selector: 'app-add-client-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './add-client-modal.component.html',
   styleUrls: ['./add-client-modal.component.scss'],
 })

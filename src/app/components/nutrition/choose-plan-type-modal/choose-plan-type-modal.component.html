@@ -6,7 +6,7 @@
 >
   <div class="modal-content choose-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Choose a nutrition plan type</h2>
+      <h2>{{ 'CHOOSE_NUTRITION_PLAN_TYPE' | translate }}</h2>
 
       <button class="close-btn" type="button" (click)="closeModal()">
         <i-feather name="x"></i-feather>
@@ -21,55 +21,44 @@
         *ngIf="hasAnyPlanType; else noPlanTypes"
       >
         <div class="plan-option" *ngIf="canCreateFullMealPlan">
-          <h3>Full Meal Plan</h3>
-          <p>
-            Create a complete meal plan with specific foods, meals, and days.
-            Ideal for detailed nutrition planning.
-          </p>
+          <h3>{{ 'FULL_MEAL_PLAN' | translate }}</h3>
+          <p>{{ 'FULL_MEAL_PLAN_DESCRIPTION' | translate }}</p>
 
           <button class="btn-primary" type="button" (click)="createFullMealPlan()">
-            Create Full Meal Plan
+            {{ 'CREATE_FULL_MEAL_PLAN' | translate }}
           </button>
         </div>
 
         <div class="plan-option" *ngIf="canCreateMacroDailyPlan">
-          <h3>Macro Total Day Plan</h3>
-          <p>
-            Set daily calorie and macro targets for each day without meal-level
-            targets.
-          </p>
+          <h3>{{ 'MACRO_TOTAL_DAY_PLAN' | translate }}</h3>
+          <p>{{ 'MACRO_TOTAL_DAY_DESCRIPTION' | translate }}</p>
 
           <button class="btn-primary" type="button" (click)="createMacroTotalPlan()">
-            Create Total Day Plan
+            {{ 'CREATE_TOTAL_DAY_PLAN' | translate }}
           </button>
         </div>
 
         <div class="plan-option" *ngIf="canCreateMacroEachMealPlan">
-          <h3>Macro Each Meal Plan</h3>
-          <p>
-            Set macro targets for each meal while keeping the plan flexible
-            without specific foods.
-          </p>
+          <h3>{{ 'MACRO_EACH_MEAL_PLAN' | translate }}</h3>
+          <p>{{ 'MACRO_EACH_MEAL_DESCRIPTION' | translate }}</p>
 
           <button class="btn-primary" type="button" (click)="createMacroEachMealPlan()">
-            Create Each Meal Plan
+            {{ 'CREATE_EACH_MEAL_PLAN' | translate }}
           </button>
         </div>
       </div>
 
       <ng-template #noPlanTypes>
         <div class="plan-option">
-          <h3>No plan types enabled</h3>
-          <p>
-            Enable at least one nutrition plan type from Coach Settings.
-          </p>
+          <h3>{{ 'NO_PLAN_TYPES_ENABLED' | translate }}</h3>
+          <p>{{ 'ENABLE_PLAN_TYPE_IN_SETTINGS' | translate }}</p>
         </div>
       </ng-template>
     </div>
 
     <div class="modal-footer">
       <button class="btn-secondary" type="button" (click)="closeModal()">
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
     </div>
   </div>
@@ -83,7 +72,7 @@
 >
   <div class="modal-content choose-modal nutrition-duration-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Create {{ selectedPlanTypeLabel }}</h2>
+      <h2>{{ 'CREATE_ITEM' | translate:{ title: selectedPlanTypeLabel } }}</h2>
 
       <button class="close-btn" type="button" (click)="closeDurationModal()">
         <i-feather name="x"></i-feather>
@@ -92,36 +81,36 @@
 
     <div class="modal-body">
       <label class="nutrition-duration-field">
-        <span>Program Name <b>*</b></span>
+        <span>{{ 'PROGRAM_NAME' | translate }} <b>*</b></span>
         <input
           type="text"
           [(ngModel)]="nutritionProgramName"
-          placeholder="e.g. Summer Shred Nutrition"
+          [placeholder]="'NUTRITION_PROGRAM_NAME_EXAMPLE' | translate"
         />
       </label>
 
       <label class="nutrition-duration-field">
-        <span>Duration <b>*</b></span>
+        <span>{{ 'DURATION' | translate }} <b>*</b></span>
         <select [(ngModel)]="nutritionDurationWeeks">
           <option *ngFor="let option of nutritionDurationOptions" [ngValue]="option">
-            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+            {{ option }} {{ option === 1 ? ('WEEK' | translate) : ('WEEKS' | translate) }}
           </option>
         </select>
       </label>
 
       <p class="nutrition-duration-copy">
-        This will create a {{ normalizedDurationWeeks }}-week nutrition program.
+        {{ 'CREATE_WEEKS_NUTRITION_PROGRAM' | translate:{ count: normalizedDurationWeeks } }}
       </p>
 
       <div class="nutrition-duration-info">
         <i-feather name="info"></i-feather>
-        <span>Program structure will be organized by weeks.</span>
+        <span>{{ 'PROGRAM_ORGANIZED_BY_WEEKS' | translate }}</span>
       </div>
     </div>
 
     <div class="modal-footer">
       <button class="btn-secondary" type="button" (click)="closeDurationModal()">
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
       <button
         class="btn-primary nutrition-duration-submit"
@@ -129,7 +118,7 @@
         [disabled]="!nutritionProgramName.trim()"
         (click)="confirmNutritionPlanDetails()"
       >
-        Create Plan
+        {{ 'CREATE_PLAN' | translate }}
       </button>
     </div>
   </div>

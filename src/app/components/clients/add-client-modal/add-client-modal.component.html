@@ -3,8 +3,8 @@
 
     <!-- Header -->
     <div class="acm-header">
-      <h2 class="acm-title">Invite new clients</h2>
-      <button class="acm-close" type="button" (click)="closeModal()" aria-label="Fermer">
+      <h2 class="acm-title">{{ 'INVITE_NEW_CLIENTS' | translate }}</h2>
+      <button class="acm-close" type="button" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
         <i-feather name="x"></i-feather>
       </button>
     </div>
@@ -14,9 +14,8 @@
 
       <!-- Description -->
       <p class="acm-desc">
-        Invite one or more clients. They will receive a link to accept your invitation
-        and be guided to download the app to be coached.
-        <a href="#" class="acm-link">Learn More</a>
+        {{ 'INVITE_CLIENTS_EXPLANATION' | translate }}
+        <a href="#" class="acm-link">{{ 'LEARN_MORE' | translate }}</a>
       </p>
 
       <!-- Invite Link -->
@@ -24,7 +23,7 @@
         <span class="acm-invite-url">{{ inviteLink }}</span>
         <button type="button" class="acm-copy-btn" (click)="copyLink()">
           <i-feather name="copy" class="acm-copy-ico"></i-feather>
-          <span>{{ copied ? 'Copied!' : 'Copy Link' }}</span>
+          <span>{{ copied ? ('COPIED' | translate) : ('COPY_LINK' | translate) }}</span>
         </button>
       </div>
 
@@ -39,7 +38,7 @@
 
       <!-- Submit -->
       <button class="acm-submit-btn" type="button" (click)="sendInvitation()" [disabled]="!email.trim()">
-        Send Invitation
+        {{ 'SEND_INVITATION' | translate }}
       </button>
 
     </div>

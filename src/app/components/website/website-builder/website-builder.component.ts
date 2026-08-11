@@ -8,6 +8,7 @@ import {WebsiteService} from "../../../service/website.service";
 import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
 import {UsersService} from "../../../service/users.service";
 import {DocumentService} from "../../../service/document.service";
+import {TranslateModule} from '@ngx-translate/core';
 
 type DescriptionBlockType = 'text' | 'heading' | 'image';
 
@@ -102,7 +103,7 @@ interface TestimonialItem {
 @Component({
   selector: 'app-yo-coach-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, CoachLandingPreviewComponent],
+  imports: [CommonModule, FormsModule, CoachLandingPreviewComponent, TranslateModule],
   templateUrl: './website-builder.component.html',
   styleUrls: ['./website-builder.component.scss']
 })
@@ -467,6 +468,19 @@ export class WebsiteBuilderComponent implements OnInit{
 
   setTab(tab: string): void {
     this.activeTab = tab;
+  }
+
+  tabLabelKey(tab: string): string {
+    const keys: Record<string, string> = {
+      Profil: 'PROFILE',
+      'Vidéo': 'VIDEO',
+      Description: 'DESCRIPTION',
+      'Résultats': 'WEBSITE_RESULTS',
+      Services: 'SERVICES',
+      'Certificats': 'CERTIFICATES',
+      'Témoignages': 'TESTIMONIALS',
+    };
+    return keys[tab] || tab;
   }
 
   selectTheme(index: number): void {

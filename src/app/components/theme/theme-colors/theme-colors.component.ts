@@ -6,6 +6,7 @@ import { finalize } from 'rxjs';
 import { environment } from '@env/environment';
 import { AppThemeColors, AppThemeColorsPage } from '../../../core/models/app-theme-colors.model';
 import { AppThemeColorsService } from '../../../core/service/app-theme-colors.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type ColorField = keyof Pick<
   AppThemeColors,
@@ -55,7 +56,7 @@ type ThemeSection =
 @Component({
   selector: 'app-theme-colors',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './theme-colors.component.html',
   styleUrls: ['./theme-colors.component.scss'],
 })
@@ -80,39 +81,39 @@ export class ThemeColorsComponent implements OnInit {
   groupedControls: { group: string; controls: ColorControl[] }[] = [];
 
   readonly controls: ColorControl[] = [
-    { key: 'primary', label: 'Primary', group: 'Brand' },
-    { key: 'secondary', label: 'Secondary', group: 'Brand' },
+    { key: 'primary', label: 'PRIMARY_COLOR', group: 'BRAND_GROUP' },
+    { key: 'secondary', label: 'SECONDARY_COLOR', group: 'BRAND_GROUP' },
 
-    { key: 'background', label: 'Background', group: 'Background' },
-    { key: 'surface', label: 'Surface', group: 'Background' },
-    { key: 'card', label: 'Card', group: 'Background' },
-    { key: 'cardSurface', label: 'Card Surface', group: 'Background' },
+    { key: 'background', label: 'BACKGROUND_COLOR', group: 'BACKGROUND_GROUP' },
+    { key: 'surface', label: 'SURFACE_COLOR', group: 'BACKGROUND_GROUP' },
+    { key: 'card', label: 'CARD_COLOR', group: 'BACKGROUND_GROUP' },
+    { key: 'cardSurface', label: 'CARD_SURFACE_COLOR', group: 'BACKGROUND_GROUP' },
 
-    { key: 'textPrimary', label: 'Text Primary', group: 'Text' },
-    { key: 'textSecondary', label: 'Text Secondary', group: 'Text' },
-    { key: 'textHint', label: 'Text Hint', group: 'Text' },
+    { key: 'textPrimary', label: 'PRIMARY_TEXT_COLOR', group: 'TEXT_GROUP' },
+    { key: 'textSecondary', label: 'SECONDARY_TEXT_COLOR', group: 'TEXT_GROUP' },
+    { key: 'textHint', label: 'HINT_TEXT_COLOR', group: 'TEXT_GROUP' },
 
-    { key: 'success', label: 'Success', group: 'Status' },
-    { key: 'successLight', label: 'Success Light', group: 'Status' },
-    { key: 'error', label: 'Error', group: 'Status' },
-    { key: 'errorLight', label: 'Error Light', group: 'Status' },
-    { key: 'warning', label: 'Warning', group: 'Status' },
-    { key: 'warningLight', label: 'Warning Light', group: 'Status' },
+    { key: 'success', label: 'SUCCESS_COLOR', group: 'STATUS_GROUP' },
+    { key: 'successLight', label: 'SUCCESS_LIGHT_COLOR', group: 'STATUS_GROUP' },
+    { key: 'error', label: 'ERROR_COLOR', group: 'STATUS_GROUP' },
+    { key: 'errorLight', label: 'ERROR_LIGHT_COLOR', group: 'STATUS_GROUP' },
+    { key: 'warning', label: 'WARNING_COLOR', group: 'STATUS_GROUP' },
+    { key: 'warningLight', label: 'WARNING_LIGHT_COLOR', group: 'STATUS_GROUP' },
 
-    { key: 'border', label: 'Border', group: 'Structure' },
-    { key: 'divider', label: 'Divider', group: 'Structure' },
-    { key: 'disabled', label: 'Disabled', group: 'Structure' },
-    { key: 'dragHandle', label: 'Drag Handle', group: 'Structure' },
-    { key: 'emptyStateBg', label: 'Empty State Background', group: 'Structure' },
+    { key: 'border', label: 'BORDER_COLOR', group: 'STRUCTURE_GROUP' },
+    { key: 'divider', label: 'DIVIDER_COLOR', group: 'STRUCTURE_GROUP' },
+    { key: 'disabled', label: 'DISABLED_COLOR', group: 'STRUCTURE_GROUP' },
+    { key: 'dragHandle', label: 'DRAG_HANDLE_COLOR', group: 'STRUCTURE_GROUP' },
+    { key: 'emptyStateBg', label: 'EMPTY_STATE_BACKGROUND_COLOR', group: 'STRUCTURE_GROUP' },
 
-    { key: 'buttonText', label: 'Button Text', group: 'Buttons' },
+    { key: 'buttonText', label: 'BUTTON_TEXT_COLOR', group: 'BUTTONS_GROUP' },
 
-    { key: 'selectedTabBg', label: 'Selected Tab Background', group: 'Interactive' },
-    { key: 'activeBg', label: 'Active Background', group: 'Interactive' },
+    { key: 'selectedTabBg', label: 'SELECTED_TAB_BACKGROUND_COLOR', group: 'INTERACTIVE_GROUP' },
+    { key: 'activeBg', label: 'ACTIVE_BACKGROUND_COLOR', group: 'INTERACTIVE_GROUP' },
 
-    { key: 'headerStart', label: 'Header Start', group: 'Header Gradient' },
-    { key: 'headerMid', label: 'Header Mid', group: 'Header Gradient' },
-    { key: 'headerEnd', label: 'Header End', group: 'Header Gradient' },
+    { key: 'headerStart', label: 'HEADER_START_COLOR', group: 'HEADER_GRADIENT_GROUP' },
+    { key: 'headerMid', label: 'HEADER_MIDDLE_COLOR', group: 'HEADER_GRADIENT_GROUP' },
+    { key: 'headerEnd', label: 'HEADER_END_COLOR', group: 'HEADER_GRADIENT_GROUP' },
   ];
 
   presets: AppThemeColors[] = [
@@ -272,7 +273,8 @@ export class ThemeColorsComponent implements OnInit {
 
   constructor(
     private themeService: AppThemeColorsService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private translate: TranslateService
   ) {
     this.flutterPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
       '/assets/mobile-preview/index.html'
@@ -431,11 +433,11 @@ export class ThemeColorsComponent implements OnInit {
 
           if (this.themes.length > 0) {
             this.selectedTheme = { ...this.themes[0] };
-            this.error = 'No active theme found. Select or edit colors and click Save & use this theme.';
+            this.error = this.translate.instant('NO_ACTIVE_THEME_HINT');
           } else {
             this.selectedTheme = this.createDefaultTheme();
             this.themes = [];
-            this.error = 'No theme found. Customize colors below and click Save & use this theme.';
+            this.error = this.translate.instant('NO_THEME_FOUND_HINT');
           }
 
           this.sendThemeToFlutter();
@@ -516,7 +518,7 @@ export class ThemeColorsComponent implements OnInit {
     this.normalizeAllColors();
 
     if (!this.selectedTheme.name?.trim()) {
-      this.error = 'Theme name is required.';
+      this.error = this.translate.instant('THEME_NAME_REQUIRED');
       return;
     }
 
@@ -525,7 +527,7 @@ export class ThemeColorsComponent implements OnInit {
     );
 
     if (invalid) {
-      this.error = `${invalid.label} must be a valid hex color. Example: #39AEEF`;
+      this.error = this.translate.instant('INVALID_HEX_COLOR', { field: this.translate.instant(invalid.label) });
       return;
     }
 
@@ -543,7 +545,7 @@ export class ThemeColorsComponent implements OnInit {
     request$.pipe(finalize(() => (this.saving = false))).subscribe({
       next: (theme) => {
         this.selectedTheme = this.normalizeTheme(theme);
-        this.success = 'Theme saved successfully.';
+        this.success = this.translate.instant('THEME_SAVED_SUCCESS');
         this.sendThemeToFlutter();
         this.loadThemes();
       },
@@ -555,7 +557,7 @@ export class ThemeColorsComponent implements OnInit {
 
   activateTheme(theme: AppThemeColors = this.selectedTheme): void {
     if (!theme.id) {
-      this.error = 'Save the theme before activating it.';
+      this.error = this.translate.instant('SAVE_THEME_BEFORE_ACTIVATING');
       return;
     }
 
@@ -569,7 +571,7 @@ export class ThemeColorsComponent implements OnInit {
       .subscribe({
         next: (activated) => {
           this.selectedTheme = this.normalizeTheme(activated);
-          this.success = 'Theme activated. Mobile app will use this theme after reload.';
+          this.success = this.translate.instant('THEME_ACTIVATED_SUCCESS');
           this.sendThemeToFlutter();
           this.loadThemes();
         },
@@ -583,11 +585,11 @@ export class ThemeColorsComponent implements OnInit {
     if (!theme.id) return;
 
     if (theme.active) {
-      this.error = 'You cannot delete the active theme. Activate another theme first.';
+      this.error = this.translate.instant('CANNOT_DELETE_ACTIVE_THEME');
       return;
     }
 
-    const confirmed = confirm(`Delete theme "${theme.name}"?`);
+    const confirmed = confirm(this.translate.instant('DELETE_THEME_CONFIRM', { name: theme.name }));
     if (!confirmed) return;
 
     this.loading = true;
@@ -599,7 +601,7 @@ export class ThemeColorsComponent implements OnInit {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: () => {
-          this.success = 'Theme deleted.';
+          this.success = this.translate.instant('THEME_DELETED_SUCCESS');
           this.loadThemes();
         },
         error: (err) => {
@@ -617,7 +619,7 @@ export class ThemeColorsComponent implements OnInit {
     const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
     if (!allowedTypes.includes(file.type)) {
-      this.error = 'Only PNG, JPG, WEBP or SVG logos are allowed.';
+      this.error = this.translate.instant('LOGO_FILE_TYPES_ERROR');
       return;
     }
 
@@ -625,7 +627,7 @@ export class ThemeColorsComponent implements OnInit {
     const maxSizeBytes = maxSizeMb * 1024 * 1024;
 
     if (file.size > maxSizeBytes) {
-      this.error = `Logo size must be less than ${maxSizeMb}MB.`;
+      this.error = this.translate.instant('LOGO_SIZE_ERROR', { size: maxSizeMb });
       return;
     }
 
@@ -641,7 +643,7 @@ export class ThemeColorsComponent implements OnInit {
         };
 
         this.uploadingLogo = false;
-        this.success = 'Logo uploaded. Click Save & use this theme to apply it.';
+        this.success = this.translate.instant('LOGO_UPLOADED_SUCCESS');
         this.sendThemeToFlutter();
       },
       error: (err) => {
@@ -657,7 +659,7 @@ export class ThemeColorsComponent implements OnInit {
       mobileLogoUrl: undefined,
     };
 
-    this.success = 'Logo removed. Click Save & use this theme to apply it.';
+    this.success = this.translate.instant('LOGO_REMOVED_SUCCESS');
     this.error = null;
 
     this.sendThemeToFlutter();
@@ -694,7 +696,7 @@ export class ThemeColorsComponent implements OnInit {
     };
 
     this.selectedPreset = 'FitBudd';
-    this.success = 'Default colors restored. Click Save & use to apply.';
+    this.success = this.translate.instant('DEFAULT_COLORS_RESTORED');
     this.error = null;
 
     this.sendThemeToFlutter();
@@ -706,7 +708,7 @@ export class ThemeColorsComponent implements OnInit {
     this.normalizeAllColors();
 
     if (!this.selectedTheme.name?.trim()) {
-      this.error = 'Theme name is required.';
+      this.error = this.translate.instant('THEME_NAME_REQUIRED');
       return;
     }
 
@@ -715,7 +717,7 @@ export class ThemeColorsComponent implements OnInit {
     );
 
     if (invalid) {
-      this.error = `${invalid.label} must be a valid hex color. Example: #39AEEF`;
+      this.error = this.translate.instant('INVALID_HEX_COLOR', { field: this.translate.instant(invalid.label) });
       return;
     }
 
@@ -736,7 +738,7 @@ export class ThemeColorsComponent implements OnInit {
         if (!savedTheme.id) {
           this.saving = false;
           this.selectedTheme = this.normalizeTheme(savedTheme);
-          this.success = 'Theme saved, but backend did not return an id.';
+          this.success = this.translate.instant('THEME_SAVED_ID_MISSING');
           this.sendThemeToFlutter();
           return;
         }
@@ -747,7 +749,7 @@ export class ThemeColorsComponent implements OnInit {
           .subscribe({
             next: (activated) => {
               this.selectedTheme = this.normalizeTheme(activated);
-              this.success = 'Theme saved and applied to the mobile app.';
+              this.success = this.translate.instant('THEME_SAVED_APPLIED');
               this.sendThemeToFlutter();
               this.loadThemes();
             },
@@ -766,13 +768,13 @@ export class ThemeColorsComponent implements OnInit {
   }
 
   getSectionTitle(): string {
-    if (this.activeColorSection === 'branding') return 'Mobile Logo';
-    if (this.activeColorSection === 'templates') return 'Templates';
-    if (this.activeColorSection === 'brand') return 'Brand Colors';
-    if (this.activeColorSection === 'background') return 'Background & Cards';
-    if (this.activeColorSection === 'text') return 'Text Colors';
-    if (this.activeColorSection === 'status') return 'Status Colors';
-    return 'Navigation & Header';
+    if (this.activeColorSection === 'branding') return 'MOBILE_LOGO';
+    if (this.activeColorSection === 'templates') return 'THEME_TEMPLATES';
+    if (this.activeColorSection === 'brand') return 'BRAND_COLORS';
+    if (this.activeColorSection === 'background') return 'BACKGROUND_AND_CARDS';
+    if (this.activeColorSection === 'text') return 'TEXT_COLORS';
+    if (this.activeColorSection === 'status') return 'STATUS_COLORS';
+    return 'NAVIGATION_AND_HEADER';
   }
 
   getColor(key: ColorField): string {
@@ -916,18 +918,18 @@ export class ThemeColorsComponent implements OnInit {
 
   private extractError(error: any): string {
     if (error?.status === 403) {
-      return 'Access denied. Backend currently allows only admin to manage themes.';
+      return this.translate.instant('THEME_ACCESS_DENIED');
     }
 
     if (error?.status === 404) {
-      return 'No active theme found in backend.';
+      return this.translate.instant('NO_ACTIVE_THEME_BACKEND');
     }
 
     return (
       error?.error?.message ||
       error?.error?.detail ||
       error?.message ||
-      'Something went wrong.'
+      this.translate.instant('SOMETHING_WENT_WRONG')
     );
   }
 }

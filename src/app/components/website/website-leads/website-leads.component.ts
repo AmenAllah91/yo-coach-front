@@ -7,11 +7,12 @@ import { ActivatedRoute } from '@angular/router';
 import { InvitationService } from 'app/service/invitation.service';
 import { CoachWebsiteLead, PageResponse, WebsiteService } from 'app/service/website.service';
 import { AddClientModalComponent } from '../../clients/add-client-modal/add-client-modal.component';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-website-leads',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, AddClientModalComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, AddClientModalComponent, TranslateModule],
   templateUrl: './website-leads.component.html',
   styleUrls: ['./website-leads.component.scss'],
 })
@@ -39,6 +40,7 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     private websiteService: WebsiteService,
     private invitationService: InvitationService,
     private route: ActivatedRoute,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -71,7 +73,7 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        this.actionError = 'Unable to load leads.';
+        this.actionError = this.translate.instant('LOAD_LEADS_ERROR');
         this.loading = false;
       },
     });
@@ -93,7 +95,7 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
 
   formatDate(date?: string): string {
     if (!date) return '';
-    return new Date(date).toLocaleDateString('fr-FR', {
+    return new Date(date).toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
       day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   }
@@ -121,14 +123,14 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
 
   onNewLeadInvited(event: { email: string }): void {
     this.showInviteModal = false;
-    this.actionMessage = `Invitation sent to ${event.email}.`;
+    this.actionMessage = this.translate.instant('INVITATION_SENT_TO', { email: event.email });
   }
 
   invite(lead: CoachWebsiteLead): void {
     if (!lead.email || this.processingLeadId) return;
     const coachId = sessionStorage.getItem('userId') || lead.coachId;
     if (!coachId) {
-      this.actionError = 'Coach account not found.';
+      this.actionError = this.translate.instant('COACH_ACCOUNT_NOT_FOUND');
       return;
     }
 
@@ -148,9 +150,9 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (updated) => {
         this.replaceLead(updated);
-        this.actionMessage = `Invitation sent to ${email}.`;
+        this.actionMessage = this.translate.instant('INVITATION_SENT_TO', { email });
       },
-      error: () => (this.actionError = 'The invitation could not be sent.'),
+      error: () => (this.actionError = this.translate.instant('INVITATION_SEND_ERROR')),
     });
   }
 
@@ -162,9 +164,9 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (updated) => {
           this.replaceLead(updated);
-          this.actionMessage = 'Lead declined.';
+          this.actionMessage = this.translate.instant('LEAD_DECLINED');
         },
-        error: () => (this.actionError = 'The lead could not be declined.'),
+        error: () => (this.actionError = this.translate.instant('LEAD_DECLINE_ERROR')),
       });
   }
 
@@ -179,7 +181,7 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
   }
 
   getLeadFullName(lead: CoachWebsiteLead): string {
-    return [lead.firstName, lead.lastName].filter(Boolean).join(' ').trim() || 'Unknown lead';
+    return [lead.firstName, lead.lastName].filter(Boolean).join(' ').trim() || this.translate.instant('UNKNOWN_LEAD');
   }
 
   getElapsedTime(date?: string): string {
@@ -187,11 +189,11 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
     const diff = Math.max(0, Date.now() - new Date(date).getTime());
     const minute = 60000;
     const day = 86400000;
-    if (diff < minute) return 'Just now';
-    if (diff < day && new Date(date).toDateString() === new Date().toDateString()) return 'Today';
+    if (diff < minute) return this.translate.instant('JUST_NOW');
+    if (diff < day && new Date(date).toDateString() === new Date().toDateString()) return this.translate.instant('TODAY');
     const days = Math.floor(diff / day);
-    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (days < 7) return this.translate.instant(days === 1 ? 'DAY_AGO' : 'DAYS_AGO', { count: days });
+    return new Date(date).toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' });
   }
 
   private startAction(id: string): void {

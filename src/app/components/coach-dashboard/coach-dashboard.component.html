@@ -1,8 +1,8 @@
 <div class="page-container">
   <div class="page-header">
     <div class="header-content">
-      <h1>Dashboard</h1>
-      <p>Manage your clients, plans, messages and check-ins.</p>
+      <h1>{{ 'DASHBOARD' | translate }}</h1>
+      <p>{{ 'COACH_DASHBOARD_SUBTITLE' | translate }}</p>
     </div>
   </div>
 
@@ -10,14 +10,14 @@
     <section class="actions">
       <button class="btn btn-primary" type="button" (click)="addClient()">
         <span class="action-icon action-icon--plus" aria-hidden="true">+</span>
-        Add Client
+        {{ 'ADD_CLIENT' | translate }}
       </button>
 
       <button class="btn btn-outline btn-workout" type="button" (click)="addWorkoutPlan()">
         <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6.5 9.5 9.5 6.5M14.5 17.5l3-3M5 12l-2 2 7 7 2-2M12 5l2-2 7 7-2 2M8 8l8 8"/>
         </svg>
-        Add Workout Plan
+        {{ 'ADD_WORKOUT_PLAN' | translate }}
       </button>
 
       <button class="btn btn-outline btn-nutrition" type="button" (click)="addNutritionPlan()">
@@ -25,14 +25,14 @@
           <path d="M12 7c-1.4-2.2-4.2-2.5-6-.8C3.5 8.5 4.4 16.9 8 20c1.3 1.1 2.5.2 4 .2s2.7.9 4-.2c3.6-3.1 4.5-11.5 2-13.8-1.8-1.7-4.6-1.4-6 .8Z"/>
           <path d="M12 7c-.2-2.1.6-3.5 2.5-4"/>
         </svg>
-        Add Nutrition Plan
+        {{ 'ADD_NUTRITION_PLAN' | translate }}
       </button>
 
       <button class="btn btn-outline btn-message" type="button" (click)="sendMessage()">
         <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 5h16v12H8l-4 3V5Z"/>
         </svg>
-        Send Message
+        {{ 'SEND_MESSAGE' | translate }}
       </button>
 
       <button class="btn btn-outline btn-checkin" type="button" (click)="addCheckIn()">
@@ -40,7 +40,7 @@
           <path d="M4 5h16v15H4z"/>
           <path d="m8 12 2.5 2.5L16 9"/>
         </svg>
-        Add Check-in
+        {{ 'ADD_CHECK_IN' | translate }}
       </button>
     </section>
 
@@ -52,7 +52,7 @@
           [class.active]="selectedTab === 'clients'"
           (click)="setTab('clients')"
         >
-          Clients
+          {{ 'CLIENTS' | translate }}
         </button>
 
         <button
@@ -60,7 +60,7 @@
           [class.active]="selectedTab === 'checkins'"
           (click)="setTab('checkins')"
         >
-          Check-ins
+          {{ 'CHECK_INS' | translate }}
         </button>
       </div>
 
@@ -78,15 +78,15 @@
               <span class="online-dot" *ngIf="client.status === 'active'"></span>
             </div>
             <div class="meta-row">
-              <span class="plan">{{ client.package }}</span>
+              <span class="plan">{{ client.package | translate }}</span>
             </div>
           </div>
           <span class="chevron">›</span>
         </article>
-        <div *ngIf="clients.length === 0" class="empty-state">No clients found</div>
+        <div *ngIf="clients.length === 0" class="empty-state">{{ 'NO_CLIENTS_FOUND' | translate }}</div>
 
         <div class="checkins-pagination dashboard-pagination" *ngIf="!loading && !error">
-          <button type="button" class="pagination-btn" aria-label="Previous page" [disabled]="!canGoPreviousClients" (click)="previousClientsPage($event)">
+          <button type="button" class="pagination-btn" [attr.aria-label]="'PREVIOUS_PAGE' | translate" [disabled]="!canGoPreviousClients" (click)="previousClientsPage($event)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <button
@@ -98,7 +98,7 @@
             [disabled]="page === '...'"
             (click)="goToClientsPage(page, $event)"
           >{{ page }}</button>
-          <button type="button" class="pagination-btn" aria-label="Next page" [disabled]="!canGoNextClients" (click)="nextClientsPage($event)">
+          <button type="button" class="pagination-btn" [attr.aria-label]="'NEXT_PAGE' | translate" [disabled]="!canGoNextClients" (click)="nextClientsPage($event)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
@@ -116,19 +116,19 @@
           <div class="card-info">
             <div class="name-row">
               <h3>{{ checkIn.clientName }}</h3>
-              <span class="overdue-badge" *ngIf="checkIn.overdue">Overdue</span>
+              <span class="overdue-badge" *ngIf="checkIn.overdue">{{ 'OVERDUE_LABEL' | translate }}</span>
             </div>
             <div class="checkin-date-lines">
-              <span class="checkin-date-line">📅 Submitted: {{ checkIn.submittedDate }}</span>
-              <span class="checkin-date-line">🕘 Answered: {{ checkIn.answeredDate }}</span>
+              <span class="checkin-date-line">📅 {{ getCheckInActivityLabel(checkIn) | translate }}: {{ formatAssignmentDate(checkIn.submittedDate) }}</span>
+              <span class="checkin-date-line">🕘 {{ 'ANSWERED' | translate }}: {{ formatAssignmentDate(checkIn.answeredDate) }}</span>
             </div>
           </div>
           <div class="status-side">
-            <span [class]="getStatusClass(checkIn.status)">{{ checkIn.status || 'Pending' }}</span>
+            <span [class]="getStatusClass(checkIn.status)">{{ (checkIn.status || 'PENDING_STATUS') | translate }}</span>
             <span class="due">{{ formatCheckInDate(checkIn) }}</span>
           </div>
         </article>
-        <div *ngIf="recentCheckIns.length === 0" class="empty-state">No check-ins found</div>
+        <div *ngIf="recentCheckIns.length === 0" class="empty-state">{{ 'NO_CHECK_INS_FOUND' | translate }}</div>
 
         <div class="checkins-pagination dashboard-pagination" *ngIf="!loading && !error">
           <button type="button" class="pagination-btn" [disabled]="!canGoPreviousCheckIns" (click)="previousCheckInsPage($event)">‹</button>
@@ -148,12 +148,12 @@
 
     <!-- ===================== LOADING / ERROR ===================== -->
     <div *ngIf="loading" class="loading-state">
-      <span>Loading...</span>
+      <span>{{ 'LOADING' | translate }}</span>
     </div>
 
     <div *ngIf="error" class="error-state">
       <span>{{ error }}</span>
-      <button type="button" class="retry-btn" (click)="loadData()">Retry</button>
+      <button type="button" class="retry-btn" (click)="loadData()">{{ 'RETRY' | translate }}</button>
     </div>
 
     <!-- ===================== DESKTOP GRID (no selectedTab) ===================== -->
@@ -162,8 +162,8 @@
       <!-- CLIENTS PANEL -->
       <div class="dashboard-panel latest-clients-panel" *ngIf="!loading && !error">
         <div class="panel-header">
-          <h2>Latest Clients</h2>
-          <p>Total {{ clients.length }} clients</p>
+          <h2>{{ 'LATEST_CLIENTS' | translate }}</h2>
+          <p>{{ 'TOTAL' | translate }} {{ clients.length }} {{ 'CLIENTS_LOWER' | translate }}</p>
         </div>
 
         <div class="panel-body">
@@ -179,15 +179,15 @@
                 <span class="online-dot" *ngIf="client.status === 'active'"></span>
               </div>
               <div class="meta-row">
-                <span class="plan">{{ client.package }}</span>
+                <span class="plan">{{ client.package | translate }}</span>
               </div>
             </div>
             <span class="chevron">›</span>
           </article>
-          <div *ngIf="clients.length === 0" class="empty-state">No clients found</div>
+          <div *ngIf="clients.length === 0" class="empty-state">{{ 'NO_CLIENTS_FOUND' | translate }}</div>
 
           <div class="checkins-pagination dashboard-pagination">
-            <button type="button" class="pagination-btn" aria-label="Previous page" [disabled]="!canGoPreviousClients" (click)="previousClientsPage($event)">
+            <button type="button" class="pagination-btn" [attr.aria-label]="'PREVIOUS_PAGE' | translate" [disabled]="!canGoPreviousClients" (click)="previousClientsPage($event)">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <button
@@ -199,7 +199,7 @@
               [disabled]="page === '...'"
               (click)="goToClientsPage(page, $event)"
             >{{ page }}</button>
-            <button type="button" class="pagination-btn" aria-label="Next page" [disabled]="!canGoNextClients" (click)="nextClientsPage($event)">
+            <button type="button" class="pagination-btn" [attr.aria-label]="'NEXT_PAGE' | translate" [disabled]="!canGoNextClients" (click)="nextClientsPage($event)">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             </button>
           </div>
@@ -210,10 +210,10 @@
       <div class="dashboard-panel recent-checkins-panel" *ngIf="!loading && !error">
         <div class="panel-header">
           <div>
-            <h2>Recent Check-ins</h2>
-            <p>Latest updates from clients</p>
+            <h2>{{ 'RECENT_CHECK_INS' | translate }}</h2>
+            <p>{{ 'LATEST_CLIENT_UPDATES' | translate }}</p>
           </div>
-          <span class="view-all">View all</span>
+          <span class="view-all">{{ 'VIEW_ALL' | translate }}</span>
         </div>
 
         <div class="panel-body">
@@ -227,19 +227,19 @@
             <div class="card-info">
               <div class="name-row">
                 <h3>{{ checkIn.clientName }}</h3>
-                <span class="overdue-badge" *ngIf="checkIn.overdue">Overdue</span>
+                <span class="overdue-badge" *ngIf="checkIn.overdue">{{ 'OVERDUE_LABEL' | translate }}</span>
               </div>
               <div class="checkin-date-lines">
-                <span class="checkin-date-line">📅 Submitted: {{ checkIn.submittedDate }}</span>
-                <span class="checkin-date-line">🕘 Answered: {{ checkIn.answeredDate }}</span>
+                <span class="checkin-date-line">📅 {{ getCheckInActivityLabel(checkIn) | translate }}: {{ formatAssignmentDate(checkIn.submittedDate) }}</span>
+                <span class="checkin-date-line">🕘 {{ 'ANSWERED' | translate }}: {{ formatAssignmentDate(checkIn.answeredDate) }}</span>
               </div>
             </div>
             <div class="status-side">
-              <span [class]="getStatusClass(checkIn.status)">{{ checkIn.status || 'Pending' }}</span>
+              <span [class]="getStatusClass(checkIn.status)">{{ (checkIn.status || 'PENDING_STATUS') | translate }}</span>
               <span class="due">{{ formatCheckInDate(checkIn) }}</span>
             </div>
           </article>
-          <div *ngIf="recentCheckIns.length === 0" class="empty-state">No check-ins found</div>
+          <div *ngIf="recentCheckIns.length === 0" class="empty-state">{{ 'NO_CHECK_INS_FOUND' | translate }}</div>
 
           <div class="checkins-pagination dashboard-pagination">
             <button type="button" class="pagination-btn" [disabled]="!canGoPreviousCheckIns" (click)="previousCheckInsPage($event)">‹</button>
@@ -282,15 +282,15 @@
       <div class="assign-icon">{{ pendingAssignIcon }}</div>
 
       <h2>{{ pendingAssignLabel }}</h2>
-      <p>Do you want to assign <strong>{{ pendingAssignTitle }}</strong> to a client now?</p>
+      <p>{{ 'ASSIGN_CREATED_ITEM_PROMPT' | translate:{ title: pendingAssignTitle } }}</p>
 
       <div class="assign-actions">
         <button class="assign-primary" type="button" (click)="openAssignModal()">
-          Assign now
+          {{ 'ASSIGN_NOW' | translate }}
         </button>
 
         <button class="assign-secondary" type="button" (click)="notNowAssign()">
-          Not now
+          {{ 'NOT_NOW' | translate }}
         </button>
       </div>
     </div>
@@ -302,12 +302,12 @@
 
       <div class="assign-icon">{{ pendingAssignIcon }}</div>
 
-      <h2>Assign {{ pendingAssignTitle }}</h2>
-      <p>Select a client and {{ assignDateLabel | lowercase }}.</p>
+      <h2>{{ 'ASSIGN_ITEM' | translate:{ title: pendingAssignTitle } }}</h2>
+      <p>{{ 'SELECT_CLIENT_AND_DATE' | translate:{ dateLabel: (assignDateLabel | lowercase) } }}</p>
 
-      <label class="assign-label">Client</label>
+      <label class="assign-label">{{ 'CLIENT' | translate }}</label>
       <select class="assign-input" [(ngModel)]="assignClientId">
-        <option value="" disabled>Select client</option>
+        <option value="" disabled>{{ 'SELECT_CLIENT' | translate }}</option>
         <option *ngFor="let client of clients" [value]="client.id">
           {{ client.name }}
         </option>
@@ -327,7 +327,7 @@
           [disabled]="assignSaving"
           (click)="confirmAssign()"
         >
-          {{ assignSaving ? 'Assigning...' : 'Assign' }}
+          {{ assignSaving ? ('ASSIGNING' | translate) : ('ASSIGN' | translate) }}
         </button>
 
         <button
@@ -336,7 +336,7 @@
           [disabled]="assignSaving"
           (click)="closeAssignModal()"
         >
-          Cancel
+          {{ 'CANCEL' | translate }}
         </button>
       </div>
     </div>

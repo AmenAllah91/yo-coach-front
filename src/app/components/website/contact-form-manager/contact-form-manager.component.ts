@@ -9,11 +9,12 @@ import {
 } from 'app/service/contact-form.service';
 import { WebsiteLeadsComponent } from '../website-leads/website-leads.component';
 import { DocumentService } from 'app/service/document.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-contact-form-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, WebsiteLeadsComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, WebsiteLeadsComponent, TranslateModule],
   templateUrl: './contact-form-manager.component.html',
   styleUrls: ['./contact-form-manager.component.scss'],
 })
@@ -31,7 +32,8 @@ export class ContactFormManagerComponent implements OnInit {
 
   constructor(
     private contactFormService: ContactFormService,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -50,7 +52,7 @@ export class ContactFormManagerComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.error = 'Unable to load your contact form.';
+        this.error = this.translate.instant('LOAD_CONTACT_FORM_ERROR');
         this.loading = false;
       },
     });
@@ -83,12 +85,12 @@ export class ContactFormManagerComponent implements OnInit {
     this.uploadError = '';
     if (!file) return;
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      this.uploadError = 'Please select a JPG or PNG image.';
+      this.uploadError = this.translate.instant('CONTACT_IMAGE_TYPE_ERROR');
       input.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      this.uploadError = 'The image must be smaller than 5 MB.';
+      this.uploadError = this.translate.instant('CONTACT_IMAGE_SIZE_ERROR');
       input.value = '';
       return;
     }
@@ -103,7 +105,7 @@ export class ContactFormManagerComponent implements OnInit {
       const ownerId = sessionStorage.getItem('userId') || 'coach';
       this.documentService.uploadFileInPath(storedFile, `contact-form-images/${ownerId}`).subscribe({
         next: url => this.draft.coverImage = url,
-        error: () => this.uploadError = 'Unable to upload the image.'
+        error: () => this.uploadError = this.translate.instant('CONTACT_IMAGE_UPLOAD_ERROR')
       });
     };
     reader.readAsDataURL(file);
@@ -124,7 +126,7 @@ export class ContactFormManagerComponent implements OnInit {
         this.modalOpen = false;
       },
       error: (err) => {
-        this.error = err?.error?.message || err?.error || 'Unable to save the contact form.';
+        this.error = err?.error?.message || err?.error || this.translate.instant('SAVE_CONTACT_FORM_ERROR');
         this.saving = false;
       },
     });

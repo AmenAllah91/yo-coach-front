@@ -10,7 +10,7 @@
             <rect x="16" y="14" width="5" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
           </svg>
         </div>
-        <div class="yc-builder__brand-title">CoachBuilder</div>
+        <div class="yc-builder__brand-title">{{ 'COACH_BUILDER' | translate }}</div>
       </div>
 
       <div class="yc-builder__actions">
@@ -22,11 +22,11 @@
       <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"></circle>
     </svg>
   </span>
-          <span>Voir l'aperçu</span>
+          <span>{{ 'VIEW_PREVIEW' | translate }}</span>
         </button>
 
         <button type="button" class="yc-builder__preview-btn" (click)="saveWebsite()">
-          <span>Enregistrer le site</span>
+          <span>{{ 'SAVE_WEBSITE' | translate }}</span>
         </button>
 
       </div>
@@ -36,7 +36,7 @@
   <!-- URL bar -->
   <div class="yc-builder__urlbar">
     <div class="yc-builder__urlbar-inner">
-      <div class="yc-builder__url-label">Adresse de votre site</div>
+      <div class="yc-builder__url-label">{{ 'WEBSITE_ADDRESS' | translate }}</div>
 
       <div class="yc-builder__url-content">
         <div class="yc-builder__url-input-wrap">
@@ -45,7 +45,7 @@
             class="yc-builder__url-input"
             type="text"
             [(ngModel)]="siteSlug"
-            placeholder="monsite"
+            [placeholder]="'WEBSITE_SLUG_PLACEHOLDER' | translate"
           />
           <span class="yc-builder__url-suffix">.yocoach.co</span>
         </div>
@@ -61,7 +61,7 @@
   <div class="yc-builder__content">
     <!-- Themes -->
     <div class="yc-builder__section">
-      <div class="yc-builder__section-title">Thème sélectionné</div>
+      <div class="yc-builder__section-title">{{ 'SELECTED_THEME' | translate }}</div>
 
       <div class="yc-builder__themes">
         <div
@@ -153,7 +153,7 @@
     <div class="yc-builder__grid">
       <!-- Left -->
       <div class="yc-builder__left">
-        <div class="yc-builder__section-title">Contenu de la page</div>
+        <div class="yc-builder__section-title">{{ 'PAGE_CONTENT' | translate }}</div>
 
         <div class="yc-card yc-card--tabs">
           <div class="yc-tabs">
@@ -164,7 +164,7 @@
               [class.is-active]="activeTab === tab"
               (click)="setTab(tab)"
             >
-              {{ tab }}
+              {{ tabLabelKey(tab) | translate }}
             </button>
           </div>
 
@@ -172,7 +172,7 @@
             <!-- PROFIL -->
             <ng-container *ngIf="activeTab === 'Profil'">
               <div class="yc-form-block">
-                <label class="yc-label">Photo de profil</label>
+                <label class="yc-label">{{ 'PROFILE_PHOTO' | translate }}</label>
                 <div class="yc-profile-upload">
                   <img [src]="profile.image" alt="profile" class="yc-avatar"/>
 
@@ -190,33 +190,33 @@
                       class="yc-btn yc-btn--outline"
                       (click)="profileImageInput.click()"
                     >
-                      Importer une image
+                      {{ 'UPLOAD_IMAGE' | translate }}
                     </button>
 
                     <button type="button" class="yc-link-btn">
-                      Ou utiliser un lien URL
+                      {{ 'USE_IMAGE_URL' | translate }}
                     </button>
                   </div>
                 </div>
               </div>
 
               <div class="yc-form-block">
-                <label class="yc-label">Nom complet</label>
+                <label class="yc-label">{{ 'FULL_NAME' | translate }}</label>
                 <input class="yc-input" type="text" [(ngModel)]="profile.fullName"/>
               </div>
 
               <div class="yc-form-block">
-                <label class="yc-label">Titre professionnel</label>
+                <label class="yc-label">{{ 'PROFESSIONAL_TITLE' | translate }}</label>
                 <input class="yc-input" type="text" [(ngModel)]="profile.title"/>
               </div>
 
               <div class="yc-form-block">
-                <label class="yc-label">Slogan / Accroche</label>
+                <label class="yc-label">{{ 'SLOGAN_TAGLINE' | translate }}</label>
                 <input class="yc-input" type="text" [(ngModel)]="profile.slogan"/>
               </div>
 
               <div class="yc-form-block">
-                <label class="yc-label">Biographie courte</label>
+                <label class="yc-label">{{ 'SHORT_BIOGRAPHY' | translate }}</label>
                 <textarea class="yc-textarea" rows="5" [(ngModel)]="profile.bio"></textarea>
               </div>
             </ng-container>
@@ -224,14 +224,14 @@
             <!-- VIDEO -->
             <ng-container *ngIf="activeTab === 'Vidéo'">
               <div class="yc-form-block">
-                <label class="yc-label">Vidéo de présentation</label>
+                <label class="yc-label">{{ 'INTRODUCTION_VIDEO' | translate }}</label>
                 <div class="yc-helper">
                   Ajoutez une vidéo publicitaire convaincante pour présenter vos services.
                 </div>
               </div>
 
               <div class="yc-form-block">
-                <label class="yc-label">Lien de la vidéo</label>
+                <label class="yc-label">{{ 'VIDEO_LINK' | translate }}</label>
                 <input
                   class="yc-input"
                   type="text"
@@ -241,12 +241,12 @@
               </div>
 
               <div class="yc-form-block" *ngIf="videoEmbedUrl">
-                <label class="yc-label">Aperçu</label>
+                <label class="yc-label">{{ 'PREVIEW_FORM' | translate }}</label>
                 <div
                   style="position: relative; width: 100%; padding-bottom: 56.25%; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
                   <iframe
                     [src]="videoEmbedUrl"
-                    title="Aperçu vidéo"
+                    [attr.title]="'VIDEO_PREVIEW' | translate"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen
                     style="position:absolute; inset:0; width:100%; height:100%; border:0;"
@@ -258,7 +258,7 @@
             <!-- DESCRIPTION -->
             <ng-container *ngIf="activeTab === 'Description'">
               <div class="yc-helper">
-                Construisez la description détaillée de votre approche en ajoutant différents blocs.
+                {{ 'DESCRIPTION_BLOCKS_HINT' | translate }}
               </div>
 
               <div
@@ -292,9 +292,9 @@
                       [ngModel]="block.type"
                       (ngModelChange)="updateBlock(block.id, { type: $event, content: '' })"
                     >
-                      <option value="text">Texte</option>
-                      <option value="heading">Titre</option>
-                      <option value="image">Image</option>
+                      <option value="text">{{ 'TEXT' | translate }}</option>
+                      <option value="heading">{{ 'TITLE' | translate }}</option>
+                      <option value="image">{{ 'IMAGE' | translate }}</option>
                     </select>
 
                     <button
@@ -302,7 +302,7 @@
                       class="yc-icon-btn yc-icon-btn--danger"
                       (click)="removeBlock(block.id)"
                     >
-                      Supprimer
+                      {{ 'DELETE' | translate }}
                     </button>
                   </div>
 
@@ -312,7 +312,7 @@
                       type="text"
                       [ngModel]="block.content"
                       (ngModelChange)="updateBlock(block.id, { content: $event })"
-                      placeholder="Votre titre ici..."
+                      [placeholder]="'TITLE_HERE_PLACEHOLDER' | translate"
                     />
                   </div>
 
@@ -322,7 +322,7 @@
           rows="4"
           [ngModel]="block.content"
           (ngModelChange)="updateBlock(block.id, { content: $event })"
-          placeholder="Votre texte ici..."
+          [placeholder]="'TEXT_HERE_PLACEHOLDER' | translate"
         ></textarea>
                   </div>
 
@@ -330,12 +330,12 @@
                     <ng-container *ngIf="block.content; else emptyBlockImage">
                       <img
                         [src]="block.content"
-                        alt="Bloc image"
+                        [alt]="'CONTENT_IMAGE' | translate"
                         class="yc-block-image-preview"
                       />
 
                       <label class="yc-image-upload-label">
-                        Remplacer l'image
+                        {{ 'REPLACE_IMAGE' | translate }}
                         <input
                           type="file"
                           accept="image/*"
@@ -347,7 +347,7 @@
 
                     <ng-template #emptyBlockImage>
                       <label class="yc-image-upload-label">
-                        Cliquez pour ajouter une image
+                        {{ 'CLICK_ADD_IMAGE' | translate }}
                         <input
                           type="file"
                           accept="image/*"
@@ -366,7 +366,7 @@
                   class="yc-btn yc-btn--outline"
                   (click)="addBlock('text')"
                 >
-                  + Texte
+                  + {{ 'TEXT' | translate }}
                 </button>
 
                 <button
@@ -374,7 +374,7 @@
                   class="yc-btn yc-btn--outline"
                   (click)="addBlock('heading')"
                 >
-                  + Titre
+                  + {{ 'TITLE' | translate }}
                 </button>
 
                 <button
@@ -382,7 +382,7 @@
                   class="yc-btn yc-btn--outline"
                   (click)="addBlock('image')"
                 >
-                  + Image
+                  + {{ 'IMAGE' | translate }}
                 </button>
               </div>
             </ng-container>
@@ -397,20 +397,20 @@
                 <div class="yc-dynamic-block">
                   <div class="yc-dynamic-block__content">
                     <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">Résultat {{ i + 1 }}</label>
+                      <label class="yc-label" style="margin: 0;">{{ 'RESULT_ITEM' | translate:{ number: i + 1 } }}</label>
 
                       <button
                         type="button"
                         class="yc-icon-btn yc-icon-btn--danger"
                         (click)="removeResult(i)"
                       >
-                        Supprimer
+                        {{ 'DELETE' | translate }}
                       </button>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                       <div>
-                        <label class="yc-label">Image Avant</label>
+                        <label class="yc-label">{{ 'BEFORE_IMAGE' | translate }}</label>
 
                         <div class="yc-image-upload-box">
                           <ng-container *ngIf="result.beforeImage; else emptyBeforeImage">
@@ -433,7 +433,7 @@
 
                           <ng-template #emptyBeforeImage>
                             <label class="yc-image-upload-label">
-                              Ajouter l'image avant
+                              {{ 'ADD_BEFORE_IMAGE' | translate }}
                               <input
                                 type="file"
                                 accept="image/*"
@@ -446,7 +446,7 @@
                       </div>
 
                       <div>
-                        <label class="yc-label">Image Après</label>
+                        <label class="yc-label">{{ 'AFTER_IMAGE' | translate }}</label>
 
                         <div class="yc-image-upload-box">
                           <ng-container *ngIf="result.afterImage; else emptyAfterImage">
@@ -469,7 +469,7 @@
 
                           <ng-template #emptyAfterImage>
                             <label class="yc-image-upload-label">
-                              Ajouter l'image après
+                              {{ 'ADD_AFTER_IMAGE' | translate }}
                               <input
                                 type="file"
                                 accept="image/*"
@@ -483,12 +483,12 @@
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Texte / Légende</label>
+                      <label class="yc-label">{{ 'TEXT_CAPTION' | translate }}</label>
                       <textarea
                         class="yc-textarea"
                         rows="3"
                         [(ngModel)]="result.text"
-                        placeholder="Ex: Transformation en 3 mois grâce au coaching"
+                        [placeholder]="'TRANSFORMATION_EXAMPLE' | translate"
                       ></textarea>
                     </div>
                   </div>
@@ -497,7 +497,7 @@
 
               <div class="yc-form-block">
                 <button type="button" class="yc-btn yc-btn--outline" (click)="addResult()">
-                  + Ajouter un résultat
+                  + {{ 'ADD_RESULT' | translate }}
                 </button>
               </div>
             </ng-container>
@@ -508,19 +508,19 @@
                 <div class="yc-dynamic-block">
                   <div class="yc-dynamic-block__content">
                     <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">Service {{ i + 1 }}</label>
+                      <label class="yc-label" style="margin: 0;">{{ 'SERVICE_ITEM' | translate:{ number: i + 1 } }}</label>
 
                       <button
                         type="button"
                         class="yc-icon-btn yc-icon-btn--danger"
                         (click)="removeService(i)"
                       >
-                        Supprimer
+                        {{ 'DELETE' | translate }}
                       </button>
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Image du service</label>
+                      <label class="yc-label">{{ 'SERVICE_IMAGE' | translate }}</label>
 
                       <div class="yc-image-upload-box">
                         <ng-container *ngIf="service.image; else emptyServiceImage">
@@ -543,7 +543,7 @@
 
                         <ng-template #emptyServiceImage>
                           <label class="yc-image-upload-label">
-                            Ajouter une image
+                            {{ 'ADD_IMAGE' | translate }}
                             <input
                               type="file"
                               accept="image/*"
@@ -556,17 +556,17 @@
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Titre</label>
+                      <label class="yc-label">{{ 'TITLE' | translate }}</label>
                       <input class="yc-input" type="text" [(ngModel)]="service.title" />
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Prix</label>
+                      <label class="yc-label">{{ 'PRICE' | translate }}</label>
                       <input class="yc-input" type="text" [(ngModel)]="service.price" />
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Description</label>
+                      <label class="yc-label">{{ 'DESCRIPTION' | translate }}</label>
                       <textarea
                         class="yc-textarea"
                         rows="4"
@@ -579,7 +579,7 @@
 
               <div class="yc-form-block">
                 <button type="button" class="yc-btn yc-btn--outline" (click)="addService()">
-                  + Ajouter un service
+                  + {{ 'ADD_SERVICE' | translate }}
                 </button>
               </div>
             </ng-container>
@@ -590,19 +590,19 @@
                 <div class="yc-dynamic-block">
                   <div class="yc-dynamic-block__content">
                     <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">Certificat {{ i + 1 }}</label>
+                      <label class="yc-label" style="margin: 0;">{{ 'CERTIFICATE_ITEM' | translate:{ number: i + 1 } }}</label>
 
                       <button
                         type="button"
                         class="yc-icon-btn yc-icon-btn--danger"
                         (click)="removeCertificate(i)"
                       >
-                        Supprimer
+                        {{ 'DELETE' | translate }}
                       </button>
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Image du certificat</label>
+                      <label class="yc-label">{{ 'CERTIFICATE_IMAGE' | translate }}</label>
 
                       <div class="yc-image-upload-box">
                         <ng-container *ngIf="certificate.image; else emptyCertificateImage">
@@ -625,7 +625,7 @@
 
                         <ng-template #emptyCertificateImage>
                           <label class="yc-image-upload-label">
-                            Ajouter une image
+                            {{ 'ADD_IMAGE' | translate }}
                             <input
                               type="file"
                               accept="image/*"
@@ -638,17 +638,17 @@
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Nom du certificat</label>
+                      <label class="yc-label">{{ 'CERTIFICATE_NAME' | translate }}</label>
                       <input class="yc-input" type="text" [(ngModel)]="certificate.title" />
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Organisation</label>
+                      <label class="yc-label">{{ 'ORGANIZATION' | translate }}</label>
                       <input class="yc-input" type="text" [(ngModel)]="certificate.organization" />
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Année</label>
+                      <label class="yc-label">{{ 'YEAR' | translate }}</label>
                       <input class="yc-input" type="text" [(ngModel)]="certificate.year" />
                     </div>
                   </div>
@@ -661,7 +661,7 @@
                   class="yc-btn yc-btn--outline"
                   (click)="addCertificate()"
                 >
-                  + Ajouter un certificat
+                  + {{ 'ADD_CERTIFICATE' | translate }}
                 </button>
               </div>
             </ng-container>
@@ -672,45 +672,45 @@
                 <div class="yc-dynamic-block">
                   <div class="yc-dynamic-block__content">
                     <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">Témoignage {{ i + 1 }}</label>
+                      <label class="yc-label" style="margin: 0;">{{ 'TESTIMONIAL_ITEM' | translate:{ number: i + 1 } }}</label>
 
                       <button
                         type="button"
                         class="yc-icon-btn yc-icon-btn--danger"
                         (click)="removeTestimonial(i)"
                       >
-                        Supprimer
+                        {{ 'DELETE' | translate }}
                       </button>
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Auteur</label>
+                      <label class="yc-label">{{ 'AUTHOR' | translate }}</label>
                       <input
                         class="yc-input"
                         type="text"
                         [(ngModel)]="testimonial.author"
-                        placeholder="Nom du client"
+                        [placeholder]="'CLIENT_NAME' | translate"
                       />
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Note</label>
+                      <label class="yc-label">{{ 'RATING' | translate }}</label>
                       <select class="yc-input" [(ngModel)]="testimonial.rating">
-                        <option [ngValue]="5">5 étoiles</option>
-                        <option [ngValue]="4">4 étoiles</option>
-                        <option [ngValue]="3">3 étoiles</option>
-                        <option [ngValue]="2">2 étoiles</option>
-                        <option [ngValue]="1">1 étoile</option>
+                        <option [ngValue]="5">{{ 'STARS_COUNT' | translate:{ count: 5 } }}</option>
+                        <option [ngValue]="4">{{ 'STARS_COUNT' | translate:{ count: 4 } }}</option>
+                        <option [ngValue]="3">{{ 'STARS_COUNT' | translate:{ count: 3 } }}</option>
+                        <option [ngValue]="2">{{ 'STARS_COUNT' | translate:{ count: 2 } }}</option>
+                        <option [ngValue]="1">{{ 'STAR_COUNT' | translate:{ count: 1 } }}</option>
                       </select>
                     </div>
 
                     <div class="yc-form-block">
-                      <label class="yc-label">Message</label>
+                      <label class="yc-label">{{ 'MESSAGE' | translate }}</label>
                       <textarea
                         class="yc-textarea"
                         rows="4"
                         [(ngModel)]="testimonial.text"
-                        placeholder="Texte du témoignage"
+                        [placeholder]="'TESTIMONIAL_TEXT' | translate"
                       ></textarea>
                     </div>
                   </div>
@@ -723,7 +723,7 @@
                   class="yc-btn yc-btn--outline"
                   (click)="addTestimonial()"
                 >
-                  + Ajouter un témoignage
+                  + {{ 'ADD_TESTIMONIAL' | translate }}
                 </button>
               </div>
             </ng-container>
@@ -737,7 +737,7 @@
         <!-- Announcement -->
         <div class="yc-card yc-side-card">
           <div class="yc-side-card__head">
-            <div class="yc-side-card__title">Barre d'annonce</div>
+            <div class="yc-side-card__title">{{ 'ANNOUNCEMENT_BAR' | translate }}</div>
             <label class="yc-switch">
               <input type="checkbox" [(ngModel)]="announcement.enabled"/>
               <span class="yc-switch__slider"></span>
@@ -745,17 +745,17 @@
           </div>
 
           <div class="yc-helper">
-            Bandeau défilant en haut de votre page avec un message promotionnel.
+            {{ 'ANNOUNCEMENT_BAR_HINT' | translate }}
           </div>
 
           <div class="yc-form-block">
-            <label class="yc-label">Message</label>
+            <label class="yc-label">{{ 'MESSAGE' | translate }}</label>
             <textarea class="yc-textarea" rows="2" [(ngModel)]="announcement.message"></textarea>
           </div>
 
           <div class="yc-color-grid">
             <div class="yc-form-block">
-              <label class="yc-label">Fond</label>
+              <label class="yc-label">{{ 'BACKGROUND_COLOR' | translate }}</label>
               <div class="yc-color-row">
                 <input type="color" [(ngModel)]="announcement.bgColor"/>
                 <span>{{ announcement.bgColor }}</span>
@@ -763,7 +763,7 @@
             </div>
 
             <div class="yc-form-block">
-              <label class="yc-label">Texte</label>
+              <label class="yc-label">{{ 'TEXT' | translate }}</label>
               <div class="yc-color-row">
                 <input type="color" [(ngModel)]="announcement.textColor"/>
                 <span>{{ announcement.textColor }}</span>
@@ -772,7 +772,7 @@
           </div>
 
           <div class="yc-form-block">
-            <label class="yc-label">Aperçu</label>
+            <label class="yc-label">{{ 'PREVIEW_FORM' | translate }}</label>
             <div
               class="yc-announcement-preview"
               [style.background]="announcement.bgColor"
@@ -788,7 +788,7 @@
         <!-- CTA -->
         <div class="yc-card yc-side-card">
           <div class="yc-side-card__head">
-            <div class="yc-side-card__title">Bouton d'action</div>
+            <div class="yc-side-card__title">{{ 'ACTION_BUTTON' | translate }}</div>
             <label class="yc-switch">
               <input type="checkbox" [(ngModel)]="cta.enabled"/>
               <span class="yc-switch__slider"></span>
@@ -796,18 +796,18 @@
           </div>
 
           <div class="yc-helper">
-            Bouton qui redirige vers le formulaire de contact. Peut être fixé en bas de l'écran.
+            {{ 'ACTION_BUTTON_HINT' | translate }}
           </div>
 
           <div class="yc-form-block">
-            <label class="yc-label">Texte du bouton</label>
+            <label class="yc-label">{{ 'BUTTON_TEXT' | translate }}</label>
             <input class="yc-input" type="text" [(ngModel)]="cta.label"/>
           </div>
 
           <div class="yc-sticky-row">
             <div>
-              <div class="yc-sticky-title">Bouton sticky</div>
-              <div class="yc-sticky-subtitle">Reste fixé en bas de l'écran</div>
+              <div class="yc-sticky-title">{{ 'STICKY_BUTTON' | translate }}</div>
+              <div class="yc-sticky-subtitle">{{ 'STICKY_BUTTON_HINT' | translate }}</div>
             </div>
 
             <label class="yc-switch">
@@ -817,7 +817,7 @@
           </div>
 
           <div class="yc-form-block">
-            <label class="yc-label">Aperçu</label>
+            <label class="yc-label">{{ 'PREVIEW_FORM' | translate }}</label>
             <div class="yc-cta-preview">
               <button type="button" class="yc-cta-btn" [style.background]="colors.accent">
                 {{ cta.label }}
@@ -829,37 +829,37 @@
         <!-- Leads -->
         <div class="yc-card yc-side-card">
           <div class="yc-side-card__title yc-side-card__title--alone">
-            Formulaire de contact (Leads)
+            {{ 'CONTACT_FORM_LEADS' | translate }}
           </div>
 
           <div class="yc-helper">
-            Sélectionnez les champs que vos clients devront remplir pour vous contacter.
+            {{ 'CONTACT_FIELDS_HINT' | translate }}
           </div>
 
           <div class="yc-check-list">
             <label class="yc-check-item">
               <input type="checkbox" [(ngModel)]="leadFields.firstName"/>
-              <span>Prénom</span>
+              <span>{{ 'FIRST_NAME' | translate }}</span>
             </label>
 
             <label class="yc-check-item">
               <input type="checkbox" [(ngModel)]="leadFields.lastName"/>
-              <span>Nom</span>
+              <span>{{ 'LAST_NAME' | translate }}</span>
             </label>
 
             <label class="yc-check-item is-disabled">
               <input type="checkbox" [checked]="leadFields.email"/>
-              <span>Email</span>
+              <span>{{ 'EMAIL' | translate }}</span>
             </label>
 
             <label class="yc-check-item">
               <input type="checkbox" [(ngModel)]="leadFields.phone" disabled/>
-              <span>Numéro de téléphone (Requis)</span>
+              <span>{{ 'PHONE_REQUIRED' | translate }}</span>
             </label>
           </div>
 
           <div class="yc-form-block">
-            <label class="yc-label">Texte du bouton (Call to Action)</label>
+            <label class="yc-label">{{ 'CALL_TO_ACTION_TEXT' | translate }}</label>
             <input class="yc-input" type="text" [(ngModel)]="leadFields.buttonLabel"/>
           </div>
         </div>
@@ -867,18 +867,18 @@
         <!-- Colors -->
         <div class="yc-card yc-side-card">
           <div class="yc-side-card__title yc-side-card__title--alone">
-            Personnalisation des couleurs
+            {{ 'COLOR_CUSTOMIZATION' | translate }}
           </div>
 
           <div class="yc-helper">
-            Ajustez les couleurs pour correspondre à votre identité visuelle.
+            {{ 'COLOR_CUSTOMIZATION_HINT' | translate }}
           </div>
 
           <div class="yc-color-settings">
             <div class="yc-color-setting">
               <div>
-                <div class="yc-color-setting__title">Couleur Principale</div>
-                <div class="yc-color-setting__hint">Titres, boutons, éléments forts</div>
+                <div class="yc-color-setting__title">{{ 'PRIMARY_COLOR' | translate }}</div>
+                <div class="yc-color-setting__hint">{{ 'PRIMARY_COLOR_HINT' | translate }}</div>
               </div>
               <div class="yc-color-setting__action">
                 <span>{{ colors.primary }}</span>
@@ -888,8 +888,8 @@
 
             <div class="yc-color-setting">
               <div>
-                <div class="yc-color-setting__title">Couleur Secondaire</div>
-                <div class="yc-color-setting__hint">Fonds de section, éléments discrets</div>
+                <div class="yc-color-setting__title">{{ 'SECONDARY_COLOR' | translate }}</div>
+                <div class="yc-color-setting__hint">{{ 'SECONDARY_COLOR_HINT' | translate }}</div>
               </div>
               <div class="yc-color-setting__action">
                 <span>{{ colors.secondary }}</span>
@@ -899,8 +899,8 @@
 
             <div class="yc-color-setting">
               <div>
-                <div class="yc-color-setting__title">Couleur d'Accent</div>
-                <div class="yc-color-setting__hint">Mise en évidence, icônes, prix</div>
+                <div class="yc-color-setting__title">{{ 'ACCENT_COLOR' | translate }}</div>
+                <div class="yc-color-setting__hint">{{ 'ACCENT_COLOR_HINT' | translate }}</div>
               </div>
               <div class="yc-color-setting__action">
                 <span>{{ colors.accent }}</span>
@@ -910,8 +910,8 @@
 
             <div class="yc-color-setting">
               <div>
-                <div class="yc-color-setting__title">Fond Général</div>
-                <div class="yc-color-setting__hint">Couleur de fond de la page</div>
+                <div class="yc-color-setting__title">{{ 'GENERAL_BACKGROUND' | translate }}</div>
+                <div class="yc-color-setting__hint">{{ 'GENERAL_BACKGROUND_HINT' | translate }}</div>
               </div>
               <div class="yc-color-setting__action">
                 <span>{{ colors.background }}</span>
@@ -921,8 +921,8 @@
 
             <div class="yc-color-setting">
               <div>
-                <div class="yc-color-setting__title">Texte Principal</div>
-                <div class="yc-color-setting__hint">Couleur des paragraphes</div>
+                <div class="yc-color-setting__title">{{ 'PRIMARY_TEXT_COLOR' | translate }}</div>
+                <div class="yc-color-setting__hint">{{ 'PRIMARY_TEXT_HINT' | translate }}</div>
               </div>
               <div class="yc-color-setting__action">
                 <span>{{ colors.text }}</span>
