@@ -1,16 +1,16 @@
 <div class="template-modal" *ngIf="visible" role="dialog" aria-modal="true" aria-labelledby="mealTemplateTitle">
-  <button class="template-modal__backdrop" type="button" aria-label="Close" (click)="close()"></button>
+  <button class="template-modal__backdrop" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="close()"></button>
 
   <section class="template-modal__panel">
     <header class="template-modal__header">
       <div class="template-modal__heading">
         <span class="template-modal__heading-icon"><i-feather name="book-open"></i-feather></span>
         <div>
-          <h2 id="mealTemplateTitle">Add Meal From Template</h2>
-          <p>Choose a template to add to your plan</p>
+          <h2 id="mealTemplateTitle">{{ 'ADD_MEAL_FROM_TEMPLATE' | translate }}</h2>
+          <p>{{ 'CHOOSE_TEMPLATE_TO_ADD' | translate }}</p>
         </div>
       </div>
-      <button class="template-modal__close" type="button" aria-label="Close" (click)="close()">
+      <button class="template-modal__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="close()">
         <i-feather name="x"></i-feather>
       </button>
     </header>
@@ -20,7 +20,7 @@
         <i-feather name="search"></i-feather>
         <input
           type="search"
-          placeholder="Search by meal name..."
+          [placeholder]="'SEARCH_BY_MEAL_NAME' | translate"
           [(ngModel)]="search"
           (input)="onSearchInput()"
         />
@@ -35,9 +35,9 @@
         >
           <span class="template-kind__icon"><i-feather name="coffee"></i-feather></span>
           <span class="template-kind__copy">
-            <strong>Meal Recipes</strong>
-            <small>Ready-to-eat recipes with ingredients and portions</small>
-            <em>With Images</em>
+            <strong>{{ 'MEAL_RECIPES' | translate }}</strong>
+            <small>{{ 'READY_RECIPES_DESCRIPTION' | translate }}</small>
+            <em>{{ 'WITH_IMAGES' | translate }}</em>
           </span>
         </button>
 
@@ -49,9 +49,9 @@
         >
           <span class="template-kind__icon"><i-feather name="clipboard"></i-feather></span>
           <span class="template-kind__copy">
-            <strong>Type Meals (With Foods)</strong>
-            <small>Simple meals made of foods without specific preparation</small>
-            <em>No Images</em>
+            <strong>{{ 'TYPE_MEALS_WITH_FOODS' | translate }}</strong>
+            <small>{{ 'SIMPLE_MEALS_DESCRIPTION' | translate }}</small>
+            <em>{{ 'NO_IMAGES' | translate }}</em>
           </span>
         </button>
       </div>
@@ -59,13 +59,13 @@
       <section class="template-results">
         <header class="template-results__header">
           <div>
-            <h3>{{ activeKind === 'recipe' ? 'Meal Recipes' : 'Type Meals (With Foods)' }}</h3>
-            <p>{{ activeKind === 'recipe' ? 'Choose a recipe to add' : 'Choose a meal to add' }}</p>
+            <h3>{{ (activeKind === 'recipe' ? 'MEAL_RECIPES' : 'TYPE_MEALS_WITH_FOODS') | translate }}</h3>
+            <p>{{ (activeKind === 'recipe' ? 'CHOOSE_RECIPE_TO_ADD' : 'CHOOSE_MEAL_TO_ADD') | translate }}</p>
           </div>
         </header>
 
-        <div class="template-state" *ngIf="activeLoading">Loading meals...</div>
-        <div class="template-state" *ngIf="!activeLoading && !activeMeals.length">No meal found.</div>
+        <div class="template-state" *ngIf="activeLoading">{{ 'LOADING_MEALS' | translate }}</div>
+        <div class="template-state" *ngIf="!activeLoading && !activeMeals.length">{{ 'NO_MEAL_FOUND' | translate }}</div>
 
         <div class="template-list" *ngIf="!activeLoading && activeMeals.length">
           <article class="template-row" *ngFor="let meal of activeMeals; trackBy: trackByMeal">
@@ -83,49 +83,49 @@
 
               <div class="template-row__macros">
                 <div><strong>{{ macros(meal).calories }}</strong><span>Kcal</span></div>
-                <div><strong>{{ macros(meal).protein }} g</strong><span>Protein</span></div>
-                <div><strong>{{ macros(meal).carbs }} g</strong><span>Carbs</span></div>
-                <div><strong>{{ macros(meal).fat }} g</strong><span>Fat</span></div>
+                <div><strong>{{ macros(meal).protein }} g</strong><span>{{ 'PROTEIN' | translate }}</span></div>
+                <div><strong>{{ macros(meal).carbs }} g</strong><span>{{ 'CARBS' | translate }}</span></div>
+                <div><strong>{{ macros(meal).fat }} g</strong><span>{{ 'FAT' | translate }}</span></div>
               </div>
 
               <div class="template-row__actions">
                 <button type="button" class="template-add" (click)="beginAdd(meal)">
                   <i-feather name="plus"></i-feather>
-                  Add
+                  {{ 'ADD' | translate }}
                 </button>
                 <button type="button" class="template-preview" (click)="togglePreview(meal)">
                   <i-feather name="eye"></i-feather>
-                  {{ previewMealId === mealKey(meal) ? 'Hide preview' : 'Preview' }}
+                  {{ (previewMealId === mealKey(meal) ? 'HIDE_PREVIEW' : 'PREVIEW') | translate }}
                 </button>
               </div>
             </div>
 
             <div class="template-serving" *ngIf="servingMealId === mealKey(meal)">
               <div>
-                <strong>How many servings?</strong>
-                <span>Adjust the number of servings for this meal</span>
+                <strong>{{ 'HOW_MANY_SERVINGS' | translate }}</strong>
+                <span>{{ 'ADJUST_SERVINGS' | translate }}</span>
               </div>
               <div class="template-serving__controls">
-                <button type="button" aria-label="Decrease servings" (click)="decrementServings()">−</button>
+                <button type="button" [attr.aria-label]="'DECREASE_SERVINGS' | translate" (click)="decrementServings()">−</button>
                 <label>
                   <input type="number" min="1" max="99" [(ngModel)]="servingCount" (change)="normalizeServings()" />
-                  <small>{{ servingCount === 1 ? 'serving' : 'servings' }}</small>
+                  <small>{{ (servingCount === 1 ? 'SERVING_LOWERCASE' : 'SERVINGS_LOWERCASE') | translate }}</small>
                 </label>
-                <button type="button" aria-label="Increase servings" (click)="incrementServings()">+</button>
-                <button type="button" class="template-serving__cancel" (click)="cancelAdd()">Cancel</button>
-                <button type="button" class="template-serving__confirm" (click)="addToPlan(meal)">Add to Plan</button>
+                <button type="button" [attr.aria-label]="'INCREASE_SERVINGS' | translate" (click)="incrementServings()">+</button>
+                <button type="button" class="template-serving__cancel" (click)="cancelAdd()">{{ 'CANCEL' | translate }}</button>
+                <button type="button" class="template-serving__confirm" (click)="addToPlan(meal)">{{ 'ADD_TO_PLAN' | translate }}</button>
               </div>
             </div>
 
             <div class="template-preview-panel" *ngIf="previewMealId === mealKey(meal)">
               <div>
-                <strong>Ingredients</strong>
+                <strong>{{ 'INGREDIENTS' | translate }}</strong>
                 <span *ngFor="let food of meal.foods || []">
                   {{ food.name || food.foodRef?.name }} — {{ food.quantity }} {{ food.unit }}
                 </span>
               </div>
               <div *ngIf="meal.directions?.length">
-                <strong>Directions</strong>
+                <strong>{{ 'DIRECTIONS' | translate }}</strong>
                 <span *ngFor="let direction of meal.directions; let i = index">{{ i + 1 }}. {{ direction }}</span>
               </div>
             </div>
@@ -133,7 +133,7 @@
         </div>
 
         <button type="button" class="template-more" *ngIf="canShowMore" (click)="showMore()">
-          View more {{ activeKind === 'recipe' ? 'recipes' : 'meals' }}
+          {{ (activeKind === 'recipe' ? 'VIEW_MORE_RECIPES' : 'VIEW_MORE_MEALS') | translate }}
           <i-feather name="chevron-down"></i-feather>
         </button>
       </section>

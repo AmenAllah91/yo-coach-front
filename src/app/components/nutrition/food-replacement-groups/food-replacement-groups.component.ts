@@ -9,6 +9,7 @@ import {
   FoodReplacementGroupsService
 } from "../../../service/food-replacement-groups.service";
 import { Subscription } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 
 type ViewMode = 'LIST' | 'EDITOR';
@@ -17,7 +18,7 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 @Component({
   selector: 'app-food-replacement-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './food-replacement-groups.component.html',
   styleUrls: ['./food-replacement-groups.component.scss'],
 })
@@ -68,6 +69,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     private replacementGroupsService: FoodReplacementGroupsService,
     private nutritionService: NutritionService,
     private hostElement: ElementRef<HTMLElement>,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -397,7 +399,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   }
 
   getFoodName(food: any): string {
-    return food.name || 'Unnamed food';
+    return food.name || this.translate.instant('UNNAMED_FOOD');
   }
 
   getCalories(food: any): number {
@@ -429,7 +431,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   }
 
   foodMacroLabel(food: any): string {
-    return `${this.getCalories(food)} kcal • ${this.getProtein(food)}g P • ${this.getFat(food)}g F • ${this.getCarbs(food)}g C`;
+    return `${this.getCalories(food)} kcal • ${this.getProtein(food)}g ${this.translate.instant('PROTEIN_SHORT')} • ${this.getFat(food)}g ${this.translate.instant('FAT_SHORT')} • ${this.getCarbs(food)}g ${this.translate.instant('CARBS_SHORT')}`;
   }
 
   getFoodImage(food: any): string {

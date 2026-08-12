@@ -3,9 +3,9 @@
     <!-- Header -->
     <div class="assign-modal-header">
       <div>
-        <h3 class="assign-modal-title">Assign Workout Program</h3>
+        <h3 class="assign-modal-title">{{ 'ASSIGN_WORKOUT_PROGRAM' | translate }}</h3>
         <p class="assign-modal-subtitle">
-          Choose an existing workout program to assign to {{ fullName }}
+          {{ 'CHOOSE_WORKOUT_PROGRAM_FOR_CLIENT' | translate:{ name: fullName } }}
         </p>
       </div>
 
@@ -30,7 +30,7 @@
         <i class="fas fa-search"></i>
         <input
           type="text"
-          placeholder="Search workout programs..."
+          [placeholder]="'SEARCH_WORKOUT_PROGRAMS' | translate"
           [(ngModel)]="searchTerm"
         />
       </div>
@@ -39,7 +39,7 @@
     <!-- Body -->
     <div class="select-program-body">
       <div *ngIf="loadingPrograms" class="select-program-empty">
-        Loading programs...
+        {{ 'LOADING_PROGRAMS' | translate }}
       </div>
 
       <ng-container *ngIf="!loadingPrograms">
@@ -78,18 +78,18 @@
                 <div class="select-program-meta" *ngIf="!program.isFile">
                   <span>
                     <i class="far fa-clock"></i>
-                    {{ program.totalWeeks }} weeks
+                    {{ 'WEEKS_COUNT' | translate:{ count: program.totalWeeks } }}
                   </span>
                   <span>
                     <i class="fas fa-dumbbell"></i>
-                    {{ program.daysPerWeek }} days/week
+                    {{ 'DAYS_PER_WEEK_COUNT' | translate:{ count: program.daysPerWeek } }}
                   </span>
                 </div>
 
                 <div class="select-program-meta" *ngIf="program.isFile">
                   <span>
                     <i class="far fa-file"></i>
-                    {{ program.originalFileName || program.fileName || 'Imported file' }}
+                    {{ program.originalFileName || program.fileName || ('IMPORTED_FILE' | translate) }}
                   </span>
                   <span *ngIf="program.fileSizeBytes">
                     {{ program.fileSizeBytes / 1024 / 1024 | number:'1.0-1' }} MB
@@ -101,23 +101,23 @@
         </ng-container>
 
         <ng-template #noPrograms>
-          <div class="select-program-empty">No workout programs found</div>
+          <div class="select-program-empty">{{ 'NO_WORKOUT_PROGRAMS_FOUND' | translate }}</div>
         </ng-template>
 
         <!-- Schedule -->
         <div *ngIf="selectedProgram" class="select-program-schedule">
-          <h4>Program Schedule</h4>
+          <h4>{{ 'PROGRAM_SCHEDULE' | translate }}</h4>
 
           <div class="schedule-grid">
             <div class="schedule-field">
-              <label>Start Date *</label>
+              <label>{{ 'START_DATE' | translate }} *</label>
               <div class="schedule-input">
                 <input type="date" [(ngModel)]="startDate" (ngModelChange)="onStartDateChange()" />
               </div>
             </div>
 
             <div class="schedule-field">
-              <label>End Date <span *ngIf="selectedProgram?.isFile">*</span></label>
+              <label>{{ 'END_DATE' | translate }} <span *ngIf="selectedProgram?.isFile">*</span></label>
               <div class="schedule-input" [class.schedule-input--readonly]="!selectedProgram?.isFile">
                 <input
                   type="date"
@@ -133,7 +133,7 @@
                 />
               </div>
               <div class="schedule-help" *ngIf="calculatedEndDate && !selectedProgram?.isFile">
-                Automatically calculated based on program duration
+                {{ 'AUTO_CALCULATED_FROM_PROGRAM_DURATION' | translate }}
               </div>
             </div>
           </div>
@@ -145,20 +145,20 @@
             <div class="selected-client-info">
               <div class="selected-client-name">
                 {{ clientDisplayName }}
-                <span class="conflict-badge" *ngIf="conflict">Conflict</span>
+                <span class="conflict-badge" *ngIf="conflict">{{ 'CONFLICT' | translate }}</span>
               </div>
               <div class="selected-client-email">{{ client?.email }}</div>
             </div>
           </div>
 
           <div class="conflict-checking" *ngIf="checkingConflicts">
-            Checking schedule conflicts...
+            {{ 'CHECKING_SCHEDULE_CONFLICTS' | translate }}
           </div>
 
           <div class="assign-conflicts" *ngIf="conflict">
             <div class="conflict-heading">
               <span class="conflict-heading-icon">!</span>
-              <span>Schedule Conflict Detected</span>
+              <span>{{ 'SCHEDULE_CONFLICT_DETECTED' | translate }}</span>
             </div>
 
             <div class="conflict-card">
@@ -176,8 +176,8 @@
                   (change)="setConflictResolution('START_AFTER')"
                 />
                 <span>
-                  <strong>Start after current program</strong>
-                  <small>Begin the new program after the existing program ends.</small>
+                  <strong>{{ 'START_AFTER_CURRENT_PROGRAM' | translate }}</strong>
+                  <small>{{ 'START_AFTER_EXISTING_PROGRAM_HINT' | translate }}</small>
                 </span>
               </label>
 
@@ -189,8 +189,8 @@
                   (change)="setConflictResolution('REPLACE')"
                 />
                 <span>
-                  <strong>Replace current program</strong>
-                  <small>Stop the existing program before the new start date.</small>
+                  <strong>{{ 'REPLACE_CURRENT_PROGRAM' | translate }}</strong>
+                  <small>{{ 'STOP_EXISTING_BEFORE_NEW_START_HINT' | translate }}</small>
                 </span>
               </label>
 
@@ -202,8 +202,8 @@
                   (change)="setConflictResolution('KEEP_BOTH')"
                 />
                 <span>
-                  <strong>Keep both anyway</strong>
-                  <small>Assign on the overlapping dates. Both programs run at the same time.</small>
+                  <strong>{{ 'KEEP_BOTH_ANYWAY' | translate }}</strong>
+                  <small>{{ 'ASSIGN_OVERLAPPING_PROGRAMS_HINT' | translate }}</small>
                 </span>
               </label>
             </div>
@@ -215,7 +215,7 @@
     <!-- Footer -->
     <div class="select-program-footer">
       <button type="button" class="btn-secondary" (click)="back()">
-        Back
+        {{ 'BACK' | translate }}
       </button>
 
       <button

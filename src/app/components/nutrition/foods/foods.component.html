@@ -1,12 +1,12 @@
 <div class="page-container">
   <div class="page-header">
     <div class="header-content">
-      <h1>Foods</h1>
-      <p>Manage your food database</p>
+      <h1>{{ 'FOODS' | translate }}</h1>
+      <p>{{ 'MANAGE_FOOD_DATABASE' | translate }}</p>
     </div>
     <button class="primary-btn" (click)="openAddModal()">
       <i-feather name="plus"></i-feather>
-      Add Food
+      {{ 'ADD_FOOD' | translate }}
     </button>
   </div>
 
@@ -16,7 +16,7 @@
         <i-feather name="search" class="search-icon"></i-feather>
         <input
           type="text"
-          placeholder="Search foods"
+          [placeholder]="'SEARCH_FOODS' | translate"
           [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
@@ -24,10 +24,10 @@
 
     <div class="foods-table">
       <div class="table-header">
-        <div class="col-food">FOOD</div>
-        <div class="col-macros">MACROS (per 100g)</div>
-        <div class="col-calories">CALORIES</div>
-        <div class="col-type">TYPE</div>
+        <div class="col-food">{{ 'FOOD' | translate }}</div>
+        <div class="col-macros">{{ 'MACROS_PER_100G' | translate }}</div>
+        <div class="col-calories">{{ 'CALORIES' | translate }}</div>
+        <div class="col-type">{{ 'TYPE' | translate }}</div>
         <div class="col-actions"></div>
       </div>
 
@@ -59,31 +59,31 @@
 
           <div class="col-type">
             <span class="type-badge" [class]="food.isGeneral ? 'general' : 'custom'">
-              {{ food.isGeneral ? 'General' : 'Custom' }}
+              {{ (food.isGeneral ? 'GENERAL' : 'CUSTOM') | translate }}
             </span>
           </div>
 
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === food.id">
               <button class="action-btn" (click)="toggleDropdown(food.id)">
-                <span>Actions</span>
+                <span>{{ 'ACTIONS' | translate }}</span>
                 <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu" *ngIf="openDropdownId === food.id">
                 <ng-container *ngIf="!food.isGeneral">
                   <button class="dropdown-item" (click)="editFood(food)">
                     <i-feather name="edit"></i-feather>
-                    Edit Food
+                    {{ 'EDIT_FOOD' | translate }}
                   </button>
                   <button class="dropdown-item delete" (click)="deleteFood(food)">
                     <i-feather name="trash-2"></i-feather>
-                    Delete Food
+                    {{ 'DELETE_FOOD' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngIf="food.isGeneral">
                   <span class="dropdown-item disabled">
                     <i-feather name="lock"></i-feather>
-                    General Food
+                    {{ 'GENERAL_FOOD' | translate }}
                   </span>
                 </ng-container>
               </div>
@@ -92,16 +92,16 @@
         </div>
       </div>
 
-      <app-scroll-loader [isLoading]="isLoading" loadingText="Loading foods..."></app-scroll-loader>
+      <app-scroll-loader [isLoading]="isLoading" [loadingText]="'LOADING_FOODS' | translate"></app-scroll-loader>
 
       <div class="pagination" *ngIf="totalPages > 1">
-        <button (click)="previousPage()" [disabled]="currentPage === 0">Previous</button>
-        <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-        <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next</button>
+        <button (click)="previousPage()" [disabled]="currentPage === 0">{{ 'PREVIOUS' | translate }}</button>
+        <span>{{ 'PAGE_OF' | translate:{ page: currentPage + 1, total: totalPages } }}</span>
+        <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">{{ 'NEXT' | translate }}</button>
       </div>
 
       <div class="no-foods" *ngIf="filteredFoods.length === 0 && !isLoading">
-        <p>No foods found.</p>
+        <p>{{ 'NO_FOODS_FOUND' | translate }}</p>
       </div>
     </div>
   </div>
@@ -110,7 +110,7 @@
   <div class="modal-overlay" *ngIf="showAddModal" (click)="closeAddModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ editingFood ? 'Edit' : 'Add' }} Food</h2>
+        <h2>{{ (editingFood ? 'EDIT_FOOD' : 'ADD_FOOD') | translate }}</h2>
         <button class="close-btn" (click)="closeAddModal()">
           <i-feather name="x"></i-feather>
         </button>
@@ -119,54 +119,54 @@
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group full-width">
-            <label>Name:</label>
-            <input type="text" [(ngModel)]="foodName" placeholder="Enter food name">
+            <label>{{ 'NAME' | translate }}:</label>
+            <input type="text" [(ngModel)]="foodName" [placeholder]="'ENTER_FOOD_NAME' | translate">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Calories (kcal):</label>
-            <input type="number" [(ngModel)]="calories" placeholder="Enter calories">
+            <label>{{ 'CALORIES_KCAL' | translate }}:</label>
+            <input type="number" [(ngModel)]="calories" [placeholder]="'ENTER_CALORIES' | translate">
           </div>
           <div class="form-group">
-            <label>Protein (g):</label>
-            <input type="number" [(ngModel)]="protein" placeholder="Enter protein">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Carbs (g):</label>
-            <input type="number" [(ngModel)]="carbs" placeholder="Enter carbs">
-          </div>
-          <div class="form-group">
-            <label>Fat (g):</label>
-            <input type="number" [(ngModel)]="fat" placeholder="Enter fat">
+            <label>{{ 'PROTEIN_GRAMS' | translate }}:</label>
+            <input type="number" [(ngModel)]="protein" [placeholder]="'ENTER_PROTEIN' | translate">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Fiber (g):</label>
-            <input type="number" [(ngModel)]="fiber" placeholder="Enter fiber">
+            <label>{{ 'CARBS_GRAMS' | translate }}:</label>
+            <input type="number" [(ngModel)]="carbs" [placeholder]="'ENTER_CARBS' | translate">
           </div>
           <div class="form-group">
-            <label>Sugar (g):</label>
-            <input type="number" [(ngModel)]="sugar" placeholder="Enter sugar">
+            <label>{{ 'FAT_GRAMS' | translate }}:</label>
+            <input type="number" [(ngModel)]="fat" [placeholder]="'ENTER_FAT' | translate">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Serving Size:</label>
-            <input type="number" [(ngModel)]="servingSize" placeholder="Enter serving size">
+            <label>{{ 'FIBER_GRAMS' | translate }}:</label>
+            <input type="number" [(ngModel)]="fiber" [placeholder]="'ENTER_FIBER' | translate">
           </div>
           <div class="form-group">
-            <label>Serving Description:</label>
+            <label>{{ 'SUGAR_GRAMS' | translate }}:</label>
+            <input type="number" [(ngModel)]="sugar" [placeholder]="'ENTER_SUGAR' | translate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>{{ 'SERVING_SIZE' | translate }}:</label>
+            <input type="number" [(ngModel)]="servingSize" [placeholder]="'ENTER_SERVING_SIZE' | translate">
+          </div>
+          <div class="form-group">
+            <label>{{ 'SERVING_DESCRIPTION' | translate }}:</label>
             <select [(ngModel)]="servingDescription">
-              <option value="Grams">Grams</option>
-              <option value="Qty">Qty</option>
+              <option value="Grams">{{ 'GRAMS' | translate }}</option>
+              <option value="Qty">{{ 'QUANTITY_ABBREVIATION' | translate }}</option>
               <option value="ml">ml</option>
             </select>
           </div>
@@ -174,8 +174,8 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeAddModal()">Cancel</button>
-        <button class="btn-primary" (click)="saveFood()">{{ editingFood ? 'Update' : 'Add' }}</button>
+        <button class="btn-secondary" (click)="closeAddModal()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn-primary" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD') | translate }}</button>
       </div>
     </div>
   </div>
@@ -184,17 +184,17 @@
   <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
     <div class="modal-content small" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Delete Food</h2>
+        <h2>{{ 'DELETE_FOOD' | translate }}</h2>
         <button class="close-btn" (click)="closeDeleteModal()">
           <i-feather name="x"></i-feather>
         </button>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to delete "{{ foodToDelete?.name }}"?</p>
+        <p>{{ 'DELETE_FOOD_QUESTION' | translate:{ name: foodToDelete?.name } }}</p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeDeleteModal()">Cancel</button>
-        <button class="btn-danger" (click)="confirmDelete()">Delete</button>
+        <button class="btn-secondary" (click)="closeDeleteModal()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn-danger" (click)="confirmDelete()">{{ 'DELETE' | translate }}</button>
       </div>
     </div>
   </div>

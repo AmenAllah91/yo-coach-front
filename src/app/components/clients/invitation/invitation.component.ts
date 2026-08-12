@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InvitationService } from "../../../service/invitation.service";
+import { TranslateModule } from '@ngx-translate/core';
+import { LanguageService } from 'app/service/language.service';
 
 interface InvitationView {
   coachName: string;
@@ -12,7 +14,7 @@ interface InvitationView {
 @Component({
   selector: 'app-invitation',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslateModule],
   templateUrl: './invitation.component.html',
   styleUrls: ['./invitation.component.scss'],
 })
@@ -26,8 +28,11 @@ export class InvitationComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private invitationService: InvitationService
-  ) {}
+    private invitationService: InvitationService,
+    private languageService: LanguageService
+  ) {
+    this.languageService.setLanguage(this.languageService.getCurrentLanguage());
+  }
 
   ngOnInit(): void {
     this.token = this.route.snapshot.paramMap.get('token')!;

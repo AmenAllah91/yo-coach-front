@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { MealsService } from 'app/service/meals.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 export interface MealTemplateSelection {
   meal: any;
@@ -22,7 +23,7 @@ type TemplateKind = 'recipe' | 'foods';
 @Component({
   selector: 'app-meal-template-picker',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './meal-template-picker.component.html',
   styleUrls: ['./meal-template-picker.component.scss'],
 })
@@ -48,7 +49,7 @@ export class MealTemplatePickerComponent implements OnChanges {
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private mealsService: MealsService) {}
+  constructor(private mealsService: MealsService, private translate: TranslateService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['visible']?.currentValue === true) {
@@ -141,8 +142,10 @@ export class MealTemplatePickerComponent implements OnChanges {
   }
 
   mealTypeLabel(meal: any): string {
+    const type = String(meal?.mealType || '').toUpperCase();
+    if (type && this.translate.instant(type) !== type) return this.translate.instant(type);
     const value = String(meal?.mealType || '').replace(/_/g, ' ').toLowerCase();
-    if (!value) return 'Meal';
+    if (!value) return this.translate.instant('MEAL');
     return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
@@ -150,7 +153,7 @@ export class MealTemplatePickerComponent implements OnChanges {
     const names = (meal?.foods || [])
       .map((food: any) => food?.name || food?.foodRef?.name)
       .filter(Boolean);
-    return names.length ? names.slice(0, 5).join(', ') : 'No foods added';
+    return names.length ? names.slice(0, 5).join(', ') : this.translate.instant('NO_FOODS_ADDED');
   }
 
   macros(meal: any): { calories: number; protein: number; carbs: number; fat: number } {

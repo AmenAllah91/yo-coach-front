@@ -1,25 +1,25 @@
 <div class="tab-section-header">
-  <h2 class="section-title">Workout Programs</h2>
+  <h2 class="section-title">{{ 'WORKOUT_PROGRAMS' | translate }}</h2>
   <button class="btn-assign-black" type="button" (click)="openAssignWorkout()">
     <i class="fas fa-plus"></i>
-    Assign New Program
+    {{ 'ASSIGN_NEW_PROGRAM' | translate }}
   </button>
 </div>
 
 <div class="workout-filter-tabs" *ngIf="workoutFileEnabled">
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
-    All
+    {{ 'ALL' | translate }}
   </button>
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'APP'" (click)="setActiveTab('APP')">
-    App Programs
+    {{ 'APP_PROGRAMS' | translate }}
   </button>
   <button *ngIf="workoutFileEnabled" class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'FILES'" (click)="setActiveTab('FILES')">
-    Uploaded Files
+    {{ 'UPLOADED_FILES' | translate }}
   </button>
 </div>
 
 <div class="program-section" *ngIf="hasActivePrograms()">
-  <h3 class="program-section-title">CURRENT ACTIVE PROGRAM</h3>
+  <h3 class="program-section-title">{{ 'CURRENT_ACTIVE_PROGRAM' | translate }}</h3>
   <ng-container *ngFor="let program of currentActivePrograms">
     <ng-container *ngTemplateOutlet="programCardTemplate; context: { $implicit: program }"></ng-container>
   </ng-container>
@@ -27,33 +27,33 @@
 
 <div class="program-section">
   <div class="all-programs-header">
-    <h3 class="program-section-title">ALL PROGRAMS</h3>
+    <h3 class="program-section-title">{{ 'ALL_PROGRAMS' | translate }}</h3>
 
     <div class="all-programs-controls">
-      <div class="program-status-filters" aria-label="Program status filters">
+      <div class="program-status-filters" [attr.aria-label]="'PROGRAM_STATUS_FILTERS' | translate">
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'ALL'" (click)="setAllProgramsFilter('ALL')">
-          All
+          {{ 'ALL' | translate }}
         </button>
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'UPCOMING'" (click)="setAllProgramsFilter('UPCOMING')">
-          Upcoming
+          {{ 'UPCOMING' | translate }}
         </button>
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'COMPLETED'" (click)="setAllProgramsFilter('COMPLETED')">
-          Completed
+          {{ 'COMPLETED' | translate }}
         </button>
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allProgramsFilter === 'OVERLAP'" (click)="setAllProgramsFilter('OVERLAP')">
-          Overlap
+          {{ 'OVERLAP' | translate }}
         </button>
       </div>
 
       <label class="program-sort-control">
         <i class="fas fa-sort"></i>
-        <span>Sort:</span>
+        <span>{{ 'SORT' | translate }}:</span>
         <select [ngModel]="allProgramsSort" (ngModelChange)="setAllProgramsSort($event)">
-          <option value="RECOMMENDED">Recommended</option>
-          <option value="START_ASC">Start date ↑</option>
-          <option value="START_DESC">Start date ↓</option>
-          <option value="END_ASC">End date ↑</option>
-          <option value="END_DESC">End date ↓</option>
+          <option value="RECOMMENDED">{{ 'RECOMMENDED' | translate }}</option>
+          <option value="START_ASC">{{ 'START_DATE_ASC' | translate }}</option>
+          <option value="START_DESC">{{ 'START_DATE_DESC' | translate }}</option>
+          <option value="END_ASC">{{ 'END_DATE_ASC' | translate }}</option>
+          <option value="END_DESC">{{ 'END_DATE_DESC' | translate }}</option>
         </select>
       </label>
     </div>
@@ -102,11 +102,11 @@
                 'status-pill--completed': program.status === 'completed'
               }"
             >
-              {{ program.status | titlecase }}
+              {{ ('PROGRAM_STATUS_' + (program.status | uppercase)) | translate }}
             </span>
-            <span class="program-type-pill program-type-pill--app">App Program</span>
+            <span class="program-type-pill program-type-pill--app">{{ 'APP_PROGRAM' | translate }}</span>
           </ng-container>
-          <span *ngIf="isProgramOverlap(program)" class="status-pill status-pill--overlap">Overlap</span>
+          <span *ngIf="isProgramOverlap(program)" class="status-pill status-pill--overlap">{{ 'OVERLAP' | translate }}</span>
 
           <ng-template #fileBadgeBlock>
             <span
@@ -131,18 +131,18 @@
           <ng-container *ngIf="!isFileWorkout(program)">
             <span *ngIf="getProgramTotalWeeks(program) > 0">
               <i class="far fa-clock me-1"></i>
-              {{ getProgramTotalWeeks(program) }} weeks
+              {{ 'WEEKS_COUNT' | translate:{ count: getProgramTotalWeeks(program) } }}
             </span>
             <span *ngIf="getCurrentWeekNumber(program) > 0" class="program-meta-highlight">
               <i class="far fa-dot-circle me-1"></i>
-              Week {{ getCurrentWeekNumber(program) }}
+              {{ 'WEEK' | translate }} {{ getCurrentWeekNumber(program) }}
             </span>
           </ng-container>
 
           <ng-container *ngIf="isFileWorkout(program)">
             <span *ngIf="program.fileUploadedAt">
               <i class="far fa-calendar-alt me-1"></i>
-              Uploaded {{ program.fileUploadedAt | date : "MMM dd, y" }}
+              {{ 'UPLOADED' | translate }} {{ program.fileUploadedAt | date : "MMM dd, y" }}
             </span>
             <span *ngIf="program.fileSizeBytes">
               <i class="far fa-file-alt me-1"></i>
@@ -158,38 +158,38 @@
       <ng-container *ngIf="isFileWorkout(program); else appActions">
         <button class="file-action-btn" type="button" (click)="previewFile(program)">
           <i class="far fa-eye"></i>
-          Preview
+          {{ 'PREVIEW' | translate }}
         </button>
         <button class="file-action-btn" type="button" (click)="downloadFile(program)">
           <i class="fas fa-download"></i>
-          Download
+          {{ 'DOWNLOAD' | translate }}
         </button>
         <div class="file-actions-menu-wrap">
           <button class="file-action-btn" type="button" (click)="toggleActions(program, $event)">
-            Actions
+            {{ 'ACTIONS' | translate }}
             <i class="fas" [ngClass]="isActionsOpen(program) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
           </button>
 
           <div class="file-actions-menu" *ngIf="isActionsOpen(program)">
             <button type="button" (click)="previewFile(program)">
               <i class="far fa-eye"></i>
-              Preview file
+              {{ 'PREVIEW_FILE' | translate }}
             </button>
             <button type="button" (click)="downloadFile(program)">
               <i class="fas fa-download"></i>
-              Download file
+              {{ 'DOWNLOAD_FILE' | translate }}
             </button>
             <button type="button" (click)="replaceFile(program)">
               <i class="fas fa-sync-alt"></i>
-              Replace file
+              {{ 'REPLACE_FILE' | translate }}
             </button>
             <button type="button" (click)="changeDates(program)">
               <i class="far fa-calendar-alt"></i>
-              Change dates
+              {{ 'CHANGE_DATES' | translate }}
             </button>
             <button type="button" class="danger" (click)="removeProgram(program)">
               <i class="far fa-trash-alt"></i>
-              Remove program
+              {{ 'REMOVE_PROGRAM' | translate }}
             </button>
           </div>
         </div>
@@ -198,22 +198,22 @@
       <ng-template #appActions>
         <div class="file-actions-menu-wrap">
           <button class="file-action-btn" type="button" (click)="toggleActions(program, $event)">
-            Actions
+            {{ 'ACTIONS' | translate }}
             <i class="fas" [ngClass]="isActionsOpen(program) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
           </button>
 
           <div class="file-actions-menu" *ngIf="isActionsOpen(program)">
             <button type="button" (click)="editWorkout(program)">
               <i class="far fa-edit"></i>
-              Edit program
+              {{ 'EDIT_PROGRAM' | translate }}
             </button>
             <button type="button" (click)="changeDates(program)">
               <i class="far fa-calendar-alt"></i>
-              Change dates
+              {{ 'CHANGE_DATES' | translate }}
             </button>
             <button type="button" class="danger" (click)="removeProgram(program)">
               <i class="far fa-trash-alt"></i>
-              Remove program
+              {{ 'REMOVE_PROGRAM' | translate }}
             </button>
           </div>
         </div>
@@ -260,47 +260,47 @@
   <div class="upload-file-modal import-style-modal" (click)="$event.stopPropagation()">
     <div class="upload-file-modal-header import-style-head">
       <div>
-        <h3>Importer un programme</h3>
-        <p>Importez un fichier PDF ou Excel, puis enregistrez-le dans votre bibliothèque ou envoyez-le à vos clients.</p>
+        <h3>{{ 'IMPORT_PROGRAM' | translate }}</h3>
+        <p>{{ 'IMPORT_PROGRAM_DESCRIPTION' | translate }}</p>
       </div>
-      <button type="button" class="upload-file-close" (click)="closeUploadFileModal()">&times;</button>
+      <button type="button" class="upload-file-close" (click)="closeUploadFileModal()" [attr.aria-label]="'CLOSE' | translate">&times;</button>
     </div>
 
     <label class="upload-zone">
       <input type="file" accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden (change)="onUploadFileSelected($event)" />
       <div class="upload-zone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-      <strong>{{ selectedUploadFile ? selectedUploadFile.name : 'Glissez votre fichier ici ou parcourez' }}</strong>
-      <span>PDF, XLS, XLSX · jusqu'à 25 MB</span>
+      <strong>{{ selectedUploadFile ? selectedUploadFile.name : ('DROP_OR_BROWSE_FILE' | translate) }}</strong>
+      <span>{{ 'WORKOUT_FILE_REQUIREMENTS' | translate }}</span>
     </label>
 
     <div class="upload-error" *ngIf="uploadError">{{ uploadError }}</div>
 
-    <label class="upload-field-label">Nom du programme <b>*</b></label>
-    <input class="upload-field" type="text" [(ngModel)]="uploadProgramName" placeholder="Ex: Programme Hypertrophie - Phase 1" />
+    <label class="upload-field-label">{{ 'PROGRAM_NAME' | translate }} <b>*</b></label>
+    <input class="upload-field" type="text" [(ngModel)]="uploadProgramName" [placeholder]="'IMPORT_PROGRAM_NAME_EXAMPLE' | translate" />
 
-    <label class="upload-field-label">Description <em>(optionnelle)</em></label>
-    <textarea class="upload-field" rows="3" [(ngModel)]="uploadProgramDescription" placeholder="Ex: Programme complet de 6 semaines..."></textarea>
+    <label class="upload-field-label">{{ 'DESCRIPTION' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></label>
+    <textarea class="upload-field" rows="3" [(ngModel)]="uploadProgramDescription" [placeholder]="'IMPORT_PROGRAM_DESCRIPTION_EXAMPLE' | translate"></textarea>
 
     <div class="upload-date-grid">
       <div>
-        <label class="upload-field-label">Start date</label>
+        <label class="upload-field-label">{{ 'START_DATE' | translate }}</label>
         <input class="upload-field" type="date" [(ngModel)]="uploadStartDate" />
       </div>
       <div>
-        <label class="upload-field-label">End date</label>
+        <label class="upload-field-label">{{ 'END_DATE' | translate }}</label>
         <input class="upload-field" type="date" [(ngModel)]="uploadEndDate" />
       </div>
     </div>
 
     <div class="upload-info">
       <i class="fas fa-info-circle"></i>
-      <span>Le programme sera créé et assigné automatiquement à ce client.</span>
+      <span>{{ 'PROGRAM_AUTO_ASSIGNED_CLIENT' | translate }}</span>
     </div>
 
     <div class="upload-file-modal-actions">
-      <button type="button" class="upload-cancel-btn" (click)="closeUploadFileModal()" [disabled]="uploadSaving">Annuler</button>
+      <button type="button" class="upload-cancel-btn" (click)="closeUploadFileModal()" [disabled]="uploadSaving">{{ 'CANCEL' | translate }}</button>
       <button type="button" class="upload-save-btn" (click)="createAndAssignUploadedFile()" [disabled]="!selectedUploadFile || !uploadProgramName.trim() || uploadSaving">
-        {{ uploadSaving ? 'Enregistrement...' : 'Enregistrer et assigner' }}
+        {{ (uploadSaving ? 'SAVING' : 'SAVE_AND_ASSIGN') | translate }}
       </button>
     </div>
   </div>
@@ -322,23 +322,23 @@
 <div class="change-dates-backdrop" *ngIf="showChangeDatesModal" (click)="closeChangeDatesModal()">
   <div class="change-dates-modal" (click)="$event.stopPropagation()">
     <div class="change-dates-header">
-      <h3>Change Dates</h3>
-      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" aria-label="Close modal">×</button>
+      <h3>{{ 'CHANGE_DATES' | translate }}</h3>
+      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" [attr.aria-label]="'CLOSE' | translate">×</button>
     </div>
 
     <div class="change-dates-body">
       <p class="change-dates-description">
-        Update the schedule for <strong>{{ dateTargetProgram?.name }}</strong>.
+        {{ 'UPDATE_PROGRAM_SCHEDULE' | translate:{ name: dateTargetProgram?.name } }}
       </p>
 
       <div class="change-dates-fields">
         <div class="change-date-field">
-          <label>Start Date</label>
+          <label>{{ 'START_DATE' | translate }}</label>
           <input type="date" [(ngModel)]="dateStart" />
         </div>
 
         <div class="change-date-field">
-          <label>End Date</label>
+          <label>{{ 'END_DATE' | translate }}</label>
           <input type="date" [(ngModel)]="dateEnd" />
         </div>
       </div>
@@ -348,11 +348,11 @@
 
     <div class="change-dates-footer">
       <button type="button" class="change-dates-cancel" (click)="closeChangeDatesModal()" [disabled]="dateSaving">
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
 
       <button type="button" class="change-dates-save" (click)="saveChangedDates()" [disabled]="!dateStart || !dateEnd || dateSaving">
-        {{ dateSaving ? 'Saving...' : 'Save Changes' }}
+        {{ (dateSaving ? 'SAVING' : 'SAVE_CHANGES') | translate }}
       </button>
     </div>
   </div>

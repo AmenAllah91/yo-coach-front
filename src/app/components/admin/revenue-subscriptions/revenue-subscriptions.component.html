@@ -3,15 +3,15 @@
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <div class="page__header">
     <div>
-      <h1 class="page__title">Abonnements &amp; Paiements</h1>
-      <p class="page__subtitle">Gérez les forfaits et les revenus de la plateforme</p>
+      <h1 class="page__title">{{ 'SUBSCRIPTIONS_PAYMENTS' | translate }}</h1>
+      <p class="page__subtitle">{{ 'SUBSCRIPTIONS_PAYMENTS_SUBTITLE' | translate }}</p>
     </div>
     <button class="btn btn--primary" (click)="onAddPlan()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-      Ajouter un plan
+      {{ 'ADD_PLAN' | translate }}
     </button>
   </div>
 
@@ -27,7 +27,7 @@
         </svg>
       </div>
       <div>
-        <p class="stat-card__label">Coachs abonnés</p>
+        <p class="stat-card__label">{{ 'SUBSCRIBED_COACHES' | translate }}</p>
         <p class="stat-card__value">{{ totalCoaches }}</p>
       </div>
     </div>
@@ -40,7 +40,7 @@
         </svg>
       </div>
       <div>
-        <p class="stat-card__label">Revenus mensuels</p>
+        <p class="stat-card__label">{{ 'MONTHLY_REVENUE' | translate }}</p>
         <p class="stat-card__value">{{ currentMonthlyRevenue | number }} €</p>
       </div>
     </div>
@@ -53,7 +53,7 @@
         </svg>
       </div>
       <div>
-        <p class="stat-card__label">Revenus totaux</p>
+        <p class="stat-card__label">{{ 'TOTAL_REVENUE' | translate }}</p>
         <p class="stat-card__value">{{ totalRevenue | number }} €</p>
       </div>
     </div>
@@ -65,7 +65,7 @@
         </svg>
       </div>
       <div>
-        <p class="stat-card__label">Actifs / Expirés</p>
+        <p class="stat-card__label">{{ 'ACTIVE_EXPIRED' | translate }}</p>
         <p class="stat-card__value">{{ activeSubs }} / {{ expiredSubs }}</p>
       </div>
     </div>
@@ -78,11 +78,11 @@
   <div class="chart-outer-head">
     <div class="chart-outer-head__left">
       <h2 class="card__title">
-        {{ chartView === 'monthly' ? 'Revenus mensuels — ' + selectedYear : 'Revenus annuels' }}
+        {{ (chartView === 'monthly' ? 'MONTHLY_REVENUE_YEAR' : 'ANNUAL_REVENUE') | translate:{ year: selectedYear } }}
       </h2>
       <div class="chart-summary" *ngIf="chartView === 'monthly'">
-        <span>Total {{ selectedYear }} : <strong>{{ yearTotal | number }} €</strong></span>
-        <span>Moyenne : <strong>{{ yearAverage | number }} € /mois</strong></span>
+        <span>{{ 'YEAR_TOTAL' | translate:{ year: selectedYear } }} : <strong>{{ yearTotal | number }} €</strong></span>
+        <span>{{ 'AVERAGE' | translate }} : <strong>{{ yearAverage | number }} € /{{ 'MONTH_LOWERCASE' | translate }}</strong></span>
       </div>
     </div>
 
@@ -97,7 +97,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
-          Mensuel
+          {{ 'MONTHLY' | translate }}
         </button>
         <button type="button"
                 [style.background]="chartView === 'annual' ? '#fff' : 'transparent'"
@@ -110,7 +110,7 @@
             <line x1="12" y1="20" x2="12" y2="4"/>
             <line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
-          Annuel
+          {{ 'ANNUAL' | translate }}
         </button>
       </div>
 
@@ -214,7 +214,7 @@
   <!-- ── Table abonnements ──────────────────────────────────────────────── -->
   <div class="card card--table">
     <div class="table-toolbar">
-      <h2 class="card__title">Liste des abonnements</h2>
+      <h2 class="card__title">{{ 'SUBSCRIPTION_LIST' | translate }}</h2>
 
       <div class="table-filters">
         <div class="search-field">
@@ -224,7 +224,7 @@
           </svg>
           <input
             type="text"
-            placeholder="Rechercher..."
+            [placeholder]="'SEARCH' | translate"
             [ngModel]="searchQuery"
             (ngModelChange)="onSearchChange($event)"
             class="search-field__input">
@@ -235,16 +235,16 @@
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
           </svg>
           <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange()" class="select-wrapper__select">
-            <option value="Tous">Tous les statuts</option>
-            <option value="Actif">Actif</option>
-            <option value="Expiré">Expiré</option>
-            <option value="Annulé">Annulé</option>
+            <option value="Tous">{{ 'ALL_STATUSES' | translate }}</option>
+            <option value="Actif">{{ 'USER_STATUS_ACTIVE' | translate }}</option>
+            <option value="Expiré">{{ 'EXPIRED' | translate }}</option>
+            <option value="Annulé">{{ 'CANCELED' | translate }}</option>
           </select>
         </div>
 
         <div class="select-wrapper">
           <select [(ngModel)]="planFilter" (ngModelChange)="onPlanFilterChange()" class="select-wrapper__select select-wrapper__select--no-icon">
-            <option value="Tous">Tous les plans</option>
+            <option value="Tous">{{ 'ALL_PLANS' | translate }}</option>
             <option *ngFor="let p of plans" [value]="p.id">{{ p.name }}</option>
           </select>
         </div>
@@ -255,18 +255,18 @@
       <table class="data-table">
         <thead>
         <tr>
-          <th>Coach</th>
-          <th>Plan</th>
-          <th>Statut</th>
-          <th>Date début</th>
-          <th>Date fin</th>
-          <th>Montant</th>
-          <th class="text-right">Actions</th>
+          <th>{{ 'COACH' | translate }}</th>
+          <th>{{ 'PLAN' | translate }}</th>
+          <th>{{ 'STATUS_LABEL' | translate }}</th>
+          <th>{{ 'START_DATE' | translate }}</th>
+          <th>{{ 'END_DATE' | translate }}</th>
+          <th>{{ 'AMOUNT' | translate }}</th>
+          <th class="text-right">{{ 'ACTIONS' | translate }}</th>
         </tr>
         </thead>
         <tbody>
         <tr *ngIf="allSubscriptions.length === 0">
-          <td colspan="7" class="data-table__empty">Aucun abonnement trouvé.</td>
+          <td colspan="7" class="data-table__empty">{{ 'NO_SUBSCRIPTIONS_FOUND' | translate }}</td>
         </tr>
 
         <tr *ngFor="let sub of allSubscriptions" class="data-table__row">
@@ -285,7 +285,7 @@
           <td class="fw-medium">{{ sub.planName }}</td>
 
           <td>
-            <span class="badge" [ngClass]="statusClass(sub.status)">{{ sub.status }}</span>
+            <span class="badge" [ngClass]="statusClass(sub.status)">{{ statusLabel(sub.status) }}</span>
           </td>
 
           <td class="text-muted">{{ sub.startDate }}</td>
@@ -294,21 +294,21 @@
 
           <td>
             <div class="action-btns">
-              <button class="action-btn action-btn--view" title="Voir détails" (click)="onViewSubscription(sub)">
+              <button class="action-btn action-btn--view" [title]="'VIEW_DETAILS' | translate" (click)="onViewSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
               </button>
 
-              <button class="action-btn action-btn--edit" title="Modifier" (click)="onEditSubscription(sub)">
+              <button class="action-btn action-btn--edit" [title]="'EDIT' | translate" (click)="onEditSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
 
-              <button *ngIf="sub.status === 'Actif'" class="action-btn action-btn--suspend" title="Suspendre" (click)="onSuspendSubscription(sub)">
+              <button *ngIf="sub.status === 'Actif'" class="action-btn action-btn--suspend" [title]="'SUSPEND' | translate" (click)="onSuspendSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="10" y1="15" x2="10" y2="9"/>
@@ -316,14 +316,14 @@
                 </svg>
               </button>
 
-              <button *ngIf="sub.status !== 'Actif'" class="action-btn action-btn--renew" title="Renouveler" (click)="onRenewSubscription(sub)">
+              <button *ngIf="sub.status !== 'Actif'" class="action-btn action-btn--renew" [title]="'RENEW' | translate" (click)="onRenewSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="23 4 23 10 17 10"/>
                   <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                 </svg>
               </button>
 
-              <button class="action-btn action-btn--cancel" title="Annuler" (click)="onCancelSubscription(sub)">
+              <button class="action-btn action-btn--cancel" [title]="'CANCEL' | translate" (click)="onCancelSubscription(sub)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="15" y1="9" x2="9" y2="15"/>
@@ -357,28 +357,28 @@
         <ng-container *ngSwitchCase="'add-plan'">
           <div class="modal-form-grid">
             <div class="form-field">
-              <label>Nom</label>
+              <label>{{ 'NAME' | translate }}</label>
               <input type="text" [(ngModel)]="planForm.name" />
             </div>
 
             <div class="form-field">
-              <label>Mensuel</label>
+              <label>{{ 'MONTHLY' | translate }}</label>
               <input type="number" [(ngModel)]="planForm.priceMonthly" />
             </div>
 
             <div class="form-field">
-              <label>Annuel</label>
+              <label>{{ 'ANNUAL' | translate }}</label>
               <input type="number" [(ngModel)]="planForm.priceAnnual" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Fonctionnalités (une par ligne)</label>
+              <label>{{ 'FEATURES_ONE_PER_LINE' | translate }}</label>
               <textarea [(ngModel)]="planForm.featuresText"></textarea>
             </div>
 
             <div class="form-check form-field-full">
               <input id="popular" type="checkbox" [(ngModel)]="planForm.isPopular" />
-              <label for="popular">Plan populaire</label>
+              <label for="popular">{{ 'POPULAR_PLAN' | translate }}</label>
             </div>
           </div>
         </ng-container>
@@ -386,108 +386,108 @@
         <ng-container *ngSwitchCase="'edit-plan'">
           <div class="modal-form-grid">
             <div class="form-field">
-              <label>Nom</label>
+              <label>{{ 'NAME' | translate }}</label>
               <input type="text" [(ngModel)]="planForm.name" />
             </div>
 
             <div class="form-field">
-              <label>Mensuel</label>
+              <label>{{ 'MONTHLY' | translate }}</label>
               <input type="number" [(ngModel)]="planForm.priceMonthly" />
             </div>
 
             <div class="form-field">
-              <label>Annuel</label>
+              <label>{{ 'ANNUAL' | translate }}</label>
               <input type="number" [(ngModel)]="planForm.priceAnnual" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Fonctionnalités (une par ligne)</label>
+              <label>{{ 'FEATURES_ONE_PER_LINE' | translate }}</label>
               <textarea [(ngModel)]="planForm.featuresText"></textarea>
             </div>
 
             <div class="form-check form-field-full">
               <input id="popular-edit" type="checkbox" [(ngModel)]="planForm.isPopular" />
-              <label for="popular-edit">Plan populaire</label>
+              <label for="popular-edit">{{ 'POPULAR_PLAN' | translate }}</label>
             </div>
           </div>
         </ng-container>
 
         <ng-container *ngSwitchCase="'delete-plan'">
-          <p>Voulez-vous vraiment supprimer le plan <strong>{{ selectedPlan?.name }}</strong> ?</p>
+          <p>{{ 'DELETE_PLAN_QUESTION' | translate:{ name: selectedPlan?.name } }}</p>
         </ng-container>
 
         <ng-container *ngSwitchCase="'view-subscription'">
           <div *ngIf="selectedSubscription as sub" class="modal-info-grid">
-            <div class="info-item"><label>Coach</label><span>{{ sub.coachName }}</span></div>
-            <div class="info-item"><label>Email</label><span>{{ sub.email }}</span></div>
-            <div class="info-item"><label>Plan</label><span>{{ sub.planName }}</span></div>
-            <div class="info-item"><label>Statut</label><span>{{ sub.status }}</span></div>
-            <div class="info-item"><label>Date début</label><span>{{ sub.startDate }}</span></div>
-            <div class="info-item"><label>Date fin</label><span>{{ sub.endDate }}</span></div>
-            <div class="info-item"><label>Montant</label><span>{{ sub.amountPaid }} €</span></div>
+            <div class="info-item"><label>{{ 'COACH' | translate }}</label><span>{{ sub.coachName }}</span></div>
+            <div class="info-item"><label>{{ 'EMAIL' | translate }}</label><span>{{ sub.email }}</span></div>
+            <div class="info-item"><label>{{ 'PLAN' | translate }}</label><span>{{ sub.planName }}</span></div>
+            <div class="info-item"><label>{{ 'STATUS_LABEL' | translate }}</label><span>{{ statusLabel(sub.status) }}</span></div>
+            <div class="info-item"><label>{{ 'START_DATE' | translate }}</label><span>{{ sub.startDate }}</span></div>
+            <div class="info-item"><label>{{ 'END_DATE' | translate }}</label><span>{{ sub.endDate }}</span></div>
+            <div class="info-item"><label>{{ 'AMOUNT' | translate }}</label><span>{{ sub.amountPaid }} €</span></div>
           </div>
         </ng-container>
 
         <ng-container *ngSwitchCase="'edit-subscription'">
           <div class="modal-form-grid">
             <div class="form-field form-field-full">
-              <label>Plan</label>
+              <label>{{ 'PLAN' | translate }}</label>
               <select [(ngModel)]="subscriptionForm.planId">
                 <option *ngFor="let p of plans" [value]="p.id">{{ p.name }}</option>
               </select>
             </div>
 
             <div class="form-field">
-              <label>Statut</label>
+              <label>{{ 'STATUS_LABEL' | translate }}</label>
               <select [(ngModel)]="subscriptionForm.status">
-                <option value="Actif">Actif</option>
-                <option value="Expiré">Expiré</option>
-                <option value="Annulé">Annulé</option>
-                <option value="Suspendu">Suspendu</option>
+                <option value="Actif">{{ 'USER_STATUS_ACTIVE' | translate }}</option>
+                <option value="Expiré">{{ 'EXPIRED' | translate }}</option>
+                <option value="Annulé">{{ 'CANCELED' | translate }}</option>
+                <option value="Suspendu">{{ 'SUSPENDED' | translate }}</option>
               </select>
             </div>
 
             <div class="form-field">
-              <label>Montant</label>
+              <label>{{ 'AMOUNT' | translate }}</label>
               <input type="number" [(ngModel)]="subscriptionForm.amountPaid" />
             </div>
 
             <div class="form-field">
-              <label>Date début</label>
+              <label>{{ 'START_DATE' | translate }}</label>
               <input type="date" [(ngModel)]="subscriptionForm.startDate" />
             </div>
 
             <div class="form-field">
-              <label>Date fin</label>
+              <label>{{ 'END_DATE' | translate }}</label>
               <input type="date" [(ngModel)]="subscriptionForm.endDate" />
             </div>
           </div>
         </ng-container>
 
         <ng-container *ngSwitchCase="'suspend-subscription'">
-          <p>Voulez-vous suspendre cet abonnement ?</p>
+          <p>{{ 'SUSPEND_SUBSCRIPTION_QUESTION' | translate }}</p>
         </ng-container>
 
         <ng-container *ngSwitchCase="'renew-subscription'">
-          <p>Voulez-vous renouveler cet abonnement ?</p>
+          <p>{{ 'RENEW_SUBSCRIPTION_QUESTION' | translate }}</p>
         </ng-container>
 
         <ng-container *ngSwitchCase="'cancel-subscription'">
-          <p>Voulez-vous annuler cet abonnement ?</p>
+          <p>{{ 'CANCEL_SUBSCRIPTION_QUESTION' | translate }}</p>
         </ng-container>
 
       </ng-container>
     </div>
 
     <div class="modal-footer">
-      <button type="button" class="btn btn--outline" (click)="closeModal()">Fermer</button>
+      <button type="button" class="btn btn--outline" (click)="closeModal()">{{ 'CLOSE' | translate }}</button>
       <button
         *ngIf="modalMode !== 'view-subscription'"
         type="button"
         class="btn btn--primary"
         [disabled]="modalLoading"
         (click)="submitModalAction()">
-        {{ modalLoading ? 'Traitement...' : getConfirmButtonLabel() }}
+        {{ modalLoading ? ('PROCESSING' | translate) : getConfirmButtonLabel() }}
       </button>
     </div>
   </div>

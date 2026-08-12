@@ -1,16 +1,16 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="library-back-btn" type="button" aria-label="Back" (click)="goBack()">
+    <button class="library-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
       <i-feather name="chevron-left"></i-feather>
     </button>
     <div class="header-content">
-      <h1>Nutrition Plans</h1>
-      <p>Create, organize and manage your nutrition programs</p>
+      <h1>{{ 'NUTRITION_PLANS' | translate }}</h1>
+      <p>{{ 'NUTRITION_PLANS_SUBTITLE' | translate }}</p>
     </div>
 
     <button class="primary-btn" type="button" (click)="openChooseModal()">
       <i-feather name="plus"></i-feather>
-      Create Nutrition Plan
+      {{ 'CREATE_NUTRITION_PLAN' | translate }}
     </button>
   </div>
 
@@ -18,17 +18,17 @@
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search nutrition plans..." [(ngModel)]="searchTerm" (input)="onSearch()" />
+        <input type="text" [placeholder]="'SEARCH_NUTRITION_PLANS' | translate" [(ngModel)]="searchTerm" (input)="onSearch()" />
       </div>
 
       <div class="type-filters" *ngIf="activeTab !== 'templates' && nutritionFileEnabled !== false">
         <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">
-          All
+          {{ 'ALL' | translate }}
         </button>
 
         <button class="type-filter" [class.active]="programTypeFilter === 'APP'" (click)="setProgramTypeFilter('APP')">
           <i-feather name="grid"></i-feather>
-          App Programs
+          {{ 'APP_PROGRAMS' | translate }}
         </button>
 
         <button *ngIf="nutritionFileEnabled !== false" class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'PDF'" (click)="setProgramTypeFilter('PDF')">
@@ -43,16 +43,16 @@
       </div>
     </div>
 
-    <div class="plans-state" *ngIf="loading">Loading nutrition plans...</div>
+    <div class="plans-state" *ngIf="loading">{{ 'LOADING_NUTRITION_PLANS' | translate }}</div>
     <div class="plans-state plans-state--error" *ngIf="!loading && error">{{ error }}</div>
-    <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">No nutrition plans found.</div>
+    <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div>
 
     <div class="programs-table programs-table--cap" *ngIf="!loading && !error && filteredPlans.length > 0">
       <div class="table-header">
-        <div class="col-program">PROGRAM</div>
-        <div class="col-type">TYPE</div>
-        <div class="col-created">CREATED</div>
-        <div class="col-modified">LAST MODIFIED</div>
+        <div class="col-program">{{ 'PROGRAM' | translate }}</div>
+        <div class="col-type">{{ 'TYPE' | translate }}</div>
+        <div class="col-created">{{ 'CREATED' | translate }}</div>
+        <div class="col-modified">{{ 'LAST_MODIFIED' | translate }}</div>
         <div class="col-actions"></div>
       </div>
 
@@ -72,16 +72,16 @@
               </div>
 
               <div class="program-copy">
-                <div class="program-name">{{ plan.name || 'Unnamed Nutrition Plan' }}</div>
+                <div class="program-name">{{ plan.name || ('UNNAMED_NUTRITION_PLAN' | translate) }}</div>
                 <div class="program-meta">{{ getProgramDescription(plan) }}</div>
                 <div class="program-week-meta" *ngIf="!isFilePlan(plan)">
                   <span *ngIf="getPlanTotalWeeks(plan) > 0">
                     <i-feather name="clock"></i-feather>
-                    {{ getPlanTotalWeeks(plan) }} {{ getPlanTotalWeeks(plan) === 1 ? 'week' : 'weeks' }}
+                    {{ 'WEEKS_COUNT' | translate:{ count: getPlanTotalWeeks(plan) } }}
                   </span>
                   <span>
                     <i-feather name="calendar"></i-feather>
-                    {{ getProgramDurationDays(plan) }} days
+                    {{ 'DAYS_COUNT' | translate:{ count: getProgramDurationDays(plan) } }}
                   </span>
                 </div>
               </div>
@@ -108,7 +108,7 @@
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === getProgramId(plan)">
               <button class="action-btn" type="button" (click)="toggleDropdown(getProgramId(plan), $event)">
-                <span>Actions</span>
+                <span>{{ 'ACTIONS' | translate }}</span>
                 <i-feather name="chevron-down"></i-feather>
               </button>
 
@@ -116,44 +116,44 @@
                 <ng-container *ngIf="isFilePlan(plan); else appPlanMenu">
                   <button class="dropdown-item" type="button" (click)="assignToClients(plan)">
                     <i-feather name="users"></i-feather>
-                    Assign to Clients
+                    {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
 
                   <button class="dropdown-item" type="button" (click)="openProgramFile(plan)">
                     <i-feather name="eye"></i-feather>
-                    Open File
+                    {{ 'OPEN_FILE' | translate }}
                   </button>
 
                   <button class="dropdown-item" type="button" (click)="downloadProgramFile(plan)">
                     <i-feather name="download"></i-feather>
-                    Download File
+                    {{ 'DOWNLOAD_FILE' | translate }}
                   </button>
 
                   <button class="dropdown-item delete" type="button" (click)="openDeleteModal(plan)">
                     <i-feather name="trash-2"></i-feather>
-                    Delete File
+                    {{ 'DELETE_FILE' | translate }}
                   </button>
                 </ng-container>
 
                 <ng-template #appPlanMenu>
                   <button class="dropdown-item" type="button" (click)="assignToClients(plan)">
                     <i-feather name="users"></i-feather>
-                    Assign to Clients
+                    {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
 
                   <button class="dropdown-item" type="button" (click)="editPlan(plan)">
                     <i-feather name="edit"></i-feather>
-                    Edit Program
+                    {{ 'EDIT_PROGRAM' | translate }}
                   </button>
 
                   <button class="dropdown-item" type="button" (click)="duplicatePlan(plan.id)">
                     <i-feather name="copy"></i-feather>
-                    Duplicate
+                    {{ 'DUPLICATE' | translate }}
                   </button>
 
                   <button class="dropdown-item delete" type="button" (click)="openDeleteModal(plan)">
                     <i-feather name="trash-2"></i-feather>
-                    Delete
+                    {{ 'DELETE' | translate }}
                   </button>
                 </ng-template>
               </div>
@@ -200,26 +200,26 @@
   <div class="nutrition-type-overlay" *ngIf="showNutritionPlanTypeModal && nutritionFileEnabled !== false" (click)="closeNutritionPlanTypeModal()">
     <div class="nutrition-type-modal" (click)="$event.stopPropagation()">
       <div class="nutrition-type-header">
-        <h3>Choose a nutrition plan type</h3>
+        <h3>{{ 'CHOOSE_NUTRITION_PLAN_TYPE' | translate }}</h3>
         <button type="button" class="modal-x" (click)="closeNutritionPlanTypeModal()">×</button>
       </div>
 
       <div class="nutrition-type-body nutrition-type-body--workout-like">
         <div class="nutrition-type-card">
-          <h4>Normal Nutrition Plan</h4>
-          <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
-          <button class="type-action" type="button" (click)="createNormalNutritionPlan()">Create Normal Nutrition</button>
+          <h4>{{ 'NORMAL_NUTRITION_PLAN' | translate }}</h4>
+          <p>{{ 'NORMAL_NUTRITION_PLAN_DESCRIPTION' | translate }}</p>
+          <button class="type-action" type="button" (click)="createNormalNutritionPlan()">{{ 'CREATE_NORMAL_NUTRITION' | translate }}</button>
         </div>
 
         <div class="nutrition-type-card" *ngIf="nutritionFileEnabled !== false">
-          <h4>File Nutrition Plan</h4>
-          <p>Import a PDF or Excel nutrition plan and manage it from your nutrition library.</p>
-          <button class="type-action" type="button" (click)="openImportNutritionFile()">Import PDF / Excel</button>
+          <h4>{{ 'FILE_NUTRITION_PLAN' | translate }}</h4>
+          <p>{{ 'FILE_NUTRITION_LIBRARY_DESCRIPTION' | translate }}</p>
+          <button class="type-action" type="button" (click)="openImportNutritionFile()">{{ 'IMPORT_PDF_EXCEL' | translate }}</button>
         </div>
       </div>
 
       <div class="nutrition-type-footer">
-        <button class="btn-cancel" type="button" (click)="closeNutritionPlanTypeModal()">Cancel</button>
+        <button class="btn-cancel" type="button" (click)="closeNutritionPlanTypeModal()">{{ 'CANCEL' | translate }}</button>
       </div>
     </div>
   </div>
@@ -229,8 +229,8 @@
     <div class="import-nutrition-modal" (click)="$event.stopPropagation()">
       <div class="import-nutrition-head">
         <div>
-          <h3>Importer un programme nutrition</h3>
-          <p>Importez un fichier PDF ou Excel, puis enregistrez-le dans votre bibliothèque nutrition.</p>
+          <h3>{{ 'IMPORT_NUTRITION_PROGRAM' | translate }}</h3>
+          <p>{{ 'IMPORT_NUTRITION_LIBRARY_HINT' | translate }}</p>
         </div>
         <button type="button" class="modal-x" (click)="closeImportNutritionFile()">×</button>
       </div>
@@ -239,31 +239,31 @@
         <label class="upload-zone" (drop)="onImportDrop($event)" (dragover)="onImportDragOver($event)">
           <input type="file" accept=".pdf,.xls,.xlsx" (change)="onImportFileSelected($event)" hidden />
           <div class="upload-icon"><i-feather name="upload-cloud"></i-feather></div>
-          <strong>{{ importFile ? importFile.name : 'Glissez votre fichier ici ou parcourez' }}</strong>
-          <span>PDF, XLS, XLSX · jusqu'à 25 MB</span>
+          <strong>{{ importFile ? importFile.name : ('DROP_FILE_OR_BROWSE' | translate) }}</strong>
+          <span>{{ 'SUPPORTED_FILE_SIZE_25MB' | translate }}</span>
         </label>
 
         <div class="import-error" *ngIf="importError">{{ importError }}</div>
 
         <label class="import-field">
-          <span>Nom du plan <b>*</b></span>
-          <input type="text" [(ngModel)]="importPlanName" placeholder="Ex: Plan sèche - Phase 1" />
+          <span>{{ 'PLAN_NAME' | translate }} <b>*</b></span>
+          <input type="text" [(ngModel)]="importPlanName" [placeholder]="'NUTRITION_PROGRAM_NAME_EXAMPLE' | translate" />
         </label>
 
         <label class="import-field">
-          <span>Description <em>(optionnelle)</em></span>
-          <textarea rows="3" [(ngModel)]="importPlanDescription" placeholder="Ex: Plan nutrition complet en PDF ou Excel..."></textarea>
+          <span>{{ 'DESCRIPTION' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></span>
+          <textarea rows="3" [(ngModel)]="importPlanDescription" [placeholder]="'NUTRITION_DESCRIPTION_EXAMPLE' | translate"></textarea>
         </label>
       </div>
 
       <div class="import-nutrition-footer">
-        <button class="btn-cancel" type="button" (click)="closeImportNutritionFile()" [disabled]="importSaving">Cancel</button>
+        <button class="btn-cancel" type="button" (click)="closeImportNutritionFile()" [disabled]="importSaving">{{ 'CANCEL' | translate }}</button>
         <button
           class="save-file-btn"
           type="button"
           (click)="saveImportedNutritionFile()"
           [disabled]="importSaving || !importFile || !importPlanName.trim()">
-          {{ importSaving ? 'Saving...' : 'Save nutrition file' }}
+          {{ (importSaving ? 'SAVING' : 'SAVE_NUTRITION_FILE') | translate }}
         </button>
       </div>
     </div>

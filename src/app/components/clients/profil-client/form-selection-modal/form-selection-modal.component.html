@@ -4,9 +4,9 @@
     <!-- Header -->
     <div class="assign-modal-header">
       <div>
-        <h3 class="assign-modal-title">Select Check-in Form</h3>
+        <h3 class="assign-modal-title">{{ 'SELECT_CHECKIN_FORM' | translate }}</h3>
         <p class="assign-modal-subtitle">
-          Choose a form to assign to {{ fullName }}
+          {{ 'CHOOSE_FORM_FOR_CLIENT' | translate:{ name: fullName } }}
         </p>
       </div>
       <button type="button" (click)="closeModal.emit()" class="assign-modal-close">
@@ -22,7 +22,7 @@
     <div class="select-program-search">
       <div class="select-search-input">
         <i class="fas fa-search"></i>
-        <input type="text" placeholder="Search forms..." [(ngModel)]="searchTerm" />
+        <input type="text" [placeholder]="'SEARCH_FORMS' | translate" [(ngModel)]="searchTerm" />
       </div>
     </div>
 
@@ -51,7 +51,7 @@
       </span>
 
             <span class="am-schedule__label">
-        Schedule for a specific date
+        {{ 'SCHEDULE_FOR_SPECIFIC_DATE' | translate }}
       </span>
           </label>
 
@@ -69,12 +69,12 @@
       </ng-container>
 
       <ng-template #scheduleTpl>
-        <div class="date-panel-title">End Date *</div>
+        <div class="date-panel-title">{{ 'END_DATE' | translate }} *</div>
         <div class="date-panel-row">
           <input class="date-input" type="date" [(ngModel)]="endDateValue" />
         </div>
         <p class="date-panel-hint">
-          End Date (required): after this date, no more assignments will be generated.
+          {{ 'END_DATE_ASSIGNMENTS_HINT' | translate }}
         </p>
       </ng-template>
     </div>
@@ -82,7 +82,7 @@
     <!-- Body -->
     <div class="select-program-body">
 
-      <div *ngIf="loading" style="padding:12px;">Loading...</div>
+      <div *ngIf="loading" style="padding:12px;">{{ 'LOADING' | translate }}</div>
       <div *ngIf="error && !loading" style="padding:12px; color:#b91c1c;">{{ error }}</div>
 
       <ng-container *ngIf="!loading && !error">
@@ -104,7 +104,7 @@
                 <div class="select-program-meta">
                   <span>
                     <i class="far fa-list-alt"></i>
-                    {{ form.questionCount }} questions
+                    {{ form.questionCount }} {{ (form.questionCount === 1 ? 'QUESTION' : 'QUESTIONS') | translate }}
                   </span>
                 </div>
               </div>
@@ -113,7 +113,7 @@
         </ng-container>
 
         <ng-template #noForms>
-          <div class="select-program-empty">No forms found</div>
+          <div class="select-program-empty">{{ 'NO_FORMS_FOUND' | translate }}</div>
         </ng-template>
       </ng-container>
 
@@ -122,7 +122,7 @@
     <!-- Footer -->
     <div class="select-program-footer">
       <button type="button" class="btn-secondary" (click)="backClick.emit()">
-        Back
+        {{ 'BACK' | translate }}
       </button>
 
       <button
@@ -132,7 +132,7 @@
         [disabled]="!canAssign()"
         (click)="assign()"
       >
-        Assign Form
+        {{ 'ASSIGN_FORM' | translate }}
       </button>
     </div>
 

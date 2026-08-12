@@ -19,11 +19,11 @@
         <!-- Texte invitation -->
         <h1 class="inv-title">
           <strong>{{ invitation.coachName }}</strong>
-          invited you to be coached on the YoCoach mobile app.
+          {{ 'INVITED_TO_YOCOACH_APP' | translate }}
         </h1>
 
         <p class="inv-sub">
-          Please complete your setup by clicking the link below.
+          {{ 'COMPLETE_SETUP_LINK' | translate }}
         </p>
 
         <!-- Bouton CTA -->
@@ -31,7 +31,7 @@
           class="inv-cta"
           *ngIf="invitation.status === 'PENDING'"
           (click)="acceptInvitation()">
-          Accept Invitation
+          {{ 'ACCEPT_INVITATION' | translate }}
         </button>
 
       </div>
@@ -42,12 +42,12 @@
       <!-- Fallback link -->
       <div class="inv-fallback">
         <p class="inv-fallback__label">
-          If the button doesn't work, paste this link in your browser:
+          {{ 'INVITATION_LINK_FALLBACK' | translate }}
         </p>
         <button
           class="inv-fallback__link"
           (click)="acceptInvitation()">
-          Accept Invitation
+          {{ 'ACCEPT_INVITATION' | translate }}
         </button>
       </div>
 
@@ -56,10 +56,10 @@
     <!-- Footer -->
     <div class="inv-footer">
       <p class="inv-footer__report">
-        If you don't know this coach, please report them
-        <a href="#" class="inv-footer__link">here</a>.
+        {{ 'UNKNOWN_COACH_REPORT' | translate }}
+        <a href="#" class="inv-footer__link">{{ 'HERE' | translate }}</a>.
       </p>
-      <p class="inv-footer__copy">© 2024 YoCoach Inc.</p>
+      <p class="inv-footer__copy">{{ 'YOCOACH_COPYRIGHT' | translate }}</p>
     </div>
 
   </div>

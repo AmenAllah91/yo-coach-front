@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MealsService } from 'app/service/meals.service';
 import { AddMealModalComponent } from './add-meal-modal.component';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-meal-editor',
   standalone: true,
-  imports: [CommonModule, AddMealModalComponent],
+  imports: [CommonModule, AddMealModalComponent, TranslateModule],
   templateUrl: './meal-editor.component.html',
   styleUrls: ['./meal-editor.component.scss'],
 })
@@ -40,7 +41,7 @@ export class MealEditorComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.loadError = 'The meal could not be loaded.';
+        this.loadError = 'MEAL_LOAD_ERROR';
       },
     });
   }

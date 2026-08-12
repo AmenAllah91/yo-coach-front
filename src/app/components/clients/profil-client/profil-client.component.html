@@ -1,22 +1,22 @@
 <section class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <div class="profile-header">
-    <button class="profile-back" type="button" aria-label="Back to clients" (click)="backToClients()">
+    <button class="profile-back" type="button" [attr.aria-label]="'BACK_TO_CLIENTS' | translate" (click)="backToClients()">
       <i class="fas fa-arrow-left"></i>
     </button>
     <img
       [src]="client?.image || 'assets/images/photoprofilvierge.jpg'"
-      [alt]="fullName || 'Profile photo'"
+      [alt]="fullName || ('PROFILE_PHOTO' | translate)"
       class="profile-picture"
     />
 
     <div class="profile-info">
       <h3 class="profile-name">{{ fullName }}</h3>
       <p class="profile-email">
-        {{ client?.email || "Not provided" }}
+        {{ client?.email || ('NOT_PROVIDED' | translate) }}
       </p>
       <p class="last-workout">
         <span class="last-workout-dot"></span>
-        Last workout —
+        {{ 'LAST_WORKOUT' | translate }} —
       </p>
     </div>
 
@@ -31,7 +31,7 @@
         >
           <span class="client-picker__avatar">{{ clientInitials }}</span>
           <span class="client-picker__selected">
-            <small><i class="far fa-user"></i> Client</small>
+            <small><i class="far fa-user"></i> {{ 'CLIENT' | translate }}</small>
             <strong>{{ fullName }}</strong>
           </span>
           <i class="fas client-picker__chevron" [class.fa-chevron-up]="clientPickerOpen" [class.fa-chevron-down]="!clientPickerOpen"></i>
@@ -43,13 +43,13 @@
             <input
               type="search"
               [(ngModel)]="clientSearch"
-              placeholder="Search clients..."
-              aria-label="Search clients"
+              [placeholder]="'SEARCH_CLIENTS' | translate"
+              [attr.aria-label]="'SEARCH_CLIENTS' | translate"
               (click)="$event.stopPropagation()"
             />
           </label>
 
-          <div class="client-picker__list" role="listbox" aria-label="Clients">
+          <div class="client-picker__list" role="listbox" [attr.aria-label]="'CLIENTS' | translate">
             <button
               *ngFor="let profileClient of filteredCoachClients"
               class="client-picker__option"
@@ -62,23 +62,23 @@
               <span class="client-picker__option-avatar">{{ getClientInitials(profileClient) }}</span>
               <span class="client-picker__option-copy">
                 <strong>{{ profileClient.firstName }} {{ profileClient.lastName }}</strong>
-                <small>{{ profileClient.email || 'Not provided' }}</small>
+                <small>{{ profileClient.email || ('NOT_PROVIDED' | translate) }}</small>
               </span>
               <span class="client-presence" [ngClass]="clientPresenceClass(profileClient)"></span>
               <i *ngIf="isSelectedClient(profileClient)" class="fas fa-check client-picker__check"></i>
             </button>
-            <p class="client-picker__empty" *ngIf="!loadingCoachClients && filteredCoachClients.length === 0">No clients found</p>
-            <p class="client-picker__empty" *ngIf="loadingCoachClients">Loading clients...</p>
+            <p class="client-picker__empty" *ngIf="!loadingCoachClients && filteredCoachClients.length === 0">{{ 'NO_CLIENTS_FOUND' | translate }}</p>
+            <p class="client-picker__empty" *ngIf="loadingCoachClients">{{ 'LOADING_CLIENTS' | translate }}</p>
           </div>
         </div>
       </div>
 
       <button class="btn-send-message" type="button" (click)="setTab('chat')">
         <i class="far fa-comment"></i>
-        <span>Send Message</span>
+        <span>{{ 'SEND_MESSAGE' | translate }}</span>
       </button>
 
-      <button class="btn-more" type="button" aria-label="More profile actions">
+      <button class="btn-more" type="button" [attr.aria-label]="'MORE_PROFILE_ACTIONS' | translate">
         <span class="dot"></span>
         <span class="dot"></span>
         <span class="dot"></span>
@@ -93,7 +93,7 @@
       (click)="toggleClientStats()"
       [attr.aria-expanded]="showClientStats"
     >
-      <span>{{ showClientStats ? 'Hide progress summary' : 'Show progress summary' }}</span>
+      <span>{{ (showClientStats ? 'HIDE_PROGRESS_SUMMARY' : 'SHOW_PROGRESS_SUMMARY') | translate }}</span>
       <i class="fas" [class.fa-chevron-up]="showClientStats" [class.fa-chevron-down]="!showClientStats"></i>
     </button>
   </div>
@@ -104,7 +104,7 @@
       <div class="stat-icon stat-icon--start">
         <i class="fas fa-balance-scale"></i>
       </div>
-      <div class="stat-label">Start Weight</div>
+      <div class="stat-label">{{ 'START_WEIGHT' | translate }}</div>
       <div class="stat-value">
         {{ startWeight !== null ? formatWeight(startWeight) : '--' }}
       </div>
@@ -114,7 +114,7 @@
       <div class="stat-icon stat-icon--current">
         <i class="fas fa-balance-scale-right"></i>
       </div>
-      <div class="stat-label">Current Weight</div>
+      <div class="stat-label">{{ 'CURRENT_WEIGHT' | translate }}</div>
       <div class="stat-value">
         {{ currentWeight !== null ? formatWeight(currentWeight) : '--' }}
       </div>
@@ -128,12 +128,12 @@
       <div class="stat-icon stat-icon--goal">
         <i class="far fa-flag"></i>
       </div>
-      <div class="stat-label">Goal Weight</div>
+      <div class="stat-label">{{ 'GOAL_WEIGHT' | translate }}</div>
       <div class="stat-value">
         {{ clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--' }}
       </div>
       <div class="stat-detail" *ngIf="weightToGoal !== null">
-        {{ formatWeight(weightToGoal) }} to go
+        {{ 'WEIGHT_TO_GO' | translate:{ weight: formatWeight(weightToGoal) } }}
       </div>
     </div>
 
@@ -141,7 +141,7 @@
       <div class="stat-icon stat-icon--objective">
         <i class="fas fa-bullseye"></i>
       </div>
-      <div class="stat-label">Objective</div>
+      <div class="stat-label">{{ 'OBJECTIVE' | translate }}</div>
       <div class="stat-value stat-value--objective">
         {{ clientObjective || '--' }}
       </div>
@@ -150,16 +150,16 @@
 
   <section class="weight-progress-card">
     <div class="weight-progress-heading">
-      <span>Weight Progress</span>
-      <strong>{{ weightProgress }}% to goal</strong>
+      <span>{{ 'WEIGHT_PROGRESS' | translate }}</span>
+      <strong>{{ 'PERCENT_TO_GOAL' | translate:{ percent: weightProgress } }}</strong>
     </div>
     <div class="weight-progress-track" aria-hidden="true">
       <div class="weight-progress-fill" [style.width.%]="weightProgress"></div>
     </div>
     <div class="weight-progress-labels">
-      <span>Start {{ startWeight !== null ? formatWeight(startWeight) : '--' }}</span>
-      <strong>Now {{ currentWeight !== null ? formatWeight(currentWeight) : '--' }}</strong>
-      <span>Goal {{ clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--' }}</span>
+      <span>{{ 'START_VALUE' | translate:{ value: startWeight !== null ? formatWeight(startWeight) : '--' } }}</span>
+      <strong>{{ 'NOW_VALUE' | translate:{ value: currentWeight !== null ? formatWeight(currentWeight) : '--' } }}</strong>
+      <span>{{ 'GOAL_VALUE' | translate:{ value: clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--' } }}</span>
     </div>
   </section>
   </ng-container>
@@ -170,28 +170,28 @@
       [class.active]="activeTab === 'dashboard'"
       (click)="setTab('dashboard')"
     >
-      Dashboard
+      {{ 'DASHBOARD' | translate }}
     </button>
     <button
       class="tab-link"
       [class.active]="activeTab === 'workouts'"
       (click)="setTab('workouts')"
     >
-      Workouts
+      {{ 'PROFILE_WORKOUTS_TAB' | translate }}
     </button>
     <button
       class="tab-link"
       [class.active]="activeTab === 'nutrition'"
       (click)="setTab('nutrition')"
     >
-      Nutrition
+      {{ 'NUTRITION' | translate }}
     </button>
     <button
       class="tab-link"
       [class.active]="activeTab === 'checkins'"
       (click)="setTab('checkins')"
     >
-      Check-ins
+      {{ 'CHECK_INS' | translate }}
     </button>
 
     <button
@@ -199,7 +199,7 @@
       [class.active]="activeTab === 'measurements'"
       (click)="setTab('measurements')"
     >
-      Measurements
+      {{ 'MEASUREMENTS' | translate }}
     </button>
     <div class="mobile-more-wrap">
       <button
@@ -207,12 +207,12 @@
         type="button"
         (click)="mobileMoreOpen = !mobileMoreOpen"
       >
-        More
+        {{ 'MORE' | translate }}
         <i class="fas fa-chevron-down"></i>
       </button>
       <div class="mobile-more-menu" *ngIf="mobileMoreOpen">
-        <button type="button" (click)="setTab('pictures'); mobileMoreOpen = false">Progress Pictures</button>
-        <button type="button" (click)="setTab('chat'); mobileMoreOpen = false">Chat</button>
+        <button type="button" (click)="setTab('pictures'); mobileMoreOpen = false">{{ 'PROGRESS_PICTURES' | translate }}</button>
+        <button type="button" (click)="setTab('chat'); mobileMoreOpen = false">{{ 'CHAT' | translate }}</button>
       </div>
     </div>
     <button
@@ -220,21 +220,21 @@
       [class.active]="activeTab === 'pictures'"
       (click)="setTab('pictures')"
     >
-      Progress Pictures
+      {{ 'PROGRESS_PICTURES' | translate }}
     </button>
     <button
       class="tab-link calendar-tab"
       [class.active]="activeTab === 'calendar'"
       (click)="setTab('calendar')"
     >
-      Calendar
+      {{ 'CALENDAR' | translate }}
     </button>
     <button
       class="tab-link chat-tab"
       [class.active]="activeTab === 'chat'"
       (click)="setTab('chat')"
     >
-      Chat
+      {{ 'CHAT' | translate }}
     </button>
   </nav>
 
@@ -251,13 +251,13 @@
                 <i class="fas fa-dumbbell"></i>
               </div>
               <div>
-                <div class="header-title">Today's Workout</div>
+                <div class="header-title">{{ 'TODAYS_WORKOUT' | translate }}</div>
                 <div class="header-subtitle" *ngIf="hasTodaysWorkout">
-                  {{ todaysWorkout?.programName }} - Week
+                  {{ todaysWorkout?.programName }} - {{ 'WEEK' | translate }}
                   {{ todaysWorkout?.currentWeek }}/{{ todaysWorkout?.totalWeeks }}
                 </div>
                 <div class="header-subtitle" *ngIf="!hasTodaysWorkout">
-                  No session scheduled for today
+                  {{ 'NO_SESSION_SCHEDULED_TODAY' | translate }}
                 </div>
               </div>
             </div>
@@ -267,7 +267,7 @@
               type="button"
               (click)="setTab('workouts')"
             >
-              View Full
+              {{ 'VIEW_FULL' | translate }}
             </button>
           </div>
 
@@ -281,7 +281,7 @@
               <div class="exercise-info">
                 <div class="exercise-name">{{ exercise.name }}</div>
                 <div class="exercise-meta">
-                  {{ exercise.sets }} • Rest: {{ exercise.rest }}
+                  {{ exercise.sets }} • {{ 'REST' | translate }}: {{ exercise.rest }}
                 </div>
               </div>
             </div>
@@ -293,18 +293,18 @@
                 <i class="fas fa-calendar-day"></i>
                 <i class="fas fa-dumbbell"></i>
               </div>
-              <div class="dashboard-empty-title">This client has no workout planned for today.</div>
+              <div class="dashboard-empty-title">{{ 'CLIENT_NO_WORKOUT_TODAY' | translate }}</div>
               <div class="dashboard-empty-subtitle">
-                Assign a workout plan or check the calendar.
+                {{ 'ASSIGN_WORKOUT_OR_CHECK_CALENDAR' | translate }}
               </div>
               <div class="dashboard-empty-actions">
                 <button class="empty-primary-btn" type="button" (click)="openAssignProgramModal('WORKOUT')">
                   <i class="fas fa-plus"></i>
-                  Assign Workout
+                  {{ 'ASSIGN_WORKOUT' | translate }}
                 </button>
                 <button class="empty-outline-btn" type="button" (click)="setTab('calendar')">
                   <i class="fas fa-calendar-alt"></i>
-                  Open Calendar
+                  {{ 'OPEN_CALENDAR' | translate }}
                 </button>
               </div>
             </div>
@@ -318,9 +318,9 @@
                 <i class="fas fa-apple-alt"></i>
               </div>
               <div>
-                <div class="header-title">Nutrition Plan</div>
+                <div class="header-title">{{ 'NUTRITION_PLAN' | translate }}</div>
                 <div class="header-subtitle" *ngIf="hasActiveNutritionPlan">{{ activeNutritionPlan?.name }}</div>
-                <div class="header-subtitle" *ngIf="!hasActiveNutritionPlan">No active plan assigned</div>
+                <div class="header-subtitle" *ngIf="!hasActiveNutritionPlan">{{ 'NO_ACTIVE_PLAN_ASSIGNED' | translate }}</div>
               </div>
             </div>
             <button
@@ -329,38 +329,38 @@
               type="button"
               (click)="setTab('nutrition')"
             >
-              View Plan
+              {{ 'VIEW_PLAN' | translate }}
             </button>
           </div>
 
           <div class="dashboard-card-body" *ngIf="hasActiveNutritionPlan; else noNutritionPlan">
             <div class="daily-target-row">
-              <div class="daily-target-label">Daily Target</div>
+              <div class="daily-target-label">{{ 'DAILY_TARGET' | translate }}</div>
               <div class="daily-target-value">
                 {{ activeNutritionPlan?.dailyCalories || 0 }}
-                <span>calories per day</span>
+                <span>{{ 'CALORIES_PER_DAY' | translate }}</span>
               </div>
             </div>
             <div class="macro-grid">
               <div class="macro-card macro-protein">
-                <div class="macro-label">Protein</div>
+                <div class="macro-label">{{ 'PROTEIN' | translate }}</div>
                 <div class="macro-value">{{ activeNutritionPlan?.protein || 0 }}</div>
-                <div class="macro-unit">grams</div>
+                <div class="macro-unit">{{ 'GRAMS' | translate }}</div>
               </div>
               <div class="macro-card macro-carbs">
-                <div class="macro-label">Carbs</div>
+                <div class="macro-label">{{ 'CARBS' | translate }}</div>
                 <div class="macro-value">{{ activeNutritionPlan?.carbs || 0 }}</div>
-                <div class="macro-unit">grams</div>
+                <div class="macro-unit">{{ 'GRAMS' | translate }}</div>
               </div>
               <div class="macro-card macro-fat">
-                <div class="macro-label">Fat</div>
+                <div class="macro-label">{{ 'FAT' | translate }}</div>
                 <div class="macro-value">{{ activeNutritionPlan?.fat || 0 }}</div>
-                <div class="macro-unit">grams</div>
+                <div class="macro-unit">{{ 'GRAMS' | translate }}</div>
               </div>
             </div>
             <div class="nutrition-status">
               <i class="fas fa-chart-line"></i>
-              <span>{{ activeNutritionPlan?.mealCount || 0 }} meals</span>
+              <span>{{ 'MEALS_COUNT' | translate:{ count: activeNutritionPlan?.mealCount || 0 } }}</span>
             </div>
           </div>
 
@@ -370,18 +370,18 @@
                 <i class="fas fa-apple-alt"></i>
                 <i class="fas fa-glass-water"></i>
               </div>
-              <div class="dashboard-empty-title">This client does not have an active nutrition plan.</div>
+              <div class="dashboard-empty-title">{{ 'CLIENT_NO_ACTIVE_NUTRITION_PLAN' | translate }}</div>
               <div class="dashboard-empty-subtitle">
-                Create or assign a nutrition plan to start tracking meals and targets.
+                {{ 'CREATE_ASSIGN_NUTRITION_HINT' | translate }}
               </div>
               <div class="dashboard-empty-actions">
                 <button class="empty-primary-btn empty-primary-green" type="button" (click)="openAssignProgramModal('NUTRITION')">
                   <i class="fas fa-plus"></i>
-                  Assign Plan
+                  {{ 'ASSIGN_PLAN' | translate }}
                 </button>
                 <button class="empty-outline-btn empty-outline-green" type="button" (click)="assignType = 'NUTRITION'; showChooseModal = true">
                   <i class="fas fa-file-circle-plus"></i>
-                  Create Plan
+                  {{ 'CREATE_PLAN' | translate }}
                 </button>
               </div>
             </div>
@@ -393,19 +393,19 @@
         <header class="workout-activity__header">
           <span class="workout-activity__icon"><i class="fas fa-wave-square"></i></span>
           <span>
-            <strong>Workout Activity</strong>
-            <small>Latest sessions at a glance</small>
+            <strong>{{ 'WORKOUT_ACTIVITY' | translate }}</strong>
+            <small>{{ 'LATEST_SESSIONS_AT_GLANCE' | translate }}</small>
           </span>
         </header>
 
         <div class="workout-activity__empty" *ngIf="!latestWorkoutActivities.length">
-          No past workout activity yet.
+          {{ 'NO_PAST_WORKOUT_ACTIVITY' | translate }}
         </div>
 
         <div class="workout-activity__table" *ngIf="latestWorkoutActivities.length">
           <div class="workout-activity__columns">
-            <span>Date</span><span>Workout</span><span>Status</span>
-            <span>Duration</span><span>Exercises</span><span>Sets</span><span>Action</span>
+            <span>{{ 'DATE' | translate }}</span><span>{{ 'WORKOUT' | translate }}</span><span>{{ 'STATUS' | translate }}</span>
+            <span>{{ 'DURATION' | translate }}</span><span>{{ 'EXERCISES' | translate }}</span><span>{{ 'SETS' | translate }}</span><span>{{ 'ACTION' | translate }}</span>
           </div>
           <div class="workout-activity__row" *ngFor="let activity of latestWorkoutActivities">
             <div class="workout-activity__date">
@@ -419,7 +419,7 @@
                 <strong>{{ activity.programName }}</strong>
                 <small>
                   {{ activity.programDescription || activity.workoutName }}
-                  · Week {{ activity.week }} · Day {{ activity.dayInWeek }}
+                  · {{ 'WEEK' | translate }} {{ activity.week }} · {{ 'DAY' | translate }} {{ activity.dayInWeek }}
                 </small>
               </span>
             </div>
@@ -435,12 +435,12 @@
             <div class="workout-activity__exercises">
               <strong>{{ activity.completedCount }} / {{ activity.totalExercises }}</strong>
               <span><i [style.width.%]="activity.totalExercises ? activity.completedCount * 100 / activity.totalExercises : 0"></i></span>
-              <small *ngIf="activity.skippedCount">{{ activity.skippedCount }} skipped</small>
+              <small *ngIf="activity.skippedCount">{{ 'SKIPPED_COUNT' | translate:{ count: activity.skippedCount } }}</small>
             </div>
             <div class="workout-activity__sets">
-              <strong>{{ activity.completedSets }} / {{ activity.totalSets }} <small>sets completed</small></strong>
+              <strong>{{ activity.completedSets }} / {{ activity.totalSets }} <small>{{ 'SETS_COMPLETED' | translate }}</small></strong>
               <span><i [style.width.%]="activity.totalSets ? activity.completedSets * 100 / activity.totalSets : 0"></i></span>
-              <small *ngIf="activity.missedSets || activity.pendingSets">{{ activity.missedSets || activity.pendingSets }} {{ activity.missedSets ? 'missed' : 'pending' }}</small>
+              <small *ngIf="activity.missedSets || activity.pendingSets">{{ (activity.missedSets ? 'MISSED_COUNT' : 'PENDING_COUNT') | translate:{ count: activity.missedSets || activity.pendingSets } }}</small>
             </div>
             <button class="workout-activity__action" type="button" (click)="openWorkoutActivity(activity)">
               {{ workoutActivityAction(activity) }}
@@ -449,7 +449,7 @@
         </div>
 
         <button class="workout-activity__all" type="button" (click)="openAllWorkoutActivity()">
-          View all workout activity <i class="fas fa-arrow-right"></i>
+          {{ 'VIEW_ALL_WORKOUT_ACTIVITY' | translate }} <i class="fas fa-arrow-right"></i>
         </button>
       </section>
 
@@ -457,19 +457,19 @@
         <header class="nutrition-activity__header">
           <span class="nutrition-activity__icon"><i class="fas fa-apple-alt"></i></span>
           <span>
-            <strong>Nutrition Activity</strong>
-            <small>Latest nutrition days at a glance</small>
+            <strong>{{ 'NUTRITION_ACTIVITY' | translate }}</strong>
+            <small>{{ 'LATEST_NUTRITION_DAYS_AT_GLANCE' | translate }}</small>
           </span>
         </header>
 
         <div class="nutrition-activity__empty" *ngIf="!latestNutritionActivities.length">
-          No past nutrition activity yet.
+          {{ 'NO_PAST_NUTRITION_ACTIVITY' | translate }}
         </div>
 
         <div class="nutrition-activity__table" *ngIf="latestNutritionActivities.length">
           <div class="nutrition-activity__columns">
-            <span>Date</span><span>Nutrition day</span><span>Status</span>
-            <span>Meals</span><span>Day summary</span><span>Action</span>
+            <span>{{ 'DATE' | translate }}</span><span>{{ 'NUTRITION_DAY' | translate }}</span><span>{{ 'STATUS' | translate }}</span>
+            <span>{{ 'MEALS' | translate }}</span><span>{{ 'DAY_SUMMARY' | translate }}</span><span>{{ 'ACTION' | translate }}</span>
           </div>
           <div class="nutrition-activity__row" *ngFor="let activity of latestNutritionActivities">
             <div class="nutrition-activity__date">
@@ -481,8 +481,8 @@
               <span class="nutrition-activity__calendar"><i class="far fa-calendar"></i></span>
               <span>
                 <strong>{{ activity.dayName }}</strong>
-                <small>{{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</small>
-                <small><i class="far fa-calendar-alt"></i> Nutrition day</small>
+                <small>{{ activity.programName }} · {{ 'WEEK' | translate }} {{ activity.week }} · {{ 'DAY' | translate }} {{ activity.dayInWeek }}</small>
+                <small><i class="far fa-calendar-alt"></i> {{ 'NUTRITION_DAY' | translate }}</small>
               </span>
             </div>
             <div class="nutrition-activity__status">
@@ -494,19 +494,19 @@
             <div class="nutrition-activity__meals">
               <strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong>
               <span><i [style.width.%]="activity.plannedMeals ? activity.loggedMeals * 100 / activity.plannedMeals : 0"></i></span>
-              <small *ngIf="activity.status === 'NOT_LOGGED'">No meals reported</small>
-              <small *ngIf="activity.status === 'OFF_PLAN'">Off-plan meals logged</small>
+              <small *ngIf="activity.status === 'NOT_LOGGED'">{{ 'NO_MEALS_REPORTED' | translate }}</small>
+              <small *ngIf="activity.status === 'OFF_PLAN'">{{ 'OFF_PLAN_MEALS_LOGGED' | translate }}</small>
               <small *ngIf="activity.status !== 'NOT_LOGGED' && activity.status !== 'OFF_PLAN'">
-                {{ activity.asPlannedMeals }} as planned<span *ngIf="activity.skippedMeals"> · {{ activity.skippedMeals }} skipped</span>
+                {{ 'AS_PLANNED_COUNT' | translate:{ count: activity.asPlannedMeals } }}<span *ngIf="activity.skippedMeals"> · {{ 'SKIPPED_COUNT' | translate:{ count: activity.skippedMeals } }}</span>
               </small>
             </div>
             <div class="nutrition-activity__summary">
               <div class="nutrition-feedback">
-                <span><small>Hunger</small><strong>{{ activity.hunger || '—' }}</strong></span>
-                <span><small>Energy</small><strong>{{ activity.energy || '—' }}</strong></span>
-                <span><small>Digestion</small><strong>{{ activity.digestion || '—' }}</strong></span>
+                <span><small>{{ 'HUNGER' | translate }}</small><strong>{{ activity.hunger || '—' }}</strong></span>
+                <span><small>{{ 'ENERGY' | translate }}</small><strong>{{ activity.energy || '—' }}</strong></span>
+                <span><small>{{ 'DIGESTION' | translate }}</small><strong>{{ activity.digestion || '—' }}</strong></span>
               </div>
-              <small>{{ activity.overallNote || (activity.status === 'NOT_LOGGED' ? 'No overall note.' : 'No note added.') }}</small>
+              <small>{{ activity.overallNote || ((activity.status === 'NOT_LOGGED' ? 'NO_OVERALL_NOTE' : 'NO_NOTE_ADDED') | translate) }}</small>
             </div>
             <button class="nutrition-activity__action" type="button" (click)="openNutritionActivity(activity)">
               {{ nutritionActivityAction(activity.status) }}
@@ -514,7 +514,7 @@
           </div>
         </div>
         <button class="nutrition-activity__all" type="button" (click)="openAllNutritionActivity()">
-          View all nutrition activity <i class="fas fa-arrow-right"></i>
+          {{ 'VIEW_ALL_NUTRITION_ACTIVITY' | translate }} <i class="fas fa-arrow-right"></i>
         </button>
       </section>
     </div>
@@ -524,32 +524,32 @@
         <header class="activity-modal__header">
           <span class="activity-modal__heading">
             <span class="activity-modal__heading-icon"><i class="fas fa-apple-alt"></i></span>
-            <span><strong>All Nutrition Activity</strong><small>Full history of {{ fullName }}'s nutrition days</small></span>
+            <span><strong>{{ 'ALL_NUTRITION_ACTIVITY' | translate }}</strong><small>{{ 'FULL_NUTRITION_HISTORY_FOR' | translate:{ name: fullName } }}</small></span>
           </span>
-          <button type="button" aria-label="Close" (click)="closeAllNutritionActivity()">×</button>
+          <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeAllNutritionActivity()">×</button>
         </header>
         <nav class="activity-filters">
           <button *ngFor="let filter of ['ALL','COMPLETED','IN_PROGRESS','NOT_LOGGED','OFF_PLAN']"
                   type="button"
                   [class.active]="nutritionActivityFilter === filter"
                   (click)="setNutritionActivityFilter($any(filter))">
-            {{ filter === 'ALL' ? 'All' : filter === 'IN_PROGRESS' ? 'In progress' : filter === 'NOT_LOGGED' ? 'Not logged' : filter === 'OFF_PLAN' ? 'Off-plan' : 'Completed' }}
+            {{ ('NUTRITION_ACTIVITY_STATUS_' + filter) | translate }}
           </button>
         </nav>
         <div class="activity-modal__body">
           <div class="nutrition-history__columns">
-            <span>Date</span><span>Nutrition day</span><span>Status</span><span>Meals</span><span>Day summary</span><span>Action</span>
+            <span>{{ 'DATE' | translate }}</span><span>{{ 'NUTRITION_DAY' | translate }}</span><span>{{ 'STATUS' | translate }}</span><span>{{ 'MEALS' | translate }}</span><span>{{ 'DAY_SUMMARY' | translate }}</span><span>{{ 'ACTION' | translate }}</span>
           </div>
           <div class="nutrition-history__row" *ngFor="let activity of visibleNutritionActivities">
             <div class="nutrition-activity__date"><small>{{ activity.scheduledDate | date:'EEE' }}</small><strong>{{ activity.scheduledDate | date:'dd' }}</strong><small>{{ activity.scheduledDate | date:'MMM' }}</small></div>
-            <div class="nutrition-activity__day"><span class="nutrition-activity__calendar"><i class="far fa-calendar"></i></span><span><strong>{{ activity.dayName }}</strong><small>{{ activity.programName }} · Week {{ activity.week }} · Day {{ activity.dayInWeek }}</small></span></div>
+            <div class="nutrition-activity__day"><span class="nutrition-activity__calendar"><i class="far fa-calendar"></i></span><span><strong>{{ activity.dayName }}</strong><small>{{ activity.programName }} · {{ 'WEEK' | translate }} {{ activity.week }} · {{ 'DAY' | translate }} {{ activity.dayInWeek }}</small></span></div>
             <div class="nutrition-activity__status"><span class="nutrition-status-pill" [attr.data-status]="activity.status"><i></i>{{ nutritionActivityStatusLabel(activity.status) }}</span><small>{{ nutritionActivityDescription(activity) }}</small></div>
             <div class="nutrition-activity__meals"><strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong><span><i [style.width.%]="activity.plannedMeals ? activity.loggedMeals * 100 / activity.plannedMeals : 0"></i></span></div>
-            <div class="nutrition-feedback"><span><small>Hunger</small><strong>{{ activity.hunger || '—' }}</strong></span><span><small>Energy</small><strong>{{ activity.energy || '—' }}</strong></span><span><small>Digestion</small><strong>{{ activity.digestion || '—' }}</strong></span></div>
+            <div class="nutrition-feedback"><span><small>{{ 'HUNGER' | translate }}</small><strong>{{ activity.hunger || '—' }}</strong></span><span><small>{{ 'ENERGY' | translate }}</small><strong>{{ activity.energy || '—' }}</strong></span><span><small>{{ 'DIGESTION' | translate }}</small><strong>{{ activity.digestion || '—' }}</strong></span></div>
             <button type="button" (click)="openNutritionActivity(activity)">{{ nutritionActivityAction(activity.status) }}</button>
           </div>
-          <div class="workout-activity__empty" *ngIf="!visibleNutritionActivities.length">No activities match this filter.</div>
-          <button class="activity-view-more" type="button" *ngIf="canViewMoreNutritionActivities" (click)="viewMoreNutritionActivities()">View more</button>
+          <div class="workout-activity__empty" *ngIf="!visibleNutritionActivities.length">{{ 'NO_ACTIVITIES_MATCH_FILTER' | translate }}</div>
+          <button class="activity-view-more" type="button" *ngIf="canViewMoreNutritionActivities" (click)="viewMoreNutritionActivities()">{{ 'VIEW_MORE' | translate }}</button>
         </div>
       </section>
     </div>
@@ -566,62 +566,62 @@
           </div>
           <span class="nutrition-report__actions">
             <button class="nutrition-report__message" type="button" (click)="closeNutritionActivity(); setTab('chat')">
-              <i class="far fa-comment"></i> Message client
+              <i class="far fa-comment"></i> {{ 'MESSAGE_CLIENT' | translate }}
             </button>
-            <button class="nutrition-report__close" type="button" aria-label="Close" (click)="closeNutritionActivity()">×</button>
+            <button class="nutrition-report__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeNutritionActivity()">×</button>
           </span>
         </header>
 
         <div class="nutrition-report__body">
           <div class="nutrition-report__metrics">
             <section>
-              <small>Meal logging</small>
+              <small>{{ 'MEAL_LOGGING' | translate }}</small>
               <div class="nutrition-report__metric-cards">
-                <span><i class="fas fa-utensils"></i><b><small>Logged</small><strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong></b></span>
-                <span><i class="far fa-check-circle"></i><b><small>As planned</small><strong>{{ activity.asPlannedMeals }}</strong></b></span>
-                <span><i class="fas fa-pencil-alt"></i><b><small>Modified</small><strong>{{ activity.modifiedMeals }}</strong></b></span>
-                <span><i class="far fa-dot-circle"></i><b><small>Skipped</small><strong>{{ activity.skippedMeals }}</strong></b></span>
+                <span><i class="fas fa-utensils"></i><b><small>{{ 'LOGGED' | translate }}</small><strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong></b></span>
+                <span><i class="far fa-check-circle"></i><b><small>{{ 'AS_PLANNED' | translate }}</small><strong>{{ activity.asPlannedMeals }}</strong></b></span>
+                <span><i class="fas fa-pencil-alt"></i><b><small>{{ 'MODIFIED' | translate }}</small><strong>{{ activity.modifiedMeals }}</strong></b></span>
+                <span><i class="far fa-dot-circle"></i><b><small>{{ 'NUTRITION_MEAL_SKIPPED' | translate }}</small><strong>{{ activity.skippedMeals }}</strong></b></span>
               </div>
             </section>
             <section>
-              <small>Day totals</small>
-              <div><span><small>Calories</small><strong>{{ activity.totals.calories | number:'1.0-0' }} <em>kcal</em></strong></span>
-                <span><small>Protein</small><strong>{{ activity.totals.protein | number:'1.0-0' }} <em>g</em></strong></span>
-                <span><small>Carbs</small><strong>{{ activity.totals.carbs | number:'1.0-0' }} <em>g</em></strong></span>
-                <span><small>Fat</small><strong>{{ activity.totals.fat | number:'1.0-0' }} <em>g</em></strong></span></div>
+              <small>{{ 'DAY_TOTALS' | translate }}</small>
+              <div><span><small>{{ 'CALORIES' | translate }}</small><strong>{{ activity.totals.calories | number:'1.0-0' }} <em>kcal</em></strong></span>
+                <span><small>{{ 'PROTEIN' | translate }}</small><strong>{{ activity.totals.protein | number:'1.0-0' }} <em>g</em></strong></span>
+                <span><small>{{ 'CARBS' | translate }}</small><strong>{{ activity.totals.carbs | number:'1.0-0' }} <em>g</em></strong></span>
+                <span><small>{{ 'FAT' | translate }}</small><strong>{{ activity.totals.fat | number:'1.0-0' }} <em>g</em></strong></span></div>
             </section>
           </div>
 
           <div class="nutrition-report__nothing" *ngIf="activity.status === 'NOT_LOGGED'">
             <span><i class="fas fa-utensils"></i></span>
-            <strong>Nothing logged yet</strong>
-            <p>The client has not reported any meals or feedback for this nutrition day.</p>
+            <strong>{{ 'NOTHING_LOGGED_YET' | translate }}</strong>
+            <p>{{ 'CLIENT_NO_NUTRITION_REPORT' | translate }}</p>
           </div>
 
           <div class="nutrition-report__grid" *ngIf="activity.status !== 'NOT_LOGGED'">
             <section class="nutrition-report__meals">
-              <h3>Meal reports</h3>
-              <div class="nutrition-report__empty" *ngIf="!activity.meals.length">No planned meals for this day.</div>
+              <h3>{{ 'MEAL_REPORTS' | translate }}</h3>
+              <div class="nutrition-report__empty" *ngIf="!activity.meals.length">{{ 'NO_PLANNED_MEALS_FOR_DAY' | translate }}</div>
               <article *ngFor="let meal of activity.meals; let mealIndex = index">
                 <ng-container *ngIf="nutritionMealLog(activity, mealIndex) as mealLog; else unloggedMeal">
                   <header>
-                    <b>{{ mealIndex + 1 }}</b><strong>Meal {{ mealIndex + 1 }} · {{ meal.name || 'Meal' }}</strong>
-                    <em [attr.data-state]="nutritionMealState(mealLog)">{{ nutritionMealState(mealLog) }}</em>
+                    <b>{{ mealIndex + 1 }}</b><strong>{{ 'MEAL' | translate }} {{ mealIndex + 1 }} · {{ meal.name || ('MEAL' | translate) }}</strong>
+                    <em [attr.data-state]="nutritionMealState(mealLog)">{{ nutritionMealStateLabel(mealLog) }}</em>
                     <span>{{ mealLog.calories || meal.calories || 0 }} kcal</span>
-                    <span>{{ mealLog.protein || meal.protein || 0 }} g protein</span>
-                    <span>{{ mealLog.carbs || meal.carbs || 0 }} g carbs</span>
-                    <span>{{ mealLog.fat || meal.fat || 0 }} g fat</span>
+                    <span>{{ mealLog.protein || meal.protein || 0 }} g {{ 'PROTEIN' | translate }}</span>
+                    <span>{{ mealLog.carbs || meal.carbs || 0 }} g {{ 'CARBS' | translate }}</span>
+                    <span>{{ mealLog.fat || meal.fat || 0 }} g {{ 'FAT' | translate }}</span>
                   </header>
                   <div class="nutrition-meal__content">
-                    <div><small>Items</small><ul><li *ngFor="let food of mealLog.items || mealLog.foods || meal.foods || []">{{ food.name }}<span *ngIf="food.quantity"> ({{ food.quantity }} {{ food.unit }})</span></li></ul></div>
-                    <div><small><i class="far fa-comment-alt"></i> Client note</small><p [class.is-empty]="!mealLog.note && !mealLog.clientNote">{{ mealLog.note || mealLog.clientNote || 'No note' }}</p></div>
-                    <figure *ngIf="mealLog.photoUrl || mealLog.imageUrl; else noMealPhoto"><img [src]="mealLog.photoUrl || mealLog.imageUrl" [alt]="meal.name || 'Meal photo'"><figcaption><i class="far fa-image"></i> Meal photo</figcaption></figure>
-                    <ng-template #noMealPhoto><div class="nutrition-meal__no-photo"><i class="far fa-camera"></i><small>No photo</small></div></ng-template>
+                    <div><small>{{ 'ITEMS' | translate }}</small><ul><li *ngFor="let food of mealLog.items || mealLog.foods || meal.foods || []">{{ food.name }}<span *ngIf="food.quantity"> ({{ food.quantity }} {{ food.unit }})</span></li></ul></div>
+                    <div><small><i class="far fa-comment-alt"></i> {{ 'CLIENT_NOTE' | translate }}</small><p [class.is-empty]="!mealLog.note && !mealLog.clientNote">{{ mealLog.note || mealLog.clientNote || ('NO_NOTE' | translate) }}</p></div>
+                    <figure *ngIf="mealLog.photoUrl || mealLog.imageUrl; else noMealPhoto"><img [src]="mealLog.photoUrl || mealLog.imageUrl" [alt]="meal.name || ('MEAL_PHOTO' | translate)"><figcaption><i class="far fa-image"></i> {{ 'MEAL_PHOTO' | translate }}</figcaption></figure>
+                    <ng-template #noMealPhoto><div class="nutrition-meal__no-photo"><i class="far fa-camera"></i><small>{{ 'NO_PHOTO' | translate }}</small></div></ng-template>
                   </div>
                 </ng-container>
                 <ng-template #unloggedMeal>
-                  <header class="is-unlogged"><b>{{ mealIndex + 1 }}</b><strong>Meal {{ mealIndex + 1 }} · {{ meal.name || 'Meal' }}</strong><em data-state="Not logged">Not logged</em></header>
-                  <p class="nutrition-meal__missing">No client entry was recorded for this meal.</p>
+                  <header class="is-unlogged"><b>{{ mealIndex + 1 }}</b><strong>{{ 'MEAL' | translate }} {{ mealIndex + 1 }} · {{ meal.name || ('MEAL' | translate) }}</strong><em data-state="Not logged">{{ 'NUTRITION_MEAL_NOT_LOGGED' | translate }}</em></header>
+                  <p class="nutrition-meal__missing">{{ 'NO_CLIENT_ENTRY_FOR_MEAL' | translate }}</p>
                 </ng-template>
               </article>
               <footer *ngIf="activity.loggedAt"><i class="far fa-clock"></i> Logged on {{ activity.loggedAt | date:'MMM d, y, h:mm a' }}</footer>
@@ -629,15 +629,15 @@
 
             <aside class="nutrition-report__aside">
               <section>
-                <h3>Daily feedback <i class="far fa-info-circle"></i></h3>
-                <div class="nutrition-daily-feedback"><span><i class="fas fa-fire"></i><b>Hunger<small>How hungry did you feel?</small></b><strong>{{ activity.hunger || '—' }}</strong></span>
-                  <span><i class="fas fa-bolt"></i><b>Energy<small>How were your energy levels?</small></b><strong>{{ activity.energy || '—' }}</strong></span>
-                  <span><i class="far fa-heart"></i><b>Digestion<small>How did digestion feel?</small></b><strong>{{ activity.digestion || '—' }}</strong></span></div>
+                <h3>{{ 'DAILY_FEEDBACK' | translate }} <i class="far fa-info-circle"></i></h3>
+                <div class="nutrition-daily-feedback"><span><i class="fas fa-fire"></i><b>{{ 'HUNGER' | translate }}<small>{{ 'HUNGER_FEELING_QUESTION' | translate }}</small></b><strong>{{ activity.hunger || '—' }}</strong></span>
+                  <span><i class="fas fa-bolt"></i><b>{{ 'ENERGY' | translate }}<small>{{ 'ENERGY_LEVELS_QUESTION' | translate }}</small></b><strong>{{ activity.energy || '—' }}</strong></span>
+                  <span><i class="far fa-heart"></i><b>{{ 'DIGESTION' | translate }}<small>{{ 'DIGESTION_FEELING_QUESTION' | translate }}</small></b><strong>{{ activity.digestion || '—' }}</strong></span></div>
               </section>
-              <section><h3><i class="far fa-file-alt"></i> Overall note</h3><p>{{ activity.overallNote || 'No overall note.' }}</p></section>
-              <section><h3><i class="far fa-image"></i> Attached photos <small>{{ activity.photos.length }} photo{{ activity.photos.length === 1 ? '' : 's' }}</small></h3>
+              <section><h3><i class="far fa-file-alt"></i> {{ 'OVERALL_NOTE' | translate }}</h3><p>{{ activity.overallNote || ('NO_OVERALL_NOTE' | translate) }}</p></section>
+              <section><h3><i class="far fa-image"></i> {{ 'ATTACHED_PHOTOS' | translate }} <small>{{ 'PHOTOS_COUNT' | translate:{ count: activity.photos.length } }}</small></h3>
                 <div class="nutrition-report__photos" *ngIf="activity.photos.length; else noAttachedPhotos"><figure *ngFor="let photo of activity.photos"><img [src]="photo.url" [alt]="photo.label"><figcaption>{{ photo.label }}</figcaption></figure></div>
-                <ng-template #noAttachedPhotos><p class="is-empty">No photos attached.</p></ng-template>
+                <ng-template #noAttachedPhotos><p class="is-empty">{{ 'NO_PHOTOS_ATTACHED' | translate }}</p></ng-template>
               </section>
             </aside>
           </div>
@@ -650,26 +650,26 @@
         <header class="activity-modal__header">
           <span class="activity-modal__heading">
             <span class="activity-modal__heading-icon"><i class="fas fa-dumbbell"></i></span>
-            <span><strong>All Workout Activity</strong><small>Full history of {{ fullName }}'s sessions</small></span>
+            <span><strong>{{ 'ALL_WORKOUT_ACTIVITY' | translate }}</strong><small>{{ 'FULL_WORKOUT_HISTORY_FOR' | translate:{ name: fullName } }}</small></span>
           </span>
-          <button type="button" aria-label="Close" (click)="closeAllWorkoutActivity()">×</button>
+          <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeAllWorkoutActivity()">×</button>
         </header>
         <nav class="activity-filters">
           <button *ngFor="let filter of ['ALL','COMPLETED','IN_PROGRESS','MISSED','UPCOMING']"
                   type="button"
                   [class.active]="workoutActivityFilter === filter"
                   (click)="setWorkoutActivityFilter($any(filter))">
-            {{ filter === 'ALL' ? 'All' : filter === 'IN_PROGRESS' ? 'In progress' : (filter | titlecase) }}
+            {{ ('WORKOUT_ACTIVITY_STATUS_' + filter) | translate }}
           </button>
         </nav>
         <div class="activity-modal__body">
           <div class="activity-history-columns">
-            <span>Date</span>
-            <span>Workout</span>
-            <span>Status</span>
-            <span>Duration</span>
-            <span>Exercises</span><span>Sets</span>
-            <span>Action</span>
+            <span>{{ 'DATE' | translate }}</span>
+            <span>{{ 'WORKOUT' | translate }}</span>
+            <span>{{ 'STATUS' | translate }}</span>
+            <span>{{ 'DURATION' | translate }}</span>
+            <span>{{ 'EXERCISES' | translate }}</span><span>{{ 'SETS' | translate }}</span>
+            <span>{{ 'ACTION' | translate }}</span>
           </div>
           <div class="activity-history-card" *ngFor="let activity of visibleWorkoutActivities">
             <div class="activity-history-card__date">
@@ -683,7 +683,7 @@
                 <strong>{{ activity.programName }}</strong>
                 <span>
                   {{ activity.programDescription || activity.workoutName }}
-                  · Week {{ activity.week }} · Day {{ activity.dayInWeek }}
+                  · {{ 'WEEK' | translate }} {{ activity.week }} · {{ 'DAY' | translate }} {{ activity.dayInWeek }}
                 </span>
               </span>
             </div>
@@ -696,19 +696,19 @@
               <span class="activity-history-card__exercise">
                 <strong>{{ activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED' ? '–' : activity.completedCount }} / {{ activity.totalExercises }}</strong>
                 <i><b [style.width.%]="activity.totalExercises ? activity.completedCount * 100 / activity.totalExercises : 0"></b></i>
-                <small *ngIf="activity.skippedCount">{{ activity.skippedCount }} {{ activity.status === 'MISSED' ? 'missed' : 'skipped' }}</small>
+                <small *ngIf="activity.skippedCount">{{ (activity.status === 'MISSED' ? 'MISSED_COUNT' : 'SKIPPED_COUNT') | translate:{ count: activity.skippedCount } }}</small>
               </span>
               <span class="activity-history-card__sets">
-                <strong>{{ activity.completedSets }} / {{ activity.totalSets }} <small>sets completed</small></strong>
+                <strong>{{ activity.completedSets }} / {{ activity.totalSets }} <small>{{ 'SETS_COMPLETED' | translate }}</small></strong>
                 <i><b [style.width.%]="activity.totalSets ? activity.completedSets * 100 / activity.totalSets : 0"></b></i>
-                <small *ngIf="activity.missedSets || activity.pendingSets">{{ activity.missedSets || activity.pendingSets }} {{ activity.missedSets ? 'missed' : 'pending' }}</small>
+                <small *ngIf="activity.missedSets || activity.pendingSets">{{ (activity.missedSets ? 'MISSED_COUNT' : 'PENDING_COUNT') | translate:{ count: activity.missedSets || activity.pendingSets } }}</small>
               </span>
             </div>
             <button type="button" (click)="openWorkoutActivity(activity)">{{ workoutActivityAction(activity) }}</button>
           </div>
-          <div class="workout-activity__empty" *ngIf="!visibleWorkoutActivities.length">No activities match this filter.</div>
+          <div class="workout-activity__empty" *ngIf="!visibleWorkoutActivities.length">{{ 'NO_ACTIVITIES_MATCH_FILTER' | translate }}</div>
           <button class="activity-view-more" type="button" *ngIf="canViewMoreWorkoutActivities" (click)="viewMoreWorkoutActivities()">
-            View more
+            {{ 'VIEW_MORE' | translate }}
           </button>
         </div>
       </section>
@@ -726,38 +726,38 @@
           </span>
           <span class="activity-detail-actions">
             <button class="activity-send-message" type="button" (click)="closeWorkoutActivity(); setTab('chat')">
-              <i class="far fa-comment-alt"></i> Send message
+              <i class="far fa-comment-alt"></i> {{ 'SEND_MESSAGE' | translate }}
             </button>
-            <button type="button" aria-label="Close" (click)="closeWorkoutActivity()">×</button>
+            <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeWorkoutActivity()">×</button>
           </span>
         </header>
         <div class="activity-modal__body">
           <div class="activity-detail-summary" *ngIf="activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">
-            <div><i class="far fa-clock"></i><span><strong>{{ workoutActivityDuration(activity) }}</strong><small>Duration</small></span></div>
-            <div><i class="far fa-check-circle"></i><span><strong>{{ activity.completedCount }} of {{ activity.totalExercises }}</strong><small>Exercises completed</small><small class="summary-detail">{{ activity.completedCount - activity.partialCount }} completed · {{ activity.partialCount }} partial</small></span></div>
+            <div><i class="far fa-clock"></i><span><strong>{{ workoutActivityDuration(activity) }}</strong><small>{{ 'DURATION' | translate }}</small></span></div>
+            <div><i class="far fa-check-circle"></i><span><strong>{{ activity.completedCount }} / {{ activity.totalExercises }}</strong><small>{{ 'EXERCISES_COMPLETED' | translate }}</small><small class="summary-detail">{{ 'COMPLETED_PARTIAL_SUMMARY' | translate:{ completed: activity.completedCount - activity.partialCount, partial: activity.partialCount } }}</small></span></div>
             <div><i class="fas fa-minus-circle"></i><span><strong>{{ activity.status === 'MISSED' ? activity.totalExercises : activity.skippedCount }}</strong><small>{{ activity.status === 'MISSED' ? 'Missed' : 'Skipped' }}</small></span></div>
-            <div><i class="fas fa-dumbbell"></i><span><strong>{{ activity.completedSets }} / {{ activity.totalSets }}</strong><small>Sets completed</small><small class="summary-detail">{{ activity.missedSets }} missed · {{ activity.totalSets ? (activity.completedSets * 100 / activity.totalSets | number:'1.0-0') : 0 }}% adherence</small></span></div>
-            <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'MISSED' ? 'No activity' : activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'After workout' : activity.status === 'COMPLETED' ? 'Live workout' : workoutActivityMode(activity) }}</strong><small>Completion mode</small></span></div>
+            <div><i class="fas fa-dumbbell"></i><span><strong>{{ activity.completedSets }} / {{ activity.totalSets }}</strong><small>{{ 'SETS_COMPLETED' | translate }}</small><small class="summary-detail">{{ 'MISSED_ADHERENCE_SUMMARY' | translate:{ missed: activity.missedSets, percent: (activity.totalSets ? (activity.completedSets * 100 / activity.totalSets | number:'1.0-0') : 0) } }}</small></span></div>
+            <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'MISSED' ? ('NO_ACTIVITY' | translate) : activity.status === 'COMPLETED_AFTER_WORKOUT' ? ('AFTER_WORKOUT' | translate) : activity.status === 'COMPLETED' ? ('LIVE_WORKOUT' | translate) : workoutActivityMode(activity) }}</strong><small>{{ 'COMPLETION_MODE' | translate }}</small></span></div>
           </div>
 
           <div class="activity-note" *ngIf="activity.status !== 'MISSED' && activity.overallNote">
             <i class="far fa-file-alt"></i>
-            <span><strong>Client note</strong><p>{{ activity.overallNote }}</p></span>
+            <span><strong>{{ 'CLIENT_NOTE' | translate }}</strong><p>{{ activity.overallNote }}</p></span>
           </div>
           <div class="activity-note activity-note--missed" *ngIf="activity.status === 'MISSED'">
             <i class="fas fa-info-circle"></i>
             <span>
-              <strong>Workout missed</strong>
-              <p>No performance data was recorded.</p>
-              <p *ngIf="activity.missedReason">Reason: {{ activity.missedReason }}</p>
+              <strong>{{ 'WORKOUT_MISSED' | translate }}</strong>
+              <p>{{ 'NO_PERFORMANCE_DATA_RECORDED' | translate }}</p>
+              <p *ngIf="activity.missedReason">{{ 'REASON' | translate }}: {{ activity.missedReason }}</p>
             </span>
           </div>
 
           <div class="activity-exercises-heading">
-            <strong>Exercises</strong>
-            <span><i class="legend-dot legend-dot--done"></i>Completed</span>
-            <span><i class="legend-dot legend-dot--partial"></i>Partially completed</span>
-            <span><i class="legend-dot legend-dot--missed"></i>Skipped</span>
+            <strong>{{ 'EXERCISES' | translate }}</strong>
+            <span><i class="legend-dot legend-dot--done"></i>{{ 'COMPLETED' | translate }}</span>
+            <span><i class="legend-dot legend-dot--partial"></i>{{ 'PARTIALLY_COMPLETED' | translate }}</span>
+            <span><i class="legend-dot legend-dot--missed"></i>{{ 'NUTRITION_MEAL_SKIPPED' | translate }}</span>
             <i class="fas fa-chevron-up"></i>
           </div>
 
@@ -767,10 +767,10 @@
               <img class="activity-exercise-image" *ngIf="exercise.imageUrl || exercise.exerciseRef?.imageUrl || exercise.exerciseRef?.image || exercise.exerciseRef?.thumbnailUrl" [src]="exercise.imageUrl || exercise.exerciseRef?.imageUrl || exercise.exerciseRef?.image || exercise.exerciseRef?.thumbnailUrl" alt="">
               <span class="activity-exercise-copy">
                 <strong>{{ exercise.name || exercise.exerciseRef?.name || 'Exercise' }}</strong>
-                <small>{{ exercise.type || exercise.exerciseRef?.type || '' }} <em *ngIf="exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">{{ exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle }}</em></small>
+                <small>{{ ('EXERCISE_TYPE_' + ((exercise.type || exercise.exerciseRef?.type || '') | uppercase)) | translate }} <em *ngIf="exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">{{ exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle }}</em></small>
               </span>
               <span class="activity-exercise-state" [attr.data-state]="exerciseActivityState(activity, exercise, exerciseIndex)">
-                <i class="far fa-check-circle"></i>{{ exerciseActivityState(activity, exercise, exerciseIndex) }}
+                <i class="far fa-check-circle"></i>{{ exerciseActivityStateLabel(activity, exercise, exerciseIndex) }}
                 <small>{{ exerciseSetSummary(activity, exercise, exerciseIndex) }}</small>
               </span>
               <i class="fas fa-chevron-up activity-exercise-chevron"></i>
@@ -778,7 +778,7 @@
             <ng-container *ngIf="workoutActivityLog(activity, exercise, exerciseIndex) as exerciseLog">
               <p class="activity-skip-reason" *ngIf="exerciseLog.skipped">
                 <i class="far fa-minus-circle"></i>
-                <strong>Skipped:</strong> {{ exerciseLog.skipReason || exerciseLog.reason || 'No reason provided' }}
+                <strong>{{ 'NUTRITION_MEAL_SKIPPED' | translate }}:</strong> {{ exerciseLog.skipReason || exerciseLog.reason || ('NO_REASON_PROVIDED' | translate) }}
               </p>
             </ng-container>
             <div class="activity-set-table" *ngIf="exerciseActivityState(activity, exercise, exerciseIndex) !== 'Skipped'">
@@ -786,9 +786,9 @@
                 class="activity-set-row activity-set-row--head"
                 [class.activity-set-row--planned-only]="activity.status === 'MISSED' || activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED'"
               >
-                <span>Set</span><span>Type</span><span>Planned</span>
-                <span *ngIf="activity.status !== 'MISSED' && activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">Actual</span>
-                <span>Rest</span><span>Status</span>
+                <span>{{ 'SET' | translate }}</span><span>{{ 'TYPE' | translate }}</span><span>{{ 'PLANNED' | translate }}</span>
+                <span *ngIf="activity.status !== 'MISSED' && activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED'">{{ 'ACTUAL' | translate }}</span>
+                <span>{{ 'REST' | translate }}</span><span>{{ 'STATUS' | translate }}</span>
               </div>
               <div
                 class="activity-set-row"
@@ -807,15 +807,15 @@
                 <span>{{ formatActivityRest(set) }}</span>
                 <span class="activity-set-status" [attr.data-status]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex)">
                   <i class="far" [class.fa-check-circle]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) === 'Done'" [class.fa-minus-circle]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) !== 'Done'"></i>
-                  {{ workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) }}
+                  {{ workoutSetStatusLabel(activity, exercise, exerciseIndex, set, setIndex) }}
                 </span>
               </div>
             </div>
             <p class="activity-coach-note" *ngIf="exercise.notes || exercise.description">
-              <strong>Coach note:</strong> {{ exercise.notes || exercise.description }}
+              <strong>{{ 'COACH_NOTE' | translate }}:</strong> {{ exercise.notes || exercise.description }}
             </p>
             <ng-container *ngIf="workoutActivityLog(activity, exercise, exerciseIndex) as log">
-              <p class="activity-client-note" *ngIf="log.note"><strong>Client note:</strong> {{ log.note }}</p>
+              <p class="activity-client-note" *ngIf="log.note"><strong>{{ 'CLIENT_NOTE' | translate }}:</strong> {{ log.note }}</p>
             </ng-container>
           </article>
         </div>
@@ -850,7 +850,7 @@
             [class.active]="activeSubTab === 'submissions'"
             (click)="setSubTab('submissions')"
           >
-            Submissions
+            {{ 'SUBMISSIONS' | translate }}
           </button>
 
           <button
@@ -858,7 +858,7 @@
             [class.active]="activeSubTab === 'assigned'"
             (click)="setSubTab('assigned')"
           >
-            Assigned
+            {{ 'ASSIGNED' | translate }}
           </button>
 
           <button
@@ -866,7 +866,7 @@
             [class.active]="activeSubTab === 'scheduled'"
             (click)="setSubTab('scheduled')"
           >
-            Scheduled
+            {{ 'SCHEDULED' | translate }}
             <span
               class="subtab-badge"
               *ngIf="activeSchedulesCount > 0"
@@ -884,7 +884,7 @@
             <i class="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search submissions..."
+              [placeholder]="'SEARCH_SUBMISSIONS' | translate"
               [(ngModel)]="submissionSearch"
               (ngModelChange)="onSubmissionSearchChange()"
             />
@@ -912,7 +912,7 @@
                 }"
               >
                 <i *ngIf="a.status === 'REVIEWED'" class="far fa-check-circle"></i>
-                {{ a.status === 'REVIEWED' ? 'Reviewed' : 'Pending Review' }}
+                {{ (a.status === 'REVIEWED' ? 'REVIEWED' : 'PENDING_REVIEW') | translate }}
               </span>
             </div>
           </div>
@@ -939,24 +939,24 @@
             <i class="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search assigned forms..."
+              [placeholder]="'SEARCH_ASSIGNED_FORMS' | translate"
               [(ngModel)]="assignedSearch"
               (ngModelChange)="onAssignedSearchChange()"
             />
           </div>
           <button class="btn-add-checkin" (click)="openCheckinModal(); $event.stopPropagation()">
             <i class="fas fa-plus"></i>
-            <span>Add Check-in</span>
+            <span>{{ 'ADD_CHECKIN' | translate }}</span>
           </button>
         </div>
 
         <div class="assigned-table">
           <div class="assigned-header-row">
-            <div>Form Name</div>
-            <div>Assigned Date</div>
-            <div>Due Date</div>
-            <div>Status</div>
-            <div class="text-right">Actions</div>
+            <div>{{ 'FORM_NAME' | translate }}</div>
+            <div>{{ 'ASSIGNED_DATE' | translate }}</div>
+            <div>{{ 'DUE_DATE' | translate }}</div>
+            <div>{{ 'STATUS' | translate }}</div>
+            <div class="text-right">{{ 'ACTIONS' | translate }}</div>
           </div>
 
           <div
@@ -975,13 +975,13 @@
             </div>
             <div>
               <span class="status-pill status-pill--pending">
-                {{ a.status === 'OPENED' ? 'Opened' : 'Pending' }}
+                {{ (a.status === 'OPENED' ? 'OPENED' : 'PENDING') | translate }}
               </span>
             </div>
             <div class="actions-cell">
               <button class="link-view" (click)="openAssignedAssignment(a, $event)">
                 <i class="far fa-eye"></i>
-                View
+                {{ 'VIEW' | translate }}
               </button>
             </div>
           </div>
@@ -1009,16 +1009,16 @@
           <div class="scheduled-empty-icon">
             <i class="far fa-clock"></i>
           </div>
-          <p class="scheduled-empty-title">No scheduled check-ins</p>
+          <p class="scheduled-empty-title">{{ 'NO_SCHEDULED_CHECKINS' | translate }}</p>
           <p class="scheduled-empty-sub">
-            Schedule forms from the Check-in Forms page to automate sending.
+            {{ 'SCHEDULE_FORMS_AUTOMATION_HINT' | translate }}
           </p>
         </div>
 
         <ng-container *ngIf="scheduledItems.length > 0">
           <div class="scheduled-summary">
             <span class="summary-dot summary-dot--active"></span>
-            <span class="summary-label">{{ activeSchedulesCount }} items</span>
+            <span class="summary-label">{{ 'ITEMS_COUNT' | translate:{ count: activeSchedulesCount } }}</span>
           </div>
 
           <div
@@ -1036,14 +1036,14 @@
 
                     <span class="freq-badge" *ngIf="s.schedule?.frequency">
                       <i class="fas fa-sync-alt"></i>
-                      {{ s.schedule.frequency | titlecase }}
+                      {{ ('FREQUENCY_' + (s.schedule.frequency | uppercase)) | translate }}
                     </span>
 
-                    <span class="kind-badge" *ngIf="s.kind === 'PLANNED'">Planned</span>
-                    <span class="kind-badge" *ngIf="s.kind === 'ASSIGNED'">Assigned</span>
+                    <span class="kind-badge" *ngIf="s.kind === 'PLANNED'">{{ 'PLANNED' | translate }}</span>
+                    <span class="kind-badge" *ngIf="s.kind === 'ASSIGNED'">{{ 'ASSIGNED' | translate }}</span>
 
                     <span class="schedule-qcount" *ngIf="s.questions?.length">
-                      {{ s.questions.length }} questions
+                      {{ s.questions.length }} {{ (s.questions.length === 1 ? 'QUESTION' : 'QUESTIONS') | translate }}
                     </span>
                   </div>
                 </div>
@@ -1053,7 +1053,7 @@
                 <button
                   class="schedule-action-btn schedule-action-btn--delete"
                   (click)="openDeleteScheduled(s, $event)"
-                  title="Delete"
+                  [title]="'DELETE' | translate"
                 >
                   <i class="fas fa-trash-alt"></i>
                 </button>
@@ -1062,21 +1062,21 @@
 
             <div class="schedule-card-details">
               <div class="schedule-detail-item" *ngIf="s.schedule?.daysOfWeek?.length">
-                <span class="schedule-detail-label">Days</span>
+                <span class="schedule-detail-label">{{ 'DAYS' | translate }}</span>
                 <div class="schedule-days">
-                  <span class="day-pill" *ngFor="let day of s.schedule.daysOfWeek">{{ day }}</span>
+                  <span class="day-pill" *ngFor="let day of s.schedule.daysOfWeek">{{ ('DAY_' + (day | uppercase)) | translate }}</span>
                 </div>
               </div>
 
               <div class="schedule-detail-item" *ngIf="s.schedule?.time">
-                <span class="schedule-detail-label">Send Time</span>
+                <span class="schedule-detail-label">{{ 'SEND_TIME' | translate }}</span>
                 <span class="schedule-detail-value">
                   <i class="far fa-clock"></i> {{ s.schedule.time }}
                 </span>
               </div>
 
               <div class="schedule-detail-item">
-                <span class="schedule-detail-label">Due</span>
+                <span class="schedule-detail-label">{{ 'DUE' | translate }}</span>
                 <span class="schedule-detail-value">
                   <i class="far fa-calendar-alt"></i>
                   {{ s.dueAt | date:'dd/MM/yyyy' }}
@@ -1084,8 +1084,8 @@
               </div>
 
               <div class="schedule-detail-item" *ngIf="s.status">
-                <span class="schedule-detail-label">Status</span>
-                <span class="schedule-detail-value">{{ s.status | titlecase }}</span>
+                <span class="schedule-detail-label">{{ 'STATUS' | translate }}</span>
+                <span class="schedule-detail-value">{{ ('CHECKIN_STATUS_' + (s.status | uppercase)) | translate }}</span>
               </div>
             </div>
           </div>
@@ -1166,7 +1166,7 @@
               <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12v6"></path>
             </svg>
-            <span>Client: {{ fullName }}</span>
+            <span>{{ 'CLIENT_NAME' | translate:{ name: fullName } }}</span>
           </div>
 
           <div class="mc-sub-row" *ngIf="modalMode === 'view'">
@@ -1176,7 +1176,7 @@
               <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"></line>
               <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"></line>
             </svg>
-            <span>Submitted: {{ selectedAssignment?.submittedAt | date:'dd/MM/yyyy' }}</span>
+            <span>{{ 'SUBMITTED' | translate }}: {{ selectedAssignment?.submittedAt | date:'dd/MM/yyyy' }}</span>
           </div>
 
           <div class="mc-sub-row" *ngIf="modalMode === 'preview'">
@@ -1186,7 +1186,7 @@
               <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"></line>
               <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"></line>
             </svg>
-            <span>Due: {{ selectedAssignment?.dueAt | date:'dd/MM/yyyy' }}</span>
+            <span>{{ 'DUE' | translate }}: {{ selectedAssignment?.dueAt | date:'dd/MM/yyyy' }}</span>
           </div>
         </div>
       </div>
@@ -1197,7 +1197,7 @@
     </div>
 
     <div class="mc-body">
-      <div *ngIf="modalLoading" class="mc-loading">Chargement...</div>
+      <div *ngIf="modalLoading" class="mc-loading">{{ 'LOADING' | translate }}</div>
 
       <div *ngIf="modalError && !modalLoading" class="mc-alert">
         {{ modalError }}
@@ -1212,9 +1212,9 @@
           </svg>
         </div>
         <div>
-          <div class="mc-banner-title">Preview Mode</div>
+          <div class="mc-banner-title">{{ 'PREVIEW_MODE' | translate }}</div>
           <div class="mc-banner-text">
-            This is a preview of the questions assigned to the client. The client has not submitted their response yet.
+            {{ 'CHECKIN_PREVIEW_EXPLANATION' | translate }}
           </div>
         </div>
       </div>
@@ -1242,7 +1242,7 @@
                   [class.is-yes]="ans.yes === true"
                   [class.is-no]="ans.yes === false"
                 >
-                  {{ ans.yes === true ? 'Yes' : ans.yes === false ? 'No' : '—' }}
+                  {{ ans.yes === true ? ('YES' | translate) : ans.yes === false ? ('NO' | translate) : '—' }}
                 </span>
               </div>
 
@@ -1265,7 +1265,7 @@
           </ng-container>
 
           <ng-template #previewTpl>
-            <div *ngIf="q.type === 'TEXT'" class="mc-preview">Text answer expected</div>
+            <div *ngIf="q.type === 'TEXT'" class="mc-preview">{{ 'TEXT_ANSWER_EXPECTED' | translate }}</div>
 
             <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-preview-list">
               <div *ngFor="let opt of q.options" class="mc-preview-opt">
@@ -1275,31 +1275,31 @@
             </div>
 
             <div *ngIf="q.type === 'YES_NO'" class="mc-preview-yesno">
-              <span class="mc-preview-pill">Yes</span>
-              <span class="mc-preview-pill">No</span>
+              <span class="mc-preview-pill">{{ 'YES' | translate }}</span>
+              <span class="mc-preview-pill">{{ 'NO' | translate }}</span>
             </div>
 
             <div *ngIf="q.type === 'STAR_RATING'" class="mc-preview-stars">
               <span *ngFor="let star of getStarsArray(q.maxStars || 5)" class="mc-preview-star">★</span>
             </div>
 
-            <div *ngIf="q.type === 'DATE'" class="mc-preview">Date selection expected</div>
+            <div *ngIf="q.type === 'DATE'" class="mc-preview">{{ 'DATE_SELECTION_EXPECTED' | translate }}</div>
           </ng-template>
         </div>
       </div>
     </div>
 
     <div class="mc-footer" *ngIf="modalMode === 'preview'">
-      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Close Preview</button>
+      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">{{ 'CLOSE_PREVIEW' | translate }}</button>
     </div>
 
     <div class="mc-footer" *ngIf="modalMode === 'view' && selectedAssignment?.status === 'SUBMITTED'">
-      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Cancel</button>
+      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">{{ 'CANCEL' | translate }}</button>
       <button type="button" (click)="markAsReviewed()" class="btn-reviewed">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
         </svg>
-        Mark as Reviewed
+        {{ 'MARK_AS_REVIEWED' | translate }}
       </button>
     </div>
   </div>
@@ -1313,7 +1313,7 @@
           <h2 class="modal-title">{{ selectedSchedule.formTitle }}</h2>
           <span class="freq-badge" *ngIf="selectedSchedule.schedule?.frequency">
             <i class="fas fa-sync-alt"></i>
-            {{ selectedSchedule.schedule.frequency | titlecase }}
+            {{ ('FREQUENCY_' + (selectedSchedule.schedule.frequency | uppercase)) | translate }}
           </span>
         </div>
       </div>
@@ -1323,37 +1323,37 @@
     <div class="modal-content">
       <div class="schedule-config-section">
         <h4 class="section-sub-title">
-          <i class="far fa-clock"></i> Schedule Configuration
+          <i class="far fa-clock"></i> {{ 'SCHEDULE_CONFIGURATION' | translate }}
         </h4>
         <div class="schedule-config-grid">
           <div class="config-item" *ngIf="selectedSchedule.schedule?.frequency">
-            <span class="config-label">Frequency</span>
-            <span class="config-value">{{ selectedSchedule.schedule.frequency | titlecase }}</span>
+            <span class="config-label">{{ 'FREQUENCY' | translate }}</span>
+            <span class="config-value">{{ ('FREQUENCY_' + (selectedSchedule.schedule.frequency | uppercase)) | translate }}</span>
           </div>
 
           <div class="config-item" *ngIf="selectedSchedule.schedule?.daysOfWeek?.length">
-            <span class="config-label">Days</span>
+            <span class="config-label">{{ 'DAYS' | translate }}</span>
             <div class="schedule-days">
-              <span class="day-pill" *ngFor="let day of selectedSchedule.schedule.daysOfWeek">{{ day }}</span>
+              <span class="day-pill" *ngFor="let day of selectedSchedule.schedule.daysOfWeek">{{ ('DAY_' + (day | uppercase)) | translate }}</span>
             </div>
           </div>
 
           <div class="config-item" *ngIf="selectedSchedule.schedule?.time">
-            <span class="config-label">Send Time</span>
+            <span class="config-label">{{ 'SEND_TIME' | translate }}</span>
             <span class="config-value">
               <i class="far fa-clock"></i> {{ selectedSchedule.schedule.time }}
             </span>
           </div>
 
           <div class="config-item">
-            <span class="config-label">Due</span>
+            <span class="config-label">{{ 'DUE' | translate }}</span>
             <span class="config-value">
               <i class="far fa-calendar-alt"></i> {{ selectedSchedule.dueAt | date:'dd/MM/yyyy' }}
             </span>
           </div>
 
           <div class="config-item">
-            <span class="config-label">Created</span>
+            <span class="config-label">{{ 'CREATED' | translate }}</span>
             <span class="config-value">{{ selectedSchedule.createdAt | date:'dd/MM/yyyy' }}</span>
           </div>
         </div>
@@ -1362,7 +1362,7 @@
       <div class="schedule-questions-section" *ngIf="selectedSchedule?.questions?.length">
         <h4 class="section-sub-title">
           <i class="fas fa-edit"></i>
-          Form Questions ({{ selectedSchedule.questions.length }})
+          {{ 'FORM_QUESTIONS_COUNT' | translate:{ count: selectedSchedule.questions.length } }}
         </h4>
 
         <div class="mc-questions">
@@ -1372,7 +1372,7 @@
               <span *ngIf="q.required" class="mc-required">*</span>
             </div>
 
-            <div *ngIf="q.type === 'TEXT'" class="mc-preview">Text answer expected</div>
+          <div *ngIf="q.type === 'TEXT'" class="mc-preview">{{ 'TEXT_ANSWER_EXPECTED' | translate }}</div>
 
             <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="mc-preview-list">
               <div *ngFor="let opt of q.options" class="mc-preview-opt">
@@ -1382,8 +1382,8 @@
             </div>
 
             <div *ngIf="q.type === 'YES_NO'" class="mc-preview-yesno">
-              <span class="mc-preview-pill">Yes</span>
-              <span class="mc-preview-pill">No</span>
+              <span class="mc-preview-pill">{{ 'YES' | translate }}</span>
+              <span class="mc-preview-pill">{{ 'NO' | translate }}</span>
             </div>
 
             <div *ngIf="q.type === 'STAR_RATING'" class="mc-preview-stars">
@@ -1393,18 +1393,18 @@
               >★</span>
             </div>
 
-            <div *ngIf="q.type === 'DATE'" class="mc-preview">Date selection expected</div>
+          <div *ngIf="q.type === 'DATE'" class="mc-preview">{{ 'DATE_SELECTION_EXPECTED' | translate }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <div class="modal-footer modal-footer--space-between">
-      <button class="btn-secondary" (click)="closeScheduleDetail()">Close</button>
+      <button class="btn-secondary" (click)="closeScheduleDetail()">{{ 'CLOSE' | translate }}</button>
     </div>
 
     <div class="mc-footer" *ngIf="modalMode === 'view' && selectedAssignment?.status === 'REVIEWED'">
-      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">Close</button>
+      <button type="button" class="mc-btn mc-btn--ghost" (click)="closeModal()">{{ 'CLOSE' | translate }}</button>
     </div>
 
     <div *ngIf="reviewError" class="mc-alert mc-alert--footer">
@@ -1429,7 +1429,7 @@
   <div class="pc-confirm-content">
     <button class="pc-confirm-close" type="button" (click)="closeScheduledDelete()">✕</button>
 
-    <div class="pc-confirm-title">Are you sure?</div>
+    <div class="pc-confirm-title">{{ 'ARE_YOU_SURE' | translate }}</div>
 
     <div class="pc-confirm-body">
       <div class="pc-confirm-warn-icon">
@@ -1441,20 +1441,19 @@
         </svg>
       </div>
       <p class="pc-confirm-text">
-        Once deleted, you will not be able to recover this scheduled check-in!
-        All future sends will be permanently cancelled.
+        {{ 'DELETE_SCHEDULED_CHECKIN_WARNING' | translate }}
       </p>
     </div>
 
     <div class="pc-confirm-actions">
       <button class="pc-confirm-btn pc-confirm-btn--no" type="button"
               (click)="closeScheduledDelete()" [disabled]="deletingScheduled">
-        No
+        {{ 'NO' | translate }}
       </button>
       <button class="pc-confirm-btn pc-confirm-btn--yes" type="button"
               (click)="confirmScheduledDelete()" [disabled]="deletingScheduled">
-        <span *ngIf="!deletingScheduled">Yes</span>
-        <span *ngIf="deletingScheduled">Deleting...</span>
+        <span *ngIf="!deletingScheduled">{{ 'YES' | translate }}</span>
+        <span *ngIf="deletingScheduled">{{ 'DELETING' | translate }}</span>
       </button>
     </div>
   </div>
@@ -1483,7 +1482,7 @@
 <div *ngIf="showWorkoutTypeModal" class="workout-plan-type-backdrop">
   <div class="workout-plan-type-modal">
     <div class="workout-plan-type-header">
-      <h3>Choose a workout plan type</h3>
+      <h3>{{ 'CHOOSE_WORKOUT_PLAN_TYPE' | translate }}</h3>
 
       <button type="button" class="workout-plan-type-close" (click)="closeWorkoutTypeModal()">
         ×
@@ -1492,27 +1491,27 @@
 
     <div class="workout-plan-type-body">
       <div class="workout-plan-type-card">
-        <h4>Normal Workout Plan</h4>
-        <p>Create a complete in-app workout with days, exercises, sets, reps and rest times.</p>
+        <h4>{{ 'NORMAL_WORKOUT_PLAN' | translate }}</h4>
+        <p>{{ 'NORMAL_WORKOUT_PLAN_DESCRIPTION' | translate }}</p>
 
         <button type="button" class="workout-plan-type-primary" (click)="createNormalWorkoutFromProfile()">
-          Create Normal Workout
+          {{ 'CREATE_NORMAL_WORKOUT' | translate }}
         </button>
       </div>
 
       <div class="workout-plan-type-card" *ngIf="workoutFileEnabled">
-        <h4>File Workout Plan</h4>
-        <p>Import a PDF or Excel program, save it in your library, then assign it to clients.</p>
+        <h4>{{ 'FILE_WORKOUT_PLAN' | translate }}</h4>
+        <p>{{ 'FILE_WORKOUT_PLAN_DESCRIPTION' | translate }}</p>
 
         <button type="button" class="workout-plan-type-primary" (click)="importFileWorkoutFromProfile()">
-          Import PDF / Excel
+          {{ 'IMPORT_PDF_EXCEL' | translate }}
         </button>
       </div>
     </div>
 
     <div class="workout-plan-type-footer">
       <button type="button" class="workout-plan-type-cancel" (click)="closeWorkoutTypeModal()">
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
     </div>
   </div>
@@ -1523,8 +1522,8 @@
   <div class="client-workout-create-modal" (click)="$event.stopPropagation()">
     <div class="client-workout-create-header">
       <div>
-        <h3>Create Client Workout Program</h3>
-        <p>For {{ fullName }}</p>
+        <h3>{{ 'CREATE_CLIENT_WORKOUT_PROGRAM' | translate }}</h3>
+        <p>{{ 'FOR_CLIENT' | translate:{ client: fullName } }}</p>
       </div>
 
       <button type="button" class="client-workout-create-close" (click)="closeClientWorkoutCreateModal()">×</button>
@@ -1532,53 +1531,53 @@
 
     <div class="client-workout-create-body">
       <label class="client-workout-create-field">
-        <span>Program Name <b>*</b></span>
+        <span>{{ 'PROGRAM_NAME' | translate }} <b>*</b></span>
         <input
           type="text"
           [(ngModel)]="clientWorkoutProgramName"
-          placeholder="e.g. Summer Shred Phase 2"
+          [placeholder]="'WORKOUT_PROGRAM_NAME_EXAMPLE' | translate"
         />
       </label>
 
       <label class="client-workout-create-field">
-        <span>Duration <b>*</b></span>
+        <span>{{ 'DURATION' | translate }} <b>*</b></span>
         <select [(ngModel)]="clientWorkoutDurationWeeks" (ngModelChange)="onClientWorkoutScheduleChange()">
           <option *ngFor="let option of workoutDurationOptions" [ngValue]="option">
-            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+            {{ 'WEEKS_COUNT' | translate:{ count: option } }}
           </option>
         </select>
       </label>
 
       <div class="client-workout-create-dates">
         <label class="client-workout-create-field">
-          <span>Start Date <b>*</b></span>
+          <span>{{ 'START_DATE' | translate }} <b>*</b></span>
           <input type="date" [(ngModel)]="clientWorkoutStartDate" (ngModelChange)="onClientWorkoutScheduleChange()" />
         </label>
 
         <label class="client-workout-create-field">
-          <span>End Date</span>
+          <span>{{ 'END_DATE' | translate }}</span>
           <input type="date" [value]="clientWorkoutEndDate" disabled />
         </label>
       </div>
 
       <div class="client-workout-duration-chip">
         <i class="far fa-calendar"></i>
-        <span>{{ clientWorkoutDurationDays }} days</span>
+        <span>{{ 'DAYS_COUNT' | translate:{ count: clientWorkoutDurationDays } }}</span>
       </div>
 
       <p class="client-workout-create-help">
-        End date is automatically calculated from start date and duration.
+        {{ 'END_DATE_AUTO_CALCULATED' | translate }}
       </p>
 
       <div class="client-workout-create-info">
         <i class="fas fa-info-circle"></i>
-        <span>This will create a {{ clientWorkoutDurationWeeks }}-week workout program for this client.</span>
+        <span>{{ 'CREATE_WORKOUT_FOR_CLIENT_INFO' | translate:{ weeks: clientWorkoutDurationWeeks } }}</span>
       </div>
 
       <div class="client-workout-conflict" *ngIf="clientWorkoutConflict">
         <div class="client-workout-conflict__heading">
           <span>!</span>
-          <strong>Schedule Conflict Detected</strong>
+          <strong>{{ 'SCHEDULE_CONFLICT_DETECTED' | translate }}</strong>
         </div>
 
         <div class="client-workout-conflict__program">
@@ -1594,8 +1593,8 @@
             (change)="setClientWorkoutConflictResolution('START_AFTER')"
           />
           <span>
-            <strong>Start after current program</strong>
-            <small>Begin this program after the existing program ends.</small>
+            <strong>{{ 'START_AFTER_CURRENT_PROGRAM' | translate }}</strong>
+            <small>{{ 'START_AFTER_CURRENT_PROGRAM_HINT' | translate }}</small>
           </span>
         </label>
 
@@ -1607,8 +1606,8 @@
             (change)="setClientWorkoutConflictResolution('REPLACE')"
           />
           <span>
-            <strong>Replace current program</strong>
-            <small>Stop the existing program before the new start date when you create this plan.</small>
+            <strong>{{ 'REPLACE_CURRENT_PROGRAM' | translate }}</strong>
+            <small>{{ 'REPLACE_CURRENT_PROGRAM_HINT' | translate }}</small>
           </span>
         </label>
 
@@ -1620,22 +1619,22 @@
             (change)="setClientWorkoutConflictResolution('KEEP_BOTH')"
           />
           <span>
-            <strong>Keep both anyway</strong>
-            <small>Create this program on the overlapping dates.</small>
+            <strong>{{ 'KEEP_BOTH_ANYWAY' | translate }}</strong>
+            <small>{{ 'KEEP_BOTH_ANYWAY_HINT' | translate }}</small>
           </span>
         </label>
       </div>
     </div>
 
     <div class="client-workout-create-footer">
-      <button type="button" class="client-workout-create-cancel" (click)="closeClientWorkoutCreateModal()">Cancel</button>
+      <button type="button" class="client-workout-create-cancel" (click)="closeClientWorkoutCreateModal()">{{ 'CANCEL' | translate }}</button>
       <button
         type="button"
         class="client-workout-create-submit"
         [disabled]="!canCreateClientWorkoutProgram"
         (click)="createClientWorkoutProgram()"
       >
-        Create Program
+        {{ 'CREATE_PROGRAM' | translate }}
       </button>
     </div>
   </div>
@@ -1646,8 +1645,8 @@
   <div class="client-workout-create-modal" (click)="$event.stopPropagation()">
     <div class="client-workout-create-header">
       <div>
-        <h3>Create Client Nutrition Program</h3>
-        <p>For {{ fullName }}</p>
+        <h3>{{ 'CREATE_CLIENT_NUTRITION_PROGRAM' | translate }}</h3>
+        <p>{{ 'FOR_CLIENT' | translate:{ client: fullName } }}</p>
       </div>
 
       <button type="button" class="client-workout-create-close" (click)="closeClientNutritionCreateModal()">×</button>
@@ -1655,53 +1654,53 @@
 
     <div class="client-workout-create-body">
       <label class="client-workout-create-field">
-        <span>Program Name <b>*</b></span>
+        <span>{{ 'PROGRAM_NAME' | translate }} <b>*</b></span>
         <input
           type="text"
           [(ngModel)]="clientNutritionProgramName"
-          placeholder="e.g. Summer Nutrition Phase 2"
+          [placeholder]="'NUTRITION_PROGRAM_NAME_EXAMPLE' | translate"
         />
       </label>
 
       <label class="client-workout-create-field">
-        <span>Duration <b>*</b></span>
+        <span>{{ 'DURATION' | translate }} <b>*</b></span>
         <select [(ngModel)]="clientNutritionDurationWeeks" (ngModelChange)="onClientNutritionScheduleChange()">
           <option *ngFor="let option of workoutDurationOptions" [ngValue]="option">
-            {{ option }} {{ option === 1 ? 'week' : 'weeks' }}
+            {{ 'WEEKS_COUNT' | translate:{ count: option } }}
           </option>
         </select>
       </label>
 
       <div class="client-workout-create-dates">
         <label class="client-workout-create-field">
-          <span>Start Date <b>*</b></span>
+          <span>{{ 'START_DATE' | translate }} <b>*</b></span>
           <input type="date" [(ngModel)]="clientNutritionStartDate" (ngModelChange)="onClientNutritionScheduleChange()" />
         </label>
 
         <label class="client-workout-create-field">
-          <span>End Date</span>
+          <span>{{ 'END_DATE' | translate }}</span>
           <input type="date" [value]="clientNutritionEndDate" disabled />
         </label>
       </div>
 
       <div class="client-workout-duration-chip">
         <i class="far fa-calendar"></i>
-        <span>{{ clientNutritionDurationDays }} days</span>
+        <span>{{ 'DAYS_COUNT' | translate:{ count: clientNutritionDurationDays } }}</span>
       </div>
 
       <p class="client-workout-create-help">
-        End date is automatically calculated from start date and duration.
+        {{ 'END_DATE_AUTO_CALCULATED' | translate }}
       </p>
 
       <div class="client-workout-create-info">
         <i class="fas fa-info-circle"></i>
-        <span>This will create a {{ clientNutritionDurationWeeks }}-week nutrition program for this client.</span>
+        <span>{{ 'CREATE_NUTRITION_FOR_CLIENT_INFO' | translate:{ weeks: clientNutritionDurationWeeks } }}</span>
       </div>
 
       <div class="client-workout-conflict" *ngIf="clientNutritionConflict">
         <div class="client-workout-conflict__heading">
           <span>!</span>
-          <strong>Schedule Conflict Detected</strong>
+          <strong>{{ 'SCHEDULE_CONFLICT_DETECTED' | translate }}</strong>
         </div>
 
         <div class="client-workout-conflict__program">
@@ -1717,8 +1716,8 @@
             (change)="setClientNutritionConflictResolution('START_AFTER')"
           />
           <span>
-            <strong>Start after current program</strong>
-            <small>Begin this program after the existing program ends.</small>
+            <strong>{{ 'START_AFTER_CURRENT_PROGRAM' | translate }}</strong>
+            <small>{{ 'START_AFTER_CURRENT_PROGRAM_HINT' | translate }}</small>
           </span>
         </label>
 
@@ -1730,8 +1729,8 @@
             (change)="setClientNutritionConflictResolution('REPLACE')"
           />
           <span>
-            <strong>Replace current program</strong>
-            <small>Stop the existing program before the new start date when you create this plan.</small>
+            <strong>{{ 'REPLACE_CURRENT_PROGRAM' | translate }}</strong>
+            <small>{{ 'REPLACE_CURRENT_PROGRAM_HINT' | translate }}</small>
           </span>
         </label>
 
@@ -1743,22 +1742,22 @@
             (change)="setClientNutritionConflictResolution('KEEP_BOTH')"
           />
           <span>
-            <strong>Keep both anyway</strong>
-            <small>Create this program on the overlapping dates.</small>
+            <strong>{{ 'KEEP_BOTH_ANYWAY' | translate }}</strong>
+            <small>{{ 'KEEP_BOTH_ANYWAY_HINT' | translate }}</small>
           </span>
         </label>
       </div>
     </div>
 
     <div class="client-workout-create-footer">
-      <button type="button" class="client-workout-create-cancel" (click)="closeClientNutritionCreateModal()">Cancel</button>
+      <button type="button" class="client-workout-create-cancel" (click)="closeClientNutritionCreateModal()">{{ 'CANCEL' | translate }}</button>
       <button
         type="button"
         class="client-workout-create-submit"
         [disabled]="!canCreateClientNutritionProgram"
         (click)="createClientNutritionProgram()"
       >
-        Continue
+        {{ 'CONTINUE' | translate }}
       </button>
     </div>
   </div>
@@ -1769,8 +1768,8 @@
   <div class="profile-file-import-modal">
     <div class="profile-file-import-header">
       <div>
-        <h3>Importer un programme</h3>
-        <p>Importez un fichier PDF ou Excel, puis assignez-le uniquement à ce client.</p>
+        <h3>{{ 'IMPORT_WORKOUT_PROGRAM' | translate }}</h3>
+        <p>{{ 'IMPORT_FILE_FOR_CLIENT_HINT' | translate }}</p>
       </div>
 
       <button type="button" class="profile-file-import-close" (click)="closeFileWorkoutImportModal()">
@@ -1791,50 +1790,50 @@
         <div class="profile-file-upload-icon">↥</div>
 
         <ng-container *ngIf="!profileImportWorkoutFile; else selectedProfileFile">
-          <strong>Glissez votre fichier ici ou <span>parcourez</span></strong>
-          <small>PDF, XLS, XLSX · jusqu'à 25 MB</small>
+          <strong>{{ 'DROP_FILE_OR_BROWSE' | translate }}</strong>
+          <small>{{ 'SUPPORTED_FILE_SIZE_25MB' | translate }}</small>
         </ng-container>
 
         <ng-template #selectedProfileFile>
           <strong>{{ profileImportWorkoutFile?.name }}</strong>
           <small>{{ (profileImportWorkoutFile?.size || 0) / 1024 / 1024 | number:'1.0-1' }} MB</small>
-          <button type="button" class="profile-file-clear" (click)="clearProfileWorkoutFile($event)">Changer le fichier</button>
+          <button type="button" class="profile-file-clear" (click)="clearProfileWorkoutFile($event)">{{ 'CHANGE_FILE' | translate }}</button>
         </ng-template>
       </div>
 
       <label class="profile-file-label">
-        Nom du programme <span>*</span>
+        {{ 'PROGRAM_NAME' | translate }} <span>*</span>
         <input
           type="text"
           [(ngModel)]="profileImportWorkoutName"
-          placeholder="Ex: Programme Hypertrophie - Phase 1"
+          [placeholder]="'WORKOUT_PROGRAM_NAME_EXAMPLE' | translate"
         />
       </label>
 
       <label class="profile-file-label">
-        Description <em>(optionnelle)</em>
+        {{ 'DESCRIPTION' | translate }} <em>({{ 'OPTIONAL' | translate }})</em>
         <textarea
           rows="3"
           [(ngModel)]="profileImportWorkoutDetails"
-          placeholder="Ex: Programme complet de 6 semaines..."
+          [placeholder]="'WORKOUT_DESCRIPTION_EXAMPLE' | translate"
         ></textarea>
       </label>
 
       <div class="profile-file-date-grid">
         <label class="profile-file-label">
-          Date de début <span>*</span>
+          {{ 'START_DATE' | translate }} <span>*</span>
           <input type="date" [(ngModel)]="profileImportStartDate" />
         </label>
 
         <label class="profile-file-label">
-          Date de fin <span>*</span>
+          {{ 'END_DATE' | translate }} <span>*</span>
           <input type="date" [(ngModel)]="profileImportEndDate" />
         </label>
       </div>
 
       <div class="profile-file-info">
         <i class="fas fa-info-circle"></i>
-        Ce programme sera enregistré et assigné uniquement à ce client. Il n’apparaîtra pas dans Workout Library.
+        {{ 'PRIVATE_WORKOUT_IMPORT_INFO' | translate }}
       </div>
 
       <div class="profile-file-error" *ngIf="profileImportError">
@@ -1844,7 +1843,7 @@
 
     <div class="profile-file-import-footer">
       <button type="button" class="profile-file-cancel" (click)="closeFileWorkoutImportModal()" [disabled]="profileImportSaving">
-        Annuler
+        {{ 'CANCEL' | translate }}
       </button>
 
       <button
@@ -1853,8 +1852,8 @@
         (click)="saveAndAssignProfileFileWorkout()"
         [disabled]="!canSaveProfileFileWorkout()"
       >
-        <span *ngIf="!profileImportSaving">Enregistrer et assigner</span>
-        <span *ngIf="profileImportSaving">Enregistrement...</span>
+        <span *ngIf="!profileImportSaving">{{ 'SAVE_AND_ASSIGN' | translate }}</span>
+        <span *ngIf="profileImportSaving">{{ 'SAVING' | translate }}</span>
       </button>
     </div>
   </div>
@@ -1865,8 +1864,8 @@
   <div class="profile-file-import-modal">
     <div class="profile-file-import-header">
       <div>
-        <h3>Importer un programme nutrition</h3>
-        <p>Importez un fichier PDF ou Excel, puis assignez-le uniquement à ce client.</p>
+        <h3>{{ 'IMPORT_NUTRITION_PROGRAM' | translate }}</h3>
+        <p>{{ 'IMPORT_FILE_FOR_CLIENT_HINT' | translate }}</p>
       </div>
 
       <button type="button" class="profile-file-import-close" (click)="closeNutritionFileImportModal()">
@@ -1887,50 +1886,50 @@
         <div class="profile-file-upload-icon">↥</div>
 
         <ng-container *ngIf="!profileImportNutritionFile; else selectedProfileNutritionFile">
-          <strong>Glissez votre fichier ici ou <span>parcourez</span></strong>
-          <small>PDF, XLS, XLSX · jusqu'à 25 MB</small>
+          <strong>{{ 'DROP_FILE_OR_BROWSE' | translate }}</strong>
+          <small>{{ 'SUPPORTED_FILE_SIZE_25MB' | translate }}</small>
         </ng-container>
 
         <ng-template #selectedProfileNutritionFile>
           <strong>{{ profileImportNutritionFile?.name }}</strong>
           <small>{{ (profileImportNutritionFile?.size || 0) / 1024 / 1024 | number:'1.0-1' }} MB</small>
-          <button type="button" class="profile-file-clear" (click)="clearProfileNutritionFile($event)">Changer le fichier</button>
+          <button type="button" class="profile-file-clear" (click)="clearProfileNutritionFile($event)">{{ 'CHANGE_FILE' | translate }}</button>
         </ng-template>
       </div>
 
       <label class="profile-file-label">
-        Nom du programme nutrition <span>*</span>
+        {{ 'NUTRITION_PROGRAM_NAME' | translate }} <span>*</span>
         <input
           type="text"
           [(ngModel)]="profileImportNutritionName"
-          placeholder="Ex: Plan nutrition sèche - Phase 1"
+          [placeholder]="'NUTRITION_PROGRAM_NAME_EXAMPLE' | translate"
         />
       </label>
 
       <label class="profile-file-label">
-        Description <em>(optionnelle)</em>
+        {{ 'DESCRIPTION' | translate }} <em>({{ 'OPTIONAL' | translate }})</em>
         <textarea
           rows="3"
           [(ngModel)]="profileImportNutritionDetails"
-          placeholder="Ex: Plan nutrition PDF/Excel complet..."
+          [placeholder]="'NUTRITION_DESCRIPTION_EXAMPLE' | translate"
         ></textarea>
       </label>
 
       <div class="profile-file-date-grid">
         <label class="profile-file-label">
-          Date de début <span>*</span>
+          {{ 'START_DATE' | translate }} <span>*</span>
           <input type="date" [(ngModel)]="profileImportNutritionStartDate" />
         </label>
 
         <label class="profile-file-label">
-          Date de fin <span>*</span>
+          {{ 'END_DATE' | translate }} <span>*</span>
           <input type="date" [(ngModel)]="profileImportNutritionEndDate" />
         </label>
       </div>
 
       <div class="profile-file-info">
         <i class="fas fa-info-circle"></i>
-        Ce programme nutrition sera enregistré puis assigné à ce client avec les dates choisies.
+        {{ 'PRIVATE_NUTRITION_IMPORT_INFO' | translate }}
       </div>
 
       <div class="profile-file-error" *ngIf="profileImportNutritionError">
@@ -1940,7 +1939,7 @@
 
     <div class="profile-file-import-footer">
       <button type="button" class="profile-file-cancel" (click)="closeNutritionFileImportModal()" [disabled]="profileImportNutritionSaving">
-        Annuler
+        {{ 'CANCEL' | translate }}
       </button>
 
       <button
@@ -1949,8 +1948,8 @@
         (click)="saveAndAssignProfileFileNutrition()"
         [disabled]="!canSaveProfileFileNutrition()"
       >
-        <span *ngIf="!profileImportNutritionSaving">Enregistrer et assigner</span>
-        <span *ngIf="profileImportNutritionSaving">Enregistrement...</span>
+        <span *ngIf="!profileImportNutritionSaving">{{ 'SAVE_AND_ASSIGN' | translate }}</span>
+        <span *ngIf="profileImportNutritionSaving">{{ 'SAVING' | translate }}</span>
       </button>
     </div>
   </div>
@@ -1967,7 +1966,7 @@
 <div *ngIf="showNutritionExistingTypeModal" class="workout-plan-type-backdrop">
   <div class="workout-plan-type-modal">
     <div class="workout-plan-type-header">
-      <h3>Choose a nutrition plan type</h3>
+      <h3>{{ 'CHOOSE_NUTRITION_PLAN_TYPE' | translate }}</h3>
 
       <button type="button" class="workout-plan-type-close" (click)="closeNutritionExistingTypeModal()">
         ×
@@ -1978,7 +1977,7 @@
       <div class="latest-programs-panel latest-programs-panel--nutrition" *ngIf="latestNutritionPrograms.length">
         <div class="latest-programs-title">
           <i class="far fa-clock"></i>
-          Derniers programmes nutrition de ce client
+          {{ 'LATEST_CLIENT_NUTRITION_PROGRAMS' | translate }}
         </div>
         <div class="latest-program-row" *ngFor="let program of latestNutritionPrograms">
           <span>{{ getProgramDisplayName(program) }}</span>
@@ -1987,27 +1986,27 @@
       </div>
 
       <div class="workout-plan-type-card">
-        <h4>Normal Nutrition Plan</h4>
-        <p>Create a complete in-app nutrition plan with days, meals, foods and macros.</p>
+        <h4>{{ 'NORMAL_NUTRITION_PLAN' | translate }}</h4>
+        <p>{{ 'NORMAL_NUTRITION_PLAN_DESCRIPTION' | translate }}</p>
 
         <button type="button" class="workout-plan-type-primary" (click)="createNormalNutritionFromProfile()">
-          Create Normal Nutrition
+          {{ 'CREATE_NORMAL_NUTRITION' | translate }}
         </button>
       </div>
 
       <div class="workout-plan-type-card" *ngIf="nutritionFileEnabled !== false">
-        <h4>File Nutrition Plan</h4>
-        <p>Import a PDF or Excel nutrition document, then assign it directly to this client.</p>
+        <h4>{{ 'FILE_NUTRITION_PLAN' | translate }}</h4>
+        <p>{{ 'FILE_NUTRITION_PLAN_DESCRIPTION' | translate }}</p>
 
         <button type="button" class="workout-plan-type-primary" (click)="importFileNutritionFromProfile()">
-          Import PDF / Excel
+          {{ 'IMPORT_PDF_EXCEL' | translate }}
         </button>
       </div>
     </div>
 
     <div class="workout-plan-type-footer">
       <button type="button" class="workout-plan-type-cancel" (click)="closeNutritionExistingTypeModal()">
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
     </div>
   </div>

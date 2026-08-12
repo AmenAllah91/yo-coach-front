@@ -1,14 +1,14 @@
 <div class="users-page">
   <div class="page-header">
     <div class="page-heading">
-      <h1>Gestion des utilisateurs</h1>
-      <p>Gérez vos clients, coachs et administrateurs</p>
+      <h1>{{ 'USER_MANAGEMENT' | translate }}</h1>
+      <p>{{ 'USER_MANAGEMENT_SUBTITLE' | translate }}</p>
     </div>
     <button class="add-user-btn" type="button" (click)="onAddUser()">
       <svg class="btn-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-      Ajouter un utilisateur
+      {{ 'ADD_USER' | translate }}
     </button>
   </div>
 
@@ -22,7 +22,7 @@
         </svg>
       </div>
       <div class="stat-content">
-        <div class="stat-label">Total Utilisateurs</div>
+        <div class="stat-label">{{ 'TOTAL_USERS' | translate }}</div>
         <div class="stat-value">{{ totalUsers }}</div>
       </div>
     </div>
@@ -37,7 +37,7 @@
         </svg>
       </div>
       <div class="stat-content">
-        <div class="stat-label">Coachs</div>
+        <div class="stat-label">{{ 'COACHES' | translate }}</div>
         <div class="stat-value">{{ totalCoachs }}</div>
       </div>
     </div>
@@ -50,7 +50,7 @@
         </svg>
       </div>
       <div class="stat-content">
-        <div class="stat-label">Clients</div>
+        <div class="stat-label">{{ 'CLIENTS' | translate }}</div>
         <div class="stat-value">{{ totalClients }}</div>
       </div>
     </div>
@@ -64,7 +64,7 @@
         </svg>
       </div>
       <div class="stat-content">
-        <div class="stat-label">Suspendus</div>
+        <div class="stat-label">{{ 'SUSPENDED' | translate }}</div>
         <div class="stat-value">{{ totalSuspendus }}</div>
       </div>
     </div>
@@ -79,7 +79,7 @@
         [class.active]="activeTab === tab.id"
         (click)="onTabChange(tab.id)"
       >
-        {{ tab.label }}
+        {{ tabLabel(tab.id) }}
       </button>
     </div>
 
@@ -92,7 +92,7 @@
         </span>
         <input
           type="text"
-          placeholder="Rechercher un utilisateur..."
+          [placeholder]="'SEARCH_USER' | translate"
           [ngModel]="searchQuery"
           (ngModelChange)="onSearchChange($event)"
         />
@@ -105,10 +105,10 @@
           </svg>
         </span>
         <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange()">
-          <option value="Tous">Tous les statuts</option>
-          <option value="Actif">Actif</option>
-          <option value="Suspendu">Suspendu</option>
-          <option value="En attente">En attente</option>
+          <option value="Tous">{{ 'ALL_STATUSES' | translate }}</option>
+          <option value="Actif">{{ 'USER_STATUS_ACTIVE' | translate }}</option>
+          <option value="Suspendu">{{ 'SUSPENDED' | translate }}</option>
+          <option value="En attente">{{ 'PENDING' | translate }}</option>
         </select>
       </div>
     </div>
@@ -117,19 +117,19 @@
       <table class="users-table">
         <thead>
         <tr>
-          <th>Utilisateur</th>
-          <th *ngIf="activeTab === 'Tous'">Type</th>
+          <th>{{ 'USER' | translate }}</th>
+          <th *ngIf="activeTab === 'Tous'">{{ 'TYPE' | translate }}</th>
           <ng-container *ngIf="activeTab === 'Tous' || activeTab === 'Clients'">
-            <th>Coach</th>
-            <th>Activité</th>
+            <th>{{ 'COACH' | translate }}</th>
+            <th>{{ 'ACTIVITY' | translate }}</th>
           </ng-container>
-          <th *ngIf="activeTab === 'Coachs'">Nb clients</th>
+          <th *ngIf="activeTab === 'Coachs'">{{ 'CLIENT_COUNT' | translate }}</th>
           <ng-container *ngIf="activeTab === 'Admins'">
-            <th>Rôle</th>
-            <th>Dernière connexion</th>
+            <th>{{ 'ROLE' | translate }}</th>
+            <th>{{ 'LAST_LOGIN' | translate }}</th>
           </ng-container>
-          <th>Statut</th>
-          <th class="actions-head">Actions</th>
+          <th>{{ 'STATUS_LABEL' | translate }}</th>
+          <th class="actions-head">{{ 'ACTIONS' | translate }}</th>
         </tr>
         </thead>
 
@@ -148,7 +148,7 @@
             </div>
           </td>
 
-          <td *ngIf="activeTab === 'Tous'" class="muted-cell">{{ user.role }}</td>
+          <td *ngIf="activeTab === 'Tous'" class="muted-cell">{{ roleLabel(user.role) }}</td>
 
           <ng-container *ngIf="activeTab === 'Tous' || activeTab === 'Clients'">
             <td class="muted-cell">{{ user.role === 'Client' ? (user.coach || '—') : '—' }}</td>
@@ -163,35 +163,35 @@
           </ng-container>
 
           <td>
-            <span [class]="getStatusClass(user.status)">{{ user.status }}</span>
+            <span [class]="getStatusClass(user.status)">{{ statusLabel(user.status) }}</span>
           </td>
 
           <td>
             <div class="actions">
-              <button type="button" class="icon-btn" title="Voir" (click)="onView(user)">
+              <button type="button" class="icon-btn" [title]="'VIEW' | translate" (click)="onView(user)">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
               </button>
-              <button type="button" class="icon-btn" title="Modifier" (click)="onEdit(user)">
+              <button type="button" class="icon-btn" [title]="'EDIT' | translate" (click)="onEdit(user)">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
-              <button type="button" class="icon-btn" title="Suspendre" (click)="onSuspend(user)">
+              <button type="button" class="icon-btn" [title]="'SUSPEND' | translate" (click)="onSuspend(user)">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <rect x="6" y="4" width="4" height="16"/>
                   <rect x="14" y="4" width="4" height="16"/>
                 </svg>
               </button>
-              <button type="button" class="icon-btn" title="Bannir" (click)="onBan(user)">
+              <button type="button" class="icon-btn" [title]="'BAN' | translate" (click)="onBan(user)">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
               </button>
-              <button type="button" class="icon-btn icon-btn-danger" title="Supprimer" (click)="onDelete(user)">
+              <button type="button" class="icon-btn icon-btn-danger" [title]="'DELETE' | translate" (click)="onDelete(user)">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6l-1 14H6L5 6"/>
@@ -208,7 +208,7 @@
 
     <ng-template #emptyState>
       <div class="empty-state">
-        Aucun utilisateur trouvé pour ces critères.
+        {{ 'NO_ADMIN_USERS_FOUND' | translate }}
       </div>
     </ng-template>
   </div>
@@ -236,32 +236,32 @@
         <ng-container *ngSwitchCase="'add'">
           <div class="modal-form-grid">
             <div class="form-field">
-              <label>Prénom</label>
+              <label>{{ 'FIRST_NAME' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.firstName" />
             </div>
 
             <div class="form-field">
-              <label>Nom</label>
+              <label>{{ 'LAST_NAME' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.lastName" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Email</label>
+              <label>{{ 'EMAIL' | translate }}</label>
               <input type="email" [(ngModel)]="editForm.email" />
             </div>
 
             <div class="form-field">
-              <label>Login</label>
+              <label>{{ 'LOGIN' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.login" />
             </div>
 
             <div class="form-field">
-              <label>Mot de passe</label>
+              <label>{{ 'PASSWORD' | translate }}</label>
               <input type="password" [(ngModel)]="editForm.password" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Rôle</label>
+              <label>{{ 'ROLE' | translate }}</label>
               <select [(ngModel)]="editForm.role">
                 <option value="ROLE_CLIENT">Client</option>
                 <option value="ROLE_COACH">Coach</option>
@@ -271,7 +271,7 @@
 
             <div class="form-check form-field-full">
               <input id="add-activated" type="checkbox" [(ngModel)]="editForm.activated" />
-              <label for="add-activated">Utilisateur actif</label>
+              <label for="add-activated">{{ 'ACTIVE_USER' | translate }}</label>
             </div>
           </div>
         </ng-container>
@@ -298,33 +298,33 @@
             <div class="modal-user-meta">
               <h4>{{ user.name }}</h4>
               <p>{{ user.email }}</p>
-              <span [class]="getStatusClass(user.status)">{{ user.status }}</span>
+              <span [class]="getStatusClass(user.status)">{{ statusLabel(user.status) }}</span>
             </div>
           </div>
 
           <div class="modal-info-grid">
             <div class="info-item">
-              <label>Rôle</label>
-              <span>{{ user.role }}</span>
+              <label>{{ 'ROLE' | translate }}</label>
+              <span>{{ roleLabel(user.role) }}</span>
             </div>
 
             <div class="info-item" *ngIf="user.role === 'Client'">
-              <label>Coach</label>
+              <label>{{ 'COACH' | translate }}</label>
               <span>{{ user.coach || '—' }}</span>
             </div>
 
             <div class="info-item" *ngIf="user.role === 'Client'">
-              <label>Activité</label>
+              <label>{{ 'ACTIVITY' | translate }}</label>
               <span>{{ user.activite || '—' }}</span>
             </div>
 
             <div class="info-item" *ngIf="user.role === 'Coach'">
-              <label>Nombre de clients</label>
+              <label>{{ 'CLIENT_COUNT' | translate }}</label>
               <span>{{ user.nbClients || 0 }}</span>
             </div>
 
             <div class="info-item" *ngIf="user.role === 'Admin'">
-              <label>Dernière connexion</label>
+              <label>{{ 'LAST_LOGIN' | translate }}</label>
               <span>{{ user.derniereConnexion || '—' }}</span>
             </div>
           </div>
@@ -333,23 +333,23 @@
         <ng-container *ngSwitchCase="'edit'">
           <div class="modal-form-grid">
             <div class="form-field">
-              <label>Prénom</label>
+              <label>{{ 'FIRST_NAME' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.firstName" />
             </div>
 
             <div class="form-field">
-              <label>Nom</label>
+              <label>{{ 'LAST_NAME' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.lastName" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Email</label>
+              <label>{{ 'EMAIL' | translate }}</label>
               <input type="email" [(ngModel)]="editForm.email" />
             </div>
 
             <div class="form-check form-field-full">
               <input id="activated" type="checkbox" [(ngModel)]="editForm.activated" />
-              <label for="activated">Utilisateur actif</label>
+              <label for="activated">{{ 'ACTIVE_USER' | translate }}</label>
             </div>
           </div>
         </ng-container>
@@ -357,32 +357,32 @@
         <ng-container *ngSwitchCase="'add'">
           <div class="modal-form-grid">
             <div class="form-field">
-              <label>Prénom</label>
+              <label>{{ 'FIRST_NAME' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.firstName" />
             </div>
 
             <div class="form-field">
-              <label>Nom</label>
+              <label>{{ 'LAST_NAME' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.lastName" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Email</label>
+              <label>{{ 'EMAIL' | translate }}</label>
               <input type="email" [(ngModel)]="editForm.email" />
             </div>
 
             <div class="form-field">
-              <label>Login</label>
+              <label>{{ 'LOGIN' | translate }}</label>
               <input type="text" [(ngModel)]="editForm.login" />
             </div>
 
             <div class="form-field">
-              <label>Mot de passe</label>
+              <label>{{ 'PASSWORD' | translate }}</label>
               <input type="password" [(ngModel)]="editForm.password" />
             </div>
 
             <div class="form-field form-field-full">
-              <label>Rôle</label>
+              <label>{{ 'ROLE' | translate }}</label>
               <select [(ngModel)]="editForm.role">
                 <option value="ROLE_CLIENT">Client</option>
                 <option value="ROLE_COACH">Coach</option>
@@ -392,7 +392,7 @@
 
             <div class="form-check form-field-full">
               <input id="add-activated" type="checkbox" [(ngModel)]="editForm.activated" />
-              <label for="add-activated">Utilisateur actif</label>
+              <label for="add-activated">{{ 'ACTIVE_USER' | translate }}</label>
             </div>
           </div>
         </ng-container>
@@ -405,7 +405,7 @@
                 <rect x="14" y="4" width="4" height="16"/>
               </svg>
             </div>
-            <p>Le compte sera désactivé et l’utilisateur ne pourra plus accéder à l’application.</p>
+            <p>{{ 'SUSPEND_USER_WARNING' | translate }}</p>
           </div>
         </ng-container>
 
@@ -416,7 +416,7 @@
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             </div>
-            <p>L’utilisateur sera banni. Cette action peut être réversible si tu prévois une API de déblocage.</p>
+            <p>{{ 'BAN_USER_WARNING' | translate }}</p>
           </div>
         </ng-container>
 
@@ -430,7 +430,7 @@
                 <path d="M9 6V4h6v2"/>
               </svg>
             </div>
-            <p>Cette suppression est définitive et supprimera les données liées à ce compte selon la logique backend.</p>
+            <p>{{ 'DELETE_USER_WARNING' | translate }}</p>
           </div>
         </ng-container>
 
@@ -439,7 +439,7 @@
 
     <div class="modal-footer">
       <button type="button" class="modal-secondary-btn" (click)="closeModal()">
-        Fermer
+        {{ 'CLOSE' | translate }}
       </button>
 
       <button
@@ -450,7 +450,7 @@
         [disabled]="modalLoading"
         (click)="submitModalAction()"
       >
-        {{ modalLoading ? 'Traitement...' : getConfirmButtonLabel() }}
+        {{ modalLoading ? ('PROCESSING' | translate) : getConfirmButtonLabel() }}
       </button>
     </div>
   </div>

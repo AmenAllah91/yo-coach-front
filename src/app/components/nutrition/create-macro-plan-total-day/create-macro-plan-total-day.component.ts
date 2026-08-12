@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-create-macro-plan-total-day',
@@ -18,6 +19,7 @@ import { NutritionService } from 'app/service/nutrition.service';
     CommonModule,
     FormsModule,
     DragDropModule,
+    TranslateModule,
   ],
   templateUrl: './create-macro-plan-total-day.component.html',
   styleUrl: './create-macro-plan-total-day.component.scss',
@@ -49,8 +51,11 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private translate: TranslateService
   ) {}
+
+  dayLabel(index: number): string { return this.translate.instant('DAY_NUMBER', { number: index + 1 }); }
 
 
   get canCreateTemplate(): boolean {

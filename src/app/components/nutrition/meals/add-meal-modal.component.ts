@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MealsService } from 'app/service/meals.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -34,7 +35,7 @@ interface IngredientRow {
 @Component({
   selector: 'app-add-meal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './add-meal-modal.component.html',
   styleUrls: ['./add-meal-modal.component.scss'],
 })
@@ -72,17 +73,18 @@ export class AddMealModalComponent implements OnChanges {
 
   readonly units = ['g', 'ml', 'oz', 'cup', 'tbsp', 'tsp', 'piece', 'slice'];
   readonly mealTypes = [
-    { value: 'BREAKFAST', label: 'Breakfast' },
-    { value: 'LUNCH', label: 'Lunch' },
-    { value: 'DINNER', label: 'Dinner' },
-    { value: 'SNACK', label: 'Snack' },
-    { value: 'PRE_WORKOUT', label: 'Pre workout' },
-    { value: 'POST_WORKOUT', label: 'Post workout' },
+    { value: 'BREAKFAST', label: 'BREAKFAST' },
+    { value: 'LUNCH', label: 'LUNCH' },
+    { value: 'DINNER', label: 'DINNER' },
+    { value: 'SNACK', label: 'SNACK' },
+    { value: 'PRE_WORKOUT', label: 'PRE_WORKOUT' },
+    { value: 'POST_WORKOUT', label: 'POST_WORKOUT' },
   ];
 
   constructor(
     private nutritionService: NutritionService,
     private mealsService: MealsService,
+    private translate: TranslateService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -104,17 +106,17 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   get modalTitle(): string {
-    if (this.step === 'choice') return 'Choose a nutrition plan type';
-    if (this.isRecipe) return this.isEditing ? 'Edit meal recipe' : 'Add meal recipe';
-    return this.isEditing ? 'Edit meal' : 'Create meal';
+    if (this.step === 'choice') return this.translate.instant('CHOOSE_NUTRITION_PLAN_TYPE');
+    if (this.isRecipe) return this.translate.instant(this.isEditing ? 'EDIT_MEAL_RECIPE' : 'ADD_MEAL_RECIPE');
+    return this.translate.instant(this.isEditing ? 'EDIT_MEAL' : 'CREATE_MEAL');
   }
 
   get modalSubtitle(): string {
     if (this.step === 'choice') {
-      return 'Select the option that best fits how you want to create nutrition plans for your clients.';
+      return this.translate.instant('CHOOSE_NUTRITION_PLAN_TYPE_SUBTITLE');
     }
-    if (this.isRecipe) return 'Create a reusable recipe for your library.';
-    return 'Build a meal by adding individual foods from your database.';
+    if (this.isRecipe) return this.translate.instant('MEAL_RECIPE_SUBTITLE');
+    return this.translate.instant('MEAL_WITH_FOODS_SUBTITLE');
   }
 
   get canSave(): boolean {
@@ -214,7 +216,7 @@ export class AddMealModalComponent implements OnChanges {
     this.ingredients.push({
       id: this.newId(),
       name: '',
-      category: 'Manual ingredient',
+      category: this.translate.instant('MANUAL_INGREDIENT'),
       quantity: null,
       unit: '',
       calories: null,
@@ -277,13 +279,13 @@ export class AddMealModalComponent implements OnChanges {
     if (!file) return;
 
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      this.imageError = 'Only JPG and PNG images are accepted.';
+      this.imageError = this.translate.instant('IMAGE_FORMAT_ERROR');
       input.value = '';
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      this.imageError = 'The cover image must be 5 MB or smaller.';
+      this.imageError = this.translate.instant('COVER_IMAGE_SIZE_ERROR');
       input.value = '';
       return;
     }
@@ -294,7 +296,7 @@ export class AddMealModalComponent implements OnChanges {
       this.coverImageName = file.name;
     };
     reader.onerror = () => {
-      this.imageError = 'The image could not be read.';
+      this.imageError = this.translate.instant('IMAGE_READ_ERROR');
     };
     reader.readAsDataURL(file);
     input.value = '';
@@ -351,7 +353,7 @@ export class AddMealModalComponent implements OnChanges {
       error: (error: any) => {
         this.saving = false;
         this.saveError =
-          error?.error?.message || error?.message || 'Unable to save this meal. Please try again.';
+          error?.error?.message || error?.message || this.translate.instant('MEAL_SAVE_ERROR');
       },
     });
   }

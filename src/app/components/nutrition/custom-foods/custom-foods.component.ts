@@ -2,12 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
+import { TranslateModule } from '@ngx-translate/core';
 import { NutritionService, Food } from '../../../service/nutrition.service';
 
 @Component({
   selector: 'app-custom-foods',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './custom-foods.component.html',
   styleUrls: ['./custom-foods.component.scss']
 })

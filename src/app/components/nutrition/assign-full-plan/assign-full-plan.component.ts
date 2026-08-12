@@ -8,11 +8,12 @@ import { NutritionService } from 'app/service/nutrition.service';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { Client, ClientService } from 'app/service/client.service';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-assign-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule],
   templateUrl: './assign-full-plan.component.html',
   styleUrl: './assign-full-plan.component.scss',
 })
@@ -77,7 +78,8 @@ export class AssignFullPlanComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
-    private clientService: ClientService
+    private clientService: ClientService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit() {
@@ -118,7 +120,7 @@ export class AssignFullPlanComponent implements OnInit {
   }
 
   getProgramDisplayName(program: any): string {
-    return program?.name || program?.programName || 'Nutrition program';
+    return program?.name || program?.programName || this.translate.instant('NUTRITION_PROGRAM');
   }
 
   getProgramDateRange(program: any): string {
@@ -126,9 +128,9 @@ export class AssignFullPlanComponent implements OnInit {
     const end = this.formatProgramDate(program?.endDate);
 
     if (start && end) return `${start} - ${end}`;
-    if (start) return `From ${start}`;
-    if (end) return `Until ${end}`;
-    return 'No dates set';
+    if (start) return this.translate.instant('FROM_DATE', { date: start });
+    if (end) return this.translate.instant('UNTIL_DATE', { date: end });
+    return this.translate.instant('NO_DATES_SET');
   }
 
   private sortProgramsByLatestDate(programs: any[]): any[] {
@@ -282,15 +284,25 @@ export class AssignFullPlanComponent implements OnInit {
   ==============================================*/
 
   getDayLabel(day: MealDay, index: number) {
-    return `Day ${index + 1}`;
+    return this.translate.instant('DAY_NUMBER', { number: index + 1 });
   }
 
   getSelectedDayLabel() {
-    if (!this.selectedDay) return 'Day 1';
+    if (!this.selectedDay) return this.translate.instant('DAY_NUMBER', { number: 1 });
     return this.getDayLabel(
       this.selectedDay,
       this.days.indexOf(this.selectedDay)
     );
+  }
+
+  mealCountLabel(count: number): string {
+    return this.translate.instant(count === 1 ? 'MEAL_COUNT_ONE' : 'MEAL_COUNT_MANY', { count });
+  }
+
+  displayMealName(meal: Meal, index: number): string {
+    return meal.name === 'New Meal' || !meal.name
+      ? this.translate.instant('MEAL_NUMBER', { number: index + 1 })
+      : meal.name;
   }
 
   private makeEmptyMeal(index = 0): Meal {

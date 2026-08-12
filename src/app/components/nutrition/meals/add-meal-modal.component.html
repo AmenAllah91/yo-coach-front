@@ -15,7 +15,7 @@
           *ngIf="step !== 'choice' && !isEditing"
           class="meal-modal__back"
           type="button"
-          aria-label="Back to meal type selection"
+          [attr.aria-label]="'BACK_TO_MEAL_TYPE_SELECTION' | translate"
           (click)="backToChoice()"
         >
           <i-feather name="arrow-left"></i-feather>
@@ -25,7 +25,7 @@
           <p *ngIf="step !== 'foods'">{{ modalSubtitle }}</p>
         </div>
       </div>
-      <button class="meal-modal__close" type="button" aria-label="Close" (click)="close()">
+      <button class="meal-modal__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="close()">
         <i-feather name="x"></i-feather>
       </button>
     </header>
@@ -39,16 +39,15 @@
             <path d="M42 47h12M37 55h22M40 63h16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
           </svg>
         </span>
-        <h3>Meal Recipes</h3>
+        <h3>{{ 'MEAL_RECIPES' | translate }}</h3>
         <p>
-          Create reusable recipes made from multiple ingredients with serving sizes,
-          nutrition values, and preparation instructions.
+          {{ 'MEAL_RECIPES_DESCRIPTION' | translate }}
         </p>
         <div class="choice-card__benefit">
           <i-feather name="check-circle"></i-feather>
-          <span>Perfect for structured meal planning</span>
+          <span>{{ 'STRUCTURED_MEAL_PLANNING' | translate }}</span>
         </div>
-        <button type="button" (click)="choose('recipe')">Create Meal Recipes</button>
+        <button type="button" (click)="choose('recipe')">{{ 'CREATE_MEAL_RECIPES' | translate }}</button>
       </article>
 
       <article class="choice-card choice-card--foods">
@@ -63,16 +62,15 @@
             <path d="M38 28c1.8 0 3.2 1.4 3.2 3.2S39.8 34.4 38 34.4 34.8 33 34.8 31.2 36.2 28 38 28Z" fill="currentColor"/>
           </svg>
         </span>
-        <h3>Meals with Foods</h3>
+        <h3>{{ 'MEALS_WITH_FOODS' | translate }}</h3>
         <p>
-          Build meals by adding individual foods from your food database. Ideal for
-          flexible meal planning without creating reusable recipes.
+          {{ 'MEALS_WITH_FOODS_DESCRIPTION' | translate }}
         </p>
         <div class="choice-card__benefit">
           <i-feather name="check-circle"></i-feather>
-          <span>Great for quick and flexible plans</span>
+          <span>{{ 'QUICK_FLEXIBLE_PLANS' | translate }}</span>
         </div>
-        <button type="button" (click)="choose('foods')">Create Meals with Foods</button>
+        <button type="button" (click)="choose('foods')">{{ 'CREATE_MEALS_WITH_FOODS' | translate }}</button>
       </article>
     </main>
 
@@ -80,46 +78,46 @@
       <section class="foods-editor">
         <div class="foods-title-row">
           <label class="foods-field foods-field--title">
-            <span>Meal Title</span>
+            <span>{{ 'MEAL_TITLE' | translate }}</span>
             <input
               type="text"
               [(ngModel)]="name"
               [class.foods-control--invalid]="submitted && !name.trim()"
-              placeholder="E.g., Breakfast Bowl"
+              [placeholder]="'MEAL_TITLE_EXAMPLE' | translate"
             />
-            <small *ngIf="submitted && !name.trim()">A title is required.</small>
+            <small *ngIf="submitted && !name.trim()">{{ 'TITLE_REQUIRED' | translate }}</small>
           </label>
 
           <label class="foods-field foods-field--type">
-            <span>Meal Type</span>
+            <span>{{ 'MEAL_TYPE' | translate }}</span>
             <select [(ngModel)]="mealType">
               <option *ngFor="let type of mealTypes" [value]="type.value">
-                {{ type.label }}
+                {{ type.label | translate }}
               </option>
             </select>
           </label>
         </div>
 
         <div class="foods-divider"></div>
-        <h3 class="foods-count">Foods ({{ ingredients.length }})</h3>
+        <h3 class="foods-count">{{ 'FOODS' | translate }} ({{ ingredients.length }})</h3>
 
         <section class="foods-box">
           <header class="foods-box__header">
             <div class="foods-macros">
               <article>
-                <span>CALORIES</span>
+                <span>{{ 'CALORIES' | translate }}</span>
                 <strong>{{ nutritionTotal('calories') | number:'1.0-0' }} Kcal</strong>
               </article>
               <article>
-                <span>PROTEIN</span>
+                <span>{{ 'PROTEIN' | translate }}</span>
                 <strong>{{ nutritionTotal('protein') | number:'1.0-1' }} g</strong>
               </article>
               <article>
-                <span>CARBS</span>
+                <span>{{ 'CARBS' | translate }}</span>
                 <strong>{{ nutritionTotal('carbs') | number:'1.0-1' }} g</strong>
               </article>
               <article>
-                <span>FAT</span>
+                <span>{{ 'FAT' | translate }}</span>
                 <strong>{{ nutritionTotal('fat') | number:'1.0-1' }} g</strong>
               </article>
             </div>
@@ -130,12 +128,12 @@
               <table class="foods-table">
                 <thead>
                   <tr>
-                    <th>Food</th>
-                    <th>Quantity</th>
-                    <th>Protein</th>
-                    <th>Carbs</th>
-                    <th>Fat</th>
-                    <th>Calories</th>
+                    <th>{{ 'FOOD' | translate }}</th>
+                    <th>{{ 'QUANTITY' | translate }}</th>
+                    <th>{{ 'PROTEIN' | translate }}</th>
+                    <th>{{ 'CARBS' | translate }}</th>
+                    <th>{{ 'FAT' | translate }}</th>
+                    <th>{{ 'CALORIES' | translate }}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -179,7 +177,7 @@
                     <td><strong>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}</strong> <span>g</span></td>
                     <td><strong>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</strong> <span>Kcal</span></td>
                     <td>
-                      <button class="foods-table__delete" type="button" aria-label="Remove food" (click)="removeIngredient(i)">
+                      <button class="foods-table__delete" type="button" [attr.aria-label]="'REMOVE_FOOD' | translate" (click)="removeIngredient(i)">
                         <i-feather name="trash-2"></i-feather>
                       </button>
                     </td>
@@ -189,14 +187,14 @@
             </div>
 
             <div class="foods-empty" *ngIf="!ingredients.length">
-              <strong>Meal looking empty?</strong>
-              <span>Add an item using the button below</span>
+              <strong>{{ 'MEAL_LOOKING_EMPTY' | translate }}</strong>
+              <span>{{ 'ADD_ITEM_BELOW' | translate }}</span>
             </div>
 
             <div class="foods-add-wrap">
               <button class="foods-add-button" type="button" (click)="openIngredientPicker()">
                 <i-feather name="plus"></i-feather>
-                Add Food
+                {{ 'ADD_FOOD' | translate }}
               </button>
             </div>
 
@@ -206,16 +204,16 @@
                 <input
                   [(ngModel)]="foodSearch"
                   (input)="searchFoods()"
-                  placeholder="Search the foods database..."
+                  [placeholder]="'SEARCH_FOODS_DATABASE' | translate"
                   autofocus
                 />
-                <button type="button" aria-label="Close food search" (click)="closeIngredientPicker()">
+                <button type="button" [attr.aria-label]="'CLOSE_FOOD_SEARCH' | translate" (click)="closeIngredientPicker()">
                   <i-feather name="x"></i-feather>
                 </button>
               </div>
 
               <div class="food-picker__results">
-                <div class="food-picker__state" *ngIf="searchingFoods">Searching foods...</div>
+                <div class="food-picker__state" *ngIf="searchingFoods">{{ 'SEARCHING_FOODS' | translate }}</div>
                 <button
                   class="food-result"
                   type="button"
@@ -228,7 +226,7 @@
                   </span>
                   <span class="food-result__identity">
                     <strong>{{ food.name }}</strong>
-                    <small>{{ food.category || food.foodGroup || 'Food' }}</small>
+                    <small>{{ food.category || food.foodGroup || ('FOOD' | translate) }}</small>
                   </span>
                   <span class="food-result__energy">
                     {{ (food.energy || food.calories || 0) | number:'1.0-0' }} kcal /
@@ -237,13 +235,13 @@
                 </button>
 
                 <div class="food-picker__state" *ngIf="!searchingFoods && !foods.length">
-                  No database foods found.
+                  {{ 'NO_DATABASE_FOODS_FOUND' | translate }}
                 </div>
               </div>
             </div>
 
             <div class="ingredient-validation" *ngIf="submitted && ingredients.length === 0">
-              Add at least one food.
+              {{ 'ADD_AT_LEAST_ONE_FOOD' | translate }}
             </div>
           </div>
         </section>
@@ -257,36 +255,36 @@
         <div class="section-heading">
           <span class="section-heading__icon"><i-feather name="image"></i-feather></span>
           <div>
-            <h3>{{ isRecipe ? 'Recipe information' : 'Meal information' }}</h3>
-            <p *ngIf="!isRecipe">Give the meal a title and select when it is usually eaten.</p>
+            <h3>{{ (isRecipe ? 'RECIPE_INFORMATION' : 'MEAL_INFORMATION') | translate }}</h3>
+            <p *ngIf="!isRecipe">{{ 'MEAL_INFORMATION_SUBTITLE' | translate }}</p>
           </div>
         </div>
 
         <div class="information-grid" [class.information-grid--meal]="!isRecipe">
           <label class="field field--name">
-            <span>{{ isRecipe ? 'Recipe name' : 'Meal title' }}</span>
+            <span>{{ (isRecipe ? 'RECIPE_NAME' : 'MEAL_TITLE') | translate }}</span>
             <input
               [(ngModel)]="name"
               [class.field-control--invalid]="submitted && !name.trim()"
-              [placeholder]="isRecipe ? 'E.g., Breakfast hash' : 'E.g., Breakfast Bowl'"
+              [placeholder]="(isRecipe ? 'RECIPE_NAME_EXAMPLE' : 'MEAL_TITLE_EXAMPLE') | translate"
             />
-            <small *ngIf="submitted && !name.trim()">A title is required.</small>
+            <small *ngIf="submitted && !name.trim()">{{ 'TITLE_REQUIRED' | translate }}</small>
           </label>
 
           <label class="field">
-            <span>Meal type</span>
+            <span>{{ 'MEAL_TYPE' | translate }}</span>
             <select [(ngModel)]="mealType">
               <option *ngFor="let type of mealTypes" [value]="type.value">
-                {{ type.label }}
+                {{ type.label | translate }}
               </option>
             </select>
           </label>
 
           <label class="field" *ngIf="isRecipe">
-            <span>Servings</span>
+            <span>{{ 'SERVINGS' | translate }}</span>
             <select [(ngModel)]="servings">
               <option *ngFor="let count of [1,2,3,4,5,6,8,10,12]" [ngValue]="count">
-                {{ count }} {{ count === 1 ? 'serving' : 'servings' }}
+                {{ count }} {{ (count === 1 ? 'SERVING_LOWERCASE' : 'SERVINGS_LOWERCASE') | translate }}
               </option>
             </select>
           </label>
@@ -301,18 +299,18 @@
             />
             <ng-container *ngIf="!coverImage">
               <i-feather name="upload-cloud"></i-feather>
-              <strong>Upload cover image</strong>
-              <span>JPG or PNG, up to 5 MB</span>
+              <strong>{{ 'UPLOAD_COVER_IMAGE' | translate }}</strong>
+              <span>{{ 'IMAGE_REQUIREMENTS' | translate }}</span>
             </ng-container>
             <ng-container *ngIf="coverImage">
               <i-feather name="refresh-cw"></i-feather>
-              <strong>Replace cover image</strong>
+              <strong>{{ 'REPLACE_COVER_IMAGE' | translate }}</strong>
               <span>{{ coverImageName }}</span>
             </ng-container>
           </label>
 
           <div class="cover-preview" *ngIf="coverImage">
-            <img [src]="coverImage" alt="Recipe cover preview" />
+            <img [src]="coverImage" [alt]="'RECIPE_COVER_PREVIEW' | translate" />
             <div class="cover-preview__actions">
               <label>
                 <input
@@ -321,9 +319,9 @@
                   (change)="onCoverImageSelected($event)"
                 />
                 <i-feather name="refresh-cw"></i-feather>
-                Replace
+                {{ 'REPLACE' | translate }}
               </label>
-              <button type="button" aria-label="Delete cover image" (click)="removeCoverImage()">
+              <button type="button" [attr.aria-label]="'DELETE_COVER_IMAGE' | translate" (click)="removeCoverImage()">
                 <i-feather name="trash-2"></i-feather>
               </button>
             </div>
@@ -335,7 +333,7 @@
           <article class="time-metric-card">
             <span class="time-metric-card__icon"><i-feather name="clock"></i-feather></span>
             <div>
-              <small>Total time</small>
+              <small>{{ 'TOTAL_TIME' | translate }}</small>
               <strong>{{ totalTimeMinutes || 0 }}</strong>
               <em>min</em>
             </div>
@@ -350,13 +348,13 @@
               <i-feather name="edit-3"></i-feather>
             </span>
             <div>
-              <h3>Ingredients</h3>
-              <p>Search your foods database or add anything manually.</p>
+              <h3>{{ 'INGREDIENTS' | translate }}</h3>
+              <p>{{ 'INGREDIENTS_SUBTITLE' | translate }}</p>
             </div>
           </div>
           <button class="blue-button" type="button" (click)="openIngredientPicker()">
             <i-feather name="plus"></i-feather>
-            Add ingredients
+            {{ 'ADD_INGREDIENTS' | translate }}
           </button>
         </div>
 
@@ -366,16 +364,16 @@
             <input
               [(ngModel)]="foodSearch"
               (input)="searchFoods()"
-              placeholder="Search the foods database..."
+              [placeholder]="'SEARCH_FOODS_DATABASE' | translate"
               autofocus
             />
-            <button type="button" aria-label="Close food search" (click)="closeIngredientPicker()">
+            <button type="button" [attr.aria-label]="'CLOSE_FOOD_SEARCH' | translate" (click)="closeIngredientPicker()">
               <i-feather name="x"></i-feather>
             </button>
           </div>
 
           <div class="food-picker__results">
-            <div class="food-picker__state" *ngIf="searchingFoods">Searching foods...</div>
+            <div class="food-picker__state" *ngIf="searchingFoods">{{ 'SEARCHING_FOODS' | translate }}</div>
             <button
               class="food-result"
               type="button"
@@ -388,7 +386,7 @@
               </span>
               <span class="food-result__identity">
                 <strong>{{ food.name }}</strong>
-                <small>{{ food.category || food.foodGroup || 'Food' }}</small>
+                <small>{{ food.category || food.foodGroup || ('FOOD' | translate) }}</small>
               </span>
               <span class="food-result__energy">
                 {{ (food.energy || food.calories || 0) | number:'1.0-0' }} kcal /
@@ -397,23 +395,23 @@
             </button>
 
             <div class="food-picker__state" *ngIf="!searchingFoods && !foods.length">
-              No database foods found.
+              {{ 'NO_DATABASE_FOODS_FOUND' | translate }}
             </div>
           </div>
 
           <button class="manual-result" *ngIf="isRecipe" type="button" (click)="addManualIngredient()">
             <span><i-feather name="edit-2"></i-feather></span>
             <span>
-              <strong>Add a manual ingredient</strong>
-              <small>Not in the database — enter nutrition yourself</small>
+              <strong>{{ 'ADD_MANUAL_INGREDIENT' | translate }}</strong>
+              <small>{{ 'MANUAL_INGREDIENT_SUBTITLE' | translate }}</small>
             </span>
           </button>
         </div>
 
         <div class="ingredient-empty" *ngIf="!ingredients.length && !ingredientPickerOpen">
           <i-feather name="shopping-bag"></i-feather>
-          <strong>Meal looking empty?</strong>
-          <span>Add an item using the button above.</span>
+          <strong>{{ 'MEAL_LOOKING_EMPTY' | translate }}</strong>
+          <span>{{ 'ADD_ITEM_ABOVE' | translate }}</span>
         </div>
 
         <div class="ingredient-list" *ngIf="ingredients.length">
@@ -425,7 +423,7 @@
             (dragover)="$event.preventDefault()"
             (drop)="onIngredientDrop(i)"
           >
-            <span class="drag-handle" title="Drag to reorder">
+            <span class="drag-handle" [title]="'DRAG_TO_REORDER' | translate">
               <i-feather name="more-vertical"></i-feather>
             </span>
 
@@ -446,31 +444,31 @@
                 *ngIf="ingredient.manual"
                 [(ngModel)]="ingredient.name"
                 [class.field-control--invalid]="submitted && !ingredient.name.trim()"
-                placeholder="Ingredient name"
+                [placeholder]="'INGREDIENT_NAME' | translate"
               />
               <strong *ngIf="!ingredient.manual">{{ ingredient.name }}</strong>
               <small>{{ ingredient.category }}</small>
             </div>
 
             <label class="compact-field">
-              <span class="sr-only">Quantity</span>
+              <span class="sr-only">{{ 'QUANTITY' | translate }}</span>
               <input
                 type="number"
                 min="0.01"
                 step="any"
                 [(ngModel)]="ingredient.quantity"
                 [class.field-control--invalid]="submitted && !(ingredient.quantity && ingredient.quantity > 0)"
-                placeholder="Qty"
+                [placeholder]="'QUANTITY_SHORT' | translate"
               />
             </label>
 
             <label class="compact-field">
-              <span class="sr-only">Unit</span>
+              <span class="sr-only">{{ 'UNIT' | translate }}</span>
               <select
                 [(ngModel)]="ingredient.unit"
                 [class.field-control--invalid]="submitted && !ingredient.unit"
               >
-                <option value="" disabled>Unit</option>
+                <option value="" disabled>{{ 'UNIT' | translate }}</option>
                 <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
               </select>
             </label>
@@ -484,15 +482,15 @@
 
             <div class="manual-macros" *ngIf="ingredient.manual">
               <label><span>Kcal</span><input type="number" min="0" [(ngModel)]="ingredient.calories" placeholder="—" /></label>
-              <label><span>Protein</span><input type="number" min="0" [(ngModel)]="ingredient.protein" placeholder="—" /></label>
-              <label><span>Carbs</span><input type="number" min="0" [(ngModel)]="ingredient.carbs" placeholder="—" /></label>
-              <label><span>Fat</span><input type="number" min="0" [(ngModel)]="ingredient.fat" placeholder="—" /></label>
+              <label><span>{{ 'PROTEIN' | translate }}</span><input type="number" min="0" [(ngModel)]="ingredient.protein" placeholder="—" /></label>
+              <label><span>{{ 'CARBS' | translate }}</span><input type="number" min="0" [(ngModel)]="ingredient.carbs" placeholder="—" /></label>
+              <label><span>{{ 'FAT' | translate }}</span><input type="number" min="0" [(ngModel)]="ingredient.fat" placeholder="—" /></label>
             </div>
 
             <button
               class="row-delete"
               type="button"
-              aria-label="Remove ingredient"
+              [attr.aria-label]="'REMOVE_INGREDIENT' | translate"
               (click)="removeIngredient(i)"
             >
               <i-feather name="trash-2"></i-feather>
@@ -501,16 +499,15 @@
         </div>
 
         <div class="ingredient-validation" *ngIf="submitted && ingredients.length === 0">
-          Add at least one ingredient.
+          {{ 'ADD_AT_LEAST_ONE_INGREDIENT' | translate }}
         </div>
         <div class="ingredient-validation" *ngIf="submitted && ingredients.length && !formIsValid">
-          Every ingredient needs a name, quantity, and unit. Nutrition values for manual
-          ingredients may stay empty.
+          {{ 'INGREDIENT_VALIDATION' | translate }}
         </div>
 
         <div class="ingredients-note" *ngIf="isRecipe">
-          <span>Nutrition (manual)</span>
-          <small>empty fields count as 0</small>
+          <span>{{ 'NUTRITION_MANUAL' | translate }}</span>
+          <small>{{ 'EMPTY_FIELDS_COUNT_ZERO' | translate }}</small>
         </div>
       </section>
 
@@ -518,8 +515,8 @@
         <div class="section-heading">
           <span class="section-heading__icon"><i-feather name="list"></i-feather></span>
           <div>
-            <h3>Directions</h3>
-            <p>Add the preparation steps in the correct order.</p>
+            <h3>{{ 'DIRECTIONS' | translate }}</h3>
+            <p>{{ 'DIRECTIONS_SUBTITLE' | translate }}</p>
           </div>
         </div>
 
@@ -534,8 +531,8 @@
           >
             <span class="drag-handle"><i-feather name="more-vertical"></i-feather></span>
             <b>{{ i + 1 }}</b>
-            <input [(ngModel)]="directions[i]" placeholder="Describe this preparation step" />
-            <button type="button" aria-label="Remove step" (click)="removeStep(i)">
+            <input [(ngModel)]="directions[i]" [placeholder]="'PREPARATION_STEP_PLACEHOLDER' | translate" />
+            <button type="button" [attr.aria-label]="'REMOVE_STEP' | translate" (click)="removeStep(i)">
               <i-feather name="trash-2"></i-feather>
             </button>
           </div>
@@ -543,35 +540,35 @@
 
         <button class="add-step" type="button" (click)="addStep()">
           <i-feather name="plus"></i-feather>
-          Add step
+          {{ 'ADD_STEP' | translate }}
         </button>
       </section>
 
       <section class="nutrition-section">
         <div class="nutrition-section__header">
-          <h3>Nutrition</h3>
+          <h3>{{ 'NUTRITION' | translate }}</h3>
         </div>
 
         <div class="nutrition-cards">
           <article>
             <span><i-feather name="zap"></i-feather></span>
             <strong>{{ nutritionTotal('calories') | number:'1.0-0' }}</strong>
-            <small>Calories</small>
+            <small>{{ 'CALORIES' | translate }}</small>
           </article>
           <article>
             <span><i-feather name="target"></i-feather></span>
             <strong>{{ nutritionTotal('protein') | number:'1.0-1' }}<em>g</em></strong>
-            <small>Protein</small>
+            <small>{{ 'PROTEIN' | translate }}</small>
           </article>
           <article>
             <span><i-feather name="grid"></i-feather></span>
             <strong>{{ nutritionTotal('carbs') | number:'1.0-1' }}<em>g</em></strong>
-            <small>Carbs</small>
+            <small>{{ 'CARBS' | translate }}</small>
           </article>
           <article>
             <span><i-feather name="droplet"></i-feather></span>
             <strong>{{ nutritionTotal('fat') | number:'1.0-1' }}<em>g</em></strong>
-            <small>Fat</small>
+            <small>{{ 'FAT' | translate }}</small>
           </article>
         </div>
       </section>
@@ -587,13 +584,13 @@
     >
       <ng-container *ngIf="step === 'choice'">
         <button class="button button--secondary" type="button" (click)="close()">
-          Cancel
+          {{ 'CANCEL' | translate }}
         </button>
       </ng-container>
 
       <ng-container *ngIf="isRecipe">
         <button class="button button--secondary" type="button" (click)="close()">
-          Cancel
+          {{ 'CANCEL' | translate }}
         </button>
         <span class="meal-modal__footer-spacer"></span>
         <div class="meal-modal__footer-actions">
@@ -603,7 +600,7 @@
             [disabled]="saving"
             (click)="save(true)"
           >
-            Save draft
+            {{ 'SAVE_DRAFT' | translate }}
           </button>
           <button
             class="button button--primary"
@@ -611,7 +608,7 @@
             [disabled]="saving"
             (click)="save(false)"
           >
-            {{ saving ? 'Saving...' : 'Save recipe' }}
+            {{ (saving ? 'SAVING' : 'SAVE_RECIPE') | translate }}
           </button>
         </div>
       </ng-container>
@@ -624,10 +621,10 @@
             [disabled]="saving"
             (click)="save(false)"
           >
-            {{ saving ? 'Saving...' : 'Save Meal' }}
+            {{ (saving ? 'SAVING' : 'SAVE_MEAL') | translate }}
           </button>
           <button class="button button--secondary" type="button" (click)="close()">
-            Cancel
+            {{ 'CANCEL' | translate }}
           </button>
         </div>
       </ng-container>

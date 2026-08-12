@@ -4,8 +4,8 @@
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Program Structure</h2>
-        <p class="np-aside__sub">{{ nutritionWeeks?.length || 0 }} Weeks • {{ days?.length || 0 }} Days</p>
+        <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
+        <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks?.length || 0, days: days?.length || 0 } }}</p>
       </div>
 
       <div
@@ -26,13 +26,11 @@
             [class.is-active]="selectedDay?.id === d.id"
             (click)="selectDay(d)"
           >
-            <span>{{ d.title }}</span>
+            <span>{{ dayLabel(i) }}</span>
             <small class="np-day__meta">
-              <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+              <span class="np-day__weekday">{{ weekdayLabel(d) }}</span>
               <span class="np-day__dot">•</span>
-              <span class="np-day__date">{{
-                d.date | date : "MMM d, yyyy"
-              }}</span>
+              <span class="np-day__date">{{ dateLabel(d) }}</span>
             </small>
           </button>
 
@@ -44,18 +42,16 @@
                 [class.is-active]="selectedDay?.id === d.id"
                 (click)="selectDay(d)"
               >
-                <span>{{ d.title }}</span>
+                <span>{{ dayLabel(i) }}</span>
                 <small class="np-day__meta">
-                  <span class="np-day__weekday">{{ d.dayOfWeek }}</span>
+                  <span class="np-day__weekday">{{ weekdayLabel(d) }}</span>
                   <span class="np-day__dot">•</span>
-                  <span class="np-day__date">{{
-                    d.date | date : "MMM d, yyyy"
-                  }}</span>
+                  <span class="np-day__date">{{ dateLabel(d) }}</span>
                 </small>
               </button>
               <button
                 class="np-iconbtn"
-                title="Delete"
+                [title]="'DELETE' | translate"
                 (click)="deleteDay(d, $event)"
               >
                 <i-feather name="trash-2" class="np-ico"></i-feather>
@@ -70,13 +66,13 @@
           (click)="addDay()"
         >
           <i-feather name="plus" class="np-ico"></i-feather>
-          Add Day
+          {{ 'ADD_DAY' | translate }}
         </button>
 
         <!-- Duplicate -->
         <div class="np-stack">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
-            <span>Duplicate Day</span>
+            <span>{{ 'DUPLICATE_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
           </button>
         </div>
@@ -88,13 +84,13 @@
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>Global Plan Settings</span>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span>
         </div>
 
         <!-- Plan Title -->
         <div class="np-field">
           <label class="np-label"
-            >Plan Title <span class="np-danger">*</span></label
+            >{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label
           >
           <input class="np-input" [(ngModel)]="planName" type="text" />
         </div>
@@ -103,18 +99,18 @@
         <ng-container *ngIf="!showPlanDescription; else planDescBlock">
           <button class="np-link" (click)="togglePlanDescription()">
             <i-feather name="plus" class="np-ico"></i-feather>
-            Add Plan Description
+            {{ 'ADD_PLAN_DESCRIPTION' | translate }}
           </button>
         </ng-container>
 
         <ng-template #planDescBlock>
           <div class="np-field">
-            <label class="np-label">Plan Description</label>
+            <label class="np-label">{{ 'PLAN_DESCRIPTION' | translate }}</label>
             <div class="np-textareaWrap">
               <textarea
                 class="np-input np-textarea"
                 rows="5"
-                placeholder="Enter Plan Description"
+                [placeholder]="'ENTER_PLAN_DESCRIPTION' | translate"
                 [(ngModel)]="planDescription"
               ></textarea>
               <button
@@ -131,7 +127,7 @@
         <div class="latest-client-programs latest-client-programs--nutrition" *ngIf="latestAssignedPrograms.length">
           <div class="latest-client-programs__title">
             <i-feather name="clock" class="np-ico"></i-feather>
-            Derniers programmes nutrition de ce client
+            {{ 'LATEST_CLIENT_NUTRITION_PROGRAMS' | translate }}
           </div>
           <div class="latest-client-programs__row" *ngFor="let program of latestAssignedPrograms">
             <span>{{ getProgramDisplayName(program) }}</span>
@@ -158,14 +154,14 @@
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
             </span>
-            Program Schedule
+            {{ 'PROGRAM_SCHEDULE' | translate }}
           </h3>
 
           <div class="program-schedule-grid">
             <!-- Start Date -->
             <div class="program-schedule-field">
               <label class="program-schedule-label">
-                Start Date <span class="required">*</span>
+                {{ 'START_DATE' | translate }} <span class="required">*</span>
               </label>
               <div class="program-schedule-input-wrapper">
                 <span class="program-schedule-input-icon">
@@ -205,7 +201,7 @@
 
             <!-- End Date -->
             <div class="program-schedule-field">
-              <label class="program-schedule-label"> End Date </label>
+              <label class="program-schedule-label"> {{ 'END_DATE' | translate }} </label>
               <div class="program-schedule-input-wrapper">
                 <span class="program-schedule-input-icon">
                   <svg
@@ -239,7 +235,7 @@
                 />
               </div>
               <p class="program-schedule-helper">
-                Automatically calculated based on number of days
+                {{ 'END_DATE_AUTO_CALCULATED' | translate }}
               </p>
             </div>
           </div>
@@ -255,10 +251,10 @@
               [class.is-active]="selectedDay?.id === d.id"
               (click)="selectDay(d)"
             >
-              <span class="np-mobile-day__title">{{ d.title || d.dayOfWeek || ('Day ' + (i + 1)) }}</span>
+              <span class="np-mobile-day__title">{{ dayLabel(i) }}</span>
             </button>
           </ng-container>
-          <button type="button" class="np-mobile-add" (click)="addDay()" aria-label="Add day">
+          <button type="button" class="np-mobile-add" (click)="addDay()" [attr.aria-label]="'ADD_DAY' | translate">
             <i-feather name="plus" class="np-ico"></i-feather>
           </button>
         </div>
@@ -266,7 +262,7 @@
 
         <!-- Day Header -->
         <div class="np-dayhead">
-          <h3 class="np-h6">{{ selectedDay?.dayOfWeek }}</h3>
+          <h3 class="np-h6">{{ selectedDayLabel() }}</h3>
           <button class="np-mini" (click)="toggleDayDescription()">
             <i-feather name="edit-2" class="np-ico"></i-feather>
           </button>
@@ -277,18 +273,18 @@
           <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Nutrition Description
+              {{ 'ADD_NUTRITION_DESCRIPTION' | translate }}
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Nutrition Description</label>
+              <label class="np-label">{{ 'NUTRITION_DESCRIPTION' | translate }}</label>
               <div class="np-textareaWrap">
                 <textarea
                   class="np-input np-textarea"
                   rows="5"
-                  placeholder="Enter Nutrition Description"
+                  [placeholder]="'ENTER_NUTRITION_DESCRIPTION' | translate"
                   [(ngModel)]="selectedDay!.description"
                 ></textarea>
                 <button
@@ -308,29 +304,29 @@
         <div class="np-totals">
           <div class="np-total">
             <div class="np-total__value">{{ selectedProtein }}</div>
-            <div class="np-total__label">Protein (g)</div>
+            <div class="np-total__label">{{ 'PROTEIN_GRAMS' | translate }}</div>
           </div>
 
           <div class="np-total">
             <div class="np-total__value">{{ selectedCarbs }}</div>
-            <div class="np-total__label">Carbs (g)</div>
+            <div class="np-total__label">{{ 'CARBS_GRAMS' | translate }}</div>
           </div>
 
           <div class="np-total">
             <div class="np-total__value">{{ selectedFat }}</div>
-            <div class="np-total__label">Fat (g)</div>
+            <div class="np-total__label">{{ 'FAT_GRAMS' | translate }}</div>
           </div>
 
           <div class="np-total">
             <div class="np-total__value">{{ selectedCalories }}</div>
-            <div class="np-total__label">Calories (kcal)</div>
+            <div class="np-total__label">{{ 'CALORIES_KCAL' | translate }}</div>
           </div>
         </div>
 
         <!-- Saisie macros -->
         <div class="np-macro-row" *ngIf="selectedDay">
           <div class="np-field">
-            <label class="np-label">Protein</label>
+            <label class="np-label">{{ 'PROTEIN' | translate }}</label>
             <div class="np-unit" data-unit="g">
               <input
                 class="np-input"
@@ -343,7 +339,7 @@
           </div>
 
           <div class="np-field">
-            <label class="np-label">Carbs</label>
+            <label class="np-label">{{ 'CARBS' | translate }}</label>
             <div class="np-unit" data-unit="g">
               <input
                 class="np-input"
@@ -356,7 +352,7 @@
           </div>
 
           <div class="np-field">
-            <label class="np-label">Fat</label>
+            <label class="np-label">{{ 'FAT' | translate }}</label>
             <div class="np-unit" data-unit="g">
               <input
                 class="np-input"
@@ -369,7 +365,7 @@
           </div>
 
           <div class="np-field">
-            <label class="np-label">Calories</label>
+            <label class="np-label">{{ 'CALORIES' | translate }}</label>
             <div class="np-unit" data-unit="Kcal">
               <input
                 class="np-input"
@@ -396,7 +392,7 @@
               stroke-linecap="round"
             />
           </svg>
-          {{ isEditMode ? "Update Plan" : "Save Plan" }}
+          {{ (isEditMode ? 'UPDATE_PLAN' : 'SAVE_PLAN') | translate }}
         </button>
       </div>
     </main>

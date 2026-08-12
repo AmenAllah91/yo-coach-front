@@ -2,8 +2,8 @@
   <div class="np-shell">
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Program Structure</h2>
-        <p class="np-aside__sub">{{ workoutWeeks.length }} Weeks • {{ days.length }} Days</p>
+        <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
+        <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</p>
       </div>
 
       <div
@@ -20,10 +20,10 @@
             [attr.aria-expanded]="!isWeekCollapsed(week.label)"
           >
             <div>
-              <strong>{{ week.label }}</strong>
-              <small>{{ week.days.length }} days</small>
+              <strong>{{ getWeekDisplayLabel(week.label) }}</strong>
+              <small>{{ 'DAYS_COUNT' | translate:{ count: week.days.length } }}</small>
             </div>
-            <span class="np-week-card__count">{{ getWeekWorkoutCount(week.days) }} workouts</span>
+            <span class="np-week-card__count">{{ 'WORKOUTS_COUNT' | translate:{ count: getWeekWorkoutCount(week.days) } }}</span>
             <i-feather
               [name]="isWeekCollapsed(week.label) ? 'chevron-down' : 'chevron-up'"
               class="np-week-card__chevron"
@@ -43,13 +43,11 @@
                 [class.is-active]="selectedDay?.id === d.id"
                 (click)="selectDay(d)"
               >
-                <span class="np-day__title">{{ d.title }}</span>
+                <span class="np-day__title">{{ getDayDisplayTitle(d) }}</span>
                 <small class="np-day__meta">
-                  <ng-container *ngIf="d.isRestDay || d.restDay; else exerciseCount">Rest Day</ng-container>
+                  <ng-container *ngIf="d.isRestDay || d.restDay; else exerciseCount">{{ 'REST_DAY' | translate }}</ng-container>
                   <ng-template #exerciseCount>
-                    {{ getDayExerciseCount(d) > 0
-                      ? (getDayExerciseCount(d) + (getDayExerciseCount(d) === 1 ? ' exercise' : ' exercises'))
-                      : 'Empty Day' }}
+                    {{ getDayExerciseCount(d) > 0 ? ('EXERCISES_COUNT' | translate:{ count: getDayExerciseCount(d) }) : ('EMPTY_DAY' | translate) }}
                   </ng-template>
                 </small>
               </button>
@@ -60,12 +58,12 @@
 
         <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
           <i-feather name="plus" class="np-ico"></i-feather>
-          Add Day
+          {{ 'ADD_DAY' | translate }}
         </button>
 
         <div class="np-stack">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
-            <span>Duplicate Day</span>
+            <span>{{ 'DUPLICATE_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
           </button>
         </div>
@@ -74,7 +72,7 @@
 
     <main class="np-main">
       <div class="np-pagehead">
-        <a routerLink="/nutrition-plan" class="np-back" aria-label="Back">
+        <a routerLink="/nutrition-plan" class="np-back" [attr.aria-label]="'BACK' | translate">
           <svg viewBox="0 0 24 24" class="np-ico">
             <path
               d="M15 18l-6-6 6-6"
@@ -88,50 +86,50 @@
         </a>
 
         <h1 class="np-h5">
-          {{ isEditMode ? "Edit Workout Plan" : "Create Workout Plan" }}
+          {{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}
         </h1>
       </div>
 
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>Global Plan Settings</span>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span>
         </div>
 
         <div class="np-field">
-          <label class="np-label">Plan Title <span class="np-danger">*</span></label>
+          <label class="np-label">{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label>
           <input
             class="np-input"
             type="text"
             [(ngModel)]="workoutPlan.name"
-            placeholder="Plan name"
+            [placeholder]="'PLAN_NAME' | translate"
           />
         </div>
 
         <ng-container *ngIf="!showPlanDescription; else planDescBlock">
           <button class="np-link" (click)="togglePlanDescription()">
             <i-feather name="plus" class="np-ico"></i-feather>
-            Add Plan Description
+            {{ 'ADD_PLAN_DESCRIPTION' | translate }}
           </button>
         </ng-container>
 
         <ng-template #planDescBlock>
           <div class="np-field">
-            <label class="np-label">Plan Description</label>
+            <label class="np-label">{{ 'PLAN_DESCRIPTION' | translate }}</label>
 
             <div class="np-textareaWrap">
               <textarea
                 class="np-input np-textarea"
                 rows="5"
                 [(ngModel)]="workoutPlan.details"
-                placeholder="Enter Plan Description"
+                [placeholder]="'ENTER_PLAN_DESCRIPTION' | translate"
               ></textarea>
 
               <button
                 type="button"
                 class="np-close"
                 (click)="togglePlanDescription()"
-                aria-label="Remove plan description"
+                [attr.aria-label]="'REMOVE_PLAN_DESCRIPTION' | translate"
               >
                 <i-feather name="x" class="np-ico"></i-feather>
               </button>
@@ -140,7 +138,7 @@
         </ng-template>
 
         <div class="np-field">
-          <label class="np-label">Duration (Weeks) <span class="np-danger">*</span></label>
+          <label class="np-label">{{ 'DURATION_WEEKS' | translate }} <span class="np-danger">*</span></label>
           <select
             class="np-input"
             [ngModel]="durationWeeks"
@@ -148,7 +146,7 @@
             name="durationWeeks"
           >
             <option *ngFor="let option of durationOptions" [ngValue]="option">
-              {{ option }} {{ option === 1 ? "Week" : "Weeks" }} ({{ option * 7 }} Days)
+              {{ 'DURATION_OPTION' | translate:{ weeks: option, days: option * 7 } }}
             </option>
           </select>
         </div>
@@ -160,11 +158,11 @@
               [(ngModel)]="isVisibleToOthers"
             />
             <span>
-              Visible to other coaches
+              {{ 'VISIBLE_TO_OTHER_COACHES' | translate }}
             </span>
           </label>
           <p class="np-help">
-            If checked, this workout plan will appear in Templates for other coaches.
+            {{ 'VISIBLE_TO_COACHES_HINT' | translate }}
           </p>
         </div>
 
@@ -192,7 +190,7 @@
                 (click)="selectDay(d)"
               >
         <span class="np-mobile-day__title">
-          {{ d.title }}
+          {{ getDayDisplayTitle(d) }}
         </span>
               </button>
 
@@ -201,8 +199,8 @@
                 *ngIf="i !== 0 && selectedDay?.id === d.id"
                 type="button"
                 class="np-mobile-day__delete"
-                title="Delete"
-                aria-label="Delete day"
+                [title]="'DELETE' | translate"
+                [attr.aria-label]="'DELETE_DAY' | translate"
                 (click)="deleteDay(d, $event)"
               >
                 <i-feather name="trash-2" class="np-ico"></i-feather>
@@ -213,8 +211,8 @@
                 type="button"
                 class="np-mobile-day__drag"
                 cdkDragHandle
-                title="Move day"
-                aria-label="Move day"
+                [title]="'MOVE_DAY' | translate"
+                [attr.aria-label]="'MOVE_DAY' | translate"
               >
                 <i-feather name="menu" class="np-ico"></i-feather>
               </button>
@@ -225,7 +223,7 @@
             type="button"
             class="np-mobile-add"
             (click)="addDayFromMobile()"
-            aria-label="Add day"
+            [attr.aria-label]="'ADD_DAY' | translate"
           >
             <i-feather name="plus" class="np-ico"></i-feather>
           </button>
@@ -234,7 +232,7 @@
         <div class="wk-day-editor" *ngIf="selectedDay">
           <div class="wk-day-editor__head">
             <div class="wk-day-editor__titleline">
-              <h3 class="wk-day-editor__title">{{ selectedDay.title }}</h3>
+              <h3 class="wk-day-editor__title">{{ getDayDisplayTitle(selectedDay) }}</h3>
               <span class="wk-day-editor__dot" *ngIf="getSelectedDayDateLabel()"></span>
               <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel()">
                 {{ getSelectedDayDateLabel() }}
@@ -249,10 +247,10 @@
                 (click)="toggleRestDay()"
               >
                 <i-feather name="flag" class="wk-restmark__icon"></i-feather>
-                {{ selectedDay.isRestDay ? "Rest day" : "Set as rest" }}
+                {{ (selectedDay.isRestDay ? 'REST_DAY' : 'SET_AS_REST') | translate }}
               </button>
 
-              <button type="button" class="wk-kebab" aria-label="Day options">
+              <button type="button" class="wk-kebab" [attr.aria-label]="'DAY_OPTIONS' | translate">
                 <i-feather name="more-vertical" class="wk-kebab__icon"></i-feather>
               </button>
             </div>
@@ -260,12 +258,12 @@
 
           <ng-container *ngIf="!selectedDay.isRestDay && selectedWorkoutSession as session">
             <div class="np-field wk-workout-name">
-              <label class="np-label">Workout Name <span class="np-danger">*</span></label>
+              <label class="np-label">{{ 'WORKOUT_NAME' | translate }} <span class="np-danger">*</span></label>
               <input
                 class="np-input"
                 type="text"
                 [(ngModel)]="session.name"
-                placeholder="Workout name"
+                [placeholder]="'WORKOUT_NAME' | translate"
               />
             </div>
           </ng-container>
@@ -283,20 +281,20 @@
             </svg>
           </div>
 
-          <h3 class="wk-restbox__title">Rest Day</h3>
-          <p class="wk-restbox__text">Rest and recovery. No exercises scheduled.</p>
+          <h3 class="wk-restbox__title">{{ 'REST_DAY' | translate }}</h3>
+          <p class="wk-restbox__text">{{ 'REST_DAY_DESCRIPTION' | translate }}</p>
 
           <ng-container *ngIf="showRestNotes; else addNotesBtnRest">
             <div class="wk-notes">
               <div class="wk-notes__head">
-                <label class="wk-notes__label">Rest Day Notes</label>
+                <label class="wk-notes__label">{{ 'REST_DAY_NOTES' | translate }}</label>
                 <button type="button" class="wk-notes__close" (click)="toggleRestNotes()">✕</button>
               </div>
 
               <textarea
                 class="wk-notes__textarea"
                 rows="3"
-                placeholder="Add recovery notes..."
+                [placeholder]="'ADD_RECOVERY_NOTES' | translate"
                 [(ngModel)]="selectedDay.description"
               ></textarea>
             </div>
@@ -305,7 +303,7 @@
           <ng-template #addNotesBtnRest>
             <button class="np-link" (click)="toggleRestNotes()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Notes
+               {{ 'ADD_NOTES' | translate }}
             </button>
           </ng-template>
         </div>
@@ -314,13 +312,13 @@
           <ng-container *ngIf="!selectedDay.showDescription; else dayDescBlock">
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Workout Description
+               {{ 'ADD_WORKOUT_DESCRIPTION' | translate }}
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Workout Description</label>
+              <label class="np-label">{{ 'WORKOUT_DESCRIPTION' | translate }}</label>
 
               <div class="np-textareaWrap">
                 <textarea
@@ -333,7 +331,7 @@
                   type="button"
                   class="np-close"
                   (click)="toggleDayDescription()"
-                  aria-label="Remove day description"
+                  [attr.aria-label]="'REMOVE_DAY_DESCRIPTION' | translate"
                 >
                   <i-feather name="x" class="np-ico"></i-feather>
                 </button>
@@ -345,7 +343,7 @@
         </ng-container>
 
         <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
-          <h3 class="wkex__heading">Exercises</h3>
+          <h3 class="wkex__heading">{{ 'EXERCISES' | translate }}</h3>
 
           <ng-container
             *ngIf="selectedDay?.workoutSessions[0]?.exercises.length; else wkNoExercises"
@@ -393,7 +391,7 @@
                         <h4 class="wkex-card__title">
                           {{ exercise.name }}
                           <span *ngIf="isInSuperset(i)" class="wkex-badge">
-                            Superset
+                            {{ 'SUPERSET' | translate }}
                           </span>
                         </h4>
 
@@ -402,7 +400,7 @@
                         >
                           <div class="wkex-notes">
                             <div class="wkex-notes__head">
-                              <label class="wkex-notes__label">Exercise Notes</label>
+                              <label class="wkex-notes__label">{{ 'EXERCISE_NOTES' | translate }}</label>
                               <button
                                 type="button"
                                 class="wkex-notes__close"
@@ -428,7 +426,7 @@
                             (click)="setEditingExerciseDescription(exercise.id)"
                           >
                             <span class="wkex-plus">＋</span>
-                            {{ exercise.description ? "Edit Notes" : "Add Notes" }}
+                            {{ (exercise.description ? 'EDIT_NOTES' : 'ADD_NOTES') | translate }}
                           </button>
                         </ng-template>
 
@@ -455,8 +453,8 @@
                           class="wkex-action wkex-action--video"
                           [class.is-active]="isExerciseVideoOpen(exercise)"
                           [disabled]="!getExerciseVideoLink(exercise)"
-                          title="Watch exercise video"
-                          aria-label="Watch exercise video"
+                          [title]="'WATCH_EXERCISE_VIDEO' | translate"
+                          [attr.aria-label]="'WATCH_EXERCISE_VIDEO' | translate"
                           (click)="toggleExerciseVideo(exercise)"
                         >
                           <i-feather name="play-circle" class="wkex-action__icon"></i-feather>
@@ -465,8 +463,8 @@
                         <button
                           type="button"
                           class="wkex-action wkex-action--danger"
-                          title="Delete exercise"
-                          aria-label="Delete exercise"
+                          [title]="'DELETE_EXERCISE' | translate"
+                          [attr.aria-label]="'DELETE_EXERCISE' | translate"
                           (click)="handleRemoveExercise(exercise.id)"
                         >
                           <i-feather name="trash-2" class="wkex-action__icon"></i-feather>
@@ -476,12 +474,12 @@
 
                     <div *ngIf="exercise.sets?.length > 0" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField() || exercise.type === 'CARDIO'">
                       <div class="wkex-sets__head">
-                        <div class="wkex-sets__th">Set</div>
-                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">Weight ({{ facade.getWeightUnitLabel() }})</div>
+                        <div class="wkex-sets__th">{{ 'SET' | translate }}</div>
+                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">{{ 'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() } }}</div>
                         <div class="wkex-sets__th">
-                          {{ exercise.type === 'CARDIO' ? 'Minutes' : 'Reps' }}
+                          {{ (exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }}
                         </div>
-                        <div class="wkex-sets__th">Rest</div>
+                        <div class="wkex-sets__th">{{ 'REST' | translate }}</div>
                         <div class="wkex-sets__th wkex-sets__th--empty"></div>
                       </div>
 
@@ -490,7 +488,7 @@
                           class="wkex-sets__row"
                           *ngFor="let set of exercise.sets; let si = index"
                         >
-                          <div class="wkex-sets__cell wkex-sets__cell--idx" data-label="Set">
+                          <div class="wkex-sets__cell wkex-sets__cell--idx" [attr.data-label]="'SET' | translate">
                             <div class="wkex-settype">
                               <button
                                 type="button"
@@ -516,7 +514,7 @@
                                   (click)="selectSetType(exercise.id, si, 'REGULAR')"
                                 >
                                   <span class="wkex-settype__code wkex-settype__code--regular">R</span>
-                                  Regular
+                                  {{ 'REGULAR_SET' | translate }}
                                 </button>
 
                                 <button
@@ -525,7 +523,7 @@
                                   (click)="selectSetType(exercise.id, si, 'WARM_UP')"
                                 >
                                   <span class="wkex-settype__code wkex-settype__code--warmup">W</span>
-                                  Warm up
+                                  {{ 'WARM_UP' | translate }}
                                 </button>
 
                                 <button
@@ -534,7 +532,7 @@
                                   (click)="selectSetType(exercise.id, si, 'DROP_SET')"
                                 >
                                   <span class="wkex-settype__code wkex-settype__code--dropset">D</span>
-                                  Drop set
+                                  {{ 'DROP_SET' | translate }}
                                 </button>
 
                                 <button
@@ -543,7 +541,7 @@
                                   (click)="selectSetType(exercise.id, si, 'FAILURE')"
                                 >
                                   <span class="wkex-settype__code wkex-settype__code--failure">F</span>
-                                  Failure
+                                  {{ 'FAILURE' | translate }}
                                 </button>
                               </div>
                             </div>
@@ -551,7 +549,7 @@
 
                           <div
                             class="wkex-sets__cell"
-                            [attr.data-label]="'Weight (' + facade.getWeightUnitLabel() + ')'"
+                            [attr.data-label]="'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() }"
                             *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
                           >
                             <input
@@ -565,7 +563,7 @@
 
                           <div
                             class="wkex-sets__cell"
-                            [attr.data-label]="exercise.type === 'CARDIO' ? 'Minutes' : 'Reps'"
+                            [attr.data-label]="(exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate"
                           >
                             <input
                               type="{{ exercise.type === 'CARDIO' ? 'number' : 'text' }}"
@@ -582,9 +580,9 @@
                             />
                           </div>
 
-                          <div class="wkex-sets__cell wkex-sets__cell--rest" data-label="Rest">
+                          <div class="wkex-sets__cell wkex-sets__cell--rest" [attr.data-label]="'REST' | translate">
                             <div class="wkex-restbox">
-                              <span class="wkex-restbox__label">Min:</span>
+                              <span class="wkex-restbox__label">{{ 'MIN_ABBREVIATION' | translate }}:</span>
                               <input
                                 type="number"
                                 class="wkex-restbox__input"
@@ -594,7 +592,7 @@
                             </div>
 
                             <div class="wkex-restbox">
-                              <span class="wkex-restbox__label">Sec:</span>
+                              <span class="wkex-restbox__label">{{ 'SEC_ABBREVIATION' | translate }}:</span>
                               <input
                                 type="number"
                                 class="wkex-restbox__input"
@@ -609,8 +607,8 @@
                               *ngIf="exercise.sets.length > 1"
                               type="button"
                               class="wkex-action wkex-action--danger"
-                              title="Delete set"
-                              aria-label="Delete set"
+                              [title]="'DELETE_SET' | translate"
+                              [attr.aria-label]="'DELETE_SET' | translate"
                               (click)="handleRemoveSet(exercise.id, si)"
                             >
                               <i-feather name="trash-2" class="wkex-action__icon"></i-feather>
@@ -620,7 +618,7 @@
                       </div>
 
                       <button type="button" class="wkex-addset" (click)="handleAddSet(exercise.id)">
-                        Add Set
+                        {{ 'ADD_SET' | translate }}
                       </button>
                     </div>
                   </div>
@@ -637,7 +635,7 @@
                     [class.is-active]="isSupersetPair(i)"
                     (click)="toggleSuperset(i)"
                   >
-                    {{ isSupersetPair(i) ? "− Superset" : "+ Superset" }}
+                    {{ isSupersetPair(i) ? ('REMOVE_SUPERSET' | translate) : ('ADD_SUPERSET' | translate) }}
                   </button>
                 </div>
               </ng-container>
@@ -646,13 +644,13 @@
 
           <ng-template #wkNoExercises>
             <div class="wkex-empty">
-              <p class="wkex-empty__text">No exercises added yet</p>
+              <p class="wkex-empty__text">{{ 'NO_EXERCISES_ADDED' | translate }}</p>
             </div>
           </ng-template>
 
           <button type="button" class="wkex-addexercise" (click)="openExerciseSelector()">
             <span class="wkex-plus">＋</span>
-            Add an Exercise
+             {{ 'ADD_EXERCISE' | translate }}
           </button>
         </div>
         </div>
@@ -670,7 +668,7 @@
             />
           </svg>
 
-          {{ isEditMode ? "Update Plan" : "Create Plan" }}
+          {{ (isEditMode ? 'UPDATE_PLAN' : 'CREATE_PLAN') | translate }}
         </button>
       </div>
     </main>
@@ -688,7 +686,7 @@
 
   <div class="np-modal__panel np-modal--food" tabindex="-1">
     <div class="np-modal__head">
-      <h3 id="npExTitle" class="np-modal__title">Add Exercise</h3>
+      <h3 id="npExTitle" class="np-modal__title">{{ 'ADD_EXERCISE' | translate }}</h3>
 
       <button class="np-modal__close" (click)="closeExerciseModal()">
         <svg viewBox="0 0 24 24" class="np-ico">
@@ -721,14 +719,14 @@
             <input
               class="np-input np-searchwrap__input"
               type="text"
-              placeholder="Search exercises..."
+              [placeholder]="'SEARCH_EXERCISES' | translate"
               [(ngModel)]="exerciseSearch"
               (input)="filterExercises()"
             />
           </div>
         </div>
 
-        <div class="np-modal__sectionTitle">Common Exercises</div>
+        <div class="np-modal__sectionTitle">{{ 'COMMON_EXERCISES' | translate }}</div>
 
         <ul class="np-foodlist">
           <li
@@ -753,7 +751,7 @@
 
             <div class="np-foodlist__text">
               <div class="np-foodlist__name">{{ ex.name }}</div>
-              <div class="np-foodlist__meta">Tap to set sets/reps</div>
+              <div class="np-foodlist__meta">{{ 'TAP_TO_SET_SETS_REPS' | translate }}</div>
             </div>
           </li>
         </ul>
@@ -765,12 +763,12 @@
 
           <div class="np-grid-2">
             <div>
-              <label class="np-label">Sets</label>
+              <label class="np-label">{{ 'SETS' | translate }}</label>
               <input class="np-input" type="number" min="1" [(ngModel)]="selectedExercise.sets" />
             </div>
 
             <div>
-              <label class="np-label">Reps</label>
+              <label class="np-label">{{ 'REPS' | translate }}</label>
               <input class="np-input" type="number" min="1" [(ngModel)]="selectedExercise.reps" />
             </div>
 
@@ -786,12 +784,12 @@
             </div>
 
             <div>
-              <label class="np-label">Rest (sec)</label>
+              <label class="np-label">{{ 'REST_SECONDS' | translate }}</label>
               <input class="np-input" type="number" min="0" [(ngModel)]="selectedExercise.restSec" />
             </div>
 
             <div>
-              <label class="np-label">Duration (min)</label>
+              <label class="np-label">{{ 'DURATION_MINUTES' | translate }}</label>
               <input
                 class="np-input"
                 type="number"
@@ -806,18 +804,18 @@
 
     <div class="np-modal__foot" *ngIf="exerciseStep === 'list'">
       <button class="np-btn np-btn--ghost np-btn--full" (click)="closeExerciseModal()">
-        Cancel
+         {{ 'CANCEL' | translate }}
       </button>
     </div>
 
     <div class="np-modal__foot" *ngIf="exerciseStep === 'detail'">
       <div class="np-grid-2">
         <button class="np-btn np-btn--ghost" (click)="exerciseStep = 'list'">
-          Back
+          {{ 'BACK' | translate }}
         </button>
 
         <button class="np-btn np-btn--brandsoft" (click)="addExerciseToSession()">
-          Add Exercise
+          {{ 'ADD_EXERCISE' | translate }}
         </button>
       </div>
     </div>
@@ -827,9 +825,9 @@
 <div *ngIf="showExerciseSelector">
   <div class="wkdrawer__backdrop" (click)="closeExerciseSelector()"></div>
 
-  <aside class="wkdrawer" role="dialog" aria-label="Choose Exercise">
+  <aside class="wkdrawer" role="dialog" [attr.aria-label]="'CHOOSE_EXERCISE' | translate">
     <div class="wkdrawer__head">
-      <h2 class="wkdrawer__title">Choose Exercise</h2>
+      <h2 class="wkdrawer__title">{{ 'CHOOSE_EXERCISE' | translate }}</h2>
       <button class="wkdrawer__close" (click)="closeExerciseSelector()">✕</button>
     </div>
 
@@ -849,7 +847,7 @@
         <input
           class="wkinput wkinput--search"
           type="text"
-          placeholder="Search by name..."
+          [placeholder]="'SEARCH_BY_NAME' | translate"
           [(ngModel)]="searchQuery"
           (ngModelChange)="onFilterChange()"
         />
@@ -858,13 +856,13 @@
       <div class="wkdrawer__filters">
         <div class="wkselectwrap">
           <select class="wkselect" [(ngModel)]="muscleFilter" (ngModelChange)="onFilterChange()">
-            <option value="">Muscles</option>
-            <option value="CHEST">Chest</option>
-            <option value="BACK">Back</option>
-            <option value="SHOULDERS">Shoulders</option>
-            <option value="ARMS">Arms</option>
-            <option value="LEGS">Legs</option>
-            <option value="CORE">Core</option>
+            <option value="">{{ 'MUSCLES' | translate }}</option>
+            <option value="CHEST">{{ 'EXERCISE_MUSCLE_CHEST' | translate }}</option>
+            <option value="BACK">{{ 'EXERCISE_MUSCLE_BACK' | translate }}</option>
+            <option value="SHOULDERS">{{ 'EXERCISE_MUSCLE_SHOULDERS' | translate }}</option>
+            <option value="ARMS">{{ 'EXERCISE_MUSCLE_ARMS' | translate }}</option>
+            <option value="LEGS">{{ 'EXERCISE_MUSCLE_LEGS' | translate }}</option>
+            <option value="CORE">{{ 'EXERCISE_MUSCLE_CORE' | translate }}</option>
           </select>
 
           <svg class="wkselect__chev" viewBox="0 0 24 24">
@@ -881,12 +879,12 @@
 
         <div class="wkselectwrap">
           <select class="wkselect" [(ngModel)]="equipmentFilter" (ngModelChange)="onFilterChange()">
-            <option value="">Equipment</option>
-            <option value="BARBELL">Barbell</option>
-            <option value="DUMBBELL">Dumbbell</option>
-            <option value="CABLE">Cable</option>
-            <option value="MACHINE">Machine</option>
-            <option value="BODYWEIGHT">Bodyweight</option>
+            <option value="">{{ 'EQUIPMENT' | translate }}</option>
+            <option value="BARBELL">{{ 'EXERCISE_EQUIPMENT_BARBELL' | translate }}</option>
+            <option value="DUMBBELL">{{ 'EXERCISE_EQUIPMENT_DUMBBELL' | translate }}</option>
+            <option value="CABLE">{{ 'EXERCISE_EQUIPMENT_CABLE' | translate }}</option>
+            <option value="MACHINE">{{ 'EXERCISE_EQUIPMENT_MACHINE' | translate }}</option>
+            <option value="BODYWEIGHT">{{ 'EXERCISE_EQUIPMENT_BODYWEIGHT' | translate }}</option>
           </select>
 
           <svg class="wkselect__chev" viewBox="0 0 24 24">
@@ -903,10 +901,10 @@
 
         <div class="wkselectwrap">
           <select class="wkselect" [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
-            <option value="">All Types</option>
-            <option value="CARDIO">Cardio</option>
-            <option value="MUSCULATION">Musculation</option>
-            <option value="STRENGTH">Strength</option>
+            <option value="">{{ 'ALL_TYPES' | translate }}</option>
+            <option value="CARDIO">{{ 'EXERCISE_TYPE_CARDIO' | translate }}</option>
+            <option value="MUSCULATION">{{ 'EXERCISE_TYPE_MUSCULATION' | translate }}</option>
+            <option value="STRENGTH">{{ 'EXERCISE_TYPE_STRENGTH' | translate }}</option>
           </select>
 
           <svg class="wkselect__chev" viewBox="0 0 24 24">
@@ -922,7 +920,7 @@
         </div>
       </div>
 
-      <div *ngIf="loading" class="wkloader">Loading exercises...</div>
+      <div *ngIf="loading" class="wkloader">{{ 'LOADING_EXERCISES' | translate }}</div>
 
       <ul class="wkdrawer__list" *ngIf="!loading">
         <li
@@ -959,28 +957,28 @@
             *ngIf="!isExerciseAdded(ex)"
             type="button"
             class="wkdrawer__add"
-            title="Add exercise"
-            [attr.aria-label]="'Add ' + ex.name"
+            [title]="'ADD_EXERCISE' | translate"
+            [attr.aria-label]="('ADD_EXERCISE_NAMED' | translate:{ name: ex.name })"
             (click)="handleSelectExercise(ex)"
           >
             ＋
           </button>
           <span class="wkdrawer__added" *ngIf="isExerciseAdded(ex)">
             <i-feather name="check"></i-feather>
-            Added
+             {{ 'ADDED' | translate }}
           </span>
         </li>
       </ul>
 
       <div class="pagination" *ngIf="totalPages > 1 && !loading">
         <button class="wkbtn-link" (click)="prevPage()" [disabled]="page === 0">
-          Prev
+          {{ 'PREVIOUS' | translate }}
         </button>
 
         <span>{{ page + 1 }} / {{ totalPages }}</span>
 
         <button class="wkbtn-link" (click)="nextPage()" [disabled]="page + 1 >= totalPages">
-          Next
+          {{ 'NEXT' | translate }}
         </button>
       </div>
     </div>
@@ -990,27 +988,25 @@
 <div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
   <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>
   <section class="duration-confirm__card">
-    <button type="button" class="duration-confirm__close" aria-label="Close" (click)="cancelDurationReduction()">
+    <button type="button" class="duration-confirm__close" [attr.aria-label]="'CLOSE' | translate" (click)="cancelDurationReduction()">
       <i-feather name="x" class="duration-confirm__closeIcon"></i-feather>
     </button>
     <div class="duration-confirm__icon">
       <i-feather name="alert-triangle" class="duration-confirm__iconSvg"></i-feather>
     </div>
     <div>
-      <h2 class="duration-confirm__title">Delete days from this plan?</h2>
+      <h2 class="duration-confirm__title">{{ 'DELETE_DAYS_FROM_PLAN' | translate }}</h2>
       <p class="duration-confirm__text">
-        Changing the duration to {{ pendingDurationWeeks }} {{ pendingDurationWeeks === 1 ? "week" : "weeks" }}
-        will permanently remove the last {{ pendingDurationRemovedDays }}
-        {{ pendingDurationRemovedDays === 1 ? "day" : "days" }}.
+        {{ 'DURATION_REDUCTION_CONFIRMATION' | translate:{ weeks: pendingDurationWeeks, days: pendingDurationRemovedDays } }}
       </p>
-      <p class="duration-confirm__hint">This action cannot be undone after you confirm.</p>
+      <p class="duration-confirm__hint">{{ 'ACTION_CANNOT_BE_UNDONE_AFTER_CONFIRM' | translate }}</p>
     </div>
     <div class="duration-confirm__actions">
       <button type="button" class="duration-confirm__btn duration-confirm__btn--ghost" (click)="cancelDurationReduction()">
-        Cancel
+         {{ 'CANCEL' | translate }}
       </button>
       <button type="button" class="duration-confirm__btn duration-confirm__btn--danger" (click)="confirmDurationReduction()">
-        Delete days
+         {{ 'DELETE_DAYS' | translate }}
       </button>
     </div>
   </section>

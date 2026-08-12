@@ -1,13 +1,13 @@
 <div class="meals-page">
   <div class="page-header">
-    <button class="mobile-page-back" type="button" aria-label="Back" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
+    <button class="mobile-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
     <div class="header-content">
-      <h1>Meals</h1>
-      <p>Create, organize and manage your meals</p>
+      <h1>{{ 'MEALS_TITLE' | translate }}</h1>
+      <p>{{ 'MEALS_SUBTITLE' | translate }}</p>
     </div>
     <button class="btn-primary header-actions" type="button" (click)="openAddMealModal()">
       <i-feather name="plus"></i-feather>
-      Add New Meal
+      {{ 'ADD_NEW_MEAL' | translate }}
     </button>
   </div>
 
@@ -16,7 +16,7 @@
       <i-feather name="search" class="search-icon"></i-feather>
       <input
         type="text"
-        placeholder="Search meals..."
+        [placeholder]="'SEARCH_MEALS' | translate"
         [(ngModel)]="search"
         (input)="onSearch()"
         class="search-input"
@@ -25,16 +25,16 @@
   </div>
 
   <div class="plans-state" *ngIf="!meals?.length && !loading">
-    No meals found.
+    {{ 'NO_MEALS_FOUND' | translate }}
   </div>
 
   <div class="meals-table" *ngIf="meals?.length">
     <div class="table-header">
-      <div class="col-title">TITLE</div>
-      <div class="col-updated">LAST UPDATED ON</div>
-      <div class="col-foods">FOODS</div>
-      <div class="col-macros">MACROS</div>
-      <div class="col-actions">ACTIONS</div>
+      <div class="col-title">{{ 'TITLE' | translate }}</div>
+      <div class="col-updated">{{ 'LAST_UPDATED_ON' | translate }}</div>
+      <div class="col-foods">{{ 'FOODS' | translate }}</div>
+      <div class="col-macros">{{ 'MACROS' | translate }}</div>
+      <div class="col-actions">{{ 'ACTIONS' | translate }}</div>
     </div>
 
     <div class="table-row" *ngFor="let m of meals">
@@ -47,7 +47,7 @@
       </div>
 
       <div class="col-foods">
-        {{ m.foods?.length || 0 }} foods
+        {{ m.foods?.length || 0 }} {{ ((m.foods?.length || 0) === 1 ? 'FOOD_LOWERCASE' : 'FOODS_LOWERCASE') | translate }}
       </div>
 
       <div class="col-macros">
@@ -63,21 +63,21 @@
       <div class="col-actions">
         <div class="dropdown" [class.open]="activeMealMenuId === m.id">
           <button class="actions-btn" (click)="toggleDropdown(m.id, $event)">
-            Actions
+            {{ 'ACTIONS' | translate }}
             <i-feather name="chevron-down"></i-feather>
           </button>
           <div class="dropdown-menu" *ngIf="activeMealMenuId === m.id">
             <button class="dropdown-item" (click)="editMeal(m); activeMealMenuId=null">
               <i-feather name="edit"></i-feather>
-              Edit
+              {{ 'EDIT' | translate }}
             </button>
             <button class="dropdown-item" (click)="duplicateMeal(m); activeMealMenuId=null">
               <i-feather name="copy"></i-feather>
-              Duplicate
+              {{ 'DUPLICATE' | translate }}
             </button>
             <button class="dropdown-item delete" (click)="deleteMeal(m); activeMealMenuId=null">
               <i-feather name="trash-2"></i-feather>
-              Delete
+              {{ 'DELETE' | translate }}
             </button>
           </div>
         </div>
@@ -117,7 +117,7 @@
 </div>
 
 <div class="meal-loading-overlay" *ngIf="loadingMealToEdit">
-  <div class="meal-loading-card">Loading meal...</div>
+  <div class="meal-loading-card">{{ 'LOADING_MEAL' | translate }}</div>
 </div>
 
 <app-delete-meal-modal

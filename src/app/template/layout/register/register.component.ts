@@ -3,10 +3,12 @@ import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from "@angular/
 import {CommonModule} from "@angular/common";
 import {RegisterService} from "../../../service/register.service";
 import {Router} from "@angular/router";
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {LanguageService} from '../../../service/language.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule],
+  imports: [CommonModule,ReactiveFormsModule,TranslateModule],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -18,9 +20,12 @@ export class RegisterComponent implements OnInit{
 
   constructor(private fb: FormBuilder,
               private registerService: RegisterService,
-              private router: Router) {}
+              private router: Router,
+              private translate: TranslateService,
+              private languageService: LanguageService) {}
 
   ngOnInit(): void {
+    this.translate.use(this.languageService.getCurrentLanguage());
     this.signupForm = this.fb.group({
       username: ['', [Validators.required]],
       firstName: ['', [Validators.required]],
@@ -50,7 +55,7 @@ export class RegisterComponent implements OnInit{
       const password = this.signupForm.get('password')?.value;
       const confirmPassword = this.signupForm.get('confirmPassword')?.value;
       if (password !== confirmPassword) {
-        this.passwordError = 'Passwords do not match!';
+        this.passwordError = this.translate.instant('PASSWORDS_DO_NOT_MATCH');
       } else {
         this.passwordError = null;
       }
@@ -78,9 +83,9 @@ export class RegisterComponent implements OnInit{
       },
       error: (error) => {
         if (error.message.includes('already exists')) {
-          this.generalError = error.message;
+          this.generalError = this.translate.instant('USER_ALREADY_EXISTS');
         } else {
-          this.generalError = 'An unexpected error occurred. Please try again.';
+          this.generalError = this.translate.instant('UNEXPECTED_ERROR_RETRY');
         }
         console.error('Registration error:', error);
       }
@@ -89,17 +94,29 @@ export class RegisterComponent implements OnInit{
   getFieldError(controlName: string): string | null {
     const control = this.signupForm.get(controlName);
     if (control?.hasError('required')) {
-      return `${controlName.charAt(0).toUpperCase() + controlName.slice(1)} is required.`;
+      return this.translate.instant('FIELD_REQUIRED', { field: this.fieldLabel(controlName) });
     }
     if (control?.hasError('email')) {
-      return 'Invalid email format.';
+      return this.translate.instant('INVALID_EMAIL_FORMAT');
     }
     if (control?.hasError('minlength')) {
-      return `${controlName.charAt(0).toUpperCase() + controlName.slice(1)} must be at least ${control.errors?.['minlength'].requiredLength} characters.`;
+      return this.translate.instant('FIELD_MIN_LENGTH', { field: this.fieldLabel(controlName), count: control.errors?.['minlength'].requiredLength });
     }
     if (controlName === 'confirmPassword' && control?.touched && control?.hasError('mismatch')) {
-      return 'Passwords do not match!';
+      return this.translate.instant('PASSWORDS_DO_NOT_MATCH');
     }
     return null;
+  }
+
+  private fieldLabel(controlName: string): string {
+    const keys: Record<string, string> = {
+      username: 'USERNAME',
+      firstName: 'FIRST_NAME',
+      lastName: 'LAST_NAME',
+      email: 'EMAIL',
+      password: 'PASSWORD',
+      confirmPassword: 'CONFIRM_PASSWORD'
+    };
+    return this.translate.instant(keys[controlName] || controlName);
   }
 }

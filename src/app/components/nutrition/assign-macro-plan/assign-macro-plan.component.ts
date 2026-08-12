@@ -7,11 +7,12 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { Client, ClientService } from 'app/service/client.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-assign-macro-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
   templateUrl: './assign-macro-plan.component.html',
   styleUrl: './assign-macro-plan.component.scss',
 })
@@ -69,8 +70,14 @@ export class AssignMacroPlanComponent implements OnInit {
   constructor(
     private clientService: ClientService,
     private route: ActivatedRoute,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private translate: TranslateService
   ) {}
+
+  dayLabel(index: number): string { return this.translate.instant('DAY_NUMBER', { number: index + 1 }); }
+  mealCountLabel(count: number): string { return this.translate.instant(count === 1 ? 'MEAL_COUNT_ONE' : 'MEAL_COUNT_MANY', { count }); }
+  promptMealRename(meal: Meal): void { this.renameMeal(meal, prompt(this.translate.instant('MEAL_NAME'), meal.name) || meal.name); }
+  displayMealName(meal: Meal, index: number): string { return /^Meal \d+$/.test(meal.name || '') ? this.translate.instant('MEAL_NUMBER', { number: index + 1 }) : meal.name; }
 
   ngOnInit() {
     this.planId = this.route.snapshot.paramMap.get('id');

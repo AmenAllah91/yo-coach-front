@@ -1,7 +1,7 @@
-<div class="meal-editor-route-state" *ngIf="loading">Loading meal...</div>
+<div class="meal-editor-route-state" *ngIf="loading">{{ 'LOADING_MEAL' | translate }}</div>
 <div class="meal-editor-route-state meal-editor-route-state--error" *ngIf="loadError">
-  {{ loadError }}
-  <button type="button" (click)="close()">Back to meals</button>
+  {{ loadError | translate }}
+  <button type="button" (click)="close()">{{ 'BACK_TO_MEALS' | translate }}</button>
 </div>
 
 <app-add-meal-modal

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import {UsersService} from "../../../service/users.service";
 import {EditUserForm, ModalMode, UserStatus} from "../models/user-models";
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type TabType = 'Tous' | 'Coachs' | 'Clients' | 'Admins';
 type StatusFilter = 'Tous' | 'Actif' | 'Suspendu';
@@ -26,7 +27,7 @@ interface UiUser {
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
@@ -69,7 +70,7 @@ export class UsersComponent implements OnInit {
 
   private searchSubject = new Subject<string>();
 
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService, private translate: TranslateService) {}
 
   ngOnInit(): void {
     this.loadStats();
@@ -324,12 +325,12 @@ export class UsersComponent implements OnInit {
 
   getModalTitle(): string {
     switch (this.modalMode) {
-      case 'view': return 'Détails utilisateur';
-      case 'add': return 'Ajouter un utilisateur';
-      case 'edit': return 'Modifier utilisateur';
-      case 'suspend': return 'Suspendre utilisateur';
-      case 'ban': return 'Bannir utilisateur';
-      case 'delete': return 'Supprimer utilisateur';
+      case 'view': return this.translate.instant('USER_DETAILS');
+      case 'add': return this.translate.instant('ADD_USER');
+      case 'edit': return this.translate.instant('EDIT_USER');
+      case 'suspend': return this.translate.instant('SUSPEND_USER');
+      case 'ban': return this.translate.instant('BAN_USER');
+      case 'delete': return this.translate.instant('DELETE_USER');
       default: return '';
     }
   }
@@ -339,17 +340,17 @@ export class UsersComponent implements OnInit {
 
     switch (this.modalMode) {
       case 'view':
-        return 'Consultez les informations principales de cet utilisateur.';
+        return this.translate.instant('VIEW_USER_DESCRIPTION');
       case 'add':
-        return 'Créez un nouvel utilisateur et définissez son rôle.';
+        return this.translate.instant('ADD_USER_DESCRIPTION');
       case 'edit':
-        return 'Modifiez les informations de cet utilisateur.';
+        return this.translate.instant('EDIT_USER_DESCRIPTION');
       case 'suspend':
-        return `Voulez-vous vraiment suspendre ${this.selectedUser.name} ?`;
+        return this.translate.instant('SUSPEND_USER_QUESTION', { name: this.selectedUser.name });
       case 'ban':
-        return `Voulez-vous vraiment bannir ${this.selectedUser.name} ?`;
+        return this.translate.instant('BAN_USER_QUESTION', { name: this.selectedUser.name });
       case 'delete':
-        return `Cette action supprimera définitivement ${this.selectedUser.name}.`;
+        return this.translate.instant('DELETE_USER_DESCRIPTION', { name: this.selectedUser.name });
       default:
         return '';
     }
@@ -357,13 +358,25 @@ export class UsersComponent implements OnInit {
 
   getConfirmButtonLabel(): string {
     switch (this.modalMode) {
-      case 'add': return 'Créer';
-      case 'edit': return 'Enregistrer';
-      case 'suspend': return 'Suspendre';
-      case 'ban': return 'Bannir';
-      case 'delete': return 'Supprimer';
-      default: return 'Confirmer';
+      case 'add': return this.translate.instant('CREATE');
+      case 'edit': return this.translate.instant('SAVE');
+      case 'suspend': return this.translate.instant('SUSPEND');
+      case 'ban': return this.translate.instant('BAN');
+      case 'delete': return this.translate.instant('DELETE');
+      default: return this.translate.instant('CONFIRM');
     }
+  }
+
+  tabLabel(id: TabType): string {
+    return this.translate.instant({ Tous: 'ALL', Coachs: 'COACHES', Clients: 'CLIENTS', Admins: 'ADMINS' }[id]);
+  }
+
+  roleLabel(role: UiUser['role']): string {
+    return this.translate.instant(role === 'Admin' ? 'ADMIN' : role === 'Coach' ? 'COACH' : 'CLIENT');
+  }
+
+  statusLabel(status: UserStatus): string {
+    return this.translate.instant(status === 'Actif' ? 'USER_STATUS_ACTIVE' : status === 'Suspendu' ? 'SUSPENDED' : 'BANNED');
   }
 
   isDangerAction(): boolean {

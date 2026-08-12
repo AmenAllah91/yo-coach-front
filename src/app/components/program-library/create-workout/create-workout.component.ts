@@ -12,11 +12,12 @@ import {
   WorkoutSession,
 } from '@shared/models/workout.models';
 import { Exercise } from '@shared/models/exercice.models';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
   templateUrl: './create-workout.component.html',
   styleUrls: ['./create-workout.component.scss'],
 })
@@ -38,6 +39,7 @@ export class CreateWorkoutComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private sanitizer: DomSanitizer,
+    private translate: TranslateService,
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     this.assignOnly = this.route.snapshot.queryParamMap.get('assignOnly') === '1';
@@ -352,6 +354,17 @@ export class CreateWorkoutComponent implements OnInit {
     }
 
     return weeks;
+  }
+
+  getWeekDisplayLabel(label: string): string {
+    const number = label.match(/\d+/)?.[0] || label;
+    return this.translate.instant('WEEK_NUMBER', { number });
+  }
+
+  getDayDisplayTitle(day: WorkoutDay): string {
+    const title = day.title || day.name || '';
+    const match = title.match(/^Day\s+(\d+)$/i);
+    return match ? this.translate.instant('DAY_NUMBER', { number: match[1] }) : title;
   }
 
   getWeekWorkoutCount(days: WorkoutDay[]): number {

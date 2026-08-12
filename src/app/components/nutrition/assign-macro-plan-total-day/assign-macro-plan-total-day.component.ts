@@ -7,6 +7,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { Client, ClientService } from 'app/service/client.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-assign-macro-plan-total-day',
@@ -20,6 +21,7 @@ import { Client, ClientService } from 'app/service/client.service';
     CommonModule,
     FormsModule,
     DragDropModule,
+    TranslateModule,
   ],
   templateUrl: './assign-macro-plan-total-day.component.html',
   styleUrl: './assign-macro-plan-total-day.component.scss',
@@ -61,7 +63,8 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
-    private clientService: ClientService
+    private clientService: ClientService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit() {
@@ -123,7 +126,7 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   }
 
   getProgramDisplayName(program: any): string {
-    return program?.name || program?.programName || 'Nutrition program';
+    return program?.name || program?.programName || this.translate.instant('NUTRITION_PROGRAM');
   }
 
   getProgramDateRange(program: any): string {
@@ -131,9 +134,9 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     const end = this.formatProgramDate(program?.endDate);
 
     if (start && end) return `${start} - ${end}`;
-    if (start) return `From ${start}`;
-    if (end) return `Until ${end}`;
-    return 'No dates set';
+    if (start) return this.translate.instant('FROM_DATE', { date: start });
+    if (end) return this.translate.instant('UNTIL_DATE', { date: end });
+    return this.translate.instant('NO_DATES_SET');
   }
 
   private sortProgramsByLatestDate(programs: any[]): any[] {
@@ -181,6 +184,31 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     const end = new Date(start);
     end.setDate(start.getDate() + (this.days.length - 1));
     this.endDate = end.toISOString().split('T')[0];
+  }
+
+  dayLabel(index: number): string {
+    return this.translate.instant('DAY_NUMBER', { number: index + 1 });
+  }
+
+  selectedDayLabel(): string {
+    const index = this.selectedDay ? this.days.findIndex((day) => day.id === this.selectedDay?.id) : -1;
+    return this.dayLabel(Math.max(index, 0));
+  }
+
+  weekdayLabel(day: MealDay): string {
+    if (!day.date) return '';
+    return new Date(`${day.date}T00:00:00`).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      { weekday: 'long' }
+    );
+  }
+
+  dateLabel(day: MealDay): string {
+    if (!day.date) return '';
+    return new Date(`${day.date}T00:00:00`).toLocaleDateString(
+      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      { day: 'numeric', month: 'short', year: 'numeric' }
+    );
   }
   /* ----------------------------------------------
       CALCUL AUTOMATIQUE DES CALORIES

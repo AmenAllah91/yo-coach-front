@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Client } from 'app/service/client.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { catchError, map, of } from 'rxjs';
@@ -16,7 +17,7 @@ interface ScheduleConflict {
 @Component({
   selector: 'app-nutrition-selection-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './nutrition-selection-modal.component.html',
   styleUrls: ['./nutrition-selection-modal.component.scss'],
 })
@@ -53,7 +54,7 @@ export class NutritionSelectionModalComponent {
   conflict: ScheduleConflict | null = null;
   checkingConflicts = false;
 
-  constructor(private nutritionService: NutritionService) {}
+  constructor(private nutritionService: NutritionService, private translate: TranslateService) {}
 
   // --- FONCTIONS EXTRAITES ---
 
@@ -124,11 +125,11 @@ export class NutritionSelectionModalComponent {
       return this.getFileKind(program);
     }
 
-    return program?.trackingMode === 'TOTAL_FOR_DAY'
-      ? 'TOTAL FOR DAY'
+    return this.translate.instant(program?.trackingMode === 'TOTAL_FOR_DAY'
+      ? 'TOTAL_FOR_DAY'
       : program?.trackingMode === 'EACH_MEAL'
-        ? 'EACH MEAL'
-        : 'FULL MEAL PLAN';
+        ? 'EACH_MEAL'
+        : 'FULL_MEAL_PLAN');
   }
 
   getFileMeta(program: any): string {
@@ -168,7 +169,7 @@ export class NutritionSelectionModalComponent {
   }
 
   get assignmentButtonLabel(): string {
-    return this.conflict ? 'Confirm Assignment' : 'Assign Nutrition Program';
+    return this.translate.instant(this.conflict ? 'CONFIRM_ASSIGNMENT' : 'ASSIGN_NUTRITION_PROGRAM');
   }
 
   get clientDisplayName(): string {

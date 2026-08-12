@@ -7,6 +7,7 @@ import { FeatherModule } from 'angular-feather';
 import { MealsService } from 'app/service/meals.service';
 import { DeleteMealModalComponent } from './delete-meal-modal/delete-meal-modal.component';
 import { AddMealModalComponent } from './add-meal-modal.component';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-meals-list',
@@ -18,6 +19,7 @@ import { AddMealModalComponent } from './add-meal-modal.component';
     FeatherModule,
     DeleteMealModalComponent,
     AddMealModalComponent,
+    TranslateModule,
   ],
   templateUrl: './meals-list.component.html',
   styleUrls: ['./meals-list.component.scss'],
@@ -46,7 +48,7 @@ export class MealsListComponent implements OnInit, OnDestroy {
     if (!target.closest('.dropdown')) this.activeMealMenuId = null;
   };
 
-  constructor(private mealsService: MealsService) {}
+  constructor(private mealsService: MealsService, private translate: TranslateService) {}
 
   ngOnInit(): void {
     this.load();
@@ -208,7 +210,7 @@ export class MealsListComponent implements OnInit, OnDestroy {
 
   formatDate(date: string): string {
     if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
+    return new Date(date).toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

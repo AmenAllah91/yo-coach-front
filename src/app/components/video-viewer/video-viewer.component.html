@@ -1,8 +1,8 @@
 <div class="video-page">
   <header class="video-header">
     <div class="title-block">
-      <p>Exercise video</p>
-      <h1>{{ title }}</h1>
+      <p>{{ 'EXERCISE_VIDEO' | translate }}</p>
+      <h1>{{ displayTitle }}</h1>
     </div>
   </header>
 
@@ -10,14 +10,14 @@
     <section class="hero-card">
       <div class="loading-card" *ngIf="loadingShort">
         <div class="loader"></div>
-        <h2>Opening Shorts video...</h2>
-        <p>The video will open inside this viewer.</p>
+        <h2>{{ 'OPENING_SHORTS_VIDEO' | translate }}</h2>
+        <p>{{ 'VIDEO_OPEN_VIEWER' | translate }}</p>
       </div>
 
       <div class="player-card" *ngIf="!loadingShort && videoUrl; else invalidVideo">
         <iframe
           [src]="videoUrl"
-          title="Exercise video"
+          [title]="'EXERCISE_VIDEO' | translate"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
         ></iframe>
@@ -26,8 +26,8 @@
       <ng-template #invalidVideo>
         <div class="error-card" *ngIf="!loadingShort">
           <div class="error-icon">!</div>
-          <h2>Video unavailable</h2>
-          <p>This video link is invalid or unsupported.</p>
+          <h2>{{ 'VIDEO_UNAVAILABLE' | translate }}</h2>
+          <p>{{ 'VIDEO_LINK_INVALID' | translate }}</p>
         </div>
       </ng-template>
     </section>

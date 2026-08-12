@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { SubscriptionsService } from '../../../service/subscriptions.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import {
   CoachSubscriptionDto,
   PlanDto,
@@ -18,7 +19,7 @@ import {
 @Component({
   selector: 'app-revenue-subscriptions',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgApexchartsModule],
+  imports: [CommonModule, FormsModule, NgApexchartsModule, TranslateModule],
   templateUrl: './revenue-subscriptions.component.html',
   styleUrl: './revenue-subscriptions.component.scss'
 })
@@ -78,12 +79,16 @@ export class RevenueSubscriptionsComponent implements OnInit {
 
   private searchSubject = new Subject<string>();
 
-  constructor(private subscriptionsService: SubscriptionsService) {}
+  constructor(private subscriptionsService: SubscriptionsService, private translate: TranslateService) {}
 
   ngOnInit(): void {
     this.loadRevenue();
     this.loadPlans();
     this.loadSubscriptions();
+    this.translate.onLangChange.subscribe(() => {
+      this.buildAreaChart();
+      this.buildBarChart();
+    });
 
     this.searchSubject.pipe(
       debounceTime(400),
@@ -253,7 +258,7 @@ export class RevenueSubscriptionsComponent implements OnInit {
     const yMax = Math.ceil((maxVal * 1.1 || 1000) / 1000) * 1000;
 
     this.areaChartOptions = {
-      series: [{ name: 'Revenus', data: values }],
+      series: [{ name: this.translate.instant('REVENUE'), data: values }],
       chart: { type: 'bar', height: 260, width: '100%', toolbar: { show: false }, redrawOnParentResize: true, redrawOnWindowResize: true, parentHeightOffset: 0 },
       dataLabels: {
         enabled: true,
@@ -304,7 +309,7 @@ export class RevenueSubscriptionsComponent implements OnInit {
     }));
 
     this.barChartOptions = {
-      series: [{ name: 'Revenus', data: annual.map(a => a.revenue) }],
+      series: [{ name: this.translate.instant('REVENUE'), data: annual.map(a => a.revenue) }],
       chart: { type: 'bar', height: 288, width: '100%', toolbar: { show: false }, redrawOnParentResize: true, redrawOnWindowResize: true, parentHeightOffset: 0 },
       plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
       dataLabels: {
@@ -369,6 +374,11 @@ export class RevenueSubscriptionsComponent implements OnInit {
       december: 'déc.'
     };
 
+    const monthIndex = ['janvier','january','février','fevrier','february','mars','march','avril','april','mai','may','juin','june','juillet','july','août','aout','august','septembre','september','octobre','october','novembre','november','décembre','decembre','december'].indexOf(normalized);
+    if (monthIndex >= 0) {
+      const indexes = [0,0,1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,7,8,8,9,9,10,10,11,11,11];
+      return new Intl.DateTimeFormat(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }).format(new Date(2026, indexes[monthIndex], 1));
+    }
     return map[normalized] || month;
   }
 
@@ -553,29 +563,34 @@ export class RevenueSubscriptionsComponent implements OnInit {
 
   getModalTitle(): string {
     switch (this.modalMode) {
-      case 'add-plan': return 'Ajouter un plan';
-      case 'edit-plan': return 'Modifier le plan';
-      case 'delete-plan': return 'Supprimer le plan';
-      case 'view-subscription': return 'Détails de l’abonnement';
-      case 'edit-subscription': return 'Modifier l’abonnement';
-      case 'suspend-subscription': return 'Suspendre l’abonnement';
-      case 'renew-subscription': return 'Renouveler l’abonnement';
-      case 'cancel-subscription': return 'Annuler l’abonnement';
+      case 'add-plan': return this.translate.instant('ADD_PLAN');
+      case 'edit-plan': return this.translate.instant('EDIT_PLAN');
+      case 'delete-plan': return this.translate.instant('DELETE_PLAN');
+      case 'view-subscription': return this.translate.instant('SUBSCRIPTION_DETAILS');
+      case 'edit-subscription': return this.translate.instant('EDIT_SUBSCRIPTION');
+      case 'suspend-subscription': return this.translate.instant('SUSPEND_SUBSCRIPTION');
+      case 'renew-subscription': return this.translate.instant('RENEW_SUBSCRIPTION');
+      case 'cancel-subscription': return this.translate.instant('CANCEL_SUBSCRIPTION');
       default: return '';
     }
   }
 
   getConfirmButtonLabel(): string {
     switch (this.modalMode) {
-      case 'add-plan': return 'Créer';
-      case 'edit-plan': return 'Enregistrer';
-      case 'delete-plan': return 'Supprimer';
-      case 'edit-subscription': return 'Enregistrer';
-      case 'suspend-subscription': return 'Suspendre';
-      case 'renew-subscription': return 'Renouveler';
-      case 'cancel-subscription': return 'Annuler';
-      default: return 'Confirmer';
+      case 'add-plan': return this.translate.instant('CREATE');
+      case 'edit-plan': return this.translate.instant('SAVE');
+      case 'delete-plan': return this.translate.instant('DELETE');
+      case 'edit-subscription': return this.translate.instant('SAVE');
+      case 'suspend-subscription': return this.translate.instant('SUSPEND');
+      case 'renew-subscription': return this.translate.instant('RENEW');
+      case 'cancel-subscription': return this.translate.instant('CANCEL');
+      default: return this.translate.instant('CONFIRM');
     }
+  }
+
+  statusLabel(status: string): string {
+    const key = status === 'Actif' ? 'USER_STATUS_ACTIVE' : status === 'Expiré' ? 'EXPIRED' : status === 'Annulé' ? 'CANCELED' : 'SUSPENDED';
+    return this.translate.instant(key);
   }
 
   getInitials(name: string): string {

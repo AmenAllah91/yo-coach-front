@@ -1,29 +1,29 @@
 <div class="tab-section-header">
-  <h2 class="section-title">Nutrition Plans</h2>
+  <h2 class="section-title">{{ 'NUTRITION_PLANS' | translate }}</h2>
   <button class="btn-assign-black" type="button" (click)="openAssignNutrition()">
     <i class="fas fa-plus"></i>
-    Assign New Plan
+    {{ 'ASSIGN_NEW_PLAN' | translate }}
   </button>
 </div>
 
 <div class="workout-filter-tabs" *ngIf="nutritionFileEnabled !== false">
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
-    All
+    {{ 'ALL' | translate }}
   </button>
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'APP'" (click)="setActiveTab('APP')">
-    App Plans
+    {{ 'APP_PLANS' | translate }}
   </button>
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'FILES'" (click)="setActiveTab('FILES')">
-    Uploaded Files
+    {{ 'UPLOADED_FILES' | translate }}
   </button>
 </div>
 
 <div *ngIf="!hasActivePlans() && allOtherPlans.length === 0" class="empty-nutrition-state">
-  No nutrition plans assigned yet.
+  {{ 'NO_NUTRITION_PLANS_ASSIGNED' | translate }}
 </div>
 
 <div class="program-section" *ngIf="hasActivePlans()">
-  <h3 class="program-section-title">CURRENT ACTIVE PLAN</h3>
+  <h3 class="program-section-title">{{ 'CURRENT_ACTIVE_PLAN' | translate }}</h3>
   <ng-container *ngFor="let plan of currentActivePlans">
     <ng-container *ngTemplateOutlet="planCardTemplate; context: { $implicit: plan }"></ng-container>
   </ng-container>
@@ -31,33 +31,33 @@
 
 <div class="program-section">
   <div class="all-programs-header">
-    <h3 class="program-section-title">ALL PLANS</h3>
+    <h3 class="program-section-title">{{ 'ALL_PLANS' | translate }}</h3>
 
     <div class="all-programs-controls">
-      <div class="program-status-filters" aria-label="Nutrition status filters">
+      <div class="program-status-filters" [attr.aria-label]="'NUTRITION_STATUS_FILTERS' | translate">
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'ALL'" (click)="setAllPlansFilter('ALL')">
-          All
+          {{ 'ALL' | translate }}
         </button>
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'UPCOMING'" (click)="setAllPlansFilter('UPCOMING')">
-          Upcoming
+          {{ 'UPCOMING' | translate }}
         </button>
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'COMPLETED'" (click)="setAllPlansFilter('COMPLETED')">
-          Completed
+          {{ 'COMPLETED' | translate }}
         </button>
         <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'OVERLAP'" (click)="setAllPlansFilter('OVERLAP')">
-          Overlap
+          {{ 'OVERLAP' | translate }}
         </button>
       </div>
 
       <label class="program-sort-control">
         <i class="fas fa-sort"></i>
-        <span>Sort:</span>
+        <span>{{ 'SORT' | translate }}:</span>
         <select [ngModel]="allPlansSort" (ngModelChange)="setAllPlansSort($event)">
-          <option value="RECOMMENDED">Recommended</option>
-          <option value="START_ASC">Start date ↑</option>
-          <option value="START_DESC">Start date ↓</option>
-          <option value="END_ASC">End date ↑</option>
-          <option value="END_DESC">End date ↓</option>
+          <option value="RECOMMENDED">{{ 'RECOMMENDED' | translate }}</option>
+          <option value="START_ASC">{{ 'START_DATE_ASC' | translate }}</option>
+          <option value="START_DESC">{{ 'START_DATE_DESC' | translate }}</option>
+          <option value="END_ASC">{{ 'END_DATE_ASC' | translate }}</option>
+          <option value="END_DESC">{{ 'END_DATE_DESC' | translate }}</option>
         </select>
       </label>
     </div>
@@ -106,13 +106,13 @@
               'status-pill--completed': plan.status === 'completed'
             }"
           >
-            {{ plan.status | titlecase }}
+            {{ ('PROGRAM_STATUS_' + (plan.status | uppercase)) | translate }}
           </span>
 
           <span *ngIf="!isFilePlan(plan)" class="program-type-pill program-type-pill--app">
-            App Plan
+            {{ 'APP_PLAN' | translate }}
           </span>
-          <span *ngIf="isPlanOverlap(plan)" class="status-pill status-pill--overlap">Overlap</span>
+          <span *ngIf="isPlanOverlap(plan)" class="status-pill status-pill--overlap">{{ 'OVERLAP' | translate }}</span>
 
           <span
             *ngIf="isFilePlan(plan)"
@@ -136,18 +136,18 @@
           <ng-container *ngIf="!isFilePlan(plan)">
             <span *ngIf="getPlanTotalWeeks(plan) > 0">
               <i class="far fa-clock me-1"></i>
-              {{ getPlanTotalWeeks(plan) }} {{ getPlanTotalWeeks(plan) === 1 ? 'week' : 'weeks' }}
+              {{ 'WEEKS_COUNT' | translate:{ count: getPlanTotalWeeks(plan) } }}
             </span>
             <span *ngIf="getCurrentWeekNumber(plan) > 0" class="program-meta-highlight">
               <i class="far fa-dot-circle me-1"></i>
-              Week {{ getCurrentWeekNumber(plan) }}
+              {{ 'WEEK' | translate }} {{ getCurrentWeekNumber(plan) }}
             </span>
           </ng-container>
 
           <ng-container *ngIf="isFilePlan(plan)">
             <span *ngIf="plan.fileUploadedAt">
               <i class="far fa-calendar-alt me-1"></i>
-              Uploaded {{ plan.fileUploadedAt | date : "MMM dd, y" }}
+              {{ 'UPLOADED' | translate }} {{ plan.fileUploadedAt | date : "MMM dd, y" }}
             </span>
 
             <span *ngIf="plan.fileSizeBytes">
@@ -164,40 +164,40 @@
       <ng-container *ngIf="isFilePlan(plan); else appActions">
         <button class="file-action-btn" type="button" (click)="previewFile(plan)">
           <i class="far fa-eye"></i>
-          Preview
+          {{ 'PREVIEW' | translate }}
         </button>
 
         <button class="file-action-btn" type="button" (click)="downloadFile(plan)">
           <i class="fas fa-download"></i>
-          Download
+          {{ 'DOWNLOAD' | translate }}
         </button>
 
         <div class="file-actions-menu-wrap">
           <button class="file-action-btn" type="button" (click)="toggleActions(plan, $event)">
-            Actions
+            {{ 'ACTIONS' | translate }}
             <i class="fas" [ngClass]="isActionsOpen(plan) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
           </button>
 
           <div class="file-actions-menu" *ngIf="isActionsOpen(plan)">
             <button type="button" (click)="previewFile(plan)">
               <i class="far fa-eye"></i>
-              Preview file
+              {{ 'PREVIEW_FILE' | translate }}
             </button>
             <button type="button" (click)="downloadFile(plan)">
               <i class="fas fa-download"></i>
-              Download file
+              {{ 'DOWNLOAD_FILE' | translate }}
             </button>
             <button type="button" (click)="replaceFile(plan)">
               <i class="fas fa-sync-alt"></i>
-              Replace file
+              {{ 'REPLACE_FILE' | translate }}
             </button>
             <button type="button" (click)="changeDates(plan)">
               <i class="far fa-calendar-alt"></i>
-              Change dates
+              {{ 'CHANGE_DATES' | translate }}
             </button>
             <button type="button" class="danger" (click)="removeProgram(plan)">
               <i class="far fa-trash-alt"></i>
-              Remove program
+              {{ 'REMOVE_PROGRAM' | translate }}
             </button>
           </div>
         </div>
@@ -206,22 +206,22 @@
       <ng-template #appActions>
         <div class="file-actions-menu-wrap">
           <button class="file-action-btn" type="button" (click)="toggleActions(plan, $event)">
-            Actions
+            {{ 'ACTIONS' | translate }}
             <i class="fas" [ngClass]="isActionsOpen(plan) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
           </button>
 
           <div class="file-actions-menu" *ngIf="isActionsOpen(plan)">
             <button type="button" (click)="editPlan(plan)">
               <i class="far fa-edit"></i>
-              Edit program
+              {{ 'EDIT_PROGRAM' | translate }}
             </button>
             <button type="button" (click)="changeDates(plan)">
               <i class="far fa-calendar-alt"></i>
-              Change dates
+              {{ 'CHANGE_DATES' | translate }}
             </button>
             <button type="button" class="danger" (click)="removeProgram(plan)">
               <i class="far fa-trash-alt"></i>
-              Remove program
+              {{ 'REMOVE_PROGRAM' | translate }}
             </button>
           </div>
         </div>
@@ -271,23 +271,23 @@
 <div class="change-dates-backdrop" *ngIf="showChangeDatesModal" (click)="closeChangeDatesModal()">
   <div class="change-dates-modal" (click)="$event.stopPropagation()">
     <div class="change-dates-header">
-      <h3>Change Dates</h3>
-      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" aria-label="Close modal">×</button>
+      <h3>{{ 'CHANGE_DATES' | translate }}</h3>
+      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" [attr.aria-label]="'CLOSE' | translate">×</button>
     </div>
 
     <div class="change-dates-body">
       <p class="change-dates-description">
-        Update the schedule for <strong>{{ dateTargetPlan?.name }}</strong>.
+        {{ 'UPDATE_PROGRAM_SCHEDULE' | translate:{ name: dateTargetPlan?.name } }}
       </p>
 
       <div class="change-dates-fields">
         <div class="change-date-field">
-          <label>Start Date</label>
+          <label>{{ 'START_DATE' | translate }}</label>
           <input type="date" [(ngModel)]="dateStart" />
         </div>
 
         <div class="change-date-field">
-          <label>End Date</label>
+          <label>{{ 'END_DATE' | translate }}</label>
           <input type="date" [(ngModel)]="dateEnd" />
         </div>
       </div>
@@ -297,11 +297,11 @@
 
     <div class="change-dates-footer">
       <button type="button" class="change-dates-cancel" (click)="closeChangeDatesModal()" [disabled]="dateSaving">
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
 
       <button type="button" class="change-dates-save" (click)="saveChangedDates()" [disabled]="!dateStart || !dateEnd || dateSaving">
-        {{ dateSaving ? 'Saving...' : 'Save Changes' }}
+        {{ (dateSaving ? 'SAVING' : 'SAVE_CHANGES') | translate }}
       </button>
     </div>
   </div>

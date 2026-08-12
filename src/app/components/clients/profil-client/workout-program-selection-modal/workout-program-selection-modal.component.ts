@@ -8,6 +8,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Client } from 'app/service/client.service';
 import { PageResponse, WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
@@ -24,7 +25,7 @@ interface ScheduleConflict {
 @Component({
   selector: 'app-workout-program-selection-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './workout-program-selection-modal.component.html',
   styleUrls: ['./workout-program-selection-modal.component.scss'],
 })
@@ -57,7 +58,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   checkingConflicts = false;
   readonly isAssignModalTitle = 'Assign Workout Program';
 
-  constructor(private workoutService: WorkoutService) {}
+  constructor(private workoutService: WorkoutService, private translate: TranslateService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']?.currentValue === true || changes['workoutFileEnabled']) {
@@ -121,12 +122,12 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   }
 
   getProgramTypeLabel(program: any): string {
-    if (!this.isFileProgram(program)) return 'App Program';
+    if (!this.isFileProgram(program)) return this.translate.instant('APP_PROGRAM');
 
     const type = String(program?.resourceType || '').toUpperCase();
     if (type === 'PDF') return 'PDF';
     if (type === 'XLS' || type === 'XLSX' || type === 'EXCEL') return 'Excel';
-    return 'File';
+    return this.translate.instant('FILE');
   }
 
 
@@ -178,8 +179,8 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   }
 
   get assignmentButtonLabel(): string {
-    if (this.assigning) return 'Assigning...';
-    return this.conflict ? 'Confirm Assignment' : 'Assign Program';
+    if (this.assigning) return this.translate.instant('ASSIGNING');
+    return this.translate.instant(this.conflict ? 'CONFIRM_ASSIGNMENT' : 'ASSIGN_PROGRAM');
   }
 
   get clientDisplayName(): string {

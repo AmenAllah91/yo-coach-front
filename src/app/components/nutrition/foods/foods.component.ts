@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { NutritionService, Food } from '../../../service/nutrition.service';
 import { ScrollLoaderComponent } from '../../scroll-loader/scroll-loader.component';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-foods',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, ScrollLoaderComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, ScrollLoaderComponent, TranslateModule],
   templateUrl: './foods.component.html',
   styleUrls: ['./foods.component.scss']
 })

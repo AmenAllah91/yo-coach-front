@@ -9,11 +9,12 @@ import { MealsService } from 'app/service/meals.service';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss'],
 })
@@ -57,7 +58,8 @@ export class CreateFullPlanComponent implements OnInit {
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
     private coachSettingsService: CoachSettingsService,
-    private mealsService: MealsService
+    private mealsService: MealsService,
+    private translate: TranslateService
   ) {}
 
 
@@ -254,15 +256,21 @@ export class CreateFullPlanComponent implements OnInit {
   ==============================================*/
 
   getDayLabel(day: MealDay, index: number) {
-    return `Day ${index + 1}`;
+    return this.translate.instant('DAY_NUMBER', { number: index + 1 });
   }
 
   getSelectedDayLabel() {
-    if (!this.selectedDay) return 'Day 1';
+    if (!this.selectedDay) return this.translate.instant('DAY_NUMBER', { number: 1 });
     return this.getDayLabel(
       this.selectedDay,
       this.days.indexOf(this.selectedDay)
     );
+  }
+
+  displayMealName(meal: Meal, index: number): string {
+    return /^(Meal \d+|New Meal)$/.test(meal.name || '')
+      ? this.translate.instant('MEAL_NUMBER', { number: index + 1 })
+      : meal.name;
   }
 
   private makeEmptyMeal(index = 0): Meal {
@@ -596,7 +604,9 @@ export class CreateFullPlanComponent implements OnInit {
   }
 
   mealTypeLabel(meal: Meal): string {
-    const value = String(meal.mealType || 'Meal').replace(/_/g, ' ').toLowerCase();
+    const type = String(meal.mealType || '').toUpperCase();
+    if (type && this.translate.instant(type) !== type) return this.translate.instant(type);
+    const value = String(meal.mealType || this.translate.instant('MEAL')).replace(/_/g, ' ').toLowerCase();
     return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
@@ -620,7 +630,7 @@ export class CreateFullPlanComponent implements OnInit {
     };
 
     this.mealsService.saveTemplate(payload).subscribe(() => {
-      alert('Template saved');
+      alert(this.translate.instant('TEMPLATE_SAVED'));
     });
   }
 

@@ -27,6 +27,7 @@ import { BodyMeasurementsComponent } from 'app/components/body-measurements/body
 import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
 import { ChatComponent } from '../../chat/chat/chat.component';
 import { MealplanDayService } from 'app/service/mealplan-day.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type TabId =
   | 'dashboard'
@@ -159,7 +160,8 @@ export interface ScheduledCheckIn {
     CalendarClientsComponent,
     ProgressPicturesComponent,
     BodyMeasurementsComponent,
-    ChatComponent
+    ChatComponent,
+    TranslateModule
   ],
   templateUrl: './profil-client.component.html',
   styleUrl: './profil-client.component.scss',
@@ -571,7 +573,8 @@ export class ProfilClientComponent {
     private submissionsApi: SubmissionsApiService,
     private bodyMeasurementsService: BodyMeasurementsService,
     private mealplanDayService: MealplanDayService,
-    public coachSettingsService: CoachSettingsService
+    public coachSettingsService: CoachSettingsService,
+    private translate: TranslateService
   ) {
     this.route.paramMap.subscribe((params) => {
       const routeId = params.get('id') || '';
@@ -1429,29 +1432,26 @@ export class ProfilClientComponent {
   }
 
   nutritionActivityStatusLabel(status: NutritionActivityStatus): string {
-    if (status === 'IN_PROGRESS') return 'In progress';
-    if (status === 'NOT_LOGGED') return 'Not logged';
-    if (status === 'OFF_PLAN') return 'Off-plan';
-    return 'Completed';
+    return this.translate.instant(`NUTRITION_ACTIVITY_STATUS_${status}`);
   }
 
   nutritionActivityAction(status: NutritionActivityStatus): string {
-    if (status === 'COMPLETED') return 'View report';
-    if (status === 'NOT_LOGGED') return 'View nutrition day';
-    return 'Review log';
+    if (status === 'COMPLETED') return this.translate.instant('VIEW_REPORT');
+    if (status === 'NOT_LOGGED') return this.translate.instant('VIEW_NUTRITION_DAY');
+    return this.translate.instant('REVIEW_LOG');
   }
 
   nutritionReportTitle(activity: NutritionActivity): string {
     return activity.status === 'IN_PROGRESS' || activity.status === 'OFF_PLAN'
-      ? `Review log · ${activity.dayName}`
-      : `Nutrition report · ${activity.dayName}`;
+      ? this.translate.instant('REVIEW_LOG_FOR_DAY', { day: activity.dayName })
+      : this.translate.instant('NUTRITION_REPORT_FOR_DAY', { day: activity.dayName });
   }
 
   nutritionActivityDescription(activity: NutritionActivity): string {
-    if (activity.status === 'COMPLETED') return 'All meals logged';
-    if (activity.status === 'IN_PROGRESS') return activity.loggedMeals ? 'Some meals logged' : 'Day in progress';
-    if (activity.status === 'OFF_PLAN') return 'Logged as off-plan';
-    return 'No meals reported';
+    if (activity.status === 'COMPLETED') return this.translate.instant('ALL_MEALS_LOGGED');
+    if (activity.status === 'IN_PROGRESS') return this.translate.instant(activity.loggedMeals ? 'SOME_MEALS_LOGGED' : 'DAY_IN_PROGRESS');
+    if (activity.status === 'OFF_PLAN') return this.translate.instant('LOGGED_AS_OFF_PLAN');
+    return this.translate.instant('NO_MEALS_REPORTED');
   }
 
   nutritionMealLog(activity: NutritionActivity, index: number): any {
@@ -1468,6 +1468,15 @@ export class ProfilClientComponent {
     if (value === 'MODIFIED' || log?.modified) return 'Modified';
     if (value === 'OFF_PLAN' || log?.offPlan) return 'Off-plan';
     return 'As planned';
+  }
+
+  nutritionMealStateLabel(log: any): string {
+    if (!log) return this.translate.instant('NUTRITION_MEAL_NOT_LOGGED');
+    const value = String(log?.status || log?.completionMode || '').toUpperCase();
+    if (value === 'SKIPPED' || log?.skipped) return this.translate.instant('NUTRITION_MEAL_SKIPPED');
+    if (value === 'MODIFIED' || log?.modified) return this.translate.instant('MODIFIED');
+    if (value === 'OFF_PLAN' || log?.offPlan) return this.translate.instant('NUTRITION_ACTIVITY_STATUS_OFF_PLAN');
+    return this.translate.instant('AS_PLANNED');
   }
 
   openAllWorkoutActivity(): void {
@@ -1502,12 +1511,12 @@ export class ProfilClientComponent {
 
   workoutActivityAction(activity: WorkoutActivity): string {
     if (activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT') {
-      return 'View results';
+      return this.translate.instant('VIEW_RESULTS');
     }
-    if (activity.status === 'IN_PROGRESS') return 'View progress';
-    if (activity.status === 'OVERDUE') return 'Resolve workout';
-    if (activity.status === 'MISSED') return 'View details';
-    return 'View workout';
+    if (activity.status === 'IN_PROGRESS') return this.translate.instant('VIEW_PROGRESS');
+    if (activity.status === 'OVERDUE') return this.translate.instant('RESOLVE_WORKOUT');
+    if (activity.status === 'MISSED') return this.translate.instant('VIEW_DETAILS');
+    return this.translate.instant('VIEW_WORKOUT');
   }
 
   workoutActivityDetailTitle(activity: WorkoutActivity): string {
@@ -1518,22 +1527,21 @@ export class ProfilClientComponent {
   }
 
   workoutActivityStatusLabel(activity: WorkoutActivity): string {
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Completed';
-    if (activity.status === 'NOT_STARTED') return 'Upcoming';
-    return activity.status.toLowerCase().replace('_', ' ').replace(/\b\w/g, value => value.toUpperCase());
+    const status = activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'COMPLETED' : activity.status === 'NOT_STARTED' ? 'UPCOMING' : activity.status;
+    return this.translate.instant(`WORKOUT_ACTIVITY_STATUS_${status}`);
   }
 
   workoutActivityMode(activity: WorkoutActivity): string {
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'After workout';
-    if (activity.status === 'COMPLETED') return 'Live workout';
-    if (activity.status === 'IN_PROGRESS') return 'Ongoing';
-    if (activity.status === 'OVERDUE') return 'Needs resolution';
-    if (activity.status === 'MISSED') return 'Workout missed';
-    return 'Not started';
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return this.translate.instant('AFTER_WORKOUT');
+    if (activity.status === 'COMPLETED') return this.translate.instant('LIVE_WORKOUT');
+    if (activity.status === 'IN_PROGRESS') return this.translate.instant('ONGOING');
+    if (activity.status === 'OVERDUE') return this.translate.instant('NEEDS_RESOLUTION');
+    if (activity.status === 'MISSED') return this.translate.instant('WORKOUT_MISSED');
+    return this.translate.instant('NOT_STARTED_LABEL');
   }
 
   workoutActivityDuration(activity: WorkoutActivity): string {
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT' || activity.status === 'MISSED') return 'Not recorded';
+    if (activity.status === 'COMPLETED_AFTER_WORKOUT' || activity.status === 'MISSED') return this.translate.instant('NOT_RECORDED');
     if (activity.durationSeconds === null) return '—';
     const minutes = Math.floor(activity.durationSeconds / 60);
     const seconds = activity.durationSeconds % 60;
@@ -1568,6 +1576,12 @@ export class ProfilClientComponent {
     return 'Pending';
   }
 
+  exerciseActivityStateLabel(activity: WorkoutActivity, exercise: any, index: number): string {
+    const state = this.exerciseActivityState(activity, exercise, index);
+    const key = `EXERCISE_ACTIVITY_${state.toUpperCase().replace(/ /g, '_')}`;
+    return this.translate.instant(key);
+  }
+
   workoutSetStatus(activity: WorkoutActivity, exercise: any, exerciseIndex: number, set: any, setIndex: number): string {
     const log = this.workoutActivityLog(activity, exercise, exerciseIndex);
     const actual = this.performedSet(log, set, setIndex);
@@ -1579,15 +1593,19 @@ export class ProfilClientComponent {
     return 'Pending';
   }
 
+  workoutSetStatusLabel(activity: WorkoutActivity, exercise: any, exerciseIndex: number, set: any, setIndex: number): string {
+    return this.translate.instant(`WORKOUT_SET_STATUS_${this.workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex).toUpperCase()}`);
+  }
+
   exerciseSetSummary(activity: WorkoutActivity, exercise: any, index: number): string {
     const sets = exercise?.sets || [];
     const done = sets.filter((set: any, setIndex: number) => this.workoutSetStatus(activity, exercise, index, set, setIndex) === 'Done').length;
     const missed = sets.filter((set: any, setIndex: number) => this.workoutSetStatus(activity, exercise, index, set, setIndex) === 'Missed').length;
-    return `${sets.length} ${sets.length === 1 ? 'set' : 'sets'} · ${done} done · ${missed} missed`;
+    return this.translate.instant('EXERCISE_SET_SUMMARY', { sets: sets.length, done, missed });
   }
 
   formatActivityDate(date: Date): string {
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -1608,9 +1626,9 @@ export class ProfilClientComponent {
 
   workoutSetTypeLabel(type: any): string {
     const value = String(type || 'REGULAR').toUpperCase();
-    if (value === 'WARM_UP') return 'Warm-up';
-    if (value === 'DROP_SET') return 'Drop set';
-    if (value === 'FAILURE') return 'To failure';
+    if (value === 'WARM_UP') return this.translate.instant('SET_TYPE_WARM_UP');
+    if (value === 'DROP_SET') return this.translate.instant('SET_TYPE_DROP_SET');
+    if (value === 'FAILURE') return this.translate.instant('SET_TYPE_FAILURE');
     return '—';
   }
 

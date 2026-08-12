@@ -10,6 +10,7 @@ import { AddClientModalComponent } from '../components/clients/add-client-modal/
 import { DeleteClientModalComponent } from '../components/clients/delete-client-modal/delete-client-modal.component';
 import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
 import { Router } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface StatusCountResponse {
   active: number;
@@ -30,6 +31,7 @@ interface StatusCountResponse {
     AddClientModalComponent,
     DeleteClientModalComponent,
     ScrollLoaderComponent,
+    TranslateModule,
   ],
 })
 export class ClientsComponent implements OnInit {
@@ -74,7 +76,8 @@ export class ClientsComponent implements OnInit {
     private clientService: ClientService,
     private authService: AuthService,
     private workoutPlanService: WorkoutPlanService,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnInit() {
@@ -388,24 +391,24 @@ export class ClientsComponent implements OnInit {
   getStatusModalTitle(): string {
     switch (this.pendingStatus) {
       case 'PAUSED':
-        return 'Pause client?';
+        return this.translate.instant('PAUSE_CLIENT_QUESTION');
       case 'ARCHIVED':
-        return 'Archive client?';
+        return this.translate.instant('ARCHIVE_CLIENT_QUESTION');
       case 'ACTIVE':
-        return 'Reactivate client?';
+        return this.translate.instant('REACTIVATE_CLIENT_QUESTION');
       default:
-        return 'Update client?';
+        return this.translate.instant('UPDATE_CLIENT_QUESTION');
     }
   }
 
   getStatusModalDescription(): string {
     switch (this.pendingStatus) {
       case 'PAUSED':
-        return 'Paused clients stay in your database, keep their history, and do not count toward billing. Use this for temporary breaks.';
+        return this.translate.instant('PAUSED_CLIENT_DESCRIPTION');
       case 'ARCHIVED':
-        return 'Archived clients stay in your database, keep their history, and no longer count toward billing. You can reactivate them later.';
+        return this.translate.instant('ARCHIVED_CLIENT_DESCRIPTION');
       case 'ACTIVE':
-        return 'This client will become active again and will count toward your plan usage.';
+        return this.translate.instant('REACTIVATE_CLIENT_DESCRIPTION');
       default:
         return '';
     }
@@ -414,13 +417,13 @@ export class ClientsComponent implements OnInit {
   getStatusConfirmLabel(): string {
     switch (this.pendingStatus) {
       case 'PAUSED':
-        return 'Pause';
+        return this.translate.instant('PAUSE');
       case 'ARCHIVED':
-        return 'Archive';
+        return this.translate.instant('ARCHIVE');
       case 'ACTIVE':
-        return 'Reactivate';
+        return this.translate.instant('REACTIVATE');
       default:
-        return 'Confirm';
+        return this.translate.instant('CONFIRM');
     }
   }
 
@@ -443,14 +446,14 @@ export class ClientsComponent implements OnInit {
 
   getAlternativeText(): string {
     if (this.pendingStatus === 'ARCHIVED') {
-      return 'Alternative: use Pause client for temporary breaks.';
+      return this.translate.instant('ARCHIVE_CLIENT_ALTERNATIVE');
     }
 
     if (this.pendingStatus === 'PAUSED') {
-      return 'Use Archive client only when the coaching relationship is finished.';
+      return this.translate.instant('PAUSE_CLIENT_ALTERNATIVE');
     }
 
-    return 'Only active clients count toward your plan.';
+    return this.translate.instant('ACTIVE_CLIENTS_PLAN_NOTE');
   }
 
   getActiveProgressWidth(): number {
@@ -479,7 +482,7 @@ export class ClientsComponent implements OnInit {
 
   getClientStatusLabel(client: Client): string {
     const status = this.getClientStatus(client);
-    return status.charAt(0) + status.slice(1).toLowerCase();
+    return this.translate.instant(`CLIENT_STATUS_${status}`);
   }
 
   createWorkoutPlan(client: Client) {
@@ -572,8 +575,8 @@ export class ClientsComponent implements OnInit {
   }
 
   getDayName(dayOffset: number): string {
-    const days = ['Sa', 'Su', 'Mo', 'Tu', 'We', 'Th', 'Fr'];
-    return days[dayOffset];
+    const days = ['SATURDAY_SHORT', 'SUNDAY_SHORT', 'MONDAY_SHORT', 'TUESDAY_SHORT', 'WEDNESDAY_SHORT', 'THURSDAY_SHORT', 'FRIDAY_SHORT'];
+    return this.translate.instant(days[dayOffset]);
   }
 
   getDayNumber(dayOffset: number): number {

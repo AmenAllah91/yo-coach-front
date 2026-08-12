@@ -1,12 +1,12 @@
 <div class="page-container" *ngIf="view === 'LIST'">
   <div class="page-header">
-    <button class="mobile-page-back" type="button" aria-label="Back" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
+    <button class="mobile-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
     <div class="header-content">
-      <h1>Food Replacement Groups</h1>
-      <p>Create reusable groups of foods that can replace each other in meal plans.</p>
+      <h1>{{ 'FOOD_REPLACEMENT_GROUPS' | translate }}</h1>
+      <p>{{ 'FOOD_REPLACEMENT_GROUPS_SUBTITLE' | translate }}</p>
     </div>
 
-    <button class="primary-btn" (click)="openCreateGroup()"><i-feather name="plus"></i-feather> Create Group</button>
+    <button class="primary-btn" (click)="openCreateGroup()"><i-feather name="plus"></i-feather> {{ 'CREATE_GROUP' | translate }}</button>
   </div>
 
   <div class="list-toolbar">
@@ -14,7 +14,7 @@
       <i-feather name="search" class="search-icon"></i-feather>
       <input
         type="text"
-        placeholder="Search groups"
+        [placeholder]="'SEARCH_GROUPS' | translate"
         [(ngModel)]="searchTerm"
         (input)="onSearch()"
       />
@@ -25,14 +25,14 @@
       [(ngModel)]="statusFilter"
       (change)="onStatusChange()"
     >
-      <option value="all">Status: All</option>
-      <option value="active">Status: Active</option>
-      <option value="inactive">Status: Inactive</option>
+      <option value="all">{{ 'STATUS_ALL' | translate }}</option>
+      <option value="active">{{ 'STATUS_ACTIVE' | translate }}</option>
+      <option value="inactive">{{ 'STATUS_INACTIVE' | translate }}</option>
     </select>
   </div>
 
-  <div class="groups-loading" *ngIf="loading" aria-live="polite" aria-label="Loading food replacement groups">
-    <div class="loading-label"><span class="loading-spinner"></span>Loading groups...</div>
+  <div class="groups-loading" *ngIf="loading" aria-live="polite" [attr.aria-label]="'LOADING_FOOD_REPLACEMENT_GROUPS' | translate">
+    <div class="loading-label"><span class="loading-spinner"></span>{{ 'LOADING_GROUPS' | translate }}</div>
     <div class="group-skeleton" *ngFor="let row of loadingRows">
       <span class="skeleton-circle"></span>
       <span class="skeleton-line skeleton-line--name"></span>
@@ -44,11 +44,11 @@
 
   <div class="groups-list" *ngIf="!loading && groups.length > 0">
     <div class="groups-head" aria-hidden="true">
-      <span>GROUP NAME</span>
-      <span>DESCRIPTION</span>
-      <span>FOODS</span>
-      <span>STATUS</span>
-      <span>ACTIONS</span>
+      <span>{{ 'GROUP_NAME' | translate }}</span>
+      <span>{{ 'DESCRIPTION' | translate }}</span>
+      <span>{{ 'FOODS' | translate }}</span>
+      <span>{{ 'STATUS' | translate }}</span>
+      <span>{{ 'ACTIONS' | translate }}</span>
     </div>
 
     <div class="group-card" *ngFor="let group of groups">
@@ -68,26 +68,26 @@
 
       <div class="group-food-count">
         <i-feather name="shopping-bag"></i-feather>
-        {{ group.foods?.length || 0 }} foods
+        {{ group.foods?.length || 0 }} {{ 'FOODS_LOWERCASE' | translate }}
       </div>
 
-      <div><span class="status-pill" [class.inactive]="!group.active">{{ group.active ? 'Active' : 'Inactive' }}</span></div>
+      <div><span class="status-pill" [class.inactive]="!group.active">{{ (group.active ? 'ACTIVE' : 'INACTIVE') | translate }}</span></div>
 
       <div class="col-actions group-actions">
         <div class="dropdown" [class.open]="isGroupActionsOpen(group)">
           <button class="action-btn" type="button" (click)="toggleGroupActions(group, $event)">
-            <span>Actions</span>
+            <span>{{ 'ACTIONS' | translate }}</span>
             <i-feather name="chevron-down"></i-feather>
           </button>
 
           <div class="dropdown-menu" *ngIf="isGroupActionsOpen(group)" (click)="$event.stopPropagation()">
             <button class="dropdown-item" type="button" (click)="openEditGroup(group); closeGroupActions()">
               <i-feather name="edit-2"></i-feather>
-              Edit
+              {{ 'EDIT' | translate }}
             </button>
             <button class="dropdown-item delete" type="button" (click)="deleteGroup(group); closeGroupActions()">
               <i-feather name="trash-2"></i-feather>
-              Delete group
+              {{ 'DELETE_GROUP' | translate }}
             </button>
           </div>
         </div>
@@ -98,9 +98,9 @@
 
   <div class="empty-state" *ngIf="!loading && groups.length === 0">
     <i-feather name="shuffle"></i-feather>
-    <h3>No replacement groups found</h3>
-    <p>Create your first reusable group of interchangeable foods.</p>
-    <button class="primary-btn" (click)="openCreateGroup()">Create Group</button>
+    <h3>{{ 'NO_REPLACEMENT_GROUPS_FOUND' | translate }}</h3>
+    <p>{{ 'CREATE_FIRST_REPLACEMENT_GROUP' | translate }}</p>
+    <button class="primary-btn" (click)="openCreateGroup()">{{ 'CREATE_GROUP' | translate }}</button>
   </div>
 
   <div class="app-pagination" *ngIf="totalPages > 1">
@@ -136,36 +136,36 @@
 
 <div class="page-container editor-page" *ngIf="view === 'EDITOR'">
   <div class="page-header editor-header">
-    <button class="editor-back-btn" type="button" aria-label="Back" (click)="closeEditor()"><i-feather name="arrow-left"></i-feather></button>
+    <button class="editor-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="closeEditor()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
-      <h1>{{ editingGroup ? 'Edit replacement group' : 'Create replacement group' }}</h1>
+      <h1>{{ (editingGroup ? 'EDIT_REPLACEMENT_GROUP' : 'CREATE_REPLACEMENT_GROUP') | translate }}</h1>
     </div>
 
     <div class="header-actions">
-      <button class="secondary-btn" (click)="closeEditor()">Cancel</button>
+      <button class="secondary-btn" (click)="closeEditor()">{{ 'CANCEL' | translate }}</button>
       <button
         class="primary-btn"
         [disabled]="!groupName.trim() || groupFoods.length < 2"
         (click)="saveGroup()"
       >
-        Save
+        {{ 'SAVE' | translate }}
       </button>
     </div>
   </div>
 
   <section class="panel group-information-panel">
     <div class="section-heading">
-      <h2>Group</h2>
+      <h2>{{ 'GROUP' | translate }}</h2>
     </div>
 
     <div class="group-information-fields">
       <div class="form-field">
-        <label>Group Name</label>
-        <input type="text" placeholder="Protein-rich foods" [(ngModel)]="groupName" />
+        <label>{{ 'GROUP_NAME' | translate }}</label>
+        <input type="text" [placeholder]="'GROUP_NAME_EXAMPLE' | translate" [(ngModel)]="groupName" />
       </div>
       <div class="form-field">
-        <label>Client Guidance</label>
-        <input type="text" placeholder="Flexible options clients can swap in their meal plans." [(ngModel)]="groupDescription" />
+        <label>{{ 'CLIENT_GUIDANCE' | translate }}</label>
+        <input type="text" [placeholder]="'CLIENT_GUIDANCE_PLACEHOLDER' | translate" [(ngModel)]="groupDescription" />
       </div>
     </div>
   </section>
@@ -174,27 +174,27 @@
       <div class="panel-header editor-foods-header">
         <div class="section-heading">
           <div class="title-with-count">
-            <h2>Foods</h2>
+            <h2>{{ 'FOODS' | translate }}</h2>
             <span>{{ groupFoods.length }}</span>
           </div>
         </div>
         <button class="outline-blue-btn" (click)="openAddFoodModal()">
           <i-feather name="plus"></i-feather>
-          Add Food
+          {{ 'ADD_FOOD' | translate }}
         </button>
       </div>
 
       <div class="group-food-search search-box small">
         <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" placeholder="Search..." [(ngModel)]="groupFoodSearchTerm" />
+        <input type="text" [placeholder]="'SEARCH' | translate" [(ngModel)]="groupFoodSearchTerm" />
       </div>
 
       <div class="foods-table" *ngIf="groupFoods.length > 0">
         <div class="table-head">
-          <span>FOOD</span>
-          <span>SERVING</span>
-          <span>CALORIES</span>
-          <span>ACTIONS</span>
+          <span>{{ 'FOOD' | translate }}</span>
+          <span>{{ 'SERVING' | translate }}</span>
+          <span>{{ 'CALORIES' | translate }}</span>
+          <span>{{ 'ACTIONS' | translate }}</span>
         </div>
 
         <div class="table-row" *ngFor="let food of filteredGroupFoods">
@@ -202,21 +202,21 @@
           <span>{{ food.quantity }} {{ food.unit }}</span>
           <span>{{ food.energy }} kcal</span>
           <span class="row-actions">
-            <button title="Edit food" (click)="editGroupFood(food)">
+            <button [title]="'EDIT_FOOD' | translate" (click)="editGroupFood(food)">
               <i-feather name="edit-2"></i-feather>
             </button>
-            <button title="Remove food" (click)="removeGroupFood(food.foodRefId)">
+            <button [title]="'REMOVE_FOOD' | translate" (click)="removeGroupFood(food.foodRefId)">
               <i-feather name="trash-2"></i-feather>
             </button>
           </span>
         </div>
-        <div class="table-no-results" *ngIf="filteredGroupFoods.length === 0">No foods match this search.</div>
+        <div class="table-no-results" *ngIf="filteredGroupFoods.length === 0">{{ 'NO_FOODS_MATCH_SEARCH' | translate }}</div>
       </div>
   </section>
 
   <section class="panel preview-panel">
     <div class="preview-copy">
-      <h2>Client Preview</h2>
+      <h2>{{ 'CLIENT_PREVIEW' | translate }}</h2>
     </div>
 
     <div class="preview-flow" *ngIf="previewSourceFood as source">
@@ -230,7 +230,7 @@
 
       <div class="preview-connect">
         <div class="connector left"></div>
-        <button class="replace-link" type="button"><i-feather name="chevron-left"></i-feather> Replace <i-feather name="chevron-right"></i-feather></button>
+        <button class="replace-link" type="button"><i-feather name="chevron-left"></i-feather> {{ 'REPLACE' | translate }} <i-feather name="chevron-right"></i-feather></button>
         <div class="connector right"></div>
       </div>
 
@@ -244,7 +244,7 @@
     </div>
 
     <div class="preview-placeholder" *ngIf="!previewSourceFood">
-      Add at least two foods to preview replacements.
+      {{ 'ADD_TWO_FOODS_TO_PREVIEW' | translate }}
     </div>
   </section>
 </div>
@@ -257,8 +257,8 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
-        <h2>Add Food to This Group</h2>
-        <p>Search and select a food, then set the quantity to add it to this replacement group.</p>
+        <h2>{{ 'ADD_FOOD_TO_GROUP' | translate }}</h2>
+        <p>{{ 'ADD_FOOD_TO_GROUP_SUBTITLE' | translate }}</p>
       </div>
 
       <button class="close-btn" (click)="closeAddFoodModal()">
@@ -273,7 +273,7 @@
             <i-feather name="search" class="search-icon"></i-feather>
             <input
               type="text"
-              placeholder="Search foods"
+              [placeholder]="'SEARCH_FOODS' | translate"
               [(ngModel)]="foodSearchTerm"
               (input)="onFoodSearch()"
             />
@@ -281,8 +281,8 @@
         </div>
 
         <div class="picker-heading">
-          <div><h3>Available foods</h3><p>Custom foods first, followed by the public catalogue.</p></div>
-          <span>{{ filteredFoods.length }} foods</span>
+          <div><h3>{{ 'AVAILABLE_FOODS' | translate }}</h3><p>{{ 'AVAILABLE_FOODS_SUBTITLE' | translate }}</p></div>
+          <span>{{ filteredFoods.length }} {{ 'FOODS_LOWERCASE' | translate }}</span>
         </div>
 
         <div
@@ -297,7 +297,7 @@
             <ng-template #foodInitial>{{ getFoodName(food).charAt(0).toUpperCase() }}</ng-template>
           </span>
           <div>
-            <h4>{{ getFoodName(food) }} <span class="custom-badge" *ngIf="!isGeneralFood(food)">Personnalisé</span></h4>
+            <h4>{{ getFoodName(food) }} <span class="custom-badge" *ngIf="!isGeneralFood(food)">{{ 'CUSTOM' | translate }}</span></h4>
             <p>{{ foodMacroLabel(food) }}</p>
           </div>
         </div>
@@ -310,23 +310,23 @@
 
         <div class="food-picker-loading" *ngIf="foodsLoading">
           <span class="loading-spinner"></span>
-          Loading foods...
+          {{ 'LOADING_FOODS' | translate }}
         </div>
 
         <div class="food-picker-empty" *ngIf="!foodsLoading && filteredFoods.length === 0">
-          No foods found.
+          {{ 'NO_FOODS_FOUND' | translate }}
         </div>
 
         <div class="modal-info">
           <i-feather name="info"></i-feather>
-          This food will become one of the interchangeable options in the group.
+          {{ 'FOOD_INTERCHANGEABLE_INFO' | translate }}
         </div>
       </div>
 
       <aside class="add-summary">
-        <h3>Add to Group</h3>
+        <h3>{{ 'ADD_TO_GROUP' | translate }}</h3>
 
-        <label>Selected Food</label>
+        <label>{{ 'SELECTED_FOOD' | translate }}</label>
         <div class="selected-food" *ngIf="selectedFood; else noFoodSelected">
           <span class="food-thumb">
             <img *ngIf="getFoodImage(selectedFood); else selectedInitial" [src]="getFoodImage(selectedFood)" [alt]="getFoodName(selectedFood)" />
@@ -336,17 +336,17 @@
         </div>
 
         <ng-template #noFoodSelected>
-          <div class="selected-food muted">No food selected</div>
+          <div class="selected-food muted">{{ 'NO_FOOD_SELECTED' | translate }}</div>
         </ng-template>
 
         <div class="summary-grid">
           <div>
-            <label>Quantity</label>
+            <label>{{ 'QUANTITY' | translate }}</label>
             <input type="number" [(ngModel)]="selectedQuantity" />
           </div>
 
           <div>
-            <label>Unit</label>
+            <label>{{ 'UNIT' | translate }}</label>
             <select [(ngModel)]="selectedUnit">
               <option value="g">g</option>
               <option value="pcs">pcs</option>
@@ -356,7 +356,7 @@
         </div>
 
         <div class="nutrition-preview" *ngIf="selectedFood">
-          {{ getCalories(selectedFood) }} kcal • {{ getProtein(selectedFood) }}g protein
+          {{ getCalories(selectedFood) }} kcal • {{ getProtein(selectedFood) }}g {{ 'PROTEIN_LOWERCASE' | translate }}
         </div>
 
         <button
@@ -364,11 +364,11 @@
           [disabled]="!selectedFood"
           (click)="addSelectedFood()"
         >
-          Add Food
+          {{ 'ADD_FOOD' | translate }}
         </button>
 
         <button class="secondary-btn full" (click)="closeAddFoodModal()">
-          Cancel
+          {{ 'CANCEL' | translate }}
         </button>
       </aside>
     </div>

@@ -11,11 +11,12 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-choose-macro-type-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './choose-macro-type-modal.component.html',
   styleUrls: ['./choose-macro-type-modal.component.scss'],
 })

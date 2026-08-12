@@ -13,6 +13,7 @@ import { DeleteNutritionPlanModalComponent } from '../delete-nutrition-plan-moda
 import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-plan-type-modal.component';
 import { ModalAssignToclientComponent } from 'app/components/clients/modal-assign-toclient/modal-assign-toclient.component';
 import * as XLSX from 'xlsx';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-nutrition-plans',
@@ -24,6 +25,7 @@ import * as XLSX from 'xlsx';
     DeleteNutritionPlanModalComponent,
     ChoosePlanTypeModalComponent,
     ModalAssignToclientComponent,
+    TranslateModule,
   ],
   templateUrl: './nutrition-plans.component.html',
   styleUrls: ['./nutrition-plans.component.scss'],
@@ -98,7 +100,8 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   constructor(
     private nutritionService: NutritionService,
     private router: Router,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private translate: TranslateService
   ) {}
 
   goBack(): void {
@@ -340,7 +343,7 @@ if (type === 'APP') {
 
   getProgramDescription(plan: NutritionPlan): string {
     if (this.isFilePlan(plan)) {
-      const fileName = (plan as any).originalFileName || (plan as any).fileName || 'Static nutrition document';
+      const fileName = (plan as any).originalFileName || (plan as any).fileName || this.translate.instant('STATIC_NUTRITION_DOCUMENT');
       const size = (plan as any).fileSizeBytes ? ` · ${this.formatFileSize((plan as any).fileSizeBytes)}` : '';
       return `${fileName}${size}`;
     }
@@ -349,11 +352,11 @@ if (type === 'APP') {
     if (days > 0) {
       const weeks = this.getPlanTotalWeeks(plan);
       return weeks > 0
-        ? `${weeks}-week nutrition program`
-        : `${days}-day nutrition program`;
+        ? this.translate.instant('WEEK_NUTRITION_PROGRAM', { count: weeks })
+        : this.translate.instant('DAY_NUTRITION_PROGRAM', { count: days });
     }
 
-    return (plan as any).details || 'Nutrition program';
+    return (plan as any).details || this.translate.instant('NUTRITION_PROGRAM');
   }
 
   getPlanTotalWeeks(plan: NutritionPlan): number {
@@ -429,7 +432,7 @@ if (type === 'APP') {
       return this.getFileKind(plan) === 'PDF' ? 'PDF' : 'Excel';
     }
 
-    return 'App Program';
+    return this.translate.instant('APP_PROGRAM');
   }
 
   formatFileSize(bytes?: number): string {
@@ -1313,7 +1316,7 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     const parsedDate = new Date(date);
     if (Number.isNaN(parsedDate.getTime())) return '';
 
-    return parsedDate.toLocaleDateString('en-US', {
+    return parsedDate.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

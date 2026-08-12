@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormsApiService, Form } from '../../../forms/services/forms-api.service';
 import {FeatherModule} from "angular-feather";
+import { TranslateModule } from '@ngx-translate/core';
 
 export interface CheckinFormItem {
   id: string;
@@ -14,7 +15,7 @@ export interface CheckinFormItem {
 @Component({
   selector: 'app-form-selection-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './form-selection-modal.component.html',
   styleUrls: ['./form-selection-modal.component.scss'],
 })

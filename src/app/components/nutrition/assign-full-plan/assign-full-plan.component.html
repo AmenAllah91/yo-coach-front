@@ -4,8 +4,8 @@
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
-        <h2 class="np-h6">Program Structure</h2>
-        <p class="np-aside__sub">{{ nutritionWeeks?.length || 0 }} Weeks • {{ days?.length || 0 }} Days</p>
+        <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
+        <p class="np-aside__sub">{{ nutritionWeeks?.length || 0 }} {{ ((nutritionWeeks?.length || 0) === 1 ? 'WEEK' : 'WEEKS') | translate }} • {{ days?.length || 0 }} {{ ((days?.length || 0) === 1 ? 'DAY' : 'DAYS') | translate }}</p>
       </div>
 
       <div
@@ -17,10 +17,10 @@
         <div class="np-week-card" *ngFor="let week of nutritionWeeks">
           <button type="button" class="np-week-card__head" (click)="toggleWeek(week.weekNumber)" [attr.aria-expanded]="!isWeekCollapsed(week.weekNumber)">
             <div>
-              <strong>WEEK {{ week.weekNumber }}</strong>
-              <small>{{ week.days[0].index + 1 }} - {{ week.days[week.days.length - 1].index + 1 }} days</small>
+              <strong>{{ 'WEEK_NUMBER' | translate:{ number: week.weekNumber } }}</strong>
+              <small>{{ 'DAY_RANGE' | translate:{ start: week.days[0].index + 1, end: week.days[week.days.length - 1].index + 1 } }}</small>
             </div>
-            <span class="np-week-card__count">{{ week.days.length }} days</span>
+            <span class="np-week-card__count">{{ 'DAYS_COUNT' | translate:{ count: week.days.length } }}</span>
             <i-feather [name]="isWeekCollapsed(week.weekNumber) ? 'chevron-down' : 'chevron-up'" class="np-week-card__chevron"></i-feather>
           </button>
 
@@ -37,8 +37,8 @@
               [class.is-active]="selectedDay?.id === item.day.id"
               (click)="selectDay(item.day)"
             >
-              <span class="np-day__title">{{ item.day.title || item.day.dayOfWeek || ('Day ' + (item.index + 1)) }}</span>
-              <small class="np-day__meta">{{ (item.day.meals?.length || 0) > 0 ? ((item.day.meals?.length || 0) + ' meals') : 'Empty Day' }}</small>
+              <span class="np-day__title">{{ getDayLabel(item.day, item.index) }}</span>
+              <small class="np-day__meta">{{ (item.day.meals?.length || 0) > 0 ? mealCountLabel(item.day.meals?.length || 0) : ('EMPTY_DAY' | translate) }}</small>
             </button>
 
           </div>
@@ -49,13 +49,13 @@
           (click)="addDay()"
         >
           <i-feather name="plus" class="np-ico"></i-feather>
-          Add Day
+          {{ 'ADD_DAY' | translate }}
         </button>
 
         <!-- Duplicate -->
         <div class="np-stack">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
-            <span>Duplicate Day</span>
+            <span>{{ 'DUPLICATE_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
           </button>
         </div>
@@ -68,13 +68,13 @@
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>Global Plan Settings</span>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span>
         </div>
 
         <!-- Plan Title -->
         <div class="np-field">
           <label class="np-label"
-            >Plan Title <span class="np-danger">*</span></label
+            >{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label
           >
           <input class="np-input" type="text" [(ngModel)]="planName" />
         </div>
@@ -85,19 +85,19 @@
         >
           <button class="np-link" (click)="togglePlanDescription()">
             <i-feather name="plus" class="np-ico"></i-feather>
-            Add Plan Description
+            {{ 'ADD_PLAN_DESCRIPTION' | translate }}
           </button>
         </ng-container>
 
         <ng-template #planDescBlock>
           <div class="np-field">
-            <label class="np-label">Plan Description</label>
+            <label class="np-label">{{ 'PLAN_DESCRIPTION' | translate }}</label>
 
             <div class="np-textareaWrap">
               <textarea
                 class="np-input np-textarea"
                 rows="5"
-                placeholder="Enter Plan Description"
+                [placeholder]="'ENTER_PLAN_DESCRIPTION' | translate"
                 [(ngModel)]="planDescription"
               ></textarea>
 
@@ -115,7 +115,7 @@
         <div class="latest-client-programs latest-client-programs--nutrition" *ngIf="latestAssignedPrograms.length">
           <div class="latest-client-programs__title">
             <i-feather name="clock" class="np-ico"></i-feather>
-            Derniers programmes nutrition de ce client
+            {{ 'LATEST_CLIENT_NUTRITION_PROGRAMS' | translate }}
           </div>
           <div class="latest-client-programs__row" *ngFor="let program of latestAssignedPrograms">
             <span>{{ getProgramDisplayName(program) }}</span>
@@ -142,14 +142,14 @@
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
             </span>
-            Program Schedule
+            {{ 'PROGRAM_SCHEDULE' | translate }}
           </h3>
 
           <div class="program-schedule-grid">
             <!-- Start Date -->
             <div class="program-schedule-field">
               <label class="program-schedule-label">
-                Start Date <span class="required">*</span>
+                {{ 'START_DATE' | translate }} <span class="required">*</span>
               </label>
               <div class="program-schedule-input-wrapper">
                 <span class="program-schedule-input-icon">
@@ -189,7 +189,7 @@
 
             <!-- End Date -->
             <div class="program-schedule-field">
-              <label class="program-schedule-label"> End Date </label>
+              <label class="program-schedule-label"> {{ 'END_DATE' | translate }} </label>
               <div class="program-schedule-input-wrapper">
                 <span class="program-schedule-input-icon">
                   <svg
@@ -223,7 +223,7 @@
                 />
               </div>
               <p class="program-schedule-helper">
-                Automatically calculated based on number of days
+                {{ 'END_DATE_AUTO_CALCULATED' | translate }}
               </p>
             </div>
           </div>
@@ -240,10 +240,10 @@
               [class.is-active]="selectedDay?.id === d.id"
               (click)="selectDay(d)"
             >
-              <span class="np-mobile-day__title">{{ d.title || d.dayOfWeek || ('Day ' + (i + 1)) }}</span>
+              <span class="np-mobile-day__title">{{ getDayLabel(d, i) }}</span>
             </button>
           </ng-container>
-          <button type="button" class="np-mobile-add" (click)="addDay()" aria-label="Add day">
+          <button type="button" class="np-mobile-add" (click)="addDay()" [attr.aria-label]="'ADD_DAY' | translate">
             <i-feather name="plus" class="np-ico"></i-feather>
           </button>
         </div>
@@ -264,7 +264,7 @@
             (click)="toggleCheatMeal()"
           >
             <i-feather name="star" class="np-ico"></i-feather>
-            {{ selectedDay?.cheatMeal ? 'Cheat meal' : 'Set as cheat meal' }}
+            {{ (selectedDay?.cheatMeal ? 'CHEAT_MEAL' : 'SET_AS_CHEAT_MEAL') | translate }}
           </button>
         </div>
 
@@ -278,18 +278,18 @@
           >
             <button class="np-link" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
-              Add Nutrition Description
+              {{ 'ADD_NUTRITION_DESCRIPTION' | translate }}
             </button>
           </ng-container>
 
           <ng-template #dayDescBlock>
             <div class="np-field">
-              <label class="np-label">Nutrition Description</label>
+              <label class="np-label">{{ 'NUTRITION_DESCRIPTION' | translate }}</label>
               <div class="np-textareaWrap">
                 <textarea
                   class="np-input np-textarea"
                   rows="5"
-                  placeholder="Enter Nutrition Description"
+                  [placeholder]="'ENTER_NUTRITION_DESCRIPTION' | translate"
                   [(ngModel)]="selectedDay.description"
                 ></textarea>
 
@@ -307,7 +307,7 @@
         </ng-container>
 
         <!-- Meals -->
-        <div class="np-subtle">Meals</div>
+        <div class="np-subtle">{{ 'MEALS' | translate }}</div>
 
         <!-- ===== Meal Cards ===== -->
         <ng-container *ngIf="selectedDay">
@@ -320,24 +320,24 @@
           <article
             class="np-meal"
             cdkDrag
-            *ngFor="let meal of selectedDay.meals; trackBy: trackByMeal"
+            *ngFor="let meal of selectedDay.meals; trackBy: trackByMeal; let mealIndex = index"
           >
             <header class="np-meal__head">
               <div class="np-meal__left">
                 <div class="np-meal-title-row">
-                  <h4 class="np-h6 np-brand">{{ meal.name }}</h4>
+                  <h4 class="np-h6 np-brand">{{ displayMealName(meal, mealIndex) }}</h4>
                   <button
                     class="np-mini"
                     type="button"
                     (click)="promptRenameMeal(meal)"
-                    aria-label="Rename meal"
+                    [attr.aria-label]="'RENAME_MEAL' | translate"
                   >
                     <i-feather name="edit-2" class="np-ico"></i-feather>
                   </button>
                 </div>
 
                 <label class="np-meal-time">
-                  <span><i-feather name="clock"></i-feather> MEAL TIME</span>
+                  <span><i-feather name="clock"></i-feather> {{ 'MEAL_TIME' | translate }}</span>
                   <input type="time" [(ngModel)]="meal.mealTime" />
                 </label>
               </div>
@@ -346,33 +346,33 @@
               <div class="np-meal__right">
                 <div class="np-badges">
                   <div class="np-badge">
-                    <div class="np-badge__label">CALORIES</div>
+                    <div class="np-badge__label">{{ 'CALORIES' | translate }}</div>
                     <div class="np-badge__val">
                       {{ getMealCalories(meal) }} Kcal
                     </div>
                   </div>
 
                   <div class="np-badge">
-                    <div class="np-badge__label">PROTEIN</div>
+                    <div class="np-badge__label">{{ 'PROTEIN' | translate }}</div>
                     <div class="np-badge__val">
                       {{ getMealProtein(meal) }} g
                     </div>
                   </div>
 
                   <div class="np-badge">
-                    <div class="np-badge__label">CARBS</div>
+                    <div class="np-badge__label">{{ 'CARBS' | translate }}</div>
                     <div class="np-badge__val">{{ getMealCarbs(meal) }} g</div>
                   </div>
 
                   <div class="np-badge">
-                    <div class="np-badge__label">FAT</div>
+                    <div class="np-badge__label">{{ 'FAT' | translate }}</div>
                     <div class="np-badge__val">{{ getMealFat(meal) }} g</div>
                   </div>
                 </div>
 
                 <button
                   class="np-iconbtn"
-                  title="Remove meal"
+                  [title]="'REMOVE_MEAL' | translate"
                   (click)="removeMeal(meal)"
                 >
                   <svg viewBox="0 0 24 24" class="np-ico">
@@ -393,10 +393,10 @@
             <div class="np-meal__body">
               <section class="np-recipe-overview" *ngIf="isRecipeMeal(meal) && meal.foods?.length">
                 <div class="np-recipe-overview__top">
-                  <span class="np-recipe-chip">MEAL RECIPE</span>
+                  <span class="np-recipe-chip">{{ 'MEAL_RECIPE' | translate }}</span>
                   <button type="button" class="np-recipe-change" (click)="openTemplateModal(meal)">
                     <i-feather name="repeat"></i-feather>
-                    Choose Another Meal Template
+                    {{ 'CHOOSE_ANOTHER_MEAL_TEMPLATE' | translate }}
                   </button>
                 </div>
 
@@ -409,35 +409,35 @@
                     <h5>{{ meal.name }}</h5>
                     <p>{{ recipeDescription(meal) }}</p>
                     <div class="np-recipe-stats">
-                      <div><span>SERVINGS</span><strong>{{ meal.servings || 1 }}</strong></div>
-                      <div><span>TOTAL TIME</span><strong>{{ meal.totalTimeMinutes || 0 }} min</strong></div>
-                      <div><span>TOTAL CALORIES</span><strong>{{ getMealCalories(meal) }} Kcal</strong></div>
-                      <div><span>PROTEIN</span><strong>{{ getMealProtein(meal) }} g</strong></div>
-                      <div><span>CARBS</span><strong>{{ getMealCarbs(meal) }} g</strong></div>
-                      <div><span>FAT</span><strong>{{ getMealFat(meal) }} g</strong></div>
+                      <div><span>{{ 'SERVINGS' | translate }}</span><strong>{{ meal.servings || 1 }}</strong></div>
+                      <div><span>{{ 'TOTAL_TIME' | translate }}</span><strong>{{ meal.totalTimeMinutes || 0 }} min</strong></div>
+                      <div><span>{{ 'TOTAL_CALORIES' | translate }}</span><strong>{{ getMealCalories(meal) }} Kcal</strong></div>
+                      <div><span>{{ 'PROTEIN' | translate }}</span><strong>{{ getMealProtein(meal) }} g</strong></div>
+                      <div><span>{{ 'CARBS' | translate }}</span><strong>{{ getMealCarbs(meal) }} g</strong></div>
+                      <div><span>{{ 'FAT' | translate }}</span><strong>{{ getMealFat(meal) }} g</strong></div>
                     </div>
                   </div>
                 </div>
 
                 <button type="button" class="np-recipe-toggle" (click)="toggleRecipeDetails(meal)">
                   <i-feather name="eye"></i-feather>
-                  {{ recipeDetailsVisible(meal) ? 'Hide Recipe Details' : 'View Full Recipe Details' }}
+                  {{ (recipeDetailsVisible(meal) ? 'HIDE_RECIPE_DETAILS' : 'VIEW_FULL_RECIPE_DETAILS') | translate }}
                 </button>
               </section>
 
               <div class="np-ingredients-title" *ngIf="meal.foods?.length">
-                {{ isRecipeMeal(meal) ? 'Ingredients' : 'Foods' }}
+                {{ (isRecipeMeal(meal) ? 'INGREDIENTS' : 'FOODS') | translate }}
               </div>
 
               <table class="np-table" *ngIf="meal.foods?.length">
                 <thead>
                   <tr>
-                    <th>Food</th>
-                    <th>Quantity</th>
-                    <th>Protein</th>
-                    <th>Carbs</th>
-                    <th>Fat</th>
-                    <th>Calories</th>
+                    <th>{{ 'FOOD' | translate }}</th>
+                    <th>{{ 'QUANTITY' | translate }}</th>
+                    <th>{{ 'PROTEIN' | translate }}</th>
+                    <th>{{ 'CARBS' | translate }}</th>
+                    <th>{{ 'FAT' | translate }}</th>
+                    <th>{{ 'CALORIES' | translate }}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -490,9 +490,9 @@
 
               <!-- Empty state -->
               <div class="np-emptystate" *ngIf="!meal.foods?.length">
-                <div class="np-emptystate__title">Meal looking empty?</div>
+                <div class="np-emptystate__title">{{ 'MEAL_LOOKING_EMPTY' | translate }}</div>
                 <div class="np-emptystate__hint">
-                  Add an item using the button below
+                  {{ 'ADD_ITEM_USING_BUTTON' | translate }}
                 </div>
               </div>
 
@@ -511,21 +511,21 @@
                       stroke-linecap="round"
                     />
                   </svg>
-                  {{ isRecipeMeal(meal) ? 'Add Ingredient' : 'Add Food' }}
+                  {{ (isRecipeMeal(meal) ? 'ADD_INGREDIENT' : 'ADD_FOOD') | translate }}
                 </button>
               </div>
 
               <section class="np-recipe-directions" *ngIf="isRecipeMeal(meal) && recipeDetailsVisible(meal)">
                 <div>
-                  <h6>Directions (Summary)</h6>
+                  <h6>{{ 'DIRECTIONS_SUMMARY' | translate }}</h6>
                   <ol *ngIf="meal.directions?.length; else noDirections">
                     <li *ngFor="let direction of meal.directions">{{ direction }}</li>
                   </ol>
-                  <ng-template #noDirections><p>No directions were added to this recipe.</p></ng-template>
+                  <ng-template #noDirections><p>{{ 'NO_DIRECTIONS_ADDED' | translate }}</p></ng-template>
                 </div>
                 <div class="np-recipe-prep-time">
                   <i-feather name="clock"></i-feather>
-                  <span>Total Preparation Time</span>
+                  <span>{{ 'TOTAL_PREPARATION_TIME' | translate }}</span>
                   <strong>{{ meal.totalTimeMinutes || 0 }} min</strong>
                 </div>
               </section>
@@ -535,22 +535,22 @@
         </ng-container>
 
         <div class="np-rename-modal" *ngIf="renamingMeal" role="dialog" aria-modal="true" aria-labelledby="editMealNameTitle">
-          <button type="button" class="np-rename-modal__backdrop" aria-label="Close edit meal name dialog" (click)="closeRenameMealModal()"></button>
+          <button type="button" class="np-rename-modal__backdrop" [attr.aria-label]="'CLOSE_EDIT_MEAL_NAME_DIALOG' | translate" (click)="closeRenameMealModal()"></button>
           <form class="np-rename-modal__panel" (ngSubmit)="confirmRenameMeal()">
             <header class="np-rename-modal__header">
               <div>
-                <h2 id="editMealNameTitle">Edit Meal Name</h2>
-                <p>Update the name of this meal. This change will only affect the meal name.</p>
+                <h2 id="editMealNameTitle">{{ 'EDIT_MEAL_NAME' | translate }}</h2>
+                <p>{{ 'EDIT_MEAL_NAME_SUBTITLE' | translate }}</p>
               </div>
-              <button type="button" class="np-rename-modal__close" aria-label="Close" (click)="closeRenameMealModal()"><i-feather name="x"></i-feather></button>
+              <button type="button" class="np-rename-modal__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeRenameMealModal()"><i-feather name="x"></i-feather></button>
             </header>
             <div class="np-rename-modal__body">
-              <label for="newMealName">New Meal Name</label>
+              <label for="newMealName">{{ 'NEW_MEAL_NAME' | translate }}</label>
               <input id="newMealName" name="newMealName" type="text" maxlength="100" required autofocus [(ngModel)]="mealNameDraft" />
             </div>
             <footer class="np-rename-modal__footer">
-              <button type="button" class="np-rename-modal__cancel" (click)="closeRenameMealModal()">Cancel</button>
-              <button type="submit" class="np-rename-modal__update" [disabled]="!mealNameDraft.trim()">Update</button>
+              <button type="button" class="np-rename-modal__cancel" (click)="closeRenameMealModal()">{{ 'CANCEL' | translate }}</button>
+              <button type="submit" class="np-rename-modal__update" [disabled]="!mealNameDraft.trim()">{{ 'UPDATE' | translate }}</button>
             </footer>
           </form>
         </div>
@@ -566,7 +566,7 @@
                 fill="none"
               />
             </svg>
-            Add Empty Meal
+            {{ 'ADD_EMPTY_MEAL' | translate }}
           </button>
 
           <button class="np-btn np-btn--branddash" (click)="openTemplateModal()">
@@ -578,7 +578,7 @@
                 fill="none"
               />
             </svg>
-            Add Meal From Template
+            {{ 'ADD_MEAL_FROM_TEMPLATE' | translate }}
           </button>
         </div>
       </section>
@@ -601,7 +601,7 @@
               stroke-linecap="round"
             />
           </svg>
-          Save Plan
+          {{ 'SAVE_PLAN' | translate }}
         </button>
       </div>
     </main>
@@ -620,7 +620,7 @@
 
   <div class="np-modal__panel np-modal--food" tabindex="-1">
     <div class="np-modal__head">
-      <h3 id="npFoodTitle" class="np-modal__title">Add Food</h3>
+      <h3 id="npFoodTitle" class="np-modal__title">{{ 'ADD_FOOD' | translate }}</h3>
 
       <button class="np-modal__close" (click)="closeFoodModal()">
         <svg viewBox="0 0 24 24" class="np-ico">
@@ -662,14 +662,14 @@
             <input
               class="np-input np-searchwrap__input"
               type="text"
-              placeholder="Search foods..."
+              [placeholder]="'SEARCH_FOODS' | translate"
               [(ngModel)]="foodSearch"
               (input)="filterFoods()"
             />
           </div>
         </div>
 
-        <div class="np-modal__sectionTitle">Results</div>
+        <div class="np-modal__sectionTitle">{{ 'RESULTS' | translate }}</div>
 
         <ul class="np-foodlist">
           <li
@@ -678,10 +678,10 @@
             (click)="showFoodDetail(f)"
           >
             <span class="np-foodlist__thumb"><img *ngIf="foodImage(f)" [src]="foodImage(f)" [alt]="f.name" /><span *ngIf="!foodImage(f)">{{ f.name.charAt(0).toUpperCase() }}</span></span>
-            <div class="np-foodlist__copy"><div class="np-foodlist__name">{{ f.name }} <span class="np-foodlist__custom" *ngIf="!f.general">Personnalisé</span></div>
+            <div class="np-foodlist__copy"><div class="np-foodlist__name">{{ f.name }} <span class="np-foodlist__custom" *ngIf="!f.general">{{ 'CUSTOM' | translate }}</span></div>
             <div class="np-foodlist__meta">
-              {{ f.protein }}g Protein | {{ f.carbohydrates }}g Carbs |
-              {{ f.fat }}g Fat
+              {{ f.protein }}g {{ 'PROTEIN' | translate }} | {{ f.carbohydrates }}g {{ 'CARBS' | translate }} |
+              {{ f.fat }}g {{ 'FAT' | translate }}
             </div></div>
           </li>
         </ul>
@@ -696,7 +696,7 @@
           <div class="np-grid-2">
             <!-- Quantity -->
             <div>
-              <label class="np-label">Quantity</label>
+              <label class="np-label">{{ 'QUANTITY' | translate }}</label>
               <input
                 class="np-input"
                 type="number"
@@ -708,7 +708,7 @@
 
             <!-- Serving -->
             <div>
-              <label class="np-label">Serving Size</label>
+              <label class="np-label">{{ 'SERVING_SIZE' | translate }}</label>
               <select class="np-input" disabled>
                 <option>g</option>
               </select>
@@ -717,32 +717,32 @@
         </div>
 
         <!-- Nutrition Values -->
-        <div class="np-modal__sectionTitle">Nutrition Values</div>
+        <div class="np-modal__sectionTitle">{{ 'NUTRITION_VALUES' | translate }}</div>
 
         <div class="np-badges" style="margin-top: 8px">
           <div class="np-badge">
-            <div class="np-badge__label">Calories</div>
+            <div class="np-badge__label">{{ 'CALORIES' | translate }}</div>
             <div class="np-badge__val">
               {{ adj.calories | number : "1.0-0" }} Kcal
             </div>
           </div>
 
           <div class="np-badge">
-            <div class="np-badge__label">Protein</div>
+            <div class="np-badge__label">{{ 'PROTEIN' | translate }}</div>
             <div class="np-badge__val">
               {{ adj.protein | number : "1.0-1" }} g
             </div>
           </div>
 
           <div class="np-badge">
-            <div class="np-badge__label">Carbs</div>
+            <div class="np-badge__label">{{ 'CARBS' | translate }}</div>
             <div class="np-badge__val">
               {{ adj.carbohydrates | number : "1.0-1" }} g
             </div>
           </div>
 
           <div class="np-badge">
-            <div class="np-badge__label">Fat</div>
+            <div class="np-badge__label">{{ 'FAT' | translate }}</div>
             <div class="np-badge__val">{{ adj.fat | number : "1.0-1" }} g</div>
           </div>
         </div>
@@ -755,7 +755,7 @@
         class="np-btn np-btn--ghost np-btn--full"
         (click)="closeFoodModal()"
       >
-        Cancel
+        {{ 'CANCEL' | translate }}
       </button>
     </div>
 
@@ -763,10 +763,10 @@
     <div class="np-modal__foot" *ngIf="foodStep === 'detail'">
       <div class="np-grid-2">
         <button class="np-btn np-btn--ghost" (click)="backToList()">
-          Back
+          {{ 'BACK' | translate }}
         </button>
         <button class="np-btn np-btn--brandsoft" (click)="addFoodToMeal()">
-          Add Food
+          {{ 'ADD_FOOD' | translate }}
         </button>
       </div>
     </div>
