@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-modal-confirm',
   standalone: true,
-  imports: [FeatherModule, CommonModule],
+  imports: [FeatherModule, CommonModule, TranslateModule],
   templateUrl: './modal-confirm.component.html',
   styleUrl: './modal-confirm.component.scss',
 })

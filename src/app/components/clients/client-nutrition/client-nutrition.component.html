@@ -390,7 +390,7 @@
       <div><h1>{{ day.programName }}</h1><span [attr.data-status]="day.status">{{ nutritionDayStatusLabel(day) }}</span></div>
       <p>▣ &nbsp;{{ day.displayDate }} &nbsp;•&nbsp; Nutrition day</p>
     </div>
-    <button class="extract-nutrition-pdf" type="button" (click)="extractNutritionPdf()">▧&nbsp; Extract PDF</button>
+    <button class="extract-nutrition-pdf" type="button" (click)="extractNutritionPdf()">▧&nbsp; {{ 'EXTRACT_PDF' | translate }}</button>
   </header>
 
   <main class="meal-day-content">
@@ -425,7 +425,7 @@
             type="button"
             (click)="toggleMealCard(meal)"
             [attr.aria-expanded]="meal.expanded !== false"
-            [attr.aria-label]="(meal.expanded !== false ? 'Collapse' : 'Expand') + ' meal'"
+            [attr.aria-label]="(meal.expanded !== false ? 'COLLAPSE_MEAL' : 'EXPAND_MEAL') | translate"
           >
             {{ meal.expanded !== false ? '⌃' : '›' }}
           </button>
@@ -448,7 +448,7 @@
           <div class="meal-recipe-preview__copy">
             <h3>{{ meal.name }}</h3>
             <div class="meal-recipe-preview__facts">
-              <span>◔ {{ meal.servings || 1 }} {{ (meal.servings || 1) > 1 ? 'servings' : 'serving' }}</span>
+              <span>◔ {{ meal.servings || 1 }} {{ ((meal.servings || 1) > 1 ? 'SERVINGS_LOWERCASE' : 'SERVING_LOWERCASE') | translate }}</span>
               <span *ngIf="meal.totalTimeMinutes">◷ {{ meal.totalTimeMinutes }} min prep</span>
             </div>
           </div>
@@ -481,22 +481,22 @@
           <div class="meal-photo-preview__content">
             <img [src]="meal.photoUrl" alt="Client meal photo">
             <span><b>{{ 'UPLOADED_BY_CLIENT' | translate }}</b><small>{{ 'MEAL_PHOTO' | translate }}</small><a [href]="meal.photoUrl" target="_blank" rel="noopener"><i class="far fa-eye"></i> {{ 'VIEW' | translate }}</a></span>
-            <label class="replace-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)"><i class="far fa-image"></i> {{ uploadingMealId === meal.id ? 'Uploading…' : 'Replace photo' }}</label>
+            <label class="replace-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)"><i class="far fa-image"></i> {{ (uploadingMealId === meal.id ? 'UPLOADING' : 'REPLACE_PHOTO') | translate }}</label>
           </div>
         </div>
 
         <label class="meal-note">
-          <span>▱ &nbsp;{{ meal.note ? ('Note for meal ' + (mealIndex + 1)) : 'Add a note' }}</span>
+          <span>▱ &nbsp;{{ (meal.note ? 'NOTE_FOR_MEAL_NUMBER' : 'ADD_NOTE') | translate:{ number: mealIndex + 1 } }}</span>
           <textarea *ngIf="meal.note" [(ngModel)]="meal.note" (blur)="saveMealNote(meal)" rows="2" [placeholder]="'MEAL_NOTE_PLACEHOLDER' | translate"></textarea>
           <button *ngIf="!meal.note" type="button" (click)="meal.note = ' '">{{ 'ADD_NOTE' | translate }}</button>
         </label>
 
         <div class="meal-card-actions meal-card-actions--footer">
           <button type="button" class="meal-card-actions__ghost" (click)="openMealView(meal, mealIndex)">
-            {{ isRecipeMeal(meal) ? '▦ View recipe' : '☰ View foods' }}
+            {{ isRecipeMeal(meal) ? '▦ ' : '☰ ' }}{{ (isRecipeMeal(meal) ? 'VIEW_RECIPE' : 'VIEW_FOODS') | translate }}
           </button>
-          <label class="upload-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ uploadingMealId === meal.id ? 'Uploading…' : (meal.photoUrl ? 'Replace photo' : 'Upload photo') }}</label>
-          <button type="button" (click)="openMealReport(meal, mealIndex)">▣&nbsp; Report meal</button>
+          <label class="upload-meal-photo"><input type="file" accept="image/*" (change)="uploadMealPhoto($event, meal)">▧ {{ (uploadingMealId === meal.id ? 'UPLOADING' : (meal.photoUrl ? 'REPLACE_PHOTO' : 'UPLOAD_PHOTO')) | translate }}</label>
+          <button type="button" (click)="openMealReport(meal, mealIndex)">▣&nbsp; {{ 'REPORT_MEAL' | translate }}</button>
         </div>
       </div>
     </article>
@@ -526,9 +526,9 @@
     </section>
   </main>
   <footer class="meal-day-footer">
-    <button class="off-plan-action" type="button" (click)="markDayOffPlan()">⊗&nbsp; Off-plan</button>
+    <button class="off-plan-action" type="button" (click)="markDayOffPlan()">⊗&nbsp; {{ 'OFF_PLAN' | translate }}</button>
     <span *ngIf="dailySaveMessage">{{ dailySaveMessage }}</span>
-    <button class="complete-day-action" type="button" (click)="completeNutritionDay()">✓&nbsp; Complete nutrition day</button>
+    <button class="complete-day-action" type="button" (click)="completeNutritionDay()">✓&nbsp; {{ 'COMPLETE_NUTRITION_DAY' | translate }}</button>
   </footer>
 </div>
 
@@ -568,7 +568,7 @@
 
       <section class="meal-view-section">
         <h3>{{ 'SERVING_SIZE' | translate }}</h3>
-        <div class="meal-view-servings">{{ viewedMeal.servings || 1 }} serving{{ (viewedMeal.servings || 1) > 1 ? 's' : '' }}</div>
+        <div class="meal-view-servings">{{ viewedMeal.servings || 1 }} {{ ((viewedMeal.servings || 1) > 1 ? 'SERVINGS_LOWERCASE' : 'SERVING_LOWERCASE') | translate }}</div>
       </section>
 
       <section class="meal-view-section" *ngIf="viewedMeal.foods?.length">
@@ -604,7 +604,7 @@
     <header class="nutrition-pdf-modal__header">
       <div><h2 id="nutrition-pdf-title">{{ 'NUTRITION_PDF_PREVIEW' | translate }}</h2><p>{{ 'REVIEW_NUTRITION_BEFORE_DOWNLOAD' | translate }}</p></div>
       <div class="nutrition-pdf-modal__actions">
-        <button type="button" class="nutrition-pdf-download" (click)="downloadNutritionPdf()">↓&nbsp; Download PDF</button>
+        <button type="button" class="nutrition-pdf-download" (click)="downloadNutritionPdf()">↓&nbsp; {{ 'DOWNLOAD_PDF' | translate }}</button>
         <button type="button" class="nutrition-pdf-close" [attr.aria-label]="'CLOSE_PREVIEW' | translate" (click)="closeNutritionPdfPreview()">×</button>
       </div>
     </header>

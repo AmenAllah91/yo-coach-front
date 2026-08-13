@@ -50,11 +50,11 @@
       </a>
       <div class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationsDropdown">
         <div class="notification-header">
-          <strong>Notifications <span class="header-count">{{unreadNotificationCount}}</span></strong>
-          <button type="button" (click)="markAllNotificationsRead($event)"><i-feather name="check"></i-feather> Tout marquer comme lu</button>
+          <strong>{{ 'NOTIFICATIONS' | translate }} <span class="header-count">{{unreadNotificationCount}}</span></strong>
+          <button type="button" (click)="markAllNotificationsRead($event)"><i-feather name="check"></i-feather> {{ 'MARK_ALL_AS_READ' | translate }}</button>
         </div>
         <div class="notification-scroll">
-          @if(unreadNotifications.length) { <div class="notification-section-title">NON LUES</div> }
+          @if(unreadNotifications.length) { <div class="notification-section-title">{{ 'UNREAD' | translate }}</div> }
           @for(item of unreadNotifications; track item.id) {
             <button class="notification-item unread" type="button" (click)="openNotification(item)">
               <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
@@ -62,7 +62,7 @@
               <span class="notification-meta">{{notificationTime(item)}}<i></i></span>
             </button>
           }
-          @if(olderNotifications.length) { <div class="notification-section-title">PLUS ANCIENNES</div> }
+          @if(olderNotifications.length) { <div class="notification-section-title">{{ 'OLDER' | translate }}</div> }
           @for(item of olderNotifications; track item.id) {
             <button class="notification-item" type="button" (click)="openNotification(item)">
               <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
@@ -70,7 +70,7 @@
               <span class="notification-meta">{{notificationTime(item)}}</span>
             </button>
           }
-          @if(!notifications.length) { <div class="notification-empty">Aucune notification</div> }
+          @if(!notifications.length) { <div class="notification-empty">{{ 'NO_NOTIFICATIONS' | translate }}</div> }
         </div>
       </div>
     </div>
@@ -86,11 +86,11 @@
         <span class="d-none d-md-inline">{{userName}}</span>
       </a>
       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-        <li><a class="dropdown-item" [routerLink]="'/edit-profile/' + sessionStorage.getItem('userId')">My Profile</a></li>
-        <li><a class="dropdown-item" [routerLink]="'/settings'">Settings</a></li>
-        <li><a class="dropdown-item" href="#">Messages</a></li>
+        <li><a class="dropdown-item" [routerLink]="'/edit-profile/' + sessionStorage.getItem('userId')">{{ 'MY_PROFILE' | translate }}</a></li>
+        <li><a class="dropdown-item" [routerLink]="'/settings'">{{ 'SETTINGS' | translate }}</a></li>
+        <li><a class="dropdown-item" href="#">{{ 'MESSAGES' | translate }}</a></li>
         <li><hr class="dropdown-divider"></li>
-        <li><button class="dropdown-item text-danger" (click)="logout()">Log Out</button></li>
+        <li><button class="dropdown-item text-danger" (click)="logout()">{{ 'LOG_OUT' | translate }}</button></li>
       </ul>
     </div>
     </div>
@@ -101,22 +101,22 @@
 <div class="modal-overlay" [class.show]="showErrorModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h5 class="modal-title">Error</h5>
-      <button type="button" class="btn-close" aria-label="Close" (click)="handleErrorModalClose()"></button>
+      <h5 class="modal-title">{{ 'ERROR' | translate }}</h5>
+      <button type="button" class="btn-close" [attr.aria-label]="'CLOSE' | translate" (click)="handleErrorModalClose()"></button>
     </div>
     <div class="modal-body">
       <p>{{ errorMessage }}</p>
       <div *ngIf="true">
-        <label for="pinInput" class="form-label">Enter PIN sent to the admin:</label>
-        <input type="text" id="pinInput" class="form-control" [(ngModel)]="adminPin" placeholder="Enter PIN">
+        <label for="pinInput" class="form-label">{{ 'ENTER_ADMIN_PIN' | translate }}</label>
+        <input type="text" id="pinInput" class="form-control" [(ngModel)]="adminPin" [placeholder]="'ENTER_PIN' | translate">
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="handleErrorModalClose()">Cancel</button>
+      <button class="btn btn-secondary" (click)="handleErrorModalClose()">{{ 'CANCEL' | translate }}</button>
       <button
         *ngIf="true"
         class="btn btn-primary"
-        (click)="toggleAgentSession({ target: { checked: true }})">Submit PIN</button>
+        (click)="toggleAgentSession({ target: { checked: true }})">{{ 'SUBMIT_PIN' | translate }}</button>
     </div>
   </div>
 </div>
@@ -126,11 +126,11 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-success text-white">
-        <h5 class="modal-title" id="successModalLabel">Success</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="successModalLabel">{{ 'SUCCESS' | translate }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" [attr.aria-label]="'CLOSE' | translate"></button>
       </div>
       <div class="modal-body">
-        Your session started successfully.
+        {{ 'SESSION_STARTED_SUCCESSFULLY' | translate }}
       </div>
       <div class="modal-footer">
         <button type="button" (click)="showSucessModal=false" class="btn btn-success" data-bs-dismiss="modal">OK</button>

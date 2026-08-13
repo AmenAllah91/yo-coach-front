@@ -2,16 +2,16 @@
   <section class="swap-modal" (click)="$event.stopPropagation()">
     <header class="swap-header">
       <div>
-        <h2>Replace food</h2>
-        <p>Swap within the {{ replacementGroupLabel }} group</p>
+        <h2>{{ 'REPLACE_FOOD' | translate }}</h2>
+        <p>{{ 'SWAP_WITHIN_GROUP' | translate:{group: replacementGroupLabel} }}</p>
       </div>
-      <button type="button" class="swap-close" aria-label="Close" (click)="onClose()">×</button>
+      <button type="button" class="swap-close" [attr.aria-label]="'CLOSE' | translate" (click)="onClose()">×</button>
     </header>
 
     <div class="swap-body">
       <article class="replacing-card" *ngIf="originalFood">
         <div>
-          <small>Replacing</small>
+          <small>{{ 'REPLACING' | translate }}</small>
           <strong>{{ originalFood.name }}</strong>
           <span>{{ originalFood.quantity }}</span>
         </div>
@@ -23,13 +23,13 @@
 
       <div class="swap-loading" *ngIf="loading">
         <span></span>
-        <p>Loading alternatives...</p>
+        <p>{{ 'LOADING_ALTERNATIVES' | translate }}</p>
       </div>
 
       <div class="swap-error" *ngIf="error && !loading">{{ error }}</div>
 
       <section class="swap-options" *ngIf="alternatives.length && !loading">
-        <h3>Choose a swap</h3>
+        <h3>{{ 'CHOOSE_SWAP' | translate }}</h3>
         <div class="swap-options-list">
           <button
             type="button"
@@ -55,8 +55,8 @@
     </div>
 
     <footer class="swap-footer">
-      <button type="button" class="swap-cancel" (click)="onClose()">Cancel</button>
-      <button type="button" class="swap-confirm" [disabled]="!selectedFoodId || loading" (click)="confirmReplace()">⇄&nbsp; Confirm swap</button>
+      <button type="button" class="swap-cancel" (click)="onClose()">{{ 'CANCEL' | translate }}</button>
+      <button type="button" class="swap-confirm" [disabled]="!selectedFoodId || loading" (click)="confirmReplace()">⇄&nbsp; {{ 'CONFIRM_SWAP' | translate }}</button>
     </footer>
   </section>
 </div>

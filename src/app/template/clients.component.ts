@@ -532,13 +532,13 @@ export class ClientsComponent implements OnInit {
     this.workoutPlanService.createWorkoutPlan(workoutPlan).subscribe({
       next: (plan) => {
         console.log('Workout plan created:', plan);
-        alert(
-          `Workout plan created for ${client.firstName} ${client.lastName}`
-        );
+        alert(this.translate.instant('WORKOUT_PLAN_CREATED_FOR', {
+          name: `${client.firstName} ${client.lastName}`.trim(),
+        }));
       },
       error: (error) => {
         console.error('Error creating workout plan:', error);
-        alert('Error creating workout plan');
+        alert(this.translate.instant('CREATE_WORKOUT_PLAN_ERROR'));
       },
     });
   }

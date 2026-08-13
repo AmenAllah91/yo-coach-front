@@ -236,7 +236,7 @@
                   class="yc-input"
                   type="text"
                   [(ngModel)]="video.url"
-                  placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                  [placeholder]="'VIDEO_URL_PLACEHOLDER' | translate"
                 />
               </div>
 

@@ -4,7 +4,7 @@
   (click)="toggleSidebar()"
   [attr.aria-expanded]="isExpanded"
   aria-controls="app-sidebar"
-  [attr.aria-label]="isExpanded ? 'Close sidebar' : 'Open sidebar'">
+  [attr.aria-label]="(isExpanded ? 'CLOSE_SIDEBAR' : 'OPEN_SIDEBAR') | translate">
   <i-feather [name]="isExpanded ? 'x' : 'menu'"></i-feather>
 </button>
 

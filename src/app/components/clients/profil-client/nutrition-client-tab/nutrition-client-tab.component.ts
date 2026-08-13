@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type NutritionStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
 type NutritionSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
@@ -47,8 +47,11 @@ export class NutritionClientTabComponent implements OnInit {
   constructor(
     private nutritionService: NutritionService,
     private router: Router,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private translate: TranslateService
   ) {}
+
+  private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
 
   ngOnInit(): void {
     this.loadNutritionFileSetting();
@@ -574,7 +577,7 @@ export class NutritionClientTabComponent implements OnInit {
             iframe { width: 100%; height: 100%; border: 0; background: #fff; }
           </style>
         </head>
-        <body><div class="message"><h2>Loading preview...</h2><p>Please wait.</p></div></body>
+        <body><div class="message"><h2>${this.previewText('LOADING_PREVIEW')}</h2><p>${this.previewText('PLEASE_WAIT')}</p></div></body>
       </html>
     `);
     popup.document.close();
@@ -614,10 +617,10 @@ export class NutritionClientTabComponent implements OnInit {
         popup.document.write(`
           <!doctype html>
           <html>
-            <head><title>Preview error</title></head>
+            <head><title>${this.previewText('PREVIEW_ERROR')}</title></head>
             <body style="font-family: Arial, sans-serif; padding: 40px;">
-              <h2>Could not preview this file</h2>
-              <p>Please try again later.</p>
+              <h2>${this.previewText('COULD_NOT_PREVIEW_FILE')}</h2>
+              <p>${this.previewText('PLEASE_TRY_AGAIN_LATER')}</p>
             </body>
           </html>
         `);
@@ -693,12 +696,12 @@ export class NutritionClientTabComponent implements OnInit {
           </style>
         </head>
         <body>
-          <div class="message" id="loading"><h2>Opening Excel preview...</h2><p>Please wait.</p></div>
+          <div class="message" id="loading"><h2>${this.previewText('OPENING_EXCEL_PREVIEW')}</h2><p>${this.previewText('PLEASE_WAIT')}</p></div>
           <div id="app" style="display:none;">
             <div class="topbar">
               <div class="title">
                 <h1>${safeTitle}</h1>
-                <div class="subtitle">Excel preview · no automatic download</div>
+                <div class="subtitle">${this.previewText('EXCEL_PREVIEW_NO_DOWNLOAD')}</div>
               </div>
             </div>
             <div class="tabs" id="tabs"></div>
@@ -731,7 +734,7 @@ export class NutritionClientTabComponent implements OnInit {
                 for (let c = 0; c < maxCols; c++) html += '<td>' + escapeText(row[c]) + '</td>';
                 html += '</tr>';
               });
-              if (!rows.length) html += '<tr><th class="row-number">1</th><td>Empty sheet</td></tr>';
+              if (!rows.length) html += '<tr><th class="row-number">1</th><td>${this.previewText('EMPTY_SHEET')}</td></tr>';
               html += '</tbody></table>';
               document.getElementById('sheet').innerHTML = html;
               document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.sheet === sheetName));
@@ -739,13 +742,13 @@ export class NutritionClientTabComponent implements OnInit {
 
             async function init() {
               try {
-                if (!window.XLSX) throw new Error('Excel preview library failed to load.');
+                if (!window.XLSX) throw new Error('${this.previewText('EXCEL_PREVIEW_LIBRARY_ERROR')}');
                 const response = await fetch(fileUrl);
-                if (!response.ok) throw new Error('Could not load the Excel file.');
+                if (!response.ok) throw new Error('${this.previewText('COULD_NOT_LOAD_EXCEL_FILE')}');
                 const buffer = await response.arrayBuffer();
                 const workbook = XLSX.read(buffer, { type: 'array' });
                 const sheetNames = workbook.SheetNames || [];
-                if (!sheetNames.length) throw new Error('This Excel file has no sheets.');
+                if (!sheetNames.length) throw new Error('${this.previewText('EXCEL_FILE_HAS_NO_SHEETS')}');
 
                 const tabs = document.getElementById('tabs');
                 sheetNames.forEach((sheetName) => {
@@ -762,7 +765,7 @@ export class NutritionClientTabComponent implements OnInit {
                 document.getElementById('app').style.display = 'block';
                 renderSheet(workbook, sheetNames[0]);
               } catch (error) {
-                document.body.innerHTML = '<div class="message"><h2>Could not open Excel preview</h2><p>' + escapeText(error.message || error) + '</p></div>';
+                document.body.innerHTML = '<div class="message"><h2>${this.previewText('COULD_NOT_OPEN_EXCEL_PREVIEW')}</h2><p>' + escapeText(error.message || error) + '</p></div>';
               }
             }
             init();
@@ -821,7 +824,7 @@ export class NutritionClientTabComponent implements OnInit {
   }
 
   private renderExcelPreview(previewWindow: Window, plan: any, blob: Blob): void {
-    const title = this.escapeHtml(plan?.name || plan?.originalFileName || 'Excel preview');
+    const title = this.escapeHtml(plan?.name || plan?.originalFileName || this.translate.instant('EXCEL_PREVIEW'));
     const fileName = this.escapeHtml(plan?.originalFileName || plan?.fileName || '');
     const excelBlob = new Blob([blob], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -920,9 +923,9 @@ export class NutritionClientTabComponent implements OnInit {
         </head>
         <body>
           <div class="topbar">${title}</div>
-          <div class="meta">${fileName} · Excel preview</div>
+          <div class="meta">${fileName} · ${this.previewText('EXCEL_PREVIEW')}</div>
           <div class="tabs" id="tabs"></div>
-          <div class="wrap" id="sheet"><div class="message">Loading Excel preview...</div></div>
+          <div class="wrap" id="sheet"><div class="message">${this.previewText('LOADING_EXCEL_PREVIEW')}</div></div>
           <script>
             const fileUrl = '${safeBlobUrl}';
             const escapeText = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -949,20 +952,20 @@ export class NutritionClientTabComponent implements OnInit {
                 for (let c = 0; c < maxCols; c++) html += '<td>' + escapeText(row[c]) + '</td>';
                 html += '</tr>';
               });
-              if (!previewRows.length) html += '<tr><th class="row-index">1</th><td>No data found in this sheet.</td></tr>';
+              if (!previewRows.length) html += '<tr><th class="row-index">1</th><td>${this.previewText('NO_DATA_IN_SHEET')}</td></tr>';
               html += '</tbody></table>';
               document.getElementById('sheet').innerHTML = html;
               document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.sheet === sheetName));
             }
             async function init() {
               try {
-                if (!window.XLSX) throw new Error('Excel preview library failed to load.');
+                if (!window.XLSX) throw new Error('${this.previewText('EXCEL_PREVIEW_LIBRARY_ERROR')}');
                 const response = await fetch(fileUrl);
-                if (!response.ok) throw new Error('Could not load the Excel file.');
+                if (!response.ok) throw new Error('${this.previewText('COULD_NOT_LOAD_EXCEL_FILE')}');
                 const buffer = await response.arrayBuffer();
                 const workbook = XLSX.read(buffer, { type: 'array' });
                 const sheetNames = workbook.SheetNames || [];
-                if (!sheetNames.length) throw new Error('This Excel file has no sheets.');
+                if (!sheetNames.length) throw new Error('${this.previewText('EXCEL_FILE_HAS_NO_SHEETS')}');
                 const tabs = document.getElementById('tabs');
                 sheetNames.forEach((sheetName) => {
                   const btn = document.createElement('button');
@@ -975,7 +978,7 @@ export class NutritionClientTabComponent implements OnInit {
                 });
                 renderSheet(workbook, sheetNames[0]);
               } catch (error) {
-                document.getElementById('sheet').innerHTML = '<div class="message error">Could not render Excel preview. Use Download to open this file.<br>' + escapeText(error.message || error) + '</div>';
+                document.getElementById('sheet').innerHTML = '<div class="message error">${this.previewText('COULD_NOT_RENDER_EXCEL_PREVIEW')}<br>' + escapeText(error.message || error) + '</div>';
               }
             }
             init();

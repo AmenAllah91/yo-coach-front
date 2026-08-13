@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import {
   CoachSettingsConfig,
   CoachSettingsService,
@@ -33,12 +33,12 @@ export class ConfigurationCoachngComponent implements OnInit {
   browserNotificationsEnabled = false;
 
   emailNotifications = [
-    { key: 'workoutCompleted', label: 'Client completes a workout', enabled: true },
-    { key: 'measurementAdded', label: 'Client adds a new measurement', enabled: true },
-    { key: 'progressPictureAdded', label: 'Client adds a progress picture', enabled: true },
-    { key: 'messageReceived', label: 'Client sends you a message', enabled: true },
-    { key: 'checkInSubmitted', label: 'Client responds to a check-in', enabled: true },
-    { key: 'programEndingSoon', label: 'Programs finishing next week', enabled: true },
+    { key: 'workoutCompleted', label: 'CLIENT_COMPLETES_WORKOUT', enabled: true },
+    { key: 'measurementAdded', label: 'CLIENT_ADDS_MEASUREMENT', enabled: true },
+    { key: 'progressPictureAdded', label: 'CLIENT_ADDS_PROGRESS_PICTURE', enabled: true },
+    { key: 'messageReceived', label: 'CLIENT_SENDS_MESSAGE', enabled: true },
+    { key: 'checkInSubmitted', label: 'CLIENT_RESPONDS_CHECK_IN', enabled: true },
+    { key: 'programEndingSoon', label: 'PROGRAMS_FINISHING_NEXT_WEEK', enabled: true },
   ];
   passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
   passwordError = '';
@@ -73,6 +73,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     private languageService: LanguageService,
     private authService: AuthService,
     private usersService: UsersService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -92,11 +93,6 @@ export class ConfigurationCoachngComponent implements OnInit {
         this.savedConfig = this.clone(config);
         this.syncNotificationToggles();
 
-        const langCode = this.languageService.languageNameToCode(
-          this.config.defaults.language,
-        );
-
-        this.languageService.setLanguage(langCode);
         this.loading = false;
       },
       error: () => {
@@ -106,11 +102,6 @@ export class ConfigurationCoachngComponent implements OnInit {
         this.savedConfig = this.clone(fallback);
         this.syncNotificationToggles();
 
-        const langCode = this.languageService.languageNameToCode(
-          this.config.defaults.language,
-        );
-
-        this.languageService.setLanguage(langCode);
         this.loading = false;
       },
     });
@@ -254,9 +245,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onResetDemoData(): void {
-    const confirmed = confirm(
-      'Reset demo data ? Les données demo actuelles seront supprimées puis recréées.',
-    );
+    const confirmed = confirm(this.translate.instant('RESET_DEMO_CONFIRM'));
 
     if (!confirmed) {
       return;
@@ -271,9 +260,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onRemoveDemoData(): void {
-    const confirmed = confirm(
-      'Remove demo data ? Toutes les données avec isDemo = true seront supprimées.',
-    );
+    const confirmed = confirm(this.translate.instant('REMOVE_DEMO_CONFIRM'));
 
     if (!confirmed) {
       return;
@@ -395,7 +382,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   requestDeleteAccount(): void {
-    const confirmed = confirm('Delete your account? This action cannot be undone.');
+    const confirmed = confirm(this.translate.instant('DELETE_ACCOUNT_CONFIRM'));
     if (confirmed) {
       console.warn('[ACCOUNT] Delete account confirmed. Connect this action to the account deletion endpoint.');
     }

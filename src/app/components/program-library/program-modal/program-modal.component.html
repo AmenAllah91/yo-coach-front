@@ -3,22 +3,22 @@
     <!-- Left Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
-        <h3>Training Days</h3>
+        <h3>{{ 'TRAINING_DAYS' | translate }}</h3>
       </div>
       <div class="days-list">
-        <div 
-          class="day-item" 
+        <div
+          class="day-item"
           [class.active]="selectedDayIndex === i"
           *ngFor="let day of trainingDays; let i = index"
           (click)="selectDay(i)">
-          <span class="day-name">{{ day.name || 'Day ' + (i + 1) }}</span>
+          <span class="day-name">{{ displayDayName(day, i) }}</span>
           <button class="remove-day-btn" (click)="removeTrainingDay(i); $event.stopPropagation()" *ngIf="trainingDays.length > 1">
             <i-feather name="trash-2" size="16"></i-feather>
           </button>
         </div>
         <button class="add-day-btn" (click)="addTrainingDay()">
           <i-feather name="plus" size="16"></i-feather>
-          Add Day
+          {{ 'ADD_DAY' | translate }}
         </button>
       </div>
     </div>
@@ -30,7 +30,7 @@
           <i-feather name="arrow-left" size="20"></i-feather>
         </button>
         <div class="header-title">
-          <h1>{{ editingProgram ? 'Edit' : 'Create' }} Program</h1>
+          <h1>{{ (editingProgram ? 'EDIT_PROGRAM' : 'CREATE_PROGRAM') | translate }}</h1>
         </div>
         <div class="header-spacer"></div>
       </div>
@@ -39,10 +39,10 @@
         <div class="form-container">
           <!-- Program Title -->
           <div class="form-group">
-            <label>Program Title <span class="required">*</span></label>
-            <input 
-              type="text" 
-              placeholder="Enter Program Title" 
+            <label>{{ 'PROGRAM_TITLE' | translate }} <span class="required">*</span></label>
+            <input
+              type="text"
+              [placeholder]="'ENTER_PROGRAM_TITLE' | translate"
               [(ngModel)]="programName"
               class="program-title-input">
           </div>
@@ -50,16 +50,16 @@
           <!-- Date Fields -->
           <div class="form-row">
             <div class="form-group">
-              <label>Start Date</label>
-              <input 
-                type="date" 
+              <label>{{ 'START_DATE' | translate }}</label>
+              <input
+                type="date"
                 [(ngModel)]="startDate"
                 class="date-input">
             </div>
             <div class="form-group">
-              <label>End Date</label>
-              <input 
-                type="date" 
+              <label>{{ 'END_DATE' | translate }}</label>
+              <input
+                type="date"
                 [(ngModel)]="endDate"
                 class="date-input">
             </div>
@@ -67,23 +67,23 @@
 
           <!-- Workout Plan Type -->
           <div class="form-group">
-            <label>Workout Plan Type</label>
+            <label>{{ 'WORKOUT_PLAN_TYPE' | translate }}</label>
             <select [(ngModel)]="typeWorkoutPlan" class="select-input">
-              <option value="STRENGTH_TRAINING">Strength Training</option>
-              <option value="CARDIO">Cardio</option>
-              <option value="FLEXIBILITY">Flexibility</option>
-              <option value="MIXED">Mixed</option>
+              <option value="STRENGTH_TRAINING">{{ 'STRENGTH_TRAINING' | translate }}</option>
+              <option value="CARDIO">{{ 'CARDIO' | translate }}</option>
+              <option value="FLEXIBILITY">{{ 'FLEXIBILITY' | translate }}</option>
+              <option value="MIXED">{{ 'MIXED' | translate }}</option>
             </select>
           </div>
 
           <!-- Template Checkbox -->
           <div class="form-group">
             <label class="checkbox-label">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 [(ngModel)]="isWorkoutPlanTemplate"
                 class="checkbox-input">
-              <span class="checkbox-text">Save as Template</span>
+              <span class="checkbox-text">{{ 'SAVE_AS_TEMPLATE' | translate }}</span>
             </label>
           </div>
 
@@ -91,18 +91,18 @@
           <div class="form-group" *ngIf="!showProgramDescription">
             <button class="add-description-btn" (click)="toggleProgramDescription()">
               <i-feather name="plus" size="16"></i-feather>
-              Add Program Description
+              {{ 'ADD_PROGRAM_DESCRIPTION' | translate }}
             </button>
           </div>
 
           <div class="form-group" *ngIf="showProgramDescription">
-            <label>Program Description
+            <label>{{ 'PROGRAM_DESCRIPTION' | translate }}
               <button class="remove-description-btn" (click)="toggleProgramDescription()">
                 <i-feather name="x" size="16"></i-feather>
               </button>
             </label>
-            <textarea 
-              placeholder="Enter Program Description" 
+            <textarea
+              [placeholder]="'ENTER_PROGRAM_DESCRIPTION' | translate"
               [(ngModel)]="programDescription"
               class="program-description-input"
               rows="4"></textarea>
@@ -111,26 +111,26 @@
           <!-- Selected Day Content -->
           <div class="day-content" *ngIf="trainingDays[selectedDayIndex]">
             <div class="day-header">
-              <h2>{{ trainingDays[selectedDayIndex].name }} 
+              <h2>{{ displayDayName(trainingDays[selectedDayIndex], selectedDayIndex) }}
                 <i-feather name="edit-2" size="16" class="edit-icon"></i-feather>
               </h2>
-            
+
             <!-- Day Description -->
             <div *ngIf="!trainingDays[selectedDayIndex].showDescription">
               <button class="add-description-btn" (click)="toggleDayDescription(selectedDayIndex)">
                 <i-feather name="plus" size="16"></i-feather>
-                Add Day Description
+                {{ 'ADD_DAY_DESCRIPTION' | translate }}
               </button>
             </div>
 
             <div *ngIf="trainingDays[selectedDayIndex].showDescription" class="day-description-section">
-              <label>Day Description
+              <label>{{ 'DAY_DESCRIPTION' | translate }}
                 <button class="remove-description-btn" (click)="toggleDayDescription(selectedDayIndex)">
                   <i-feather name="x" size="16"></i-feather>
                 </button>
               </label>
-              <textarea 
-                placeholder="Enter Day Description" 
+              <textarea
+                [placeholder]="'ENTER_DAY_DESCRIPTION' | translate"
                 [(ngModel)]="trainingDays[selectedDayIndex].description"
                 class="day-description-input"
                 rows="3"></textarea>
@@ -139,13 +139,13 @@
 
           <!-- Exercises Section -->
           <div class="exercises-section">
-            <h3>Exercises</h3>
+            <h3>{{ 'EXERCISES' | translate }}</h3>
             <div class="exercises-content">
               <div class="no-exercises" *ngIf="trainingDays[selectedDayIndex].exercises.length === 0">
-                <p>No exercises added yet</p>
+                <p>{{ 'NO_EXERCISES_ADDED' | translate }}</p>
                 <button class="add-exercise-btn" (click)="addExercise()">
                   <i-feather name="plus" size="16"></i-feather>
-                  Add an Exercise
+                  {{ 'ADD_EXERCISE' | translate }}
                 </button>
               </div>
 
@@ -166,9 +166,9 @@
 
                     <div class="sets-section">
                       <div class="sets-header">
-                        <div class="set-col">Set</div>
-                        <div class="reps-col">Reps</div>
-                        <div class="rest-col">Rest Period</div>
+                        <div class="set-col">{{ 'SET' | translate }}</div>
+                        <div class="reps-col">{{ 'REPS' | translate }}</div>
+                        <div class="rest-col">{{ 'REST_PERIOD' | translate }}</div>
                         <div class="actions-col"></div>
                       </div>
 
@@ -179,11 +179,11 @@
                         </div>
                         <div class="rest-inputs">
                           <div class="rest-input-group">
-                            <label>Min:</label>
+                            <label>{{ 'MINUTES_SHORT' | translate }}:</label>
                             <input type="number" [(ngModel)]="set.restMin" placeholder="1">
                           </div>
                           <div class="rest-input-group">
-                            <label>Sec:</label>
+                            <label>{{ 'SECONDS_SHORT' | translate }}:</label>
                             <input type="number" [(ngModel)]="set.restSec" placeholder="0">
                           </div>
                         </div>
@@ -195,7 +195,7 @@
                       </div>
 
                       <button class="add-set-btn" (click)="addSet(i)">
-                        Add Set
+                        {{ 'ADD_SET' | translate }}
                       </button>
                     </div>
                   </div>
@@ -203,7 +203,7 @@
 
                 <button class="add-exercise-btn" (click)="addExercise()">
                   <i-feather name="plus" size="16"></i-feather>
-                  Add an Exercise
+                  {{ 'ADD_EXERCISE' | translate }}
                 </button>
               </div>
             </div>
@@ -216,7 +216,7 @@
     <div class="save-section">
       <button class="save-program-btn" (click)="saveProgram()">
         <i-feather name="save" size="20"></i-feather>
-        Save Program
+        {{ 'SAVE_PROGRAM' | translate }}
       </button>
     </div>
   </div>
@@ -226,7 +226,7 @@
     <div class="exercise-modal-content" (click)="$event.stopPropagation()">
       <div class="exercise-modal-header">
         <div class="header-spacer"></div>
-        <h2>Exercise</h2>
+        <h2>{{ 'EXERCISE' | translate }}</h2>
         <button class="close-btn" (click)="closeExerciseModal()">
           <i-feather name="x"></i-feather>
         </button>
@@ -236,30 +236,30 @@
         <div class="search-section">
           <div class="search-box">
             <i-feather name="search" class="search-icon"></i-feather>
-            <input type="text" placeholder="Search by name..." [(ngModel)]="exerciseSearchTerm" (keyup.enter)="onExerciseSearchChange()" (blur)="onExerciseSearchChange()">
+            <input type="text" [placeholder]="'SEARCH_BY_NAME' | translate" [(ngModel)]="exerciseSearchTerm" (keyup.enter)="onExerciseSearchChange()" (blur)="onExerciseSearchChange()">
           </div>
         </div>
 
         <div class="filter-section">
           <select class="filter-select" [(ngModel)]="selectedMuscle" (change)="onExerciseFilterChange()">
-            <option value="">Muscles</option>
+            <option value="">{{ 'MUSCLES' | translate }}</option>
             <option *ngFor="let muscle of enums?.muscleGroup" [value]="muscle">{{ muscle }}</option>
           </select>
           <select class="filter-select" [(ngModel)]="selectedEquipment" (change)="onExerciseFilterChange()">
-            <option value="">Equipment</option>
+            <option value="">{{ 'EQUIPMENT' | translate }}</option>
             <option *ngFor="let equipment of enums?.equipment" [value]="equipment">{{ equipment }}</option>
           </select>
         </div>
 
         <div class="add-new-exercise">
           <button class="add-new-btn" (click)="addNewExercise()">
-            Add new exercise +
+            {{ 'ADD_NEW_EXERCISE' | translate }} +
           </button>
         </div>
 
         <div class="exercises-list">
           <div class="loading-state" *ngIf="isLoadingExercises">
-            <p>Loading exercises...</p>
+            <p>{{ 'LOADING_EXERCISES' | translate }}</p>
           </div>
           <div class="exercise-row" *ngFor="let exercise of filteredExercises">
             <div class="exercise-icon"></div>
@@ -271,15 +271,15 @@
               <i-feather name="plus"></i-feather>
             </button>
           </div>
-          
+
           <div class="exercise-pagination" *ngIf="exerciseTotalPages > 1">
-            <button (click)="previousExercisePage()" [disabled]="exerciseCurrentPage === 0">Previous</button>
-            <span>Page {{ exerciseCurrentPage + 1 }} of {{ exerciseTotalPages }}</span>
-            <button (click)="nextExercisePage()" [disabled]="exerciseCurrentPage === exerciseTotalPages - 1">Next</button>
+            <button (click)="previousExercisePage()" [disabled]="exerciseCurrentPage === 0">{{ 'PREVIOUS' | translate }}</button>
+            <span>{{ 'PAGE_OF' | translate:{current: exerciseCurrentPage + 1, total: exerciseTotalPages} }}</span>
+            <button (click)="nextExercisePage()" [disabled]="exerciseCurrentPage === exerciseTotalPages - 1">{{ 'NEXT' | translate }}</button>
           </div>
-          
+
           <div class="no-exercises" *ngIf="filteredExercises.length === 0 && !isLoadingExercises">
-            <p>No exercises found.</p>
+            <p>{{ 'NO_EXERCISES_FOUND' | translate }}</p>
           </div>
         </div>
       </div>

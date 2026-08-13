@@ -1,13 +1,13 @@
 <section class="main-content">
   <ul class="breadcrumb breadcrumb-style ">
     <li class="breadcrumb-item">
-      <h5 class="page-title m-b-0">Calendar</h5>
+      <h5 class="page-title m-b-0">{{ 'CALENDAR' | translate }}</h5>
     </li>
     <li class="breadcrumb-item bcrumb-1">
       <a routerLink="/dashboard/main">
         <i class="fas fa-home font-17"></i></a>
       </li>
-      <li class="breadcrumb-item">Calendar</li>
+      <li class="breadcrumb-item">{{ 'CALENDAR' | translate }}</li>
     </ul>
     <div class="section-body">
       <div class="row">
@@ -17,17 +17,16 @@
               <div class="row">
                 <div class="col-md-2 col-sm-12 p-l-30">
                   <div class="m-b-25">
-                    <button class="btn btn-icon icon-left btn-primary" (click)="eventWindowCall($event, 'addEvent')"> Add
-                    Event</button>
+                    <button class="btn btn-icon icon-left btn-primary" (click)="eventWindowCall($event, 'addEvent')">{{ 'ADD_EVENT' | translate }}</button>
                   </div>
-                  <p>My Calendars</p>
+                  <p>{{ 'MY_CALENDARS' | translate }}</p>
                   <div class="filter-container">
                     <ul class="filterCheck">
                       @for (filter of filters; track filter; let i = $index) {
                         <li>
                           <input type="checkbox" name="filter{{i}}" [name]="calCheck" [value]="filter.value"
                             [checked]="filter.checked === true" (change)="changeCategory($event, filter)" />
-                            {{filter.value}}
+                            {{ filter.value | translate }}
                           </li>
                         }
                       </ul>
@@ -51,11 +50,11 @@
               <div class="table-modal-header">
                 <div class="modal-about">
                   <div class="fw-bold p-t-10 font-17">
-                  {{dialogTitle}}</div>
+                  {{ isEditClick ? dialogTitle : ('ADD_NEW_EVENT' | translate) }}</div>
                 </div>
               </div>
             </h4>
-            <button type="button" class="close" aria-label="Close" (click)="modal.dismiss()">
+            <button type="button" class="close" [attr.aria-label]="'CLOSE' | translate" (click)="modal.dismiss()">
               <span aria-hidden="true"><i class="material-icons">close</i></span>
             </button>
           </div>
@@ -66,61 +65,58 @@
                 </div>
                 <div class="row">
                   <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-4">
-                    <label>Title<span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" placeholder="Title" formControlName="title" required>
+                    <label>{{ 'TITLE' | translate }}<span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" [placeholder]="'TITLE' | translate" formControlName="title" required>
                       @if (!calendarForm.get('title')?.valid && calendarForm.get('title')?.touched) {
-                        <small class="form-text text-danger"> Title is
-                        required</small>
+                        <small class="form-text text-danger">{{ 'TITLE_REQUIRED' | translate }}</small>
                       }
                     </div>
                   </div>
                   <div class="row">
                     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-4">
-                      <label>Category <span class="text-danger">*</span></label>
+                      <label>{{ 'CATEGORY' | translate }} <span class="text-danger">*</span></label>
                       <select class="form-select form-control" formControlName="category" required>
-                        <option value="" selected disabled>Please select</option>
-                        <option id="work" value="work">Work</option>
-                        <option id="personal" value="personal">Personal</option>
-                        <option id="important" value="important">Important</option>
-                        <option id="travel" value="travel">Travel</option>
-                        <option id="friends" value="friends">Friends</option>
+                        <option value="" selected disabled>{{ 'PLEASE_SELECT' | translate }}</option>
+                        <option id="work" value="work">{{ 'WORK' | translate }}</option>
+                        <option id="personal" value="personal">{{ 'PERSONAL' | translate }}</option>
+                        <option id="important" value="important">{{ 'IMPORTANT' | translate }}</option>
+                        <option id="travel" value="travel">{{ 'TRAVEL' | translate }}</option>
+                        <option id="friends" value="friends">{{ 'FRIENDS' | translate }}</option>
                       </select>
                     </div>
                   </div>
                   <div class="row">
                     <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-4">
-                      <label>Start Date<span class="text-danger">*</span></label>
-                      <input type="date" class="form-control" placeholder="Start Date" formControlName="startDate" required>
+                      <label>{{ 'START_DATE' | translate }}<span class="text-danger">*</span></label>
+                      <input type="date" class="form-control" [placeholder]="'START_DATE' | translate" formControlName="startDate" required>
                         @if (!calendarForm.get('startDate')?.valid && calendarForm.get('startDate')?.touched) {
-                          <small class="form-text text-danger"> Start Date is
-                          required</small>
+                          <small class="form-text text-danger">{{ 'START_DATE_REQUIRED' | translate }}</small>
                         }
                       </div>
                       <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-4">
-                        <label>End Date<span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" placeholder="Start Date" formControlName="endDate" required>
+                        <label>{{ 'END_DATE' | translate }}<span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" [placeholder]="'END_DATE' | translate" formControlName="endDate" required>
                           @if (!calendarForm.get('endDate')?.valid && calendarForm.get('endDate')?.touched) {
-                            <small class="form-text text-danger"> End Date is
-                            required</small>
+                            <small class="form-text text-danger">{{ 'END_DATE_REQUIRED' | translate }}</small>
                           }
                         </div>
                       </div>
                       <div class="row">
                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-4">
-                          <label>Details<span class="text-danger">*</span></label>
-                          <textarea type="textarea" class="form-control" placeholder="Details" formControlName="details"></textarea>
+                          <label>{{ 'DETAILS' | translate }}<span class="text-danger">*</span></label>
+                          <textarea type="textarea" class="form-control" [placeholder]="'DETAILS' | translate" formControlName="details"></textarea>
                         </div>
                       </div>
                       <div class="modal-footer">
                         @if (!isEditClick) {
                           <button type="button" class="btn btn-primary" (click)="saveEvent(calendarForm)"
-                          [disabled]="!calendarForm.valid">Add Event</button>
+                          [disabled]="!calendarForm.valid">{{ 'ADD_EVENT' | translate }}</button>
                         }
                         @if (isEditClick) {
                           <button type="button" class="btn btn-primary" (click)="eventClick(calendarForm)"
-                          [disabled]="!calendarForm.valid">Save Event</button>
+                          [disabled]="!calendarForm.valid">{{ 'SAVE_EVENT' | translate }}</button>
                         }
-                        <button type="button" class="btn btn-light" (click)="modal.close('Close click')">Close</button>
+                        <button type="button" class="btn btn-light" (click)="modal.close('Close click')">{{ 'CLOSE' | translate }}</button>
                       </div>
                     </form>
                   </div>

@@ -1,5 +1,5 @@
 <main class="public-page">
-  <div class="state-message" *ngIf="loading">Loading...</div>
+  <div class="state-message" *ngIf="loading">{{ 'LOADING' | translate }}</div>
   <div class="state-message state-message--error" *ngIf="!loading && error && !form">{{ error }}</div>
 
   <ng-container *ngIf="form && !loading">
@@ -12,31 +12,31 @@
         <div class="coach-name">{{ form.coachName }}</div>
 
         <form *ngIf="!submitted" (ngSubmit)="submit()" #contactForm="ngForm">
-          <label for="fullName">Full Name</label>
+          <label for="fullName">{{ 'FULL_NAME' | translate }}</label>
           <input id="fullName" name="fullName" type="text" required maxlength="100" [(ngModel)]="lead.fullName" />
 
-          <label for="email">Email</label>
+          <label for="email">{{ 'EMAIL' | translate }}</label>
           <input id="email" name="email" type="email" required email maxlength="160" [(ngModel)]="lead.email" />
 
-          <label for="message">Message</label>
+          <label for="message">{{ 'MESSAGE' | translate }}</label>
           <textarea id="message" name="message" required maxlength="1000" rows="4" [(ngModel)]="lead.message"></textarea>
 
           <label class="terms-row">
             <input name="terms" type="checkbox" [(ngModel)]="lead.termsAccepted" />
-            <span>I have read and I accept the <a href="/terms-and-conditions" target="_blank">terms and conditions</a></span>
+            <span>{{ 'ACCEPT_TERMS_PREFIX' | translate }} <a href="/terms-and-conditions" target="_blank">{{ 'TERMS_AND_CONDITIONS' | translate }}</a></span>
           </label>
 
           <div class="form-error" *ngIf="error">{{ error }}</div>
-          <div class="preview-note" *ngIf="isPreview">Preview mode — submissions are disabled.</div>
-          <button type="submit" [disabled]="!canSubmit || isPreview">{{ submitting ? 'Sending...' : 'Send' }}</button>
+          <div class="preview-note" *ngIf="isPreview">{{ 'PREVIEW_SUBMISSIONS_DISABLED' | translate }}</div>
+          <button type="submit" [disabled]="!canSubmit || isPreview">{{ (submitting ? 'SENDING' : 'SEND') | translate }}</button>
         </form>
 
         <div class="confirmation" *ngIf="submitted">
           <div class="check-circle"><i-feather name="check"></i-feather></div>
-          <p>Your request has been submitted. You will receive an email when the coach accepts or declines your request.</p>
+          <p>{{ 'CONTACT_REQUEST_SUBMITTED' | translate }}</p>
         </div>
       </div>
     </section>
-    <footer>Created with <strong>Yo Coach</strong></footer>
+    <footer>{{ 'CREATED_WITH' | translate }} <strong>Yo Coach</strong></footer>
   </ng-container>
 </main>

@@ -6,7 +6,7 @@ import { forkJoin } from 'rxjs';
 import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type ProgramStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
 type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
@@ -59,7 +59,9 @@ export class WorkoutsClientTabComponent implements OnInit {
   allProgramsFilter: ProgramStatusFilter = 'ALL';
   allProgramsSort: ProgramSortMode = 'RECOMMENDED';
 
-  constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService) {}
+  constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService, private translate: TranslateService) {}
+
+  private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
 
   ngOnInit(): void {
     this.coachSettingsService.loadConfig().subscribe({
@@ -656,7 +658,7 @@ export class WorkoutsClientTabComponent implements OnInit {
             iframe { width: 100%; height: 100%; border: 0; background: #fff; }
           </style>
         </head>
-        <body><div class="message"><h2>Loading preview...</h2><p>Please wait.</p></div></body>
+        <body><div class="message"><h2>${this.previewText('LOADING_PREVIEW')}</h2><p>${this.previewText('PLEASE_WAIT')}</p></div></body>
       </html>
     `);
     popup.document.close();
@@ -694,10 +696,10 @@ export class WorkoutsClientTabComponent implements OnInit {
         popup.document.write(`
           <!doctype html>
           <html>
-            <head><title>Preview error</title></head>
+            <head><title>${this.previewText('PREVIEW_ERROR')}</title></head>
             <body style="font-family: Arial, sans-serif; padding: 40px;">
-              <h2>Could not preview this file</h2>
-              <p>Please try again later.</p>
+              <h2>${this.previewText('COULD_NOT_PREVIEW_FILE')}</h2>
+              <p>${this.previewText('PLEASE_TRY_AGAIN_LATER')}</p>
             </body>
           </html>
         `);
@@ -740,12 +742,12 @@ export class WorkoutsClientTabComponent implements OnInit {
           </style>
         </head>
         <body>
-          <div class="message" id="loading"><h2>Opening Excel preview...</h2><p>Please wait.</p></div>
+          <div class="message" id="loading"><h2>${this.previewText('OPENING_EXCEL_PREVIEW')}</h2><p>${this.previewText('PLEASE_WAIT')}</p></div>
           <div id="app" style="display:none;">
             <div class="topbar">
               <div class="title">
                 <h1>${safeTitle}</h1>
-                <div class="subtitle">Excel preview · no automatic download</div>
+                <div class="subtitle">${this.previewText('EXCEL_PREVIEW_NO_DOWNLOAD')}</div>
               </div>
             </div>
             <div class="tabs" id="tabs"></div>
@@ -778,7 +780,7 @@ export class WorkoutsClientTabComponent implements OnInit {
                 for (let c = 0; c < maxCols; c++) html += '<td>' + escapeText(row[c]) + '</td>';
                 html += '</tr>';
               });
-              if (!rows.length) html += '<tr><th class="row-number">1</th><td>Empty sheet</td></tr>';
+              if (!rows.length) html += '<tr><th class="row-number">1</th><td>${this.previewText('EMPTY_SHEET')}</td></tr>';
               html += '</tbody></table>';
               document.getElementById('sheet').innerHTML = html;
 
@@ -787,13 +789,13 @@ export class WorkoutsClientTabComponent implements OnInit {
 
             async function init() {
               try {
-                if (!window.XLSX) throw new Error('Excel preview library failed to load.');
+                if (!window.XLSX) throw new Error('${this.previewText('EXCEL_PREVIEW_LIBRARY_ERROR')}');
                 const response = await fetch(fileUrl);
-                if (!response.ok) throw new Error('Could not load the Excel file.');
+                if (!response.ok) throw new Error('${this.previewText('COULD_NOT_LOAD_EXCEL_FILE')}');
                 const buffer = await response.arrayBuffer();
                 const workbook = XLSX.read(buffer, { type: 'array' });
                 const sheetNames = workbook.SheetNames || [];
-                if (!sheetNames.length) throw new Error('This Excel file has no sheets.');
+                if (!sheetNames.length) throw new Error('${this.previewText('EXCEL_FILE_HAS_NO_SHEETS')}');
 
                 const tabs = document.getElementById('tabs');
                 sheetNames.forEach((sheetName) => {
@@ -810,7 +812,7 @@ export class WorkoutsClientTabComponent implements OnInit {
                 document.getElementById('app').style.display = 'block';
                 renderSheet(workbook, sheetNames[0]);
               } catch (error) {
-                document.body.innerHTML = '<div class="message"><h2>Could not open Excel preview</h2><p>' + escapeText(error.message || error) + '</p></div>';
+                document.body.innerHTML = '<div class="message"><h2>${this.previewText('COULD_NOT_OPEN_EXCEL_PREVIEW')}</h2><p>' + escapeText(error.message || error) + '</p></div>';
               }
             }
             init();

@@ -17,7 +17,7 @@ import { Subject, Observable, take, takeUntil, forkJoin, of } from 'rxjs';
 import { switchMap, catchError, debounceTime, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { ChatUnreadService } from '../../../service/chat-unread.service';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
@@ -184,7 +184,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     private clientService: ClientService,
     private wsService: ChatWebsocketService,
     private chatUnreadService: ChatUnreadService,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -1023,7 +1024,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         error: (err) => {
           this.isUploadingAttachment = false;
           console.error('Attachment upload failed:', err);
-          alert('Upload failed - Status: ' + (err.status || 'unknown') + '\nMessage: ' + (err.message || 'unknown') + '\nCheck console for details.');
+          alert(this.translate.instant('UPLOAD_FAILED_DETAILS', {
+            status: err.status || this.translate.instant('UNKNOWN'),
+            message: err.message || this.translate.instant('UNKNOWN'),
+          }));
         }
       });
   }

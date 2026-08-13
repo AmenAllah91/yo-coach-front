@@ -9,12 +9,12 @@
 >
   <div class="yc-preview__topbar" *ngIf="!publicMode">
     <div class="yc-preview__topbar-left">
-      <span class="yc-preview__mode">Mode Aperçu</span>
+      <span class="yc-preview__mode">{{ 'PREVIEW_MODE' | translate }}</span>
       <span class="yc-preview__theme">{{ themeName }}</span>
     </div>
 
     <button type="button" class="yc-preview__close" (click)="closePreview()">
-      Fermer l'aperçu
+      {{ 'CLOSE_PREVIEW' | translate }}
     </button>
   </div>
 
@@ -48,11 +48,11 @@
         </section>
 
         <section class="yc-elegance-section" *ngIf="videoEmbedUrl">
-          <h2>Découvrez mon approche</h2>
+          <h2>{{ 'DISCOVER_MY_APPROACH' | translate }}</h2>
           <div class="yc-video yc-video--xl">
             <iframe
               [src]="videoEmbedUrl"
-              title="Aperçu vidéo"
+              [title]="'VIDEO_PREVIEW' | translate"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen
               style="position:absolute; inset:0; width:100%; height:100%; border:0;"
@@ -61,7 +61,7 @@
         </section>
 
         <section class="yc-elegance-section yc-elegance-section--soft">
-          <h2>À propos</h2>
+          <h2>{{ 'ABOUT' | translate }}</h2>
 
           <ng-container *ngIf="hasDescriptionBlocks; else eleganceBioFallback">
             <div class="yc-description-blocks yc-description-blocks--elegance">
@@ -90,7 +90,7 @@
         </section>
 
         <section class="yc-elegance-section" *ngIf="services?.length">
-          <h2>Mes Services</h2>
+          <h2>{{ 'MY_SERVICES' | translate }}</h2>
           <div class="yc-services yc-services--elegance">
             <article class="yc-service-card" *ngFor="let service of services; trackBy: trackByIndex">
               <img
@@ -107,18 +107,18 @@
         </section>
 
         <section class="yc-elegance-section yc-elegance-section--soft" *ngIf="results?.length">
-          <h2>Transformations</h2>
+          <h2>{{ 'TRANSFORMATIONS' | translate }}</h2>
 
           <div class="yc-results--elegance">
             <article class="yc-result-card yc-result-card--elegance" *ngFor="let result of results; trackBy: trackByIndex">
               <div class="yc-result-card__images">
                 <div class="yc-result-card__image-wrap">
-                  <span class="yc-badge yc-badge--before">AVANT</span>
+                  <span class="yc-badge yc-badge--before">{{ 'BEFORE' | translate }}</span>
                   <img [src]="result.beforeImage" alt="Avant" />
                 </div>
 
                 <div class="yc-result-card__image-wrap">
-                  <span class="yc-badge yc-badge--after">APRÈS</span>
+                  <span class="yc-badge yc-badge--after">{{ 'AFTER' | translate }}</span>
                   <img [src]="result.afterImage" alt="Après" />
                 </div>
               </div>
@@ -131,7 +131,7 @@
         </section>
 
         <section class="yc-elegance-certificates" *ngIf="certificates?.length">
-          <h2>Certifications</h2>
+          <h2>{{ 'CERTIFICATIONS' | translate }}</h2>
 
           <div class="yc-certificates">
             <article class="yc-certificate-card" *ngFor="let certificate of certificates; trackBy: trackByIndex">
@@ -160,7 +160,7 @@
         </section>
 
         <section class="yc-elegance-section" *ngIf="testimonials?.length">
-          <h2>Témoignages</h2>
+          <h2>{{ 'TESTIMONIALS' | translate }}</h2>
           <div class="yc-testimonials--elegance">
             <article class="yc-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
               <p>"{{ testimonial.text }}"</p>
@@ -174,35 +174,35 @@
 
         <section class="yc-elegance-contact yc-elegance-section--soft">
           <div class="yc-contact-card">
-            <h2>Commençons ensemble</h2>
+            <h2>{{ 'LETS_START_TOGETHER' | translate }}</h2>
 
             <form (ngSubmit)="submitLead()">
               <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <label>Prénom</label>
+                <label>{{ 'FIRST_NAME' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.firstName" name="firstNameElegance" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <label>Nom</label>
+                <label>{{ 'LAST_NAME' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameElegance" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <label>Email</label>
+                <label>{{ 'EMAIL' | translate }}</label>
                 <input type="email" [(ngModel)]="leadForm.email" name="emailElegance" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <label>Téléphone</label>
+                <label>{{ 'PHONE' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.phone" name="phoneElegance" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary" [disabled]="submittingLead">
-                {{ submittingLead ? 'Envoi...' : leadFields?.buttonLabel }}
+                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
               </button>
             </form>
 
-            <div class="yc-form-success" *ngIf="leadSuccess">Votre demande a bien été envoyée.</div>
+            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
             <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
           </div>
         </section>
@@ -227,12 +227,12 @@
         </section>
 
         <section class="yc-dynamic-video" *ngIf="videoEmbedUrl">
-          <h2>Regardez ma vidéo</h2>
-          <p>Découvrez en quelques minutes comment je peux vous accompagner vers vos objectifs.</p>
+          <h2>{{ 'WATCH_MY_VIDEO' | translate }}</h2>
+          <p>{{ 'VIDEO_SUPPORT_DESCRIPTION' | translate }}</p>
           <div class="yc-video yc-video--xl">
             <iframe
               [src]="videoEmbedUrl"
-              title="Vidéo de présentation"
+              [title]="'PRESENTATION_VIDEO' | translate"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen>
             </iframe>
@@ -240,14 +240,14 @@
         </section>
 
         <section class="yc-dynamic-cert-strip" *ngIf="certificates?.length">
-          <span>Certifié par :</span>
+          <span>{{ 'CERTIFIED_BY' | translate }}</span>
           <span *ngFor="let certificate of certificates; trackBy: trackByIndex">
             {{ certificate.organization }}
           </span>
         </section>
 
         <section class="yc-dynamic-section yc-dynamic-section--center">
-          <h2>Ma Philosophie</h2>
+          <h2>{{ 'MY_PHILOSOPHY' | translate }}</h2>
 
           <ng-container *ngIf="hasDescriptionBlocks; else dynamicBioFallback">
             <div class="yc-description-blocks yc-description-blocks--dynamic">
@@ -276,7 +276,7 @@
         </section>
 
         <section class="yc-dynamic-section yc-dynamic-section--alt" *ngIf="services?.length">
-          <h2>Comment je vous accompagne</h2>
+          <h2>{{ 'HOW_I_SUPPORT_YOU' | translate }}</h2>
           <div class="yc-services yc-services--dynamic">
             <article class="yc-service-card yc-service-card--dynamic" *ngFor="let service of services; trackBy: trackByIndex">
               <img
@@ -293,16 +293,16 @@
         </section>
 
         <section class="yc-dynamic-section" *ngIf="results?.length">
-          <h2>Résultats Concrets</h2>
+          <h2>{{ 'CONCRETE_RESULTS' | translate }}</h2>
           <div class="yc-results--dynamic">
             <article class="yc-result-card--dynamic" *ngFor="let result of results; trackBy: trackByIndex">
               <div class="yc-result-card__images">
                 <div class="yc-result-card__image-wrap">
-                  <span>AVANT</span>
+                  <span>{{ 'BEFORE' | translate }}</span>
                   <img [src]="result.beforeImage" alt="Avant" />
                 </div>
                 <div class="yc-result-card__image-wrap">
-                  <span>APRÈS</span>
+                  <span>{{ 'AFTER' | translate }}</span>
                   <img [src]="result.afterImage" alt="Après" />
                 </div>
               </div>
@@ -312,7 +312,7 @@
         </section>
 
         <section class="yc-dynamic-section yc-dynamic-section--alt" *ngIf="certificates?.length">
-          <h2>Certifications</h2>
+          <h2>{{ 'CERTIFICATIONS' | translate }}</h2>
           <div class="yc-certificates">
             <article class="yc-certificate-card yc-certificate-card--light" *ngFor="let certificate of certificates; trackBy: trackByIndex">
               <img
@@ -329,7 +329,7 @@
         </section>
 
         <section class="yc-dynamic-testimonials" *ngIf="testimonials?.length">
-          <h2>Ils ont transformé leur vie</h2>
+          <h2>{{ 'THEY_TRANSFORMED_THEIR_LIVES' | translate }}</h2>
           <div class="yc-testimonials--dynamic">
             <article class="yc-testimonial-card--dynamic" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
               <div class="yc-stars">
@@ -343,36 +343,36 @@
 
         <section class="yc-dynamic-contact">
           <div class="yc-contact-card yc-contact-card--dynamic">
-            <h2>Passez à l'action</h2>
-            <p>Laissez-moi vos coordonnées pour un premier échange gratuit.</p>
+            <h2>{{ 'TAKE_ACTION' | translate }}</h2>
+            <p>{{ 'LEAVE_CONTACT_FOR_FREE_CHAT' | translate }}</p>
 
             <form (ngSubmit)="submitLead()">
               <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <label>Prénom</label>
+                <label>{{ 'FIRST_NAME' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.firstName" name="firstNameDynamic" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <label>Nom</label>
+                <label>{{ 'LAST_NAME' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameDynamic" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <label>Email</label>
+                <label>{{ 'EMAIL' | translate }}</label>
                 <input type="email" [(ngModel)]="leadForm.email" name="emailDynamic" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <label>Téléphone</label>
+                <label>{{ 'PHONE' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.phone" name="phoneDynamic" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary" [disabled]="submittingLead">
-                {{ submittingLead ? 'Envoi...' : leadFields?.buttonLabel }}
+                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
               </button>
             </form>
 
-            <div class="yc-form-success" *ngIf="leadSuccess">Votre demande a bien été envoyée.</div>
+            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
             <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
           </div>
         </section>
@@ -387,7 +387,7 @@
           </div>
 
           <div class="yc-trust-hero__content">
-            <div class="yc-trust-hero__badge">{{ profile.title || 'Coach Professionnel Certifié' }}</div>
+            <div class="yc-trust-hero__badge">{{ profile.title || ('CERTIFIED_PROFESSIONAL_COACH' | translate) }}</div>
             <h1>{{ profile.fullName }}</h1>
             <h2>{{ profile.title }}</h2>
             <p class="yc-trust-hero__slogan">{{ profile.slogan }}</p>
@@ -402,15 +402,15 @@
           <div class="yc-trust-section__intro">
             <div class="yc-trust-section__icon">▶</div>
             <div>
-              <h3>Présentation vidéo</h3>
-              <p>Découvrez mon approche en quelques minutes</p>
+              <h3>{{ 'VIDEO_PRESENTATION' | translate }}</h3>
+              <p>{{ 'DISCOVER_APPROACH_IN_MINUTES' | translate }}</p>
             </div>
           </div>
 
           <div class="yc-video yc-video--xl">
             <iframe
               [src]="videoEmbedUrl"
-              title="Vidéo de présentation"
+              [title]="'PRESENTATION_VIDEO' | translate"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen>
             </iframe>
@@ -418,7 +418,7 @@
         </section>
 
         <section class="yc-trust-certs" *ngIf="certificates?.length">
-          <h2>Qualifications & Diplômes</h2>
+          <h2>{{ 'QUALIFICATIONS_DIPLOMAS' | translate }}</h2>
           <div class="yc-trust-cert-grid">
             <article class="yc-trust-cert-card" *ngFor="let certificate of certificates; trackBy: trackByIndex">
               <div class="yc-trust-cert-card__icon">🎓</div>
@@ -430,7 +430,7 @@
         </section>
 
         <section class="yc-trust-about">
-          <h2>Mon Approche</h2>
+          <h2>{{ 'MY_APPROACH' | translate }}</h2>
 
           <ng-container *ngIf="hasDescriptionBlocks; else trustBioFallbackNew">
             <div class="yc-trust-description">
@@ -459,7 +459,7 @@
         </section>
 
         <section class="yc-trust-services" *ngIf="services?.length">
-          <h2>Programmes d'Accompagnement</h2>
+          <h2>{{ 'COACHING_PROGRAMS' | translate }}</h2>
 
           <div class="yc-trust-service-list">
             <article class="yc-trust-service-row" *ngFor="let service of services; trackBy: trackByIndex">
@@ -468,7 +468,7 @@
                 <p>{{ service.description }}</p>
               </div>
               <div class="yc-trust-service-row__price">
-                <span>Tarif</span>
+                <span>{{ 'PRICE' | translate }}</span>
                 <strong>{{ service.price }}</strong>
               </div>
             </article>
@@ -476,17 +476,17 @@
         </section>
 
         <section class="yc-trust-results" *ngIf="results?.length">
-          <h2>Résultats Obtenus</h2>
+          <h2>{{ 'RESULTS_ACHIEVED' | translate }}</h2>
 
           <div class="yc-trust-results-grid">
             <article class="yc-trust-result-card" *ngFor="let result of results; trackBy: trackByIndex">
               <div class="yc-trust-result-card__images">
                 <div>
-                  <span>AVANT</span>
+                  <span>{{ 'BEFORE' | translate }}</span>
                   <img [src]="result.beforeImage" alt="Avant" />
                 </div>
                 <div>
-                  <span>APRÈS</span>
+                  <span>{{ 'AFTER' | translate }}</span>
                   <img [src]="result.afterImage" alt="Après" />
                 </div>
               </div>
@@ -496,7 +496,7 @@
         </section>
 
         <section class="yc-trust-testimonials" *ngIf="testimonials?.length">
-          <h2>Avis Clients</h2>
+          <h2>{{ 'CLIENT_REVIEWS' | translate }}</h2>
 
           <div class="yc-trust-testimonials__grid">
             <article class="yc-trust-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
@@ -505,43 +505,43 @@
               </div>
               <p>"{{ testimonial.text }}"</p>
               <strong>{{ testimonial.author }}</strong>
-              <small>Client vérifié</small>
+              <small>{{ 'VERIFIED_CLIENT' | translate }}</small>
             </article>
           </div>
         </section>
 
         <section class="yc-trust-contact">
           <div class="yc-trust-contact__card">
-            <h2>Demander une consultation</h2>
-            <p>Remplissez ce formulaire pour être recontacté sous 24h ouvrées.</p>
+            <h2>{{ 'REQUEST_CONSULTATION' | translate }}</h2>
+            <p>{{ 'CONTACT_WITHIN_24_HOURS' | translate }}</p>
 
             <form (ngSubmit)="submitLead()">
               <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <label>Prénom</label>
+                <label>{{ 'FIRST_NAME' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.firstName" name="firstNameTrust" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <label>Nom</label>
+                <label>{{ 'LAST_NAME' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameTrust" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <label>Email professionnel</label>
+                <label>{{ 'PROFESSIONAL_EMAIL' | translate }}</label>
                 <input type="email" [(ngModel)]="leadForm.email" name="emailTrust" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <label>Téléphone</label>
+                <label>{{ 'PHONE' | translate }}</label>
                 <input type="text" [(ngModel)]="leadForm.phone" name="phoneTrust" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary yc-site__cta-secondary--trust" [disabled]="submittingLead">
-                {{ submittingLead ? 'Envoi...' : leadFields?.buttonLabel }}
+                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
               </button>
             </form>
 
-            <div class="yc-form-success" *ngIf="leadSuccess">Votre demande a bien été envoyée.</div>
+            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
             <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
           </div>
         </section>
@@ -561,11 +561,11 @@
         </section>
 
         <section class="yc-serenity-video" *ngIf="videoEmbedUrl">
-          <div class="yc-serenity-video__trigger">▶ Ma vidéo de présentation</div>
+          <div class="yc-serenity-video__trigger">▶ {{ 'MY_PRESENTATION_VIDEO' | translate }}</div>
           <div class="yc-video yc-video--xl">
             <iframe
               [src]="videoEmbedUrl"
-              title="Vidéo de présentation"
+              [title]="'PRESENTATION_VIDEO' | translate"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen>
             </iframe>
@@ -602,7 +602,7 @@
         </section>
 
         <section class="yc-serenity-services" *ngIf="services?.length">
-          <h2>Cheminements proposés</h2>
+          <h2>{{ 'PROPOSED_PATHS' | translate }}</h2>
           <div class="yc-serenity-service-grid">
             <article class="yc-serenity-service-card" *ngFor="let service of services; trackBy: trackByIndex">
               <div class="yc-serenity-service-card__icon">♡</div>
@@ -614,20 +614,20 @@
         </section>
 
         <section class="yc-serenity-results" *ngIf="results?.length">
-          <h2>Évolutions</h2>
+          <h2>{{ 'PROGRESS_EVOLUTIONS' | translate }}</h2>
 
           <article class="yc-serenity-result" *ngFor="let result of results; trackBy: trackByIndex">
             <div class="yc-serenity-result__images">
               <div class="yc-serenity-result__item">
                 <img [src]="result.beforeImage" alt="Avant" />
-                <span>Avant</span>
+                <span>{{ 'BEFORE' | translate }}</span>
               </div>
 
               <div class="yc-serenity-result__separator">•••</div>
 
               <div class="yc-serenity-result__item yc-serenity-result__item--after">
                 <img [src]="result.afterImage" alt="Après" />
-                <span>Après</span>
+                <span>{{ 'AFTER' | translate }}</span>
               </div>
             </div>
 
@@ -636,7 +636,7 @@
         </section>
 
         <section class="yc-serenity-certificates" *ngIf="certificates?.length">
-          <h2>Mon Parcours</h2>
+          <h2>{{ 'MY_JOURNEY' | translate }}</h2>
 
           <div class="yc-serenity-timeline">
             <article class="yc-serenity-timeline__item" *ngFor="let certificate of certificates; let i = index; trackBy: trackByIndex">
@@ -650,8 +650,8 @@
         </section>
 
         <section class="yc-serenity-testimonials" *ngIf="testimonials?.length">
-          <h2>Ce qu'ils en disent</h2>
-          <p>Des témoignages authentiques de personnes accompagnées</p>
+          <h2>{{ 'WHAT_THEY_SAY' | translate }}</h2>
+          <p>{{ 'AUTHENTIC_TESTIMONIALS' | translate }}</p>
 
           <div class="yc-serenity-testimonials__grid">
             <article class="yc-serenity-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
@@ -661,7 +661,7 @@
               <p>"{{ testimonial.text }}"</p>
               <div class="yc-serenity-testimonial-card__author">
                 <strong>{{ testimonial.author }}</strong>
-                <small>Client vérifié</small>
+                <small>{{ 'VERIFIED_CLIENT' | translate }}</small>
               </div>
             </article>
           </div>
@@ -669,32 +669,32 @@
 
         <section class="yc-serenity-contact">
           <div class="yc-serenity-contact__card">
-            <h2>Faisons connaissance</h2>
-            <p>Un premier échange sans engagement pour explorer vos besoins.</p>
+            <h2>{{ 'LETS_GET_ACQUAINTED' | translate }}</h2>
+            <p>{{ 'NO_COMMITMENT_FIRST_CHAT' | translate }}</p>
 
             <form (ngSubmit)="submitLead()">
               <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <input type="text" placeholder="Prénom" [(ngModel)]="leadForm.firstName" name="firstNameSerenity" />
+                <input type="text" [placeholder]="'FIRST_NAME' | translate" [(ngModel)]="leadForm.firstName" name="firstNameSerenity" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <input type="text" placeholder="Nom" [(ngModel)]="leadForm.lastName" name="lastNameSerenity" />
+                <input type="text" [placeholder]="'LAST_NAME' | translate" [(ngModel)]="leadForm.lastName" name="lastNameSerenity" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <input type="email" placeholder="Email" [(ngModel)]="leadForm.email" name="emailSerenity" />
+                <input type="email" [placeholder]="'EMAIL' | translate" [(ngModel)]="leadForm.email" name="emailSerenity" />
               </div>
 
               <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <input type="text" placeholder="Téléphone" [(ngModel)]="leadForm.phone" name="phoneSerenity" required/>
+                <input type="text" [placeholder]="'PHONE' | translate" [(ngModel)]="leadForm.phone" name="phoneSerenity" required/>
               </div>
 
               <button type="submit" class="yc-site__cta-secondary yc-site__cta-secondary--serenity" [disabled]="submittingLead">
-                {{ submittingLead ? 'Envoi...' : leadFields?.buttonLabel }}
+                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
               </button>
             </form>
 
-            <div class="yc-form-success" *ngIf="leadSuccess">Votre demande a bien été envoyée.</div>
+            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
             <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
           </div>
         </section>

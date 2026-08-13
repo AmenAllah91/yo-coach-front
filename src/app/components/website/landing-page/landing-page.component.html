@@ -30,12 +30,12 @@
 
       <!-- Desktop Navigation -->
       <div class="hero-nav-links">
-        <a href="#features" class="nav-link">Fonctionnalités</a>
-        <a href="#pricing" class="nav-link">Tarifs</a>
-        <a href="#testimonials" class="nav-link">Témoignages</a>
+        <a href="#features" class="nav-link">{{ 'FEATURES' | translate }}</a>
+        <a href="#pricing" class="nav-link">{{ 'PRICING' | translate }}</a>
+        <a href="#testimonials" class="nav-link">{{ 'TESTIMONIALS' | translate }}</a>
         <a href="#faq" class="nav-link">FAQ</a>
-        <button class="btn-nav-primary">Sign Up</button>
-        <button class="btn-nav-secondary">Log In</button>
+        <button class="btn-nav-primary">{{ 'SIGN_UP' | translate }}</button>
+        <button class="btn-nav-secondary">{{ 'LOG_IN' | translate }}</button>
       </div>
 
       <!-- Mobile Menu Button -->
@@ -90,21 +90,21 @@
         class="mobile-nav-link"
         (click)="closeMobileMenu()"
       >
-        Fonctionnalités
+        {{ 'FEATURES' | translate }}
       </a>
       <a
         href="#pricing"
         class="mobile-nav-link"
         (click)="closeMobileMenu()"
       >
-        Tarifs
+        {{ 'PRICING' | translate }}
       </a>
       <a
         href="#testimonials"
         class="mobile-nav-link"
         (click)="closeMobileMenu()"
       >
-        Témoignages
+        {{ 'TESTIMONIALS' | translate }}
       </a>
       <a
         href="#faq"
@@ -116,10 +116,10 @@
 
       <div class="mobile-nav-actions">
         <button class="btn-mobile-primary" (click)="closeMobileMenu()">
-          Sign Up
+          {{ 'SIGN_UP' | translate }}
         </button>
         <button class="btn-mobile-secondary" (click)="closeMobileMenu()">
-          Log In
+          {{ 'LOG_IN' | translate }}
         </button>
       </div>
     </div>
@@ -129,18 +129,18 @@
       <!-- Left content -->
       <div class="hero-left fade-up delay-1">
         <h1 class="hero-title">
-          Plus de revenus.
-          <span class="hero-highlight">Plus de clients.</span>
-          Plus de croissance.
+          {{ 'MORE_REVENUE' | translate }}
+          <span class="hero-highlight">{{ 'MORE_CLIENTS' | translate }}</span>
+          {{ 'MORE_GROWTH' | translate }}
         </h1>
 
         <p class="hero-subtitle">
-          Attirez de nouveaux membres, fidélisez votre communauté et développez votre chiffre d’affaires avec une plateforme tout-en-un pensée pour la croissance des clubs de fitness en Tunisie.
+          {{ 'YOGYM_HERO_SUBTITLE' | translate }}
         </p>
 
         <div class="fade-up delay-2">
           <button class="btn-cta">
-            <span>Commencer maintenant</span>
+            <span>{{ 'GET_STARTED_NOW' | translate }}</span>
             <span class="btn-cta-icon-wrapper">
               <svg
                 class="btn-cta-icon"
@@ -213,8 +213,8 @@
       [class.in-view]="sectionInView"
     >
       <h2 class="section-title">
-        Tout ce dont vous avez besoin,
-        <span class="highlight">en un seul endroit</span>
+        {{ 'EVERYTHING_YOU_NEED' | translate }}
+        <span class="highlight">{{ 'IN_ONE_PLACE' | translate }}</span>
       </h2>
 
     </div>
@@ -235,9 +235,9 @@
           <span class="icon">{{ feature.icon }}</span>
         </div>
 
-        <h3 class="feature-title">{{ feature.title }}</h3>
+        <h3 class="feature-title">{{ feature.title | translate }}</h3>
         <p class="feature-description">
-          {{ feature.description }}
+          {{ feature.description | translate }}
         </p>
 
         <div class="top-glow"></div>
@@ -261,19 +261,18 @@
           <div class="text-column">
             <div class="badge">
               <span class="badge-icon">⚡</span>
-              <span class="badge-text">Ultra simple</span>
+              <span class="badge-text">{{ 'ULTRA_SIMPLE' | translate }}</span>
             </div>
 
             <h3 class="title">
-              Votre salle reste organisée,
+              {{ 'YOUR_GYM_STAYS_ORGANIZED' | translate }}
               <span class="title-highlight">
-            même quand votre équipe change
+            {{ 'EVEN_WHEN_TEAM_CHANGES' | translate }}
           </span>
             </h3>
 
             <p class="subtitle">
-              Un logiciel de gestion de salle de sport si simple que
-              chaque nouvel employé sait l'utiliser dès le premier jour.
+              {{ 'YOGYM_EASY_SUBTITLE' | translate }}
             </p>
 
             <div class="points">
@@ -282,7 +281,7 @@
                   ✓
                 </div>
                 <span class="point-text">
-              {{ point }}
+              {{ point | translate }}
             </span>
               </div>
             </div>
@@ -298,7 +297,7 @@
               />
 
               <div class="floating-badge">
-                ⚡ Prise en main immédiate
+                ⚡ {{ 'IMMEDIATE_ONBOARDING' | translate }}
               </div>
             </div>
           </div>
@@ -311,12 +310,10 @@
       [class.in-view]="sectionInView"
     >
       <div class="updates-header">
-        <h3 class="updates-title">Mises à jour gratuites à vie</h3>
+        <h3 class="updates-title">{{ 'FREE_LIFETIME_UPDATES' | translate }}</h3>
       </div>
       <p class="updates-text">
-        Toutes les nouvelles fonctionnalités, améliorations et mises à jour
-        de l'application sont incluses gratuitement. Votre investissement
-        reste toujours à jour sans frais supplémentaires.
+        {{ 'FREE_UPDATES_DESCRIPTION' | translate }}
       </p>
     </div>
   </div>
@@ -336,14 +333,13 @@
     <!-- Titre -->
     <div class="statistics-header" [class.in-view]="statsInView">
       <h2 class="statistics-title">
-        Pilotez votre salle avec
+        {{ 'MANAGE_YOUR_GYM_WITH' | translate }}
         <span class="highlight">
-          des données concrètes
+          {{ 'REAL_DATA' | translate }}
         </span>
       </h2>
       <p class="statistics-subtitle">
-        Visualisez vos performances en temps réel et prenez des décisions
-        éclairées
+        {{ 'STATISTICS_SUBTITLE' | translate }}
       </p>
     </div>
 
@@ -495,19 +491,18 @@
     <div class="multi-header">
       <div class="multi-badge">
         <mat-icon class="multi-badge-icon">cloud</mat-icon>
-        <span class="multi-badge-text">Technologie moderne</span>
+        <span class="multi-badge-text">{{ 'MODERN_TECHNOLOGY' | translate }}</span>
       </div>
 
       <h2 class="multi-title">
-        Un logiciel
+        {{ 'ONE_SOFTWARE' | translate }}
         <span class="multi-title-highlight">
-          multiplateforme et connecté
+          {{ 'CROSS_PLATFORM_CONNECTED' | translate }}
         </span>
       </h2>
 
       <p class="multi-subtitle">
-        YoGym est un logiciel moderne qui fonctionne sur tous vos appareils.
-        Accédez à votre salle depuis n'importe où, à tout moment.
+        {{ 'YOGYM_MULTIPLATFORM_DESCRIPTION' | translate }}
       </p>
     </div>
 
@@ -521,8 +516,8 @@
         <div class="platform-icon-wrapper">
           <mat-icon class="platform-icon">{{ platform.icon }}</mat-icon>
         </div>
-        <h3 class="platform-name">{{ platform.name }}</h3>
-        <p class="platform-description">{{ platform.description }}</p>
+        <h3 class="platform-name">{{ platform.name | translate }}</h3>
+        <p class="platform-description">{{ platform.description | translate }}</p>
 <!--        <p class="platform-details">{{ platform.details }}</p>-->
       </div>
     </div>
@@ -531,13 +526,10 @@
     <div class="technical-card">
       <div class="technical-inner">
         <h3 class="technical-title">
-          Technologie avancée et intégrations automatisé
+          {{ 'ADVANCED_TECH_INTEGRATIONS' | translate }}
         </h3>
         <p class="technical-text">
-          YoGym est conçu pour s'intégrer parfaitement avec vos équipements
-          existants. Notre système multi-utilisateurs permet à toute votre
-          équipe de travailler efficacement, avec des permissions adaptées à
-          chaque rôle.
+          {{ 'YOGYM_INTEGRATIONS_DESCRIPTION' | translate }}
         </p>
 
         <div class="capabilities-grid">
@@ -552,9 +544,9 @@
                 {{ capability.icon }}
               </mat-icon>
             </div>
-            <h4 class="capability-title">{{ capability.title }}</h4>
+            <h4 class="capability-title">{{ capability.title | translate }}</h4>
             <p class="capability-description">
-              {{ capability.description }}
+              {{ capability.description | translate }}
             </p>
           </div>
         </div>
@@ -570,18 +562,15 @@
         <div class="advantage-header">
           <div class="advantage-badge">
             <mat-icon class="advantage-badge-icon">check_circle</mat-icon>
-            <span class="advantage-badge-text">Avantage compétitif</span>
+            <span class="advantage-badge-text">{{ 'COMPETITIVE_ADVANTAGE' | translate }}</span>
           </div>
 
           <h3 class="advantage-title">
-            Un seul abonnement, plusieurs salles
+            {{ 'ONE_SUBSCRIPTION_MULTIPLE_GYMS' | translate }}
           </h3>
 
           <p class="advantage-text">
-            Offrez à vos adhérents la flexibilité d'accéder à plusieurs salles
-            avec un seul abonnement. Cette fonctionnalité unique renforce
-            l'attractivité de votre établissement et vous démarque de la
-            concurrence.
+            {{ 'MULTI_GYM_SUBSCRIPTION_DESCRIPTION' | translate }}
           </p>
         </div>
 
@@ -592,7 +581,7 @@
             [style.transitionDelay]="inView ? (1.1 + i * 0.1) + 's' : '0s'"
           >
             <div class="advantage-stat-number">{{ stat.number }}</div>
-            <div class="advantage-stat-label">{{ stat.text }}</div>
+            <div class="advantage-stat-label">{{ stat.text | translate }}</div>
           </div>
         </div>
       </div>
@@ -609,14 +598,13 @@
     <!-- Titre -->
     <div class="pricing-header" [class.in-view]="pricingInView">
       <h2 class="pricing-title">
-        Choisissez la solution
+        {{ 'CHOOSE_THE_SOLUTION' | translate }}
         <span class="highlight">
-          adaptée à vos besoins
+          {{ 'TAILORED_TO_YOUR_NEEDS' | translate }}
         </span>
       </h2>
       <p class="pricing-subtitle">
-        Deux options performantes pour gérer votre salle, selon votre budget
-        et vos ambitions
+        {{ 'PRICING_OPTIONS_SUBTITLE' | translate }}
       </p>
     </div>
 
@@ -711,8 +699,8 @@
             <mat-icon class="card-icon">computer</mat-icon>
           </div>
           <div>
-            <h3 class="card-title">Version Desktop</h3>
-            <p class="card-subtitle">Solution locale économique</p>
+            <h3 class="card-title">{{ 'DESKTOP_VERSION' | translate }}</h3>
+            <p class="card-subtitle">{{ 'AFFORDABLE_LOCAL_SOLUTION' | translate }}</p>
           </div>
         </div>
 
@@ -722,7 +710,7 @@
             <span class="price-currency">DT</span>
           </div>
           <p class="price-note">
-            Paiement unique • Sans abonnement
+            {{ 'ONE_TIME_PAYMENT_NO_SUBSCRIPTION' | translate }}
           </p>
         </div>
 
@@ -732,16 +720,16 @@
             *ngFor="let feature of desktopFeatures"
           >
             <mat-icon class="check-icon">check_circle</mat-icon>
-            <span class="feature-text">{{ feature }}</span>
+            <span class="feature-text">{{ feature | translate }}</span>
           </div>
         </div>
 
 
         <button class="card-button dark">
-          Choisir Desktop
+          {{ 'CHOOSE_DESKTOP' | translate }}
         </button>
         <p class="card-footer">
-          Idéal pour les petites et nouvelles salles
+          {{ 'IDEAL_FOR_SMALL_NEW_GYMS' | translate }}
         </p>
       </div>
 
@@ -757,15 +745,15 @@
                 <mat-icon class="card-icon">cloud</mat-icon>
               </div>
               <div>
-                <h3 class="card-title">Version Cloud</h3>
+                <h3 class="card-title">{{ 'CLOUD_VERSION' | translate }}</h3>
                 <p class="card-subtitle light-text">
-                  Solution évolutive et moderne
+                  {{ 'SCALABLE_MODERN_SOLUTION' | translate }}
                 </p>
               </div>
             </div>
             <div class="cloud-badge">
               <mat-icon class="cloud-badge-icon">bolt</mat-icon>
-              <span>POPULAIRE</span>
+              <span>{{ 'POPULAR' | translate }}</span>
             </div>
           </div>
 
@@ -776,7 +764,7 @@
 <!--              <span class="price-period">/mois</span>-->
 <!--            </div>-->
             <p class="price-note light-text">
-              Selon le nombre d'adhérents • Évolutif
+              {{ 'BASED_ON_MEMBERS_SCALABLE' | translate }}
             </p>
           </div>
 
@@ -786,17 +774,17 @@
               *ngFor="let feature of cloudFeatures"
             >
               <mat-icon class="check-icon white">check_circle</mat-icon>
-              <span class="feature-text light-text">{{ feature }}</span>
+              <span class="feature-text light-text">{{ feature | translate }}</span>
             </div>
           </div>
 
         </div>
 
         <button class="card-button light">
-          Essayer gratuitement 30 jours
+          {{ 'TRY_FREE_30_DAYS' | translate }}
         </button>
         <p class="card-footer light-text">
-          Recommandé pour la croissance
+          {{ 'RECOMMENDED_FOR_GROWTH' | translate }}
         </p>
       </div>
     </div>
@@ -805,10 +793,10 @@
   <!-- CTA bas de page -->
   <div class="pricing-bottom-cta" [class.in-view]="pricingInView">
     <p class="bottom-text">
-      Besoin d'aide pour choisir ? Notre équipe est là pour vous conseiller
+      {{ 'NEED_HELP_CHOOSING' | translate }}
     </p>
     <button class="bottom-button">
-      Parler à un conseiller
+      {{ 'TALK_TO_ADVISOR' | translate }}
     </button>
   </div>
 
@@ -832,29 +820,29 @@
       <!-- Badge -->
       <div class="free-trial-badge">
         <mat-icon class="badge-icon">rocket_launch</mat-icon>
-        <span class="badge-text">1 ère solution en Tunisie avec essai gratuit</span>
+        <span class="badge-text">{{ 'FIRST_TUNISIAN_SOLUTION_FREE_TRIAL' | translate }}</span>
       </div>
 
       <!-- Titre -->
       <h2 class="free-trial-title">
-        Essayez gratuitement la meilleure solution de gestion
+        {{ 'TRY_BEST_MANAGEMENT_SOLUTION_FREE' | translate }}
         <span class="highlight">
-          de salles de sport en Tunisie
+          {{ 'FOR_GYMS_IN_TUNISIA' | translate }}
         </span>
       </h2>
 
       <!-- Sous-titre -->
       <p class="free-trial-subtitle">
-        30 jours d'essai sans engagement.
+        {{ 'THIRTY_DAY_TRIAL_NO_COMMITMENT' | translate }}
       </p>
       <p class="free-trial-subtitle">
-        1ère solution de gestion de salles de sport en Tunisie à proposer un essai gratuit,parce que nous avons une totale confiance dans la performance de notre application.
+        {{ 'FREE_TRIAL_CONFIDENCE_DESCRIPTION' | translate }}
 
       </p>
       <!-- Boutons -->
       <div class="free-trial-buttons">
         <button class="btn-primary">
-          Demander une période d'essai gratuite
+          {{ 'REQUEST_FREE_TRIAL' | translate }}
         </button>
 
       </div>
@@ -868,7 +856,7 @@
           [class.in-view]="freeTrialInView"
         >
           <span class="item-icon">{{ item.icon }}</span>
-          <span class="item-text">{{ item.text }}</span>
+          <span class="item-text">{{ item.text | translate }}</span>
         </div>
       </div>
     </div>
@@ -883,14 +871,13 @@
     <!-- Header -->
     <div class="testimonials-header" [class.in-view]="testimonialsInView">
       <h2 class="testimonials-title">
-        Ils ont choisi
+        {{ 'THEY_CHOSE' | translate }}
         <span class="highlight">
           YoGym
         </span>
       </h2>
       <p class="testimonials-subtitle">
-        Rejoignez les salles qui ont transformé leur gestion
-        avec YoGym
+        {{ 'JOIN_GYMS_TRANSFORMED_MANAGEMENT' | translate }}
       </p>
     </div>
 
@@ -929,7 +916,7 @@
 
         <!-- Contenu -->
         <p class="testimonial-content">
-          "{{ testimonial.content }}"
+          "{{ testimonial.content | translate }}"
         </p>
       </div>
     </div>
@@ -961,13 +948,13 @@
     <!-- Header -->
     <div class="faq-header" [class.in-view]="faqInView">
       <h2 class="faq-title">
-        Questions
+        {{ 'QUESTIONS' | translate }}
         <span class="highlight">
-          fréquentes
+          {{ 'FREQUENT' | translate }}
         </span>
       </h2>
       <p class="faq-subtitle">
-        Tout ce que vous devez savoir sur YoGym
+        {{ 'EVERYTHING_ABOUT_YOGYM' | translate }}
       </p>
     </div>
 
@@ -985,7 +972,7 @@
           (click)="toggleFaq(i)"
         >
           <span class="question-text">
-            {{ faq.question }}
+            {{ faq.question | translate }}
           </span>
           <mat-icon
             class="chevron-icon"
@@ -1000,7 +987,7 @@
           [class.open]="openFaqIndex === i"
         >
           <div class="faq-answer">
-            {{ faq.answer }}
+            {{ faq.answer | translate }}
           </div>
         </div>
       </div>
@@ -1009,10 +996,10 @@
     <!-- CTA bas -->
     <div class="faq-cta" [class.in-view]="faqInView">
       <h3 class="faq-cta-title">
-        Vous avez d'autres questions ?
+        {{ 'HAVE_OTHER_QUESTIONS' | translate }}
       </h3>
       <p class="faq-cta-subtitle">
-        Notre équipe est là pour vous aider
+        {{ 'TEAM_HERE_TO_HELP' | translate }}
       </p>
 <!--      <button class="faq-cta-button">-->
 <!--        Contactez-nous-->
@@ -1033,8 +1020,7 @@
           <span class="brand-name">YoGym</span>
         </div>
         <p class="brand-text">
-          La solution tunisienne de référence pour la gestion de salles de
-          sport. Moderne, puissante et intuitive.
+          {{ 'YOGYM_FOOTER_DESCRIPTION' | translate }}
         </p>
         <div class="socials">
           <a href="#" class="social-btn">
@@ -1051,22 +1037,22 @@
 
       <!-- Produit -->
       <div class="footer-col">
-        <h4 class="footer-title">Produit</h4>
+        <h4 class="footer-title">{{ 'PRODUCT' | translate }}</h4>
         <ul class="footer-list">
           <li>
-            <a href="#features" class="footer-link">Fonctionnalités</a>
+            <a href="#features" class="footer-link">{{ 'FEATURES' | translate }}</a>
           </li>
           <li>
-            <a href="#pricing" class="footer-link">Tarifs</a>
+            <a href="#pricing" class="footer-link">{{ 'PRICING' | translate }}</a>
           </li>
           <li>
-            <a href="#" class="footer-link">Démo en ligne</a>
+            <a href="#" class="footer-link">{{ 'ONLINE_DEMO' | translate }}</a>
           </li>
           <li>
-            <a href="#" class="footer-link">Essai gratuit</a>
+            <a href="#" class="footer-link">{{ 'FREE_TRIAL' | translate }}</a>
           </li>
           <li>
-            <a href="#" class="footer-link">Mises à jour</a>
+            <a href="#" class="footer-link">{{ 'UPDATES' | translate }}</a>
           </li>
         </ul>
       </div>
@@ -1095,11 +1081,11 @@
 
       <!-- Contact -->
       <div class="footer-col">
-        <h4 class="footer-title">Contact</h4>
+        <h4 class="footer-title">{{ 'CONTACT' | translate }}</h4>
         <ul class="footer-contact">
           <li class="contact-item">
             <mat-icon class="contact-icon">location_on</mat-icon>
-            <span>Tunis, Tunisie</span>
+            <span>{{ 'TUNIS_TUNISIA' | translate }}</span>
           </li>
           <li class="contact-item">
             <mat-icon class="contact-icon">phone</mat-icon>
@@ -1116,7 +1102,7 @@
     <!-- Bottom bar -->
     <div class="footer-bottom">
       <p class="footer-copy">
-        © 2025 YoGym. Tous droits réservés. Made with ❤️ in Tunisia By YoSoftware
+        {{ 'YOGYM_COPYRIGHT' | translate }}
       </p>
 <!--      <div class="footer-bottom-links">-->
 <!--        <a href="#" class="footer-link">Mentions légales</a>-->

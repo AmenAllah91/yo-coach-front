@@ -3,11 +3,13 @@ import { Component, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SafeResourceUrl } from '@angular/platform-browser';
 import { WebsiteService } from '../../../service/website.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageService } from '../../../service/language.service';
 
 @Component({
   selector: 'app-coach-landing-preview',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './coach-landing-preview.component.html',
   styleUrls: ['./coach-landing-preview.component.scss']
 })
@@ -43,8 +45,12 @@ export class CoachLandingPreviewComponent {
 
   constructor(
     private location: Location,
-    private websiteService: WebsiteService
-  ) {}
+    private websiteService: WebsiteService,
+    private translate: TranslateService,
+    private languageService: LanguageService
+  ) {
+    this.translate.use(this.languageService.getCurrentLanguage());
+  }
 
   closePreview(): void {
     if (!this.publicMode) {
@@ -69,12 +75,12 @@ export class CoachLandingPreviewComponent {
     this.leadError = '';
 
     if (!this.publicSlug) {
-      this.leadError = 'Slug public introuvable.';
+      this.leadError = this.translate.instant('PUBLIC_SLUG_NOT_FOUND');
       return;
     }
 
     if (!this.leadForm.phone?.trim()) {
-      this.leadError = 'Le Téléphone est requis.';
+      this.leadError = this.translate.instant('PHONE_REQUIRED');
       return;
     }
 
@@ -98,7 +104,7 @@ export class CoachLandingPreviewComponent {
       },
       error: () => {
         this.submittingLead = false;
-        this.leadError = 'Une erreur est survenue lors de l’envoi.';
+        this.leadError = this.translate.instant('REQUEST_SEND_ERROR');
       }
     });
   }

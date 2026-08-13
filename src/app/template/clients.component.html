@@ -139,7 +139,7 @@
         </div>
       </div>
 
-      <app-scroll-loader [isLoading]="isLoading" [loadingText]="'LOADING_CLIENTS' | translate"></app-scroll-loader>
+      <app-scroll-loader [isLoading]="isLoading" loadingText="LOADING_CLIENTS"></app-scroll-loader>
 
       <div class="pagination" *ngIf="totalPages > 1">
         <button type="button" class="page-btn" (click)="previousPage()" [disabled]="currentPage === 0">&lt;</button>

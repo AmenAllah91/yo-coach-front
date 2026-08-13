@@ -3,7 +3,7 @@ import { RouteInfo } from '../sidebar.metadata';
 export const items: RouteInfo[] = [
   {
     path: '/coach-dashboard',
-    title: 'Dashboard',
+    title: 'DASHBOARD',
     iconType: 'feather',
     icon: 'grid',
     class: '',
@@ -15,7 +15,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/clients',
-    title: 'Clients',
+    title: 'CLIENTS',
     iconType: 'feather',
     icon: 'users',
     class: '',
@@ -27,7 +27,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/clients/client-workouts',
-    title: 'Workouts',
+    title: 'WORKOUTS',
     iconType: 'feather',
     icon: 'zap',
     class: '',
@@ -39,7 +39,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Admin',
+    title: 'ADMIN',
     iconType: 'feather',
     icon: 'shield',
     class: '',
@@ -50,7 +50,7 @@ export const items: RouteInfo[] = [
     submenu: [
       {
         path: '/users',
-        title: 'Users Management',
+        title: 'USERS_MANAGEMENT',
         iconType: 'feather',
         icon: 'users',
         class: '',
@@ -61,7 +61,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/subscriptions',
-        title: 'Subscriptions',
+        title: 'SUBSCRIPTIONS',
         iconType: 'feather',
         icon: 'credit-card',
         class: '',
@@ -74,7 +74,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/clients/client-nutrition',
-    title: 'Nutrition',
+    title: 'NUTRITION',
     iconType: 'feather',
     icon: 'heart',
     class: '',
@@ -86,7 +86,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Workout',
+    title: 'WORKOUT',
     iconType: 'feather',
     icon: 'zap',
     class: '',
@@ -97,7 +97,7 @@ export const items: RouteInfo[] = [
     submenu: [
       {
         path: '/workout/program-library',
-        title: 'Program Library',
+        title: 'PROGRAM_LIBRARY',
         iconType: 'feather',
         icon: 'folder',
         class: '',
@@ -108,7 +108,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/workout/exercise-library',
-        title: 'Exercise Library',
+        title: 'EXERCISE_LIBRARY',
         iconType: 'feather',
         icon: 'target',
         class: '',
@@ -121,7 +121,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Nutrition',
+    title: 'NUTRITION',
     iconType: 'feather',
     icon: 'heart',
     class: '',
@@ -132,7 +132,7 @@ export const items: RouteInfo[] = [
     submenu: [
       {
         path: '/nutrition/plans',
-        title: 'Plans',
+        title: 'PLANS',
         iconType: 'feather',
         icon: 'clipboard',
         class: '',
@@ -143,7 +143,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/nutrition/custom-foods',
-        title: 'Custom Foods',
+        title: 'CUSTOM_FOODS',
         iconType: 'feather',
         icon: 'plus-circle',
         class: '',
@@ -154,7 +154,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/nutrition/food-replacement-groups',
-        title: 'Food Replacement Groups',
+        title: 'FOOD_REPLACEMENT_GROUPS',
         iconType: 'feather',
         icon: 'shuffle',
         class: '',
@@ -165,7 +165,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/nutrition/meals',
-        title: 'Meals',
+        title: 'MEALS',
         iconType: 'feather',
         icon: 'coffee',
         class: '',
@@ -178,7 +178,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Nutrition',
+    title: 'NUTRITION',
     iconType: 'feather',
     icon: 'heart',
     class: '',
@@ -189,7 +189,7 @@ export const items: RouteInfo[] = [
     submenu: [
       {
         path: '/nutrition/plans',
-        title: 'Plans',
+        title: 'PLANS',
         iconType: 'feather',
         icon: 'clipboard',
         class: '',
@@ -200,7 +200,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/nutrition/custom-foods',
-        title: 'Custom Foods',
+        title: 'CUSTOM_FOODS',
         iconType: 'feather',
         icon: 'plus-circle',
         class: '',
@@ -213,7 +213,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/chat',
-    title: 'Chat',
+    title: 'CHAT',
     iconType: 'feather',
     icon: 'message-square',
     class: '',
@@ -225,7 +225,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: 'assignments/me',
-    title: 'My Check-ins',
+    title: 'MY_CHECK_INS',
     iconType: 'feather',
     icon: 'message-square',
     class: '',
@@ -237,7 +237,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/calendar',
-    title: 'Calendar',
+    title: 'CALENDAR',
     iconType: 'feather',
     icon: 'calendar',
     class: '',
@@ -249,7 +249,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Forms',
+    title: 'FORMS',
     iconType: 'feather',
     icon: 'file-text',
     class: '',
@@ -260,7 +260,7 @@ export const items: RouteInfo[] = [
     submenu: [
       {
         path: '/forms',
-        title: 'Check-in Templates',
+        title: 'CHECK_IN_TEMPLATES',
         iconType: 'feather',
         icon: 'clipboard',
         class: '',
@@ -271,7 +271,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: 'forms/manage-checkins',
-        title: 'Clients Check-ins',
+        title: 'CLIENT_CHECK_INS',
         iconType: 'feather',
         icon: 'message-square',
         class: '',
@@ -284,7 +284,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/theme',
-    title: 'Theme',
+    title: 'THEME',
     iconType: 'feather',
     icon: 'sliders',
     class: '',
@@ -296,7 +296,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '/configuration',
-    title: 'Settings',
+    title: 'SETTINGS',
     iconType: 'feather',
     icon: 'settings',
     class: '',
@@ -308,7 +308,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: '',
-    title: 'Grow',
+    title: 'GROW',
     iconType: 'feather',
     icon: 'layout',
     class: '',
@@ -319,7 +319,7 @@ export const items: RouteInfo[] = [
     submenu: [
       {
         path: '/grow/contact-form',
-        title: 'Contact Form',
+        title: 'CONTACT_FORM',
         iconType: 'feather',
         icon: 'file-text',
         class: '',
@@ -330,7 +330,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/websites/create',
-        title: 'Coach Website',
+        title: 'COACH_WEBSITE',
         iconType: 'feather',
         icon: 'edit-3',
         class: '',
@@ -341,7 +341,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/websites/leads',
-        title: 'Leads',
+        title: 'LEADS',
         iconType: 'feather',
         icon: 'inbox',
         class: '',
@@ -354,7 +354,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: 'body-measurements',
-    title: 'Body Measurements',
+    title: 'BODY_MEASUREMENTS',
     iconType: 'feather',
     icon: 'activity',
     class: '',
@@ -366,7 +366,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: 'progress-pictures',
-    title: 'Progress pictures',
+    title: 'PROGRESS_PICTURES',
     iconType: 'feather',
     icon: 'camera',
     class: '',

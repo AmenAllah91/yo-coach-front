@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { ExerciseService, Exercise, PageResponse as ExercisePageResponse, EnumResponse } from '../../../service/exercise.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-program-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './program-modal.component.html',
   styleUrls: ['./program-modal.component.scss']
 })
@@ -40,7 +41,11 @@ export class ProgramModalComponent implements OnInit, OnChanges {
 
 
 
-  constructor(private exerciseService: ExerciseService) {}
+  constructor(private exerciseService: ExerciseService, private translate: TranslateService) {}
+
+  displayDayName(day: any, index: number): string {
+    return /^Day \d+$/.test(day?.name || '') ? `${this.translate.instant('DAY')} ${index + 1}` : day?.name;
+  }
 
   ngOnInit() {
     this.loadEnums();

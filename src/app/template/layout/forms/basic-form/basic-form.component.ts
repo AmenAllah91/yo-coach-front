@@ -3,6 +3,8 @@ import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {NgSelectModule} from "@ng-select/ng-select";
 import {NgbInputDatepicker} from "@ng-bootstrap/ng-bootstrap";
 import {NgxDatatableModule} from "@swimlane/ngx-datatable";
+import {CommonModule} from '@angular/common';
+import {TranslateModule} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-basic-form',
@@ -12,7 +14,9 @@ import {NgxDatatableModule} from "@swimlane/ngx-datatable";
     NgSelectModule,
     FormsModule,
     NgbInputDatepicker,
-    NgxDatatableModule
+    NgxDatatableModule,
+    CommonModule,
+    TranslateModule
   ],
   templateUrl: './basic-form.component.html',
   styleUrl: './basic-form.component.scss'

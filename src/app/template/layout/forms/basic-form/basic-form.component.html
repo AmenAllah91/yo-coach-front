@@ -1,17 +1,17 @@
 <div class="top-bar d-flex align-items-center justify-content-between px-4 py-3">
   <!-- Titre de la page -->
   <div class="page-title d-flex align-items-center">
-    <h4 class="mb-0 title-size">All Customers</h4>
+    <h4 class="mb-0 title-size">{{ 'ALL_CUSTOMERS' | translate }}</h4>
     <i class="fas fa-chevron-down ms-2"></i>
   </div>
 
   <!-- Boutons et actions -->
   <div class="actions d-flex align-items-center gap-3">
     <button class="btn btn-outline-primary d-flex align-items-center">
-      <i class="fas fa-plus me-2"></i> New
+      <i class="fas fa-plus me-2"></i> {{ 'NEW' | translate }}
     </button>
     <button class="btn btn-primary d-flex align-items-center">
-      <i class="fas fa-user-plus me-2"></i> Save
+      <i class="fas fa-user-plus me-2"></i> {{ 'SAVE' | translate }}
     </button>
   </div>
 </div>
@@ -21,7 +21,7 @@
   <form >
 
 <div class="datepicker-size">
-  <label for="planName">Date<span class="text-danger">*</span></label>
+  <label for="planName">{{ 'DATE' | translate }}<span class="text-danger">*</span></label>
   <div class="col-12">
     <div class="input-group-date">
       <input
@@ -39,44 +39,44 @@
     <div class="form-group position-relative">
       <div style="position: relative;">
         <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
-        <input type="password" class="form-control" placeholder="Research" name="password"
+        <input type="password" class="form-control" [placeholder]="'SEARCH' | translate" name="password"
                style="padding-left: 35px;" required>
       </div>
     </div>
 
   <div class="form-group position-relative">
-    <label>Your Email <span class="text-danger">*</span></label>
+    <label>{{ 'YOUR_EMAIL' | translate }} <span class="text-danger">*</span></label>
     <div style="position: relative;">
       <i class="fas fa-user" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
-      <input type="email" class="form-control" placeholder="Email" name="email" style="padding-left: 35px;" required>
+      <input type="email" class="form-control" [placeholder]="'EMAIL' | translate" name="email" style="padding-left: 35px;" required>
     </div>
   </div>
 
   <div class="form-group position-relative">
-    <label>Password <span class="text-danger">*</span></label>
+    <label>{{ 'PASSWORD' | translate }} <span class="text-danger">*</span></label>
     <div style="position: relative;">
       <i class="fas fa-key" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
-      <input type="password" class="form-control" placeholder="Password" name="password"
+      <input type="password" class="form-control" [placeholder]="'PASSWORD' | translate" name="password"
              style="padding-left: 35px;" required>
     </div>
   </div>
 
           <!-- Plan Name -->
   <div class="form-group " >
-    <label for="planName">Plan Name<span class="required">*</span></label>
+    <label for="planName">{{ 'PLAN_NAME' | translate }}<span class="required">*</span></label>
     <input type="text" id="planName" placeholder="Coaching Basic (0-5 clients)" class="form-control hauteur-input" required>
   </div>
 
   <!-- Plan Code -->
   <div class="form-group">
-    <label for="planCode">Plan Code<span class="required">*</span></label>
+    <label for="planCode">{{ 'PLAN_CODE' | translate }}<span class="required">*</span></label>
     <input type="text" class="form-control hauteur-input" id="planCode" placeholder="COACH_BEG" required>
-    <small class="form-text">A unique code to refer to this plan.</small>
+    <small class="form-text">{{ 'PLAN_CODE_HINT' | translate }}</small>
   </div>
 
 
   <div class="form-group">
-    <label > 1 choice no search </label>
+    <label>{{ 'ONE_CHOICE_NO_SEARCH' | translate }}</label>
 
     <ng-select [items]="items"
                [multiple]="false"
@@ -85,13 +85,13 @@
                [searchable]="false"
                class="select-item hauteur-input"
                bindLabel="name"
-               placeholder="Select Your Product">
+               [placeholder]="'SELECT_YOUR_PRODUCT' | translate">
     </ng-select>
-    <small class="form-text">Add tax to your Plan or Addon. Use tax group for more than one tax.</small>
+    <small class="form-text">{{ 'PLAN_TAX_HINT' | translate }}</small>
   </div>
 
   <div class="form-group">
-    <label >1 choice with search</label>
+    <label>{{ 'ONE_CHOICE_WITH_SEARCH' | translate }}</label>
 
     <ng-select [items]="items"
                [multiple]="false"
@@ -102,11 +102,11 @@
                bindLabel="name"
                >
     </ng-select>
-    <small class="form-text">Add tax to your Plan or Addon. Use tax group for more than one tax.</small>
+    <small class="form-text">{{ 'PLAN_TAX_HINT' | translate }}</small>
   </div>
 
   <div class="form-group">
-    <label >Multi Item searchable</label>
+    <label>{{ 'MULTI_ITEM_SEARCHABLE' | translate }}</label>
 
     <ng-select [items]="items"
                [multiple]="true"
@@ -115,13 +115,13 @@
                [searchable]="true"
                class="select-item hauteur-input"
                bindLabel="name"
-               placeholder="Select Your Product">
+               [placeholder]="'SELECT_YOUR_PRODUCT' | translate">
     </ng-select>
-    <small class="form-text">Add tax to your Plan or Addon. Use tax group for more than one tax.</small>
+    <small class="form-text">{{ 'PLAN_TAX_HINT' | translate }}</small>
   </div>
   <!-- Price -->
   <div class="form-group ">
-    <label for="price">Price<span class="required">*</span></label>
+    <label for="price">{{ 'PRICE' | translate }}<span class="required">*</span></label>
     <div class="input-group">
       <span class="input-group-text">TND</span>
       <input type="text" class="form-control hauteur-input" id="price" placeholder="39.99" required >
@@ -130,49 +130,49 @@
 
   <!-- Bill Every -->
   <div class="form-group bill-group">
-    <label>Bill Every<span class="required">*</span></label>
+    <label>{{ 'BILL_EVERY' | translate }}<span class="required">*</span></label>
     <div class="flex-input">
       <input type="number" class="form-control hauteur-input" value="1" >
       <select >
-        <option>Month(s)</option>
-        <option>Year(s)</option>
+        <option>{{ 'MONTHS' | translate }}</option>
+        <option>{{ 'YEARS' | translate }}</option>
       </select>
     </div>
   </div>
 
   <!-- Billing Cycles -->
   <div class="form-group">
-    <label>Billing Cycles<span class="required">*</span></label>
+    <label>{{ 'BILLING_CYCLES' | translate }}<span class="required">*</span></label>
     <div class="radio-group">
-      <label><input type="radio" name="billingCycle" checked> Auto-renews until canceled</label>
-      <label><input type="radio" name="billingCycle"> Expires after a specified </label>
+      <label><input type="radio" name="billingCycle" checked> {{ 'AUTO_RENEWS_UNTIL_CANCELED' | translate }}</label>
+      <label><input type="radio" name="billingCycle"> {{ 'EXPIRES_AFTER_SPECIFIED' | translate }}</label>
     </div>
   </div>
 
   <!-- Free Trial -->
   <div class="form-group">
-    <label for="freeTrial">Free Trial</label>
+    <label for="freeTrial">{{ 'FREE_TRIAL' | translate }}</label>
     <input type="number" class="form-control hauteur-input" id="freeTrial" placeholder="30" >
-    <small class="form-text">in days</small>
+    <small class="form-text">{{ 'BASIC_FORM_IN_DAYS' | translate }}</small>
   </div>
 
   <!-- Setup Fee -->
   <div class="form-group">
-    <label for="setupFee">Setup Fee</label>
+    <label for="setupFee">{{ 'SETUP_FEE' | translate }}</label>
     <input type="text" class="form-control hauteur-input" id="setupFee" >
   </div>
 
   <!-- Type -->
   <div class="form-group">
-    <label>Type<span class="required">*</span></label>
+    <label>{{ 'TYPE' | translate }}<span class="required">*</span></label>
     <div class="radio-group">
-      <label><input type="radio" name="type"> Goods</label>
-      <label><input type="radio" name="type" checked> Service</label>
+      <label><input type="radio" name="type"> {{ 'GOODS' | translate }}</label>
+      <label><input type="radio" name="type" checked> {{ 'SERVICE' | translate }}</label>
     </div>
   </div>
 
 <div class="flex-input">
-  <small class="form-text">Are you a trainer?</small>
+  <small class="form-text">{{ 'ARE_YOU_A_TRAINER' | translate }}</small>
 
   <div class="form-switch me-3 flex-input" style="display: flex; align-items: center; gap: 8px;">
 
@@ -187,10 +187,10 @@
 <br>
 
   <div class="form-buttons">
-    <button type="submit" class="btn btn-save">Save</button>
-    <button type="button" class="btn btn-cancel">Cancel</button>
+    <button type="submit" class="btn btn-save">{{ 'SAVE' | translate }}</button>
+    <button type="button" class="btn btn-cancel">{{ 'CANCEL' | translate }}</button>
     <button class="btn btn-outline-primary d-flex align-items-center btn-new">
-      <i class="fas fa-plus me-2"></i> New
+      <i class="fas fa-plus me-2"></i> {{ 'NEW' | translate }}
     </button>
   </div>
   <br>

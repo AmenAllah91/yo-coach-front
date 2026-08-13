@@ -5,6 +5,7 @@ import {
   FoodReplacementGroup,
   FoodReplacementGroupItem
 } from 'app/service/food-replacement-groups.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 export interface Food {
   id: string;
@@ -21,7 +22,7 @@ export interface Food {
 @Component({
   selector: 'app-modal-replace-food',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslateModule],
   templateUrl: './modal-replace-food.template.html',
   styleUrl: './modal-replace-food.component.scss',
 })
@@ -46,7 +47,10 @@ export class ModalReplaceFoodComponent implements OnChanges {
   loading = false;
   error: string | null = null;
 
-  constructor(private foodGroupService: FoodReplacementGroupsService) {}
+  constructor(
+    private foodGroupService: FoodReplacementGroupsService,
+    private translate: TranslateService
+  ) {}
 
   get alternatives(): Array<{ food: FoodReplacementGroupItem; group: FoodReplacementGroup }> {
     const seen = new Set<string>();
@@ -83,7 +87,7 @@ export class ModalReplaceFoodComponent implements OnChanges {
 
   private loadReplacementGroups() {
     if (!this.originalFood?.id || !this.mealPlanId || !this.mealDayId || !this.mealId) {
-      this.error = 'Missing replacement context';
+      this.error = this.translate.instant('MISSING_REPLACEMENT_CONTEXT');
       return;
     }
 
@@ -121,12 +125,12 @@ export class ModalReplaceFoodComponent implements OnChanges {
           this.loading = false;
 
           if (this.groups.length === 0) {
-            this.error = 'No replacement foods found for this food';
+            this.error = this.translate.instant('NO_REPLACEMENT_FOODS_FOUND');
           }
         },
         error: (err) => {
           console.error('Error loading replacement groups:', err);
-          this.error = 'Failed to load replacement options';
+          this.error = this.translate.instant('LOAD_REPLACEMENT_OPTIONS_ERROR');
           this.loading = false;
         },
       });

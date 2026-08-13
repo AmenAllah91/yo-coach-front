@@ -3,16 +3,17 @@ import { CommonModule } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { ModalUiStateService, DeleteModalConfig } from '../../service/modal-ui-state.service';
 import { Subscription } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-delete-modal',
   standalone: true,
-  imports: [CommonModule, FeatherModule],
+  imports: [CommonModule, FeatherModule, TranslateModule],
   template: `
     <div class="modal-overlay" [class.show]="show" (click)="onCancel()">
       <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>{{ config?.title || 'Delete Item' }}</h2>
+          <h2>{{ config?.title || ('DELETE_ITEM' | translate) }}</h2>
           <button class="close-btn" (click)="onCancel()">
             <i-feather name="x"></i-feather>
           </button>
@@ -22,8 +23,8 @@ import { Subscription } from 'rxjs';
           <div class="delete-icon">
             <i-feather name="trash-2" size="24"></i-feather>
           </div>
-          <h3>Are you sure?</h3>
-          <p>{{ config?.message || 'This action cannot be undone.' }}</p>
+          <h3>{{ 'ARE_YOU_SURE' | translate }}</h3>
+          <p>{{ config?.message || ('ACTION_CANNOT_BE_UNDONE_SHORT' | translate) }}</p>
           <p *ngIf="config?.itemName" class="item-name">
             <strong>{{ config.itemName }}</strong>
           </p>
@@ -31,10 +32,10 @@ import { Subscription } from 'rxjs';
 
         <div class="modal-footer">
           <button class="cancel-btn" (click)="onCancel()">
-            {{ config?.cancelText || 'Cancel' }}
+            {{ config?.cancelText || ('CANCEL' | translate) }}
           </button>
           <button class="confirm-btn danger" (click)="onConfirm()">
-            {{ config?.confirmText || 'Delete' }}
+            {{ config?.confirmText || ('DELETE' | translate) }}
           </button>
         </div>
       </div>

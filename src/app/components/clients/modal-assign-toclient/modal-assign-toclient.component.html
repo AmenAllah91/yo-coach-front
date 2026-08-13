@@ -3,7 +3,7 @@
     <!-- HEADER -->
     <div class="assign-header">
       <div>
-        <h2 class="assign-title">Assign Program</h2>
+        <h2 class="assign-title">{{ 'ASSIGN_PROGRAM' | translate }}</h2>
         <p class="assign-subtitle">{{ programName }}</p>
       </div>
 
@@ -14,7 +14,7 @@
     <div class="assign-section assign-section--grey">
       <div class="assign-date-grid" [class.assign-date-grid--single]="!showEndDate">
         <div>
-          <label class="assign-label">Start Date *</label>
+          <label class="assign-label">{{ 'START_DATE' | translate }} *</label>
           <div class="date-wrapper">
             <span class="input-icon-left calendar-icon"></span>
 
@@ -30,7 +30,7 @@
         </div>
 
         <div>
-          <label class="assign-label">End Date <span class="auto-note">(Auto-calculated)</span></label>
+          <label class="assign-label">{{ 'END_DATE' | translate }} <span class="auto-note">({{ 'AUTO_CALCULATED' | translate }})</span></label>
           <div class="date-wrapper">
             <span class="input-icon-left calendar-icon"></span>
 
@@ -54,7 +54,7 @@
         <input
           type="text"
           class="assign-input assign-input--blue"
-          placeholder="Search clients..."
+          [placeholder]="'SEARCH_CLIENTS' | translate"
           [(ngModel)]="searchTerm"
         />
       </div>
@@ -81,14 +81,14 @@
         <div class="client-info">
           <div class="client-name">
             {{ c.firstName }} {{ c.lastName }}
-            <span class="conflict-badge" *ngIf="hasClientConflict(c)">Conflict</span>
+            <span class="conflict-badge" *ngIf="hasClientConflict(c)">{{ 'CONFLICT' | translate }}</span>
           </div>
           <div class="client-email">{{ c.email }}</div>
         </div>
       </div>
 
       <div *ngIf="filteredClients.length === 0" class="no-results">
-        No clients found
+        {{ 'NO_CLIENTS_FOUND' | translate }}
       </div>
     </div>
 
@@ -99,7 +99,7 @@
       </div>
 
       <div class="summary-right">
-        <div class="summary-title">Selected Recipients</div>
+        <div class="summary-title">{{ 'SELECTED_RECIPIENTS' | translate }}</div>
 
         <div class="summary-chips">
           <!-- Chips dynamiques -->
@@ -126,7 +126,7 @@
     <div class="assign-conflicts" *ngIf="hasConflicts">
       <div class="conflict-heading">
         <span class="conflict-heading-icon">!</span>
-        <span>Schedule Conflicts Detected</span>
+        <span>{{ 'SCHEDULE_CONFLICTS_DETECTED' | translate }}</span>
       </div>
 
       <div class="conflict-card" *ngFor="let conflict of conflicts">
@@ -148,8 +148,8 @@
             (change)="setConflictResolution(conflict, 'START_AFTER')"
           />
           <span>
-            <strong>Start after current program</strong>
-            <small>Begin the new program after the existing program ends.</small>
+            <strong>{{ 'START_AFTER_CURRENT_PROGRAM' | translate }}</strong>
+            <small>{{ 'START_AFTER_CURRENT_PROGRAM_DESCRIPTION' | translate }}</small>
           </span>
         </label>
 
@@ -161,8 +161,8 @@
             (change)="setConflictResolution(conflict, 'REPLACE')"
           />
           <span>
-            <strong>Replace current program</strong>
-            <small>Stop the existing program before the new start date.</small>
+            <strong>{{ 'REPLACE_CURRENT_PROGRAM' | translate }}</strong>
+            <small>{{ 'REPLACE_CURRENT_PROGRAM_DESCRIPTION' | translate }}</small>
           </span>
         </label>
 
@@ -174,8 +174,8 @@
             (change)="setConflictResolution(conflict, 'KEEP_BOTH')"
           />
           <span>
-            <strong>Keep both anyway</strong>
-            <small>Assign on the overlapping dates. Both programs run at the same time.</small>
+            <strong>{{ 'KEEP_BOTH_PROGRAMS' | translate }}</strong>
+            <small>{{ 'KEEP_BOTH_PROGRAMS_DESCRIPTION' | translate }}</small>
           </span>
         </label>
       </div>
@@ -185,7 +185,7 @@
     <div class="assign-footer">
       <div class="footer-count">
         {{ selectedCount }}
-        client{{ selectedCount > 1 ? "s" : "" }} selected
+        {{ selectedCount === 1 ? ('CLIENT_SELECTED' | translate) : ('CLIENTS_SELECTED' | translate) }}
       </div>
 
       <div class="footer-actions">
@@ -194,7 +194,7 @@
           class="btn-footer btn-footer--cancel"
           (click)="onCancel()"
         >
-          Cancel
+          {{ 'CANCEL' | translate }}
         </button>
 
         <button

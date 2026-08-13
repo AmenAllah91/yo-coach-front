@@ -9,7 +9,7 @@
     class="sidebar-backdrop"
     [class.visible]="isSidebarOpen"
     (click)="closeSidebar()"
-    aria-label="Close sidebar">
+    [attr.aria-label]="'CLOSE_SIDEBAR' | translate">
   </button>
 
   <app-sidebar #sidebar (sidebarToggle)="handleSidebarToggle($event)"></app-sidebar>

@@ -92,7 +92,7 @@
         </div>
       </div>
 
-      <app-scroll-loader [isLoading]="isLoading" [loadingText]="'LOADING_FOODS' | translate"></app-scroll-loader>
+      <app-scroll-loader [isLoading]="isLoading" loadingText="LOADING_FOODS"></app-scroll-loader>
 
       <div class="pagination" *ngIf="totalPages > 1">
         <button (click)="previousPage()" [disabled]="currentPage === 0">{{ 'PREVIOUS' | translate }}</button>

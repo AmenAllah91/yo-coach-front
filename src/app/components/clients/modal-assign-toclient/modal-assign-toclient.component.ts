@@ -5,6 +5,7 @@ import { Client, ClientService } from 'app/service/client.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { catchError, forkJoin, map, of } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type AssignmentType = 'workout' | 'nutrition';
 type ConflictResolution = 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH';
@@ -19,7 +20,7 @@ interface ScheduleConflict {
 @Component({
   selector: 'app-modal-assign-toclient',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './modal-assign-toclient.component.html',
   styleUrls: ['./modal-assign-toclient.component.scss'],
 })
@@ -32,7 +33,8 @@ export class ModalAssignToclientComponent implements OnInit {
   constructor(
     private clientService: ClientService,
     private workoutService: WorkoutService,
-    private nutritionService: NutritionService
+    private nutritionService: NutritionService,
+    private translate: TranslateService
   ) {}
   // Nom du programme affiché sous le titre
   @Input() programName = '';
@@ -140,7 +142,7 @@ export class ModalAssignToclientComponent implements OnInit {
   }
 
   get assignmentButtonLabel(): string {
-    return this.hasConflicts ? 'Confirm Assignment' : 'Assign Program';
+    return this.translate.instant(this.hasConflicts ? 'CONFIRM_ASSIGNMENT' : 'ASSIGN_PROGRAM');
   }
 
   onStartDateChange(): void {

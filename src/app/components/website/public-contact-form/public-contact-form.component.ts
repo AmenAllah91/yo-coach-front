@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
 import { CoachContactForm, ContactFormService } from 'app/service/contact-form.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageService } from 'app/service/language.service';
 
 @Component({
   selector: 'app-public-contact-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './public-contact-form.component.html',
   styleUrls: ['./public-contact-form.component.scss'],
 })
@@ -25,7 +27,11 @@ export class PublicContactFormComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private contactFormService: ContactFormService,
-  ) {}
+    private translate: TranslateService,
+    private languageService: LanguageService,
+  ) {
+    this.translate.use(this.languageService.getCurrentLanguage());
+  }
 
   ngOnInit(): void {
     const slug = this.route.snapshot.paramMap.get('slug') || '';
@@ -47,7 +53,7 @@ export class PublicContactFormComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.error = 'This contact form is not available.';
+        this.error = this.translate.instant('CONTACT_FORM_NOT_AVAILABLE');
         this.loading = false;
       },
     });
@@ -76,7 +82,7 @@ export class PublicContactFormComponent implements OnInit {
         this.submitted = true;
       },
       error: () => {
-        this.error = 'Your request could not be sent. Please try again.';
+        this.error = this.translate.instant('REQUEST_SEND_ERROR');
         this.submitting = false;
       },
     });

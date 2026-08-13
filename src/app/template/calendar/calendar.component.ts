@@ -22,6 +22,7 @@ import { ToastrService } from 'ngx-toastr';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { RouterLink } from '@angular/router';
 import { OwlDateTimeModule, OwlNativeDateTimeModule } from '@danielmoncada/angular-datetime-picker';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-calendar',
@@ -36,6 +37,7 @@ import { OwlDateTimeModule, OwlNativeDateTimeModule } from '@danielmoncada/angul
     OwlDateTimeModule,
     OwlNativeDateTimeModule,
     ReactiveFormsModule,
+    TranslateModule,
   ],
 })
 export class CalendarComponent implements OnInit {
@@ -58,11 +60,11 @@ export class CalendarComponent implements OnInit {
   tempEvents?: EventInput[];
 
   public filters = [
-    { name: 'work', value: 'Work', checked: true },
-    { name: 'personal', value: 'Personal', checked: true },
-    { name: 'important', value: 'Important', checked: true },
-    { name: 'travel', value: 'Travel', checked: true },
-    { name: 'friends', value: 'Friends', checked: true },
+    { name: 'work', value: 'WORK', checked: true },
+    { name: 'personal', value: 'PERSONAL', checked: true },
+    { name: 'important', value: 'IMPORTANT', checked: true },
+    { name: 'travel', value: 'TRAVEL', checked: true },
+    { name: 'friends', value: 'FRIENDS', checked: true },
   ];
 
   @ViewChild('callAPIDialog', { static: false })
@@ -76,7 +78,8 @@ export class CalendarComponent implements OnInit {
     private fb: UntypedFormBuilder,
     public calendarService: CalendarService,
     private modalService: NgbModal,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private translate: TranslateService,
   ) {
     this.dialogTitle = 'Add New Event';
     const blankObject = {} as Calendar;
@@ -151,7 +154,7 @@ export class CalendarComponent implements OnInit {
 
     this.showNotification(
       'success',
-      'Save Event Successfully...!!!',
+      this.translate.instant('EVENT_SAVED_SUCCESSFULLY'),
       'top',
       'right'
     );
@@ -187,7 +190,7 @@ export class CalendarComponent implements OnInit {
 
     this.showNotification(
       'success',
-      'Edit Event Successfully...!!!',
+      this.translate.instant('EVENT_UPDATED_SUCCESSFULLY'),
       'top',
       'right'
     );

@@ -13,7 +13,7 @@ import {forkJoin, of, Subject} from "rxjs";
 import {catchError, debounceTime, map, takeUntil} from "rxjs/operators";
 import { environment } from "@env/environment";
 import {FeatherModule} from "angular-feather";
-import {TranslateModule} from "@ngx-translate/core";
+import {TranslateModule, TranslateService} from "@ngx-translate/core";
 
 export interface Member { id: string; name: string; avatar: string; }
 
@@ -72,7 +72,8 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
               private wsService: ChatWebsocketService,
               private notificationService: NotificationService,
               private userService: UsersService,
-              private router: Router) {}
+              private router: Router,
+              private translate: TranslateService) {}
 
   ngOnInit(): void {
     this.currentUserId = sessionStorage.getItem("userId");
@@ -432,7 +433,10 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
         error: (err) => {
           this.isUploadingAttachment = false;
           console.error('Attachment upload failed:', err);
-          alert('Upload failed - Status: ' + (err.status || 'unknown') + '\nMessage: ' + (err.message || 'unknown') + '\nCheck console for details.');
+          alert(this.translate.instant('UPLOAD_FAILED_DETAILS', {
+            status: err.status || this.translate.instant('UNKNOWN'),
+            message: err.message || this.translate.instant('UNKNOWN'),
+          }));
         },
       });
   }

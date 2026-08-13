@@ -8,6 +8,7 @@ import {ChatMessage} from "../components/chat/models/chat-message";
 import {PageDto} from "../models/pageDto";
 import {ChatWebsocketService} from "./chat-websocket.service";
 import {ClientService} from "./client.service";
+import {TranslateService} from '@ngx-translate/core';
 
 export interface AutoMessageSequenceDto {
   id: string;
@@ -62,7 +63,8 @@ export class ChatService {
 
   constructor(private wsService: ChatWebsocketService,
               private http: HttpClient,
-              private clientService: ClientService) {
+               private clientService: ClientService,
+               private translate: TranslateService) {
 
     this.wsService.messages$.subscribe(data => {
       if (!data) return;
@@ -241,11 +243,10 @@ export class ChatService {
         console.error('UPLOAD ERROR BODY =', err.error);
         console.error('UPLOAD ERROR FULL =', err);
 
-        alert(
-          'Upload failed\n' +
-          'Status: ' + err.status + '\n' +
-          'Message: ' + err.message
-        );
+        alert(this.translate.instant('UPLOAD_FAILED_DETAILS', {
+          status: err.status || this.translate.instant('UNKNOWN'),
+          message: err.message || this.translate.instant('UNKNOWN'),
+        }));
 
         return throwError(() => err);
       })

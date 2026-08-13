@@ -14,7 +14,6 @@ export class LanguageService {
 
     if (!lang || !this.languages.includes(lang)) {
       lang = 'fr';
-      localStorage.setItem('lang', lang);
     }
 
     this.translate.setDefaultLang('fr');

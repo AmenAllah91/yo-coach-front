@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageService } from 'app/service/language.service';
 interface Service {
   title: string;
   description: string;
@@ -13,11 +15,14 @@ interface Product {
 @Component({
   selector: 'app-yosoft-landing-page',
   standalone: true,
-  imports: [],
+  imports: [TranslateModule],
   templateUrl: './yosoft-landing-page.component.html',
   styleUrl: './yosoft-landing-page.component.scss'
 })
 export class YosoftLandingPageComponent {
+  constructor(private translate: TranslateService, private languageService: LanguageService) {
+    this.translate.use(this.languageService.getCurrentLanguage());
+  }
   services: Service[] = [
     {
       icon: '💻',

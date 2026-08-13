@@ -7,6 +7,7 @@ import { NgClass, NgIf } from '@angular/common';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { LanguageService } from 'app/service/language.service';
 import { BackButtonComponent } from 'app/shared/components/back-button/back-button.component';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-main-layout',
@@ -20,6 +21,7 @@ import { BackButtonComponent } from 'app/shared/components/back-button/back-butt
     NgClass,
     NgIf,
     BackButtonComponent,
+    TranslateModule,
   ],
 })
 export class MainLayoutComponent implements OnInit {
@@ -43,6 +45,11 @@ export class MainLayoutComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const storedLanguage = localStorage.getItem('lang');
+    if (storedLanguage && this.languageService.languages.includes(storedLanguage)) {
+      return;
+    }
+
     this.coachSettingsService.loadConfig().subscribe({
       next: (config) => {
         const langCode = this.languageService.languageNameToCode(

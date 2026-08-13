@@ -158,7 +158,7 @@
           <td *ngIf="activeTab === 'Coachs'" class="muted-cell">{{ user.nbClients || 0 }}</td>
 
           <ng-container *ngIf="activeTab === 'Admins'">
-            <td class="muted-cell">Administrateur</td>
+            <td class="muted-cell">{{ 'ADMIN' | translate }}</td>
             <td class="muted-cell">{{ user.derniereConnexion || '—' }}</td>
           </ng-container>
 
@@ -263,9 +263,9 @@
             <div class="form-field form-field-full">
               <label>{{ 'ROLE' | translate }}</label>
               <select [(ngModel)]="editForm.role">
-                <option value="ROLE_CLIENT">Client</option>
-                <option value="ROLE_COACH">Coach</option>
-                <option value="ROLE_ADMIN">Admin</option>
+                <option value="ROLE_CLIENT">{{ 'CLIENT' | translate }}</option>
+                <option value="ROLE_COACH">{{ 'COACH' | translate }}</option>
+                <option value="ROLE_ADMIN">{{ 'ADMIN' | translate }}</option>
               </select>
             </div>
 
@@ -384,9 +384,9 @@
             <div class="form-field form-field-full">
               <label>{{ 'ROLE' | translate }}</label>
               <select [(ngModel)]="editForm.role">
-                <option value="ROLE_CLIENT">Client</option>
-                <option value="ROLE_COACH">Coach</option>
-                <option value="ROLE_ADMIN">Admin</option>
+                <option value="ROLE_CLIENT">{{ 'CLIENT' | translate }}</option>
+                <option value="ROLE_COACH">{{ 'COACH' | translate }}</option>
+                <option value="ROLE_ADMIN">{{ 'ADMIN' | translate }}</option>
               </select>
             </div>
 

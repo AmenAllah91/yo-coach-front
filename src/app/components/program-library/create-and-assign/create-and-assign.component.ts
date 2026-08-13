@@ -17,11 +17,12 @@ import {
   WorkoutSession,
 } from '@shared/models/workout.models';
 import { Exercise } from '@shared/models/exercice.models';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-create-and-assign',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
   templateUrl: './create-and-assign.component.html',
   styleUrl: './create-and-assign.component.scss',
 })

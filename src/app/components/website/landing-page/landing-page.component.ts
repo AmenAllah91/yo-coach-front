@@ -1,6 +1,8 @@
 import {Component, ElementRef, ViewChild} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {MatIcon} from "@angular/material/icon";
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {LanguageService} from '../../../service/language.service';
 interface Feature {
   icon: string;        // ici on met juste un identifiant ou un emoji
   title: string;
@@ -51,11 +53,14 @@ interface Integration {
 @Component({
   selector: 'app-landing-page',
   standalone: true,
-  imports: [CommonModule, MatIcon],
+  imports: [CommonModule, MatIcon, TranslateModule],
   templateUrl: './landing-page.component.html',
   styleUrl: './landing-page.component.scss'
 })
 export class LandingPageComponent {
+  constructor(private translate: TranslateService, private languageService: LanguageService) {
+    this.translate.use(this.languageService.getCurrentLanguage());
+  }
   gyms: string[] = [
     'FitZone',
     'PowerGym',
@@ -85,44 +90,38 @@ export class LandingPageComponent {
   features: Feature[] = [
     {
       icon: '👥',
-      title: 'Gestion des adhérents',
-      description:
-        'Base de données complète avec historique, photos, et suivi personnalisé de chaque membre.',
+      title: 'MEMBER_MANAGEMENT',
+      description: 'MEMBER_MANAGEMENT_DESCRIPTION',
       colorClass: 'gradient-blue',
     },
     {
       icon: '💳',
-      title: 'Abonnements intelligents',
-      description:
-        'Gestion automatisée des paiements, renouvellements et relances pour maximiser vos revenus.',
+      title: 'SMART_SUBSCRIPTIONS',
+      description: 'SMART_SUBSCRIPTIONS_DESCRIPTION',
       colorClass: 'gradient-green',
     },
     {
       icon: '📅',
-      title: 'Planning & réservations',
-      description:
-        'Système de réservation en ligne avec notifications automatiques et gestion des capacités.',
+      title: 'SCHEDULING_RESERVATIONS',
+      description: 'SCHEDULING_RESERVATIONS_DESCRIPTION',
       colorClass: 'gradient-purple',
     },
     {
       icon: '🔔',
-      title: 'Marketing automation',
-      description:
-        'Campagnes SMS/Email automatiques pour fidéliser et réactiver vos membres inactifs.',
+      title: 'MARKETING_AUTOMATION',
+      description: 'MARKETING_AUTOMATION_DESCRIPTION',
       colorClass: 'gradient-orange',
     },
     {
       icon: '📈',
-      title: 'Statistiques avancées',
-      description:
-        'Tableaux de bord en temps réel pour piloter votre activité avec des données concrètes.',
+      title: 'ADVANCED_STATISTICS',
+      description: 'ADVANCED_STATISTICS_DESCRIPTION',
       colorClass: 'gradient-pink',
     },
     {
       icon: '📊',
-      title: 'Rapports financiers',
-      description:
-        'Suivi précis de vos revenus, dépenses et rentabilité avec exports comptables.',
+      title: 'FINANCIAL_REPORTS',
+      description: 'FINANCIAL_REPORTS_DESCRIPTION',
       colorClass: 'gradient-indigo',
     },
   ];
@@ -342,24 +341,24 @@ export class LandingPageComponent {
     return `${percent}%`;
   }
   desktopFeatures: string[] = [
-    'Installation sur votre ordinateur',
-    'Aucun frais mensuel',
-    'Toutes les fonctionnalités essentielles',
-    'Données stockées localement',
-    'Support technique inclus',
-    'Mises à jour gratuites à vie',
+    'INSTALL_ON_YOUR_COMPUTER',
+    'NO_MONTHLY_FEES',
+    'ALL_ESSENTIAL_FEATURES',
+    'DATA_STORED_LOCALLY',
+    'TECHNICAL_SUPPORT_INCLUDED',
+    'FREE_LIFETIME_UPDATES',
     // '🎁 Formation vidéo gratuite (2,500 DT)',
   ];
 
   cloudFeatures: string[] = [
-    "Accès depuis n'importe où (web + mobile)",
-    'Sauvegarde automatique dans le cloud',
-    'Mises à jour automatiques en continu',
-    'Gestion multi-salles illimitée',
-    'Support prioritaire 7j/7',
-    'Intégrations avancées (SMS, Email, etc.)',
-    'Statistiques en temps réel',
-    'Application mobile pour vos membres',
+    'ACCESS_ANYWHERE_WEB_MOBILE',
+    'AUTOMATIC_CLOUD_BACKUP',
+    'CONTINUOUS_AUTOMATIC_UPDATES',
+    'UNLIMITED_MULTI_GYM_MANAGEMENT',
+    'PRIORITY_SUPPORT_7_DAYS',
+    'ADVANCED_INTEGRATIONS',
+    'REAL_TIME_STATISTICS',
+    'MEMBER_MOBILE_APP',
     // '🎁 Formation vidéo gratuite (2,500 DT)',
   ];
   trainingBenefits: TrainingBenefit[] = [
@@ -387,15 +386,15 @@ export class LandingPageComponent {
   freeTrialItems: FreeTrialItem[] = [
     {
       icon: '✨',
-      text: 'Installation en 2 minutes',
+      text: 'INSTALLATION_IN_TWO_MINUTES',
     },
     {
       icon: '🔒',
-      text: 'Aucun engagement',
+      text: 'NO_COMMITMENT',
     },
     {
       icon: '🎯',
-      text: 'Support dédié inclus',
+      text: 'DEDICATED_SUPPORT_INCLUDED',
     },
   ];
   @ViewChild('testimonialsSection') testimonialsSection!: ElementRef;
@@ -408,9 +407,7 @@ export class LandingPageComponent {
       role: '',
       image:
         'https://scontent.ftun4-2.fna.fbcdn.net/v/t39.30808-6/461525570_557498403457397_2420086670981672548_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pqPWDX6z6ZgQ7kNvwE4qZ2y&_nc_oc=Adlx4y4-ac749sk1T3M_DnAUob8GWMmuHnRSkK5DzCTiPYepmjtVXWy0S0IniqbfeCg&_nc_zt=23&_nc_ht=scontent.ftun4-2.fna&_nc_gid=eumg83a7qdSZQ9aNVQWRrQ&oh=00_AfjmoN8ctvEnJ9C0sPQfupWE__sPOCVPz4N8oRyOZl0Ukg&oe=69283447',
-      content:
-        "Depuis que nous avons migré vers l’application YoGym, la gestion de notre salle est devenue beaucoup plus simple et intuitive. La navigation ne demande presque aucun effort et toutes les fonctionnalités sont faciles à trouver.\n" +
-"\n" + "Nos employés sont désormais beaucoup plus à l’aise : la passation entre collaborateurs se fait sans difficulté, ce qui garantit une continuité fluide et une meilleure organisation de la salle.",
+      content: 'VIKINGS_TESTIMONIAL',
       rating: 5,
     },
     {
@@ -418,11 +415,7 @@ export class LandingPageComponent {
       role: '',
       image:
         'https://scontent.ftun4-2.fna.fbcdn.net/v/t39.30808-6/472316264_1401936111215501_7989131506461055218_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=SKyvay7kNPYQ7kNvwE8E3j8&_nc_oc=AdnMHjoenV27ALrhS-uwptn3U9qjxJuBWJ1VbUbcTrWOEU13kJ1OZzFsA7lLX2MS_8Y&_nc_zt=23&_nc_ht=scontent.ftun4-2.fna&_nc_gid=m0mrGATENVFENis8sHPaOQ&oh=00_AfgJiPH1cH3tBkHhigLCv5YDcRGmxlJqP-HWy6EwIVxfdw&oe=69283171',
-      content:
-        'Avec YoGym, la gestion d’Empire Gym est devenue simple, rapide et efficace.\n' +
-        'Les statistiques détaillées nous permettent de suivre nos performances et de comparer facilement chaque période.\n' +
-        'Grâce au suivi à distance depuis le téléphone ou n’importe quel appareil, on reste connecté à la salle même en étant loin.\n' +
-        'Et surtout, l’interface est claire et agréable, ce qui rend l’utilisation très confortable au quotidien.',
+      content: 'EMPIRE_GYM_TESTIMONIAL',
       rating: 5,
     }
   ];
@@ -437,35 +430,28 @@ export class LandingPageComponent {
 
   faqs: FAQItem[] = [
     {
-      question: "Comment fonctionne la période d'essai gratuite ?",
-      answer:
-        "Vous bénéficiez de 30 jours d'accès complet à toutes les fonctionnalités de YoGym, sans limitation et sans engagement. Aucune carte bancaire n'est requise pour démarrer. À la fin de la période, vous pouvez choisir l'offre qui vous convient ou arrêter sans frais.",
+      question: 'FREE_TRIAL_FAQ_QUESTION',
+      answer: 'FREE_TRIAL_FAQ_ANSWER',
     },
     {
-      question: 'Quelle différence entre la version Desktop et Cloud ?',
-      answer:
-        'La version Desktop ( paiement unique) est installée sur votre ordinateur, idéale pour les petites et nouvelles salles. La version Cloud (paiement mensuel ou annuel ) est accessible partout via internet, inclut des mises à jour automatiques, la gestion multi-salles et une application mobile pour vos membres.',
+      question: 'DESKTOP_CLOUD_DIFFERENCE_QUESTION',
+      answer: 'DESKTOP_CLOUD_DIFFERENCE_ANSWER',
     },
 
     {
-      question: 'Puis-je gérer plusieurs salles avec un seul compte ?',
-      answer:
-        'Oui, avec la version Cloud. Vous pouvez gérer un nombre illimité de salles depuis un seul compte, avec des statistiques séparées pour chaque établissement et la possibilité de créer des abonnements valables dans plusieurs salles : un même adhérent peut ainsi accéder à plusieurs salles avec un seul abonnement, ce qui représente un atout majeur pour votre salle et une raison forte pour que les clients vous choisissent plutôt que vos concurrents.',
+      question: 'MULTIPLE_GYMS_ONE_ACCOUNT_QUESTION',
+      answer: 'MULTIPLE_GYMS_ONE_ACCOUNT_ANSWER',
      },
     {
-      question: 'Est-ce que YoGym continue d’ajouter de nouvelles fonctionnalités et des mises à jour?',
-      answer:
-        "Oui. YoGym évolue en continu.Notre équipe ajoute régulièrement de nouvelles fonctionnalités et améliore l’existant, aussi bien sur la version desktop que sur la version web.",
+      question: 'CONTINUOUS_UPDATES_QUESTION',
+      answer: 'CONTINUOUS_UPDATES_ANSWER',
     },
     {
-      question: 'Comment choisir entre la version desktop et la version web de YoGym ?',
-      answer:
-        "Oui, nous offrons une formation complète gratuite lors de l'installation. De plus, notre support technique est disponible 7j/7 pour répondre à toutes vos questions. L'interface est conçue pour être intuitive et facile à prendre en main.",
+      question: 'TRAINING_SUPPORT_QUESTION',
+      answer: 'TRAINING_SUPPORT_ANSWER',
     },{
-      question: 'Quelle version de YoGym me conseillez-vous, desktop ou Cloud ?',
-      answer:
-        "Pour les nouvelles salles et les petites structures, nous recommandons de commencer avec la version desktop : vous limitez vos charges fixes tout en profitant d’un logiciel complet (abonnements, adhérents, caisse, statistiques financières et générales).\n" +
-        "Quand votre salle grandit, que vos adhérents augmentent et que vous pouvez assumer une mensualité supplémentaire, vous pourrez évoluer vers la version Cloud (web) pour une gestion plus flexible, un accès à distance multiplier vos chiffres et garder un accès à votre salle à distance sans perdre vos données et être prêt à ouvrir d’autres points reliés entre eux"
+      question: 'RECOMMENDED_VERSION_QUESTION',
+      answer: 'RECOMMENDED_VERSION_ANSWER'
     }
 
 
@@ -487,10 +473,10 @@ export class LandingPageComponent {
   easyInView = false;
 
   easyToUsePoints: string[] = [
-    'Interface claire et intuitive',
-    'Formation en moins de 30 minutes',
-    'Support disponible 7j/7',
-    "Pas de courbe d'apprentissage",
+    'CLEAR_INTUITIVE_INTERFACE',
+    'TRAINING_UNDER_30_MINUTES',
+    'SUPPORT_AVAILABLE_7_DAYS',
+    'NO_LEARNING_CURVE',
   ];
 
   private easyObserver?: IntersectionObserver;
@@ -537,20 +523,20 @@ export class LandingPageComponent {
   platforms: Platform[] = [
     {
       icon: 'desktop_windows',
-      name: 'Desktop',
-      description: 'Windows & Mac',
+      name: 'DESKTOP',
+      description: 'WINDOWS_AND_MAC',
       details: 'Logiciel optimisé pour votre PC',
     },
     {
       icon: 'cloud',
-      name: 'Web',
-      description: 'Accès navigateur',
+      name: 'WEB',
+      description: 'BROWSER_ACCESS',
       details: 'Aucune installation requise',
     },
     {
       icon: 'smartphone',
-      name: 'Mobile',
-      description: 'iOS & Android',
+      name: 'MOBILE',
+      description: 'IOS_AND_ANDROID',
       details: 'Gérez en déplacement',
     },
   ];
@@ -558,28 +544,25 @@ export class LandingPageComponent {
   capabilities: Integration[] = [
     {
       icon: 'wifi',
-      title: "Contrôle d'accès intégré",
-      description:
-        'Intégration directe avec vos pointeuses et tourniquets pour un accès fluide et sécurisé.',
+      title: 'INTEGRATED_ACCESS_CONTROL',
+      description: 'INTEGRATED_ACCESS_CONTROL_DESCRIPTION',
     },
     {
       icon: 'group',
-      title: 'Multi-utilisateurs',
-      description:
-        'Gérez votre équipe avec des rôles et permissions personnalisés pour chaque membre.',
+      title: 'MULTI_USER',
+      description: 'MULTI_USER_DESCRIPTION',
     },
     {
       icon: 'lock',
-      title: 'Sécurité avancée',
-      description:
-        'Données cryptées et sauvegardes automatiques pour une protection maximale.',
+      title: 'ADVANCED_SECURITY',
+      description: 'ADVANCED_SECURITY_DESCRIPTION',
     },
   ];
 
   advantageStats = [
-    { number: '1', text: 'Abonnement unique' },
-    { number: '∞', text: 'Salles accessibles' },
-    { number: '100%', text: 'Satisfaction client' },
+    { number: '1', text: 'SINGLE_SUBSCRIPTION' },
+    { number: '∞', text: 'ACCESSIBLE_GYMS' },
+    { number: '100%', text: 'CLIENT_SATISFACTION' },
   ];
 
 }

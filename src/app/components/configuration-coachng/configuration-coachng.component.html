@@ -1,90 +1,90 @@
 <div class="coach-settings">
   <div class="settings-page-header">
-    <h1>Settings</h1>
-    <p>Update personal details and manage your plan</p>
+    <h1>{{ 'SETTINGS' | translate }}</h1>
+    <p>{{ 'SETTINGS_PAGE_SUBTITLE' | translate }}</p>
   </div>
 
-  <nav class="settings-tabs" aria-label="Settings sections">
-    <button type="button" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">Profile</button>
-    <button type="button" [class.active]="activeTab === 'password'" (click)="setActiveTab('password')">Password</button>
-    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">Plan &amp; Billing</button>
-    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">Notifications</button>
-    <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">Preferences</button>
+  <nav class="settings-tabs" [attr.aria-label]="'SETTINGS_SECTIONS' | translate">
+    <button type="button" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">{{ 'PROFILE' | translate }}</button>
+    <button type="button" [class.active]="activeTab === 'password'" (click)="setActiveTab('password')">{{ 'PASSWORD' | translate }}</button>
+    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">{{ 'PLAN_AND_BILLING' | translate }}</button>
+    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">{{ 'NOTIFICATIONS' | translate }}</button>
+    <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">{{ 'PREFERENCES' | translate }}</button>
   </nav>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'profile'">
-    <h2>Profile</h2>
+    <h2>{{ 'PROFILE' | translate }}</h2>
     <div class="settings-card profile-card">
       <div class="form-row">
-        <label for="profileUsername">Username</label>
+        <label for="profileUsername">{{ 'USERNAME' | translate }}</label>
         <input id="profileUsername" type="text" [(ngModel)]="profile.username" />
       </div>
       <div class="form-row form-row--name">
-        <label>Name</label>
+        <label>{{ 'NAME' | translate }}</label>
         <div class="stacked-inputs">
-          <input type="text" placeholder="First name" [(ngModel)]="profile.firstName" />
-          <input type="text" placeholder="Last name" [(ngModel)]="profile.lastName" />
+          <input type="text" [placeholder]="'FIRST_NAME' | translate" [(ngModel)]="profile.firstName" />
+          <input type="text" [placeholder]="'LAST_NAME' | translate" [(ngModel)]="profile.lastName" />
         </div>
       </div>
       <div class="form-row">
-        <label for="profileEmail">Email address</label>
+        <label for="profileEmail">{{ 'EMAIL_ADDRESS' | translate }}</label>
         <input id="profileEmail" type="email" [(ngModel)]="profile.email" />
       </div>
       <div class="form-row photo-row">
-        <label>Your profile photo</label>
+        <label>{{ 'YOUR_PROFILE_PHOTO' | translate }}</label>
         <div class="photo-control">
           <div class="avatar-placeholder" aria-hidden="true">👤</div>
           <div>
             <label class="btn btn--accent upload-button">
-              Upload photo
+              {{ 'UPLOAD_PHOTO' | translate }}
               <input type="file" accept="image/png,image/jpeg,image/svg+xml" hidden (change)="onProfilePhotoSelected($event)" />
             </label>
-            <small>SVG, PNG, JPG or GIF (max. 1000×1000px)</small>
+            <small>{{ 'PROFILE_PHOTO_FORMAT_HINT' | translate }}</small>
           </div>
         </div>
       </div>
       <div class="card-footer-actions">
-        <button class="btn btn--save-dark" type="button" (click)="saveProfile()">Save changes</button>
+        <button class="btn btn--save-dark" type="button" (click)="saveProfile()">{{ 'SAVE_CHANGES' | translate }}</button>
       </div>
     </div>
 
     <div class="account-section">
-      <h2>Account</h2>
-      <button class="btn btn--outline" type="button" (click)="logout()">↪ Log out</button>
+      <h2>{{ 'ACCOUNT' | translate }}</h2>
+      <button class="btn btn--outline" type="button" (click)="logout()">↪ {{ 'LOG_OUT' | translate }}</button>
 <!--      <button class="danger-link" *ngIf="!isClient" type="button" (click)="requestDeleteAccount()">Delete Account</button>-->
     </div>
   </section>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'password'">
-    <h2>Change Password</h2>
+    <h2>{{ 'CHANGE_PASSWORD' | translate }}</h2>
     <div class="settings-card password-card">
-      <div class="form-row"><label for="currentPassword">Current Password</label><input id="currentPassword" type="password" autocomplete="current-password" [(ngModel)]="passwordFormModel.oldPassword" /></div>
+      <div class="form-row"><label for="currentPassword">{{ 'CURRENT_PASSWORD' | translate }}</label><input id="currentPassword" type="password" autocomplete="current-password" [(ngModel)]="passwordFormModel.oldPassword" /></div>
       <div class="password-grid">
-        <div class="form-row"><label for="newPassword">New Password</label><input id="newPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.newPassword" /></div>
-        <div class="form-row"><label for="confirmPassword">Confirm New Password</label><input id="confirmPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.confirmPassword" /></div>
+        <div class="form-row"><label for="newPassword">{{ 'NEW_PASSWORD' | translate }}</label><input id="newPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.newPassword" /></div>
+        <div class="form-row"><label for="confirmPassword">{{ 'CONFIRM_NEW_PASSWORD' | translate }}</label><input id="confirmPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.confirmPassword" /></div>
       </div>
       <p class="form-message form-message--error" *ngIf="passwordError">{{ passwordError }}</p>
       <p class="form-message form-message--success" *ngIf="passwordSuccess">{{ passwordSuccess }}</p>
-      <div class="card-footer-actions card-footer-actions--right"><button class="btn btn--accent" type="button" [disabled]="isChangingPassword" (click)="changePassword()">{{ isChangingPassword ? 'Updating...' : 'Update Password' }}</button></div>
+      <div class="card-footer-actions card-footer-actions--right"><button class="btn btn--accent" type="button" [disabled]="isChangingPassword" (click)="changePassword()">{{ (isChangingPassword ? 'UPDATING' : 'UPDATE_PASSWORD') | translate }}</button></div>
     </div>
   </section>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'plan'">
-    <h2>Plan</h2>
+    <h2>{{ 'PLAN' | translate }}</h2>
     <div class="settings-card plan-card">
       <div class="plan-content">
         <div>
-          <p class="plan-name">30 Day Free Trial</p>
+          <p class="plan-name">{{ 'THIRTY_DAY_FREE_TRIAL' | translate }}</p>
           <strong class="plan-price">0,00 $US</strong>
-          <p class="muted-text">Free trial ends on Aug 6, 2026</p>
+          <p class="muted-text">{{ 'FREE_TRIAL_ENDS_ON' | translate:{date: ('FREE_TRIAL_DATE' | translate)} }}</p>
         </div>
         <div class="plan-usage">
-          <p><strong>0</strong> clients on the Unlimited Trial</p>
+          <p><strong>0</strong> {{ 'CLIENTS_ON_UNLIMITED_TRIAL' | translate }}</p>
           <div class="usage-track"><span style="width: 2%"></span></div>
         </div>
       </div>
       <div class="card-footer-actions card-footer-actions--right">
-        <button class="btn btn--accent" type="button">Change Plan</button>
+        <button class="btn btn--accent" type="button">{{ 'CHANGE_PLAN' | translate }}</button>
       </div>
     </div>
   </section>
@@ -92,19 +92,19 @@
   <section class="settings-tab-panel" *ngIf="activeTab === 'notifications'">
     <div class="browser-notification-card">
       <div class="notification-icon">♧</div>
-      <h2>Enable Notifications</h2>
-      <p>Receive notifications when your clients complete important activities.</p>
+      <h2>{{ 'ENABLE_NOTIFICATIONS' | translate }}</h2>
+      <p>{{ 'ENABLE_NOTIFICATIONS_DESCRIPTION' | translate }}</p>
       <button class="btn" [class.btn--accent]="!browserNotificationsEnabled" [class.btn--outline]="browserNotificationsEnabled" type="button" (click)="enableBrowserNotifications()">
-        {{ browserNotificationsEnabled ? 'Disable Notifications' : 'Enable Notifications' }}
+        {{ (browserNotificationsEnabled ? 'DISABLE_NOTIFICATIONS' : 'ENABLE_NOTIFICATIONS') | translate }}
       </button>
     </div>
 
     <div class="email-notifications-section">
-      <h2>Notification Preferences</h2>
-      <p class="muted-text">Receive a notification when this happens:</p>
+      <h2>{{ 'NOTIFICATION_PREFERENCES' | translate }}</h2>
+      <p class="muted-text">{{ 'NOTIFICATION_PREFERENCES_DESCRIPTION' | translate }}</p>
       <div class="settings-card notification-list">
         <div class="notification-row" *ngFor="let item of emailNotifications">
-          <span>{{ item.label }}</span>
+          <span>{{ item.label | translate }}</span>
           <button class="toggle" type="button" [disabled]="!browserNotificationsEnabled" [class.toggle--on]="item.enabled && browserNotificationsEnabled" (click)="toggleNotification(item)">
             <span class="toggle__thumb" [class.toggle__thumb--on]="item.enabled"></span>
           </button>
@@ -116,12 +116,12 @@
   <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences' && !isClient">
     <div class="preferences-heading">
       <div>
-        <h2>Preferences</h2>
-        <p>Configure workout, nutrition, language and workspace preferences.</p>
+        <h2>{{ 'PREFERENCES' | translate }}</h2>
+        <p>{{ 'PREFERENCES_DESCRIPTION' | translate }}</p>
       </div>
       <div class="cs-header__actions">
-        <button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">{{ 'COACH_SETTINGS.CANCEL' | translate }}</button>
-        <button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ saving ? ('COACH_SETTINGS.SAVING' | translate) : ('COACH_SETTINGS.SAVE_CHANGES' | translate) }}</button>
+        <button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">{{ 'COACH_SETTINGS_CANCEL' | translate }}</button>
+        <button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ saving ? ('COACH_SETTINGS_SAVING' | translate) : ('COACH_SETTINGS_SAVE_CHANGES' | translate) }}</button>
       </div>
     </div>
   <div class="section-card">
@@ -136,14 +136,14 @@
           </svg>
         </div>
         <h3 class="section-title">
-          1. {{ 'COACH_SETTINGS.NUTRITION_PLANS' | translate }}
+          1. {{ 'COACH_SETTINGS_NUTRITION_PLANS' | translate }}
         </h3>
       </div>
 
       <div class="section-body">
         <div class="toggle-row">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.FULL_MEAL_PLAN' | translate }}
+            {{ 'COACH_SETTINGS_FULL_MEAL_PLAN' | translate }}
           </span>
           <button
             class="toggle"
@@ -160,7 +160,7 @@
 
         <div class="toggle-row">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.MACRO_PLAN_DAILY' | translate }}
+            {{ 'COACH_SETTINGS_MACRO_PLAN_DAILY' | translate }}
           </span>
           <button
             class="toggle"
@@ -177,7 +177,7 @@
 
         <div class="toggle-row">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.MACRO_PLAN_EACH_MEAL' | translate }}
+            {{ 'COACH_SETTINGS_MACRO_PLAN_EACH_MEAL' | translate }}
           </span>
           <button
             class="toggle"
@@ -203,14 +203,14 @@
               </svg>
             </div>
             <span class="sub-box__title">
-              {{ 'COACH_SETTINGS.MEAL_DEFAULTS' | translate }}
+              {{ 'COACH_SETTINGS_MEAL_DEFAULTS' | translate }}
             </span>
           </div>
 
           <div class="sub-box__row">
             <div class="select-group">
               <label class="select-label">
-                {{ 'COACH_SETTINGS.MEALS_SHOWN_BY_DEFAULT' | translate }}
+                {{ 'COACH_SETTINGS_MEALS_SHOWN_BY_DEFAULT' | translate }}
               </label>
               <select [(ngModel)]="config.nutrition.defaultMeals" class="select select--sm">
                 <option value="1">1</option>
@@ -226,7 +226,7 @@
 
             <div class="toggle-row">
               <span class="toggle-label">
-                {{ 'COACH_SETTINGS.AUTO_CREATE_MEALS' | translate }}
+                {{ 'COACH_SETTINGS_AUTO_CREATE_MEALS' | translate }}
               </span>
               <button
                 class="toggle"
@@ -281,7 +281,7 @@
           </svg>
         </div>
         <h3 class="section-title">
-          2. {{ 'COACH_SETTINGS.WORKOUT_DEFAULTS' | translate }}
+          2. {{ 'COACH_SETTINGS_WORKOUT_DEFAULTS' | translate }}
         </h3>
       </div>
 
@@ -289,7 +289,7 @@
         <div class="workout-selects" style="display:flex;flex-wrap:wrap;gap:1rem;width:100%">
           <div class="select-group">
             <label class="select-label">
-              {{ 'COACH_SETTINGS.WORKOUT_SETS' | translate }}
+              {{ 'COACH_SETTINGS_WORKOUT_SETS' | translate }}
             </label>
             <select [(ngModel)]="config.workout.workoutSets" class="select">
               <option value="1">1</option>
@@ -303,7 +303,7 @@
 
           <div class="select-group">
             <label class="select-label">
-              {{ 'COACH_SETTINGS.WORKOUT_REPS' | translate }}
+              {{ 'COACH_SETTINGS_WORKOUT_REPS' | translate }}
             </label>
             <select [(ngModel)]="config.workout.workoutReps" class="select">
               <option value="6">6</option>
@@ -317,7 +317,7 @@
 
           <div class="select-group">
             <label class="select-label">
-              {{ 'COACH_SETTINGS.CARDIO_SETS' | translate }}
+              {{ 'COACH_SETTINGS_CARDIO_SETS' | translate }}
             </label>
             <select [(ngModel)]="config.workout.cardioSets" class="select">
               <option value="1">1</option>
@@ -330,7 +330,7 @@
 
           <div class="select-group">
             <label class="select-label">
-              {{ 'COACH_SETTINGS.CARDIO_MINUTES' | translate }}
+              {{ 'COACH_SETTINGS_CARDIO_MINUTES' | translate }}
             </label>
             <select [(ngModel)]="config.workout.cardioMinutes" class="select">
               <option value="5">5</option>
@@ -346,7 +346,7 @@
 
         <div class="workout-toggle">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.AUTO_FILL_DEFAULTS' | translate }}
+            {{ 'COACH_SETTINGS_AUTO_FILL_DEFAULTS' | translate }}
           </span>
           <button
             class="toggle"
@@ -396,14 +396,14 @@
           </svg>
         </div>
         <h3 class="section-title">
-          3. {{ 'COACH_SETTINGS.QUICK_ACTIONS' | translate }}
+          3. {{ 'COACH_SETTINGS_QUICK_ACTIONS' | translate }}
         </h3>
       </div>
 
       <div class="section-body">
         <div class="toggle-row">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.ASSIGN_AFTER_NUTRITION' | translate }}
+            {{ 'COACH_SETTINGS_ASSIGN_AFTER_NUTRITION' | translate }}
           </span>
           <button
             class="toggle"
@@ -420,7 +420,7 @@
 
         <div class="toggle-row">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.ASSIGN_AFTER_WORKOUT' | translate }}
+            {{ 'COACH_SETTINGS_ASSIGN_AFTER_WORKOUT' | translate }}
           </span>
           <button
             class="toggle"
@@ -437,7 +437,7 @@
 
         <div class="toggle-row">
           <span class="toggle-label">
-            {{ 'COACH_SETTINGS.ASSIGN_AFTER_CHECKIN' | translate }}
+            {{ 'COACH_SETTINGS_ASSIGN_AFTER_CHECKIN' | translate }}
           </span>
           <button
             class="toggle"
@@ -467,14 +467,14 @@
           </svg>
         </div>
         <h3 class="section-title">
-          4. {{ 'COACH_SETTINGS.DEFAULTS_TITLE' | translate }}
+          4. {{ 'COACH_SETTINGS_DEFAULTS_TITLE' | translate }}
         </h3>
       </div>
 
       <div class="section-body">
         <div class="select-group">
           <label class="select-label">
-            {{ 'COACH_SETTINGS.DEFAULT_LANGUAGE' | translate }}
+            {{ 'COACH_SETTINGS_DEFAULT_LANGUAGE' | translate }}
           </label>
 
           <select
@@ -483,10 +483,10 @@
             (ngModelChange)="onLanguageChange()"
           >
             <option value="English">
-              {{ 'COACH_SETTINGS.LANGUAGE_ENGLISH' | translate }}
+              {{ 'COACH_SETTINGS_LANGUAGE_ENGLISH' | translate }}
             </option>
             <option value="French">
-              {{ 'COACH_SETTINGS.LANGUAGE_FRENCH' | translate }}
+              {{ 'COACH_SETTINGS_LANGUAGE_FRENCH' | translate }}
             </option>
           </select>
         </div>
@@ -509,14 +509,14 @@
           </svg>
         </div>
         <h3 class="section-title">
-          5. Units
+          5. {{ 'UNITS' | translate }}
         </h3>
       </div>
 
       <div class="section-body">
         <div class="units-settings">
           <div class="units-setting">
-            <label class="select-label">Weight</label>
+            <label class="select-label">{{ 'WEIGHT' | translate }}</label>
             <div class="unit-segment">
               <button
                 type="button"
@@ -538,7 +538,7 @@
           </div>
 
           <div class="units-setting">
-            <label class="select-label">Measurements</label>
+            <label class="select-label">{{ 'MEASUREMENTS' | translate }}</label>
             <div class="unit-segment">
               <button
                 type="button"
@@ -623,7 +623,7 @@
               <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
               <path d="M21 3v6h-6"/>
             </svg>
-            {{ demoActionLoading === 'reset' ? 'Reset...' : 'Reset demo data' }}
+            {{ (demoActionLoading === 'reset' ? 'RESETTING' : 'RESET_DEMO_DATA') | translate }}
           </button>
 
           <button
@@ -640,7 +640,7 @@
               <line x1="10" y1="11" x2="10" y2="17"/>
               <line x1="14" y1="11" x2="14" y2="17"/>
             </svg>
-            {{ demoActionLoading === 'remove' ? 'Removing...' : 'Remove demo data' }}
+            {{ (demoActionLoading === 'remove' ? 'REMOVING' : 'REMOVE_DEMO_DATA') | translate }}
           </button>
         </div>
 
@@ -657,7 +657,7 @@
                 <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/>
                 <path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"/>
               </svg>
-              {{ demoActionLoading === 'generate' ? 'Generating...' : 'Generate demo data' }}
+              {{ (demoActionLoading === 'generate' ? 'GENERATING' : 'GENERATE_DEMO_DATA') | translate }}
             </button>
           </div>
         </ng-template>
@@ -722,15 +722,15 @@
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
     </svg>
     <p class="info-banner__text">
-      {{ 'COACH_SETTINGS.INFO' | translate }}
+      {{ 'COACH_SETTINGS_INFO' | translate }}
     </p>
   </div>
   </section>
 
   <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences' && isClient">
     <div class="preferences-heading">
-      <div><h2>Preferences</h2><p>Choose your language and display units.</p></div>
-      <div class="cs-header__actions"><button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">Cancel</button><button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ saving ? 'Saving...' : 'Save changes' }}</button></div>
+      <div><h2>{{ 'PREFERENCES' | translate }}</h2><p>{{ 'CLIENT_PREFERENCES_DESCRIPTION' | translate }}</p></div>
+      <div class="cs-header__actions"><button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">{{ 'CANCEL' | translate }}</button><button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button></div>
     </div>
 
     <div class="section-card">
@@ -741,14 +741,14 @@
               <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
             </svg>
           </div>
-          <h3 class="section-title">4. {{ 'COACH_SETTINGS.DEFAULTS_TITLE' | translate }}</h3>
+          <h3 class="section-title">4. {{ 'COACH_SETTINGS_DEFAULTS_TITLE' | translate }}</h3>
         </div>
         <div class="section-body">
           <div class="select-group">
-            <label class="select-label">{{ 'COACH_SETTINGS.DEFAULT_LANGUAGE' | translate }}</label>
+            <label class="select-label">{{ 'COACH_SETTINGS_DEFAULT_LANGUAGE' | translate }}</label>
             <select id="clientLanguage" [(ngModel)]="config.defaults.language" class="select select--lg" (ngModelChange)="onLanguageChange()">
-              <option value="English">{{ 'COACH_SETTINGS.LANGUAGE_ENGLISH' | translate }}</option>
-              <option value="French">{{ 'COACH_SETTINGS.LANGUAGE_FRENCH' | translate }}</option>
+              <option value="English">{{ 'COACH_SETTINGS_LANGUAGE_ENGLISH' | translate }}</option>
+              <option value="French">{{ 'COACH_SETTINGS_LANGUAGE_FRENCH' | translate }}</option>
             </select>
           </div>
         </div>
@@ -763,19 +763,19 @@
               <path d="M4 19V5"/><path d="M20 19V5"/><path d="M8 8h8"/><path d="M8 16h8"/><path d="M9 12h6"/>
             </svg>
           </div>
-          <h3 class="section-title">5. Units</h3>
+          <h3 class="section-title">5. {{ 'UNITS' | translate }}</h3>
         </div>
         <div class="section-body">
           <div class="units-settings">
             <div class="units-setting">
-              <label class="select-label">Weight</label>
+              <label class="select-label">{{ 'WEIGHT' | translate }}</label>
               <div class="unit-segment">
                 <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.weightUnit !== 'lbs'" (click)="config.defaults.weightUnit = 'kg'">Kg</button>
                 <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.weightUnit === 'lbs'" (click)="config.defaults.weightUnit = 'lbs'">Lbs</button>
               </div>
             </div>
             <div class="units-setting">
-              <label class="select-label">Measurements</label>
+              <label class="select-label">{{ 'MEASUREMENTS' | translate }}</label>
               <div class="unit-segment">
                 <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.measurementUnit !== 'in'" (click)="config.defaults.measurementUnit = 'cm'">Cm</button>
                 <button type="button" class="unit-segment__option" [class.unit-segment__option--active]="config.defaults.measurementUnit === 'in'" (click)="config.defaults.measurementUnit = 'in'">In</button>
@@ -799,8 +799,8 @@
   >
     <div class="coach-settings-toast__icon">✓</div>
     <div>
-      <strong>{{ 'COACH_SETTINGS.SAVED_SUCCESS_TITLE' | translate }}</strong>
-      <p>{{ 'COACH_SETTINGS.SAVED_SUCCESS_MESSAGE' | translate }}</p>
+      <strong>{{ 'COACH_SETTINGS_SAVED_SUCCESS_TITLE' | translate }}</strong>
+      <p>{{ 'COACH_SETTINGS_SAVED_SUCCESS_MESSAGE' | translate }}</p>
     </div>
   </div>
 
@@ -810,8 +810,8 @@
   >
     <div class="coach-settings-toast__icon">!</div>
     <div>
-      <strong>{{ 'COACH_SETTINGS.SAVED_ERROR_TITLE' | translate }}</strong>
-      <p>{{ 'COACH_SETTINGS.SAVED_ERROR_MESSAGE' | translate }}</p>
+      <strong>{{ 'COACH_SETTINGS_SAVED_ERROR_TITLE' | translate }}</strong>
+      <p>{{ 'COACH_SETTINGS_SAVED_ERROR_MESSAGE' | translate }}</p>
     </div>
   </div>
 </div>

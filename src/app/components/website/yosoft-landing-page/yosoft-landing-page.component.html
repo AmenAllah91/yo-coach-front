@@ -11,16 +11,16 @@
 
       <nav class="nav-links">
         <button class="nav-link" (click)="scrollTo('about')">
-          À propos
+          {{ 'ABOUT' | translate }}
         </button>
         <button class="nav-link" (click)="scrollTo('services')">
-          Solutions
+          {{ 'SOLUTIONS' | translate }}
         </button>
         <button class="nav-link" (click)="scrollTo('products')">
-          Produits
+          {{ 'PRODUCTS' | translate }}
         </button>
         <button class="nav-link" (click)="scrollTo('contact')">
-          Contact
+          {{ 'CONTACT' | translate }}
         </button>
       </nav>
     </div>
@@ -38,12 +38,10 @@
       <!-- Colonne texte -->
       <div class="hero-left">
         <h1 class="hero-title">
-          LOGICIELS, PAIEMENTS & SOLUTIONS<br />
-          POUR AIDER LES ENTREPRISES À RÉUSSIR
+          {{ 'YOSOFT_HERO_TITLE' | translate }}
         </h1>
         <p class="hero-subtitle">
-          Nous aidons les entreprises à se concentrer sur ce qu'elles aiment en
-          leur offrant la technologie dont elles ont besoin pour grandir.
+          {{ 'YOSOFT_HERO_SUBTITLE' | translate }}
         </p>
       </div>
 
@@ -62,7 +60,7 @@
           </div>
 
           <button class="hero-card-button" (click)="scrollTo('services')">
-            Découvrir nos solutions
+            {{ 'DISCOVER_OUR_SOLUTIONS' | translate }}
           </button>
         </div>
       </div>
@@ -72,13 +70,9 @@
   <!-- À propos -->
   <section id="about" class="section section-about">
     <div class="section-about-card">
-      <h2 class="section-title">Qui sommes-nous ?</h2>
+      <h2 class="section-title">{{ 'WHO_WE_ARE' | translate }}</h2>
       <p class="section-text">
-        YoSoftware est une suite de solutions SaaS qui accompagne les
-        entreprises dans leur croissance. Nous concevons des logiciels, des
-        systèmes de paiement et des outils métier pensés pour simplifier le
-        quotidien, améliorer l'organisation et soutenir le développement de nos
-        clients.
+        {{ 'YOSOFT_ABOUT_TEXT' | translate }}
       </p>
     </div>
   </section>
@@ -86,17 +80,16 @@
   <!-- Services -->
   <section id="services" class="section">
     <div class="section-container">
-      <h2 class="section-title center">Ce que nous faisons</h2>
+      <h2 class="section-title center">{{ 'WHAT_WE_DO' | translate }}</h2>
 
       <div class="cards-grid">
         <div class="service-card">
           <div class="service-icon">
             <span>💻</span>
           </div>
-          <h3 class="card-title">Software</h3>
+          <h3 class="card-title">{{ 'SOFTWARE' | translate }}</h3>
           <p class="card-text">
-            Des applications SaaS simples et modernes pour piloter votre
-            activité.
+            {{ 'YOSOFT_SOFTWARE_DESCRIPTION' | translate }}
           </p>
         </div>
 
@@ -104,10 +97,9 @@
           <div class="service-icon">
             <span>💳</span>
           </div>
-          <h3 class="card-title">Payments</h3>
+          <h3 class="card-title">{{ 'PAYMENTS' | translate }}</h3>
           <p class="card-text">
-            Des solutions de paiement intégrées pour soutenir votre modèle
-            économique.
+            {{ 'YOSOFT_PAYMENTS_DESCRIPTION' | translate }}
           </p>
         </div>
 
@@ -115,10 +107,9 @@
           <div class="service-icon">
             <span>💡</span>
           </div>
-          <h3 class="card-title">Solutions</h3>
+          <h3 class="card-title">{{ 'SOLUTIONS' | translate }}</h3>
           <p class="card-text">
-            Un accompagnement et des outils adaptés à votre secteur pour vous
-            aider à passer au niveau supérieur.
+            {{ 'YOSOFT_SOLUTIONS_DESCRIPTION' | translate }}
           </p>
         </div>
       </div>
@@ -128,9 +119,9 @@
   <!-- Produits -->
   <section id="products" class="section section-products">
     <div class="section-container">
-      <h2 class="section-title center light">Nos solutions</h2>
+      <h2 class="section-title center light">{{ 'OUR_SOLUTIONS' | translate }}</h2>
       <p class="section-subtitle center">
-        Quelques solutions signées YoSoftware
+        {{ 'YOSOFT_PRODUCTS_SUBTITLE' | translate }}
       </p>
 
       <div class="cards-grid">
@@ -140,7 +131,7 @@
           </div>
           <h3 class="card-title light">YoGym</h3>
           <p class="card-text muted">
-            Solution SaaS pour la gestion des salles de sport.
+            {{ 'YOGYM_PRODUCT_DESCRIPTION' | translate }}
           </p>
         </div>
 
@@ -150,7 +141,7 @@
           </div>
           <h3 class="card-title light">YoSales</h3>
           <p class="card-text muted">
-            Outil pour structurer et suivre l'activité commerciale.
+            {{ 'YOSALES_PRODUCT_DESCRIPTION' | translate }}
           </p>
         </div>
 
@@ -160,7 +151,7 @@
           </div>
           <h3 class="card-title light">YoCoach</h3>
           <p class="card-text muted">
-            Plateforme pour les coachs et indépendants.
+            {{ 'YOCOACH_PRODUCT_DESCRIPTION' | translate }}
           </p>
         </div>
       </div>
@@ -171,12 +162,12 @@
   <section id="contact" class="section section-cta">
     <div class="section-cta-inner">
       <h2 class="section-title light">
-        Prêt à faire grandir votre entreprise ?
+        {{ 'READY_TO_GROW_BUSINESS' | translate }}
       </h2>
       <p class="section-text light">
-        Découvrez comment YoSoftware peut vous aider à atteindre vos objectifs.
+        {{ 'YOSOFT_CTA_DESCRIPTION' | translate }}
       </p>
-      <button class="cta-button">Nous contacter</button>
+      <button class="cta-button">{{ 'CONTACT_US' | translate }}</button>
     </div>
   </section>
 
@@ -185,22 +176,22 @@
     <div class="footer-inner">
       <div>
         <h3 class="footer-logo">YoSoftware</h3>
-        <p class="footer-text">La technologie au service de votre croissance</p>
+        <p class="footer-text">{{ 'TECHNOLOGY_FOR_GROWTH' | translate }}</p>
       </div>
       <div class="footer-links">
         <button class="footer-link" (click)="scrollTo('about')">
-          À propos
+          {{ 'ABOUT' | translate }}
         </button>
         <button class="footer-link" (click)="scrollTo('services')">
-          Solutions
+          {{ 'SOLUTIONS' | translate }}
         </button>
         <button class="footer-link" (click)="scrollTo('contact')">
-          Contact
+          {{ 'CONTACT' | translate }}
         </button>
       </div>
     </div>
     <div class="footer-bottom">
-      © 2024 YoSoftware. Tous droits réservés.
+      {{ 'YOSOFT_COPYRIGHT' | translate }}
     </div>
   </footer>
 </div>

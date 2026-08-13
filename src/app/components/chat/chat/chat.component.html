@@ -2,7 +2,7 @@
   <div class="chat-page-header__left">
     <div class="chat-page-header__titles">
       <h1>{{ 'CHAT_TITLE' | translate }}</h1>
-      <p>{{ 'CHAT_SUBTITLE' | translate }}</p>
+      <p>{{ (isClientUser ? 'CHAT_SUBTITLE_CLIENT' : 'CHAT_SUBTITLE') | translate }}</p>
     </div>
   </div>
 </div>

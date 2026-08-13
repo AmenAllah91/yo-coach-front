@@ -1,15 +1,16 @@
 import { Component } from '@angular/core';
 import { Location } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-back-button',
   standalone: true,
-  imports: [FeatherModule],
+  imports: [FeatherModule, TranslateModule],
   template: `
-    <button class="back-btn" (click)="goBack()" type="button" aria-label="Back">
+    <button class="back-btn" (click)="goBack()" type="button" [attr.aria-label]="'BACK' | translate">
       <i-feather name="arrow-left" class="back-icon"></i-feather>
-      <span class="back-label">Back</span>
+      <span class="back-label">{{ 'BACK' | translate }}</span>
     </button>
   `,
   styles: [`

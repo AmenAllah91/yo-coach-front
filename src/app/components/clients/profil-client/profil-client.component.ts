@@ -2834,7 +2834,7 @@ export class ProfilClientComponent {
       error: (err) => {
         console.error(err);
         this.loadingAssignments = false;
-        alert('Assign failed');
+        alert(this.translate.instant('ASSIGN_FAILED'));
       }
     });
   }
