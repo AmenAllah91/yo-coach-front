@@ -229,6 +229,7 @@
   "EXERCISE_TYPE_STRENGTH": "Strength",
   "PROGRAM_STRUCTURE": "Program Structure",
   "REMOVE_MEAL": "Remove meal",
+  "MOVE_MEAL": "Move meal",
   "ADD_ITEM_USING_BUTTON": "Add an item using the button below",
   "FROM_DATE": "From {{date}}",
   "UNTIL_DATE": "Until {{date}}",

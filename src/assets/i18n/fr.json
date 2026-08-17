@@ -229,6 +229,7 @@
   "EXERCISE_TYPE_STRENGTH": "Force",
   "PROGRAM_STRUCTURE": "Structure du programme",
   "REMOVE_MEAL": "Supprimer le repas",
+  "MOVE_MEAL": "Déplacer le repas",
   "ADD_ITEM_USING_BUTTON": "Ajoutez un élément avec le bouton ci-dessous",
   "FROM_DATE": "À partir du {{date}}",
   "UNTIL_DATE": "Jusqu’au {{date}}",
