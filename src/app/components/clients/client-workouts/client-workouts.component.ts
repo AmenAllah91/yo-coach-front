@@ -114,6 +114,7 @@ interface WorkoutExerciseDisplay {
   name: string;
   suffix: string;
   isWarmUp: boolean;
+  imageUrl: string;
 }
 
 interface FileProgram {
@@ -1578,6 +1579,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           name: this.translate.instant('WARM_UP'),
           suffix: '',
           isWarmUp: true,
+          imageUrl: this.getExerciseCardImage(exercise),
         });
         return;
       }
@@ -1604,10 +1606,22 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         name: exercise.name || this.translate.instant('EXERCISE'),
         suffix: this.getExerciseSuffix(exercise),
         isWarmUp: false,
+        imageUrl: this.getExerciseCardImage(exercise),
       });
     });
 
     return display;
+  }
+
+  getExerciseCardImage(exercise: any): string {
+    const ref = exercise?.exerciseRef || {};
+    const videoLink = exercise?.youtubeUrl || exercise?.videoLink || exercise?.videoUrl ||
+      ref?.youtubeUrl || ref?.videoLink || ref?.videoUrl || '';
+    const videoId = this.getYouTubeVideoId(videoLink);
+    if (videoId) return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+    return exercise?.imageUrl || exercise?.image || exercise?.thumbnailUrl || exercise?.photoUrl ||
+      ref?.imageUrl || ref?.image || ref?.thumbnailUrl || ref?.photoUrl || '';
   }
 
   private indexToExerciseLetter(index: number): string {

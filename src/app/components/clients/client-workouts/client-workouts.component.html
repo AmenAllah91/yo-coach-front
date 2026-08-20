@@ -3,8 +3,7 @@
   <div class="client-page-inner">
     <div class="cw-root">
       <header class="client-header">
-        <h1 class="client-header-title">{{ greeting }}, {{ currentUserName }}</h1>
-        <p class="client-header-subtitle">{{ 'WORKOUT_JOURNEY_STARTS' | translate }}</p>
+        <h1 class="client-header-title">{{ 'WORKOUTS' | translate }}</h1>
       </header>
 
       <div class="file-toggle-wrap" *ngIf="showWorkoutFiles">
@@ -204,9 +203,9 @@
         </nav>
 
         <div class="client-month-nav">
-          <button class="month-nav-btn" [disabled]="!canGoPrevMonth" (click)="prevMonth()"><i class="chevron chevron-left"></i></button>
+          <button class="month-nav-btn" [disabled]="!canGoPrevMonth" (click)="prevMonth()"><i class="chevron chevron-left"></i><span>{{ 'PREVIOUS' | translate }}</span></button>
           <div class="month-title">{{ currentMonth }}</div>
-          <button class="month-nav-btn" [disabled]="!canGoNextMonth" (click)="nextMonth()"><i class="chevron chevron-right"></i></button>
+          <button class="month-nav-btn" [disabled]="!canGoNextMonth" (click)="nextMonth()"><span>{{ 'NEXT' | translate }}</span><i class="chevron chevron-right"></i></button>
         </div>
 
         <div class="client-list">
@@ -223,7 +222,7 @@
                   <h3 class="cn-day-title">{{ workout.title }}</h3>
                   <p class="cn-day-subtitle" *ngIf="workout.program">{{ workout.program }}</p>
                   <div class="client-schedule-card__meta">
-                    <span aria-hidden="true">🏋️</span>
+                    <i-feather class="exercise-count-icon" name="activity" aria-hidden="true"></i-feather>
                     <span>{{ getTotalExercises(workout) }} {{ 'EXERCISES' | translate }}</span>
                   </div>
                 </div>
@@ -244,6 +243,10 @@
                       <ng-container *ngIf="exercise.isWarmUp; else exerciseBadge">&#128293;</ng-container>
                       <ng-template #exerciseBadge>{{ exercise.badge }}</ng-template>
                     </span>
+                    <span class="exercise-thumbnail" aria-hidden="true">
+                      <i-feather name="activity"></i-feather>
+                      <img *ngIf="exercise.imageUrl" [src]="exercise.imageUrl" alt="" (error)="$any($event.target).style.display='none'" />
+                    </span>
                     <span class="exercise-name">{{ exercise.name }}<span *ngIf="exercise.suffix"> {{ exercise.suffix }}</span></span>
                   </div>
                 </div>
@@ -252,8 +255,8 @@
           </article>
 
           <div class="cn-empty" *ngIf="displayWorkouts.length === 0">
-            <div class="cn-empty-icon">
-              <i-feather name="calendar"></i-feather>
+            <div class="cn-empty-illustration cn-empty-illustration--workout" aria-hidden="true">
+              <img src="assets/empty_states/workout_ticket_screen.png" alt="" />
             </div>
             <h3 class="cn-empty-title">{{ 'NO_WORKOUTS_SCHEDULED' | translate }}</h3>
             <p class="cn-empty-text">{{ (activeTab === 'upcoming' ? 'NO_UPCOMING_WORKOUTS' : 'NO_PAST_WORKOUTS') | translate }}</p>
@@ -268,7 +271,7 @@
 <!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page workout-day" *ngIf="selectedWorkout">
   <header class="workout-day__topbar">
-    <div class="workout-day__title"><button [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span></div>
+    <div class="workout-day__title"><button [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span><button class="mobile-workout-pdf" type="button" [attr.aria-label]="'EXTRACT_PDF' | translate" [title]="'EXTRACT_PDF' | translate" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather></button></div>
     <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ (workoutRunStatus === 'LOG_WORKOUT' ? 'NO_TIMER' : 'WORKOUT_TIMER') | translate }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
       <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> {{ 'EXTRACT_PDF' | translate }}</button>

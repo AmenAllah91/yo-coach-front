@@ -41,6 +41,7 @@ export class ProgressPicturesComponent implements OnInit {
   selectedSinglePicture: ProgressPicture | null = null;
   selectedAfterPicture: ProgressPicture | null = null;
   selectedBeforePicture: ProgressPicture | null = null;
+  comparisonSelectionError: string | null = null;
 
   constructor(
     private progressPicturesService: ProgressPicturesService,
@@ -204,10 +205,10 @@ export class ProgressPicturesComponent implements OnInit {
     this.showPicturesComparison = true;
     this.comparisonMode = 'comparison';
 
-    const sorted = this.sortedPictures;
-    this.selectedAfterPicture = sorted[0] || null;
-    this.selectedBeforePicture = sorted[1] || null;
-    this.selectedSinglePicture = sorted[0] || null;
+    this.selectedAfterPicture = null;
+    this.selectedBeforePicture = null;
+    this.selectedSinglePicture = this.sortedPictures[0] || null;
+    this.comparisonSelectionError = null;
   }
 
   closeComparison(): void {
@@ -216,6 +217,7 @@ export class ProgressPicturesComponent implements OnInit {
 
   changeComparisonMode(mode: 'single' | 'comparison'): void {
     this.comparisonMode = mode;
+    this.comparisonSelectionError = null;
 
     if (mode === 'single') {
       this.selectedSinglePicture =
@@ -229,15 +231,30 @@ export class ProgressPicturesComponent implements OnInit {
   selectComparisonPicture(picture: ProgressPicture): void {
     if (this.comparisonMode === 'single') {
       this.selectedSinglePicture = picture;
+      this.comparisonSelectionError = null;
       return;
     }
 
     if (!this.selectedBeforePicture || (this.selectedBeforePicture && this.selectedAfterPicture)) {
       this.selectedBeforePicture = picture;
-      this.selectedAfterPicture =
-        this.selectedAfterPicture?.id === picture.id ? null : this.selectedAfterPicture;
+      this.selectedAfterPicture = null;
+      this.comparisonSelectionError = null;
     } else if (!this.selectedAfterPicture) {
-      this.selectedAfterPicture = picture;
+      const candidateTime = new Date(picture.date).getTime();
+      const beforeTime = new Date(this.selectedBeforePicture.date).getTime();
+
+      if (candidateTime === beforeTime) {
+        this.comparisonSelectionError = 'AFTER_PICTURE_DATE_MUST_BE_LATER';
+        return;
+      }
+
+      if (candidateTime > beforeTime) {
+        this.selectedAfterPicture = picture;
+      } else {
+        this.selectedAfterPicture = this.selectedBeforePicture;
+        this.selectedBeforePicture = picture;
+      }
+      this.comparisonSelectionError = null;
     }
   }
 

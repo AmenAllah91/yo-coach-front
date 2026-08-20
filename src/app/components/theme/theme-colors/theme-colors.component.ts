@@ -286,6 +286,8 @@ export class ThemeColorsComponent implements OnInit {
     this.loadThemes();
   }
 
+  goBack(): void { window.history.back(); }
+
   get visibleControls(): ColorControl[] {
     if (this.activeColorSection === 'templates' || this.activeColorSection === 'branding') {
       return [];

@@ -1611,18 +1611,6 @@
           </span>
         </label>
 
-        <label class="client-workout-resolution" [class.selected]="clientWorkoutConflict.resolution === 'KEEP_BOTH'">
-          <input
-            type="radio"
-            name="client-workout-conflict-resolution"
-            [checked]="clientWorkoutConflict.resolution === 'KEEP_BOTH'"
-            (change)="setClientWorkoutConflictResolution('KEEP_BOTH')"
-          />
-          <span>
-            <strong>{{ 'KEEP_BOTH_ANYWAY' | translate }}</strong>
-            <small>{{ 'KEEP_BOTH_ANYWAY_HINT' | translate }}</small>
-          </span>
-        </label>
       </div>
     </div>
 
@@ -1734,18 +1722,6 @@
           </span>
         </label>
 
-        <label class="client-workout-resolution" [class.selected]="clientNutritionConflict.resolution === 'KEEP_BOTH'">
-          <input
-            type="radio"
-            name="client-nutrition-conflict-resolution"
-            [checked]="clientNutritionConflict.resolution === 'KEEP_BOTH'"
-            (change)="setClientNutritionConflictResolution('KEEP_BOTH')"
-          />
-          <span>
-            <strong>{{ 'KEEP_BOTH_ANYWAY' | translate }}</strong>
-            <small>{{ 'KEEP_BOTH_ANYWAY_HINT' | translate }}</small>
-          </span>
-        </label>
       </div>
     </div>
 

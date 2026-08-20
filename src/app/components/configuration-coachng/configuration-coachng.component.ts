@@ -107,6 +107,8 @@ export class ConfigurationCoachngComponent implements OnInit {
     });
   }
 
+  goBack(): void { window.history.back(); }
+
   private async loadCurrentUserProfile(): Promise<void> {
     const account = await this.authService.getCurrentUserDetails();
 

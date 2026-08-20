@@ -1956,6 +1956,7 @@
   "PICTURE": "Picture",
   "SELECT_BEFORE_PICTURE": "Select a before picture.",
   "SELECT_AFTER_PICTURE": "Select an after picture.",
+  "AFTER_PICTURE_DATE_MUST_BE_LATER": "The After photo must have a later date than the Before photo.",
   "SELECT_PICTURE": "Select a picture.",
   "LOAD_PROGRESS_PICTURES_ERROR": "Failed to load progress pictures.",
   "SAVE_PROGRESS_PICTURE_ERROR": "Failed to save progress picture.",

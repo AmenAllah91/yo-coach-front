@@ -3,8 +3,7 @@
   <div class="client-page-inner">
     <div class="cw-root">
       <header class="client-header">
-        <h1 class="client-header-title">{{ greeting }}, {{ userName }}</h1>
-        <p class="client-header-subtitle">{{ 'NUTRITION_JOURNEY_STARTS' | translate }}</p>
+        <h1 class="client-header-title">{{ 'NUTRITION' | translate }}</h1>
       </header>
 
       <div class="file-toggle-wrap" *ngIf="showNutritionFiles">
@@ -132,9 +131,9 @@
         </nav>
 
         <div class="client-month-nav">
-          <button class="month-nav-btn" [disabled]="!canGoPrevMonth" (click)="handlePrevMonth()"><i class="chevron chevron-left"></i></button>
+          <button class="month-nav-btn" [disabled]="!canGoPrevMonth" (click)="handlePrevMonth()"><i class="chevron chevron-left"></i><span>{{ 'PREVIOUS' | translate }}</span></button>
           <div class="month-title">{{ formatMonthYear(currentDate) }}</div>
-          <button class="month-nav-btn" [disabled]="!canGoNextMonth" (click)="handleNextMonth()"><i class="chevron chevron-right"></i></button>
+          <button class="month-nav-btn" [disabled]="!canGoNextMonth" (click)="handleNextMonth()"><span>{{ 'NEXT' | translate }}</span><i class="chevron chevron-right"></i></button>
         </div>
 
         <div class="client-list">
@@ -182,7 +181,9 @@
           </article>
 
           <div class="cn-empty" *ngIf="filteredDays.length === 0">
-            <div class="cn-empty-icon">📅</div>
+            <div class="cn-empty-illustration cn-empty-illustration--nutrition" aria-hidden="true">
+              <img src="assets/empty_states/nutrition_ticket_screen.png" alt="" />
+            </div>
             <h3 class="cn-empty-title">{{ 'NO_NUTRITION_SCHEDULED' | translate }}</h3>
             <p class="cn-empty-text">{{ (activeTab === 'upcoming' ? 'NO_UPCOMING_NUTRITION' : 'NO_PAST_NUTRITION') | translate }}</p>
             <p class="cn-empty-text">{{ 'COACH_WILL_ADD_NUTRITION' | translate }}</p>

@@ -1,7 +1,7 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="library-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
-      <i-feather name="chevron-left"></i-feather>
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
     </button>
     <div class="header-content">
       <h1>{{ 'PROGRAM_LIBRARY' | translate }}</h1>
@@ -37,10 +37,10 @@
       </div>
     </div>
 
-    <div class="programs-table programs-table--cap">
+    <div class="programs-table programs-table--cap" [class.programs-table--without-type]="!workoutFileEnabled">
       <div class="table-header">
         <div class="col-program">{{ 'PROGRAM' | translate }}</div>
-        <div class="col-type">{{ 'TYPE' | translate }}</div>
+        <div class="col-type" *ngIf="workoutFileEnabled">{{ 'TYPE' | translate }}</div>
         <div class="col-created">{{ 'CREATED' | translate }}</div>
         <div class="col-modified">{{ 'LAST_MODIFIED' | translate }}</div>
         <div class="col-actions"></div>

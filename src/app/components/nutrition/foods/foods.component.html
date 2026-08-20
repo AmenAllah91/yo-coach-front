@@ -1,5 +1,6 @@
 <div class="page-container">
   <div class="page-header">
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ 'FOODS' | translate }}</h1>
       <p>{{ 'MANAGE_FOOD_DATABASE' | translate }}</p>

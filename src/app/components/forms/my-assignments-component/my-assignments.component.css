@@ -229,6 +229,9 @@
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 .card:hover {
   border-color: #44b4df;
@@ -244,7 +247,41 @@
   box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
 }
 
-.card-body { padding: 1.25rem; }
+.card-body { padding: 1.25rem; flex: 1; min-width: 0; }
+
+.checkin-date-tile {
+  width: 68px;
+  min-width: 68px;
+  margin: 12px 0 12px 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 12px;
+  background: #f8fbfe;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-transform: uppercase;
+  align-self: center;
+}
+
+.checkin-date-tile span {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.checkin-date-tile strong {
+  margin: 4px 0;
+  color: #0f172a;
+  font-size: 25px;
+  font-weight: 800;
+}
+
+@media (max-width: 520px) {
+  .checkin-date-tile { width: 58px; min-width: 58px; margin: 10px 0 10px 10px; }
+  .checkin-date-tile strong { font-size: 22px; }
+}
 
 .card-header-row {
   display: flex;

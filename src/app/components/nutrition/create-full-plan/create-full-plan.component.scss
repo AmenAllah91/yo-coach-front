@@ -2558,3 +2558,32 @@ textarea.np-input,.np-textarea{min-height:108px!important;height:auto!important;
   .np-dayhead { align-items: flex-start; gap: 10px !important; }
   .np-cheat-btn { min-height: 32px; padding: 6px 9px; font-size: 10px; }
 }
+
+/* Keep the editor's typography consistent with the modern action links. */
+.np-root {
+  font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+.np-root :where(h1, h2, h3, h4, h5, h6, p, span, strong, small, label, button, input, select, textarea, table, th, td) {
+  font-family: inherit !important;
+}
+
+.np-root .material-icons {
+  font-family: "Material Icons" !important;
+}
+
+/* The structure sidebar can leave less room than the viewport breakpoint implies.
+   Keep every Foods column reachable instead of clipping the end of the table. */
+.np-meal__body {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+@media (min-width: 768px) {
+  .np-meal__body > .np-table {
+    width: 100%;
+    min-width: 720px;
+  }
+}

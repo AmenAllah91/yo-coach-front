@@ -2,6 +2,7 @@
   <div class="container">
     <!-- Header -->
     <div class="header page-header checkins-page-header">
+      <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
       <div class="header-left header-content">
         <h1 class="title">{{ 'CHECK_INS' | translate }}</h1>
         <p class="subtitle">{{ 'MANAGE_CHECK_INS_SUBTITLE' | translate }}</p>

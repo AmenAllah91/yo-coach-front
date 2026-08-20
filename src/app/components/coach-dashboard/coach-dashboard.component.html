@@ -1,8 +1,13 @@
 <div class="page-container">
   <div class="page-header">
-    <div class="header-content">
-      <h1>{{ 'DASHBOARD' | translate }}</h1>
-      <p>{{ 'COACH_DASHBOARD_SUBTITLE' | translate }}</p>
+    <div class="page-heading">
+      <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
+        <span aria-hidden="true">←</span>
+      </button>
+      <div class="header-content">
+        <h1>{{ 'DASHBOARD' | translate }}</h1>
+        <p>{{ 'COACH_DASHBOARD_SUBTITLE' | translate }}</p>
+      </div>
     </div>
   </div>
 

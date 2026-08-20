@@ -1,7 +1,7 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="library-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
-      <i-feather name="chevron-left"></i-feather>
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
     </button>
     <div class="header-content">
       <h1>{{ 'NUTRITION_PLANS' | translate }}</h1>
@@ -47,10 +47,10 @@
     <div class="plans-state plans-state--error" *ngIf="!loading && error">{{ error }}</div>
     <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div>
 
-    <div class="programs-table programs-table--cap" *ngIf="!loading && !error && filteredPlans.length > 0">
+    <div class="programs-table programs-table--cap" [class.programs-table--without-type]="nutritionFileEnabled === false" *ngIf="!loading && !error && filteredPlans.length > 0">
       <div class="table-header">
         <div class="col-program">{{ 'PROGRAM' | translate }}</div>
-        <div class="col-type">{{ 'TYPE' | translate }}</div>
+        <div class="col-type" *ngIf="nutritionFileEnabled !== false">{{ 'TYPE' | translate }}</div>
         <div class="col-created">{{ 'CREATED' | translate }}</div>
         <div class="col-modified">{{ 'LAST_MODIFIED' | translate }}</div>
         <div class="col-actions"></div>

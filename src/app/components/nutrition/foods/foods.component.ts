@@ -51,6 +51,8 @@ export class FoodsComponent implements OnInit {
     this.loadFoods();
   }
 
+  goBack(): void { window.history.back(); }
+
   loadFoods() {
     this.isLoading = true;
     this.nutritionService.getFoods(this.currentPage, this.pageSize, this.searchTerm || undefined, false).subscribe({

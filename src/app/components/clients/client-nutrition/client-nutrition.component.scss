@@ -5151,7 +5151,24 @@
 .sidebar-program:hover{background:#f8fbfd;}.sidebar-program--active{background:#eaf7fd!important;border-color:#bde8f7!important;}.sidebar-title{font-weight:900;color:#0f172a;}.sidebar-meta{font-size:12px;color:#64748b;font-weight:700;}.sidebar-icon,.file-card-icon{width:34px;height:34px;border-radius:10px;background:#eaf7fd;display:inline-flex;align-items:center;justify-content:center;}
 .file-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #e6e9ee;}.file-card-title-wrap{display:flex;gap:12px;align-items:flex-start;}.file-card-title-row{display:flex;gap:8px;align-items:center;}.file-card-title-row h2{margin:0;font-size:20px;font-weight:900;color:#0f172a;}.active-pill,.date-range-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border:1px solid #bde8f7;border-radius:999px;background:#eaf7fd;color:#0ea5e9;font-size:11px;font-weight:900;}.file-card-meta-row{display:flex;flex-wrap:wrap;gap:8px;color:#64748b;font-size:12px;font-weight:700;margin-top:4px;}
 .file-preview-panel{border:1px solid #e6e9ee;border-radius:10px;background:#fbfdff;overflow:hidden;}.file-preview-title{padding:12px 14px;border-bottom:1px solid #e6e9ee;color:#7184a2;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}.file-preview-content{background:#fff;}.pdf-iframe{width:100%;min-height:640px;border:0;}.excel-table-wrap{overflow:auto;max-height:640px;}.excel-table{width:100%;border-collapse:collapse;background:#fff;}.excel-table td,.excel-table th{border:1px solid #e6e9ee;padding:8px;color:#0f172a;}.excel-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-bottom:1px solid #e6e9ee;background:#f8fafc;}.file-actions-row{display:flex;justify-content:flex-end;margin-top:14px;}.file-download-btn{height:40px;padding:0 16px;border:1px solid #cfeaf7;border-radius:8px;background:#eaf7fd;color:#0ea5e9;font-weight:900;cursor:pointer;}
-.client-month-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0;}.month-title{font-weight:900;color:#0f172a;}.month-nav-btn{width:34px;height:34px;border:1px solid #dbe4ee;border-radius:999px;background:#fff;}
+.client-month-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;}.month-title{font-weight:900;color:#0f172a;}.month-nav-btn{min-width:92px;height:34px;border:0;border-radius:999px;background:transparent;display:inline-flex;align-items:center;gap:8px;color:#334155;font-size:13px;font-weight:600;}.month-nav-btn:last-child{justify-content:flex-end}.month-nav-btn:disabled{color:#aeb7c4;opacity:1;cursor:not-allowed}.month-nav-btn:disabled .chevron{border-color:#c7ced8}
+
+.cw-root .cn-empty-illustration {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 12px;
+  overflow: hidden;
+}
+
+.cw-root .cn-empty-illustration--nutrition img {
+  position: absolute;
+  top: -220px;
+  left: -499px;
+  width: 1479px;
+  height: 832px;
+  max-width: none;
+}
 .client-list{display:grid;gap:12px;}.cn-day-card{padding:14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}.cn-day-card:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(15,23,42,.07)!important;}.cn-day-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}.cn-day-chip-date{display:inline-flex;height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#eaf7fd;color:#0ea5e9;font-size:11px;font-weight:900;}.cn-day-title{margin:8px 0 2px;font-size:16px;font-weight:900;color:#0f172a;}.cn-day-subtitle{margin:0;color:#64748b;font-size:12px;font-weight:700;}.cn-day-meals-line{display:flex;align-items:center;gap:8px;margin:12px 0;color:#475569;font-weight:800;}.cn-day-macros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}.cn-macro-card{border:1px solid #e6e9ee;border-radius:8px;background:#fbfdff;padding:9px;text-align:center;}.cn-macro-value{font-weight:900;color:#0f172a;}.cn-macro-label{font-size:11px;color:#8a94a6;font-weight:800;text-transform:uppercase;}
 @media(max-width:767px){.file-client-layout{grid-template-columns:1fr;}.file-sidebar{order:2;}.file-main{order:1;padding:12px;}.file-card-header{flex-direction:column;}.cn-day-macros{grid-template-columns:repeat(2,minmax(0,1fr));}.pdf-iframe{min-height:520px;}.file-mode-switch,.client-tabs{width:100%;}.file-mode-btn,.client-tab{flex:1;}}
 
@@ -6658,6 +6675,37 @@
   .client-day-status__icon {
     display: none;
   }
+}
+
+/* Match the segmented Upcoming/Past control used by the mobile client. */
+.cw-root .client-tabs {
+  margin: 8px 0 14px !important;
+  padding: 4px !important;
+  gap: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #e8f7fd !important;
+  overflow: hidden;
+}
+
+.cw-root .client-tab {
+  padding: 10px 0 !important;
+  border-radius: 6px !important;
+  color: #64748b !important;
+}
+
+.cw-root .client-tab--active {
+  background: #38ace0 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.cw-root .client-tab--active::after {
+  display: none !important;
+}
+
+.cw-root .client-tab:focus {
+  outline: none;
 }
 
 /* ===== Nutrition detail: use the available desktop workspace ===== */

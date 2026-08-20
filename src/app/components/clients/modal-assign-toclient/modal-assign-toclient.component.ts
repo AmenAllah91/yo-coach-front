@@ -8,7 +8,7 @@ import { catchError, forkJoin, map, of } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type AssignmentType = 'workout' | 'nutrition';
-type ConflictResolution = 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH';
+type ConflictResolution = 'START_AFTER' | 'REPLACE';
 
 interface ScheduleConflict {
   client: Client;

@@ -52,7 +52,7 @@
 
   .table-header {
     display: grid;
-    grid-template-columns: 2fr 1fr 3fr 1fr 60px;
+    grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(320px, 3fr) minmax(112px, auto);
     gap: 24px;
     padding: 16px 24px;
     background: #f8fafc;
@@ -67,7 +67,7 @@
   .table-body {
     .food-row {
       display: grid;
-      grid-template-columns: 2fr 1fr 3fr 1fr 60px;
+      grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(320px, 3fr) minmax(112px, auto);
       gap: 24px;
       padding: 20px 24px;
       border-bottom: 1px solid #f1f5f9;
@@ -113,6 +113,11 @@
       font-size: 12px;
       color: #64748b;
     }
+
+    .macro--calories {
+      color: #059669;
+      font-weight: 700;
+    }
   }
 }
 
@@ -129,10 +134,14 @@
     position: relative;
 
     .action-btn {
-      background: none;
-      border: none;
-      padding: 8px;
-      border-radius: 6px;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #d9e2ec;
+      padding: 0 12px;
+      border-radius: 8px;
       cursor: pointer;
       color: #64748b;
       transition: all 0.2s;
@@ -209,6 +218,12 @@
       display: block;
     }
   }
+}
+
+.modal-body input[readonly] {
+  background: #f1f5f9;
+  color: #475569;
+  cursor: not-allowed;
 }
 
 .pagination {

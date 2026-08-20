@@ -1905,3 +1905,11 @@
   .programs-table--cap .action-btn { min-width: 75px !important; height: 34px !important; padding: 0 10px !important; border-radius: 7px !important; font-size: 10px !important; }
   .app-pagination { background: transparent !important; border: 0 !important; }
 }
+.programs-table--cap.programs-table--without-type .table-header,
+.programs-table--cap.programs-table--without-type .program-row {
+  grid-template-columns: minmax(360px, 1fr) 180px 190px 130px !important;
+}
+
+.programs-table--cap.programs-table--without-type .col-actions {
+  grid-column: 4 !important;
+}

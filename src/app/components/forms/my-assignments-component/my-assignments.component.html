@@ -90,6 +90,11 @@
               *ngFor="let a of pendingAssignments(); trackBy: trackById"
               (click)="openAssignment(a)"
             >
+              <time class="checkin-date-tile" [attr.datetime]="a.dueDate || a.assignedAt">
+                <span>{{ formatDateTilePart(a.dueDate || a.assignedAt, 'weekday') }}</span>
+                <strong>{{ formatDateTilePart(a.dueDate || a.assignedAt, 'day') }}</strong>
+                <span>{{ formatDateTilePart(a.dueDate || a.assignedAt, 'month') }}</span>
+              </time>
               <div class="card-body">
                 <div class="card-header-row">
                   <div class="card-title-group">
@@ -176,6 +181,11 @@
               *ngFor="let a of submittedAssignments(); trackBy: trackById"
               (click)="openAssignment(a)"
             >
+              <time class="checkin-date-tile" [attr.datetime]="a.submittedAt || a.dueDate || a.assignedAt">
+                <span>{{ formatDateTilePart(a.submittedAt || a.dueDate || a.assignedAt, 'weekday') }}</span>
+                <strong>{{ formatDateTilePart(a.submittedAt || a.dueDate || a.assignedAt, 'day') }}</strong>
+                <span>{{ formatDateTilePart(a.submittedAt || a.dueDate || a.assignedAt, 'month') }}</span>
+              </time>
               <div class="card-body">
                 <div class="card-header-row">
                   <div class="card-title-group">

@@ -122,6 +122,8 @@ export class WebsiteBuilderComponent implements OnInit{
   ngOnInit(): void {
     this.loadWebsiteOrUserData();
   }
+
+  goBack(): void { window.history.back(); }
   loadWebsiteOrUserData(): void {
     const saved = this.builderState.getDraft();
 

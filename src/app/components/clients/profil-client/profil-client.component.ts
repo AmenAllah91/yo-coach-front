@@ -39,7 +39,7 @@ type TabId =
   | 'pictures'
   | 'calendar';
 
-type WorkoutConflictResolution = 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH';
+type WorkoutConflictResolution = 'START_AFTER' | 'REPLACE';
 
 interface ClientWorkoutConflict {
   program: any;
@@ -182,7 +182,7 @@ export class ProfilClientComponent {
   @ViewChild(NutritionClientTabComponent) nutritionTab: NutritionClientTabComponent;
 
   activeTab: TabId = 'dashboard';
-  showClientStats = true;
+  showClientStats = false;
   private checkinsLoaded = false;
 
   setTab(tab: TabId) {
@@ -2454,7 +2454,7 @@ export class ProfilClientComponent {
     program: any;
     startDate: string;
     endDate: string | null;
-    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH'; conflict: any }>;
+    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE'; conflict: any }>;
   }) {
     const { program, startDate: requestedStartDate, endDate } = payload;
     const resolution = this.getProfileConflictResolution(payload);
@@ -2522,8 +2522,8 @@ export class ProfilClientComponent {
   }
 
   private getProfileConflictResolution(payload: {
-    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH'; conflict: any }>;
-  }): { resolution: 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH'; conflict: any } | null {
+    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE'; conflict: any }>;
+  }): { resolution: 'START_AFTER' | 'REPLACE'; conflict: any } | null {
     if (!this.client?.id) return null;
     return payload.conflictResolutions?.[this.client.id] || null;
   }

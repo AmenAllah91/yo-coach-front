@@ -1,5 +1,6 @@
 <div class="website-leads-container">
   <div class="page-header">
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <h1>{{ 'WEBSITE_LEADS' | translate }}</h1>
     <div class="page-header-actions">
       <span class="leads-count"><i-feather name="users"></i-feather>{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</span>

@@ -108,6 +108,8 @@ export class ManageCheckinsComponent implements OnInit{
     this.loadAssignments();
   }
 
+  goBack(): void { window.history.back(); }
+
   loadAssignments(): void {
     this.loading = true;
     this.error = null;

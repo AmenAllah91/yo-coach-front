@@ -1,5 +1,12 @@
 <div class="page-container">
   <div class="page-header">
+    <button
+      class="app-page-back"
+      type="button"
+      [attr.aria-label]="'BACK' | translate"
+      (click)="goBack()">
+      <i-feather name="arrow-left" aria-hidden="true"></i-feather>
+    </button>
     <div class="header-content">
       <h1>{{ 'CLIENTS' | translate }}</h1>
       <p>{{ 'CLIENTS_SUBTITLE' | translate }}</p>
@@ -29,7 +36,7 @@
         class="status-tab active-tab"
         [class.selected]="statusFilter === 'ACTIVE'"
         (click)="setStatusFilter('ACTIVE')">
-        {{ 'ACTIVE' | translate }} <span>{{ statusCounts.active }}</span>
+        {{ 'CLIENT_STATUS_ACTIVE' | translate }} <span>{{ statusCounts.active }}</span>
       </button>
       <button
         class="status-tab paused-tab"

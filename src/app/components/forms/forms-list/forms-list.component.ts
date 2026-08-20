@@ -131,6 +131,8 @@ export class FormsListComponent implements OnInit, OnDestroy {
       .subscribe();
   }
 
+  goBack(): void { window.history.back(); }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();

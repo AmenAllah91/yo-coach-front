@@ -125,18 +125,15 @@ export class MealsListComponent implements OnInit, OnDestroy {
   }
 
   editMeal(meal: any): void {
-    this.loadingMealToEdit = true;
     this.activeMealMenuId = null;
+    this.mealToEdit = meal;
+    this.showAddMealModal = true;
     this.mealsService.getMeal(meal.id).subscribe({
       next: (fullMeal: any) => {
-        this.loadingMealToEdit = false;
         this.mealToEdit = fullMeal || meal;
-        this.showAddMealModal = true;
       },
       error: () => {
-        this.loadingMealToEdit = false;
         this.mealToEdit = meal;
-        this.showAddMealModal = true;
       },
     });
   }

@@ -40,6 +40,8 @@ export class ContactFormManagerComponent implements OnInit {
     this.load();
   }
 
+  goBack(): void { window.history.back(); }
+
   get publicUrl(): string {
     return this.form?.slug ? `${window.location.origin}/contact/${this.form.slug}` : '';
   }

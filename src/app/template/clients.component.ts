@@ -84,6 +84,10 @@ export class ClientsComponent implements OnInit {
     this.loadClients();
   }
 
+  goBack(): void {
+    window.history.back();
+  }
+
   async loadClients() {
     this.isLoading = true;
     const startTime = Date.now();

@@ -1,6 +1,6 @@
 <div class="meals-page">
   <div class="page-header">
-    <button class="mobile-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ 'MEALS_TITLE' | translate }}</h1>
       <p>{{ 'MEALS_SUBTITLE' | translate }}</p>
@@ -52,10 +52,9 @@
 
       <div class="col-macros">
         <ng-container *ngIf="m.foods?.length; else noMacros">
-          <span class="macro macro--protein">P {{ mealMacros(m).protein }}</span>
-          <span class="macro macro--carbs">C {{ mealMacros(m).carbs }}</span>
-          <span class="macro macro--fat">F {{ mealMacros(m).fat }}</span>
-          <span class="macro macro--kcal">{{ mealMacros(m).calories }} <span class="macro-unit">kcal</span></span>
+          <span class="macro">{{ mealMacros(m).protein }}g {{ 'PROTEIN' | translate }}</span>
+          <span class="macro">{{ mealMacros(m).carbs }}g {{ 'CARBS' | translate }}</span>
+          <span class="macro">{{ mealMacros(m).fat }}g {{ 'FAT' | translate }}</span>
         </ng-container>
         <ng-template #noMacros><span class="no-macros">-</span></ng-template>
       </div>

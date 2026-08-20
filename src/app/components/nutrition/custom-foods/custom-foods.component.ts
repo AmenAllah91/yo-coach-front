@@ -66,6 +66,18 @@ export class CustomFoodsComponent implements OnInit {
     private nutritionService: NutritionService,
   ) {}
 
+  getCalculatedCalories(protein: number | null | undefined, carbs: number | null | undefined, fat: number | null | undefined): number {
+    return Math.round(((Number(protein) || 0) * 4) + ((Number(carbs) || 0) * 4) + ((Number(fat) || 0) * 9));
+  }
+
+  getFoodCarbs(food: Food): number {
+    return Number(food.carbs ?? (food as Food & { carbohydrates?: number }).carbohydrates ?? 0);
+  }
+
+  recalculateCalories(): void {
+    this.calories = this.getCalculatedCalories(this.protein, this.carbs, this.fat);
+  }
+
   ngOnInit() {
     this.loadFoods();
     // Close dropdown when clicking outside
@@ -135,8 +147,9 @@ export class CustomFoodsComponent implements OnInit {
     this.foodName = food.name;
     this.calories = food.calories;
     this.protein = food.protein;
-    this.carbs = food.carbs;
+    this.carbs = this.getFoodCarbs(food);
     this.fat = food.fat;
+    this.recalculateCalories();
     this.fiber = food.fiber || 0;
     this.sugar = food.sugar || 0;
     this.polyols = 0;
@@ -154,6 +167,7 @@ export class CustomFoodsComponent implements OnInit {
 
   saveFood() {
     if (!this.foodName.trim()) return;
+    this.recalculateCalories();
 
     const food: Food = {
       name: this.foodName,

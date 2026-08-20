@@ -1,6 +1,7 @@
 <!-- CONTENEUR PRINCIPAL -->
 <div class="calendar-wrapper">
   <div class="calendar-header">
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
     <div class="header-left">
       <button type="button" class="nav-button" (click)="onPrev()">‹</button>
 

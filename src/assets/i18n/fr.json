@@ -1956,6 +1956,7 @@
   "PICTURE": "Photo",
   "SELECT_BEFORE_PICTURE": "Sélectionnez une photo avant.",
   "SELECT_AFTER_PICTURE": "Sélectionnez une photo après.",
+  "AFTER_PICTURE_DATE_MUST_BE_LATER": "La photo Après doit avoir une date postérieure à la photo Avant.",
   "SELECT_PICTURE": "Sélectionnez une photo.",
   "LOAD_PROGRESS_PICTURES_ERROR": "Impossible de charger les photos de progression.",
   "SAVE_PROGRESS_PICTURE_ERROR": "Impossible d'enregistrer la photo de progression.",

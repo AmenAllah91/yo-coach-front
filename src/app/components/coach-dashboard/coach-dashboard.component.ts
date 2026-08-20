@@ -139,6 +139,10 @@ export class CoachDashboardComponent implements OnInit {
     private translate: TranslateService,
   ) {}
 
+  goBack(): void {
+    window.history.back();
+  }
+
   ngOnInit(): void {
     this.coachId = sessionStorage.getItem('userId') || '';
 

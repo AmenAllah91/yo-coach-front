@@ -589,3 +589,91 @@ body .table-wrap .dropdown-item.delete:hover {
     padding: 0 !important;
   }
 }
+/* Shared page navigation and zoom-safe data layouts. */
+.app-page-back {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: #eef2f6;
+  color: #53677d;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+.app-page-back:hover {
+  background: #dfe8f0;
+  color: #0f2135;
+  transform: translateX(-1px);
+}
+
+body .page-header:has(> .app-page-back) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 16px !important;
+}
+
+body .page-header:has(> .app-page-back) > .header-actions,
+body .page-header:has(> .app-page-back) > .page-header-actions,
+body .page-header:has(> .app-page-back) > .primary-btn,
+body .page-header:has(> .app-page-back) > .btn-primary {
+  margin-left: auto !important;
+}
+
+/* Preserve every column under browser zoom instead of clipping the right edge. */
+.table-responsive,
+.foods-table,
+.programs-table,
+.clients-table,
+.meals-table,
+.assigned-table,
+.excel-table-wrap,
+.yo-excel-table-wrap {
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+table {
+  max-width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .page-container,
+  .main-content,
+  .content {
+    min-width: 0;
+  }
+
+  .page-header {
+    flex-wrap: wrap;
+  }
+}
+
+/* Modern typography baseline for authenticated application screens.
+   Feature-specific families such as Inter and DM Sans can still override it. */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Angular Material's legacy typography theme otherwise re-applies Roboto to
+   headings even when their page already inherits the modern app family. */
+.mat-typography :is(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit !important;
+}

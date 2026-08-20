@@ -188,6 +188,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     private translate: TranslateService
   ) {}
 
+  goBack(): void {
+    window.history.back();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['embeddedClientId'] || changes['embeddedCoachId']) && this.embeddedMode) {
       this.tryOpenEmbeddedConversation();

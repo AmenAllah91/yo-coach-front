@@ -1413,3 +1413,21 @@
 }
 
 @import './replacement-editor-exact';
+.groups-list .action-btn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #10243a;
+  font-weight: 700;
+}
+
+.groups-list .action-btn:hover {
+  border-color: #9eb1c4;
+  background: #f7f9fb;
+}

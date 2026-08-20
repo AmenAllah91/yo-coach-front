@@ -1,5 +1,8 @@
 <div class="chat-page-header" *ngIf="!embeddedMode">
   <div class="chat-page-header__left">
+    <button class="app-page-back chat-page-header__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
     <div class="chat-page-header__titles">
       <h1>{{ 'CHAT_TITLE' | translate }}</h1>
       <p>{{ (isClientUser ? 'CHAT_SUBTITLE_CLIENT' : 'CHAT_SUBTITLE') | translate }}</p>

@@ -262,6 +262,8 @@ currentDate = new Date();
 
   }
 
+  goBack(): void { window.history.back(); }
+
   ngOnDestroy(): void {
     this.cleanupWorkoutPointerDrag();
     this.teardownPopoverIntercept();
@@ -570,24 +572,8 @@ currentDate = new Date();
       // We display them in the calendar during their assigned period.
       // Existing in-app workout day logic below is untouched.
       if (isFilePlan) {
-        const resourceType = this.getBackendFileWorkoutResourceType(plan);
-
-        // One item only. The calendar decides where to render connected weekly bars.
-        result.push({
-          id: `${plan.id}-file-range`,
-          title: plan.name || (resourceType === 'EXCEL' ? 'Programme Excel' : 'Programme PDF'),
-          date: startDate,
-          clientId: plan.client?.id,
-          programId: plan.id,
-          programName: resourceType === 'EXCEL' ? 'Programme Excel' : 'Programme PDF',
-          sessions: [],
-          status: 'PENDING',
-          fileProgram: true,
-          resourceType,
-          startDate,
-          endDate,
-        });
-
+        // PDF and Excel assignments stay available elsewhere, but are intentionally
+        // hidden from the calendar until their dedicated calendar UX is restored.
         return;
       }
 
@@ -1016,6 +1002,7 @@ currentDate = new Date();
 
     if (this.calendarType === 'workout') {
       return this.workoutPrograms
+        .filter((program: WorkoutProgram) => !program.fileProgram)
         .filter((p: WorkoutProgram) => {
           const matchesClient =
             p.clientId === this.selectedClient;

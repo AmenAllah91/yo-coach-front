@@ -123,6 +123,9 @@
 
     <div class="comparison-content">
       <aside class="comparison-sidebar">
+        <p class="comparison-selection-error" *ngIf="comparisonSelectionError">
+          {{ comparisonSelectionError | translate }}
+        </p>
         <div
           class="thumb-card"
           *ngFor="let picture of sortedPictures; trackBy: trackByPictureId"

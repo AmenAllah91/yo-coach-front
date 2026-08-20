@@ -91,6 +91,26 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  formatDateTilePart(
+    value: string | Date | null | undefined,
+    part: 'weekday' | 'day' | 'month',
+  ): string {
+    if (!value) return '--';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '--';
+
+    const locale = this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US';
+    if (part === 'day') {
+      return date.toLocaleDateString(locale, { day: '2-digit' });
+    }
+
+    return date
+      .toLocaleDateString(locale, part === 'weekday' ? { weekday: 'short' } : { month: 'short' })
+      .replace('.', '')
+      .toUpperCase();
+  }
+
   // ─── List methods ─────────────────────────────────────────────
 
   setTab(tab: Tab): void {

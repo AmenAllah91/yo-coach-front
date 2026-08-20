@@ -166,18 +166,6 @@
           </span>
         </label>
 
-        <label class="resolution-option" [class.selected]="conflict.resolution === 'KEEP_BOTH'">
-          <input
-            type="radio"
-            [name]="'resolution-' + conflict.client.id"
-            [checked]="conflict.resolution === 'KEEP_BOTH'"
-            (change)="setConflictResolution(conflict, 'KEEP_BOTH')"
-          />
-          <span>
-            <strong>{{ 'KEEP_BOTH_PROGRAMS' | translate }}</strong>
-            <small>{{ 'KEEP_BOTH_PROGRAMS_DESCRIPTION' | translate }}</small>
-          </span>
-        </label>
       </div>
     </div>
 

@@ -54,6 +54,8 @@ export class WebsiteLeadsComponent implements OnInit, OnDestroy {
       });
   }
 
+  goBack(): void { window.history.back(); }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();

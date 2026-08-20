@@ -1,6 +1,6 @@
 <div class="page-container">
   <div class="page-header">
-    <button class="mobile-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="chevron-left"></i-feather></button>
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ 'CUSTOM_FOODS' | translate }}</h1>
       <p>{{ 'CUSTOM_FOODS_SUBTITLE' | translate }}</p>
@@ -28,7 +28,6 @@
         <div class="col-name">{{ 'NAME' | translate }}</div>
         <div class="col-weight">{{ 'WEIGHT' | translate }}</div>
         <div class="col-macros">{{ 'MACRONUTRIENTS' | translate }}</div>
-        <div class="col-calories">{{ 'CALORIES' | translate }}</div>
         <div class="col-actions"></div>
       </div>
 
@@ -46,23 +45,21 @@
             </div>
           </div>
           <div class="col-weight">
-            {{ food.servingSize }} {{ food.servingDescription }}
+            {{ food.servingSize }} {{ food.servingUnit }}
           </div>
           <div class="col-macros">
             <div class="macro-info">
               <span class="macro">{{ food.protein }}g {{ 'PROTEIN' | translate }}</span>
-              <span class="macro">{{ food.carbohydrates }}g {{ 'CARBS' | translate }}</span>
+              <span class="macro">{{ getFoodCarbs(food) }}g {{ 'CARBS' | translate }}</span>
               <span class="macro">{{ food.fat }}g {{ 'FAT' | translate }}</span>
+              <span class="macro macro--calories">{{ getCalculatedCalories(food.protein, getFoodCarbs(food), food.fat) }} kcal</span>
             </div>
-          </div>
-          <div class="col-calories">
-            {{ food.energy }}kcal
           </div>
           <div class="col-actions">
             <div class="dropdown" [class.open]="openDropdownId === food.id">
               <button class="action-btn" (click)="toggleDropdown(food.id!, $event)">
                 <span>{{ 'ACTIONS' | translate }}</span>
-                <i-feather name="more-vertical"></i-feather>
+                <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu">
                 <ng-container *ngIf="!food.isGeneral">
@@ -152,22 +149,22 @@
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'CALORIES' | translate }} (kcal):</label>
-            <input type="number" [(ngModel)]="calories" [placeholder]="'ENTER_TOTAL_CALORIES' | translate">
+            <input type="number" [ngModel]="calories" readonly aria-readonly="true">
           </div>
           <div class="form-group">
             <label>{{ 'PROTEIN' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="protein" [placeholder]="'ENTER_TOTAL_PROTEIN' | translate">
+            <input type="number" [(ngModel)]="protein" (ngModelChange)="recalculateCalories()" [placeholder]="'ENTER_TOTAL_PROTEIN' | translate">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'CARBS' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="carbs" [placeholder]="'ENTER_TOTAL_CARBS' | translate">
+            <input type="number" [(ngModel)]="carbs" (ngModelChange)="recalculateCalories()" [placeholder]="'ENTER_TOTAL_CARBS' | translate">
           </div>
           <div class="form-group">
             <label>{{ 'FAT' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="fat" [placeholder]="'ENTER_TOTAL_FAT' | translate">
+            <input type="number" [(ngModel)]="fat" (ngModelChange)="recalculateCalories()" [placeholder]="'ENTER_TOTAL_FAT' | translate">
           </div>
         </div>
 
