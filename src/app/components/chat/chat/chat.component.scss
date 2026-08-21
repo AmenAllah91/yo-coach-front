@@ -258,6 +258,14 @@
   color: #fff;
 }
 .chat-avatar--group i-feather { width: 20px; height: 20px; display: block; }
+.chat-avatar--person {
+  background: #44b4df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.chat-avatar--person i-feather { width: 20px; height: 20px; display: block; }
 .chat-avatar--sm {
   width: 36px;
   height: 36px;

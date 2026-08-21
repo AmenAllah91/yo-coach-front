@@ -70,8 +70,13 @@ export class ClientService {
     return this.http.get<ClientStatusCounts>(`${this.apiUrl}/coach/${coachId}/status-counts`);
   }
 
-  getClientById(id: string): Observable<Client> {
-    return this.http.get<Client>(`${this.apiUrl}/${id}`);
+  getClientById(id: string, silent = false): Observable<Client> {
+    return this.http.get<Client>(`${this.apiUrl}/${id}`, silent ? {
+      headers: {
+        'X-Skip-Toast': 'true',
+        'X-Skip-Loader': 'true'
+      }
+    } : {});
   }
 
   createClient(client: Client): Observable<Client> {

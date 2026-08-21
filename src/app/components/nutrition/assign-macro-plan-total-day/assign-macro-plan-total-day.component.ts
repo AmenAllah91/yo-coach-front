@@ -24,7 +24,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     TranslateModule,
   ],
   templateUrl: './assign-macro-plan-total-day.component.html',
-  styleUrl: './assign-macro-plan-total-day.component.scss',
+  styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignMacroPlanTotalDayComponent implements OnInit {
   startDate = new Date().toISOString().split('T')[0];

@@ -33,6 +33,10 @@ type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT';
   styleUrls: ['./chat.component.scss'],
 })
 export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDestroy {
+  onConversationAvatarError(conversation: Conversation): void {
+    conversation.avatar = '';
+  }
+
 
   @ViewChild('messagesContainer') private msgContainer!: ElementRef<HTMLElement>;
 

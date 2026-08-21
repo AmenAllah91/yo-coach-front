@@ -113,8 +113,13 @@ export class FormsApiService {
   getForOwner(formId: string): Observable<FormDetails> {
     return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}/owner`);
   }
-  getFormById(formId: string): Observable<FormDetails> {
-    return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}`);
+  getFormById(formId: string, silent = false): Observable<FormDetails> {
+    return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}`, silent ? {
+      headers: {
+        'X-Skip-Toast': 'true',
+        'X-Skip-Loader': 'true'
+      }
+    } : {});
   }
   createForm(payload: FormDetails): Observable<FormDetails> {
     return this.http.post<FormDetails>(

@@ -14,7 +14,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
   templateUrl: './assign-macro-plan.component.html',
-  styleUrl: './assign-macro-plan.component.scss',
+  styleUrls: ['./assign-macro-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignMacroPlanComponent implements OnInit {
   startDate = new Date().toISOString().split('T')[0];

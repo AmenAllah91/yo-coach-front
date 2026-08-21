@@ -65,6 +65,14 @@ export class CreateWorkoutComponent implements OnInit {
     this.facade.selectedDay = v;
   }
 
+  goBack(): void {
+    if (this.returnUrl?.startsWith('/')) {
+      void this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+    void this.router.navigate(['/workout/program-library']);
+  }
+
   get selectedWorkoutSession(): WorkoutSession | null {
     if (!this.selectedDay || this.selectedDay.isRestDay || this.selectedDay.restDay) {
       return null;
@@ -381,6 +389,17 @@ export class CreateWorkoutComponent implements OnInit {
       (total, session) => total + (session.exercises?.length || 0),
       0
     );
+  }
+
+  getDayDateLabel(day: WorkoutDay): string {
+    if (!day.date) return '';
+    const date = new Date(`${day.date}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
   }
 
   isWeekCollapsed(weekLabel: string): boolean {

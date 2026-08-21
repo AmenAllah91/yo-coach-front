@@ -78,6 +78,24 @@ export class CreateAndAssignComponent implements OnInit {
     this.facade.selectedDay = v;
   }
 
+  goBack(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl?.startsWith('/')) {
+      void this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
+    const clientId = this.route.snapshot.paramMap.get('idClient');
+    if (clientId) {
+      void this.router.navigate(['/clients/profil-client', clientId], {
+        queryParams: { tab: 'workouts' },
+      });
+      return;
+    }
+
+    void this.router.navigate(['/workout/program-library']);
+  }
+
   get selectedWorkoutSession(): WorkoutSession | null {
     if (!this.selectedDay || this.selectedDay.isRestDay || this.selectedDay.restDay) {
       return null;
@@ -205,6 +223,7 @@ export class CreateAndAssignComponent implements OnInit {
 
           this.updateAllDates();
           this.facade.syncPlanDays();
+          this.collapseWeeksAfterFirst();
           this.cdr.markForCheck();
         },
 
@@ -221,6 +240,7 @@ export class CreateAndAssignComponent implements OnInit {
         isWorkoutPlanTemplate: false,
       });
       this.updateAllDates();
+      this.collapseWeeksAfterFirst();
     }
 
     if (clientId) {
@@ -258,6 +278,19 @@ export class CreateAndAssignComponent implements OnInit {
     return days.filter((day) =>
       (day.workoutSessions || []).some((session) => (session.exercises || []).length > 0)
     ).length;
+  }
+
+  getDayExerciseCount(day: WorkoutDay): number {
+    return (day.workoutSessions || []).reduce(
+      (count, session) => count + (session.exercises || []).length,
+      0
+    );
+  }
+
+  private collapseWeeksAfterFirst(): void {
+    this.collapsedWeeks = new Set(
+      Array.from({ length: Math.max(0, this.durationWeeks - 1) }, (_, index) => index + 2)
+    );
   }
 
   isWeekCollapsed(weekLabel: string): boolean {

@@ -39,7 +39,12 @@
             <div class="chat-avatar chat-avatar--group"><i-feather name="users"></i-feather></div>
           </ng-container>
           <ng-template #singleAvatar>
-            <img class="chat-avatar chat-avatar--img" [src]="conv.avatar" [alt]="conv.name" />
+            <ng-container *ngIf="conv.avatar; else singleAvatarFallback">
+              <img class="chat-avatar chat-avatar--img" [src]="conv.avatar" [alt]="conv.name" (error)="onConversationAvatarError(conv)" />
+            </ng-container>
+            <ng-template #singleAvatarFallback>
+              <div class="chat-avatar chat-avatar--person"><i-feather name="user"></i-feather></div>
+            </ng-template>
           </ng-template>
           <span class="chat-item__unread-dot" *ngIf="isConversationUnread(conv)"></span>
         </div>
@@ -119,7 +124,12 @@
             </div>
           </ng-container>
           <ng-template #singleHeader>
-            <img class="chat-avatar chat-avatar--img chat-avatar--sm" [src]="selectedConv.avatar" [alt]="selectedConv.name" />
+            <ng-container *ngIf="selectedConv.avatar; else singleHeaderFallback">
+              <img class="chat-avatar chat-avatar--img chat-avatar--sm" [src]="selectedConv.avatar" [alt]="selectedConv.name" (error)="onConversationAvatarError(selectedConv)" />
+            </ng-container>
+            <ng-template #singleHeaderFallback>
+              <div class="chat-avatar chat-avatar--person chat-avatar--sm"><i-feather name="user"></i-feather></div>
+            </ng-template>
             <div class="chat-header__name">{{ selectedConv.name }}</div>
           </ng-template>
         </div>

@@ -43,7 +43,10 @@
                 [class.is-active]="selectedDay?.id === d.id"
                 (click)="selectDay(d)"
               >
-                <span class="np-day__title">{{ getDayDisplayTitle(d) }}</span>
+                <span class="np-day__topline">
+                  <span class="np-day__title">{{ getDayDisplayTitle(d) }}</span>
+                  <span class="np-day__dateLine">{{ getDayDateLabel(d) }}</span>
+                </span>
                 <small class="np-day__meta">
                   <ng-container *ngIf="d.isRestDay || d.restDay; else exerciseCount">{{ 'REST_DAY' | translate }}</ng-container>
                   <ng-template #exerciseCount>
@@ -72,7 +75,7 @@
 
     <main class="np-main">
       <div class="np-pagehead">
-        <a routerLink="/nutrition-plan" class="np-back" [attr.aria-label]="'BACK' | translate">
+        <button type="button" class="np-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
           <svg viewBox="0 0 24 24" class="np-ico">
             <path
               d="M15 18l-6-6 6-6"
@@ -83,7 +86,7 @@
               stroke-linejoin="round"
             />
           </svg>
-        </a>
+        </button>
 
         <h1 class="np-h5">
           {{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}
@@ -166,7 +169,9 @@
           </p>
         </div>
 
+      </section>
 
+      <section class="np-card np-card--day">
         <div class="np-sep"></div>
         <!-- Mobile days tabs: shown only on mobile, placed just above selected Day -->
         <div
@@ -247,7 +252,7 @@
                 (click)="toggleRestDay()"
               >
                 <i-feather name="flag" class="wk-restmark__icon"></i-feather>
-                {{ (selectedDay.isRestDay ? 'REST_DAY' : 'SET_AS_REST') | translate }}
+                {{ (selectedDay.isRestDay ? 'REST_DAY' : 'MARK_AS_REST_DAY') | translate }}
               </button>
 
               <button type="button" class="wk-kebab" [attr.aria-label]="'DAY_OPTIONS' | translate">

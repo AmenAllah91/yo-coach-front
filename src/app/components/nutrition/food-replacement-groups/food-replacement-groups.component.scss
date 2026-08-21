@@ -1431,3 +1431,251 @@
   border-color: #9eb1c4;
   background: #f7f9fb;
 }
+
+/* Match the Meals list visual system on desktop. */
+@media (min-width: 901px) {
+  .page-container:not(.editor-page) {
+    padding: 0 !important;
+    background: #f8fafc;
+  }
+
+  .page-container:not(.editor-page) > .page-header {
+    min-height: 112px;
+    margin: 0;
+    padding: 24px 32px;
+    border-bottom: 1px solid #dfe5ec;
+    align-items: center;
+  }
+
+  .page-container:not(.editor-page) > .page-header .header-content h1 {
+    color: #14263b;
+    font-size: 24px;
+    line-height: 30px;
+    font-weight: 500 !important;
+  }
+
+  .page-container:not(.editor-page) > .page-header .header-content p {
+    margin-top: 4px;
+    color: #63758a;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .page-container:not(.editor-page) > .page-header > .primary-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 6px;
+    background: #08172f;
+    font-size: 14px;
+    font-weight: 500 !important;
+  }
+
+  .list-toolbar,
+  .groups-list,
+  .groups-loading,
+  .app-pagination,
+  .empty-state {
+    margin-left: 32px !important;
+    margin-right: 32px !important;
+  }
+
+  .list-toolbar {
+    margin-top: 24px !important;
+    margin-bottom: 24px !important;
+    gap: 14px;
+  }
+
+  .list-toolbar .search-box {
+    width: 400px;
+  }
+
+  .list-toolbar .search-box input,
+  .list-toolbar .status-select {
+    height: 46px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 400 !important;
+  }
+
+  .list-toolbar .search-icon {
+    top: 14px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .groups-list {
+    gap: 0;
+    border: 1px solid #e1e6ec;
+    border-radius: 9px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .07);
+  }
+
+  .groups-head,
+  .group-card,
+  .group-skeleton {
+    grid-template-columns: minmax(260px, 1.5fr) minmax(280px, 1.5fr) 120px 110px 120px;
+    column-gap: 16px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .groups-head {
+    min-height: 52px;
+    border-bottom: 1px solid #dfe4ea;
+    background: #f8f9fb;
+    color: #5e6f83;
+    font-size: 12px;
+    font-weight: 500 !important;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .group-card {
+    min-height: 78px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-top: 0;
+    border-bottom: 1px solid #edf0f3;
+    background: #fff;
+    font-size: 14px;
+  }
+
+  .group-card:last-child {
+    border-bottom: 0;
+  }
+
+  .group-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+
+  .group-info h3 {
+    margin-bottom: 4px;
+    color: #26384e;
+    font-size: 16px;
+    line-height: 21px;
+    font-weight: 500 !important;
+  }
+
+  .group-description-chip,
+  .group-description-cell p,
+  .group-food-count {
+    font-size: 14px;
+    font-weight: 400 !important;
+  }
+
+  .group-description-chip {
+    padding: 3px 7px;
+  }
+
+  .status-pill {
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 500 !important;
+  }
+
+  .page-container .groups-list .group-card .group-actions .dropdown .action-btn {
+    width: 96px !important;
+    min-width: 96px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    border: 1px solid #d7dee7 !important;
+    border-radius: 6px !important;
+    background: #fff !important;
+    color: #33465b !important;
+    font-size: 12px !important;
+    line-height: 12px !important;
+    font-weight: 500 !important;
+    gap: 8px !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+  }
+
+  .page-container .groups-list .group-card .group-actions .dropdown .action-btn i-feather,
+  .page-container .groups-list .group-card .group-actions .dropdown .action-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .groups-list {
+    gap: 0 !important;
+    border: 1px solid #e1e6ec !important;
+    border-radius: 9px !important;
+    background: #fff !important;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .07) !important;
+    overflow: visible !important;
+  }
+
+  .group-card {
+    min-height: 90px !important;
+    padding: 12px 116px 12px 64px !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf0f3 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .group-card:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .group-icon {
+    top: 14px !important;
+  }
+
+  .group-info h3 {
+    font-size: 12px !important;
+    line-height: 17px !important;
+    font-weight: 500 !important;
+  }
+
+  .group-description-chip {
+    max-width: 100% !important;
+    font-size: 9px !important;
+    line-height: 13px !important;
+  }
+
+  .group-food-count {
+    margin-top: 8px !important;
+    font-size: 10px !important;
+  }
+
+  .group-card > div:nth-child(4) {
+    right: 17px !important;
+    top: 10px !important;
+  }
+
+  .group-actions {
+    right: 10px !important;
+    top: 38px !important;
+  }
+
+  .page-container .groups-list .group-card .group-actions .dropdown .action-btn {
+    width: 96px !important;
+    min-width: 96px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    border: 1px solid #d7dee7 !important;
+    border-radius: 6px !important;
+    color: #33465b !important;
+    font-size: 12px !important;
+    line-height: 12px !important;
+    font-weight: 500 !important;
+    gap: 8px !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+  }
+
+  .page-container .groups-list .group-card .group-actions .dropdown .action-btn i-feather,
+  .page-container .groups-list .group-card .group-actions .dropdown .action-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+}

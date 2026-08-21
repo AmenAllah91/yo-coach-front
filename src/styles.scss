@@ -659,21 +659,504 @@ table {
   }
 }
 
-/* Modern typography baseline for authenticated application screens.
-   Feature-specific families such as Inter and DM Sans can still override it. */
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+/* Shared soft list-page language. Meals is the visual reference for every
+   application tab; component-specific layout and behavior remain untouched. */
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-button,
-input,
-select,
-textarea {
-  font-family: inherit;
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) .page-header h1 {
+  color: #14263b !important;
+  font-weight: 500 !important;
+  letter-spacing: -.015em !important;
 }
 
-/* Angular Material's legacy typography theme otherwise re-applies Roboto to
-   headings even when their page already inherits the modern app family. */
-.mat-typography :is(h1, h2, h3, h4, h5, h6) {
-  font-family: inherit !important;
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) .page-header p {
+  color: #63758a !important;
+  font-weight: 400 !important;
 }
+
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(
+  .table-header,
+  thead th,
+  .column-header
+) {
+  color: #5e6f83 !important;
+  font-weight: 500 !important;
+  letter-spacing: .02em !important;
+}
+
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(
+  tbody td,
+  .table-body,
+  .table-row,
+  .client-row
+) {
+  font-weight: 400 !important;
+}
+
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(
+  tbody h3,
+  tbody h4,
+  .table-body h3,
+  .table-body h4,
+  .item-title,
+  .program-name,
+  .meal-name
+) {
+  font-weight: 500 !important;
+}
+
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(
+  .primary-btn,
+  .btn-primary,
+  .header-actions,
+  .add-user-btn
+) {
+  font-weight: 500 !important;
+}
+
+:is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(
+  .action-btn,
+  .actions-btn,
+  .actions-button,
+  .dropdown-toggle,
+  .menu-button
+) {
+  font-weight: 400 !important;
+  box-shadow: none !important;
+}
+
+/* Component styles use emulated host attributes and can be more specific;
+   these final selectors keep the shared hierarchy authoritative. */
+body :is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) .page-header .header-content h1,
+body .users-page .page-header .page-heading h1,
+body .website-leads-container .page-header .header-content h1 {
+  font-weight: 500 !important;
+}
+
+body :is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(.table-header, thead th) {
+  font-weight: 500 !important;
+}
+
+body :is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(.table-row, tbody tr, .client-row) {
+  font-weight: 400 !important;
+}
+
+body :is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(.meal-name, .program-name, .item-title, tbody h3, tbody h4) {
+  font-weight: 500 !important;
+}
+
+body :is(
+  .page-container,
+  .meals-page,
+  .forms-page,
+  .users-page,
+  .website-leads-container
+) :is(.actions-btn, .actions-button, .action-btn, .dropdown-toggle) {
+  font-weight: 400 !important;
+  box-shadow: none !important;
+}
+
+/* Meals table is the structural reference for every desktop data table. */
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table,
+  .groups-list,
+  .table-wrap
+) {
+  overflow: visible !important;
+  border: 1px solid #e1e6ec !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .07) !important;
+}
+
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table
+) > :is(.table-header, .table-head),
+body .table-wrap thead {
+  min-height: 52px !important;
+  border-bottom: 1px solid #dfe4ea !important;
+  border-radius: 9px 9px 0 0 !important;
+  background: #f8f9fb !important;
+  color: #5e6f83 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: .02em !important;
+}
+
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table
+) :is(
+  .program-row,
+  .food-row,
+  .table-row,
+  .client-row
+),
+body .table-wrap tbody tr {
+  min-height: 78px !important;
+  border-bottom: 1px solid #edf0f3 !important;
+  background: #fff !important;
+  font-weight: 400 !important;
+}
+
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table
+) :is(
+  .program-row,
+  .food-row,
+  .table-row,
+  .client-row
+):hover,
+body .table-wrap tbody tr:hover {
+  background: #fbfdfe !important;
+}
+
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table
+) :is(
+  .program-name,
+  .food-name,
+  .meal-name,
+  .plan-name,
+  h3,
+  h4
+) {
+  color: #26384e !important;
+  font-weight: 500 !important;
+}
+
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table
+) :is(.action-btn, .actions-btn),
+body .table-wrap :is(.action-btn, .actions-btn) {
+  min-width: 96px !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+  border: 1px solid #d7dee7 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #33465b !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
+}
+
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table
+) :is(.action-btn, .actions-btn):hover,
+body .table-wrap :is(.action-btn, .actions-btn):hover {
+  border-color: #c8d2dd !important;
+  background: #f8fafc !important;
+  color: #24374d !important;
+}
+
+@media (max-width: 900px) {
+  body :is(
+    .programs-table,
+    .foods-table,
+    .meals-table,
+    .clients-table,
+    .plans-table,
+    .groups-list,
+    .table-wrap
+  ) {
+    box-shadow: none !important;
+  }
+}
+
+/* Explicit desktop table selectors override emulated component selectors. */
+body .page-container :is(.programs-table, .foods-table, .clients-table, .plans-table),
+body .meals-page .meals-table,
+body .website-leads-container .plans-table,
+body .forms-page .table-wrap {
+  overflow: visible !important;
+  border: 1px solid #e1e6ec !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .07) !important;
+}
+
+body .page-container :is(.programs-table, .foods-table, .clients-table, .plans-table) > :is(.table-header, .table-head),
+body .meals-page .meals-table > .table-header,
+body .website-leads-container .plans-table > .table-header,
+body .forms-page .table-wrap thead {
+  min-height: 52px !important;
+  border-bottom: 1px solid #dfe4ea !important;
+  border-radius: 9px 9px 0 0 !important;
+  background: #f8f9fb !important;
+  color: #5e6f83 !important;
+  font-weight: 500 !important;
+}
+
+body .page-container :is(.programs-table, .foods-table, .clients-table, .plans-table) :is(.program-row, .food-row, .client-row, .table-row),
+body .meals-page .meals-table > .table-row,
+body .website-leads-container .plans-table > .table-row,
+body .forms-page .table-wrap tbody tr {
+  min-height: 78px !important;
+  border-bottom: 1px solid #edf0f3 !important;
+  background: #fff !important;
+  font-weight: 400 !important;
+}
+
+body .page-container :is(.programs-table, .foods-table, .clients-table, .plans-table) :is(.program-name, .food-name, .plan-name, h3, h4),
+body .meals-page .meals-table .meal-name,
+body .website-leads-container .plans-table .plan-name {
+  color: #26384e !important;
+  font-weight: 500 !important;
+}
+
+body .page-container :is(.programs-table, .foods-table, .clients-table, .plans-table) :is(.action-btn, .actions-btn),
+body .meals-page .meals-table .actions-btn,
+body .website-leads-container .plans-table .actions-btn,
+body .forms-page .table-wrap :is(.action-btn, .actions-btn) {
+  min-width: 96px !important;
+  width: auto !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+  border: 1px solid #d7dee7 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #33465b !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
+}
+
+/* Emulated component attributes add specificity to each local selector.
+   Repeating the real table class keeps the common Meals skin authoritative. */
+body .page-container .programs-table.programs-table.programs-table > .table-header,
+body .page-container .foods-table.foods-table.foods-table > .table-header,
+body .page-container .clients-table.clients-table.clients-table > .table-header,
+body .meals-page.meals-page .meals-table.meals-table > .table-header,
+body .website-leads-container.website-leads-container .plans-table.plans-table > .table-header {
+  min-height: 52px !important;
+  height: 52px !important;
+  background: #f8f9fb !important;
+  color: #5e6f83 !important;
+  font-weight: 500 !important;
+}
+
+body .page-container .programs-table.programs-table.programs-table .program-row,
+body .page-container .foods-table.foods-table.foods-table .food-row,
+body .page-container .clients-table.clients-table.clients-table .client-row,
+body .meals-page.meals-page .meals-table.meals-table > .table-row,
+body .website-leads-container.website-leads-container .plans-table.plans-table > .table-row {
+  min-height: 78px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #edf0f3 !important;
+  font-weight: 400 !important;
+}
+
+body .page-container .programs-table.programs-table.programs-table .action-btn,
+body .page-container .foods-table.foods-table.foods-table .action-btn,
+body .page-container .clients-table.clients-table.clients-table .action-btn,
+body .meals-page.meals-page .meals-table.meals-table .actions-btn,
+body .website-leads-container.website-leads-container .plans-table.plans-table .actions-btn {
+  min-width: 96px !important;
+  width: auto !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+  border: 1px solid #d7dee7 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #33465b !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
+}
+
+body .page .page-header .header-content h1,
+body .page .page-header .header-left h1 {
+  color: #14263b !important;
+  font-weight: 500 !important;
+}
+
+body .page .page-header .header-content p,
+body .page .page-header .header-left p {
+  color: #63758a !important;
+  font-weight: 400 !important;
+}
+
+body .page .card {
+  border: 1px solid #e1e6ec !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .07) !important;
+}
+
+body .page .card .row {
+  border-bottom: 1px solid #edf0f3 !important;
+  background: #fff !important;
+  font-weight: 400 !important;
+}
+
+body .page .card .row .name {
+  font-weight: 500 !important;
+}
+
+/* App-wide soft typography.
+   Keep text at regular/medium weights while leaving icon-font weights intact. */
+html body app-root [class][class][class][class] :is(
+  h1, h2, h3, h4, h5, h6,
+  label, legend, th, strong, b, small,
+  button:not(.mat-icon-button):not(.icon-btn):not(.icon-button)
+) {
+  font-weight: 500 !important;
+}
+
+html body app-root :is(
+  h1, h2, h3, h4, h5, h6,
+  label, legend, th, strong, b,
+  span:not(.material-icons):not(.material-symbols-outlined):not([class^="fa"]):not([class*=" fa"]):not([class*="icon"]),
+  button:not(.mat-icon-button):not(.icon-btn):not(.icon-button)
+) {
+  font-weight: 500 !important;
+}
+
+html body app-root [class][class][class][class]:is(
+  [class*="title"], [class*="Title"],
+  [class*="name"], [class*="Name"],
+  [class*="label"], [class*="Label"],
+  [class*="heading"], [class*="Heading"],
+  [class*="badge"], [class*="Badge"],
+  [class*="status"], [class*="Status"],
+  [class*="pill"], [class*="Pill"]
+):not(i):not([class^="fa"]):not([class*=" fa"]):not([class*="icon"]) {
+  font-weight: 500 !important;
+}
+
+html body app-root [class][class][class][class]:is(
+  [class*="value"], [class*="Value"]
+):not(i):not([class^="fa"]):not([class*=" fa"]):not([class*="icon"]) {
+  font-weight: 500 !important;
+}
+
+html body app-root [class][class][class][class]:is(
+  [class*="subtitle"], [class*="Subtitle"],
+  [class*="description"], [class*="Description"],
+  [class*="helper"], [class*="Helper"],
+  [class*="hint"], [class*="Hint"],
+  [class*="meta"], [class*="Meta"],
+  [class*="subtle"], [class*="Subtle"]
+):not(i):not([class^="fa"]):not([class*=" fa"]):not([class*="icon"]),
+html body app-root :is(p, td, input, select, textarea, option) {
+  font-weight: 400 !important;
+}
+
+/* Action columns stay visually blank across list tables. */
+body :is(
+  .programs-table,
+  .foods-table,
+  .clients-table,
+  .plans-table,
+  .meals-table,
+  .groups-list,
+  .table-wrap
+) :is(.table-header, .table-head, .groups-head) > :last-child,
+body .table-wrap thead th:last-child {
+  color: transparent !important;
+  font-size: 0 !important;
+  letter-spacing: 0 !important;
+}
+

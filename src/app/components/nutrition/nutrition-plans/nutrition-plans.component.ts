@@ -31,6 +31,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   styleUrls: ['./nutrition-plans.component.scss'],
 })
 export class NutritionPlansComponent implements OnInit, OnDestroy {
+  private static readonly plansCache = new Map<string, NutritionPlan[]>();
+  private static readonly initialFetchSize = 100;
+
   nutritionFileEnabled = true;
 
 
@@ -143,37 +146,45 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
   loadPlans() {
-    this.loading = true;
+    const cacheKey = `${this.activeTab}|${this.programTypeFilter}|${this.searchTerm.trim().toLowerCase()}`;
+    const sessionCacheKey = `yo-coach:nutrition-plans:${cacheKey}`;
+    let cachedPlans = NutritionPlansComponent.plansCache.get(cacheKey);
+
+    if (!cachedPlans) {
+      try {
+        const storedPlans = sessionStorage.getItem(sessionCacheKey);
+        cachedPlans = storedPlans ? JSON.parse(storedPlans) as NutritionPlan[] : undefined;
+        if (cachedPlans) {
+          NutritionPlansComponent.plansCache.set(cacheKey, cachedPlans);
+        }
+      } catch {
+        sessionStorage.removeItem(sessionCacheKey);
+      }
+    }
+
+    if (cachedPlans) {
+      this.applyLoadedPlans(cachedPlans);
+    }
+
+    this.loading = !cachedPlans;
     this.error = null;
 
     const request$ = this.activeTab === 'templates'
-      ? this.nutritionService.getNutritionPlansTemplates(0, 500, this.searchTerm)
-      : this.nutritionService.getNutritionPlans(0, 500, this.programTypeFilter, this.searchTerm);
+      ? this.nutritionService.getNutritionPlansTemplates(0, NutritionPlansComponent.initialFetchSize, this.searchTerm)
+      : this.nutritionService.getNutritionPlans(0, NutritionPlansComponent.initialFetchSize, this.programTypeFilter, this.searchTerm);
 
     request$
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
           const content = this.extractPlans(page);
-
-          this.plans = this.sortNewestFirst(
-            this.activeTab === 'templates'
-              ? content
-                  .filter((plan: any) => !plan.isDemo && this.isLibraryOnlyPlan(plan))
-                  .map((plan) => ({
-                    ...plan,
-                    isMealPlanTemplate: true,
-                  }))
-              : content.filter((plan: any) => this.isLibraryOnlyPlan(plan))
-          );
-
-          const matchingPlans = this.getMatchingPlans();
-          this.totalElements = matchingPlans.length;
-          this.totalPages = Math.ceil(matchingPlans.length / this.pageSize);
-          if (this.currentPage > this.totalPages - 1) {
-            this.currentPage = 0;
+          NutritionPlansComponent.plansCache.set(cacheKey, content);
+          try {
+            sessionStorage.setItem(sessionCacheKey, JSON.stringify(content));
+          } catch {
+            // Memory cache still keeps navigation fast when session storage is unavailable.
           }
-          this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
+          this.applyLoadedPlans(content);
           this.loading = false;
         },
         error: (error) => {
@@ -182,6 +193,27 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
       });
+  }
+
+  private applyLoadedPlans(content: NutritionPlan[]): void {
+    this.plans = this.sortNewestFirst(
+      this.activeTab === 'templates'
+        ? content
+            .filter((plan: any) => !plan.isDemo && this.isLibraryOnlyPlan(plan))
+            .map((plan) => ({
+              ...plan,
+              isMealPlanTemplate: true,
+            }))
+        : content.filter((plan: any) => this.isLibraryOnlyPlan(plan))
+    );
+
+    const matchingPlans = this.getMatchingPlans();
+    this.totalElements = matchingPlans.length;
+    this.totalPages = Math.ceil(matchingPlans.length / this.pageSize);
+    if (this.currentPage > this.totalPages - 1) {
+      this.currentPage = 0;
+    }
+    this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
   private extractPlans(response: any): NutritionPlan[] {

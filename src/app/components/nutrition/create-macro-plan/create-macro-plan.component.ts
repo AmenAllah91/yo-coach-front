@@ -14,7 +14,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
   templateUrl: './create-macro-plan.component.html',
-  styleUrls: ['./create-macro-plan.component.scss'],
+  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateMacroPlanComponent implements OnInit {
   planName = '';

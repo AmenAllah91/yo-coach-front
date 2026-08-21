@@ -22,7 +22,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     TranslateModule,
   ],
   templateUrl: './create-macro-plan-total-day.component.html',
-  styleUrl: './create-macro-plan-total-day.component.scss',
+  styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateMacroPlanTotalDayComponent implements OnInit {
   planName = '';

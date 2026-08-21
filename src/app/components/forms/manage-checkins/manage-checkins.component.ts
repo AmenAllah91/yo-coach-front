@@ -137,7 +137,7 @@ export class ManageCheckinsComponent implements OnInit{
     const clients$ = uniqueClientIds.length
       ? forkJoin(
         uniqueClientIds.map(id =>
-          this.clientService.getClientById(id).pipe(
+          this.clientService.getClientById(id, true).pipe(
             catchError(() => of(null))
           )
         )
@@ -147,7 +147,7 @@ export class ManageCheckinsComponent implements OnInit{
     const forms$ = uniqueFormIds.length
       ? forkJoin(
         uniqueFormIds.map(id =>
-          this.formsApi.getFormById(id).pipe(
+          this.formsApi.getFormById(id, true).pipe(
             catchError(() => of(null))
           )
         )

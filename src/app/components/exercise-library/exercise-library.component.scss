@@ -6,6 +6,78 @@
   padding: 0.85rem 2rem 1rem;
 }
 
+/* Soft exercise rail typography, consistent with the shared list template. */
+.left-panel .exercises-section > h3 {
+  color: #50647a !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.left-panel .exercise-list .exercise-item {
+  border-color: #dfe5ec !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.left-panel .exercise-list .exercise-item:hover {
+  border-color: #cfd9e3 !important;
+  background: #fbfdfe !important;
+  box-shadow: 0 3px 9px rgba(15, 23, 42, .045) !important;
+}
+
+.left-panel .exercise-list .exercise-item.selected {
+  border-color: #9fdced !important;
+  background: #edf9fd !important;
+  box-shadow: none !important;
+}
+
+.left-panel .exercise-list .exercise-item .exercise-info h4 {
+  color: #26384e !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+
+.left-panel .exercise-list .exercise-item .exercise-info .exercise-meta {
+  color: #6c7d90 !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  letter-spacing: .01em !important;
+}
+
+.left-panel .exercise-list .exercise-item .exercise-info .exercise-meta .custom-badge {
+  background: #eef2f6 !important;
+  color: #526477 !important;
+  font-weight: 500 !important;
+}
+
+/* Detail panel: no heavy typography above or below the video. */
+.right-panel .exercise-detail .exercise-header .exercise-title-block h2,
+.right-panel .exercise-detail .exercise-title-block h2 {
+  color: #26384e !important;
+  font-weight: 500 !important;
+  letter-spacing: -.01em !important;
+}
+
+.right-panel .exercise-detail .exercise-meta-section .meta-tag {
+  font-weight: 500 !important;
+  letter-spacing: .01em !important;
+}
+
+.right-panel .exercise-detail .exercise-notes h3,
+.right-panel .exercise-detail .exercise-notes h4,
+.right-panel .exercise-detail .exercise-notes strong {
+  color: #33465b !important;
+  font-weight: 500 !important;
+}
+
+.right-panel .no-selection h3 {
+  color: #33465b !important;
+  font-weight: 500 !important;
+}
+
 .page-container > .page-header .header-content {
   display: flex;
   align-items: flex-start;

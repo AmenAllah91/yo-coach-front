@@ -15,7 +15,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule],
   templateUrl: './assign-full-plan.component.html',
-  styleUrl: './assign-full-plan.component.scss',
+  styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignFullPlanComponent implements OnInit {
   userId = sessionStorage.getItem('userId');
