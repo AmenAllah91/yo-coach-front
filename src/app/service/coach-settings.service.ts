@@ -52,6 +52,26 @@ export interface CoachSettingsConfig {
     checkInSubmitted: boolean;
     programEndingSoon: boolean;
   };
+  publicProfile: CoachPublicProfile;
+}
+
+export interface CoachPublicProfile {
+  professionalTitle: string;
+  bio: string;
+  specialties: string[];
+  experience: string;
+  certifications: string[];
+  languages: string[];
+  location: string;
+  coachingType: string;
+  instagramUrl: string;
+  websiteUrl: string;
+  photoUrl: string;
+  photoVisible: boolean;
+  introductionVisible: boolean;
+  expertiseVisible: boolean;
+  practicalDetailsVisible: boolean;
+  socialLinksVisible: boolean;
 }
 
 export interface DemoWorkspaceStatus {
@@ -170,6 +190,13 @@ export class CoachSettingsService {
         messageReceived: true,
         checkInSubmitted: true,
         programEndingSoon: true,
+      },
+      publicProfile: {
+        professionalTitle: '', bio: '', specialties: [], experience: '',
+        certifications: [], languages: [], location: '', coachingType: '',
+        instagramUrl: '', websiteUrl: '', photoUrl: '', photoVisible: true,
+        introductionVisible: true, expertiseVisible: true,
+        practicalDetailsVisible: true, socialLinksVisible: true,
       },
     };
   }
@@ -318,6 +345,13 @@ export class CoachSettingsService {
       notifications: {
         ...defaults.notifications,
         ...(config.notifications || {}),
+      },
+      publicProfile: {
+        ...defaults.publicProfile,
+        ...(config.publicProfile || {}),
+        specialties: [...(config.publicProfile?.specialties || [])],
+        certifications: [...(config.publicProfile?.certifications || [])],
+        languages: [...(config.publicProfile?.languages || [])],
       },
     };
   }

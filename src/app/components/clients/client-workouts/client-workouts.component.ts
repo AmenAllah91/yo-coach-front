@@ -12,6 +12,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '@config/auth.service';
+import { ToastService } from 'app/service/toast.service';
 
 type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS' | 'OVERDUE';
 type WorkoutRunStatus = 'NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
@@ -208,7 +209,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     private coachSettingsService: CoachSettingsService,
     private sanitizer: DomSanitizer,
     private translate: TranslateService,
-    private authService: AuthService
+    private authService: AuthService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -239,7 +241,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const keys: Record<WorkoutRunStatus, string> = {
       NOT_STARTED: 'NOT_STARTED_LABEL', IN_PROGRESS: 'IN_PROGRESS_LABEL', PAUSED: 'PAUSED_LABEL',
       OVERDUE: 'OVERDUE_LABEL', MISSED: 'MISSED_LABEL', LOG_WORKOUT: 'LOG_WORKOUT',
-      COMPLETED: 'COMPLETED_LABEL', ALREADY_COMPLETED: 'ALREADY_COMPLETED',
+      COMPLETED: 'COMPLETED_LABEL', ALREADY_COMPLETED: 'LOG_COMPLETED',
     };
     return this.translate.instant(keys[this.workoutRunStatus]);
   }
@@ -502,6 +504,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       }
     }
     this.enterCompletedWorkoutMode();
+    this.toastService.show({
+      type: 'info',
+      title: this.translate.instant('LOG_COMPLETED_WORKOUT_TITLE'),
+      message: this.translate.instant('LOG_COMPLETED_WORKOUT_MESSAGE'),
+      duration: 5000,
+    });
   }
 
   private enterCompletedWorkoutMode(): void {
@@ -512,18 +520,27 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   finishWorkout(alreadyCompleted = false): void {
     if (!this.selectedWorkout) return;
+    if (alreadyCompleted && this.selectedWorkout.groupedExercises.some(
+      (exercise) => exercise.sets.some((set) => set.status === 'PENDING')
+    )) {
+      this.toastService.show({
+        type: 'info',
+        title: this.translate.instant('LOG_COMPLETED_WORKOUT_TITLE'),
+        message: this.translate.instant('LOG_COMPLETED_WORKOUT_MESSAGE'),
+        duration: 5000,
+      });
+      return;
+    }
     if (!alreadyCompleted && this.hasNoCompletedExercises()) {
       this.showNoExercisesCompletedModal = true;
       return;
     }
     this.stopTimer();
     this.workoutRunStatus = alreadyCompleted ? 'ALREADY_COMPLETED' : 'COMPLETED';
-    this.selectedWorkout.groupedExercises
-      .filter((exercise) => this.isSingleCardioWarmUp(exercise))
-      .forEach((exercise) => {
-        exercise.sets.forEach(set => set.status = 'COMPLETED');
-        this.recalculateExerciseStatus(exercise);
-      });
+    this.resolvePendingSetsForCompletedWorkout(
+      this.selectedWorkout.groupedExercises,
+      alreadyCompleted ? 'COMPLETED' : 'MISSED'
+    );
     this.selectedWorkout.workoutElapsedSeconds = this.elapsedSeconds;
     this.selectedWorkout.clientCompletionMode = alreadyCompleted ? 'ALREADY_COMPLETED' : 'TRACKED';
     this.updateWorkoutStatus(this.selectedWorkout, 'COMPLETED', true);
@@ -588,6 +605,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.pendingWorkoutToStart = null;
     this.onSelectWorkout(previous);
     this.enterCompletedWorkoutMode();
+    this.toastService.show({
+      type: 'info',
+      title: this.translate.instant('LOG_COMPLETED_WORKOUT_TITLE'),
+      message: this.translate.instant('LOG_COMPLETED_WORKOUT_MESSAGE'),
+      duration: 5000,
+    });
   }
 
   closePreviousOverdueModal(): void {
@@ -700,6 +723,18 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     exercise.exerciseStatus = this.getExerciseStatus(exercise);
     exercise.completed = exercise.exerciseStatus === 'COMPLETED';
     exercise.skipped = exercise.exerciseStatus === 'MISSED';
+  }
+
+  private resolvePendingSetsForCompletedWorkout(
+    exercises: GroupedExercise[],
+    pendingResolution: 'COMPLETED' | 'MISSED'
+  ): void {
+    exercises.forEach((exercise) => {
+      exercise.sets.forEach((set) => {
+        if (set.status === 'PENDING') set.status = pendingResolution;
+      });
+      this.recalculateExerciseStatus(exercise);
+    });
   }
 
   private saveWorkoutProgress(): void {
@@ -1007,11 +1042,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         const dateStr = this.toWorkoutDate(workoutDate);
         const groupedExercises = this.groupExercisesBySuperset(day.workoutSessions || []);
         this.applyClientExerciseLogs(groupedExercises, day.clientExerciseLogs || []);
-        if (day.status === 'COMPLETED' && !(day.clientExerciseLogs || []).length) {
-          groupedExercises.forEach((exercise) => {
-            exercise.sets.forEach(set => set.status = 'COMPLETED');
-            this.recalculateExerciseStatus(exercise);
-          });
+        if (day.status === 'COMPLETED') {
+          const pendingResolution: 'COMPLETED' | 'MISSED' = !(day.clientExerciseLogs || []).length ||
+            day.clientCompletionMode === 'ALREADY_COMPLETED'
+            ? 'COMPLETED'
+            : 'MISSED';
+          this.resolvePendingSetsForCompletedWorkout(groupedExercises, pendingResolution);
         }
         const persistedStatus = (day.status ?? 'PENDING') as WorkoutStatus;
         const status: WorkoutStatus = (persistedStatus === 'PENDING' || persistedStatus === 'IN_PROGRESS') && workoutDate < today
@@ -1615,13 +1651,15 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   getExerciseCardImage(exercise: any): string {
     const ref = exercise?.exerciseRef || {};
+    const exerciseImage = exercise?.imageUrl || exercise?.image || exercise?.thumbnailUrl || exercise?.photoUrl ||
+      ref?.imageUrl || ref?.image || ref?.thumbnailUrl || ref?.photoUrl || '';
+    if (exerciseImage) return exerciseImage;
+
     const videoLink = exercise?.youtubeUrl || exercise?.videoLink || exercise?.videoUrl ||
       ref?.youtubeUrl || ref?.videoLink || ref?.videoUrl || '';
     const videoId = this.getYouTubeVideoId(videoLink);
     if (videoId) return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-    return exercise?.imageUrl || exercise?.image || exercise?.thumbnailUrl || exercise?.photoUrl ||
-      ref?.imageUrl || ref?.image || ref?.thumbnailUrl || ref?.photoUrl || '';
+    return '';
   }
 
   private indexToExerciseLetter(index: number): string {

@@ -8,15 +8,16 @@
   </div>
 
   <nav class="settings-tabs" [attr.aria-label]="'SETTINGS_SECTIONS' | translate">
-    <button type="button" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">{{ 'PROFILE' | translate }}</button>
+    <button type="button" [class.active]="activeTab === 'account'" (click)="setActiveTab('account')">{{ 'ACCOUNT' | translate }}</button>
+    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'publicProfile'" (click)="setActiveTab('publicProfile')">{{ 'PUBLIC_PROFILE' | translate }}</button>
     <button type="button" [class.active]="activeTab === 'password'" (click)="setActiveTab('password')">{{ 'PASSWORD' | translate }}</button>
     <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">{{ 'PLAN_AND_BILLING' | translate }}</button>
     <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">{{ 'NOTIFICATIONS' | translate }}</button>
     <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">{{ 'PREFERENCES' | translate }}</button>
   </nav>
 
-  <section class="settings-tab-panel" *ngIf="activeTab === 'profile'">
-    <h2>{{ 'PROFILE' | translate }}</h2>
+  <section class="settings-tab-panel" *ngIf="activeTab === 'account'">
+    <h2>{{ 'ACCOUNT' | translate }}</h2>
     <div class="settings-card profile-card">
       <div class="form-row">
         <label for="profileUsername">{{ 'USERNAME' | translate }}</label>
@@ -33,19 +34,6 @@
         <label for="profileEmail">{{ 'EMAIL_ADDRESS' | translate }}</label>
         <input id="profileEmail" type="email" [(ngModel)]="profile.email" />
       </div>
-      <div class="form-row photo-row">
-        <label>{{ 'YOUR_PROFILE_PHOTO' | translate }}</label>
-        <div class="photo-control">
-          <div class="avatar-placeholder" aria-hidden="true">👤</div>
-          <div>
-            <label class="btn btn--accent upload-button">
-              {{ 'UPLOAD_PHOTO' | translate }}
-              <input type="file" accept="image/png,image/jpeg,image/svg+xml" hidden (change)="onProfilePhotoSelected($event)" />
-            </label>
-            <small>{{ 'PROFILE_PHOTO_FORMAT_HINT' | translate }}</small>
-          </div>
-        </div>
-      </div>
       <div class="card-footer-actions">
         <button class="btn btn--save-dark" type="button" (click)="saveProfile()">{{ 'SAVE_CHANGES' | translate }}</button>
       </div>
@@ -55,6 +43,47 @@
       <h2>{{ 'ACCOUNT' | translate }}</h2>
       <button class="btn btn--outline" type="button" (click)="logout()">↪ {{ 'LOG_OUT' | translate }}</button>
 <!--      <button class="danger-link" *ngIf="!isClient" type="button" (click)="requestDeleteAccount()">Delete Account</button>-->
+    </div>
+  </section>
+
+  <section class="settings-tab-panel public-profile-panel" *ngIf="activeTab === 'publicProfile'">
+    <div class="public-profile-heading">
+      <div><h2>{{ 'PUBLIC_PROFILE' | translate }}</h2><p>{{ 'PUBLIC_PROFILE_SUBTITLE' | translate }}</p></div>
+      <div class="cs-header__actions"><button class="btn btn--outline" type="button" (click)="onCancel()">{{ 'CANCEL' | translate }}</button><button class="btn btn--save-dark" type="button" [disabled]="saving" (click)="onSave()">{{ 'SAVE_CHANGES' | translate }}</button></div>
+    </div>
+    <div class="public-profile-layout">
+      <div class="public-profile-editor">
+        <div class="profile-hero-editor">
+          <div class="public-avatar"><img *ngIf="config.publicProfile.photoUrl" [src]="config.publicProfile.photoUrl" alt=""/><span *ngIf="!config.publicProfile.photoUrl">{{ (profile.firstName || 'C').charAt(0) }}{{ (profile.lastName || '').charAt(0) }}</span></div>
+          <div class="profile-photo-fields"><h3>{{ 'PUBLIC_PHOTO' | translate }}</h3><div class="photo-actions"><label class="btn btn--accent upload-button">{{ uploadingPublicPhoto ? ('UPLOADING' | translate) : ((config.publicProfile.photoUrl ? 'REPLACE_PHOTO' : 'ADD_PHOTO') | translate) }}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden [disabled]="uploadingPublicPhoto" (change)="onPublicPhotoSelected($event)"/></label><button *ngIf="config.publicProfile.photoUrl" class="btn btn--outline" type="button" [disabled]="uploadingPublicPhoto" (click)="removePublicPhoto()">{{ 'REMOVE' | translate }}</button><small>SVG, PNG, JPG or GIF · max 10 MB</small></div><label class="visibility-check"><input type="checkbox" [(ngModel)]="config.publicProfile.photoVisible"/> {{ 'VISIBLE_TO_CLIENTS' | translate }}</label></div>
+        </div>
+
+        <div class="profile-edit-card">
+          <div class="profile-card-title"><div><span>01</span><h3>{{ 'INTRODUCTION' | translate }}</h3></div><label class="visibility-check"><input type="checkbox" [(ngModel)]="config.publicProfile.introductionVisible"/> {{ 'VISIBLE' | translate }}</label></div>
+          <label>{{ 'PROFESSIONAL_TITLE' | translate }}</label><input [(ngModel)]="config.publicProfile.professionalTitle" maxlength="80"/>
+          <label>{{ 'SHORT_BIO' | translate }}</label><textarea rows="4" maxlength="500" [(ngModel)]="config.publicProfile.bio"></textarea>
+        </div>
+
+        <div class="profile-edit-card">
+          <div class="profile-card-title"><div><span>02</span><h3>{{ 'EXPERTISE_CREDENTIALS' | translate }}</h3></div><label class="visibility-check"><input type="checkbox" [(ngModel)]="config.publicProfile.expertiseVisible"/> {{ 'VISIBLE' | translate }}</label></div>
+          <label>{{ 'SPECIALTIES' | translate }}</label><div class="chip-list"><span *ngFor="let item of config.publicProfile.specialties">{{ item }} <button type="button" (click)="removeProfileItem('specialties', item)">×</button></span></div><div class="inline-add"><input #specialtyInput [placeholder]="'ADD_SPECIALTY' | translate" (keyup.enter)="addProfileItem('specialties', specialtyInput)"/><button type="button" (click)="addProfileItem('specialties', specialtyInput)">+</button></div>
+          <label>{{ 'EXPERIENCE' | translate }}</label><select [(ngModel)]="config.publicProfile.experience"><option value="">—</option><option>0–2 years</option><option>3–5 years</option><option>6–10 years</option><option>10+ years</option></select>
+          <label>{{ 'CERTIFICATIONS' | translate }}</label><div class="chip-list"><span *ngFor="let item of config.publicProfile.certifications">{{ item }} <button type="button" (click)="removeProfileItem('certifications', item)">×</button></span></div><div class="inline-add"><input #certificationInput [placeholder]="'ADD_CERTIFICATION' | translate" (keyup.enter)="addProfileItem('certifications', certificationInput)"/><button type="button" (click)="addProfileItem('certifications', certificationInput)">+</button></div>
+        </div>
+
+        <div class="profile-edit-card">
+          <div class="profile-card-title"><div><span>03</span><h3>{{ 'PRACTICAL_DETAILS' | translate }}</h3></div><label class="visibility-check"><input type="checkbox" [(ngModel)]="config.publicProfile.practicalDetailsVisible"/> {{ 'VISIBLE' | translate }}</label></div>
+          <label>{{ 'LANGUAGES' | translate }}</label><div class="chip-list"><span *ngFor="let item of config.publicProfile.languages">{{ item }} <button type="button" (click)="removeProfileItem('languages', item)">×</button></span></div><div class="inline-add"><input #languageInput [placeholder]="'ADD_LANGUAGE' | translate" (keyup.enter)="addProfileItem('languages', languageInput)"/><button type="button" (click)="addProfileItem('languages', languageInput)">+</button></div>
+          <div class="two-column"><div><label>{{ 'LOCATION' | translate }}</label><input [(ngModel)]="config.publicProfile.location"/></div><div><label>{{ 'COACHING_TYPE' | translate }}</label><input [(ngModel)]="config.publicProfile.coachingType"/></div></div>
+        </div>
+
+        <div class="profile-edit-card">
+          <div class="profile-card-title"><div><span>04</span><h3>{{ 'SOCIAL_LINKS' | translate }}</h3></div><label class="visibility-check"><input type="checkbox" [(ngModel)]="config.publicProfile.socialLinksVisible"/> {{ 'VISIBLE' | translate }}</label></div>
+          <label>Instagram</label><input type="url" [(ngModel)]="config.publicProfile.instagramUrl" placeholder="https://instagram.com/..."/><label>{{ 'WEBSITE' | translate }}</label><input type="url" [(ngModel)]="config.publicProfile.websiteUrl" placeholder="https://..."/>
+        </div>
+      </div>
+
+      <aside class="client-preview"><p class="preview-label">{{ 'CLIENT_PREVIEW' | translate }}</p><div class="preview-card"><div class="preview-cover"><div class="preview-avatar"><img *ngIf="config.publicProfile.photoVisible && config.publicProfile.photoUrl" [src]="config.publicProfile.photoUrl" alt=""/><span *ngIf="!config.publicProfile.photoVisible || !config.publicProfile.photoUrl">{{ (profile.firstName || 'C').charAt(0) }}{{ (profile.lastName || '').charAt(0) }}</span></div></div><div class="preview-content"><h3>{{ profile.firstName }} {{ profile.lastName }}</h3><p class="preview-title" *ngIf="config.publicProfile.introductionVisible">{{ config.publicProfile.professionalTitle }}</p><p *ngIf="config.publicProfile.introductionVisible">{{ config.publicProfile.bio }}</p><div class="chip-list" *ngIf="config.publicProfile.expertiseVisible"><span *ngFor="let item of config.publicProfile.specialties">{{ item }}</span></div><dl><ng-container *ngIf="config.publicProfile.expertiseVisible && config.publicProfile.experience"><dt>{{ 'EXPERIENCE' | translate }}</dt><dd>{{ config.publicProfile.experience }}</dd></ng-container><ng-container *ngIf="config.publicProfile.expertiseVisible && config.publicProfile.certifications.length"><dt>{{ 'CERTIFICATIONS' | translate }}</dt><dd>{{ config.publicProfile.certifications.join(', ') }}</dd></ng-container><ng-container *ngIf="config.publicProfile.practicalDetailsVisible && config.publicProfile.languages.length"><dt>{{ 'LANGUAGES' | translate }}</dt><dd>{{ config.publicProfile.languages.join(', ') }}</dd></ng-container><ng-container *ngIf="config.publicProfile.practicalDetailsVisible"><dt>{{ 'COACHING' | translate }}</dt><dd>{{ config.publicProfile.coachingType }}<span *ngIf="config.publicProfile.location"> · {{ config.publicProfile.location }}</span></dd></ng-container></dl><div class="preview-links" *ngIf="config.publicProfile.socialLinksVisible"><a *ngIf="config.publicProfile.instagramUrl" [href]="config.publicProfile.instagramUrl" target="_blank">Instagram</a><a *ngIf="config.publicProfile.websiteUrl" [href]="config.publicProfile.websiteUrl" target="_blank">{{ 'WEBSITE' | translate }}</a></div></div></div></aside>
     </div>
   </section>
 

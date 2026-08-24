@@ -102,6 +102,11 @@
   background: rgba(255, 255, 255, .96) !important;
 }
 
+.np-sticky .np-btn--save:disabled {
+  cursor: not-allowed !important;
+  opacity: .55 !important;
+}
+
 .np-sticky .np-btn--save,
 .np-sticky .np-btn--save:hover {
   width: calc(100% - 32px) !important;

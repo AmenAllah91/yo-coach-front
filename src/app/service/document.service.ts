@@ -11,6 +11,13 @@ export class DocumentService {
   constructor(private http: HttpClient) {}
 
   private documentUrl=environment.documentServiceUrl;
+  private apiUrl=environment.baseApiUrl;
+
+  uploadPublicProfilePhoto(file: File): Observable<{ photoUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ photoUrl: string }>(`${this.apiUrl}/api/users/me/public-photo`, formData);
+  }
 
   getFilesInFolder(path: string): Observable<string[]> {
     const url = `${this.documentUrl}/files/list`;

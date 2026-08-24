@@ -880,7 +880,18 @@ export class AssignFullPlanComponent implements OnInit {
     return +this.computeFoodMacros(food).fat.toFixed(1);
   }
 
+  get hasEmptyMeals(): boolean {
+    return this.days.some((day) =>
+      (day.meals || []).some((meal) => !(meal.foods || []).length)
+    );
+  }
+
   savePlan() {
+    if (this.hasEmptyMeals) {
+      alert(this.translate.instant('MEAL_REQUIRES_FOOD'));
+      return;
+    }
+
     this.days.forEach((day) => this.recalcDayTargets(day));
     this.mealPlan.name = this.planName;
     this.mealPlan.details = this.planDescription;

@@ -239,13 +239,13 @@
               <div class="workout-exercises client-schedule-card__list">
                 <div class="workout-exercises-list">
                   <div class="exercise-line" *ngFor="let exercise of getWorkoutExerciseDisplay(workout)">
-                    <span class="exercise-badge" [class.exercise-badge--warmup]="exercise.isWarmUp">
-                      <ng-container *ngIf="exercise.isWarmUp; else exerciseBadge">&#128293;</ng-container>
-                      <ng-template #exerciseBadge>{{ exercise.badge }}</ng-template>
-                    </span>
                     <span class="exercise-thumbnail" aria-hidden="true">
                       <i-feather name="activity"></i-feather>
                       <img *ngIf="exercise.imageUrl" [src]="exercise.imageUrl" alt="" (error)="$any($event.target).style.display='none'" />
+                      <span class="exercise-thumbnail__badge" [class.exercise-thumbnail__badge--warmup]="exercise.isWarmUp">
+                        <ng-container *ngIf="exercise.isWarmUp; else exerciseBadge">&#128293;</ng-container>
+                        <ng-template #exerciseBadge>{{ exercise.badge }}</ng-template>
+                      </span>
                     </span>
                     <span class="exercise-name">{{ exercise.name }}<span *ngIf="exercise.suffix"> {{ exercise.suffix }}</span></span>
                   </div>
@@ -277,7 +277,7 @@
       <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> {{ 'EXTRACT_PDF' | translate }}</button>
       <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> {{ 'MARK_AS_COMPLETED' | translate }}</button>
       <button class="secondary-action missed-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="openMissedWorkoutModal()"><i-feather name="x"></i-feather> {{ 'MARK_AS_MISSED' | translate }}</button>
-      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()"><i-feather name="check-circle"></i-feather> {{ 'ALREADY_COMPLETED' | translate }}</button>
+      <button class="log-completed-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="logCompletedWorkout()"><i-feather name="clipboard"></i-feather> {{ 'LOG_COMPLETED' | translate }}</button>
       <button class="primary-action" *ngIf="workoutRunStatus === 'NOT_STARTED'" (click)="startWorkout()"><i-feather name="play"></i-feather> {{ 'START_WORKOUT' | translate }}</button>
       <ng-container *ngIf="workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED'">
         <div class="workout-menu"><button class="icon-action" [attr.aria-label]="'WORKOUT_MENU' | translate" (click)="showWorkoutMenu = !showWorkoutMenu">•••</button><button class="cancel-action" *ngIf="showWorkoutMenu" (click)="cancelWorkout()">{{ 'CANCEL_WORKOUT' | translate }}</button></div>
@@ -322,7 +322,7 @@
         <div class="simple-warmup__duration"><i-feather name="clock"></i-feather><span>{{ cardioMinutes(exercise) }} {{ 'MINUTES_LABEL' | translate }}</span></div>
       </div>
       <button class="exercise-card__header" *ngIf="!isSingleCardioWarmUp(exercise)" (click)="openExercise(exercise)">
-        <span class="exercise-index" [class.exercise-index--warmup]="!exercise.completed && isSingleCardioWarmUp(exercise)"><ng-container *ngIf="exercise.completed; else pendingExercise">✓</ng-container><ng-template #pendingExercise><span *ngIf="isSingleCardioWarmUp(exercise); else exerciseNumber" class="exercise-index__fire" [attr.aria-label]="'WARM_UP' | translate">🔥</span><ng-template #exerciseNumber>{{ exercise.displayNumber }}</ng-template></ng-template></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><em class="exercise-superset-label" *ngIf="exercise.isSuperset">{{ 'SUPERSET' | translate }}</em><i-feather name="chevron-right"></i-feather></span><small class="exercise-set-summary"><span class="set-summary-completed">{{ getSetStatusCount(exercise, 'COMPLETED') }}/{{ exercise.sets.length }} {{ 'COMPLETED_LOWER' | translate }}</span><span class="set-summary-missed">{{ getSetStatusCount(exercise, 'MISSED') }} {{ 'MISSED_LOWER' | translate }}</span><span class="set-summary-pending">{{ getSetStatusCount(exercise, 'PENDING') }} {{ 'PENDING_LOWER' | translate }}</span></small></span>
+        <span class="exercise-header-thumbnail" aria-hidden="true"><i-feather name="activity"></i-feather><img *ngIf="getExerciseCardImage(exercise) as exerciseImage" [src]="exerciseImage" alt="" (error)="$any($event.target).style.display='none'" /><span class="exercise-header-thumbnail__badge" [class.is-complete]="exercise.completed">{{ exercise.completed ? '✓' : exercise.displayNumber }}</span></span><span><span class="exercise-name-line"><strong>{{ exercise.name }}</strong><em class="exercise-superset-label" *ngIf="exercise.isSuperset">{{ 'SUPERSET' | translate }}</em><i-feather name="chevron-right"></i-feather></span><small class="exercise-set-summary"><span class="set-summary-completed">{{ getSetStatusCount(exercise, 'COMPLETED') }}/{{ exercise.sets.length }} {{ 'COMPLETED_LOWER' | translate }}</span><span class="set-summary-missed">{{ getSetStatusCount(exercise, 'MISSED') }} {{ 'MISSED_LOWER' | translate }}</span><span class="set-summary-pending">{{ getSetStatusCount(exercise, 'PENDING') }} {{ 'PENDING_LOWER' | translate }}</span></small></span>
       </button>
       <div class="exercise-table" *ngIf="exercise.sets.length && !isSingleCardioWarmUp(exercise)">
         <div class="exercise-row exercise-row--head"><span>{{ 'SET' | translate }}</span><span>{{ (exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }}</span><span>{{ 'WEIGHT' | translate }} ({{ weightUnitLabel }})</span><span>{{ 'REST' | translate }}</span><span>{{ 'STATUS' | translate }}</span></div>

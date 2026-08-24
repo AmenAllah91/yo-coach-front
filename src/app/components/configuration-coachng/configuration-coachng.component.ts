@@ -10,6 +10,7 @@ import {
 import { LanguageService } from 'app/service/language.service';
 import { AuthService } from 'app/config/auth.service';
 import { UsersService } from 'app/service/users.service';
+import { DocumentService } from 'app/service/document.service';
 
 @Component({
   selector: 'app-configuration-coachng',
@@ -19,7 +20,7 @@ import { UsersService } from 'app/service/users.service';
   styleUrl: './configuration-coachng.component.scss',
 })
 export class ConfigurationCoachngComponent implements OnInit {
-  activeTab: 'profile' | 'password' | 'plan' | 'notifications' | 'preferences' = 'profile';
+  activeTab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'preferences' = 'account';
   isClient = false;
 
   profile = {
@@ -50,6 +51,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   loading = false;
   saving = false;
+  uploadingPublicPhoto = false;
   showSaveSuccessPopup = false;
   showSaveErrorPopup = false;
   isAdmin = false;
@@ -67,12 +69,14 @@ export class ConfigurationCoachngComponent implements OnInit {
   };
 
   private savePopupTimer: any = null;
+  private currentUserId = '';
 
   constructor(
     private coachSettingsService: CoachSettingsService,
     private languageService: LanguageService,
     private authService: AuthService,
     private usersService: UsersService,
+    private documentService: DocumentService,
     private translate: TranslateService,
   ) {}
 
@@ -125,6 +129,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
     const currentUserId = account?.id || sessionStorage.getItem('userId') || '';
     if (!currentUserId) return;
+    this.currentUserId = currentUserId;
 
     this.usersService.getUserById(currentUserId).subscribe({
       next: (user: any) => {
@@ -296,10 +301,22 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
 
-  setActiveTab(tab: 'profile' | 'password' | 'plan' | 'notifications' | 'preferences'): void {
+  setActiveTab(tab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'preferences'): void {
     this.activeTab = tab;
     this.passwordError = '';
     this.passwordSuccess = '';
+  }
+
+  addProfileItem(field: 'specialties' | 'certifications' | 'languages', input: HTMLInputElement): void {
+    const value = input.value.trim();
+    if (!value || this.config.publicProfile[field].includes(value)) return;
+    if (field === 'specialties' && this.config.publicProfile.specialties.length >= 6) return;
+    this.config.publicProfile[field] = [...this.config.publicProfile[field], value];
+    input.value = '';
+  }
+
+  removeProfileItem(field: 'specialties' | 'certifications' | 'languages', value: string): void {
+    this.config.publicProfile[field] = this.config.publicProfile[field].filter((item) => item !== value);
   }
 
   toggleNotification(item: { key: string; enabled: boolean }): void {
@@ -341,7 +358,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   saveProfile(): void {
-    const currentUserId = sessionStorage.getItem('userId') || '';
+    const currentUserId = this.currentUserId || sessionStorage.getItem('userId') || '';
     if (!currentUserId) return;
     this.usersService.updateUser(currentUserId, {
       login: this.profile.username.trim(),
@@ -363,6 +380,31 @@ export class ConfigurationCoachngComponent implements OnInit {
   onProfilePhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.profile.photoName = input.files?.[0]?.name || '';
+  }
+
+  onPublicPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const currentUserId = this.currentUserId || sessionStorage.getItem('userId') || '';
+    input.value = '';
+    if (!file || !currentUserId) return;
+    if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
+      this.showPopup('error');
+      return;
+    }
+    this.uploadingPublicPhoto = true;
+    this.documentService.uploadPublicProfilePhoto(file).subscribe({
+      next: ({ photoUrl }) => {
+        this.config.publicProfile.photoUrl = photoUrl;
+        this.config.publicProfile.photoVisible = true;
+        this.uploadingPublicPhoto = false;
+      },
+      error: () => { this.uploadingPublicPhoto = false; this.showPopup('error'); },
+    });
+  }
+
+  removePublicPhoto(): void {
+    this.config.publicProfile.photoUrl = '';
   }
 
   enableBrowserNotifications(): void {

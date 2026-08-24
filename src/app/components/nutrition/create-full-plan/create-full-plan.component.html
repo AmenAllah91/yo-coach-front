@@ -536,7 +536,7 @@
       ></app-meal-template-picker>
 
       <div class="np-sticky">
-        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
+        <button class="np-btn np-btn--save np-btn--full" [disabled]="hasEmptyMeals" [attr.title]="hasEmptyMeals ? ('MEAL_REQUIRES_FOOD' | translate) : null" (click)="savePlan()">
           <svg viewBox="0 0 24 24" class="np-ico">
             <path
               d="M12 5v14m7-7H5"

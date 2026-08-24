@@ -931,11 +931,22 @@ export class CreateFullPlanComponent implements OnInit {
     return +this.computeFoodMacros(food).fat.toFixed(1);
   }
 
+  get hasEmptyMeals(): boolean {
+    return this.days.some((day) =>
+      (day.meals || []).some((meal) => !(meal.foods || []).length)
+    );
+  }
+
   /* ============================================
                 SAVE PLAN
   ==============================================*/
 
   savePlan() {
+    if (this.hasEmptyMeals) {
+      alert(this.translate.instant('MEAL_REQUIRES_FOOD'));
+      return;
+    }
+
     this.recalcAllDays();
 
     this.mealPlan.name = this.planName;
