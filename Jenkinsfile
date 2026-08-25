@@ -39,7 +39,7 @@ pipeline {
                           allowAnyHosts: true
                         ], command: """
                           echo ${USER_CREDENTIALS_PSW} | docker login -u ${USER_CREDENTIALS_USR} --password-stdin
-                          cd workspace && docker compose pull ${SERVICE_NAME} && docker compose down ${SERVICE_NAME} && docker compose up -d ${SERVICE_NAME}
+                          cd workspace-yocoach && docker compose pull ${SERVICE_NAME} && docker compose down ${SERVICE_NAME} && docker compose up -d ${SERVICE_NAME}
                         """
                     }
                 }
