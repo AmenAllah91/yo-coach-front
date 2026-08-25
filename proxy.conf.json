@@ -5,7 +5,7 @@
     "changeOrigin": true
   },
   "/auth": {
-    "target": "https://login.yocoach.co",
+    "target": "https://login.yocoach.app",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": {"^/auth" : ""}
