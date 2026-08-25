@@ -10,11 +10,11 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'kamdigisdocker/yo-coach-front'
-        IMAGE_TAG = 'integ'
+        IMAGE_TAG = 'prod'
         SERVICE_NAME = 'yo-coach-front'
         USER_CREDENTIALS= credentials('jenkins-docker')
-        VPS_USER = credentials('integration-vps')
-        VPS_IP = '54.38.35.221'
+        VPS_USER = credentials('production-vps')
+        VPS_IP = '51.178.55.238'
     }
 
     stages {
@@ -30,17 +30,18 @@ pipeline {
             }
         }
         stage('Perform Service Update') {
-            steps {
-                sshCommand remote: [
-                  name: 'remote-vm',
-                  host: "${VPS_IP}",
-                  user: "${VPS_USER_USR}",
-                  password : "${VPS_USER_PSW}",
-                  allowAnyHosts: true
-                ], command: """
-                  cd workspace-yocoach && sudo docker-compose pull ${SERVICE_NAME} && sudo docker-compose down ${SERVICE_NAME} && sudo docker-compose up -d ${SERVICE_NAME}
-                """
-            }
-        }
+                    steps {
+                        sshCommand remote: [
+                          name: 'remote-vm',
+                          host: "${VPS_IP}",
+                          user: "${VPS_USER_USR}",
+                          password: "${VPS_USER_PSW}",
+                          allowAnyHosts: true
+                        ], command: """
+                          echo ${USER_CREDENTIALS_PSW} | docker login -u ${USER_CREDENTIALS_USR} --password-stdin
+                          cd workspace && docker compose pull ${SERVICE_NAME} && docker compose down ${SERVICE_NAME} && docker compose up -d ${SERVICE_NAME}
+                        """
+                    }
+                }
     }
 }

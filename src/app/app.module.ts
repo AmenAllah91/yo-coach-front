@@ -94,7 +94,7 @@ function initializeKeycloakAndSync(
 
     const authenticated = await keycloak.init({
       config: {
-        url: 'https://login-int.yogym.co',
+        url: 'https://login.yocoach.co',
         realm: 'yo-coach',
         clientId: 'front-app',
       },

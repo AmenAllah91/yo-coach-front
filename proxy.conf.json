@@ -5,7 +5,7 @@
     "changeOrigin": true
   },
   "/auth": {
-    "target": "https://login-int.yogym.co",
+    "target": "https://login.yocoach.co",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": {"^/auth" : ""}
