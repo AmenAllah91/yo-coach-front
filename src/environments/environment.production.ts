@@ -1,9 +1,9 @@
 export const environment = {
   production: false,
-  baseApiUrl: 'https://account.yocoach.app/yo-coach-app',
-  notificationApiUrl: 'https://account.yocoach.app/notifications',
-  mobileAssetsBaseUrl: 'https://account.yocoach.app',
-  keycloakUrl: 'https://login.yocoach.app',
-  apiUrl: 'https://account.yocoach.app',
-  documentServiceUrl: 'https://account.yocoach.app/document-management',
+  baseApiUrl: 'https://account.yo-coach.app/yo-coach-app',
+  notificationApiUrl: 'https://account.yo-coach.app/notifications',
+  mobileAssetsBaseUrl: 'https://account.yo-coach.app',
+  keycloakUrl: 'https://login.yo-coach.app',
+  apiUrl: 'https://account.yo-coach.app',
+  documentServiceUrl: 'https://account.yo-coach.app/document-management',
 };

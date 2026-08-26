@@ -45,19 +45,19 @@ function isPublicCoachHostname(host: string): boolean {
     return false;
   }
 
-  if (normalized === 'integration.yocoach.app' || normalized === 'www.integration.yocoach.app') {
+  if (normalized === 'integration.yo-coach.app' || normalized === 'www.integration.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'app.yocoach.app' || normalized === 'www.app.yocoach.app') {
+  if (normalized === 'app.yo-coach.app' || normalized === 'www.app.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'yocoach.app' || normalized === 'www.yocoach.app') {
+  if (normalized === 'yo-coach.app' || normalized === 'www.yo-coach.app') {
     return false;
   }
 
-  return normalized.endsWith('.yocoach.app');
+  return normalized.endsWith('.yo-coach.app');
 }
 
 
@@ -94,7 +94,7 @@ function initializeKeycloakAndSync(
 
     const authenticated = await keycloak.init({
       config: {
-        url: 'https://login.yocoach.app',
+        url: 'https://login.yo-coach.app',
         realm: 'yo-coach',
         clientId: 'front-app',
       },

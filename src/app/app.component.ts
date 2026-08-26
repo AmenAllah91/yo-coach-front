@@ -13,39 +13,39 @@ function isPublicCoachHostname(host: string): boolean {
     return false;
   }
 
-  if (normalized === 'integration.yocoach.app' || normalized === 'www.integration.yocoach.app') {
+  if (normalized === 'integration.yo-coach.app' || normalized === 'www.integration.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'account.yocoach.app' || normalized === 'www.account.yocoach.app') {
+  if (normalized === 'account.yo-coach.app' || normalized === 'www.account.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'login.yocoach.app' || normalized === 'www.login.yocoach.app') {
+  if (normalized === 'login.yo-coach.app' || normalized === 'www.login.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'login-int.yocoach.app' || normalized === 'www.login-int.yocoach.app') {
+  if (normalized === 'login-int.yo-coach.app' || normalized === 'www.login-int.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'minio.yocoach.app' || normalized === 'www.minio.yocoach.app') {
+  if (normalized === 'minio.yo-coach.app' || normalized === 'www.minio.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'minio-console.yocoach.app' || normalized === 'www.minio-console.yocoach.app') {
+  if (normalized === 'minio-console.yo-coach.app' || normalized === 'www.minio-console.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'minio-console-int.yocoach.app' || normalized === 'www.minio-console-int.yocoach.app') {
+  if (normalized === 'minio-console-int.yo-coach.app' || normalized === 'www.minio-console-int.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'yocoach.app' || normalized === 'www.yocoach.app') {
+  if (normalized === 'yo-coach.app' || normalized === 'www.yo-coach.app') {
     return false;
   }
 
-  return normalized.endsWith('.yocoach.app');
+  return normalized.endsWith('.yo-coach.app');
 }
 
 @Component({
