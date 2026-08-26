@@ -13,19 +13,19 @@ function isPublicCoachHostname(host: string): boolean {
     return false;
   }
 
-  if (normalized === 'integration.yocoach.co' || normalized === 'www.integration.yocoach.co') {
+  if (normalized === 'integration.yo-coach.app' || normalized === 'www.integration.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'app.yocoach.co' || normalized === 'www.app.yocoach.co') {
+  if (normalized === 'app.yo-coach.app' || normalized === 'www.app.yo-coach.app') {
     return false;
   }
 
-  if (normalized === 'yocoach.co' || normalized === 'www.yocoach.co') {
+  if (normalized === 'yo-coach.app' || normalized === 'www.yo-coach.app') {
     return false;
   }
 
-  return normalized.endsWith('.yocoach.co');
+  return normalized.endsWith('.yo-coach.app');
 }
 
 @Component({

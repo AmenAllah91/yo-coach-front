@@ -506,7 +506,7 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   get publicSiteUrl(): string {
-    return `https://${this.normalizedSlug}.yocoach.co`;
+    return `https://${this.normalizedSlug}.yo-coach.app`;
   }
 
   get videoEmbedUrl(): SafeResourceUrl | null {

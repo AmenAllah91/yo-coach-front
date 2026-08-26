@@ -7,8 +7,8 @@ export const environment = {
   // apiUrl: 'http://localhost:4200',
   // documentServiceUrl: 'http://localhost:8087',
 
-  // baseApiUrl: 'https://integration.yocoach.co/yo-coach-app',
+  // baseApiUrl: 'https://integration.yo-coach.app/yo-coach-app',
   keycloakUrl: 'https://login-int.yogym.co',
-  apiUrl: 'https://integration.yocoach.co',
-  documentServiceUrl: 'https://integration.yocoach.co/document-management',
+  apiUrl: 'https://integration.yo-coach.app',
+  documentServiceUrl: 'https://integration.yo-coach.app/document-management',
 };
