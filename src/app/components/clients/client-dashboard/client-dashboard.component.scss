@@ -355,3 +355,22 @@
 .task-row.empty-task:hover {
   background: #fff;
 }
+
+@media (max-width: 768px) {
+  .container { padding: 12px; min-width: 0; }
+  .header { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .header > * { min-width: 0; }
+  .week-grid { gap: 4px; overflow-x: auto; }
+  .week-grid .day { min-width: 42px; padding-left: 4px; padding-right: 4px; }
+  .task-row { grid-template-columns: minmax(72px, 90px) minmax(0, 1fr) 20px; padding: 12px; }
+  .macros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .macro3 { grid-template-columns: 1fr; }
+  .modal { max-height: calc(100vh - 24px); border-radius: 14px; }
+}
+
+@media (max-width: 640px) {
+  .task-row { grid-template-columns: 1fr auto; }
+  .task-row .task-main { grid-column: 1 / -1; }
+  .macros { grid-template-columns: 1fr; }
+  .modal-head, .modal-body, .modal-foot { padding: 14px; }
+}

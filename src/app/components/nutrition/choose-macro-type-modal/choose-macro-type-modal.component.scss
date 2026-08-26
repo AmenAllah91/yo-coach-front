@@ -239,3 +239,12 @@
     cursor: not-allowed;
   }
 }
+
+@media (max-width: 640px) {
+  .modal-overlay { padding: 12px; }
+  .choose-modal { width: 100%; max-height: calc(100vh - 24px); overflow-y: auto; }
+  .choose-modal .plan-options { grid-template-columns: 1fr; gap: 12px; }
+  .modal-header, .modal-body, .modal-footer { padding: 16px; }
+  .modal-footer { align-items: stretch; flex-direction: column; }
+  .modal-footer button, .nutrition-duration-submit { width: 100%; }
+}

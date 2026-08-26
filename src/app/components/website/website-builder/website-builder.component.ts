@@ -8,6 +8,7 @@ import {WebsiteService} from "../../../service/website.service";
 import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
 import {UsersService} from "../../../service/users.service";
 import {DocumentService} from "../../../service/document.service";
+import {CoachSettingsService} from "../../../service/coach-settings.service";
 import {TranslateModule} from '@ngx-translate/core';
 
 type DescriptionBlockType = 'text' | 'heading' | 'image';
@@ -115,7 +116,8 @@ export class WebsiteBuilderComponent implements OnInit{
     private websiteService: WebsiteService,
     private builderState: WebsiteBuilderStateService,
     private userService: UsersService,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private coachSettingsService: CoachSettingsService
   ) {}
 
 
@@ -129,6 +131,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
     if (saved) {
       this.populateFromDraft(saved);
+      this.loadPublicProfilePhoto();
       return;
     }
 
@@ -136,6 +139,7 @@ export class WebsiteBuilderComponent implements OnInit{
       next: async (website) => {
         if (website) {
           this.populateFromWebsite(website);
+          this.loadPublicProfilePhoto();
         } else {
           this.loadUserProfile();
         }
@@ -194,6 +198,17 @@ export class WebsiteBuilderComponent implements OnInit{
 
         const avatarUrl = user.avatarUrl?.trim();
         this.profile.image = avatarUrl && avatarUrl.toLowerCase() !== 'not found' ? avatarUrl : '';
+        this.loadPublicProfilePhoto();
+      },
+      error: () => {}
+    });
+  }
+
+  private loadPublicProfilePhoto(): void {
+    this.coachSettingsService.loadConfig(true).subscribe({
+      next: config => {
+        const publicPhoto = config.publicProfile?.photoUrl?.trim();
+        if (publicPhoto) this.profile.image = publicPhoto;
       },
       error: () => {}
     });

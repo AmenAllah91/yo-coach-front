@@ -397,6 +397,8 @@ export class ConfigurationCoachngComponent implements OnInit {
       next: ({ photoUrl }) => {
         this.config.publicProfile.photoUrl = photoUrl;
         this.config.publicProfile.photoVisible = true;
+        this.savedConfig.publicProfile.photoUrl = photoUrl;
+        this.savedConfig.publicProfile.photoVisible = true;
         this.uploadingPublicPhoto = false;
       },
       error: () => { this.uploadingPublicPhoto = false; this.showPopup('error'); },
