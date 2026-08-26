@@ -13,45 +13,44 @@ function isPublicCoachHostname(host: string): boolean {
 
   const normalized = host.toLowerCase();
 
-  if (normalized === 'localhost' || normalized.startsWith('localhost:')) {
+  const privateHosts = [
+    'localhost',
+
+    'integration.yo-coach.app',
+    'www.integration.yo-coach.app',
+
+    'account.yo-coach.app',
+    'www.account.yo-coach.app',
+
+    'login.yo-coach.app',
+    'www.login.yo-coach.app',
+
+    'login-int.yo-coach.app',
+    'www.login-int.yo-coach.app',
+
+    'minio.yo-coach.app',
+    'www.minio.yo-coach.app',
+
+    'minio-console.yo-coach.app',
+    'www.minio-console.yo-coach.app',
+
+    'minio-console-int.yo-coach.app',
+    'www.minio-console-int.yo-coach.app',
+
+    'yo-coach.app',
+    'www.yo-coach.app'
+  ];
+
+  if (normalized.startsWith('localhost')) {
     return false;
   }
 
-  if (normalized === 'integration.yo-coach.app' || normalized === 'www.integration.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'account.yo-coach.app' || normalized === 'www.account.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'login.yo-coach.app' || normalized === 'www.login.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'login-int.yo-coach.app' || normalized === 'www.login-int.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'minio.yo-coach.app' || normalized === 'www.minio.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'minio-console.yo-coach.app' || normalized === 'www.minio-console.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'minio-console-int.yo-coach.app' || normalized === 'www.minio-console-int.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'yo-coach.app' || normalized === 'www.yo-coach.app') {
+  if (privateHosts.includes(normalized)) {
     return false;
   }
 
   return normalized.endsWith('.yo-coach.app');
 }
-
 @Injectable({
   providedIn: 'root'
 })
