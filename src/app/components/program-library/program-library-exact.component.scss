@@ -833,3 +833,24 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .program-library-container { padding: 16px 12px; min-width: 0; }
+  .page-header, .library-header { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .header-actions { width: 100%; flex-wrap: wrap; }
+  .sets-header { display: none !important; }
+  .set-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+  .set-row > * { min-width: 0; }
+  .exercise-library-panel { width: min(100%, 400px); }
+}
+
+@media (max-width: 480px) {
+  .header-actions > button { width: 100%; justify-content: center; }
+  .form-container { padding: 16px !important; }
+  .exercise-item { gap: 10px; }
+  .exercise-item .add-exercise-btn { opacity: 1 !important; visibility: visible !important; }
+  .exercise-library-panel { width: 100%; }
+}

@@ -498,3 +498,13 @@
   color: #6b7280;
   font-size: 0.76rem;
 }
+
+@media (max-width: 640px) {
+  .assign-modal-overlay { padding: 10px; }
+  .assign-modal { max-height: calc(100vh - 20px); border-radius: 10px; }
+  .assign-modal-header, .assign-modal-body, .assign-modal-footer { padding: 14px; }
+  .schedule-grid { grid-template-columns: 1fr; gap: 12px; }
+  .select-program-card { padding: 12px; }
+  .assign-modal-footer { align-items: stretch; flex-direction: column-reverse; }
+  .assign-modal-footer button { width: 100%; }
+}
