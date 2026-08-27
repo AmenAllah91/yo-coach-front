@@ -2981,3 +2981,20 @@
 .programs-table--cap.programs-table--without-type .col-modified {
   grid-column: 3 !important;
 }
+
+@media (max-width: 600px) {
+  .page-container > .page-header {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .page-header .primary-btn {
+    grid-column: 1 / -1;
+    width: 100% !important;
+    justify-content: center;
+  }
+
+  .programs-table--cap.programs-table--without-type .program-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+}

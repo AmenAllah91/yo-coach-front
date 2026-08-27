@@ -492,3 +492,44 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .foods-container { padding: 16px 12px; min-width: 0; }
+  .page-header { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .page-header .header-actions { width: 100%; flex-wrap: wrap; }
+  .search-container .search-box { max-width: none; }
+
+  .foods-table {
+    background: transparent;
+    box-shadow: none;
+    display: grid;
+    gap: 12px;
+
+    .table-header { display: none; }
+    .food-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 9px 12px;
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+    }
+    .food-row > * { min-width: 0; overflow-wrap: anywhere; }
+    .col-actions { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+  }
+
+  .modal-content { width: calc(100% - 24px); }
+  .modal-content .modal-body .form-row { grid-template-columns: 1fr; }
+  .modal-content .modal-body .form-row .form-group.full-width { grid-column: 1; }
+}
+
+@media (max-width: 480px) {
+  .page-header .header-actions > * { width: 100%; justify-content: center; }
+  .modal-content .modal-header,
+  .modal-content .modal-body,
+  .modal-content .modal-footer { padding: 16px; }
+  .modal-content .modal-footer { flex-direction: column-reverse; }
+  .modal-content .modal-footer button { width: 100%; }
+}

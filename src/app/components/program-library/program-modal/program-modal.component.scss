@@ -385,3 +385,12 @@
     }
   }
 }
+
+@media (max-width: 640px) {
+  .modal-overlay { padding: 12px; }
+  .modal-content { max-height: calc(100vh - 24px); }
+  .form-container { padding: 16px !important; }
+  .form-container .form-row { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .modal-header, .save-section { padding: 16px !important; }
+  .no-exercises { min-height: 140px !important; padding: 18px !important; }
+}
