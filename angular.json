@@ -68,8 +68,6 @@
               "./node_modules/moment/min/moment.min.js",
               "./node_modules/apexcharts/dist/apexcharts.min.js",
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
-
-              "./node_modules/apexcharts/dist/apexcharts.min.js",
               "./node_modules/jquery/dist/jquery.js"
             ]
           },
