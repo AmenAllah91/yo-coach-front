@@ -51,9 +51,14 @@
   min-height: 107px;
   border-bottom: 1px solid #e5e7eb;
   padding: 32px 27px 24px 34px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+
+  &__copy {
+    min-width: 0;
+  }
 
   h3 {
     margin: 0;
@@ -515,6 +520,10 @@
     height: auto;
     min-height: 0;
     grid-template-columns: 1fr;
+  }
+
+  .panel-heading {
+    padding: 20px 16px;
   }
 
   .left-panel,

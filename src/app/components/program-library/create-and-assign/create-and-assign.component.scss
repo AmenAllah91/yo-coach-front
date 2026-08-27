@@ -4454,9 +4454,12 @@ input:checked + .slider:before {
 .np-pagehead .np-back {
   padding: 0 !important;
   border: 0 !important;
-  background: transparent !important;
+  background: #eef2f6 !important;
   cursor: pointer;
 }
+
+.np-pagehead .np-back:hover { background: #dfe8f0 !important; }
+.np-pagehead .np-back:active { background: #d3dee8 !important; }
 
 .np-main > .np-card,
 .np-main > .np-card.np-card--settings:first-of-type {

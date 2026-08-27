@@ -1,4 +1,4 @@
-<div class="chat-page-header" *ngIf="!embeddedMode">
+<div class="chat-page-header" *ngIf="!embeddedMode && (!isMobile || showList)">
   <div class="chat-page-header__left">
     <button class="app-page-back chat-page-header__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
       <i-feather name="arrow-left"></i-feather>
@@ -108,7 +108,7 @@
       </div>
 
       <div class="chat-header" *ngIf="!embeddedMode">
-        <button *ngIf="isMobile" class="chat-icon-btn" type="button" (click)="backToList()">
+        <button *ngIf="isMobile" class="chat-icon-btn app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">
           <i-feather name="arrow-left"></i-feather>
         </button>
         <div class="chat-header__info" [class.chat-header__info--clickable]="selectedConv && !selectedConv.isGroup" (click)="openClientProfilePage()">

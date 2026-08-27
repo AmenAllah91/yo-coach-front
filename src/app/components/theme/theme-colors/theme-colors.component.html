@@ -1,12 +1,13 @@
 <div class="theme-builder-page">
-  <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
   <div *ngIf="error" class="alert error">{{ error }}</div>
   <div *ngIf="success" class="alert success">{{ success }}</div>
 
   <div class="builder-layout">
     <aside class="left-panel">
       <div class="panel-heading">
-        <div>
+        <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+
+        <div class="panel-heading__copy">
           <h3>{{ 'THEME_SETTINGS' | translate }}</h3>
           <p>{{ 'CUSTOMIZE_MOBILE_COLORS' | translate }}</p>
         </div>
