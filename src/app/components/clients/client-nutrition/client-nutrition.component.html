@@ -200,7 +200,7 @@
     <div class="cn-detail-root cn-detail-container">
       <!-- HEADER -->
       <header class="cn-detail-header">
-        <button class="cn-back-btn" (click)="backToList()">‹</button>
+        <button class="cn-back-btn app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">‹</button>
 
         <div class="cn-detail-header-main">
           <h1 class="cn-detail-title">{{ selectedDay.programName }}</h1>
@@ -386,7 +386,7 @@
 <!-- Client meal-plan dashboard -->
 <div class="meal-day-page" *ngIf="selectedDay as day">
   <header class="meal-day-header">
-    <button class="meal-day-back" type="button" (click)="backToList()">←</button>
+    <button class="meal-day-back app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button>
     <div class="meal-day-heading">
       <div><h1>{{ day.programName }}</h1><span [attr.data-status]="day.status">{{ nutritionDayStatusLabel(day) }}</span></div>
       <p>▣ &nbsp;{{ day.displayDate }} &nbsp;•&nbsp; Nutrition day</p>

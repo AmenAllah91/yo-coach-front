@@ -271,7 +271,7 @@
 <!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page workout-day" *ngIf="selectedWorkout">
   <header class="workout-day__topbar">
-    <div class="workout-day__title"><button [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span><button class="mobile-workout-pdf" type="button" [attr.aria-label]="'EXTRACT_PDF' | translate" [title]="'EXTRACT_PDF' | translate" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather></button></div>
+    <div class="workout-day__title"><button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span><button class="mobile-workout-pdf" type="button" [attr.aria-label]="'EXTRACT_PDF' | translate" [title]="'EXTRACT_PDF' | translate" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather></button></div>
     <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ (workoutRunStatus === 'LOG_WORKOUT' ? 'NO_TIMER' : 'WORKOUT_TIMER') | translate }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
       <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> {{ 'EXTRACT_PDF' | translate }}</button>

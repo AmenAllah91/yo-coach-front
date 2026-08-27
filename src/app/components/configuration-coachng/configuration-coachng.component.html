@@ -17,7 +17,14 @@
   </nav>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'account'">
-    <h2>{{ 'ACCOUNT' | translate }}</h2>
+    <div class="tab-heading">
+      <h2>{{ 'ACCOUNT' | translate }}</h2>
+      <div class="cs-header__actions">
+        <span class="unsaved-label" *ngIf="hasAccountChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
+        <button class="btn btn--outline" type="button" [disabled]="!hasAccountChanges" (click)="cancelProfile()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="!hasAccountChanges" (click)="saveProfile()">{{ 'SAVE_CHANGES' | translate }}</button>
+      </div>
+    </div>
     <div class="settings-card profile-card">
       <div class="form-row">
         <label for="profileUsername">{{ 'USERNAME' | translate }}</label>
@@ -34,9 +41,6 @@
         <label for="profileEmail">{{ 'EMAIL_ADDRESS' | translate }}</label>
         <input id="profileEmail" type="email" [(ngModel)]="profile.email" />
       </div>
-      <div class="card-footer-actions">
-        <button class="btn btn--save-dark" type="button" (click)="saveProfile()">{{ 'SAVE_CHANGES' | translate }}</button>
-      </div>
     </div>
 
     <div class="account-section">
@@ -49,7 +53,7 @@
   <section class="settings-tab-panel public-profile-panel" *ngIf="activeTab === 'publicProfile'">
     <div class="public-profile-heading">
       <div><h2>{{ 'PUBLIC_PROFILE' | translate }}</h2><p>{{ 'PUBLIC_PROFILE_SUBTITLE' | translate }}</p></div>
-      <div class="cs-header__actions"><button class="btn btn--outline" type="button" (click)="onCancel()">{{ 'CANCEL' | translate }}</button><button class="btn btn--save-dark" type="button" [disabled]="saving" (click)="onSave()">{{ 'SAVE_CHANGES' | translate }}</button></div>
+      <div class="cs-header__actions"><span class="unsaved-label" *ngIf="hasConfigChanges">{{ 'UNSAVED_CHANGES' | translate }}</span><button class="btn btn--outline" type="button" [disabled]="saving || !hasConfigChanges" (click)="onCancel()">{{ 'CANCEL' | translate }}</button><button class="btn btn--save-dark" type="button" [disabled]="saving || !hasConfigChanges" (click)="onSave()">{{ 'SAVE_CHANGES' | translate }}</button></div>
     </div>
     <div class="public-profile-layout">
       <div class="public-profile-editor">
@@ -88,7 +92,14 @@
   </section>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'password'">
-    <h2>{{ 'CHANGE_PASSWORD' | translate }}</h2>
+    <div class="tab-heading">
+      <h2>{{ 'CHANGE_PASSWORD' | translate }}</h2>
+      <div class="cs-header__actions">
+        <span class="unsaved-label" *ngIf="hasPasswordChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
+        <button class="btn btn--outline" type="button" [disabled]="isChangingPassword || !hasPasswordChanges" (click)="cancelPassword()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="isChangingPassword || !hasPasswordChanges" (click)="changePassword()">{{ (isChangingPassword ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
+      </div>
+    </div>
     <div class="settings-card password-card">
       <div class="form-row"><label for="currentPassword">{{ 'CURRENT_PASSWORD' | translate }}</label><input id="currentPassword" type="password" autocomplete="current-password" [(ngModel)]="passwordFormModel.oldPassword" /></div>
       <div class="password-grid">
@@ -97,7 +108,6 @@
       </div>
       <p class="form-message form-message--error" *ngIf="passwordError">{{ passwordError }}</p>
       <p class="form-message form-message--success" *ngIf="passwordSuccess">{{ passwordSuccess }}</p>
-      <div class="card-footer-actions card-footer-actions--right"><button class="btn btn--accent" type="button" [disabled]="isChangingPassword" (click)="changePassword()">{{ (isChangingPassword ? 'UPDATING' : 'UPDATE_PASSWORD') | translate }}</button></div>
     </div>
   </section>
 
@@ -122,6 +132,14 @@
   </section>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'notifications'">
+    <div class="tab-heading">
+      <h2>{{ 'NOTIFICATIONS' | translate }}</h2>
+      <div class="cs-header__actions">
+        <span class="unsaved-label" *ngIf="hasConfigChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
+        <button class="btn btn--outline" type="button" [disabled]="saving || !hasConfigChanges" (click)="onCancel()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="saving || !hasConfigChanges" (click)="onSave()">{{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
+      </div>
+    </div>
     <div class="browser-notification-card">
       <div class="notification-icon">♧</div>
       <h2>{{ 'ENABLE_NOTIFICATIONS' | translate }}</h2>
@@ -152,8 +170,9 @@
         <p>{{ 'PREFERENCES_DESCRIPTION' | translate }}</p>
       </div>
       <div class="cs-header__actions">
-        <button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">{{ 'COACH_SETTINGS_CANCEL' | translate }}</button>
-        <button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ saving ? ('COACH_SETTINGS_SAVING' | translate) : ('COACH_SETTINGS_SAVE_CHANGES' | translate) }}</button>
+        <span class="unsaved-label" *ngIf="hasConfigChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
+        <button class="btn btn--outline" type="button" [disabled]="saving || loading || !hasConfigChanges" (click)="onCancel()">{{ 'COACH_SETTINGS_CANCEL' | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="saving || loading || !hasConfigChanges" (click)="onSave()">{{ saving ? ('COACH_SETTINGS_SAVING' | translate) : ('COACH_SETTINGS_SAVE_CHANGES' | translate) }}</button>
       </div>
     </div>
   <div class="section-card">
@@ -762,7 +781,7 @@
   <section class="settings-tab-panel preferences-panel" *ngIf="activeTab === 'preferences' && isClient">
     <div class="preferences-heading">
       <div><h2>{{ 'PREFERENCES' | translate }}</h2><p>{{ 'CLIENT_PREFERENCES_DESCRIPTION' | translate }}</p></div>
-      <div class="cs-header__actions"><button class="btn btn--outline" type="button" [disabled]="saving || loading" (click)="onCancel()">{{ 'CANCEL' | translate }}</button><button class="btn btn--accent" type="button" [disabled]="saving || loading" (click)="onSave()">{{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button></div>
+      <div class="cs-header__actions"><span class="unsaved-label" *ngIf="hasConfigChanges">{{ 'UNSAVED_CHANGES' | translate }}</span><button class="btn btn--outline" type="button" [disabled]="saving || loading || !hasConfigChanges" (click)="onCancel()">{{ 'CANCEL' | translate }}</button><button class="btn btn--save-dark" type="button" [disabled]="saving || loading || !hasConfigChanges" (click)="onSave()">{{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button></div>
     </div>
 
     <div class="section-card">

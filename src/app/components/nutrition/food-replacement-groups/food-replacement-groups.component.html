@@ -136,7 +136,7 @@
 
 <div class="page-container editor-page" *ngIf="view === 'EDITOR'">
   <div class="page-header editor-header">
-    <button class="editor-back-btn" type="button" [attr.aria-label]="'BACK' | translate" (click)="closeEditor()"><i-feather name="arrow-left"></i-feather></button>
+    <button class="editor-back-btn app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="closeEditor()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ (editingGroup ? 'EDIT_REPLACEMENT_GROUP' : 'CREATE_REPLACEMENT_GROUP') | translate }}</h1>
     </div>

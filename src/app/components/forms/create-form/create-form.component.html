@@ -5,7 +5,7 @@
 
   <div class="iq-topbar" [class.iq-topbar--editing]="isEditingTitle">
 
-    <button type="button" class="iq-back" (click)="back()">
+    <button type="button" class="iq-back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="back()">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round"/>
