@@ -295,16 +295,6 @@ body .page-header.page-header.page-header {
   border-bottom: 0.0625rem solid #dce5ef !important;
 }
 
-/* Settings sits directly below the application top bar; unlike list pages it
-   must not receive the shared page-header top inset. */
-body .coach-settings .settings-page-header.page-header.page-header {
-  padding-top: 0 !important;
-}
-
-body .website-leads-container .page-header.page-header.page-header {
-  padding-top: 0 !important;
-}
-
 body .page-header.page-header.page-header h1 {
   margin: 0 !important;
   font-size: clamp(1.45rem, 1.4vw, 1.75rem) !important;
@@ -616,10 +606,8 @@ body .app-page-back {
   border-radius: 50% !important;
   background: #eef2f6 !important;
   color: #53677d !important;
-  /* The icon is provided by ::before. Keep legacy raw arrow text from
-     rendering beside it if an older template still contains one. */
-  font-size: 0 !important;
-  line-height: 0 !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
   box-sizing: border-box;
   appearance: none;
   cursor: pointer;

@@ -3,8 +3,16 @@ $brand-blue: #44b4df;
 :host { display: block; }
 
 .grow-page { padding: 26px 28px 40px; color: #12213d; }
+.grow-header {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+.grow-header__copy { min-width: 0; }
 .grow-header h1 { margin: 0; font-size: 34px; font-weight: 750; letter-spacing: -1px; }
-.grow-header p { margin: 5px 0 30px; color: #6f82a5; font-size: 16px; }
+.grow-header p { margin: 5px 0 0; color: #6f82a5; font-size: 16px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .section-heading h2 { margin: 0; font-size: 19px; font-weight: 700; }
 .heading-actions, .footer-actions { display: flex; gap: 12px; }
@@ -65,8 +73,9 @@ textarea:focus { border-color: $brand-blue; box-shadow: 0 0 0 3px rgba(68, 180, 
 }
 @media (max-width: 560px) {
   .grow-page { padding: 20px 14px 32px; }
+  .grow-header { gap: 12px; margin-bottom: 22px; }
   .grow-header h1 { font-size: 28px; }
-  .grow-header p { margin-bottom: 22px; font-size: 14px; }
+  .grow-header p { font-size: 14px; }
   .section-heading { align-items: flex-start; flex-direction: column; }
   .heading-actions { width: 100%; flex-direction: column; }
   .heading-actions .button { width: 100%; }

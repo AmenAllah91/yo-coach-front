@@ -30,6 +30,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     email: localStorage.getItem('email') || '',
     photoName: '',
   };
+  savedProfile = { ...this.profile };
 
   browserNotificationsEnabled = false;
 
@@ -124,6 +125,7 @@ export class ConfigurationCoachngComponent implements OnInit {
       this.profile.firstName = account.firstName || this.profile.firstName;
       this.profile.lastName = account.lastName || this.profile.lastName;
       this.profile.email = account.email || this.profile.email;
+      this.savedProfile = { ...this.profile };
 
       if (account.id) {
         sessionStorage.setItem('userId', account.id);
@@ -140,6 +142,7 @@ export class ConfigurationCoachngComponent implements OnInit {
         this.profile.firstName = user.firstName || this.profile.firstName;
         this.profile.lastName = user.lastName || this.profile.lastName;
         this.profile.email = user.email || this.profile.email;
+        this.savedProfile = { ...this.profile };
       },
       error: () => undefined,
     });
@@ -147,6 +150,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   onCancel(): void {
     this.config = this.clone(this.savedConfig);
+    this.syncNotificationToggles();
 
     const langCode = this.languageService.languageNameToCode(
       this.config.defaults.language,
@@ -310,6 +314,30 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.passwordSuccess = '';
   }
 
+  get hasConfigChanges(): boolean {
+    return JSON.stringify(this.config) !== JSON.stringify(this.savedConfig);
+  }
+
+  get hasAccountChanges(): boolean {
+    return ['username', 'firstName', 'lastName', 'email'].some(
+      (key) => (this.profile as any)[key] !== (this.savedProfile as any)[key],
+    );
+  }
+
+  get hasPasswordChanges(): boolean {
+    return Object.values(this.passwordFormModel).some((value) => Boolean(value));
+  }
+
+  cancelProfile(): void {
+    this.profile = { ...this.savedProfile };
+  }
+
+  cancelPassword(): void {
+    this.passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
+    this.passwordError = '';
+    this.passwordSuccess = '';
+  }
+
   addProfileItem(field: 'specialties' | 'certifications' | 'languages', input: HTMLInputElement): void {
     const value = input.value.trim();
     if (!value || this.config.publicProfile[field].includes(value)) return;
@@ -325,7 +353,6 @@ export class ConfigurationCoachngComponent implements OnInit {
   toggleNotification(item: { key: string; enabled: boolean }): void {
     item.enabled = !item.enabled;
     (this.config.notifications as any)[item.key] = item.enabled;
-    this.onSave();
   }
 
   private syncNotificationToggles(): void {
@@ -374,6 +401,7 @@ export class ConfigurationCoachngComponent implements OnInit {
         localStorage.setItem('firstName', this.profile.firstName.trim());
         localStorage.setItem('lastName', this.profile.lastName.trim());
         localStorage.setItem('email', this.profile.email.trim());
+        this.savedProfile = { ...this.profile };
         this.showPopup('success');
       },
       error: () => this.showPopup('error'),
@@ -432,13 +460,11 @@ export class ConfigurationCoachngComponent implements OnInit {
     if (this.browserNotificationsEnabled) {
       this.browserNotificationsEnabled = false;
       this.config.notifications.enabled = false;
-      this.onSave();
       return;
     }
 
     this.browserNotificationsEnabled = true;
     this.config.notifications.enabled = true;
-    this.onSave();
   }
 
   logout(): void {

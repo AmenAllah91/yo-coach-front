@@ -6,7 +6,11 @@
       <p>{{ 'WEBSITE_LEADS_SUBTITLE' | translate }}</p>
     </div>
     <div class="page-header-actions">
-      <span class="leads-count"><i-feather name="users"></i-feather>{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</span>
+      <span class="leads-count">
+        <i-feather name="users"></i-feather>
+        <span class="desktop-count-label">{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</span>
+        <span class="mobile-count-label">{{ totalElements }}</span>
+      </span>
       <button class="btn-primary" type="button" (click)="openInviteModal()">
         <i-feather name="user-plus"></i-feather>
         {{ 'INVITE_NEW_LEAD' | translate }}
@@ -25,7 +29,13 @@
         class="search-input"
       />
     </div>
+    <button class="mobile-invite-btn" type="button" (click)="openInviteModal()">
+      <i-feather name="user-plus"></i-feather>
+      {{ 'INVITE_NEW_LEAD' | translate }}
+    </button>
   </div>
+
+  <div class="mobile-leads-total">{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</div>
 
   <div class="lead-action-message lead-action-message--success" *ngIf="actionMessage">{{ actionMessage }}</div>
   <div class="lead-action-message lead-action-message--error" *ngIf="actionError">{{ actionError }}</div>
@@ -55,7 +65,7 @@
       </div>
 
       <div class="col-calories">
-        {{ lead.sourceTheme || '—' }}
+        <span>{{ lead.sourceTheme || '—' }}</span>
       </div>
 
       <div class="col-actions">
