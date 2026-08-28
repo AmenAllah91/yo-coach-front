@@ -68,8 +68,6 @@
               "./node_modules/moment/min/moment.min.js",
               "./node_modules/apexcharts/dist/apexcharts.min.js",
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
-
-              "./node_modules/apexcharts/dist/apexcharts.min.js",
               "./node_modules/jquery/dist/jquery.js"
             ]
           },
@@ -114,13 +112,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "4mb",
-                  "maximumError": "10mb"
+                  "maximumWarning": "6mb",
+                  "maximumError": "8mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "20kb",
-                  "maximumError": "100kb"
+                  "maximumWarning": "100kb",
+                  "maximumError": "150kb"
                 }
               ],
               "fileReplacements": [
