@@ -3,7 +3,11 @@
   <div class="client-page-inner">
     <div class="cw-root">
       <header class="client-header">
-        <h1 class="client-header-title">{{ 'WORKOUTS' | translate }}</h1>
+        <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+        <div class="client-header-copy">
+          <h1 class="client-header-title">{{ 'WORKOUTS' | translate }}</h1>
+          <p class="client-header-subtitle">{{ 'CLIENT_WORKOUTS_PAGE_SUBTITLE' | translate }}</p>
+        </div>
       </header>
 
       <div class="file-toggle-wrap" *ngIf="showWorkoutFiles">
@@ -271,7 +275,7 @@
 <!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page workout-day" *ngIf="selectedWorkout">
   <header class="workout-day__topbar">
-    <div class="workout-day__title"><button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span><button class="mobile-workout-pdf" type="button" [attr.aria-label]="'EXTRACT_PDF' | translate" [title]="'EXTRACT_PDF' | translate" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather></button></div>
+    <div class="workout-day__title"><button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()"><span aria-hidden="true">←</span></button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span><button class="mobile-workout-pdf" type="button" [attr.aria-label]="'EXTRACT_PDF' | translate" [title]="'EXTRACT_PDF' | translate" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather></button></div>
     <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ (workoutRunStatus === 'LOG_WORKOUT' ? 'NO_TIMER' : 'WORKOUT_TIMER') | translate }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
       <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> {{ 'EXTRACT_PDF' | translate }}</button>
@@ -509,6 +513,7 @@
     <div class="exercise-modal__content"><small>{{ 'ISOLATION' | translate }}</small><h2>{{ selectedExercise.name }}</h2>
       <div class="exercise-facts"><span><i-feather name="activity"></i-feather><span><small>{{ 'EQUIPMENT' | translate }}</small><strong>{{ selectedExercise.equipment || '—' }}</strong></span></span><span><i-feather name="target"></i-feather><span><small>{{ 'PRIMARY_MUSCLE' | translate }}</small><strong>{{ selectedExercise.primaryMuscle || selectedExercise.label || '—' }}</strong></span></span><span><i-feather name="layers"></i-feather><span><small>{{ 'PLANNED_LABEL' | translate }}</small><strong>{{ selectedExercise.sets.length }} {{ 'SETS' | translate }} × {{ selectedExercise.sets[0]?.reps || '—' }} {{ 'REPS_LOWER' | translate }}</strong></span></span><span><i-feather name="clock"></i-feather><span><small>{{ 'REST_TIME' | translate }}</small><strong>{{ selectedExercise.sets[0]?.rest || '—' }}</strong></span></span></div>
       <h3>{{ 'PLANNED_SETS' | translate }}</h3><div class="modal-set" *ngFor="let set of selectedExercise.sets"><span>{{ 'SET' | translate }} {{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span><strong>⇄ {{ set.reps }} {{ 'REPS_LOWER' | translate }} &nbsp;&nbsp; ◷ {{ set.rest }}</strong></div>
+      <div class="exercise-description" *ngIf="selectedExercise.description"><strong>{{ 'EXERCISE_DESCRIPTION' | translate }}</strong><p>{{ selectedExercise.description }}</p></div>
       <div class="coach-note" *ngIf="selectedExercise.coachNote"><strong>{{ 'COACH_NOTE' | translate }}</strong><p>{{ selectedExercise.coachNote }}</p></div>
       <h3 *ngIf="selectedExercise.instructions?.length">{{ 'INSTRUCTIONS' | translate }}</h3><ol><li *ngFor="let instruction of selectedExercise.instructions">{{ instruction }}</li></ol>
     </div>
