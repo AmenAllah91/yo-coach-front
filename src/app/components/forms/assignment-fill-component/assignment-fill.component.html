@@ -1,5 +1,8 @@
 <div class="page" *ngIf="!loading(); else loadingTpl">
-  <h1 class="title">{{ form.title }}</h1>
+  <div class="assignment-header">
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+    <h1 class="title">{{ form.title }}</h1>
+  </div>
 
   <div *ngIf="error()" class="alert">{{ error() }}</div>
 

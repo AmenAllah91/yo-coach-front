@@ -120,7 +120,7 @@ exercises: day.exercises.map((exercise: any) => ({
               isSuperset: exercise.isSuperset || false,
               supersetWith: exercise.supersetWith || null,
               supersetGroupId: exercise.supersetGroupId || null,
-              notes: exercise.notes || '',
+              notes: exercise.coachNote || exercise.notes || '',
               sets: exercise.sets.map((set: any, setIndex: number) => ({
                 setNumber: setIndex + 1,
                 reps: set.reps || 8,

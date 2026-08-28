@@ -3072,6 +3072,7 @@
 .exercise-facts small { color:#75869a; font-size:14px; }.exercise-facts strong { font-size:16px; }
 .modal-set { min-height:53px; padding:0 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e7ecf0; background:#f8fafc; font-size:16px; }.modal-set em { margin-left:8px; padding:4px 9px; border:1px solid #ffd36b; border-radius:99px; background:#fff8e6; color:#c27700; font-size:11px; font-style:normal; text-transform:uppercase; }.modal-set em[data-type='FAILURE'] { border-color:#ffb6c3; background:#fff0f3; color:#df3455; }.modal-set em[data-type='DROP_SET'] { border-color:#c7b9ff; background:#f4f0ff; color:#6545df; }.modal-set strong { color:#53657a; font-weight:500; }
 .coach-note { margin-top:24px; padding:20px; border:1px solid #cceafb; border-radius:12px; background:#edf8fe; color:#075f8d; font-size:16px; }.coach-note p { margin:8px 0 0; line-height:1.45; }
+.exercise-description { margin-top:24px; padding:20px; border:1px solid #dce5ed; border-radius:12px; background:#f7fafc; color:#26384a; font-size:16px; }.exercise-description p { margin:8px 0 0; color:#60758b; line-height:1.45; }
 .exercise-modal ol { margin:0; padding-left:26px; font-size:10px; line-height:1.55; }
 .note-modal { width:min(430px,100%); padding:22px; border-radius:14px; background:#fff; }.note-modal h2 { margin:0 0 14px; font-size:18px; }.note-modal textarea { width:100%; resize:vertical; padding:12px; border:1px solid #d8e1e9; border-radius:9px; }.note-modal > div { margin-top:12px; display:flex; justify-content:flex-end; gap:8px; }
 
@@ -3100,7 +3101,7 @@
   .exercise-modal__content { padding:16px 20px 24px; }
   .exercise-modal__content > small { font-size:10px; }.exercise-modal__content h2 { margin:5px 0 16px; font-size:18px; }.exercise-modal__content h3 { margin:18px 0 10px; font-size:14px; }
   .exercise-facts { grid-template-columns:1fr; gap:8px; }.exercise-facts > span { min-height:77px; padding:12px 15px; gap:14px; border-radius:12px; }.exercise-facts > span > i-feather { width:45px; height:45px; flex-basis:45px; padding:12px; }.exercise-facts small { font-size:12px; }.exercise-facts strong { font-size:14px; }
-  .modal-set { min-height:53px; padding:0 16px; font-size:12px; }.modal-set em { padding:3px 7px; font-size:8px; }.coach-note { margin-top:16px; padding:14px; border-radius:10px; font-size:12px; }
+  .modal-set { min-height:53px; padding:0 16px; font-size:12px; }.modal-set em { padding:3px 7px; font-size:8px; }.coach-note,.exercise-description { margin-top:16px; padding:14px; border-radius:10px; font-size:12px; }
   .workout-mobile-actions { position:fixed;z-index:40;left:0;right:0;bottom:0;min-height:62px;padding:7px 8px 9px;display:flex;align-items:center;gap:7px;border-top:1px solid #dce5ed;background:#fff;box-shadow:0 -5px 18px rgba(15,23,42,.08); }
   .workout-mobile-actions > button { min-width:0;flex:1;height:42px;min-height:42px;padding:0 9px;border-radius:8px;font-size:11px;white-space:nowrap; }
   .workout-mobile-actions > .primary-action:last-child { flex:1.08; }
@@ -3961,6 +3962,19 @@
 .cw-root .client-header {
   text-align: left !important;
 }
+
+/* Standard client page heading: title and subtitle always start at the left. */
+.cw-root .client-header {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 20px 12px 18px !important;
+  text-align: left !important;
+}
+.cw-root .client-header-copy { flex: 1 1 auto; min-width: 0; text-align: left; }
+.cw-root .client-header-title { margin: 0 0 5px !important; text-align: left !important; }
+.cw-root .client-header-subtitle { margin: 0 !important; text-align: left !important; }
 
 .cw-root .client-tabs {
   margin: 8px 0 14px !important;

@@ -1,13 +1,3 @@
-<button
-  type="button"
-  class="toggle-sidebar"
-  (click)="toggleSidebar()"
-  [attr.aria-expanded]="isExpanded"
-  aria-controls="app-sidebar"
-  [attr.aria-label]="(isExpanded ? 'CLOSE_SIDEBAR' : 'OPEN_SIDEBAR') | translate">
-  <i-feather [name]="isExpanded ? 'x' : 'menu'"></i-feather>
-</button>
-
 <aside id="app-sidebar" class="sidebar" [class.expanded]="isExpanded">
   <div class="sidebar-header">
     <img

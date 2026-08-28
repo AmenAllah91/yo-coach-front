@@ -3,7 +3,11 @@
   <div class="client-page-inner">
     <div class="cw-root">
       <header class="client-header">
-        <h1 class="client-header-title">{{ 'NUTRITION' | translate }}</h1>
+        <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+        <div class="client-header-copy">
+          <h1 class="client-header-title">{{ 'NUTRITION' | translate }}</h1>
+          <p class="client-header-subtitle">{{ 'CLIENT_NUTRITION_PAGE_SUBTITLE' | translate }}</p>
+        </div>
       </header>
 
       <div class="file-toggle-wrap" *ngIf="showNutritionFiles">
@@ -200,7 +204,7 @@
     <div class="cn-detail-root cn-detail-container">
       <!-- HEADER -->
       <header class="cn-detail-header">
-        <button class="cn-back-btn app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">‹</button>
+        <button class="cn-back-btn app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()"><span aria-hidden="true">‹</span></button>
 
         <div class="cn-detail-header-main">
           <h1 class="cn-detail-title">{{ selectedDay.programName }}</h1>
@@ -386,7 +390,7 @@
 <!-- Client meal-plan dashboard -->
 <div class="meal-day-page" *ngIf="selectedDay as day">
   <header class="meal-day-header">
-    <button class="meal-day-back app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()">←</button>
+    <button class="meal-day-back app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()"><span aria-hidden="true">←</span></button>
     <div class="meal-day-heading">
       <div><h1>{{ day.programName }}</h1><span [attr.data-status]="day.status">{{ nutritionDayStatusLabel(day) }}</span></div>
       <p>▣ &nbsp;{{ day.displayDate }} &nbsp;•&nbsp; Nutrition day</p>

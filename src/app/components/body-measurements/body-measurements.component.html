@@ -1,4 +1,11 @@
-<div class="measurements-page">
+<div class="measurements-page" [class.measurements-page--standalone]="standaloneView">
+  <div class="measurements-page-header" *ngIf="standaloneView">
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+    <div>
+      <h1>{{ 'BODY_MEASUREMENTS' | translate }}</h1>
+      <p>{{ 'MEASUREMENTS' | translate }}</p>
+    </div>
+  </div>
   <div class="measurements-shell">
     <aside class="measurements-sidebar">
       <div class="measurement-search">

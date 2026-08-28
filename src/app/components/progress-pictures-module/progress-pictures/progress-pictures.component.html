@@ -1,6 +1,7 @@
 <div class="page">
   <div class="wrap">
     <div class="header">
+      <button *ngIf="standaloneView" class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
       <div class="header-content">
         <h1 class="h1">{{ 'PROGRESS_PICTURES_TITLE' | translate }}</h1>
         <p class="sub">{{ 'PROGRESS_PICTURES_SUBTITLE' | translate }}</p>

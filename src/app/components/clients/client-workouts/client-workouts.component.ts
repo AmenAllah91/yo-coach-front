@@ -13,6 +13,7 @@ import { catchError, map } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '@config/auth.service';
 import { ToastService } from 'app/service/toast.service';
+import { Location } from '@angular/common';
 
 type WorkoutStatus = 'COMPLETED' | 'MISSED' | 'PENDING' | 'IN_PROGRESS' | 'OVERDUE';
 type WorkoutRunStatus = 'NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
@@ -51,6 +52,7 @@ interface RawExercise {
   equipment?: string;
   primaryMuscle?: string;
   coachNote?: string;
+  notes?: string;
   muscle?: string;
   exerciseRef?: any;
 }
@@ -210,8 +212,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private translate: TranslateService,
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private location: Location
   ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   ngOnInit(): void {
     this.loadCurrentUserName();
@@ -1523,7 +1530,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           }) || [],
           duration: totalDuration,
           isWarmUp: this.isWarmUpExercise(ex),
-          description: ex.description || exerciseRef.description,
+          description: exerciseRef.description || ((ex.coachNote || exerciseRef.coachNote) ? ex.description : undefined),
           instructions: Array.isArray(ex.instructions || exerciseRef.instructions)
             ? (ex.instructions || exerciseRef.instructions)
             : (ex.instructions || exerciseRef.instructions || '').split(/\r?\n/).filter(Boolean),
@@ -1531,7 +1538,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           imageUrl: ex.imageUrl || exerciseRef.imageUrl || exerciseRef.image || exerciseRef.thumbnailUrl || exerciseRef.photoUrl,
           equipment: ex.equipment || exerciseRef.equipment,
           primaryMuscle: ex.primaryMuscle || ex.muscle || ex.category || exerciseRef.muscle,
-          coachNote: ex.coachNote || exerciseRef.coachNote || ex.description,
+          coachNote: ex.coachNote || ex.notes || exerciseRef.coachNote,
         });
       });
       globalIndex++;

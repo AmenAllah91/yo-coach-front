@@ -3776,6 +3776,22 @@ color: #757272;
 .np-day__topline { display: flex; width: 100%; min-width: 0; align-items: baseline; gap: 7px; white-space: nowrap; }
 .np-day__title, .np-day.is-active .np-day__title { flex: 0 0 auto; font-size: 14px !important; font-weight: 500 !important; line-height: 19px !important; }
 .np-day__dateLine { min-width: 0; overflow: hidden; color: #7d8ca0; font-size: 10px; font-weight: 400; line-height: 15px; text-overflow: ellipsis; }
+
+/* The editor lives below the application header. Using 100vh here made the
+   bottom of its own scroll area extend outside the visible viewport. */
+.np-main {
+  height: calc(100dvh - 72px) !important;
+  min-height: 0 !important;
+  padding-bottom: 140px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.np-main > .np-card:last-of-type {
+  margin-bottom: 32px !important;
+}
 .np-day__meta { display: block !important; width: 100%; margin: 0 !important; color: #8b99aa !important; font-size: 10px !important; font-weight: 400 !important; line-height: 15px !important; text-align: left; }
 .wk-day-editor__title { font-size: 18px !important; font-weight: 500 !important; }
 .wk-day-editor__date { font-size: 13px !important; font-weight: 400 !important; }

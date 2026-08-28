@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import {CommonModule} from "@angular/common";
+import {CommonModule, Location} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
@@ -74,7 +74,11 @@ interface CheckInItem {
   styleUrl: './my-checkins.component.scss'
 })
 export class MyCheckinsComponent {
-  constructor(private translate: TranslateService) {}
+  constructor(private translate: TranslateService, private location: Location) {}
+
+  goBack(): void {
+    this.location.back();
+  }
   activeTab: Tab = 'pending';
   selectedCheckIn: CheckInItem | null = null;
   isModalOpen = false;

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {Observable} from "rxjs";
+import {Observable, throwError} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {environment} from "@env/environment";
 
@@ -51,6 +51,26 @@ export class DocumentService {
     const getPhototUrl = `${this.documentUrl}/client-photo/client-photo/generate-url`;
     const body = {objectPath:  pathToFile};
     return this.http.post(getPhototUrl, body, {responseType: 'text'});
+  }
+
+  refreshStoredFileUrl(storedUrl: string): Observable<string> {
+    try {
+      const parsed = new URL(storedUrl);
+      const segments = parsed.pathname
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => decodeURIComponent(segment));
+
+      // MinIO URLs contain the bucket first. The document service expects the
+      // exact object key, including the generated filename.
+      if (segments.length < 2) {
+        return throwError(() => new Error('Invalid stored document URL'));
+      }
+
+      return this.simpleGenerateFileUrl(segments.slice(1).join('/'));
+    } catch (error) {
+      return throwError(() => error);
+    }
   }
   downloadFile(path: string): Observable<Blob> {
     const downloadUrl = `${this.documentUrl}/files/downloadFile`;

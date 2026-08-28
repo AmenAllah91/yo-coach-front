@@ -9,6 +9,7 @@ import { FormsApiService, FormDetails } from '../services/forms-api.service';
 import {SubmissionsApiService} from "../services/submissions-api.service";
 import {Answer, QuestionType, Submission} from "../../../models/forms.model";
 import {ClientService} from "../../../service/client.service";
+import {DocumentService} from "../../../service/document.service";
 
 export interface OptionItem {
   id: string;
@@ -101,6 +102,7 @@ export class ManageCheckinsComponent implements OnInit{
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private clientService: ClientService,
+    private documentService: DocumentService,
     private translate: TranslateService,
   ) {}
 
@@ -154,8 +156,18 @@ export class ManageCheckinsComponent implements OnInit{
       )
       : of([]);
 
-    forkJoin([clients$, forms$]).subscribe({
-      next: ([clients, forms]: any[]) => {
+    const photos$ = uniqueClientIds.length
+      ? forkJoin(
+        uniqueClientIds.map(id =>
+          this.documentService.getPhoto(id, 'user-profile-photos').pipe(
+            catchError(() => of(''))
+          )
+        )
+      )
+      : of([]);
+
+    forkJoin([clients$, forms$, photos$]).subscribe({
+      next: ([clients, forms, photos]: any[]) => {
         const clientMap = new Map<string, any>();
         (clients ?? []).forEach((c: any) => {
           if (c?.id) clientMap.set(String(c.id), c);
@@ -164,6 +176,14 @@ export class ManageCheckinsComponent implements OnInit{
         const formMap = new Map<string, any>();
         (forms ?? []).forEach((f: any) => {
           if (f?.id) formMap.set(String(f.id), f);
+        });
+
+        const photoMap = new Map<string, string>();
+        uniqueClientIds.forEach((id, index) => {
+          const photoUrl = String(photos?.[index] ?? '').trim();
+          if (photoUrl && photoUrl.toLowerCase() !== 'not found') {
+            photoMap.set(String(id), photoUrl);
+          }
         });
 
         this.clients = this.clients.map(row => {
@@ -180,7 +200,11 @@ export class ManageCheckinsComponent implements OnInit{
           return {
             ...row,
             name: fullName || row.name,
-            avatar: c?.avatarUrl ?? c?.avatar ?? row.avatar,
+            avatar: photoMap.get(String(assignment.assigneeId))
+              || c?.avatarUrl
+              || c?.avatar
+              || c?.image
+              || row.avatar,
             formType: f?.title ?? f?.name ?? row.formType,
             formName: f?.title ?? f?.name ?? row.formName,
           };
@@ -301,6 +325,10 @@ export class ManageCheckinsComponent implements OnInit{
 
   initials(name: string) {
     return name?.trim()?.charAt(0)?.toUpperCase() || '?';
+  }
+
+  onAvatarError(client: ClientData): void {
+    client.avatar = undefined;
   }
 
   openCheckInModal(client: ClientData) {

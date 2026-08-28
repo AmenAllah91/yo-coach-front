@@ -2,8 +2,11 @@
   <div class="wrap">
 
     <div class="header">
-      <h1 class="h1">{{ 'MY_CHECK_INS' | translate }}</h1>
-      <p class="sub">{{ 'ASSIGNED_FORMS_SUBTITLE' | translate }}</p>
+      <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+      <div class="header-copy">
+        <h1 class="h1">{{ 'MY_CHECK_INS' | translate }}</h1>
+        <p class="sub">{{ 'ASSIGNED_FORMS_SUBTITLE' | translate }}</p>
+      </div>
     </div>
 
     <div class="panel">

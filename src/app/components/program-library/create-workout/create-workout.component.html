@@ -418,7 +418,7 @@
                             <textarea
                               rows="2"
                               class="wkex-notes__textarea"
-                              [ngModel]="exercise.description || ''"
+                              [ngModel]="exercise.coachNote || exercise.notes || ''"
                               (ngModelChange)="handleExerciseDescriptionChange(exercise.id, $event)"
                             ></textarea>
                           </div>
@@ -431,15 +431,15 @@
                             (click)="setEditingExerciseDescription(exercise.id)"
                           >
                             <span class="wkex-plus">＋</span>
-                            {{ (exercise.description ? 'EDIT_NOTES' : 'ADD_NOTES') | translate }}
+                            {{ ((exercise.coachNote || exercise.notes) ? 'EDIT_NOTES' : 'ADD_NOTES') | translate }}
                           </button>
                         </ng-template>
 
                         <div
-                          *ngIf="exercise.description && editingExerciseDescription !== exercise.id"
+                          *ngIf="(exercise.coachNote || exercise.notes) && editingExerciseDescription !== exercise.id"
                           class="wkex-noteview"
                         >
-                          {{ exercise.description }}
+                          {{ exercise.coachNote || exercise.notes }}
                         </div>
 
                         <div *ngIf="isExerciseVideoOpen(exercise)" class="wkex-video">

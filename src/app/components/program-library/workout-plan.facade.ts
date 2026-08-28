@@ -847,7 +847,7 @@ export class WorkoutPlanFacade {
     const ex = session.exercises.find((e) => e.id === exerciseId);
 
     if (ex) {
-      ex.description = value;
+      ex.coachNote = value;
     }
   }
 

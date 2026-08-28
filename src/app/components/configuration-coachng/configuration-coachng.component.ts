@@ -53,6 +53,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   loading = false;
   saving = false;
   uploadingPublicPhoto = false;
+  publicPhotoDisplayUrl = '';
   showSaveSuccessPopup = false;
   showSaveErrorPopup = false;
   isAdmin = false;
@@ -96,6 +97,7 @@ export class ConfigurationCoachngComponent implements OnInit {
       next: (config) => {
         this.config = this.clone(config);
         this.savedConfig = this.clone(config);
+        this.refreshPublicPhoto(config.publicProfile.photoUrl);
         this.syncNotificationToggles();
 
         this.loading = false;
@@ -105,6 +107,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
         this.config = this.clone(fallback);
         this.savedConfig = this.clone(fallback);
+        this.refreshPublicPhoto(fallback.publicProfile.photoUrl);
         this.syncNotificationToggles();
 
         this.loading = false;
@@ -424,6 +427,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.documentService.uploadPublicProfilePhoto(file).subscribe({
       next: ({ photoUrl }) => {
         this.config.publicProfile.photoUrl = photoUrl;
+        this.publicPhotoDisplayUrl = photoUrl;
         this.config.publicProfile.photoVisible = true;
         this.savedConfig.publicProfile.photoUrl = photoUrl;
         this.savedConfig.publicProfile.photoVisible = true;
@@ -435,6 +439,21 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   removePublicPhoto(): void {
     this.config.publicProfile.photoUrl = '';
+    this.publicPhotoDisplayUrl = '';
+  }
+
+  onPublicPhotoLoadError(): void {
+    this.publicPhotoDisplayUrl = '';
+  }
+
+  private refreshPublicPhoto(storedUrl: string): void {
+    this.publicPhotoDisplayUrl = storedUrl || '';
+    if (!storedUrl) return;
+
+    this.documentService.refreshStoredFileUrl(storedUrl).subscribe({
+      next: (freshUrl) => { this.publicPhotoDisplayUrl = freshUrl; },
+      error: () => { this.publicPhotoDisplayUrl = ''; },
+    });
   }
 
   enableBrowserNotifications(): void {
