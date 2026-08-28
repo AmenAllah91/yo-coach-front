@@ -31,6 +31,19 @@
   color: #6b7280;
 }
 
+/* Standard client page heading: title and subtitle always start at the left. */
+.cw-root .client-header {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 20px 12px 18px !important;
+  text-align: left !important;
+}
+.cw-root .client-header-copy { flex: 1 1 auto; min-width: 0; text-align: left; }
+.cw-root .client-header-title { margin: 0 0 5px !important; text-align: left !important; }
+.cw-root .client-header-subtitle { margin: 0 !important; text-align: left !important; }
+
 /* Onglets Upcoming / Past – EXACTEMENT comme Workouts */
 
 .client-tabs {
@@ -5368,9 +5381,9 @@
   margin: 0 auto;
   padding: 28px 24px 18px;
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   align-items: start;
-  gap: 10px;
+  gap: 14px;
 }
 
 .meal-day-back {
@@ -5532,7 +5545,7 @@
 
 @media (max-width: 700px) {
   .meal-day-page { padding-bottom:82px; }
-  .meal-day-header { padding:16px 14px 12px; grid-template-columns:20px 1fr auto; gap:7px; }
+  .meal-day-header { padding:16px 14px 12px; grid-template-columns:40px 1fr auto; gap:10px; }
   .meal-day-heading h1 { font-size:20px; max-width:190px; }
   .meal-day-heading p { font-size:11px; }
   .extract-nutrition-pdf { min-height:38px; padding:0 10px; font-size:11px; }

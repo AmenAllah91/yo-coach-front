@@ -68,7 +68,7 @@
           <div class="row-left">
             <div class="avatar">
               <ng-container *ngIf="client.avatar; else initialsTpl">
-                <img [src]="client.avatar" [alt]="client.name" />
+                <img [src]="client.avatar" [alt]="client.name" (error)="onAvatarError(client)" />
               </ng-container>
               <ng-template #initialsTpl>
                 <div class="avatar-fallback">{{ initials(client.name) }}</div>

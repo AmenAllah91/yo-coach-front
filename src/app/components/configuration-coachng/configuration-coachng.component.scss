@@ -160,8 +160,10 @@ $lg: 768px;
 // ─── Wrapper ─────────────────────────────────────────
 .coach-settings {
   margin: 0 auto;
-  // mobile : padding réduit
-  padding: 1rem;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 0 clamp(1rem, 2vw, 1.5rem) clamp(1rem, 2vw, 1.5rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -883,6 +885,8 @@ $lg: 768px;
 
 // Settings tabs layout
 .settings-page-header {
+  padding-top: 0 !important;
+
   h1 { margin: 0; font-size: 1.5rem; color: $gray-900; }
   p { margin: .35rem 0 0; color: $gray-500; font-size: .875rem; }
 }

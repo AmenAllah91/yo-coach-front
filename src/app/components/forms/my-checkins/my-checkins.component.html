@@ -3,8 +3,11 @@
 
     <!-- Header -->
     <div class="header">
-      <h1 class="h1">{{ 'CHECK_INS' | translate }}</h1>
-      <p class="sub">{{ 'CHECK_INS_PROGRESS_SUBTITLE' | translate }}</p>
+      <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
+      <div class="header-copy">
+        <h1 class="h1">{{ 'CHECK_INS' | translate }}</h1>
+        <p class="sub">{{ 'CHECK_INS_PROGRESS_SUBTITLE' | translate }}</p>
+      </div>
     </div>
 
     <!-- Panel -->

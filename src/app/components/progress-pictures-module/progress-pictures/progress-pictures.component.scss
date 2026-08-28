@@ -23,6 +23,11 @@
   padding-top: clamp(0.35rem, 1vw, 0.75rem);
 }
 
+.header > .app-page-back {
+  align-self: flex-start;
+  margin-top: 0.1rem;
+}
+
 .header-content {
   min-width: 0;
 }

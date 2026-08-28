@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { finalize, catchError, map, switchMap } from 'rxjs/operators';
@@ -42,14 +42,17 @@ export class ProgressPicturesComponent implements OnInit {
   selectedAfterPicture: ProgressPicture | null = null;
   selectedBeforePicture: ProgressPicture | null = null;
   comparisonSelectionError: string | null = null;
+  standaloneView = false;
 
   constructor(
     private progressPicturesService: ProgressPicturesService,
     private documentService: DocumentService,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
+    this.standaloneView = !this.clientId;
     if (!this.clientId) {
       this.clientId = sessionStorage.getItem('userId') || '';
     }
@@ -61,6 +64,10 @@ export class ProgressPicturesComponent implements OnInit {
     }
 
     this.loadPictures();
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
   loadPictures(): void {

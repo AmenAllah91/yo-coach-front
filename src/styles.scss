@@ -295,6 +295,16 @@ body .page-header.page-header.page-header {
   border-bottom: 0.0625rem solid #dce5ef !important;
 }
 
+/* Settings sits directly below the application top bar; unlike list pages it
+   must not receive the shared page-header top inset. */
+body .coach-settings .settings-page-header.page-header.page-header {
+  padding-top: 0 !important;
+}
+
+body .website-leads-container .page-header.page-header.page-header {
+  padding-top: 0 !important;
+}
+
 body .page-header.page-header.page-header h1 {
   margin: 0 !important;
   font-size: clamp(1.45rem, 1.4vw, 1.75rem) !important;
@@ -590,34 +600,89 @@ body .table-wrap .dropdown-item.delete:hover {
   }
 }
 /* Shared page navigation and zoom-safe data layouts. */
-.app-page-back {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 50%;
-  background: #eef2f6;
-  color: #53677d;
-  font-size: 22px;
-  line-height: 1;
+body .app-page-back {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  flex: 0 0 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #eef2f6 !important;
+  color: #53677d !important;
+  /* The icon is provided by ::before. Keep legacy raw arrow text from
+     rendering beside it if an older template still contains one. */
+  font-size: 0 !important;
+  line-height: 0 !important;
+  box-sizing: border-box;
+  appearance: none;
   cursor: pointer;
   transition: background-color .15s ease, color .15s ease, transform .15s ease;
 }
 
-.app-page-back:hover {
-  background: #dfe8f0;
-  color: #0f2135;
+/* Draw one identical icon everywhere, including legacy pages that used a
+   text arrow, Font Awesome, Feather or an inline SVG. */
+body .app-page-back > * {
+  display: none !important;
+}
+
+body .app-page-back::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  display: block;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5'/%3E%3Cpath d='m12 19-7-7 7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5'/%3E%3Cpath d='m12 19-7-7 7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+body .app-page-back:hover {
+  background: #dfe8f0 !important;
+  color: #0f2135 !important;
   transform: translateX(-1px);
+}
+
+body .app-page-back:active {
+  background: #d3dee8 !important;
+  transform: translateX(-1px) scale(.97);
+}
+
+body .app-page-back:focus-visible {
+  outline: 2px solid #44b4df;
+  outline-offset: 2px;
 }
 
 body .page-header:has(> .app-page-back) {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
   gap: 16px !important;
+}
+
+body .page-header:has(> .app-page-back) > .header-content {
+  min-width: 0;
+}
+
+body .page-header > .header-content:has(> .app-page-back),
+body .page-header > .page-heading:has(> .app-page-back) {
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 16px !important;
+  min-width: 0;
+}
+
+body .page-header > .header-content:has(> .app-page-back) > .header-copy,
+body .page-header > .page-heading:has(> .app-page-back) > .header-content {
+  min-width: 0;
 }
 
 body .page-header:has(> .app-page-back) > .header-actions,
@@ -625,6 +690,41 @@ body .page-header:has(> .app-page-back) > .page-header-actions,
 body .page-header:has(> .app-page-back) > .primary-btn,
 body .page-header:has(> .app-page-back) > .btn-primary {
   margin-left: auto !important;
+}
+
+@media (max-width: 768px) {
+  body .page-header:has(> .app-page-back) {
+    display: grid !important;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start !important;
+    gap: 10px 12px !important;
+  }
+
+  body .page-header:has(> .app-page-back) > .app-page-back {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  body .page-header:has(> .app-page-back) > .header-content {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  body .page-header:has(> .app-page-back) > .header-content p {
+    display: block !important;
+  }
+
+  body .page-header:has(> .app-page-back) > .header-actions,
+  body .page-header:has(> .app-page-back) > .page-header-actions,
+  body .page-header:has(> .app-page-back) > .primary-btn,
+  body .page-header:has(> .app-page-back) > .btn-primary {
+    position: static !important;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100% !important;
+    margin: 0 !important;
+  }
 }
 
 /* Preserve every column under browser zoom instead of clipping the right edge. */

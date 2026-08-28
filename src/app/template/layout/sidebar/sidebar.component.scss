@@ -15,42 +15,6 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   display: contents;
 }
 
-.toggle-sidebar {
-  position: fixed;
-  top: 14px;
-  left: 14px;
-  z-index: 1060;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: $text-light;
-  background: rgba(22, 26, 32, 0.94);
-  border: 1px solid $sidebar-border;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
-  cursor: pointer;
-  transition: background $transition-speed ease, border-color $transition-speed ease, transform $transition-speed ease;
-
-  &:hover {
-    background: #202630;
-    border-color: rgba(68, 180, 223, 0.42);
-    transform: translateY(-1px);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(68, 180, 223, 0.28);
-    outline-offset: 2px;
-  }
-
-  i-feather {
-    width: 19px;
-    height: 19px;
-    stroke-width: 2.2;
-  }
-}
-
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;

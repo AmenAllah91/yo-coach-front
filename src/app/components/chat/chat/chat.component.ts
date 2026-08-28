@@ -18,6 +18,8 @@ import { switchMap, catchError, debounceTime, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { ChatUnreadService } from '../../../service/chat-unread.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { CoachSettingsService } from '../../../service/coach-settings.service';
+import { DocumentService } from '../../../service/document.service';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
@@ -188,6 +190,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     private clientService: ClientService,
     private wsService: ChatWebsocketService,
     private chatUnreadService: ChatUnreadService,
+    private coachSettingsService: CoachSettingsService,
+    private documentService: DocumentService,
     private router: Router,
     private translate: TranslateService
   ) {}
@@ -359,13 +363,33 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     }
     if (!otherUserId) return of(conv);
 
-    return this.userService.getUserById(otherUserId).pipe(
-      map(user => {
+    const coachPhoto$ = otherUserId === conv.coachId
+      ? this.coachSettingsService.getConfigForCoach(conv.coachId, true).pipe(
+          switchMap(settings => {
+            const profile = settings.publicProfile;
+            const storedUrl = profile.photoVisible ? profile.photoUrl?.trim() : '';
+            return storedUrl
+              ? this.documentService.refreshStoredFileUrl(storedUrl).pipe(catchError(() => of('')))
+              : of('');
+          }),
+          catchError(() => of('')),
+        )
+      : of(null);
+
+    return forkJoin({
+      user: this.userService.getUserById(otherUserId),
+      coachPhoto: coachPhoto$,
+    }).pipe(
+      map(({ user, coachPhoto }) => {
         conv.name = user.firstName + " " + user.lastName;
-        if (user.avatarUrl === 'not found') {
+        if (otherUserId === conv.coachId) {
+          // Never fall back to a folder/user avatar for a coach: it may point
+          // to a different object. Use the exact configured public photo only.
+          conv.avatar = coachPhoto || '';
+        } else if (user.avatarUrl === 'not found') {
           conv.avatar = '';
         } else {
-          conv.avatar = user.avatarUrl;
+          conv.avatar = user.avatarUrl || '';
         }
         return conv;
       }),

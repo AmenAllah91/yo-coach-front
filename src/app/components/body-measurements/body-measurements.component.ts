@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -30,6 +30,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   @Input() clientId = '';
   @Input() allowAdd = true;
   @Input() allowDelete = true;
+  standaloneView = false;
 
   /**
    * Goal body weight from the client profile.
@@ -78,10 +79,12 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     private route: ActivatedRoute,
     private coachSettingsService: CoachSettingsService,
     private clientService: ClientService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
+    this.standaloneView = !this.clientId;
     if (!this.clientId) {
       this.clientId =
         this.route.snapshot.queryParamMap.get('clientId') ||
@@ -93,6 +96,10 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     this.loadUnitPreferences();
     this.loadTargetWeightIfNeeded();
     this.loadMeasurements();
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
   ngOnChanges(changes: SimpleChanges): void {

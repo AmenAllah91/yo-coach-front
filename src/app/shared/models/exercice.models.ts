@@ -38,6 +38,8 @@ export interface Exercise {
   videoUrl?: string;
   videoLink?: string;
   description?: string;
+  coachNote?: string;
+  notes?: string;
 
   equipment?: string;
   muscle?: string;

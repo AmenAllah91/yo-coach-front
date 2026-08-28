@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { catchError, forkJoin, of, Subject, takeUntil } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -80,7 +80,12 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private translate: TranslateService,
+    private location: Location,
   ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   ngOnInit(): void {
     this.loadPage();

@@ -14,6 +14,7 @@ import * as XLSX from 'xlsx';
 import { environment } from '@env/environment';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '@config/auth.service';
+import { Location } from '@angular/common';
 
 type PlanStatus = 'COMPLETED' | 'OFF_PLAN' | 'IN_PROGRESS' | 'PENDING';
 type MealReportStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
@@ -168,8 +169,13 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private coachSettingsService: CoachSettingsService,
     private translate: TranslateService,
-    private authService: AuthService
+    private authService: AuthService,
+    private location: Location
   ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   ngOnInit(): void {
     this.loadCurrentUserName();

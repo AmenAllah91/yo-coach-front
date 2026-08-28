@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -36,8 +36,13 @@ export class AssignmentFillComponent implements OnInit {
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private assignmentsApi: AssignmentsApiService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private location: Location
   ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   ngOnInit(): void {
     this.assignmentId = this.route.snapshot.paramMap.get('id')!;
