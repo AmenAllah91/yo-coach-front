@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -47,6 +47,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   passwordSuccess = '';
   isChangingPassword = false;
   isDeletingAccount = false;
+  showDeleteAccountModal = false;
 
   config: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
   savedConfig: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
@@ -474,8 +475,22 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   requestDeleteAccount(): void {
-    const confirmed = confirm(this.translate.instant('DELETE_ACCOUNT_CONFIRM'));
-    if (!confirmed || this.isDeletingAccount) return;
+    if (this.isDeletingAccount) return;
+    this.showDeleteAccountModal = true;
+  }
+
+  closeDeleteAccountModal(): void {
+    if (this.isDeletingAccount) return;
+    this.showDeleteAccountModal = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showDeleteAccountModal) this.closeDeleteAccountModal();
+  }
+
+  confirmDeleteAccount(): void {
+    if (this.isDeletingAccount) return;
 
     this.isDeletingAccount = true;
     this.usersService.deleteMyAccount().subscribe({
@@ -486,6 +501,7 @@ export class ConfigurationCoachngComponent implements OnInit {
       error: (err) => {
         console.error('[ACCOUNT] Account deletion failed', err);
         this.isDeletingAccount = false;
+        this.showDeleteAccountModal = false;
         this.showPopup('error');
       },
     });

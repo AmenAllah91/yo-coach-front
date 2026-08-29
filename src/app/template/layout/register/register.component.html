@@ -3,7 +3,7 @@
 
     <img src="assets/yocoachlogo.png" alt="Logo" style="height: 105px; margin-bottom: 6px;">
     <h1 style="font-weight: bold;margin: 2rem 0;font-size: 2.1rem;">{{ 'CREATE_ACCOUNT' | translate }}</h1>
-    <a href="#" class="d-block mb-4 text-decoration-none">{{ 'ALREADY_HAVE_ACCOUNT' | translate }}
+    <a routerLink="/" class="d-block mb-4 text-decoration-none">{{ 'ALREADY_HAVE_ACCOUNT' | translate }}
       <u style="color: #0face4;">{{ 'SIGN_IN' | translate }}</u></a>
 
     <div *ngIf="generalError" class="alert alert-danger text-center mt-2">
