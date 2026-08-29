@@ -56,6 +56,7 @@
   "RESET_DEMO_CONFIRM": "Reset demo data? The current demo data will be deleted and recreated.",
   "REMOVE_DEMO_CONFIRM": "Remove demo data? All data marked as demo will be deleted.",
   "DELETE_ACCOUNT_CONFIRM": "Delete your account? This action cannot be undone.",
+  "DELETE_ACCOUNT": "Delete account",
   "WORKOUT_PLAN_CREATED_FOR": "Workout plan created for {{name}}.",
   "NO_FOODS_ADDED": "No foods added",
   "PROFILE_IMAGE": "Profile image",

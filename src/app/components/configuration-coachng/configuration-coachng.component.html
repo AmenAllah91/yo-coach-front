@@ -45,8 +45,9 @@
 
     <div class="account-section">
       <h2>{{ 'ACCOUNT' | translate }}</h2>
-      <button class="btn btn--outline" type="button" (click)="logout()">↪ {{ 'LOG_OUT' | translate }}</button>
-<!--      <button class="danger-link" *ngIf="!isClient" type="button" (click)="requestDeleteAccount()">Delete Account</button>-->
+      <button class="danger-link" type="button" [disabled]="isDeletingAccount" (click)="requestDeleteAccount()">
+        {{ (isDeletingAccount ? 'DELETING' : 'DELETE_ACCOUNT') | translate }}
+      </button>
     </div>
   </section>
 
