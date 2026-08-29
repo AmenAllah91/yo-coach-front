@@ -93,6 +93,10 @@ export class UsersService {
     return this.http.delete<void>(`${this.userServiceUrl}/api/users/${id}`);
   }
 
+  deleteMyAccount(): Observable<void> {
+    return this.http.delete<void>(`${this.userServiceUrl}/api/users/me`);
+  }
+
   banUser(id: string): Observable<UserDto> {
     return this.http.patch<UserDto>(`${this.userServiceUrl}/api/users/${id}/ban`, {});
   }

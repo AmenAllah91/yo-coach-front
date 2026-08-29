@@ -56,6 +56,7 @@
   "RESET_DEMO_CONFIRM": "Réinitialiser les données de démonstration ? Les données actuelles seront supprimées puis recréées.",
   "REMOVE_DEMO_CONFIRM": "Supprimer les données de démonstration ? Toutes les données marquées comme démonstration seront supprimées.",
   "DELETE_ACCOUNT_CONFIRM": "Supprimer votre compte ? Cette action est irréversible.",
+  "DELETE_ACCOUNT": "Supprimer le compte",
   "WORKOUT_PLAN_CREATED_FOR": "Programme d’entraînement créé pour {{name}}.",
   "NO_FOODS_ADDED": "Aucun aliment ajouté",
   "PROFILE_IMAGE": "Photo de profil",

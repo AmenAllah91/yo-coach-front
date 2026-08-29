@@ -46,6 +46,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   passwordError = '';
   passwordSuccess = '';
   isChangingPassword = false;
+  isDeletingAccount = false;
 
   config: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
   savedConfig: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
@@ -474,9 +475,20 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   requestDeleteAccount(): void {
     const confirmed = confirm(this.translate.instant('DELETE_ACCOUNT_CONFIRM'));
-    if (confirmed) {
-      console.warn('[ACCOUNT] Delete account confirmed. Connect this action to the account deletion endpoint.');
-    }
+    if (!confirmed || this.isDeletingAccount) return;
+
+    this.isDeletingAccount = true;
+    this.usersService.deleteMyAccount().subscribe({
+      next: () => {
+        sessionStorage.clear();
+        this.authService.logout();
+      },
+      error: (err) => {
+        console.error('[ACCOUNT] Account deletion failed', err);
+        this.isDeletingAccount = false;
+        this.showPopup('error');
+      },
+    });
   }
 
   private handleDemoActionSuccess(status: DemoWorkspaceStatus): void {
