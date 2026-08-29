@@ -1,14 +1,14 @@
 import {Component, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
+import {AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators} from "@angular/forms";
 import {CommonModule} from "@angular/common";
 import {RegisterService} from "../../../service/register.service";
-import {Router} from "@angular/router";
+import {Router, RouterLink} from "@angular/router";
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {LanguageService} from '../../../service/language.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule,TranslateModule],
+  imports: [CommonModule,ReactiveFormsModule,TranslateModule,RouterLink],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -34,18 +34,15 @@ export class RegisterComponent implements OnInit{
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       isCoach: [false]
-    }, { validator: this.passwordMatchValidator });
+    }, { validators: this.passwordMatchValidator });
   }
 
-  passwordMatchValidator(formGroup: FormGroup): void {
-    const password = formGroup.get('password');
-    const confirmPassword = formGroup.get('confirmPassword');
-
-    if (confirmPassword?.value && password?.value !== confirmPassword.value) {
-      confirmPassword.setErrors({ mismatch: true });
-    } else {
-      confirmPassword?.setErrors(null);
-    }
+  passwordMatchValidator(formGroup: AbstractControl): ValidationErrors | null {
+    const password = formGroup.get('password')?.value;
+    const confirmPassword = formGroup.get('confirmPassword')?.value;
+    return password && confirmPassword && password !== confirmPassword
+      ? { passwordMismatch: true }
+      : null;
   }
 
   onSubmit(): void {
@@ -102,7 +99,7 @@ export class RegisterComponent implements OnInit{
     if (control?.hasError('minlength')) {
       return this.translate.instant('FIELD_MIN_LENGTH', { field: this.fieldLabel(controlName), count: control.errors?.['minlength'].requiredLength });
     }
-    if (controlName === 'confirmPassword' && control?.touched && control?.hasError('mismatch')) {
+    if (controlName === 'confirmPassword' && control?.touched && this.signupForm.hasError('passwordMismatch')) {
       return this.translate.instant('PASSWORDS_DO_NOT_MATCH');
     }
     return null;

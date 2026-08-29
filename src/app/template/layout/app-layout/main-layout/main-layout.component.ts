@@ -23,7 +23,7 @@ import { TranslateModule } from '@ngx-translate/core';
 })
 export class MainLayoutComponent implements OnInit {
   public config!: InConfiguration;
-  isSidebarOpen = true;
+  isSidebarOpen = window.innerWidth >= 1024;
   @ViewChild('sidebar') sidebar?: SidebarComponent;
 
   constructor(
