@@ -53,6 +53,7 @@ import {
 } from "./components/nutrition/food-replacement-groups/food-replacement-groups.component";
 import {ConfigurationCoachngComponent} from "./components/configuration-coachng/configuration-coachng.component";
 import { ThemeColorsComponent } from './components/theme/theme-colors/theme-colors.component';
+import { PlansLandingPageComponent } from './components/website/plans-landing-page/plans-landing-page.component';
 import { ContactFormManagerComponent } from './components/website/contact-form-manager/contact-form-manager.component';
 import { PublicContactFormComponent } from './components/website/public-contact-form/public-contact-form.component';
 
@@ -262,6 +263,10 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'landing-page',
     component: LandingPageComponent,
+  },
+  {
+    path: 'plans-landing',
+    component: PlansLandingPageComponent,
   },
   {
     path: 'yosoft-landing-page',
