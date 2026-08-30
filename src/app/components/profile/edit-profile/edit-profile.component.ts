@@ -1,10 +1,13 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule, NgForm } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { UsersService } from '../../../service/users.service';
 import { DocumentService } from '../../../service/document.service';
+import { CoachBillingService } from '../../../service/coach-billing.service';
+import { CoachInvoice, InvoicePaymentGateway } from '../../../models/coach-invoice.model';
 import { User } from '../../../template/core';
 
 type ProfileUser = Partial<User> & {
@@ -29,6 +32,17 @@ export class EditProfileComponent implements OnInit {
   isSaving: boolean = false;
   isUploadingPhoto: boolean = false;
   isChangingPassword: boolean = false;
+  isLoadingInvoices: boolean = false;
+  invoicesLoaded: boolean = false;
+
+  invoices: CoachInvoice[] = [];
+  invoiceError: string = '';
+  selectedInvoice: CoachInvoice | null = null;
+  paymentGateways: InvoicePaymentGateway[] = [];
+  selectedPaymentGateway: string = '';
+  isLoadingPaymentGateways: boolean = false;
+  isPayingInvoice: boolean = false;
+  paymentError: string = '';
 
   currentUserId: string = '';
   selectedFile: File | null = null;
@@ -36,6 +50,7 @@ export class EditProfileComponent implements OnInit {
   tabs = [
     { id: 'overview', labelKey: 'OVERVIEW' },
     { id: 'settings', labelKey: 'SETTINGS' },
+    { id: 'invoices', labelKey: 'INVOICES' }
   ];
 
   userData: ProfileUser = {
@@ -77,6 +92,7 @@ export class EditProfileComponent implements OnInit {
     private usersService: UsersService,
     private documentService: DocumentService,
     private translate: TranslateService,
+    private coachBillingService: CoachBillingService,
   ) {}
 
   ngOnInit(): void {
@@ -129,6 +145,121 @@ export class EditProfileComponent implements OnInit {
     this.activeTab = tabId;
     this.passwordError = '';
     this.passwordSuccess = '';
+    if (tabId !== 'invoices') {
+      this.closeInvoiceDetails();
+    }
+
+    if (tabId === 'invoices' && !this.invoicesLoaded) {
+      this.loadInvoices();
+    }
+  }
+
+  loadInvoices(): void {
+    this.isLoadingInvoices = true;
+    this.invoiceError = '';
+
+    this.coachBillingService.getInvoices().subscribe({
+      next: (invoices) => {
+        this.invoices = invoices || [];
+        this.invoicesLoaded = true;
+        this.isLoadingInvoices = false;
+      },
+      error: () => {
+        this.invoiceError = 'Invoices could not be loaded. Please try again.';
+        this.isLoadingInvoices = false;
+      }
+    });
+  }
+
+  openInvoiceDetails(invoice: CoachInvoice): void {
+    this.selectedInvoice = invoice;
+    this.paymentGateways = [];
+    this.selectedPaymentGateway = '';
+    this.paymentError = '';
+
+    if (this.isPayableInvoice(invoice)) {
+      this.loadInvoicePaymentGateways(invoice.id);
+    }
+  }
+
+  closeInvoiceDetails(): void {
+    if (this.isPayingInvoice) return;
+
+    this.selectedInvoice = null;
+    this.paymentGateways = [];
+    this.selectedPaymentGateway = '';
+    this.paymentError = '';
+    this.isLoadingPaymentGateways = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  closeInvoiceDetailsOnEscape(): void {
+    if (this.selectedInvoice) {
+      this.closeInvoiceDetails();
+    }
+  }
+
+  loadInvoicePaymentGateways(invoiceId: number): void {
+    this.isLoadingPaymentGateways = true;
+    this.paymentError = '';
+
+    this.coachBillingService.getInvoicePaymentGateways(invoiceId).subscribe({
+      next: (gateways) => {
+        if (this.selectedInvoice?.id !== invoiceId) return;
+
+        this.paymentGateways = gateways || [];
+        this.selectedPaymentGateway = this.paymentGateways[0]?.gateway || '';
+        this.isLoadingPaymentGateways = false;
+
+        if (this.paymentGateways.length === 0) {
+          this.paymentError = 'No payment method is currently available for this invoice.';
+        }
+      },
+      error: (error) => {
+        if (this.selectedInvoice?.id !== invoiceId) return;
+
+        this.paymentError = this.getPaymentErrorMessage(
+          error,
+          'Payment methods could not be loaded. Please try again.'
+        );
+        this.isLoadingPaymentGateways = false;
+      }
+    });
+  }
+
+  paySelectedInvoice(): void {
+    const invoice = this.selectedInvoice;
+    if (!invoice || !this.selectedPaymentGateway || !this.isPayableInvoice(invoice)) return;
+
+    this.isPayingInvoice = true;
+    this.paymentError = '';
+
+    this.coachBillingService
+      .initiateInvoicePayment(invoice.id, this.selectedPaymentGateway)
+      .subscribe({
+        next: (response) => {
+          const redirectUrl = response?.redirectUrl?.trim();
+          if (redirectUrl) {
+            window.location.assign(redirectUrl);
+            return;
+          }
+
+          this.paymentError = response?.message || 'The payment page could not be opened.';
+          this.isPayingInvoice = false;
+        },
+        error: (error) => {
+          this.paymentError = this.getPaymentErrorMessage(
+            error,
+            'Payment could not be initiated. Please try again.'
+          );
+          this.isPayingInvoice = false;
+        }
+      });
+  }
+
+  private getPaymentErrorMessage(error: HttpErrorResponse, fallback: string): string {
+    const message = error?.error?.message || error?.error?.detail || error?.error;
+    return typeof message === 'string' && message.trim() ? message : fallback;
   }
 
   handleEditStart(): void {
@@ -157,7 +288,7 @@ export class EditProfileComponent implements OnInit {
 
     this.isSaving = true;
 
-    const payload: ProfileUser = {
+    const payload = {
       firstName: this.editData.firstName || '',
       lastName: this.editData.lastName || '',
       email: this.editData.email || '',
@@ -168,7 +299,7 @@ export class EditProfileComponent implements OnInit {
       idealShapeDescription: this.editData.idealShapeDescription || ''
     };
 
-    this.usersService.updateUser(this.userData.id, payload as any).subscribe({
+    this.usersService.updateUser(this.userData.id, payload).subscribe({
       next: (updatedUser) => {
         this.userData = { ...this.userData, ...updatedUser };
         this.editData = { ...this.userData };
@@ -296,6 +427,82 @@ export class EditProfileComponent implements OnInit {
 
     const filled = fields.filter(value => !!value).length;
     return Math.round((filled / fields.length) * 100);
+  }
+
+  get paidInvoiceCount(): number {
+    return this.invoices.filter(invoice => this.isPaid(invoice)).length;
+  }
+
+  get outstandingInvoiceCount(): number {
+    return this.invoices.filter(invoice => !this.isPaid(invoice)).length;
+  }
+
+  get outstandingInvoiceTotal(): number {
+    return this.invoices
+      .filter(invoice => !this.isPaid(invoice))
+      .reduce((total, invoice) => total + (Number(invoice.amount) || 0), 0);
+  }
+
+  get outstandingCurrency(): string {
+    const currencies = this.invoices
+      .filter(invoice => !this.isPaid(invoice) && !!invoice.currency)
+      .map(invoice => invoice.currency as string)
+      .filter((currency, index, values) => values.indexOf(currency) === index);
+
+    return currencies.length === 1 ? currencies[0] : '';
+  }
+
+  isPaid(invoice: CoachInvoice): boolean {
+    return invoice.status?.toUpperCase() === 'PAID';
+  }
+
+  isPayableInvoice(invoice: CoachInvoice): boolean {
+    const status = invoice.status?.toUpperCase();
+    return status === 'PENDING' || status === 'UNPAID' || status === 'OVERDUE';
+  }
+
+  displayInvoiceValue(value: string | null | undefined): string {
+    if (!value) return '—';
+
+    return value
+      .toLowerCase()
+      .split('_')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  gatewayLabel(gateway: string): string {
+    return this.displayInvoiceValue(gateway);
+  }
+
+  invoicePaymentButtonLabel(invoice: CoachInvoice): string {
+    if (this.isPayingInvoice) return 'Opening secure checkout...';
+
+    const amount = (Number(invoice.amount) || 0).toFixed(2);
+    return `Pay ${amount}${invoice.currency ? ` ${invoice.currency}` : ''}`;
+  }
+
+  isOverdue(invoice: CoachInvoice): boolean {
+    if (this.isPaid(invoice)) return false;
+    if (invoice.status?.toUpperCase() === 'OVERDUE') return true;
+    if (!invoice.dueDate) return false;
+
+    const dueDate = new Date(`${invoice.dueDate}T23:59:59`);
+    return !Number.isNaN(dueDate.getTime()) && dueDate.getTime() < Date.now();
+  }
+
+  invoiceStatusLabel(invoice: CoachInvoice): string {
+    if (this.isPaid(invoice)) return 'Paid';
+    return this.isOverdue(invoice) ? 'Overdue' : 'To pay';
+  }
+
+  invoiceStatusClass(invoice: CoachInvoice): string {
+    if (this.isPaid(invoice)) return 'paid';
+    return this.isOverdue(invoice) ? 'overdue' : 'to-pay';
+  }
+
+  trackInvoiceById(_index: number, invoice: CoachInvoice): number {
+    return invoice.id;
   }
 
   onImageError(event: Event): void {

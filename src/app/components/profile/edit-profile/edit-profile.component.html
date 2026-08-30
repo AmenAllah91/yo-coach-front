@@ -229,6 +229,304 @@
     </div>
   </div>
 
+  <!-- INVOICES -->
+  <div *ngIf="activeTab === 'invoices'" class="tab-content">
+    <div class="invoice-summary-grid" *ngIf="!isLoadingInvoices && !invoiceError">
+      <div class="invoice-summary-card paid-summary">
+        <span class="invoice-summary-label">Paid invoices</span>
+        <strong>{{ paidInvoiceCount }}</strong>
+      </div>
+
+      <div class="invoice-summary-card due-summary">
+        <span class="invoice-summary-label">Invoices to pay</span>
+        <strong>{{ outstandingInvoiceCount }}</strong>
+      </div>
+
+      <div class="invoice-summary-card amount-summary">
+        <span class="invoice-summary-label">Outstanding amount</span>
+        <strong>
+          {{ outstandingInvoiceTotal | number:'1.2-2' }}
+          <small *ngIf="outstandingCurrency">{{ outstandingCurrency }}</small>
+        </strong>
+      </div>
+    </div>
+
+    <div class="card invoice-card">
+      <div class="card-header">
+        <div>
+          <h2>Billing history</h2>
+          <p class="card-subtitle">Review paid invoices and upcoming payment dates.</p>
+        </div>
+        <button
+          type="button"
+          class="btn-outline"
+          (click)="loadInvoices()"
+          [disabled]="isLoadingInvoices"
+        >
+          {{ isLoadingInvoices ? 'Refreshing...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <div class="invoice-state" *ngIf="isLoadingInvoices" aria-live="polite">
+        <span class="invoice-spinner" aria-hidden="true"></span>
+        <p>Loading your invoices...</p>
+      </div>
+
+      <div class="invoice-state invoice-error-state" *ngIf="!isLoadingInvoices && invoiceError">
+        <p>{{ invoiceError }}</p>
+        <button type="button" class="btn-blue" (click)="loadInvoices()">Try again</button>
+      </div>
+
+      <div
+        class="empty-state invoice-empty-state"
+        *ngIf="!isLoadingInvoices && !invoiceError && invoices.length === 0"
+      >
+        <div class="empty-icon invoice-empty-icon" aria-hidden="true">✓</div>
+        <p>No invoices are available for your subscription yet.</p>
+      </div>
+
+      <div
+        class="invoice-table-wrapper"
+        *ngIf="!isLoadingInvoices && !invoiceError && invoices.length > 0"
+      >
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Plan</th>
+              <th>Invoice date</th>
+              <th>Payment due</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let invoice of invoices; trackBy: trackInvoiceById"
+              class="invoice-row"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="'View invoice ' + invoice.id + ' details'"
+              (click)="openInvoiceDetails(invoice)"
+              (keydown.enter)="openInvoiceDetails(invoice)"
+              (keydown.space)="openInvoiceDetails(invoice); $event.preventDefault()"
+            >
+              <td data-label="Invoice">
+                <span class="invoice-number">#{{ invoice.id }}</span>
+              </td>
+              <td data-label="Plan">{{ invoice.planName || 'Subscription plan' }}</td>
+              <td data-label="Invoice date">
+                {{ invoice.invoiceDate ? (invoice.invoiceDate | date:'mediumDate') : '—' }}
+              </td>
+              <td data-label="Payment due">
+                <span [class.overdue-date]="isOverdue(invoice)">
+                  {{ invoice.dueDate ? (invoice.dueDate | date:'mediumDate') : '—' }}
+                </span>
+              </td>
+              <td data-label="Amount" class="invoice-amount">
+                {{ invoice.amount | number:'1.2-2' }}
+                <span *ngIf="invoice.currency" class="invoice-currency">{{ invoice.currency }}</span>
+              </td>
+              <td data-label="Status">
+                <span class="invoice-status" [ngClass]="invoiceStatusClass(invoice)">
+                  {{ invoiceStatusLabel(invoice) }}
+                </span>
+              </td>
+              <td data-label="Details">
+                <span class="invoice-view-link">View details <span aria-hidden="true">→</span></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div
+    *ngIf="selectedInvoice as invoice"
+    class="invoice-modal-backdrop"
+    role="presentation"
+    (click)="closeInvoiceDetails()"
+  >
+    <section
+      class="invoice-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="invoice-detail-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="invoice-modal-header">
+        <div>
+          <span class="invoice-modal-eyebrow">Invoice details</span>
+          <h2 id="invoice-detail-title">Invoice #{{ invoice.id }}</h2>
+          <p>{{ invoice.planName || 'Subscription plan' }}</p>
+        </div>
+        <button
+          type="button"
+          class="invoice-modal-close"
+          aria-label="Close invoice details"
+          [disabled]="isPayingInvoice"
+          (click)="closeInvoiceDetails()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="invoice-modal-body">
+        <div class="invoice-detail-hero">
+          <div>
+            <span class="invoice-detail-label">Total amount</span>
+            <strong>
+              {{ invoice.amount | number:'1.2-2' }}
+              <small>{{ invoice.currency || '' }}</small>
+            </strong>
+          </div>
+          <span class="invoice-status" [ngClass]="invoiceStatusClass(invoice)">
+            {{ invoiceStatusLabel(invoice) }}
+          </span>
+        </div>
+
+        <div class="invoice-detail-grid">
+          <div class="invoice-detail-item">
+            <span>Customer</span>
+            <strong>{{ invoice.customerName || fullName || '—' }}</strong>
+          </div>
+          <div class="invoice-detail-item">
+            <span>Email</span>
+            <strong>{{ invoice.customerEmail || userData.email || '—' }}</strong>
+          </div>
+          <div class="invoice-detail-item">
+            <span>Subscription</span>
+            <strong>#{{ invoice.subscriptionId || '—' }}</strong>
+          </div>
+          <div class="invoice-detail-item">
+            <span>Invoice type</span>
+            <strong>{{ displayInvoiceValue(invoice.invoiceType) }}</strong>
+          </div>
+          <div class="invoice-detail-item">
+            <span>Invoice date</span>
+            <strong>{{ invoice.invoiceDate ? (invoice.invoiceDate | date:'mediumDate') : '—' }}</strong>
+          </div>
+          <div class="invoice-detail-item">
+            <span>Payment due</span>
+            <strong [class.overdue-date]="isOverdue(invoice)">
+              {{ invoice.dueDate ? (invoice.dueDate | date:'mediumDate') : '—' }}
+            </strong>
+          </div>
+          <div class="invoice-detail-item invoice-detail-wide">
+            <span>Creation reason</span>
+            <strong>{{ displayInvoiceValue(invoice.creationReason) }}</strong>
+          </div>
+        </div>
+
+        <section class="invoice-detail-section">
+          <h3>Amount breakdown</h3>
+          <div class="invoice-breakdown-row">
+            <span>Base amount</span>
+            <strong>{{ (invoice.baseAmount ?? invoice.amount) | number:'1.2-2' }} {{ invoice.currency || '' }}</strong>
+          </div>
+          <div class="invoice-breakdown-row" *ngIf="invoice.addonAmount !== null && invoice.addonAmount !== undefined">
+            <span>Add-ons</span>
+            <strong>{{ invoice.addonAmount | number:'1.2-2' }} {{ invoice.currency || '' }}</strong>
+          </div>
+          <div class="invoice-breakdown-row" *ngIf="invoice.discountAmount !== null && invoice.discountAmount !== undefined">
+            <span>Discount</span>
+            <strong>−{{ invoice.discountAmount | number:'1.2-2' }} {{ invoice.currency || '' }}</strong>
+          </div>
+          <div class="invoice-breakdown-row invoice-breakdown-total">
+            <span>Total</span>
+            <strong>{{ invoice.amount | number:'1.2-2' }} {{ invoice.currency || '' }}</strong>
+          </div>
+        </section>
+
+        <section class="invoice-detail-section" *ngIf="invoice.note || invoice.planSnapshot">
+          <h3>Additional information</h3>
+          <div class="invoice-note" *ngIf="invoice.note">
+            <span>Note</span>
+            <p>{{ invoice.note }}</p>
+          </div>
+          <div class="invoice-note" *ngIf="invoice.planSnapshot">
+            <span>Plan at invoice creation</span>
+            <p>{{ invoice.planSnapshot }}</p>
+          </div>
+        </section>
+
+        <section class="invoice-detail-section" *ngIf="invoice.events?.length">
+          <h3>Invoice history</h3>
+          <ol class="invoice-event-list">
+            <li *ngFor="let event of invoice.events">
+              <span class="invoice-event-dot" aria-hidden="true"></span>
+              <div>
+                <strong>{{ displayInvoiceValue(event.eventType) }}</strong>
+                <time *ngIf="event.occurredAt">{{ event.occurredAt | date:'medium' }}</time>
+                <p *ngIf="event.detail">{{ event.detail }}</p>
+                <small *ngIf="event.gateway || event.transactionId">
+                  {{ event.gateway ? gatewayLabel(event.gateway) : '' }}
+                  {{ event.transactionId ? ' · ' + event.transactionId : '' }}
+                </small>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="invoice-payment-panel" *ngIf="isPayableInvoice(invoice)">
+          <div>
+            <h3>Pay this invoice</h3>
+            <p>Select a payment method to continue to the secure checkout.</p>
+          </div>
+
+          <div class="invoice-payment-loading" *ngIf="isLoadingPaymentGateways">
+            <span class="invoice-spinner" aria-hidden="true"></span>
+            <span>Loading payment methods...</span>
+          </div>
+
+          <div class="payment-gateway-list" *ngIf="!isLoadingPaymentGateways && paymentGateways.length > 0">
+            <label
+              *ngFor="let option of paymentGateways"
+              class="payment-gateway-option"
+              [class.selected]="selectedPaymentGateway === option.gateway"
+            >
+              <input
+                type="radio"
+                name="invoicePaymentGateway"
+                [value]="option.gateway"
+                [(ngModel)]="selectedPaymentGateway"
+              />
+              <img *ngIf="option.imageUrl" [src]="option.imageUrl" [alt]="gatewayLabel(option.gateway)" />
+              <span>{{ gatewayLabel(option.gateway) }}</span>
+            </label>
+          </div>
+
+          <p class="invoice-payment-error" *ngIf="paymentError" aria-live="polite">
+            {{ paymentError }}
+          </p>
+
+          <button
+            type="button"
+            class="btn-blue invoice-pay-button"
+            [disabled]="isLoadingPaymentGateways || isPayingInvoice || !selectedPaymentGateway"
+            (click)="paySelectedInvoice()"
+          >
+            {{ invoicePaymentButtonLabel(invoice) }}
+          </button>
+        </section>
+
+        <div class="invoice-paid-message" *ngIf="isPaid(invoice)">
+          <span aria-hidden="true">✓</span>
+          <div>
+            <strong>This invoice is paid</strong>
+            <p>No further action is required.</p>
+          </div>
+        </div>
+
+        <p class="invoice-draft-message" *ngIf="!isPaid(invoice) && !isPayableInvoice(invoice)">
+          This invoice is not ready for payment yet.
+        </p>
+      </div>
+    </section>
+  </div>
+
   <!-- SETTINGS = CHANGE PASSWORD -->
   <div *ngIf="activeTab === 'settings'" class="tab-content">
     <div class="card">

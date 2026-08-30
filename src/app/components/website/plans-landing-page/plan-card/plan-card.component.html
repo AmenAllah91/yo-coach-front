@@ -1,0 +1,41 @@
+<article class="plan-card" [class.plan-card-featured]="plan.highlighted">
+  <div class="plan-badge" *ngIf="plan.badge">
+    {{ plan.badge }}
+  </div>
+
+  <div class="plan-card-header">
+    <div class="plan-icon">
+      <mat-icon>{{ plan.icon }}</mat-icon>
+    </div>
+    <div>
+      <h3>{{ plan.name }}</h3>
+      <p>{{ plan.subtitle }}</p>
+    </div>
+  </div>
+
+  <p class="plan-description">{{ plan.description }}</p>
+
+  <div class="plan-price">
+    <span>{{ plan.price }}</span>
+    <small>{{ plan.period }}</small>
+  </div>
+
+  <div class="plan-info-grid">
+    <div class="plan-info" *ngFor="let item of plan.info">
+      <span>{{ item.label }}</span>
+      <strong>{{ item.value }}</strong>
+    </div>
+  </div>
+
+  <ul class="plan-features">
+    <li *ngFor="let feature of plan.features">
+      <mat-icon>check_circle</mat-icon>
+      <span>{{ feature }}</span>
+    </li>
+  </ul>
+
+  <button type="button" class="plan-action" (click)="onSelectPlan()">
+    {{ plan.ctaLabel }}
+    <mat-icon>arrow_forward</mat-icon>
+  </button>
+</article>

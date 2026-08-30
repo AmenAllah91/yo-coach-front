@@ -39,6 +39,32 @@
   font-size: 1.2rem;
 }
 
+.selected-plan {
+  background: #fff3e9;
+  border: 1px solid #fdb982;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+
+  span {
+    color: #b54708;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: #101828;
+    font-size: 1.2rem;
+  }
+
+  small {
+    color: #667085;
+  }
+}
+
 @media (max-width: 768px) {
   .container-signup {
     padding: 1.5rem;
