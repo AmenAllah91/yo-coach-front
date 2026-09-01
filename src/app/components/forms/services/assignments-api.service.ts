@@ -138,10 +138,14 @@ export class AssignmentsApiService {
     page: number,
     size: number,
     sortBy = 'dueAt',
-    direction: 'ASC' | 'DESC' = 'ASC'
+    direction: 'ASC' | 'DESC' = 'ASC',
+    skipLoader = false
   ): Observable<PageResponse<FormAssignment>> {
     const params: any = { page, size, sortBy, direction };
-    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
+    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   reviewAssignment(assignmentId: string, feedback: string | null) {

@@ -24,21 +24,25 @@
       </button>
     </div>
 
-    <!-- Search -->
-    <div class="select-program-search">
-      <div class="select-search-input">
-        <i class="fas fa-search"></i>
-        <input
-          type="text"
-          [placeholder]="'SEARCH_NUTRITION_PROGRAMS' | translate"
-          [(ngModel)]="searchTerm"
-        />
-      </div>
-    </div>
-
     <!-- Body -->
     <div class="select-program-body">
-      <ng-container *ngIf="filteredPrograms.length; else noNutrition">
+      <div class="select-program-search select-program-search--inline">
+        <div class="select-search-input">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            [placeholder]="'SEARCH_NUTRITION_PROGRAMS' | translate"
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="onSearchChange()"
+          />
+          <button type="button" class="select-search-submit" (click)="onSearchChange()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="select-program-empty" *ngIf="loadingPrograms">{{ 'LOADING_PROGRAMS' | translate }}</div>
+      <ng-container *ngIf="!loadingPrograms && filteredPrograms.length; else noNutrition">
         <div
           class="select-program-card"
           *ngFor="let program of filteredPrograms"
@@ -91,11 +95,17 @@
       </ng-container>
 
       <ng-template #noNutrition>
-        <div class="select-program-empty">{{ 'NO_NUTRITION_PROGRAMS_FOUND' | translate }}</div>
+        <div class="select-program-empty" *ngIf="!loadingPrograms">{{ 'NO_NUTRITION_PROGRAMS_FOUND' | translate }}</div>
       </ng-template>
 
+      <div class="select-program-pagination" *ngIf="!loadingPrograms && totalPages > 1">
+        <button type="button" [disabled]="page === 0" (click)="changePage(page - 1)">‹</button>
+        <span>{{ page + 1 }} / {{ totalPages }}</span>
+        <button type="button" [disabled]="page + 1 >= totalPages" (click)="changePage(page + 1)">›</button>
+      </div>
+
       <!-- Schedule -->
-      <div *ngIf="selectedProgram" class="select-program-schedule">
+      <div class="select-program-schedule">
         <h4>{{ 'PROGRAM_SCHEDULE' | translate }}</h4>
 
         <div class="schedule-grid">

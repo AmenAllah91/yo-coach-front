@@ -40,12 +40,15 @@ export class DocumentService {
     const uploadUrl = `${this.documentUrl+"/client-photo/upload/path"}`;
     return this.http.post(uploadUrl, formData,{ responseType: 'text' });
   }
-  getPhoto(id: string,directoryUrl:string): Observable<any> {
+  getPhoto(id: string,directoryUrl:string, skipLoader = false): Observable<any> {
     const requestBody = {
       objectPath: `${directoryUrl}/${id}`
     };
     const downloadUrl = `${this.documentUrl}/client-photo/client-photo/generate-url`;
-    return this.http.post(downloadUrl, requestBody, { responseType: 'text' });
+    return this.http.post(downloadUrl, requestBody, {
+      responseType: 'text',
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
   simpleGenerateFileUrl(pathToFile:string){
     const getPhototUrl = `${this.documentUrl}/client-photo/client-photo/generate-url`;

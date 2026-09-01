@@ -24,18 +24,6 @@
       </button>
     </div>
 
-    <!-- Search -->
-    <div class="select-program-search">
-      <div class="select-search-input">
-        <i class="fas fa-search"></i>
-        <input
-          type="text"
-          [placeholder]="'SEARCH_WORKOUT_PROGRAMS' | translate"
-          [(ngModel)]="searchTerm"
-        />
-      </div>
-    </div>
-
     <!-- Body -->
     <div class="select-program-body">
       <div *ngIf="loadingPrograms" class="select-program-empty">
@@ -43,6 +31,17 @@
       </div>
 
       <ng-container *ngIf="!loadingPrograms">
+        <div class="select-program-search select-program-search--inline">
+          <div class="select-search-input">
+            <i class="fas fa-search"></i>
+            <input
+              type="text"
+              [placeholder]="'SEARCH_WORKOUT_PROGRAMS' | translate"
+              [(ngModel)]="searchTerm"
+            />
+          </div>
+        </div>
+
         <ng-container *ngIf="filteredPrograms.length; else noPrograms">
           <div
             class="select-program-card"
@@ -105,7 +104,7 @@
         </ng-template>
 
         <!-- Schedule -->
-        <div *ngIf="selectedProgram" class="select-program-schedule">
+        <div class="select-program-schedule">
           <h4>{{ 'PROGRAM_SCHEDULE' | translate }}</h4>
 
           <div class="schedule-grid">

@@ -16,6 +16,7 @@ import {
 import { FormsApiService } from '../forms/services/forms-api.service';
 import { AddClientModalComponent } from '../clients/add-client-modal/add-client-modal.component';
 import { ChoosePlanTypeModalComponent } from '../nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
+import { UsersService } from '../../service/users.service';
 
 interface ClientDisplay {
   id: string;
@@ -23,6 +24,7 @@ interface ClientDisplay {
   package: string;
   status: 'active' | 'inactive';
   lastCheckIn?: string;
+  avatar?: string;
 }
 
 interface CheckInDisplay {
@@ -35,6 +37,7 @@ interface CheckInDisplay {
   submittedDate: string;
   answeredDate: string;
   sortTimestamp: number;
+  avatar?: string;
 }
 
 type AssignType = 'workout' | 'nutrition' | 'checkin';
@@ -136,6 +139,7 @@ export class CoachDashboardComponent implements OnInit {
     private coachSettingsService: CoachSettingsService,
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
+    private usersService: UsersService,
     private translate: TranslateService,
   ) {}
 
@@ -175,11 +179,11 @@ export class CoachDashboardComponent implements OnInit {
 
     forkJoin({
       clients: this.clientService
-        .getListClientsByCoachWithoutPagination(this.coachId)
+        .getListClientsByCoachWithoutPagination(this.coachId, true)
         .pipe(catchError(() => of([]))),
 
       assignments: this.assignmentsApi
-        .pageOwnerAssignments(0, this.checkInsPageSize, 'activityAt', 'DESC')
+        .pageOwnerAssignments(0, this.checkInsPageSize, 'activityAt', 'DESC', true)
         .pipe(catchError(() => of(this.emptyAssignmentsPage()))),
     })
       .pipe(
@@ -205,6 +209,7 @@ export class CoachDashboardComponent implements OnInit {
           this.clientsPage = 1;
           this.checkInsPage = 1;
           this.enrichCheckIns(this.rawClients);
+          this.loadClientPhotos(rawClients);
           this.clampClientsPage();
           this.clampCheckInsPage();
           this.openPendingAssignFromNavigationState();
@@ -335,8 +340,46 @@ export class CoachDashboardComponent implements OnInit {
         submittedDate: displayDate ? String(displayDate) : '',
         answeredDate: (assignment as any).reviewedAt ? String((assignment as any).reviewedAt) : '',
         sortTimestamp: this.toTimestamp(activityDate),
+        avatar: this.clients.find((item) => item.id === String(assignment.assigneeId))?.avatar,
       };
     }).sort((a, b) => b.sortTimestamp - a.sortTimestamp);
+  }
+
+  private loadClientPhotos(rawClients: any[]): void {
+    const ids = rawClients
+      .map((client: any) => String(client?.id || '').trim())
+      .filter(Boolean);
+
+    if (!ids.length) return;
+
+    forkJoin(
+      ids.map((id) =>
+        this.usersService.getUserById(id, true).pipe(
+          catchError(() => of(null)),
+        ),
+      ),
+    ).subscribe((users) => {
+      const avatarMap = new Map<string, string>();
+      ids.forEach((id, index) => {
+        const avatar = String((users[index] as any)?.avatarUrl || '').trim();
+        if (avatar && avatar.toLowerCase() !== 'not found') {
+          avatarMap.set(id, avatar);
+        }
+      });
+
+      this.clients = this.clients.map((client) => ({
+        ...client,
+        avatar: avatarMap.get(client.id) || client.avatar,
+      }));
+      this.recentCheckIns = this.recentCheckIns.map((checkIn) => ({
+        ...checkIn,
+        avatar: avatarMap.get(checkIn.clientId) || checkIn.avatar,
+      }));
+    });
+  }
+
+  onClientAvatarError(client: ClientDisplay): void {
+    client.avatar = undefined;
   }
 
   private getLastCheckInDate(client: any): string {
@@ -622,7 +665,16 @@ export class CoachDashboardComponent implements OnInit {
   }
 
   openClient(id: string): void {
-    this.router.navigate([`/clients/profil-client/${id}`]);
+    const profileClient = this.rawClients.find((client: any) => String(client?.id) === String(id));
+    this.router.navigate([`/clients/profil-client/${id}`], {
+      state: profileClient ? { profileClient } : undefined,
+    });
+  }
+
+  openCheckIn(checkIn: CheckInDisplay): void {
+    this.router.navigate(['/forms/manage-checkins'], {
+      queryParams: { assignmentId: checkIn.id },
+    });
   }
 
   get pendingAssignTitle(): string {

@@ -105,8 +105,22 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   async initializeSidebar() {
-    this.sidebarItems = ROUTES;
-    this.sidebarItems = this.filterSidebarItemsByRoles(ROUTES, this.roles);
+    // Some coach accounts also carry ROLE_CLIENT. In the rest of the app a
+    // coach takes precedence, so the sidebar must follow the same rule instead
+    // of rendering both the client and coach navigation blocks.
+    const effectiveRoles = this.roles.includes('ROLE_COACH')
+      ? this.roles.filter((role) => role !== 'ROLE_CLIENT')
+      : this.roles;
+
+    // Work on fresh objects because role filtering also filters submenus.
+    // Mutating the shared ROUTES constant can leak one user's menu into a
+    // later session in the same browser.
+    const routes = ROUTES.map((item) => ({
+      ...item,
+      submenu: item.submenu?.map((subItem) => ({ ...subItem })) || [],
+    }));
+
+    this.sidebarItems = this.filterSidebarItemsByRoles(routes, effectiveRoles);
     this.syncActiveState();
   }
 

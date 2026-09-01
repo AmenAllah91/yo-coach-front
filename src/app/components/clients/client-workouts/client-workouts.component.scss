@@ -3136,6 +3136,9 @@
 .workout-day .exercise-row {
   grid-template-columns:1.1fr 1fr 1fr 70px 126px;
 }
+.workout-day .exercise-row--cardio {
+  grid-template-columns:1.1fr 1fr 70px 126px;
+}
 .workout-day .set-status-actions {
   display:flex;
   justify-content:flex-end;
@@ -3158,6 +3161,12 @@
 .workout-day .set-status-actions .set-status-completed { border-color:#1caf72; background:#eaf9f2; color:#138757; }
 .workout-day .set-status-actions .set-status-missed { border-color:#eb4b67; background:#fff0f3; color:#d92f4d; }
 .workout-day .set-status-actions .set-status-pending { border-color:#249fe5; background:#eef8ff; color:#172b43; }
+.modal-set__statuses { flex:0 0 auto; display:flex; gap:5px; }
+.modal-set__statuses button { width:34px; height:34px; padding:0; border:1px solid #d7e1ea; border-radius:8px; background:#fff; color:#8a9ab0; font-size:18px; cursor:pointer; }
+.modal-set__statuses button:disabled { cursor:not-allowed; opacity:.65; }
+.modal-set__statuses .set-status-completed { border-color:#1caf72; background:#eaf9f2; color:#138757; }
+.modal-set__statuses .set-status-missed { border-color:#eb4b67; background:#fff0f3; color:#d92f4d; }
+.modal-set__statuses .set-status-pending { border-color:#249fe5; background:#eef8ff; color:#172b43; }
 
 .set-status-confirm-backdrop {
   position:fixed;
@@ -3188,6 +3197,12 @@
     padding:6px 8px;
     grid-template-columns:minmax(38px,.7fr) minmax(46px,.85fr) minmax(52px,.9fr) 38px 87px;
     gap:4px;
+  }
+  .workout-day .exercise-row--cardio {
+    grid-template-areas:
+      "set rest"
+      "value value"
+      "status status";
   }
   .workout-day .set-status-actions { gap:2px; }
   .workout-day .set-status-actions button { width:27px; height:30px; border-radius:6px; font-size:15px; }
@@ -3266,6 +3281,7 @@
   }
   .workout-day .set-value-field:first-of-type { grid-area:value; }
   .workout-day .set-value-field:last-of-type { grid-area:weight; }
+  .workout-day .exercise-row--cardio .set-value-field:last-of-type { grid-area:value; }
   .workout-day .set-value-field > small {
     display:block;
     color:#91a0b5;
@@ -3961,6 +3977,12 @@
 /* Client workout list: keep the same composition as the mobile screen. */
 .cw-root .client-header {
   text-align: left !important;
+}
+
+@media (max-width:700px) {
+  .modal-set { padding:10px 14px; flex-wrap:wrap; gap:8px; }
+  .modal-set__statuses { width:100%; display:grid; grid-template-columns:repeat(3,1fr); }
+  .modal-set__statuses button { width:100%; }
 }
 
 /* Standard client page heading: title and subtitle always start at the left. */

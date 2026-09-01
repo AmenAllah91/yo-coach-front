@@ -76,7 +76,15 @@
           *ngFor="let client of paginatedClients; trackBy: trackByClientId"
           (click)="openClient(client.id)"
         >
-          <div class="avatar">{{ getInitials(client.name) }}</div>
+          <div class="avatar">
+            <img
+              *ngIf="client.avatar; else mobileClientAvatarFallback"
+              [src]="client.avatar"
+              [alt]="client.name"
+              (error)="onClientAvatarError(client)"
+            />
+            <ng-template #mobileClientAvatarFallback>{{ getInitials(client.name) }}</ng-template>
+          </div>
           <div class="card-info">
             <div class="name-row">
               <h3>{{ client.name }}</h3>
@@ -115,9 +123,12 @@
           class="checkin-card"
           [class.overdue-card]="checkIn.overdue"
           *ngFor="let checkIn of paginatedRecentCheckIns; trackBy: trackByCheckInId"
-          (click)="openClient(checkIn.clientId)"
+          (click)="openCheckIn(checkIn)"
         >
-          <div class="avatar icon-avatar"></div>
+          <div class="avatar icon-avatar">
+            <img *ngIf="checkIn.avatar; else mobileCheckInFallback" [src]="checkIn.avatar" [alt]="checkIn.clientName" />
+            <ng-template #mobileCheckInFallback>{{ getInitials(checkIn.clientName) }}</ng-template>
+          </div>
           <div class="card-info">
             <div class="name-row">
               <h3>{{ checkIn.clientName }}</h3>
@@ -177,7 +188,15 @@
             *ngFor="let client of paginatedClients; trackBy: trackByClientId"
             (click)="openClient(client.id)"
           >
-            <div class="avatar">{{ getInitials(client.name) }}</div>
+            <div class="avatar">
+              <img
+                *ngIf="client.avatar; else desktopClientAvatarFallback"
+                [src]="client.avatar"
+                [alt]="client.name"
+                (error)="onClientAvatarError(client)"
+              />
+              <ng-template #desktopClientAvatarFallback>{{ getInitials(client.name) }}</ng-template>
+            </div>
             <div class="card-info">
               <div class="name-row">
                 <h3>{{ client.name }}</h3>
@@ -226,9 +245,12 @@
             class="checkin-card"
             [class.overdue-card]="checkIn.overdue"
             *ngFor="let checkIn of paginatedRecentCheckIns; trackBy: trackByCheckInId"
-            (click)="openClient(checkIn.clientId)"
+            (click)="openCheckIn(checkIn)"
           >
-            <div class="avatar icon-avatar"></div>
+            <div class="avatar icon-avatar">
+              <img *ngIf="checkIn.avatar; else desktopCheckInFallback" [src]="checkIn.avatar" [alt]="checkIn.clientName" />
+              <ng-template #desktopCheckInFallback>{{ getInitials(checkIn.clientName) }}</ng-template>
+            </div>
             <div class="card-info">
               <div class="name-row">
                 <h3>{{ checkIn.clientName }}</h3>

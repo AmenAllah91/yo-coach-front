@@ -10,6 +10,7 @@ import {SubmissionsApiService} from "../services/submissions-api.service";
 import {Answer, QuestionType, Submission} from "../../../models/forms.model";
 import {ClientService} from "../../../service/client.service";
 import {DocumentService} from "../../../service/document.service";
+import {ActivatedRoute, Router} from '@angular/router';
 
 export interface OptionItem {
   id: string;
@@ -96,6 +97,7 @@ export class ManageCheckinsComponent implements OnInit{
   error: string | null = null;
 
   assignments: FormAssignment[] = [];
+  private pendingAssignmentId: string | null = null;
 
   constructor(
     private assignmentsApi: AssignmentsApiService,
@@ -104,9 +106,12 @@ export class ManageCheckinsComponent implements OnInit{
     private clientService: ClientService,
     private documentService: DocumentService,
     private translate: TranslateService,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
+    this.pendingAssignmentId = this.route.snapshot.queryParamMap.get('assignmentId');
     this.loadAssignments();
   }
 
@@ -209,6 +214,8 @@ export class ManageCheckinsComponent implements OnInit{
             formName: f?.title ?? f?.name ?? row.formName,
           };
         });
+
+        this.openPendingAssignment();
       },
       error: () => {
       }
@@ -325,6 +332,24 @@ export class ManageCheckinsComponent implements OnInit{
 
   initials(name: string) {
     return name?.trim()?.charAt(0)?.toUpperCase() || '?';
+  }
+
+  private openPendingAssignment(): void {
+    if (!this.pendingAssignmentId) return;
+
+    const client = this.clients.find(row => row.id === this.pendingAssignmentId);
+    if (!client) return;
+
+    this.pendingAssignmentId = null;
+    this.activeTab = client.status;
+    this.currentPage = 1;
+    this.openCheckInModal(client);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { assignmentId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   onAvatarError(client: ClientData): void {

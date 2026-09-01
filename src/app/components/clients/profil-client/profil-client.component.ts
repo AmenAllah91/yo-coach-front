@@ -6,6 +6,7 @@ import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Client, ClientService } from 'app/service/client.service';
+import { UsersService } from 'app/service/users.service';
 
 import { ChoosePlanTypeModalComponent, NutritionPlanChoice } from 'app/components/nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
 import { WorkoutsClientTabComponent } from './workouts-client-tab/workouts-client-tab.component';
@@ -19,7 +20,7 @@ import { Subject, takeUntil, from, of, Observable, forkJoin } from 'rxjs';
 import { FormDetails, FormsApiService, Form } from '../../forms/services/forms-api.service';
 import { Answer, QuestionType } from '../../../models/forms.model';
 import { SubmissionsApiService } from '../../forms/services/submissions-api.service';
-import { switchMap, finalize, map, catchError } from 'rxjs/operators';
+import { switchMap, finalize, map, catchError, startWith } from 'rxjs/operators';
 import { ClientScheduleItemDto } from '../../../models/client-schedule.model';
 import { CalendarClientsComponent } from '../../calendar/calendar-clients/calendar-clients.component';
 import { ProgressPicturesComponent } from 'app/components/progress-pictures-module/progress-pictures/progress-pictures.component';
@@ -167,6 +168,12 @@ export interface ScheduledCheckIn {
   styleUrl: './profil-client.component.scss',
 })
 export class ProfilClientComponent {
+  profileLoading = true;
+  private seededClientId: string | null = null;
+  private clientHeaderLoaded = false;
+  private measurementsLoaded = false;
+  private workoutDashboardLoaded = false;
+  private nutritionDashboardLoaded = false;
   mobileMoreOpen = false;
   clientPickerOpen = false;
   clientSearch = '';
@@ -218,19 +225,41 @@ export class ProfilClientComponent {
     return `${this.client?.firstName?.[0] || ''}${this.client?.lastName?.[0] || ''}`.toUpperCase() || '--';
   }
 
+  get selectedClientPickerPhoto(): string {
+    const selectedClient = this.coachClients.find((client) => client.id === this.clientId);
+    return this.getClientPickerPhoto(selectedClient || this.client);
+  }
+
+  get profilePhotoUrl(): string {
+    return this.getClientPickerPhoto(this.client);
+  }
+
   getClientInitials(client: Client): string {
     return `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`.toUpperCase() || '--';
   }
 
-  isSelectedClient(client: Client): boolean {
-    return !!client.id && client.id === this.clientId;
+  getClientPickerPhoto(client: Client): string {
+    const url = String(client.avatarUrl || client.image || '').trim();
+    return url && url.toLowerCase() !== 'not found' ? url : '';
   }
 
-  clientPresenceClass(client: Client): string {
-    const status = String(client.clientStatus || '').toUpperCase();
-    if (status === 'PAUSED') return 'client-presence--away';
-    if (status === 'ARCHIVED' || client.activated === false) return 'client-presence--offline';
-    return 'client-presence--online';
+  onClientPickerPhotoError(client: Client): void {
+    client.avatarUrl = '';
+    client.image = '';
+  }
+
+  onSelectedClientPickerPhotoError(): void {
+    const selectedClient = this.coachClients.find((client) => client.id === this.clientId);
+    if (selectedClient) this.onClientPickerPhotoError(selectedClient);
+    if (this.client) this.onClientPickerPhotoError(this.client);
+  }
+
+  onProfilePhotoError(): void {
+    if (this.client) this.onClientPickerPhotoError(this.client);
+  }
+
+  isSelectedClient(client: Client): boolean {
+    return !!client.id && client.id === this.clientId;
   }
 
   toggleClientPicker(event: Event): void {
@@ -262,9 +291,34 @@ export class ProfilClientComponent {
     this.clientService.getListClientsByCoachWithoutPagination(this.userid).subscribe({
       next: (response) => {
         const clients = Array.isArray(response) ? response : response?.content || [];
-        this.coachClients = clients.filter((client: Client) => !!client.id);
-        this.coachClientsLoaded = true;
-        this.loadingCoachClients = false;
+        const validClients = clients.filter((client: Client) => !!client.id);
+
+        if (!validClients.length) {
+          this.coachClients = [];
+          this.coachClientsLoaded = true;
+          this.loadingCoachClients = false;
+          return;
+        }
+
+        // The clients endpoint does not include the account avatar. Enrich each
+        // row from the user profile, which is also the source used by Discussion.
+        const clientProfiles$: Observable<Client>[] = validClients.map((client: Client) =>
+          this.usersService.getUserById(client.id!, true).pipe(
+            map((user: any) => ({
+              ...client,
+              avatarUrl: user?.avatarUrl && user.avatarUrl !== 'not found'
+                ? user.avatarUrl
+                : '',
+            })),
+            catchError(() => of(client)),
+          )
+        );
+
+        forkJoin(clientProfiles$).subscribe((enrichedClients) => {
+          this.coachClients = enrichedClients;
+          this.coachClientsLoaded = true;
+          this.loadingCoachClients = false;
+        });
       },
       error: () => {
         this.coachClients = [];
@@ -364,13 +418,17 @@ export class ProfilClientComponent {
       return;
     }
 
-    this.bodyMeasurementsService.getByClient(this.clientId).subscribe({
+    this.bodyMeasurementsService.getByClient(this.clientId, true).subscribe({
       next: (items) => {
         this.bodyMeasurements = items || [];
+        this.measurementsLoaded = true;
+        this.finishProfileLoading();
       },
       error: (err) => {
         console.error('Failed to load body measurements:', err);
         this.bodyMeasurements = [];
+        this.measurementsLoaded = true;
+        this.finishProfileLoading();
       },
     });
   }
@@ -418,6 +476,10 @@ export class ProfilClientComponent {
   profileImportNutritionError = '';
 
   nutritionSelectionList: any[] = [];
+  nutritionSelectionPage = 0;
+  nutritionSelectionTotalPages = 0;
+  nutritionSelectionLoading = false;
+  nutritionSelectionSearch = '';
   assignments: FormAssignment[] = [];
   submissionAssignments: FormAssignment[] = [];
   assignedAssignments: FormAssignment[] = [];
@@ -565,6 +627,7 @@ export class ProfilClientComponent {
   constructor(
     private route: ActivatedRoute,
     private clientService: ClientService,
+    private usersService: UsersService,
     private workoutService: WorkoutService,
     private router: Router,
     private nutritionService: NutritionService,
@@ -576,6 +639,12 @@ export class ProfilClientComponent {
     public coachSettingsService: CoachSettingsService,
     private translate: TranslateService
   ) {
+    const seededClient = history.state?.profileClient as Client | undefined;
+    if (seededClient?.id) {
+      this.client = seededClient;
+      this.seededClientId = String(seededClient.id);
+    }
+
     this.route.paramMap.subscribe((params) => {
       const routeId = params.get('id') || '';
       if (routeId && routeId !== this.clientId) {
@@ -625,14 +694,12 @@ export class ProfilClientComponent {
       this.pendingCreatedNutritionToAssign = assignAfterCreate.item;
     }
 
-    this.getAllNutrition();
     this.loadWorkoutFileSetting();
-    this.loadCoachClients();
   }
 
 
   private loadWorkoutFileSetting(): void {
-    this.coachSettingsService.loadConfig().subscribe({
+    this.coachSettingsService.loadConfig(true).subscribe({
       next: () => {
         this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
         this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
@@ -659,8 +726,14 @@ export class ProfilClientComponent {
 
   private loadClientData(): void {
     if (!this.clientId) return;
+    const hasSeededClient = this.seededClientId === String(this.clientId);
+    this.profileLoading = !hasSeededClient;
+    this.clientHeaderLoaded = hasSeededClient;
+    this.measurementsLoaded = false;
+    this.workoutDashboardLoaded = false;
+    this.nutritionDashboardLoaded = false;
     this.checkinsLoaded = false;
-    this.getClientById(this.clientId);
+    this.getClientById(this.clientId, hasSeededClient);
     this.loadBodyMeasurements();
     this.loadDashboardPrograms();
     this.loadTabData(this.activeTab);
@@ -677,17 +750,49 @@ export class ProfilClientComponent {
     return String.fromCharCode(65 + index);
   }
 
-  getClientById(id: string) {
-    this.clientService.getClientById(id).subscribe((res) => {
-      this.client = res;
-      this.assignPendingCreatedWorkoutIfNeeded();
-      this.assignPendingCreatedNutritionIfNeeded();
+  getClientById(id: string, silent = false) {
+    this.clientService.getClientById(id, silent).subscribe({
+      next: (res) => {
+        this.client = res;
+        this.enrichProfilePhoto(id);
+        this.clientHeaderLoaded = true;
+        this.finishProfileLoading();
+        this.assignPendingCreatedWorkoutIfNeeded();
+        this.assignPendingCreatedNutritionIfNeeded();
+      },
+      error: (err) => {
+        console.error('Failed to load client profile:', err);
+        this.clientHeaderLoaded = true;
+        this.finishProfileLoading();
+      },
     });
+  }
+
+  private enrichProfilePhoto(id: string): void {
+    this.usersService.getUserById(id, true).subscribe({
+      next: (user: any) => {
+        const avatarUrl = String(user?.avatarUrl || '').trim();
+        if (!this.client || !avatarUrl || avatarUrl.toLowerCase() === 'not found') return;
+        this.client = { ...this.client, avatarUrl };
+      },
+      error: () => {},
+    });
+  }
+
+  private finishProfileLoading(): void {
+    // Only the identity request blocks opening the profile. Measurements and
+    // program details enrich the already visible dashboard in the background.
+    this.profileLoading = !this.clientHeaderLoaded;
   }
 
 
   private loadDashboardPrograms(): void {
-    if (!this.clientId || !this.userid) return;
+    if (!this.clientId || !this.userid) {
+      this.workoutDashboardLoaded = true;
+      this.nutritionDashboardLoaded = true;
+      this.finishProfileLoading();
+      return;
+    }
 
     this.loadingDashboardPrograms = true;
     this.dashboardProgramsError = null;
@@ -697,7 +802,7 @@ export class ProfilClientComponent {
     this.nutritionActivities = [];
 
     this.workoutService
-      .getWorkoutByCoachIdAndClient(this.userid, this.clientId, 0, 100)
+      .getWorkoutByCoachIdAndClient(this.userid, this.clientId, 0, 100, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', true)
       .pipe(
         switchMap((res: any) => {
           const summaries = res?.content || [];
@@ -709,6 +814,8 @@ export class ProfilClientComponent {
           this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
           this.todaysWorkout = this.extractTodaysWorkout(plans);
           this.workoutActivities = this.buildWorkoutActivities(plans);
+          this.workoutDashboardLoaded = true;
+          this.finishProfileLoading();
         },
         error: (err) => {
           console.error('Failed to load today workout:', err);
@@ -716,11 +823,13 @@ export class ProfilClientComponent {
           this.todaysWorkout = null;
           this.workoutActivities = [];
           this.dashboardProgramsError = 'Failed to load today workout.';
+          this.workoutDashboardLoaded = true;
+          this.finishProfileLoading();
         },
       });
 
     this.nutritionService
-      .getNutritionPlanByCoachIdAndClient(this.userid, this.clientId, 0, 100)
+      .getNutritionPlanByCoachIdAndClient(this.userid, this.clientId, 0, 100, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', true)
       .pipe(
         switchMap((res: any) => {
           const summaries = res?.content || [];
@@ -734,6 +843,8 @@ export class ProfilClientComponent {
           this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
           this.activeNutritionPlan = this.extractTodaysNutrition(plans);
           this.nutritionActivities = this.buildNutritionActivities(plans);
+          this.nutritionDashboardLoaded = true;
+          this.finishProfileLoading();
           this.loadingDashboardPrograms = false;
         },
         error: (err) => {
@@ -743,6 +854,8 @@ export class ProfilClientComponent {
           this.nutritionActivities = [];
           this.loadingDashboardPrograms = false;
           this.dashboardProgramsError = 'Failed to load active nutrition plan.';
+          this.nutritionDashboardLoaded = true;
+          this.finishProfileLoading();
         },
       });
   }
@@ -750,10 +863,12 @@ export class ProfilClientComponent {
   private hydrateWorkoutDashboardPlans(summaries: any[]): Observable<any[]> {
     if (!summaries.length) return of([]);
 
-    return forkJoin(summaries.map((summary: any) => {
+    const plansToHydrate = this.sortPlansByStartDate(summaries).slice(0, 12);
+
+    return forkJoin(plansToHydrate.map((summary: any) => {
       if (!summary?.id || this.isFileWorkoutPlan(summary)) return of(summary);
 
-      return this.workoutService.getWorkoutById(summary.id).pipe(
+      return this.workoutService.getWorkoutById(summary.id, true).pipe(
         map((detail: any) => ({
           ...summary,
           ...detail,
@@ -764,7 +879,12 @@ export class ProfilClientComponent {
         })),
         catchError(() => of(summary))
       );
-    }));
+    })).pipe(
+      map((hydratedPlans) => this.mergeHydratedPlans(summaries, hydratedPlans)),
+      // List responses are sufficient to paint the profile immediately. Full
+      // details arrive afterwards without keeping the page visually blocked.
+      startWith(summaries)
+    );
   }
 
   private mergeWorkoutDashboardDays(summaryDays: any[], detailDays: any[]): any[] {
@@ -798,10 +918,12 @@ export class ProfilClientComponent {
   private hydrateNutritionDashboardPlans(summaries: any[]): Observable<any[]> {
     if (!summaries.length) return of([]);
 
-    return forkJoin(summaries.map((summary: any) => {
+    const plansToHydrate = this.sortPlansByStartDate(summaries).slice(0, 12);
+
+    return forkJoin(plansToHydrate.map((summary: any) => {
       if (!summary?.id || this.isFileNutritionPlan(summary)) return of(summary);
 
-      return this.nutritionService.getNutritionPlanById(summary.id).pipe(
+      return this.nutritionService.getNutritionPlanById(summary.id, true).pipe(
         map((detail: any) => ({
           ...summary,
           ...detail,
@@ -812,7 +934,20 @@ export class ProfilClientComponent {
         })),
         catchError(() => of(summary))
       );
-    }));
+    })).pipe(
+      map((hydratedPlans) => this.mergeHydratedPlans(summaries, hydratedPlans)),
+      startWith(summaries)
+    );
+  }
+
+  private mergeHydratedPlans(summaries: any[], hydratedPlans: any[]): any[] {
+    const hydratedById = new Map(
+      hydratedPlans
+        .filter((plan) => plan?.id)
+        .map((plan) => [plan.id, plan])
+    );
+
+    return summaries.map((summary) => hydratedById.get(summary?.id) || summary);
   }
 
   private mergeNutritionDashboardDays(summaryDays: any[], detailDays: any[]): any[] {
@@ -1863,17 +1998,35 @@ export class ProfilClientComponent {
     return baseList;
   }
 
-  getAllNutrition() {
-    this.nutritionService.getNutritionPlans(0, 1000).subscribe((res: any) => {
-      this.nutritionSelectionList = (res.content || [])
-        .filter((plan: any) => !plan.client)
-        .map((plan: any) => ({
-          ...plan,
-          status: 'upcoming',
-          totalDays: this.isFileNutritionPlan(plan) ? 0 : (plan.mealDays?.length || 0),
-          calories: this.isFileNutritionPlan(plan) ? null : (plan.mealDays?.[0]?.dayTargets?.calories ?? null),
-        }));
-    });
+  getAllNutrition(page = 0, search = this.nutritionSelectionSearch) {
+    this.nutritionSelectionLoading = true;
+    this.nutritionSelectionSearch = search;
+    const apiPlanType = this.nutritionSelectionMode === 'APP'
+      ? 'APP'
+      : this.nutritionSelectionMode === 'FILES' ? 'FILES' : 'ALL';
+
+    this.nutritionService.getNutritionPlans(page, 12, apiPlanType, search, true)
+      .pipe(finalize(() => (this.nutritionSelectionLoading = false)))
+      .subscribe((res: any) => {
+        this.nutritionSelectionPage = Number(res?.number ?? page);
+        this.nutritionSelectionTotalPages = Number(res?.totalPages ?? 0);
+        this.nutritionSelectionList = (res?.content || [])
+          .filter((plan: any) => !plan.client)
+          .map((plan: any) => ({
+            ...plan,
+            status: 'upcoming',
+            totalDays: this.isFileNutritionPlan(plan) ? 0 : (plan.mealDays?.length || 0),
+            calories: this.isFileNutritionPlan(plan) ? null : (plan.mealDays?.[0]?.dayTargets?.calories ?? null),
+          }));
+      });
+  }
+
+  searchNutritionPrograms(search: string): void {
+    this.getAllNutrition(0, search);
+  }
+
+  changeNutritionProgramsPage(page: number): void {
+    this.getAllNutrition(page);
   }
 
   openDirectWorkoutSelection(): void {
@@ -1897,6 +2050,10 @@ export class ProfilClientComponent {
 
     if (this.assignType === 'NUTRITION') {
       this.nutritionSelectionMode = 'ALL';
+      this.nutritionSelectionList = [];
+      this.nutritionSelectionPage = 0;
+      this.nutritionSelectionSearch = '';
+      this.getAllNutrition(0, '');
       this.showNutritionSelectionModal = true;
       return;
     }
@@ -1943,6 +2100,10 @@ export class ProfilClientComponent {
 
     this.nutritionSelectionMode = mode;
     this.showNutritionExistingTypeModal = false;
+    this.nutritionSelectionList = [];
+    this.nutritionSelectionPage = 0;
+    this.nutritionSelectionSearch = '';
+    this.getAllNutrition(0, '');
     this.showNutritionSelectionModal = true;
   }
 

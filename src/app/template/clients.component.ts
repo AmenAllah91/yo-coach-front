@@ -11,6 +11,7 @@ import { DeleteClientModalComponent } from '../components/clients/delete-client-
 import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { UsersService } from '../service/users.service';
 
 interface StatusCountResponse {
   active: number;
@@ -77,6 +78,7 @@ export class ClientsComponent implements OnInit {
     private authService: AuthService,
     private workoutPlanService: WorkoutPlanService,
     private router: Router,
+    private usersService: UsersService,
     private translate: TranslateService
   ) {}
 
@@ -90,66 +92,31 @@ export class ClientsComponent implements OnInit {
 
   async loadClients() {
     this.isLoading = true;
-    const startTime = Date.now();
 
     try {
-      console.log('=== KEYCLOAK USER INFO ===');
-      console.log('Is logged in:', this.authService.isLoggedIn());
-      console.log('Username:', this.authService.getUsername());
-      console.log('User ID:', this.authService.getId());
-
-      const token = await this.authService.getToken();
-      console.log('Token:', token);
-
-      const userId = await this.authService.extractUserId();
-      console.log('Extracted User ID:', userId);
-
-      const username = await this.authService.extractUserName();
-      console.log('Extracted Username:', username);
-
-      const roles = await this.authService.extractRoles();
-      console.log('User Roles:', roles);
-      console.log('========================');
-
-      const coachId = userId;
+      const coachId = sessionStorage.getItem('userId') || await this.authService.extractUserId();
 
       if (!coachId) {
         console.error('No coach ID found');
-        const elapsed = Date.now() - startTime;
-        const minDelay = 800;
-        const remainingDelay = Math.max(0, minDelay - elapsed);
-        setTimeout(() => {
-          this.isLoading = false;
-        }, remainingDelay);
+        this.isLoading = false;
         return;
       }
 
       this.loadStatusCounts(coachId);
 
-      console.log('Making API call to get clients for coachId:', coachId);
-      console.log(
-        'API URL will be:',
-        `${environment.baseApiUrl}/gym_coaching/clients/coach/${coachId}`
-      );
-
       const statusParam = this.statusFilter === 'ALL' ? undefined : this.statusFilter;
 
       this.clientService
-        .getClientsByCoach(coachId, this.currentPage, this.pageSize, statusParam)
+        .getClientsByCoach(coachId, this.currentPage, this.pageSize, statusParam, true)
         .subscribe({
           next: (response) => {
-            const elapsed = Date.now() - startTime;
-            const minDelay = 800;
-            const remainingDelay = Math.max(0, minDelay - elapsed);
-
-            setTimeout(() => {
-              const clientsData = response.content || response;
-              this.clients = clientsData.map((client: Client) => ({
+            const clientsData = response.content || response;
+            this.clients = clientsData.map((client: Client) => ({
                 ...client,
                 clientStatus: this.normalizeStatus(client.clientStatus),
                 workoutDates: client.workoutDates || this.generateRandomWorkoutDates(),
                 program: this.getClientProgram(client) || this.getRandomProgram(),
-              }));
+            }));
 
               if (response.totalPages !== undefined) {
                 this.totalPages = response.totalPages;
@@ -161,31 +128,44 @@ export class ClientsComponent implements OnInit {
                 this.currentPage = 0;
               }
 
-              this.applyFilters();
-              this.isLoading = false;
-            }, remainingDelay);
+            this.applyFilters();
+            this.enrichClientPhotos(this.clients);
+            this.isLoading = false;
           },
           error: (error) => {
-            const elapsed = Date.now() - startTime;
-            const minDelay = 800;
-            const remainingDelay = Math.max(0, minDelay - elapsed);
-
-            setTimeout(() => {
-              console.error('Error loading clients:', error);
-              this.isLoading = false;
-            }, remainingDelay);
+            console.error('Error loading clients:', error);
+            this.isLoading = false;
           },
         });
     } catch (error) {
-      const elapsed = Date.now() - startTime;
-      const minDelay = 800;
-      const remainingDelay = Math.max(0, minDelay - elapsed);
-
-      setTimeout(() => {
-        console.error('Error getting coach ID:', error);
-        this.isLoading = false;
-      }, remainingDelay);
+      console.error('Error getting coach ID:', error);
+      this.isLoading = false;
     }
+  }
+
+  getClientPhoto(client: Client): string {
+    const photo = String(client.avatarUrl || client.image || '').trim();
+    return photo && photo.toLowerCase() !== 'not found' ? photo : '';
+  }
+
+  onClientPhotoError(client: Client): void {
+    client.avatarUrl = '';
+    client.image = '';
+  }
+
+  private enrichClientPhotos(clients: Client[]): void {
+    clients.forEach((client) => {
+      if (!client.id || this.getClientPhoto(client)) return;
+      this.usersService.getUserById(client.id, true).subscribe({
+        next: (user: any) => {
+          const avatarUrl = String(user?.avatarUrl || '').trim();
+          if (avatarUrl && avatarUrl.toLowerCase() !== 'not found') {
+            client.avatarUrl = avatarUrl;
+          }
+        },
+        error: () => {},
+      });
+    });
   }
 
   async loadStatusCounts(coachId?: string) {
@@ -287,7 +267,7 @@ export class ClientsComponent implements OnInit {
   viewProfile(client: Client) {
     console.log('View profile:', client);
     const url = 'clients/profil-client/' + client.id;
-    this.router.navigateByUrl(url);
+    this.router.navigateByUrl(url, { state: { profileClient: client } });
   }
 
   sendMessage(client: Client) {

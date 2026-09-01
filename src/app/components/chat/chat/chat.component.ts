@@ -659,7 +659,9 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
    private loadMessages(conversationId: string): void {
      console.log('Loading messages for conversation:', conversationId);
-     this.chatService.getMessages(conversationId, 0, 50)
+     // The page-level loader already covered the conversation list. Messages
+     // refresh inside the selected conversation without blocking the whole UI.
+     this.chatService.getMessages(conversationId, 0, 50, true)
        .pipe(takeUntil(this.destroy$))
        .subscribe({
           next: (pageDto) => {
@@ -1229,7 +1231,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   private loadAutoMessageSequences(conversationId: string): void {
     this.chatService
-      .getAutoMessageSequences(conversationId)
+      .getAutoMessageSequences(conversationId, true)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (sequences) => {

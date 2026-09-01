@@ -16,7 +16,7 @@
 .assign-modal {
   background: #ffffff;
   width: 100%;
-  max-width: 580px;
+  max-width: 860px;
   border-radius: 12px;
   box-shadow: 0 24px 40px rgba(15, 23, 42, 0.16);
   overflow: hidden;
@@ -76,6 +76,12 @@
   background-color: #f9fafb;
 }
 
+.select-program-search--inline {
+  margin: 0 -1.5rem 1rem;
+  padding: 0 1.5rem 1rem;
+  background: #fff;
+}
+
 .select-search-input {
   display: flex;
   align-items: center;
@@ -104,7 +110,11 @@
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
+
+.select-program-body > ng-container { display: contents; }
 
 .select-program-card {
   border-radius: 12px;
@@ -189,9 +199,11 @@
 }
 
 .select-program-schedule {
-  margin-top: 1.25rem;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 1.25rem;
+  order: -1;
+  margin: -1.5rem -1.5rem 1.25rem;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 .select-program-schedule h4 {
@@ -219,7 +231,8 @@
   width: 100%;
   border-radius: 8px;
   border: 1px solid #d1d5db;
-  padding: 0.45rem 0.65rem;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
   font-size: 0.85rem;
   color: #111827;
   box-sizing: border-box;
@@ -497,6 +510,22 @@
   margin-top: 0.15rem;
   color: #6b7280;
   font-size: 0.76rem;
+}
+
+@media (max-width: 700px) {
+  .assign-modal-overlay { padding: 0; align-items: stretch; }
+  .assign-modal { max-width: none; min-height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  .assign-modal-header { padding: 16px 18px; }
+  .select-program-search { padding: 12px 16px; }
+  .select-program-search--inline { margin: 0 -16px 14px; padding: 0 16px 14px; }
+  .select-program-body { padding: 16px; }
+  .select-program-schedule { margin: -16px -16px 16px; padding: 14px 16px; }
+  .schedule-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .schedule-field label { min-height: 30px; font-size: 11px; }
+  .schedule-input input { min-height: 46px; padding: 8px; font-size: 12px; }
+  .selected-client-card { margin-top: 12px; }
+  .select-program-footer { padding: 12px 16px; }
+  .select-program-footer button { min-height: 46px; flex: 1; }
 }
 
 @media (max-width: 640px) {

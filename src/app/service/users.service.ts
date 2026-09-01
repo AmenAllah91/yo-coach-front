@@ -15,8 +15,10 @@ export class UsersService {
 
   constructor(private http: HttpClient) { }
 
-  getUserById(userId: string): Observable<User> {
-    return this.http.get<User>(`${this.userServiceUrl}/api/users/${userId}`);
+  getUserById(userId: string, skipLoader = false): Observable<User> {
+    return this.http.get<User>(`${this.userServiceUrl}/api/users/${userId}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
 
