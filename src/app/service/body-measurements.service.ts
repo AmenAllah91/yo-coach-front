@@ -30,8 +30,10 @@ export class BodyMeasurementsService {
 
   constructor(private http: HttpClient) {}
 
-  getByClient(clientId: string): Observable<BodyMeasurement[]> {
-    return this.http.get<BodyMeasurement[]>(`${this.baseUrl}/client/${clientId}`);
+  getByClient(clientId: string, skipLoader = false): Observable<BodyMeasurement[]> {
+    return this.http.get<BodyMeasurement[]>(`${this.baseUrl}/client/${clientId}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   getByClientAndType(clientId: string, measurementType: string): Observable<BodyMeasurement[]> {

@@ -119,8 +119,10 @@ export class WorkoutService {
   }
 
 
-  getWorkoutById(id: string): Observable<WorkoutPlan> {
-    return this.http.get<WorkoutPlan>(`${this.apiUrl}${id}`);
+  getWorkoutById(id: string, skipLoader = false): Observable<WorkoutPlan> {
+    return this.http.get<WorkoutPlan>(`${this.apiUrl}${id}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
   getWorkoutByCoachIdAndClient(
     coachId: string,
@@ -130,12 +132,14 @@ export class WorkoutService {
     type: 'ALL' | 'APP' | 'FILES' = 'ALL',
     period: 'ALL' | 'ACTIVE' | 'NON_ACTIVE' = 'ALL',
     statusFilter: 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP' = 'ALL',
-    sort: 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC' = 'RECOMMENDED'
+    sort: 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC' = 'RECOMMENDED',
+    skipLoader = false
   ) {
     return this.http.get<PageResponse<WorkoutPlan>>(
       `${this.apiUrl}client/${clientId}/coach/${coachId}`,
       {
         params: { page, size, type, period, statusFilter, sort, t: Date.now().toString() },
+        headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
       }
     );
   }

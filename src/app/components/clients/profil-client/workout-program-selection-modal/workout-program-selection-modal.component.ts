@@ -143,9 +143,9 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   selectProgram(program: any): void {
     this.selectedProgramItem = program;
     this.selectedProgramId = program.id;
-    this.startDate = '';
-    this.endDate = '';
+    if (!this.isFileProgram(program)) this.endDate = '';
     this.conflict = null;
+    this.refreshConflicts();
   }
 
   get selectedProgram(): any | null {

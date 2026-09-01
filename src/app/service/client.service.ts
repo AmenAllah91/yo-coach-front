@@ -22,6 +22,7 @@ export interface Client {
   activated?: boolean;
   coachId?: string;
   image?: string;
+  avatarUrl?: string;
   coach?: {
     id: string;
   };
@@ -49,7 +50,8 @@ export class ClientService {
     coachId: string,
     page: number = 0,
     size: number = 10,
-    status?: ClientStatus
+    status?: ClientStatus,
+    skipLoader = false
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -59,11 +61,16 @@ export class ClientService {
       params = params.set('status', status);
     }
 
-    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}`, { params });
+    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
-  getListClientsByCoachWithoutPagination(coachId: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}/all`);
+  getListClientsByCoachWithoutPagination(coachId: string, skipLoader = false): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/coach/${coachId}/all`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   getClientStatusCounts(coachId: string): Observable<ClientStatusCounts> {

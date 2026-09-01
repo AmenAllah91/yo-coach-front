@@ -30,10 +30,15 @@ export class NutritionSelectionModalComponent {
   // liste complète (non filtrée) fournie par le parent
   @Input() programs: any[] = [];
   @Input() nutritionFileEnabled = true;
+  @Input() loadingPrograms = false;
+  @Input() page = 0;
+  @Input() totalPages = 0;
 
   // events vers parent
   @Output() closeModal = new EventEmitter<void>();
   @Output() backClick = new EventEmitter<void>();
+  @Output() searchPrograms = new EventEmitter<string>();
+  @Output() pageChange = new EventEmitter<number>();
 
   // action finale : on renvoie au parent l’item choisi + dates
   @Output() assignProgram = new EventEmitter<{
@@ -83,9 +88,18 @@ export class NutritionSelectionModalComponent {
   selectProgram(program: any): void {
     this.selectedProgramItem = program;
     this.selectedProgramId = program.id;
-    this.startDate = '';
-    this.endDate = '';
+    if (!this.isFileProgram(program)) this.endDate = '';
     this.conflict = null;
+    this.refreshConflicts();
+  }
+
+  onSearchChange(): void {
+    this.searchPrograms.emit(this.searchTerm.trim());
+  }
+
+  changePage(page: number): void {
+    if (page < 0 || page >= this.totalPages || page === this.page || this.loadingPrograms) return;
+    this.pageChange.emit(page);
   }
 
   get selectedProgram(): any | null {

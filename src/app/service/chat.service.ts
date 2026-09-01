@@ -189,7 +189,8 @@ export class ChatService {
   getMessages(
     conversationId: string,
     page: number,
-    size = 20
+    size = 20,
+    skipLoader = false
   ): Observable<PageDto<ChatMessage>> {
     const params = new HttpParams()
       .set('page', page.toString())
@@ -202,7 +203,8 @@ export class ChatService {
         params,
         headers: new HttpHeaders({
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'Pragma': 'no-cache',
+          ...(skipLoader ? { 'X-Skip-Loader': 'true' } : {})
         })
       }
     );
@@ -302,9 +304,15 @@ export class ChatService {
     );
   }
 
-  getAutoMessageSequences(conversationId: string): Observable<AutoMessageSequenceDto[]> {
+  getAutoMessageSequences(
+    conversationId: string,
+    skipLoader = false
+  ): Observable<AutoMessageSequenceDto[]> {
     return this.http.get<AutoMessageSequenceDto[]>(
-      `${this.apiUrl}/conversations/${conversationId}/auto-messages`
+      `${this.apiUrl}/conversations/${conversationId}/auto-messages`,
+      {
+        headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {}
+      }
     );
   }
 

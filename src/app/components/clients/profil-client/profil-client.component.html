@@ -1,12 +1,13 @@
-<section class="main-content" [class.progress-summary-collapsed]="!showClientStats">
+<section *ngIf="!profileLoading" class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <div class="profile-header">
     <button class="profile-back app-page-back" type="button" [attr.aria-label]="'BACK_TO_CLIENTS' | translate" (click)="backToClients()">
       <i class="fas fa-arrow-left"></i>
     </button>
     <img
-      [src]="client?.image || 'assets/images/photoprofilvierge.jpg'"
+      [src]="profilePhotoUrl || 'assets/images/photoprofilvierge.jpg'"
       [alt]="fullName || ('PROFILE_PHOTO' | translate)"
       class="profile-picture"
+      (error)="onProfilePhotoError()"
     />
 
     <div class="profile-info">
@@ -29,7 +30,15 @@
           aria-haspopup="listbox"
           (click)="toggleClientPicker($event)"
         >
-          <span class="client-picker__avatar">{{ clientInitials }}</span>
+          <span class="client-picker__avatar">
+            <img
+              *ngIf="selectedClientPickerPhoto; else selectedClientAvatarFallback"
+              [src]="selectedClientPickerPhoto"
+              [alt]="fullName"
+              (error)="onSelectedClientPickerPhotoError()"
+            />
+            <ng-template #selectedClientAvatarFallback><i class="far fa-user"></i></ng-template>
+          </span>
           <span class="client-picker__selected">
             <small><i class="far fa-user"></i> {{ 'CLIENT' | translate }}</small>
             <strong>{{ fullName }}</strong>
@@ -59,12 +68,19 @@
               [class.client-picker__option--selected]="isSelectedClient(profileClient)"
               (click)="selectProfileClient(profileClient)"
             >
-              <span class="client-picker__option-avatar">{{ getClientInitials(profileClient) }}</span>
+              <span class="client-picker__option-avatar">
+                <img
+                  *ngIf="getClientPickerPhoto(profileClient) as photoUrl; else clientPickerAvatarFallback"
+                  [src]="photoUrl"
+                  [alt]="profileClient.firstName + ' ' + profileClient.lastName"
+                  (error)="onClientPickerPhotoError(profileClient)"
+                />
+                <ng-template #clientPickerAvatarFallback><i class="far fa-user"></i></ng-template>
+              </span>
               <span class="client-picker__option-copy">
                 <strong>{{ profileClient.firstName }} {{ profileClient.lastName }}</strong>
                 <small>{{ profileClient.email || ('NOT_PROVIDED' | translate) }}</small>
               </span>
-              <span class="client-presence" [ngClass]="clientPresenceClass(profileClient)"></span>
               <i *ngIf="isSelectedClient(profileClient)" class="fas fa-check client-picker__check"></i>
             </button>
             <p class="client-picker__empty" *ngIf="!loadingCoachClients && filteredCoachClients.length === 0">{{ 'NO_CLIENTS_FOUND' | translate }}</p>
@@ -78,11 +94,6 @@
         <span>{{ 'SEND_MESSAGE' | translate }}</span>
       </button>
 
-      <button class="btn-more" type="button" [attr.aria-label]="'MORE_PROFILE_ACTIONS' | translate">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </button>
     </div>
   </div>
 
@@ -302,9 +313,9 @@
                   <i class="fas fa-plus"></i>
                   {{ 'ASSIGN_WORKOUT' | translate }}
                 </button>
-                <button class="empty-outline-btn" type="button" (click)="setTab('calendar')">
-                  <i class="fas fa-calendar-alt"></i>
-                  {{ 'OPEN_CALENDAR' | translate }}
+                <button class="empty-outline-btn" type="button" (click)="openClientWorkoutCreateModal()">
+                  <i class="fas fa-file-circle-plus"></i>
+                  {{ 'CREATE_PLAN' | translate }}
                 </button>
               </div>
             </div>
@@ -1994,6 +2005,11 @@
   [fullName]="fullName"
   [client]="client"
   [programs]="nutritionSelectionPrograms"
+  [loadingPrograms]="nutritionSelectionLoading"
+  [page]="nutritionSelectionPage"
+  [totalPages]="nutritionSelectionTotalPages"
+  (searchPrograms)="searchNutritionPrograms($event)"
+  (pageChange)="changeNutritionProgramsPage($event)"
   (closeModal)="closeAssignFlow()"
   (backClick)="backToAssignModal()"
   (assignProgram)="onAssignNutritionFromModal($event)"

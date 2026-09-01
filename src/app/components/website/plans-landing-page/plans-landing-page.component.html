@@ -1,0 +1,92 @@
+<main class="plans-page">
+  <header class="plans-nav">
+    <a class="brand" routerLink="/plans-landing">
+      <span class="brand-mark">Y</span>
+      <span>YoCoach</span>
+    </a>
+
+    <nav aria-label="Plans landing navigation">
+      <a href="#plans">Plans</a>
+      <a href="#details">Details</a>
+      <a href="#workflow">How it works</a>
+    </nav>
+  </header>
+
+  <section class="hero-section">
+    <div class="hero-copy">
+      <span class="eyebrow">Coaching plans landing page</span>
+      <h1>Simple plans for coaches ready to grow.</h1>
+      <p>
+        Present your offers with clear pricing, plan limits, setup details, and
+        benefits. The data below is sample content, ready to be replaced by your API.
+      </p>
+      <div class="hero-actions">
+        <button type="button" class="primary-action" (click)="scrollToPlans()">
+          View plans
+          <mat-icon>arrow_downward</mat-icon>
+        </button>
+        <a class="secondary-action" href="#details">Compare details</a>
+      </div>
+    </div>
+
+    <div class="hero-panel" aria-label="Selected plan preview">
+      <span>Current selection</span>
+      <strong>{{ selectedPlanName }}</strong>
+      <p>
+        Choose an offer below to create your YoCoach account and subscription.
+      </p>
+    </div>
+  </section>
+
+  <section class="highlights-section" id="details">
+    <article class="highlight-card" *ngFor="let item of highlights">
+      <div class="highlight-icon">
+        <mat-icon>{{ item.icon }}</mat-icon>
+      </div>
+      <h2>{{ item.title }}</h2>
+      <p>{{ item.description }}</p>
+    </article>
+  </section>
+
+  <section class="plans-section" id="plans">
+    <div class="section-heading">
+      <span>YoCoach subscriptions</span>
+      <h2>Choose the plan that fits the business stage.</h2>
+      <p>
+        These plans are loaded from the subscription catalog for YoCoach.
+      </p>
+    </div>
+
+    <div class="plans-state" *ngIf="isLoading">
+      Loading plans...
+    </div>
+
+    <div class="plans-state plans-state-error" *ngIf="loadError">
+      <p>{{ loadError }}</p>
+      <button type="button" (click)="loadPlans()">Try again</button>
+    </div>
+
+    <div class="plans-grid" *ngIf="!isLoading && !loadError">
+      <app-plan-card
+        *ngFor="let plan of plans"
+        [plan]="plan"
+        (selectPlan)="selectPlan($event)"
+      ></app-plan-card>
+    </div>
+  </section>
+
+  <section class="workflow-section" id="workflow">
+    <div class="section-heading compact">
+      <span>Plan flow</span>
+      <h2>How visitors move from browsing to action.</h2>
+    </div>
+
+    <div class="workflow-grid">
+      <article class="workflow-card" *ngFor="let step of steps; let i = index">
+        <span class="step-number">0{{ i + 1 }}</span>
+        <h3>{{ step.title }}</h3>
+        <p>{{ step.description }}</p>
+      </article>
+    </div>
+  </section>
+</main>

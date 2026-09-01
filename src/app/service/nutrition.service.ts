@@ -213,8 +213,9 @@ export class NutritionService {
   getNutritionPlans(
     page: number = 0,
     size: number = 10,
-    planType: 'ALL' | 'APP' | 'PDF' | 'EXCEL' = 'ALL',
-    search: string = ''
+    planType: 'ALL' | 'APP' | 'FILES' | 'PDF' | 'EXCEL' = 'ALL',
+    search: string = '',
+    skipLoader = false
   ): Observable<Page<NutritionPlan>> {
     const params: any = { page, size, planType };
 
@@ -222,7 +223,10 @@ export class NutritionService {
       params.search = search.trim();
     }
 
-    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`, { params });
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
   getNutritionPlansTemplates(
     page: number = 0,
@@ -237,8 +241,10 @@ export class NutritionService {
 
     return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`, { params });
   }
-  getNutritionPlanById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.mealPlanUrl}${id}`);
+  getNutritionPlanById(id: string, skipLoader = false): Observable<any> {
+    return this.http.get<any>(`${this.mealPlanUrl}${id}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   createNutritionPlan(plan: MealPlan): Observable<MealPlan> {
@@ -349,7 +355,8 @@ export class NutritionService {
     planType: 'ALL' | 'APP' | 'FILES' = 'ALL',
     period: 'ALL' | 'ACTIVE' | 'NON_ACTIVE' = 'ALL',
     statusFilter: 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP' = 'ALL',
-    sort: 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC' = 'RECOMMENDED'
+    sort: 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC' = 'RECOMMENDED',
+    skipLoader = false
   ) {
     return this.http.get<any>(
       `${this.mealPlanUrl}client/${clientId}/coach/${coachId}/all`,
@@ -362,6 +369,7 @@ export class NutritionService {
           statusFilter,
           sort,
         },
+        headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
       }
     );
   }

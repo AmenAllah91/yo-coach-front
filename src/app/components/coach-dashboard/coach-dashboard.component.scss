@@ -1871,6 +1871,30 @@ body {
   font-weight: 500 !important;
 }
 
+.avatar img,
+.icon-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Check-ins now use the client's photo (or initials). Remove the legacy
+   calendar glyph that used to sit on top of the old static icon. */
+.icon-avatar {
+  overflow: hidden;
+  border-radius: 50% !important;
+}
+
+.icon-avatar::before,
+.icon-avatar::after,
+.recent-checkins-panel .icon-avatar::before,
+.recent-checkins-panel .icon-avatar::after {
+  content: none !important;
+  display: none !important;
+}
+
 .latest-client-card .chevron,
 .chevron {
   font-weight: 400 !important;
