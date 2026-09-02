@@ -274,9 +274,9 @@
 
 <!-- ===================== DETAIL VIEW ===================== -->
 <div class="client-page workout-day" *ngIf="selectedWorkout">
-  <header class="workout-day__topbar">
+  <header class="workout-day__topbar" [class.workout-day__topbar--without-timer]="workoutRunStatus === 'LOG_WORKOUT'">
     <div class="workout-day__title"><button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="backToList()"><span aria-hidden="true">←</span></button><h1>{{ selectedWorkout.title }}</h1><span class="run-status" [attr.data-status]="workoutRunStatus">{{ workoutStatusLabel }}</span><button class="mobile-workout-pdf" type="button" [attr.aria-label]="'EXTRACT_PDF' | translate" [title]="'EXTRACT_PDF' | translate" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather></button></div>
-    <div class="workout-timer" [class.workout-timer--disabled]="workoutRunStatus === 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ (workoutRunStatus === 'LOG_WORKOUT' ? 'NO_TIMER' : 'WORKOUT_TIMER') | translate }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
+    <div class="workout-timer" *ngIf="workoutRunStatus !== 'LOG_WORKOUT'"><i-feather name="clock"></i-feather><span><small>{{ 'WORKOUT_TIMER' | translate }}</small><strong>{{ formattedWorkoutTime }}</strong></span></div>
     <div class="workout-day__actions">
       <button class="extract-workout-pdf" type="button" (click)="openWorkoutPdfPreview()"><i-feather name="file-text"></i-feather> {{ 'EXTRACT_PDF' | translate }}</button>
       <button class="primary-action" *ngIf="workoutRunStatus === 'OVERDUE'" (click)="logCompletedWorkout()"><i-feather name="check"></i-feather> {{ 'MARK_AS_COMPLETED' | translate }}</button>
@@ -352,9 +352,9 @@
           [placeholder]="'WRITE_NOTE_FOR_COACH' | translate"
         ></textarea>
       </div>
-      <footer class="exercise-card__footer" *ngIf="!isSingleCardioWarmUp(exercise) && (workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED' || workoutRunStatus === 'LOG_WORKOUT')">
+      <footer class="exercise-card__footer" *ngIf="!isSingleCardioWarmUp(exercise) && getSetStatusCount(exercise, 'PENDING') > 0 && (workoutRunStatus === 'IN_PROGRESS' || workoutRunStatus === 'PAUSED' || workoutRunStatus === 'LOG_WORKOUT')">
         <button class="note-action" (click)="openNote(exercise)"><i-feather name="file-text"></i-feather> {{ (exercise.note ? 'EDIT_NOTE' : 'ADD_NOTE') | translate }}</button>
-        <span></span><button class="secondary-action exercise-skip-action" (click)="markExercise(exercise, true)"><i-feather name="skip-forward"></i-feather> {{ 'SKIP_EXERCISE' | translate }}</button><button class="primary-action exercise-complete-action" (click)="markExercise(exercise, false)"><i-feather name="check"></i-feather> {{ 'MARK_EXERCISE_COMPLETE' | translate }}</button><small class="exercise-action-hint">{{ getExerciseActionHint(exercise) }}</small>
+        <span></span><button class="secondary-action exercise-skip-action" (click)="markExercise(exercise, true)"><i-feather name="skip-forward"></i-feather> {{ 'SKIP_EXERCISE' | translate }}</button><button class="primary-action exercise-complete-action" (click)="markExercise(exercise, false)"><i-feather name="check"></i-feather> {{ 'MARK_EXERCISE_COMPLETE' | translate }}</button><small class="exercise-action-hint">{{ 'COMPLETE_PENDING_SETS' | translate:{ count: getSetStatusCount(exercise, 'PENDING') } }}</small>
       </footer>
     </article>
     <section class="overall-workout-note">
@@ -392,7 +392,7 @@
 
 <div class="set-status-confirm-backdrop" *ngIf="pendingExerciseStatusAction as action" (click)="cancelExerciseStatusAction()">
   <section class="set-status-confirm-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <h2>{{ 'UPDATE_SET_STATUSES' | translate }}</h2>
+    <h2>{{ (action.status === 'MISSED' ? 'SKIP_THIS_EXERCISE' : 'UPDATE_SET_STATUSES') | translate }}</h2>
     <p *ngIf="action.status === 'COMPLETED'">{{ 'CONFIRM_CHANGE_MISSED_SETS' | translate }}</p>
     <p *ngIf="action.status === 'MISSED'">{{ 'CONFIRM_SKIP_COMPLETED_SETS' | translate }}</p>
     <footer>
@@ -513,9 +513,20 @@
     <div class="exercise-modal__content"><small>{{ 'ISOLATION' | translate }}</small><h2>{{ selectedExercise.name }}</h2>
       <div class="exercise-facts"><span><i-feather name="activity"></i-feather><span><small>{{ 'EQUIPMENT' | translate }}</small><strong>{{ selectedExercise.equipment || '—' }}</strong></span></span><span><i-feather name="target"></i-feather><span><small>{{ 'PRIMARY_MUSCLE' | translate }}</small><strong>{{ selectedExercise.primaryMuscle || selectedExercise.label || '—' }}</strong></span></span><span><i-feather name="layers"></i-feather><span><small>{{ 'PLANNED_LABEL' | translate }}</small><strong *ngIf="selectedExercise.type === 'CARDIO'">{{ selectedExercise.sets[0]?.duration || selectedExercise.duration || 0 }} {{ 'MINUTES' | translate }}</strong><strong *ngIf="selectedExercise.type !== 'CARDIO'">{{ selectedExercise.sets.length }} {{ 'SETS' | translate }} × {{ selectedExercise.sets[0]?.reps || '—' }} {{ 'REPS_LOWER' | translate }}</strong></span></span><span><i-feather name="clock"></i-feather><span><small>{{ 'REST_TIME' | translate }}</small><strong>{{ selectedExercise.sets[0]?.rest || '—' }}</strong></span></span></div>
       <h3>{{ 'PLANNED_SETS' | translate }}</h3><div class="modal-set" *ngFor="let set of selectedExercise.sets"><span>{{ 'SET' | translate }} {{ set.setNumber }} <em *ngIf="getSetTypeText(set.type)" [attr.data-type]="set.type">{{ getSetTypeText(set.type) }}</em></span><strong>⇄ {{ selectedExercise.type === 'CARDIO' ? set.duration : set.reps }} {{ (selectedExercise.type === 'CARDIO' ? 'MINUTES' : 'REPS_LOWER') | translate }} &nbsp;&nbsp; ◷ {{ set.rest }}</strong><span class="set-status-actions modal-set__statuses"><button type="button" [title]="'COMPLETED_LABEL' | translate" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'COMPLETED'" [class.set-status-completed]="set.status === 'COMPLETED'" (click)="setWorkoutSetStatus(selectedExercise, set, 'COMPLETED')">✓</button><button type="button" [title]="'MISSED_LABEL' | translate" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'MISSED'" [class.set-status-missed]="set.status === 'MISSED'" (click)="setWorkoutSetStatus(selectedExercise, set, 'MISSED')">×</button><button type="button" [title]="'PENDING_LABEL' | translate" [disabled]="!canEditWorkoutSets" [class.is-active]="set.status === 'PENDING'" [class.set-status-pending]="set.status === 'PENDING'" (click)="setWorkoutSetStatus(selectedExercise, set, 'PENDING')">−</button></span></div>
+      <footer class="exercise-card__footer exercise-modal__actions" *ngIf="canEditWorkoutSets && getSetStatusCount(selectedExercise, 'PENDING') > 0">
+        <button class="secondary-action exercise-skip-action" type="button" (click)="markExercise(selectedExercise, true)"><i-feather name="skip-forward"></i-feather> {{ 'SKIP_EXERCISE' | translate }}</button>
+        <button class="primary-action exercise-complete-action" type="button" (click)="markExercise(selectedExercise, false)"><i-feather name="check"></i-feather> {{ 'MARK_EXERCISE_COMPLETE' | translate }}</button>
+      </footer>
       <div class="exercise-description" *ngIf="selectedExercise.description"><strong>{{ 'EXERCISE_DESCRIPTION' | translate }}</strong><p>{{ selectedExercise.description }}</p></div>
       <div class="coach-note" *ngIf="selectedExercise.coachNote"><strong>{{ 'COACH_NOTE' | translate }}</strong><p>{{ selectedExercise.coachNote }}</p></div>
       <h3 *ngIf="selectedExercise.instructions?.length">{{ 'INSTRUCTIONS' | translate }}</h3><ol><li *ngFor="let instruction of selectedExercise.instructions">{{ instruction }}</li></ol>
+      <footer class="exercise-start-workout" *ngIf="workoutRunStatus === 'NOT_STARTED'">
+        <div class="exercise-start-workout__notice">
+          <i-feather name="info"></i-feather>
+          <span><strong>{{ 'WORKOUT_NOT_STARTED_TITLE' | translate }}</strong><small>{{ 'WORKOUT_NOT_STARTED' | translate }}</small></span>
+        </div>
+        <button class="primary-action" type="button" (click)="startWorkoutFromExercise()"><i-feather name="play"></i-feather> {{ 'START_WORKOUT' | translate }}</button>
+      </footer>
     </div>
   </article>
 </div>

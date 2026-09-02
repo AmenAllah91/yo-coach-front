@@ -255,7 +255,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   get reviewedExerciseCount(): number {
     return this.selectedWorkout?.groupedExercises.filter((exercise) =>
-      ['COMPLETED', 'MISSED', 'PARTIALLY_COMPLETED'].includes(this.getExerciseStatus(exercise))
+      this.getExerciseStatus(exercise) === 'COMPLETED'
     ).length || 0;
   }
 
@@ -272,9 +272,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   get completedWorkoutSetCount(): number {
     return this.selectedWorkout?.groupedExercises.reduce(
-      (total, exercise) => total +
-        this.getSetStatusCount(exercise, 'COMPLETED') +
-        this.getSetStatusCount(exercise, 'MISSED'),
+      (total, exercise) => total + this.getSetStatusCount(exercise, 'COMPLETED'),
       0
     ) || 0;
   }
@@ -660,13 +658,15 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   markExercise(exercise: GroupedExercise, skipped: boolean): void {
-    const targetStatus = skipped ? 'MISSED' : 'COMPLETED';
-    const oppositeStatus = skipped ? 'COMPLETED' : 'MISSED';
-    if (exercise.sets.some(set => set.status === oppositeStatus)) {
-      this.pendingExerciseStatusAction = { exercise, status: targetStatus };
+    if (skipped) {
+      this.pendingExerciseStatusAction = { exercise, status: 'MISSED' };
       return;
     }
-    this.applyStatusToAllSets(exercise, targetStatus);
+    exercise.sets.forEach(set => {
+      if (set.status === 'PENDING') set.status = 'COMPLETED';
+    });
+    this.recalculateExerciseStatus(exercise);
+    this.saveWorkoutProgress();
   }
 
   confirmExerciseStatusAction(): void {
@@ -752,6 +752,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   openExercise(exercise: GroupedExercise): void { this.selectedExercise = exercise; this.showExerciseVideo = false; this.exerciseEmbedUrl = null; }
+  startWorkoutFromExercise(): void {
+    this.startWorkout();
+  }
   openExerciseVideo(exercise: GroupedExercise): void {
     if (!exercise.videoLink) return;
     this.openExercise(exercise);
