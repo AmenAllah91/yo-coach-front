@@ -2949,6 +2949,7 @@
 .workout-timer strong { font-family:monospace; font-size:20px; line-height:1.25; }
 .workout-timer--disabled { border-color:#e1e4eb; background:#f5f5f8; color:#667085; }
 .workout-timer--disabled small { color:#667085; }
+.workout-day__topbar--without-timer { grid-template-columns:minmax(0,1fr) auto; }
 .workout-day__actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
 .workout-day__actions button { white-space:nowrap; }
 .workout-mobile-actions { display:none; }
@@ -3079,6 +3080,7 @@
 @media (max-width: 760px) {
   .workout-day { padding-bottom:68px; }
   .workout-day__topbar { min-height:0; padding:10px 12px 12px; grid-template-columns:1fr; gap:9px; }
+  .workout-day__topbar--without-timer { grid-template-columns:1fr; }
   .workout-day__title { min-width:0; gap:7px; }.workout-day__title h1 { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16px; }.run-status { flex:0 0 auto; font-size:9px; padding:3px 7px; }
   .workout-day__title > .mobile-workout-pdf { width:34px; height:34px; margin-left:auto; padding:0; flex:0 0 34px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #ccd8e4; border-radius:9px; background:#fff; color:#10243a; }
   .workout-day__title > .mobile-workout-pdf i-feather { width:16px; height:16px; }
@@ -3136,6 +3138,9 @@
 .workout-day .exercise-row {
   grid-template-columns:1.1fr 1fr 1fr 70px 126px;
 }
+.workout-day .exercise-row--cardio {
+  grid-template-columns:1.1fr 1fr 70px 126px;
+}
 .workout-day .set-status-actions {
   display:flex;
   justify-content:flex-end;
@@ -3158,6 +3163,53 @@
 .workout-day .set-status-actions .set-status-completed { border-color:#1caf72; background:#eaf9f2; color:#138757; }
 .workout-day .set-status-actions .set-status-missed { border-color:#eb4b67; background:#fff0f3; color:#d92f4d; }
 .workout-day .set-status-actions .set-status-pending { border-color:#249fe5; background:#eef8ff; color:#172b43; }
+.modal-set__statuses { flex:0 0 auto; display:flex; gap:5px; }
+.modal-set__statuses button { width:34px; height:34px; padding:0; border:1px solid #d7e1ea; border-radius:8px; background:#fff; color:#8a9ab0; font-size:18px; cursor:pointer; }
+.modal-set__statuses button:disabled { cursor:not-allowed; opacity:.65; }
+.modal-set__statuses .set-status-completed { border-color:#1caf72; background:#eaf9f2; color:#138757; }
+.modal-set__statuses .set-status-missed { border-color:#eb4b67; background:#fff0f3; color:#d92f4d; }
+
+.exercise-modal__actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+.exercise-start-workout {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px -24px -24px;
+  padding: 12px 24px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 -8px 20px rgba(15, 23, 42, .08);
+}
+
+.exercise-start-workout__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #b9e1fa;
+  border-radius: 10px;
+  background: #eaf6ff;
+  color: #17699d;
+}
+.exercise-start-workout__notice i-feather { flex: 0 0 20px; width: 20px; height: 20px; color: #168bc4; }
+.exercise-start-workout__notice span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.exercise-start-workout__notice strong { font-size: 13px; line-height: 17px; }
+.exercise-start-workout__notice small { color: #2675a6; font-size: 12px; line-height: 16px; }
+.exercise-start-workout .primary-action { width: 100%; background: #000; }
+
+@media (max-width: 760px) {
+  .exercise-start-workout { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
+  .exercise-start-workout__notice { padding: 10px; }
+}
+.modal-set__statuses .set-status-pending { border-color:#249fe5; background:#eef8ff; color:#172b43; }
 
 .set-status-confirm-backdrop {
   position:fixed;
@@ -3188,6 +3240,12 @@
     padding:6px 8px;
     grid-template-columns:minmax(38px,.7fr) minmax(46px,.85fr) minmax(52px,.9fr) 38px 87px;
     gap:4px;
+  }
+  .workout-day .exercise-row--cardio {
+    grid-template-areas:
+      "set rest"
+      "value value"
+      "status status";
   }
   .workout-day .set-status-actions { gap:2px; }
   .workout-day .set-status-actions button { width:27px; height:30px; border-radius:6px; font-size:15px; }
@@ -3266,6 +3324,7 @@
   }
   .workout-day .set-value-field:first-of-type { grid-area:value; }
   .workout-day .set-value-field:last-of-type { grid-area:weight; }
+  .workout-day .exercise-row--cardio .set-value-field:last-of-type { grid-area:value; }
   .workout-day .set-value-field > small {
     display:block;
     color:#91a0b5;
@@ -3961,6 +4020,12 @@
 /* Client workout list: keep the same composition as the mobile screen. */
 .cw-root .client-header {
   text-align: left !important;
+}
+
+@media (max-width:700px) {
+  .modal-set { padding:10px 14px; flex-wrap:wrap; gap:8px; }
+  .modal-set__statuses { width:100%; display:grid; grid-template-columns:repeat(3,1fr); }
+  .modal-set__statuses button { width:100%; }
 }
 
 /* Standard client page heading: title and subtitle always start at the left. */
