@@ -384,7 +384,7 @@ export class WebsiteBuilderComponent implements OnInit{
   ];
 
   profile: ProfileSection = {
-    image: 'assets/images/photoprofilvierge.jpg',
+    image: '',
     fullName: '',
     title: 'Coach Certifiée en Développement Personnel',
     slogan: 'Transformez votre vie, révélez votre potentiel',

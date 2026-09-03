@@ -713,7 +713,20 @@ export class AssignFullPlanComponent implements OnInit {
 
   toggleCheatMeal(): void {
     if (!this.selectedDay) return;
-    this.selectedDay.cheatMeal = !this.selectedDay.cheatMeal;
+    const cheatMeal = !this.selectedDay.cheatMeal;
+    this.selectedDay.cheatMeal = cheatMeal;
+
+    if (cheatMeal) {
+      this.selectedDay.refeedDay = false;
+      this.selectedDay.meals = [];
+      this.selectedDay.dayTargets = {
+        calories: 0,
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+      };
+      this.renamingMeal = null;
+    }
   }
 
   showFoodDetail(food: FoodRef) {

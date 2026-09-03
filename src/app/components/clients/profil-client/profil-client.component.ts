@@ -27,6 +27,8 @@ import { ProgressPicturesComponent } from 'app/components/progress-pictures-modu
 import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
 import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
 import { ChatComponent } from '../../chat/chat/chat.component';
+import { ClientWorkoutsComponent } from '../client-workouts/client-workouts.component';
+import { ClientNutritionComponent } from '../client-nutrition/client-nutrition.component';
 import { MealplanDayService } from 'app/service/mealplan-day.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
@@ -162,6 +164,8 @@ export interface ScheduledCheckIn {
     ProgressPicturesComponent,
     BodyMeasurementsComponent,
     ChatComponent,
+    ClientWorkoutsComponent,
+    ClientNutritionComponent,
     TranslateModule
   ],
   templateUrl: './profil-client.component.html',
@@ -190,6 +194,10 @@ export class ProfilClientComponent {
 
   activeTab: TabId = 'dashboard';
   showClientStats = false;
+  clientPreviewOpen = false;
+  clientPreviewDevice: 'desktop' | 'mobile' = 'desktop';
+  clientPreviewSection: 'workouts' | 'nutrition' | 'chat' | 'measurements' | 'pictures' = 'workouts';
+  clientPreviewSidebarOpen = false;
   private checkinsLoaded = false;
 
   setTab(tab: TabId) {
@@ -2033,6 +2041,30 @@ export class ProfilClientComponent {
     this.assignType = 'WORKOUT';
     this.showAssignSelectModal = false;
     this.showProgramSelectionModal = true;
+  }
+
+  openClientPreview(): void {
+    this.clientPreviewDevice = window.innerWidth <= 768 ? 'mobile' : 'desktop';
+    this.clientPreviewSection = 'workouts';
+    this.clientPreviewSidebarOpen = this.clientPreviewDevice === 'desktop';
+    this.clientPreviewOpen = true;
+    document.body.classList.add('client-preview-open');
+  }
+
+  closeClientPreview(): void {
+    this.clientPreviewOpen = false;
+    this.clientPreviewSidebarOpen = false;
+    document.body.classList.remove('client-preview-open');
+  }
+
+  setClientPreviewDevice(device: 'desktop' | 'mobile'): void {
+    this.clientPreviewDevice = device;
+    this.clientPreviewSidebarOpen = device === 'desktop';
+  }
+
+  setClientPreviewSection(section: 'workouts' | 'nutrition' | 'chat' | 'measurements' | 'pictures'): void {
+    this.clientPreviewSection = section;
+    this.clientPreviewSidebarOpen = false;
   }
 
   openAssignProgramModal(type: 'WORKOUT' | 'NUTRITION'): void {

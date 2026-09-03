@@ -48,12 +48,13 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 }
 
 .logo {
-  width: clamp(138px, 58%, 160px);
-  height: auto;
-  max-height: 60px;
-  object-fit: contain;
+  width: min(205px, 92%);
+  height: 70px;
+  max-height: none;
+  object-fit: cover;
+  object-position: 39% 55%;
   padding: 0;
-  transform: translateY(-3px);
+  transform: translateY(-1px);
 }
 
 .sidebar-nav {
@@ -61,6 +62,115 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   min-height: 0;
   padding: 14px 10px 18px;
   background: $sidebar-bg !important;
+}
+
+.sidebar-account {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 10px;
+  background: $sidebar-bg;
+  border-top: 1px solid $sidebar-border;
+}
+
+.account-trigger {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  padding: 7px 8px;
+  color: $text-light;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: $hover-bg;
+  }
+
+  img,
+  .account-avatar-fallback {
+    width: 42px;
+    height: 42px;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    border-radius: 50%;
+  }
+
+  img { object-fit: cover; }
+
+  .account-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: rgba(68, 180, 223, 0.3);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  > i-feather {
+    width: 16px;
+    height: 16px;
+    color: $text-muted;
+    transition: transform $transition-speed ease;
+
+    &.open { transform: rotate(180deg); }
+  }
+}
+
+.account-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong { color: #fff; font-size: 13px; font-weight: 600; }
+  small { color: $text-muted; font-size: 11px; }
+}
+
+.account-menu {
+  position: absolute;
+  right: 10px;
+  bottom: calc(100% + 8px);
+  left: 10px;
+  z-index: 10;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e6e9ef;
+  border-radius: 10px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
+}
+
+.account-menu-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  color: #1c2635;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-size: 13px;
+  text-align: left;
+
+  &:hover { background: #f3f6f8; }
+  &.logout { color: #dc3545; }
+
+  i-feather {
+    width: 17px;
+    height: 17px;
+  }
 }
 
 .nav-list,

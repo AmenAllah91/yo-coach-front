@@ -1,7 +1,7 @@
 import { MealplanDayService } from './../../../service/mealplan-day.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -107,6 +107,8 @@ interface NutritionFileProgram {
   styleUrl: './client-nutrition.component.scss',
 })
 export class ClientNutritionComponent implements OnInit, OnDestroy {
+  @Input() previewClientId = '';
+  @Input() previewMode = false;
   coachNutritionFileEnabled = new Map<string, boolean>();
   nutritionFileEnabled = false;
   fileSettingsResolved = false;
@@ -178,6 +180,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.previewClientId) this.userid = this.previewClientId;
     this.loadCurrentUserName();
     this.getMealPlan();
   }

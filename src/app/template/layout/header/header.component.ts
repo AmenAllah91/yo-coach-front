@@ -221,9 +221,9 @@ this.translate.use(lang);}
   onImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
     if(!this.gender || this.gender == 'HOMME')
-      imgElement.src = '/assets/images/photoprofilvierge.jpg';
+      imgElement.style.display = 'none';
     else
-      imgElement.src = '/assets/images/photoprofilviergeFemme.jpg';
+      imgElement.style.display = 'none';
   }
 
   clearUnreadNotificationsMessages() {

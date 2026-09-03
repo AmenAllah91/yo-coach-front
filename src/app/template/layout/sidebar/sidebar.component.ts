@@ -9,6 +9,9 @@ import { RouteInfo } from './sidebar.metadata';
 import { ROUTES } from './sidebar-items';
 import { filter } from 'rxjs/operators';
 import { Subject, takeUntil } from 'rxjs';
+import { UsersService } from 'app/service/users.service';
+import { DocumentService } from 'app/service/document.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -30,6 +33,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   activeItem: any = null;
   activeSubItem: any = null;
   roles: string[] = [];
+  accountMenuOpen = false;
+  userPhotoUrl = '';
+  userFullName = sessionStorage.getItem('username') || '';
+  userRoleKey = 'CLIENT';
   private destroy$ = new Subject<void>();
   @Output() sidebarToggle = new EventEmitter<boolean>();
 
@@ -37,13 +44,31 @@ export class SidebarComponent implements OnInit, OnDestroy {
     @Inject(DOCUMENT) private document: Document,
     private authService: AuthService,
     private router: Router,
+    private usersService: UsersService,
+    private documentService: DocumentService,
+    private coachSettingsService: CoachSettingsService,
   ) {}
 
   async ngOnInit() {
     this.setExpanded(window.innerWidth >= 1024);
     this.roles = await this.authService.extractRoles();
+    this.userRoleKey = this.roles.includes('ROLE_COACH')
+      ? 'COACH'
+      : this.roles.includes('ROLE_ADMIN')
+        ? 'ADMIN'
+        : 'CLIENT';
 
     this.initializeSidebar();
+    if (this.roles.includes('ROLE_COACH')) {
+      this.coachSettingsService.configChanges$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((config) => {
+          if (config.publicProfile?.photoUrl) {
+            this.setStoredPhoto(config.publicProfile.photoUrl);
+          }
+        });
+    }
+    await this.loadAccountSummary();
 
     this.router.events
       .pipe(
@@ -120,7 +145,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
       submenu: item.submenu?.map((subItem) => ({ ...subItem })) || [],
     }));
 
-    this.sidebarItems = this.filterSidebarItemsByRoles(routes, effectiveRoles);
+    this.sidebarItems = this.filterSidebarItemsByRoles(routes, effectiveRoles)
+      .filter((item) => item.path !== '/configuration');
     this.syncActiveState();
   }
 
@@ -182,6 +208,97 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   trackByItem(index: number, item: RouteInfo) {
     return item.path;
+  }
+
+  toggleAccountMenu(event: Event): void {
+    event.stopPropagation();
+    this.accountMenuOpen = !this.accountMenuOpen;
+  }
+
+  openSettings(): void {
+    this.accountMenuOpen = false;
+    void this.router.navigate(['/configuration']);
+    if (window.innerWidth < 1024) this.closeSidebar();
+  }
+
+  logout(): void {
+    this.accountMenuOpen = false;
+    this.authService.logout();
+  }
+
+  get userInitials(): string {
+    const parts = this.userFullName.trim().split(/\s+/).filter(Boolean);
+    return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+  }
+
+  onUserPhotoError(): void {
+    this.userPhotoUrl = '';
+  }
+
+  private async loadAccountSummary(): Promise<void> {
+    const details = await this.authService.getCurrentUserDetails();
+    const userId = details?.id || sessionStorage.getItem('userId');
+
+    this.userFullName = [details?.firstName, details?.lastName]
+      .filter(Boolean)
+      .join(' ') || details?.username || this.userFullName || 'User';
+
+    if (!userId) return;
+
+    this.usersService.getUserById(userId, true)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (user) => {
+          this.userFullName = [user.firstName, user.lastName]
+            .filter(Boolean)
+            .join(' ') || user.login || this.userFullName;
+
+          this.loadCorrectProfilePhoto(userId);
+        },
+        error: () => this.loadCorrectProfilePhoto(userId),
+      });
+  }
+
+  private loadCorrectProfilePhoto(userId: string): void {
+    if (this.roles.includes('ROLE_COACH')) {
+      this.coachSettingsService.loadConfig(true)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (config) => this.setStoredPhoto(config.publicProfile?.photoUrl),
+          error: () => this.userPhotoUrl = '',
+        });
+      return;
+    }
+
+    this.documentService.getPhoto(userId, 'user-profile-photos', true)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (url: string) => {
+          const photo = String(url || '').trim();
+          this.userPhotoUrl = photo && photo.toLowerCase() !== 'not found' ? photo : '';
+        },
+        error: () => this.userPhotoUrl = '',
+      });
+  }
+
+  private setStoredPhoto(storedUrl: string | null | undefined): void {
+    const photo = String(storedUrl || '').trim();
+    if (!photo || photo.toLowerCase() === 'not found') {
+      this.userPhotoUrl = '';
+      return;
+    }
+
+    this.documentService.refreshStoredFileUrl(photo)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (url) => this.userPhotoUrl = url,
+        error: () => this.userPhotoUrl = photo,
+      });
+  }
+
+  @HostListener('document:click')
+  closeAccountMenu(): void {
+    this.accountMenuOpen = false;
   }
 
   @HostListener('window:resize')

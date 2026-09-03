@@ -80,5 +80,32 @@
       </ul>
     </ng-scrollbar>
   </div>
+
+  <div class="sidebar-account">
+    <div class="account-menu" *ngIf="accountMenuOpen" (click)="$event.stopPropagation()">
+      <button type="button" class="account-menu-item" (click)="openSettings()">
+        <i-feather name="settings"></i-feather>
+        <span>{{ 'SETTINGS' | translate }}</span>
+      </button>
+      <button type="button" class="account-menu-item logout" (click)="logout()">
+        <i-feather name="log-out"></i-feather>
+        <span>{{ 'LOG_OUT' | translate }}</span>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="account-trigger"
+      [attr.aria-expanded]="accountMenuOpen"
+      (click)="toggleAccountMenu($event)">
+      <img *ngIf="userPhotoUrl; else accountInitials" [src]="userPhotoUrl" (error)="onUserPhotoError()" alt="" />
+      <ng-template #accountInitials><span class="account-avatar-fallback">{{ userInitials }}</span></ng-template>
+      <span class="account-copy">
+        <strong>{{ userFullName }}</strong>
+        <small>{{ userRoleKey | translate }}</small>
+      </span>
+      <i-feather name="chevron-up" [class.open]="accountMenuOpen"></i-feather>
+    </button>
+  </div>
 </aside>
 

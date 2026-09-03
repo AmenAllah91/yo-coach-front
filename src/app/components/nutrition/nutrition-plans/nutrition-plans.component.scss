@@ -1913,3 +1913,150 @@
 .programs-table--cap.programs-table--without-type .col-actions {
   grid-column: 4 !important;
 }
+
+/*
+ * Keep this mobile block last. The desktop column definitions above intentionally
+ * use !important, so the responsive layout must override them after every table
+ * variant (including programs-table--without-type).
+ */
+@media (max-width: 900px) {
+  :host {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .page-container,
+  .content,
+  .program-toolbar,
+  .programs-table--cap,
+  .programs-table--cap .table-body {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .page-container {
+    overflow-x: hidden !important;
+  }
+
+  .page-container > .page-header {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 16px 12px !important;
+  }
+
+  .page-container > .page-header .app-page-back {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .page-container > .page-header .header-content {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0 !important;
+  }
+
+  .page-container > .page-header .header-content h1,
+  .page-container > .page-header .header-content p {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .page-container > .page-header .primary-btn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100% !important;
+    justify-content: center;
+  }
+
+  .content {
+    padding: 14px 12px 24px !important;
+  }
+
+  .program-toolbar {
+    overflow: hidden;
+  }
+
+  .type-filters {
+    max-width: 100%;
+    padding-bottom: 3px;
+    scrollbar-width: thin;
+  }
+
+  .programs-table--cap .table-header {
+    display: none !important;
+  }
+
+  .programs-table--cap .table-body {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .programs-table--cap .program-row,
+  .programs-table--cap.programs-table--without-type .program-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto !important;
+    column-gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 92px !important;
+    height: auto !important;
+    padding: 14px 10px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  .programs-table--cap .col-program {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+    padding-right: 80px;
+  }
+
+  .programs-table--cap .program-info,
+  .programs-table--cap .program-copy {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .programs-table--cap .program-name {
+    padding-right: 0 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  .programs-table--cap .program-meta {
+    display: block !important;
+    max-width: 100%;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+.programs-table--cap .col-actions,
+.programs-table--cap.programs-table--without-type .col-actions {
+    position: absolute !important;
+    top: 50% !important;
+    right: 10px !important;
+    grid-column: auto !important;
+    transform: translateY(-50%) !important;
+  }
+
+  .programs-table--cap .dropdown-menu,
+  .programs-table--cap .dropdown-menu--side {
+    right: 0 !important;
+    left: auto !important;
+    width: min(250px, calc(100vw - 44px)) !important;
+    max-width: calc(100vw - 44px) !important;
+  }
+
+  .programs-table--cap .program-row:has(.dropdown.open) {
+    z-index: 20 !important;
+    position: relative !important;
+  }
+}
