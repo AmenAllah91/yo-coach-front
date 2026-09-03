@@ -3,8 +3,8 @@
     <button class="profile-back app-page-back" type="button" [attr.aria-label]="'BACK_TO_CLIENTS' | translate" (click)="backToClients()">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <img
-      [src]="profilePhotoUrl || 'assets/images/photoprofilvierge.jpg'"
+    <img *ngIf="profilePhotoUrl"
+      [src]="profilePhotoUrl"
       [alt]="fullName || ('PROFILE_PHOTO' | translate)"
       class="profile-picture"
       (error)="onProfilePhotoError()"
@@ -88,6 +88,11 @@
           </div>
         </div>
       </div>
+
+      <button class="btn-client-preview" type="button" (click)="openClientPreview()">
+        <i class="far fa-eye"></i>
+        <span>{{ 'VIEW_CLIENT' | translate }}</span>
+      </button>
 
       <button class="btn-send-message" type="button" (click)="setTab('chat')">
         <i class="far fa-comment"></i>
@@ -311,7 +316,7 @@
               <div class="dashboard-empty-actions">
                 <button class="empty-primary-btn" type="button" (click)="openAssignProgramModal('WORKOUT')">
                   <i class="fas fa-plus"></i>
-                  {{ 'ASSIGN_WORKOUT' | translate }}
+                  {{ 'ASSIGN_SIMPLE_PLAN' | translate }}
                 </button>
                 <button class="empty-outline-btn" type="button" (click)="openClientWorkoutCreateModal()">
                   <i class="fas fa-file-circle-plus"></i>
@@ -388,7 +393,7 @@
               <div class="dashboard-empty-actions">
                 <button class="empty-primary-btn empty-primary-green" type="button" (click)="openAssignProgramModal('NUTRITION')">
                   <i class="fas fa-plus"></i>
-                  {{ 'ASSIGN_PLAN' | translate }}
+                  {{ 'ASSIGN_SIMPLE_PLAN' | translate }}
                 </button>
                 <button class="empty-outline-btn empty-outline-green" type="button" (click)="assignType = 'NUTRITION'; showChooseModal = true">
                   <i class="fas fa-file-circle-plus"></i>
@@ -1158,6 +1163,74 @@
     </div>
   </div>
 </section>
+
+<div class="client-preview-backdrop" *ngIf="clientPreviewOpen" (click)="closeClientPreview()">
+  <section class="client-preview-modal" role="dialog" aria-modal="true" [attr.aria-label]="'CLIENT_PREVIEW' | translate" (click)="$event.stopPropagation()">
+    <header class="client-preview-header">
+      <span class="client-preview-heading-icon"><i class="far fa-eye"></i></span>
+      <div class="client-preview-heading">
+        <strong>{{ 'CLIENT_VIEW_PREVIEW' | translate }}</strong>
+        <small>{{ 'CLIENT_PREVIEW_SUBTITLE' | translate:{ name: fullName } }}</small>
+      </div>
+      <div class="client-preview-devices" role="group" [attr.aria-label]="'PREVIEW_DEVICE' | translate">
+        <button type="button" [class.active]="clientPreviewDevice === 'desktop'" (click)="setClientPreviewDevice('desktop')">
+          <i class="fas fa-desktop"></i> {{ 'DESKTOP' | translate }}
+        </button>
+        <button type="button" [class.active]="clientPreviewDevice === 'mobile'" (click)="setClientPreviewDevice('mobile')">
+          <i class="fas fa-mobile-alt"></i> {{ 'MOBILE' | translate }}
+        </button>
+      </div>
+      <button class="client-preview-close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeClientPreview()"><i class="fas fa-times"></i></button>
+    </header>
+
+    <div class="client-preview-notice"><i class="fas fa-lock"></i> {{ 'CLIENT_PREVIEW_READ_ONLY' | translate }}</div>
+
+    <div class="client-preview-stage" [class.client-preview-stage--mobile]="clientPreviewDevice === 'mobile'">
+      <div
+        class="client-preview-app"
+        [class.client-preview-app--mobile]="clientPreviewDevice === 'mobile'"
+        [class.client-preview-app--sidebar-closed]="!clientPreviewSidebarOpen"
+      >
+        <button class="client-preview-drawer-backdrop" type="button" *ngIf="clientPreviewDevice === 'mobile' && clientPreviewSidebarOpen" (click)="clientPreviewSidebarOpen = false" aria-label="Close menu"></button>
+        <aside
+          class="client-preview-sidebar"
+          [class.client-preview-sidebar--mobile]="clientPreviewDevice === 'mobile'"
+          [class.open]="clientPreviewSidebarOpen"
+          [class.closed]="!clientPreviewSidebarOpen"
+        >
+          <div class="client-preview-sidebar__brand"><img src="assets/yocoachlogo.png" alt="Yo Coach" /></div>
+          <div class="client-preview-sidebar__nav">
+            <button type="button" [class.active]="clientPreviewSection === 'workouts'" (click)="setClientPreviewSection('workouts')"><i class="fas fa-bolt"></i>{{ 'WORKOUTS' | translate }}</button>
+            <button type="button" [class.active]="clientPreviewSection === 'nutrition'" (click)="setClientPreviewSection('nutrition')"><i class="far fa-heart"></i>{{ 'NUTRITION' | translate }}</button>
+            <button type="button" [class.active]="clientPreviewSection === 'chat'" (click)="setClientPreviewSection('chat')"><i class="far fa-comment-alt"></i>{{ 'CHAT' | translate }}</button>
+            <button type="button"><i class="far fa-comment-alt"></i>{{ 'MY_CHECK_INS' | translate }}</button>
+            <button type="button"><i class="fas fa-cog"></i>{{ 'SETTINGS' | translate }}</button>
+            <button type="button" [class.active]="clientPreviewSection === 'measurements'" (click)="setClientPreviewSection('measurements')"><i class="fas fa-wave-square"></i>{{ 'BODY_MEASUREMENTS' | translate }}</button>
+            <button type="button" [class.active]="clientPreviewSection === 'pictures'" (click)="setClientPreviewSection('pictures')"><i class="far fa-camera"></i>{{ 'PROGRESS_PICTURES' | translate }}</button>
+          </div>
+        </aside>
+        <main class="client-preview-content">
+          <div class="client-preview-content-top">
+            <button type="button" class="client-preview-hamburger" (click)="clientPreviewSidebarOpen = !clientPreviewSidebarOpen"><i class="fas fa-bars"></i></button>
+            <div class="client-preview-top-actions">
+              <span class="client-preview-language"><img src="assets/images/flags/french.jpg" alt="" />{{ 'LANGUAGE' | translate }}<i class="fas fa-caret-down"></i></span>
+              <i class="far fa-comment-alt"></i>
+              <span class="client-preview-bell"><i class="far fa-bell"></i></span>
+              <span class="client-preview-avatar"><img *ngIf="profilePhotoUrl" [src]="profilePhotoUrl" [alt]="fullName" /><i class="fas fa-caret-down"></i></span>
+            </div>
+          </div>
+          <div class="client-preview-real-content" (click)="$event.stopPropagation()">
+            <app-client-workouts *ngIf="clientPreviewSection === 'workouts'" [previewClientId]="clientId" [previewMode]="true"></app-client-workouts>
+            <app-client-nutrition *ngIf="clientPreviewSection === 'nutrition'" [previewClientId]="clientId" [previewMode]="true"></app-client-nutrition>
+            <app-chat *ngIf="clientPreviewSection === 'chat'" [embeddedMode]="true" [embeddedClientId]="clientId" [embeddedCoachId]="userid || ''"></app-chat>
+            <app-body-measurements *ngIf="clientPreviewSection === 'measurements'" [clientId]="clientId"></app-body-measurements>
+            <app-progress-pictures *ngIf="clientPreviewSection === 'pictures'" [clientId]="clientId"></app-progress-pictures>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+</div>
 
 <div
   *ngIf="isModalOpen && selectedAssignment"

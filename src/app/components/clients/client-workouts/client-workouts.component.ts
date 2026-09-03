@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -144,6 +144,8 @@ interface FileProgram {
   styleUrl: './client-workouts.component.scss',
 })
 export class ClientWorkoutsComponent implements OnInit, OnDestroy {
+  @Input() previewClientId = '';
+  @Input() previewMode = false;
   activeTab: 'upcoming' | 'past' = 'upcoming';
   clientViewMode: 'calendar' | 'file' = 'calendar';
   currentMonthDate = new Date();
@@ -221,6 +223,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.previewClientId) this.userid = this.previewClientId;
     this.loadCurrentUserName();
     // Programs are the page's critical data. Settings are refreshed silently in
     // parallel so they no longer delay the initial workout rendering.

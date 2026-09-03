@@ -151,12 +151,12 @@
           </div>
           <button
             type="button"
-            class="np-cheat-btn"
+            class="wk-restmark"
             [class.is-active]="selectedDay?.cheatMeal"
             [attr.aria-pressed]="selectedDay?.cheatMeal"
             (click)="toggleCheatMeal()"
           >
-            <i-feather name="star" class="np-ico"></i-feather>
+            <i-feather name="flag" class="wk-restmark__icon"></i-feather>
             {{ (selectedDay?.cheatMeal ? 'CHEAT_MEAL' : 'SET_AS_CHEAT_MEAL') | translate }}
           </button>
         </div>
@@ -197,7 +197,17 @@
             <div class="np-sep"></div>
           </ng-template>
 
-          <div class="np-day-total">
+          <div *ngIf="selectedDay.cheatMeal" class="wk-restbox">
+            <div class="wk-restbox__icon"><i-feather name="coffee"></i-feather></div>
+            <h3 class="wk-restbox__title">{{ 'CHEAT_MEAL' | translate }}</h3>
+            <p class="wk-restbox__text">{{ 'CHEAT_MEAL_DESCRIPTION' | translate }}</p>
+            <button type="button" class="np-link wk-restbox__notes" (click)="toggleDayDescription()">
+              <i-feather name="plus" class="np-ico"></i-feather>
+              {{ 'ADD_NOTES' | translate }}
+            </button>
+          </div>
+
+          <div *ngIf="!selectedDay.cheatMeal" class="np-day-total">
             <div class="np-day-total__header">
               <span class="np-day-total__title">{{ 'DAY_TOTAL' | translate }}</span>
               <span class="np-day-total__count">
@@ -240,9 +250,9 @@
           <div class="np-sep"></div>
         </ng-container>
 
-        <div class="np-subtle">{{ 'MEALS_TITLE' | translate }}</div>
+        <div *ngIf="!selectedDay?.cheatMeal" class="np-subtle">{{ 'MEALS_TITLE' | translate }}</div>
 
-        <ng-container *ngIf="selectedDay">
+        <ng-container *ngIf="selectedDay && !selectedDay.cheatMeal">
           <div
             class="np-meals-list"
             cdkDropList
@@ -501,7 +511,7 @@
           </form>
         </div>
 
-        <div class="np-grid-2">
+        <div *ngIf="!selectedDay?.cheatMeal" class="np-grid-2">
           <button class="np-btn np-btn--branddash" (click)="addMeal()">
             <svg viewBox="0 0 24 24" class="np-ico">
               <path

@@ -9,14 +9,8 @@
     [class.chat-user--clickable]="!selectedConversation?.isGroup"
     (click)="navigateTouserprofile()"
   >
-    <img
-      [src]="
-        selectedConversation?.avatar && selectedConversation?.avatar !== 'not found'
-          ? selectedConversation.avatar
-          : '/assets/images/photoprofilvierge.jpg'
-      "
-      alt=""
-    />
+    <img *ngIf="selectedConversation?.avatar && selectedConversation?.avatar !== 'not found'"
+      [src]="selectedConversation.avatar" alt="" />
     <div class="chat-user__info">
       <span class="chat-user__name">{{ selectedConversation?.name }}</span>
       <span class="chat-user__members" *ngIf="selectedConversation?.isGroup">
