@@ -13,6 +13,7 @@ import { FeatherModule } from 'angular-feather';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MealsService } from 'app/service/meals.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { nutritionFoodValid } from '@shared/models/nutrition-publication';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -125,13 +126,12 @@ export class AddMealModalComponent implements OnChanges {
 
   get formIsValid(): boolean {
     if (!this.name.trim() || this.ingredients.length === 0) return false;
-    if (this.isRecipe && (!this.servings || Number(this.servings) < 1)) return false;
+    if (this.isRecipe && (!Number.isFinite(Number(this.servings)) || Number(this.servings) <= 0)) return false;
+    if (this.isRecipe && this.totalTimeMinutes != null
+      && (!Number.isFinite(Number(this.totalTimeMinutes)) || Number(this.totalTimeMinutes) < 0)) return false;
 
     return this.ingredients.every((ingredient) => {
-      const quantityIsValid = Number(ingredient.quantity) > 0;
-      const unitIsValid = Boolean(ingredient.unit);
-      const nameIsValid = !ingredient.manual || Boolean(ingredient.name.trim());
-      return quantityIsValid && unitIsValid && nameIsValid;
+      return nutritionFoodValid({ ...ingredient, quantity: ingredient.quantity ?? 0 });
     });
   }
 

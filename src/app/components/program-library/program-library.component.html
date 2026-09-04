@@ -60,6 +60,7 @@
               <div class="program-copy">
                 <div class="program-name">{{ program.name || ('UNNAMED_PROGRAM' | translate) }}</div>
                 <div class="program-meta">{{ getProgramDescription(program) }}</div>
+                <app-workout-publication-badge *ngIf="!isFileProgram(program)" [plan]="program"></app-workout-publication-badge>
               </div>
             </div>
           </div>

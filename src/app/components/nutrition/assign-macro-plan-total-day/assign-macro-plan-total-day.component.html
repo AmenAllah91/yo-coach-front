@@ -5,71 +5,43 @@
     <aside class="np-aside">
       <div class="np-aside__head">
         <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
-        <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks?.length || 0, days: days?.length || 0 } }}</p>
+        <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks.length, days: days.length } }}</p>
+        <button type="button" class="np-link" (click)="draft.toggleAllWeeks(nutritionWeeks.length)">
+          <i-feather [name]="draft.allWeeksExpanded(nutritionWeeks.length) ? 'minimize-2' : 'maximize-2'" class="np-ico"></i-feather>
+          {{ (draft.allWeeksExpanded(nutritionWeeks.length) ? 'COLLAPSE_ALL' : 'EXPAND_ALL') | translate }}
+        </button>
       </div>
-
-      <div
-        class="np-aside__body"
-        cdkDropList
-        [cdkDropListData]="days"
-        (cdkDropListDropped)="onDropDay($event)"
-      >
-        <!-- Day list -->
-        <ng-container
-          *ngFor="let d of days; trackBy: trackByDay; let i = index"
-        >
-          <!-- First day (no trash icon) -->
-          <button
-            *ngIf="i === 0; else otherDay"
-            cdkDrag
-            class="np-day"
-            [class.is-active]="selectedDay?.id === d.id"
-            (click)="selectDay(d)"
-          >
-            <span>{{ dayLabel(i) }}</span>
-            <small class="np-day__meta">
-              <span class="np-day__weekday">{{ weekdayLabel(d) }}</span>
-              <span class="np-day__dot">•</span>
-              <span class="np-day__date">{{ dateLabel(d) }}</span>
-            </small>
-          </button>
-
-          <!-- Other Days -->
-          <ng-template #otherDay>
-            <div class="np-dayrow" cdkDrag>
-              <button
-                class="np-day"
-                [class.is-active]="selectedDay?.id === d.id"
-                (click)="selectDay(d)"
-              >
-                <span>{{ dayLabel(i) }}</span>
-                <small class="np-day__meta">
-                  <span class="np-day__weekday">{{ weekdayLabel(d) }}</span>
-                  <span class="np-day__dot">•</span>
-                  <span class="np-day__date">{{ dateLabel(d) }}</span>
-                </small>
-              </button>
-              <button
-                class="np-iconbtn"
-                [title]="'DELETE' | translate"
-                (click)="deleteDay(d, $event)"
-              >
-                <i-feather name="trash-2" class="np-ico"></i-feather>
-              </button>
+      <div class="np-aside__body" cdkDropList [cdkDropListData]="days" (cdkDropListDropped)="onDropDay($event)">
+        <div class="np-week-card" *ngFor="let week of nutritionWeeks">
+          <button type="button" class="np-week-card__head" (click)="draft.toggleWeek(week.weekNumber)" [attr.aria-expanded]="!draft.collapsedWeeks.has(week.weekNumber)">
+            <div class="np-week-card__head-top">
+              <strong>{{ 'WEEK_NUMBER' | translate:{ number: week.weekNumber } }}</strong>
+              <span class="np-week-card__count">{{ draft.readyCount(days, week.weekNumber) }}/7</span>
+              <i-feather [name]="draft.collapsedWeeks.has(week.weekNumber) ? 'chevron-down' : 'chevron-up'" class="np-week-card__chevron"></i-feather>
             </div>
-          </ng-template>
-        </ng-container>
-
-        <!-- Add Day -->
-        <button
-          class="np-btn np-btn--dash np-btn--ghost np-btn--full"
-          (click)="addDay()"
-        >
+            <small>{{ (draft.isPublished(week.weekNumber) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}<span *ngIf="draft.weekDates(days, week.weekNumber)"> · {{ draft.weekDates(days, week.weekNumber) }}</span></small>
+          </button>
+          <ng-container *ngIf="!draft.collapsedWeeks.has(week.weekNumber)">
+            <ng-container *ngFor="let item of week.days">
+              <div class="np-dayrow" cdkDrag [class.is-active]="selectedDay?.id === item.day.id">
+                <button type="button" class="np-day" [class.is-active]="selectedDay?.id === item.day.id" (click)="selectDay(item.day)">
+                  <span class="np-day-state" [class.ready]="draft.dayState(item.day) === 'READY'" [class.rest]="draft.dayState(item.day) === 'CHEAT'">{{ draft.dayState(item.day) === 'READY' ? '✓' : draft.dayState(item.day) === 'CHEAT' ? '☾' : '○' }}</span>
+                  <span class="np-day__topline">
+                    <span class="np-day__title">{{ 'DAY_NUMBER' | translate:{ number: item.index % 7 + 1 } }}</span>
+                    <span class="np-day__dateLine">{{ draft.dayDate(item.day) }}</span>
+                  </span>
+                  <small class="np-day__meta">
+                    {{ (draft.dayState(item.day) === 'READY' ? 'WORKOUT_READY' : draft.dayState(item.day) === 'CHEAT' ? 'CHEAT_MEAL' : 'WORKOUT_EMPTY') | translate }}
+                  </small>
+                </button>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
+        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
           <i-feather name="plus" class="np-ico"></i-feather>
           {{ 'ADD_DAY' | translate }}
         </button>
-
-        <!-- Duplicate -->
         <div class="np-stack">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
             <span>{{ 'DUPLICATE_DAY' | translate }}</span>
@@ -85,15 +57,19 @@
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
           <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span>
-        </div>
+        <button type="button" class="np-link" (click)="draft.settingsVisible = !draft.settingsVisible">{{ draft.settingsVisible ? 'Hide' : 'Show' }} Global Plan Settings</button></div>
+<ng-container *ngIf="draft.settingsVisible">
 
         <!-- Plan Title -->
-        <div class="np-field">
+        <div class="np-global-fields"><div class="np-field">
           <label class="np-label"
             >{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label
           >
           <input class="np-input" [(ngModel)]="planName" type="text" />
-        </div>
+        </div><div class="np-field"><label class="np-label">Duration</label>
+          <select class="np-input" [ngModel]="days.length / 7" (ngModelChange)="onDurationWeeksChange($event)">
+            <option *ngFor="let option of durationOptions" [ngValue]="option">{{ option }} weeks</option>
+          </select></div></div>
 
         <!-- Add Plan Description -->
         <ng-container *ngIf="!showPlanDescription; else planDescBlock">
@@ -192,9 +168,9 @@
                 <input
                   type="date"
                   class="program-schedule-input"
-                  [(ngModel)]="startDate"
+                  [ngModel]="startDate" (ngModelChange)="changeStartDate($event)"
                   name="startDate"
-                  (ngModelChange)="updateAllDates()"
+
                 />
               </div>
             </div>
@@ -230,12 +206,12 @@
                   type="date"
                   class="program-schedule-input program-schedule-input--disabled"
                   [value]="endDate"
-                  name="endDate"
+                  name="endDate" aria-describedby="nutrition-end-date-help"
                   disabled
                 />
               </div>
-              <p class="program-schedule-helper">
-                {{ 'END_DATE_AUTO_CALCULATED' | translate }}
+              <p class="program-schedule-helper" id="nutrition-end-date-help">
+                Automatically calculated from start date and program duration.
               </p>
             </div>
           </div>
@@ -243,6 +219,28 @@
 
         <div class="np-sep"></div>
 
+        </ng-container>
+        <div class="np-week-actions" *ngIf="selectedDay">
+          <strong>Week {{ draft.selectedWeek(days, selectedDay) }} · {{ draft.isPublished(draft.selectedWeek(days, selectedDay)) ? 'Published' : 'Draft' }} · {{ draft.readyCount(days, draft.selectedWeek(days, selectedDay)) }}/7 days ready</strong>
+          <div class="np-week-actions__buttons">
+            <button type="button" class="np-btn" [disabled]="draft.saving" (click)="savePlan()">{{ draft.saving ? 'Saving…' : 'Save draft' }}</button>
+            <button type="button" class="np-btn np-btn--primary" [disabled]="draft.saving || draft.readyCount(days, draft.selectedWeek(days, selectedDay)) !== 7 || draft.isPublished(draft.selectedWeek(days, selectedDay))" (click)="savePlan(draft.selectedWeek(days, selectedDay))">Publish week {{ draft.selectedWeek(days, selectedDay) }}</button>
+            <small *ngIf="draft.savedAt" role="status">Saved {{ draft.savedAt | date:'HH:mm' }}</small>
+          </div>
+          <p>Draft weeks are hidden from clients. Publish a completed week when it is ready.</p>
+          <div class="np-copy-day">
+            <label>Copy selected day to
+              <select class="np-input" [(ngModel)]="draft.copyTargetIndex">
+                <option [ngValue]="null">Choose a day</option>
+                <ng-container *ngFor="let week of nutritionWeeks">
+                  <option *ngFor="let item of week.days" [ngValue]="item.index" [disabled]="item.day === selectedDay">Week {{ week.weekNumber }} � Day {{ item.index % 7 + 1 }}</option>
+                </ng-container>
+              </select>
+            </label>
+            <button type="button" class="np-btn" [disabled]="draft.copyTargetIndex === null || draft.saving" (click)="draft.copyDay(days, selectedDay)">Copy day</button>
+          </div>
+          <p class="np-danger" *ngIf="draft.error" role="alert">{{ draft.error }}</p>
+        </div>
         <div class="np-mobile-days">
           <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
             <button
@@ -254,9 +252,7 @@
               <span class="np-mobile-day__title">{{ dayLabel(i) }}</span>
             </button>
           </ng-container>
-          <button type="button" class="np-mobile-add" (click)="addDay()" [attr.aria-label]="'ADD_DAY' | translate">
-            <i-feather name="plus" class="np-ico"></i-feather>
-          </button>
+
         </div>
 
 
@@ -378,23 +374,7 @@
         </div>
       </section>
 
-      <div class="np-sticky">
-        <button
-          class="np-btn np-btn--save np-btn--full"
-          (click)="isEditMode ? updatePlan() : savePlan()"
-        >
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              d="M12 5v14m7-7H5"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-            />
-          </svg>
-          {{ (isEditMode ? 'UPDATE_PLAN' : 'SAVE_PLAN') | translate }}
-        </button>
-      </div>
+
     </main>
   </div>
 </div>

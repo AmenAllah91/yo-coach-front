@@ -14,6 +14,11 @@ export interface ExerciseRef {
   id?: string;
   name?: string;
   videoLink?: string;
+  videoUrl?: string;
+  imageUrl?: string;
+  image?: string;
+  thumbnailUrl?: string;
+  photoUrl?: string;
   description?: string;
   type?: string;
   muscle?: string;
@@ -35,6 +40,9 @@ export interface Exercise {
   sets?: ExerciseSet[];
 
   image?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  photoUrl?: string;
   videoUrl?: string;
   videoLink?: string;
   description?: string;

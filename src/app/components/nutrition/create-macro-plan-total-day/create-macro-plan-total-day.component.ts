@@ -1,3 +1,4 @@
+import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
@@ -25,6 +26,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateMacroPlanTotalDayComponent implements OnInit {
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY');
+
   planName = '';
   planDescription = '';
   isMealPlanTemplate = false;
@@ -170,7 +173,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
   }
 
   ngOnInit() {
-    const planId = this.route.snapshot.paramMap.get('id');
+    const planId = (this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId'));
     const type = this.route.snapshot.queryParamMap.get('type');
     this.durationWeeks = this.normalizeDurationWeeks(
       Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || this.durationWeeks
@@ -182,6 +185,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
 
     if (planId) {
       this.nutritionService.getNutritionPlanById(planId).subscribe((plan) => {
+        this.draft.load(plan);
         this.planName = plan.name;
         this.planDescription = plan.details;
       this.isMealPlanTemplate = this.canCreateTemplate
@@ -210,10 +214,17 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       this.showModeModal = true;
       this.createInitialDays();
     }
-  }
+
+    if (!this.route.snapshot.paramMap.get('id') && !this.route.snapshot.queryParamMap.get('draftId')) {
+      this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
+      this.resizeDraftDays(this.durationWeeks, false);
+      this.selectedDay = this.days[0] || null;
+      if (this.planName.trim()) this.savePlan();
+    }
+}
 
   private normalizeDurationWeeks(value: number): number {
-    return Math.max(1, Math.min(Number(value) || 4, 52));
+    return Math.max(1, Math.min(Number(value) || 4, 12));
   }
 
   private createInitialDays(): void {
@@ -430,62 +441,19 @@ selectDay(day: MealDay) {
   /* ----------------------------------------------
       SAVE PLAN
   ------------------------------------------------*/
-  savePlan() {
-    const mealPlan: MealPlan = {
-      name: this.planName,
-      details: this.planDescription,
-      mealDays: this.days,
-      trackingMode: 'TOTAL_FOR_DAY',
-      startDate: this.scheduleStartDate,
-      endDate: this.scheduleEndDate,
-      coach: { id: this.userid },
-      client: undefined,
-      isMealPlanTemplate: this.canCreateTemplate ? Boolean(this.isMealPlanTemplate) : false,
+  savePlan(publishWeek?: number) {
+    this.days.forEach(day => this.updateCaloriesForDay(day));
+
+    const plan = {
+      name: this.planName, details: this.planDescription, mealDays: this.days,
+      trackingMode: 'TOTAL_FOR_DAY', coach: { id: this.userid }, client: null,
+      startDate: '', endDate: '',
+      isMealPlanTemplate: this.canCreateTemplate && this.isMealPlanTemplate,
     } as MealPlan;
-
-    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-
-    this.nutritionService.createNutritionPlan(mealPlan).subscribe({
-      next: (createdPlan) => {
-        if (returnUrl) {
-          this.router.navigateByUrl(returnUrl, {
-            state: {
-              assignAfterCreate: {
-                type: 'nutrition',
-                item: createdPlan,
-              },
-            },
-          });
-        } else {
-          this.router.navigate(['/nutrition/plans']);
-        }
-      },
-      error: (error) => console.error('Error creating nutrition plan:', error),
-    });
+    this.draft.save(plan, publishWeek);
   }
 
-  updatePlan() {
-    const mealPlan: MealPlan = {
-      id: this.route.snapshot.paramMap.get('id'),
-      name: this.planName,
-      details: this.planDescription,
-      mealDays: this.days,
-      trackingMode: 'TOTAL_FOR_DAY',
-      startDate: '',
-      endDate: '',
-      coach: { id: this.userid },
-      client: undefined,
-      isMealPlanTemplate: this.canCreateTemplate ? Boolean(this.isMealPlanTemplate) : false,
-    } as MealPlan;
-
-    this.nutritionService.updateNutritionPlan(mealPlan).subscribe({
-      next: () => {
-        console.log('Plan updated');
-        this.router.navigate(['/nutrition/plans']);
-      },
-      error: (error) => console.error('Error updating nutrition plan:', error),
-    });
-  }
+  updatePlan() { this.savePlan(); }
 
   /* ----------------------------------------------
       TOTALS DU JOUR SÉLECTIONNÉ
@@ -518,5 +486,15 @@ selectDay(day: MealDay) {
     this.selectedDay = null;
 
     this.addDay();
+  }
+
+  resizeDraftDays(value: number, confirmRemoval = true) {
+    const weeks = Math.max(1, Math.min(12, Math.floor(Number(value) || 4)));
+    const count = weeks * 7;
+    if (count < this.days.length && confirmRemoval && !confirm('Shortening the program will remove the final days. Continue?')) return;
+    while (this.days.length < count) this.addDay();
+    this.days = this.days.slice(0, count);
+    this.durationWeeks = weeks;
+    if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
   }
 }

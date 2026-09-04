@@ -100,6 +100,9 @@ export interface MealDay {
 export type MacroTrackingMode = 'TOTAL_FOR_DAY' | 'EACH_MEAL';
 
 export interface MealPlan {
+  publishedWeeks?: number[];
+  durationWeeks?: number;
+  publicationWorkflow?: boolean;
   id?: string;
   name: string;
   details?: string;

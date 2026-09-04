@@ -2338,8 +2338,7 @@ export class ProfilClientComponent {
 
   get canCreateClientWorkoutProgram(): boolean {
     return !!this.clientWorkoutProgramName.trim()
-      && !!this.clientWorkoutStartDate
-      && (!this.clientWorkoutConflict || !!this.clientWorkoutConflict.resolution);
+      && !!this.clientWorkoutStartDate && !this.clientWorkoutSaving;
   }
 
   onClientWorkoutScheduleChange(): void {
@@ -2353,6 +2352,9 @@ export class ProfilClientComponent {
   }
 
   private refreshClientWorkoutConflict(): void {
+    // Authoring a draft must never replace an existing client prescription.
+    this.clientWorkoutConflict = null;
+    return;
     if (!this.clientWorkoutStartDate || !this.clientWorkoutEndDate) {
       this.clientWorkoutConflict = null;
       return;
@@ -2389,29 +2391,27 @@ export class ProfilClientComponent {
     return existingStart <= nextEnd && nextStart <= existingEnd;
   }
 
+  clientWorkoutSaving = false;
   createClientWorkoutProgram(): void {
     const name = this.clientWorkoutProgramName.trim();
-    if (!name || !this.canCreateClientWorkoutProgram) return;
-
-    const returnUrl = this.router.url.split('?')[0] + '?tab=workouts';
-    const conflict = this.clientWorkoutConflict;
-    const resolution = conflict?.resolution;
-    const resolvedStartDate = resolution === 'START_AFTER' && conflict?.program?.endDate
-      ? this.addDays(conflict.program.endDate, 1)
-      : this.clientWorkoutStartDate;
-
-    this.router.navigate(['clients/create-workout', this.clientId], {
-      queryParams: {
-        returnUrl,
-        assignOnly: 1,
-        name,
-        durationWeeks: this.clientWorkoutDurationWeeks,
-        startDate: resolvedStartDate,
-        endDate: this.addDays(resolvedStartDate, this.clientWorkoutDurationDays - 1),
-        conflictResolution: resolution || '',
-        conflictId: conflict?.program?.id || '',
-        conflictStartDate: conflict?.program?.startDate || '',
+    if (!name || !this.canCreateClientWorkoutProgram || this.clientWorkoutSaving) return;
+    this.clientWorkoutSaving = true;
+    const startDate = this.clientWorkoutStartDate;
+    const workoutDays = Array.from({length: this.clientWorkoutDurationDays}, (_, index) => ({
+      title: 'Day ' + (index % 7 + 1), dayNumber: index + 1, restDay: false,
+      status: 'PENDING', workoutSessions: [], date: this.addDays(startDate, index)
+    }));
+    this.workoutService.createWorkout({name, details: '', startDate,
+      endDate: this.addDays(startDate, this.clientWorkoutDurationDays - 1),
+      client: {id: this.clientId}, workoutDays, publishedWeeks: []}).subscribe({
+      next: created => {
+        this.clientWorkoutSaving = false;
+        this.closeClientWorkoutCreateModal();
+        void this.router.navigate(['/clients/create-workout', this.clientId, 'edit', created.id], {
+          queryParams: {returnUrl: this.router.url.split('?')[0] + '?tab=workouts'}
+        });
       },
+      error: () => { this.clientWorkoutSaving = false; window.alert(this.translate.instant('WORKOUT_SAVE_ERROR')); }
     });
   }
 

@@ -1,3 +1,5 @@
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
@@ -27,6 +29,10 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignMacroPlanTotalDayComponent implements OnInit {
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY');
+  durationWeeks = 4;
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
   startDate = new Date().toISOString().split('T')[0];
   endDate: string = '';
   client: Client;
@@ -63,12 +69,13 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
+    private coachSettingsService: CoachSettingsService,
     private clientService: ClientService,
     private translate: TranslateService
   ) {}
 
   ngOnInit() {
-    const planId = this.route.snapshot.paramMap.get('id');
+    const planId = (this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId'));
     const type = this.route.snapshot.queryParamMap.get('type');
     const clientId = this.route.snapshot.paramMap.get('idClient');
     if (clientId) {
@@ -79,6 +86,7 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
 
     if (planId) {
       this.nutritionService.getNutritionPlanById(planId).subscribe((plan) => {
+        this.draft.load(plan);
         this.planName = plan.name;
         this.planDescription = plan.details;
         this.days = plan.mealDays;
@@ -102,6 +110,13 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     } else {
       this.showModeModal = true;
       this.applyCreationQueryParams();
+    }
+
+    if (!this.route.snapshot.paramMap.get('id') && !this.route.snapshot.queryParamMap.get('draftId')) {
+      this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
+      this.resizeDraftDays(this.durationWeeks, false);
+      this.selectedDay = this.days[0] || null;
+      if (this.planName.trim()) this.savePlan();
     }
   }
 
@@ -166,24 +181,17 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   }
 
   updateAllDates() {
-    if (!this.startDate) return;
-
-    const start = new Date(this.startDate);
-    console.log(start);
-    console.log(this.days);
+    if (!this.startDate || !this.days.length) return;
+    const start = new Date(`${this.startDate}T12:00:00`);
+    const dateOnly = (date: Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     this.days.forEach((day, index) => {
-      const current = new Date(start);
-      current.setDate(start.getDate() + index);
-
-      day.date = current.toISOString().split('T')[0];
-      day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      day.date = dateOnly(date);
+      day.dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
       day.title = `Day ${index + 1}`;
     });
-
-    // Calcule la date de fin
-    const end = new Date(start);
-    end.setDate(start.getDate() + (this.days.length - 1));
-    this.endDate = end.toISOString().split('T')[0];
+    this.endDate = this.days[this.days.length - 1].date;
   }
 
   dayLabel(index: number): string {
@@ -262,7 +270,7 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     this.planName = params.get('name') || this.planName;
     this.startDate = params.get('startDate') || this.startDate;
 
-    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 52));
+    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 12));
     const totalDays = durationWeeks * 7;
     this.days = [];
 
@@ -346,40 +354,18 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   /* ----------------------------------------------
       SAVE PLAN
   ------------------------------------------------*/
-  savePlan() {
-    const mealPlan: MealPlan = {
-      name: this.planName,
-      details: this.planDescription,
-      mealDays: this.days,
-      trackingMode: 'TOTAL_FOR_DAY',
-      startDate: this.startDate,
-      endDate: this.endDate,
-      coach: { id: this.userid },
-      client: this.client,
-    };
-
-    this.nutritionService.createNutritionPlan(mealPlan).subscribe(() => {
-      this.resetForm();
-    });
+  savePlan(publishWeek?: number) {
+    this.days.forEach(day => this.updateCaloriesForDay(day));
+    this.updateAllDates();
+    const plan = {
+      name: this.planName, details: this.planDescription, mealDays: this.days,
+      trackingMode: 'TOTAL_FOR_DAY', coach: { id: this.userid }, client: this.client || this.draftClient,
+      startDate: this.startDate, endDate: this.endDate,
+    } as MealPlan;
+    this.draft.save(plan, publishWeek);
   }
 
-  updatePlan() {
-    const mealPlan: MealPlan = {
-      id: this.route.snapshot.paramMap.get('id'),
-      name: this.planName,
-      details: this.planDescription,
-      mealDays: this.days,
-      trackingMode: 'TOTAL_FOR_DAY',
-      startDate: this.startDate,
-      endDate: this.endDate,
-      coach: { id: this.userid },
-      client: this.client,
-    };
-
-    this.nutritionService.updateNutritionPlan(mealPlan).subscribe(() => {
-      console.log('Plan updated');
-    });
-  }
+  updatePlan() { this.savePlan(); }
 
   /* ----------------------------------------------
       TOTALS DU JOUR SÉLECTIONNÉ
@@ -412,5 +398,35 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     this.selectedDay = null;
 
     this.addDay();
+  }
+
+  private get draftClient() {
+    const id = this.route.snapshot.paramMap.get('idClient');
+    return id ? { id } : null;
+  }
+
+  changeStartDate(value: string) {
+    if (value === this.startDate || !value) return;
+    const previous = this.startDate;
+    this.startDate = value;
+    if (!confirm('Changing Start Date will recalculate every week and day. Continue?')) {
+      setTimeout(() => this.startDate = previous);
+      return;
+    }
+    this.updateAllDates();
+  }
+
+  onDurationWeeksChange(value: number) { this.resizeDraftDays(value, true); }
+
+  resizeDraftDays(value: number, confirmRemoval = true) {
+    const weeks = Math.max(1, Math.min(12, Math.floor(Number(value) || 4)));
+    const count = weeks * 7;
+    if (count < this.days.length && confirmRemoval && !confirm('Shortening the program will remove the final days. Continue?')) return;
+    while (this.days.length < count) this.addDay();
+    this.days = this.days.slice(0, count);
+    this.durationWeeks = weeks;
+    if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
+
+    this.updateAllDates();
   }
 }

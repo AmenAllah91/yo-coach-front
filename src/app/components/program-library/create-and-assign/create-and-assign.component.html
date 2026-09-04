@@ -6,6 +6,7 @@
       <div class="np-aside__head">
         <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
         <p class="np-aside__sub">{{ workoutWeeks.length }} Weeks • {{ days.length }} Days</p>
+        <button type="button" class="np-link" (click)="toggleAllWeeks()">{{ (allWeeksExpanded() ? 'COLLAPSE_ALL' : 'EXPAND_ALL') | translate }}</button>
       </div>
 
       <div
@@ -14,22 +15,20 @@
         [cdkDropListData]="days"
         (cdkDropListDropped)="onDropDay($event)"
       >
-        <div class="np-week-card" *ngFor="let week of workoutWeeks">
+        <div class="np-week-card" *ngFor="let week of workoutWeeks; trackBy: trackByWeek; let wi = index">
           <button
             type="button"
             class="np-week-card__head"
             (click)="toggleWeek(week.label)"
             [attr.aria-expanded]="!isWeekCollapsed(week.label)"
           >
-            <div>
+            <div class="np-week-card__head-top">
+              <i-feather [name]="isWeekCollapsed(week.label) ? 'chevron-right' : 'chevron-down'" class="np-week-card__chevron"></i-feather>
               <strong>{{ week.label }}</strong>
-              <small>{{ week.range }}</small>
+              <small class="np-week-status">{{ (isWeekPublished(wi + 1) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</small>
+              <span class="np-week-range">{{ week.range }}</span>
+              <span class="np-week-card__count">{{ getWeekReadyCount(week.days) }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</span>
             </div>
-            <span class="np-week-card__count">{{ getWeekWorkoutCount(week.days) }} workouts</span>
-            <i-feather
-              [name]="isWeekCollapsed(week.label) ? 'chevron-down' : 'chevron-up'"
-              class="np-week-card__chevron"
-            ></i-feather>
           </button>
 
           <ng-container *ngIf="!isWeekCollapsed(week.label)">
@@ -45,21 +44,14 @@
                 [class.is-active]="selectedDay?.id === d.id"
                 (click)="selectDay(d)"
               >
-                <span class="np-day__topline">
+                <span class="np-day-state" [class.ready]="getDayBuilderStatus(d) === 'READY'" [class.rest]="getDayBuilderStatus(d) === 'REST_DAY'">{{ getDayBuilderStatus(d) === 'READY' ? '✓' : getDayBuilderStatus(d) === 'REST_DAY' ? '☾' : '○' }}</span><span class="np-day__topline">
                   <span class="np-day__title">{{ d.title }}</span>
                   <span class="np-day__dateLine">
                     {{ d.dayOfWeek }}, {{ d.date | date : "MMM d" }}
                   </span>
                 </span>
                 <small class="np-day__meta">
-                  <ng-container *ngIf="d.isRestDay || d.restDay; else dayExerciseState">
-                    {{ 'REST_DAY' | translate }}
-                  </ng-container>
-                  <ng-template #dayExerciseState>
-                    {{ getDayExerciseCount(d) > 0
-                      ? ('EXERCISES_COUNT' | translate:{ count: getDayExerciseCount(d) })
-                      : ('EMPTY_DAY' | translate) }}
-                  </ng-template>
+                  {{ (getDayBuilderStatus(d) === 'REST_DAY' ? 'REST_DAY' : getDayBuilderStatus(d) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_EMPTY') | translate }}
                 </small>
               </button>
               <button
@@ -120,8 +112,9 @@
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><button type="button" class="np-link" (click)="planSettingsCollapsed = !planSettingsCollapsed">{{ (planSettingsCollapsed ? 'WORKOUT_SHOW' : 'WORKOUT_HIDE') | translate }}</button>
         </div>
+        <ng-container *ngIf="!planSettingsCollapsed">
 
         <!-- Plan Title -->
         <div class="np-field">
@@ -224,9 +217,9 @@
                 <input
                   type="date"
                   class="program-schedule-input"
-                  [(ngModel)]="startDate"
+                  [ngModel]="startDate"
                   name="startDate"
-                  (ngModelChange)="updateAllDates()"
+                  (ngModelChange)="onStartDateChange($event)"
                 />
               </div>
             </div>
@@ -295,7 +288,10 @@
           </div>
         </div>
 
+        </ng-container>
       </section>
+
+      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="workoutWeeks[getSelectedWeekNumber() - 1].range" [saving]="savingDraft" [savedAt]="savedAt" [error]="saveError" (save)="savePlan()" (publish)="publishSelectedWeek()"></app-workout-week-panel>
 
       <section class="np-card np-card--day">
 
@@ -486,7 +482,7 @@
 
         <!-- ==== EXERCISES ==== -->
         <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
-          <h3 class="wkex__heading">{{ 'EXERCISES' | translate }}</h3>
+          <h3 class="wkex__heading">{{ 'EXERCISES' | translate }} · {{ selectedDay ? getDayExerciseCount(selectedDay) : 0 }}</h3>
 
           <!-- If no exercises -->
           <ng-container
@@ -577,18 +573,7 @@
                           </div>
                         </ng-container>
 
-                        <ng-template #addNotesBtn>
-                          <button
-                            type="button"
-                            class="wkex-addnote"
-                            (click)="setEditingExerciseDescription(exercise.id)"
-                          >
-                            <span class="wkex-plus">＋</span>
-                            {{
-                              ((exercise.coachNote || exercise.notes) ? 'EDIT_NOTES' : 'ADD_NOTES') | translate
-                            }}
-                          </button>
-                        </ng-template>
+                        <ng-template #addNotesBtn></ng-template>
 
                         <!-- Display notes -->
                         <div
@@ -601,17 +586,9 @@
                           {{ exercise.coachNote || exercise.notes }}
                         </div>
 
-                        <div *ngIf="isExerciseVideoOpen(exercise)" class="wkex-video">
-                          <iframe
-                            [src]="getYouTubeEmbedUrl(exercise)"
-                            [title]="exercise.name + ' video'"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowfullscreen
-                          ></iframe>
-                        </div>
                       </div>
 
-                      <div class="wkex-card__actions">
+                      <div class="wkex-card__actions"><button type="button" class="wkex-action wkex-action--note" [title]="'EXERCISE_NOTES' | translate" [attr.aria-label]="'EXERCISE_NOTES' | translate" (click)="setEditingExerciseDescription(editingExerciseDescription === exercise.id ? null : exercise.id)"><i-feather name="file-text" class="wkex-action__icon"></i-feather></button>
                         <button
                           type="button"
                           class="wkex-action wkex-action--video"
@@ -838,7 +815,7 @@
 
       <!-- Sticky Save -->
       <div class="np-sticky">
-        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()">
+        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()" [disabled]="savingDraft">
           <svg viewBox="0 0 24 24" class="np-ico">
             <path
               stroke="currentColor"
@@ -849,7 +826,7 @@
             />
           </svg>
 
-          {{ (isEditMode ? 'UPDATE_PLAN' : 'CREATE_PLAN') | translate }}
+          {{ 'SAVE_DRAFT' | translate }}
         </button>
       </div>
     </main>
@@ -857,6 +834,19 @@
 </div>
 
 <!-- ==== MODAL ADD EXERCISE ==== -->
+<div class="exercise-preview-backdrop" *ngIf="previewExercise" (click)="closeExercisePreview()">
+  <article class="exercise-preview-card" (click)="$event.stopPropagation()">
+    <button type="button" class="exercise-preview-card__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeExercisePreview()">×</button>
+    <div class="exercise-preview-card__media"><iframe [src]="getYouTubeEmbedUrl(previewExercise)" [title]="previewExercise.name + ' video'" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+    <div class="exercise-preview-card__content">
+      <h2>{{ previewExercise.name }}</h2>
+      <p class="exercise-preview-card__meta">{{ previewExercise.type }} · {{ previewExercise.sets?.length || 0 }} {{ 'SETS' | translate }}</p>
+      <p class="exercise-preview-card__description" *ngIf="previewExercise.description || previewExercise.exerciseRef?.description">{{ previewExercise.description || previewExercise.exerciseRef?.description }}</p>
+      <div class="exercise-preview-sets"><div class="exercise-preview-set" *ngFor="let set of previewExercise.sets; let si = index"><strong>{{ 'SET' | translate }} {{ si + 1 }}</strong><span>{{ previewExercise.type === 'CARDIO' ? set.duration : set.reps }} {{ (previewExercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }} · {{ set.restMin || 0 }}m {{ set.restSec || 0 }}s</span></div></div>
+    </div>
+  </article>
+</div>
+
 <div
   class="np-modal"
   *ngIf="isExerciseModalOpen"

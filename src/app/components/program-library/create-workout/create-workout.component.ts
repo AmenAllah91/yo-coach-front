@@ -6,6 +6,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
+import { WorkoutWeekPanelComponent } from '../workout-week-panel.component';
+import { workoutDayState } from '@shared/models/workout-publication';
 import {
   WorkoutDay,
   WorkoutPlan,
@@ -17,7 +19,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent],
   templateUrl: './create-workout.component.html',
   styleUrls: ['./create-workout.component.scss'],
 })
@@ -28,10 +30,15 @@ export class CreateWorkoutComponent implements OnInit {
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
-  collapsedWeeks = new Set<number>();
+  collapsedWeeks = new Set<number>(Array.from({length: 11}, (_, index) => index + 2));
+  planSettingsCollapsed = false;
+  savedAt: Date | null = null;
+  savingDraft = false;
+  saveError = '';
   private returnUrl: string | null = null;
   private assignOnly = false;
   activeVideoExerciseId: string | null = null;
+  previewExercise: Exercise | null = null;
   @ViewChild('mobileDaysScroller')
   mobileDaysScroller?: ElementRef<HTMLElement>;
   constructor(
@@ -381,6 +388,70 @@ export class CreateWorkoutComponent implements OnInit {
     ).length;
   }
 
+  getDayBuilderStatus(day: WorkoutDay): 'EMPTY' | 'READY' | 'REST_DAY' {
+    return workoutDayState(day);
+  }
+
+  private legacyDayBuilderStatus(day: WorkoutDay): 'EMPTY' | 'READY' | 'REST_DAY' {
+    if (day.isRestDay || day.restDay) return 'REST_DAY';
+    const sessions = day.workoutSessions?.length
+      ? day.workoutSessions
+      : (day.session ? [day.session] : []);
+    const hasName = Boolean((sessions[0]?.name || '').trim());
+    const exercises = sessions.flatMap((session) => session.exercises || []);
+    const hasValidExercises = exercises.length > 0
+      && exercises.every((exercise) =>
+        (exercise.sets || []).some((set) => this.isSetValid(exercise, set))
+      );
+
+    return hasName && hasValidExercises ? 'READY' : 'EMPTY';
+  }
+
+  private isSetValid(exercise: Exercise, set: any): boolean {
+    const restMin = Number(set?.restMin ?? 0);
+    const restSec = Number(set?.restSec ?? 0);
+    const weightIsValid = set?.weight == null
+      || set.weight === ''
+      || (Number.isFinite(Number(set.weight)) && Number(set.weight) >= 0);
+    const restIsValid = Number.isFinite(restMin) && restMin >= 0
+      && Number.isFinite(restSec) && restSec >= 0;
+
+    if (!weightIsValid || !restIsValid) return false;
+
+    if (exercise.type === 'CARDIO') {
+      const duration = Number(set?.duration);
+      return Number.isFinite(duration) && duration > 0;
+    }
+
+    const reps = Number(set?.reps);
+    return set?.reps !== '' && set?.reps != null
+      && Number.isFinite(reps) && reps >= 0;
+  }
+
+  getWeekReadyCount(days: WorkoutDay[]): number {
+    return days.filter((day) => this.getDayBuilderStatus(day) !== 'EMPTY').length;
+  }
+
+  getSelectedWeekNumber(): number {
+    const index = Math.max(0, this.days.indexOf(this.selectedDay!));
+    return Math.floor(index / 7) + 1;
+  }
+
+  isWeekPublished(weekNumber: number): boolean {
+    return (this.workoutPlan.publishedWeeks || []).includes(weekNumber);
+  }
+
+  canPublishSelectedWeek(): boolean {
+    const weekIndex = this.getSelectedWeekNumber() - 1;
+    return this.getWeekReadyCount(this.workoutWeeks[weekIndex]?.days || []) === 7;
+  }
+
+  publishSelectedWeek(): void {
+    if (!this.canPublishSelectedWeek()) return;
+    const weekNumber = this.getSelectedWeekNumber();
+    this.persistDraft(false, weekNumber);
+  }
+
   getDayExerciseCount(day: WorkoutDay): number {
     const sessions = day.workoutSessions?.length
       ? day.workoutSessions
@@ -413,6 +484,32 @@ export class CreateWorkoutComponent implements OnInit {
     } else {
       this.collapsedWeeks.add(weekNumber);
     }
+  }
+
+  allWeeksExpanded(): boolean {
+    return this.workoutWeeks.every((_, index) => !this.collapsedWeeks.has(index + 1));
+  }
+
+  toggleAllWeeks(): void {
+    if (this.allWeeksExpanded()) {
+      for (let i = 1; i <= this.workoutWeeks.length; i++) {
+        this.collapsedWeeks.add(i);
+      }
+    } else {
+      this.collapsedWeeks.clear();
+    }
+  }
+
+  getWeekDateRange(week: { days: WorkoutDay[] }): string {
+    const dates = week.days
+      .filter(d => d.date)
+      .map(d => new Date(`${d.date}T00:00:00`))
+      .filter(d => !Number.isNaN(d.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime());
+    if (!dates.length) return '';
+    const fmt = (d: Date) =>
+      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
   }
 
   getSelectedDayDateLabel(): string {
@@ -466,10 +563,13 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   trackByDay = (index: number, d: WorkoutDay) => d.id;
+  trackByWeek = (index: number, week: {label: string}) => week.label;
   trackByExercise = (_: number, ex: Exercise) => ex.id;
 
   selectDay(d: WorkoutDay) {
     this.facade.selectDay(d);
+    const weekIndex = this.workoutWeeks.findIndex(week => week.days.some(day => day.id === d.id));
+    if (weekIndex >= 0) this.collapsedWeeks.delete(weekIndex + 1);
   }
 
   addDay() {
@@ -668,6 +768,13 @@ export class CreateWorkoutComponent implements OnInit {
     this.facade.handleSetChange?.(exId, si, field, value);
   }
 
+  preventInvalidNumericKey(event: KeyboardEvent, allowDecimal = false): void {
+    if (['e', 'E', '+', '-'].includes(event.key)
+      || (!allowDecimal && ['.', ','].includes(event.key))) {
+      event.preventDefault();
+    }
+  }
+
   openSetTypeKey: string | null = null;
 
   toggleSetTypeMenu(exerciseId: string, setIndex: number, event?: MouseEvent) {
@@ -816,7 +923,13 @@ export class CreateWorkoutComponent implements OnInit {
 
     if (!videoUrl) return;
 
-    this.activeVideoExerciseId = this.activeVideoExerciseId === exercise.id ? null : exercise.id;
+    this.previewExercise = exercise;
+    this.activeVideoExerciseId = exercise.id || null;
+  }
+
+  closeExercisePreview(): void {
+    this.previewExercise = null;
+    this.activeVideoExerciseId = null;
   }
 
   isExerciseVideoOpen(exercise: Exercise): boolean {
@@ -843,6 +956,17 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   savePlan() {
+    this.persistDraft(false);
+  }
+
+  private persistDraft(navigateAfterSave: boolean, publishWeek?: number) {
+    if (this.savingDraft || !this.workoutPlan.name.trim()) return;
+    this.savingDraft = true;
+    this.saveError = '';
+    const previous = [...(this.workoutPlan.publishedWeeks || [])];
+    const publishedWeeks = previous.filter(week => this.getWeekReadyCount(this.days.slice((week - 1) * 7, week * 7)) === 7);
+    if (publishWeek) publishedWeeks.push(publishWeek);
+    this.facade.setPlan({...this.workoutPlan, publishedWeeks: Array.from(new Set(publishedWeeks))});
     this.cleanRestDayWorkoutSessions();
     this.facade.days.forEach((day, index) => {
       day.date = undefined;
@@ -873,17 +997,24 @@ export class CreateWorkoutComponent implements OnInit {
       this.facade.updatePlan().subscribe({
         next: (res) => {
           console.log('Workout plan updated:', res);
-          this.router.navigate(['/workout/program-library']);
+          this.savedAt = new Date();
+          this.savingDraft = false;
+          this.facade.setPlan({...this.facade.plan, publishedWeeks: res.publishedWeeks || []});
+          if (navigateAfterSave) this.router.navigate(['/workout/program-library']);
         },
-        error: (err) => console.error('Error updating workout plan:', err),
+        error: () => { this.savingDraft = false; this.saveError = this.translate.instant('WORKOUT_SAVE_ERROR'); this.facade.setPlan({...this.workoutPlan, publishedWeeks: previous}); },
       });
     } else {
       this.facade.createPlan().subscribe({
         next: (res) => {
           console.log('Workout plan created:', res);
+          this.savingDraft = false;
+          this.savedAt = new Date();
+          this.facade.setPlan({...this.facade.plan, id: res.id, publishedWeeks: res.publishedWeeks || []});
+          this.isEditMode = true;
 
           if (this.returnUrl) {
-            this.router.navigateByUrl(this.returnUrl, {
+            if (navigateAfterSave) this.router.navigateByUrl(this.returnUrl, {
               state: {
                 assignAfterCreate: {
                   type: 'workout',
@@ -892,11 +1023,11 @@ export class CreateWorkoutComponent implements OnInit {
                 },
               },
             });
-          } else {
+          } else if (navigateAfterSave) {
             this.router.navigate(['/workout/program-library']);
           }
         },
-        error: (err) => console.error('Error creating workout plan:', err),
+        error: () => { this.savingDraft = false; this.saveError = this.translate.instant('WORKOUT_SAVE_ERROR'); this.facade.setPlan({...this.workoutPlan, publishedWeeks: previous}); },
       });
     }
   }

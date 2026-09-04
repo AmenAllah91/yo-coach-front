@@ -7,6 +7,7 @@ import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutPublicationBadgeComponent } from '../../../program-library/workout-publication-badge.component';
 
 type ProgramStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
 type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
@@ -14,7 +15,7 @@ type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 
 @Component({
   selector: 'app-workouts-client-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, WorkoutPublicationBadgeComponent],
   templateUrl: './workouts-client-tab.component.html',
   styleUrl: './workouts-client-tab.component.scss',
 })
@@ -943,6 +944,14 @@ export class WorkoutsClientTabComponent implements OnInit {
     this.dateError = null;
   }
 
+  recalculateDateEnd() {
+    if (!this.dateTargetProgram || this.isFileWorkout(this.dateTargetProgram) || !this.dateStart) return;
+    const start = new Date(`${this.dateStart}T12:00:00`);
+    const days = Math.max(7, Math.ceil(this.getWorkoutDaySpan(this.dateTargetProgram) / 7) * 7);
+    start.setDate(start.getDate() + days - 1);
+    this.dateEnd = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+  }
+
   saveChangedDates() {
     if (!this.dateTargetProgram?.id) return;
 
@@ -956,6 +965,8 @@ export class WorkoutsClientTabComponent implements OnInit {
       return;
     }
 
+    if (!this.isFileWorkout(this.dateTargetProgram) && !confirm(this.translate.instant('WORKOUT_DATE_CONFIRM'))) return;
+    this.recalculateDateEnd();
     this.dateSaving = true;
     this.dateError = null;
 
