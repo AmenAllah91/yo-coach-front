@@ -122,6 +122,7 @@
         </div>
 
         <div class="program-meta">
+          <app-workout-publication-badge *ngIf="!isFileWorkout(program)" [plan]="program"></app-workout-publication-badge>
           <span *ngIf="program.startDate || program.endDate">
             <i class="far fa-calendar-alt me-1"></i>
             {{ formatProgramDate(program.startDate) }}
@@ -334,12 +335,12 @@
       <div class="change-dates-fields">
         <div class="change-date-field">
           <label>{{ 'START_DATE' | translate }}</label>
-          <input type="date" [(ngModel)]="dateStart" />
+          <input type="date" [(ngModel)]="dateStart" (ngModelChange)="recalculateDateEnd()" />
         </div>
 
         <div class="change-date-field">
           <label>{{ 'END_DATE' | translate }}</label>
-          <input type="date" [(ngModel)]="dateEnd" />
+          <input type="date" [(ngModel)]="dateEnd" [readOnly]="!!dateTargetProgram && !isFileWorkout(dateTargetProgram)" />
         </div>
       </div>
 

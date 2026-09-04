@@ -4261,6 +4261,8 @@ input:checked + .slider:before {
   }
 }
 
+@import '../_workout-builder-publication.scss';
+
 /* Keep the reference proportions at regular desktop sizes, while avoiding
    oversized empty gutters on wide monitors. */
 @media (min-width: 1600px) {

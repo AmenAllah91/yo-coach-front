@@ -17,18 +17,38 @@ import {
   WorkoutSession,
 } from '@shared/models/workout.models';
 import { Exercise } from '@shared/models/exercice.models';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { inject } from '@angular/core';
+import { WorkoutWeekPanelComponent } from '../workout-week-panel.component';
+import { workoutDayState, workoutWeekReady } from '@shared/models/workout-publication';
 
 @Component({
   selector: 'app-create-and-assign',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent],
   templateUrl: './create-and-assign.component.html',
   styleUrl: './create-and-assign.component.scss',
 })
 export class CreateAndAssignComponent implements OnInit {
   isEditMode = false;
+  private translate = inject(TranslateService);
+  planSettingsCollapsed = false;
+  savingDraft = false;
+  savedAt: Date | null = null;
+  saveError = '';
+  getDayBuilderStatus = workoutDayState;
+  getWeekReadyCount(days: WorkoutDay[]) { return days.filter(d => workoutDayState(d) !== 'EMPTY').length; }
+  getSelectedWeekNumber() { return Math.floor(Math.max(0, this.days.indexOf(this.selectedDay!)) / 7) + 1; }
+  isWeekPublished(week: number) { return (this.workoutPlan.publishedWeeks || []).includes(week); }
+  publishSelectedWeek() { this.savePlan(this.getSelectedWeekNumber()); }
+  onStartDateChange(value: string) {
+    if (!value || value === this.startDate) return;
+    if (!window.confirm(this.translate.instant('WORKOUT_DATE_CONFIRM'))) return;
+    this.startDate = value;
+    this.updateAllDates();
+  }
   activeVideoExerciseId: string | null = null;
+  previewExercise: Exercise | null = null;
 
   // assign-specific
   client: Client | null = null;
@@ -41,7 +61,7 @@ export class CreateAndAssignComponent implements OnInit {
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
-  collapsedWeeks = new Set<number>();
+  collapsedWeeks = new Set<number>(Array.from({length: 11}, (_, index) => index + 2));
   private conflictResolution = '';
   private conflictId = '';
   private conflictStartDate = '';
@@ -306,6 +326,18 @@ export class CreateAndAssignComponent implements OnInit {
     }
   }
 
+  allWeeksExpanded(): boolean {
+    return this.workoutWeeks.every((_, index) => !this.collapsedWeeks.has(index + 1));
+  }
+
+  toggleAllWeeks(): void {
+    if (this.allWeeksExpanded()) {
+      for (let i = 1; i <= this.workoutWeeks.length; i++) this.collapsedWeeks.add(i);
+    } else {
+      this.collapsedWeeks.clear();
+    }
+  }
+
   getSelectedDayDateLabel(): string {
     if (!this.selectedDay?.date) return '';
 
@@ -459,10 +491,13 @@ export class CreateAndAssignComponent implements OnInit {
 
   // ===== template functions (proxies) =====
   trackByDay = (index: number, d: WorkoutDay) => d.id;
+  trackByWeek = (index: number, week: {label: string}) => week.label;
   trackByExercise = (_: number, ex: Exercise) => ex.id;
 
   selectDay(d: WorkoutDay) {
     this.facade.selectDay(d);
+    const weekIndex = this.workoutWeeks.findIndex(week => week.days.some(day => day.id === d.id));
+    if (weekIndex >= 0) this.collapsedWeeks.delete(weekIndex + 1);
   }
 
   addDay() {
@@ -849,7 +884,13 @@ export class CreateAndAssignComponent implements OnInit {
 
     if (!videoUrl) return;
 
-    this.activeVideoExerciseId = this.activeVideoExerciseId === exercise.id ? null : exercise.id;
+    this.previewExercise = exercise;
+    this.activeVideoExerciseId = exercise.id || null;
+  }
+
+  closeExercisePreview(): void {
+    this.previewExercise = null;
+    this.activeVideoExerciseId = null;
   }
 
   isExerciseVideoOpen(exercise: Exercise): boolean {
@@ -898,34 +939,33 @@ export class CreateAndAssignComponent implements OnInit {
   }
 
   // ===== save (assign-specific) =====
-  savePlan() {
+  savePlan(publishWeek?: number) {
+    if (this.savingDraft || !this.workoutPlan.name.trim()) return;
+    this.savingDraft = true;
+    this.saveError = '';
+    const previous = [...(this.workoutPlan.publishedWeeks || [])];
+    const publishedWeeks = previous.filter(w => workoutWeekReady(this.days, w) === 7);
+    if (publishWeek && workoutWeekReady(this.days, publishWeek) === 7) publishedWeeks.push(publishWeek);
     this.cleanRestDayWorkoutSessions();
-    this.facade.setPlan({
-      ...this.facade.plan,
-      startDate: this.startDate,
-      endDate: this.endDate,
-      client: this.client ?? this.facade.plan.client,
-    });
-
+    this.updateAllDates();
+    this.facade.setPlan({...this.workoutPlan, publishedWeeks: Array.from(new Set(publishedWeeks)), startDate: this.startDate, endDate: this.endDate,
+      client: this.client ?? this.workoutPlan.client ?? {id: this.route.snapshot.paramMap.get('idClient')}});
     this.facade.syncPlanDays();
-
-    const save$ = this.resolveConflictBeforeSave().pipe(
-      switchMap(() => this.facade.plan.id ? this.facade.updatePlan() : this.facade.createPlan())
-    );
-
-    save$.subscribe({
-      next: (res) => {
-        if (this.facade.plan.id) {
-          console.log('Workout plan updated:', res);
-        } else {
-          console.log('Workout plan created:', res);
-          this.facade.initCreate();
-          this.startDate = new Date().toISOString().split('T')[0];
-          this.updateAllDates();
-        }
+    const request = this.workoutPlan.id ? this.facade.updatePlan() : this.facade.createPlan();
+    request.subscribe({
+      next: res => {
+        this.facade.setPlan({...this.workoutPlan, id: res.id, publishedWeeks: res.publishedWeeks || []});
+        this.isEditMode = true;
+        this.savingDraft = false;
+        this.savedAt = new Date();
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error saving workout plan:', err),
+      error: () => {
+        this.facade.setPlan({...this.workoutPlan, publishedWeeks: previous});
+        this.savingDraft = false;
+        this.saveError = this.translate.instant('WORKOUT_SAVE_ERROR');
+        this.cdr.markForCheck();
+      }
     });
-
   }
 }

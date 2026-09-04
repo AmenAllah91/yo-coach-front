@@ -932,14 +932,26 @@ export class WorkoutPlanFacade {
 
     const set: ExerciseSet = ex.sets[setIndex];
 
-    if (field === 'reps') set.reps = String(value ?? '');
-    if (field === 'duration') set.duration = Number(value);
+    const nonNegativeNumber = (rawValue: unknown): number | null => {
+      if (rawValue === '' || rawValue == null) return null;
+      const parsed = Number(rawValue);
+      return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+    };
+
+    if (field === 'reps') {
+      const normalized = nonNegativeNumber(value);
+      set.reps = normalized == null ? '' : String(Math.trunc(normalized));
+    }
+    if (field === 'duration') {
+      const normalized = nonNegativeNumber(value);
+      set.duration = normalized == null ? 0 : normalized;
+    }
     if (field === 'weight') {
       if (!this.shouldShowWeightField()) return;
-      set.weight = value === '' || value == null ? null : Number(value);
+      set.weight = nonNegativeNumber(value);
     }
-    if (field === 'restMin') set.restMin = Number(value);
-    if (field === 'restSec') set.restSec = Number(value);
+    if (field === 'restMin') set.restMin = nonNegativeNumber(value) ?? 0;
+    if (field === 'restSec') set.restSec = nonNegativeNumber(value) ?? 0;
     if (field === 'type') set.type = value as WorkoutSetType;
 
     set.setNumber = setIndex + 1;

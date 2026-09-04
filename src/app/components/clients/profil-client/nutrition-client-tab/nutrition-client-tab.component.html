@@ -96,6 +96,7 @@
       <div class="program-text">
         <div class="program-title-row">
           <h5 class="program-name">{{ plan.name }}</h5>
+          <small *ngIf="!isFilePlan(plan)">{{ plan.publishedWeeks?.length === 0 ? 'Draft · ' : '' }}{{ plan.publishedWeeks?.length ?? getPlanTotalWeeks(plan) }}/{{ getPlanTotalWeeks(plan) }} weeks published</small>
 
           <span
             *ngIf="!isFilePlan(plan)"

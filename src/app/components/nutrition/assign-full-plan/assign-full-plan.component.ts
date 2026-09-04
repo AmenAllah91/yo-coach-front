@@ -1,3 +1,5 @@
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +20,10 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignFullPlanComponent implements OnInit {
+  draft = new NutritionDraftState(this.nutritionService, this.route, null);
+  durationWeeks = 4;
+  readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
   userId = sessionStorage.getItem('userId');
   client: Client;
   latestAssignedPrograms: any[] = [];
@@ -78,12 +84,13 @@ export class AssignFullPlanComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
+    private coachSettingsService: CoachSettingsService,
     private clientService: ClientService,
     private translate: TranslateService
   ) {}
 
   ngOnInit() {
-    this.planId = this.route.snapshot.paramMap.get('id');
+    this.planId = (this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId'));
     const clientId = this.route.snapshot.paramMap.get('idClient');
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
@@ -96,6 +103,13 @@ export class AssignFullPlanComponent implements OnInit {
     if (clientId) {
       this.getClientById(clientId);
       this.loadLatestAssignedPrograms(clientId);
+    }
+
+    if (!this.route.snapshot.paramMap.get('id') && !this.route.snapshot.queryParamMap.get('draftId')) {
+      this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
+      this.resizeDraftDays(this.durationWeeks, false);
+      this.selectedDay = this.days[0] || null;
+      if (this.planName.trim()) this.savePlan();
     }
   }
 
@@ -189,6 +203,7 @@ export class AssignFullPlanComponent implements OnInit {
     this.nutritionService
       .getNutritionPlanById(id)
       .subscribe((plan: MealPlan) => {
+        this.draft.load(plan);
         this.mealPlan = plan;
         this.planName = plan.name;
         this.planDescription = plan.details || '';
@@ -363,7 +378,8 @@ export class AssignFullPlanComponent implements OnInit {
         carbsG: 0,
         fatG: 0,
       },
-      meals: [this.makeEmptyMeal(0)],
+      meals: Array.from({ length: this.coachSettingsService.getConfig().nutrition.autoCreateMeals
+        ? this.coachSettingsService.getDefaultMealsCount() : 1 }, (_, index) => ({ ...this.makeEmptyMeal(index), name: `Meal ${index + 1}` })),
     };
   }
 
@@ -383,7 +399,7 @@ export class AssignFullPlanComponent implements OnInit {
     this.planName = params.get('name') || this.planName;
     this.startDate = params.get('startDate') || this.startDate;
 
-    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 52));
+    const durationWeeks = Math.max(1, Math.min(Number(params.get('durationWeeks')) || 1, 12));
     const totalDays = durationWeeks * 7;
     this.days = Array.from({ length: totalDays }, () => this.makeEmptyDay());
     this.mealPlan.mealDays = this.days;
@@ -758,7 +774,8 @@ export class AssignFullPlanComponent implements OnInit {
   }
 
   addFoodToMeal() {
-    if (!this.mealForModal || !this.selectedFood) return;
+    if (!this.mealForModal || !this.selectedFood
+      || !Number.isFinite(Number(this.foodQty)) || Number(this.foodQty) <= 0) return;
 
     const food: Food = {
       id: crypto.randomUUID?.() ?? Date.now().toString(),
@@ -893,37 +910,45 @@ export class AssignFullPlanComponent implements OnInit {
     return +this.computeFoodMacros(food).fat.toFixed(1);
   }
 
-  get hasEmptyMeals(): boolean {
-    return this.days.some((day) =>
-      (day.meals || []).some((meal) => !(meal.foods || []).length)
-    );
+
+  savePlan(publishWeek?: number) {
+    this.days.forEach(day => this.recalcDayTargets(day));
+    this.updateAllDates();
+    const plan = {
+      name: this.planName, details: this.planDescription, mealDays: this.days,
+      trackingMode: null, coach: { id: this.userId }, client: this.client || this.draftClient,
+      startDate: this.startDate, endDate: this.endDate,
+    } as MealPlan;
+    this.draft.save(plan, publishWeek);
   }
 
-  savePlan() {
-    if (this.hasEmptyMeals) {
-      alert(this.translate.instant('MEAL_REQUIRES_FOOD'));
+  private get draftClient() {
+    const id = this.route.snapshot.paramMap.get('idClient');
+    return id ? { id } : null;
+  }
+
+  changeStartDate(value: string) {
+    if (value === this.startDate || !value) return;
+    const previous = this.startDate;
+    this.startDate = value;
+    if (!confirm('Changing Start Date will recalculate every week and day. Continue?')) {
+      setTimeout(() => this.startDate = previous);
       return;
     }
+    this.updateAllDates();
+  }
 
-    this.days.forEach((day) => this.recalcDayTargets(day));
-    this.mealPlan.name = this.planName;
-    this.mealPlan.details = this.planDescription;
-    this.mealPlan.mealDays = this.days;
-    this.mealPlan.coach = { id: this.userId };
-    this.mealPlan.startDate = this.startDate;
-    this.mealPlan.endDate = this.endDate;
-    this.mealPlan.client = this.client;
+  onDurationWeeksChange(value: number) { this.resizeDraftDays(value, true); }
 
-    if (this.planId) {
-      this.mealPlan.id = this.planId;
+  resizeDraftDays(value: number, confirmRemoval = true) {
+    const weeks = Math.max(1, Math.min(12, Math.floor(Number(value) || 4)));
+    const count = weeks * 7;
+    if (count < this.days.length && confirmRemoval && !confirm('Shortening the program will remove the final days. Continue?')) return;
+    while (this.days.length < count) this.addDay();
+    this.days = this.days.slice(0, count);
+    this.durationWeeks = weeks;
+    if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
 
-      this.nutritionService.updateNutritionPlan(this.mealPlan).subscribe(() => {
-        this.router.navigate(['/nutrition/plans']);
-      });
-    } else {
-      this.nutritionService.createNutritionPlan(this.mealPlan).subscribe(() => {
-        this.router.navigate(['/nutrition/plans']);
-      });
-    }
+    this.updateAllDates();
   }
 }

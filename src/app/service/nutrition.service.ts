@@ -59,6 +59,9 @@ export interface FoodRef {
 }
 
 export interface NutritionPlan {
+  publishedWeeks?: number[];
+  durationWeeks?: number;
+  publicationWorkflow?: boolean;
   id?: string;
   name: string;
   description?: string;
@@ -251,8 +254,8 @@ export class NutritionService {
     return this.http.post<MealPlan>(`${this.mealPlanUrl}`, plan);
   }
 
-  updateNutritionPlan(plan: any): Observable<NutritionPlan> {
-    return this.http.put<NutritionPlan>(`${this.mealPlanUrl}`, plan);
+  updateNutritionPlan(plan: MealPlan): Observable<MealPlan> {
+    return this.http.put<MealPlan>(`${this.mealPlanUrl}`, plan);
   }
   assignNutritionPlan(plan: any): Observable<NutritionPlan> {
     return this.http.put<NutritionPlan>(`${this.mealPlanUrl}assign`, plan);

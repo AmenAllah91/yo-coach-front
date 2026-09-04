@@ -18,6 +18,7 @@ import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 import * as XLSX from 'xlsx';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutPublicationBadgeComponent } from './workout-publication-badge.component';
 
 @Component({
   selector: 'app-program-library',
@@ -29,6 +30,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     ScrollLoaderComponent,
     ModalAssignToclientComponent,
     TranslateModule,
+    WorkoutPublicationBadgeComponent,
   ],
   templateUrl: './program-library.component.html',
   styleUrls: [
@@ -653,12 +655,28 @@ export class ProgramLibraryComponent implements OnInit {
     if (!name) return;
 
     const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, 52));
+    const days = Array.from({ length: durationWeeks * 7 }, (_, index) => ({
+      name: `Day ${index + 1}`,
+      title: `Day ${index + 1}`,
+      dayNumber: index + 1,
+      restDay: false,
+      status: 'PENDING',
+      workoutSessions: [],
+    }));
+    const draft: WorkoutPlan = {
+      name,
+      details: '',
+      workoutDays: days,
+      isWorkoutPlanTemplate: this.activeTab === 'templates',
+      publishedWeeks: [],
+    };
+
     this.showWorkoutCreateModal = false;
-    this.router.navigate(['/workout/create-workout'], {
-      queryParams: {
-        name,
-        durationWeeks,
-        template: this.activeTab === 'templates' ? 1 : 0,
+    this.workoutService.createWorkout(draft).subscribe({
+      next: (created) => { this.loadPrograms(); void this.router.navigate(['/workout/edit-workout', created.id]); },
+      error: (error) => {
+        console.error('Unable to create workout draft:', error);
+        this.showWorkoutCreateModal = true;
       },
     });
   }

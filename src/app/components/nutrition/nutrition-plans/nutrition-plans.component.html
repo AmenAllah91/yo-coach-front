@@ -75,6 +75,7 @@
                 <div class="program-name">{{ plan.name || ('UNNAMED_NUTRITION_PLAN' | translate) }}</div>
                 <div class="program-meta">{{ getProgramDescription(plan) }}</div>
                 <div class="program-week-meta" *ngIf="!isFilePlan(plan)">
+                  <span>{{ plan.publishedWeeks?.length === 0 ? 'Draft · ' : '' }}{{ plan.publishedWeeks?.length ?? getPlanTotalWeeks(plan) }}/{{ getPlanTotalWeeks(plan) }} weeks published</span>
                   <span *ngIf="getPlanTotalWeeks(plan) > 0">
                     <i-feather name="clock"></i-feather>
                     {{ 'WEEKS_COUNT' | translate:{ count: getPlanTotalWeeks(plan) } }}

@@ -63,4 +63,6 @@ export interface WorkoutPlan {
   fileUploadedAt?: string;
   sourceWorkoutPlanId?: string;
   overlap?: boolean;
+  /** One-based week numbers explicitly published by the coach. */
+  publishedWeeks?: number[];
 }
