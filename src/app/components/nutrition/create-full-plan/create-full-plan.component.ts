@@ -11,11 +11,12 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })

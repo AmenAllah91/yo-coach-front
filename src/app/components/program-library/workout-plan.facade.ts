@@ -192,7 +192,7 @@ export class WorkoutPlanFacade {
   }
 
   setDurationWeeks(weeks: number) {
-    const safeWeeks = Math.max(1, Math.min(Number(weeks) || 1, 52));
+    const safeWeeks = Math.max(1, Math.min(Number(weeks) || 1, 12));
     const totalDays = safeWeeks * 7;
     const currentDays = [...this.days];
 
@@ -201,17 +201,17 @@ export class WorkoutPlanFacade {
 
       if (existing) {
         existing.dayNumber = index + 1;
-        existing.title = `Day ${index + 1}`;
+        existing.title = `Day ${(index % 7) + 1}`;
         existing.name = existing.title;
         return existing;
       }
 
       return {
         id: crypto.randomUUID(),
-        name: `Day ${index + 1}`,
+        name: `Day ${(index % 7) + 1}`,
         isRestDay: false,
         showDescription: false,
-        title: `Day ${index + 1}`,
+        title: `Day ${(index % 7) + 1}`,
         dayNumber: index + 1,
         restDay: false,
         workoutSessions: [],

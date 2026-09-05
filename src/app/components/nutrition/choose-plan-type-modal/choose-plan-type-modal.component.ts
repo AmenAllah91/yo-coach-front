@@ -277,12 +277,12 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
 
   get normalizedDurationWeeks(): number {
     const value = Number(this.presetDurationWeeks || this.nutritionDurationWeeks) || 4;
-    return Math.max(1, Math.min(value, 52));
+    return Math.max(1, Math.min(value, 12));
   }
 
   private get normalizedPresetDurationWeeks(): number {
     const value = Number(this.presetDurationWeeks || this.nutritionDurationWeeks) || 4;
-    return Math.max(1, Math.min(value, 52));
+    return Math.max(1, Math.min(value, 12));
   }
 
   private addPresetSchedule(queryParams: any): void {

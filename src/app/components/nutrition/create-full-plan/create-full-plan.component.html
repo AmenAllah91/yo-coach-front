@@ -13,11 +13,12 @@
         <div class="np-week-card" *ngFor="let week of nutritionWeeks">
           <button type="button" class="np-week-card__head" (click)="draft.toggleWeek(week.weekNumber)" [attr.aria-expanded]="!draft.collapsedWeeks.has(week.weekNumber)">
             <div class="np-week-card__head-top">
+              <i-feather [name]="draft.collapsedWeeks.has(week.weekNumber) ? 'chevron-right' : 'chevron-down'" class="np-week-card__chevron"></i-feather>
               <strong>{{ 'WEEK_NUMBER' | translate:{ number: week.weekNumber } }}</strong>
-              <span class="np-week-card__count">{{ draft.readyCount(days, week.weekNumber) }}/7</span>
-              <i-feather [name]="draft.collapsedWeeks.has(week.weekNumber) ? 'chevron-down' : 'chevron-up'" class="np-week-card__chevron"></i-feather>
+              <span class="np-week-card__status" [class.is-published]="draft.isPublished(week.weekNumber)">{{ (draft.isPublished(week.weekNumber) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</span>
+              <span class="np-week-card__range" *ngIf="draft.weekDates(days, week.weekNumber)">{{ draft.weekDates(days, week.weekNumber) }}</span>
+              <span class="np-week-card__count">{{ draft.readyCount(days, week.weekNumber) }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</span>
             </div>
-            <small>{{ (draft.isPublished(week.weekNumber) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}<span *ngIf="draft.weekDates(days, week.weekNumber)"> · {{ draft.weekDates(days, week.weekNumber) }}</span></small>
           </button>
           <ng-container *ngIf="!draft.collapsedWeeks.has(week.weekNumber)">
             <ng-container *ngFor="let item of week.days">
@@ -49,7 +50,8 @@
       </div>
     </aside>
 
-    <main class="np-main">
+<main class="np-main">
+      <app-workout-week-panel *ngIf="selectedDay" [week]="draft.selectedWeek(days, selectedDay)" [ready]="draft.readyCount(days, draft.selectedWeek(days, selectedDay))" [published]="draft.isPublished(draft.selectedWeek(days, selectedDay))" [range]="draft.weekDates(days, draft.selectedWeek(days, selectedDay))" [saving]="draft.saving" [savedAt]="draft.savedAt" [error]="draft.error" (save)="savePlan()" (publish)="savePlan(draft.selectedWeek(days, selectedDay))"></app-workout-week-panel>
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>

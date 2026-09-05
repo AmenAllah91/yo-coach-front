@@ -7,6 +7,7 @@
   "WORKOUT_READY_COUNT": "{{count}}/7 jours prêts",
   "WORKOUT_PUBLISH_HINT": "Les sept jours doivent être prêts avant la publication.",
   "WORKOUT_DRAFT_HINT": "Les semaines en brouillon sont masquées aux clients. Publiez une semaine complète quand elle est prête.",
+  "WORKOUT_PUBLISHED_HINT": "Cette semaine est visible par le client assigné.",
   "WORKOUT_PUBLISHED_COUNT": "{{count}}/{{total}} semaines publiées",
   "WORKOUT_SAVED": "Enregistré à",
   "WORKOUT_SAVE_ERROR": "Échec de la sauvegarde. Vos modifications sont conservées ici. Réessayez.",

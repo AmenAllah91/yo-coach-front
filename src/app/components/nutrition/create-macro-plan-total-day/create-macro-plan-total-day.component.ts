@@ -8,6 +8,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 
 @Component({
   selector: 'app-create-macro-plan-total-day',
@@ -21,6 +22,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     FormsModule,
     DragDropModule,
     TranslateModule,
+    WorkoutWeekPanelComponent,
   ],
   templateUrl: './create-macro-plan-total-day.component.html',
   styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],

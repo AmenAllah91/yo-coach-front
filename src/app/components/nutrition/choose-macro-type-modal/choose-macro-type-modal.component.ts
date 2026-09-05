@@ -184,6 +184,6 @@ export class ChooseMacroTypeModalComponent implements OnChanges {
 
   get normalizedDurationWeeks(): number {
     const value = Number(this.durationWeeks) || 4;
-    return Math.max(1, Math.min(value, 52));
+    return Math.max(1, Math.min(value, 12));
   }
 }

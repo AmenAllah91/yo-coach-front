@@ -10,6 +10,7 @@ import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { Client, ClientService } from 'app/service/client.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 
 @Component({
   selector: 'app-assign-macro-plan-total-day',
@@ -24,6 +25,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     FormsModule,
     DragDropModule,
     TranslateModule,
+    WorkoutWeekPanelComponent,
   ],
   templateUrl: './assign-macro-plan-total-day.component.html',
   styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
