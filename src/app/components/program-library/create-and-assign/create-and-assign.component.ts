@@ -447,7 +447,7 @@ export class CreateAndAssignComponent implements OnInit {
       day.date = current.toISOString().split('T')[0];
       day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
       day.dayNumber = index + 1;
-      day.title = `Day ${index + 1}`;
+      day.title = `Day ${(index % 7) + 1}`;
       day.name = day.title;
     });
 

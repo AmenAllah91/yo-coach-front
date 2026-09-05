@@ -471,7 +471,7 @@ export class ProgramLibraryComponent implements OnInit {
               date,
               dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
               dayNumber: index + 1,
-              title: day.restDay ? 'Rest Day' : `Day ${index + 1}`,
+              title: day.restDay ? 'Rest Day' : `Day ${(index % 7) + 1}`,
             };
           });
 
@@ -654,10 +654,10 @@ export class ProgramLibraryComponent implements OnInit {
     const name = this.createWorkoutName.trim();
     if (!name) return;
 
-    const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, 52));
+    const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, 12));
     const days = Array.from({ length: durationWeeks * 7 }, (_, index) => ({
-      name: `Day ${index + 1}`,
-      title: `Day ${index + 1}`,
+      name: `Day ${(index % 7) + 1}`,
+      title: `Day ${(index % 7) + 1}`,
       dayNumber: index + 1,
       restDay: false,
       status: 'PENDING',

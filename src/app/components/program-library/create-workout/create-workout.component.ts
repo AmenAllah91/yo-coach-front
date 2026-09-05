@@ -972,7 +972,7 @@ export class CreateWorkoutComponent implements OnInit {
       day.date = undefined;
       day.dayOfWeek = undefined;
       day.dayNumber = index + 1;
-      day.title = `Day ${index + 1}`;
+      day.title = `Day ${(index % 7) + 1}`;
       day.name = day.title;
     });
     this.facade.syncPlanDays();

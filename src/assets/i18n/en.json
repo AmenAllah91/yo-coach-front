@@ -7,6 +7,7 @@
   "WORKOUT_READY_COUNT": "{{count}}/7 days ready",
   "WORKOUT_PUBLISH_HINT": "All seven days must be ready before publishing.",
   "WORKOUT_DRAFT_HINT": "Draft weeks are hidden from clients. Publish a completed week when it is ready.",
+  "WORKOUT_PUBLISHED_HINT": "This week is visible to the assigned client.",
   "WORKOUT_PUBLISHED_COUNT": "{{count}}/{{total}} weeks published",
   "WORKOUT_SAVED": "Saved",
   "WORKOUT_SAVE_ERROR": "Unable to save. Your changes are still here. Please retry.",

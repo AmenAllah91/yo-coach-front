@@ -9,11 +9,12 @@ import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent],
   templateUrl: './create-macro-plan.component.html',
   styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss'],
 })

@@ -1,21 +1,27 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
+
 @Component({
-  selector: 'app-workout-week-panel', standalone: true, imports: [CommonModule, TranslateModule],
+  selector: 'app-workout-week-panel',
+  standalone: true,
+  imports: [CommonModule, TranslateModule],
   template: `<section class="week-panel">
-    <div class="week-heading"><h2>{{ 'WEEK_NUMBER' | translate:{number: week} }} <small>{{ range }}</small></h2>
-      <div class="week-actions"><button type="button" [disabled]="saving" (click)="save.emit()">{{ 'SAVE_DRAFT' | translate }}</button>
-      <button type="button" class="publish" [disabled]="saving || ready !== 7 || published" [title]="'WORKOUT_PUBLISH_HINT' | translate" (click)="publish.emit()">{{ 'WORKOUT_PUBLISH_WEEK' | translate:{number: week} }}</button></div></div>
-    <div class="week-status"><span class="badge" [class.published]="published">{{ (published ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</span><span>{{ 'WORKOUT_READY_COUNT' | translate:{count: ready} }}</span></div>
-    <div class="week-progress"><progress [value]="ready" max="7" [attr.aria-label]="'WORKOUT_READY_COUNT' | translate:{count: ready}"></progress><small>{{ 'WORKOUT_DRAFT_HINT' | translate }}</small></div>
-    <small *ngIf="savedAt" role="status">{{ 'WORKOUT_SAVED' | translate }} {{ savedAt | date:'HH:mm' }}</small>
-    <p *ngIf="error" role="alert" class="error">{{ error }}</p>
+    <div class="week-panel__identity">
+      <div class="week-panel__title"><h2>{{ 'WEEK_NUMBER' | translate:{number: week} }}</h2><span [class.published]="published">{{ (published ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</span><strong>{{ ready }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</strong></div>
+      <div class="progress"><i [style.width.%]="ready / 7 * 100"></i></div>
+    </div>
+    <p class="week-panel__hint">{{ published ? ('WORKOUT_PUBLISHED_HINT' | translate) : ('WORKOUT_DRAFT_HINT' | translate) }}</p>
+    <small class="saved" *ngIf="savedAt">{{ 'WORKOUT_SAVED' | translate }} {{ savedAt | date:'HH:mm' }}</small>
+    <div class="week-panel__buttons"><button type="button" (click)="save.emit()" [disabled]="saving">{{ saving ? ('LOADING' | translate) : ('SAVE_DRAFT' | translate) }}</button><button type="button" class="primary" (click)="publish.emit()" [disabled]="saving || ready !== 7 || published">{{ published ? ('WORKOUT_PUBLISHED' | translate) : ('WORKOUT_PUBLISH_WEEK' | translate:{number: week}) }}</button></div>
+    <small class="week-panel__range" *ngIf="range">{{ range }}</small><p class="error" *ngIf="error">{{ error }}</p>
   </section>`,
-  styles: [`.week-panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;margin:0 0 18px;color:#17212f}.week-heading,.week-actions,.week-status,.week-progress{display:flex;align-items:center;gap:12px}.week-heading{justify-content:space-between;flex-wrap:wrap}h2{font-size:18px;margin:0}h2 small{font-size:12px;font-weight:400;color:#788391}.week-status{margin:12px 0;font-size:12px}.badge{background:#f2f4f7;color:#64748b;border-radius:5px;padding:4px 8px}.published{background:#dcfce7;color:#15803d}button{border:1px solid #dce1e7;background:white;border-radius:8px;padding:10px 14px;font:inherit;font-size:12px;cursor:pointer}.publish{background:#111827;color:white}button:disabled{background:#e9edf2;color:#99a1ad;cursor:not-allowed;border-color:#e9edf2}progress{width:160px;height:7px;accent-color:#249abd;flex-shrink:0}.week-progress small{color:#8b95a4;font-size:12px}.error{color:#b42318}.week-panel>small{display:block;margin-top:10px;color:#667085}@media(max-width:600px){.week-actions{width:100%}.week-progress{align-items:flex-start;flex-direction:column}}`]
+  styles: [`
+    .week-panel{display:grid;grid-template-columns:minmax(280px,auto) minmax(220px,1fr) auto auto;align-items:center;gap:12px;margin:16px;padding:16px;border:1px solid #dce3ea;border-radius:12px;background:#fff;box-shadow:0 2px 4px rgba(15,23,42,.07)}.week-panel__title{display:flex;align-items:center;gap:9px}.week-panel h2{margin:0;font-size:16px}.week-panel__title span{padding:3px 8px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:12px}.week-panel__title span.published{border:1px solid #82e3bd;background:#ecfdf5;color:#07875f}.week-panel__title strong{color:#079669;font-size:12px}.progress{width:72px;height:4px;margin-top:17px;border-radius:9px;background:#e5e7eb;overflow:hidden}.progress i{display:block;height:100%;background:#19b889}.week-panel__hint{margin:0;color:#8a99b5;font-size:12px;line-height:1.35}.saved{white-space:nowrap;color:#8a99b5}.week-panel__buttons{display:flex;gap:8px}.week-panel button{white-space:nowrap;padding:10px 14px;border:1px solid #d7dee8;border-radius:8px;background:#fff}.week-panel button.primary{background:#0d1b33;color:#fff}.week-panel button:disabled{border-color:#e2e8f0;background:#e8edf5;color:#94a3b8}.week-panel__range{grid-column:1;color:#718096}.error{grid-column:1/-1;margin:0;color:#c62828!important}@media(max-width:900px){.week-panel{grid-template-columns:1fr}.week-panel__range,.error{grid-column:1}.week-panel__buttons{justify-content:flex-start}}
+  `],
 })
 export class WorkoutWeekPanelComponent {
-  @Input() week = 1; @Input() ready = 0; @Input() published = false; @Input() range = '';
-  @Input() saving = false; @Input() savedAt: Date | null = null; @Input() error = '';
+  @Input() week = 1; @Input() ready = 0; @Input() published = false; @Input() saving = false;
+  @Input() savedAt: Date | null = null; @Input() error = ''; @Input() range = '';
   @Output() save = new EventEmitter<void>(); @Output() publish = new EventEmitter<void>();
 }

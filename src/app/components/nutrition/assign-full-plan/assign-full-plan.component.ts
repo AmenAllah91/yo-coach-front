@@ -11,11 +11,12 @@ import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan'
 import { Client, ClientService } from 'app/service/client.service';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 
 @Component({
   selector: 'app-assign-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent],
   templateUrl: './assign-full-plan.component.html',
   styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
