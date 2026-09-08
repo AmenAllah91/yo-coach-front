@@ -7,6 +7,25 @@
   align-items: end;
 }
 
+/* Final sidebar alignment: identical horizontal structure to Workout. */
+@media (min-width: 768px) {
+  .np-root .np-shell > .np-aside .np-week-card__head-top {
+    display: grid !important;
+    grid-template-columns: 14px max-content max-content minmax(0, 1fr) max-content !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    justify-items: start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+  .np-root .np-shell > .np-aside .np-week-card__chevron { grid-column: 1 !important; }
+  .np-root .np-shell > .np-aside .np-week-card__head strong { grid-column: 2 !important; margin: 0 !important; text-align: left !important; }
+  .np-root .np-shell > .np-aside .np-week-card__status { grid-column: 3 !important; margin: 0 !important; }
+  .np-root .np-shell > .np-aside .np-week-card__range { grid-column: 4 !important; margin: 0 !important; }
+  .np-root .np-shell > .np-aside .np-week-card__count { grid-column: 5 !important; justify-self: end !important; margin: 0 !important; }
+}
+
 .np-settings-kicker {
   display: flex;
   align-items: center;
@@ -132,9 +151,31 @@
   background: #f7f9fb !important;
 }
 
-.np-main > app-workout-week-panel { display: block; order: 0; }
-.np-main > .np-card--settings { order: 1; }
+.np-main > .np-card--settings { order: 0; }
+.np-main > app-workout-week-panel { display: block; order: 1; }
+.np-main > .np-card--day { order: 2; }
+.np-main > .np-sticky { order: 3; }
 .np-card--settings > .np-week-actions { display: none !important; }
+
+/* The shared Workout week panel is the only week publication UI. Keep the
+   unrelated copy-day utility, but remove the legacy duplicate week card. */
+.np-card--day > .np-week-actions {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.np-card--day > .np-week-actions > strong,
+.np-card--day > .np-week-actions > .np-week-actions__buttons,
+.np-card--day > .np-week-actions > p {
+  display: none !important;
+}
+
+.np-card--day > .np-week-actions > .np-copy-day {
+  margin: 0 !important;
+}
 
 .np-shell > .np-aside {
   width: 388px !important;
@@ -331,5 +372,1120 @@
   .np-sticky .np-btn--save {
     width: 100% !important;
     margin: 0 !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .np-root,
+  .np-root > .np-shell {
+    width: 100% !important;
+    max-width: none !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .np-root > .np-shell {
+    display: grid !important;
+    grid-template-columns: 448px minmax(0, 1fr) !important;
+  }
+
+  .np-root .np-main {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  .np-root .np-main > .np-card,
+  .np-root .np-main > .np-card:first-of-type,
+  .np-root .np-main > .np-card.np-card--settings:first-of-type {
+    width: calc(100% - 32px) !important;
+    max-width: none !important;
+    margin-right: 16px !important;
+    margin-left: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-main > app-workout-week-panel {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .np-shell > .np-aside {
+    flex: 0 0 400px !important;
+    width: 400px !important;
+    min-width: 400px !important;
+    height: calc(100vh - 48px) !important;
+    margin: 24px !important;
+    overflow: hidden auto !important;
+    border: 1px solid #dbe3ec !important;
+    border-radius: 15px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05) !important;
+
+    .np-aside__head {
+      position: relative !important;
+      display: block !important;
+      min-height: 86px !important;
+      padding: 22px 20px 18px !important;
+      border-bottom: 1px solid #e5eaf0 !important;
+    }
+
+    .np-aside__head .np-h6 { margin: 0 0 2px !important; font-size: 18px !important; font-weight: 600 !important; line-height: 24px !important; }
+    .np-aside__sub { margin: 0 !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; }
+    .np-aside__head > .np-link { position: absolute !important; top: 22px !important; right: 20px !important; display: block !important; width: auto !important; margin: 0 !important; padding: 0 !important; font-size: 14px !important; font-weight: 500 !important; line-height: 20px !important; white-space: nowrap !important; }
+    .np-aside__head > .np-link .np-ico { display: none !important; }
+    .np-aside__body { padding: 15px 20px 28px !important; }
+    .np-btn--full, .np-stack { display: none !important; }
+
+    .np-week-card {
+      margin: 0 0 8px !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .np-week-card__head { display: block !important; width: 100% !important; min-height: 42px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+    .np-week-card__head-top { display: flex !important; width: 100% !important; align-items: center !important; gap: 8px !important; }
+    .np-week-card__chevron { flex: 0 0 14px !important; width: 14px !important; height: 14px !important; color: #8aa0b8 !important; }
+    .np-week-card__head strong { color: #182235 !important; font-size: 17px !important; font-weight: 600 !important; line-height: 22px !important; white-space: nowrap !important; }
+    .np-week-card__status { padding: 3px 7px !important; border: 0 !important; border-radius: 5px !important; background: #eef2f6 !important; color: #4d6077 !important; font-size: 12px !important; font-weight: 400 !important; line-height: 18px !important; white-space: nowrap !important; }
+    .np-week-card__status.is-published { border: 0 !important; background: #eef2f6 !important; color: #4d6077 !important; }
+    .np-week-card__range { min-width: 0 !important; overflow: hidden !important; color: #71829a !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+    .np-week-card__count { margin-left: auto !important; padding: 0 !important; border: 0 !important; background: transparent !important; color: #6d7f99 !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; white-space: nowrap !important; }
+
+    .np-dayrow, .np-dayrow.is-active { position: relative !important; min-height: 45px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; }
+    .np-dayrow::before { display: block !important; content: "" !important; position: absolute !important; left: 1px !important; top: -1px !important; bottom: -1px !important; width: 1px !important; background: #dbe5ef !important; }
+    .np-dayrow::after { display: none !important; }
+    .np-dayrow .np-day, .np-dayrow .np-day.is-active {
+      display: flex !important;
+      width: calc(100% + 20px) !important;
+      min-height: 45px !important;
+      margin: 0 !important;
+      padding: 8px 12px 8px 14px !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 10px !important;
+      border: 0 !important;
+      border-radius: 0 9px 9px 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: #35445b !important;
+    }
+    .np-dayrow .np-day.is-active { background: #e5f5fb !important; }
+    .np-day-state, .np-day-state.ready, .np-day-state.rest { display: grid !important; flex: 0 0 19px !important; width: 19px !important; height: 19px !important; place-items: center !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+    .np-day-state i-feather { display: block !important; width: 19px !important; height: 19px !important; color: #c6d4e2 !important; stroke-width: 1.7 !important; }
+    .np-day-state.ready i-feather { color: #0ec291 !important; stroke-width: 2 !important; }
+    .np-day-state.rest i-feather { color: #8fa7c1 !important; stroke-width: 1.7 !important; }
+    .np-day__topline { display: flex !important; flex: 0 1 auto !important; width: auto !important; min-width: 0 !important; align-items: baseline !important; gap: 8px !important; white-space: nowrap !important; }
+    .np-day__title, .np-day.is-active .np-day__title { flex: 0 0 auto !important; color: #35445b !important; font-size: 16px !important; font-weight: 600 !important; line-height: 22px !important; }
+    .np-day__dateLine, .np-root .np-day__dateLine { display: inline !important; min-width: 0 !important; overflow: hidden !important; color: #71829a !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; text-overflow: ellipsis !important; }
+    .np-day__meta { display: block !important; flex: 0 0 auto !important; width: auto !important; margin: 0 0 0 auto !important; color: #72839d !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; text-align: right !important; white-space: nowrap !important; }
+    .np-day.is-active .np-day__meta { color: #079bd4 !important; font-weight: 600 !important; }
+  }
+}
+
+@media (min-width: 768px) {
+  .np-root .np-shell > .np-aside .np-week-card__head-top {
+    display: grid !important;
+    grid-template-columns: 14px max-content max-content minmax(0, 1fr) max-content !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    justify-items: start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+  .np-root .np-shell > .np-aside .np-week-card__chevron { grid-column: 1 !important; }
+  .np-root .np-shell > .np-aside .np-week-card__head strong { grid-column: 2 !important; margin: 0 !important; text-align: left !important; }
+  .np-root .np-shell > .np-aside .np-week-card__status { grid-column: 3 !important; margin: 0 !important; }
+  .np-root .np-shell > .np-aside .np-week-card__range { grid-column: 4 !important; margin: 0 !important; }
+  .np-root .np-shell > .np-aside .np-week-card__count { grid-column: 5 !important; justify-self: end !important; margin: 0 !important; }
+}
+
+/* ========================================================================== */
+/* FINAL NUTRITION RESPONSIVE POLISH — visual only, meal/nutrition logic intact */
+/* Inspired by the final Workout builder proportions and responsive rhythm.    */
+/* ========================================================================== */
+
+/* Kill the legacy copy-day UI everywhere. The template blocks are also removed
+   from the six builder HTML files, this is a safety net for any nested variant. */
+.np-copy-day { display: none !important; }
+
+/* Keep the main builder calm and centered rather than stretching oddly. */
+.np-root {
+  --np-mobile-page-pad: 12px;
+  --np-content-max: 1040px;
+  background: #f6f8fb !important;
+}
+
+.np-main {
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+}
+
+.np-main > .np-card,
+.np-main > app-workout-week-panel,
+.np-main > .np-sticky {
+  box-sizing: border-box !important;
+}
+
+/* Global settings: same compact editorial scale as Workout. */
+.np-card--settings {
+  padding: 20px 22px !important;
+}
+
+.np-settings-kicker {
+  min-height: 22px;
+  margin: 0 0 18px !important;
+  color: #42536a !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: .08em !important;
+  line-height: 18px !important;
+}
+
+.np-settings-kicker__dot {
+  width: 8px !important;
+  height: 8px !important;
+  flex: 0 0 8px !important;
+  box-shadow: none !important;
+}
+
+.np-settings-kicker .np-link {
+  margin: 0 0 0 auto !important;
+  color: #079bd4 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.np-global-fields {
+  gap: 16px !important;
+}
+
+.np-label {
+  margin-bottom: 7px !important;
+  color: #172033 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 18px !important;
+}
+
+.np-input {
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 9px 12px !important;
+  border-color: #cfd9e5 !important;
+  border-radius: 8px !important;
+  color: #172033 !important;
+  background: #fff !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
+}
+
+textarea.np-input,
+.np-textarea {
+  height: auto !important;
+  min-height: 96px !important;
+}
+
+.np-card--settings > .np-link {
+  margin: 4px 0 0 !important;
+  font-size: 13px !important;
+}
+
+/* Week card: force the shared week panel to behave like the Workout template.
+   ::ng-deep is intentional here because the week panel is a child component. */
+:host ::ng-deep app-workout-week-panel .week-panel,
+.np-root ::ng-deep app-workout-week-panel .week-panel {
+  box-sizing: border-box !important;
+  border-color: #dce3ea !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .06) !important;
+}
+
+:host ::ng-deep app-workout-week-panel .week-panel__progress,
+.np-root ::ng-deep app-workout-week-panel .week-panel__progress {
+  display: block !important;
+  width: 100% !important;
+  max-width: 180px !important;
+  height: 5px !important;
+  min-height: 5px !important;
+  max-height: 5px !important;
+  flex: 0 0 5px !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  background: #e4eaf0 !important;
+}
+
+:host ::ng-deep app-workout-week-panel .week-panel__progress i,
+.np-root ::ng-deep app-workout-week-panel .week-panel__progress i {
+  display: block !important;
+  width: auto;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 5px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: inherit !important;
+  background: #1aa7d8 !important;
+  box-shadow: none !important;
+}
+
+/* The old duplicated week text inside the day card remains hidden. */
+.np-card--day > .np-week-actions {
+  display: none !important;
+}
+
+/* Day builder and meals: use the same readable width rhythm as Workout. */
+.np-card--day {
+  padding: 20px 22px !important;
+}
+
+.builder-rail {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin-top: 0 !important;
+}
+
+.np-dayhead {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 10px !important;
+}
+
+.np-dayhead .np-h6,
+.np-dayhead h3 {
+  color: #172033 !important;
+  font-size: 18px !important;
+  font-weight: 650 !important;
+  line-height: 24px !important;
+}
+
+.np-subtle {
+  margin: 8px 0 12px !important;
+  color: #60738b !important;
+  font-size: 12px !important;
+  line-height: 18px !important;
+}
+
+.np-meal {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-bottom: 14px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04) !important;
+}
+
+.np-meal__head {
+  padding: 13px 14px !important;
+}
+
+.np-meal__body {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 16px !important;
+}
+
+.np-badge {
+  min-width: 78px !important;
+  padding: 7px 8px !important;
+}
+
+.np-badge__label {
+  font-size: 10px !important;
+}
+
+.np-badge__val {
+  font-size: 13px !important;
+}
+
+/* Desktop keeps the familiar sidebar; content no longer grows excessively. */
+@media (min-width: 901px) {
+  .np-root > .np-shell {
+    grid-template-columns: 420px minmax(0, 1fr) !important;
+  }
+
+  .np-shell > .np-aside {
+    width: 372px !important;
+    min-width: 372px !important;
+    flex-basis: 372px !important;
+    margin: 20px 16px 20px 20px !important;
+    height: calc(100vh - 40px) !important;
+  }
+
+  .np-root .np-main > .np-card,
+  .np-root .np-main > .np-card:first-of-type,
+  .np-root .np-main > .np-card.np-card--settings:first-of-type {
+    width: calc(100% - 32px) !important;
+    max-width: var(--np-content-max) !important;
+    margin: 16px auto 0 !important;
+  }
+
+  .np-root .np-main > app-workout-week-panel {
+    display: block !important;
+    width: calc(100% - 32px) !important;
+    max-width: var(--np-content-max) !important;
+    margin: 0 auto !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel.compact,
+  .np-root ::ng-deep app-workout-week-panel .week-panel.compact {
+    margin: 16px 0 0 !important;
+  }
+}
+
+/* Mobile: Workout-style card stack. No giant widths, no accidental green
+   circle, no horizontal concatenated day pills. */
+@media (max-width: 900px) {
+  .np-root,
+  .np-shell,
+  .np-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .np-shell {
+    display: block !important;
+  }
+
+  .np-shell > .np-aside {
+    display: none !important;
+  }
+
+  .np-main {
+    height: auto !important;
+    min-height: 100vh !important;
+    padding: 0 0 80px !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+
+  .np-main > .np-card,
+  .np-main > .np-card:first-of-type,
+  .np-main > .np-card.np-card--settings:first-of-type {
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+    margin: 12px 12px 0 !important;
+  }
+
+  .np-card--settings,
+  .np-card--day {
+    padding: 14px !important;
+    border-radius: 11px !important;
+  }
+
+  .np-card--settings {
+    border-left-width: 1px !important;
+  }
+
+  .np-settings-kicker {
+    min-width: 0 !important;
+    margin-bottom: 14px !important;
+    gap: 7px !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  .np-settings-kicker > span:not(.np-settings-kicker__dot) {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .np-settings-kicker .np-link {
+    flex: 0 0 auto !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  .np-global-fields {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .np-field {
+    margin-bottom: 16px !important;
+  }
+
+  .np-label {
+    font-size: 12px !important;
+  }
+
+  .np-input {
+    min-height: 40px !important;
+    height: 40px !important;
+    font-size: 12px !important;
+  }
+
+  textarea.np-input,
+  .np-textarea {
+    height: auto !important;
+    min-height: 88px !important;
+  }
+
+  .np-main > app-workout-week-panel {
+    display: block !important;
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+    margin: 0 12px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel,
+  :host ::ng-deep app-workout-week-panel .week-panel.compact,
+  .np-root ::ng-deep app-workout-week-panel .week-panel,
+  .np-root ::ng-deep app-workout-week-panel .week-panel.compact {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 12px 0 0 !important;
+    padding: 14px !important;
+    gap: 12px !important;
+    border-radius: 11px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__title,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__title {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 7px !important;
+    white-space: normal !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel h2,
+  .np-root ::ng-deep app-workout-week-panel .week-panel h2 {
+    font-size: 16px !important;
+    line-height: 22px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__status,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__status {
+    padding: 3px 7px !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__title strong,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__title strong {
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__support,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__support {
+    display: grid !important;
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 10px !important;
+    margin-top: 0 !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__progress,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__progress {
+    width: 92px !important;
+    max-width: 92px !important;
+    height: 4px !important;
+    min-height: 4px !important;
+    max-height: 4px !important;
+    flex: 0 0 4px !important;
+    margin-top: 6px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__progress i,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__progress i {
+    height: 4px !important;
+    max-height: 4px !important;
+    border-radius: 999px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__hint,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__hint {
+    max-width: none !important;
+    margin: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__buttons,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__buttons {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel button,
+  .np-root ::ng-deep app-workout-week-panel .week-panel button {
+    width: 100% !important;
+    min-height: 40px !important;
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Workout mobile does not use a concatenated horizontal day rail. */
+  .np-mobile-days {
+    display: none !important;
+  }
+
+  .builder-rail {
+    margin-top: 0 !important;
+  }
+
+  .np-dayhead {
+    align-items: flex-start !important;
+    margin-bottom: 10px !important;
+  }
+
+  .np-dayhead .np-h6,
+  .np-dayhead h3 {
+    font-size: 16px !important;
+    line-height: 22px !important;
+  }
+
+  .np-meal {
+    margin-bottom: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .np-meal__head {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .np-meal__left,
+  .np-meal__right {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .np-meal__right {
+    gap: 8px !important;
+  }
+
+  .np-badges {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    gap: 7px !important;
+  }
+
+  .np-badge {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 7px 6px !important;
+  }
+
+  .np-meal__body {
+    padding: 12px !important;
+    overflow-x: auto !important;
+  }
+
+  .np-day-total {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 10px 0 14px !important;
+  }
+
+  .np-day-total__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    padding: 10px !important;
+  }
+
+  .np-day-total__item {
+    min-width: 0 !important;
+    padding: 9px 6px !important;
+  }
+
+  .np-day-total__value {
+    font-size: 17px !important;
+  }
+
+  .np-sticky {
+    width: 100% !important;
+    padding: 10px 12px !important;
+  }
+
+  .np-sticky .np-btn--save,
+  .np-sticky .np-btn--save:hover {
+    width: 100% !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Very narrow phones: preserve readable meal cards without horizontal page
+   overflow; inner food tables may scroll inside their own card if required. */
+@media (max-width: 480px) {
+  .np-card--settings,
+  .np-card--day {
+    padding: 12px !important;
+  }
+
+  .np-main > .np-card,
+  .np-main > .np-card:first-of-type,
+  .np-main > .np-card.np-card--settings:first-of-type,
+  .np-main > app-workout-week-panel {
+    width: calc(100% - 16px) !important;
+    margin-left: 8px !important;
+    margin-right: 8px !important;
+  }
+
+  .np-badges {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* ========================================================================== */
+/* FINAL NUTRITION MOBILE WEEKS — workout-style compact Program Structure     */
+/* Presentation only. No nutrition calculation/save/meal logic is changed.   */
+/* ========================================================================== */
+.np-mobile-structure-toggle,
+.np-mobile-nutrition-toolbar { display: none; }
+
+@media (max-width: 900px) {
+  .np-root > .np-mobile-structure-toggle {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .np-root > .np-mobile-nutrition-toolbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    width: calc(100% - 24px) !important;
+    min-height: 48px !important;
+    margin: 0 12px !important;
+    padding: 7px 0 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-mobile-nutrition-toolbar__spacer { flex: 1 1 auto !important; }
+
+  .np-root .np-mobile-weeks-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    min-width: 82px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    border: 1px solid #d2ddea !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #102038 !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-mobile-weeks-btn .np-ico {
+    width: 14px !important;
+    height: 14px !important;
+    color: #60748f !important;
+  }
+
+  /* Closed by default; opening is inline like the Workout template. */
+  .np-root .np-shell > .np-aside {
+    display: none !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: calc(100% - 24px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 12px 12px !important;
+    border: 1px solid #dfe6ee !important;
+    border-radius: 11px !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(15,23,42,.04) !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__head {
+    position: relative !important;
+    min-height: 58px !important;
+    padding: 13px 14px 10px !important;
+    border-bottom: 1px solid #e6ebf1 !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__head .np-h6 {
+    margin: 0 0 1px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    font-weight: 700 !important;
+    color: #102038 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__sub {
+    margin: 0 !important;
+    font-size: 10px !important;
+    line-height: 14px !important;
+    color: #697b94 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__head > .np-link {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #0099d4 !important;
+    font-size: 10px !important;
+    line-height: 14px !important;
+    font-weight: 600 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__head > .np-link .np-ico {
+    display: none !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__body {
+    display: block !important;
+    height: auto !important;
+    max-height: 355px !important;
+    padding: 7px 10px 9px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  /* Hide desktop utility actions from the compact mobile navigation card. */
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__body > .np-btn--full,
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-aside__body > .np-stack {
+    display: none !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card + .np-week-card {
+    margin-top: 3px !important;
+    padding-top: 3px !important;
+    border-top: 1px solid #eef2f6 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__head {
+    width: 100% !important;
+    min-height: 34px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__head-top {
+    display: grid !important;
+    grid-template-columns: 10px auto auto minmax(0,1fr) auto !important;
+    align-items: center !important;
+    gap: 5px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px 2px !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__chevron {
+    width: 10px !important;
+    height: 10px !important;
+    color: #7890ad !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__head strong {
+    margin: 0 !important;
+    font-size: 11px !important;
+    line-height: 15px !important;
+    font-weight: 600 !important;
+    color: #102038 !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__status {
+    padding: 2px 5px !important;
+    border-radius: 5px !important;
+    font-size: 8px !important;
+    line-height: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__range {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 9px !important;
+    line-height: 13px !important;
+    color: #667892 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-week-card__count {
+    justify-self: end !important;
+    font-size: 9px !important;
+    line-height: 13px !important;
+    color: #59708e !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-dayrow {
+    min-height: 34px !important;
+    margin: 0 !important;
+    border: 0 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day {
+    display: grid !important;
+    grid-template-columns: 16px minmax(0,1fr) auto !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    min-height: 34px !important;
+    padding: 5px 7px !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day.is-active {
+    background: #dff3fb !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day-state,
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day-state i-feather,
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day-state svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day__topline {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day__title {
+    font-size: 10px !important;
+    line-height: 14px !important;
+    font-weight: 600 !important;
+    color: #17304f !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day__dateLine {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 9px !important;
+    line-height: 13px !important;
+    color: #6c7e96 !important;
+  }
+
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside .np-day__meta {
+    justify-self: end !important;
+    margin: 0 !important;
+    font-size: 8px !important;
+    line-height: 12px !important;
+    color: #5f7591 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Week publication panel: give every element breathing room. */
+  :host ::ng-deep app-workout-week-panel .week-panel,
+  :host ::ng-deep app-workout-week-panel .week-panel.compact,
+  .np-root ::ng-deep app-workout-week-panel .week-panel,
+  .np-root ::ng-deep app-workout-week-panel .week-panel.compact {
+    padding: 15px 14px !important;
+    gap: 13px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__title,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__title {
+    gap: 8px !important;
+    row-gap: 6px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__title h2,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__title h2 {
+    margin-right: 1px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__support,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__support {
+    grid-template-columns: 86px minmax(0,1fr) !important;
+    column-gap: 12px !important;
+    margin-top: 1px !important;
+  }
+
+  :host ::ng-deep app-workout-week-panel .week-panel__buttons,
+  .np-root ::ng-deep app-workout-week-panel .week-panel__buttons {
+    gap: 9px !important;
+    margin-top: 1px !important;
+  }
+}
+
+/* ========================================================================== */
+/* STANDARD NUTRITION PAGE HEADER — same geometry/presentation as Workout     */
+/* Applies to every Nutrition builder on desktop and responsive layouts.      */
+/* ========================================================================== */
+.np-root > .np-pagehead {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-height: 88px !important;
+  padding: 18px 24px !important;
+  margin: 0 !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e5eaf0 !important;
+  box-sizing: border-box !important;
+}
+
+.np-root > .np-pagehead .np-back {
+  display: inline-flex !important;
+  flex: 0 0 44px !important;
+  width: 44px !important;
+  height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #f2f6f9 !important;
+  color: #60748f !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+.np-root > .np-pagehead .np-back:hover { background: #eaf0f5 !important; }
+.np-root > .np-pagehead .np-back .np-ico { width: 22px !important; height: 22px !important; }
+
+.np-root > .np-pagehead .np-pagehead__copy {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+.np-root > .np-pagehead .np-h5 {
+  margin: 0 !important;
+  color: #102038 !important;
+  font-family: inherit !important;
+  font-size: 24px !important;
+  line-height: 30px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+.np-root > .np-pagehead .np-pagehead__meta {
+  margin: 2px 0 0 !important;
+  color: #637795 !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  font-weight: 400 !important;
+}
+
+/* Weeks exists in the same header as Workout but only becomes visible mobile. */
+.np-root > .np-pagehead .np-mobile-weeks-btn { display: none !important; }
+
+/* Retire the previous standalone mobile toolbar completely. */
+.np-root > .np-mobile-nutrition-toolbar { display: none !important; }
+
+@media (max-width: 900px) {
+  .np-root > .np-pagehead {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 80 !important;
+    min-height: 66px !important;
+    height: 66px !important;
+    gap: 10px !important;
+    padding: 8px 12px !important;
+  }
+  .np-root > .np-pagehead .np-back {
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .np-root > .np-pagehead .np-back .np-ico { width: 18px !important; height: 18px !important; }
+  .np-root > .np-pagehead .np-h5 {
+    font-size: 16px !important;
+    line-height: 20px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .np-root > .np-pagehead .np-pagehead__meta {
+    max-width: 100% !important;
+    margin-top: 1px !important;
+    font-size: 10px !important;
+    line-height: 14px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .np-root > .np-pagehead .np-mobile-weeks-btn {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    min-width: 82px !important;
+    height: 36px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    padding: 0 12px !important;
+    border: 1px solid #cbd6e2 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #102038 !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+  }
+  .np-root > .np-pagehead .np-mobile-weeks-btn .np-ico {
+    width: 14px !important;
+    height: 14px !important;
+    color: #60748f !important;
+  }
+
+  /* The existing inline Program Structure still opens directly below header. */
+  .np-root > .np-mobile-structure-toggle:checked ~ .np-shell > .np-aside {
+    margin-top: 0 !important;
   }
 }

@@ -1,5 +1,22 @@
 <!-- Root -->
 <div class="np-root">
+  <!-- Standard application page header — intentionally identical to Workout. -->
+  <input type="checkbox" id="np-mobile-nutrition-weeks" class="np-mobile-structure-toggle" aria-hidden="true" />
+  <div class="np-pagehead">
+    <button type="button" class="np-back app-page-back" aria-label="Back" (click)="goBack()">
+      <svg viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </button>
+    <div class="np-pagehead__copy">
+      <h1 class="np-h5">Edit Nutrition Plan</h1>
+      <p class="np-pagehead__meta">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks.length, days: days.length } }}</p>
+    </div>
+    <label for="np-mobile-nutrition-weeks" class="np-mobile-weeks-btn" role="button" tabindex="0">
+      <i-feather name="list" class="np-ico"></i-feather>
+      <span>Weeks</span>
+    </label>
+  </div>
   <div class="np-shell">
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
@@ -26,7 +43,7 @@
             <ng-container *ngFor="let item of week.days">
               <div class="np-dayrow" cdkDrag [class.is-active]="selectedDay?.id === item.day.id">
                 <button type="button" class="np-day" [class.is-active]="selectedDay?.id === item.day.id" (click)="selectDay(item.day)">
-                  <span class="np-day-state" [class.ready]="draft.dayState(item.day) === 'READY'" [class.rest]="draft.dayState(item.day) === 'CHEAT'">{{ draft.dayState(item.day) === 'READY' ? '✓' : draft.dayState(item.day) === 'CHEAT' ? '☾' : '○' }}</span>
+                  <span class="np-day-state" [class.ready]="draft.dayState(item.day) === 'READY'" [class.rest]="draft.dayState(item.day) === 'CHEAT'"><i-feather [name]="draft.dayState(item.day) === 'READY' ? 'check-circle' : draft.dayState(item.day) === 'CHEAT' ? 'moon' : 'circle'"></i-feather></span>
                   <span class="np-day__topline">
                     <span class="np-day__title">{{ 'DAY_NUMBER' | translate:{ number: item.index % 7 + 1 } }}</span>
                     <span class="np-day__dateLine">{{ draft.dayDate(item.day) }}</span>
@@ -54,7 +71,6 @@
 
     <!-- ===== Main ===== -->
 <main class="np-main">
-      <app-workout-week-panel *ngIf="selectedDay" [week]="draft.selectedWeek(days, selectedDay)" [ready]="draft.readyCount(days, draft.selectedWeek(days, selectedDay))" [published]="draft.isPublished(draft.selectedWeek(days, selectedDay))" [range]="draft.weekDates(days, draft.selectedWeek(days, selectedDay))" [saving]="draft.saving" [savedAt]="draft.savedAt" [error]="draft.error" (save)="savePlan()" (publish)="savePlan(draft.selectedWeek(days, selectedDay))"></app-workout-week-panel>
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
@@ -222,6 +238,11 @@
         <div class="np-sep"></div>
 
         </ng-container>
+      </section>
+
+      <app-workout-week-panel [compact]="true" *ngIf="selectedDay" [week]="draft.selectedWeek(days, selectedDay)" [ready]="draft.readyCount(days, draft.selectedWeek(days, selectedDay))" [published]="draft.isPublished(draft.selectedWeek(days, selectedDay))" [range]="draft.weekDates(days, draft.selectedWeek(days, selectedDay))" [saving]="draft.saving" [savedAt]="draft.savedAt" [error]="draft.error" (save)="savePlan()" (publish)="savePlan(draft.selectedWeek(days, selectedDay))"></app-workout-week-panel>
+
+      <section class="np-card np-card--day">
         <div class="np-week-actions" *ngIf="selectedDay">
           <strong>Week {{ draft.selectedWeek(days, selectedDay) }} · {{ draft.isPublished(draft.selectedWeek(days, selectedDay)) ? 'Published' : 'Draft' }} · {{ draft.readyCount(days, draft.selectedWeek(days, selectedDay)) }}/7 days ready</strong>
           <div class="np-week-actions__buttons">
@@ -230,17 +251,7 @@
             <small *ngIf="draft.savedAt" role="status">Saved {{ draft.savedAt | date:'HH:mm' }}</small>
           </div>
           <p>Draft weeks are hidden from clients. Publish a completed week when it is ready.</p>
-          <div class="np-copy-day">
-            <label>Copy selected day to
-              <select class="np-input" [(ngModel)]="draft.copyTargetIndex">
-                <option [ngValue]="null">Choose a day</option>
-                <ng-container *ngFor="let week of nutritionWeeks">
-                  <option *ngFor="let item of week.days" [ngValue]="item.index" [disabled]="item.day === selectedDay">Week {{ week.weekNumber }} � Day {{ item.index % 7 + 1 }}</option>
-                </ng-container>
-              </select>
-            </label>
-            <button type="button" class="np-btn" [disabled]="draft.copyTargetIndex === null || draft.saving" (click)="draft.copyDay(days, selectedDay)">Copy day</button>
-          </div>
+
           <p class="np-danger" *ngIf="draft.error" role="alert">{{ draft.error }}</p>
         </div>
         <div class="np-mobile-days">

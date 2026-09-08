@@ -21,7 +21,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateFullPlanComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, null);
+  draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang);
 
   userId = sessionStorage.getItem('userId');
 
@@ -983,5 +983,10 @@ export class CreateFullPlanComponent implements OnInit {
     this.days = this.days.slice(0, count);
     this.durationWeeks = weeks;
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
+  }
+
+  /** Standard application back action used by the shared Workout/Nutrition header. */
+  goBack(): void {
+    window.history.back();
   }
 }

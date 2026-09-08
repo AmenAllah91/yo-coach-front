@@ -1,7 +1,7 @@
 import { ActivatedRoute } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MacroTrackingMode, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
-import { nutritionDayState, nutritionMealValid } from '@shared/models/nutrition-publication';
+import { nutritionDayState, nutritionMealState } from '@shared/models/nutrition-publication';
 
 export class NutritionDraftState {
   collapsedWeeks = new Set<number>(Array.from({ length: 11 }, (_, i) => i + 2));
@@ -12,12 +12,14 @@ export class NutritionDraftState {
   savedAt: Date | null = null;
   error = '';
   private planId: string | null = null;
+  private readonly localeProvider?: () => string;
 
   constructor(
     private service: NutritionService,
     private route: ActivatedRoute,
     private trackingMode: MacroTrackingMode | null,
-  ) {}
+    localeProvider?: () => string,
+  ) { this.localeProvider = localeProvider; }
 
   load(plan: MealPlan): void {
     this.planId = plan.id || this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId');
@@ -42,10 +44,18 @@ export class NutritionDraftState {
   toggleAllWeeks(count: number): void { if (this.allWeeksExpanded(count)) for (let w = 1; w <= count; w++) this.collapsedWeeks.add(w); else this.collapsedWeeks.clear(); }
   isPublished(week: number): boolean { return this.publishedWeeks.includes(week); }
   dayState(day: MealDay) { return nutritionDayState(day); }
-  readyCount(days: MealDay[], week: number): number { return days.slice((week - 1) * 7, week * 7).filter(d => nutritionDayState(d) !== 'EMPTY').length; }
+  readyCount(days: MealDay[], week: number): number { return days.slice((week - 1) * 7, week * 7).filter(d => ['READY', 'CHEAT'].includes(nutritionDayState(d))).length; }
   selectedWeek(days: MealDay[], selected: MealDay | null): number { const index = selected ? days.indexOf(selected) : 0; return Math.max(1, Math.floor(Math.max(index, 0) / 7) + 1); }
-  dayDate(day: MealDay): string { if (!day?.date) return ''; const date = new Date(`${day.date}T00:00:00`); return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
-  weekDates(days: MealDay[], week: number): string { const slice = days.slice((week - 1) * 7, week * 7).filter(d => d.date); if (!slice.length) return ''; const fmt = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); return `${fmt(slice[0].date)} – ${fmt(slice[slice.length - 1].date)}`; }
-  mealStatus(meal: Meal): string { return nutritionMealValid(meal) ? 'Ready' : 'Incomplete'; }
+  dayDate(day: MealDay): string { if (!day?.date) return ''; const date = new Date(`${day.date}T00:00:00`); return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(this.dateLocale(), { weekday: 'short', month: 'short', day: 'numeric' }); }
+  weekDates(days: MealDay[], week: number): string { const slice = days.slice((week - 1) * 7, week * 7).filter(d => d.date); if (!slice.length) return ''; const fmt = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' }); return `${fmt(slice[0].date)} – ${fmt(slice[slice.length - 1].date)}`; }
+  mealStatus(meal: Meal): string {
+    const state = nutritionMealState(meal);
+    return state === 'VALID' ? 'Ready' : state === 'INCOMPLETE' ? 'Incomplete' : 'Empty';
+  }
   copyDay(days: MealDay[], source: MealDay | null): void { if (!source || this.copyTargetIndex === null || !days[this.copyTargetIndex]) return; const target = days[this.copyTargetIndex]; const clone = JSON.parse(JSON.stringify(source)) as MealDay; Object.assign(target, clone, { id: target.id, date: target.date, dayOfWeek: target.dayOfWeek }); }
+
+  private dateLocale(): string {
+    const language = this.localeProvider?.() || (typeof document !== 'undefined' ? document.documentElement.lang : '');
+    return language.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US';
+  }
 }

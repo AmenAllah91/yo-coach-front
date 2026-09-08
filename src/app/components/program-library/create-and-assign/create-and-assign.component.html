@@ -1,11 +1,31 @@
 <!-- Root -->
-<div class="np-root" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector">
+<div class="np-root" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen">
+  <div class="np-pagehead">
+    <button type="button" class="np-back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
+      <svg viewBox="0 0 24 24" class="np-ico">
+        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
+    <div class="np-pagehead__copy">
+      <h1 class="np-h5">{{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}</h1>
+      <p class="np-pagehead__meta">
+        {{ workoutPlan.name }} · {{ startDate }} – {{ endDate }} ·
+        {{ 'WEEK_NUMBER' | translate:{number: getSelectedWeekNumber()} }} ·
+        {{ 'DAY_NUMBER' | translate:{number: selectedDay?.dayNumber || 1} }} ·
+        {{ (isWeekPublished(getSelectedWeekNumber()) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}
+      </p>
+    </div>
+    <button type="button" class="np-mobile-weeks-btn" (click)="toggleMobileStructure()" [attr.aria-expanded]="mobileStructureOpen">
+      <i-feather name="list" class="np-ico"></i-feather> Weeks
+    </button>
+  </div>
   <div class="np-shell">
     <!-- ===== Left Sidebar (Days) ===== -->
     <aside class="np-aside">
       <div class="np-aside__head">
+        <button type="button" class="np-mobile-structure-close" (click)="closeMobileStructure()" aria-label="Close weeks"><i-feather name="x" class="np-ico"></i-feather></button>
         <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
-        <p class="np-aside__sub">{{ workoutWeeks.length }} Weeks • {{ days.length }} Days</p>
+        <p class="np-aside__sub">{{ workoutWeeks.length }} Weeks · {{ days.length }} Days</p>
         <button type="button" class="np-link" (click)="toggleAllWeeks()">{{ (allWeeksExpanded() ? 'COLLAPSE_ALL' : 'EXPAND_ALL') | translate }}</button>
       </div>
 
@@ -42,13 +62,15 @@
                 type="button"
                 class="np-day"
                 [class.is-active]="selectedDay?.id === d.id"
-                (click)="selectDay(d)"
+                (click)="selectDay(d); closeMobileStructure()"
               >
-                <span class="np-day-state" [class.ready]="getDayBuilderStatus(d) === 'READY'" [class.rest]="getDayBuilderStatus(d) === 'REST_DAY'">{{ getDayBuilderStatus(d) === 'READY' ? '✓' : getDayBuilderStatus(d) === 'REST_DAY' ? '☾' : '○' }}</span><span class="np-day__topline">
-                  <span class="np-day__title">{{ d.title }}</span>
-                  <span class="np-day__dateLine">
-                    {{ d.dayOfWeek }}, {{ d.date | date : "MMM d" }}
-                  </span>
+                <span class="np-day-state" [class.ready]="getDayBuilderStatus(d) === 'READY'" [class.rest]="getDayBuilderStatus(d) === 'REST_DAY'">
+                  <span *ngIf="getDayBuilderStatus(d) === 'READY'" class="np-ready-check" aria-hidden="true">✓</span>
+                  <i-feather *ngIf="getDayBuilderStatus(d) !== 'READY'" [name]="getDayBuilderStatus(d) === 'REST_DAY' ? 'moon' : 'circle'"></i-feather>
+                </span>
+                <span class="np-day__topline">
+                  <span class="np-day__title">{{ 'DAY_NUMBER' | translate:{number: (d.dayNumber || (week.days.indexOf(d) + 1))} }}</span>
+                  <span class="np-day__dateLine">{{ getAssignedDayDateLabel(d) }}</span>
                 </span>
                 <small class="np-day__meta">
                   {{ (getDayBuilderStatus(d) === 'REST_DAY' ? 'REST_DAY' : getDayBuilderStatus(d) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_EMPTY') | translate }}
@@ -86,38 +108,21 @@
         </div>
       </div>
     </aside>
+    <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="closeMobileStructure()" aria-label="Close weeks"></button>
 
     <!-- ===== Main ===== -->
     <main class="np-main">
-      <!-- Page title (desktop) -->
-      <div class="np-pagehead">
-        <button type="button" class="np-back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <h1 class="np-h5">
-          {{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}
-        </h1>
-      </div>
-
+      <button type="button" class="wkex-quickchoose" (click)="openExerciseSelector()"><span class="wkex-plus">＋</span>{{ 'CHOOSE_EXERCISE' | translate }}</button>
       <!-- Main Card -->
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><button type="button" class="np-link" (click)="planSettingsCollapsed = !planSettingsCollapsed">{{ (planSettingsCollapsed ? 'WORKOUT_SHOW' : 'WORKOUT_HIDE') | translate }}</button>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="planSettingsCollapsed">{{ workoutPlan.name }} · {{ durationWeeks }} {{ 'WEEKS' | translate }} · {{ startDate }} – {{ endDate }}</span><button type="button" class="np-link np-settings-toggle" (click)="planSettingsCollapsed = !planSettingsCollapsed">{{ (planSettingsCollapsed ? 'WORKOUT_SHOW' : 'WORKOUT_HIDE') | translate }}<i-feather [name]="planSettingsCollapsed ? 'chevron-down' : 'chevron-up'" class="np-ico"></i-feather></button>
         </div>
         <ng-container *ngIf="!planSettingsCollapsed">
 
         <!-- Plan Title -->
-        <div class="np-field">
+        <div class="np-field np-plan-title">
           <label class="np-label"
             >{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label
           >
@@ -127,6 +132,13 @@
             [(ngModel)]="workoutPlan.name"
             [placeholder]="'PLAN_NAME' | translate"
           />
+        </div>
+
+        <div class="np-field np-global-duration">
+          <label class="np-label">{{ 'DURATION_WEEKS' | translate }} <span class="np-danger">*</span></label>
+          <select class="np-input" [(ngModel)]="durationWeeks" (ngModelChange)="onDurationWeeksChange()" name="globalDurationWeeks">
+            <option *ngFor="let option of durationOptions" [ngValue]="option">{{ 'DURATION_OPTION' | translate:{ weeks: option, days: option * 7 } }}</option>
+          </select>
         </div>
 
         <!-- Add Plan Description (collapsed) -->
@@ -179,14 +191,14 @@
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
             </span>
-            Program Schedule
+            {{ 'PROGRAM_SCHEDULE' | translate }}
           </h3>
 
           <div class="program-schedule-grid">
             <!-- Start Date -->
             <div class="program-schedule-field">
               <label class="program-schedule-label">
-                Start Date <span class="required">*</span>
+                {{ 'START_DATE' | translate }} <span class="required">*</span>
               </label>
               <div class="program-schedule-input-wrapper">
                 <span class="program-schedule-input-icon">
@@ -222,28 +234,7 @@
                   (ngModelChange)="onStartDateChange($event)"
                 />
               </div>
-            </div>
-
-            <!-- Duration -->
-            <div class="program-schedule-field">
-              <label class="program-schedule-label">
-                Duration (Weeks) <span class="required">*</span>
-              </label>
-              <div class="program-schedule-input-wrapper">
-                <span class="program-schedule-input-icon">
-                  <i-feather name="clock" class="program-schedule-input-icon-svg"></i-feather>
-                </span>
-                <select
-                  class="program-schedule-input"
-                  [(ngModel)]="durationWeeks"
-                  name="durationWeeks"
-                  (ngModelChange)="onDurationWeeksChange()"
-                >
-                  <option *ngFor="let option of durationOptions" [ngValue]="option">
-                    {{ option }} {{ option === 1 ? "Week" : "Weeks" }} ({{ option * 7 }} Days)
-                  </option>
-                </select>
-              </div>
+              <p class="program-schedule-helper">{{ startDate | date:'dd/MM/yyyy' }} · every week and day date is calculated from here.</p>
             </div>
 
             <!-- End Date -->
@@ -282,7 +273,7 @@
                 />
               </div>
               <p class="program-schedule-helper">
-                Automatically calculated based on number of days
+                Read-only · start date + {{ durationWeeks * 7 }} days.
               </p>
             </div>
           </div>
@@ -291,7 +282,7 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="workoutWeeks[getSelectedWeekNumber() - 1].range" [saving]="savingDraft" [savedAt]="savedAt" [error]="saveError" (save)="savePlan()" (publish)="publishSelectedWeek()"></app-workout-week-panel>
+      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="workoutWeeks[getSelectedWeekNumber() - 1].range" [saving]="savingDraft" [savedAt]="savedAt" [error]="saveError" [narrow]="showExerciseSelector" (save)="savePlan()" (publish)="publishSelectedWeek()"></app-workout-week-panel>
 
       <section class="np-card np-card--day">
 
@@ -318,7 +309,7 @@
                 (click)="selectDay(d)"
               >
                 <span class="np-mobile-day__title">
-                  {{ d.title }}
+                  {{ 'DAY_NUMBER' | translate:{number: d.dayNumber || 1} }}
                 </span>
               </button>
 
@@ -358,12 +349,16 @@
         <div class="builder-rail">
         <div class="wk-day-editor" *ngIf="selectedDay">
           <div class="wk-day-editor__head">
-            <div class="wk-day-editor__titleline">
-              <h3 class="wk-day-editor__title">{{ selectedDay.title }}</h3>
-              <span class="wk-day-editor__dot" *ngIf="getSelectedDayDateLabel()"></span>
-              <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel()">
-                {{ getSelectedDayDateLabel() }}
-              </span>
+            <div class="wk-day-editor__identity">
+              <div class="wk-day-editor__titleline">
+                <h3 class="wk-day-editor__title">{{ 'DAY_NUMBER' | translate:{number: selectedDay.dayNumber || 1} }}</h3>
+                <span class="wk-day-editor__dot" *ngIf="getSelectedDayDateLabel()"></span>
+                <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel()">{{ getSelectedDayDateLabel() }}</span>
+                <span class="wk-day-editor__status" [class.is-ready]="getDayBuilderStatus(selectedDay) === 'READY'">
+                  {{ (getDayBuilderStatus(selectedDay) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_DRAFT') | translate }}
+                </span>
+              </div>
+              <small class="wk-day-editor__week">{{ 'WEEK_NUMBER' | translate:{ number: getSelectedWeekNumber() } }}</small>
             </div>
 
             <div class="wk-day-editor__actions">
@@ -373,7 +368,7 @@
                 [class.is-active]="selectedDay.isRestDay"
                 (click)="toggleRestDay()"
               >
-                <i-feather name="flag" class="wk-restmark__icon"></i-feather>
+                <i-feather name="moon" class="wk-restmark__icon"></i-feather>
                 {{ (selectedDay.isRestDay ? 'REST_DAY' : 'MARK_AS_REST_DAY') | translate }}
               </button>
 
@@ -482,7 +477,7 @@
 
         <!-- ==== EXERCISES ==== -->
         <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
-          <h3 class="wkex__heading">{{ 'EXERCISES' | translate }} · {{ selectedDay ? getDayExerciseCount(selectedDay) : 0 }}</h3>
+          <h3 class="wkex__heading">{{ 'EXERCISES' | translate }} {{ selectedDay ? getDayExerciseCount(selectedDay) : 0 }}</h3>
 
           <!-- If no exercises -->
           <ng-container
@@ -537,6 +532,7 @@
                             >{{ 'SUPERSET' | translate }}</span
                           >
                         </h4>
+                        <small class="wkex-summary">{{ exercise.type }} · {{ exercise.sets?.length || 0 }} {{ 'SETS' | translate }}</small>
 
                         <!-- Notes -->
                         <ng-container
@@ -588,7 +584,7 @@
 
                       </div>
 
-                      <div class="wkex-card__actions"><button type="button" class="wkex-action wkex-action--note" [title]="'EXERCISE_NOTES' | translate" [attr.aria-label]="'EXERCISE_NOTES' | translate" (click)="setEditingExerciseDescription(editingExerciseDescription === exercise.id ? null : exercise.id)"><i-feather name="file-text" class="wkex-action__icon"></i-feather></button>
+                      <div class="wkex-card__actions"><button type="button" class="wkex-action wkex-action--note" [title]="'EXERCISE_NOTES' | translate" [attr.aria-label]="'EXERCISE_NOTES' | translate" (click)="setEditingExerciseDescription(editingExerciseDescription === exercise.id ? null : exercise.id)"><i-feather name="message-square" class="wkex-action__icon"></i-feather></button>
                         <button
                           type="button"
                           class="wkex-action wkex-action--video"
@@ -598,7 +594,7 @@
                           [attr.aria-label]="'WATCH_EXERCISE_VIDEO' | translate"
                           (click)="toggleExerciseVideo(exercise)"
                         >
-                          <i-feather name="play-circle" class="wkex-action__icon"></i-feather>
+                          <i-feather name="play" class="wkex-action__icon"></i-feather>
                         </button>
 
                         <button
@@ -770,6 +766,7 @@
                         class="wkex-addset"
                         (click)="handleAddSet(exercise.id)"
                       >
+                        <span aria-hidden="true">＋</span>
                         {{ 'ADD_SET' | translate }}
                       </button>
                     </div>
@@ -796,9 +793,10 @@
           </ng-container>
 
           <ng-template #wkNoExercises>
-            <div class="wkex-empty">
-              <p class="wkex-empty__text">{{ 'NO_EXERCISES_ADDED' | translate }}</p>
-            </div>
+            <button type="button" class="wkex-addexercise wkex-addexercise--empty" (click)="openExerciseSelector()">
+              <span class="wkex-plus">＋</span>
+              {{ 'CHOOSE_EXERCISE' | translate }}
+            </button>
           </ng-template>
 
           <button
@@ -1029,7 +1027,10 @@
 
   <aside class="wkdrawer" role="dialog" [attr.aria-label]="'CHOOSE_EXERCISE' | translate">
     <div class="wkdrawer__head">
-      <h2 class="wkdrawer__title">{{ 'CHOOSE_EXERCISE' | translate }}</h2>
+      <div class="wkdrawer__heading">
+        <h2 class="wkdrawer__title">{{ 'CHOOSE_EXERCISE' | translate }}</h2>
+        <p class="wkdrawer__count">{{ exerciseDatabase.length }} exercises available</p>
+      </div>
       <button class="wkdrawer__close" (click)="closeExerciseSelector()">
         ✕
       </button>
@@ -1155,6 +1156,7 @@
       <ul class="wkdrawer__list" *ngIf="!loading">
         <li
           class="wkdrawer__item"
+          [class.is-added]="isExerciseAdded(ex)"
           *ngFor="let ex of exerciseDatabase"
           (mouseenter)="hoveringExerciseId = ex.id"
           (mouseleave)="hoveringExerciseId = null"
@@ -1180,7 +1182,12 @@
 
           <div class="wkdrawer__meta">
             <div class="wkdrawer__name">{{ ex.name }}</div>
-            <div class="wkdrawer__sub">{{ ex.type || "Exercise" }}</div>
+            <div class="wkdrawer__sub">
+              {{ ex.type || "Exercise" }}
+              <ng-container *ngIf="ex.muscle || ex.exerciseRef?.muscle">
+                · {{ ex.muscle || ex.exerciseRef?.muscle }}
+              </ng-container>
+            </div>
           </div>
 
           <button

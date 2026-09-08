@@ -21,7 +21,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignFullPlanComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, null);
+  draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -951,5 +951,10 @@ export class AssignFullPlanComponent implements OnInit {
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
 
     this.updateAllDates();
+  }
+
+  /** Standard application back action used by the shared Workout/Nutrition header. */
+  goBack(): void {
+    window.history.back();
   }
 }

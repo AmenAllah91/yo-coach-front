@@ -1,0 +1,1177 @@
+/*
+ * Unified workout builder visual system
+ * -------------------------------------
+ * Shared by:
+ *   - Program Library workout editor (app-create-workout)
+ *   - Client assigned workout editor (app-create-and-assign)
+ *
+ * This file is intentionally imported LAST in both component stylesheets.
+ * It only changes presentation/layout. No workout, date, publication or
+ * assignment logic is changed.
+ */
+
+app-create-workout,
+app-create-and-assign {
+  --workout-ui-bg: #f7f9fb;
+  --workout-ui-card: #ffffff;
+  --workout-ui-border: #dce4ec;
+  --workout-ui-text: #102038;
+  --workout-ui-muted: #667b93;
+  --workout-ui-blue: #079bd4;
+  --workout-ui-blue-soft: #e7f6fc;
+  --workout-ui-green: #0bb989;
+  --workout-builder-header: 84px;
+  --workout-builder-sidebar: 376px;
+  --exercise-panel-width: 400px;
+  --exercise-drawer-width: 432px;
+}
+
+/* ================================================================
+   DESKTOP / TABLET LANDSCAPE
+   ================================================================ */
+@media (min-width: 901px) {
+  app-create-workout .np-root,
+  app-create-and-assign .np-root {
+    --builder-header-height: var(--workout-builder-header) !important;
+    --builder-rail-width: var(--workout-builder-sidebar) !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-right: 0 !important;
+    background: var(--workout-ui-bg) !important;
+    font-size: 15px !important;
+  }
+
+  /* The exercise selector gets its own right column instead of shrinking the
+     whole app. This is what keeps the editor readable when the drawer opens. */
+  app-create-workout .np-root.exercise-drawer-open,
+  app-create-and-assign .np-root.exercise-drawer-open {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-right: 0 !important;
+  }
+
+  app-create-workout .np-root .np-shell,
+  app-create-and-assign .np-root .np-shell {
+    grid-template-columns: var(--workout-builder-sidebar) minmax(0, 1fr) !important;
+  }
+
+  /* Header */
+  app-create-workout .np-root .np-pagehead,
+  app-create-and-assign .np-root .np-pagehead {
+    min-height: var(--workout-builder-header) !important;
+    height: var(--workout-builder-header) !important;
+    padding: 0 28px !important;
+    gap: 14px !important;
+  }
+
+  app-create-workout .np-root .np-pagehead .np-back,
+  app-create-and-assign .np-root .np-pagehead .np-back {
+    width: 44px !important;
+    height: 44px !important;
+    flex-basis: 44px !important;
+  }
+
+  app-create-workout .np-root .np-pagehead .np-h5,
+  app-create-and-assign .np-root .np-pagehead .np-h5,
+  app-create-and-assign .np-root .np-pagehead__copy .np-h5 {
+    font-size: 21px !important;
+    line-height: 27px !important;
+    font-weight: 650 !important;
+  }
+
+  app-create-and-assign .np-root .np-pagehead__meta {
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  /* Program structure rail */
+  app-create-workout .np-root .np-aside,
+  app-create-and-assign .np-root .np-aside {
+    width: calc(var(--workout-builder-sidebar) - 24px) !important;
+    min-width: calc(var(--workout-builder-sidebar) - 24px) !important;
+    max-width: calc(var(--workout-builder-sidebar) - 24px) !important;
+    margin-left: 20px !important;
+    border-radius: 14px !important;
+  }
+
+  app-create-workout .np-root .np-aside__head,
+  app-create-and-assign .np-root .np-aside__head {
+    min-height: 90px !important;
+    padding: 22px 20px 18px !important;
+  }
+
+  app-create-workout .np-root .np-aside__head .np-h6,
+  app-create-and-assign .np-root .np-aside__head .np-h6 {
+    font-size: 18px !important;
+    line-height: 24px !important;
+  }
+
+  app-create-workout .np-root .np-aside__sub,
+  app-create-and-assign .np-root .np-aside__sub,
+  app-create-workout .np-root .np-aside__head > .np-link,
+  app-create-and-assign .np-root .np-aside__head > .np-link {
+    font-size: 13px !important;
+    line-height: 19px !important;
+  }
+
+  app-create-workout .np-week-card__head strong,
+  app-create-and-assign .np-week-card__head strong {
+    font-size: 16px !important;
+  }
+
+  app-create-workout .np-week-status,
+  app-create-and-assign .np-week-status {
+    font-size: 12px !important;
+  }
+
+  app-create-workout .np-week-range,
+  app-create-and-assign .np-week-range,
+  app-create-workout .np-week-card__count,
+  app-create-and-assign .np-week-card__count {
+    font-size: 13px !important;
+  }
+
+  app-create-workout .np-dayrow,
+  app-create-workout .np-dayrow .np-day,
+  app-create-and-assign .np-dayrow,
+  app-create-and-assign .np-dayrow .np-day {
+    min-height: 48px !important;
+  }
+
+  app-create-workout .np-day__title,
+  app-create-workout .np-day.is-active .np-day__title,
+  app-create-and-assign .np-day__title,
+  app-create-and-assign .np-day.is-active .np-day__title {
+    font-size: 15px !important;
+    line-height: 21px !important;
+  }
+
+  app-create-workout .np-root .np-day__dateLine,
+  app-create-and-assign .np-root .np-day__dateLine,
+  app-create-workout .np-root .np-day__meta,
+  app-create-and-assign .np-root .np-day__meta {
+    font-size: 13px !important;
+    line-height: 19px !important;
+  }
+
+  /* Main editor: match the mockup proportions and preserve a wide content
+     column while the exercise drawer is visible. */
+  app-create-workout .np-root .np-main,
+  app-create-and-assign .np-root .np-main {
+    grid-template-columns: minmax(560px, 1fr) minmax(300px, 360px) !important;
+    column-gap: 18px !important;
+    row-gap: 18px !important;
+    padding: calc(var(--workout-builder-header) + 20px) 20px 104px 18px !important;
+  }
+
+  app-create-workout .np-root.exercise-drawer-open .np-main,
+  app-create-and-assign .np-root.exercise-drawer-open .np-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding-right: calc(var(--exercise-panel-width) + 48px) !important;
+  }
+
+  app-create-workout .np-root.exercise-drawer-open .np-sticky,
+  app-create-and-assign .np-root.exercise-drawer-open .np-sticky {
+    right: calc(var(--exercise-panel-width) + 32px) !important;
+  }
+
+  /* Settings card */
+  app-create-workout .np-card--settings,
+  app-create-and-assign .np-card--settings,
+  app-create-workout .np-root.settings-collapsed .np-card--settings,
+  app-create-and-assign .np-root.settings-collapsed .np-card--settings {
+    border-radius: 12px !important;
+  }
+
+  app-create-workout .np-settings-kicker,
+  app-create-and-assign .np-settings-kicker {
+    font-size: 13px !important;
+    line-height: 19px !important;
+  }
+
+  app-create-workout .np-root:not(.settings-collapsed) .np-label,
+  app-create-and-assign .np-root:not(.settings-collapsed) .np-label,
+  app-create-and-assign .np-root:not(.settings-collapsed) .program-schedule-label {
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  app-create-workout .np-root:not(.settings-collapsed) .np-input,
+  app-create-and-assign .np-root:not(.settings-collapsed) .np-input,
+  app-create-and-assign .np-root:not(.settings-collapsed) .program-schedule-input {
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+  }
+
+  app-create-workout .np-root:not(.settings-collapsed) textarea.np-input,
+  app-create-and-assign .np-root:not(.settings-collapsed) textarea.np-input {
+    height: auto !important;
+    min-height: 96px !important;
+  }
+
+  /* Day editor shell */
+  app-create-workout .builder-rail,
+  app-create-and-assign .builder-rail {
+    padding: 0 16px 16px !important;
+    border: 1px solid var(--workout-ui-border) !important;
+    border-left: 3px solid #16aee4 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+  }
+
+  app-create-workout .builder-rail > .wk-day-editor,
+  app-create-and-assign .builder-rail > .wk-day-editor {
+    margin: 0 -16px !important;
+  }
+
+  app-create-workout .builder-rail .wk-day-editor__head,
+  app-create-and-assign .builder-rail .wk-day-editor__head {
+    min-height: 74px !important;
+    padding: 16px !important;
+  }
+
+  app-create-workout .wk-day-editor__titleline,
+  app-create-and-assign .wk-day-editor__titleline {
+    gap: 8px !important;
+  }
+
+  app-create-workout .wk-day-editor__title,
+  app-create-and-assign .wk-day-editor__title {
+    font-size: 18px !important;
+    line-height: 24px !important;
+  }
+
+  app-create-workout .wk-day-editor__date,
+  app-create-and-assign .wk-day-editor__date {
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  app-create-workout .wk-day-editor__status,
+  app-create-and-assign .wk-day-editor__status {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  app-create-workout .wk-day-editor__week,
+  app-create-and-assign .wk-day-editor__week {
+    margin-top: 4px !important;
+    font-size: 12px !important;
+    line-height: 17px !important;
+  }
+
+  app-create-workout .wk-restmark,
+  app-create-and-assign .wk-restmark,
+  app-create-workout .wk-restmark.is-active,
+  app-create-and-assign .wk-restmark.is-active {
+    min-height: 38px !important;
+    padding: 0 14px !important;
+    border-radius: 7px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout .wk-restmark__icon,
+  app-create-and-assign .wk-restmark__icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  app-create-workout .builder-rail .wk-workout-name,
+  app-create-and-assign .builder-rail .wk-workout-name {
+    padding: 15px 16px 12px !important;
+  }
+
+  app-create-workout .builder-rail .wk-workout-name .np-label,
+  app-create-and-assign .builder-rail .wk-workout-name .np-label {
+    margin-bottom: 7px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  app-create-workout .builder-rail .wk-workout-name .np-input,
+  app-create-and-assign .builder-rail .wk-workout-name .np-input {
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 9px 11px !important;
+    border-radius: 7px !important;
+    font-size: 14px !important;
+  }
+
+  app-create-workout .builder-rail > .np-link,
+  app-create-and-assign .builder-rail > .np-link,
+  app-create-workout .builder-rail > ng-container > .np-link,
+  app-create-and-assign .builder-rail > ng-container > .np-link {
+    min-height: 38px !important;
+    padding: 9px 0 !important;
+    font-size: 13px !important;
+  }
+
+  /* Exercise cards */
+  app-create-workout .builder-rail > .wkex,
+  app-create-and-assign .builder-rail > .wkex {
+    padding-top: 8px !important;
+  }
+
+  app-create-workout .wkex__heading,
+  app-create-and-assign .wkex__heading {
+    margin: 0 0 10px !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+    letter-spacing: .04em !important;
+  }
+
+  app-create-workout .wkex__stack,
+  app-create-and-assign .wkex__stack {
+    gap: 12px !important;
+  }
+
+  app-create-workout .wkex-card,
+  app-create-and-assign .wkex-card {
+    border-radius: 9px !important;
+  }
+
+  app-create-workout .wkex-card__inner,
+  app-create-and-assign .wkex-card__inner {
+    padding: 0 0 12px !important;
+  }
+
+  app-create-workout .wkex-card__header,
+  app-create-and-assign .wkex-card__header {
+    min-height: 64px !important;
+    grid-template-columns: 18px 50px minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    padding: 8px 12px !important;
+  }
+
+  app-create-workout .wkex-card__drag,
+  app-create-and-assign .wkex-card__drag,
+  app-create-workout .wkex-card__drag .np-ico,
+  app-create-and-assign .wkex-card__drag .np-ico {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  app-create-workout .wkex-card__media,
+  app-create-and-assign .wkex-card__media {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    flex-basis: 50px !important;
+    border-radius: 7px !important;
+  }
+
+  app-create-workout .wkex-card__title,
+  app-create-and-assign .wkex-card__title {
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  app-create-workout .wkex-summary,
+  app-create-and-assign .wkex-summary {
+    margin-top: 2px !important;
+    font-size: 11px !important;
+    line-height: 15px !important;
+  }
+
+  app-create-workout .wkex-card__actions .wkex-action,
+  app-create-and-assign .wkex-card__actions .wkex-action,
+  app-create-workout .wkex-card__actions .wkex-action:disabled,
+  app-create-and-assign .wkex-card__actions .wkex-action:disabled {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+  }
+
+  app-create-workout .wkex-card__actions .wkex-action__icon,
+  app-create-and-assign .wkex-card__actions .wkex-action__icon {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  /* Sets table: the previous version used 7-10px labels and 25px controls.
+     These values are deliberately brought back to normal application scale. */
+  app-create-workout .wkex-sets,
+  app-create-and-assign .wkex-sets {
+    padding: 12px 12px 0 !important;
+  }
+
+  app-create-workout .wkex-sets__head,
+  app-create-workout .wkex-sets__row,
+  app-create-and-assign .wkex-sets__head,
+  app-create-and-assign .wkex-sets__row {
+    grid-template-columns: 34px minmax(92px, 1fr) minmax(92px, 1fr) minmax(190px, 1.5fr) 30px !important;
+    gap: 8px !important;
+  }
+
+  app-create-workout .wkex-sets--no-weight .wkex-sets__head,
+  app-create-workout .wkex-sets--no-weight .wkex-sets__row,
+  app-create-and-assign .wkex-sets--no-weight .wkex-sets__head,
+  app-create-and-assign .wkex-sets--no-weight .wkex-sets__row {
+    grid-template-columns: 34px minmax(120px, 1fr) minmax(220px, 1.6fr) 30px !important;
+  }
+
+  app-create-workout .wkex-sets__head,
+  app-create-and-assign .wkex-sets__head {
+    min-height: 20px !important;
+    margin-bottom: 5px !important;
+  }
+
+  app-create-workout .wkex-sets__th,
+  app-create-and-assign .wkex-sets__th {
+    font-size: 10px !important;
+    line-height: 14px !important;
+  }
+
+  app-create-workout .wkex-sets__row,
+  app-create-and-assign .wkex-sets__row {
+    min-height: 38px !important;
+    margin-bottom: 6px !important;
+  }
+
+  app-create-workout .wkex-settype,
+  app-create-workout .wkex-settype__trigger,
+  app-create-and-assign .wkex-settype,
+  app-create-and-assign .wkex-settype__trigger {
+    width: 34px !important;
+    height: 36px !important;
+  }
+
+  app-create-workout .wkex-settype__value,
+  app-create-workout .wkex-settype__value--regular,
+  app-create-and-assign .wkex-settype__value,
+  app-create-and-assign .wkex-settype__value--regular {
+    font-size: 13px !important;
+  }
+
+  app-create-workout .wkex-input,
+  app-create-workout .wkex-restbox,
+  app-create-and-assign .wkex-input,
+  app-create-and-assign .wkex-restbox {
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 6px !important;
+  }
+
+  app-create-workout .wkex-input,
+  app-create-and-assign .wkex-input {
+    padding: 7px 9px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout .wkex-restbox__label,
+  app-create-and-assign .wkex-restbox__label {
+    padding-left: 9px !important;
+    font-size: 11px !important;
+  }
+
+  app-create-workout .wkex-restbox__input,
+  app-create-and-assign .wkex-restbox__input {
+    height: 34px !important;
+    padding: 5px 6px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout .wkex-sets__cell--action .wkex-action,
+  app-create-and-assign .wkex-sets__cell--action .wkex-action {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  app-create-workout .wkex-sets__cell--action .wkex-action__icon,
+  app-create-and-assign .wkex-sets__cell--action .wkex-action__icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  app-create-workout .wkex-addset,
+  app-create-and-assign .wkex-addset {
+    min-height: 34px !important;
+    padding: 7px 11px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+  }
+
+  app-create-workout .wkex-addexercise,
+  app-create-workout .wkex-addexercise--empty,
+  app-create-and-assign .wkex-addexercise,
+  app-create-and-assign .wkex-addexercise--empty {
+    min-height: 44px !important;
+    margin-top: 12px !important;
+    padding: 10px 12px !important;
+    border-radius: 7px !important;
+    font-size: 13px !important;
+  }
+
+  /* Exercise drawer */
+  app-create-workout .wkdrawer.wkdrawer,
+  app-create-and-assign .wkdrawer.wkdrawer {
+    top: calc(var(--workout-builder-header) + 20px) !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    width: var(--exercise-panel-width) !important;
+    max-width: var(--exercise-panel-width) !important;
+    border-radius: 14px !important;
+  }
+
+  app-create-workout .wkdrawer__head.wkdrawer__head,
+  app-create-and-assign .wkdrawer__head.wkdrawer__head {
+    height: 96px !important;
+    min-height: 96px !important;
+    flex-basis: 96px !important;
+    padding: 24px 22px 18px !important;
+  }
+
+  app-create-workout .wkdrawer__title,
+  app-create-and-assign .wkdrawer__title {
+    font-size: 21px !important;
+    line-height: 27px !important;
+  }
+
+  app-create-workout .wkdrawer__count,
+  app-create-and-assign .wkdrawer__count {
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  app-create-workout .wkdrawer__body.wkdrawer__body,
+  app-create-and-assign .wkdrawer__body.wkdrawer__body {
+    padding: 20px 18px 0 !important;
+  }
+
+  app-create-workout .wkdrawer__search input,
+  app-create-and-assign .wkdrawer__search input {
+    min-height: 48px !important;
+    font-size: 14px !important;
+  }
+
+  app-create-workout .wkdrawer__filters button,
+  app-create-workout .wkdrawer__filters select,
+  app-create-and-assign .wkdrawer__filters button,
+  app-create-and-assign .wkdrawer__filters select {
+    min-height: 42px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout .wkdrawer__list.wkdrawer__list,
+  app-create-and-assign .wkdrawer__list.wkdrawer__list {
+    margin: 12px -18px 0 !important;
+  }
+
+  app-create-workout .wkdrawer__item.wkdrawer__item,
+  app-create-and-assign .wkdrawer__item.wkdrawer__item {
+    min-height: 78px !important;
+    padding: 11px 18px !important;
+  }
+
+  app-create-workout .wkdrawer__thumb.wkdrawer__thumb,
+  app-create-and-assign .wkdrawer__thumb.wkdrawer__thumb {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    flex-basis: 52px !important;
+  }
+
+  app-create-workout .wkdrawer__name,
+  app-create-and-assign .wkdrawer__name {
+    font-size: 15px !important;
+    line-height: 20px !important;
+  }
+
+  app-create-workout .wkdrawer__sub,
+  app-create-and-assign .wkdrawer__sub {
+    margin-top: 2px !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  app-create-workout .wkdrawer__add,
+  app-create-and-assign .wkdrawer__add {
+    width: 38px !important;
+    height: 38px !important;
+    flex-basis: 38px !important;
+  }
+
+  app-create-workout .wkdrawer__added,
+  app-create-and-assign .wkdrawer__added {
+    min-height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ================================================================
+   MOBILE / PORTRAIT TABLET
+   Mirrors the template mobile rhythm while preserving each editor's
+   own data model (library = no assigned dates, client = assigned dates).
+   ================================================================ */
+@media (max-width: 900px) {
+  app-create-workout .np-root,
+  app-create-and-assign .np-root {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+    background: var(--workout-ui-bg) !important;
+    font-size: 14px !important;
+  }
+
+  app-create-workout .np-shell,
+  app-create-and-assign .np-shell {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* The desktop program structure is replaced by the existing mobile day
+     navigation. No client/library business logic is changed. */
+  app-create-workout .np-aside,
+  app-create-and-assign .np-aside {
+    display: none !important;
+  }
+
+  app-create-workout .np-root .np-pagehead,
+  app-create-and-assign .np-root .np-pagehead {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 30 !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 64px !important;
+    height: 64px !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border-bottom: 1px solid #e3e8ee !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+  }
+
+  app-create-workout .np-root .np-pagehead .np-back,
+  app-create-and-assign .np-root .np-pagehead .np-back {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+  }
+
+  app-create-workout .np-root .np-pagehead .np-h5,
+  app-create-and-assign .np-root .np-pagehead .np-h5,
+  app-create-and-assign .np-root .np-pagehead__copy .np-h5 {
+    font-size: 17px !important;
+    line-height: 22px !important;
+  }
+
+  app-create-and-assign .np-pagehead__meta {
+    max-width: calc(100vw - 88px) !important;
+    font-size: 10px !important;
+    line-height: 14px !important;
+  }
+
+  app-create-workout .np-main,
+  app-create-and-assign .np-main,
+  app-create-workout .np-root .np-main,
+  app-create-and-assign .np-root .np-main {
+    display: flex !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    padding: 10px 10px 96px !important;
+    overflow: visible !important;
+    background: var(--workout-ui-bg) !important;
+    box-sizing: border-box !important;
+  }
+
+  app-create-workout .np-main > .np-pagehead {
+    /* library header lives inside main in the current markup */
+    order: -10 !important;
+    margin: -10px -10px 0 !important;
+    width: calc(100% + 20px) !important;
+  }
+
+  app-create-workout .np-main > .wkex-quickchoose,
+  app-create-and-assign .np-main > .wkex-quickchoose {
+    display: none !important;
+  }
+
+  app-create-workout .np-main > .np-card,
+  app-create-and-assign .np-main > .np-card,
+  app-create-workout .np-main > .np-card.np-card--settings:first-of-type,
+  app-create-and-assign .np-main > .np-card.np-card--settings:first-of-type {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  app-create-workout .np-card--settings,
+  app-create-and-assign .np-card--settings,
+  app-create-workout .np-root.settings-collapsed .np-card--settings,
+  app-create-and-assign .np-root.settings-collapsed .np-card--settings {
+    padding: 14px !important;
+    border-radius: 11px !important;
+  }
+
+  app-create-workout .np-settings-kicker,
+  app-create-and-assign .np-settings-kicker {
+    min-height: 24px !important;
+    gap: 7px !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  app-create-workout .np-settings-kicker__dot,
+  app-create-and-assign .np-settings-kicker__dot {
+    width: 7px !important;
+    height: 7px !important;
+    flex-basis: 7px !important;
+  }
+
+  app-create-workout .np-settings-summary,
+  app-create-and-assign .np-settings-summary {
+    font-size: 10px !important;
+  }
+
+  app-create-workout .np-settings-toggle,
+  app-create-and-assign .np-settings-toggle {
+    font-size: 11px !important;
+  }
+
+  app-create-workout .np-root:not(.settings-collapsed) .np-main > .np-card--settings,
+  app-create-and-assign .np-root:not(.settings-collapsed) .np-main > .np-card--settings {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    padding: 0 14px 14px !important;
+  }
+
+  app-create-workout .np-root:not(.settings-collapsed) .np-card--settings > .np-settings-kicker,
+  app-create-and-assign .np-root:not(.settings-collapsed) .np-card--settings > .np-settings-kicker {
+    min-height: 48px !important;
+    margin: 0 -14px !important;
+    padding: 0 14px !important;
+    border-bottom: 1px solid #e7ecf1 !important;
+  }
+
+  app-create-workout .np-label,
+  app-create-and-assign .np-label,
+  app-create-and-assign .program-schedule-label {
+    font-size: 12px !important;
+    line-height: 17px !important;
+  }
+
+  app-create-workout .np-input,
+  app-create-and-assign .np-input,
+  app-create-and-assign .program-schedule-input {
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 9px 10px !important;
+    border-radius: 7px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout textarea.np-input,
+  app-create-and-assign textarea.np-input {
+    height: auto !important;
+    min-height: 88px !important;
+  }
+
+  app-create-and-assign .program-schedule-card {
+    padding: 14px !important;
+    border-radius: 8px !important;
+  }
+
+  app-create-and-assign .program-schedule-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  app-create-workout .np-main > app-workout-week-panel,
+  app-create-and-assign .np-main > app-workout-week-panel {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  app-create-workout .np-card--day,
+  app-create-and-assign .np-card--day {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 11px !important;
+  }
+
+  /* Existing mobile day strip */
+  app-create-workout .np-mobile-days,
+  app-create-and-assign .np-mobile-days {
+    display: flex !important;
+    gap: 7px !important;
+    padding: 10px !important;
+    overflow-x: auto !important;
+    border-bottom: 1px solid #e8edf2 !important;
+    background: #fff !important;
+  }
+
+  app-create-workout .np-mobile-day,
+  app-create-and-assign .np-mobile-day {
+    flex: 0 0 auto !important;
+  }
+
+  app-create-workout .np-mobile-day__main,
+  app-create-and-assign .np-mobile-day__main {
+    min-height: 34px !important;
+    padding: 7px 10px !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+  }
+
+  app-create-workout .builder-rail,
+  app-create-and-assign .builder-rail {
+    margin: 0 !important;
+    padding: 0 12px 14px !important;
+    border: 0 !important;
+    border-left: 3px solid #18aee4 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  app-create-workout .builder-rail > .wk-day-editor,
+  app-create-and-assign .builder-rail > .wk-day-editor {
+    margin: 0 -12px !important;
+  }
+
+  app-create-workout .builder-rail .wk-day-editor__head,
+  app-create-and-assign .builder-rail .wk-day-editor__head {
+    min-height: 78px !important;
+    padding: 14px 12px !important;
+    align-items: flex-start !important;
+  }
+
+  app-create-workout .wk-day-editor__titleline,
+  app-create-and-assign .wk-day-editor__titleline {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  app-create-workout .wk-day-editor__title,
+  app-create-and-assign .wk-day-editor__title {
+    font-size: 16px !important;
+    line-height: 21px !important;
+  }
+
+  app-create-workout .wk-day-editor__date,
+  app-create-and-assign .wk-day-editor__date {
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  app-create-workout .wk-day-editor__status,
+  app-create-and-assign .wk-day-editor__status {
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+    line-height: 15px !important;
+  }
+
+  app-create-workout .wk-day-editor__week,
+  app-create-and-assign .wk-day-editor__week {
+    font-size: 11px !important;
+    line-height: 16px !important;
+  }
+
+  app-create-workout .wk-day-editor__actions,
+  app-create-and-assign .wk-day-editor__actions {
+    width: 100% !important;
+    margin-top: 10px !important;
+  }
+
+  app-create-workout .wk-restmark,
+  app-create-and-assign .wk-restmark,
+  app-create-workout .wk-restmark.is-active,
+  app-create-and-assign .wk-restmark.is-active {
+    width: 100% !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+  }
+
+  app-create-workout .builder-rail .wk-workout-name,
+  app-create-and-assign .builder-rail .wk-workout-name {
+    padding: 13px 0 10px !important;
+  }
+
+  app-create-workout .builder-rail .wk-workout-name .np-label,
+  app-create-and-assign .builder-rail .wk-workout-name .np-label {
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+  }
+
+  app-create-workout .builder-rail .wk-workout-name .np-input,
+  app-create-and-assign .builder-rail .wk-workout-name .np-input {
+    height: 42px !important;
+    min-height: 42px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout .builder-rail > .np-link,
+  app-create-and-assign .builder-rail > .np-link,
+  app-create-workout .builder-rail > ng-container > .np-link,
+  app-create-and-assign .builder-rail > ng-container > .np-link {
+    min-height: 36px !important;
+    padding: 8px 0 !important;
+    font-size: 12px !important;
+  }
+
+  app-create-workout .wkex__heading,
+  app-create-and-assign .wkex__heading {
+    margin: 4px 0 9px !important;
+    font-size: 10px !important;
+    line-height: 14px !important;
+  }
+
+  app-create-workout .wkex__stack,
+  app-create-and-assign .wkex__stack {
+    gap: 10px !important;
+  }
+
+  app-create-workout .wkex-card__header,
+  app-create-and-assign .wkex-card__header {
+    min-height: 58px !important;
+    grid-template-columns: 16px 42px minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    padding: 8px 9px !important;
+  }
+
+  app-create-workout .wkex-card__media,
+  app-create-and-assign .wkex-card__media {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    flex-basis: 42px !important;
+  }
+
+  app-create-workout .wkex-card__title,
+  app-create-and-assign .wkex-card__title {
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  app-create-workout .wkex-summary,
+  app-create-and-assign .wkex-summary {
+    font-size: 10px !important;
+    line-height: 14px !important;
+  }
+
+  app-create-workout .wkex-card__actions .wkex-action,
+  app-create-and-assign .wkex-card__actions .wkex-action {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+
+  app-create-workout .wkex-sets,
+  app-create-and-assign .wkex-sets {
+    padding: 10px 9px 0 !important;
+    overflow-x: auto !important;
+  }
+
+  app-create-workout .wkex-sets__head,
+  app-create-workout .wkex-sets__row,
+  app-create-and-assign .wkex-sets__head,
+  app-create-and-assign .wkex-sets__row {
+    grid-template-columns: 32px minmax(82px, 1fr) minmax(82px, 1fr) minmax(180px, 1.45fr) 28px !important;
+    gap: 7px !important;
+    min-width: 490px !important;
+  }
+
+  app-create-workout .wkex-sets--no-weight .wkex-sets__head,
+  app-create-workout .wkex-sets--no-weight .wkex-sets__row,
+  app-create-and-assign .wkex-sets--no-weight .wkex-sets__head,
+  app-create-and-assign .wkex-sets--no-weight .wkex-sets__row {
+    grid-template-columns: 32px minmax(110px, 1fr) minmax(180px, 1.5fr) 28px !important;
+    min-width: 380px !important;
+  }
+
+  app-create-workout .wkex-sets__th,
+  app-create-and-assign .wkex-sets__th {
+    font-size: 9px !important;
+    line-height: 13px !important;
+  }
+
+  app-create-workout .wkex-sets__row,
+  app-create-and-assign .wkex-sets__row {
+    min-height: 36px !important;
+  }
+
+  app-create-workout .wkex-settype,
+  app-create-workout .wkex-settype__trigger,
+  app-create-and-assign .wkex-settype,
+  app-create-and-assign .wkex-settype__trigger {
+    width: 32px !important;
+    height: 34px !important;
+  }
+
+  app-create-workout .wkex-input,
+  app-create-workout .wkex-restbox,
+  app-create-and-assign .wkex-input,
+  app-create-and-assign .wkex-restbox {
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  app-create-workout .wkex-input,
+  app-create-and-assign .wkex-input,
+  app-create-workout .wkex-restbox__input,
+  app-create-and-assign .wkex-restbox__input {
+    font-size: 12px !important;
+  }
+
+  app-create-workout .wkex-restbox__label,
+  app-create-and-assign .wkex-restbox__label {
+    font-size: 10px !important;
+  }
+
+  app-create-workout .wkex-addset,
+  app-create-and-assign .wkex-addset {
+    min-height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  app-create-workout .wkex-addexercise,
+  app-create-and-assign .wkex-addexercise {
+    min-height: 42px !important;
+    font-size: 12px !important;
+  }
+
+  app-create-workout .np-sticky,
+  app-create-and-assign .np-sticky {
+    position: fixed !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 25 !important;
+    padding: 10px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    background: rgba(255,255,255,.96) !important;
+  }
+
+  app-create-workout .np-sticky .np-btn--save,
+  app-create-and-assign .np-sticky .np-btn--save {
+    width: 100% !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+  }
+
+  /* Exercise selector becomes a true mobile sheet. */
+  app-create-workout .wkdrawer.wkdrawer,
+  app-create-and-assign .wkdrawer.wkdrawer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  app-create-workout .wkdrawer__head.wkdrawer__head,
+  app-create-and-assign .wkdrawer__head.wkdrawer__head {
+    height: 72px !important;
+    min-height: 72px !important;
+    flex-basis: 72px !important;
+    padding: 18px 16px 14px !important;
+  }
+
+  app-create-workout .wkdrawer__title,
+  app-create-and-assign .wkdrawer__title {
+    font-size: 18px !important;
+    line-height: 24px !important;
+  }
+
+  app-create-workout .wkdrawer__count,
+  app-create-and-assign .wkdrawer__count {
+    font-size: 12px !important;
+  }
+
+  app-create-workout .wkdrawer__body.wkdrawer__body,
+  app-create-and-assign .wkdrawer__body.wkdrawer__body {
+    padding: 14px 14px 0 !important;
+  }
+
+  app-create-workout .wkdrawer__search input,
+  app-create-and-assign .wkdrawer__search input {
+    min-height: 44px !important;
+    font-size: 13px !important;
+  }
+
+  app-create-workout .wkdrawer__filters,
+  app-create-and-assign .wkdrawer__filters {
+    gap: 7px !important;
+    overflow-x: auto !important;
+  }
+
+  app-create-workout .wkdrawer__item.wkdrawer__item,
+  app-create-and-assign .wkdrawer__item.wkdrawer__item {
+    min-height: 70px !important;
+    padding: 9px 14px !important;
+  }
+
+  app-create-workout .wkdrawer__thumb.wkdrawer__thumb,
+  app-create-and-assign .wkdrawer__thumb.wkdrawer__thumb {
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    flex-basis: 46px !important;
+  }
+
+  app-create-workout .wkdrawer__name,
+  app-create-and-assign .wkdrawer__name {
+    font-size: 14px !important;
+    line-height: 19px !important;
+  }
+
+  app-create-workout .wkdrawer__sub,
+  app-create-and-assign .wkdrawer__sub {
+    font-size: 10px !important;
+    line-height: 14px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  app-create-workout .np-main,
+  app-create-and-assign .np-main,
+  app-create-workout .np-root .np-main,
+  app-create-and-assign .np-root .np-main {
+    padding-right: 8px !important;
+    padding-left: 8px !important;
+  }
+
+  app-create-workout .np-main > .np-pagehead {
+    margin-right: -8px !important;
+    margin-left: -8px !important;
+    width: calc(100% + 16px) !important;
+  }
+
+  app-create-workout .wk-day-editor__title,
+  app-create-and-assign .wk-day-editor__title {
+    font-size: 15px !important;
+  }
+
+  app-create-workout .wkex-card__header,
+  app-create-and-assign .wkex-card__header {
+    grid-template-columns: 14px 38px minmax(0, 1fr) auto !important;
+    gap: 7px !important;
+  }
+
+  app-create-workout .wkex-card__media,
+  app-create-and-assign .wkex-card__media {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    flex-basis: 38px !important;
+  }
+}
