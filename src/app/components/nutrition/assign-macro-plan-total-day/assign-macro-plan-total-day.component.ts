@@ -31,7 +31,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignMacroPlanTotalDayComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY');
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -208,7 +208,7 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   weekdayLabel(day: MealDay): string {
     if (!day.date) return '';
     return new Date(`${day.date}T00:00:00`).toLocaleDateString(
-      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      this.translate.currentLang?.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US',
       { weekday: 'long' }
     );
   }
@@ -216,7 +216,7 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   dateLabel(day: MealDay): string {
     if (!day.date) return '';
     return new Date(`${day.date}T00:00:00`).toLocaleDateString(
-      this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      this.translate.currentLang?.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US',
       { day: 'numeric', month: 'short', year: 'numeric' }
     );
   }
@@ -430,5 +430,10 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
 
     this.updateAllDates();
+  }
+
+  /** Standard application back action used by the shared Workout/Nutrition header. */
+  goBack(): void {
+    window.history.back();
   }
 }

@@ -32,7 +32,8 @@ import { workoutDayState, workoutWeekReady } from '@shared/models/workout-public
 export class CreateAndAssignComponent implements OnInit {
   isEditMode = false;
   private translate = inject(TranslateService);
-  planSettingsCollapsed = false;
+  planSettingsCollapsed = true;
+  mobileStructureOpen = false;
   savingDraft = false;
   savedAt: Date | null = null;
   saveError = '';
@@ -55,7 +56,7 @@ export class CreateAndAssignComponent implements OnInit {
   latestAssignedPrograms: WorkoutPlan[] = [];
 
   // schedule-specific
-  startDate = new Date().toISOString().split('T')[0];
+  startDate = this.toDateOnly(new Date());
   endDate = '';
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
@@ -96,6 +97,14 @@ export class CreateAndAssignComponent implements OnInit {
   }
   set selectedDay(v: WorkoutDay | null) {
     this.facade.selectedDay = v;
+  }
+
+  toggleMobileStructure(): void {
+    this.mobileStructureOpen = !this.mobileStructureOpen;
+  }
+
+  closeMobileStructure(): void {
+    this.mobileStructureOpen = false;
   }
 
   goBack(): void {
@@ -235,9 +244,7 @@ export class CreateAndAssignComponent implements OnInit {
           this.facade.applyPlanForEdit(plan);
 
           if (plan.startDate) {
-            this.startDate = new Date(plan.startDate)
-              .toISOString()
-              .split('T')[0];
+            this.startDate = this.toDateOnly(this.parseDateOnly(plan.startDate));
           }
           this.durationWeeks = this.normalizeDurationWeeks(Math.ceil((plan.workoutDays?.length || 28) / 7));
 
@@ -341,15 +348,55 @@ export class CreateAndAssignComponent implements OnInit {
   getSelectedDayDateLabel(): string {
     if (!this.selectedDay?.date) return '';
 
-    const date = new Date(`${this.selectedDay.date}T00:00:00`);
+    const date = this.parseDateOnly(this.selectedDay.date);
     if (Number.isNaN(date.getTime())) return '';
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(this.activeDateLocale(), {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
+  }
+
+  getAssignedDayDateLabel(day: WorkoutDay): string {
+    let value = day.date;
+
+    // Assigned plans must always expose a date in the structure rail, including
+    // legacy plans whose individual workout days were saved without one.
+    if (!value && this.startDate) {
+      const dayIndex = this.days.indexOf(day);
+      const calculated = this.parseDateOnly(this.startDate);
+      calculated.setDate(calculated.getDate() + Math.max(0, dayIndex));
+      value = this.toDateOnly(calculated);
+    }
+
+    if (!value) return '';
+    const date = this.parseDateOnly(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString(this.activeDateLocale(), {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  private parseDateOnly(value: string): Date {
+    const [year, month, day] = value.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private toDateOnly(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private activeDateLocale(): string {
+    const language = this.translate.currentLang || this.translate.defaultLang || 'en';
+    return language.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US';
   }
 
   private normalizeDurationWeeks(value: number): number {
@@ -365,10 +412,10 @@ export class CreateAndAssignComponent implements OnInit {
   }
 
   private formatShortDate(value: string): string {
-    const date = new Date(`${value}T00:00:00`);
+    const date = this.parseDateOnly(value);
     if (Number.isNaN(date.getTime())) return '';
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(this.activeDateLocale(), {
       month: 'short',
       day: 'numeric',
     });
@@ -422,7 +469,7 @@ export class CreateAndAssignComponent implements OnInit {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
 
-    return date.toLocaleDateString('fr-FR', {
+    return date.toLocaleDateString(this.activeDateLocale(), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -438,14 +485,14 @@ export class CreateAndAssignComponent implements OnInit {
   private updateDatesFromCurrentOrder() {
     if (!this.startDate) return;
 
-    const start = new Date(this.startDate);
+    const start = this.parseDateOnly(this.startDate);
 
     this.facade.days.forEach((day, index) => {
       const current = new Date(start);
       current.setDate(start.getDate() + index);
 
-      day.date = current.toISOString().split('T')[0];
-      day.dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
+      day.date = this.toDateOnly(current);
+      day.dayOfWeek = current.toLocaleDateString(this.activeDateLocale(), { weekday: 'long' });
       day.dayNumber = index + 1;
       day.title = `Day ${(index % 7) + 1}`;
       day.name = day.title;

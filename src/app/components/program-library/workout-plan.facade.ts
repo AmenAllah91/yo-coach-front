@@ -575,8 +575,8 @@ export class WorkoutPlanFacade {
 
   addDay() {
     const sortedDays = [...this.days].sort((a, b) => {
-      const aTime = a.date ? new Date(a.date).getTime() : 0;
-      const bTime = b.date ? new Date(b.date).getTime() : 0;
+      const aTime = a.date ? this.parseDateOnly(a.date).getTime() : 0;
+      const bTime = b.date ? this.parseDateOnly(b.date).getTime() : 0;
       return aTime - bTime;
     });
 
@@ -584,12 +584,12 @@ export class WorkoutPlanFacade {
 
     if (sortedDays.length > 0) {
       const lastDay = sortedDays[sortedDays.length - 1];
-      nextDate = lastDay.date ? new Date(lastDay.date) : new Date();
+      nextDate = lastDay.date ? this.parseDateOnly(lastDay.date) : new Date();
       nextDate.setDate(nextDate.getDate() + 1);
     }
 
     const newIdx = this.days.length + 1;
-    const nextDateStr = nextDate.toISOString().split('T')[0];
+    const nextDateStr = this.toDateOnly(nextDate);
 
     const session: WorkoutSession = {
       name: 'Main Session',
@@ -624,8 +624,8 @@ export class WorkoutPlanFacade {
     if (!this.selectedDay) return;
 
     const sortedDays = [...this.days].sort((a, b) => {
-      const aTime = a.date ? new Date(a.date).getTime() : 0;
-      const bTime = b.date ? new Date(b.date).getTime() : 0;
+      const aTime = a.date ? this.parseDateOnly(a.date).getTime() : 0;
+      const bTime = b.date ? this.parseDateOnly(b.date).getTime() : 0;
       return aTime - bTime;
     });
 
@@ -633,13 +633,13 @@ export class WorkoutPlanFacade {
 
     if (sortedDays.length > 0) {
       const lastDay = sortedDays[sortedDays.length - 1];
-      nextDate = lastDay.date ? new Date(lastDay.date) : new Date();
+      nextDate = lastDay.date ? this.parseDateOnly(lastDay.date) : new Date();
       nextDate.setDate(nextDate.getDate() + 1);
     }
 
     const copy: WorkoutDay = JSON.parse(JSON.stringify(this.selectedDay));
     copy.id = crypto.randomUUID();
-    copy.date = nextDate.toISOString().split('T')[0];
+    copy.date = this.toDateOnly(nextDate);
     copy.dayOfWeek = nextDate.toLocaleDateString('en-US', { weekday: 'long' });
     copy.dayNumber = this.days.length + 1;
     copy.title = `Day ${copy.dayNumber}`;
@@ -1186,5 +1186,17 @@ export class WorkoutPlanFacade {
     this.selectedDay = normalized[0] || null;
 
     this.syncPlanDays();
+  }
+
+  private parseDateOnly(value: string): Date {
+    const [year, month, day] = value.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private toDateOnly(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

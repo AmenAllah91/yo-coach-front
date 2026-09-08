@@ -19,7 +19,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateMacroPlanComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL');
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL', () => this.translate.currentLang);
 
   planName = '';
   planDescription = '';
@@ -489,5 +489,10 @@ export class CreateMacroPlanComponent implements OnInit {
     this.days = this.days.slice(0, count);
     this.durationWeeks = weeks;
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
+  }
+
+  /** Standard application back action used by the shared Workout/Nutrition header. */
+  goBack(): void {
+    window.history.back();
   }
 }

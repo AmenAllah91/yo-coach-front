@@ -31,7 +31,8 @@ export class CreateWorkoutComponent implements OnInit {
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
   collapsedWeeks = new Set<number>(Array.from({length: 11}, (_, index) => index + 2));
-  planSettingsCollapsed = false;
+  planSettingsCollapsed = true;
+  mobileStructureOpen = false;
   savedAt: Date | null = null;
   savingDraft = false;
   saveError = '';
@@ -70,6 +71,14 @@ export class CreateWorkoutComponent implements OnInit {
 
   set selectedDay(v: WorkoutDay | null) {
     this.facade.selectedDay = v;
+  }
+
+  toggleMobileStructure(): void {
+    this.mobileStructureOpen = !this.mobileStructureOpen;
+  }
+
+  closeMobileStructure(): void {
+    this.mobileStructureOpen = false;
   }
 
   goBack(): void {
@@ -466,7 +475,7 @@ export class CreateWorkoutComponent implements OnInit {
     if (!day.date) return '';
     const date = new Date(`${day.date}T00:00:00`);
     if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(this.translate.currentLang?.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
@@ -508,7 +517,7 @@ export class CreateWorkoutComponent implements OnInit {
       .sort((a, b) => a.getTime() - b.getTime());
     if (!dates.length) return '';
     const fmt = (d: Date) =>
-      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      d.toLocaleDateString(this.translate.currentLang?.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' });
     return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
   }
 
@@ -518,7 +527,7 @@ export class CreateWorkoutComponent implements OnInit {
     const date = new Date(`${this.selectedDay.date}T00:00:00`);
     if (Number.isNaN(date.getTime())) return '';
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(this.translate.currentLang?.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric',

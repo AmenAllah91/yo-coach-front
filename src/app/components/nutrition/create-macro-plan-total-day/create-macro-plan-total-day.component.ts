@@ -28,7 +28,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateMacroPlanTotalDayComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY');
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang);
 
   planName = '';
   planDescription = '';
@@ -498,5 +498,10 @@ selectDay(day: MealDay) {
     this.days = this.days.slice(0, count);
     this.durationWeeks = weeks;
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
+  }
+
+  /** Standard application back action used by the shared Workout/Nutrition header. */
+  goBack(): void {
+    window.history.back();
   }
 }

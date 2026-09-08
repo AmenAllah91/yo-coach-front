@@ -2,7 +2,7 @@
   width:100%!important;max-width:100%!important;min-width:0!important;
   .np-shell{display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:388px minmax(0,1fr)!important}
   .np-main{display:flex!important;flex-direction:column!important;min-width:0!important;width:auto!important;flex:1 1 0!important}
-  .np-main>.np-pagehead{order:0}.np-main>app-workout-week-panel{order:1}.np-main>.np-card--settings{order:2}.np-main>.np-card--day{order:3}.np-main>.np-sticky{order:4}
+  .np-main>.np-pagehead{order:0}.np-main>.np-card--settings{order:1}.np-main>app-workout-week-panel{order:2}.np-main>.np-card--day{order:3}.np-main>.np-sticky{order:4}
   .np-main>app-workout-week-panel{display:block}
   .np-aside{position:sticky;top:0;align-self:start!important;width:calc(100% - 32px)!important;max-width:none!important;min-width:0!important;flex:none!important;height:calc(100dvh - 32px)!important;margin:16px!important;box-sizing:border-box!important;overflow:hidden;display:flex;flex-direction:column}
   .np-aside__head{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:start;padding:20px!important;.np-h6{grid-column:1;grid-row:1;font-size:16px!important}.np-aside__sub{grid-column:1;grid-row:2;margin-top:3px!important;font-size:13px!important}.np-link{grid-column:2;grid-row:1/span 2;display:inline-flex!important;align-items:center!important;gap:6px!important;margin:0!important;font-size:13px!important;text-transform:none!important;letter-spacing:normal!important}.np-ico{width:14px!important;height:14px!important}}
