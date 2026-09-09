@@ -4694,3 +4694,120 @@ input:checked + .slider:before {
 .np-day.is-active .np-ready-check {
   background: #fff;
 }
+
+
+/* Exercise drawer pagination: visually aligned with the rest of the builder. */
+.wkdrawer__pagination {
+  position: sticky;
+  bottom: -24px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 14px -16px -24px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid #e5eaf0;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 -8px 18px rgba(15, 23, 42, .035);
+}
+
+.wkdrawer__pageNumbers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wkdrawer__pageNav,
+.wkdrawer__pageNumber {
+  height: 38px;
+  border: 1px solid #d8e1eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.wkdrawer__pageNav {
+  min-width: 96px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.wkdrawer__pageNav > span[aria-hidden="true"] {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 0;
+  transform: translateY(-1px);
+}
+
+.wkdrawer__pageNumber {
+  width: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wkdrawer__pageNav:hover:not(:disabled),
+.wkdrawer__pageNumber:hover:not(.is-active) {
+  border-color: #8fcce5;
+  background: #f4fbfe;
+  color: #158bb8;
+  box-shadow: 0 2px 8px rgba(30, 139, 184, .09);
+}
+
+.wkdrawer__pageNumber.is-active {
+  border-color: #44b4df;
+  background: #44b4df;
+  color: #fff;
+  box-shadow: 0 3px 9px rgba(68, 180, 223, .24);
+  cursor: default;
+}
+
+.wkdrawer__pageNav:disabled {
+  border-color: #e7ecf2;
+  background: #f7f9fb;
+  color: #a7b1bf;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.wkdrawer__pageNav:focus-visible,
+.wkdrawer__pageNumber:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, .2);
+}
+
+@media (max-width: 520px) {
+  .wkdrawer__pagination {
+    gap: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .wkdrawer__pageNav {
+    min-width: 42px;
+    width: 42px;
+    padding: 0;
+  }
+
+  .wkdrawer__pageNav span:not([aria-hidden="true"]) {
+    display: none;
+  }
+
+  .wkdrawer__pageNumber {
+    width: 36px;
+    height: 36px;
+  }
+}

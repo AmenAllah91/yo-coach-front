@@ -650,6 +650,14 @@ export class CreateAndAssignComponent implements OnInit {
     this.facade.prevPage();
   }
 
+  goToExercisePage(targetPage: number) {
+    this.facade.goToPage(targetPage);
+  }
+
+  get exercisePageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index);
+  }
+
   handleSelectExercise(ex: Exercise) {
     this.facade.handleSelectExercise(ex);
   }

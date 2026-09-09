@@ -1047,15 +1047,39 @@
         </li>
       </ul>
 
-      <div class="pagination" *ngIf="totalPages > 1 && !loading">
-        <button class="wkbtn-link" (click)="prevPage()" [disabled]="page === 0">
-          {{ 'PREVIOUS' | translate }}
+      <div class="wkdrawer__pagination" *ngIf="totalPages > 1 && !loading" role="navigation" aria-label="Exercise pages">
+        <button
+          type="button"
+          class="wkdrawer__pageNav"
+          (click)="prevPage()"
+          [disabled]="page === 0"
+        >
+          <span aria-hidden="true">‹</span>
+          <span>{{ 'PREVIOUS' | translate }}</span>
         </button>
 
-        <span>{{ page + 1 }} / {{ totalPages }}</span>
+        <div class="wkdrawer__pageNumbers" aria-label="Page numbers">
+          <button
+            *ngFor="let pageIndex of exercisePageNumbers"
+            type="button"
+            class="wkdrawer__pageNumber"
+            [class.is-active]="pageIndex === page"
+            [attr.aria-current]="pageIndex === page ? 'page' : null"
+            [attr.aria-label]="'Page ' + (pageIndex + 1)"
+            (click)="goToExercisePage(pageIndex)"
+          >
+            {{ pageIndex + 1 }}
+          </button>
+        </div>
 
-        <button class="wkbtn-link" (click)="nextPage()" [disabled]="page + 1 >= totalPages">
-          {{ 'NEXT' | translate }}
+        <button
+          type="button"
+          class="wkdrawer__pageNav"
+          (click)="nextPage()"
+          [disabled]="page + 1 >= totalPages"
+        >
+          <span>{{ 'NEXT' | translate }}</span>
+          <span aria-hidden="true">›</span>
         </button>
       </div>
     </div>

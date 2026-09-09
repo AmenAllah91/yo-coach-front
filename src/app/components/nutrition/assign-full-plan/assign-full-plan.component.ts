@@ -7,11 +7,13 @@ import { FeatherModule } from 'angular-feather';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NutritionService } from 'app/service/nutrition.service';
+import { ToastService } from 'app/service/toast.service';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { Client, ClientService } from 'app/service/client.service';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
+import { nutritionDayState, nutritionDayValidationMessages, nutritionFoodValidationMessages } from '@shared/models/nutrition-publication';
 
 @Component({
   selector: 'app-assign-full-plan',
@@ -87,7 +89,8 @@ export class AssignFullPlanComponent implements OnInit {
     private nutritionService: NutritionService,
     private coachSettingsService: CoachSettingsService,
     private clientService: ClientService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit() {
@@ -644,9 +647,11 @@ export class AssignFullPlanComponent implements OnInit {
   selectedFood: FoodRef | null = null;
 
   foodQty = 100;
+  foodValidationMessage = '';
   adj = { calories: 0, protein: 0, carbohydrates: 0, fat: 0 };
 
   openFoodModal(meal: Meal) {
+    this.foodValidationMessage = '';
     this.mealForModal = meal;
     this.foodStep = 'list';
     this.isFoodModalOpen = true;
@@ -654,6 +659,7 @@ export class AssignFullPlanComponent implements OnInit {
   }
 
   closeFoodModal() {
+    this.foodValidationMessage = '';
     this.isFoodModalOpen = false;
     this.mealForModal = null;
     this.selectedFood = null;
@@ -747,6 +753,7 @@ export class AssignFullPlanComponent implements OnInit {
   }
 
   showFoodDetail(food: FoodRef) {
+    this.foodValidationMessage = '';
     this.selectedFood = food;
     this.foodStep = 'detail';
     this.foodQty = 100;
@@ -754,11 +761,13 @@ export class AssignFullPlanComponent implements OnInit {
   }
 
   backToList() {
+    this.foodValidationMessage = '';
     this.foodStep = 'list';
     this.selectedFood = null;
   }
 
   recomputeAdjusted() {
+    this.foodValidationMessage = '';
     if (!this.selectedFood) return;
     const factor = this.foodQty / 100;
 
@@ -774,9 +783,33 @@ export class AssignFullPlanComponent implements OnInit {
     };
   }
 
+  private showFoodValidation(message: string): void {
+    this.foodValidationMessage = message;
+    this.toastService.error('Nutrition validation', message);
+  }
+
   addFoodToMeal() {
-    if (!this.mealForModal || !this.selectedFood
-      || !Number.isFinite(Number(this.foodQty)) || Number(this.foodQty) <= 0) return;
+    if (!this.mealForModal) {
+      this.showFoodValidation('Please choose a meal before adding food.');
+      return;
+    }
+    if (!this.selectedFood) {
+      this.showFoodValidation('Please select a food.');
+      return;
+    }
+
+    const validationFood: Partial<Food> = {
+      name: this.selectedFood.name,
+      quantity: this.foodQty,
+      unit: 'g',
+      foodRef: this.selectedFood,
+    };
+    const message = nutritionFoodValidationMessages(validationFood, { includeNutritionValues: false })[0];
+    if (message) {
+      this.showFoodValidation(message);
+      return;
+    }
+    this.foodValidationMessage = '';
 
     const food: Food = {
       id: crypto.randomUUID?.() ?? Date.now().toString(),
@@ -913,6 +946,31 @@ export class AssignFullPlanComponent implements OnInit {
 
 
   savePlan(publishWeek?: number) {
+    this.draft.error = '';
+    if (!this.planName.trim()) {
+      this.draft.error = 'Nutrition plan name is required.';
+      return;
+    }
+
+    const dayValidation = this.days
+      .map((day) => nutritionDayValidationMessages(day)[0])
+      .find((message): message is string => !!message);
+    if (dayValidation) {
+      this.draft.error = dayValidation;
+      return;
+    }
+
+    if (publishWeek) {
+      const weekDays = this.days.slice((publishWeek - 1) * 7, publishWeek * 7);
+      if (weekDays.length < 7 || this.draft.readyCount(this.days, publishWeek) !== 7) {
+        const firstNotReady = weekDays.findIndex((day) => !['READY', 'CHEAT'].includes(nutritionDayState(day)));
+        this.draft.error = firstNotReady >= 0
+          ? `Week ${publishWeek} cannot be published: Day ${(publishWeek - 1) * 7 + firstNotReady + 1} is not ready.`
+          : `Week ${publishWeek} cannot be published until all 7 days are ready.`;
+        return;
+      }
+    }
+
     this.days.forEach(day => this.recalcDayTargets(day));
     this.updateAllDates();
     const plan = {

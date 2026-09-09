@@ -556,6 +556,14 @@ export class WorkoutPlanFacade {
     }
   }
 
+  goToPage(targetPage: number) {
+    if (targetPage < 0 || targetPage >= this.totalPages || targetPage === this.page) {
+      return;
+    }
+    this.page = targetPage;
+    this.loadExercisesFromAPI();
+  }
+
   openExerciseSelector() {
     this.showExerciseSelector = true;
     this.loadExercisesFromAPI();

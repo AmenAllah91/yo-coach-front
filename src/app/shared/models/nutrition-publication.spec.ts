@@ -1,6 +1,8 @@
 import {
   nutritionDayState,
   nutritionMealState,
+  firstNutritionFoodValidationMessage,
+  nutritionFoodValidationMessages,
 } from './nutrition-publication';
 import { Meal, MealDay } from './MealPlan';
 
@@ -39,5 +41,42 @@ describe('nutrition publication state', () => {
 
   it('counts a cheat day as valid regardless of its placeholders', () => {
     expect(nutritionDayState({ ...dayWith(placeholder('Meal 1')), cheatMeal: true })).toBe('CHEAT');
+  });
+
+  it('keeps a food-less meal without foods as a placeholder', () => {
+    expect(nutritionMealState(placeholder('Meal 1'))).toBe('EMPTY_PLACEHOLDER');
+  });
+
+  it('rejects a food with quantity 0 with the expected message', () => {
+    const messages = nutritionFoodValidationMessages({ name: 'Eggs', quantity: 0, unit: 'g' });
+    expect(messages).toContain('Quantity must be greater than 0.');
+    expect(firstNutritionFoodValidationMessage({ name: 'Eggs', quantity: 0, unit: 'g' }))
+      .toBe('Quantity must be greater than 0.');
+  });
+
+  it('collects name, quantity, unit and negative-value messages for a food', () => {
+    const messages = nutritionFoodValidationMessages({
+      name: ' ',
+      quantity: 0,
+      unit: '',
+      calories: -5,
+    });
+    expect(messages).toContain('Please select a food.');
+    expect(messages).toContain('Quantity must be greater than 0.');
+    expect(messages).toContain('Serving size is required.');
+    expect(messages).toContain('Calories cannot be negative.');
+  });
+
+  it('returns no messages for a fully valid food', () => {
+    expect(nutritionFoodValidationMessages({ name: 'Eggs', quantity: 100, unit: 'g' })).toEqual([]);
+    expect(firstNutritionFoodValidationMessage({ name: 'Eggs', quantity: 100, unit: 'g' })).toBeNull();
+  });
+
+  it('skips nutrition-value checks when includeNutritionValues is false', () => {
+    const messages = nutritionFoodValidationMessages(
+      { name: 'Eggs', quantity: 100, unit: 'g', calories: -5 },
+      { includeNutritionValues: false },
+    );
+    expect(messages).toEqual([]);
   });
 });
