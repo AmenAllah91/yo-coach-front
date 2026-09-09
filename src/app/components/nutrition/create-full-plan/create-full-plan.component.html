@@ -714,6 +714,7 @@
               </select>
             </div>
           </div>
+          <p class="np-danger np-food-validation" *ngIf="foodValidationMessage" role="alert">{{ foodValidationMessage }}</p>
         </div>
 
         <div class="np-modal__sectionTitle">{{ 'NUTRITION_VALUES' | translate }}</div>

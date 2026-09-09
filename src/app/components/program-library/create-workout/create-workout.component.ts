@@ -7,7 +7,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
 import { WorkoutWeekPanelComponent } from '../workout-week-panel.component';
-import { workoutDayState } from '@shared/models/workout-publication';
+import { workoutDayState, workoutDayValidationMessages } from '@shared/models/workout-publication';
 import {
   WorkoutDay,
   WorkoutPlan,
@@ -456,8 +456,23 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   publishSelectedWeek(): void {
-    if (!this.canPublishSelectedWeek()) return;
+    this.saveError = '';
     const weekNumber = this.getSelectedWeekNumber();
+    const weekDays = this.workoutWeeks[weekNumber - 1]?.days || [];
+    const validation = weekDays
+      .map((day, index) => workoutDayValidationMessages(day, (weekNumber - 1) * 7 + index)[0])
+      .find((message): message is string => !!message);
+    if (validation) {
+      this.saveError = validation;
+      return;
+    }
+    if (!this.canPublishSelectedWeek()) {
+      const firstEmpty = weekDays.findIndex((day) => workoutDayState(day) === 'EMPTY');
+      this.saveError = firstEmpty >= 0
+        ? `Week ${weekNumber} cannot be published: Day ${(weekNumber - 1) * 7 + firstEmpty + 1} is not ready.`
+        : `Week ${weekNumber} cannot be published until all 7 days are ready.`;
+      return;
+    }
     this.persistDraft(false, weekNumber);
   }
 
@@ -676,6 +691,14 @@ export class CreateWorkoutComponent implements OnInit {
 
   prevPage() {
     this.facade.prevPage();
+  }
+
+  goToExercisePage(targetPage: number) {
+    this.facade.goToPage(targetPage);
+  }
+
+  get exercisePageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index);
   }
 
   handleSelectExercise(ex: Exercise) {
@@ -969,9 +992,22 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   private persistDraft(navigateAfterSave: boolean, publishWeek?: number) {
-    if (this.savingDraft || !this.workoutPlan.name.trim()) return;
-    this.savingDraft = true;
+    if (this.savingDraft) return;
     this.saveError = '';
+    if (!this.workoutPlan.name.trim()) {
+      this.saveError = 'Workout plan name is required.';
+      return;
+    }
+
+    const validation = this.days
+      .map((day, index) => workoutDayValidationMessages(day, index)[0])
+      .find((message): message is string => !!message);
+    if (validation) {
+      this.saveError = validation;
+      return;
+    }
+
+    this.savingDraft = true;
     const previous = [...(this.workoutPlan.publishedWeeks || [])];
     const publishedWeeks = previous.filter(week => this.getWeekReadyCount(this.days.slice((week - 1) * 7, week * 7)) === 7);
     if (publishWeek) publishedWeeks.push(publishWeek);

@@ -1,43 +1,82 @@
+import {
+  nutritionDayState,
+  nutritionMealState,
+  firstNutritionFoodValidationMessage,
+  nutritionFoodValidationMessages,
+} from './nutrition-publication';
 import { Meal, MealDay } from './MealPlan';
-import { nutritionDayStatus, nutritionMealStatus } from './nutrition-publication';
 
-function placeholder(): Meal {
-  return { name: 'Meal 1', foods: [] };
-}
+const placeholder = (name: string): Meal => ({ name, mealTime: '10:00', foods: [] });
+const validMeal = (): Meal => ({
+  name: 'Meal 2',
+  foods: [{ name: 'Eggs', quantity: 100, unit: 'g' }],
+});
 
-function incompleteMeal(): Meal {
-  return {
-    name: 'Meal 1',
-    foods: [{ name: 'Rice', quantity: 0, unit: 'g', manual: true }],
-  };
-}
+const dayWith = (...meals: Meal[]): MealDay => ({
+  date: '',
+  dayOfWeek: '',
+  cheatMeal: false,
+  refeedDay: false,
+  meals,
+});
 
-function day(meals: Meal[]): MealDay {
-  return {
-    date: '', dayOfWeek: '', cheatMeal: false, refeedDay: false, meals,
-    dayTargets: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 },
-  };
-}
-
-describe('nutrition publication rules', () => {
-  it('keeps untouched meals as empty placeholders', () => {
-    expect(nutritionMealStatus(placeholder(), null)).toBe('Empty');
-    expect(nutritionDayStatus(day([placeholder()]), null)).toBe('Empty');
+describe('nutrition publication state', () => {
+  it('ignores untouched automatic meal placeholders', () => {
+    expect(nutritionMealState(placeholder('Meal 1'))).toBe('EMPTY_PLACEHOLDER');
+    expect(nutritionDayState(dayWith(placeholder('Meal 1'), placeholder('Meal 2')))).toBe('EMPTY');
   });
 
-  it('marks a day incomplete when its only edited meal is invalid', () => {
-    expect(nutritionDayStatus(day([placeholder(), incompleteMeal()]), null)).toBe('Incomplete');
+  it('marks a day ready when one meal is valid and the remaining meals are placeholders', () => {
+    expect(nutritionDayState(dayWith(validMeal(), placeholder('Meal 3')))).toBe('READY');
   });
 
-  it('lets an incomplete meal block a total-for-day plan', () => {
-    const value = day([placeholder(), incompleteMeal()]);
-    value.dayTargets = { calories: 1450, proteinG: 100, carbsG: 150, fatG: 50 };
-    expect(nutritionDayStatus(value, 'TOTAL_FOR_DAY')).toBe('Incomplete');
+  it('marks a started meal without a valid quantity as incomplete', () => {
+    const incomplete: Meal = {
+      name: 'Meal 1',
+      foods: [{ name: 'Eggs', quantity: 0, unit: 'g' }],
+    };
+    expect(nutritionMealState(incomplete)).toBe('INCOMPLETE');
+    expect(nutritionDayState(dayWith(validMeal(), incomplete))).toBe('INCOMPLETE');
   });
 
-  it('treats a cheat meal day as ready regardless of placeholders', () => {
-    const value = day([placeholder()]);
-    value.cheatMeal = true;
-    expect(nutritionDayStatus(value, null)).toBe('Cheat meal');
+  it('counts a cheat day as valid regardless of its placeholders', () => {
+    expect(nutritionDayState({ ...dayWith(placeholder('Meal 1')), cheatMeal: true })).toBe('CHEAT');
+  });
+
+  it('keeps a food-less meal without foods as a placeholder', () => {
+    expect(nutritionMealState(placeholder('Meal 1'))).toBe('EMPTY_PLACEHOLDER');
+  });
+
+  it('rejects a food with quantity 0 with the expected message', () => {
+    const messages = nutritionFoodValidationMessages({ name: 'Eggs', quantity: 0, unit: 'g' });
+    expect(messages).toContain('Quantity must be greater than 0.');
+    expect(firstNutritionFoodValidationMessage({ name: 'Eggs', quantity: 0, unit: 'g' }))
+      .toBe('Quantity must be greater than 0.');
+  });
+
+  it('collects name, quantity, unit and negative-value messages for a food', () => {
+    const messages = nutritionFoodValidationMessages({
+      name: ' ',
+      quantity: 0,
+      unit: '',
+      calories: -5,
+    });
+    expect(messages).toContain('Please select a food.');
+    expect(messages).toContain('Quantity must be greater than 0.');
+    expect(messages).toContain('Serving size is required.');
+    expect(messages).toContain('Calories cannot be negative.');
+  });
+
+  it('returns no messages for a fully valid food', () => {
+    expect(nutritionFoodValidationMessages({ name: 'Eggs', quantity: 100, unit: 'g' })).toEqual([]);
+    expect(firstNutritionFoodValidationMessage({ name: 'Eggs', quantity: 100, unit: 'g' })).toBeNull();
+  });
+
+  it('skips nutrition-value checks when includeNutritionValues is false', () => {
+    const messages = nutritionFoodValidationMessages(
+      { name: 'Eggs', quantity: 100, unit: 'g', calories: -5 },
+      { includeNutritionValues: false },
+    );
+    expect(messages).toEqual([]);
   });
 });
