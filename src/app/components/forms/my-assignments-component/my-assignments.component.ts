@@ -415,22 +415,30 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
   }
 
   isValid(): boolean {
-    return this.modalAnswers.every(a => {
-      switch (a.type) {
+    if (!this.currentForm) return false;
+
+    return this.currentForm.questions.every((question, index) => {
+      // Optional questions do not block submission.
+      if (!question.required) return true;
+
+      const answer = this.modalAnswers[index];
+      if (!answer) return false;
+
+      switch (answer.type) {
         case QuestionType.YES_NO:
-          return a.yes !== null && a.yes !== undefined;
+          return answer.yes !== null && answer.yes !== undefined;
 
         case QuestionType.STAR_RATING:
-          return a.rating !== null && a.rating !== undefined;
+          return answer.rating !== null && answer.rating !== undefined;
 
         case QuestionType.MULTIPLE_CHOICE:
-          return !!a.selectedOptionId;
+          return !!answer.selectedOptionId;
 
         case QuestionType.TEXT:
-          return !!a.text && a.text.trim().length > 0;
+          return !!answer.text && answer.text.trim().length > 0;
 
         case QuestionType.DATE:
-          return !!a.date;
+          return !!answer.date;
 
         default:
           return false;

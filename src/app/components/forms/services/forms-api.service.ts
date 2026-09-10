@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import {map, Observable, of} from 'rxjs';
+import {map, Observable, of, throwError} from 'rxjs';
 import { environment } from '@env/environment';
 import { switchMap } from 'rxjs/operators';
 import {ClientScheduleItemDto} from "../../../models/client-schedule.model";
@@ -51,6 +51,7 @@ export interface FormDetails {
   updatedAt?: string;
   questions: QuestionBE[];
   schedule?: FormSchedule;
+  showInSignup?: boolean;
 }
 
 /** ====== LIST MODEL (ta liste actuelle) ====== */
@@ -122,6 +123,11 @@ export class FormsApiService {
     } : {});
   }
   createForm(payload: FormDetails): Observable<FormDetails> {
+    const publishError = this.getPublishValidationError(payload);
+    if (payload.status === 'PUBLISHED' && publishError) {
+      return throwError(() => new Error(publishError));
+    }
+
     return this.http.post<FormDetails>(
       `${this.baseUrl}`,
       payload,
@@ -135,6 +141,11 @@ export class FormsApiService {
   }
 
   updateForm(formId: string, payload: FormDetails): Observable<FormDetails> {
+    const publishError = this.getPublishValidationError(payload);
+    if (payload.status === 'PUBLISHED' && publishError) {
+      return throwError(() => new Error(publishError));
+    }
+
     return this.http.put<FormDetails>(
       `${this.baseUrl}/${encodeURIComponent(formId)}`,
       payload,
@@ -145,6 +156,42 @@ export class FormsApiService {
         }
       }
     );
+  }
+
+  private getPublishValidationError(payload: FormDetails): string | null {
+    const questions = payload.questions ?? [];
+    if (questions.length === 0) return 'A published check-in requires at least one question.';
+
+    for (const question of questions) {
+      if (!question.label?.trim()) return 'Every published question requires question text.';
+
+      if (question.type === 'MULTIPLE_CHOICE') {
+        const labels = (question.options ?? []).map(option => option.label?.trim() ?? '');
+        if (labels.length < 2) return 'Multiple choice questions require at least two options.';
+        if (labels.some(label => !label)) return 'Multiple choice options cannot be empty.';
+        const normalized = labels.map(label => label.toLocaleLowerCase());
+        if (new Set(normalized).size !== normalized.length) return 'Multiple choice options must be unique.';
+      }
+    }
+
+    const schedule = payload.schedule;
+    if (!schedule) return null;
+    if (!schedule.frequency) return 'An automatic check-in schedule requires a reminder frequency.';
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? '')) return 'An automatic check-in schedule requires a valid send time.';
+
+    if (schedule.frequency === 'WEEKLY' && !(schedule.daysOfWeek?.length)) {
+      return 'Weekly check-ins require a weekday.';
+    }
+
+    if (schedule.frequency === 'BIWEEKLY' && !(schedule.daysOfWeek?.length)) {
+      return 'Biweekly check-ins require a weekday.';
+    }
+
+    if (schedule.frequency === 'MONTHLY' && (!Number.isInteger(schedule.monthlyDay) || schedule.monthlyDay! < 1 || schedule.monthlyDay! > 31)) {
+      return 'Monthly check-ins require a day of month between 1 and 31.';
+    }
+
+    return null;
   }
 
   /** une api provisoire pour recuperer les utilisateurs seulement pour tester l'affectation de formulaire */
