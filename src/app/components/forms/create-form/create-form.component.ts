@@ -15,6 +15,12 @@ import {
   QuestionBE,
   QuestionTypeBE
 } from '../services/forms-api.service';
+import {
+  CheckInScheduleFrequency,
+  CheckInValidationIssue,
+  isQuestionValid,
+  validateCheckInForm,
+} from './check-in-form-validation';
 
 export type QuestionType =
   | 'scale'
@@ -22,6 +28,8 @@ export type QuestionType =
   | 'star-rating'
   | 'yes-no'
   | 'input-text'
+  | 'long-text'
+  | 'number'
   | 'opinion-rating'
   | 'signature'
   | 'media'
@@ -34,10 +42,13 @@ export interface QuestionItem {
   text: string;
   isRequired: boolean;
   options?: string[];
+  maxStars?: number;
+  minDate?: string;
+  maxDate?: string;
 }
 
 type Tab = 'form' | 'schedule';
-type ScheduleFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+type ScheduleFrequency = CheckInScheduleFrequency;
 type BiweeklyWeekOption = '1-3' | '2-4';
 type MonthlyMode = 'start' | 'end' | 'specific';
 type SaveStatus = 'UNSAVED' | 'DRAFT' | 'PUBLISHED';
@@ -73,6 +84,9 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   showPreview = false;
   showQuestionSidebar = false;
   showInSignup = false;
+  showValidationSummary = false;
+  validationIssues: CheckInValidationIssue[] = [];
+  hasPublishAttempted = false;
 
   formTitle = '';
   detailsTitle = '';
@@ -103,11 +117,12 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   addToLibrary = true;
 
   questionTypes = [
+    { id: 'input-text' as QuestionType, label: 'SHORT_ANSWER_LABEL' },
+    { id: 'long-text' as QuestionType, label: 'LONG_ANSWER_LABEL' },
     { id: 'multiple-choice' as QuestionType, label: 'MULTIPLE_CHOICE_LABEL' },
-    { id: 'star-rating' as QuestionType, label: 'STAR_RATING_LABEL' },
+    { id: 'star-rating' as QuestionType, label: 'RATING_SCALE_LABEL' },
     { id: 'yes-no' as QuestionType, label: 'YES_NO_LABEL' },
-    { id: 'input-text' as QuestionType, label: 'TEXT_INPUT_LABEL' },
-    { id: 'date' as QuestionType, label: 'DATE' },
+    { id: 'number' as QuestionType, label: 'NUMBER_LABEL' },
   ];
 
   ngOnInit(): void {
@@ -169,9 +184,28 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.triggerAutoSave();
   }
 
+  @HostListener('document:click', ['$event'])
+  closeQuestionMenuOnOutsideClick(event: MouseEvent): void {
+    if (!this.showQuestionSidebar) return;
+
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('.question-add-anchor, .question-type-menu')) return;
+
+    this.closeTypeDrawer();
+  }
+
+  @HostListener('document:keydown.escape')
+  closeQuestionMenuOnEscape(): void {
+    this.closeTypeDrawer();
+  }
+
   triggerAutoSave(): void {
     if (!this.hasLoadedInitialData) return;
     if (this.isSaving) return;
+
+    if (this.hasPublishAttempted) {
+      this.refreshValidationIssues();
+    }
 
     this.hasUnsavedChanges = true;
     this.autoSaveSubject.next();
@@ -276,7 +310,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       type,
       text: '',
       isRequired: true,
-      options: type === 'multiple-choice' ? [this.translate.instant('NEW_OPTION')] : undefined,
+      options: type === 'multiple-choice' ? ['', ''] : undefined,
+      ...(type === 'star-rating' ? { maxStars: 5 } : {}),
     };
 
     this.questions = [...this.questions, newQuestion];
@@ -286,6 +321,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
 
   removeQuestion(index: number): void {
     this.questions = this.questions.filter((_, i) => i !== index);
+    this.refreshValidationIssues();
     this.triggerAutoSave();
   }
 
@@ -300,13 +336,14 @@ export class CreateFormComponent implements OnInit, OnDestroy {
 
   addOption(q: QuestionItem): void {
     q.options = q.options || [];
-    q.options.push(this.translate.instant('NEW_OPTION'));
+    q.options.push('');
     this.triggerAutoSave();
   }
 
   removeOption(q: QuestionItem, index: number): void {
     q.options = q.options || [];
     q.options.splice(index, 1);
+    this.refreshValidationIssues();
     this.triggerAutoSave();
   }
 
@@ -326,6 +363,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
         return 'DATE';
       case 'scale':
       case 'input-text':
+      case 'long-text':
+      case 'number':
       case 'opinion-rating':
       case 'signature':
       case 'media':
@@ -363,7 +402,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.formTitle = form.title || this.translate.instant('FORM_TITLE');
     this.detailsTitle = form.title || this.translate.instant('FORM_TITLE');
     this.description = form.description ?? '';
-    this.showInSignup = !!(form as any).showInSignup;
+    this.showInSignup = !!form.showInSignup;
 
     this.questions = (form.questions ?? [])
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -373,6 +412,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
         text: q.label ?? '',
         isRequired: !!q.required,
         options: (q.options ?? []).map(o => o.label),
+        ...(q.type === 'STAR_RATING' ? { maxStars: 5 } : {}),
       }));
 
     this.scheduleFrequency = null;
@@ -411,8 +451,12 @@ export class CreateFormComponent implements OnInit, OnDestroy {
         this.monthlyMode = form.schedule.monthlyMode.toLowerCase() as MonthlyMode;
       }
 
-      if (form.schedule.monthlyDay) {
-        this.monthlyDay = form.schedule.monthlyDay;
+      if (this.scheduleFrequency === 'monthly') {
+        this.monthlyDay = form.schedule.monthlyMode === 'START'
+          ? 1
+          : form.schedule.monthlyMode === 'END'
+            ? 31
+            : form.schedule.monthlyDay ?? null;
       }
     }
   }
@@ -479,10 +523,10 @@ export class CreateFormComponent implements OnInit, OnDestroy {
         biweeklyWeeks: this.scheduleFrequency === 'biweekly'
           ? this.toBeBiweeklyWeeks(this.biweeklyWeekOption)
           : undefined,
-        monthlyMode: this.scheduleFrequency === 'monthly' && this.monthlyMode
-          ? (this.monthlyMode.toUpperCase() as any)
+        monthlyMode: this.scheduleFrequency === 'monthly'
+          ? 'SPECIFIC'
           : undefined,
-        monthlyDay: this.scheduleFrequency === 'monthly' && this.monthlyMode === 'specific'
+        monthlyDay: this.scheduleFrequency === 'monthly'
           ? this.monthlyDay ?? undefined
           : undefined,
       };
@@ -506,7 +550,15 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   saveForm(): void {
-    const payload = this.buildPayload('DRAFT');
+    this.hasPublishAttempted = true;
+    this.refreshValidationIssues();
+
+    if (this.validationIssues.length > 0) {
+      this.showValidationSummary = true;
+      return;
+    }
+
+    const payload = this.buildPayload('PUBLISHED');
 
     this.isSaving = true;
     this.hasUnsavedChanges = false;
@@ -580,10 +632,6 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.monthlyMode = null;
     this.monthlyDay = null;
 
-    if (!this.scheduleTime) {
-      this.scheduleTime = '09:00';
-    }
-
     this.triggerAutoSave();
   }
 
@@ -598,7 +646,6 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   get daySectionTitle(): string {
-    if (this.scheduleFrequency === 'daily') return 'SELECT_DAYS';
     if (this.scheduleFrequency === 'weekly' || this.scheduleFrequency === 'biweekly') return 'DAY_OF_WEEK';
     return '';
   }
@@ -634,6 +681,47 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.triggerAutoSave();
   }
 
+  isQuestionIncomplete(question: QuestionItem, index: number): boolean {
+    return !isQuestionValid(question, index);
+  }
+
+  hasValidationError(targetId: string): boolean {
+    return this.validationIssues.some(issue => issue.targetId === targetId);
+  }
+
+  closeValidationSummary(): void {
+    this.showValidationSummary = false;
+  }
+
+  focusValidationIssue(issue: CheckInValidationIssue): void {
+    this.activeTab = issue.tab;
+    this.showValidationSummary = false;
+
+    setTimeout(() => {
+      const target = document.getElementById(issue.targetId);
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (target instanceof HTMLElement) {
+        target.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  private refreshValidationIssues(): void {
+    if (!this.hasPublishAttempted) return;
+
+    this.validationIssues = validateCheckInForm(this.questions, {
+      frequency: this.scheduleFrequency,
+      sendTime: this.scheduleTime,
+      weeklyDay: this.weeklySelectedDay,
+      biweeklyDay: this.biweeklySelectedDay,
+      monthlyDay: this.monthlyDay,
+    });
+
+    if (this.validationIssues.length === 0) {
+      this.showValidationSummary = false;
+    }
+  }
+
   ordinal(n: number): string {
     if (this.translate.currentLang === 'fr') return `${n}${n === 1 ? 'er' : 'e'}`;
     const v = n % 100;
@@ -658,13 +746,17 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       case 'yes-no':
         return 'YES_NO_LABEL';
       case 'star-rating':
-        return 'STAR_RATING_LABEL';
+        return 'RATING_SCALE_LABEL';
       case 'scale':
         return 'SCALE_LABEL';
       case 'date':
         return 'DATE';
       case 'input-text':
-        return 'TEXT_INPUT_LABEL';
+        return 'SHORT_ANSWER_LABEL';
+      case 'long-text':
+        return 'LONG_ANSWER_LABEL';
+      case 'number':
+        return 'NUMBER_LABEL';
       default:
         return 'QUESTION';
     }
