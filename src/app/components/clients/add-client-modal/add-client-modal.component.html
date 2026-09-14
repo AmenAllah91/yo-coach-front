@@ -28,17 +28,43 @@
       </div>
 
       <!-- Email Input -->
-      <input
-        class="acm-email-input"
-        type="email"
-        placeholder="client@example.com"
-        [(ngModel)]="email"
-        name="email"
-      />
+      <div class="acm-email-field">
+        <input
+          class="acm-email-input"
+          [class.acm-email-input--invalid]="!!emailError"
+          type="email"
+          placeholder="client@example.com"
+          [ngModel]="email"
+          (ngModelChange)="onEmailChange($event)"
+          (blur)="onEmailBlur()"
+          [attr.aria-invalid]="!!emailError"
+          [attr.aria-describedby]="emailError ? 'acm-email-error' : null"
+          name="email"
+        />
+        <p *ngIf="emailError" id="acm-email-error" class="acm-email-error" role="alert">
+          {{ emailError }}
+        </p>
+        <button
+          *ngIf="pendingInvitation"
+          class="acm-resend-btn"
+          type="button"
+          (click)="sendInvitation()"
+          [disabled]="isSending"
+        >
+          {{ (isSending ? 'SENDING' : 'RESEND_INVITATION') | translate }}
+        </button>
+      </div>
 
       <!-- Submit -->
-      <button class="acm-submit-btn" type="button" (click)="sendInvitation()" [disabled]="!email.trim()">
-        {{ 'SEND_INVITATION' | translate }}
+      <button
+        class="acm-submit-btn"
+        type="button"
+        (click)="sendInvitation()"
+        [disabled]="!canSubmit || pendingInvitation"
+      >
+        {{ isSending
+          ? ('SENDING' | translate)
+          : ('SEND_INVITATION' | translate) }}
       </button>
 
     </div>

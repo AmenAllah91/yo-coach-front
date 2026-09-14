@@ -25,9 +25,9 @@ export class InvitationService {
     });
   }
 
-  sendInvitation(token: string, coachId: string, email: string) {
+  sendInvitation(token: string, coachId: string, email: string, resend = false) {
     return this.http.post(`${this.baseUrl}/send`, null, {
-      params: { token, coachId, email }
+      params: { token, coachId, email, resend }
     });
   }
 
