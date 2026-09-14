@@ -119,6 +119,12 @@
 .acm-copy-ico { width: 15px; height: 15px; display: block; }
 
 /* ── Email input ───────────────────────────────────────────── */
+.acm-email-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .acm-email-input {
   width: 100%;
   padding: 11px 14px;
@@ -136,6 +142,28 @@
   border-color: #44b4df;
   box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
 }
+.acm-email-input.acm-email-input--invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+}
+.acm-email-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.acm-resend-btn {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #249bc9;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.acm-resend-btn:hover:not(:disabled) { text-decoration: underline; }
+.acm-resend-btn:disabled { opacity: 0.65; cursor: wait; }
 
 /* ── Submit button ─────────────────────────────────────────── */
 .acm-submit-btn {

@@ -586,18 +586,4 @@ export class ClientsComponent implements OnInit {
     return Array.from(new Set(programs));
   }
 
-  onCreateClient(client: Client) {
-    const newClient = {
-      ...client,
-      clientStatus: 'ACTIVE' as ClientStatus,
-    };
-
-    this.clientService.createClient(newClient).subscribe({
-      next: () => {
-        this.closeAddModal();
-        this.loadClients();
-      },
-      error: (error) => console.error('Error creating client:', error),
-    });
-  }
 }
