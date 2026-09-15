@@ -5,6 +5,23 @@
   color: #111827;
 }
 
+.field-error {
+  display: block;
+  margin-top: 5px;
+  color: #dc2626;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.section-error { margin: 8px 0 12px; }
+
+input.field-invalid,
+select.field-invalid {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, .08);
+}
+
 .mobile-page-back { display: none; }
 @media (max-width: 900px) {
   .page-container { padding: 0 10px 24px !important; background: #f7f9fc; }

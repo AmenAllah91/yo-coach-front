@@ -63,7 +63,7 @@ export class ConversationListComponent implements OnInit {
       if (!conv) return;
       // update preview and unread count
       conv.lastMessage = msg.content;
-      try { (conv as any).timestamp = msg.createdAt || (conv as any).timestamp; } catch {}
+      conv.lastMessageAt = msg.createdAt || conv.lastMessageAt;
       const currentUserId = sessionStorage.getItem('userId');
       const activeConversationId = this.chatService.getActiveConversationId();
       if (msg.senderId && msg.senderId !== currentUserId && msg.conversationId !== activeConversationId) {

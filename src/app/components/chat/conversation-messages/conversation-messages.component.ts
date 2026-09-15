@@ -55,6 +55,11 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
 
 
   messageText: string = '';
+  messageError = '';
+  readonly maxMessageLength = 5_000;
+  readonly maxAttachmentSize = 20 * 1024 * 1024;
+  private composerDispatchLocked = false;
+  private attachmentErrorTimer?: ReturnType<typeof setTimeout>;
 
   isUploadingAttachment = false;
   pendingDocument: File | null = null;
@@ -67,6 +72,12 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
   private recordingStartedAt = 0;
   private readonly destroy$ = new Subject<void>();
   private optimisticMessageSequence = 0;
+  private readonly voicePlaybackRequests = new Set<string>();
+  private readonly voicePlaybackRetryCounts = new Map<string, number>();
+  private readonly voiceObjectUrls = new Set<string>();
+  private readonly imagePlaybackRequests = new Set<string>();
+  previewImageUrl = '';
+  previewImageName = '';
 
   constructor(private chatService: ChatService,
               private wsService: ChatWebsocketService,
@@ -94,7 +105,32 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
 
       const exists = !!msg.id && this.messages.some(m => !!m.id && m.id === msg.id);
       if (!exists) {
-        this.messages.push(msg);
+        const optimisticIndex = this.messages.findIndex(m =>
+          m.id.startsWith('tmp-') &&
+          m.senderId === msg.senderId &&
+          m.content === msg.content &&
+          m.type === msg.type &&
+          (m.attachmentName || '') === (msg.attachmentName || '')
+        );
+        if (optimisticIndex >= 0) {
+          const optimisticMessage = this.messages[optimisticIndex];
+          const resolvedMessage: ChatMessage = {
+            ...msg,
+            deliveryStatus: 'sent',
+            uiKey: optimisticMessage.uiKey || optimisticMessage.id,
+            playbackUrl: optimisticMessage.playbackUrl,
+          };
+          this.messages = this.messages.map((message, index) => index === optimisticIndex
+            ? resolvedMessage
+            : message);
+          this.prepareVoicePlayback(resolvedMessage);
+          this.prepareImagePlayback(resolvedMessage);
+        } else {
+          const resolvedMessage: ChatMessage = { ...msg, deliveryStatus: 'sent' };
+          this.messages = [...this.messages, resolvedMessage];
+          this.prepareVoicePlayback(resolvedMessage);
+          this.prepareImagePlayback(resolvedMessage);
+        }
         setTimeout(() => this.scrollToBottomIfNeeded(), 0);
       }
     });
@@ -113,6 +149,9 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
     this.chatService.notifyConversationOpened(null);
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.attachmentErrorTimer) clearTimeout(this.attachmentErrorTimer);
+    this.voiceObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    this.voiceObjectUrls.clear();
   }
 
   toggleSidebar() {
@@ -128,6 +167,10 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
       const liveMessages = this.messages.filter(message => !loadedIds.has(message.id));
       this.messages = [...loadedMessages, ...liveMessages]
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      this.messages.forEach(message => {
+        this.prepareVoicePlayback(message);
+        this.prepareImagePlayback(message);
+      });
       this.loading = false;
       setTimeout(() => this.scrollToBottom(), 0);
     });
@@ -156,14 +199,22 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
   }
 
   sendMessage() {
-    if (this.isUploadingAttachment || this.isRecordingVoice) return;
+    if (this.isRecordingVoice || this.composerDispatchLocked) return;
 
     const text = this.messageText.trim();
+    if (text.length > this.maxMessageLength) {
+      this.messageError = this.translate.instant('MESSAGE_TOO_LONG');
+      return;
+    }
+
+    this.composerDispatchLocked = true;
+    setTimeout(() => this.composerDispatchLocked = false, 350);
 
     if (this.pendingDocument) {
       const file = this.pendingDocument;
       this.pendingDocument = null;
       this.messageText = '';
+      this.messageError = '';
       this.uploadAttachment(file, 'DOCUMENT', undefined, text);
       return;
     }
@@ -171,6 +222,7 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
     if (!text) return;
 
     this.messageText = '';
+    this.messageError = '';
 
     const optimisticMessage: ChatMessage = {
       id: `tmp-${Date.now()}-${++this.optimisticMessageSequence}`,
@@ -180,8 +232,22 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
       conversationId: this.selectedConversation.id,
       type: 'TEXT'
     };
+    optimisticMessage.deliveryStatus = 'sending';
+    optimisticMessage.retry = () => this.dispatchTextMessage(optimisticMessage, text);
     this.messages = [...this.messages, optimisticMessage];
 
+    this.dispatchTextMessage(optimisticMessage, text);
+
+    setTimeout(() => {
+      const container = document.querySelector('.chat-messages');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 0);
+  }
+
+  private dispatchTextMessage(optimisticMessage: ChatMessage, text: string): void {
+    this.updateDeliveryStatus(optimisticMessage.id, 'sending');
     this.chatService.sendMessage(this.selectedConversation.id, text, this.currentUserId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -189,7 +255,7 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
           const alreadyReceived = this.messages.some(message => message.id === savedMessage.id);
           this.messages = alreadyReceived
             ? this.messages.filter(message => message.id !== optimisticMessage.id)
-            : this.messages.map(message => message.id === optimisticMessage.id ? savedMessage : message);
+            : this.messages.map(message => message.id === optimisticMessage.id ? { ...savedMessage, deliveryStatus: 'sent' } : message);
 
           this.selectedConversation = {
             ...this.selectedConversation,
@@ -202,17 +268,25 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
         },
         error: err => {
           console.error('Message send failed:', err);
-          this.messages = this.messages.filter(message => message.id !== optimisticMessage.id);
-          this.messageText = text;
+          this.updateDeliveryStatus(optimisticMessage.id, 'failed');
         }
       });
+  }
 
-    setTimeout(() => {
-      const container = document.querySelector('.chat-messages');
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 0);
+  retryMessage(message: ChatMessage): void {
+    if (message.deliveryStatus === 'failed') message.retry?.();
+  }
+
+  onMessageTextChange(value: string): void {
+    this.messageError = value.trim().length > this.maxMessageLength
+      ? this.translate.instant('MESSAGE_TOO_LONG')
+      : '';
+  }
+
+  private updateDeliveryStatus(id: string, deliveryStatus: 'sending' | 'failed'): void {
+    this.messages = this.messages.map(message => message.id === id
+      ? { ...message, deliveryStatus }
+      : message);
   }
 
   onScroll(event: Event) {
@@ -297,6 +371,176 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
     return `${environment.baseApiUrl}${url.startsWith('/') ? url : '/' + url}`;
   }
 
+  getVoicePlaybackUrl(msg: ChatMessage): string {
+    return msg.playbackUrl || '';
+  }
+
+  isImageAttachment(msg: ChatMessage): boolean {
+    const type = (msg?.attachmentType || '').toLowerCase();
+    const name = (msg?.attachmentName || msg?.attachmentUrl || '').toLowerCase();
+    return type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)$/i.test(name);
+  }
+
+  private prepareImagePlayback(message: ChatMessage, force = false): void {
+    if (this.getMessageType(message) !== 'DOCUMENT' || !this.isImageAttachment(message) || !message.id || message.id.startsWith('tmp-')) return;
+    if (!force && message.imageUrl) return;
+    if (this.imagePlaybackRequests.has(message.id)) return;
+
+    this.imagePlaybackRequests.add(message.id);
+    (message as any).imageLoadError = false;
+    const finish = () => this.imagePlaybackRequests.delete(message.id!);
+    const applyUrl = (url: string) => {
+      if (!url) { (message as any).imageLoadError = true; finish(); return; }
+      this.messages = this.messages.map(current => current.id === message.id
+        ? { ...current, imageUrl: url, imageLoadError: false } as any
+        : current);
+      finish();
+    };
+
+    this.chatService.getMessageAttachmentBlob(message.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: blob => {
+          if (blob && blob.size > 0 && (!blob.type || blob.type.toLowerCase().startsWith('image/'))) {
+            const objectUrl = URL.createObjectURL(blob);
+            const oldUrl = message.imageUrl?.startsWith('blob:') ? message.imageUrl : '';
+            this.messages = this.messages.map(current => current.id === message.id
+              ? { ...current, imageUrl: objectUrl, imageLoadError: false } as any
+              : current);
+            if (oldUrl && oldUrl !== objectUrl) setTimeout(() => URL.revokeObjectURL(oldUrl), 1000);
+            finish();
+            return;
+          }
+          this.chatService.getMessageAttachmentUrl(message.id!).pipe(takeUntil(this.destroy$)).subscribe({
+            next: applyUrl,
+            error: err => { console.error('Image URL fallback failed:', err); (message as any).imageLoadError = true; finish(); }
+          });
+        },
+        error: err => {
+          console.error('Image proxy failed, trying signed URL:', err);
+          this.chatService.getMessageAttachmentUrl(message.id!).pipe(takeUntil(this.destroy$)).subscribe({
+            next: applyUrl,
+            error: err2 => { console.error('Image URL fallback failed:', err2); (message as any).imageLoadError = true; finish(); }
+          });
+        }
+      });
+  }
+
+  refreshImagePlayback(message: ChatMessage): void {
+    const retries = Number((message as any).imageLoadRetries || 0);
+    if (retries >= 1) {
+      (message as any).imageLoadError = true;
+      message.imageUrl = '';
+      return;
+    }
+    (message as any).imageLoadRetries = retries + 1;
+    if (message.imageUrl?.startsWith('blob:')) URL.revokeObjectURL(message.imageUrl);
+    message.imageUrl = '';
+    this.prepareImagePlayback(message, true);
+  }
+
+  openImagePreview(message: ChatMessage, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!this.isImageAttachment(message)) return;
+
+    const open = (url: string) => {
+      this.previewImageUrl = url;
+      this.previewImageName = message.attachmentName || 'Image';
+    };
+
+    if (message.imageUrl) {
+      open(message.imageUrl);
+      return;
+    }
+
+    if (message.id && !message.id.startsWith('tmp-')) {
+      this.chatService.getMessageAttachmentBlob(message.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: blob => {
+            const objectUrl = URL.createObjectURL(blob);
+            this.messages = this.messages.map(current =>
+              current.id === message.id ? { ...current, imageUrl: objectUrl } : current
+            );
+            open(objectUrl);
+          },
+          error: error => console.error('Image preview could not be opened:', error)
+        });
+      return;
+    }
+
+    if (message.attachmentUrl?.startsWith('blob:')) open(message.attachmentUrl);
+  }
+
+  closeImagePreview(): void {
+    this.previewImageUrl = '';
+    this.previewImageName = '';
+  }
+
+  private prepareVoicePlayback(message: ChatMessage, force = false): void {
+    if (this.getMessageType(message) !== 'VOICE' || !message.id || message.id.startsWith('tmp-')) return;
+    if (!force && message.playbackUrl && !message.playbackUrl.startsWith('blob:')) return;
+    if (this.voicePlaybackRequests.has(message.id)) return;
+
+    this.voicePlaybackRequests.add(message.id);
+    this.chatService.getMessagePlaybackUrl(message.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: url => {
+          this.voicePlaybackRequests.delete(message.id);
+          this.voicePlaybackRetryCounts.delete(message.id);
+          let previousBlobUrl = '';
+          this.messages = this.messages.map(current => {
+            if (current.id !== message.id) return current;
+            if (current.playbackUrl?.startsWith('blob:')) previousBlobUrl = current.playbackUrl;
+            return { ...current, playbackUrl: url };
+          });
+          if (previousBlobUrl) {
+            setTimeout(() => {
+              URL.revokeObjectURL(previousBlobUrl);
+              this.voiceObjectUrls.delete(previousBlobUrl);
+            }, 5000);
+          }
+        },
+        error: () => this.voicePlaybackRequests.delete(message.id),
+      });
+  }
+
+  refreshVoicePlayback(message: ChatMessage): void {
+    if (!message.id || message.id.startsWith('tmp-')) return;
+    const retries = this.voicePlaybackRetryCounts.get(message.id) || 0;
+    if (retries >= 1) return;
+    this.voicePlaybackRetryCounts.set(message.id, retries + 1);
+    this.messages = this.messages.map(current => current.id === message.id
+      ? { ...current, playbackUrl: undefined }
+      : current);
+    this.prepareVoicePlayback(message, true);
+  }
+
+  trackMessage(_index: number, message: ChatMessage): string {
+    return message.uiKey || message.id;
+  }
+
+  formatMessageTimestamp(value?: string): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMessageDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayDifference = Math.round((startOfToday.getTime() - startOfMessageDay.getTime()) / 86_400_000);
+    const locale = this.translate.currentLang || this.translate.defaultLang || 'fr';
+    const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
+
+    if (dayDifference === 0) return time;
+    if (dayDifference === 1) return `${this.translate.instant('YESTERDAY')}, ${time}`;
+    return new Intl.DateTimeFormat(locale, {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }).format(date);
+  }
+
   formatDuration(seconds?: number): string {
     const total = Math.max(0, Math.round(Number(seconds || 0)));
     const min = Math.floor(total / 60);
@@ -320,7 +564,13 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
 
     if (!this.isAcceptedDocument(file)) {
       this.pendingDocument = null;
-      this.attachmentError = 'Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.';
+      this.showAttachmentError('Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.');
+      return;
+    }
+
+    if (file.size > this.maxAttachmentSize) {
+      this.pendingDocument = null;
+      this.showAttachmentError(this.translate.instant('FILE_TOO_LARGE'));
       return;
     }
 
@@ -330,7 +580,17 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
 
   removePendingDocument(): void {
     this.pendingDocument = null;
+    if (this.attachmentErrorTimer) clearTimeout(this.attachmentErrorTimer);
     this.attachmentError = '';
+  }
+
+  private showAttachmentError(message: string): void {
+    if (this.attachmentErrorTimer) clearTimeout(this.attachmentErrorTimer);
+    this.attachmentError = message;
+    this.attachmentErrorTimer = setTimeout(() => {
+      this.attachmentError = '';
+      this.attachmentErrorTimer = undefined;
+    }, 4_000);
   }
 
   private isAcceptedDocument(file: File): boolean {
@@ -391,7 +651,38 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
   private uploadAttachment(file: File, type: 'VOICE' | 'DOCUMENT', durationSeconds?: number, content?: string): void {
     if (!this.selectedConversation?.id || !this.currentUserId) return;
 
-    this.isUploadingAttachment = true;
+    if (file.size > this.maxAttachmentSize) {
+      this.showAttachmentError(this.translate.instant('FILE_TOO_LARGE'));
+      return;
+    }
+
+    const optimisticId = `tmp-${Date.now()}-${++this.optimisticMessageSequence}`;
+    const objectUrl = URL.createObjectURL(file);
+    if (type === 'VOICE') this.voiceObjectUrls.add(objectUrl);
+    const optimisticMessage: ChatMessage = {
+      id: optimisticId,
+      uiKey: optimisticId,
+      senderId: this.currentUserId,
+      content: content || '',
+      createdAt: new Date().toISOString(),
+      conversationId: this.selectedConversation.id,
+      type,
+      attachmentUrl: objectUrl,
+      playbackUrl: type === 'VOICE' ? objectUrl : undefined,
+      attachmentName: file.name,
+      attachmentType: file.type,
+      attachmentSize: file.size,
+      durationSeconds,
+      deliveryStatus: 'sending',
+    };
+    optimisticMessage.retry = () => this.dispatchAttachment(optimisticMessage, file, type, durationSeconds, content);
+    this.messages = [...this.messages, optimisticMessage];
+    setTimeout(() => this.scrollToBottom(), 0);
+    this.dispatchAttachment(optimisticMessage, file, type, durationSeconds, content);
+  }
+
+  private dispatchAttachment(optimisticMessage: ChatMessage, file: File, type: 'VOICE' | 'DOCUMENT', durationSeconds?: number, content?: string): void {
+    this.updateDeliveryStatus(optimisticMessage.id, 'sending');
 
     this.chatService
       .uploadAttachment(
@@ -404,19 +695,31 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
       )
       .subscribe({
         next: (msg) => {
-          this.isUploadingAttachment = false;
-
           const normalizedMsg: ChatMessage = {
             ...msg,
             type: msg.type || type,
             attachmentName: msg.attachmentName || file.name,
             attachmentType: msg.attachmentType || file.type,
             attachmentSize: msg.attachmentSize || file.size,
+            deliveryStatus: 'sent',
+            uiKey: optimisticMessage.uiKey || optimisticMessage.id,
+            playbackUrl: optimisticMessage.playbackUrl,
+            // Keep the local preview alive until the persisted MinIO image has actually
+            // been fetched. prepareImagePlayback(..., true) replaces and revokes it safely.
+            imageUrl: type === 'DOCUMENT' && this.isImageAttachment({
+              ...msg,
+              attachmentName: msg.attachmentName || file.name,
+              attachmentType: msg.attachmentType || file.type,
+            } as ChatMessage)
+              ? optimisticMessage.attachmentUrl
+              : undefined,
           };
 
           const exists = this.messages.some(m => m.id === normalizedMsg.id);
-          if (!exists) {
-            this.messages = [...this.messages, normalizedMsg];
+          this.messages = exists
+            ? this.messages.filter(m => m.id !== optimisticMessage.id)
+            : this.messages.map(m => m.id === optimisticMessage.id ? normalizedMsg : m);
+          if (!exists || this.messages.some(m => m.id === normalizedMsg.id)) {
             this.selectedConversation = {
               ...this.selectedConversation,
               messages: [...(this.selectedConversation.messages || []), normalizedMsg],
@@ -429,14 +732,23 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
             setTimeout(() => this.scrollToBottom(), 0);
           }
 
+          this.prepareVoicePlayback(normalizedMsg);
+          this.prepareImagePlayback(normalizedMsg, type === 'DOCUMENT' && this.isImageAttachment(normalizedMsg));
+
+          // Do not revoke image blobs here. The persisted-image loader revokes the old
+          // optimistic blob only after the MinIO-backed blob has loaded successfully.
+          if (type !== 'VOICE' && !this.isImageAttachment(normalizedMsg) && optimisticMessage.attachmentUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(optimisticMessage.attachmentUrl);
+          }
+
         },
         error: (err) => {
-          this.isUploadingAttachment = false;
           console.error('Attachment upload failed:', err);
-          alert(this.translate.instant('UPLOAD_FAILED_DETAILS', {
-            status: err.status || this.translate.instant('UNKNOWN'),
-            message: err.message || this.translate.instant('UNKNOWN'),
-          }));
+          this.updateDeliveryStatus(optimisticMessage.id, 'failed');
+          const serverMessage = typeof err?.error === 'string'
+            ? err.error
+            : (err?.error?.error || err?.error?.message || err?.error?.detail);
+          if (serverMessage) this.showAttachmentError(serverMessage);
         },
       });
   }

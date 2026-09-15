@@ -32,7 +32,7 @@
 <div class="chat-messages" (scroll)="onScroll($event)">
   <div
     class="message"
-    *ngFor="let msg of messages"
+    *ngFor="let msg of messages; trackBy: trackMessage"
     [ngClass]="msg.senderId === currentUserId ? 'me' : 'other'"
   >
     <span class="message-sender" *ngIf="selectedConversation?.isGroup && msg.senderId !== currentUserId">
@@ -45,26 +45,48 @@
       <div class="message-content message-content--voice" *ngSwitchCase="'VOICE'">
         <div class="voice-bubble">
           <i-feather name="mic"></i-feather>
-          <audio [src]="getAttachmentUrl(msg)" controls preload="metadata"></audio>
+          <audio
+            [src]="getVoicePlaybackUrl(msg)"
+            controls
+            preload="metadata"
+            (error)="refreshVoicePlayback(msg)"
+          ></audio>
           <span>{{ formatDuration(msg.durationSeconds) }}</span>
         </div>
       </div>
 
-      <button
-        type="button"
-        class="message-content message-content--doc"
-        *ngSwitchCase="'DOCUMENT'"
-        (click)="downloadDocument(msg, $event)"
-      >
-        <div class="doc-bubble">
-          <span class="doc-bubble__icon"><i-feather name="paperclip"></i-feather></span>
-          <span class="doc-bubble__info">
-            <strong>{{ msg.attachmentName || ('DOCUMENT_LABEL' | translate) }}</strong>
-            <small>{{ msg.attachmentType || ('DOCUMENT_LABEL' | translate) }} {{ formatFileSize(msg.attachmentSize) }}</small>
-          </span>
-          <i-feather name="download"></i-feather>
-        </div>
-      </button>
+      <ng-container *ngSwitchCase="'DOCUMENT'">
+        <button
+          *ngIf="isImageAttachment(msg); else documentMessage"
+          type="button"
+          class="message-content message-content--image"
+          (click)="openImagePreview(msg, $event)"
+        >
+          <img
+            *ngIf="msg.imageUrl; else messageImageLoading"
+            [src]="msg.imageUrl"
+            [alt]="msg.attachmentName || 'Image'"
+            (error)="refreshImagePlayback(msg)"
+          />
+          <ng-template #messageImageLoading><span class="message-image-loading">{{ msg.imageLoadError ? 'Image unavailable' : 'Loading image…' }}</span></ng-template>
+        </button>
+        <ng-template #documentMessage>
+          <button
+            type="button"
+            class="message-content message-content--doc"
+            (click)="downloadDocument(msg, $event)"
+          >
+            <div class="doc-bubble">
+              <span class="doc-bubble__icon"><i-feather name="paperclip"></i-feather></span>
+              <span class="doc-bubble__info">
+                <strong>{{ msg.attachmentName || ('DOCUMENT_LABEL' | translate) }}</strong>
+                <small>{{ msg.attachmentType || ('DOCUMENT_LABEL' | translate) }} {{ formatFileSize(msg.attachmentSize) }}</small>
+              </span>
+              <i-feather name="download"></i-feather>
+            </div>
+          </button>
+        </ng-template>
+      </ng-container>
 
       <div class="message-content" *ngSwitchDefault>
         {{ msg.content || msg.attachmentName || ('MESSAGE' | translate) }}
@@ -75,7 +97,13 @@
       {{ msg.content }}
     </div>
 
-    <div class="message-time">{{ msg.createdAt | date:'dd MMM, HH:mm' }}</div>
+    <div class="message-time">
+      {{ formatMessageTimestamp(msg.createdAt) }}
+      <ng-container *ngIf="msg.senderId === currentUserId">
+        · {{ (msg.deliveryStatus === 'sending' ? 'SENDING' : msg.deliveryStatus === 'failed' ? 'FAILED' : 'SENT') | translate }}
+        <button *ngIf="msg.deliveryStatus === 'failed'" type="button" class="message-retry" (click)="retryMessage(msg)">· {{ 'RETRY' | translate }}</button>
+      </ng-container>
+    </div>
   </div>
 </div>
 
@@ -100,6 +128,7 @@
   </div>
 
   <div class="attachment-error" *ngIf="attachmentError">{{ attachmentError }}</div>
+  <div class="attachment-error" *ngIf="messageError">{{ messageError }}</div>
 
   <div class="chat-input__row">
     <input
@@ -107,6 +136,7 @@
       type="text"
       [placeholder]="(pendingDocument ? 'ADD_A_MESSAGE' : 'WRITE_A_MESSAGE') | translate"
       [(ngModel)]="messageText"
+      (ngModelChange)="onMessageTextChange($event)"
       (keyup.enter)="sendMessage()"
     />
 
@@ -116,7 +146,6 @@
         class="composer-icon"
         [title]="'SEND_DOCUMENT' | translate"
         (click)="documentInput.click()"
-        [disabled]="isUploadingAttachment"
       >
         <i-feather name="paperclip"></i-feather>
       </button>
@@ -127,7 +156,6 @@
         [title]="'VOICE_MESSAGE' | translate"
         (click)="toggleVoiceRecording()"
         [class.is-recording]="isRecordingVoice"
-        [disabled]="isUploadingAttachment"
       >
         <i-feather [name]="isRecordingVoice ? 'square' : 'mic'"></i-feather>
       </button>
@@ -136,10 +164,19 @@
         type="button"
         class="send-button"
         (click)="sendMessage()"
-        [disabled]="isUploadingAttachment || (!messageText.trim() && !pendingDocument)"
+        [disabled]="(!messageText.trim() && !pendingDocument) || messageText.trim().length > maxMessageLength"
       >
         {{ 'SEND' | translate }}
       </button>
     </div>
+  </div>
+</div>
+
+<div class="image-preview-backdrop" *ngIf="previewImageUrl" (click)="closeImagePreview()">
+  <div class="image-preview-card" role="dialog" aria-modal="true" [attr.aria-label]="previewImageName" (click)="$event.stopPropagation()">
+    <button type="button" class="image-preview-close" (click)="closeImagePreview()" aria-label="Close image preview">
+      <i-feather name="x"></i-feather>
+    </button>
+    <img [src]="previewImageUrl" [alt]="previewImageName" />
   </div>
 </div>

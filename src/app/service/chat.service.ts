@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import {BehaviorSubject, Observable, of, Subject, throwError} from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import {catchError, map, switchMap, timeout} from 'rxjs/operators';
 import {Conversation} from "../components/chat/models/conversation";
 import {HttpClient, HttpHeaders, HttpParams} from "@angular/common/http";
 import {environment} from "@env/environment";
@@ -17,6 +17,7 @@ export interface AutoMessageSequenceDto {
   name: string;
   date: string;
   time: string;
+  timeZone?: string;
   createdAt?: string;
   messages: string[];
   items?: AutoMessageItemDto[];
@@ -37,6 +38,7 @@ export interface AutoMessageSequenceRequest {
   name: string;
   date: string;
   time: string;
+  timeZone?: string;
   messages: string[];
   items?: AutoMessageItemDto[];
 }
@@ -109,6 +111,11 @@ export class ChatService {
       content,
       senderId,
       type: 'TEXT'
+    }, {
+      headers: new HttpHeaders({
+        'X-Skip-Loader': 'true',
+        'X-Skip-Toast': 'true'
+      })
     });
   }
 
@@ -237,18 +244,18 @@ export class ChatService {
       console.log('UPLOAD FIELD:', key, value);
     });
 
-    return this.http.post<ChatMessage>(url, formData).pipe(
+    return this.http.post<ChatMessage>(url, formData, {
+      headers: new HttpHeaders({
+        'X-Skip-Loader': 'true',
+        'X-Skip-Toast': 'true'
+      })
+    }).pipe(
       catchError((err) => {
         console.error('UPLOAD ERROR STATUS =', err.status);
         console.error('UPLOAD ERROR URL =', err.url);
         console.error('UPLOAD ERROR MESSAGE =', err.message);
         console.error('UPLOAD ERROR BODY =', err.error);
         console.error('UPLOAD ERROR FULL =', err);
-
-        alert(this.translate.instant('UPLOAD_FAILED_DETAILS', {
-          status: err.status || this.translate.instant('UNKNOWN'),
-          message: err.message || this.translate.instant('UNKNOWN'),
-        }));
 
         return throwError(() => err);
       })
@@ -302,6 +309,34 @@ export class ChatService {
         return throwError(() => err);
       })
     );
+  }
+
+  getMessageAttachmentBlob(messageId: string): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/messages/${encodeURIComponent(messageId)}/attachment-content`,
+      {
+        responseType: 'blob',
+        headers: new HttpHeaders({
+          'X-Skip-Loader': 'true',
+          'X-Skip-Toast': 'true',
+          'Cache-Control': 'no-cache'
+        })
+      }
+    ).pipe(timeout(10000));
+  }
+
+  getMessageAttachmentUrl(messageId: string): Observable<string> {
+    return this.http.get<{ url: string }>(
+      `${this.apiUrl}/messages/${encodeURIComponent(messageId)}/attachment-url`,
+      { headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } }
+    ).pipe(timeout(10000), map(response => response.url));
+  }
+
+  getMessagePlaybackUrl(messageId: string): Observable<string> {
+    return this.http.get<{ url: string }>(
+      `${this.apiUrl}/messages/${encodeURIComponent(messageId)}/playback-url`,
+      { headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } }
+    ).pipe(map(response => response.url));
   }
 
   getAutoMessageSequences(

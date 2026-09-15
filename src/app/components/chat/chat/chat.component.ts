@@ -60,9 +60,21 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   selectedConvMembers: Member[] = [];
   showAllMembers = false;
   messageText = '';
+  messageError = '';
   private scrollPending = false;
   displayMessages: any[] = [];
   private optimisticMessageSeq = 0;
+  private composerDispatchLocked = false;
+  private readonly voicePlaybackRequests = new Set<string>();
+  private readonly voicePlaybackRetryCounts = new Map<string, number>();
+  private readonly voiceObjectUrls = new Set<string>();
+  private readonly imageObjectUrls = new Set<string>();
+  private readonly imagePlaybackRequests = new Set<string>();
+  previewImageUrl = '';
+  previewImageName = '';
+  readonly maxMessageLength = 5_000;
+  readonly maxAttachmentSize = 20 * 1024 * 1024;
+  private attachmentErrorTimer?: ReturnType<typeof setTimeout>;
 
   // Attachments / voice messages
   showAttachmentMenu = false;
@@ -128,6 +140,15 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   autoSequenceMessages: string[] = [];
   autoSequenceItems: AutoMessageItemDto[] = [];
   isUploadingAutoAttachment = false;
+  isSavingAutoSequence = false;
+  autoSequenceSubmitted = false;
+  autoSequenceNameTouched = false;
+  autoSequenceDateTouched = false;
+  autoSequenceTimeTouched = false;
+  autoMessageDraftTouched = false;
+  autoSequenceItemTouched: boolean[] = [];
+  autoSequenceTimeZone = 'Africa/Tunis';
+  private autoSequenceValidationTimer: ReturnType<typeof setInterval> | null = null;
   autoMessagesByConversation: Record<string, AutoMessageSequence[]> = {};
 
   // ── Create Group state ────────────────────────────────────────────────────
@@ -236,6 +257,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
           this.conversations[targetIdx] = {
             ...target,
             lastMessage: preview,
+            lastMessageAt: msg.createdAt,
             unreadCount: (!isOpen && msg.senderId !== this.currentUserId)
               ? (target.unreadCount || 0) + 1
               : target.unreadCount || 0
@@ -304,10 +326,16 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   ngOnDestroy(): void {
+    this.stopAutoSequenceValidationClock();
     this.chatService.notifyConversationOpened(null);
     this.cancelVoiceRecording();
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.attachmentErrorTimer) clearTimeout(this.attachmentErrorTimer);
+    this.voiceObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    this.voiceObjectUrls.clear();
+    this.imageObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    this.imageObjectUrls.clear();
   }
 
   @HostListener('window:resize')
@@ -690,28 +718,40 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
    private mapMessageToUi(msg: ChatMessage, optimistic = false): any {
      const type = this.normalizeMessageType(msg.type);
-
-     return {
+     const attachmentUrl = msg.attachmentUrl ? this.resolveFileUrl(msg.attachmentUrl) : '';
+     const mapped = {
        id: msg.id,
+       uiKey: msg.uiKey || msg.id,
        optimistic,
-       senderId: msg.senderId,
-       text: msg.content || '',
-       type,
-       attachmentUrl: msg.attachmentUrl ? this.resolveFileUrl(msg.attachmentUrl) : '',
-       attachmentName: msg.attachmentName || 'Document',
-       attachmentType: msg.attachmentType || '',
+       deliveryStatus: msg.deliveryStatus || (optimistic ? 'sending' : 'sent'),
+       retry: msg.retry,
+        senderId: msg.senderId,
+        text: msg.content || '',
+        type,
+        attachmentUrl,
+        playbackUrl: msg.playbackUrl || (type === 'VOICE' && attachmentUrl.startsWith('blob:') ? attachmentUrl : ''),
+        imageUrl: type === 'DOCUMENT' && this.isImageAttachment(msg) && attachmentUrl.startsWith('blob:') ? attachmentUrl : '',
+        attachmentName: msg.attachmentName || 'Document',
+        attachmentType: msg.attachmentType || '',
        attachmentSize: msg.attachmentSize || 0,
        durationSeconds: msg.durationSeconds || 0,
-       createdAtRaw: msg.createdAt || new Date().toISOString(),
-       timestamp: this.formatTime(msg.createdAt),
+       createdAtRaw: msg.createdAt || '',
+       timestamp: this.formatChatTimestamp(msg.createdAt),
        isRead: true,
        sender: {
          name: this.getUserName(msg.senderId),
          avatar: this.getUserAvatar(msg.senderId),
          initials: this.getInitials(msg.senderId)
        }
-     };
-   }
+};
+      if (type === 'VOICE' && !optimistic && !mapped.playbackUrl) {
+        setTimeout(() => this.prepareVoicePlayback(mapped));
+      }
+      if (type === 'DOCUMENT' && this.isImageAttachment(mapped) && !optimistic) {
+        setTimeout(() => this.prepareImagePlayback(mapped));
+      }
+      return mapped;
+    }
 
    private createOptimisticTextMessage(conversationId: string, content: string): ChatMessage {
      const now = new Date().toISOString();
@@ -734,9 +774,16 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      const mappedMessage = this.mapMessageToUi(msg);
 
      if (existingIndex !== -1) {
+       mappedMessage.uiKey = this.displayMessages[existingIndex].uiKey || mappedMessage.uiKey;
+       mappedMessage.playbackUrl = this.displayMessages[existingIndex].playbackUrl || mappedMessage.playbackUrl;
+       mappedMessage.imageUrl = this.displayMessages[existingIndex].imageUrl || mappedMessage.imageUrl;
        this.displayMessages = this.displayMessages.map((message: any, index: number) =>
          index === existingIndex ? mappedMessage : message
        );
+       this.prepareVoicePlayback(mappedMessage);
+       // A websocket/server acknowledgement can replace an optimistic image. Force the
+       // persisted copy to be resolved so we never keep a revoked local blob URL.
+       this.prepareImagePlayback(mappedMessage, this.isImageAttachment(mappedMessage));
        return;
      }
 
@@ -744,17 +791,138 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
        message.optimistic &&
        message.senderId === msg.senderId &&
        message.type === this.normalizeMessageType(msg.type) &&
-       message.text === (msg.content || '')
+       message.text === (msg.content || '') &&
+(!msg.attachmentName || message.attachmentName === msg.attachmentName)
      );
 
      if (optimisticIndex !== -1) {
+       const optimisticMessage = this.displayMessages[optimisticIndex];
+       mappedMessage.uiKey = optimisticMessage.uiKey || optimisticMessage.id;
+       mappedMessage.playbackUrl = optimisticMessage.playbackUrl || mappedMessage.playbackUrl;
+       // Keep the optimistic local blob visible only until the persisted MinIO copy is ready.
+       // IMPORTANT: force a reload from the backend once the real message id exists; otherwise
+       // the optimistic blob may later be revoked and Angular keeps rendering a dead blob URL.
+       mappedMessage.imageUrl = optimisticMessage.imageUrl || optimisticMessage.attachmentUrl || mappedMessage.imageUrl;
        this.displayMessages = this.displayMessages.map((message: any, index: number) =>
          index === optimisticIndex ? mappedMessage : message
        );
+       this.prepareVoicePlayback(mappedMessage);
+       this.prepareImagePlayback(mappedMessage, this.isImageAttachment(mappedMessage));
        return;
      }
 
      this.displayMessages = [...this.displayMessages, mappedMessage];
+     this.prepareVoicePlayback(mappedMessage);
+     this.prepareImagePlayback(mappedMessage);
+   }
+
+   trackTimelineEntry(_: number, entry: any): string {
+     return entry.kind === 'message'
+       ? `message-${entry.message.uiKey || entry.message.id}`
+       : `sequence-${entry.sequence.id}`;
+   }
+
+   prepareVoicePlayback(message: any, force = false): void {
+     if (!message || message.type !== 'VOICE' || !message.id || message.id.startsWith('tmp-')) return;
+     if (!force && message.playbackUrl && !message.playbackUrl.startsWith('blob:')) return;
+     if (this.voicePlaybackRequests.has(message.id)) return;
+
+     this.voicePlaybackRequests.add(message.id);
+     this.chatService.getMessagePlaybackUrl(message.id)
+       .pipe(takeUntil(this.destroy$))
+       .subscribe({
+         next: (url) => {
+           const oldBlobUrl = message.playbackUrl?.startsWith('blob:') ? message.playbackUrl : '';
+           this.displayMessages = this.displayMessages.map((item: any) =>
+             item.id === message.id ? { ...item, playbackUrl: url } : item
+           );
+           if (oldBlobUrl) {
+             this.voiceObjectUrls.delete(oldBlobUrl);
+             setTimeout(() => URL.revokeObjectURL(oldBlobUrl), 5000);
+           }
+           this.voicePlaybackRequests.delete(message.id);
+           this.voicePlaybackRetryCounts.delete(message.id);
+         },
+          error: (error) => {
+            console.error('Voice playback URL could not be resolved:', error);
+            this.voicePlaybackRequests.delete(message.id);
+          }
+        });
+   }
+
+   prepareImagePlayback(message: any, force = false): void {
+     if (!message || message.type !== 'DOCUMENT' || !this.isImageAttachment(message) || !message.id || message.id.startsWith('tmp-')) return;
+     if (!force && message.imageUrl) return;
+     if (this.imagePlaybackRequests.has(message.id)) return;
+
+     this.imagePlaybackRequests.add(message.id);
+     message.imageLoadError = false;
+
+     const finish = () => this.imagePlaybackRequests.delete(message.id);
+     const applyUrl = (url: string) => {
+       if (!url) {
+         message.imageLoadError = true;
+         finish();
+         return;
+       }
+       this.displayMessages = this.displayMessages.map((item: any) =>
+         item.id === message.id ? { ...item, imageUrl: url, imageLoadError: false } : item
+       );
+       finish();
+     };
+
+     // 1) Preferred path: authenticated backend proxy returning the real bytes.
+     this.chatService.getMessageAttachmentBlob(message.id)
+       .pipe(takeUntil(this.destroy$))
+       .subscribe({
+         next: (blob) => {
+           if (blob && blob.size > 0 && (!blob.type || blob.type.toLowerCase().startsWith('image/'))) {
+             const objectUrl = URL.createObjectURL(blob);
+             const oldUrl = message.imageUrl?.startsWith('blob:') ? message.imageUrl : '';
+             this.displayMessages = this.displayMessages.map((item: any) =>
+               item.id === message.id ? { ...item, imageUrl: objectUrl, imageLoadError: false } : item
+             );
+             if (oldUrl && oldUrl !== objectUrl) setTimeout(() => URL.revokeObjectURL(oldUrl), 1000);
+             finish();
+             return;
+           }
+           // Proxy answered, but not with an image -> use fresh presigned URL as fallback.
+           this.chatService.getMessageAttachmentUrl(message.id).pipe(takeUntil(this.destroy$)).subscribe({
+             next: applyUrl,
+             error: (urlError) => { console.error('Image URL fallback failed:', urlError); message.imageLoadError = true; finish(); }
+           });
+         },
+         error: (proxyError) => {
+           console.error('Image proxy failed, trying signed URL:', proxyError);
+           this.chatService.getMessageAttachmentUrl(message.id).pipe(takeUntil(this.destroy$)).subscribe({
+             next: applyUrl,
+             error: (urlError) => { console.error('Image URL fallback failed:', urlError); message.imageLoadError = true; finish(); }
+           });
+         }
+       });
+   }
+
+   refreshImagePlayback(message: any): void {
+     if (!message || !message.id || message.id.startsWith('tmp-')) return;
+     const retries = Number(message.imageLoadRetries || 0);
+     if (retries >= 1) {
+       message.imageLoadError = true;
+       message.imageUrl = '';
+       return;
+     }
+     message.imageLoadRetries = retries + 1;
+     if (message.imageUrl?.startsWith('blob:')) URL.revokeObjectURL(message.imageUrl);
+     message.imageUrl = '';
+     this.prepareImagePlayback(message, true);
+   }
+
+   refreshVoicePlayback(message: any): void {
+     if (!message || message.playbackUrl?.startsWith('blob:')) return;
+     const retries = this.voicePlaybackRetryCounts.get(message.id) || 0;
+     if (retries >= 1) return;
+     this.voicePlaybackRetryCounts.set(message.id, retries + 1);
+     message.playbackUrl = '';
+     this.prepareVoicePlayback(message, true);
    }
 
    private normalizeMessageType(type?: string): ChatUiMessageType {
@@ -772,7 +940,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
    resolveFileUrl(url: string): string {
      if (!url) return '';
-     if (url.startsWith('http://') || url.startsWith('https://')) return url;
+     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) return url;
      return `${environment.baseApiUrl}${url}`;
    }
 
@@ -790,16 +958,21 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      return `${min}:${String(sec).padStart(2, '0')}`;
    }
 
-   private formatTime(date: string | undefined): string {
-     try {
-       if (!date) return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-       const d = new Date(date);
-       if (isNaN(d.getTime())) return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-     } catch (e) {
-       console.error('Error formatting time:', e, date);
-       return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-     }
+   private formatChatTimestamp(date: string | undefined): string {
+     if (!date) return '';
+     const value = new Date(date);
+     if (Number.isNaN(value.getTime())) return '';
+
+     const locale = this.translate.currentLang || navigator.language;
+     const time = value.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+     const now = new Date();
+     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+     const messageDay = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+     const dayDifference = Math.round((today.getTime() - messageDay.getTime()) / 86_400_000);
+
+     if (dayDifference === 0) return time;
+     if (dayDifference === 1) return `${this.translate.instant('YESTERDAY')}, ${time}`;
+     return `${value.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}, ${time}`;
    }
 
    private getUserName(userId: string): string {
@@ -833,14 +1006,22 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   // ── Messages ──────────────────────────────────────────────────────────────
   sendMessage(): void {
-    if (!this.selectedConv || this.isRecording || this.isUploadingAttachment) return;
+    if (!this.selectedConv || this.isRecording || this.composerDispatchLocked) return;
 
     const content = this.messageText.trim();
+    if (content.length > this.maxMessageLength) {
+      this.messageError = this.translate.instant('MESSAGE_TOO_LONG');
+      return;
+    }
+
+    this.composerDispatchLocked = true;
+    setTimeout(() => this.composerDispatchLocked = false, 350);
 
     if (this.pendingDocument) {
       const file = this.pendingDocument;
       this.pendingDocument = null;
       this.messageText = '';
+      this.messageError = '';
       this.uploadAttachment(file, 'DOCUMENT', undefined, content);
       return;
     }
@@ -848,8 +1029,18 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     if (!content) return;
 
     this.messageText = '';
+    this.messageError = '';
     const optimisticMessage = this.createOptimisticTextMessage(this.selectedConv.id, content);
+    optimisticMessage.deliveryStatus = 'sending';
+    optimisticMessage.retry = () => this.dispatchTextMessage(optimisticMessage, content);
     this.displayMessages = [...this.displayMessages, this.mapMessageToUi(optimisticMessage, true)];
+    this.dispatchTextMessage(optimisticMessage, content);
+    this.updateLocalConversationLastMessage(content);
+    this.scrollPending = true;
+  }
+
+  private dispatchTextMessage(optimisticMessage: ChatMessage, content: string): void {
+    this.updateDisplayDeliveryStatus(optimisticMessage.id, 'sending');
     this.chatService
       .sendMessage(this.selectedConv.id, content, this.currentUserId)
       .pipe(takeUntil(this.destroy$))
@@ -861,13 +1052,26 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         },
         error: (err) => {
           console.error('Message send failed:', err);
-          this.displayMessages = this.displayMessages.filter((message: any) => message.id !== optimisticMessage.id);
-          this.messageText = content;
-          this.loadMessages(this.selectedConv!.id);
+          this.updateDisplayDeliveryStatus(optimisticMessage.id, 'failed');
         }
       });
-    this.updateLocalConversationLastMessage(content);
-    this.scrollPending = true;
+  }
+
+  retryMessage(message: any): void {
+    if (message.deliveryStatus !== 'failed' || typeof message.retry !== 'function') return;
+    message.retry();
+  }
+
+  onMessageTextChange(value: string): void {
+    this.messageError = value.trim().length > this.maxMessageLength
+      ? this.translate.instant('MESSAGE_TOO_LONG')
+      : '';
+  }
+
+  private updateDisplayDeliveryStatus(id: string, deliveryStatus: 'sending' | 'failed'): void {
+    this.displayMessages = this.displayMessages.map((message: any) =>
+      message.id === id ? { ...message, deliveryStatus } : message
+    );
   }
 
   toggleAttachmentMenu(): void {
@@ -885,7 +1089,13 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
     if (!this.isAcceptedDocument(file)) {
       this.pendingDocument = null;
-      this.attachmentError = 'Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.';
+      this.showAttachmentError('Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.');
+      return;
+    }
+
+    if (file.size > this.maxAttachmentSize) {
+      this.pendingDocument = null;
+      this.showAttachmentError(this.translate.instant('FILE_TOO_LARGE'));
       return;
     }
 
@@ -895,7 +1105,17 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   removePendingDocument(): void {
     this.pendingDocument = null;
+    if (this.attachmentErrorTimer) clearTimeout(this.attachmentErrorTimer);
     this.attachmentError = '';
+  }
+
+  private showAttachmentError(message: string): void {
+    if (this.attachmentErrorTimer) clearTimeout(this.attachmentErrorTimer);
+    this.attachmentError = message;
+    this.attachmentErrorTimer = setTimeout(() => {
+      this.attachmentError = '';
+      this.attachmentErrorTimer = undefined;
+    }, 4_000);
   }
 
   private isAcceptedDocument(file: File): boolean {
@@ -986,12 +1206,11 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       const msgs = conv.messages || [];
       if (msgs.length > 0) {
         msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        return this.formatTime(msgs[msgs.length - 1].createdAt);
+        return this.formatChatTimestamp(msgs[msgs.length - 1].createdAt);
       }
       // fallback if server provided a timestamp-like field
       // try to use conv['timestamp'] if present
-      const ts = (conv as any).timestamp;
-      return this.formatTime(ts);
+      return this.formatChatTimestamp(conv.lastMessageAt);
     } catch (e) {
       return '';
     }
@@ -1025,7 +1244,38 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   private uploadAttachment(file: File, type: 'VOICE' | 'DOCUMENT', durationSeconds?: number, content?: string): void {
     if (!this.selectedConv) return;
 
-    this.isUploadingAttachment = true;
+    if (file.size > this.maxAttachmentSize) {
+      this.showAttachmentError(this.translate.instant('FILE_TOO_LARGE'));
+      return;
+    }
+
+    const optimisticId = `tmp-${Date.now()}-${++this.optimisticMessageSeq}`;
+    const objectUrl = URL.createObjectURL(file);
+    if (type === 'VOICE') this.voiceObjectUrls.add(objectUrl);
+    const optimisticMessage: ChatMessage = {
+      id: optimisticId,
+      uiKey: optimisticId,
+      senderId: this.currentUserId,
+      content: content || '',
+      createdAt: new Date().toISOString(),
+      conversationId: this.selectedConv.id,
+      type,
+      attachmentUrl: objectUrl,
+      playbackUrl: type === 'VOICE' ? objectUrl : undefined,
+      attachmentName: file.name,
+      attachmentType: file.type,
+      attachmentSize: file.size,
+      durationSeconds,
+      deliveryStatus: 'sending',
+    };
+    optimisticMessage.retry = () => this.dispatchAttachment(optimisticMessage, file, type, durationSeconds, content);
+    this.displayMessages = [...this.displayMessages, this.mapMessageToUi(optimisticMessage, true)];
+    this.scrollPending = true;
+    this.dispatchAttachment(optimisticMessage, file, type, durationSeconds, content);
+  }
+
+  private dispatchAttachment(optimisticMessage: ChatMessage, file: File, type: 'VOICE' | 'DOCUMENT', durationSeconds?: number, content?: string): void {
+    this.updateDisplayDeliveryStatus(optimisticMessage.id, 'sending');
 
     this.chatService
       .uploadAttachment(
@@ -1039,8 +1289,6 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (savedMessage) => {
-          this.isUploadingAttachment = false;
-
           const normalizedMessage: ChatMessage = {
             ...savedMessage,
             type: savedMessage.type || type,
@@ -1048,20 +1296,20 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
             attachmentType: savedMessage.attachmentType || file.type,
             attachmentSize: savedMessage.attachmentSize || file.size,
           };
-
-          if (!this.displayMessages.some((m: any) => m.id === normalizedMessage.id)) {
-            this.displayMessages = [...this.displayMessages, this.mapMessageToUi(normalizedMessage)];
-          }
+          this.upsertDisplayMessage(normalizedMessage);
           this.updateConversationPreview(normalizedMessage);
           this.scrollPending = true;
+          if (type !== 'VOICE' && !this.isImageAttachment(normalizedMessage) && optimisticMessage.attachmentUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(optimisticMessage.attachmentUrl);
+          }
         },
         error: (err) => {
-          this.isUploadingAttachment = false;
           console.error('Attachment upload failed:', err);
-          alert(this.translate.instant('UPLOAD_FAILED_DETAILS', {
-            status: err.status || this.translate.instant('UNKNOWN'),
-            message: err.message || this.translate.instant('UNKNOWN'),
-          }));
+          this.updateDisplayDeliveryStatus(optimisticMessage.id, 'failed');
+          const serverMessage = typeof err?.error === 'string'
+            ? err.error
+            : (err?.error?.error || err?.error?.message || err?.error?.detail);
+          if (serverMessage) this.showAttachmentError(serverMessage);
         }
       });
   }
@@ -1085,6 +1333,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       this.conversations[idx] = {
         ...this.conversations[idx],
         lastMessage: content,
+        lastMessageAt: new Date().toISOString(),
       };
       this.conversations = [...this.conversations];
     }
@@ -1257,12 +1506,16 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     this.showManageAutoMessages = false;
     this.showAutoMessageModal = true;
     this.editingAutoMessage = sequence || null;
+    this.resolveAutoSequenceClientTimeZone();
+    this.startAutoSequenceValidationClock();
 
     if (sequence) {
       this.autoSequenceName = sequence.name;
       this.autoSequenceDate = sequence.date;
       this.autoSequenceTime = sequence.time;
+      if (sequence.timeZone) this.autoSequenceTimeZone = sequence.timeZone;
       this.autoSequenceItems = this.getAutoSequenceItems(sequence).map((item) => ({ ...item }));
+      this.autoSequenceItemTouched = this.autoSequenceItems.map(() => false);
       this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
       this.autoMessageDraft = '';
       return;
@@ -1274,6 +1527,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   closeAutoMessageModal(): void {
     this.showAutoMessageModal = false;
     this.editingAutoMessage = null;
+    this.stopAutoSequenceValidationClock();
     this.resetAutoMessageForm();
   }
 
@@ -1291,16 +1545,20 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   addAutoSequenceMessage(): void {
+    this.autoMessageDraftTouched = true;
     const message = this.autoMessageDraft.trim();
-    if (!message || this.autoSequenceItems.length >= 3) return;
+    if (!message || message.length > this.maxMessageLength || this.autoSequenceItems.length >= 3) return;
 
     this.autoSequenceItems = [...this.autoSequenceItems, { type: 'TEXT', content: message }];
+    this.autoSequenceItemTouched = [...this.autoSequenceItemTouched, false];
     this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
     this.autoMessageDraft = '';
+    this.autoMessageDraftTouched = false;
   }
 
   removeAutoSequenceMessage(index: number): void {
     this.autoSequenceItems = this.autoSequenceItems.filter((_, i) => i !== index);
+    this.autoSequenceItemTouched = this.autoSequenceItemTouched.filter((_, i) => i !== index);
     this.autoSequenceMessages = this.autoSequenceItems.map(item => item.content).filter(Boolean);
   }
 
@@ -1340,7 +1598,11 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     if (!file || this.autoSequenceItems.length >= 3) return;
 
     if (!this.isAcceptedDocument(file)) {
-      this.attachmentError = 'Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.';
+      this.showAttachmentError('Format non accepté. Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG, WEBP.');
+      return;
+    }
+    if (file.size > this.maxAttachmentSize) {
+      this.showAttachmentError('File is too large. Maximum size is 20 MB.');
       return;
     }
 
@@ -1359,6 +1621,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         next: (item) => {
           this.isUploadingAutoAttachment = false;
           this.autoSequenceItems = [...this.autoSequenceItems, item];
+          this.autoSequenceItemTouched = [...this.autoSequenceItemTouched, false];
           this.autoSequenceMessages = this.autoSequenceItems.map(sequenceItem => sequenceItem.content).filter(Boolean);
         },
         error: (err) => {
@@ -1369,14 +1632,22 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   saveAutoMessageSequence(): void {
-    if (!this.selectedConv || !this.canSaveAutoSequence()) return;
+    this.autoSequenceSubmitted = true;
+    this.autoSequenceNameTouched = true;
+    this.autoSequenceDateTouched = true;
+    this.autoSequenceTimeTouched = true;
+    this.autoSequenceItemTouched = this.autoSequenceItems.map(() => true);
 
+    if (!this.selectedConv || !this.canSaveAutoSequence() || this.isSavingAutoSequence) return;
+
+    this.isSavingAutoSequence = true;
     const conversationId = this.selectedConv.id;
     const request: AutoMessageSequenceRequest = {
       conversationId,
       name: this.autoSequenceName.trim(),
       date: this.autoSequenceDate,
       time: this.autoSequenceTime,
+      timeZone: this.autoSequenceTimeZone,
       messages: this.autoSequenceItems.map(item => item.content).filter(Boolean),
       items: [...this.autoSequenceItems],
     };
@@ -1389,10 +1660,12 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
+          this.isSavingAutoSequence = false;
           this.closeAutoMessageModal();
           this.loadAutoMessageSequences(conversationId);
         },
         error: (err) => {
+          this.isSavingAutoSequence = false;
           console.error('Error saving auto message sequence:', err);
         }
       });
@@ -1401,12 +1674,134 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   canSaveAutoSequence(): boolean {
     return !!(
       this.selectedConv &&
-      this.autoSequenceName.trim() &&
-      this.autoSequenceDate &&
-      this.autoSequenceTime &&
-      this.autoSequenceItems.length &&
-      this.autoSequenceItems.every(item => item.type !== 'TEXT' || !!item.content?.trim())
+      !this.isSavingAutoSequence &&
+      !this.getAutoSequenceNameError() &&
+      !this.getAutoSequenceDateError() &&
+      !this.getAutoSequenceTimeError() &&
+      !this.getAutoSequenceItemsError() &&
+      this.autoSequenceItems.length >= 1 &&
+      this.autoSequenceItems.length <= 3
     );
+  }
+
+  getAutoSequenceNameError(): string {
+    return this.autoSequenceName.trim() ? '' : 'Sequence name is required.';
+  }
+
+  getAutoSequenceDateError(): string {
+    if (!this.autoSequenceDate) return 'Date is required.';
+    const today = this.getNowInClientTimeZone().date;
+    return this.autoSequenceDate < today ? 'Date cannot be in the past.' : '';
+  }
+
+  getAutoSequenceTimeError(): string {
+    if (!this.autoSequenceTime) return 'Time is required.';
+    if (!this.autoSequenceDate || this.getAutoSequenceDateError()) return '';
+    const now = this.getNowInClientTimeZone();
+    const selected = `${this.autoSequenceDate}T${this.autoSequenceTime}`;
+    const current = `${now.date}T${now.time}`;
+    return selected <= current ? 'Choose a future date and time.' : '';
+  }
+
+  getAutoSequenceItemsError(): string {
+    if (this.autoSequenceItems.length < 1) return 'Add at least 1 message.';
+    if (this.autoSequenceItems.length > 3) return 'A sequence can contain up to 3 messages.';
+    for (const item of this.autoSequenceItems) {
+      if (item.type === 'TEXT') {
+        const content = item.content ?? '';
+        if (!content.trim()) return 'Message cannot be empty.';
+        if (content.trim().length > this.maxMessageLength) return 'Message cannot exceed 5000 characters.';
+      }
+      if (item.attachmentSize != null && item.attachmentSize > this.maxAttachmentSize) {
+        return 'File is too large. Maximum size is 20 MB.';
+      }
+    }
+    return '';
+  }
+
+  getAutoSequenceItemError(index: number): string {
+    const item = this.autoSequenceItems[index];
+    if (!item || item.type !== 'TEXT') return '';
+    const content = item.content ?? '';
+    if (!content.trim()) return 'Message cannot be empty.';
+    if (content.trim().length > this.maxMessageLength) return 'Message cannot exceed 5000 characters.';
+    return '';
+  }
+
+  getAutoMessageDraftError(): string {
+    if (!this.autoMessageDraftTouched) return '';
+    if (!this.autoMessageDraft.trim()) return 'Message cannot be empty.';
+    if (this.autoMessageDraft.trim().length > this.maxMessageLength) return 'Message cannot exceed 5000 characters.';
+    return '';
+  }
+
+  getAutoSequenceMinDate(): string {
+    return this.getNowInClientTimeZone().date;
+  }
+
+  private startAutoSequenceValidationClock(): void {
+    this.stopAutoSequenceValidationClock();
+    // Keep the button/error state correct even when the form stays open while
+    // the selected client-local time crosses into the past. setInterval runs
+    // inside Angular's zone, so each tick triggers change detection.
+    this.autoSequenceValidationTimer = setInterval(() => {
+      if (!this.showAutoMessageModal) {
+        this.stopAutoSequenceValidationClock();
+        return;
+      }
+      // No mutation is required: the template calls the validation getters.
+      // Touch the time field once the selected instant becomes invalid so the
+      // required exact error is shown directly under Time.
+      if (this.autoSequenceDate && this.autoSequenceTime && this.getAutoSequenceTimeError()) {
+        this.autoSequenceTimeTouched = true;
+      }
+    }, 15_000);
+  }
+
+  private stopAutoSequenceValidationClock(): void {
+    if (this.autoSequenceValidationTimer) {
+      clearInterval(this.autoSequenceValidationTimer);
+      this.autoSequenceValidationTimer = null;
+    }
+  }
+
+  private getNowInClientTimeZone(): { date: string; time: string } {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.autoSequenceTimeZone || 'Africa/Tunis',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    });
+    const parts = formatter.formatToParts(now).reduce((acc: Record<string, string>, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return {
+      date: `${parts['year']}-${parts['month']}-${parts['day']}`,
+      time: `${parts['hour']}:${parts['minute']}`
+    };
+  }
+
+  private resolveAutoSequenceClientTimeZone(): void {
+    const clientId = this.selectedConv?.clientId;
+    if (!clientId) {
+      this.autoSequenceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
+      return;
+    }
+    this.userService.getUserById(clientId, true).pipe(take(1)).subscribe({
+      next: (user: any) => {
+        const candidate = user?.timeZone || user?.timezone || user?.zoneId || user?.zone;
+        try {
+          if (candidate) new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date());
+          this.autoSequenceTimeZone = candidate || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
+        } catch {
+          this.autoSequenceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
+        }
+      },
+      error: () => {
+        this.autoSequenceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
+      }
+    });
   }
 
   getAutoSequenceItems(sequence: AutoMessageSequence): AutoMessageItemDto[] {
@@ -1438,12 +1833,12 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   private getTimelineTime(value?: string): number {
-    if (!value) return Date.now();
+    if (!value) return 0;
     const numericValue = Number(value);
     const time = !Number.isNaN(numericValue) && /^\d+(\.\d+)?$/.test(String(value))
       ? (numericValue < 1_000_000_000_000 ? numericValue * 1000 : numericValue)
       : new Date(value).getTime();
-    return Number.isNaN(time) ? Date.now() : time;
+    return Number.isNaN(time) ? 0 : time;
   }
 
   private resetAutoMessageForm(): void {
@@ -1453,7 +1848,53 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     this.autoMessageDraft = '';
     this.autoSequenceMessages = [];
     this.autoSequenceItems = [];
+    this.autoSequenceItemTouched = [];
     this.isUploadingAutoAttachment = false;
+    this.isSavingAutoSequence = false;
+    this.autoSequenceSubmitted = false;
+    this.autoSequenceNameTouched = false;
+    this.autoSequenceDateTouched = false;
+    this.autoSequenceTimeTouched = false;
+    this.autoMessageDraftTouched = false;
+  }
+
+  openImagePreview(msg: any, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!msg || !this.isImageAttachment(msg)) return;
+
+    const open = (url: string) => {
+      this.previewImageUrl = url;
+      this.previewImageName = msg.attachmentName || 'Image';
+    };
+
+    if (msg.imageUrl) {
+      open(msg.imageUrl);
+      return;
+    }
+
+    if (msg.id && !msg.id.startsWith('tmp-')) {
+      this.chatService.getMessageAttachmentBlob(msg.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (blob) => {
+            const objectUrl = URL.createObjectURL(blob);
+            this.displayMessages = this.displayMessages.map((item: any) =>
+              item.id === msg.id ? { ...item, imageUrl: objectUrl } : item
+            );
+            open(objectUrl);
+          },
+          error: (error) => console.error('Image preview could not be opened:', error)
+        });
+      return;
+    }
+
+    if (msg.attachmentUrl?.startsWith('blob:')) open(msg.attachmentUrl);
+  }
+
+  closeImagePreview(): void {
+    this.previewImageUrl = '';
+    this.previewImageName = '';
   }
 
   downloadDocument(msg: any, event?: Event): void {

@@ -165,7 +165,7 @@
       </div>
 
       <div class="chat-messages" #messagesContainer>
-        <ng-container *ngFor="let entry of conversationTimeline">
+        <ng-container *ngFor="let entry of conversationTimeline; trackBy: trackTimelineEntry">
         <div
           *ngIf="entry.kind === 'message'"
           class="message"
@@ -181,7 +181,7 @@
             <div class="message-content message-content--voice" *ngSwitchCase="'VOICE'">
               <div class="voice-bubble">
                 <div class="voice-bubble__icon"><i-feather name="mic"></i-feather></div>
-                <audio class="voice-bubble__audio" [src]="entry.message.attachmentUrl" controls></audio>
+                <audio class="voice-bubble__audio" [src]="entry.message.playbackUrl" (error)="refreshVoicePlayback(entry.message)" controls preload="metadata"></audio>
                 <span class="voice-bubble__duration">{{ formatDuration(entry.message.durationSeconds) }}</span>
               </div>
             </div>
@@ -191,9 +191,10 @@
                 *ngIf="isImageAttachment(entry.message); else documentBubble"
                 type="button"
                 class="message-content message-content--image"
-                (click)="downloadDocument(entry.message, $event)"
+                (click)="openImagePreview(entry.message, $event)"
               >
-                <img [src]="entry.message.attachmentUrl" [alt]="entry.message.attachmentName" />
+                <img *ngIf="entry.message.imageUrl; else imageLoading" [src]="entry.message.imageUrl" [alt]="entry.message.attachmentName" (error)="refreshImagePlayback(entry.message)" />
+                <ng-template #imageLoading><span class="message-image-loading">{{ entry?.message?.imageLoadError ? 'Image unavailable' : 'Loading image…' }}</span></ng-template>
               </button>
               <ng-template #documentBubble>
                 <button
@@ -220,6 +221,12 @@
 
           <div class="message-time">
             {{ entry.message.timestamp }}
+            <ng-container *ngIf="entry.message.senderId === currentUserId">
+              · {{ (entry.message.deliveryStatus === 'sending' ? 'SENDING' : entry.message.deliveryStatus === 'failed' ? 'FAILED' : 'SENT') | translate }}
+              <button *ngIf="entry.message.deliveryStatus === 'failed'" type="button" class="message-retry" (click)="retryMessage(entry.message)">
+                · {{ 'RETRY' | translate }}
+              </button>
+            </ng-container>
           </div>
         </div>
 
@@ -268,6 +275,7 @@
         </div>
 
         <div class="attachment-error" *ngIf="attachmentError">{{ attachmentError }}</div>
+        <div class="attachment-error" *ngIf="messageError">{{ messageError }}</div>
 
         <div class="chat-input-row">
           <div class="chat-attach-wrap">
@@ -303,15 +311,16 @@
             type="text"
             [placeholder]="pendingDocument ? ('ADD_A_MESSAGE' | translate) : (isRecording ? ('RECORDING_VOICE_MESSAGE' | translate) : ('CHAT_WITH' | translate) + ' ' + selectedConv.name)"
             [(ngModel)]="messageText"
+            (ngModelChange)="onMessageTextChange($event)"
             (keydown.enter)="sendMessage()"
-            [disabled]="isRecording || isUploadingAttachment"
+            [disabled]="isRecording"
           />
 
           <button
             class="chat-send-btn"
             type="button"
             (click)="sendMessage()"
-            [disabled]="(!messageText.trim() && !pendingDocument) || isRecording || isUploadingAttachment"
+            [disabled]="(!messageText.trim() && !pendingDocument) || messageText.trim().length > maxMessageLength || isRecording"
           >
             <i-feather name="send"></i-feather>
           </button>
@@ -339,7 +348,8 @@
     <div class="am-body">
       <label class="am-field">
         <span>{{ 'SEQUENCE_NAME' | translate }}</span>
-        <input type="text" [placeholder]="'SEQUENCE_NAME_EXAMPLE' | translate" [(ngModel)]="autoSequenceName" />
+        <input type="text" [placeholder]="'SEQUENCE_NAME_EXAMPLE' | translate" [(ngModel)]="autoSequenceName" (blur)="autoSequenceNameTouched = true" />
+        <small class="am-field-error" *ngIf="(autoSequenceNameTouched || autoSequenceSubmitted) && getAutoSequenceNameError()">{{ getAutoSequenceNameError() }}</small>
       </label>
 
       <div class="am-grid">
@@ -347,15 +357,18 @@
           <span>{{ 'DATE' | translate }}</span>
           <div class="am-input-icon">
             <i-feather name="calendar"></i-feather>
-            <input type="date" [(ngModel)]="autoSequenceDate" />
+            <input type="date" [(ngModel)]="autoSequenceDate" (blur)="autoSequenceDateTouched = true" />
           </div>
+          <small class="am-field-error" *ngIf="(autoSequenceDateTouched || autoSequenceSubmitted) && getAutoSequenceDateError()">{{ getAutoSequenceDateError() }}</small>
         </label>
         <label class="am-field">
           <span>{{ 'CLIENT_LOCAL_TIME' | translate }}</span>
           <div class="am-input-icon">
             <i-feather name="clock"></i-feather>
-            <input type="time" [(ngModel)]="autoSequenceTime" />
+            <input type="time" [(ngModel)]="autoSequenceTime" (blur)="autoSequenceTimeTouched = true" />
           </div>
+          <small class="am-field-hint">{{ autoSequenceTimeZone }}</small>
+          <small class="am-field-error" *ngIf="(autoSequenceTimeTouched || autoSequenceSubmitted) && getAutoSequenceTimeError()">{{ getAutoSequenceTimeError() }}</small>
         </label>
       </div>
 
@@ -379,8 +392,10 @@
                   rows="2"
                   [(ngModel)]="item.content"
                   (ngModelChange)="onAutoSequenceTextChanged()"
+                  (blur)="autoSequenceItemTouched[i] = true"
                   [placeholder]="'EDIT_SCHEDULED_MESSAGE' | translate"
                 ></textarea>
+                <small class="am-field-error" *ngIf="(autoSequenceItemTouched[i] || autoSequenceSubmitted) && getAutoSequenceItemError(i)">{{ getAutoSequenceItemError(i) }}</small>
                 <span *ngSwitchCase="'DOCUMENT'">{{ (isImageAttachment(item) ? 'PHOTO' : 'DOCUMENT_LABEL') | translate }} - {{ item.attachmentName }}</span>
               </ng-container>
             </span>
@@ -393,14 +408,21 @@
         <div class="am-limit" *ngIf="autoSequenceItems.length >= 3">
           {{ 'THREE_MESSAGE_LIMIT' | translate }}
         </div>
+        <small class="am-field-error am-sequence-error" *ngIf="autoSequenceSubmitted && getAutoSequenceItemsError()">{{ getAutoSequenceItemsError() }}</small>
 
         <div class="am-composer" [class.am-composer--disabled]="autoSequenceItems.length >= 3">
           <textarea
             rows="4"
             [placeholder]="'TYPE_MESSAGE_ALT_ENTER' | translate"
             [(ngModel)]="autoMessageDraft"
+            (blur)="autoMessageDraftTouched = true"
             [disabled]="autoSequenceItems.length >= 3"
           ></textarea>
+          <div class="am-composer__validation">
+            <small class="am-field-error" *ngIf="getAutoMessageDraftError()">{{ getAutoMessageDraftError() }}</small>
+            <small class="am-char-count">{{ autoMessageDraft.length }}/{{ maxMessageLength }}</small>
+          </div>
+          <small class="am-field-error" *ngIf="attachmentError">{{ attachmentError }}</small>
           <div class="am-composer__footer">
             <div class="am-composer__tools">
               <button type="button" class="am-tool-btn" (click)="autoAttachmentInput.click()" [disabled]="autoSequenceItems.length >= 3 || isUploadingAutoAttachment">
@@ -416,7 +438,7 @@
               type="button"
               class="am-add-btn"
               (click)="addAutoSequenceMessage()"
-              [disabled]="!autoMessageDraft.trim() || autoSequenceItems.length >= 3 || isUploadingAutoAttachment"
+              [disabled]="!autoMessageDraft.trim() || autoMessageDraft.trim().length > maxMessageLength || autoSequenceItems.length >= 3 || isUploadingAutoAttachment"
             >
               {{ 'ADD' | translate }}
             </button>
@@ -427,7 +449,7 @@
 
     <div class="am-footer">
       <button type="button" class="am-cancel-btn" (click)="closeAutoMessageModal()">{{ 'CANCEL' | translate }}</button>
-      <button type="button" class="am-primary-btn" (click)="saveAutoMessageSequence()" [disabled]="!canSaveAutoSequence()">
+      <button type="button" class="am-primary-btn" (click)="saveAutoMessageSequence()" [disabled]="!canSaveAutoSequence() || isSavingAutoSequence">
         <i-feather name="clock"></i-feather>
         <span>{{ (editingAutoMessage ? 'SAVE_CHANGES' : 'SCHEDULE_SEQUENCE') | translate }}</span>
       </button>
@@ -669,5 +691,15 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Image preview -->
+<div class="image-preview-backdrop" *ngIf="previewImageUrl" (click)="closeImagePreview()">
+  <div class="image-preview-card" role="dialog" aria-modal="true" [attr.aria-label]="previewImageName" (click)="$event.stopPropagation()">
+    <button type="button" class="image-preview-close" (click)="closeImagePreview()" aria-label="Close image preview">
+      <i-feather name="x"></i-feather>
+    </button>
+    <img [src]="previewImageUrl" [alt]="previewImageName" />
   </div>
 </div>

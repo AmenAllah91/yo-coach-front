@@ -10,6 +10,16 @@ import {
 } from "../../../service/food-replacement-groups.service";
 import { Subscription } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { finalize } from 'rxjs/operators';
+import {
+  hasUniqueReplacementGroupFoods,
+  isReplacementGroupFoodValid,
+  isReplacementGroupGuidanceValid,
+  isReplacementGroupNameValid,
+  isReplacementGroupValid,
+  REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH,
+  REPLACEMENT_GROUP_NAME_MAX_LENGTH,
+} from './food-replacement-group-validation';
 
 
 type ViewMode = 'LIST' | 'EDITOR';
@@ -61,6 +71,10 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   selectedFood: any | null = null;
   selectedQuantity = 100;
   selectedUnit = 'g';
+  editingFoodRefId: string | null = null;
+  saving = false;
+  readonly groupNameMaxLength = REPLACEMENT_GROUP_NAME_MAX_LENGTH;
+  readonly clientGuidanceMaxLength = REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH;
   foodPage = 0;
   readonly foodPageSize = 3;
   openGroupActionsId: string | null = null;
@@ -146,6 +160,52 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       : this.groupFoods;
   }
 
+  get groupNameValid(): boolean {
+    return isReplacementGroupNameValid(this.groupName);
+  }
+
+  get clientGuidanceValid(): boolean {
+    return isReplacementGroupGuidanceValid(this.groupDescription);
+  }
+
+  get groupFoodsUnique(): boolean {
+    return hasUniqueReplacementGroupFoods(this.groupFoods);
+  }
+
+  get groupFoodsValid(): boolean {
+    return this.groupFoods.every(isReplacementGroupFoodValid);
+  }
+
+  get canSaveGroup(): boolean {
+    return !this.saving && isReplacementGroupValid(
+      this.groupName,
+      this.groupDescription,
+      this.groupFoods,
+    );
+  }
+
+  get selectedFoodValid(): boolean {
+    return Boolean(this.selectedFood && this.getFoodId(this.selectedFood));
+  }
+
+  get selectedQuantityValid(): boolean {
+    return Number.isFinite(Number(this.selectedQuantity)) && Number(this.selectedQuantity) > 0;
+  }
+
+  get selectedUnitValid(): boolean {
+    return Boolean(this.selectedUnit?.trim());
+  }
+
+  get canAddSelectedFood(): boolean {
+    if (!this.selectedFoodValid || !this.selectedQuantityValid || !this.selectedUnitValid) {
+      return false;
+    }
+    const foodRefId = this.getFoodId(this.selectedFood);
+    return !this.groupFoods.some(
+      (food) => food.foodRefId === foodRefId && food.foodRefId !== this.editingFoodRefId,
+    );
+  }
+
   loadGroups(): void {
     this.loading = true;
 
@@ -226,6 +286,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.clientNote = '';
     this.groupFoods = [];
     this.groupFoodSearchTerm = '';
+    this.saving = false;
     this.view = 'EDITOR';
     setTimeout(() => this.hideLayoutBackButton());
   }
@@ -237,6 +298,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.clientNote = group.clientNote || '';
     this.groupFoods = (group.foods || []).map((food) => ({ ...food }));
     this.groupFoodSearchTerm = '';
+    this.saving = false;
     this.view = 'EDITOR';
     setTimeout(() => this.hideLayoutBackButton());
   }
@@ -268,9 +330,11 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   }
 
   saveGroup(): void {
-    if (!this.groupName.trim() || this.groupFoods.length < 2) {
+    if (!this.canSaveGroup) {
       return;
     }
+
+    this.saving = true;
 
     const payload: FoodReplacementGroup = {
       id: this.editingGroup?.id,
@@ -280,8 +344,8 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       active: this.editingGroup?.active ?? true,
       foods: this.groupFoods.map((food) => ({
         foodRefId: food.foodRefId,
-        quantity: food.quantity,
-        unit: food.unit,
+        quantity: Number(food.quantity),
+        unit: food.unit.trim(),
       })),
     };
 
@@ -289,7 +353,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       ? this.replacementGroupsService.updateGroup(this.editingGroup.id, payload)
       : this.replacementGroupsService.createGroup(payload);
 
-    request.subscribe({
+    request.pipe(finalize(() => this.saving = false)).subscribe({
       next: () => {
         this.loadGroups();
         this.closeEditor();
@@ -313,6 +377,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.foodPage = 0;
     this.foodTab = 'all';
     this.selectedFood = null;
+    this.editingFoodRefId = null;
     this.selectedQuantity = 100;
     this.selectedUnit = 'g';
     this.showAddFoodModal = true;
@@ -321,24 +386,28 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   closeAddFoodModal(): void {
     this.showAddFoodModal = false;
     this.selectedFood = null;
+    this.editingFoodRefId = null;
   }
 
   selectFood(food: any): void {
+    const foodRefId = this.getFoodId(food);
+    if (!foodRefId || this.groupFoods.some(
+      (item) => item.foodRefId === foodRefId && item.foodRefId !== this.editingFoodRefId,
+    )) return;
     this.selectedFood = food;
     this.selectedQuantity = this.getServingSize(food);
     this.selectedUnit = this.getServingUnit(food);
   }
 
   addSelectedFood(): void {
-    if (!this.selectedFood) return;
+    if (!this.canAddSelectedFood) return;
 
     const foodRefId = this.getFoodId(this.selectedFood);
-    const existingIndex = this.groupFoods.findIndex((food) => food.foodRefId === foodRefId);
 
     const item: FoodReplacementGroupItem = {
       foodRefId,
-      quantity: this.selectedQuantity,
-      unit: this.selectedUnit,
+      quantity: Number(this.selectedQuantity),
+      unit: this.selectedUnit.trim(),
       name: this.getFoodName(this.selectedFood),
       energy: this.getCalories(this.selectedFood),
       protein: this.getProtein(this.selectedFood),
@@ -349,8 +418,11 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       general: this.isGeneralFood(this.selectedFood),
     };
 
-    if (existingIndex >= 0) {
-      this.groupFoods[existingIndex] = item;
+    const editingIndex = this.editingFoodRefId
+      ? this.groupFoods.findIndex((food) => food.foodRefId === this.editingFoodRefId)
+      : -1;
+    if (editingIndex >= 0) {
+      this.groupFoods[editingIndex] = item;
     } else {
       this.groupFoods.push(item);
     }
@@ -360,6 +432,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
 
   editGroupFood(food: FoodReplacementGroupItem): void {
     this.loadFoods();
+    this.editingFoodRefId = food.foodRefId;
     this.selectedFood = {
       id: food.foodRefId,
       name: food.name,
