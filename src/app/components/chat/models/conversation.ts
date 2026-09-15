@@ -6,6 +6,7 @@ export interface Conversation {
   avatar: string;
   adherentId: string
   lastMessage: string;
+  lastMessageAt?: string;
   messages: ChatMessage[];
   unreadCount: number;
   clientId: string;

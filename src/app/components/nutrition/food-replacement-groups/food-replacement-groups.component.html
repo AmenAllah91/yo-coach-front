@@ -145,7 +145,7 @@
       <button class="secondary-btn" (click)="closeEditor()">{{ 'CANCEL' | translate }}</button>
       <button
         class="primary-btn"
-        [disabled]="!groupName.trim() || groupFoods.length < 2"
+        [disabled]="!canSaveGroup"
         (click)="saveGroup()"
       >
         {{ 'SAVE' | translate }}
@@ -161,11 +161,32 @@
     <div class="group-information-fields">
       <div class="form-field">
         <label>{{ 'GROUP_NAME' | translate }}</label>
-        <input type="text" [placeholder]="'GROUP_NAME_EXAMPLE' | translate" [(ngModel)]="groupName" />
+        <input
+          type="text"
+          [placeholder]="'GROUP_NAME_EXAMPLE' | translate"
+          [(ngModel)]="groupName"
+          #groupNameInput="ngModel"
+          required
+          [class.field-invalid]="groupNameInput.touched && !groupNameValid"
+        />
+        <span class="field-error" *ngIf="groupNameInput.touched && !groupName.trim()">
+          {{ 'REPLACEMENT_GROUP_NAME_REQUIRED' | translate }}
+        </span>
+        <span class="field-error" *ngIf="groupName.length > groupNameMaxLength">
+          {{ 'REPLACEMENT_GROUP_NAME_MAX_LENGTH' | translate }}
+        </span>
       </div>
       <div class="form-field">
         <label>{{ 'CLIENT_GUIDANCE' | translate }}</label>
-        <input type="text" [placeholder]="'CLIENT_GUIDANCE_PLACEHOLDER' | translate" [(ngModel)]="groupDescription" />
+        <input
+          type="text"
+          [placeholder]="'CLIENT_GUIDANCE_PLACEHOLDER' | translate"
+          [(ngModel)]="groupDescription"
+          [class.field-invalid]="!clientGuidanceValid"
+        />
+        <span class="field-error" *ngIf="!clientGuidanceValid">
+          {{ 'REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH' | translate }}
+        </span>
       </div>
     </div>
   </section>
@@ -212,6 +233,15 @@
         </div>
         <div class="table-no-results" *ngIf="filteredGroupFoods.length === 0">{{ 'NO_FOODS_MATCH_SEARCH' | translate }}</div>
       </div>
+      <span class="field-error section-error" *ngIf="groupFoods.length < 2">
+        {{ 'REPLACEMENT_GROUP_MIN_FOODS' | translate }}
+      </span>
+      <span class="field-error section-error" *ngIf="!groupFoodsUnique">
+        {{ 'REPLACEMENT_GROUP_DUPLICATE_FOOD' | translate }}
+      </span>
+      <span class="field-error section-error" *ngIf="!groupFoodsValid">
+        {{ 'REPLACEMENT_GROUP_INVALID_FOOD' | translate }}
+      </span>
   </section>
 
   <section class="panel preview-panel">
@@ -337,21 +367,41 @@
 
         <ng-template #noFoodSelected>
           <div class="selected-food muted">{{ 'NO_FOOD_SELECTED' | translate }}</div>
+          <span class="field-error">{{ 'REPLACEMENT_GROUP_FOOD_REQUIRED' | translate }}</span>
         </ng-template>
 
         <div class="summary-grid">
           <div>
             <label>{{ 'QUANTITY' | translate }}</label>
-            <input type="number" [(ngModel)]="selectedQuantity" />
+            <input
+              type="number"
+              min="0"
+              step="any"
+              [(ngModel)]="selectedQuantity"
+              #quantityInput="ngModel"
+              required
+              [class.field-invalid]="quantityInput.touched && !selectedQuantityValid"
+            />
+            <span class="field-error" *ngIf="quantityInput.touched && !selectedQuantityValid">
+              {{ 'REPLACEMENT_GROUP_QUANTITY_POSITIVE' | translate }}
+            </span>
           </div>
 
           <div>
             <label>{{ 'UNIT' | translate }}</label>
-            <select [(ngModel)]="selectedUnit">
+            <select
+              [(ngModel)]="selectedUnit"
+              #unitInput="ngModel"
+              required
+              [class.field-invalid]="unitInput.touched && !selectedUnitValid"
+            >
               <option value="g">g</option>
               <option value="pcs">pcs</option>
               <option value="ml">ml</option>
             </select>
+            <span class="field-error" *ngIf="unitInput.touched && !selectedUnitValid">
+              {{ 'REPLACEMENT_GROUP_UNIT_REQUIRED' | translate }}
+            </span>
           </div>
         </div>
 
@@ -361,7 +411,7 @@
 
         <button
           class="primary-btn full"
-          [disabled]="!selectedFood"
+          [disabled]="!canAddSelectedFood"
           (click)="addSelectedFood()"
         >
           {{ 'ADD_FOOD' | translate }}
