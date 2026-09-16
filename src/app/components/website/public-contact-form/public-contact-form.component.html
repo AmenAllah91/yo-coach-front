@@ -11,20 +11,30 @@
         <h1>{{ form.message }}</h1>
         <div class="coach-name">{{ form.coachName }}</div>
 
-        <form *ngIf="!submitted" (ngSubmit)="submit()" #contactForm="ngForm">
+        <form *ngIf="!submitted" (ngSubmit)="submit()" #contactForm="ngForm" novalidate>
           <label for="fullName">{{ 'FULL_NAME' | translate }}</label>
-          <input id="fullName" name="fullName" type="text" required maxlength="100" [(ngModel)]="lead.fullName" />
+          <input id="fullName" name="fullName" type="text" maxlength="100" [(ngModel)]="lead.fullName" (blur)="touched.fullName = true" />
+          <div class="field-error" *ngIf="touched.fullName && fullNameError">{{ fullNameError }}</div>
 
           <label for="email">{{ 'EMAIL' | translate }}</label>
-          <input id="email" name="email" type="email" required email maxlength="160" [(ngModel)]="lead.email" />
+          <input id="email" name="email" type="email" maxlength="254" [(ngModel)]="lead.email" (blur)="touched.email = true" />
+          <div class="field-error" *ngIf="touched.email && emailError">{{ emailError }}</div>
 
           <label for="message">{{ 'MESSAGE' | translate }}</label>
-          <textarea id="message" name="message" required maxlength="1000" rows="4" [(ngModel)]="lead.message"></textarea>
+          <textarea id="message" name="message" maxlength="2000" rows="4" [(ngModel)]="lead.message" (blur)="touched.message = true"></textarea>
+          <div class="field-error" *ngIf="touched.message && messageError">{{ messageError }}</div>
+
+          <!-- Honeypot: intentionally invisible to humans, available to naive bots/autofill. -->
+          <div class="contact-honeypot" aria-hidden="true">
+            <label for="website">Website</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" [(ngModel)]="lead.website" />
+          </div>
 
           <label class="terms-row">
-            <input name="terms" type="checkbox" [(ngModel)]="lead.termsAccepted" />
-            <span>{{ 'ACCEPT_TERMS_PREFIX' | translate }} <a href="/terms-and-conditions" target="_blank">{{ 'TERMS_AND_CONDITIONS' | translate }}</a></span>
+            <input name="terms" type="checkbox" [(ngModel)]="lead.termsAccepted" (blur)="touched.terms = true" />
+            <span>{{ 'ACCEPT_TERMS_PREFIX' | translate }} <a href="https://yo-coach.app/terms" target="_blank" rel="noopener noreferrer">{{ 'TERMS_AND_CONDITIONS' | translate }}</a></span>
           </label>
+          <div class="field-error" *ngIf="touched.terms && termsError">{{ termsError }}</div>
 
           <div class="form-error" *ngIf="error">{{ error }}</div>
           <div class="preview-note" *ngIf="isPreview">{{ 'PREVIEW_SUBMISSIONS_DISABLED' | translate }}</div>
@@ -33,7 +43,7 @@
 
         <div class="confirmation" *ngIf="submitted">
           <div class="check-circle"><i-feather name="check"></i-feather></div>
-          <p>{{ 'CONTACT_REQUEST_SUBMITTED' | translate }}</p>
+          <p>Message sent successfully.</p>
         </div>
       </div>
     </section>

@@ -36,3 +36,19 @@ footer strong { color: $brand-blue; }
   .cover { height: 150px; }
   .avatar { top: 112px; }
 }
+
+.contact-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.field-error {
+  margin-top: 5px;
+  color: #dc2626;
+  font-size: 12px;
+}

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
@@ -12,12 +12,13 @@ export interface Food {
   protein: number;
   carbs: number;
   fat: number;
-  fiber?: number;
-  sugar?: number;
-  polyunsaturatedFat?: number;
-  monounsaturatedFat?: number;
-  saturatedFat?: number;
-  sodium?: number;
+  polyols?: number | null;
+  fiber?: number | null;
+  sugar?: number | null;
+  polyunsaturatedFat?: number | null;
+  monounsaturatedFat?: number | null;
+  saturatedFat?: number | null;
+  sodium?: number | null;
   servingSize: number;
   servingUnit: string;
   coachId?: string;
@@ -137,6 +138,17 @@ export class NutritionService {
 
   constructor(private http: HttpClient) {}
 
+  private fromFoodApi(food: any): Food {
+    return { ...food, calories: food.energy ?? food.calories ?? null,
+      carbs: food.carbohydrates ?? food.carbs ?? null,
+      servingUnit: food.servingDescription ?? food.servingUnit ?? '',
+      isGeneral: food.general ?? food.isGeneral };
+  }
+  private toFoodApi(food: Food) {
+    const { calories, carbs, servingUnit, ...fields } = food;
+    return { ...fields, energy: calories, carbohydrates: carbs, servingDescription: servingUnit };
+  }
+
   // Food management
   getFoods(
     page: number = 0,
@@ -155,7 +167,7 @@ export class NutritionService {
     return this.http.get<any>(
       `${environment.baseApiUrl}/api/food-ref?${params}`,
       { headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} },
-    );
+    ).pipe(map(response => ({ ...response, content: (response.content || []).map(food => this.fromFoodApi(food)) })));
   }
 
   duplicate(id: string): Observable<any> {
@@ -178,24 +190,24 @@ export class NutritionService {
   }
 
   createFood(food: Food): Observable<Food> {
-    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref`, food);
+    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref`, this.toFoodApi(food)).pipe(map(result => this.fromFoodApi(result)));
   }
 
   updateFood(id: string, food: Food): Observable<Food> {
     return this.http.put<Food>(
       `${environment.baseApiUrl}/api/food-ref/${id}`,
-      food
-    );
+      this.toFoodApi(food)
+    ).pipe(map(result => this.fromFoodApi(result)));
   }
 
   uploadFoodImage(id: string, file: File): Observable<Food> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/image`, formData);
+    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/image`, formData).pipe(map(result => this.fromFoodApi(result)));
   }
 
   removeFoodImage(id: string): Observable<Food> {
-    return this.http.delete<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/image`);
+    return this.http.delete<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/image`).pipe(map(result => this.fromFoodApi(result)));
   }
 
   deleteFood(id: string): Observable<void> {
@@ -205,11 +217,11 @@ export class NutritionService {
   }
 
   getFoodById(id: string): Observable<Food> {
-    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/${id}`);
+    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/${id}`).pipe(map(result => this.fromFoodApi(result)));
   }
 
   getFoodForClient(id: string): Observable<Food> {
-    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`);
+    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`).pipe(map(result => this.fromFoodApi(result)));
   }
 
   // Nutrition plan management

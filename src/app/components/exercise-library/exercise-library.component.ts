@@ -8,6 +8,9 @@ import { ExerciseService, PageResponse } from '../../service/exercise.service';
 import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
 import { EnumResponse, Exercise } from '@shared/models/exercice.models';
+import { firstValueFrom } from 'rxjs';
+import { DocumentService } from '../../service/document.service';
+import { exerciseErrors, exerciseMediaError, youtubeVideoId } from './exercise-validation';
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
@@ -58,6 +61,69 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
     this.videoResizeObserver.observe(wrapper);
   }
 
+  isSaving = false;
+  touched = new Set<string>();
+  imageFile: File | null = null;
+  videoFile: File | null = null;
+  imagePreview = '';
+  uploadedImageUrl = '';
+  uploadedVideoUrl = '';
+  attachmentErrors: Record<string, string> = {};
+  saveError = '';
+
+  get formErrors(): Record<string, string> {
+    return { ...exerciseErrors({ name: this.exerciseName, type: this.exerciseType, equipment: this.equipment, muscle: this.muscle, description: this.exerciseDescription, youtube: this.videoLink, hasVideo: !!(this.videoFile || this.uploadedVideoUrl), existingNames: this.myExercisesForTemplateFilter.filter(e => e.id !== this.editingExercise?.id).map(e => e.name) }), ...this.attachmentErrors };
+  }
+
+  get canSave(): boolean {
+    return !this.isSaving && !this.isLoading && Object.keys(this.formErrors).length === 0;
+  }
+
+  touch(field: string) {
+    this.touched.add(field);
+    delete this.attachmentErrors[field];
+  }
+
+  fieldError(field: string): string {
+    const error = this.formErrors[field] || '';
+    const visible = this.touched.has(field) || (error === 'EX_VALID_VIDEO_EXCLUSIVE' && (this.touched.has('video') || this.touched.has('youtube')));
+    return visible ? error : '';
+  }
+
+  selectAttachment(event: Event, kind: 'image' | 'video') {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.selectFileAttachment(file, kind);
+    input.value = '';
+  }
+
+  dropAttachment(event: DragEvent, kind: 'image' | 'video') {
+    event.preventDefault();
+    const file = event.dataTransfer?.files[0];
+    if (file) this.selectFileAttachment(file, kind);
+  }
+
+  private selectFileAttachment(file: File, kind: 'image' | 'video') {
+    if (this.isSaving) return;
+    this.touched.add(kind);
+    delete this.attachmentErrors[kind];
+    const error = exerciseMediaError(file, kind);
+    if (error) this.attachmentErrors[kind] = error;
+    this.clearAttachment(kind, false);
+    if (!this.attachmentErrors[kind]) {
+      if (kind === 'image') { this.imageFile = file; this.imagePreview = URL.createObjectURL(file); }
+      else this.videoFile = file;
+    }
+  }
+
+  clearAttachment(kind: 'image' | 'video', clearError = true) {
+    if (kind === 'image') {
+      if (this.imagePreview) URL.revokeObjectURL(this.imagePreview);
+      this.imagePreview = ''; this.imageFile = null; this.uploadedImageUrl = '';
+    } else { this.videoFile = null; this.uploadedVideoUrl = ''; }
+    if (clearError) delete this.attachmentErrors[kind];
+  }
+
   exerciseName = '';
   exerciseType = '';
   equipment = '';
@@ -86,6 +152,7 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
 
   constructor(
     private exerciseService: ExerciseService,
+    private documentService: DocumentService,
     private authService: AuthService,
     private location: Location,
     private hostElement: ElementRef<HTMLElement>,
@@ -342,6 +409,9 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   }
 
   getModalPreviewImage(): string {
+    if (this.imagePreview || this.uploadedImageUrl) return this.imagePreview || this.uploadedImageUrl;
+    const existingImage = this.getExerciseImageUrl(this.editingExercise);
+    if (existingImage) return existingImage;
     const videoId = this.getYouTubeVideoId(this.videoLink);
 
     if (!videoId) return '';
@@ -350,48 +420,17 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   }
 
   getYouTubeVideoId(url: string): string {
-    if (!url || !url.trim()) return '';
-
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname.toLowerCase();
-      const segments = parsed.pathname.split('/').filter(Boolean);
-
-      let videoId = '';
-
-      if (host.includes('youtu.be')) {
-        videoId = segments[0] ?? '';
-      }
-
-      if (host.includes('youtube.com')) {
-        videoId = parsed.searchParams.get('v') ?? '';
-
-        if (!videoId && segments[0] === 'shorts') {
-          videoId = segments[1] ?? '';
-        }
-
-        if (!videoId && segments[0] === 'embed') {
-          videoId = segments[1] ?? '';
-        }
-      }
-
-      return videoId.split('?')[0].split('&')[0].trim();
-    } catch {
-      const regex =
-        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^"&?/\s]{6,})/;
-
-      const match = url.match(regex);
-
-      return match ? match[1] : '';
-    }
+    return youtubeVideoId(url);
   }
 
   openCreateModal() {
+    if (this.isSaving) return;
     this.resetForm();
     this.showCreateModal = true;
   }
 
   closeCreateModal() {
+    if (this.isSaving) return;
     this.showCreateModal = false;
     this.resetForm();
   }
@@ -401,17 +440,7 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
       next: (enums) => {
         this.enums = enums;
 
-        if (enums.typeExercise.length > 0) {
-          this.exerciseType = enums.typeExercise[0];
-        }
 
-        if (enums.equipment.length > 0) {
-          this.equipment = enums.equipment[0];
-        }
-
-        if (enums.muscleGroup.length > 0) {
-          this.muscle = enums.muscleGroup[0];
-        }
       },
       error: (error) => console.error('Error loading enums:', error),
     });
@@ -473,6 +502,7 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
       this.layoutBackButton.style.display = this.layoutBackButtonDisplay;
     }
     this.videoResizeObserver?.disconnect();
+    this.clearAttachment('image');
   }
 
   goBack(): void {
@@ -511,61 +541,77 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
     this.isLoading = false;
   }
 
-  createExercise() {
-    if (!this.exerciseName.trim()) return;
-
-    if (this.editingExercise && !this.canManageExercise(this.editingExercise)) {
-      console.warn('Edit blocked: current user is not the owner of this exercise');
-      return;
-    }
-
-    const videoId = this.getYouTubeVideoId(this.videoLink);
-    const generatedThumbnail = videoId
-      ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-      : '';
-
-    const exercise: any = {
-      name: this.exerciseName,
-      type: this.exerciseType,
-      equipment: this.equipment,
-      muscle: this.muscle,
-      isTemplate: this.canCreateTemplate ? this.isTemplate : false,
-      videoLink: this.videoLink,
-      description: this.exerciseDescription,
-      createdBy: this.editingExercise?.createdBy || null,
-
-      imageUrl:
-        this.getExerciseImageUrl(this.editingExercise) || generatedThumbnail,
-      thumbnailUrl:
-        this.getExerciseImageUrl(this.editingExercise) || generatedThumbnail,
-    };
-
-    if (this.editingExercise) {
-      this.exerciseService.updateExercise(this.editingExercise.id!, exercise).subscribe({
-        next: () => {
-          this.loadAllExercises();
-          this.resetForm();
-          this.closeCreateModal();
-        },
-        error: (error) => console.error('Error updating exercise:', error),
-      });
-    } else {
-      this.exerciseService.createExercise(exercise).subscribe({
-        next: () => {
-          this.loadAllExercises();
-          this.resetForm();
-          this.closeCreateModal();
-        },
-        error: (error) => console.error('Error creating exercise:', error),
-      });
+  async createExercise() {
+    this.touched = new Set(['name', 'type', 'equipment', 'muscle', 'youtube', 'description', 'image', 'video']);
+    if (!this.canSave) return;
+    if (this.editingExercise && !this.canManageExercise(this.editingExercise)) return;
+    this.isSaving = true;
+    this.saveError = '';
+    let stage = 'save';
+    try {
+      // Check every page, including exercises not currently displayed.
+      const names: string[] = [];
+      let page = 0;
+      let totalPages = 1;
+      do {
+        const response = await firstValueFrom(this.exerciseService.getMyExercises(page, 100));
+        names.push(...response.content.filter(e => e.id !== this.editingExercise?.id).map(e => e.name));
+        totalPages = response.totalPages;
+        page++;
+      } while (page < totalPages);
+      if (names.some(name => name.trim().toLowerCase() === this.exerciseName.trim().toLowerCase())) {
+        this.attachmentErrors['name'] = 'EX_VALID_DUPLICATE';
+        return;
+      }
+      const folder = `custom-exercises/${this.currentUserId || 'coach'}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (this.imageFile && !this.uploadedImageUrl) {
+        stage = 'image';
+        this.uploadedImageUrl = await firstValueFrom(this.documentService.uploadFileInPath(this.imageFile, folder));
+        if (!/^https?:\/\//.test(this.uploadedImageUrl)) this.uploadedImageUrl = await firstValueFrom(this.documentService.simpleGenerateFileUrl(this.uploadedImageUrl));
+      }
+      if (this.videoFile && !this.uploadedVideoUrl) {
+        stage = 'video';
+        this.uploadedVideoUrl = await firstValueFrom(this.documentService.uploadFileInPath(this.videoFile, folder));
+        if (!/^https?:\/\//.test(this.uploadedVideoUrl)) this.uploadedVideoUrl = await firstValueFrom(this.documentService.simpleGenerateFileUrl(this.uploadedVideoUrl));
+      }
+      stage = 'save';
+      const videoId = this.getYouTubeVideoId(this.videoLink);
+      const imageUrl = this.uploadedImageUrl || this.getExerciseImageUrl(this.editingExercise) || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '');
+      const exercise: any = {
+        name: this.exerciseName.trim(), type: this.exerciseType, equipment: this.equipment, muscle: this.muscle,
+        isTemplate: this.canCreateTemplate ? this.isTemplate : false,
+        videoLink: this.uploadedVideoUrl || this.videoLink.trim(), description: this.exerciseDescription,
+        createdBy: this.editingExercise?.createdBy || null, imageUrl, thumbnailUrl: imageUrl,
+      };
+      await firstValueFrom(this.editingExercise
+        ? this.exerciseService.updateExercise(this.editingExercise.id!, exercise)
+        : this.exerciseService.createExercise(exercise));
+      this.isSaving = false;
+      this.closeCreateModal();
+      this.loadAllExercises();
+    } catch (error: any) {
+      if (stage !== 'save') {
+        if (stage === 'image') this.uploadedImageUrl = '';
+        else this.uploadedVideoUrl = '';
+        this.attachmentErrors[stage] = 'EX_VALID_UPLOAD_FAILED';
+      }
+      else if (error?.status === 409) this.attachmentErrors['name'] = 'EX_VALID_DUPLICATE';
+      else this.saveError = 'EX_VALID_SAVE_FAILED';
+    } finally {
+      this.isSaving = false;
     }
   }
 
   resetForm() {
+    this.clearAttachment('image');
+    this.clearAttachment('video');
+    this.touched.clear();
+    this.attachmentErrors = {};
+    this.saveError = '';
     this.exerciseName = '';
-    this.exerciseType = this.enums?.typeExercise[0] || '';
-    this.equipment = this.enums?.equipment[0] || '';
-    this.muscle = this.enums?.muscleGroup[0] || '';
+    this.exerciseType = '';
+    this.equipment = '';
+    this.muscle = '';
     this.videoLink = '';
     this.exerciseDescription = '';
     this.isTemplate = false;
@@ -573,18 +619,22 @@ export class ExerciseLibraryComponent implements OnInit, OnDestroy {
   }
 
   editExercise(exercise: Exercise) {
+    if (this.isSaving) return;
     if (!this.canManageExercise(exercise)) {
       console.warn('Edit blocked: current user is not the owner of this exercise');
       return;
     }
 
+    this.resetForm();
     this.editingExercise = exercise;
     this.exerciseName = exercise.name;
     this.exerciseType = exercise.type;
     this.equipment = exercise.equipment;
     this.muscle = exercise.muscle;
     this.isTemplate = this.canCreateTemplate ? exercise.isTemplate || false : false;
-    this.videoLink = this.getExerciseVideoLink(exercise);
+    const existingVideo = this.getExerciseVideoLink(exercise);
+    this.videoLink = this.getYouTubeVideoId(existingVideo) ? existingVideo : '';
+    this.uploadedVideoUrl = this.videoLink ? '' : existingVideo;
     this.exerciseDescription = exercise.description || '';
     this.showCreateModal = true;
   }
