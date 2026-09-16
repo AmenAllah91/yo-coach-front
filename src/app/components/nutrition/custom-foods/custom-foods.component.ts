@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+import { FoodDraft, foodErrors, foodNumber, foodImageError } from './food-validation';
 import { NutritionService, Food } from '../../../service/nutrition.service';
 
 @Component({
@@ -45,18 +47,18 @@ export class CustomFoodsComponent implements OnInit {
 
   // Form fields
   foodName = '';
-  calories = 0;
-  protein = 0;
-  carbs = 0;
-  fat = 0;
-  fiber = 0;
-  sugar = 0;
-  polyols = 0;
-  saturated = 0;
-  polyunsaturated = 0;
-  monounsaturated = 0;
-  salt = 0;
-  servingSize = 100;
+  calories = '';
+  protein = '';
+  carbs = '';
+  fat = '';
+  fiber = '';
+  sugar = '';
+  polyols = '';
+  saturated = '';
+  polyunsaturated = '';
+  monounsaturated = '';
+  salt = '';
+  servingSize = '100';
   servingDescription = 'Grams';
   foodImageUrl = '';
   selectedImageFile: File | null = null;
@@ -74,9 +76,25 @@ export class CustomFoodsComponent implements OnInit {
     return Number(food.carbs ?? (food as Food & { carbohydrates?: number }).carbohydrates ?? 0);
   }
 
-  recalculateCalories(): void {
-    this.calories = this.getCalculatedCalories(this.protein, this.carbs, this.fat);
+  isSaving = false;
+  touched = new Set<string>();
+  imageError = '';
+  saveError = '';
+  private savedFood: Food | null = null;
+
+  get draft(): FoodDraft {
+    return { foodName: this.foodName, servingDescription: this.servingDescription, servingSize: this.servingSize,
+      calories: this.calories, protein: this.protein, carbs: this.carbs, fat: this.fat, fiber: this.fiber,
+      sugar: this.sugar, polyols: this.polyols, saturated: this.saturated, polyunsaturated: this.polyunsaturated,
+      monounsaturated: this.monounsaturated, salt: this.salt };
   }
+  get errors(): Record<string, string> { return { ...foodErrors(this.draft), ...(this.imageError ? { image: this.imageError } : {}) }; }
+  get canSave(): boolean { return !this.isSaving && Object.keys(this.errors).length === 0; }
+  fieldError(field: string): string {
+    const error = this.errors[field] || '';
+    return this.touched.has(field) || error === 'FOOD_VALID_FAT_SUM' ? error : '';
+  }
+  touch(field: string) { this.touched.add(field); }
 
   ngOnInit() {
     this.loadFoods();
@@ -131,129 +149,94 @@ export class CustomFoodsComponent implements OnInit {
   }
 
   openAddModal() {
+    if (this.isSaving) return;
     this.resetForm();
     this.showAddModal = true;
   }
 
   closeAddModal() {
+    if (this.isSaving) return;
     this.showAddModal = false;
     this.resetForm();
   }
 
   editFood(food: Food) {
+    if (this.isSaving) return;
+    this.resetForm();
     // Allow editing general foods - backend will create a copy
 
     this.editingFood = food;
     this.foodName = food.name;
-    this.calories = food.calories;
-    this.protein = food.protein;
-    this.carbs = this.getFoodCarbs(food);
-    this.fat = food.fat;
-    this.recalculateCalories();
-    this.fiber = food.fiber || 0;
-    this.sugar = food.sugar || 0;
-    this.polyols = 0;
-    this.saturated = food.saturatedFat || 0;
-    this.polyunsaturated = food.polyunsaturatedFat || 0;
-    this.monounsaturated = food.monounsaturatedFat || 0;
-    this.salt = food.sodium || 0;
-    this.servingSize = food.servingSize;
-    this.servingDescription = food.servingUnit;
+    this.calories = food.calories == null ? '' : String(food.calories);
+    this.protein = food.protein == null ? '' : String(food.protein);
+    this.carbs = food.carbs == null ? '' : String(food.carbs);
+    this.fat = food.fat == null ? '' : String(food.fat);
+    this.fiber = food.fiber == null ? '' : String(food.fiber);
+    this.sugar = food.sugar == null ? '' : String(food.sugar);
+    this.polyols = food.polyols == null ? '' : String(food.polyols);
+    this.saturated = food.saturatedFat == null ? '' : String(food.saturatedFat);
+    this.polyunsaturated = food.polyunsaturatedFat == null ? '' : String(food.polyunsaturatedFat);
+    this.monounsaturated = food.monounsaturatedFat == null ? '' : String(food.monounsaturatedFat);
+    this.salt = food.sodium == null ? '' : String(food.sodium);
+    this.servingSize = food.servingSize == null ? '' : String(food.servingSize);
+    this.servingDescription = food.servingUnit || '';
     this.foodImageUrl = food.imageUrl || '';
     this.hadExistingImage = Boolean(food.imageUrl);
     this.showAddModal = true;
     this.openDropdownId = null;
   }
 
-  saveFood() {
-    if (!this.foodName.trim()) return;
-    this.recalculateCalories();
-
-    const food: Food = {
-      name: this.foodName,
-      calories: this.calories,
-      protein: this.protein,
-      carbs: this.carbs,
-      fat: this.fat,
-      fiber: this.fiber,
-      sugar: this.sugar,
-      saturatedFat: this.saturated,
-      polyunsaturatedFat: this.polyunsaturated,
-      monounsaturatedFat: this.monounsaturated,
-      sodium: this.salt,
-      servingSize: this.servingSize,
-      servingUnit: this.servingDescription
-    };
-
-    if (this.editingFood) {
-      this.nutritionService.updateFood(this.editingFood.id!, food).subscribe({
-        next: (updatedFood) => {
-          // Update the editing food ID in case a new copy was created
-          if (updatedFood.id !== this.editingFood!.id) {
-            this.editingFood!.id = updatedFood.id;
-          }
-          this.saveFoodImage(updatedFood);
-        },
-        error: (error) => {
-          console.error('Error updating food:', error);
-          let errorMessage = 'Unable to update this food item.';
-
-          if (error.status === 403) {
-            errorMessage = 'Cannot update this food item. It may be a general food or not owned by you.';
-          } else if (error.status === 404) {
-            errorMessage = 'Food item not found.';
-          } else if (error.status === 409) {
-            errorMessage = 'Cannot update this food item as it is currently in use.';
-          }
-
-          // You can replace this with a toast notification or other UI feedback
-          console.error(errorMessage);
-        }
-      });
-    } else {
-      this.nutritionService.createFood(food).subscribe({
-        next: (createdFood) => {
-          this.saveFoodImage(createdFood);
-        },
-        error: (error) => console.error('Error creating food:', error)
-      });
-    }
+  async saveFood() {
+    if (!this.canSave) return;
+    this.isSaving = true;
+    this.saveError = '';
+    let stage = 'save';
+    try {
+      const food: Food = {
+        name: this.foodName.trim(), calories: foodNumber(this.calories)!, protein: foodNumber(this.protein)!,
+        carbs: foodNumber(this.carbs)!, fat: foodNumber(this.fat)!, fiber: foodNumber(this.fiber),
+        sugar: foodNumber(this.sugar), polyols: foodNumber(this.polyols), saturatedFat: foodNumber(this.saturated),
+        polyunsaturatedFat: foodNumber(this.polyunsaturated), monounsaturatedFat: foodNumber(this.monounsaturated),
+        sodium: foodNumber(this.salt), servingSize: foodNumber(this.servingSize)!, servingUnit: this.servingDescription.trim(),
+      };
+      // Retain the returned ID if the image request fails, so retry updates instead of creating again.
+      const id = this.savedFood?.id || this.editingFood?.id;
+      this.savedFood = await firstValueFrom(id ? this.nutritionService.updateFood(id, food) : this.nutritionService.createFood(food));
+      if (this.selectedImageFile) {
+        stage = 'image';
+        this.savedFood = await firstValueFrom(this.nutritionService.uploadFoodImage(this.savedFood.id!, this.selectedImageFile));
+      } else if (this.hadExistingImage && !this.foodImageUrl) {
+        stage = 'image';
+        this.savedFood = await firstValueFrom(this.nutritionService.removeFoodImage(this.savedFood.id!));
+      }
+      this.isSaving = false;
+      this.loadFoods();
+      this.closeAddModal();
+    } catch (error) {
+      if (stage === 'image') { this.imageError = 'FOOD_VALID_IMAGE_FAILED'; this.touched.add('image'); }
+      else this.saveError = 'FOOD_VALID_SAVE_FAILED';
+    } finally { this.isSaving = false; }
   }
 
   onImageSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.isSaving) return;
+    this.touched.add('image');
+    this.imageError = foodImageError(file);
+    if (this.imageError) { this.selectedImageFile = null; return; }
     this.selectedImageFile = file;
     const reader = new FileReader();
-    reader.onload = () => this.foodImageUrl = String(reader.result || '');
+    reader.onload = () => { if (this.selectedImageFile === file) this.foodImageUrl = String(reader.result || ''); };
     reader.readAsDataURL(file);
   }
 
   removeSelectedImage() {
+    if (this.isSaving) return;
     this.selectedImageFile = null;
     this.foodImageUrl = '';
-  }
-
-  private saveFoodImage(food: Food) {
-    if (!food.id) return this.finishSave();
-    if (this.selectedImageFile) {
-      this.nutritionService.uploadFoodImage(food.id, this.selectedImageFile).subscribe({
-        next: () => this.finishSave(),
-        error: (error) => console.error('Error uploading food image:', error),
-      });
-    } else if (this.hadExistingImage && !this.foodImageUrl) {
-      this.nutritionService.removeFoodImage(food.id).subscribe({
-        next: () => this.finishSave(),
-        error: (error) => console.error('Error removing food image:', error),
-      });
-    } else {
-      this.finishSave();
-    }
-  }
-
-  private finishSave() {
-    this.loadFoods();
-    this.closeAddModal();
+    this.imageError = '';
   }
 
   deleteFood(food: Food) {
@@ -305,19 +288,23 @@ export class CustomFoodsComponent implements OnInit {
   }
 
   resetForm() {
+    this.touched.clear();
+    this.imageError = '';
+    this.saveError = '';
+    this.savedFood = null;
     this.foodName = '';
-    this.calories = 0;
-    this.protein = 0;
-    this.carbs = 0;
-    this.fat = 0;
-    this.fiber = 0;
-    this.sugar = 0;
-    this.polyols = 0;
-    this.saturated = 0;
-    this.polyunsaturated = 0;
-    this.monounsaturated = 0;
-    this.salt = 0;
-    this.servingSize = 100;
+    this.calories = '';
+    this.protein = '';
+    this.carbs = '';
+    this.fat = '';
+    this.fiber = '';
+    this.sugar = '';
+    this.polyols = '';
+    this.saturated = '';
+    this.polyunsaturated = '';
+    this.monounsaturated = '';
+    this.salt = '';
+    this.servingSize = '100';
     this.servingDescription = 'Grams';
     this.foodImageUrl = '';
     this.selectedImageFile = null;

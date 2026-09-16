@@ -888,3 +888,8 @@
 }
 
 @import './exercise-mobile-exact';
+
+.exercise-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.field-error { color: #d32f2f; font-size: 12px; margin: 5px 0; }
+.create-btn:disabled { opacity: .5; cursor: not-allowed; }
+.upload-area { cursor: pointer; }

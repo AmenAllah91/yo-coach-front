@@ -298,9 +298,11 @@
       </div>
 
       <div class="modal-body">
+        <fieldset [disabled]="isSaving" class="exercise-fields">
         <div class="image-upload">
+          <input #imageInput type="file" hidden accept="image/jpeg,image/png,image/webp" (change)="selectAttachment($event, 'image')" />
           <div
-            class="upload-area image-preview-area"
+            class="upload-area image-preview-area" (click)="imageInput.click()" role="button" tabindex="0" (keydown.enter)="imageInput.click()" (dragover)="$event.preventDefault()" (drop)="dropAttachment($event, 'image')"
             [class.has-image]="getModalPreviewImage()"
           >
             <img
@@ -316,22 +318,28 @@
           </div>
         </div>
 
+        <small>JPG / PNG / WEBP · 10 MB max</small>
+        <button *ngIf="imageFile || fieldError('image')" type="button" (click)="clearAttachment('image')">{{ 'EX_VALID_REMOVE' | translate }} {{ imageFile?.name }}</button>
+        <p class="field-error" *ngIf="fieldError('image')" role="alert">{{ fieldError('image') | translate }}</p>
         <div class="form-group">
           <label>{{ 'EXERCISE_NAME' | translate }}</label>
           <input
             type="text"
             [placeholder]="'ENTER_EXERCISE_NAME' | translate"
-            [(ngModel)]="exerciseName"
+            [(ngModel)]="exerciseName" (ngModelChange)="touch('name')" (blur)="touched.add('name')" [attr.aria-invalid]="!!fieldError('name')"
           />
+          <p class="field-error" *ngIf="fieldError('name')" role="alert">{{ fieldError('name') | translate }}</p>
         </div>
 
         <div class="form-group">
           <label>{{ 'EXERCISE_TYPE' | translate }}</label>
-          <select [(ngModel)]="exerciseType">
+          <select [(ngModel)]="exerciseType" (ngModelChange)="touch('type')" (blur)="touched.add('type')" [attr.aria-invalid]="!!fieldError('type')">
+              <option value="">{{ 'EX_VALID_SELECT' | translate }}</option>
             <option *ngFor="let type of enums?.typeExercise" [value]="type">
               {{ getTypeTranslationKey(type) | translate }}
             </option>
           </select>
+          <p class="field-error" *ngIf="fieldError('type')" role="alert">{{ fieldError('type') | translate }}</p>
         </div>
 
         <div class="form-group" *ngIf="canCreateTemplate">
@@ -345,20 +353,24 @@
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'EQUIPMENT' | translate }}</label>
-            <select [(ngModel)]="equipment">
+            <select [(ngModel)]="equipment" (ngModelChange)="touch('equipment')" (blur)="touched.add('equipment')" [attr.aria-invalid]="!!fieldError('equipment')">
+              <option value="">{{ 'EX_VALID_SELECT' | translate }}</option>
               <option *ngFor="let eq of enums?.equipment" [value]="eq">
                 {{ getEquipmentTranslationKey(eq) | translate }}
               </option>
             </select>
+          <p class="field-error" *ngIf="fieldError('equipment')" role="alert">{{ fieldError('equipment') | translate }}</p>
           </div>
 
           <div class="form-group">
             <label>{{ 'PRIMARY_MUSCLE_GROUP' | translate }}</label>
-            <select [(ngModel)]="muscle">
+            <select [(ngModel)]="muscle" (ngModelChange)="touch('muscle')" (blur)="touched.add('muscle')" [attr.aria-invalid]="!!fieldError('muscle')">
+              <option value="">{{ 'EX_VALID_SELECT' | translate }}</option>
               <option *ngFor="let mg of enums?.muscleGroup" [value]="mg">
                 {{ getMuscleTranslationKey(mg) | translate }}
               </option>
             </select>
+          <p class="field-error" *ngIf="fieldError('muscle')" role="alert">{{ fieldError('muscle') | translate }}</p>
           </div>
         </div>
 
@@ -366,7 +378,8 @@
           <label>{{ 'VIDEO_ATTACHMENT' | translate }}</label>
 
           <div class="video-upload">
-            <div class="upload-area">
+            <input #videoInput type="file" hidden accept="video/mp4,.mp4" (change)="selectAttachment($event, 'video')" />
+            <div class="upload-area" (click)="videoInput.click()" role="button" tabindex="0" (keydown.enter)="videoInput.click()" (dragover)="$event.preventDefault()" (drop)="dropAttachment($event, 'video')">
               <i-feather name="plus" size="24"></i-feather>
 
               <div class="upload-text">
@@ -375,13 +388,17 @@
               </div>
             </div>
 
+            <span *ngIf="videoFile || uploadedVideoUrl">{{ videoFile?.name || ('EX_VALID_EXISTING_VIDEO' | translate) }}</span>
+            <button *ngIf="videoFile || uploadedVideoUrl || fieldError('video')" type="button" (click)="clearAttachment('video')">{{ 'EX_VALID_REMOVE' | translate }}</button>
+            <p class="field-error" *ngIf="fieldError('video')" role="alert">{{ fieldError('video') | translate }}</p>
             <div class="or-divider">{{ 'OR' | translate }}</div>
 
             <input
-              type="text"
+              type="url"
               [placeholder]="'PASTE_YOUTUBE_LINK' | translate"
-              [(ngModel)]="videoLink"
+              [(ngModel)]="videoLink" (ngModelChange)="touch('youtube')" (blur)="touched.add('youtube')" [attr.aria-invalid]="!!fieldError('youtube')"
             />
+          <p class="field-error" *ngIf="fieldError('youtube')" role="alert">{{ fieldError('youtube') | translate }}</p>
           </div>
         </div>
 
@@ -389,16 +406,19 @@
           <label>{{ 'DESCRIPTION' | translate }}</label>
           <textarea
             [placeholder]="'ENTER_EXERCISE_DESCRIPTION' | translate"
-            [(ngModel)]="exerciseDescription"
+            [(ngModel)]="exerciseDescription" (ngModelChange)="touch('description')" (blur)="touched.add('description')" [attr.aria-invalid]="!!fieldError('description')"
             rows="3"
           ></textarea>
+          <p class="field-error" *ngIf="fieldError('description')" role="alert">{{ fieldError('description') | translate }}</p>
         </div>
+        </fieldset>
+        <p class="field-error" *ngIf="saveError" role="alert">{{ saveError | translate }}</p>
       </div>
 
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeCreateModal()">{{ 'CANCEL' | translate }}</button>
 
-        <button class="create-btn primary" (click)="createExercise()">
+        <button class="create-btn primary" [disabled]="!canSave" (click)="createExercise()" [attr.aria-busy]="isSaving">
           {{ (editingExercise ? 'UPDATE_EXERCISE' : 'CREATE_EXERCISE') | translate }}
         </button>
       </div>

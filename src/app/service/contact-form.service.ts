@@ -26,6 +26,7 @@ export interface ContactLeadPayload {
   email: string;
   message: string;
   termsAccepted: boolean;
+  website?: string;
 }
 
 @Injectable({ providedIn: 'root' })

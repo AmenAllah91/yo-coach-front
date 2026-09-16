@@ -543,3 +543,7 @@
   .foods-table .action-btn i-feather { width: 15px !important; height: 15px !important; color: #516986; }
   .foods-table .action-btn span { display: none; }
 }
+
+.food-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.field-error { color: #d32f2f; font-size: 12px; margin: 5px 0; }
+.confirm-btn:disabled { opacity: .5; cursor: not-allowed; }

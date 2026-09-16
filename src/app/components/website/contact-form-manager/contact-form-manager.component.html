@@ -84,23 +84,26 @@
     <div class="modal-fields">
       <label class="field-title">{{ 'COVER_IMAGE' | translate }}</label>
       <p class="field-help">{{ 'COVER_IMAGE_REQUIREMENTS' | translate }}</p>
-      <input #coverInput hidden type="file" accept="image/jpeg,image/png" (change)="onCoverSelected($event)" />
-      <button class="upload-zone" type="button" (click)="triggerUpload()">
+      <input #coverInput hidden type="file" [disabled]="saving || processingCover" accept="image/jpeg,image/png,image/webp" (change)="onCoverSelected($event)" />
+      <button class="upload-zone" type="button" [disabled]="saving || processingCover" (click)="triggerUpload()">
         <i-feather name="image"></i-feather>
         {{ (draft.coverImage ? 'CHANGE_IMAGE' : 'UPLOAD_IMAGE') | translate }}
       </button>
+      <button class="button button--light" type="button" *ngIf="draft.coverImage || uploadError" (click)="removeCover()" [disabled]="saving || processingCover">{{ 'CONTACT_REMOVE_IMAGE' | translate }}</button>
       <div class="field-error" *ngIf="uploadError">{{ uploadError }}</div>
 
       <label class="field-title field-title--message" for="contactMessage">{{ 'MESSAGE' | translate }}</label>
       <p class="field-help">{{ 'CONTACT_MESSAGE_HINT' | translate }}</p>
-      <textarea id="contactMessage" rows="3" maxlength="240" [(ngModel)]="draft.message"></textarea>
+      <textarea id="contactMessage" rows="3" maxlength="500" [(ngModel)]="draft.message" [disabled]="saving"></textarea>
+      <div class="field-error" *ngIf="messageError">{{ messageError }}</div>
+      <div class="field-error" *ngIf="error">{{ error }}</div>
     </div>
 
     <footer class="modal-footer">
       <button class="button button--light" type="button" (click)="previewDraft()"><i-feather name="external-link"></i-feather> {{ 'PREVIEW_FORM' | translate }}</button>
       <div class="footer-actions">
         <button class="button button--light" type="button" (click)="closeCustomize()">{{ 'CANCEL' | translate }}</button>
-        <button class="button button--primary" type="button" (click)="save()" [disabled]="saving || !draft.message.trim()">
+        <button class="button button--primary" type="button" (click)="save()" [disabled]="!canSave">
           {{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}
         </button>
       </div>

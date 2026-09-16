@@ -52,7 +52,7 @@
               <span class="macro">{{ food.protein }}g {{ 'PROTEIN' | translate }}</span>
               <span class="macro">{{ getFoodCarbs(food) }}g {{ 'CARBS' | translate }}</span>
               <span class="macro">{{ food.fat }}g {{ 'FAT' | translate }}</span>
-              <span class="macro macro--calories">{{ getCalculatedCalories(food.protein, getFoodCarbs(food), food.fat) }} kcal</span>
+              <span class="macro macro--calories">{{ food.calories ?? getCalculatedCalories(food.protein, getFoodCarbs(food), food.fat) }} kcal</span>
             </div>
           </div>
           <div class="col-actions">
@@ -130,6 +130,7 @@
       </div>
 
       <div class="modal-body">
+        <fieldset [disabled]="isSaving" class="food-fields">
         <div class="form-group food-image-field">
           <label>{{ 'FOOD_IMAGE' | translate }}:</label>
           <div class="food-image-control">
@@ -137,94 +138,113 @@
               <img *ngIf="foodImageUrl; else formInitial" [src]="foodImageUrl" [alt]="'FOOD_PREVIEW' | translate" />
               <ng-template #formInitial>{{ (foodName || '?').charAt(0).toUpperCase() }}</ng-template>
             </span>
-            <label class="image-upload-btn">{{ 'CHOOSE_IMAGE' | translate }}<input type="file" accept="image/*" (change)="onImageSelected($event)" /></label>
-            <button *ngIf="foodImageUrl" type="button" class="image-remove-btn" (click)="removeSelectedImage()">{{ 'REMOVE' | translate }}</button>
+            <label class="image-upload-btn">{{ 'CHOOSE_IMAGE' | translate }}<input type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageSelected($event)" /></label>
+            <button *ngIf="foodImageUrl || imageError" type="button" class="image-remove-btn" (click)="removeSelectedImage()">{{ 'FOOD_VALID_REMOVE' | translate }}</button>
           </div>
         </div>
+        <small>JPG / PNG / WEBP · 10 MB max</small>
+        <p class="field-error" *ngIf="fieldError('image')" role="alert">{{ fieldError('image') | translate }}</p>
         <div class="form-group">
           <label>{{ 'NAME' | translate }}:</label>
-          <input type="text" [(ngModel)]="foodName" [placeholder]="'ENTER_FOOD_NAME' | translate">
+          <input type="text" [(ngModel)]="foodName" (ngModelChange)="touch('foodName')" (blur)="touched.add('foodName')" [attr.aria-invalid]="!!fieldError('foodName')" [placeholder]="'ENTER_FOOD_NAME' | translate">
+            <p class="field-error" *ngIf="fieldError('foodName')" role="alert">{{ fieldError('foodName') | translate }}</p>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'CALORIES' | translate }} (kcal):</label>
-            <input type="number" [ngModel]="calories" readonly aria-readonly="true">
+            <input type="text" inputmode="decimal" [(ngModel)]="calories" (ngModelChange)="touch('calories')" (blur)="touched.add('calories')" [attr.aria-invalid]="!!fieldError('calories')">
+            <p class="field-error" *ngIf="fieldError('calories')" role="alert">{{ fieldError('calories') | translate }}</p>
           </div>
           <div class="form-group">
             <label>{{ 'PROTEIN' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="protein" (ngModelChange)="recalculateCalories()" [placeholder]="'ENTER_TOTAL_PROTEIN' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="protein" (ngModelChange)="touch('protein')" (blur)="touched.add('protein')" [attr.aria-invalid]="!!fieldError('protein')" [placeholder]="'ENTER_TOTAL_PROTEIN' | translate">
+            <p class="field-error" *ngIf="fieldError('protein')" role="alert">{{ fieldError('protein') | translate }}</p>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'CARBS' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="carbs" (ngModelChange)="recalculateCalories()" [placeholder]="'ENTER_TOTAL_CARBS' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="carbs" (ngModelChange)="touch('carbs')" (blur)="touched.add('carbs')" [attr.aria-invalid]="!!fieldError('carbs')" [placeholder]="'ENTER_TOTAL_CARBS' | translate">
+            <p class="field-error" *ngIf="fieldError('carbs')" role="alert">{{ fieldError('carbs') | translate }}</p>
           </div>
           <div class="form-group">
             <label>{{ 'FAT' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="fat" (ngModelChange)="recalculateCalories()" [placeholder]="'ENTER_TOTAL_FAT' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="fat" (ngModelChange)="touch('fat')" (blur)="touched.add('fat')" [attr.aria-invalid]="!!fieldError('fat')" [placeholder]="'ENTER_TOTAL_FAT' | translate">
+            <p class="field-error" *ngIf="fieldError('fat')" role="alert">{{ fieldError('fat') | translate }}</p>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'FIBER' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="fiber" [placeholder]="'ENTER_TOTAL_FIBER' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="fiber" (ngModelChange)="touch('fiber')" (blur)="touched.add('fiber')" [attr.aria-invalid]="!!fieldError('fiber')" [placeholder]="'ENTER_TOTAL_FIBER' | translate">
+            <p class="field-error" *ngIf="fieldError('fiber')" role="alert">{{ fieldError('fiber') | translate }}</p>
           </div>
           <div class="form-group">
             <label>{{ 'SUGAR' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="sugar" [placeholder]="'ENTER_TOTAL_SUGAR' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="sugar" (ngModelChange)="touch('sugar')" (blur)="touched.add('sugar')" [attr.aria-invalid]="!!fieldError('sugar')" [placeholder]="'ENTER_TOTAL_SUGAR' | translate">
+            <p class="field-error" *ngIf="fieldError('sugar')" role="alert">{{ fieldError('sugar') | translate }}</p>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'POLYOLS' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="polyols" [placeholder]="'ENTER_TOTAL_POLYOLS' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="polyols" (ngModelChange)="touch('polyols')" (blur)="touched.add('polyols')" [attr.aria-invalid]="!!fieldError('polyols')" [placeholder]="'ENTER_TOTAL_POLYOLS' | translate">
+            <p class="field-error" *ngIf="fieldError('polyols')" role="alert">{{ fieldError('polyols') | translate }}</p>
           </div>
           <div class="form-group">
             <label>{{ 'SATURATED_FAT' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="saturated" [placeholder]="'ENTER_TOTAL_SATURATED_FAT' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="saturated" (ngModelChange)="touch('saturated')" (blur)="touched.add('saturated')" [attr.aria-invalid]="!!fieldError('saturated')" [placeholder]="'ENTER_TOTAL_SATURATED_FAT' | translate">
+            <p class="field-error" *ngIf="fieldError('saturated')" role="alert">{{ fieldError('saturated') | translate }}</p>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'POLYUNSATURATED_FAT' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="polyunsaturated" [placeholder]="'ENTER_TOTAL_POLYUNSATURATED_FAT' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="polyunsaturated" (ngModelChange)="touch('polyunsaturated')" (blur)="touched.add('polyunsaturated')" [attr.aria-invalid]="!!fieldError('polyunsaturated')" [placeholder]="'ENTER_TOTAL_POLYUNSATURATED_FAT' | translate">
+            <p class="field-error" *ngIf="fieldError('polyunsaturated')" role="alert">{{ fieldError('polyunsaturated') | translate }}</p>
           </div>
           <div class="form-group">
             <label>{{ 'MONOUNSATURATED_FAT' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="monounsaturated" [placeholder]="'ENTER_TOTAL_MONOUNSATURATED_FAT' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="monounsaturated" (ngModelChange)="touch('monounsaturated')" (blur)="touched.add('monounsaturated')" [attr.aria-invalid]="!!fieldError('monounsaturated')" [placeholder]="'ENTER_TOTAL_MONOUNSATURATED_FAT' | translate">
+            <p class="field-error" *ngIf="fieldError('monounsaturated')" role="alert">{{ fieldError('monounsaturated') | translate }}</p>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'SALT' | translate }} (g):</label>
-            <input type="number" [(ngModel)]="salt" [placeholder]="'ENTER_TOTAL_SALT' | translate">
+            <input type="text" inputmode="decimal" [(ngModel)]="salt" (ngModelChange)="touch('salt')" (blur)="touched.add('salt')" [attr.aria-invalid]="!!fieldError('salt')" [placeholder]="'ENTER_TOTAL_SALT' | translate">
+            <p class="field-error" *ngIf="fieldError('salt')" role="alert">{{ fieldError('salt') | translate }}</p>
           </div>
           <div class="form-group">
             <label>{{ 'SERVING_DESCRIPTION' | translate }}:</label>
-            <select [(ngModel)]="servingDescription">
+            <select [(ngModel)]="servingDescription" (ngModelChange)="touch('servingDescription')" (blur)="touched.add('servingDescription')" [attr.aria-invalid]="!!fieldError('servingDescription')">
+              <option value="">{{ 'FOOD_VALID_SELECT' | translate }}</option>
               <option value="Grams">{{ 'GRAMS' | translate }}</option>
               <option value="Qty">{{ 'QUANTITY_SHORT' | translate }}</option>
               <option value="ml">ml</option>
             </select>
+            <p class="field-error" *ngIf="fieldError('servingDescription')" role="alert">{{ fieldError('servingDescription') | translate }}</p>
           </div>
         </div>
 
         <div class="form-group">
           <label>{{ 'SERVING_SIZE_GRAMS' | translate }}:</label>
-          <input type="number" [(ngModel)]="servingSize" [placeholder]="'ENTER_SERVING_SIZE' | translate">
+          <input type="text" inputmode="decimal" [(ngModel)]="servingSize" (ngModelChange)="touch('servingSize')" (blur)="touched.add('servingSize')" [attr.aria-invalid]="!!fieldError('servingSize')" [placeholder]="'ENTER_SERVING_SIZE' | translate">
+            <p class="field-error" *ngIf="fieldError('servingSize')" role="alert">{{ fieldError('servingSize') | translate }}</p>
         </div>
+        </fieldset>
+        <p class="field-error" *ngIf="saveError" role="alert">{{ saveError | translate }}</p>
       </div>
 
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeAddModal()">{{ 'CANCEL' | translate }}</button>
-        <button class="confirm-btn primary" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD') | translate }}</button>
+        <button class="confirm-btn primary" [disabled]="!canSave" [attr.aria-busy]="isSaving" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD') | translate }}</button>
       </div>
     </div>
   </div>
