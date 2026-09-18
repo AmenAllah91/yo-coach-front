@@ -1,63 +1,8 @@
-<div class="pp-modal-backdrop" *ngIf="isOpen" (click)="onClose()">
-  <div class="pp-modal-container" (click)="$event.stopPropagation()">
-    <div class="pp-modal-header">
-      <div>
-        <h2 class="pp-modal-title">{{ 'ADD_PROGRESS_PICTURE_TITLE' | translate }}</h2>
-        <p class="pp-modal-subtitle">
-          {{ 'ADD_PROGRESS_PICTURE_SUBTITLE' | translate }}
-        </p>
-      </div>
-
-      <button class="pp-close-button" type="button" (click)="onClose()">
-        <svg class="pp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="pp-modal-content">
-      <div class="pp-form-grid">
-        <div class="pp-field pp-field--full">
-          <label class="pp-label">{{ 'PHOTO' | translate }}</label>
-          <input
-            class="pp-input-file"
-            type="file"
-            accept="image/*"
-            (change)="onFileSelected($event)"
-          />
-        </div>
-
-        <div class="pp-preview" *ngIf="filePreviewUrl">
-          <img [src]="filePreviewUrl" alt="Preview" />
-        </div>
-
-        <div class="pp-field">
-          <label class="pp-label">{{ 'WEIGHT' | translate }}</label>
-          <div class="pp-input-with-suffix">
-            <input class="pp-input" type="number" [(ngModel)]="weight" min="0" step="0.1" />
-            <span class="pp-suffix">{{ weightUnitLabel }}</span>
-          </div>
-        </div>
-
-        <div class="pp-field">
-          <label class="pp-label">{{ 'DATE' | translate }}</label>
-          <input class="pp-input" type="date" [(ngModel)]="date" />
-        </div>
-      </div>
-    </div>
-
-    <div class="pp-modal-footer">
-      <button type="button" class="pp-btn pp-btn--secondary" (click)="onClose()">
-        {{ 'CANCEL' | translate }}
-      </button>
-      <button
-        type="button"
-        class="pp-btn pp-btn--primary"
-        [disabled]="!isFormValid() || saving"
-        (click)="submit()"
-      >
-        {{ saving ? ('SAVING' | translate) : ('SAVE' | translate) }}
-      </button>
-    </div>
-  </div>
-</div>
+<div class="pp-modal-backdrop" *ngIf="isOpen" (click)="onClose()"><div role="dialog" aria-modal="true" class="pp-modal-container" (click)="$event.stopPropagation()">
+<div class="pp-modal-header"><div><h2 class="pp-modal-title">{{ 'ADD_PROGRESS_PICTURE_TITLE'|translate }}</h2><p class="pp-modal-subtitle">Upload a photo and log the weight recorded that day.</p></div><button class="pp-close-button" type="button" (click)="onClose()">×</button></div>
+<div class="pp-modal-content"><p class="pp-file-error" *ngIf="error">{{error|translate}}</p><div class="pp-form-grid">
+<div class="pp-field pp-field--full"><label class="pp-label">Photo</label><input #picker hidden type="file" accept="image/jpeg,image/png" [disabled]="saving" (change)="onFileSelected(activePose,$event)"/><button type="button" class="pp-upload" (click)="picker.click()" [disabled]="saving"><img *ngIf="previews[activePose]" class="pp-active-preview" [src]="previews[activePose]" alt=""/><ng-container *ngIf="!previews[activePose]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4m-5 5 5-5 5 5M5 14v6h14v-6" stroke-width="1.5"/></svg><strong>{{'PROGRESS_UPLOAD'|translate}}</strong><small>JPG or PNG, up to 10 MB</small></ng-container></button><p class="pp-file-error" *ngIf="fileErrors[activePose]">{{'PROGRESS_FILE_ERROR'|translate}}</p></div>
+<div class="pp-field"><label class="pp-label">{{'WEIGHT'|translate}}</label><div class="pp-input-with-suffix"><input class="pp-input" type="number" [(ngModel)]="weight" min="0" step="0.1"/><span class="pp-suffix">{{weightUnitLabel}}</span></div></div><div class="pp-field"><label class="pp-label">{{'DATE'|translate}}</label><input class="pp-input" type="date" [(ngModel)]="date"/></div>
+<div class="pp-field pp-field--full"><label class="pp-label">{{'PROGRESS_POSE'|translate}}</label><div class="pp-poses"><button *ngFor="let pose of poses" type="button" [class.is-active]="activePose===pose" [class.has-photo]="!!files[pose]" (click)="activePose=pose"><span>{{('PROGRESS_POSE_'+pose)|translate}}</span><span class="pp-pose-check" *ngIf="files[pose]">✓</span></button></div></div>
+<div class="pp-field pp-field--full"><label class="pp-label">{{'PROGRESS_NOTE'|translate}}</label><textarea class="pp-input" [(ngModel)]="note" maxlength="2000" rows="2" placeholder="How did the week go?"></textarea></div></div></div>
+<div class="pp-modal-footer"><button class="pp-btn pp-btn--secondary" (click)="onClose()">{{'CANCEL'|translate}}</button><button class="pp-btn pp-btn--primary" [disabled]="!isFormValid()||saving" (click)="submit()">{{saving?('SAVING'|translate):('PROGRESS_SAVE_PICTURE'|translate)}}</button></div></div></div>

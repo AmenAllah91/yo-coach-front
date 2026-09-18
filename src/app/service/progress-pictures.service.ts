@@ -6,15 +6,24 @@ import { environment } from '@env/environment';
 export interface ProgressPicture {
   id: string;
   imageUrl: string;
+  groupId?: string;
   weight: number;
+  pose?: string;
+  note?: string;
   date: string;
+  createdBy?: string;
+  addedByRole?: "COACH" | "CLIENT";
+  client?: { id: string };
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface SaveProgressPictureRequest {
   imageUrl: string;
+  groupId?: string;
   weight: number;
+  pose?: string;
+  note?: string;
   date: string;
   clientId: string;
 }

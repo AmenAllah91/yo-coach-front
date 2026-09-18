@@ -9,11 +9,13 @@ import {DatePipe, NgClass, NgForOf, NgIf, NgSwitch, NgSwitchCase, NgSwitchDefaul
 import {NotificationService} from "../../../service/notification.service";
 import {Router} from "@angular/router";
 import {UsersService} from "../../../service/users.service";
-import {forkJoin, of, Subject} from "rxjs";
+import {forkJoin, of, Subject, switchMap} from "rxjs";
 import {catchError, debounceTime, map, takeUntil} from "rxjs/operators";
 import { environment } from "@env/environment";
 import {FeatherModule} from "angular-feather";
 import {TranslateModule, TranslateService} from "@ngx-translate/core";
+import {CoachSettingsService} from "../../../service/coach-settings.service";
+import {DocumentService} from "../../../service/document.service";
 
 export interface Member { id: string; name: string; avatar: string; }
 
@@ -76,6 +78,7 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
   private readonly voicePlaybackRetryCounts = new Map<string, number>();
   private readonly voiceObjectUrls = new Set<string>();
   private readonly imagePlaybackRequests = new Set<string>();
+  private readonly resolvedHeaderPhotos = new Set<string>();
   previewImageUrl = '';
   previewImageName = '';
 
@@ -84,7 +87,9 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
               private notificationService: NotificationService,
               private userService: UsersService,
               private router: Router,
-              private translate: TranslateService) {}
+              private translate: TranslateService,
+              private coachSettingsService: CoachSettingsService,
+              private documentService: DocumentService) {}
 
   ngOnInit(): void {
     this.currentUserId = sessionStorage.getItem("userId");
@@ -94,6 +99,7 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
     this.groupMembers = [];
     this.wsService.subscribeToConversation(this.selectedConversation.id);
     this.chatService.notifyConversationOpened(this.selectedConversation.id);
+    this.resolveCoachHeaderPhoto();
     this.loadInitialMessages();
     if (this.selectedConversation.isGroup && this.selectedConversation.memberIds?.length) {
       this.resolveGroupMembers(this.selectedConversation.memberIds);
@@ -190,6 +196,29 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
 
   toggleGroupMembers(): void {
     this.showAllGroupMembers = !this.showAllGroupMembers;
+  }
+
+  private resolveCoachHeaderPhoto(): void {
+    const conv = this.selectedConversation;
+    if (!conv || conv.isGroup || !conv.coachId || !conv.clientId) return;
+    if (this.currentUserId !== conv.clientId) return;
+    if (this.resolvedHeaderPhotos.has(conv.id)) return;
+    this.resolvedHeaderPhotos.add(conv.id);
+
+    this.coachSettingsService.getConfigForCoach(conv.coachId, true).pipe(
+      switchMap(settings => {
+        const profile = settings.publicProfile;
+        const storedUrl = profile.photoVisible ? profile.photoUrl?.trim() : '';
+        return storedUrl
+          ? this.documentService.refreshStoredFileUrl(storedUrl).pipe(catchError(() => of('')))
+          : of('');
+      }),
+      catchError(() => of('')),
+      takeUntil(this.destroy$),
+    ).subscribe((photoUrl) => {
+      if (!photoUrl) return;
+      this.selectedConversation = { ...this.selectedConversation, avatar: photoUrl } as Conversation;
+    });
   }
 
   getSenderName(senderId: string): string {

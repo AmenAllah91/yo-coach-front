@@ -13,7 +13,6 @@ import { FeatherModule } from 'angular-feather';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MealsService } from 'app/service/meals.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { nutritionFoodValid } from '@shared/models/nutrition-publication';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -50,7 +49,7 @@ export class AddMealModalComponent implements OnChanges {
   step: BuilderStep = 'choice';
   name = '';
   mealType = 'BREAKFAST';
-  servings = 1;
+  servings: number | null = 1;
   totalTimeMinutes: number | null = null;
   coverImage: string | null = null;
   coverImageName = '';
@@ -68,6 +67,10 @@ export class AddMealModalComponent implements OnChanges {
   saveError = '';
   imageError = '';
   submitted = false;
+  foodsTouched = false;
+  imageReading = false;
+  fieldErrors: Record<string, string> = {};
+  private coverReadVersion = 0;
 
   draggedIngredientIndex: number | null = null;
   draggedDirectionIndex: number | null = null;
@@ -124,18 +127,70 @@ export class AddMealModalComponent implements OnChanges {
     return this.formIsValid && !this.saving;
   }
 
-  get formIsValid(): boolean {
-    if (!this.name.trim() || this.ingredients.length === 0) return false;
-    if (this.isRecipe && (!Number.isFinite(Number(this.servings)) || Number(this.servings) <= 0)) return false;
-    if (this.isRecipe && this.totalTimeMinutes != null
-      && (!Number.isFinite(Number(this.totalTimeMinutes)) || Number(this.totalTimeMinutes) < 0)) return false;
+  get nameError(): string {
+    return !this.name.trim() ? 'TITLE_REQUIRED'
+      : this.name.trim().length > 100 ? 'MEAL_TITLE_MAX_LENGTH' : '';
+  }
 
-    return this.ingredients.every((ingredient) => {
-      return nutritionFoodValid({ ...ingredient, quantity: ingredient.quantity ?? 0 });
-    });
+  get mealTypeError(): string {
+    return this.mealType.trim() ? '' : 'MEAL_TYPE_REQUIRED';
+  }
+
+  get servingsError(): string {
+    return this.isRecipe && (this.servings == null || !Number.isFinite(Number(this.servings))
+      || Number(this.servings) < 1) ? 'MEAL_SERVINGS_MIN' : '';
+  }
+
+  quantityError(value: number | null): string {
+    return value == null || !Number.isFinite(Number(value)) || Number(value) <= 0
+      ? 'MEAL_QUANTITY_POSITIVE' : '';
+  }
+
+  numericError(value: number | null): string {
+    return value != null && (!Number.isFinite(Number(value)) || Number(value) < 0)
+      ? 'MEAL_NUMBER_NON_NEGATIVE' : '';
+  }
+
+  duplicateIngredient(item: IngredientRow): boolean {
+    return this.ingredients.some(other => other !== item && (
+      (item.foodRef?.id != null && String(other.foodRef?.id) === String(item.foodRef.id))
+      || (!!item.name.trim() && other.name.trim().toLowerCase() === item.name.trim().toLowerCase())
+    ));
+  }
+
+  foodAlreadyAdded(food: any): boolean {
+    return this.ingredients.some(item =>
+      (food.id != null && String(item.foodRef?.id) === String(food.id))
+      || (!!food.name?.trim() && item.name.trim().toLowerCase() === food.name.trim().toLowerCase()));
+  }
+
+  get canSaveDraft(): boolean {
+    return this.isRecipe && !this.saving && this.validFields(true);
+  }
+
+  get formIsValid(): boolean {
+    return this.validFields(false);
+  }
+
+  private validFields(draft: boolean): boolean {
+    if (this.imageReading || this.imageError || Object.keys(this.fieldErrors).length) return false;
+    if ((!draft && (this.nameError || this.mealTypeError || !this.ingredients.length))
+      || this.name.trim().length > 100) return false;
+    if (this.isRecipe && ((!draft || this.servings != null) && this.servingsError
+      || this.numericError(this.totalTimeMinutes))) return false;
+    return this.ingredients.every(item => !this.duplicateIngredient(item)
+      && (draft || (!!item.name.trim() && !!item.unit.trim()))
+      && ((draft && item.quantity == null) || !this.quantityError(item.quantity))
+      && (!item.manual || (['calories', 'protein', 'carbs', 'fat'] as MacroKey[])
+        .every(key => !this.numericError(item[key]))));
+  }
+
+  clearServerErrors(): void {
+    this.fieldErrors = {};
   }
 
   choose(step: 'foods' | 'recipe'): void {
+    if (this.saving) return;
     this.step = step;
     this.ingredientPickerOpen = false;
     this.foodSearch = '';
@@ -144,6 +199,7 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   backToChoice(): void {
+    if (this.saving) return;
     if (this.isEditing) {
       this.close();
       return;
@@ -163,6 +219,7 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   closeIngredientPicker(): void {
+    this.foodsTouched = true;
     this.ingredientPickerOpen = false;
     this.foodSearch = '';
     this.foods = [];
@@ -185,13 +242,8 @@ export class AddMealModalComponent implements OnChanges {
   addFood(food: any): void {
     if (!food) return;
 
-    const duplicate = this.ingredients.some(
-      (ingredient) => !ingredient.manual && ingredient.foodRef?.id === food.id,
-    );
-    if (duplicate) {
-      this.closeIngredientPicker();
-      return;
-    }
+    if (this.foodAlreadyAdded(food) || this.saving) return;
+    this.clearServerErrors();
 
     const servingSize = this.positiveNumber(food.servingSize, 100);
     this.ingredients.push({
@@ -229,6 +281,8 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   removeIngredient(index: number): void {
+    this.foodsTouched = true;
+    this.clearServerErrors();
     this.ingredients.splice(index, 1);
   }
 
@@ -273,6 +327,8 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   onCoverImageSelected(event: Event): void {
+    if (this.saving) return;
+    this.clearServerErrors();
     this.imageError = '';
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -290,12 +346,29 @@ export class AddMealModalComponent implements OnChanges {
       return;
     }
 
+    this.imageReading = true;
+    const version = ++this.coverReadVersion;
     const reader = new FileReader();
     reader.onload = () => {
-      this.coverImage = String(reader.result || '');
+      if (version !== this.coverReadVersion) return;
+      this.imageReading = false;
+      const data = String(reader.result || '');
+      try {
+        const header = atob(data.split(',')[1] || '').slice(0, 8);
+        const valid = file.type === 'image/png'
+          ? header === '\x89PNG\r\n\x1a\n'
+          : header.startsWith('\xff\xd8\xff');
+        if (!valid) throw new Error('Invalid image');
+      } catch {
+        this.imageError = this.translate.instant('IMAGE_FORMAT_ERROR');
+        return;
+      }
+      this.coverImage = data;
       this.coverImageName = file.name;
     };
     reader.onerror = () => {
+      if (version !== this.coverReadVersion) return;
+      this.imageReading = false;
       this.imageError = this.translate.instant('IMAGE_READ_ERROR');
     };
     reader.readAsDataURL(file);
@@ -303,6 +376,10 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   removeCoverImage(): void {
+    if (this.saving) return;
+    ++this.coverReadVersion;
+    this.imageReading = false;
+    this.clearServerErrors();
     this.coverImage = null;
     this.coverImageName = '';
     this.imageError = '';
@@ -331,9 +408,10 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   save(asDraft = false): void {
+    if (this.saving) return;
     this.submitted = true;
     this.saveError = '';
-    if (!this.formIsValid || this.saving) return;
+    if (asDraft ? !this.canSaveDraft : !this.canSave) return;
 
     this.saving = true;
     const payload = this.buildPayload(asDraft);
@@ -352,6 +430,7 @@ export class AddMealModalComponent implements OnChanges {
       },
       error: (error: any) => {
         this.saving = false;
+        this.fieldErrors = error?.error?.errors || {};
         this.saveError =
           error?.error?.message || error?.message || this.translate.instant('MEAL_SAVE_ERROR');
       },
@@ -374,7 +453,7 @@ export class AddMealModalComponent implements OnChanges {
     return {
       name: this.name.trim(),
       mealType: this.mealType,
-      servings: this.isRecipe ? Math.max(1, Number(this.servings) || 1) : 1,
+      servings: this.isRecipe ? (this.servings == null ? null : Number(this.servings)) : 1,
       totalTimeMinutes: this.isRecipe && this.totalTimeMinutes != null
         ? Math.max(0, Number(this.totalTimeMinutes) || 0)
         : null,
@@ -386,9 +465,9 @@ export class AddMealModalComponent implements OnChanges {
       draft: this.isRecipe ? asDraft : false,
       foods: this.ingredients.map((ingredient) => ({
         id: ingredient.id,
-        name: ingredient.name.trim() || 'Manual ingredient',
-        quantity: Number(ingredient.quantity),
-        unit: ingredient.unit,
+        name: ingredient.name.trim(),
+        quantity: ingredient.quantity == null ? null : Number(ingredient.quantity),
+        unit: ingredient.unit.trim(),
         manual: ingredient.manual,
         foodRef: ingredient.manual || !ingredient.foodRef?.id
           ? undefined
@@ -406,8 +485,8 @@ export class AddMealModalComponent implements OnChanges {
     this.meal = meal;
     this.step = meal?.template ? 'recipe' : 'foods';
     this.name = meal?.name || meal?.title || '';
-    this.mealType = meal?.mealType || 'BREAKFAST';
-    this.servings = Math.max(1, Number(meal?.servings) || 1);
+    this.mealType = meal?.mealType ?? '';
+    this.servings = meal?.servings ?? null;
     this.totalTimeMinutes = meal?.totalTimeMinutes ?? null;
     this.coverImage = meal?.coverImage || null;
     this.coverImageName = this.coverImage ? 'Current cover image' : '';
@@ -421,8 +500,8 @@ export class AddMealModalComponent implements OnChanges {
         id: food?.id || this.newId(),
         name: food?.name || ref?.name || '',
         category: manual ? 'Manual ingredient' : ref?.category || ref?.foodGroup || 'Food',
-        quantity: food?.quantity ?? ref?.servingSize ?? 100,
-        unit: this.normalizeUnit(food?.unit || ref?.servingUnit || 'g'),
+        quantity: food?.quantity ?? null,
+        unit: food?.unit ? this.normalizeUnit(food.unit) : '',
         foodRef: ref,
         calories: manual ? food?.calories ?? null : this.nutrient(ref, 'energy', 'calories'),
         protein: manual ? food?.protein ?? null : this.nutrient(ref, 'protein'),
@@ -474,6 +553,10 @@ export class AddMealModalComponent implements OnChanges {
     this.saveError = '';
     this.imageError = '';
     this.submitted = false;
+    this.imageReading = false;
+    this.foodsTouched = false;
+    this.fieldErrors = {};
+    ++this.coverReadVersion;
     this.draggedIngredientIndex = null;
     this.draggedDirectionIndex = null;
   }
@@ -497,11 +580,11 @@ export class AddMealModalComponent implements OnChanges {
   }
 
   private normalizeUnit(unit: string): string {
-    const normalized = String(unit || '').toLowerCase();
+    const normalized = String(unit || '').trim().toLowerCase();
     if (this.units.includes(normalized)) return normalized;
     if (normalized.includes('gram')) return 'g';
     if (normalized.includes('millil')) return 'ml';
-    return 'g';
+    return normalized;
   }
 
   private newId(): string {

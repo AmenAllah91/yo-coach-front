@@ -11,6 +11,8 @@ import { catchError, map } from "rxjs/operators";
 import { TranslateModule } from "@ngx-translate/core";
 import { UsersService } from "../../../service/users.service";
 import { ChatUnreadService } from "../../../service/chat-unread.service";
+import { CoachSettingsService } from "../../../service/coach-settings.service";
+import { DocumentService } from "../../../service/document.service";
 
 @Component({
   selector: 'app-conversation-list',
@@ -45,7 +47,9 @@ export class ConversationListComponent implements OnInit {
     private chatService: ChatService,
     private userService: UsersService,
     private chatwsService: ChatWebsocketService,
-    private chatUnreadService: ChatUnreadService
+    private chatUnreadService: ChatUnreadService,
+    private coachSettingsService: CoachSettingsService,
+    private documentService: DocumentService
   ) {}
 
   ngOnInit(): void {
@@ -170,13 +174,36 @@ export class ConversationListComponent implements OnInit {
     }
     if (!otherUserId) return of(conv);
 
-    return this.userService.getUserById(otherUserId).pipe(
-      map(user => {
+    const otherIsCoach = otherUserId === conv.coachId;
+
+    // For a coach, resolve the exact configured public profile photo. The user
+    // account avatarUrl may point to a different object, so never use it here.
+    const coachPhoto$ = otherIsCoach
+      ? this.coachSettingsService.getConfigForCoach(conv.coachId, true).pipe(
+          switchMap(settings => {
+            const profile = settings.publicProfile;
+            const storedUrl = profile.photoVisible ? profile.photoUrl?.trim() : '';
+            return storedUrl
+              ? this.documentService.refreshStoredFileUrl(storedUrl).pipe(catchError(() => of('')))
+              : of('');
+          }),
+          catchError(() => of('')),
+        )
+      : of(null);
+
+    return forkJoin({
+      user: this.userService.getUserById(otherUserId),
+      coachPhoto: coachPhoto$,
+    }).pipe(
+      map(({ user, coachPhoto }) => {
         conv.name = user.firstName + " " + user.lastName;
-        if(user.avatarUrl === 'not found')
-          conv.avatar = null
-        else
+        if (otherIsCoach) {
+          conv.avatar = coachPhoto || '';
+        } else if (user.avatarUrl === 'not found') {
+          conv.avatar = null;
+        } else {
           conv.avatar = user.avatarUrl;
+        }
         return conv;
       }),
       catchError(() => of(conv))
