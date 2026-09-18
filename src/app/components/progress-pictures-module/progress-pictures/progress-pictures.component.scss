@@ -327,6 +327,14 @@
   }
 }
 
+/* Pose filter buttons and Single/Compare strict blue parity — one shared rule so the
+   selected Compare can never fall back to the dark/navy tone used elsewhere. */
+.pose-filter-toolbar .mode-btn.is-active,
+.comparison-toolbar .mode-btn.is-active {
+  background: #44b4df !important;
+  color: #ffffff !important;
+}
+
 .comparison-content {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
@@ -574,4 +582,387 @@
 
 .comparison-panel img {
   max-height: calc(92vh - 240px);
+}
+
+// Dimensions and breakpoints from the progress tracking reference.
+.page { background: #f6f8fa; padding: 24px; }
+.header { padding-top: 0; margin-bottom: 32px; align-items: flex-start; }
+.header-content { flex: 1; }
+.h1 { font-size: 30px; line-height: 36px; letter-spacing: -.75px; margin: 0 0 4px; }
+.sub { font-size: 14px; line-height: 20px; color: #64748b; }
+.header > .app-page-back { width: 40px; height: 40px; min-width: 40px; border: 1px solid #e2e8f0; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0f172a12; margin: 2px 0 0; }
+.header-actions { flex-wrap: nowrap; gap: 12px; }
+.action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+.action-btn svg { width: 16px; height: 16px; }
+.action-btn--secondary { background: white; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px #0f172a12; }
+.action-btn--primary { background: #2cadd8; box-shadow: 0 1px 3px #0f172a12; }
+.panel { background: transparent; box-shadow: none; overflow: visible; }
+.content { padding: 0; }
+.month-group { margin-bottom: 40px; }
+.month-heading { display: flex; align-items: center; gap: 16px; width: 100%; padding: 0 0 16px; border: 0; background: transparent; text-align: left; color: #0f172a; cursor: pointer; line-height: 20px; }
+.month-heading strong { text-transform: uppercase; font-size: 14px; font-weight: 600; }
+.month-heading span { color: #8894a4; font-size: 12px; }
+.month-rule { flex: 1; height: 1px; background: #e2e8f0; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.picture-card { border: 1px solid #e2e8f0; border-radius: 12px; background: white; display: flex; flex-direction: column; box-shadow: 0 1px 3px #0f172a12; }
+.picture-card__image { position: relative; display: block; overflow: hidden; border: 0; padding: 0; width: 100%; cursor: pointer; aspect-ratio: 3 / 4; }
+.pose-badge { position: absolute; top: 12px; left: 12px; background: #0b0d0fb3; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; line-height: 16.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .275px; }
+.picture-card__body { padding: 16px; display: flex; flex-direction: column; flex: 1; gap: 12px; line-height: 20px; min-height: 124px; }
+.picture-card__row { align-items: flex-start; gap: 8px; margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; }
+.picture-card__title { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; }
+.picture-note { font-size: 12px; line-height: 19.5px; color: #64748b; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.weight-change, .starting-point { align-self: flex-start; margin-top: auto; padding: 4px 10px; border-radius: 9999px; background: #eff9ff; color: #087caf; font-size: 12px; font-weight: 600; line-height: 16px; }
+.weight-change--up { color: #a16207; background: #fffbeb; }
+.starting-point { color: #64748b; background: #f8fafc; }
+@media (min-width: 1280px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1536px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 768px) {
+ .page { padding: 12px 8px; }
+ .header { flex-direction: row; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+ .header-content { flex: 1; }
+ .h1 { font-size: 20px; line-height: 24px; letter-spacing: -.5px; margin-bottom: 4px; }
+ .sub { font-size: 11px; line-height: 15px; }
+ .header-actions { width: auto; flex-wrap: nowrap; gap: 6px; margin-left: 0; }
+ .action-btn { height: 30px; padding: 0 8px; border-radius: 5px; font-size: 10px; gap: 4px; }
+ .action-btn svg { width: 12px; height: 12px; }
+ .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+ .picture-card__image { aspect-ratio: 4 / 5; }
+ .picture-card__body { padding: 6px; gap: 6px; min-height: 76px; }
+ .picture-card__row { flex-wrap: wrap; font-size: 9px; line-height: 12px; }
+ .picture-card__title { font-size: 9px; line-height: 12px; }
+ .picture-note { font-size: 9px; line-height: 12px; }
+ .pose-badge { top: 6px; left: 6px; padding: 3px 5px; font-size: 8px; line-height: 10px; }
+ .weight-change, .starting-point { font-size: 8px; padding: 5px; border-radius: 5px; line-height: 11px; }
+ .month-group { margin-bottom: 28px; }
+ .month-heading { gap: 10px; padding-bottom: 10px; }
+ .month-heading strong { font-size: 12px; }
+ .month-heading span { font-size: 10px; }
+ .month-rule { background: transparent; }
+}
+
+.missing-photo { display: flex; align-items: center; justify-content: center; height: 100%; padding: 16px; color: #64748b; font-size: 12px; text-align: center; }
+
+.pose-filter-toolbar { display:flex; gap:8px; padding:0 24px 16px; border-bottom:1px solid #e5e7eb; }
+.pose-filter-toolbar .mode-btn { min-width:96px; }
+
+/* Responsive comparison modal: true mobile layout, not compressed desktop */
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 8px;
+    align-items: center;
+  }
+
+  .comparison-modal {
+    width: 100%;
+    max-width: 100%;
+    height: min(92dvh, 920px);
+    max-height: 92dvh;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 18px 16px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .modal-subtitle {
+    font-size: 12px;
+    line-height: 17px;
+    max-width: 260px;
+  }
+
+  .comparison-toolbar {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .comparison-toolbar .mode-btn {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  .pose-filter-toolbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 16px 12px;
+  }
+
+  .pose-filter-toolbar .mode-btn {
+    min-width: 0;
+    width: 100%;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .comparison-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 16px 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    overscroll-behavior: contain;
+  }
+
+  /* Photo picker becomes a horizontal strip above Before/After. */
+  .comparison-sidebar {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 6px;
+    flex: 0 0 auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .comparison-selection-error {
+    flex: 0 0 100%;
+    margin: 0 0 4px;
+  }
+
+  .thumb-card {
+    flex: 0 0 112px;
+    width: 112px;
+    margin: 0;
+    scroll-snap-align: start;
+  }
+
+  .thumb-card__image {
+    aspect-ratio: 3 / 4;
+  }
+
+  .thumb-card__meta {
+    padding: 8px;
+  }
+
+  .thumb-date {
+    font-size: 11px;
+    line-height: 15px;
+  }
+
+  .thumb-weight {
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  /* Critical: undo desktop sticky/max-height rules that caused overlap. */
+  .comparison-panels,
+  .comparison-panels--single {
+    position: static;
+    top: auto;
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .comparison-panel {
+    width: 100%;
+    min-height: 150px;
+    max-height: none;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .comparison-panel img {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 3 / 4;
+    object-fit: contain;
+  }
+
+  .comparison-placeholder {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 16px 20px;
+  }
+
+  .comparison-label {
+    top: 12px;
+    right: 12px;
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+
+  .comparison-footer {
+    font-size: 11px;
+    line-height: 15px;
+  }
+}
+
+/* 2026-09-18 — Responsive web comparison placement parity with Flutter.
+   Keep the existing web colours/card styling; only mirror Flutter's element placement. */
+@media (max-width: 768px) {
+  .comparison-modal {
+    height: min(94dvh, 920px);
+    max-height: 94dvh;
+  }
+
+  /* Single / Comparison remains the first full-width row. */
+  .comparison-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    padding: 12px 16px 8px;
+    border-bottom: 0;
+  }
+
+  .comparison-toolbar .mode-btn {
+    width: 100%;
+  }
+
+  /* Front / Side / Back is the second full-width row. */
+  .pose-filter-toolbar {
+    width: 100%;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* Flutter placement: photo rail | BEFORE | AFTER. */
+  .comparison-content {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .comparison-sidebar {
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 88px;
+    min-width: 88px;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .comparison-selection-error {
+    width: 100%;
+    flex: none;
+    margin: 0;
+    font-size: 9px;
+    padding: 6px;
+  }
+
+  .thumb-card {
+    flex: none;
+    width: 88px;
+    margin: 0;
+    border-radius: 12px;
+  }
+
+  .thumb-card__image {
+    aspect-ratio: 4 / 5;
+  }
+
+  .thumb-card__meta {
+    padding: 6px;
+  }
+
+  .thumb-date {
+    font-size: 9px;
+    line-height: 12px;
+  }
+
+  .thumb-weight {
+    font-size: 8px;
+    line-height: 11px;
+    margin-top: 2px;
+  }
+
+  .comparison-panels {
+    grid-column: 2 / 4;
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    align-self: stretch;
+  }
+
+  .comparison-panels--single {
+    grid-column: 2 / 4;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .comparison-panel {
+    width: 100%;
+    min-width: 0;
+    min-height: 360px;
+    max-height: none;
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .comparison-panel img {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 3 / 4;
+    object-fit: contain;
+    margin: auto 0;
+  }
+
+  .comparison-label {
+    top: 10px;
+    right: 10px;
+    font-size: 9px;
+    line-height: 12px;
+    padding: 5px 8px;
+  }
+
+  .comparison-placeholder {
+    min-height: 330px;
+    padding: 48px 8px 20px;
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .comparison-footer {
+    font-size: 9px;
+    line-height: 12px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 390px) {
+  .comparison-content {
+    grid-template-columns: 76px minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .comparison-sidebar,
+  .thumb-card {
+    width: 76px;
+    min-width: 76px;
+  }
+  .comparison-panel {
+    min-height: 320px;
+    padding: 6px;
+  }
+  .comparison-placeholder { min-height: 290px; }
 }

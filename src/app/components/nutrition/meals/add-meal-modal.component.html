@@ -1,5 +1,7 @@
 <div class="meal-modal" *ngIf="isVisible" (click)="close()">
   <section
+    (input)="clearServerErrors()"
+    (change)="clearServerErrors()"
     class="meal-modal__panel"
     [class.meal-modal__panel--choice]="step === 'choice'"
     [class.meal-modal__panel--foods]="step === 'foods'"
@@ -82,19 +84,25 @@
             <input
               type="text"
               [(ngModel)]="name"
-              [class.foods-control--invalid]="submitted && !name.trim()"
+              #nameControl="ngModel"
+              (blur)="name = name.trim()"
+              [class.foods-control--invalid]="(submitted || nameControl.touched || nameControl.dirty) && !!nameError"
               [placeholder]="'MEAL_TITLE_EXAMPLE' | translate"
             />
-            <small *ngIf="submitted && !name.trim()">{{ 'TITLE_REQUIRED' | translate }}</small>
+            <small *ngIf="(submitted || nameControl.touched || nameControl.dirty) && !!nameError">{{ nameError | translate }}</small>
+            <small class="inline-error" *ngIf="fieldErrors['name']">{{ fieldErrors['name'] }}</small>
           </label>
 
           <label class="foods-field foods-field--type">
             <span>{{ 'MEAL_TYPE' | translate }}</span>
-            <select [(ngModel)]="mealType">
+            <select [(ngModel)]="mealType" #mealTypeControl="ngModel">
+              <option value="">{{ 'MEAL_TYPE' | translate }}</option>
               <option *ngFor="let type of mealTypes" [value]="type.value">
                 {{ type.label | translate }}
               </option>
             </select>
+            <small class="inline-error" *ngIf="(submitted || mealTypeControl.touched || mealTypeControl.dirty) && mealTypeError">{{ mealTypeError | translate }}</small>
+            <small class="inline-error" *ngIf="fieldErrors['mealType']">{{ fieldErrors['mealType'] }}</small>
           </label>
         </div>
 
@@ -153,24 +161,29 @@
                           ></i-feather>
                         </span>
                         <strong>{{ ingredient.name }}</strong>
+                        <small class="inline-error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
                       </div>
                     </td>
                     <td>
                       <div class="foods-table__quantity">
                         <input
                           type="number"
-                          min="0.01"
+                          min="0"
                           step="any"
-                          [(ngModel)]="ingredient.quantity"
-                          [class.foods-control--invalid]="submitted && !(ingredient.quantity && ingredient.quantity > 0)"
+                          [(ngModel)]="ingredient.quantity" #quantityControl="ngModel"
+                          [class.foods-control--invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
                         />
                         <select
-                          [(ngModel)]="ingredient.unit"
-                          [class.foods-control--invalid]="submitted && !ingredient.unit"
+                          [(ngModel)]="ingredient.unit" #unitControl="ngModel"
+                          [class.foods-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
                         >
                           <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                          <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
                         </select>
                       </div>
+                      <small class="inline-error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
+                      <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
+                      <small class="inline-error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
                     </td>
                     <td><strong>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}</strong> <span>g</span></td>
                     <td><strong>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}</strong> <span>g</span></td>
@@ -218,6 +231,7 @@
                   class="food-result"
                   type="button"
                   *ngFor="let food of foods; trackBy: trackByFood"
+                  [disabled]="foodAlreadyAdded(food) || saving"
                   (click)="addFood(food)"
                 >
                   <span class="food-result__thumb">
@@ -240,7 +254,7 @@
               </div>
             </div>
 
-            <div class="ingredient-validation" *ngIf="submitted && ingredients.length === 0">
+            <div class="ingredient-validation" *ngIf="(submitted || foodsTouched) && ingredients.length === 0">
               {{ 'ADD_AT_LEAST_ONE_FOOD' | translate }}
             </div>
           </div>
@@ -265,28 +279,32 @@
             <span>{{ (isRecipe ? 'RECIPE_NAME' : 'MEAL_TITLE') | translate }}</span>
             <input
               [(ngModel)]="name"
-              [class.field-control--invalid]="submitted && !name.trim()"
+              #nameControl="ngModel"
+              (blur)="name = name.trim()"
+              [class.field-control--invalid]="(submitted || nameControl.touched || nameControl.dirty) && !!nameError"
               [placeholder]="(isRecipe ? 'RECIPE_NAME_EXAMPLE' : 'MEAL_TITLE_EXAMPLE') | translate"
             />
-            <small *ngIf="submitted && !name.trim()">{{ 'TITLE_REQUIRED' | translate }}</small>
+            <small *ngIf="(submitted || nameControl.touched || nameControl.dirty) && !!nameError">{{ nameError | translate }}</small>
+            <small class="inline-error" *ngIf="fieldErrors['name']">{{ fieldErrors['name'] }}</small>
           </label>
 
           <label class="field">
             <span>{{ 'MEAL_TYPE' | translate }}</span>
-            <select [(ngModel)]="mealType">
+            <select [(ngModel)]="mealType" #mealTypeControl="ngModel">
+              <option value="">{{ 'MEAL_TYPE' | translate }}</option>
               <option *ngFor="let type of mealTypes" [value]="type.value">
                 {{ type.label | translate }}
               </option>
             </select>
+            <small class="inline-error" *ngIf="(submitted || mealTypeControl.touched || mealTypeControl.dirty) && mealTypeError">{{ mealTypeError | translate }}</small>
+            <small class="inline-error" *ngIf="fieldErrors['mealType']">{{ fieldErrors['mealType'] }}</small>
           </label>
 
           <label class="field" *ngIf="isRecipe">
             <span>{{ 'SERVINGS' | translate }}</span>
-            <select [(ngModel)]="servings">
-              <option *ngFor="let count of [1,2,3,4,5,6,8,10,12]" [ngValue]="count">
-                {{ count }} {{ (count === 1 ? 'SERVING_LOWERCASE' : 'SERVINGS_LOWERCASE') | translate }}
-              </option>
-            </select>
+            <input type="number" min="1" step="any" [(ngModel)]="servings" #servingsControl="ngModel" />
+            <small class="inline-error" *ngIf="(submitted || servingsControl.touched || servingsControl.dirty) && servingsError">{{ servingsError | translate }}</small>
+            <small class="inline-error" *ngIf="fieldErrors['servings']">{{ fieldErrors['servings'] }}</small>
           </label>
         </div>
 
@@ -327,14 +345,16 @@
             </div>
           </div>
         </div>
-        <p class="inline-error" *ngIf="imageError">{{ imageError }}</p>
+        <p class="inline-error" *ngIf="imageError || fieldErrors['coverImage']">{{ imageError || fieldErrors['coverImage'] }}</p>
 
         <div class="time-metrics" *ngIf="isRecipe">
           <article class="time-metric-card">
             <span class="time-metric-card__icon"><i-feather name="clock"></i-feather></span>
             <div>
               <small>{{ 'TOTAL_TIME' | translate }}</small>
-              <strong>{{ totalTimeMinutes || 0 }}</strong>
+              <input type="number" min="0" step="any" [(ngModel)]="totalTimeMinutes" #timeControl="ngModel" [attr.aria-label]="'TOTAL_TIME' | translate" />
+              <small class="inline-error" *ngIf="(submitted || timeControl.touched || timeControl.dirty) && numericError(totalTimeMinutes)">{{ numericError(totalTimeMinutes) | translate }}</small>
+              <small class="inline-error" *ngIf="fieldErrors['totalTimeMinutes']">{{ fieldErrors['totalTimeMinutes'] }}</small>
               <em>min</em>
             </div>
           </article>
@@ -378,7 +398,8 @@
               class="food-result"
               type="button"
               *ngFor="let food of foods; trackBy: trackByFood"
-              (click)="addFood(food)"
+              [disabled]="foodAlreadyAdded(food) || saving"
+                  (click)="addFood(food)"
             >
               <span class="food-result__thumb">
                 <img *ngIf="food.image || food.imageUrl" [src]="food.image || food.imageUrl" alt="" />
@@ -440,37 +461,44 @@
             </span>
 
             <div class="ingredient-row__identity">
+              <ng-container *ngIf="ingredient.manual">
               <input
-                *ngIf="ingredient.manual"
-                [(ngModel)]="ingredient.name"
-                [class.field-control--invalid]="submitted && !ingredient.name.trim()"
+                [(ngModel)]="ingredient.name" #ingredientNameControl="ngModel"
+                [class.field-control--invalid]="(submitted || ingredientNameControl.touched || ingredientNameControl.dirty) && !ingredient.name.trim()"
                 [placeholder]="'INGREDIENT_NAME' | translate"
               />
+              <small class="inline-error" *ngIf="(submitted || ingredientNameControl.touched || ingredientNameControl.dirty) && !ingredient.name.trim()">{{ 'MEAL_INGREDIENT_NAME_REQUIRED' | translate }}</small>
+              </ng-container>
               <strong *ngIf="!ingredient.manual">{{ ingredient.name }}</strong>
               <small>{{ ingredient.category }}</small>
+              <small class="inline-error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
             </div>
 
             <label class="compact-field">
               <span class="sr-only">{{ 'QUANTITY' | translate }}</span>
               <input
                 type="number"
-                min="0.01"
+                min="0"
                 step="any"
-                [(ngModel)]="ingredient.quantity"
-                [class.field-control--invalid]="submitted && !(ingredient.quantity && ingredient.quantity > 0)"
+                [(ngModel)]="ingredient.quantity" #quantityControl="ngModel"
+                [class.field-control--invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
                 [placeholder]="'QUANTITY_SHORT' | translate"
               />
+              <small class="inline-error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
+              <small class="inline-error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
             </label>
 
             <label class="compact-field">
               <span class="sr-only">{{ 'UNIT' | translate }}</span>
               <select
-                [(ngModel)]="ingredient.unit"
-                [class.field-control--invalid]="submitted && !ingredient.unit"
+                [(ngModel)]="ingredient.unit" #unitControl="ngModel"
+                [class.field-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
               >
                 <option value="" disabled>{{ 'UNIT' | translate }}</option>
                 <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
               </select>
+              <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
             </label>
 
             <div class="ingredient-row__macros" *ngIf="!ingredient.manual">
@@ -498,7 +526,7 @@
           </article>
         </div>
 
-        <div class="ingredient-validation" *ngIf="submitted && ingredients.length === 0">
+        <div class="ingredient-validation" *ngIf="(submitted || foodsTouched) && ingredients.length === 0">
           {{ 'ADD_AT_LEAST_ONE_INGREDIENT' | translate }}
         </div>
         <div class="ingredient-validation" *ngIf="submitted && ingredients.length && !formIsValid">
@@ -597,7 +625,7 @@
           <button
             class="button button--secondary"
             type="button"
-            [disabled]="saving"
+            [disabled]="!canSaveDraft"
             (click)="save(true)"
           >
             {{ 'SAVE_DRAFT' | translate }}
@@ -605,7 +633,7 @@
           <button
             class="button button--primary"
             type="button"
-            [disabled]="saving"
+            [disabled]="!canSave"
             (click)="save(false)"
           >
             {{ (saving ? 'SAVING' : 'SAVE_RECIPE') | translate }}
@@ -618,7 +646,7 @@
           <button
             class="button button--primary"
             type="button"
-            [disabled]="saving"
+            [disabled]="!canSave"
             (click)="save(false)"
           >
             {{ (saving ? 'SAVING' : 'SAVE_MEAL') | translate }}

@@ -14,6 +14,7 @@
           (click)="openComparison()"
           [disabled]="picturesCount === 0"
         >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6 7v10a2 2 0 0 0 2 2h4M12 5h4a2 2 0 0 1 2 2v10"/></svg>
           {{ 'COMPARE' | translate }}
         </button>
 
@@ -23,20 +24,13 @@
           class="action-btn action-btn--primary"
           (click)="openAddModal()"
         >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg>
           {{ 'ADD_PICTURE' | translate }}
         </button>
       </div>
     </div>
 
     <div class="panel">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <span class="toolbar-badge" *ngIf="picturesCount > 0">
-            {{ picturesCount }} {{ 'PICTURES_ITEMS' | translate }}
-          </span>
-        </div>
-      </div>
-
       <div class="content">
         <div *ngIf="loading" class="empty">
           <div class="empty-title">{{ 'LOADING' | translate }}</div>
@@ -46,25 +40,31 @@
           <div class="empty-title">{{ error | translate }}</div>
         </div>
 
-        <div class="grid" *ngIf="!loading && sortedPictures.length > 0">
-          <div class="picture-card" *ngFor="let picture of sortedPictures; trackBy: trackByPictureId">
-            <div class="picture-card__image">
-              <img [src]="picture.imageUrl" [alt]="'Progress picture ' + (picture.date | date:'mediumDate')" />
+        <ng-container *ngIf="!loading">
+          <section class="month-group" *ngFor="let group of monthGroups">
+            <button type="button" class="month-heading" (click)="toggleMonth(group.key)" [attr.aria-expanded]="!collapsedMonths.has(group.key)">
+              <strong>{{ group.date | date:'MMMM yyyy':'':dateLocale }}</strong><span>{{ group.pictures.length }} {{ (group.pictures.length === 1 ? 'PHOTO' : 'PICTURES_ITEMS') | translate }}</span>
+              <span class="month-rule"></span><span>{{ collapsedMonths.has(group.key) ? '⌄' : '⌃' }}</span>
+            </button>
+            <div class="grid" *ngIf="!collapsedMonths.has(group.key)">
+              <article [attr.title]="authorRole(picture) ? (('PROGRESS_ADDED_BY_' + authorRole(picture)) | translate) : null" class="picture-card" *ngFor="let picture of group.pictures; trackBy: trackByPictureId">
+                <button type="button" class="picture-card__image" (click)="openComparison(); changeComparisonMode('single'); selectComparisonPicture(picture)" [attr.aria-label]="('PICTURE' | translate) + ' ' + picture.date">
+                  <img *ngIf="!failedImages.has(picture.id); else missingPhoto" (error)="failedImages.add(picture.id)" loading="lazy" [src]="picture.imageUrl" [alt]="('PICTURE' | translate) + ' ' + picture.date" />
+                  <ng-template #missingPhoto><span class="missing-photo">{{ 'PROGRESS_PHOTO_UNAVAILABLE' | translate }}</span></ng-template>
+                  <span class="pose-badge" *ngIf="picture.pose">{{ ('PROGRESS_POSE_' + picture.pose) | translate }}</span>
+                </button>
+                <div class="picture-card__body">
+                  <div class="picture-card__row"><h3 class="picture-card__title">{{ picture.date | date:'dd MMM yyyy':'':dateLocale }}</h3><span>{{ formatWeight(picture.weight) }}</span></div>
+                  <p class="picture-note" *ngIf="picture.note">{{ picture.note }}</p>
+                  <div class="weight-change" *ngIf="weightChange(picture) !== null; else startingPoint" [class.weight-change--up]="weightChange(picture)! > 0">
+                    {{ weightChange(picture)! < 0 ? '↓' : weightChange(picture)! > 0 ? '↑' : '→' }} {{ formatChange(weightChange(picture)!) }} {{ 'PROGRESS_VS_PREVIOUS' | translate }}
+                  </div>
+                  <ng-template #startingPoint><div class="starting-point">{{ 'PROGRESS_STARTING_POINT' | translate }}</div></ng-template>
+                </div>
+              </article>
             </div>
-
-            <div class="picture-card__body">
-              <div class="picture-card__row">
-                <h3 class="picture-card__title">{{ picture.date | date:'dd MMM yyyy' }}</h3>
-              </div>
-
-              <div class="picture-card__meta">
-                <span class="meta-pill">
-                  {{ 'WEIGHT' | translate }}: {{ formatWeight(picture.weight) }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+          </section>
+        </ng-container>
 
         <div class="empty" *ngIf="!loading && sortedPictures.length === 0">
           <div class="empty-icon empty-icon--gray">
@@ -85,6 +85,7 @@
 <app-add-progress-picture-modal
   [isOpen]="showAddModal"
   [saving]="saving"
+  [error]="error"
   (close)="closeAddModal()"
   (save)="onSavePicture($event)"
 ></app-add-progress-picture-modal>
@@ -122,6 +123,12 @@
       </button>
     </div>
 
+    <div class="pose-filter-toolbar">
+      <button type="button" class="mode-btn" [class.is-active]="comparisonPose === 'FRONT'" (click)="changeComparisonPose('FRONT')">Front</button>
+      <button type="button" class="mode-btn" [class.is-active]="comparisonPose === 'SIDE'" (click)="changeComparisonPose('SIDE')">Side</button>
+      <button type="button" class="mode-btn" [class.is-active]="comparisonPose === 'BACK'" (click)="changeComparisonPose('BACK')">Back</button>
+    </div>
+
     <div class="comparison-content">
       <aside class="comparison-sidebar">
         <p class="comparison-selection-error" *ngIf="comparisonSelectionError">
@@ -129,7 +136,7 @@
         </p>
         <div
           class="thumb-card"
-          *ngFor="let picture of sortedPictures; trackBy: trackByPictureId"
+          *ngFor="let picture of filteredComparisonPictures; trackBy: trackByPictureId"
           [class.thumb-card--before]="isSelectedAsBefore(picture)"
           [class.thumb-card--after]="isSelectedAsAfter(picture)"
           (click)="selectComparisonPicture(picture)"
@@ -138,7 +145,7 @@
             <img [src]="picture.imageUrl" alt="thumbnail" />
           </div>
           <div class="thumb-card__meta">
-            <div class="thumb-date">{{ picture.date | date:'dd MMM yyyy' }}</div>
+            <div class="thumb-date">{{ picture.date | date:'dd MMM yyyy':'':dateLocale }}</div>
             <div class="thumb-weight">{{ formatWeight(picture.weight) }}</div>
           </div>
         </div>
@@ -153,7 +160,7 @@
           <ng-container *ngIf="selectedBeforePicture; else beforePlaceholder">
             <img [src]="selectedBeforePicture.imageUrl" alt="Before picture" />
             <div class="comparison-footer">
-              <span>{{ selectedBeforePicture.date | date:'dd MMM yyyy' }}</span>
+              <span>{{ selectedBeforePicture.date | date:'dd MMM yyyy':'':dateLocale }}</span>
               <span>{{ formatWeight(selectedBeforePicture.weight) }}</span>
             </div>
           </ng-container>
@@ -173,7 +180,7 @@
           <ng-container *ngIf="selectedAfterPicture; else afterPlaceholder">
             <img [src]="selectedAfterPicture.imageUrl" alt="After picture" />
             <div class="comparison-footer">
-              <span>{{ selectedAfterPicture.date | date:'dd MMM yyyy' }}</span>
+              <span>{{ selectedAfterPicture.date | date:'dd MMM yyyy':'':dateLocale }}</span>
               <span>{{ formatWeight(selectedAfterPicture.weight) }}</span>
             </div>
           </ng-container>
@@ -195,7 +202,7 @@
           <ng-container *ngIf="selectedSinglePicture; else singlePlaceholder">
             <img [src]="selectedSinglePicture.imageUrl" alt="Selected picture" />
             <div class="comparison-footer">
-              <span>{{ selectedSinglePicture.date | date:'dd MMM yyyy' }}</span>
+              <span>{{ selectedSinglePicture.date | date:'dd MMM yyyy':'':dateLocale }}</span>
               <span>{{ formatWeight(selectedSinglePicture.weight) }}</span>
             </div>
           </ng-container>

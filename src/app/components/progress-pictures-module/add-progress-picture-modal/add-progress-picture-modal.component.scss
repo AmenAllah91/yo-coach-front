@@ -1,235 +1,57 @@
-.pp-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 1rem;
-}
-
-.pp-modal-container {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  width: 100%;
-  max-width: 52rem;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.pp-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
-
-.pp-modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-.pp-modal-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0.5rem 0 0 0;
-}
-
-.pp-close-button {
-  padding: 0.5rem;
-  border-radius: 9999px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  flex-shrink: 0;
-
-  &:hover {
-    background-color: #f3f4f6;
-  }
-}
-
-.pp-icon {
-  height: 1.25rem;
-  width: 1.25rem;
-  color: #9ca3af;
-}
-
-.pp-modal-content {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1 1 auto;
-}
-
-.pp-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.pp-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  &--full {
-    grid-column: 1 / -1;
-  }
-}
-
-.pp-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.pp-input,
-.pp-input-file {
-  width: 100%;
-  min-height: 3rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s;
-  background: white;
-  box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: #44b4df;
-    box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.1);
-  }
-}
-
-.pp-input-with-suffix {
-  position: relative;
-}
-
-.pp-input-with-suffix .pp-input {
-  padding-right: 3.5rem;
-}
-
-.pp-suffix {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.pp-preview {
-  grid-column: 1 / -1;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pp-preview img {
-  width: 100%;
-  max-height: 320px;
-  object-fit: contain;
-  display: block;
-  background: #f9fafb;
-}
-
-.pp-modal-footer {
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-  padding: 1rem 1.5rem;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-.pp-btn {
-  border: none;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  padding: 0.75rem 1rem;
-  transition: all 0.2s;
-
-  &--secondary {
-    background-color: #f3f4f6;
-    color: #374151;
-
-    &:hover {
-      background-color: #e5e7eb;
-    }
-  }
-
-  &--primary {
-    background-color: #44b4df;
-    color: white;
-
-    &:hover {
-      background-color: #3a9bc1;
-    }
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-  }
-}
-
-.pp-modal-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.pp-modal-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 999px;
-}
-
-.pp-modal-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
-}
-
+.pp-modal-backdrop { position: fixed; inset: 0; background: #0006; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+.pp-modal-container { width: 100%; max-width: 512px; max-height: calc(100dvh - 32px); background: white; border-radius: 16px; box-shadow: 0 24px 64px #0003; display: flex; flex-direction: column; overflow: hidden; color: #111820; font-size: 14px; line-height: 20px; }
+.pp-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.pp-modal-title { margin: 0; font-size: 18px; line-height: 28px; font-weight: 700; letter-spacing: -.45px; }
+.pp-modal-subtitle { margin: 4px 0 0; font-size: 14px; line-height: 20px; color: #64748b; }
+.pp-close-button { background: transparent; border: 0; padding: 6px; border-radius: 8px; color: #8894a4; cursor: pointer; }
+.pp-icon { width: 20px; height: 20px; }
+.pp-modal-content { padding: 24px; overflow-y: auto; flex: 1 1 auto; }
+.pp-form-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px 16px; }
+.pp-field { display: flex; flex-direction: column; gap: 8px; }
+.pp-field--full { grid-column: 1 / -1; }
+.pp-label { font-size: 14px; line-height: 20px; font-weight: 600; }
+.pp-input { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; font: inherit; background: white; box-sizing: border-box; min-width: 0; }
+.pp-input:focus { outline: none; border-color: #2cadd8; }
+.pp-input::placeholder { color: #8894a4; }
+textarea.pp-input { height: 62px; padding: 10px 12px; resize: none; }
+.pp-input-with-suffix { position: relative; }
+.pp-input-with-suffix .pp-input { padding-right: 44px; }
+.pp-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #8894a4; }
+.pp-upload { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 130px; border: 2px dashed #e2e8f0; border-radius: 12px; background: #f6f8fa; cursor: pointer; font: inherit; }
+.pp-upload svg { width: 24px; height: 24px; color: #8894a4; margin-bottom: 8px; }
+.pp-upload strong { font-size: 14px; line-height: 20px; font-weight: 600; }
+.pp-upload small { font-size: 12px; line-height: 16px; color: #64748b; }
+.pp-preview { grid-column: 1 / -1; background: #f6f8fa; border-radius: 8px; overflow: hidden; }
+.pp-preview img { width: 100%; max-height: 240px; object-fit: contain; }
+.pp-file-error { color: #b91c1c; font-size: 12px; margin: 0 0 8px; }
+.pp-poses { display: flex; gap: 8px; }
+.pp-poses button { flex: 1; height: 40px; border: 1px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.pp-poses .is-active { background: #eff9ff; color: #087caf; border-color: #2cadd8; }
+.pp-modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f6f8fa; flex-shrink: 0; }
+.pp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.pp-btn svg { width: 16px; height: 16px; }
+.pp-btn--secondary { background: white; border: 1px solid #e2e8f0; color: #334155; }
+.pp-btn--primary { border: 0; background: #2cadd8; color: white; }
+.pp-btn:disabled { opacity: .6; cursor: not-allowed; }
 @media (max-width: 768px) {
-  .pp-modal-container {
-    max-height: 95vh;
-  }
-
-  .pp-modal-content {
-    padding: 1rem;
-  }
-
-  .pp-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pp-modal-footer {
-    padding: 1rem;
-    flex-direction: column;
-  }
-
-  .pp-btn {
-    width: 100%;
-  }
-
-  .pp-preview img {
-    max-height: 240px;
-  }
+ .pp-modal-container { max-width: 460px; border-radius: 14px; }
+ .pp-modal-header, .pp-modal-content { padding: 20px; }
+ .pp-modal-title { font-size: 16px; line-height: 22px; }
+ .pp-modal-subtitle { font-size: 13px; line-height: 18px; }
+ .pp-form-grid { gap: 16px 12px; }
+ .pp-label { font-size: 12px; line-height: 16px; }
+ .pp-input { height: 36px; font-size: 12px; border-radius: 6px; }
+ .pp-upload { height: 108px; }
+ .pp-upload strong { font-size: 13px; }
+ .pp-upload small { font-size: 11px; }
+ .pp-poses button { height: 34px; font-size: 12px; }
+ .pp-modal-footer { padding: 12px 20px; gap: 10px; }
+ .pp-btn { height: 34px; padding: 0 12px; font-size: 12px; }
 }
+.pp-three-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pp-photo-slot__title{font-weight:700;font-size:12px;margin-bottom:6px}.pp-upload--pose{height:180px;overflow:hidden;padding:0}.pp-upload--pose img{width:100%;height:100%;object-fit:cover}.pp-remove-photo{border:0;background:transparent;text-decoration:underline;font-size:11px;margin-top:5px;cursor:pointer}@media(max-width:700px){.pp-three-photos{grid-template-columns:1fr}.pp-upload--pose{height:150px}}
+/* Reference modal: one upload surface, switched by Front / Side / Back tabs. */
+.pp-upload { width:100%; height:160px; overflow:hidden; }
+.pp-active-preview { width:100%; height:100%; object-fit:contain; border-radius:10px; }
+.pp-poses button { position:relative; }
+.pp-pose-check { margin-left:6px; font-size:12px; }
+.pp-poses button.has-photo:not(.is-active) { border-color:#b9ddea; }

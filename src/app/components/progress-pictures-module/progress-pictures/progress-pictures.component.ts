@@ -1,6 +1,6 @@
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule, Location, registerLocaleData } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { finalize, catchError, map, switchMap } from 'rxjs/operators';
 import { forkJoin, of } from 'rxjs';
 import { DocumentService } from 'app/service/document.service';
@@ -13,6 +13,9 @@ import {
   AddProgressPictureModalComponent,
   AddProgressPicturePayload
 } from '../add-progress-picture-modal/add-progress-picture-modal.component';
+import localeFr from '@angular/common/locales/fr';
+registerLocaleData(localeFr);
+
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 @Component({
@@ -37,6 +40,7 @@ export class ProgressPicturesComponent implements OnInit {
   showAddModal = false;
   showPicturesComparison = false;
   comparisonMode: 'single' | 'comparison' = 'comparison';
+  comparisonPose: 'FRONT' | 'SIDE' | 'BACK' = 'FRONT';
 
   selectedSinglePicture: ProgressPicture | null = null;
   selectedAfterPicture: ProgressPicture | null = null;
@@ -48,6 +52,7 @@ export class ProgressPicturesComponent implements OnInit {
     private progressPicturesService: ProgressPicturesService,
     private documentService: DocumentService,
     private coachSettingsService: CoachSettingsService,
+    private translateService: TranslateService,
     private location: Location
   ) {}
 
@@ -131,6 +136,7 @@ export class ProgressPicturesComponent implements OnInit {
 
   openAddModal(): void {
     if (!this.allowAddPicture) return;
+    this.error = null;
     this.showAddModal = true;
   }
 
@@ -140,77 +146,19 @@ export class ProgressPicturesComponent implements OnInit {
   }
 
   onSavePicture(payload: AddProgressPicturePayload): void {
-    if (!this.clientId) {
-      this.error = 'CLIENT_ID_MISSING';
-      console.error('Progress picture save stopped: clientId is missing');
-      return;
-    }
-
-    if (this.saving) {
-      return;
-    }
-
-    this.saving = true;
-    this.error = null;
-
-    const folderPath = `${this.progressPicturesDirectory}/${this.clientId}`;
-    const extension = payload.file.name.includes('.')
-      ? `.${payload.file.name.split('.').pop()}`
-      : '';
-    const uniqueFile = new File(
-      [payload.file],
-      `progress-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${extension}`,
-      { type: payload.file.type, lastModified: payload.file.lastModified }
-    );
-
-    this.documentService
-      .uploadFileInPath(uniqueFile, folderPath)
-      .subscribe({
-        next: () => {
-          // The upload endpoint may return a display URL (or no usable value).
-          // Persist the stable MinIO object path and generate fresh signed URLs on read.
-          const objectPath = `${folderPath}/${uniqueFile.name}`;
-          const body: SaveProgressPictureRequest = {
-            clientId: this.clientId,
-            imageUrl: objectPath,
-            weight: this.coachSettingsService.convertWeightToKg(payload.weight) ?? payload.weight,
-            date: payload.date
-          };
-
-          this.progressPicturesService
-            .createProgressPicture(body)
-            .pipe(finalize(() => (this.saving = false)))
-            .subscribe({
-              next: (created) => {
-                this.showAddModal = false;
-                this.pictureAdded.emit(created);
-
-                // Reload to get fresh URLs from DocumentService
-                this.loadPictures();
-              },
-              error: (err) => {
-                console.error('createProgressPicture failed:', err);
-                this.error =
-                  err?.error?.message ||
-                  err?.message ||
-                  'SAVE_PROGRESS_PICTURE_ERROR';
-              }
-            });
-        },
-        error: (err) => {
-          console.error('uploadFileInPath failed:', err);
-          this.saving = false;
-          this.error =
-            err?.error?.message ||
-            err?.message ||
-            'UPLOAD_PROGRESS_PICTURE_ERROR';
-        }
-      });
+    if (!this.clientId || this.saving) { if (!this.clientId) this.error='CLIENT_ID_MISSING'; return; }
+    this.saving=true; this.error=null;
+    const folderPath=`${this.progressPicturesDirectory}/${this.clientId}`;
+    const groupId=`progress-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const poses=(['FRONT','SIDE','BACK'] as const);
+    const uploads=poses.map(pose=>{const file=payload.files[pose]; const ext=file.name.includes('.')?`.${file.name.split('.').pop()}`:''; const named=new File([file],`${groupId}-${pose.toLowerCase()}${ext}`,{type:file.type,lastModified:file.lastModified}); return this.documentService.uploadFileInPath(named,folderPath).pipe(map(()=>({pose,imageUrl:`${folderPath}/${named.name}`})));});
+    forkJoin(uploads).pipe(switchMap(items=>forkJoin(items.map(item=>this.progressPicturesService.createProgressPicture({clientId:this.clientId,imageUrl:item.imageUrl,groupId,weight:this.coachSettingsService.convertWeightToKg(payload.weight)??payload.weight,date:payload.date,pose:item.pose,note:payload.note})))),finalize(()=>this.saving=false)).subscribe({next:created=>{this.showAddModal=false;created.forEach(x=>this.pictureAdded.emit(x));this.loadPictures();},error:err=>{console.error(err);this.error=err?.error?.message||err?.message||'SAVE_PROGRESS_PICTURE_ERROR';}});
   }
 
   openComparison(): void {
     this.showPicturesComparison = true;
     this.comparisonMode = 'comparison';
+    this.comparisonPose = 'FRONT';
 
     this.selectedAfterPicture = null;
     this.selectedBeforePicture = null;
@@ -233,6 +181,20 @@ export class ProgressPicturesComponent implements OnInit {
         this.sortedPictures[0] ||
         null;
     }
+  }
+
+
+  changeComparisonPose(pose: 'FRONT' | 'SIDE' | 'BACK'): void {
+    if (this.comparisonPose === pose) return;
+    this.comparisonPose = pose;
+    this.selectedBeforePicture = null;
+    this.selectedAfterPicture = null;
+    this.selectedSinglePicture = this.filteredComparisonPictures[0] || null;
+    this.comparisonSelectionError = null;
+  }
+
+  get filteredComparisonPictures(): ProgressPicture[] {
+    return this.sortedPictures.filter(p => (p.pose || 'FRONT').toUpperCase() === this.comparisonPose);
   }
 
   selectComparisonPicture(picture: ProgressPicture): void {
@@ -281,6 +243,42 @@ export class ProgressPicturesComponent implements OnInit {
     return [...this.pictures].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+  }
+
+  failedImages = new Set<string>();
+
+  get dateLocale(): string {
+    return this.translateService.currentLang?.startsWith("fr") ? "fr" : "en";
+  }
+
+  collapsedMonths = new Set<string>();
+
+  get monthGroups(): { key: string; date: string; pictures: ProgressPicture[] }[] {
+    const groups = new Map<string, { key: string; date: string; pictures: ProgressPicture[] }>();
+    for (const picture of this.sortedPictures) {
+      const key = picture.date.slice(0, 7);
+      if (!groups.has(key)) groups.set(key, { key, date: picture.date, pictures: [] });
+      groups.get(key)!.pictures.push(picture);
+    }
+    return [...groups.values()];
+  }
+
+  toggleMonth(key: string): void {
+    if (this.collapsedMonths.has(key)) this.collapsedMonths.delete(key);
+    else this.collapsedMonths.add(key);
+  }
+
+  weightChange(picture: ProgressPicture): number | null {
+    const previous = this.sortedPictures.find(p => p.date < picture.date);
+    return previous ? picture.weight - previous.weight : null;
+  }
+
+  formatChange(change: number): string {
+    return `${change > 0 ? "+" : change < 0 ? "−" : ""}${this.formatWeight(Math.abs(change))}`;
+  }
+
+  authorRole(picture: ProgressPicture): string | null {
+    return picture.addedByRole || (picture.createdBy ? (picture.createdBy === this.clientId ? "CLIENT" : "COACH") : null);
   }
 
   get picturesCount(): number {
