@@ -15,6 +15,8 @@ interface MeasurementTypeItem {
   label: string;
   unit: string;
   icon: string;
+  min: number;
+  max: number;
 }
 
 @Component({
@@ -49,6 +51,9 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   historyLimit = this.historyPageSize;
 
   showAddModal = false;
+  valueTouched = false;
+  dateTouched = false;
+  noteTouched = false;
 
   addForm = {
     value: null as number | null,
@@ -61,17 +66,17 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   measurementUnit: 'cm' | 'in' = 'cm';
 
   measurementTypes: MeasurementTypeItem[] = [
-    { key: 'BODYWEIGHT', label: 'BODYWEIGHT', unit: 'kg', icon: 'fa-weight-scale' },
-    { key: 'BMI', label: 'BMI', unit: '%', icon: 'fa-person' },
-    { key: 'BODY_FAT_INDEX', label: 'BODY_FAT_INDEX', unit: '%', icon: 'fa-person' },
-    { key: 'WAIST', label: 'WAIST', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'CHEST', label: 'CHEST', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'SHOULDERS', label: 'SHOULDERS', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'BICEPS_RIGHT', label: 'BICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'BICEPS_LEFT', label: 'BICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'QUADRICEPS_RIGHT', label: 'QUADRICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'QUADRICEPS_LEFT', label: 'QUADRICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal' },
-    { key: 'NECK', label: 'NECK', unit: 'cm', icon: 'fa-ruler-horizontal' },
+    { key: 'BODYWEIGHT', label: 'BODYWEIGHT', unit: 'kg', icon: 'fa-weight-scale', min: 20, max: 500 },
+    { key: 'BMI', label: 'BMI', unit: '', icon: 'fa-person', min: 5, max: 100 },
+    { key: 'BODY_FAT_INDEX', label: 'BODY_FAT_INDEX', unit: '%', icon: 'fa-person', min: 1, max: 70 },
+    { key: 'WAIST', label: 'WAIST', unit: 'cm', icon: 'fa-ruler-horizontal', min: 20, max: 300 },
+    { key: 'CHEST', label: 'CHEST', unit: 'cm', icon: 'fa-ruler-horizontal', min: 20, max: 300 },
+    { key: 'SHOULDERS', label: 'SHOULDERS', unit: 'cm', icon: 'fa-ruler-horizontal', min: 20, max: 300 },
+    { key: 'BICEPS_RIGHT', label: 'BICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 5, max: 100 },
+    { key: 'BICEPS_LEFT', label: 'BICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 5, max: 100 },
+    { key: 'QUADRICEPS_RIGHT', label: 'QUADRICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 10, max: 150 },
+    { key: 'QUADRICEPS_LEFT', label: 'QUADRICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 10, max: 150 },
+    { key: 'NECK', label: 'NECK', unit: 'cm', icon: 'fa-ruler-horizontal', min: 10, max: 100 },
   ];
 
   constructor(
@@ -167,9 +172,12 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
     this.addForm = {
       value: null,
-      date: new Date().toISOString().split('T')[0],
+      date: this.today,
       note: '',
     };
+    this.valueTouched = false;
+    this.dateTouched = false;
+    this.noteTouched = false;
 
     this.showAddModal = true;
   }
@@ -180,7 +188,10 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   }
 
   saveMeasurement(): void {
-    if (!this.clientId || this.addForm.value === null || this.addForm.value === undefined) {
+    this.valueTouched = true;
+    this.dateTouched = true;
+    this.noteTouched = true;
+    if (!this.clientId || !this.isAddFormValid || this.saving) {
       return;
     }
 
@@ -225,6 +236,56 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
 
   get currentType(): MeasurementTypeItem {
     return this.measurementTypes.find((type) => type.key === this.selectedType) || this.measurementTypes[0];
+  }
+
+  get today(): string {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60_000;
+    return new Date(now.getTime() - offset).toISOString().split('T')[0];
+  }
+
+  get displayRange(): { min: number; max: number } {
+    return {
+      min: this.toDisplayValue(this.currentType.min, this.currentType),
+      max: this.toDisplayValue(this.currentType.max, this.currentType),
+    };
+  }
+
+  get valueError(): string | null {
+    const value = this.addForm.value;
+    if (value === null || value === undefined) {
+      return this.translate.instant('MEASUREMENT_VALUE_REQUIRED');
+    }
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      return this.translate.instant('MEASUREMENT_VALUE_POSITIVE');
+    }
+    const storedValue = this.toStoredValue(numericValue, this.currentType);
+    if (storedValue < this.currentType.min || storedValue > this.currentType.max) {
+      return this.translate.instant('MEASUREMENT_VALUE_RANGE', {
+        min: this.formatValue(this.displayRange.min),
+        max: this.formatValue(this.displayRange.max),
+        unit: this.getDisplayUnit(this.currentType),
+      });
+    }
+    return null;
+  }
+
+  get dateError(): string | null {
+    if (!this.addForm.date) return this.translate.instant('MEASUREMENT_DATE_REQUIRED');
+    return this.addForm.date > this.today
+      ? this.translate.instant('MEASUREMENT_DATE_FUTURE')
+      : null;
+  }
+
+  get noteError(): string | null {
+    return this.addForm.note.length > 500
+      ? this.translate.instant('MEASUREMENT_NOTE_MAX')
+      : null;
+  }
+
+  get isAddFormValid(): boolean {
+    return !this.valueError && !this.dateError && !this.noteError;
   }
 
   get selectedMeasurements(): BodyMeasurement[] {

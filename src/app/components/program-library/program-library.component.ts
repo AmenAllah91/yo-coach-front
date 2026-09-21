@@ -312,7 +312,7 @@ export class ProgramLibraryComponent implements OnInit {
     this.openDropdownId = programId;
 
     if (event && programId) {
-      const button = event.target as HTMLElement;
+      const button = (event.currentTarget as HTMLElement) || (event.target as HTMLElement);
       const dropdown = button
         .closest('.dropdown')
         ?.querySelector('.dropdown-menu') as HTMLElement;

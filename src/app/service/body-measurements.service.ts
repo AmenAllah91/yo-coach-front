@@ -12,6 +12,7 @@ export interface BodyMeasurement {
   date: string;
   note?: string;
   createdBy?: string;
+  addedByRole?: 'COACH' | 'CLIENT';
   createdAt?: string;
   updatedAt?: string;
 }

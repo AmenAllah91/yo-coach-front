@@ -176,13 +176,18 @@
 
     <div class="measurement-modal-body">
       <label>
-        {{ 'VALUE' | translate }} ({{ getDisplayUnit(currentType) }})
+        {{ 'VALUE' | translate }}<ng-container *ngIf="getDisplayUnit(currentType)"> ({{ getDisplayUnit(currentType) }})</ng-container>
         <input
           type="number"
           step="0.1"
           [(ngModel)]="addForm.value"
+          [min]="displayRange.min"
+          [max]="displayRange.max"
+          (ngModelChange)="valueTouched = true"
+          (blur)="valueTouched = true"
           [placeholder]="'ENTER_VALUE' | translate"
         />
+        <small class="field-error" *ngIf="valueTouched && valueError">{{ valueError }}</small>
       </label>
 
       <label>
@@ -190,7 +195,11 @@
         <input
           type="date"
           [(ngModel)]="addForm.date"
+          [max]="today"
+          (ngModelChange)="dateTouched = true"
+          (blur)="dateTouched = true"
         />
+        <small class="field-error" *ngIf="dateTouched && dateError">{{ dateError }}</small>
       </label>
 
       <label>
@@ -198,8 +207,12 @@
         <textarea
           rows="3"
           [(ngModel)]="addForm.note"
+          maxlength="500"
+          (ngModelChange)="noteTouched = true"
+          (blur)="noteTouched = true"
           [placeholder]="'OPTIONAL_NOTE' | translate"
         ></textarea>
+        <small class="field-error" *ngIf="noteTouched && noteError">{{ noteError }}</small>
       </label>
     </div>
 
@@ -209,7 +222,7 @@
         type="button"
         class="btn-save"
         (click)="saveMeasurement()"
-        [disabled]="saving || addForm.value === null || addForm.value === undefined"
+        [disabled]="saving || !isAddFormValid"
       >
         {{ (saving ? 'SAVING' : 'SAVE_MEASUREMENT') | translate }}
       </button>

@@ -99,7 +99,7 @@
               id="add-question-button"
               class="btn questions-panel__add"
               type="button"
-              (click)="openTypeDrawer()"
+              (click)="openTypeDrawer($event)"
               [attr.aria-expanded]="showQuestionSidebar"
             >
               <span aria-hidden="true">＋</span> {{ 'ADD_QUESTION' | translate }}
@@ -120,7 +120,7 @@
           <h3>{{ 'NO_QUESTIONS_YET' | translate }}</h3>
           <p class="fb-hint">{{ 'START_FORM_BUILDING_HINT' | translate }}</p>
           <div class="question-add-anchor question-add-anchor--empty">
-            <button id="add-question-button" class="btn btn-black" type="button" (click)="openTypeDrawer()" [attr.aria-expanded]="showQuestionSidebar">
+            <button id="add-question-button" class="btn btn-black" type="button" (click)="openTypeDrawer($event)" [attr.aria-expanded]="showQuestionSidebar">
               <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -332,7 +332,7 @@
 </div><!-- /fb-root -->
 
 <ng-template #questionTypeMenu>
-  <div class="question-type-menu" *ngIf="showQuestionSidebar" role="menu" [attr.aria-label]="'ADD_QUESTION' | translate" (click)="$event.stopPropagation()">
+  <div class="question-type-menu" *ngIf="showQuestionSidebar" [class.question-type-menu--above]="questionMenuOpensAbove" [style.max-height.px]="questionMenuMaxHeight" role="menu" [attr.aria-label]="'ADD_QUESTION' | translate" (click)="$event.stopPropagation()">
     <button class="question-type-item" type="button" role="menuitem" (click)="addQuestion('input-text')">
       <span class="question-type-icon question-type-icon--text" aria-hidden="true">
         <svg viewBox="0 0 24 24" focusable="false">

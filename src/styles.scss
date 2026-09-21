@@ -395,11 +395,11 @@ body .table-wrap .action-btn i-feather {
   height: 0.9375rem !important;
 }
 
-body .col-actions .dropdown-menu,
-body .group-actions .dropdown-menu,
-body .programs-table .dropdown-menu,
-body .meals-table .dropdown-menu,
-body .table-wrap .dropdown-menu {
+body .col-actions .dropdown-menu:not(.dropdown-menu--side),
+body .group-actions .dropdown-menu:not(.dropdown-menu--side),
+body .programs-table .dropdown-menu:not(.dropdown-menu--side),
+body .meals-table .dropdown-menu:not(.dropdown-menu--side),
+body .table-wrap .dropdown-menu:not(.dropdown-menu--side) {
   position: absolute !important;
   top: calc(100% + 0.35rem) !important;
   right: 0 !important;
@@ -419,6 +419,25 @@ body .programs-table .dropdown.open .dropdown-menu,
 body .meals-table .dropdown.open .dropdown-menu,
 body .table-wrap .dropdown.open .dropdown-menu {
   display: block !important;
+}
+
+/* Lift the row that owns an open actions menu above the following rows
+   so subsequent rows/buttons never paint over the opened list. */
+body :is(
+  .programs-table,
+  .foods-table,
+  .meals-table,
+  .clients-table,
+  .plans-table,
+  .table-wrap
+) :is(
+  .program-row,
+  .food-row,
+  .client-row,
+  .table-row
+):has(.dropdown.open) {
+  position: relative !important;
+  z-index: 50 !important;
 }
 
 body .col-actions .dropdown-item,

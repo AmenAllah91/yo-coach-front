@@ -354,8 +354,18 @@
                 <h3 class="wk-day-editor__title">{{ 'DAY_NUMBER' | translate:{number: selectedDay.dayNumber || 1} }}</h3>
                 <span class="wk-day-editor__dot" *ngIf="getSelectedDayDateLabel()"></span>
                 <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel()">{{ getSelectedDayDateLabel() }}</span>
-                <span class="wk-day-editor__status" [class.is-ready]="getDayBuilderStatus(selectedDay) === 'READY'">
-                  {{ (getDayBuilderStatus(selectedDay) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_DRAFT') | translate }}
+                <span
+                  class="wk-day-editor__status"
+                  [class.is-ready]="getDayBuilderStatus(selectedDay) === 'READY'"
+                  [class.is-rest]="getDayBuilderStatus(selectedDay) === 'REST_DAY'"
+                >
+                  {{
+                    (getDayBuilderStatus(selectedDay) === 'READY'
+                      ? 'WORKOUT_READY'
+                      : getDayBuilderStatus(selectedDay) === 'REST_DAY'
+                        ? 'REST_DAY'
+                        : 'WORKOUT_EMPTY') | translate
+                  }}
                 </span>
               </div>
               <small class="wk-day-editor__week">{{ 'WEEK_NUMBER' | translate:{ number: getSelectedWeekNumber() } }}</small>
@@ -795,11 +805,12 @@
           <ng-template #wkNoExercises>
             <button type="button" class="wkex-addexercise wkex-addexercise--empty" (click)="openExerciseSelector()">
               <span class="wkex-plus">＋</span>
-              {{ 'CHOOSE_EXERCISE' | translate }}
+              {{ 'ADD_EXERCISE' | translate }}
             </button>
           </ng-template>
 
           <button
+            *ngIf="selectedDay?.workoutSessions[0]?.exercises.length"
             type="button"
             class="wkex-addexercise"
             (click)="openExerciseSelector()"

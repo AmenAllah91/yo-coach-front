@@ -11,6 +11,7 @@ import { LanguageService } from 'app/service/language.service';
 import { AuthService } from 'app/config/auth.service';
 import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-configuration-coachng',
@@ -48,6 +49,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   isChangingPassword = false;
   isDeletingAccount = false;
   showDeleteAccountModal = false;
+  showRemovePhotoModal = false;
 
   config: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
   savedConfig: CoachSettingsConfig = this.coachSettingsService.getDefaultConfig();
@@ -75,6 +77,151 @@ export class ConfigurationCoachngComponent implements OnInit {
   private savePopupTimer: any = null;
   private currentUserId = '';
 
+  private readonly supportedPublicPhotoTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ]);
+  readonly publicProfileLanguages = ['Arabic', 'English', 'French', 'German', 'Italian', 'Portuguese', 'Spanish', 'Turkish'];
+
+  instagramLink(value: string): string {
+    return value?.startsWith('@') ? `https://www.instagram.com/${value.slice(1)}/` : value;
+  }
+
+  get publicProfileValidationErrors(): Record<string, string> {
+    return this.validatePublicProfile(this.config.publicProfile);
+  }
+
+  get publicProfileHasErrors(): boolean {
+    return Object.keys(this.publicProfileValidationErrors).length > 0;
+  }
+
+  private validatePublicProfile(profile: any): Record<string, string> {
+    const errors: Record<string, string> = {};
+
+    const professionalTitle = (profile?.professionalTitle ?? '').trim();
+    if (professionalTitle && professionalTitle.length > 100) {
+      errors['professionalTitle'] = 'Professional title must be 100 characters or less.';
+    }
+    if (!professionalTitle && (profile?.professionalTitle ?? '').trim().length === 0 && (profile?.professionalTitle ?? '').length > 0) {
+      errors['professionalTitle'] = 'Professional title cannot be only spaces.';
+    }
+
+    const bio = (profile?.bio ?? '').trim();
+    if (bio.length > 500) {
+      errors['bio'] = 'Short bio must not exceed 500 characters.';
+    }
+
+    const specialties = (profile?.specialties ?? []) as string[];
+    if (specialties.some((value) => value.trim().length > 50)) {
+      errors['specialties'] = 'Each specialty must be 50 characters or less.';
+    }
+    if (specialties.length > 10) {
+      errors['specialties'] = 'Specialties must contain 10 or fewer items.';
+    }
+    const specialtySet = new Set(specialties.map((value) => value.trim().toLowerCase()));
+    if (specialties.length !== specialtySet.size) {
+      errors['specialties'] = 'Specialties must be unique.';
+    }
+
+    const experience = (profile?.experience ?? '').trim();
+    if (experience) {
+      const value = experience.toLowerCase();
+      const validExperienceOptions = new Set([
+        '< 1 year',
+        '1-2 years',
+        '3-5 years',
+        '6-10 years',
+        '10+ years',
+        '0-2 years',
+      ]);
+      const numericYearsMatch = /^\d+$/.test(value);
+      const valueAsNumber = Number(value);
+      if (!validExperienceOptions.has(value) && !numericYearsMatch) {
+        errors['experience'] = 'Experience must be a whole number from 0 to 80 years or use the provided ranges.';
+      }
+      if (numericYearsMatch && (!Number.isInteger(valueAsNumber) || valueAsNumber < 0 || valueAsNumber > 80)) {
+        errors['experience'] = 'Experience must be between 0 and 80 years.';
+      }
+    }
+
+    const certifications = (profile?.certifications ?? []) as string[];
+    if (certifications.some((value) => value.trim().length > 100)) {
+      errors['certifications'] = 'Each certification must be 100 characters or less.';
+    }
+    if (certifications.length > 10) {
+      errors['certifications'] = 'Certifications must contain 10 or fewer items.';
+    }
+    const certificationSet = new Set(certifications.map((value) => value.trim().toLowerCase()));
+    if (certifications.length !== certificationSet.size) {
+      errors['certifications'] = 'Certifications must be unique.';
+    }
+
+    const languages = (profile?.languages ?? []) as string[];
+    if (languages.length > 10) {
+      errors['languages'] = 'Languages must contain 10 or fewer items.';
+    }
+    const languageSet = new Set(languages.map((value) => value.trim().toLowerCase()));
+    if (languages.length !== languageSet.size) {
+      errors['languages'] = 'Languages must be unique.';
+    }
+    if (languages.some((value) => !this.publicProfileLanguages.includes(value))) {
+      errors['languages'] = 'Select a language from the list.';
+    }
+
+    const location = (profile?.location ?? '').trim();
+    if (location.length > 100) {
+      errors['location'] = 'Location must be 100 characters or less.';
+    }
+
+    const coachingType = (profile?.coachingType ?? '').trim();
+    if (coachingType && !['Online', 'In-person', 'Hybrid'].includes(coachingType)) {
+      errors['coachingType'] = 'Coaching type must be Online, In-person, or Hybrid.';
+    }
+
+    const instagram = (profile?.instagramUrl ?? '').trim();
+    if (instagram) {
+      if (instagram.startsWith('@')) {
+        if (!/^@[A-Za-z0-9._]{1,30}$/.test(instagram)) {
+          errors['instagramUrl'] = 'Instagram handle is invalid.';
+        }
+      } else {
+        try {
+          const url = new URL(instagram);
+          if (url.protocol !== 'https:' || !['instagram.com', 'www.instagram.com'].includes(url.hostname.toLowerCase()) || url.username || url.password) {
+            errors['instagramUrl'] = 'Instagram must be a valid https:// Instagram URL.';
+          }
+        } catch {
+          errors['instagramUrl'] = 'Instagram must be a valid https:// Instagram URL.';
+        }
+        if (instagram.length > 255) {
+          errors['instagramUrl'] = 'Instagram URL must be 255 characters or less.';
+        }
+      }
+    }
+
+    const website = (profile?.websiteUrl ?? '').trim();
+    if (website) {
+      try {
+        const url = new URL(website);
+        if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) {
+          errors['websiteUrl'] = 'Website must use http:// or https://.';
+        }
+      } catch {
+        errors['websiteUrl'] = 'Website must be a valid URL.';
+      }
+      if (website.length > 2048) {
+        errors['websiteUrl'] = 'Website cannot exceed 2048 characters.';
+      }
+    }
+
+    return errors;
+  }
+
+  private normalizeCollectionValue(value: string): string {
+    return value.trim().replace(/\s+/g, ' ');
+  }
+
   constructor(
     private coachSettingsService: CoachSettingsService,
     private languageService: LanguageService,
@@ -82,6 +229,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     private usersService: UsersService,
     private documentService: DocumentService,
     private translate: TranslateService,
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit(): void {
@@ -152,6 +300,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   onCancel(): void {
     this.config = this.clone(this.savedConfig);
+    this.refreshPublicPhoto(this.config.publicProfile.photoUrl);
     this.syncNotificationToggles();
 
     const langCode = this.languageService.languageNameToCode(
@@ -162,6 +311,11 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onSave(): void {
+    if (this.saving || !this.hasConfigChanges || this.publicProfileHasErrors) return;
+    const p = this.config.publicProfile;
+    for (const key of ['professionalTitle', 'bio', 'experience', 'location', 'coachingType', 'instagramUrl', 'websiteUrl'] as const) {
+      p[key] = (p[key] || '').trim();
+    }
     this.saving = true;
     this.showSaveSuccessPopup = false;
     this.showSaveErrorPopup = false;
@@ -320,6 +474,10 @@ export class ConfigurationCoachngComponent implements OnInit {
     return JSON.stringify(this.config) !== JSON.stringify(this.savedConfig);
   }
 
+  get publicProfileSaveDisabled(): boolean {
+    return this.saving || this.uploadingPublicPhoto || !this.hasConfigChanges || this.publicProfileHasErrors;
+  }
+
   get hasAccountChanges(): boolean {
     return ['username', 'firstName', 'lastName', 'email'].some(
       (key) => (this.profile as any)[key] !== (this.savedProfile as any)[key],
@@ -340,11 +498,33 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.passwordSuccess = '';
   }
 
-  addProfileItem(field: 'specialties' | 'certifications' | 'languages', input: HTMLInputElement): void {
-    const value = input.value.trim();
-    if (!value || this.config.publicProfile[field].includes(value)) return;
-    if (field === 'specialties' && this.config.publicProfile.specialties.length >= 6) return;
-    this.config.publicProfile[field] = [...this.config.publicProfile[field], value];
+  addProfileItem(field: 'specialties' | 'certifications' | 'languages', input: HTMLInputElement | HTMLSelectElement): void {
+    const rawValue = this.normalizeCollectionValue(input.value);
+    if (!rawValue) return;
+    if (field === 'languages' && !this.publicProfileLanguages.includes(rawValue)) return;
+
+    const maxItems = field === 'specialties' ? 10 : field === 'certifications' ? 10 : 10;
+    const maxLength = field === 'specialties' ? 50 : field === 'certifications' ? 100 : 50;
+    const duplicate = this.config.publicProfile[field].some(
+      (item) => item.trim().toLowerCase() === rawValue.toLowerCase(),
+    );
+
+    if (duplicate) {
+      input.value = '';
+      return;
+    }
+
+    if (rawValue.length > maxLength) {
+      input.value = '';
+      return;
+    }
+
+    if (this.config.publicProfile[field].length >= maxItems) {
+      input.value = '';
+      return;
+    }
+
+    this.config.publicProfile[field] = [...this.config.publicProfile[field], rawValue];
     input.value = '';
   }
 
@@ -421,8 +601,12 @@ export class ConfigurationCoachngComponent implements OnInit {
     const currentUserId = this.currentUserId || sessionStorage.getItem('userId') || '';
     input.value = '';
     if (!file || !currentUserId) return;
-    if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
-      this.showPopup('error');
+    if (!this.supportedPublicPhotoTypes.has(file.type)) {
+      this.toastr.warning('Unsupported image format.');
+      return;
+    }
+    if (file.size >= 5 * 1024 * 1024) {
+      this.toastr.warning('Image must be smaller than 5 MB.');
       return;
     }
     this.uploadingPublicPhoto = true;
@@ -431,15 +615,29 @@ export class ConfigurationCoachngComponent implements OnInit {
         this.config.publicProfile.photoUrl = photoUrl;
         this.publicPhotoDisplayUrl = photoUrl;
         this.config.publicProfile.photoVisible = true;
-        this.savedConfig.publicProfile.photoUrl = photoUrl;
-        this.savedConfig.publicProfile.photoVisible = true;
         this.uploadingPublicPhoto = false;
       },
-      error: () => { this.uploadingPublicPhoto = false; this.showPopup('error'); },
+      error: (error) => {
+        this.uploadingPublicPhoto = false;
+        if (error?.status === 413) this.toastr.warning('Image must be smaller than 5 MB.');
+        else if (String(error?.error || '').includes('400 × 400')) this.toastr.warning('Image must be at least 400 × 400 px.');
+        else this.toastr.warning('Unsupported image format.');
+      },
     });
   }
 
   removePublicPhoto(): void {
+    if (!this.config.publicProfile.photoUrl || this.uploadingPublicPhoto || this.saving) return;
+    this.showRemovePhotoModal = true;
+  }
+
+  closeRemovePhotoModal(): void {
+    this.showRemovePhotoModal = false;
+  }
+
+  confirmRemovePublicPhoto(): void {
+    if (!this.showRemovePhotoModal) return;
+    this.showRemovePhotoModal = false;
     this.config.publicProfile.photoUrl = '';
     this.publicPhotoDisplayUrl = '';
   }
@@ -486,6 +684,7 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
+    if (this.showRemovePhotoModal) this.closeRemovePhotoModal();
     if (this.showDeleteAccountModal) this.closeDeleteAccountModal();
   }
 

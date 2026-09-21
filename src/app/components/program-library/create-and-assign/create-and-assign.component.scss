@@ -4811,3 +4811,318 @@ input:checked + .slider:before {
     height: 36px;
   }
 }
+
+/* ========================================================================== */
+/* MAGIC PATTERNS — client workout editor fidelity pass                       */
+/* Reference: project-client-program-workout-editor-248.magicpatterns.app     */
+/* Keep this block LAST: the legacy file contains several older visual passes. */
+/* ========================================================================== */
+@media (min-width: 901px) {
+  /* The day card must use exactly the same first grid column as Settings and
+     the Week panel. No legacy side margins / calc-width are allowed here. */
+  .np-root .np-main > .np-card.np-card--day {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-card--day > .np-sep,
+  .np-root .np-card--day > .np-mobile-days {
+    display: none !important;
+  }
+
+  /* One clean white card. Horizontal spacing is owned by each inner section,
+     which prevents the old double-padding / negative-margin drift. */
+  .np-root .np-card--day .builder-rail {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 0 17px !important;
+    overflow: hidden !important;
+    border: 1px solid #dce3ea !important;
+    border-left: 1px solid #dce3ea !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, .055) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Day header */
+  .np-root .np-card--day .builder-rail > .wk-day-editor {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-card--day .builder-rail .wk-day-editor__head {
+    position: relative !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 91px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 18px !important;
+    margin: 0 !important;
+    padding: 18px 24px 17px !important;
+    border-bottom: 1px solid #e6ebf1 !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+  }
+
+  /* The cyan accent exists only on the selected day header in the reference. */
+  .np-root .np-card--day .builder-rail .wk-day-editor__head::before {
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 4px !important;
+    border-radius: 14px 0 0 0 !important;
+    background: #169bcf !important;
+    content: '' !important;
+  }
+
+  .np-root .wk-day-editor__identity {
+    min-width: 0 !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__titleline {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 9px !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__title {
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    color: #0f1f35 !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    line-height: 28px !important;
+    letter-spacing: -.018em !important;
+  }
+
+  /* Magic Patterns has no dot between Day and the long date. */
+  .np-root .np-card--day .wk-day-editor__dot {
+    display: none !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__date {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    color: #31465f !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 22px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__status {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    min-height: 24px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px 10px !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: #f0f3f7 !important;
+    color: #5b6c82 !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__status.is-ready {
+    background: #ecfdf5 !important;
+    color: #07875f !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__status.is-rest {
+    background: #f3f6f9 !important;
+    color: #60748b !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__week {
+    display: block !important;
+    margin: 4px 0 0 !important;
+    color: #64778f !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 18px !important;
+  }
+
+  .np-root .np-card--day .wk-day-editor__actions {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    gap: 0 !important;
+  }
+
+  .np-root .np-card--day .wk-restmark,
+  .np-root .np-card--day .wk-restmark.is-active {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 190px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    margin: 0 !important;
+    padding: 0 18px !important;
+    border: 1px solid #cad5e1 !important;
+    border-radius: 9px !important;
+    background: #fff !important;
+    color: #12233b !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .03) !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 20px !important;
+    white-space: nowrap !important;
+  }
+
+  .np-root .np-card--day .wk-restmark__icon {
+    width: 18px !important;
+    height: 18px !important;
+    color: #1d3149 !important;
+    stroke-width: 1.7 !important;
+  }
+
+  /* Not present in the Magic Patterns day header. Keep the element available
+     for later functionality but remove it from the visual layout. */
+  .np-root .np-card--day .wk-kebab {
+    display: none !important;
+  }
+
+  /* Workout name block */
+  .np-root .np-card--day .builder-rail .wk-workout-name {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 22px 24px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-card--day .builder-rail .wk-workout-name .np-label {
+    display: block !important;
+    margin: 0 0 7px !important;
+    color: #18283e !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 21px !important;
+  }
+
+  .np-root .np-card--day .builder-rail .wk-workout-name .np-input {
+    display: block !important;
+    width: 100% !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    margin: 0 !important;
+    padding: 11px 14px !important;
+    border: 1px solid #cbd7e4 !important;
+    border-radius: 9px !important;
+    background: #fff !important;
+    color: #18283e !important;
+    box-shadow: none !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 22px !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-card--day .builder-rail .wk-workout-name .np-input:focus {
+    border-color: #55b8dd !important;
+    outline: 0 !important;
+    box-shadow: 0 0 0 2px rgba(42, 169, 216, .11) !important;
+  }
+
+  /* Add description — align to the exact 24px body gutter. */
+  .np-root .np-card--day .builder-rail > .np-link,
+  .np-root .np-card--day .builder-rail > ng-container > .np-link {
+    display: inline-flex !important;
+    width: auto !important;
+    min-height: 45px !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 11px 24px 10px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #078dcb !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 22px !important;
+  }
+
+  .np-root .np-card--day .builder-rail > .np-link .np-ico,
+  .np-root .np-card--day .builder-rail > ng-container > .np-link .np-ico {
+    width: 17px !important;
+    height: 17px !important;
+    stroke-width: 1.8 !important;
+  }
+
+  /* Empty exercise state */
+  .np-root .np-card--day .builder-rail > .wkex,
+  .np-root .np-card--day .builder-rail > .wkex.mb-6 {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 12px 24px 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-card--day .wkex__heading {
+    margin: 0 0 16px !important;
+    color: #53667e !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 16px !important;
+    letter-spacing: .055em !important;
+    text-transform: uppercase !important;
+  }
+
+  .np-root .np-card--day .wkex-addexercise--empty {
+    display: flex !important;
+    width: 100% !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    margin: 0 !important;
+    padding: 0 18px !important;
+    border: 1px dashed #55bbe3 !important;
+    border-radius: 11px !important;
+    background: #f7fcfe !important;
+    color: #078dcb !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 22px !important;
+    box-sizing: border-box !important;
+  }
+
+  .np-root .np-card--day .wkex-addexercise--empty .wkex-plus {
+    font-size: 22px !important;
+    font-weight: 400 !important;
+    line-height: 1 !important;
+  }
+}

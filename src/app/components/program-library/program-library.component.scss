@@ -87,8 +87,20 @@
 .programs-table {
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  /* Keep the card rounded without `overflow: hidden`, which clips the
+     fixed-position Actions dropdown behind the following rows. */
+  > :first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+
+  > :last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
 
   .table-header {
     display: grid;
@@ -115,6 +127,8 @@
 
       &:last-child {
         border-bottom: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
       }
 
       &:hover {
@@ -2961,7 +2975,7 @@
   .programs-table--cap .col-type { display: flex !important; position: absolute; left: 64px; bottom: 11px; }
   .programs-table--cap .type-badge { min-height: 22px !important; height: 22px !important; padding: 0 7px !important; border-radius: 5px !important; font-size: 8px !important; }
   .programs-table--cap .type-badge i-feather { width: 10px !important; height: 10px !important; }
-  .programs-table--cap .col-actions { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+  .programs-table--cap .col-actions { position: absolute; right: 10px; top: 50%; margin-top: -17px; }
   .programs-table--cap .action-btn { min-width: 75px !important; height: 34px !important; padding: 0 10px !important; border-radius: 7px !important; font-size: 10px !important; }
   .pagination { background: transparent !important; border: 0 !important; }
 }
