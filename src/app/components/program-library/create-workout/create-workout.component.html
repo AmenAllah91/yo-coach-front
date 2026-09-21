@@ -46,7 +46,6 @@
               ></i-feather>
               <strong>{{ getWeekDisplayLabel(week.label) }}</strong>
               <small class="np-week-status">{{ (isWeekPublished(wi + 1) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</small>
-              <span class="np-week-range" *ngIf="getWeekDateRange(week)">{{ getWeekDateRange(week) }}</span>
               <span class="np-week-card__count">{{ getWeekReadyCount(week.days) }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</span>
             </div>
           </button>
@@ -70,7 +69,6 @@
                 </span>
                 <span class="np-day__topline">
                   <span class="np-day__title">{{ getDayDisplayTitle(d) }}</span>
-                  <span class="np-day__dateLine">{{ getDayDateLabel(d) }}</span>
                 </span>
                 <small class="np-day__meta">
                   <ng-container *ngIf="d.isRestDay || d.restDay; else exerciseCount">{{ 'REST_DAY' | translate }}</ng-container>
@@ -100,7 +98,15 @@
     <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="closeMobileStructure()" aria-label="Close weeks"></button>
 
     <main class="np-main">
-      <button type="button" class="wkex-quickchoose" (click)="openExerciseSelector()"><span class="wkex-plus">＋</span>{{ 'CHOOSE_EXERCISE' | translate }}</button>
+      <button
+        type="button"
+        class="wkex-quickchoose"
+        (click)="openExerciseSelector()"
+        [attr.aria-label]="'CHOOSE_EXERCISE' | translate"
+      >
+        <span class="wkex-plus" aria-hidden="true">＋</span>
+        {{ 'CHOOSE_EXERCISE' | translate }}
+      </button>
       <div class="np-pagehead np-pagehead--desktop-only">
         <button type="button" class="np-back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
           <svg viewBox="0 0 24 24" class="np-ico">
@@ -209,7 +215,7 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="getWeekDateRange(workoutWeeks[getSelectedWeekNumber() - 1])" [saving]="savingDraft" [savedAt]="savedAt" [error]="saveError" [narrow]="showExerciseSelector" (save)="savePlan()" (publish)="publishSelectedWeek()"></app-workout-week-panel>
+      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="''" [saving]="savingDraft" [savedAt]="savedAt" [error]="saveError" [narrow]="showExerciseSelector" (save)="savePlan()" (publish)="publishSelectedWeek()"></app-workout-week-panel>
 
       <section class="np-card np-card--day">
 
@@ -280,10 +286,17 @@
             <div class="wk-day-editor__identity">
               <div class="wk-day-editor__titleline">
                 <h3 class="wk-day-editor__title">{{ getDayDisplayTitle(selectedDay) }}</h3>
-                <span class="wk-day-editor__dot" *ngIf="getSelectedDayDateLabel()"></span>
-                <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel()">{{ getSelectedDayDateLabel() }}</span>
-                <span class="wk-day-editor__status" [class.is-ready]="getDayBuilderStatus(selectedDay) === 'READY'">
-                  {{ (getDayBuilderStatus(selectedDay) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_DRAFT') | translate }}
+                <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel() as selectedDayDate">{{ selectedDayDate }}</span>
+                <span
+                  class="wk-day-editor__status"
+                  [class.is-ready]="getDayBuilderStatus(selectedDay) === 'READY'"
+                  [class.is-rest]="getDayBuilderStatus(selectedDay) === 'REST_DAY'"
+                >
+                  {{ (getDayBuilderStatus(selectedDay) === 'REST_DAY'
+                    ? 'REST_DAY'
+                    : getDayBuilderStatus(selectedDay) === 'READY'
+                      ? 'WORKOUT_READY'
+                      : 'WORKOUT_EMPTY') | translate }}
                 </span>
               </div>
               <small class="wk-day-editor__week">{{ 'WEEK_NUMBER' | translate:{ number: getSelectedWeekNumber() } }}</small>
@@ -397,9 +410,7 @@
         <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
           <h3 class="wkex__heading">{{ 'EXERCISES' | translate }} {{ selectedDay ? getDayExerciseCount(selectedDay) : 0 }}</h3>
 
-          <ng-container
-            *ngIf="selectedDay?.workoutSessions[0]?.exercises.length; else wkNoExercises"
-          >
+          <ng-container *ngIf="selectedDay?.workoutSessions[0]?.exercises.length">
             <div class="wkex__stack" cdkDropList (cdkDropListDropped)="onDropExercise($event)">
               <ng-container
                 *ngFor="
@@ -695,13 +706,6 @@
               </ng-container>
             </div>
           </ng-container>
-
-          <ng-template #wkNoExercises>
-            <button type="button" class="wkex-addexercise wkex-addexercise--empty" (click)="openExerciseSelector()">
-              <span class="wkex-plus">＋</span>
-              {{ 'CHOOSE_EXERCISE' | translate }}
-            </button>
-          </ng-template>
 
           <button type="button" class="wkex-addexercise" (click)="openExerciseSelector()">
             <span class="wkex-plus">＋</span>

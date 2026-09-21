@@ -11,7 +11,7 @@ h1 { max-width: 520px; margin: 0 auto 9px; font-size: 20px; line-height: 1.4; te
 .coach-name { margin-bottom: 24px; text-align: center; color: #7c8799; font-size: 13px; }
 form { max-width: 590px; margin: 0 auto; }
 label:not(.terms-row) { display: block; margin: 0 0 7px; font-size: 13px; font-weight: 600; }
-input[type='text'], input[type='email'], textarea { width: 100%; border: 1px solid #d6dce5; border-radius: 5px; padding: 10px 11px; outline: none; font: inherit; margin-bottom: 15px; }
+input[type='text'], input[type='email'], textarea { display: block; width: 100%; border: 1px solid #d6dce5; border-radius: 5px; padding: 10px 11px; outline: none; font: inherit; margin-bottom: 15px; }
 input[type='text'], input[type='email'] { height: 42px; }
 textarea { resize: vertical; min-height: 84px; }
 input:focus, textarea:focus { border-color: $brand-blue; box-shadow: 0 0 0 3px rgba(68, 180, 223, .1); }
@@ -48,7 +48,7 @@ footer strong { color: $brand-blue; }
 }
 
 .field-error {
-  margin-top: 5px;
+  margin: -10px 0 15px;
   color: #dc2626;
   font-size: 12px;
 }

@@ -83,6 +83,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   activeTab: Tab = 'form';
   showPreview = false;
   showQuestionSidebar = false;
+  questionMenuOpensAbove = false;
+  questionMenuMaxHeight = 430;
   showInSignup = false;
   showValidationSummary = false;
   validationIssues: CheckInValidationIssue[] = [];
@@ -292,7 +294,19 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.showPreview = false;
   }
 
-  openTypeDrawer(): void {
+  openTypeDrawer(event: MouseEvent): void {
+    const button = event.currentTarget as HTMLElement;
+    const bounds = button.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const menuHeight = 360;
+    const gap = 8;
+    const edge = 8;
+    const spaceAbove = bounds.top - gap - edge;
+    const spaceBelow = viewportHeight - bounds.bottom - gap - edge;
+
+    this.questionMenuOpensAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+    this.questionMenuMaxHeight = Math.max(0, Math.min(430,
+      this.questionMenuOpensAbove ? spaceAbove : spaceBelow));
     this.showQuestionSidebar = true;
   }
 

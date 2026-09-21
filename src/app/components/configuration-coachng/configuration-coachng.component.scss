@@ -1169,6 +1169,14 @@ $lg: 768px;
   &:disabled { opacity: .6; cursor: not-allowed; }
 }
 
+.remove-photo-modal {
+  .delete-account-modal__icon { background: #fef3c7; color: #b45309; font-size: 1.7rem; font-weight: 700; }
+  .delete-account-modal__warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+  .delete-account-modal__warning span { background: #f59e0b; }
+  .delete-account-modal__confirm { background: #f59e0b; border-color: #f59e0b; color: #111827; }
+  .delete-account-modal__confirm:hover:not(:disabled) { background: #d97706; border-color: #d97706; }
+}
+
 @keyframes delete-modal-fade-in { from { opacity: 0; } }
 @keyframes delete-modal-slide-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
 
