@@ -21,25 +21,25 @@
       <h2>{{ 'ACCOUNT' | translate }}</h2>
       <div class="cs-header__actions">
         <span class="unsaved-label" *ngIf="hasAccountChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
-        <button class="btn btn--outline" type="button" [disabled]="!hasAccountChanges" (click)="cancelProfile()">{{ 'CANCEL' | translate }}</button>
-        <button class="btn btn--save-dark" type="button" [disabled]="!hasAccountChanges" (click)="saveProfile()">{{ 'SAVE_CHANGES' | translate }}</button>
+        <button class="btn btn--outline" type="button" [disabled]="isSavingAccount || !hasAccountChanges" (click)="cancelProfile()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="accountSaveDisabled" (click)="saveProfile()">{{ (isSavingAccount ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
       </div>
     </div>
     <div class="settings-card profile-card">
       <div class="form-row">
         <label for="profileUsername">{{ 'USERNAME' | translate }}</label>
-        <input id="profileUsername" type="text" [(ngModel)]="profile.username" />
+        <div class="field-control"><input id="profileUsername" type="text" autocomplete="username" [(ngModel)]="profile.username" (ngModelChange)="clearAccountServerError('username')" [attr.aria-invalid]="!!accountValidationErrors.username" aria-describedby="profileUsernameError" /><div id="profileUsernameError" class="field-error" *ngIf="accountValidationErrors.username">{{ accountValidationErrors.username }}</div></div>
       </div>
       <div class="form-row form-row--name">
         <label>{{ 'NAME' | translate }}</label>
         <div class="stacked-inputs">
-          <input type="text" [placeholder]="'FIRST_NAME' | translate" [(ngModel)]="profile.firstName" />
-          <input type="text" [placeholder]="'LAST_NAME' | translate" [(ngModel)]="profile.lastName" />
+          <div><input type="text" autocomplete="given-name" [placeholder]="'FIRST_NAME' | translate" [(ngModel)]="profile.firstName" [attr.aria-invalid]="!!accountValidationErrors.firstName" /><div class="field-error" *ngIf="accountValidationErrors.firstName">{{ accountValidationErrors.firstName }}</div></div>
+          <div><input type="text" autocomplete="family-name" [placeholder]="'LAST_NAME' | translate" [(ngModel)]="profile.lastName" [attr.aria-invalid]="!!accountValidationErrors.lastName" /><div class="field-error" *ngIf="accountValidationErrors.lastName">{{ accountValidationErrors.lastName }}</div></div>
         </div>
       </div>
       <div class="form-row">
         <label for="profileEmail">{{ 'EMAIL_ADDRESS' | translate }}</label>
-        <input id="profileEmail" type="email" [(ngModel)]="profile.email" />
+        <div class="field-control"><input id="profileEmail" type="email" autocomplete="email" [(ngModel)]="profile.email" (ngModelChange)="clearAccountServerError('email')" [attr.aria-invalid]="!!accountValidationErrors.email" aria-describedby="profileEmailError" /><div id="profileEmailError" class="field-error" *ngIf="accountValidationErrors.email">{{ accountValidationErrors.email }}</div></div>
       </div>
     </div>
 
@@ -115,14 +115,14 @@
       <div class="cs-header__actions">
         <span class="unsaved-label" *ngIf="hasPasswordChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
         <button class="btn btn--outline" type="button" [disabled]="isChangingPassword || !hasPasswordChanges" (click)="cancelPassword()">{{ 'CANCEL' | translate }}</button>
-        <button class="btn btn--save-dark" type="button" [disabled]="isChangingPassword || !hasPasswordChanges" (click)="changePassword()">{{ (isChangingPassword ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="passwordSaveDisabled" (click)="changePassword()">{{ (isChangingPassword ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
       </div>
     </div>
     <div class="settings-card password-card">
-      <div class="form-row"><label for="currentPassword">{{ 'CURRENT_PASSWORD' | translate }}</label><input id="currentPassword" type="password" autocomplete="current-password" [(ngModel)]="passwordFormModel.oldPassword" /></div>
+      <div class="form-row"><label for="currentPassword">{{ 'CURRENT_PASSWORD' | translate }}</label><div class="field-control"><div class="password-input"><input id="currentPassword" [type]="showCurrentPassword ? 'text' : 'password'" autocomplete="current-password" [(ngModel)]="passwordFormModel.oldPassword" (ngModelChange)="onPasswordInput('oldPassword')" (blur)="passwordFieldTouched.oldPassword = true" [attr.aria-invalid]="(passwordFieldTouched.oldPassword || !!currentPasswordServerError) && !!passwordValidationErrors.oldPassword"/><button type="button" (click)="showCurrentPassword = !showCurrentPassword" [attr.aria-label]="showCurrentPassword ? ('HIDE_PASSWORD' | translate) : ('SHOW_PASSWORD' | translate)"><i class="far" [class.fa-eye]="!showCurrentPassword" [class.fa-eye-slash]="showCurrentPassword"></i></button></div><div class="field-error" *ngIf="(passwordFieldTouched.oldPassword || currentPasswordServerError) && passwordValidationErrors.oldPassword">{{ passwordValidationErrors.oldPassword }}</div></div></div>
       <div class="password-grid">
-        <div class="form-row"><label for="newPassword">{{ 'NEW_PASSWORD' | translate }}</label><input id="newPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.newPassword" /></div>
-        <div class="form-row"><label for="confirmPassword">{{ 'CONFIRM_NEW_PASSWORD' | translate }}</label><input id="confirmPassword" type="password" autocomplete="new-password" [(ngModel)]="passwordFormModel.confirmPassword" /></div>
+        <div class="form-row"><label for="newPassword">{{ 'NEW_PASSWORD' | translate }}</label><div class="field-control"><div class="password-input"><input id="newPassword" [type]="showNewPassword ? 'text' : 'password'" autocomplete="new-password" [(ngModel)]="passwordFormModel.newPassword" (ngModelChange)="onPasswordInput('newPassword')" (blur)="passwordFieldTouched.newPassword = true" [attr.aria-invalid]="passwordFieldTouched.newPassword && !!passwordValidationErrors.newPassword"/><button type="button" (click)="showNewPassword = !showNewPassword" [attr.aria-label]="showNewPassword ? ('HIDE_PASSWORD' | translate) : ('SHOW_PASSWORD' | translate)"><i class="far" [class.fa-eye]="!showNewPassword" [class.fa-eye-slash]="showNewPassword"></i></button></div><small class="password-hint">{{ 'PASSWORD_AT_LEAST_10' | translate }}</small><div class="field-error" *ngIf="passwordFieldTouched.newPassword && passwordValidationErrors.newPassword">{{ passwordValidationErrors.newPassword }}</div></div></div>
+        <div class="form-row"><label for="confirmPassword">{{ 'CONFIRM_NEW_PASSWORD' | translate }}</label><div class="field-control"><div class="password-input"><input id="confirmPassword" [type]="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" [(ngModel)]="passwordFormModel.confirmPassword" (ngModelChange)="onPasswordInput('confirmPassword')" (blur)="passwordFieldTouched.confirmPassword = true" [attr.aria-invalid]="passwordFieldTouched.confirmPassword && !!passwordValidationErrors.confirmPassword"/><button type="button" (click)="showConfirmPassword = !showConfirmPassword" [attr.aria-label]="showConfirmPassword ? ('HIDE_PASSWORD' | translate) : ('SHOW_PASSWORD' | translate)"><i class="far" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i></button></div><div class="field-error" *ngIf="passwordFieldTouched.confirmPassword && passwordValidationErrors.confirmPassword">{{ passwordValidationErrors.confirmPassword }}</div></div></div>
       </div>
       <p class="form-message form-message--error" *ngIf="passwordError">{{ passwordError }}</p>
       <p class="form-message form-message--success" *ngIf="passwordSuccess">{{ passwordSuccess }}</p>
@@ -190,7 +190,7 @@
       <div class="cs-header__actions">
         <span class="unsaved-label" *ngIf="hasConfigChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
         <button class="btn btn--outline" type="button" [disabled]="saving || loading || !hasConfigChanges" (click)="onCancel()">{{ 'COACH_SETTINGS_CANCEL' | translate }}</button>
-        <button class="btn btn--save-dark" type="button" [disabled]="saving || loading || !hasConfigChanges" (click)="onSave()">{{ saving ? ('COACH_SETTINGS_SAVING' | translate) : ('COACH_SETTINGS_SAVE_CHANGES' | translate) }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="preferencesSaveDisabled" (click)="onSave()">{{ saving ? ('COACH_SETTINGS_SAVING' | translate) : ('COACH_SETTINGS_SAVE_CHANGES' | translate) }}</button>
       </div>
     </div>
   <div class="section-card">
@@ -281,16 +281,8 @@
               <label class="select-label">
                 {{ 'COACH_SETTINGS_MEALS_SHOWN_BY_DEFAULT' | translate }}
               </label>
-              <select [(ngModel)]="config.nutrition.defaultMeals" class="select select--sm">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-              </select>
+              <input type="number" min="1" max="10" step="1" inputmode="numeric" class="select select--sm numeric-preference-input" [(ngModel)]="config.nutrition.defaultMeals" (keydown)="onPreferenceNumberKeydown($event)" [attr.aria-invalid]="!!preferenceNumberError(config.nutrition.defaultMeals, 1, 10, config.nutrition.autoCreateMeals)" />
+              <div class="preference-field-error" *ngIf="preferenceNumberError(config.nutrition.defaultMeals, 1, 10, config.nutrition.autoCreateMeals) as error">{{ error }}</div>
             </div>
 
             <div class="toggle-row">
@@ -360,56 +352,32 @@
             <label class="select-label">
               {{ 'COACH_SETTINGS_WORKOUT_SETS' | translate }}
             </label>
-            <select [(ngModel)]="config.workout.workoutSets" class="select">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-            </select>
+            <input type="number" min="1" max="20" step="1" inputmode="numeric" class="select numeric-preference-input" [(ngModel)]="config.workout.workoutSets" (keydown)="onPreferenceNumberKeydown($event)" [attr.aria-invalid]="!!preferenceNumberError(config.workout.workoutSets, 1, 20, config.workout.autoFillDefaults)" />
+            <div class="preference-field-error" *ngIf="preferenceNumberError(config.workout.workoutSets, 1, 20, config.workout.autoFillDefaults) as error">{{ error }}</div>
           </div>
 
           <div class="select-group">
             <label class="select-label">
               {{ 'COACH_SETTINGS_WORKOUT_REPS' | translate }}
             </label>
-            <select [(ngModel)]="config.workout.workoutReps" class="select">
-              <option value="6">6</option>
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="12">12</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-            </select>
+            <input type="number" min="1" max="100" step="1" inputmode="numeric" class="select numeric-preference-input" [(ngModel)]="config.workout.workoutReps" (keydown)="onPreferenceNumberKeydown($event)" [attr.aria-invalid]="!!preferenceNumberError(config.workout.workoutReps, 1, 100, config.workout.autoFillDefaults)" />
+            <div class="preference-field-error" *ngIf="preferenceNumberError(config.workout.workoutReps, 1, 100, config.workout.autoFillDefaults) as error">{{ error }}</div>
           </div>
 
           <div class="select-group">
             <label class="select-label">
               {{ 'COACH_SETTINGS_CARDIO_SETS' | translate }}
             </label>
-            <select [(ngModel)]="config.workout.cardioSets" class="select">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
+            <input type="number" min="1" max="20" step="1" inputmode="numeric" class="select numeric-preference-input" [(ngModel)]="config.workout.cardioSets" (keydown)="onPreferenceNumberKeydown($event)" [attr.aria-invalid]="!!preferenceNumberError(config.workout.cardioSets, 1, 20, config.workout.autoFillDefaults)" />
+            <div class="preference-field-error" *ngIf="preferenceNumberError(config.workout.cardioSets, 1, 20, config.workout.autoFillDefaults) as error">{{ error }}</div>
           </div>
 
           <div class="select-group">
             <label class="select-label">
               {{ 'COACH_SETTINGS_CARDIO_MINUTES' | translate }}
             </label>
-            <select [(ngModel)]="config.workout.cardioMinutes" class="select">
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
-              <option value="45">45</option>
-              <option value="60">60</option>
-            </select>
+            <input type="number" min="1" max="300" step="1" inputmode="numeric" class="select numeric-preference-input" [(ngModel)]="config.workout.cardioMinutes" (keydown)="onPreferenceNumberKeydown($event)" [attr.aria-invalid]="!!preferenceNumberError(config.workout.cardioMinutes, 1, 300, config.workout.autoFillDefaults)" />
+            <div class="preference-field-error" *ngIf="preferenceNumberError(config.workout.cardioMinutes, 1, 300, config.workout.autoFillDefaults) as error">{{ error }}</div>
           </div>
         </div>
 
@@ -932,7 +900,7 @@
     <div class="coach-settings-toast__icon">✓</div>
     <div>
       <strong>{{ 'COACH_SETTINGS_SAVED_SUCCESS_TITLE' | translate }}</strong>
-      <p>{{ activeTab === 'publicProfile' ? 'Profile updated successfully.' : ('COACH_SETTINGS_SAVED_SUCCESS_MESSAGE' | translate) }}</p>
+      <p>{{ activeTab === 'account' ? ('ACCOUNT_CHANGES_SAVED' | translate) : (activeTab === 'publicProfile' ? 'Profile updated successfully.' : ('COACH_SETTINGS_SAVED_SUCCESS_MESSAGE' | translate)) }}</p>
     </div>
   </div>
 
@@ -943,7 +911,7 @@
     <div class="coach-settings-toast__icon">!</div>
     <div>
       <strong>{{ 'COACH_SETTINGS_SAVED_ERROR_TITLE' | translate }}</strong>
-      <p>{{ activeTab === 'publicProfile' ? 'Unable to update your profile. Please try again.' : ('COACH_SETTINGS_SAVED_ERROR_MESSAGE' | translate) }}</p>
+      <p>{{ activeTab === 'account' ? ('ACCOUNT_SAVE_ERROR' | translate) : (activeTab === 'publicProfile' ? 'Unable to update your profile. Please try again.' : ('COACH_SETTINGS_SAVED_ERROR_MESSAGE' | translate)) }}</p>
     </div>
   </div>
 </div>

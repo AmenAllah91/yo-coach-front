@@ -449,13 +449,13 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
           programName: plan.name,
           programType: 'Nutrition Program',
           status: mealDay.status ?? this.calculateStatus(dateStr),
-          mealCount: mealDay.meals?.length || 0,
+          mealCount: this.clientVisibleMeals(mealDay.meals || [], mealDay.clientMealLogs || []).length,
           totalProtein: totals.proteinG || 0,
           totalCarbs: totals.carbsG || 0,
           totalFat: totals.fatG || 0,
           totalCalories: totals.calories || 0,
           dayTargets: totals,
-          meals: this.mapMeals(mealDay.meals || []),
+          meals: this.mapMeals(mealDay.meals || [], mealDay.clientMealLogs || []),
           hunger: mealDay.hunger || '',
           energy: mealDay.energy || '',
           digestion: mealDay.digestion || '',
@@ -528,8 +528,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     });
   }
 
-  private mapMeals(meals: any[]): Meal[] {
-    return meals.map((meal) => ({
+  private mapMeals(meals: any[], logs: any[] = []): Meal[] {
+    return this.clientVisibleMeals(meals, logs).map((meal) => ({
       id: meal.id,
       name: meal.name,
       mealType: meal.mealType || '',
@@ -568,6 +568,20 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         calories: 0,
       },
     }));
+  }
+
+  private clientVisibleMeals(meals: any[], logs: any[] = []): any[] {
+    return meals.filter((meal) => {
+      const untouchedName = !String(meal?.name || '').trim() || /^meal\s+\d+$/i.test(String(meal.name).trim());
+      const hasContent = Boolean(
+        (meal?.foods || []).length || meal?.template || meal?.draft || meal?.coverImage ||
+        meal?.totalTimeMinutes || (meal?.directions || []).some((step: string) => step?.trim()) ||
+        (meal?.tags || []).length || meal?.note?.trim() || meal?.photoPath || meal?.photoUrl ||
+        meal?.mealTargets && Object.values(meal.mealTargets).some((value) => Number(value) > 0) ||
+        logs.some((log) => log?.mealId === meal?.id)
+      );
+      return !untouchedName || hasContent;
+    });
   }
 
   isRecipeMeal(meal: Meal): boolean {
@@ -1378,13 +1392,13 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
             const totals = updatedDay.dayTargets || {};
             const mappedDay: NutritionDay = {
               ...this.selectedDay!,
-              mealCount: updatedDay.meals?.length || 0,
+              mealCount: this.clientVisibleMeals(updatedDay.meals || [], updatedDay.clientMealLogs || []).length,
               totalProtein: totals.proteinG || 0,
               totalCarbs: totals.carbsG || 0,
               totalFat: totals.fatG || 0,
               totalCalories: totals.calories || 0,
               dayTargets: totals,
-              meals: this.mapMeals(updatedDay.meals || []),
+              meals: this.mapMeals(updatedDay.meals || [], updatedDay.clientMealLogs || []),
             };
 
             this.selectedDay = mappedDay;
