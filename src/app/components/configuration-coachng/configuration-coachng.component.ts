@@ -47,6 +47,17 @@ export class ConfigurationCoachngComponent implements OnInit {
   passwordError = '';
   passwordSuccess = '';
   isChangingPassword = false;
+  showCurrentPassword = false;
+  showNewPassword = false;
+  showConfirmPassword = false;
+  currentPasswordServerError = '';
+  passwordFieldTouched = {
+    oldPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  };
+  isSavingAccount = false;
+  accountServerErrors: Partial<Record<'username' | 'email', string>> = {};
   isDeletingAccount = false;
   showDeleteAccountModal = false;
   showRemovePhotoModal = false;
@@ -311,7 +322,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onSave(): void {
-    if (this.saving || !this.hasConfigChanges || this.publicProfileHasErrors) return;
+    if (this.saving || !this.hasConfigChanges || this.publicProfileHasErrors || this.preferencesHaveErrors) return;
     const p = this.config.publicProfile;
     for (const key of ['professionalTitle', 'bio', 'experience', 'location', 'coachingType', 'instagramUrl', 'websiteUrl'] as const) {
       p[key] = (p[key] || '').trim();
@@ -322,7 +333,26 @@ export class ConfigurationCoachngComponent implements OnInit {
 
     console.log('[COACH SETTINGS] Saving...', this.config);
 
-    this.coachSettingsService.saveConfig(this.config).subscribe({
+    const payload = this.clone(this.config);
+    if (!payload.nutrition.autoCreateMeals && this.preferenceNumberError(payload.nutrition.defaultMeals, 1, 10)) {
+      payload.nutrition.defaultMeals = this.savedConfig.nutrition.defaultMeals;
+    }
+    if (!payload.workout.autoFillDefaults) {
+      if (this.preferenceNumberError(payload.workout.workoutSets, 1, 20)) {
+        payload.workout.workoutSets = this.savedConfig.workout.workoutSets;
+      }
+      if (this.preferenceNumberError(payload.workout.workoutReps, 1, 100)) {
+        payload.workout.workoutReps = this.savedConfig.workout.workoutReps;
+      }
+      if (this.preferenceNumberError(payload.workout.cardioSets, 1, 20)) {
+        payload.workout.cardioSets = this.savedConfig.workout.cardioSets;
+      }
+      if (this.preferenceNumberError(payload.workout.cardioMinutes, 1, 300)) {
+        payload.workout.cardioMinutes = this.savedConfig.workout.cardioMinutes;
+      }
+    }
+
+    this.coachSettingsService.saveConfig(payload).subscribe({
       next: (saved) => {
         console.log('[COACH SETTINGS] Saved successfully', saved);
 
@@ -480,22 +510,131 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   get hasAccountChanges(): boolean {
     return ['username', 'firstName', 'lastName', 'email'].some(
-      (key) => (this.profile as any)[key] !== (this.savedProfile as any)[key],
+      (key) => String((this.profile as any)[key] ?? '').trim() !== String((this.savedProfile as any)[key] ?? '').trim(),
     );
+  }
+
+  onPreferenceNumberKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const allowedKeys = new Set([
+      'Backspace', 'Delete', 'Tab', 'Enter', 'Escape',
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End',
+    ]);
+    if (allowedKeys.has(event.key) || /^\d$/.test(event.key)) return;
+    event.preventDefault();
+  }
+
+  preferenceNumberError(value: unknown, min: number, max: number, enabled = true): string {
+    const normalized = String(value ?? '').trim();
+    if (!enabled && !normalized) return '';
+    const parsed = Number(normalized);
+    if (!/^\d+$/.test(normalized) || !Number.isInteger(parsed) || parsed < min || parsed > max) {
+      return this.translate.instant('COACH_SETTINGS_NUMBER_RANGE_ERROR', { min, max });
+    }
+    return '';
+  }
+
+  get preferencesHaveErrors(): boolean {
+    const nutrition = this.config.nutrition;
+    const workout = this.config.workout;
+    return Boolean(
+      this.preferenceNumberError(nutrition.defaultMeals, 1, 10, nutrition.autoCreateMeals) ||
+      this.preferenceNumberError(workout.workoutSets, 1, 20, workout.autoFillDefaults) ||
+      this.preferenceNumberError(workout.workoutReps, 1, 100, workout.autoFillDefaults) ||
+      this.preferenceNumberError(workout.cardioSets, 1, 20, workout.autoFillDefaults) ||
+      this.preferenceNumberError(workout.cardioMinutes, 1, 300, workout.autoFillDefaults)
+    );
+  }
+
+  get preferencesSaveDisabled(): boolean {
+    return this.saving || this.loading || !this.hasConfigChanges || this.preferencesHaveErrors || this.publicProfileHasErrors;
+  }
+
+  get accountValidationErrors(): Partial<Record<'username' | 'firstName' | 'lastName' | 'email', string>> {
+    const errors: Partial<Record<'username' | 'firstName' | 'lastName' | 'email', string>> = {};
+    const username = this.profile.username.trim();
+    const firstName = this.profile.firstName.trim();
+    const lastName = this.profile.lastName.trim();
+    const email = this.profile.email.trim();
+
+    if (!username) errors.username = this.translate.instant('ACCOUNT_USERNAME_REQUIRED');
+    else if (username.length < 3) errors.username = this.translate.instant('ACCOUNT_USERNAME_MIN_LENGTH');
+    else if (username.length > 50) errors.username = this.translate.instant('ACCOUNT_USERNAME_MAX_LENGTH');
+    else if (!/^[A-Za-z0-9._-]+$/.test(username)) errors.username = this.translate.instant('ACCOUNT_USERNAME_INVALID');
+
+    if (!firstName) errors.firstName = this.translate.instant('ACCOUNT_FIRST_NAME_REQUIRED');
+    else if (firstName.length > 100) errors.firstName = this.translate.instant('ACCOUNT_FIRST_NAME_MAX_LENGTH');
+
+    if (!lastName) errors.lastName = this.translate.instant('ACCOUNT_LAST_NAME_REQUIRED');
+    else if (lastName.length > 100) errors.lastName = this.translate.instant('ACCOUNT_LAST_NAME_MAX_LENGTH');
+
+    if (!email) errors.email = this.translate.instant('ACCOUNT_EMAIL_REQUIRED');
+    else if (email.length > 254) errors.email = this.translate.instant('ACCOUNT_EMAIL_MAX_LENGTH');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = this.translate.instant('ACCOUNT_EMAIL_INVALID');
+
+    return { ...errors, ...this.accountServerErrors };
+  }
+
+  get accountSaveDisabled(): boolean {
+    return this.isSavingAccount || !this.hasAccountChanges || Object.keys(this.accountValidationErrors).length > 0;
   }
 
   get hasPasswordChanges(): boolean {
     return Object.values(this.passwordFormModel).some((value) => Boolean(value));
   }
 
+  get passwordValidationErrors(): Partial<Record<'oldPassword' | 'newPassword' | 'confirmPassword', string>> {
+    const errors: Partial<Record<'oldPassword' | 'newPassword' | 'confirmPassword', string>> = {};
+    const { oldPassword, newPassword, confirmPassword } = this.passwordFormModel;
+    const commonPasswords = new Set(['password', 'password123', '12345678', '123456789', '1234567890', 'qwerty123', 'azerty123']);
+
+    if (!oldPassword) errors.oldPassword = this.translate.instant('PASSWORD_CURRENT_REQUIRED');
+    if (this.currentPasswordServerError) errors.oldPassword = this.currentPasswordServerError;
+
+    if (!newPassword) errors.newPassword = this.translate.instant('PASSWORD_NEW_REQUIRED');
+    else if (newPassword.length < 10) errors.newPassword = this.translate.instant('PASSWORD_MIN_LENGTH_10');
+    else if (newPassword.length > 128) errors.newPassword = this.translate.instant('PASSWORD_MAX_LENGTH_128');
+    else if (newPassword === oldPassword) errors.newPassword = this.translate.instant('PASSWORD_MUST_DIFFER');
+    else if (commonPasswords.has(newPassword.toLowerCase())) errors.newPassword = this.translate.instant('PASSWORD_TOO_COMMON');
+
+    if (!confirmPassword) errors.confirmPassword = this.translate.instant('PASSWORD_CONFIRM_REQUIRED');
+    else if (confirmPassword !== newPassword) errors.confirmPassword = this.translate.instant('PASSWORDS_DO_NOT_MATCH');
+
+    return errors;
+  }
+
+  get passwordSaveDisabled(): boolean {
+    return this.isChangingPassword || Object.keys(this.passwordValidationErrors).length > 0;
+  }
+
   cancelProfile(): void {
     this.profile = { ...this.savedProfile };
+    this.accountServerErrors = {};
+  }
+
+  clearAccountServerError(field: 'username' | 'email'): void {
+    if (!this.accountServerErrors[field]) return;
+    const { [field]: _removed, ...remaining } = this.accountServerErrors;
+    this.accountServerErrors = remaining;
   }
 
   cancelPassword(): void {
     this.passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
     this.passwordError = '';
     this.passwordSuccess = '';
+    this.currentPasswordServerError = '';
+    this.passwordFieldTouched = {
+      oldPassword: false,
+      newPassword: false,
+      confirmPassword: false,
+    };
+  }
+
+  onPasswordInput(field: 'oldPassword' | 'newPassword' | 'confirmPassword'): void {
+    this.passwordFieldTouched[field] = true;
+    this.passwordError = '';
+    this.passwordSuccess = '';
+    if (field === 'oldPassword') this.currentPasswordServerError = '';
   }
 
   addProfileItem(field: 'specialties' | 'certifications' | 'languages', input: HTMLInputElement | HTMLSelectElement): void {
@@ -545,48 +684,73 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   changePassword(): void {
+    if (this.passwordSaveDisabled) return;
     this.passwordError = '';
     this.passwordSuccess = '';
-    if (!this.passwordFormModel.oldPassword || !this.passwordFormModel.newPassword || !this.passwordFormModel.confirmPassword) {
-      this.passwordError = 'All fields are required.';
-      return;
-    }
-    if (this.passwordFormModel.newPassword !== this.passwordFormModel.confirmPassword) {
-      this.passwordError = 'Password confirmation does not match.';
-      return;
-    }
+    this.currentPasswordServerError = '';
     this.isChangingPassword = true;
     this.usersService.updateMyPassword(this.passwordFormModel).subscribe({
       next: () => {
         this.isChangingPassword = false;
-        this.passwordSuccess = 'Password updated successfully.';
+        this.passwordSuccess = this.translate.instant('PASSWORD_CHANGED_SUCCESSFULLY');
         this.passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
+        this.passwordFieldTouched = {
+          oldPassword: false,
+          newPassword: false,
+          confirmPassword: false,
+        };
       },
-      error: () => {
+      error: (error) => {
         this.isChangingPassword = false;
-        this.passwordError = 'Unable to update password.';
+        const details = JSON.stringify(error?.error ?? error ?? '').toLowerCase();
+        if (details.includes('current password is incorrect')) {
+          this.currentPasswordServerError = this.translate.instant('PASSWORD_CURRENT_INCORRECT');
+        } else {
+          this.passwordError = this.translate.instant('PASSWORD_CHANGE_ERROR');
+        }
       },
     });
   }
 
   saveProfile(): void {
     const currentUserId = this.currentUserId || sessionStorage.getItem('userId') || '';
-    if (!currentUserId) return;
-    this.usersService.updateUser(currentUserId, {
-      login: this.profile.username.trim(),
+    if (!currentUserId || this.accountSaveDisabled) return;
+    this.isSavingAccount = true;
+    this.accountServerErrors = {};
+    const normalizedProfile = {
+      username: this.profile.username.trim(),
       firstName: this.profile.firstName.trim(),
       lastName: this.profile.lastName.trim(),
       email: this.profile.email.trim(),
+      photoName: this.profile.photoName,
+    };
+    this.usersService.updateUser(currentUserId, {
+      login: normalizedProfile.username,
+      firstName: normalizedProfile.firstName,
+      lastName: normalizedProfile.lastName,
+      email: normalizedProfile.email,
     } as any).subscribe({
       next: () => {
-        localStorage.setItem('username', this.profile.username.trim());
-        localStorage.setItem('firstName', this.profile.firstName.trim());
-        localStorage.setItem('lastName', this.profile.lastName.trim());
-        localStorage.setItem('email', this.profile.email.trim());
-        this.savedProfile = { ...this.profile };
+        this.profile = normalizedProfile;
+        localStorage.setItem('username', normalizedProfile.username);
+        localStorage.setItem('firstName', normalizedProfile.firstName);
+        localStorage.setItem('lastName', normalizedProfile.lastName);
+        localStorage.setItem('email', normalizedProfile.email);
+        this.savedProfile = { ...normalizedProfile };
+        this.isSavingAccount = false;
         this.showPopup('success');
       },
-      error: () => this.showPopup('error'),
+      error: (error) => {
+        this.isSavingAccount = false;
+        const details = JSON.stringify(error?.error ?? error ?? '').toLowerCase();
+        if (details.includes('email')) {
+          this.accountServerErrors = { email: this.translate.instant('ACCOUNT_EMAIL_IN_USE') };
+        } else if (details.includes('username') || details.includes('login') || details.includes('userexists')) {
+          this.accountServerErrors = { username: this.translate.instant('ACCOUNT_USERNAME_IN_USE') };
+        } else {
+          this.showPopup('error');
+        }
+      },
     });
   }
 

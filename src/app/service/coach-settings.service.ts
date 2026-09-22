@@ -159,7 +159,7 @@ export class CoachSettingsService {
         fullMealPlan: true,
         macroPlanDaily: true,
         macroPlanMeal: true,
-        defaultMeals: '5',
+        defaultMeals: '3',
         autoCreateMeals: true,
 
       nutritionFileEnabled: true,},
