@@ -41,6 +41,7 @@ export interface CoachSettingsConfig {
   defaults: {
     language: string;
     weightUnit?: 'kg' | 'lbs';
+    distanceUnit?: 'km' | 'miles';
     measurementUnit?: 'cm' | 'in';
   };
   notifications: {
@@ -180,6 +181,7 @@ export class CoachSettingsService {
       defaults: {
         language: 'French',
         weightUnit: 'kg',
+        distanceUnit: 'km',
         measurementUnit: 'cm',
       },
       notifications: {
@@ -203,6 +205,10 @@ export class CoachSettingsService {
 
   getWeightUnit(): 'kg' | 'lbs' {
     return this.getConfig().defaults.weightUnit === 'lbs' ? 'lbs' : 'kg';
+  }
+
+  getDistanceUnit(): 'km' | 'miles' {
+    return this.getConfig().defaults.distanceUnit === 'miles' ? 'miles' : 'km';
   }
 
   getMeasurementUnit(): 'cm' | 'in' {
@@ -340,6 +346,7 @@ export class CoachSettingsService {
         ...defaults.defaults,
         ...(config.defaults || {}),
         weightUnit: (config.defaults as any)?.weightUnit === 'lbs' ? 'lbs' : 'kg',
+        distanceUnit: (config.defaults as any)?.distanceUnit === 'miles' ? 'miles' : 'km',
         measurementUnit: (config.defaults as any)?.measurementUnit === 'in' ? 'in' : 'cm',
       },
       notifications: {

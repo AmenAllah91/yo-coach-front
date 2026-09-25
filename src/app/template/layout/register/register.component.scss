@@ -20,6 +20,40 @@
   border-radius: 4px;
   font-size: 1.1rem;
 }
+
+.password-field {
+  position: relative;
+
+  input {
+    padding-right: 3rem;
+  }
+}
+
+.password-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  font-size: 1.1rem;
+  height: 100%;
+  justify-content: center;
+  padding: 0 0.75rem;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.text-danger {
+  display: block;
+  font-size: 0.875rem;
+  margin-top: 0.35rem;
+}
+
+button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.65;
+}
 .page-wrapper {
   display: flex;
   justify-content: center;

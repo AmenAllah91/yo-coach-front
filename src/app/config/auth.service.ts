@@ -60,6 +60,7 @@ function isPublicCoachHostname(host: string): boolean {
 export class AuthService {
 
   keycloak:KeycloakService = inject(KeycloakService);
+  private loginInProgress?: Promise<void>;
 
   constructor() {
     const host = window.location.hostname;
@@ -106,8 +107,15 @@ export class AuthService {
     });
   }
 
-  login() {
-    this.keycloak.login({redirectUri: "http://localhost:4200/#/dashboard/main"}).then();
+  login(redirectUri: string = window.location.origin, loginHint?: string): Promise<void> {
+    if (this.loginInProgress) {
+      return this.loginInProgress;
+    }
+
+    this.loginInProgress = this.keycloak.login({ redirectUri, loginHint }).finally(() => {
+      this.loginInProgress = undefined;
+    });
+    return this.loginInProgress;
   }
 
   async getToken(): Promise<string | null> {

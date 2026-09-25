@@ -5,6 +5,13 @@ import {catchError} from "rxjs/operators";
 import {environment} from "@env/environment";
 import {RegistrationUser} from '../models/subscription-onboarding.model';
 
+export class RegistrationRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'RegistrationRequestError';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -14,7 +21,7 @@ export class RegisterService {
 
   registerUser(user: RegistrationUser): Observable<void> {
     return this.http.post<void>(this.baseUrl, user).pipe(
-      catchError(this.handleError)
+      catchError((error: HttpErrorResponse) => this.handleError(error))
     );
   }
 
@@ -29,7 +36,7 @@ export class RegisterService {
       errorMessage = this.getApiMessage(error, `Erreur serveur: ${error.status}\nMessage: ${error.message}`);
     }
 
-    return throwError(() => new Error(errorMessage));
+    return throwError(() => new RegistrationRequestError(errorMessage, error.status));
   }
 
   private getApiMessage(error: HttpErrorResponse, fallback: string): string {
@@ -38,6 +45,12 @@ export class RegisterService {
     }
     if (error.error?.error && typeof error.error.error === 'string') {
       return error.error.error;
+    }
+    if (error.error?.errorMessage && typeof error.error.errorMessage === 'string') {
+      return error.error.errorMessage;
+    }
+    if (error.error?.message && typeof error.error.message === 'string') {
+      return error.error.message;
     }
     return fallback;
   }
