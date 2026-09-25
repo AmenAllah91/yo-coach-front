@@ -9,7 +9,8 @@ import {AuthService} from "@config/auth.service";
 export class AuthGuard extends KeycloakAuthGuard {
   constructor(
     protected override readonly router: Router,
-    private readonly keycloak: KeycloakService) {
+    private readonly keycloak: KeycloakService,
+    private readonly authService: AuthService) {
     super(router, keycloak);
   }
   public  isRoleAllowed: CanActivateFn = async (route, state) => {
@@ -33,15 +34,10 @@ export class AuthGuard extends KeycloakAuthGuard {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Promise<boolean> {
-    if (window.location.href.includes('/signup')) {
-      await this.router.navigate(['/signup']);
-      return false;
-    }
-    let authenticated = this.keycloak.getKeycloakInstance().authenticated;
+    const authenticated = this.keycloak.getKeycloakInstance().authenticated;
     if (!authenticated) {
-      await this.keycloak.login({
-        redirectUri: window.location.origin + state.url,
-      });
+      await this.authService.login(window.location.origin + state.url);
+      return false;
     }
 
     const requiredRoles = route.data['rollen'];

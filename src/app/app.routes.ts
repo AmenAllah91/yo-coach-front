@@ -56,15 +56,22 @@ import { ThemeColorsComponent } from './components/theme/theme-colors/theme-colo
 import { PlansLandingPageComponent } from './components/website/plans-landing-page/plans-landing-page.component';
 import { ContactFormManagerComponent } from './components/website/contact-form-manager/contact-form-manager.component';
 import { PublicContactFormComponent } from './components/website/public-contact-form/public-contact-form.component';
+import { CoachOnboardingComponent } from './components/coach-onboarding/coach-onboarding.component';
+import { coachOnboardingEntryGuard, coachOnboardingGuard } from './config/guard/coach-onboarding.guard';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
 
 export const APP_ROUTE: Route[] = [
   {
+    path: 'coach-onboarding',
+    component: CoachOnboardingComponent,
+    canActivate: [isAuthenticated, coachOnboardingEntryGuard],
+  },
+  {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [isAuthenticated],
+    canActivate: [isAuthenticated, coachOnboardingGuard],
     children: [
       {
         path: 'forms/create-form',
