@@ -13,6 +13,7 @@
   ],
   "include": [
     "src/app/components/website/website-leads/website-leads.component.ts",
+    "src/app/components/coach-onboarding/**/*.ts",
     "src/**/*.d.ts"
   ]
 }

@@ -8,14 +8,17 @@ const pendingState: CoachOnboardingState = {
   currentStep: 'business-goals',
   completedSteps: [],
   completed: false,
-  businessName: '',
-  businessType: '',
-  businessTypeOther: '',
-  businessGoals: [],
-  businessGoalOther: '',
-  clientManagementMethod: '',
-  clientManagementOther: '',
+  coachRole: '',
+  coachRoleOther: '',
+  coachingMode: '',
+  activeClientsRange: '',
+  managementTools: [],
+  managementOther: '',
   coachingSoftware: '',
+  biggestChallenge: '',
+  biggestChallengeOther: '',
+  businessGoals: [],
+  targetClientsRange: '',
   country: '',
   city: '',
   timezone: '',
@@ -61,19 +64,22 @@ describe('CoachOnboardingService', () => {
       ...pendingState,
       currentStep: 'location-timezone' as const,
       completedSteps: ['business-goals' as const],
-      businessName: 'Peak Coaching',
+      coachRole: 'ONLINE_COACH',
     };
     http.put.and.returnValue(of(nextState));
     const service = new CoachOnboardingService(http);
 
     service.saveStep('business-goals', {
-      businessName: 'Peak Coaching',
-      businessType: 'ONLINE',
+      coachRole: 'ONLINE_COACH',
+      coachingMode: 'ONLINE_ONLY',
+      activeClientsRange: 'ONE_TO_FIVE',
+      managementTools: ['SPREADSHEETS'],
+      biggestChallenge: 'TIME_MANAGEMENT',
       businessGoals: ['SAVE_TIME'],
-      clientManagementMethod: 'SPREADSHEETS',
+      targetClientsRange: 'ELEVEN_TO_TWENTY',
     }).subscribe((state) => {
       expect(state.currentStep).toBe('location-timezone');
-      expect(service.currentState?.businessName).toBe('Peak Coaching');
+      expect(service.currentState?.coachRole).toBe('ONLINE_COACH');
       done();
     });
   });
