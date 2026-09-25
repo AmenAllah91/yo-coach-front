@@ -10,14 +10,17 @@ export interface CoachOnboardingState {
   completedSteps: CoachOnboardingStep[];
   completed: boolean;
 
-  businessName: string;
-  businessType: string;
-  businessTypeOther: string;
-  businessGoals: string[];
-  businessGoalOther: string;
-  clientManagementMethod: string;
-  clientManagementOther: string;
+  coachRole: string;
+  coachRoleOther: string;
+  coachingMode: string;
+  activeClientsRange: string;
+  managementTools: string[];
+  managementOther: string;
   coachingSoftware: string;
+  biggestChallenge: string;
+  biggestChallengeOther: string;
+  businessGoals: string[];
+  targetClientsRange: string;
 
   country: string;
   city: string;
@@ -30,14 +33,17 @@ export interface CoachOnboardingState {
 }
 
 export interface CoachOnboardingStepPayload {
-  businessName?: string;
-  businessType?: string;
-  businessTypeOther?: string;
-  businessGoals?: string[];
-  businessGoalOther?: string;
-  clientManagementMethod?: string;
-  clientManagementOther?: string;
+  coachRole?: string;
+  coachRoleOther?: string;
+  coachingMode?: string;
+  activeClientsRange?: string;
+  managementTools?: string[];
+  managementOther?: string;
   coachingSoftware?: string;
+  biggestChallenge?: string;
+  biggestChallengeOther?: string;
+  businessGoals?: string[];
+  targetClientsRange?: string;
 
   country?: string;
   city?: string;

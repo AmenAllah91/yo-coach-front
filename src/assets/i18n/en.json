@@ -2517,17 +2517,13 @@
     "LOAD_ERROR_TEXT": "Check your connection and try again.",
     "RETRY": "Retry",
     "BUSINESS_TITLE": "Business & Goals",
-    "BUSINESS_SUBTITLE": "Tell us a little about your coaching business so YoCoach can fit the way you work.",
-    "BUSINESS_NAME": "Business name",
-    "BUSINESS_NAME_PLACEHOLDER": "e.g. Peak Performance Coaching",
-    "BUSINESS_TYPE": "Business type",
+    "BUSINESS_SUBTITLE": "Tell us about your coaching business so we can personalize your experience.",
     "OTHER": "Other",
     "OTHER_PLACEHOLDER": "Please specify",
-    "GOALS_TITLE": "What do you want to achieve with YoCoach?",
-    "GOALS_HELP": "Select all that apply.",
+    "SELECT_ALL": "Select all that apply.",
     "SELECT_AT_LEAST_ONE": "Select at least one option.",
-    "OTHER_GOAL_PLACEHOLDER": "Tell us your other goal",
-    "MANAGEMENT_TITLE": "How do you currently manage your coaching business?",
+    "MANAGEMENT_HEADING": "How do you manage your coaching today?",
+    "GOALS_HEADING": "What do you want to achieve with YoCoach?",
     "SOFTWARE_QUESTION": "Which platform are you currently using?",
     "SOFTWARE_PLACEHOLDER": "Type the platform name",
     "LOCATION_TITLE": "Location & timezone",
@@ -2539,6 +2535,10 @@
     "TIMEZONE": "Timezone",
     "SELECT_TIMEZONE": "Select your timezone",
     "LANGUAGE": "Language",
+    "DETECTED": "Detected automatically — you can change it",
+    "AUTOSAVE": "Your progress is saved automatically",
+    "OF_7_ANSWERED": "of 7 answered",
+    "LEFT": "left",
     "UNITS_TITLE": "Set units",
     "UNITS_SUBTITLE": "Choose the units you want to use across YoCoach. You can change them later in Settings.",
     "WEIGHT": "Weight",
@@ -2553,21 +2553,23 @@
     "FINISH": "Finish setup",
     "SAVING": "Saving...",
     "REQUIRED": "This field is required.",
-    "BUSINESS_TYPES": {
-      "ONLINE": "Online coaching",
-      "IN_PERSON": "In-person coaching",
-      "HYBRID": "Hybrid coaching"
+    "QUESTIONS": {
+      "ROLE": "What best describes you?",
+      "MODE": "How do you currently coach your clients?",
+      "ACTIVE_CLIENTS": "How many active clients are you currently coaching?",
+      "MANAGEMENT": "How do you currently manage your clients?",
+      "CHALLENGE": "What's your biggest challenge with coaching clients right now?",
+      "GOALS": "What would you like YoCoach to help you achieve?",
+      "TARGET_CLIENTS": "How many clients would you like to coach in the next 6 months?"
     },
-    "GOALS": {
-      "GET_MORE_CLIENTS": "Get more clients",
-      "SAVE_TIME": "Save time",
-      "IMPROVE_CLIENT_EXPERIENCE": "Improve client experience",
-      "GROW_REVENUE": "Grow revenue",
-      "ORGANIZE_BUSINESS": "Organize my business"
+    "ROLE": { "PERSONAL_TRAINER": "Personal Trainer", "ONLINE_COACH": "Online Coach", "NUTRITION_COACH": "Nutrition Coach", "STRENGTH": "Strength & Conditioning Coach", "GYM_OWNER": "Gym Owner" },
+    "MODE": { "IN_PERSON": "In person only", "ONLINE": "Online only", "BOTH": "Both online & in person", "STARTING": "I'm just getting started" },
+    "CLIENT_RANGE": { "ZERO": "0", "ONE_TO_FIVE": "1–5", "SIX_TO_TEN": "6–10", "ELEVEN_TO_TWENTY": "11–20", "TWENTY_ONE_TO_FIFTY": "21–50", "FIFTY_ONE_TO_HUNDRED": "51–100", "HUNDRED_PLUS": "100+" },
+    "TOOLS": { "WHATSAPP": "WhatsApp / Messenger", "SPREADSHEETS": "Excel / Google Sheets", "PDF": "PDF / Documents", "SOFTWARE": "Coaching software", "OWN_SYSTEM": "My own system", "NOTHING": "I don't use anything yet" },
+    "CHALLENGE": {
+      "TIME_MANAGEMENT": "Managing too many clients takes too much time", "WORKOUT_PROGRAM_CREATION": "Creating workout programs takes too long", "NUTRITION_PLANS": "Managing nutrition plans", "PROGRESS_TRACKING": "Tracking client progress", "ACCOUNTABILITY": "Keeping clients accountable", "COMMUNICATION": "Communication with clients", "GROWING_ONLINE_BUSINESS": "Growing my online coaching business", "PROFESSIONAL_IMAGE": "Looking more professional", "TOOLS_FRAGMENTED": "Everything is spread across different tools", "STARTING_BUSINESS": "I'm just starting my coaching business"
     },
-    "MANAGEMENT": {
-      "SPREADSHEETS": "Spreadsheets / manual tools",
-      "COACHING_SOFTWARE": "Coaching software"
-    }
+    "GOAL": { "SAVE_TIME": "Save time managing clients", "COACH_MORE_CLIENTS": "Coach more clients", "INCREASE_REVENUE": "Increase my coaching revenue", "START_ONLINE_COACHING": "Start online coaching", "IMPROVE_RETENTION": "Improve client retention", "PROFESSIONAL_CLIENT_EXPERIENCE": "Deliver a more professional client experience", "REPLACE_TOOLS": "Replace my current coaching tools", "ORGANIZE_EVERYTHING": "Organize everything in one place" },
+    "TARGET_RANGE": { "ONE_TO_TEN": "1–10", "ELEVEN_TO_TWENTY": "11–20", "TWENTY_ONE_TO_FIFTY": "21–50", "FIFTY_ONE_TO_HUNDRED": "51–100", "HUNDRED_PLUS": "100+" }
   }
 }
