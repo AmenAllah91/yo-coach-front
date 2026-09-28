@@ -14,6 +14,7 @@
   "include": [
     "src/app/components/website/website-leads/website-leads.component.ts",
     "src/app/components/coach-onboarding/**/*.ts",
+    "src/app/components/clients/profil-client/client-tasks-tab/client-tasks-tab.component.ts",
     "src/**/*.d.ts"
   ]
 }

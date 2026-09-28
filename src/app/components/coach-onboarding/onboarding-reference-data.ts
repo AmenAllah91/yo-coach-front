@@ -250,6 +250,22 @@ export const ONBOARDING_COUNTRIES = [
   'Åland Islands',
 ] as const;
 
+export const ONBOARDING_COUNTRY_TIMEZONES: Record<string, string> = {
+  France: 'Europe/Paris', Belgium: 'Europe/Brussels', Switzerland: 'Europe/Zurich', Germany: 'Europe/Berlin',
+  Spain: 'Europe/Madrid', Italy: 'Europe/Rome', Portugal: 'Europe/Lisbon', Netherlands: 'Europe/Amsterdam',
+  'United Kingdom': 'Europe/London', Ireland: 'Europe/Dublin', Austria: 'Europe/Vienna', Poland: 'Europe/Warsaw',
+  Romania: 'Europe/Bucharest', Greece: 'Europe/Athens', Sweden: 'Europe/Stockholm', Norway: 'Europe/Oslo',
+  Denmark: 'Europe/Copenhagen', Finland: 'Europe/Helsinki', Morocco: 'Africa/Casablanca', Algeria: 'Africa/Algiers',
+  Tunisia: 'Africa/Tunis', Egypt: 'Africa/Cairo', Senegal: 'Africa/Dakar', Cameroon: 'Africa/Douala',
+  Nigeria: 'Africa/Lagos', Kenya: 'Africa/Nairobi', 'South Africa': 'Africa/Johannesburg',
+  'United Arab Emirates': 'Asia/Dubai', 'Saudi Arabia': 'Asia/Riyadh', Qatar: 'Asia/Qatar', Turkey: 'Europe/Istanbul',
+  India: 'Asia/Kolkata', Pakistan: 'Asia/Karachi', Bangladesh: 'Asia/Dhaka', China: 'Asia/Shanghai',
+  Japan: 'Asia/Tokyo', Singapore: 'Asia/Singapore', Indonesia: 'Asia/Jakarta', Australia: 'Australia/Sydney',
+  'New Zealand': 'Pacific/Auckland', 'United States': 'America/New_York', Canada: 'America/Toronto',
+  Mexico: 'America/Mexico_City', Brazil: 'America/Sao_Paulo', Argentina: 'America/Argentina/Buenos_Aires',
+  Colombia: 'America/Bogota', Chile: 'America/Santiago', Peru: 'America/Lima',
+};
+
 export const ONBOARDING_TIMEZONES = [
   'Africa/Abidjan',
   'Africa/Accra',

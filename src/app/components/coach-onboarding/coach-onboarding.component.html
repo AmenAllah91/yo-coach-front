@@ -1,6 +1,6 @@
 <div class="onboarding-shell">
   <header class="page-header">
-    <img src="assets/yocoachlogo.png" alt="YoCoach" />
+    <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" />
     <div><strong>{{ 'COACH_ONBOARDING.STEP' | translate }} {{ activeStepIndex + 1 }} of 3</strong><span>— {{ ['COACH_ONBOARDING.STEP_BUSINESS','COACH_ONBOARDING.STEP_LOCATION','COACH_ONBOARDING.STEP_UNITS'][activeStepIndex] | translate }}</span></div>
   </header>
   <div class="progress-track"><span [style.width.%]="progressPercent"></span></div>
@@ -14,11 +14,11 @@
         <div class="title-block"><h1>{{ 'COACH_ONBOARDING.BUSINESS_TITLE' | translate }}</h1><p>{{ 'COACH_ONBOARDING.BUSINESS_SUBTITLE' | translate }}</p></div>
 
         <section class="question"><h2>{{ 'COACH_ONBOARDING.QUESTIONS.ROLE' | translate }}</h2><div class="choice-grid">
-          <button *ngFor="let option of coachRoles" type="button" class="choice-card" [class.selected]="isSelected('coachRole', option.value)" (click)="select('coachRole', option.value)"><span class="option-icon">{{ option.icon }}</span><span>{{ option.label | translate }}</span><i class="radio"></i></button>
+          <button *ngFor="let option of coachRoles" type="button" class="choice-card" [class.selected]="isSelected('coachRole', option.value)" (click)="select('coachRole', option.value)"><span *ngIf="option.icon" class="option-icon"><svg *ngIf="option.icon === 'dumbbell'" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg><i *ngIf="option.icon !== 'dumbbell'" [ngClass]="option.icon"></i></span><span>{{ option.label | translate }}</span><i class="radio"></i></button>
         </div><input *ngIf="isSelected('coachRole','OTHER')" class="field-control nested" formControlName="coachRoleOther" [placeholder]="'COACH_ONBOARDING.OTHER_PLACEHOLDER' | translate" /><div class="field-error" *ngIf="businessForm.hasError('coachRoleOtherRequired') && businessForm.touched">{{ 'COACH_ONBOARDING.REQUIRED' | translate }}</div></section>
 
         <section class="question"><h2>{{ 'COACH_ONBOARDING.QUESTIONS.MODE' | translate }}</h2><div class="choice-grid">
-          <button *ngFor="let option of coachingModes" type="button" class="choice-card" [class.selected]="isSelected('coachingMode', option.value)" (click)="select('coachingMode', option.value)"><span class="option-icon">{{ option.icon }}</span><span>{{ option.label | translate }}</span><i class="radio"></i></button>
+          <button *ngFor="let option of coachingModes" type="button" class="choice-card" [class.selected]="isSelected('coachingMode', option.value)" (click)="select('coachingMode', option.value)"><span *ngIf="option.icon" class="option-icon"><i class="bi" [ngClass]="option.icon"></i></span><span>{{ option.label | translate }}</span><i class="radio"></i></button>
         </div></section>
 
         <section class="question"><h2>{{ 'COACH_ONBOARDING.QUESTIONS.ACTIVE_CLIENTS' | translate }}</h2><div class="choice-grid ranges">
@@ -27,7 +27,7 @@
 
         <div class="section-heading"><h2>{{ 'COACH_ONBOARDING.MANAGEMENT_HEADING' | translate }}</h2></div>
         <section class="question"><h2>{{ 'COACH_ONBOARDING.QUESTIONS.MANAGEMENT' | translate }}</h2><p class="field-help">{{ 'COACH_ONBOARDING.SELECT_ALL' | translate }}</p><div class="choice-grid">
-          <button *ngFor="let option of managementTools" type="button" class="choice-card" [class.selected]="isSelected('managementTools', option.value)" (click)="toggleMulti('managementTools', option.value)"><span class="option-icon">{{ option.icon }}</span><span>{{ option.label | translate }}</span><i class="checkbox">✓</i></button>
+          <button *ngFor="let option of managementTools" type="button" class="choice-card" [class.selected]="isSelected('managementTools', option.value)" (click)="toggleMulti('managementTools', option.value)"><span *ngIf="option.icon" class="option-icon"><i class="bi" [ngClass]="option.icon"></i></span><span>{{ option.label | translate }}</span><i class="checkbox">✓</i></button>
         </div><div class="field-error" *ngIf="businessForm.hasError('managementRequired') && businessForm.touched">{{ 'COACH_ONBOARDING.SELECT_AT_LEAST_ONE' | translate }}</div>
           <div *ngIf="isSelected('managementTools','COACHING_SOFTWARE')" class="nested-field"><label for="coachingSoftware">{{ 'COACH_ONBOARDING.SOFTWARE_QUESTION' | translate }}</label><input id="coachingSoftware" class="field-control" formControlName="coachingSoftware" autocomplete="off" [placeholder]="'COACH_ONBOARDING.SOFTWARE_PLACEHOLDER' | translate" /></div>
           <div *ngIf="isSelected('managementTools','OTHER')" class="nested-field"><label>{{ 'COACH_ONBOARDING.OTHER_PLACEHOLDER' | translate }}</label><input class="field-control" formControlName="managementOther" [placeholder]="'COACH_ONBOARDING.OTHER_PLACEHOLDER' | translate" /></div>
@@ -49,10 +49,9 @@
 
       <form *ngIf="activeStepIndex === 1" [formGroup]="locationForm" novalidate>
         <div class="title-block"><h1>{{ 'COACH_ONBOARDING.LOCATION_TITLE' | translate }}</h1><p>{{ 'COACH_ONBOARDING.LOCATION_SUBTITLE' | translate }}</p></div>
-        <div class="location-grid"><div><label for="country">{{ 'COACH_ONBOARDING.COUNTRY' | translate }}</label><select id="country" class="field-control" formControlName="country"><option value="" disabled>{{ 'COACH_ONBOARDING.SELECT_COUNTRY' | translate }}</option><option *ngFor="let country of countries" [value]="country">{{ country }}</option></select><small>{{ 'COACH_ONBOARDING.DETECTED' | translate }}</small></div>
+        <div class="location-grid"><div><label for="country">{{ 'COACH_ONBOARDING.COUNTRY' | translate }}</label><select id="country" class="field-control" formControlName="country"><option value="" disabled>{{ 'COACH_ONBOARDING.SELECT_COUNTRY' | translate }}</option><option *ngFor="let country of countries" [value]="country">{{ country }}</option></select><div class="field-error" *ngIf="showError('country')">{{ 'COACH_ONBOARDING.REQUIRED' | translate }}</div><small>⌾ {{ 'COACH_ONBOARDING.DETECTED' | translate }}</small></div>
         <div><label for="city">{{ 'COACH_ONBOARDING.CITY' | translate }}</label><input id="city" class="field-control" formControlName="city" [placeholder]="'COACH_ONBOARDING.CITY_PLACEHOLDER' | translate" /><div class="field-error" *ngIf="showError('city')">{{ 'COACH_ONBOARDING.REQUIRED' | translate }}</div></div></div>
-        <label for="timezone">{{ 'COACH_ONBOARDING.TIMEZONE' | translate }}</label><select id="timezone" class="field-control" formControlName="timezone"><option value="" disabled>{{ 'COACH_ONBOARDING.SELECT_TIMEZONE' | translate }}</option><option *ngFor="let timezone of timezones" [value]="timezone">{{ timezoneLabel(timezone) }}</option></select><small>{{ 'COACH_ONBOARDING.DETECTED' | translate }}</small>
-        <div class="language-field"><label>{{ 'COACH_ONBOARDING.LANGUAGE' | translate }}</label><div class="segmented-control"><button type="button" [class.selected]="locationForm.get('language')?.value === 'English'" (click)="locationForm.get('language')?.setValue('English')">English</button><button type="button" [class.selected]="locationForm.get('language')?.value === 'French'" (click)="locationForm.get('language')?.setValue('French')">Français</button></div></div>
+        <label for="timezone">{{ 'COACH_ONBOARDING.TIMEZONE' | translate }}</label><select id="timezone" class="field-control" formControlName="timezone"><option value="" disabled>{{ 'COACH_ONBOARDING.SELECT_TIMEZONE' | translate }}</option><option *ngFor="let timezone of timezones" [value]="timezone">{{ timezoneLabel(timezone) }}</option></select><div class="field-error" *ngIf="showError('timezone')">{{ 'COACH_ONBOARDING.REQUIRED' | translate }}</div><small>⌾ {{ 'COACH_ONBOARDING.DETECTED' | translate }}</small>
       </form>
 
       <form *ngIf="activeStepIndex === 2" [formGroup]="unitsForm" novalidate>
@@ -60,6 +59,7 @@
         <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.WEIGHT' | translate }}</strong><span>{{ 'COACH_ONBOARDING.WEIGHT_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.weightUnit === 'kg'" (click)="selectUnit('weightUnit','kg')">Kg</button><button type="button" [class.selected]="unitsForm.value.weightUnit === 'lbs'" (click)="selectUnit('weightUnit','lbs')">Lbs</button></div></div>
         <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.DISTANCE' | translate }}</strong><span>{{ 'COACH_ONBOARDING.DISTANCE_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.distanceUnit === 'km'" (click)="selectUnit('distanceUnit','km')">Kilometers</button><button type="button" [class.selected]="unitsForm.value.distanceUnit === 'miles'" (click)="selectUnit('distanceUnit','miles')">Miles</button></div></div>
         <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.MEASUREMENTS' | translate }}</strong><span>{{ 'COACH_ONBOARDING.MEASUREMENTS_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.measurementUnit === 'cm'" (click)="selectUnit('measurementUnit','cm')">Cm</button><button type="button" [class.selected]="unitsForm.value.measurementUnit === 'in'" (click)="selectUnit('measurementUnit','in')">In</button></div></div>
+        <div class="units-note"><i class="bi bi-info-circle"></i><span>{{ 'COACH_ONBOARDING.UNITS_HINT' | translate }}</span></div>
       </form>
       <div *ngIf="submitError" class="submit-error">{{ submitError }}</div>
     </main>
