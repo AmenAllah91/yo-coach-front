@@ -1,6 +1,19 @@
+/* Client profile with the client navigation panel on its left:
+   [panel: its own clamp() width, 0 when closed] [profile: all remaining space]. */
+.client-workspace {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 100%;
+  background-color: #f7f9fc;
+}
+
+.client-workspace__main {
+  min-width: 0;
+}
+
 .main-content {
   min-height: 100%;
-  padding: 28px;
+  padding: 18px 28px 28px;
   font-family: Arial, Helvetica, sans-serif;
   color: #07152f;
   background-color: #f7f9fc;
@@ -13,12 +26,12 @@
   display: flex;
   align-items: center;
   background-color: #ffffff;
-  min-height: 122px;
-  padding: 24px 22px 24px 26px;
+  min-height: 0;
+  padding: 16px 22px 16px 26px;
   border: 1px solid #dce5ef;
   border-radius: 15px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
-  margin-bottom: 30px;
+  margin-bottom: 14px;
 }
 
 .profile-picture {
@@ -282,7 +295,7 @@ body.client-preview-open { overflow: hidden; }
   display: flex;
   gap: 30px;
   border-bottom: 1px solid #dce5ef;
-  margin-top: 30px;
+  margin-top: 14px;
   padding: 0 4px;
   overflow-x: auto;
 }
@@ -320,12 +333,12 @@ body.client-preview-open { overflow: hidden; }
 }
 
 .tab-content {
-  margin-top: 12px;
+  margin-top: 0;
 }
 
 .tab-pane {
   display: none;
-  padding-top: 16px;
+  padding-top: 8px;
 }
 
 .tab-pane.active {
@@ -336,7 +349,7 @@ body.client-preview-open { overflow: hidden; }
    DASHBOARD
 ========================================= */
 .dashboard-pane {
-  margin-top: 16px;
+  margin-top: 6px;
 }
 
 .dashboard-main-grid {
@@ -4456,7 +4469,7 @@ body.client-preview-open { overflow: hidden; }
 .main-content > .client-stats-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 19px;
-  margin: 0 0 30px;
+  margin: 0 0 14px;
 }
 
 .main-content > .client-stats-grid > .client-stat-card {
@@ -4719,11 +4732,11 @@ body.client-preview-open { overflow: hidden; }
 }
 
 .progress-summary-collapsed .profile-tabs {
-  margin-top: 16px;
+  margin-top: 0;
 }
 
 .progress-summary-collapsed .profile-header {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .progress-summary-collapsed .tab-content {
@@ -4810,8 +4823,6 @@ body.client-preview-open { overflow: hidden; }
 .profile-back:active { transform: scale(.96); }
 .profile-back:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
 .profile-back i { font-size: 15px; }
-.mobile-more-tab { display: none; }
-.mobile-more-wrap { display: none; position: relative; flex: 0 0 auto; }
 
 /* Compact mobile profile composition. */
 @media (max-width: 900px) {
@@ -4834,24 +4845,13 @@ body.client-preview-open { overflow: hidden; }
   .stats-toggle-row { margin: 0 0 8px; }
   .stats-toggle-btn { min-height: 30px; padding: 0 10px; font-size: 9px; border-radius: 6px; }
   .progress-summary-collapsed .profile-header { margin-bottom: 10px; }
+  /* All tabs on one swipeable row (scrollbar hidden by the base .profile-tabs rules). */
   .profile-tabs, .progress-summary-collapsed .profile-tabs {
-    gap: 28px; margin-top: 0; padding: 0 10px; background: #fff; border-radius: 0;
+    flex-wrap: nowrap; gap: 22px; margin-top: 0; padding: 0 12px; background: #fff; border-radius: 0;
+    overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+    scroll-padding-inline: 12px;
   }
-  .tab-link { padding: 12px 0 11px; font-size: 10px; }
-  .profile-tabs .calendar-tab { display: none; }
-  .profile-tabs .pictures-tab,
-  .profile-tabs .chat-tab { display: none; }
-  .profile-tabs .pictures-tab.active,
-  .profile-tabs .chat-tab.active { display: block; order: 6; }
-  .profile-tabs .mobile-more-wrap { display: block; order: 7; }
-  .profile-tabs .mobile-more-tab { display: inline-flex; align-items: center; gap: 4px; }
-  .mobile-more-menu {
-    position: fixed; right: 12px; top: 148px; z-index: 100;
-    width: 154px; padding: 6px; border: 1px solid #dce5ef; border-radius: 9px;
-    background: #fff; box-shadow: 0 12px 30px rgba(15, 23, 42, .15);
-  }
-  .mobile-more-menu button { width: 100%; padding: 10px; border: 0; border-radius: 6px; background: #fff; color: #334155; font-size: 11px; text-align: left; }
-  .mobile-more-menu button:hover { background: #f1f7fb; }
+  .tab-link { flex: 0 0 auto; padding: 12px 0 11px; font-size: 12px; }
   .tab-content { margin-top: 4px; }
   .tab-pane, .progress-summary-collapsed .tab-pane { padding-top: 6px; }
 
@@ -5321,4 +5321,337 @@ body.client-preview-open { overflow: hidden; }
   .main-content .profile-header .btn-send-message { grid-column: 1 / -1; grid-row: 3; width: 100%; height: 44px; padding: 0 16px; border-radius: 9px; }
   .main-content .profile-header .btn-send-message span { display: inline; }
   .main-content .profile-header .btn-client-preview { grid-column: 1 / -1; grid-row: 4; width: 100%; height: 44px; border-radius: 9px; }
+}
+
+/* =========================================
+   COMPACT DESKTOP PROFILE (> 900px; mobile keeps its own layout above)
+   Fluid spacing so more content fits above the fold and cards use the width.
+========================================= */
+@media (min-width: 900.02px) {
+  .main-content {
+    padding: clamp(10px, 1vw, 16px) clamp(10px, 1.2vw, 20px) clamp(16px, 2vw, 28px);
+  }
+
+  .profile-header {
+    padding: clamp(8px, 0.8vw, 12px) clamp(12px, 1.4vw, 20px);
+    margin-bottom: clamp(8px, 0.9vw, 12px);
+    gap: clamp(8px, 1vw, 12px);
+    border-radius: 12px;
+  }
+
+  .progress-summary-collapsed .profile-header {
+    margin-bottom: clamp(8px, 0.9vw, 12px);
+  }
+
+  .profile-picture {
+    width: clamp(48px, 4vw, 60px);
+    height: clamp(48px, 4vw, 60px);
+  }
+
+  .profile-info {
+    min-width: 0;
+    margin-left: clamp(8px, 1vw, 14px);
+  }
+
+  .profile-name {
+    font-size: clamp(18px, 1.5vw, 22px);
+    line-height: 1.2;
+    margin-bottom: 1px;
+  }
+
+  .profile-email,
+  .last-workout {
+    line-height: 18px;
+  }
+
+  .last-workout {
+    margin-top: 0;
+  }
+
+
+  .client-picker__trigger {
+    min-width: 0;
+    width: clamp(11rem, 15vw, 15rem);
+    height: clamp(46px, 3.6vw, 54px);
+    padding: 6px 12px 6px 8px;
+    border-radius: 11px;
+  }
+
+  .client-picker__avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .btn-client-preview,
+  .profile-header .btn-send-message {
+    height: clamp(36px, 2.8vw, 40px);
+    padding: 0 clamp(12px, 1.1vw, 18px);
+  }
+
+
+  .tab-link {
+    padding: 11px 0 12px;
+  }
+
+  .tab-pane,
+  .progress-summary-collapsed .tab-pane {
+    padding-top: clamp(8px, 0.9vw, 12px);
+  }
+
+  .dashboard-pane {
+    margin-top: 0;
+  }
+}
+
+// Leave room for the client panel's reopen tab (the panel exists from 1024px).
+@media (min-width: 1024px) {
+  .client-workspace--nav-closed .main-content {
+    padding-left: max(clamp(10px, 1.2vw, 20px), 26px);
+  }
+}
+
+/* =========================================
+   DESKTOP COMPOSITION (> 900px)
+   Grouped header content and a single tabs row: [tabs 1fr | summary toggle auto].
+   Grid placement only, the DOM and the mobile layout are unchanged.
+========================================= */
+@media (min-width: 900.02px) {
+  .main-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'header  header'
+      'summary summary'
+      'tabs    toggle'
+      'content content';
+    align-content: start;
+  }
+
+  .main-content > .profile-header { grid-area: header; }
+  .main-content > .progress-summary { grid-area: summary; }
+  .main-content > .tab-content { grid-area: content; min-width: 0; }
+
+  // Identity on the left, selector + actions grouped on the right at their natural width.
+  // When space runs out the actions drop to a second line instead of squeezing.
+  .profile-header {
+    flex-wrap: wrap;
+    row-gap: clamp(8px, 0.8vw, 10px);
+  }
+
+  .profile-info {
+    flex: 0 1 auto;
+  }
+
+  .profile-name,
+  .profile-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+    gap: clamp(6px, 0.6vw, 10px);
+  }
+
+  .main-content > .profile-tabs,
+  .progress-summary-collapsed > .profile-tabs {
+    grid-area: tabs;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    column-gap: clamp(14px, 1.4vw, 22px);
+    min-width: 0;
+    margin: 0;
+    padding: 0 2px;
+    // Normal row when it fits, horizontal scroll (hidden scrollbar) when it does not.
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .main-content > .profile-tabs .tab-link {
+    flex: 0 0 auto;
+  }
+
+  // Sits at the end of the tabs row; its bottom border continues the tabs line.
+  .main-content > .stats-toggle-row,
+  .progress-summary-collapsed > .stats-toggle-row {
+    grid-area: toggle;
+    float: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0 0 6px clamp(10px, 1.2vw, 16px);
+    border-bottom: 1px solid #dce5ef;
+  }
+
+  .stats-toggle-btn {
+    min-height: 2rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* =========================================
+   PROGRESS SUMMARY: compact information strip
+   [start | current | goal | objective] + weight progress (last wider item,
+   or a thin second row on smaller screens). Same data, same colours.
+========================================= */
+.progress-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(clamp(12rem, 24%, 22rem), 1.6fr);
+  align-items: center;
+  gap: 8px clamp(10px, 1.2vw, 18px);
+  margin-bottom: clamp(8px, 0.9vw, 12px);
+  padding: clamp(8px, 0.8vw, 10px) clamp(10px, 1.2vw, 16px);
+  background: #ffffff;
+  border: 1px solid #dce5ef;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+}
+
+.progress-summary .client-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.35fr);
+  gap: 8px clamp(8px, 1vw, 14px);
+  margin: 0;
+}
+
+.progress-summary .client-stat-card {
+  position: static;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'icon label'
+    'icon value'
+    'icon detail';
+  align-items: center;
+  gap: 0 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+// Thin dividers between metrics instead of separate cards.
+.progress-summary .client-stat-card + .client-stat-card {
+  padding-left: clamp(8px, 1vw, 14px);
+  border-left: 1px solid #edf1f6;
+}
+
+.progress-summary .client-stat-card .stat-icon {
+  position: static;
+  grid-area: icon;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.progress-summary .client-stat-card .stat-label {
+  position: static;
+  grid-area: label;
+  overflow: hidden;
+  color: #8b9bb8;
+  font-size: 10.5px;
+  line-height: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.progress-summary .client-stat-card .stat-value {
+  grid-area: value;
+  overflow: hidden;
+  margin: 0;
+  color: #020c20;
+  font-size: clamp(14px, 1.1vw, 16px);
+  line-height: 20px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-summary .client-stat-card .stat-value--objective {
+  display: -webkit-box;
+  max-width: none;
+  color: #07142a;
+  font-size: 12.5px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.progress-summary .client-stat-card .stat-detail {
+  grid-area: detail;
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 13px;
+}
+
+.progress-summary .weight-progress-card {
+  min-width: 0;
+  min-height: 0;
+  padding: 0 0 0 clamp(10px, 1.2vw, 18px);
+  background: none;
+  border: 0;
+  border-left: 1px solid #edf1f6;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.progress-summary .weight-progress-heading {
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 15px;
+}
+
+.progress-summary .weight-progress-track {
+  height: 5px;
+  margin-top: 5px;
+}
+
+.progress-summary .weight-progress-labels {
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 14px;
+}
+
+// Smaller desktops / tablets: weight progress becomes a thin row under the metrics.
+@media (max-width: 1279.98px) {
+  .progress-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .progress-summary .weight-progress-card {
+    padding: 8px 0 0;
+    border-left: 0;
+    border-top: 1px solid #edf1f6;
+  }
+}
+
+// Narrow screens: metrics wrap into two rows of two.
+@media (max-width: 640px) {
+  .progress-summary .client-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+
+  .progress-summary .client-stat-card:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+// The tab strip is a scroll container: keep the active underline inside it so it is not clipped.
+.profile-tabs .tab-link.active::after {
+  bottom: 0;
 }

@@ -2,7 +2,7 @@ import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Component, Input, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Client, ClientService } from 'app/service/client.service';
@@ -28,6 +28,10 @@ import { BodyMeasurementsComponent } from 'app/components/body-measurements/body
 import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
 import { ChatComponent } from '../../chat/chat/chat.component';
 import { ClientWorkoutsComponent } from '../client-workouts/client-workouts.component';
+import { ClientNavPanelComponent } from '../client-nav-panel/client-nav-panel.component';
+import { ClientTasksTabComponent } from './client-tasks-tab/client-tasks-tab.component';
+
+const CLIENT_NAV_OPEN_KEY = 'clientNavPanelOpen';
 import { ClientNutritionComponent } from '../client-nutrition/client-nutrition.component';
 import { MealplanDayService } from 'app/service/mealplan-day.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -40,6 +44,7 @@ type TabId =
   | 'chat'
   | 'measurements'
   | 'pictures'
+  | 'tasks'
   | 'calendar';
 
 type WorkoutConflictResolution = 'START_AFTER' | 'REPLACE';
@@ -166,6 +171,8 @@ export interface ScheduledCheckIn {
     ChatComponent,
     ClientWorkoutsComponent,
     ClientNutritionComponent,
+    ClientNavPanelComponent,
+    ClientTasksTabComponent,
     TranslateModule
   ],
   templateUrl: './profil-client.component.html',
@@ -178,18 +185,35 @@ export class ProfilClientComponent {
   private measurementsLoaded = false;
   private workoutDashboardLoaded = false;
   private nutritionDashboardLoaded = false;
-  mobileMoreOpen = false;
   clientPickerOpen = false;
   clientSearch = '';
   coachClients: Client[] = [];
   loadingCoachClients = false;
   private coachClientsLoaded = false;
+  clientNavOpen = this.readClientNavPreference();
+
+  onClientNavOpenChange(open: boolean): void {
+    this.clientNavOpen = open;
+    try {
+      localStorage.setItem(CLIENT_NAV_OPEN_KEY, String(open));
+    } catch {}
+    if (open) this.loadCoachClients();
+  }
+
+  private readClientNavPreference(): boolean {
+    try {
+      return localStorage.getItem(CLIENT_NAV_OPEN_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  }
 
   backToClients(): void {
     this.router.navigate(['/clients']);
   }
 
   @ViewChild(WorkoutsClientTabComponent) workoutsTab: WorkoutsClientTabComponent;
+  @ViewChild('profileTabs') profileTabsRef?: ElementRef<HTMLElement>;
   @ViewChild(NutritionClientTabComponent) nutritionTab: NutritionClientTabComponent;
 
   activeTab: TabId = 'dashboard';
@@ -204,6 +228,25 @@ export class ProfilClientComponent {
     this.activeTab = tab;
     this.loadTabData(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.scrollActiveTabIntoView();
+  }
+
+  // On narrow screens the tab strip scrolls horizontally: keep the active tab visible.
+  private scrollActiveTabIntoView(): void {
+    setTimeout(() => {
+      const strip = this.profileTabsRef?.nativeElement;
+      const tab = strip?.querySelector<HTMLElement>('.tab-link.active');
+      if (!strip || !tab || strip.scrollWidth <= strip.clientWidth) return;
+
+      const edge = 16;
+      const stripBox = strip.getBoundingClientRect();
+      const tabBox = tab.getBoundingClientRect();
+      if (tabBox.left < stripBox.left + edge) {
+        strip.scrollBy({ left: tabBox.left - stripBox.left - edge, behavior: 'smooth' });
+      } else if (tabBox.right > stripBox.right - edge) {
+        strip.scrollBy({ left: tabBox.right - stripBox.right + edge, behavior: 'smooth' });
+      }
+    });
   }
 
   toggleClientStats(): void {
@@ -287,6 +330,9 @@ export class ProfilClientComponent {
 
     this.clientPickerOpen = false;
     this.clientSearch = '';
+    // Show the known identity right away; loadClientData refreshes it silently.
+    this.client = client;
+    this.seededClientId = String(client.id);
     this.router.navigate(['/clients/profil-client', client.id], {
       queryParams: { tab: this.activeTab === 'dashboard' ? null : this.activeTab },
     });
@@ -307,6 +353,9 @@ export class ProfilClientComponent {
           this.loadingCoachClients = false;
           return;
         }
+
+        // Show the list immediately (client panel); avatars arrive with the enrichment.
+        this.coachClients = validClients;
 
         // The clients endpoint does not include the account avatar. Enrich each
         // row from the user profile, which is also the source used by Discussion.
@@ -666,6 +715,7 @@ export class ProfilClientComponent {
       if (tab) {
         this.activeTab = tab;
         this.loadTabData(tab);
+        this.scrollActiveTabIntoView();
       }
       this.notificationAssignmentId = params['assignmentId'] || null;
 
@@ -703,6 +753,7 @@ export class ProfilClientComponent {
     }
 
     this.loadWorkoutFileSetting();
+    if (this.clientNavOpen) this.loadCoachClients();
   }
 
 

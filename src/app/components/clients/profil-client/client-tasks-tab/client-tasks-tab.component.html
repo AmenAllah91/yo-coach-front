@@ -1,0 +1,427 @@
+<section class="tasks-card">
+  <!-- Header -->
+  <header class="tasks-head">
+    <div class="tasks-title">
+      <span class="tasks-title__icon"><i-feather name="list-checks"></i-feather></span>
+      <div>
+        <h3>{{ 'TASKS' | translate }}</h3>
+        <p>{{ 'TASKS_SUBTITLE' | translate: { name: clientName } }}</p>
+      </div>
+    </div>
+
+    <button type="button" class="tasks-btn-primary" (click)="openCreateTask()">
+      <i-feather name="plus"></i-feather>
+      {{ 'TASKS_ADD' | translate }}
+    </button>
+  </header>
+
+  <!-- Calendar controls -->
+  <div class="tasks-toolbar">
+    <div class="tasks-nav">
+      <button type="button" class="tasks-btn-ghost" [disabled]="isCurrentRange" (click)="goToToday()">
+        {{ 'TODAY' | translate }}
+      </button>
+      <button type="button" class="tasks-icon-btn" (click)="shiftRange(-1)" [attr.aria-label]="'PREVIOUS' | translate">
+        <i-feather name="chevron-left"></i-feather>
+      </button>
+      <button type="button" class="tasks-icon-btn" (click)="shiftRange(1)" [attr.aria-label]="'NEXT' | translate">
+        <i-feather name="chevron-right"></i-feather>
+      </button>
+      <span class="tasks-range">
+        <i-feather name="calendar"></i-feather>
+        {{ rangeStart | date: 'MMM d' }} – {{ rangeEnd | date: 'MMM d, y' }}
+      </span>
+    </div>
+
+    <div class="tasks-switches">
+      <div class="tasks-segment" role="group">
+        <button
+          *ngFor="let weeks of weekOptions"
+          type="button"
+          [class.active]="weeksShown === weeks"
+          [attr.aria-pressed]="weeksShown === weeks"
+          (click)="setWeeks(weeks)">
+          {{ (weeks === 1 ? 'TASKS_ONE_WEEK' : 'TASKS_N_WEEKS') | translate: { count: weeks } }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar view -->
+  <div class="tasks-calendar" [class.compact]="compactCards" (scroll)="closeTaskMenu()">
+    <div class="tasks-weekdays" aria-hidden="true">
+      <span *ngFor="let day of weeks[0]">{{ day.date | date: 'EEE' }}</span>
+    </div>
+
+    <div class="tasks-week" *ngFor="let week of weeks">
+      <div
+        *ngFor="let day of week; trackBy: trackByKey"
+        class="tasks-day"
+        [class.today]="day.isToday"
+        [class.past]="day.isPast">
+        <div class="tasks-day__head">
+          <span class="tasks-day__date">
+            <span class="tasks-day__weekday">{{ day.date | date: 'EEE' }}</span>
+            <span class="tasks-day__num">{{ day.date | date: (day.date.getDate() === 1 || day === days[0] ? 'MMM d' : 'd') }}</span>
+          </span>
+          <button
+            type="button"
+            class="tasks-day__add"
+            (click)="openCreateTask(day.date)"
+            [attr.aria-label]="'TASKS_ADD' | translate">
+            <i-feather name="plus"></i-feather>
+          </button>
+        </div>
+
+        <div
+          *ngFor="let task of visibleTasks(day)"
+          class="task-chip"
+          [ngClass]="['task-chip--' + task.status, 'kind-' + task.kind]"
+          [class.menu-open]="isMenuOpenFor(task)"
+          [attr.title]="task.title">
+          <span class="task-chip__icon"><i-feather [name]="task.icon"></i-feather></span>
+          <span class="task-chip__text">
+            <strong>{{ task.title }}</strong>
+            <small *ngIf="!compactCards">{{ task.subtitle }}</small>
+          </span>
+          <i-feather *ngIf="task.status === 'done'" name="check-circle" class="task-chip__done"></i-feather>
+          <!-- Actions button shown on hover (replaces the status icon). -->
+          <button
+            type="button"
+            class="task-chip__menu-btn"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="isMenuOpenFor(task)"
+            [attr.aria-label]="'TASKS_TASK_ACTIONS' | translate"
+            (click)="toggleTaskMenu($event, day, task)">
+            <i-feather name="more-horizontal"></i-feather>
+          </button>
+        </div>
+
+        <button *ngIf="hiddenCount(day)" type="button" class="tasks-day__more" (click)="expandDay(day)">
+          {{ 'TASKS_MORE' | translate: { count: hiddenCount(day) } }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Habit actions menu -->
+  <div
+    *ngIf="taskMenu"
+    class="task-menu"
+    role="menu"
+    [style.top.px]="taskMenu.top"
+    [style.left.px]="taskMenu.left"
+    (click)="$event.stopPropagation()">
+    <button type="button" role="menuitem" (click)="editTask()">
+      <i-feather name="edit-2"></i-feather>
+      {{ (taskMenu.task.kind === 'habit' ? 'TASKS_EDIT_HABIT' : 'TASKS_EDIT_TASK') | translate }}
+    </button>
+    <button type="button" role="menuitem" (click)="toggleTaskDone()">
+      <i-feather [name]="taskMenu.task.status === 'done' ? 'rotate-ccw' : 'check-circle'"></i-feather>
+      {{ (taskMenu.task.status === 'done' ? 'TASKS_MARK_NOT_DONE' : 'TASKS_MARK_DONE') | translate }}
+    </button>
+    <button type="button" role="menuitem" class="danger" (click)="deleteTask()">
+      <i-feather name="trash-2"></i-feather>
+      {{ (taskMenu.task.kind === 'habit' ? 'TASKS_DELETE_HABIT' : 'TASKS_DELETE_TASK') | translate }}
+    </button>
+  </div>
+</section>
+
+<!-- Modals -->
+<div class="tasks-modal-backdrop" *ngIf="modalStep" (click)="closeModal()">
+  <section class="tasks-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" [ngClass]="'tasks-modal--' + modalStep">
+
+    <!-- Step 1: task type -->
+    <ng-container *ngIf="modalStep === 'type'">
+      <header class="tasks-modal__head">
+        <div class="tasks-modal__title">
+          <h4>{{ 'TASKS_CREATE_TITLE' | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+      <div class="tasks-modal__body">
+        <div class="task-types">
+          <button
+            *ngFor="let type of taskTypes"
+            type="button"
+            class="task-type"
+            [ngClass]="'kind-' + type.kind"
+            (click)="chooseTaskType(type)">
+            <span class="task-type__icon"><i-feather [name]="type.icon"></i-feather></span>
+            <strong>{{ type.titleKey | translate }}</strong>
+            <span class="task-type__desc">{{ type.descriptionKey | translate }}</span>
+            <small>{{ type.examplesKey | translate }}</small>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Step 2: habit presets -->
+    <ng-container *ngIf="modalStep === 'habits'">
+      <header class="tasks-modal__head">
+        <button type="button" class="tasks-modal__back" (click)="back()" [attr.aria-label]="'BACK' | translate">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="tasks-modal__title">
+          <h4>{{ 'TASKS_ADD_HABIT_TITLE' | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-btn-primary tasks-btn-primary--sm" (click)="openCustomHabit()">
+          <i-feather name="plus"></i-feather>
+          {{ 'TASKS_CREATE_CUSTOM_HABIT' | translate }}
+        </button>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+      <div class="tasks-modal__body">
+        <label class="habit-search">
+          <i-feather name="search"></i-feather>
+          <input type="search" [(ngModel)]="habitSearch" [placeholder]="'TASKS_SEARCH_HABIT' | translate" />
+        </label>
+
+        <section class="habit-group" *ngFor="let category of filteredHabitCategories">
+          <h5>{{ category.titleKey | translate }}</h5>
+          <div class="habit-grid">
+            <button *ngFor="let preset of category.habits" type="button" class="habit-card" (click)="openCustomHabit(preset)">
+              <span class="habit-card__icon" [ngClass]="'tone-' + preset.tone"><i-feather [name]="preset.icon"></i-feather></span>
+              <span class="habit-card__text">
+                <strong>{{ preset.name }}</strong>
+                <small>{{ preset.goal }}</small>
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <p class="habit-empty" *ngIf="!filteredHabitCategories.length">{{ 'TASKS_NO_HABIT' | translate }}</p>
+      </div>
+    </ng-container>
+
+    <!-- Step 3: custom habit -->
+    <ng-container *ngIf="modalStep === 'custom'">
+      <header class="tasks-modal__head">
+        <button *ngIf="!editing" type="button" class="tasks-modal__back" (click)="back()" [attr.aria-label]="'BACK' | translate">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="tasks-modal__title">
+          <h4>{{ (editing ? 'TASKS_EDIT_HABIT' : 'TASKS_CUSTOM_HABIT_TITLE') | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+
+      <form class="tasks-modal__body habit-form" (ngSubmit)="saveHabit()">
+        <div class="habit-field">
+          <label for="habitName">{{ 'TASKS_HABIT_NAME' | translate }}</label>
+          <div class="habit-name">
+            <span class="habit-card__icon habit-name__icon" [ngClass]="'tone-' + habit.tone"><i-feather [name]="habit.icon"></i-feather></span>
+            <input
+              id="habitName"
+              name="habitName"
+              class="habit-input"
+              [(ngModel)]="habit.name"
+              [maxlength]="nameMax"
+              [placeholder]="'TASKS_HABIT_NAME_PLACEHOLDER' | translate" />
+          </div>
+          <small class="habit-counter">{{ habit.name.length }} / {{ nameMax }}</small>
+        </div>
+
+        <div class="habit-goal">
+          <div class="habit-field">
+            <label for="habitGoal">{{ 'TASKS_GOAL_VALUE' | translate }}</label>
+            <input id="habitGoal" name="habitGoal" type="number" min="0" class="habit-input" [(ngModel)]="habit.goalValue" [placeholder]="'TASKS_GOAL_PLACEHOLDER' | translate" />
+          </div>
+          <div class="habit-field">
+            <label for="habitUnit">{{ 'TASKS_UNIT' | translate }}</label>
+            <div class="habit-unit">
+              <select id="habitUnit" name="habitUnit" class="habit-input" [(ngModel)]="habit.unit">
+                <option *ngFor="let unit of units" [value]="unit">{{ ('TASKS_UNIT_' + unit) | translate }}</option>
+              </select>
+              <span class="habit-per">{{ 'TASKS_PER_DAY' | translate }}</span>
+            </div>
+            <input
+              *ngIf="habit.unit === 'CUSTOM'"
+              name="habitCustomUnit"
+              class="habit-input habit-input--custom-unit"
+              [(ngModel)]="habit.customUnit"
+              [placeholder]="'TASKS_CUSTOM_UNIT_PLACEHOLDER' | translate" />
+          </div>
+        </div>
+
+        <fieldset class="habit-period">
+          <legend>{{ 'TASKS_HABIT_PERIOD' | translate }}</legend>
+          <div class="habit-period__dates">
+            <div class="habit-field">
+              <label for="habitStart">{{ 'TASKS_START_DATE' | translate }}</label>
+              <input id="habitStart" name="habitStart" type="date" class="habit-input" [(ngModel)]="habit.startDate" />
+            </div>
+            <div class="habit-field">
+              <label for="habitEnd">{{ 'TASKS_END_DATE' | translate }} <em>{{ 'OPTIONAL' | translate }}</em></label>
+              <input id="habitEnd" name="habitEnd" type="date" class="habit-input" [(ngModel)]="habit.endDate" />
+              <small *ngIf="!habit.endDate" class="habit-hint">{{ 'TASKS_NO_END_DATE' | translate }}</small>
+            </div>
+          </div>
+
+          <div class="habit-repeat">
+            <div class="habit-field">
+              <label for="habitRepeat">{{ 'TASKS_REPEAT' | translate }}</label>
+              <select id="habitRepeat" name="habitRepeat" class="habit-input" [(ngModel)]="habit.repeat">
+                <option value="DAILY">{{ 'TASKS_REPEAT_DAILY' | translate }}</option>
+                <option value="WEEKLY">{{ 'TASKS_REPEAT_WEEKLY' | translate }}</option>
+              </select>
+            </div>
+            <div class="habit-field" *ngIf="habit.repeat === 'WEEKLY'">
+              <span class="habit-label">{{ 'TASKS_EVERY' | translate }}</span>
+              <div class="habit-days" role="group">
+                <button
+                  *ngFor="let initial of weekdayInitials; let i = index"
+                  type="button"
+                  [class.active]="habit.repeatDays[i]"
+                  [attr.aria-pressed]="habit.repeatDays[i]"
+                  (click)="toggleRepeatDay(i)">
+                  {{ initial }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <ng-container *ngTemplateOutlet="reminderTpl; context: { $implicit: habit, offKey: 'TASKS_REMINDER_OFF' }"></ng-container>
+        <ng-container *ngTemplateOutlet="advancedTpl; context: { $implicit: habit, id: 'habit' }"></ng-container>
+
+        <footer class="tasks-modal__foot">
+          <button type="button" class="tasks-btn-ghost" (click)="back()">{{ (editing ? 'CANCEL' : 'BACK') | translate }}</button>
+          <button type="submit" class="tasks-btn-primary">{{ 'TASKS_SAVE_HABIT' | translate }}</button>
+        </footer>
+      </form>
+    </ng-container>
+
+    <!-- General task -->
+    <ng-container *ngIf="modalStep === 'general'">
+      <header class="tasks-modal__head">
+        <button *ngIf="!editing" type="button" class="tasks-modal__back" (click)="back()" [attr.aria-label]="'BACK' | translate">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="tasks-modal__title">
+          <h4>{{ (editing ? 'TASKS_EDIT_TASK' : 'TASKS_GENERAL_TITLE') | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+
+      <form class="tasks-modal__body habit-form" (ngSubmit)="createGeneralTask()">
+        <div class="habit-field">
+          <label for="generalTitle">{{ 'TASKS_TASK_TITLE' | translate }}</label>
+          <input
+            id="generalTitle"
+            name="generalTitle"
+            class="habit-input"
+            [(ngModel)]="generalTask.title"
+            [maxlength]="nameMax"
+            [placeholder]="'TASKS_TASK_TITLE_PLACEHOLDER' | translate" />
+          <div class="task-suggestions">
+            <button
+              *ngFor="let suggestion of generalSuggestions"
+              type="button"
+              class="task-suggestion"
+              [class.active]="generalTask.title === suggestion"
+              (click)="generalTask.title = suggestion">
+              {{ suggestion }}
+            </button>
+          </div>
+        </div>
+
+        <div class="habit-field">
+          <label for="generalInstructions">{{ 'TASKS_INSTRUCTIONS' | translate }} <em>{{ 'OPTIONAL' | translate }}</em></label>
+          <textarea
+            id="generalInstructions"
+            name="generalInstructions"
+            rows="3"
+            class="habit-input habit-textarea"
+            [(ngModel)]="generalTask.instructions"
+            [placeholder]="'TASKS_INSTRUCTIONS_PLACEHOLDER' | translate"></textarea>
+        </div>
+
+        <div class="habit-goal">
+          <div class="habit-field">
+            <label for="generalDate">{{ 'TASKS_DATE' | translate }}</label>
+            <input id="generalDate" name="generalDate" type="date" class="habit-input" [(ngModel)]="generalTask.date" />
+          </div>
+          <div class="habit-field">
+            <label for="generalRepeat">{{ 'TASKS_REPEAT' | translate }}</label>
+            <select id="generalRepeat" name="generalRepeat" class="habit-input" [(ngModel)]="generalTask.repeat">
+              <option value="NONE">{{ 'TASKS_REPEAT_NONE' | translate }}</option>
+              <option value="DAILY">{{ 'TASKS_REPEAT_EVERY_DAY' | translate }}</option>
+              <option value="WEEKLY">{{ 'TASKS_REPEAT_EVERY_WEEK_ON' | translate: { day: generalTaskWeekday } }}</option>
+              <option value="WEEKDAYS">{{ 'TASKS_REPEAT_WEEKDAYS' | translate }}</option>
+            </select>
+          </div>
+        </div>
+
+        <ng-container *ngTemplateOutlet="reminderTpl; context: { $implicit: generalTask, offKey: 'TASKS_REMINDER_OFF_TASK' }"></ng-container>
+        <ng-container *ngTemplateOutlet="advancedTpl; context: { $implicit: generalTask, id: 'general' }"></ng-container>
+
+        <footer class="tasks-modal__foot">
+          <button type="button" class="tasks-btn-ghost" (click)="back()">{{ (editing ? 'CANCEL' : 'BACK') | translate }}</button>
+          <button type="submit" class="tasks-btn-primary" [disabled]="!generalTask.title.trim()">{{ (editing ? 'SAVE_CHANGES' : 'TASKS_CREATE_TASK') | translate }}</button>
+        </footer>
+      </form>
+    </ng-container>
+  </section>
+</div>
+
+<!-- Shared form blocks (habit + general task) -->
+<ng-template #reminderTpl let-form let-offKey="offKey">
+  <div class="habit-reminder">
+    <button
+      type="button"
+      role="switch"
+      class="yc-switch"
+      [class.on]="form.reminder"
+      [attr.aria-checked]="form.reminder"
+      [attr.aria-label]="'TASKS_SET_REMINDER' | translate"
+      (click)="form.reminder = !form.reminder">
+      <span class="yc-switch__knob"></span>
+    </button>
+    <div class="habit-reminder__text">
+      <strong>{{ 'TASKS_SET_REMINDER' | translate }}</strong>
+      <small>{{ (form.reminder ? 'TASKS_REMINDER_ON' : offKey) | translate: { name: clientName } }}</small>
+    </div>
+    <input
+      *ngIf="form.reminder"
+      type="time"
+      class="habit-input habit-reminder__time"
+      [(ngModel)]="form.reminderTime"
+      [ngModelOptions]="{ standalone: true }"
+      [attr.aria-label]="'TASKS_REMINDER_TIME' | translate" />
+  </div>
+</ng-template>
+
+<ng-template #advancedTpl let-form let-id="id">
+  <button type="button" class="habit-advanced" [attr.aria-expanded]="advancedOpen" (click)="advancedOpen = !advancedOpen">
+    <i-feather name="settings"></i-feather>
+    {{ 'TASKS_ADVANCED_SETTINGS' | translate }}
+    <i-feather name="chevron-down" class="habit-advanced__chevron" [class.open]="advancedOpen"></i-feather>
+  </button>
+  <div class="habit-advanced__panel" *ngIf="advancedOpen">
+    <button
+      type="button"
+      role="switch"
+      class="yc-switch"
+      [class.on]="form.allowComments"
+      [attr.aria-checked]="form.allowComments"
+      [attr.aria-labelledby]="id + 'CommentsLabel'"
+      (click)="form.allowComments = !form.allowComments">
+      <span class="yc-switch__knob"></span>
+    </button>
+    <span [id]="id + 'CommentsLabel'" class="habit-advanced__label">{{ 'TASKS_ENABLE_COMMENTS' | translate }}</span>
+  </div>
+</ng-template>
