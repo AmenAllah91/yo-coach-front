@@ -1,0 +1,65 @@
+<aside class="client-nav" [class.open]="open" [attr.aria-label]="'CLIENTS' | translate">
+  <div class="client-nav__inner" [attr.aria-hidden]="!open" [attr.inert]="open ? null : ''">
+    <div class="client-nav__head">
+      <h2 class="client-nav__title">
+        {{ 'CLIENTS' | translate }}
+        <span class="client-nav__count">{{ clients.length }}</span>
+      </h2>
+      <button
+        type="button"
+        class="client-nav__toggle"
+        (click)="setOpen(false)"
+        [attr.aria-label]="'HIDE_CLIENT_LIST' | translate"
+        [attr.title]="'HIDE_CLIENT_LIST' | translate">
+        <i-feather name="chevrons-left"></i-feather>
+      </button>
+    </div>
+
+    <label class="client-nav__search">
+      <i-feather name="search"></i-feather>
+      <input
+        type="search"
+        [(ngModel)]="search"
+        [placeholder]="'SEARCH_CLIENTS' | translate"
+        [attr.aria-label]="'SEARCH_CLIENTS' | translate" />
+    </label>
+
+    <div class="client-nav__list" role="list">
+      <div class="client-nav__state" *ngIf="loading && !clients.length">
+        {{ 'LOADING_CLIENTS' | translate }}
+      </div>
+      <div class="client-nav__state" *ngIf="!loading && !filteredClients.length">
+        {{ 'NO_CLIENTS_FOUND' | translate }}
+      </div>
+
+      <button
+        *ngFor="let client of filteredClients; trackBy: trackById"
+        type="button"
+        role="listitem"
+        class="client-nav__row"
+        [class.active]="isActive(client)"
+        [attr.aria-current]="isActive(client) ? 'page' : null"
+        (click)="select(client)">
+        <span class="client-nav__avatar">
+          <img *ngIf="photo(client); else initialsTpl" [src]="photo(client)" alt="" (error)="onPhotoError(client)" />
+          <ng-template #initialsTpl>{{ initials(client) }}</ng-template>
+        </span>
+        <span class="client-nav__text">
+          <strong>{{ fullName(client) }}</strong>
+          <small *ngIf="program(client) as programName">{{ programName }}</small>
+        </span>
+      </button>
+    </div>
+  </div>
+
+</aside>
+<button
+  *ngIf="!open"
+  type="button"
+  class="client-nav__reopen"
+  (click)="setOpen(true)"
+  [attr.aria-label]="'SHOW_CLIENT_LIST' | translate"
+  [attr.title]="'SHOW_CLIENT_LIST' | translate">
+  <i-feather name="users"></i-feather>
+  <i-feather name="chevrons-right" class="client-nav__reopen-arrow"></i-feather>
+</button>

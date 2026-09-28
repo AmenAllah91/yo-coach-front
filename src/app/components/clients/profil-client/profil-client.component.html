@@ -1,3 +1,14 @@
+<div class="client-workspace" [class.client-workspace--nav-closed]="!clientNavOpen">
+  <app-client-nav-panel
+    [clients]="coachClients"
+    [activeClientId]="clientId"
+    [loading]="loadingCoachClients"
+    [open]="clientNavOpen"
+    (openChange)="onClientNavOpenChange($event)"
+    (clientSelect)="selectProfileClient($event)"
+  ></app-client-nav-panel>
+
+  <div class="client-workspace__main">
 <section *ngIf="!profileLoading" class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <div class="profile-header">
     <button class="profile-back app-page-back" type="button" [attr.aria-label]="'BACK_TO_CLIENTS' | translate" (click)="backToClients()">
@@ -114,7 +125,7 @@
     </button>
   </div>
 
-  <ng-container *ngIf="showClientStats">
+  <div class="progress-summary" *ngIf="showClientStats">
   <div class="client-stats-grid">
     <div class="client-stat-card">
       <div class="stat-icon stat-icon--start">
@@ -178,9 +189,9 @@
       <span>{{ 'GOAL_VALUE' | translate:{ value: clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--' } }}</span>
     </div>
   </section>
-  </ng-container>
+  </div>
 
-  <nav class="profile-tabs">
+  <nav class="profile-tabs" #profileTabs>
     <button
       class="tab-link"
       [class.active]="activeTab === 'dashboard'"
@@ -217,26 +228,19 @@
     >
       {{ 'MEASUREMENTS' | translate }}
     </button>
-    <div class="mobile-more-wrap">
-      <button
-        class="tab-link mobile-more-tab"
-        type="button"
-        (click)="mobileMoreOpen = !mobileMoreOpen"
-      >
-        {{ 'MORE' | translate }}
-        <i class="fas fa-chevron-down"></i>
-      </button>
-      <div class="mobile-more-menu" *ngIf="mobileMoreOpen">
-        <button type="button" (click)="setTab('pictures'); mobileMoreOpen = false">{{ 'PROGRESS_PICTURES' | translate }}</button>
-        <button type="button" (click)="setTab('chat'); mobileMoreOpen = false">{{ 'CHAT' | translate }}</button>
-      </div>
-    </div>
     <button
       class="tab-link pictures-tab"
       [class.active]="activeTab === 'pictures'"
       (click)="setTab('pictures')"
     >
       {{ 'PROGRESS_PICTURES' | translate }}
+    </button>
+    <button
+      class="tab-link tasks-tab"
+      [class.active]="activeTab === 'tasks'"
+      (click)="setTab('tasks')"
+    >
+      {{ 'TASKS' | translate }}
     </button>
     <button
       class="tab-link calendar-tab"
@@ -1154,6 +1158,10 @@
       ></app-progress-pictures>
     </div>
 
+    <div class="tab-pane tasks-pane" *ngIf="activeTab === 'tasks'" [class.active]="true">
+      <app-client-tasks-tab [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
+    </div>
+
     <div class="tab-pane" *ngIf="activeTab === 'calendar'" [class.active]="true">
       <app-calendar-clients
         [embeddedClientId]="clientId"
@@ -1163,6 +1171,8 @@
     </div>
   </div>
 </section>
+  </div>
+</div>
 
 <div class="client-preview-backdrop" *ngIf="clientPreviewOpen" (click)="closeClientPreview()">
   <section class="client-preview-modal" role="dialog" aria-modal="true" [attr.aria-label]="'CLIENT_PREVIEW' | translate" (click)="$event.stopPropagation()">

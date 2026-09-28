@@ -1,0 +1,277 @@
+$border: #dce5ef;
+$text: #07152f;
+$muted: #6b7f99;
+$accent: #00a8e8;
+$active-bg: #eaf6fd;
+$hover-bg: #f5f9fc;
+$speed: 0.24s;
+
+// Sticky column right under the app bar; it scrolls independently of the profile.
+:host {
+  // Proportional width: narrow on laptops, capped on wide screens so the profile keeps priority.
+  --client-nav-width: clamp(10.5rem, 12.5vw, 13.5rem);
+
+  position: sticky;
+  top: var(--client-nav-top, 0px);
+  z-index: 20;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  height: calc(100vh - var(--client-nav-top, 0px));
+}
+
+.client-nav {
+  position: relative;
+  width: 0;
+  height: 100%;
+  background: #ffffff;
+  overflow: hidden;
+  border-right: 1px solid transparent;
+  transition: width $speed ease, border-color $speed ease;
+
+  &.open {
+    width: var(--client-nav-width);
+    border-right-color: $border;
+  }
+}
+
+// Fixed-width content clipped by the animated column: no reflow while it slides.
+.client-nav__inner {
+  display: flex;
+  flex-direction: column;
+  width: var(--client-nav-width);
+  height: 100%;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity $speed ease;
+
+  .client-nav.open & {
+    opacity: 1;
+  }
+
+  .client-nav:not(.open) & {
+    visibility: hidden;
+  }
+}
+
+
+.client-nav__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 10px 8px 8px 12px;
+}
+
+.client-nav__title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: $text;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.client-nav__count {
+  color: $muted;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.client-nav__toggle,
+.client-nav__reopen {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: $muted;
+  background: #ffffff;
+  border: 1px solid $border;
+  cursor: pointer;
+  transition: color $speed ease, background $speed ease, border-color $speed ease;
+
+  &:hover {
+    color: $accent;
+    background: $active-bg;
+    border-color: rgba(0, 168, 232, 0.35);
+  }
+
+  i-feather {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.client-nav__toggle {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+.client-nav__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  margin: 0 8px 8px;
+  padding: 0 8px;
+  color: $muted;
+  background: #ffffff;
+  border: 1px solid $border;
+  border-radius: 8px;
+  transition: border-color $speed ease, box-shadow $speed ease;
+
+  &:focus-within {
+    border-color: $accent;
+    box-shadow: 0 0 0 3px rgba(0, 168, 232, 0.12);
+  }
+
+  i-feather {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    color: $text;
+    font-size: 12.5px;
+    background: transparent;
+    border: 0;
+    outline: none;
+
+    &::placeholder {
+      color: #9aa9bb;
+    }
+  }
+}
+
+.client-nav__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid $border;
+}
+
+.client-nav__state {
+  padding: 16px;
+  color: $muted;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.client-nav__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px 6px 11px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #edf2f7;
+  box-shadow: inset 3px 0 0 transparent;
+  cursor: pointer;
+  transition: background $speed ease, box-shadow $speed ease;
+
+  &:hover {
+    background: $hover-bg;
+  }
+
+  &.active {
+    background: $active-bg;
+    box-shadow: inset 3px 0 0 $accent;
+    cursor: default;
+
+    strong {
+      color: #007cc7;
+    }
+  }
+}
+
+.client-nav__avatar {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  color: #ffffff;
+  background: #3db2e3;
+  border-radius: 50%;
+  font-size: 10.5px;
+  font-weight: 700;
+
+  img {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+  }
+}
+
+.client-nav__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: $text;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  small {
+    color: $muted;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+}
+
+// Small tab stuck to the left edge of the profile while the panel is closed.
+.client-nav__reopen {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  gap: 2px;
+  width: 20px;
+  height: 48px;
+  border-left: 0;
+  border-radius: 0 9px 9px 0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+
+  i-feather {
+    width: 13px;
+    height: 13px;
+  }
+
+  .client-nav__reopen-arrow {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+// Smaller desktops: tighter proportion so the profile keeps most of the width.
+@media (max-width: 1279.98px) {
+  :host {
+    --client-nav-width: clamp(9.5rem, 14vw, 11rem);
+  }
+}
+
+// The profile keeps its existing mobile layout (header client switcher).
+@media (max-width: 1023.98px) {
+  :host {
+    display: none;
+  }
+}

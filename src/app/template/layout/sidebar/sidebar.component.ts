@@ -13,6 +13,10 @@ import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 
+const DESKTOP_BREAKPOINT = 1024;
+const PINNED_STORAGE_KEY = 'sidebarPinned';
+const HOVER_OPEN_DELAY_MS = 80;
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
@@ -27,7 +31,12 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
   styleUrls: ['./sidebar.component.scss'],
 })
 export class SidebarComponent implements OnInit, OnDestroy {
+  // Desktop: pinned open (true) or collapsed to icons (false).
+  // Mobile: off-canvas drawer open (true) or hidden (false).
   isExpanded = true;
+  isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
+  isHovered = false;
+  private hoverTimer?: ReturnType<typeof setTimeout>;
   sidebarItems: RouteInfo[] = [];
   listMaxHeight = '100%';
   activeItem: any = null;
@@ -50,7 +59,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
-    this.setExpanded(window.innerWidth >= 1024);
+    this.setExpanded(this.isDesktop && this.readPinnedPreference());
     this.roles = await this.authService.extractRoles();
     this.userRoleKey = this.roles.includes('ROLE_COACH')
       ? 'COACH'
@@ -81,6 +90,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.hoverTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -168,8 +178,55 @@ export class SidebarComponent implements OnInit, OnDestroy {
     });
   }
 
+  get isCollapsed(): boolean {
+    return this.isDesktop && !this.isExpanded;
+  }
+
+  get isHoverOpen(): boolean {
+    return this.isCollapsed && this.isHovered;
+  }
+
   toggleSidebar() {
     this.setExpanded(!this.isExpanded);
+    if (this.isDesktop) {
+      this.writePinnedPreference(this.isExpanded);
+      // After a manual collapse, stay compact until the pointer leaves and re-enters.
+      this.clearHover();
+    }
+  }
+
+  onSidebarMouseEnter(): void {
+    if (!this.isCollapsed) return;
+    clearTimeout(this.hoverTimer);
+    this.hoverTimer = setTimeout(() => (this.isHovered = true), HOVER_OPEN_DELAY_MS);
+  }
+
+  onSidebarMouseLeave(): void {
+    this.clearHover();
+    if (this.isCollapsed) this.accountMenuOpen = false;
+  }
+
+  hasActiveChild(item: RouteInfo): boolean {
+    return !!item.submenu?.some((subItem) => subItem.isActive);
+  }
+
+  private clearHover(): void {
+    clearTimeout(this.hoverTimer);
+    this.isHovered = false;
+  }
+
+  private readPinnedPreference(): boolean {
+    try {
+      return localStorage.getItem(PINNED_STORAGE_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  }
+
+  private writePinnedPreference(pinned: boolean): void {
+    try {
+      localStorage.setItem(PINNED_STORAGE_KEY, String(pinned));
+    } catch {}
   }
 
   closeSidebar() {
@@ -303,9 +360,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   @HostListener('window:resize')
   onWindowResize() {
-    const shouldBeExpanded = window.innerWidth >= 1024;
-    if (this.isExpanded !== shouldBeExpanded) {
-      this.setExpanded(shouldBeExpanded);
-    }
+    const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
+    if (isDesktop === this.isDesktop) return;
+
+    // Only reset when crossing the breakpoint so a manual desktop collapse survives resizes.
+    this.isDesktop = isDesktop;
+    this.clearHover();
+    this.setExpanded(isDesktop && this.readPinnedPreference());
   }
 }

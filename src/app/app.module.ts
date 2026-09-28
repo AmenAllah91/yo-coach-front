@@ -14,10 +14,11 @@ import { BrowserAnimationsModule, provideAnimations } from '@angular/platform-br
 import { provideRouter, RouterModule } from '@angular/router';
 import { AuthInterceptor } from '@config/AuthInterceptor';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { FeatherModule } from 'angular-feather';
 import { allIcons } from 'angular-feather/icons';
+import { sidebarIcons } from './template/layout/sidebar/sidebar-icons';
+import { taskIcons } from './components/clients/profil-client/client-tasks-tab/task-icons';
 import { KeycloakAngularModule, KeycloakService } from 'keycloak-angular';
 import { InfiniteScrollModule } from 'ngx-infinite-scroll';
 import { NgxSpinnerModule } from 'ngx-spinner';
@@ -34,7 +35,7 @@ import {AuthService} from "@config/auth.service";
 import {environment} from "@env/environment";
 
 export function HttpLoaderFactory(http: HttpClient) {
-  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
+  return createTranslateLoader(http);
 }
 function isPublicCoachHostname(host: string): boolean {
   if (!host) return false;
@@ -204,7 +205,7 @@ function initializeKeycloakAndSync(
         },
       })
     ),
-    importProvidersFrom(FeatherModule.pick(allIcons)),
+    importProvidersFrom(FeatherModule.pick({ ...allIcons, ...sidebarIcons, ...taskIcons })),
     {
 
 

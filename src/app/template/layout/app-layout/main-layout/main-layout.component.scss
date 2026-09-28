@@ -1,4 +1,5 @@
 $sidebar-width: 15rem;
+$sidebar-collapsed-width: 4rem;
 
 .layout-body {
   display: flex;
@@ -17,9 +18,13 @@ $sidebar-width: 15rem;
   flex: 0 0 $sidebar-width;
   transition: width 0.24s ease, flex-basis 0.24s ease;
 
-  &.closed {
-    width: 0;
-    flex-basis: 0;
+}
+
+// Desktop: a closed sidebar is the compact icon rail, not hidden.
+@media (min-width: 1024px) {
+  .sidebar-spacer.closed {
+    width: $sidebar-collapsed-width;
+    flex-basis: $sidebar-collapsed-width;
   }
 }
 

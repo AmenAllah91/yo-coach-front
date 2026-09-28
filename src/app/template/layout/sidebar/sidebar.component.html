@@ -1,17 +1,37 @@
-<aside id="app-sidebar" class="sidebar" [class.expanded]="isExpanded">
+<aside
+  id="app-sidebar"
+  class="sidebar"
+  [class.expanded]="isExpanded"
+  [class.collapsed]="isCollapsed"
+  [class.hover-open]="isHoverOpen"
+  (mouseenter)="onSidebarMouseEnter()"
+  (mouseleave)="onSidebarMouseLeave()">
   <div class="sidebar-header">
     <img
-      src="assets/yocoachlogo.png"
-      class="logo"
+      src="assets/logo/yocoach-logo.svg"
+      class="logo logo-full"
       alt="Yo Coach Logo"
     />
+    <img
+      src="assets/logo/yocoach-logo-yo.svg"
+      class="logo logo-mini"
+      alt="Yo Coach Logo"
+    />
+    <button
+      type="button"
+      class="sidebar-toggle"
+      [class.pinned]="isExpanded"
+      (click)="toggleSidebar()"
+      [attr.aria-label]="(isExpanded ? 'CLOSE_SIDEBAR' : 'OPEN_SIDEBAR') | translate">
+      <i-feather name="sidebar"></i-feather>
+    </button>
   </div>
 
   <div class="sidebar-nav">
     <ng-scrollbar [style.height]="listMaxHeight" visibility="hover">
       <ul class="nav-list">
         <ng-container *ngFor="let item of sidebarItems; trackBy: trackByItem">
-          <li class="nav-item" [class.active]="item.isActive">
+          <li class="nav-item" [class.active]="item.isActive" [class.has-active-child]="hasActiveChild(item)">
             <!-- Group Title -->
             <ng-container *ngIf="item.groupTitle">
               <div class="nav-group-title">

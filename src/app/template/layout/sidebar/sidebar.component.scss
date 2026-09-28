@@ -1,4 +1,5 @@
 $sidebar-width: 15rem;
+$sidebar-collapsed-width: 4rem;
 $sidebar-mobile-width: min(18rem, calc(100vw - 28px));
 $transition-speed: 0.24s;
 $sidebar-bg: #0f1115;
@@ -39,22 +40,55 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 8px;
   height: 72px;
-  padding: 0 18px 0 52px;
+  padding: 0 12px 0 14px;
   border-bottom: 1px solid $sidebar-border;
   flex-shrink: 0;
   background: $sidebar-bg !important;
 }
 
+// Vector logos with a tight viewBox: sized by width, height follows the artwork.
 .logo {
-  width: min(205px, 92%);
-  height: 70px;
+  flex: 0 0 auto;
+  max-width: none;
   max-height: none;
-  object-fit: cover;
-  object-position: 39% 55%;
+  height: auto;
   padding: 0;
-  transform: translateY(-1px);
+}
+
+.logo-full {
+  width: 132px;
+}
+
+.logo-mini {
+  display: none;
+  width: 40px;
+}
+
+.sidebar-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: $text-muted;
+  background: transparent;
+  border: 1px solid $sidebar-border;
+  border-radius: 7px;
+  transition: color $transition-speed ease, background $transition-speed ease, border-color $transition-speed ease;
+
+  &:hover {
+    color: #ffffff;
+    background: $hover-bg;
+  }
+
+  i-feather {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .sidebar-nav {
@@ -345,5 +379,77 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 @media (min-width: 1024px) {
   .sidebar {
     box-shadow: none;
+    overflow: hidden;
+    transform: none;
+    transition: width $transition-speed ease, box-shadow $transition-speed ease;
+  }
+
+  // Compact rail: icons only. Everything stays in the DOM so hovering back to
+  // full width is a pure width transition, without re-layout of the items.
+  .sidebar.collapsed:not(.hover-open) {
+    width: $sidebar-collapsed-width;
+
+    .sidebar-header {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .logo-full,
+    .sidebar-toggle {
+      display: none;
+    }
+
+    .logo-mini {
+      display: block;
+    }
+
+    .nav-label,
+    .nav-badge,
+    .submenu-arrow,
+    .nav-group-title,
+    .account-copy,
+    .account-trigger > i-feather {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .submenu.expanded {
+      max-height: 0;
+      margin: 0;
+    }
+
+    .nav-link,
+    .account-trigger {
+      overflow: hidden;
+    }
+
+    .sidebar-account {
+      padding-inline: 3px;
+    }
+
+    // A route inside a submenu highlights its parent icon in the rail.
+    .nav-item.has-active-child > .nav-link {
+      color: #ffffff !important;
+      background: $active-bg !important;
+      box-shadow: inset 3px 0 0 $accent !important;
+    }
+  }
+
+  // Temporary expansion over the content (the layout spacer keeps the rail width).
+  .sidebar.collapsed.hover-open {
+    box-shadow: $shadow-lg;
+  }
+
+  .nav-label,
+  .nav-badge,
+  .submenu-arrow,
+  .nav-group-title,
+  .account-copy,
+  .account-trigger > i-feather {
+    transition: opacity $transition-speed ease, visibility $transition-speed ease, transform $transition-speed ease;
+  }
+
+  .sidebar-account {
+    transition: padding $transition-speed ease;
   }
 }

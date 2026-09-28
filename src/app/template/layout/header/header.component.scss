@@ -54,8 +54,9 @@
 }
 
 @media (min-width: 64rem) {
+  // Collapsed desktop sidebar is a 4rem icon rail.
   .navbar {
-    padding-left: 1rem;
+    padding-left: 5rem;
   }
 
   .navbar.sidebar-expanded {
