@@ -78,7 +78,8 @@
           class="task-chip"
           [ngClass]="['task-chip--' + task.status, 'kind-' + task.kind]"
           [class.menu-open]="isMenuOpenFor(task)"
-          [attr.title]="task.title">
+          [attr.title]="task.title"
+          (click)="editCalendarTask(day, task)">
           <span class="task-chip__icon"><i-feather [name]="task.icon"></i-feather></span>
           <span class="task-chip__text">
             <strong>{{ task.title }}</strong>
@@ -116,10 +117,6 @@
     <button type="button" role="menuitem" (click)="editTask()">
       <i-feather name="edit-2"></i-feather>
       {{ (taskMenu.task.kind === 'habit' ? 'TASKS_EDIT_HABIT' : 'TASKS_EDIT_TASK') | translate }}
-    </button>
-    <button type="button" role="menuitem" (click)="toggleTaskDone()">
-      <i-feather [name]="taskMenu.task.status === 'done' ? 'rotate-ccw' : 'check-circle'"></i-feather>
-      {{ (taskMenu.task.status === 'done' ? 'TASKS_MARK_NOT_DONE' : 'TASKS_MARK_DONE') | translate }}
     </button>
     <button type="button" role="menuitem" class="danger" (click)="deleteTask()">
       <i-feather name="trash-2"></i-feather>
@@ -327,16 +324,6 @@
             [(ngModel)]="generalTask.title"
             [maxlength]="nameMax"
             [placeholder]="'TASKS_TASK_TITLE_PLACEHOLDER' | translate" />
-          <div class="task-suggestions">
-            <button
-              *ngFor="let suggestion of generalSuggestions"
-              type="button"
-              class="task-suggestion"
-              [class.active]="generalTask.title === suggestion"
-              (click)="generalTask.title = suggestion">
-              {{ suggestion }}
-            </button>
-          </div>
         </div>
 
         <div class="habit-field">
@@ -354,15 +341,6 @@
           <div class="habit-field">
             <label for="generalDate">{{ 'TASKS_DATE' | translate }}</label>
             <input id="generalDate" name="generalDate" type="date" class="habit-input" [(ngModel)]="generalTask.date" />
-          </div>
-          <div class="habit-field">
-            <label for="generalRepeat">{{ 'TASKS_REPEAT' | translate }}</label>
-            <select id="generalRepeat" name="generalRepeat" class="habit-input" [(ngModel)]="generalTask.repeat">
-              <option value="NONE">{{ 'TASKS_REPEAT_NONE' | translate }}</option>
-              <option value="DAILY">{{ 'TASKS_REPEAT_EVERY_DAY' | translate }}</option>
-              <option value="WEEKLY">{{ 'TASKS_REPEAT_EVERY_WEEK_ON' | translate: { day: generalTaskWeekday } }}</option>
-              <option value="WEEKDAYS">{{ 'TASKS_REPEAT_WEEKDAYS' | translate }}</option>
-            </select>
           </div>
         </div>
 

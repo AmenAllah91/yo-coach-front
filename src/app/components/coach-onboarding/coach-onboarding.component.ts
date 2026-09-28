@@ -7,7 +7,7 @@ import { finalize } from 'rxjs/operators';
 import { CoachDistanceUnit, CoachLanguage, CoachMeasurementUnit, CoachOnboardingState, CoachWeightUnit } from '../../models/coach-onboarding.model';
 import { CoachOnboardingService } from '../../service/coach-onboarding.service';
 import { LanguageService } from '../../service/language.service';
-import { ONBOARDING_COUNTRIES, ONBOARDING_TIMEZONES } from './onboarding-reference-data';
+import { ONBOARDING_COUNTRIES, ONBOARDING_COUNTRY_TIMEZONES, ONBOARDING_TIMEZONES } from './onboarding-reference-data';
 
 type Option = { value: string; label: string; icon?: string };
 
@@ -16,20 +16,20 @@ export class CoachOnboardingComponent implements OnInit {
   readonly countries = ONBOARDING_COUNTRIES;
   readonly timezones = ONBOARDING_TIMEZONES;
   readonly coachRoles: Option[] = [
-    { value: 'PERSONAL_TRAINER', label: 'COACH_ONBOARDING.ROLE.PERSONAL_TRAINER', icon: '🏋️' }, { value: 'ONLINE_COACH', label: 'COACH_ONBOARDING.ROLE.ONLINE_COACH', icon: '💻' },
-    { value: 'NUTRITION_COACH', label: 'COACH_ONBOARDING.ROLE.NUTRITION_COACH', icon: '🥗' }, { value: 'STRENGTH_CONDITIONING_COACH', label: 'COACH_ONBOARDING.ROLE.STRENGTH', icon: '💪' },
-    { value: 'GYM_OWNER', label: 'COACH_ONBOARDING.ROLE.GYM_OWNER', icon: '🏢' }, { value: 'OTHER', label: 'COACH_ONBOARDING.OTHER', icon: '✨' },
+    { value: 'PERSONAL_TRAINER', label: 'COACH_ONBOARDING.ROLE.PERSONAL_TRAINER', icon: 'dumbbell' }, { value: 'ONLINE_COACH', label: 'COACH_ONBOARDING.ROLE.ONLINE_COACH', icon: 'bi-laptop' },
+    { value: 'NUTRITION_COACH', label: 'COACH_ONBOARDING.ROLE.NUTRITION_COACH', icon: 'bi-apple' }, { value: 'STRENGTH_CONDITIONING_COACH', label: 'COACH_ONBOARDING.ROLE.STRENGTH', icon: 'bi-activity' },
+    { value: 'GYM_OWNER', label: 'COACH_ONBOARDING.ROLE.GYM_OWNER', icon: 'bi-buildings' }, { value: 'OTHER', label: 'COACH_ONBOARDING.OTHER', icon: 'bi-three-dots' },
   ];
   readonly coachingModes: Option[] = [
-    { value: 'IN_PERSON_ONLY', label: 'COACH_ONBOARDING.MODE.IN_PERSON', icon: '👥' }, { value: 'ONLINE_ONLY', label: 'COACH_ONBOARDING.MODE.ONLINE', icon: '🌐' },
-    { value: 'BOTH', label: 'COACH_ONBOARDING.MODE.BOTH', icon: '🔄' }, { value: 'JUST_GETTING_STARTED', label: 'COACH_ONBOARDING.MODE.STARTING', icon: '🚀' },
+    { value: 'IN_PERSON_ONLY', label: 'COACH_ONBOARDING.MODE.IN_PERSON' }, { value: 'ONLINE_ONLY', label: 'COACH_ONBOARDING.MODE.ONLINE' },
+    { value: 'BOTH', label: 'COACH_ONBOARDING.MODE.BOTH' }, { value: 'JUST_GETTING_STARTED', label: 'COACH_ONBOARDING.MODE.STARTING' },
   ];
   readonly activeClientRanges = this.options('CLIENT_RANGE', ['ZERO', 'ONE_TO_FIVE', 'SIX_TO_TEN', 'ELEVEN_TO_TWENTY', 'TWENTY_ONE_TO_FIFTY', 'FIFTY_ONE_TO_HUNDRED', 'HUNDRED_PLUS']);
   readonly managementTools: Option[] = [
-    { value: 'WHATSAPP_MESSENGER', label: 'COACH_ONBOARDING.TOOLS.WHATSAPP', icon: '💬' }, { value: 'SPREADSHEETS', label: 'COACH_ONBOARDING.TOOLS.SPREADSHEETS', icon: '📊' },
-    { value: 'PDF_DOCUMENTS', label: 'COACH_ONBOARDING.TOOLS.PDF', icon: '📄' }, { value: 'COACHING_SOFTWARE', label: 'COACH_ONBOARDING.TOOLS.SOFTWARE', icon: '⚙️' },
-    { value: 'OWN_SYSTEM', label: 'COACH_ONBOARDING.TOOLS.OWN_SYSTEM', icon: '🧩' }, { value: 'NOTHING_YET', label: 'COACH_ONBOARDING.TOOLS.NOTHING', icon: '🌱' },
-    { value: 'OTHER', label: 'COACH_ONBOARDING.OTHER', icon: '✨' },
+    { value: 'WHATSAPP_MESSENGER', label: 'COACH_ONBOARDING.TOOLS.WHATSAPP' }, { value: 'SPREADSHEETS', label: 'COACH_ONBOARDING.TOOLS.SPREADSHEETS' },
+    { value: 'PDF_DOCUMENTS', label: 'COACH_ONBOARDING.TOOLS.PDF' }, { value: 'COACHING_SOFTWARE', label: 'COACH_ONBOARDING.TOOLS.SOFTWARE' },
+    { value: 'OWN_SYSTEM', label: 'COACH_ONBOARDING.TOOLS.OWN_SYSTEM' }, { value: 'NOTHING_YET', label: 'COACH_ONBOARDING.TOOLS.NOTHING' },
+    { value: 'OTHER', label: 'COACH_ONBOARDING.OTHER' },
   ];
   readonly challenges = this.options('CHALLENGE', ['TIME_MANAGEMENT', 'WORKOUT_PROGRAM_CREATION', 'NUTRITION_PLANS', 'PROGRESS_TRACKING', 'ACCOUNTABILITY', 'COMMUNICATION', 'GROWING_ONLINE_BUSINESS', 'PROFESSIONAL_IMAGE', 'TOOLS_FRAGMENTED', 'STARTING_BUSINESS']).concat([{ value: 'OTHER', label: 'COACH_ONBOARDING.OTHER' }]);
   readonly goalOptions = this.options('GOAL', ['SAVE_TIME', 'COACH_MORE_CLIENTS', 'INCREASE_REVENUE', 'START_ONLINE_COACHING', 'IMPROVE_RETENTION', 'PROFESSIONAL_CLIENT_EXPERIENCE', 'REPLACE_TOOLS', 'ORGANIZE_EVERYTHING']);
@@ -55,7 +55,7 @@ export class CoachOnboardingComponent implements OnInit {
     this.unitsForm = this.fb.group({ weightUnit: ['kg', Validators.required], distanceUnit: ['km', Validators.required], measurementUnit: ['cm', Validators.required] });
   }
 
-  ngOnInit(): void { this.loadState(); this.locationForm.get('country')?.valueChanges.subscribe((country) => { if (this.unitsForm.pristine) this.unitsForm.patchValue(this.defaultUnitsForCountry(country), { emitEvent: false }); }); }
+  ngOnInit(): void { this.loadState(); this.locationForm.get('country')?.valueChanges.subscribe((country) => { const timezone = ONBOARDING_COUNTRY_TIMEZONES[country]; if (timezone) this.locationForm.get('timezone')?.setValue(timezone); if (this.unitsForm.pristine) this.unitsForm.patchValue(this.defaultUnitsForCountry(country), { emitEvent: false }); }); }
   get progressPercent(): number { return ((this.activeStepIndex + 1) / 3) * 100; }
   get currentForm(): FormGroup { return [this.businessForm, this.locationForm, this.unitsForm][this.activeStepIndex]; }
   get answeredBusinessQuestions(): number { const v = this.businessForm.value; return [v.coachRole, v.coachingMode, v.activeClientsRange, v.managementTools?.length, v.biggestChallenge, v.businessGoals?.length, v.targetClientsRange].filter(Boolean).length; }

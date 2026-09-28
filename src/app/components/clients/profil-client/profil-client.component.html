@@ -1159,7 +1159,7 @@
     </div>
 
     <div class="tab-pane tasks-pane" *ngIf="activeTab === 'tasks'" [class.active]="true">
-      <app-client-tasks-tab [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
+      <app-client-tasks-tab [clientId]="clientId" [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
     </div>
 
     <div class="tab-pane" *ngIf="activeTab === 'calendar'" [class.active]="true">
