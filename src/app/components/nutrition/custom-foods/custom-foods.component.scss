@@ -547,3 +547,29 @@
 .food-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .field-error { color: #d32f2f; font-size: 12px; margin: 5px 0; }
 .confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.serving-section {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+  margin-bottom: 1.5rem;
+
+  .form-group { margin-bottom: 0.5rem; }
+}
+.serving-section__title { margin: 0 0 0.25rem; font-size: 0.9375rem; font-weight: 600; color: #111827; }
+.serving-section__hint { margin: 0 0 0.75rem; font-size: 0.8125rem; color: #64748b; }
+.serving-main-row__size { flex: 0 0 110px !important; }
+.serving-list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 8px; }
+.serving-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+.serving-item__form { flex: 1; min-width: 0; }
+.serving-item__text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.serving-item__text strong { font-size: 0.875rem; color: #111827; }
+.serving-item__text span { font-size: 0.75rem; color: #64748b; }
+.serving-item__actions { display: flex; gap: 2px; }
+.serving-item__actions button { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #516986; cursor: pointer; }
+.serving-item__actions button:hover:not(:disabled) { background: #f1f5f9; }
+.serving-item__actions button.danger { color: #d14343; }
+.serving-item__actions button:disabled { opacity: .4; cursor: not-allowed; }
+.serving-item__actions i-feather { width: 16px; height: 16px; }
+.serving-add-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px dashed #cbd8e6; border-radius: 7px; background: #fff; color: #17324d; padding: 8px 12px; font-weight: 600; font-size: 0.8125rem; cursor: pointer; }
+.serving-add-btn i-feather { width: 16px; height: 16px; }
+.serving-count { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 11px; font-weight: 600; }
