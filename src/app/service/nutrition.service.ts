@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { MealPlan } from '@shared/models/MealPlan';
+import { FoodServing, MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
 
 export interface Food {
@@ -21,6 +21,8 @@ export interface Food {
   sodium?: number | null;
   servingSize: number;
   servingUnit: string;
+  servings?: FoodServing[] | null;
+  defaultServingId?: string | null;
   coachId?: string;
   isGeneral?: boolean;
   createdDate?: string;
@@ -53,6 +55,8 @@ export interface FoodRef {
   coachId: string | null;
   servingSize: number | null;
   servingDescription: string | null;
+  servings?: FoodServing[] | null;
+  defaultServingId?: string | null;
   createdDate: Date | null;
   lastModifiedDate: Date | null;
   general: boolean;

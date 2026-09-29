@@ -14,6 +14,7 @@ import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-temp
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 import { nutritionDayState, nutritionDayValidationMessages, nutritionFoodValidationMessages } from '@shared/models/nutrition-publication';
+import { lineMacros, lineServing } from '@shared/models/nutrition-math';
 
 @Component({
   selector: 'app-assign-full-plan',
@@ -548,7 +549,7 @@ export class AssignFullPlanComponent implements OnInit {
       const copy: any = JSON.parse(JSON.stringify(food));
       copy.id = this.newLocalId();
       copy.quantity = this.multiplyNumber(
-        food.quantity ?? food.foodRef?.servingSize ?? 100,
+        food.quantity ?? lineServing(food)?.size ?? 100,
         multiplier,
       );
       if (food.manual || !food.foodRef) {
@@ -834,30 +835,7 @@ export class AssignFullPlanComponent implements OnInit {
   ==============================================*/
 
   computeFoodMacros(food: Food) {
-    if (food.manual || !food.foodRef) {
-      return {
-        calories: Number(food.calories) || 0,
-        protein: Number(food.protein) || 0,
-        carbs: Number(food.carbohydrates ?? food.carbs) || 0,
-        fat: Number(food.fat) || 0,
-      };
-    }
-
-    const servingSize = Number(food.foodRef.servingSize) || 100;
-    const factor = (Number(food.quantity) || servingSize) / servingSize;
-    const protein = (Number(food.foodRef.protein) || 0) * factor;
-    const carbs = (Number(food.foodRef.carbohydrates) || 0) * factor;
-    const fat = (Number(food.foodRef.fat) || 0) * factor;
-    const declaredCalories = Number(food.foodRef.energy ?? food.foodRef.calories);
-
-    return {
-      calories: Number.isFinite(declaredCalories)
-        ? declaredCalories * factor
-        : protein * 4 + carbs * 4 + fat * 9,
-      protein,
-      carbs,
-      fat,
-    };
+    return lineMacros(food);
   }
 
   computeMealMacros(meal: Meal) {

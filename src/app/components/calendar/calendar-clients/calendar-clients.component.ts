@@ -20,6 +20,7 @@ import { ExerciseService, PageResponse } from 'app/service/exercise.service';
 import { Exercise as LibraryExercise } from '@shared/models/exercice.models';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
+import { lineMacros } from '@shared/models/nutrition-math';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface ExerciseSet {
@@ -713,10 +714,7 @@ currentDate = new Date();
             foods: (meal.foods || []).map((food: any) => ({
               name: food.name,
               quantity: food.quantity,
-              protein: food.protein ?? 0,
-              carbs: food.carbs ?? 0,
-              fat: food.fat ?? 0,
-              calories: food.calories ?? 0,
+              ...lineMacros(food),
             })),
           })
         );

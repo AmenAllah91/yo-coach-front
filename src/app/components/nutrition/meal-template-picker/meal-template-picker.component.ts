@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { MealsService } from 'app/service/meals.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { totalMacros } from '@shared/models/nutrition-math';
 
 export interface MealTemplateSelection {
   meal: any;
@@ -157,29 +158,7 @@ export class MealTemplatePickerComponent implements OnChanges {
   }
 
   macros(meal: any): { calories: number; protein: number; carbs: number; fat: number } {
-    let calories = 0;
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-
-    for (const food of meal?.foods || []) {
-      if (food?.manual || !food?.foodRef) {
-        calories += Number(food?.calories) || 0;
-        protein += Number(food?.protein) || 0;
-        carbs += Number(food?.carbohydrates ?? food?.carbs) || 0;
-        fat += Number(food?.fat) || 0;
-        continue;
-      }
-
-      const ref = food.foodRef;
-      const servingSize = Number(ref?.servingSize) || 100;
-      const quantity = Number(food?.quantity) || servingSize;
-      const ratio = quantity / servingSize;
-      calories += (Number(ref?.energy ?? ref?.calories) || 0) * ratio;
-      protein += (Number(ref?.protein) || 0) * ratio;
-      carbs += (Number(ref?.carbohydrates ?? ref?.carbs) || 0) * ratio;
-      fat += (Number(ref?.fat) || 0) * ratio;
-    }
+    const { calories, protein, carbs, fat } = totalMacros(meal?.foods);
 
     return {
       calories: Math.round(calories),

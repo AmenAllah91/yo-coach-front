@@ -15,6 +15,7 @@ import { environment } from '@env/environment';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '@config/auth.service';
 import { Location } from '@angular/common';
+import { lineMacros, lineServing } from '@shared/models/nutrition-math';
 
 type PlanStatus = 'COMPLETED' | 'OFF_PLAN' | 'IN_PROGRESS' | 'PENDING';
 type MealReportStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
@@ -543,19 +544,19 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       expanded: true,
       foods: (meal.foods || []).map((food: any) => {
         const foodRef = food.foodRef || {};
-        const quantity = Number(food.quantity ?? foodRef.servingSize ?? 100);
-        const servingSize = Number(foodRef.servingSize ?? 100);
-        const ratio = servingSize > 0 ? quantity / servingSize : 1;
-        const unit = food.unit || foodRef.servingDescription || 'g';
+        const serving = lineServing(food);
+        const quantity = Number(food.quantity ?? serving?.size ?? 100);
+        const unit = food.unit || serving?.unit || 'g';
+        const macros = lineMacros(food);
 
         return {
           id: food.id,
           name: food.name || foodRef.name || this.translate.instant('FOOD'),
           quantity: `${quantity} ${unit}`,
-          protein: Math.round(Number(foodRef.protein || 0) * ratio),
-          carbs: Math.round(Number(foodRef.carbohydrates || 0) * ratio),
-          fat: Math.round(Number(foodRef.fat || 0) * ratio),
-          calories: Math.round(Number(foodRef.energy || 0) * ratio),
+          protein: Math.round(macros.protein),
+          carbs: Math.round(macros.carbs),
+          fat: Math.round(macros.fat),
+          calories: Math.round(macros.calories),
           foodRefId: foodRef.id,
           imageUrl: foodRef.imageUrl || food.imageUrl || '',
           category: this.foodCategory(foodRef, food),
