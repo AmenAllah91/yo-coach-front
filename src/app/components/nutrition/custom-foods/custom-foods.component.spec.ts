@@ -1,6 +1,7 @@
 import { of } from 'rxjs';
 import { CustomFoodsComponent } from './custom-foods.component';
 import { Food } from '../../../service/nutrition.service';
+import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
 
 describe('CustomFoodsComponent servings', () => {
   const translate: any = { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) };
@@ -55,10 +56,10 @@ describe('CustomFoodsComponent servings', () => {
     expect(payload.servings.map((s: any) => s.id)).toEqual(['egg', 'initial']);
   });
 
-  it('adds a serving, refuses a duplicate main serving and waits for an open serving form', () => {
+  it('adds a serving and refuses a duplicate main serving', () => {
     component.editFood(legacyEggs());
     component.openServingForm(null);
-    expect(component.canSave).toBeFalse();
+    expect(component.canSave).toBeTrue();
     component.onServingSaved({ size: 100, unit: 'G', energy: 1, protein: 1, carbohydrates: 1, fat: 1 });
     expect(component.servingFormOpen).toBeFalse();
     expect(component.errors['servingDescription']).toBe('FOOD_VALID_SERVING_DUPLICATE');
@@ -76,6 +77,42 @@ describe('CustomFoodsComponent servings', () => {
     expect(payload.defaultServingId).toBeNull();
     expect(payload.servings.map((s: any) => `${s.size} ${s.unit}`)).toEqual(['1 barre', '3 barres']);
     expect(payload.servings[0].id).toBeUndefined();
+  });
+
+  function pendingForm(values: Partial<Record<string, string>>): FoodServingFormComponent {
+    const form = new FoodServingFormComponent(translate);
+    form.ngOnChanges();
+    Object.assign(form.draft, values);
+    component.openServingForm(null);
+    component.servingForm = form;
+    return form;
+  }
+
+  it('saves the main serving and the serving being typed in one click', async () => {
+    component.openAddModal();
+    Object.assign(component, { foodName: 'Œufs', servingSize: '100', servingDescription: 'g', calories: '143', protein: '12.6', carbs: '0.7', fat: '9.5' });
+    pendingForm({ unit: 'œuf', energy: '72', protein: '6.3', carbohydrates: '0.4', fat: '4.8' });
+    await component.saveFood();
+    const payload = service.createFood.calls.mostRecent().args[0];
+    expect(payload.servings.map((s: any) => `${s.size} ${s.unit}`)).toEqual(['100 g', '1 œuf']);
+  });
+
+  it('keeps the food unsaved while the serving being typed is incomplete', async () => {
+    component.openAddModal();
+    Object.assign(component, { foodName: 'Œufs', calories: '143', protein: '12.6', carbs: '0.7', fat: '9.5' });
+    const form = pendingForm({ unit: 'œuf', energy: '72' });
+    await component.saveFood();
+    expect(service.createFood).not.toHaveBeenCalled();
+    expect(form.error('protein')).toBe('FOOD_VALID_REQUIRED');
+    expect(component.servingFormOpen).toBeTrue();
+  });
+
+  it('ignores a serving form left empty', async () => {
+    component.openAddModal();
+    Object.assign(component, { foodName: 'Œufs', calories: '143', protein: '12.6', carbs: '0.7', fat: '9.5' });
+    pendingForm({});
+    await component.saveFood();
+    expect(service.createFood.calls.mostRecent().args[0].servings.length).toBe(1);
   });
 
   it('shows the main serving and the number of extra servings in the list', () => {
