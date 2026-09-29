@@ -353,11 +353,252 @@
         </footer>
       </form>
     </ng-container>
+
+    <!-- Client progress (progress pictures request) -->
+    <ng-container *ngIf="modalStep === 'progress'">
+      <header class="tasks-modal__head">
+        <button *ngIf="!editing" type="button" class="tasks-modal__back" (click)="back()" [attr.aria-label]="'BACK' | translate">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="tasks-modal__title">
+          <h4>{{ (editing ? 'TASKS_EDIT_TASK' : 'TASKS_PROGRESS_TITLE') | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+
+      <form class="tasks-modal__body habit-form" (ngSubmit)="createProgressTask()">
+        <div class="progress-info">
+          <span class="progress-info__icon"><i-feather name="camera"></i-feather></span>
+          <span class="progress-info__text">
+            <strong>{{ 'TASKS_PROGRESS_PHOTOS' | translate }}</strong>
+            <small>{{ 'TASKS_PROGRESS_PHOTOS_DESC' | translate }}</small>
+          </span>
+        </div>
+
+        <div class="habit-field">
+          <label for="progressTitle">{{ 'TASKS_TASK_TITLE' | translate }}</label>
+          <input
+            id="progressTitle"
+            name="progressTitle"
+            class="habit-input"
+            [(ngModel)]="progressTask.title"
+            [maxlength]="nameMax"
+            [placeholder]="'TASKS_PROGRESS_DEFAULT_TITLE' | translate" />
+        </div>
+
+        <div class="habit-field">
+          <span class="habit-label" id="progressPosesLabel">{{ 'TASKS_PHOTOS_TO_TAKE' | translate }}</span>
+          <div class="task-options" role="group" aria-labelledby="progressPosesLabel">
+            <button
+              *ngFor="let pose of progressPoses"
+              type="button"
+              class="task-option"
+              [class.active]="isPoseSelected(pose)"
+              [attr.aria-pressed]="isPoseSelected(pose)"
+              (click)="toggleProgressPose(pose)">
+              <i-feather *ngIf="isPoseSelected(pose)" name="check"></i-feather>
+              {{ ('PROGRESS_POSE_' + pose) | translate }}
+            </button>
+          </div>
+          <small *ngIf="!progressTask.poses.length" class="habit-hint habit-hint--error">{{ 'TASKS_POSE_REQUIRED' | translate }}</small>
+        </div>
+
+        <div class="habit-field">
+          <label for="progressNote">{{ 'TASKS_NOTE_FOR_CLIENT' | translate }} <em>{{ 'OPTIONAL' | translate }}</em></label>
+          <textarea
+            id="progressNote"
+            name="progressNote"
+            rows="2"
+            class="habit-input habit-textarea"
+            [(ngModel)]="progressTask.note"
+            [placeholder]="'TASKS_PROGRESS_NOTE_PLACEHOLDER' | translate"></textarea>
+        </div>
+
+        <div class="habit-field">
+          <label for="progressDate">{{ 'TASKS_DATE' | translate }}</label>
+          <input id="progressDate" name="progressDate" type="date" class="habit-input" [(ngModel)]="progressTask.date" required />
+        </div>
+
+        <ng-container *ngTemplateOutlet="reminderTpl; context: { $implicit: progressTask, offKey: 'TASKS_REMINDER_AT_TIME', onKey: 'TASKS_REMINDER_AT_TIME', optional: true }"></ng-container>
+        <ng-container *ngTemplateOutlet="advancedTpl; context: { $implicit: progressTask, id: 'progress', labelKey: 'TASKS_ALLOW_COMMENTS', hintKey: 'TASKS_ALLOW_COMMENTS_HINT' }"></ng-container>
+
+        <footer class="tasks-modal__foot">
+          <button type="button" class="tasks-btn-ghost" (click)="back()">{{ (editing ? 'CANCEL' : 'BACK') | translate }}</button>
+          <button type="submit" class="tasks-btn-primary" [disabled]="!canCreateProgressTask">{{ (editing ? 'SAVE_CHANGES' : 'TASKS_CREATE_TASK') | translate }}</button>
+        </footer>
+      </form>
+    </ng-container>
+
+    <!-- Body metrics (request to record Measurements types) -->
+    <ng-container *ngIf="modalStep === 'metrics'">
+      <header class="tasks-modal__head">
+        <button *ngIf="!editing" type="button" class="tasks-modal__back" (click)="back()" [attr.aria-label]="'BACK' | translate">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="tasks-modal__title">
+          <h4>{{ (editing ? 'TASKS_EDIT_TASK' : 'TASKS_METRICS_TITLE') | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+
+      <form class="tasks-modal__body habit-form" (ngSubmit)="createMetricsTask()" (click)="measurementPickerOpen = false">
+        <div class="habit-field">
+          <label for="metricsTitle">{{ 'TASKS_TASK_TITLE' | translate }}</label>
+          <input
+            id="metricsTitle"
+            name="metricsTitle"
+            class="habit-input"
+            [(ngModel)]="metricsTask.title"
+            [maxlength]="nameMax"
+            [placeholder]="'TASKS_METRICS_DEFAULT_TITLE' | translate" />
+        </div>
+
+        <div class="habit-field">
+          <span class="habit-label" id="metricsTypesLabel">{{ 'TASKS_MEASUREMENTS_TO_UPDATE' | translate }}</span>
+          <div class="task-options" role="group" aria-labelledby="metricsTypesLabel">
+            <button
+              *ngFor="let type of shownMeasurements"
+              type="button"
+              class="task-option"
+              [class.active]="isMeasurementSelected(type.key)"
+              [attr.aria-pressed]="isMeasurementSelected(type.key)"
+              (click)="toggleMeasurement(type.key)">
+              <i-feather *ngIf="isMeasurementSelected(type.key)" name="check"></i-feather>
+              {{ type.label | translate }}
+            </button>
+
+            <!-- Other existing Measurements types only: no free-text measurement can be created here. -->
+            <div class="measurement-picker" *ngIf="otherMeasurements.length">
+              <button
+                type="button"
+                class="measurement-picker__toggle"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="measurementPickerOpen"
+                (click)="toggleMeasurementPicker($event)">
+                <i-feather name="plus"></i-feather>
+                {{ 'TASKS_ADD_MEASUREMENT' | translate }}
+              </button>
+              <div class="measurement-picker__menu" role="menu" *ngIf="measurementPickerOpen" (click)="$event.stopPropagation()">
+                <button *ngFor="let type of otherMeasurements" type="button" role="menuitem" (click)="addMeasurement(type.key)">
+                  {{ type.label | translate }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <small *ngIf="!metricsTask.measurements.length" class="habit-hint habit-hint--error">{{ 'TASKS_MEASUREMENT_REQUIRED' | translate }}</small>
+        </div>
+
+        <div class="habit-field">
+          <label for="metricsNote">{{ 'TASKS_NOTE_FOR_CLIENT' | translate }} <em>{{ 'OPTIONAL' | translate }}</em></label>
+          <textarea
+            id="metricsNote"
+            name="metricsNote"
+            rows="2"
+            class="habit-input habit-textarea"
+            [(ngModel)]="metricsTask.note"
+            [placeholder]="'TASKS_METRICS_NOTE_PLACEHOLDER' | translate"></textarea>
+        </div>
+
+        <div class="habit-field">
+          <label for="metricsDate">{{ 'TASKS_DATE' | translate }}</label>
+          <input id="metricsDate" name="metricsDate" type="date" class="habit-input" [(ngModel)]="metricsTask.date" required />
+        </div>
+
+        <ng-container *ngTemplateOutlet="reminderTpl; context: { $implicit: metricsTask, offKey: 'TASKS_REMINDER_AT_TIME', onKey: 'TASKS_REMINDER_AT_TIME', optional: true }"></ng-container>
+        <ng-container *ngTemplateOutlet="advancedTpl; context: { $implicit: metricsTask, id: 'metrics', labelKey: 'TASKS_ALLOW_COMMENTS', hintKey: 'TASKS_ALLOW_COMMENTS_HINT' }"></ng-container>
+
+        <footer class="tasks-modal__foot">
+          <button type="button" class="tasks-btn-ghost" (click)="back()">{{ (editing ? 'CANCEL' : 'BACK') | translate }}</button>
+          <button type="submit" class="tasks-btn-primary" [disabled]="!canCreateMetricsTask">{{ (editing ? 'SAVE_CHANGES' : 'TASKS_CREATE_TASK') | translate }}</button>
+        </footer>
+      </form>
+    </ng-container>
+
+    <!-- Form (one-off assignment of an existing form: recurrence stays in the form's Schedule tab) -->
+    <ng-container *ngIf="modalStep === 'form'">
+      <header class="tasks-modal__head">
+        <button *ngIf="!editing" type="button" class="tasks-modal__back" (click)="back()" [attr.aria-label]="'BACK' | translate">
+          <i-feather name="arrow-left"></i-feather>
+        </button>
+        <div class="tasks-modal__title">
+          <h4>{{ (editing ? 'TASKS_EDIT_TASK' : 'TASKS_FORM_TITLE') | translate }}</h4>
+          <p>{{ 'TASKS_FOR' | translate: { name: clientName } }} · {{ modalDate | date: 'EEE, MMM d' }}</p>
+        </div>
+        <button type="button" class="tasks-btn-soft" (click)="createNewForm()">
+          <i-feather name="plus"></i-feather>
+          {{ 'TASKS_CREATE_NEW_FORM' | translate }}
+        </button>
+        <button type="button" class="tasks-modal__close" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
+          <i-feather name="x"></i-feather>
+        </button>
+      </header>
+
+      <form class="tasks-modal__body habit-form" (ngSubmit)="assignFormTask()">
+        <label class="habit-search">
+          <i-feather name="search"></i-feather>
+          <input type="search" name="formSearch" [(ngModel)]="formSearch" [placeholder]="'TASKS_SEARCH_FORM' | translate" />
+        </label>
+
+        <div class="form-list" role="radiogroup" [attr.aria-label]="'TASKS_TYPE_FORM' | translate">
+          <p *ngIf="formsLoading" class="form-list__state">{{ 'LOADING' | translate }}</p>
+          <p *ngIf="formsError && !formsLoading" class="form-list__state habit-hint--error">{{ 'TASKS_FORMS_ERROR' | translate }}</p>
+
+          <ng-container *ngIf="!formsLoading && !formsError">
+            <button
+              *ngFor="let form of filteredForms"
+              type="button"
+              role="radio"
+              class="form-option"
+              [class.active]="isFormSelected(form)"
+              [attr.aria-checked]="isFormSelected(form)"
+              (click)="selectForm(form)">
+              <span class="form-option__icon"><i-feather name="clipboard-list"></i-feather></span>
+              <span class="form-option__text">
+                <strong>{{ form.name }}</strong>
+                <small>
+                  <span *ngIf="form.questionCount !== null">{{ (form.questionCount === 1 ? 'TASKS_FORM_ONE_QUESTION' : 'TASKS_FORM_QUESTIONS') | translate: { count: form.questionCount } }}</span>
+                  <span *ngIf="form.frequency" class="form-option__schedule" [attr.title]="'TASKS_FORM_SCHEDULED_HINT' | translate">
+                    <i-feather name="repeat"></i-feather>
+                    {{ ('FREQUENCY_' + form.frequency) | translate }}
+                  </span>
+                </small>
+              </span>
+              <span class="form-option__radio" aria-hidden="true"></span>
+            </button>
+
+            <p *ngIf="!filteredForms.length" class="form-list__state">{{ 'NO_FORMS_FOUND' | translate }}</p>
+          </ng-container>
+        </div>
+
+        <div class="habit-goal">
+          <div class="habit-field">
+            <label for="formDueDate">{{ 'DUE_DATE' | translate }}</label>
+            <input id="formDueDate" name="formDueDate" type="date" class="habit-input" [(ngModel)]="generalTask.date" required />
+            <small class="habit-hint">{{ 'TASKS_FORM_ONE_OFF_HINT' | translate }}</small>
+          </div>
+        </div>
+
+        <ng-container *ngTemplateOutlet="reminderTpl; context: { $implicit: generalTask, offKey: 'TASKS_REMINDER_OFF_TASK' }"></ng-container>
+
+        <small *ngIf="formAssignError" class="habit-hint habit-hint--error">{{ 'TASKS_FORM_PUBLISH_ERROR' | translate }}</small>
+
+        <footer class="tasks-modal__foot">
+          <button type="button" class="tasks-btn-ghost" (click)="back()">{{ (editing ? 'CANCEL' : 'BACK') | translate }}</button>
+          <button type="submit" class="tasks-btn-primary" [disabled]="!canAssignForm">{{ (editing ? 'SAVE_CHANGES' : 'ASSIGN_FORM') | translate }}</button>
+        </footer>
+      </form>
+    </ng-container>
   </section>
 </div>
 
-<!-- Shared form blocks (habit + general task) -->
-<ng-template #reminderTpl let-form let-offKey="offKey">
+<!-- Shared form blocks (habit, general task, client progress, body metrics, form) -->
+<ng-template #reminderTpl let-form let-offKey="offKey" let-onKey="onKey" let-optional="optional">
   <div class="habit-reminder">
     <button
       type="button"
@@ -370,8 +611,8 @@
       <span class="yc-switch__knob"></span>
     </button>
     <div class="habit-reminder__text">
-      <strong>{{ 'TASKS_SET_REMINDER' | translate }}</strong>
-      <small>{{ (form.reminder ? 'TASKS_REMINDER_ON' : offKey) | translate: { name: clientName } }}</small>
+      <strong>{{ 'TASKS_SET_REMINDER' | translate }} <em *ngIf="optional">{{ 'OPTIONAL' | translate }}</em></strong>
+      <small>{{ (form.reminder ? (onKey || 'TASKS_REMINDER_ON') : offKey) | translate: { name: clientName } }}</small>
     </div>
     <input
       *ngIf="form.reminder"
@@ -383,7 +624,7 @@
   </div>
 </ng-template>
 
-<ng-template #advancedTpl let-form let-id="id">
+<ng-template #advancedTpl let-form let-id="id" let-labelKey="labelKey" let-hintKey="hintKey">
   <button type="button" class="habit-advanced" [attr.aria-expanded]="advancedOpen" (click)="advancedOpen = !advancedOpen">
     <i-feather name="settings"></i-feather>
     {{ 'TASKS_ADVANCED_SETTINGS' | translate }}
@@ -400,6 +641,9 @@
       (click)="form.allowComments = !form.allowComments">
       <span class="yc-switch__knob"></span>
     </button>
-    <span [id]="id + 'CommentsLabel'" class="habit-advanced__label">{{ 'TASKS_ENABLE_COMMENTS' | translate }}</span>
+    <span class="habit-advanced__text">
+      <span [id]="id + 'CommentsLabel'" class="habit-advanced__label">{{ (labelKey || 'TASKS_ENABLE_COMMENTS') | translate }}</span>
+      <small *ngIf="hintKey">{{ hintKey | translate }}</small>
+    </span>
   </div>
 </ng-template>
