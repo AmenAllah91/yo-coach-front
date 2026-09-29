@@ -1,5 +1,5 @@
 import { SimpleChange } from '@angular/core';
-import { Subject, of } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AddMealModalComponent } from './add-meal-modal.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FeatherModule } from 'angular-feather';
@@ -15,7 +15,9 @@ describe('Meals create and edit validation', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj('MealsService', ['createMeal', 'updateMeal', 'saveTemplate']);
-    component = new AddMealModalComponent({} as any, service, { instant: (key: string) => key } as any);
+    const nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient']);
+    nutrition.getFoodForClient.and.returnValue(of({}));
+    component = new AddMealModalComponent(nutrition, service, { instant: (key: string) => key } as any);
     component.choose('recipe');
     component.name = ' Lunch ';
     component.addFood(food);
@@ -118,6 +120,95 @@ describe('Meals create and edit validation', () => {
     select(); reader.result = 'data:image/png;base64,iVBORw0KGgo='; reader.onload();
     expect(component.canSave).toBeTrue(); expect(component.coverImageName).toBe('cover.png');
     select(); component.removeCoverImage(); reader.onload(); expect(component.coverImage).toBeNull();
+  });
+});
+
+describe('Meal ingredient servings', () => {
+  let component: AddMealModalComponent;
+  let meals: any;
+  let nutrition: any;
+  const initial = { id: 'initial', size: 100, unit: 'Grams', energy: 143, protein: 12.6, carbohydrates: 0.7, fat: 9.5 };
+  const egg = { id: 'egg', size: 1, unit: 'œuf', energy: 72, protein: 6.3, carbohydrates: 0.4, fat: 4.8 };
+  const eggs = () => ({ id: 'eggs', name: 'Œufs', imageUrl: 'eggs.png', defaultServingId: 'initial', servings: [initial, egg] });
+  const select = (value: string) => ({ value } as HTMLSelectElement);
+
+  beforeEach(() => {
+    meals = jasmine.createSpyObj('MealsService', ['createMeal', 'updateMeal', 'saveTemplate']);
+    nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient', 'addFoodServing']);
+    nutrition.getFoodForClient.and.returnValue(of({}));
+    component = new AddMealModalComponent(nutrition, meals, { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) } as any);
+    component.choose('foods');
+    component.name = 'Petit-déjeuner';
+    component.addFood(eggs());
+  });
+
+  it('starts on the main serving and switches to another one with its own values', () => {
+    const row = component.ingredients[0];
+    expect(row.servingId).toBe('initial');
+    expect(row.quantity).toBe(100);
+    expect(row.unit).toBe('g');
+    component.onServingChange(row, select('egg'));
+    expect(row.servingId).toBe('egg');
+    expect(row.quantity).toBe(1);
+    expect(row.unit).toBe('œuf');
+    row.quantity = 2;
+    expect(component.ingredientTotal(row, 'calories')).toBe(144);
+  });
+
+  it('opens the new serving form without changing the current selection', () => {
+    const row = component.ingredients[0];
+    const element = select(component.newServingOption);
+    component.onServingChange(row, element);
+    expect(component.servingFormRowId).toBe(row.id);
+    expect(element.value).toBe('initial');
+    expect(row.servingId).toBe('initial');
+  });
+
+  it('creates a serving on the food and selects it right away', () => {
+    const box = { id: 'box', size: 6, unit: 'œufs', energy: 430, protein: 37.8, carbohydrates: 2.4, fat: 28.5 };
+    nutrition.addFoodServing.and.returnValue(of({ ...eggs(), servings: [initial, egg, box] }));
+    const row = component.ingredients[0];
+    component.openServingForm(row);
+    component.createServing(row, { size: 6, unit: ' œufs ', energy: 430, protein: 37.8, carbohydrates: 2.4, fat: 28.5 });
+    expect(nutrition.addFoodServing).toHaveBeenCalledWith('eggs', jasmine.objectContaining({ size: 6 }));
+    expect(row.servingId).toBe('box');
+    expect(row.quantity).toBe(6);
+    expect(component.servingOptions(row).map((s) => s.id)).toEqual(['initial', 'egg', 'box']);
+    expect(component.servingFormRowId).toBeNull();
+  });
+
+  it('explains why a serving could not be added', () => {
+    nutrition.addFoodServing.and.returnValue(throwError(() => ({ status: 403 })));
+    const row = component.ingredients[0];
+    component.openServingForm(row);
+    component.createServing(row, { size: 6, unit: 'œufs', energy: 1, protein: 1, carbohydrates: 1, fat: 1 });
+    expect(component.servingError).toBe('MEAL_SERVING_NOT_OWNED');
+    expect(component.servingFormRowId).toBe(row.id);
+  });
+
+  it('keeps the copy of a serving that no longer exists on the food', () => {
+    component.isVisible = true;
+    component.meal = { id: 'meal', name: 'Snack', mealType: 'SNACK', foods: [{
+      id: 'line', name: 'Œufs', quantity: 2, unit: 'pot', foodRef: eggs(), servingId: 'gone',
+      serving: { id: 'gone', size: 1, unit: 'pot', energy: 90, protein: 10, carbohydrates: 5, fat: 3 },
+    }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    const row = component.ingredients[0];
+    expect(component.servingOptions(row).map((s) => s.id)).toEqual(['gone', 'initial', 'egg']);
+    expect(component.ingredientTotal(row, 'calories')).toBe(180);
+  });
+
+  it('refreshes the servings of loaded foods and sends the chosen serving id', () => {
+    const pot = { id: 'pot', size: 1, unit: 'pot', energy: 90, protein: 10, carbohydrates: 5, fat: 3 };
+    nutrition.getFoodForClient.and.returnValue(of({ ...eggs(), servings: [initial, egg, pot] }));
+    component.isVisible = true;
+    component.meal = { id: 'meal', name: 'Snack', mealType: 'SNACK', foods: [{ id: 'line', name: 'Œufs', quantity: 2, unit: 'œuf', foodRef: eggs(), servingId: 'egg' }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    expect(nutrition.getFoodForClient).toHaveBeenCalledWith('eggs');
+    expect(component.servingOptions(component.ingredients[0]).map((s) => s.id)).toEqual(['initial', 'egg', 'pot']);
+    meals.updateMeal.and.returnValue(of({}));
+    component.save();
+    expect(meals.updateMeal.calls.mostRecent().args[1].foods[0]).toEqual(jasmine.objectContaining({ servingId: 'egg', quantity: 2, unit: 'œuf' }));
   });
 });
 
