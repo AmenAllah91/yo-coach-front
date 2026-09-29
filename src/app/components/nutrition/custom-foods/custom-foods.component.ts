@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -72,6 +72,7 @@ export class CustomFoodsComponent implements OnInit {
   extraServings: FoodServing[] = [];
   servingFormOpen = false;
   editingServingIndex: number | null = null;
+  @ViewChild(FoodServingFormComponent) servingForm?: FoodServingFormComponent;
 
   constructor(
     private nutritionService: NutritionService,
@@ -153,6 +154,18 @@ export class CustomFoodsComponent implements OnInit {
     this.editingServingIndex = null;
   }
 
+  private commitPendingServing(): boolean {
+    const form = this.servingForm;
+    if (!form || form.isBlank) {
+      this.closeServingForm();
+      return true;
+    }
+    const serving = form.commit();
+    if (!serving) return false;
+    this.onServingSaved(serving);
+    return true;
+  }
+
   onServingSaved(serving: FoodServing): void {
     if (this.editingServingIndex === null) this.extraServings = [...this.extraServings, serving];
     else this.extraServings = this.extraServings.map((current, index) => (index === this.editingServingIndex ? serving : current));
@@ -204,7 +217,7 @@ export class CustomFoodsComponent implements OnInit {
     }
     return errors;
   }
-  get canSave(): boolean { return !this.isSaving && !this.servingFormOpen && Object.keys(this.errors).length === 0; }
+  get canSave(): boolean { return !this.isSaving && Object.keys(this.errors).length === 0; }
   fieldError(field: string): string {
     const error = this.errors[field] || '';
     return this.touched.has(field) || error === 'FOOD_VALID_FAT_SUM' || error === 'FOOD_VALID_SERVING_DUPLICATE' ? error : '';
@@ -294,6 +307,7 @@ export class CustomFoodsComponent implements OnInit {
 
   async saveFood() {
     if (!this.canSave) return;
+    if (this.servingFormOpen && !this.commitPendingServing()) return;
     this.isSaving = true;
     this.saveError = '';
     let stage = 'save';

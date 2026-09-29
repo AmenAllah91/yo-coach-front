@@ -2610,7 +2610,6 @@
   "FOOD_SERVING_MORE_NUTRIENTS": "More nutrients",
   "FOOD_SERVING_LESS_NUTRIENTS": "Fewer nutrients",
   "FOOD_SERVING_SET_MAIN": "Make main serving",
-  "FOOD_SERVING_PENDING": "Finish or cancel the serving you're editing before saving the food.",
   "FOOD_SERVINGS_MORE": "+{{count}} serving(s)",
   "FOOD_UNIT_PIECE": "piece",
   "FOOD_UNIT_SUGGESTIONS": "g,ml,piece,pot,slice,bowl,handful,tbsp,tsp,scoop,container",

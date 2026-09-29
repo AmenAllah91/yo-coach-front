@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -47,12 +47,16 @@ export class FoodServingFormComponent implements OnChanges {
   showMore = false;
   prefill: Prefill | null = null;
   private autoFilled = false;
+  private initialized = false;
 
   constructor(private translate: TranslateService) {}
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges = {}): void {
+    if (this.initialized && !changes['initial']) return;
+    this.initialized = true;
     const unit = this.initial ? editableUnit(this.initial.unit, this.translate.instant('FOOD_UNIT_PIECE')) : '';
     this.draft = draftOf(this.initial, unit);
+    if (!this.initial) this.draft.size = '1';
     this.touched.clear();
     this.submitted = false;
     this.prefill = null;
@@ -92,9 +96,19 @@ export class FoodServingFormComponent implements OnChanges {
     this.prefill = null;
   }
 
-  submit(): void {
+  get isBlank(): boolean {
+    return !this.draft.unit.trim() && [...this.macros, ...this.extras].every((key) => !this.draft[key].trim());
+  }
+
+  commit(): FoodServing | null {
     this.submitted = true;
-    if (this.saving || Object.keys(this.errors).length) return;
-    this.saved.emit(servingFromDraft(this.draft, this.initial?.id));
+    if (Object.keys(this.errors).length) return null;
+    return servingFromDraft(this.draft, this.initial?.id);
+  }
+
+  submit(): void {
+    if (this.saving) return;
+    const serving = this.commit();
+    if (serving) this.saved.emit(serving);
   }
 }

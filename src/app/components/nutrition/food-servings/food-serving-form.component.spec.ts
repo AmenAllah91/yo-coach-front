@@ -1,3 +1,4 @@
+import { SimpleChange } from '@angular/core';
 import { FoodServingFormComponent } from './food-serving-form.component';
 import { FoodServing } from '@shared/models/MealPlan';
 
@@ -47,6 +48,20 @@ describe('FoodServingFormComponent', () => {
     expect(form.prefill).toBeNull();
   });
 
+  it('starts a new serving at 1 and keeps what was typed when the parent re-renders', () => {
+    expect(form.draft.size).toBe('1');
+    type('unit', 'pot');
+    form.draft.energy = '90';
+    form.onValueChange('energy');
+    form.ngOnChanges({
+      others: new SimpleChange([egg], [egg], false),
+      unitSuggestions: new SimpleChange(['g'], ['g'], false),
+    });
+    expect(form.draft.unit).toBe('pot');
+    expect(form.draft.energy).toBe('90');
+    expect(form.isBlank).toBeFalse();
+  });
+
   it('only emits a valid serving and keeps the id when editing', () => {
     type('size', '1');
     type('unit', 'œuf');
@@ -55,7 +70,7 @@ describe('FoodServingFormComponent', () => {
     expect(form.error('unit')).toBe('FOOD_VALID_SERVING_DUPLICATE');
 
     form.initial = { id: 'pot', size: 1, unit: 'Qty', energy: 90, protein: 5, carbohydrates: 10, fat: 3 };
-    form.ngOnChanges();
+    form.ngOnChanges({ initial: new SimpleChange(null, form.initial, false) });
     expect(form.draft.unit).toBe('pièce');
     form.submit();
     expect(emitted).toEqual([jasmine.objectContaining({ id: 'pot', size: 1, unit: 'pièce', energy: 90 })]);

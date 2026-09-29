@@ -534,6 +534,7 @@
   .foods-table .food-avatar i { font-size: 18px; font-weight: 900; }
   .foods-table .food-info h4 { font-size: 11px; }
   .foods-table .col-weight { position: absolute; left: 54px; top: 31px; font-size: 8px; color: #64748b; }
+  .foods-table .col-weight .serving-count { margin-left: 3px; padding: 0 4px; font-size: 7px; line-height: 10px; vertical-align: baseline; }
   .foods-table .col-macros { margin-top: 7px; padding-left: 43px; }
   .foods-table .macro-info { gap: 5px; }
   .foods-table .macro { padding: 3px 6px; font-size: 7px; }
@@ -555,8 +556,8 @@
 
   .form-group { margin-bottom: 0.5rem; }
 }
-.serving-section__title { margin: 0 0 0.25rem; font-size: 0.9375rem; font-weight: 600; color: #111827; }
-.serving-section__hint { margin: 0 0 0.75rem; font-size: 0.8125rem; color: #64748b; }
+.serving-section .serving-section__title { margin: 0 0 0.25rem; font-size: 0.9375rem; font-weight: 600; color: #111827; text-align: left; }
+.serving-section .serving-section__hint { margin: 0 0 0.75rem; font-size: 0.8125rem; color: #64748b; text-align: left; }
 .serving-main-row__size { flex: 0 0 110px !important; }
 .serving-list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 8px; }
 .serving-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }

@@ -2610,7 +2610,6 @@
   "FOOD_SERVING_MORE_NUTRIENTS": "Plus de nutriments",
   "FOOD_SERVING_LESS_NUTRIENTS": "Moins de nutriments",
   "FOOD_SERVING_SET_MAIN": "Définir comme unité principale",
-  "FOOD_SERVING_PENDING": "Terminez ou annulez l’unité en cours avant d’enregistrer l’aliment.",
   "FOOD_SERVINGS_MORE": "+{{count}} unité(s)",
   "FOOD_UNIT_PIECE": "pièce",
   "FOOD_UNIT_SUGGESTIONS": "g,ml,pièce,pot,tranche,bol,poignée,c. à soupe,c. à café,scoop,container",
