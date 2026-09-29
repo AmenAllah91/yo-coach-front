@@ -410,6 +410,7 @@ export class NutritionService {
       replacementFoodRefId: string;
       quantity: number;
       unit: string;
+      servingId?: string | null;
     }
   ): Observable<any> {
     return this.http.patch<any>(

@@ -1372,6 +1372,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     replacementFoodRefId: string;
     quantity: number;
     unit: string;
+    servingId?: string | null;
   }): void {
     if (!this.selectedDay || !this.mealToUpdate || !this.foodToReplace) return;
 

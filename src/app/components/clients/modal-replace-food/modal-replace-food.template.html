@@ -43,11 +43,11 @@
               <strong>{{ option.food.name }}</strong>
               <small>{{ option.food.quantity || 100 }} {{ option.food.unit || 'g' }}</small>
             </div>
-            <div class="swap-macros">
-              <div class="swap-kcal"><strong>{{ displayMacro(option.food.energy) }}</strong><small>Kcal</small></div>
-              <div><strong>{{ displayMacro(option.food.protein) }}g</strong><small>P</small></div>
-              <div><strong>{{ displayMacro(option.food.carbohydrates) }}g</strong><small>C</small></div>
-              <div><strong>{{ displayMacro(option.food.fat) }}g</strong><small>F</small></div>
+            <div class="swap-macros" *ngIf="optionMacros(option.food) as macros">
+              <div class="swap-kcal"><strong>{{ displayMacro(macros.calories) }}</strong><small>Kcal</small></div>
+              <div><strong>{{ displayMacro(macros.protein) }}g</strong><small>P</small></div>
+              <div><strong>{{ displayMacro(macros.carbs) }}g</strong><small>C</small></div>
+              <div><strong>{{ displayMacro(macros.fat) }}g</strong><small>F</small></div>
             </div>
           </button>
         </div>
