@@ -34,6 +34,17 @@ export function servingKey(size: unknown, unit: unknown): string {
   return `${Number(size)}|${normalizeUnit(unit)}`;
 }
 
+export function portionsOf(amount: unknown, size: unknown): number | null {
+  if (amount === null || amount === undefined || amount === '') return null;
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return null;
+  return value / (Number(size) > 0 ? Number(size) : 100);
+}
+
+export function amountOf(portions: unknown, size: unknown): number {
+  return Math.round(Number(portions) * (Number(size) > 0 ? Number(size) : 100) * 1000) / 1000;
+}
+
 export function editableUnit(unit: unknown, pieceLabel: string): string {
   const value = cleanUnit(unit);
   const key = value.toLowerCase();

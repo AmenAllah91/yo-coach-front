@@ -34,7 +34,8 @@ describe('Replacement groups with servings', () => {
     component.openAddFoodModal();
     component.selectFood(eggs());
     expect(component.selectedServingId).toBe('initial');
-    expect(component.selectedQuantity).toBe(100);
+    expect(component.selectedQuantity).toBe(1);
+    expect(component.selectedAmount).toBe(100);
     expect(component.selectedUnit).toBe('g');
     component.selectServing('egg');
     component.selectedQuantity = 2;
@@ -51,7 +52,7 @@ describe('Replacement groups with servings', () => {
 
   it('sends each item serving when saving the group', () => {
     add(eggs(), 'egg', 4);
-    add(rice(), undefined, 150);
+    add(rice(), undefined, 1.5);
     component.groupName = 'Protéines';
     component.saveGroup();
     const payload = groups.createGroup.calls.mostRecent().args[0];

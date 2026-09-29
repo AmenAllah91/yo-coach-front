@@ -372,7 +372,7 @@
 
         <div class="summary-grid">
           <div>
-            <label>{{ 'QUANTITY' | translate }}</label>
+            <label>{{ 'FOOD_PORTIONS' | translate }}</label>
             <input
               type="number"
               min="0"
@@ -406,7 +406,7 @@
         </div>
 
         <div class="nutrition-preview" *ngIf="selectedPreview as preview">
-          {{ preview.calories | number:'1.0-0' }} kcal • {{ preview.protein | number:'1.0-1' }}g {{ 'PROTEIN_LOWERCASE' | translate }}
+          = {{ selectedAmount | number:'1.0-2' }} {{ selectedUnit }} • {{ preview.calories | number:'1.0-0' }} kcal • {{ preview.protein | number:'1.0-1' }}g {{ 'PROTEIN_LOWERCASE' | translate }}
         </div>
 
         <button

@@ -712,8 +712,8 @@
             <span class="np-foodlist__thumb"><img *ngIf="foodImage(f)" [src]="foodImage(f)" [alt]="f.name" /><span *ngIf="!foodImage(f)">{{ f.name.charAt(0).toUpperCase() }}</span></span>
             <div class="np-foodlist__copy"><div class="np-foodlist__name">{{ f.name }} <span class="np-foodlist__custom" *ngIf="!f.general">{{ 'CUSTOM' | translate }}</span></div>
             <div class="np-foodlist__meta">
-              {{ f.protein }}g {{ 'PROTEIN' | translate }} | {{ f.carbohydrates }}g {{ 'CARBS' | translate }} |
-              {{ f.fat }}g {{ 'FAT' | translate }}
+              {{ f.protein ?? 0 }}g {{ 'PROTEIN' | translate }} | {{ f.carbohydrates ?? 0 }}g {{ 'CARBS' | translate }} |
+              {{ f.fat ?? 0 }}g {{ 'FAT' | translate }}
             </div></div>
           </li>
         </ul>
@@ -728,25 +728,34 @@
           <div class="np-grid-2">
             <!-- Quantity -->
             <div>
-              <label class="np-label">{{ 'QUANTITY' | translate }}</label>
+              <label class="np-label">{{ 'FOOD_PORTIONS' | translate }}</label>
               <input
                 class="np-input"
                 type="number"
-                min="1"
-                [(ngModel)]="foodQty"
+                min="0"
+                step="any"
+                [(ngModel)]="foodServing.portions"
                 (input)="recomputeAdjusted()"
               />
             </div>
 
             <!-- Serving -->
             <div>
-              <label class="np-label">{{ 'SERVING_SIZE' | translate }}</label>
-              <select class="np-input" disabled>
-                <option>g</option>
+              <label class="np-label">{{ 'UNIT' | translate }}</label>
+              <select class="np-input" (change)="foodServing.choose($any($event.target))">
+                <option *ngFor="let serving of foodServing.options" [value]="serving.id" [selected]="serving.id === foodServing.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
+                <option *ngIf="foodServing.canAdd" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
               </select>
             </div>
           </div>
+          <p class="np-serving-amount" *ngIf="foodServing.serving as serving">= {{ foodServing.quantity | number:'1.0-2' }} {{ serving.unit | servingUnit }}</p>
           <p class="np-danger np-food-validation" *ngIf="foodValidationMessage" role="alert">{{ foodValidationMessage }}</p>
+          <div class="np-serving-form" *ngIf="foodServing.formOpen">
+            <p class="np-serving-form__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: selectedFood.name } }}</p>
+            <app-food-serving-form [others]="foodServing.options" [unitSuggestions]="unitSuggestions" [saving]="foodServing.saving"
+              (saved)="createServing($event)" (cancelled)="foodServing.formOpen = false"></app-food-serving-form>
+            <p class="np-danger" *ngIf="foodServing.error" role="alert">{{ foodServing.error | translate }}</p>
+          </div>
         </div>
 
         <!-- Nutrition Values -->
@@ -793,7 +802,7 @@
     </div>
 
     <!-- FOOTER DETAIL -->
-    <div class="np-modal__foot" *ngIf="foodStep === 'detail'">
+    <div class="np-modal__foot" *ngIf="foodStep === 'detail' && !foodServing.formOpen">
       <div class="np-grid-2">
         <button class="np-btn np-btn--ghost" (click)="backToList()">
           {{ 'BACK' | translate }}

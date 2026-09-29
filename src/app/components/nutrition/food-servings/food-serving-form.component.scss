@@ -20,11 +20,15 @@
 }
 
 .serving-form__field {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
   min-width: 0;
 
   span {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: flex-end;
     font-size: 0.75rem;
     font-weight: 500;
     color: #374151;

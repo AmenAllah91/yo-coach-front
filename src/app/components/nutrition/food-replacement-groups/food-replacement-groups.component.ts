@@ -22,7 +22,7 @@ import {
 } from './food-replacement-group-validation';
 import { FoodServing } from '@shared/models/MealPlan';
 import { defaultServingOf, lineRatio, Macros, servingMacros, servingsOf } from '@shared/models/nutrition-math';
-import { editableUnit } from '../food-servings/food-serving-rules';
+import { amountOf, editableUnit, portionsOf } from '../food-servings/food-serving-rules';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
 
 
@@ -385,7 +385,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.selectedFood = null;
     this.editingFoodRefId = null;
     this.selectedServingId = null;
-    this.selectedQuantity = 100;
+    this.selectedQuantity = 1;
     this.selectedUnit = 'g';
     this.showAddFoodModal = true;
   }
@@ -415,7 +415,12 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
 
   get selectedPreview(): Macros | null {
     const serving = this.selectedServing;
-    return serving ? servingMacros(serving, lineRatio(this.selectedQuantity, serving.size)) : null;
+    return serving ? servingMacros(serving, lineRatio(this.selectedAmount, serving.size)) : null;
+  }
+
+  get selectedAmount(): number {
+    const serving = this.selectedServing;
+    return serving ? amountOf(this.selectedQuantity, serving.size) : 0;
   }
 
   selectServing(servingId: string): void {
@@ -429,7 +434,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
 
   private applyServing(serving: FoodServing): void {
     this.selectedServingId = serving.id ?? null;
-    this.selectedQuantity = Number(serving.size) > 0 ? Number(serving.size) : 100;
+    this.selectedQuantity = 1;
     this.selectedUnit = editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE'));
   }
 
@@ -442,7 +447,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     const item: FoodReplacementGroupItem = {
       foodRefId,
       servingId: serving.id ?? null,
-      quantity: Number(this.selectedQuantity),
+      quantity: amountOf(this.selectedQuantity, serving.size),
       unit: this.selectedUnit.trim(),
       name: this.getFoodName(this.selectedFood),
       energy: this.getCalories(serving),
@@ -495,7 +500,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       defaultServingId: food.servingId ?? undefined,
     };
     this.selectedServingId = food.servingId ?? servingsOf(this.selectedFood)[0]?.id ?? null;
-    this.selectedQuantity = food.quantity;
+    this.selectedQuantity = portionsOf(food.quantity, food.servingSize) ?? 1;
     this.selectedUnit = food.unit;
     this.showAddFoodModal = true;
     this.nutritionService.getFoodForClient(food.foodRefId).subscribe({
