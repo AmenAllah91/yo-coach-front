@@ -221,7 +221,7 @@
         <div class="table-row" *ngFor="let food of filteredGroupFoods">
           <span class="food-name-cell"><span class="food-initial">{{ (food.name || '?').charAt(0) }}</span><strong>{{ food.name }}</strong></span>
           <span>{{ food.quantity }} {{ food.unit }}</span>
-          <span>{{ food.energy }} kcal</span>
+          <span>{{ itemMacros(food).calories | number:'1.0-0' }} kcal</span>
           <span class="row-actions">
             <button [title]="'EDIT_FOOD' | translate" (click)="editGroupFood(food)">
               <i-feather name="edit-2"></i-feather>
@@ -390,14 +390,14 @@
           <div>
             <label>{{ 'UNIT' | translate }}</label>
             <select
-              [(ngModel)]="selectedUnit"
+              [ngModel]="selectedServingId"
+              (ngModelChange)="selectServing($event)"
               #unitInput="ngModel"
               required
+              [disabled]="!selectedFood"
               [class.field-invalid]="unitInput.touched && !selectedUnitValid"
             >
-              <option value="g">g</option>
-              <option value="pcs">pcs</option>
-              <option value="ml">ml</option>
+              <option *ngFor="let serving of servingOptions" [value]="serving.id">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
             </select>
             <span class="field-error" *ngIf="unitInput.touched && !selectedUnitValid">
               {{ 'REPLACEMENT_GROUP_UNIT_REQUIRED' | translate }}
@@ -405,8 +405,8 @@
           </div>
         </div>
 
-        <div class="nutrition-preview" *ngIf="selectedFood">
-          {{ getCalories(selectedFood) }} kcal • {{ getProtein(selectedFood) }}g {{ 'PROTEIN_LOWERCASE' | translate }}
+        <div class="nutrition-preview" *ngIf="selectedPreview as preview">
+          {{ preview.calories | number:'1.0-0' }} kcal • {{ preview.protein | number:'1.0-1' }}g {{ 'PROTEIN_LOWERCASE' | translate }}
         </div>
 
         <button
