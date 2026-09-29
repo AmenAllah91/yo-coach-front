@@ -11,7 +11,8 @@ import {
 } from 'app/service/progress-pictures.service';
 import {
   AddProgressPictureModalComponent,
-  AddProgressPicturePayload
+  AddProgressPicturePayload,
+  ProgressPictureRequest
 } from '../add-progress-picture-modal/add-progress-picture-modal.component';
 import localeFr from '@angular/common/locales/fr';
 registerLocaleData(localeFr);
@@ -38,6 +39,8 @@ export class ProgressPicturesComponent implements OnInit {
   error: string | null = null;
 
   showAddModal = false;
+  /** Set when the add flow is opened from a "Client progress" task (requested poses + task date). */
+  addRequest: ProgressPictureRequest | null = null;
   showPicturesComparison = false;
   comparisonMode: 'single' | 'comparison' = 'comparison';
   comparisonPose: 'FRONT' | 'SIDE' | 'BACK' = 'FRONT';
@@ -134,9 +137,10 @@ export class ProgressPicturesComponent implements OnInit {
       });
   }
 
-  openAddModal(): void {
+  openAddModal(request?: ProgressPictureRequest): void {
     if (!this.allowAddPicture) return;
     this.error = null;
+    this.addRequest = request || null;
     this.showAddModal = true;
   }
 
@@ -150,8 +154,8 @@ export class ProgressPicturesComponent implements OnInit {
     this.saving=true; this.error=null;
     const folderPath=`${this.progressPicturesDirectory}/${this.clientId}`;
     const groupId=`progress-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    const poses=(['FRONT','SIDE','BACK'] as const);
-    const uploads=poses.map(pose=>{const file=payload.files[pose]; const ext=file.name.includes('.')?`.${file.name.split('.').pop()}`:''; const named=new File([file],`${groupId}-${pose.toLowerCase()}${ext}`,{type:file.type,lastModified:file.lastModified}); return this.documentService.uploadFileInPath(named,folderPath).pipe(map(()=>({pose,imageUrl:`${folderPath}/${named.name}`})));});
+    const poses=(['FRONT','SIDE','BACK'] as const).filter(pose=>!!payload.files[pose]);
+    const uploads=poses.map(pose=>{const file=payload.files[pose]!; const ext=file.name.includes('.')?`.${file.name.split('.').pop()}`:''; const named=new File([file],`${groupId}-${pose.toLowerCase()}${ext}`,{type:file.type,lastModified:file.lastModified}); return this.documentService.uploadFileInPath(named,folderPath).pipe(map(()=>({pose,imageUrl:`${folderPath}/${named.name}`})));});
     forkJoin(uploads).pipe(switchMap(items=>forkJoin(items.map(item=>this.progressPicturesService.createProgressPicture({clientId:this.clientId,imageUrl:item.imageUrl,groupId,weight:this.coachSettingsService.convertWeightToKg(payload.weight)??payload.weight,date:payload.date,pose:item.pose,note:payload.note})))),finalize(()=>this.saving=false)).subscribe({next:created=>{this.showAddModal=false;created.forEach(x=>this.pictureAdded.emit(x));this.loadPictures();},error:err=>{console.error(err);this.error=err?.error?.message||err?.message||'SAVE_PROGRESS_PICTURE_ERROR';}});
   }
 

@@ -1,21 +1,35 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { finalize } from 'rxjs/operators';
 import { ClientTaskPayload, ClientTasksService, ClientTaskType, HabitPayload, HabitUnit, TaskCalendarItem, TaskCalendarResponse } from 'app/service/client-tasks.service';
+import { ProgressPose } from 'app/components/progress-pictures-module/add-progress-picture-modal/add-progress-picture-modal.component';
+import { MANUAL_MEASUREMENT_TYPES, MeasurementTypeItem } from 'app/models/measurement-type.model';
+import { Form, FormsApiService } from 'app/components/forms/services/forms-api.service';
 
 type TaskKind = 'general' | 'progress' | 'metrics' | 'form' | 'habit';
 type TaskStatus = 'done' | 'missed' | 'upcoming';
-type ModalStep = 'type' | 'habits' | 'custom' | 'general';
+type ModalStep = 'type' | 'habits' | 'custom' | 'general' | 'progress' | 'metrics' | 'form';
 type WeeksShown = 1 | 2 | 4;
-interface CalendarTask { id: string; occurrence: string; title: string; subtitle: string; kind: TaskKind; icon: string; status: TaskStatus; goalValue?: number; unit?: string; source: TaskCalendarItem; }
+interface CalendarTask {
+  id: string; occurrence: string; title: string; subtitle: string; kind: TaskKind; icon: string; status: TaskStatus; goalValue?: number; unit?: string; source: TaskCalendarItem;
+  /** Client progress task: poses the client must upload in Progress Pictures (not returned by the backend yet). */
+  poses?: ProgressPose[];
+  /** Body metrics task: measurement types (Measurements module keys) the client must record (not returned by the backend yet). */
+  measurements?: string[];
+}
 interface CalendarDay { date: Date; key: string; isToday: boolean; isPast: boolean; tasks: CalendarTask[]; }
 interface TaskMenu { day: CalendarDay; task: CalendarTask; top: number; left: number; }
 interface TaskTypeOption { kind: TaskKind; icon: string; titleKey: string; descriptionKey: string; examplesKey: string; }
 interface HabitPreset { name: string; goal: string; icon: string; tone: string; value?: number; unit?: string; }
 interface HabitCategory { titleKey: string; habits: HabitPreset[]; }
+/** Fields shared by the client progress and body metrics forms, the ones the Tasks backend stores. */
+interface TaskRequestForm { title: string; note: string; date: string; reminder: boolean; reminderTime: string; allowComments: boolean; }
+/** Existing coach form offered in the "Form" task step. `frequency` is set when the form already has a Schedule. */
+interface FormOption { id: string; name: string; questionCount: number | null; frequency: string | null; }
 
 const KIND_ICON: Record<TaskKind, string> = { general: 'list-checks', progress: 'camera', metrics: 'activity', form: 'clipboard-list', habit: 'repeat' };
 const TYPE_TO_KIND: Record<ClientTaskType, TaskKind> = { GENERAL: 'general', CLIENT_PROGRESS: 'progress', BODY_METRICS: 'metrics', FORM: 'form' };
@@ -44,6 +58,18 @@ export class ClientTasksTabComponent implements OnChanges {
   habit = this.emptyHabitForm();
   advancedOpen = false;
   generalTask = this.emptyGeneralTaskForm();
+  progressTask = this.emptyProgressTaskForm();
+  readonly progressPoses: ProgressPose[] = ['FRONT', 'SIDE', 'BACK'];
+  metricsTask = this.emptyMetricsTaskForm();
+  /** Types added through "Add measurement": they stay listed next to the first ones once added. */
+  private addedMeasurements = new Set<string>();
+  measurementPickerOpen = false;
+  private readonly shownMeasurementCount = 5;
+  forms: FormOption[] = [];
+  formSearch = '';
+  formsLoading = false;
+  formsError = false;
+  formAssignError = false;
   readonly weekOptions: WeeksShown[] = [1, 2, 4];
   readonly weekdayInitials = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   readonly units = ['TIMES', 'MINUTES', 'HOURS', 'LITERS', 'SERVINGS', 'STEPS', 'CUSTOM'];
@@ -73,7 +99,7 @@ export class ClientTasksTabComponent implements OnChanges {
     ] },
   ];
 
-  constructor(private api: ClientTasksService) { this.buildEmptyDays(); }
+  constructor(private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router) { this.buildEmptyDays(); }
   ngOnChanges(changes: SimpleChanges): void { if (changes['clientId'] && this.clientId) this.refresh(); }
   get rangeEnd(): Date { return addDays(this.rangeStart, this.weeksShown * 7 - 1); }
   get weeks(): CalendarDay[][] { const result: CalendarDay[][] = []; for (let i = 0; i < this.days.length; i += 7) result.push(this.days.slice(i, i + 7)); return result; }
@@ -124,8 +150,18 @@ export class ClientTasksTabComponent implements OnChanges {
     if (task.kind === 'habit') {
       this.habit = { name: s.title, icon: task.icon, tone: 'sky', goalValue: s.goalValue ?? null, unit: s.unit || 'TIMES', customUnit: s.customUnit || '', startDate: s.startDate || s.date, endDate: s.endDate || '', repeat: s.repeatType || 'DAILY', repeatDays: WEEK_DAYS.map(d => !!s.weekDays?.includes(d)), reminder: s.reminderEnabled, reminderTime: s.reminderTime || '08:00', allowComments: s.allowClientComment };
       this.modalStep = 'custom';
+    } else if (task.kind === 'progress' || task.kind === 'metrics') {
+      const saved = { note: s.instructions || '', date: s.date, reminder: s.reminderEnabled, reminderTime: s.reminderTime || '08:00', allowComments: s.allowClientComment };
+      if (task.kind === 'progress') {
+        this.progressTask = { ...this.emptyProgressTaskForm(), ...saved, title: s.title, poses: [...(task.poses || ['FRONT'])] };
+        this.modalStep = 'progress';
+      } else {
+        this.openMetricsForm({ title: s.title, measurements: [...(task.measurements || ['BODYWEIGHT'])] });
+        this.metricsTask = { ...this.metricsTask, ...saved };
+      }
     } else {
-      this.selectedTaskType = s.taskType || 'GENERAL'; this.generalTask = { title: s.title, instructions: s.instructions || '', date: s.date, reminder: s.reminderEnabled, reminderTime: s.reminderTime || '08:00', allowComments: s.allowClientComment, formId: s.formId || '' }; this.modalStep = 'general';
+      this.selectedTaskType = s.taskType || 'GENERAL'; this.generalTask = { title: s.title, instructions: s.instructions || '', date: s.date, reminder: s.reminderEnabled, reminderTime: s.reminderTime || '08:00', allowComments: s.allowClientComment, formId: s.formId || '' };
+      if (task.kind === 'form') this.openFormStep(); else this.modalStep = 'general';
     }
     this.advancedOpen = false;
   }
@@ -137,7 +173,11 @@ export class ClientTasksTabComponent implements OnChanges {
   openCreateTask(date?: Date): void { this.closeTaskMenu(); this.editing = false; this.editingId = null; this.modalDate = date || this.today; this.modalStep = 'type'; }
   chooseTaskType(option: TaskTypeOption): void {
     if (option.kind === 'habit') { this.habitSearch = ''; this.modalStep = 'habits'; return; }
-    this.selectedTaskType = KIND_TO_TYPE[option.kind] || 'GENERAL'; this.generalTask = this.emptyGeneralTaskForm(); this.advancedOpen = false; this.modalStep = 'general';
+    this.selectedTaskType = KIND_TO_TYPE[option.kind] || 'GENERAL'; this.advancedOpen = false;
+    if (option.kind === 'progress') { this.progressTask = this.emptyProgressTaskForm(); this.modalStep = 'progress'; return; }
+    if (option.kind === 'metrics') { this.openMetricsForm(); return; }
+    this.generalTask = this.emptyGeneralTaskForm();
+    if (option.kind === 'form') this.openFormStep(); else this.modalStep = 'general';
   }
   get filteredHabitCategories(): HabitCategory[] { const term = this.habitSearch.trim().toLowerCase(); if (!term) return this.habitCategories; return this.habitCategories.map(c => ({ ...c, habits: c.habits.filter(h => h.name.toLowerCase().includes(term)) })).filter(c => c.habits.length); }
   openCustomHabit(preset?: HabitPreset): void {
@@ -151,19 +191,188 @@ export class ClientTasksTabComponent implements OnChanges {
     const payload: ClientTaskPayload = { clientId: this.clientId, type: this.selectedTaskType, title: this.generalTask.title.trim(), instructions: this.generalTask.instructions.trim(), date: this.generalTask.date, reminderEnabled: this.generalTask.reminder, reminderTime: this.generalTask.reminder ? this.generalTask.reminderTime : undefined, allowClientComment: this.generalTask.allowComments, formId: this.generalTask.formId || undefined };
     (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
   }
+
+  isPoseSelected(pose: ProgressPose): boolean {
+    return this.progressTask.poses.includes(pose);
+  }
+
+  toggleProgressPose(pose: ProgressPose): void {
+    const poses = this.progressTask.poses;
+    // Kept in Front / Side / Back order, the order the client uploads them in.
+    this.progressTask.poses = poses.includes(pose)
+      ? poses.filter((selected) => selected !== pose)
+      : this.progressPoses.filter((option) => option === pose || poses.includes(option));
+  }
+
+  get canCreateProgressTask(): boolean {
+    return !!this.progressTask.title.trim() && this.progressTask.poses.length > 0 && !!this.progressTask.date;
+  }
+
+  createProgressTask(): void {
+    // Prototype: the requested poses are not persisted yet. The backend will link the task to Progress Pictures:
+    // the client uploads the requested poses from the task, which then turns DONE automatically.
+    if (!this.canCreateProgressTask) return;
+    this.saveTaskRequest('CLIENT_PROGRESS', this.progressTask);
+  }
+
+  private openMetricsForm(values: { title?: string; measurements?: string[] } = {}): void {
+    this.metricsTask = { ...this.emptyMetricsTaskForm(), ...values };
+    // Keep any requested type outside the first ones visible, e.g. when editing a task.
+    this.addedMeasurements = new Set(this.metricsTask.measurements);
+    this.measurementPickerOpen = false;
+    this.advancedOpen = false;
+    this.modalStep = 'metrics';
+  }
+
+  /** First manual types of the Measurements module, plus the ones added with "Add measurement". */
+  get shownMeasurements(): MeasurementTypeItem[] {
+    return MANUAL_MEASUREMENT_TYPES.filter(
+      (type, index) => index < this.shownMeasurementCount || this.addedMeasurements.has(type.key));
+  }
+
+  /** Remaining manual types, offered in the "Add measurement" picker. */
+  get otherMeasurements(): MeasurementTypeItem[] {
+    const shown = this.shownMeasurements;
+    return MANUAL_MEASUREMENT_TYPES.filter((type) => !shown.includes(type));
+  }
+
+  isMeasurementSelected(key: string): boolean {
+    return this.metricsTask.measurements.includes(key);
+  }
+
+  toggleMeasurement(key: string): void {
+    const selected = this.metricsTask.measurements;
+    // Kept in the Measurements module order.
+    this.metricsTask.measurements = selected.includes(key)
+      ? selected.filter((selectedKey) => selectedKey !== key)
+      : MANUAL_MEASUREMENT_TYPES.map((type) => type.key).filter((typeKey) => typeKey === key || selected.includes(typeKey));
+  }
+
+  toggleMeasurementPicker(event: MouseEvent): void {
+    event.stopPropagation();
+    this.measurementPickerOpen = !this.measurementPickerOpen;
+  }
+
+  addMeasurement(key: string): void {
+    this.addedMeasurements.add(key);
+    if (!this.isMeasurementSelected(key)) this.toggleMeasurement(key);
+    this.measurementPickerOpen = false;
+  }
+
+  get canCreateMetricsTask(): boolean {
+    return !!this.metricsTask.title.trim() && this.metricsTask.measurements.length > 0 && !!this.metricsTask.date;
+  }
+
+  createMetricsTask(): void {
+    // Prototype: the requested measurement types are not persisted yet. The backend will link the task to Measurements:
+    // the client records each requested type there, and the task turns DONE once all are recorded.
+    if (!this.canCreateMetricsTask) return;
+    this.saveTaskRequest('BODY_METRICS', this.metricsTask);
+  }
+
+  /** One-off form task: recurrence is not set here, it stays in the Schedule tab of the form. */
+  private openFormStep(): void {
+    this.formSearch = '';
+    this.formAssignError = false;
+    this.modalStep = 'form';
+    this.loadForms();
+  }
+
+  private loadForms(): void {
+    this.formsLoading = true;
+    this.formsError = false;
+    this.formsApi.getMyFormsPage(0, 50).pipe(finalize(() => this.formsLoading = false)).subscribe({
+      next: (page) => this.forms = (page?.content ?? []).filter((form) => form.status !== 'ARCHIVED').map(toFormOption),
+      error: () => this.formsError = true,
+    });
+  }
+
+  get filteredForms(): FormOption[] {
+    const term = this.formSearch.trim().toLowerCase();
+    return term ? this.forms.filter((form) => form.name.toLowerCase().includes(term)) : this.forms;
+  }
+
+  isFormSelected(form: FormOption): boolean {
+    return this.generalTask.formId === form.id;
+  }
+
+  selectForm(form: FormOption): void {
+    this.generalTask.formId = form.id;
+    // The task is shown with the form name in the calendar.
+    this.generalTask.title = form.name;
+    this.formAssignError = false;
+  }
+
+  get canAssignForm(): boolean {
+    return !!this.generalTask.formId && !!this.generalTask.date;
+  }
+
+  assignFormTask(): void {
+    if (!this.canAssignForm) return;
+    this.formAssignError = false;
+    // As when assigning from Check-ins: a draft form is published first so the client can fill it in.
+    this.formsApi.ensurePublished(this.generalTask.formId).subscribe({
+      next: () => this.createGeneralTask(),
+      error: () => this.formAssignError = true,
+    });
+  }
+
+  createNewForm(): void {
+    this.closeModal();
+    this.router.navigate(['/forms/create-form']);
+  }
+
+  /** Saves a client progress / body metrics task with the fields the Tasks backend already supports. */
+  private saveTaskRequest(type: ClientTaskType, form: TaskRequestForm): void {
+    if (!this.clientId) return;
+    const payload: ClientTaskPayload = { clientId: this.clientId, type, title: form.title.trim(), instructions: form.note.trim(), date: form.date, reminderEnabled: form.reminder, reminderTime: form.reminder ? form.reminderTime : undefined, allowClientComment: form.allowComments };
+    (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
+  }
+
   saveHabit(): void {
     if (!this.clientId || !this.habit.name.trim() || !this.habit.goalValue) return;
     const payload: HabitPayload = { clientId: this.clientId, name: this.habit.name.trim(), goalValue: this.habit.goalValue, unit: this.habit.unit as HabitUnit, customUnit: this.habit.unit === 'CUSTOM' ? this.habit.customUnit.trim() : undefined, startDate: this.habit.startDate, endDate: this.habit.endDate || null, repeatType: this.habit.repeat, weekDays: this.habit.repeat === 'WEEKLY' ? WEEK_DAYS.filter((_, i) => this.habit.repeatDays[i]) : [], reminderEnabled: this.habit.reminder, reminderTime: this.habit.reminder ? this.habit.reminderTime : undefined, allowClientComment: this.habit.allowComments };
     (this.editingId ? this.api.updateHabit(this.editingId, payload) : this.api.createHabit(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
   }
   closeModal(): void { this.modalStep = null; this.editingId = null; }
-  @HostListener('document:click') @HostListener('window:resize') onOutsideInteraction(): void { if (this.taskMenu) this.closeTaskMenu(); }
+  @HostListener('document:click') @HostListener('window:resize') onOutsideInteraction(): void { if (this.taskMenu) this.closeTaskMenu(); this.measurementPickerOpen = false; }
   @HostListener('window:scroll') onWindowScroll(): void { if (this.taskMenu) this.closeTaskMenu(); }
-  @HostListener('document:keydown.escape') onEscape(): void { if (this.taskMenu) this.closeTaskMenu(); else if (this.modalStep) this.closeModal(); }
+  @HostListener('document:keydown.escape') onEscape(): void { if (this.taskMenu) this.closeTaskMenu(); else if (this.measurementPickerOpen) this.measurementPickerOpen = false; else if (this.modalStep) this.closeModal(); }
   private emptyGeneralTaskForm() { return { title: '', instructions: '', date: toInputDate(this.modalDate || new Date()), reminder: false, reminderTime: '08:00', allowComments: true, formId: '' }; }
+
+  /** Client progress = a progress pictures request: no status and no recurrence (only habits repeat). */
+  private emptyProgressTaskForm() {
+    return {
+      title: this.translate.instant('TASKS_PROGRESS_DEFAULT_TITLE') as string,
+      poses: ['FRONT'] as ProgressPose[],
+      note: '',
+      date: toInputDate(this.modalDate || new Date()),
+      reminder: false,
+      reminderTime: '08:00',
+      allowComments: true,
+    };
+  }
+
+  /** Body metrics = a request to record Measurements types: the coach never enters values here. */
+  private emptyMetricsTaskForm() {
+    return {
+      title: this.translate.instant('TASKS_METRICS_DEFAULT_TITLE') as string,
+      measurements: ['BODYWEIGHT'],
+      note: '',
+      date: toInputDate(this.modalDate || new Date()),
+      reminder: false,
+      reminderTime: '08:00',
+      allowComments: true,
+    };
+  }
+
   private emptyHabitForm() { const weekday = this.modalDate?.getDay?.() ?? new Date().getDay(); const repeatDays = [false, false, false, false, false, false, false]; repeatDays[(weekday + 6) % 7] = true; return { name: '', icon: 'dumbbell', tone: 'orange', goalValue: null as number | null, unit: 'TIMES', customUnit: '', startDate: toInputDate(this.modalDate || new Date()), endDate: '', repeat: 'DAILY' as 'DAILY' | 'WEEKLY', repeatDays, reminder: false, reminderTime: '08:00', allowComments: true }; }
 }
 function startOfDay(date: Date): Date { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 function addDays(date: Date, days: number): Date { return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days); }
 function mondayOf(date: Date): Date { return addDays(startOfDay(date), -((date.getDay() + 6) % 7)); }
+/** Same question count fallback as the Check-ins form selection modal; null when the page gives neither. */
+function toFormOption(form: Form & { questions?: unknown[]; questionsCount?: number }): FormOption {
+  return { id: String(form.id), name: form.title || form.name || '(Untitled)', questionCount: Array.isArray(form.questions) ? form.questions.length : form.questionsCount ?? null, frequency: form.schedule?.frequency ?? null };
+}
 function toInputDate(date: Date): string { const pad = (v: number) => String(v).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; }

@@ -9,15 +9,7 @@ import {
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ClientService } from 'app/service/client.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-
-interface MeasurementTypeItem {
-  key: string;
-  label: string;
-  unit: string;
-  icon: string;
-  min: number;
-  max: number;
-}
+import { MEASUREMENT_TYPES, MeasurementTypeItem } from 'app/models/measurement-type.model';
 
 @Component({
   selector: 'app-body-measurements',
@@ -65,19 +57,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   weightUnit: 'kg' | 'lbs' = 'kg';
   measurementUnit: 'cm' | 'in' = 'cm';
 
-  measurementTypes: MeasurementTypeItem[] = [
-    { key: 'BODYWEIGHT', label: 'BODYWEIGHT', unit: 'kg', icon: 'fa-weight-scale', min: 20, max: 500 },
-    { key: 'BMI', label: 'BMI', unit: '', icon: 'fa-person', min: 5, max: 100 },
-    { key: 'BODY_FAT_INDEX', label: 'BODY_FAT_INDEX', unit: '%', icon: 'fa-person', min: 1, max: 70 },
-    { key: 'WAIST', label: 'WAIST', unit: 'cm', icon: 'fa-ruler-horizontal', min: 20, max: 300 },
-    { key: 'CHEST', label: 'CHEST', unit: 'cm', icon: 'fa-ruler-horizontal', min: 20, max: 300 },
-    { key: 'SHOULDERS', label: 'SHOULDERS', unit: 'cm', icon: 'fa-ruler-horizontal', min: 20, max: 300 },
-    { key: 'BICEPS_RIGHT', label: 'BICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 5, max: 100 },
-    { key: 'BICEPS_LEFT', label: 'BICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 5, max: 100 },
-    { key: 'QUADRICEPS_RIGHT', label: 'QUADRICEPS_RIGHT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 10, max: 150 },
-    { key: 'QUADRICEPS_LEFT', label: 'QUADRICEPS_LEFT', unit: 'cm', icon: 'fa-ruler-horizontal', min: 10, max: 150 },
-    { key: 'NECK', label: 'NECK', unit: 'cm', icon: 'fa-ruler-horizontal', min: 10, max: 100 },
-  ];
+  measurementTypes: MeasurementTypeItem[] = MEASUREMENT_TYPES;
 
   constructor(
     private bodyMeasurementsService: BodyMeasurementsService,
