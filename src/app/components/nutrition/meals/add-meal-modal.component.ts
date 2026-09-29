@@ -4,6 +4,7 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnInit,
   Output,
   SimpleChanges,
 } from '@angular/core';
@@ -15,9 +16,10 @@ import { MealsService } from 'app/service/meals.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { defaultServingOf, lineServing, servingsOf } from '@shared/models/nutrition-math';
 import { FoodServing } from '@shared/models/MealPlan';
-import { editableUnit, servingKey } from '../food-servings/food-serving-rules';
+import { amountOf, editableUnit, portionsOf, servingKey } from '../food-servings/food-serving-rules';
 import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
+import { AuthService } from '@config/auth.service';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -47,7 +49,7 @@ interface IngredientRow {
   templateUrl: './add-meal-modal.component.html',
   styleUrls: ['./add-meal-modal.component.scss'],
 })
-export class AddMealModalComponent implements OnChanges {
+export class AddMealModalComponent implements OnChanges, OnInit {
   @Input() isVisible = false;
   @Input() meal: any | null = null;
 
@@ -97,11 +99,22 @@ export class AddMealModalComponent implements OnChanges {
     { value: 'POST_WORKOUT', label: 'POST_WORKOUT' },
   ];
 
+  isAdmin = false;
+
   constructor(
     private nutritionService: NutritionService,
     private mealsService: MealsService,
     private translate: TranslateService,
+    private authService: AuthService,
   ) {}
+
+  async ngOnInit(): Promise<void> {
+    this.isAdmin = (await this.authService.extractRoles()).includes('ROLE_ADMIN');
+  }
+
+  canAddServing(item: IngredientRow): boolean {
+    return this.isAdmin || !(item.foodRef?.general ?? item.foodRef?.isGeneral);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isVisible']?.currentValue === true) {
@@ -404,9 +417,7 @@ export class AddMealModalComponent implements OnChanges {
     if (!Number.isFinite(value)) return 0;
     if (item.manual) return value;
 
-    const baseServing = this.positiveNumber(item.servingSize ?? item.foodRef?.servingSize, 100);
-    const quantity = Number(item.quantity) || 0;
-    return value * (quantity / baseServing);
+    return value * (Number(item.quantity) || 0);
   }
 
   nutritionTotal(key: MacroKey): number {
@@ -480,7 +491,8 @@ export class AddMealModalComponent implements OnChanges {
       foods: this.ingredients.map((ingredient) => ({
         id: ingredient.id,
         name: ingredient.name.trim(),
-        quantity: ingredient.quantity == null ? null : Number(ingredient.quantity),
+        quantity: ingredient.quantity == null ? null
+          : ingredient.manual ? Number(ingredient.quantity) : amountOf(ingredient.quantity, ingredient.servingSize),
         unit: ingredient.unit.trim(),
         manual: ingredient.manual,
         foodRef: ingredient.manual || !ingredient.foodRef?.id
@@ -516,7 +528,7 @@ export class AddMealModalComponent implements OnChanges {
         id: food?.id || this.newId(),
         name: food?.name || ref?.name || '',
         category: manual ? 'Manual ingredient' : ref?.category || ref?.foodGroup || 'Food',
-        quantity: food?.quantity ?? null,
+        quantity: manual ? food?.quantity ?? null : portionsOf(food?.quantity, serving?.size),
         unit: food?.unit ? this.normalizeUnit(food.unit) : '',
         foodRef: ref,
         servingId: manual ? null : food?.servingId ?? serving?.id ?? null,
@@ -591,7 +603,7 @@ export class AddMealModalComponent implements OnChanges {
     item.servingId = serving.id ?? null;
     item.serving = serving;
     item.servingSize = this.positiveNumber(serving.size, 100);
-    item.quantity = item.servingSize;
+    item.quantity = 1;
     item.unit = this.normalizeUnit(editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE')));
     item.calories = this.nutrient(serving, 'energy', 'calories');
     item.protein = this.nutrient(serving, 'protein');
@@ -617,6 +629,7 @@ export class AddMealModalComponent implements OnChanges {
                 imageUrl: row.foodRef.imageUrl || detail?.imageUrl,
                 servings: detail?.servings ?? row.foodRef.servings,
                 defaultServingId: detail?.defaultServingId ?? row.foodRef.defaultServingId,
+                general: detail?.general ?? row.foodRef.general,
               };
             });
         },

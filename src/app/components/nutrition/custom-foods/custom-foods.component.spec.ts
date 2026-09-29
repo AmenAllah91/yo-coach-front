@@ -27,7 +27,9 @@ describe('CustomFoodsComponent servings', () => {
     service.updateFood.and.callFake((_id: string, food: Food) => of({ ...food, id: 'eggs' }));
     service.createFood.and.callFake((food: Food) => of({ ...food, id: 'new' }));
     service.getFoods.and.returnValue(of({ content: [] }));
-    component = new CustomFoodsComponent(service, translate);
+    const auth = jasmine.createSpyObj('AuthService', ['extractRoles']);
+    auth.extractRoles.and.resolveTo(['ROLE_COACH']);
+    component = new CustomFoodsComponent(service, translate, auth);
   });
 
   it('opens a historical food on its initial serving shown as grams', async () => {
@@ -113,6 +115,44 @@ describe('CustomFoodsComponent servings', () => {
     pendingForm({});
     await component.saveFood();
     expect(service.createFood.calls.mostRecent().args[0].servings.length).toBe(1);
+  });
+
+  it('lets any admin manage the catalog and a coach only their own foods', () => {
+    const catalog = { ...legacyEggs(), isGeneral: true } as Food;
+    const own = { ...legacyEggs(), isGeneral: false } as Food;
+    expect([catalog, own].map((food) => component.canManage(food))).toEqual([false, true]);
+    component.deleteFood(catalog);
+    expect(component.showDeleteModal).toBeFalse();
+    component.isAdmin = true;
+    expect(component.canManage(catalog)).toBeTrue();
+    component.deleteFood(catalog);
+    expect(component.showDeleteModal).toBeTrue();
+  });
+
+  it('imports only the valid foods of a file and shows the report', () => {
+    service.importFoods = jasmine.createSpy('importFoods').and.returnValue(of({ created: 1, duplicates: 1, rejected: 0, entries: [
+      { name: 'Œufs', status: 'CREATED', message: null }, { name: 'Riz', status: 'DUPLICATE', message: null },
+    ] }));
+    component.importPreview = {
+      foods: [
+        { name: 'Œufs', rows: [2, 3], valid: true, servings: [{ size: 100, unit: 'g', energy: 143, protein: 12.6, carbohydrates: 0.7, fat: 9.5 }] },
+        { name: 'Riz', rows: [4], valid: true, servings: [{ size: 100, unit: 'g', energy: 130, protein: 2.7, carbohydrates: 28, fat: 0.3 }] },
+        { name: 'Skyr', rows: [5], valid: false, servings: [] },
+      ],
+      errors: [], fileError: null, validFoods: 2, validServings: 2, invalidFoods: 1, errorRows: 1,
+    };
+    component.showImportModal = true;
+    expect(component.canConfirmImport).toBeTrue();
+    component.confirmImport();
+    expect(service.importFoods).toHaveBeenCalledWith([
+      jasmine.objectContaining({ name: 'Œufs' }), jasmine.objectContaining({ name: 'Riz' }),
+    ]);
+    expect(component.importReport?.created).toBe(1);
+    expect(component.importEntries('DUPLICATE').map((entry) => entry.name)).toEqual(['Riz']);
+    expect(service.getFoods).toHaveBeenCalled();
+    component.closeImportModal();
+    expect(component.showImportModal).toBeFalse();
+    expect(component.importReport).toBeNull();
   });
 
   it('shows the main serving and the number of extra servings in the list', () => {

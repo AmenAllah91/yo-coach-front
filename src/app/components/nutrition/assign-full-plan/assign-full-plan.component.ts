@@ -15,11 +15,15 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 import { nutritionDayState, nutritionDayValidationMessages, nutritionFoodValidationMessages } from '@shared/models/nutrition-publication';
 import { lineMacros, lineServing } from '@shared/models/nutrition-math';
+import { FoodServing } from '@shared/models/MealPlan';
+import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
+import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
+import { NEW_SERVING_OPTION, PlanFoodServing } from '../food-servings/plan-food-serving';
 
 @Component({
   selector: 'app-assign-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent, FoodServingFormComponent, ServingUnitPipe],
   templateUrl: './assign-full-plan.component.html',
   styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
@@ -647,14 +651,15 @@ export class AssignFullPlanComponent implements OnInit {
   foodStep: 'list' | 'detail' = 'list';
   selectedFood: FoodRef | null = null;
 
-  foodQty = 100;
+  readonly foodServing = new PlanFoodServing(() => false);
+  readonly newServingOption = NEW_SERVING_OPTION;
   foodValidationMessage = '';
-  adj = { calories: 0, protein: 0, carbohydrates: 0, fat: 0 };
 
   openFoodModal(meal: Meal) {
     this.foodValidationMessage = '';
     this.mealForModal = meal;
     this.foodStep = 'list';
+    this.foodSearch = '';
     this.isFoodModalOpen = true;
     this.filterFoods();
   }
@@ -757,8 +762,7 @@ export class AssignFullPlanComponent implements OnInit {
     this.foodValidationMessage = '';
     this.selectedFood = food;
     this.foodStep = 'detail';
-    this.foodQty = 100;
-    this.recomputeAdjusted();
+    this.foodServing.start(food);
   }
 
   backToList() {
@@ -769,19 +773,22 @@ export class AssignFullPlanComponent implements OnInit {
 
   recomputeAdjusted() {
     this.foodValidationMessage = '';
-    if (!this.selectedFood) return;
-    const factor = this.foodQty / 100;
+  }
 
-    const p = this.selectedFood.protein * factor;
-    const c = this.selectedFood.carbohydrates * factor;
-    const f = this.selectedFood.fat * factor;
+  get adj() {
+    const macros = this.foodServing.macros;
+    return { calories: macros.calories, protein: macros.protein, carbohydrates: macros.carbs, fat: macros.fat };
+  }
 
-    this.adj = {
-      protein: p,
-      carbohydrates: c,
-      fat: f,
-      calories: p * 4 + c * 4 + f * 9,
-    };
+  get unitSuggestions(): string[] {
+    return String(this.translate.instant('FOOD_UNIT_SUGGESTIONS')).split(',').map((unit) => unit.trim()).filter(Boolean);
+  }
+
+  createServing(serving: FoodServing): void {
+    this.foodServing.create(serving, (id, draft) => this.nutritionService.addFoodServing(id, draft), (food) => {
+      this.selectedFood = food;
+      this.filteredFoods = this.filteredFoods.map((item) => (item.id === food.id ? food : item));
+    });
   }
 
   private showFoodValidation(message: string): void {
@@ -799,10 +806,10 @@ export class AssignFullPlanComponent implements OnInit {
       return;
     }
 
+    const line = this.foodServing.line(this.translate.instant('FOOD_UNIT_PIECE'));
     const validationFood: Partial<Food> = {
       name: this.selectedFood.name,
-      quantity: this.foodQty,
-      unit: 'g',
+      ...line,
       foodRef: this.selectedFood,
     };
     const message = nutritionFoodValidationMessages(validationFood, { includeNutritionValues: false })[0];
@@ -815,8 +822,7 @@ export class AssignFullPlanComponent implements OnInit {
     const food: Food = {
       id: crypto.randomUUID?.() ?? Date.now().toString(),
       name: this.selectedFood.name,
-      quantity: this.foodQty,
-      unit: 'g',
+      ...line,
       foodRef: this.selectedFood,
     };
 

@@ -5,10 +5,21 @@
       <h1>{{ 'CUSTOM_FOODS' | translate }}</h1>
       <p>{{ 'CUSTOM_FOODS_SUBTITLE' | translate }}</p>
     </div>
-    <button class="primary-btn" (click)="openAddModal()">
-      <i-feather name="plus"></i-feather>
-      {{ 'CREATE_FOOD' | translate }}
-    </button>
+    <div class="header-actions">
+      <button class="secondary-btn" type="button" (click)="downloadImportTemplate()">
+        <i-feather name="download"></i-feather>
+        <span>{{ 'FOOD_IMPORT_TEMPLATE' | translate }}</span>
+      </button>
+      <label class="secondary-btn">
+        <i-feather name="upload"></i-feather>
+        <span>{{ 'FOOD_IMPORT_BUTTON' | translate }}</span>
+        <input type="file" accept=".xlsx,.xls" (change)="onImportFile($any($event.target))" />
+      </label>
+      <button class="primary-btn" (click)="openAddModal()">
+        <i-feather name="plus"></i-feather>
+        {{ 'CREATE_FOOD' | translate }}
+      </button>
+    </div>
   </div>
 
   <div class="content">
@@ -63,7 +74,7 @@
                 <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu">
-                <ng-container *ngIf="!food.isGeneral">
+                <ng-container *ngIf="canManage(food)">
                   <button class="dropdown-item" (click)="editFood(food)">
                     <i-feather name="edit"></i-feather>
                     {{ 'EDIT' | translate }}
@@ -73,7 +84,7 @@
                     {{ 'DELETE' | translate }}
                   </button>
                 </ng-container>
-                <ng-container *ngIf="food.isGeneral">
+                <ng-container *ngIf="!canManage(food)">
                   <span class="dropdown-item disabled">
                     <i-feather name="lock"></i-feather>
                     {{ 'GENERAL_FOOD' | translate }}
@@ -291,6 +302,57 @@
     </div>
   </div>
 
+  <div class="modal-overlay" [class.show]="showImportModal" (click)="closeImportModal()">
+    <div class="modal-content import" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ 'FOOD_IMPORT_TITLE' | translate }}</h2>
+        <button class="close-btn" type="button" (click)="closeImportModal()" [disabled]="importing">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <div class="modal-body import-body">
+        <p class="field-error" *ngIf="importError" role="alert">{{ importError | translate }}</p>
+
+        <ng-container *ngIf="importPreview as preview">
+          <p class="field-error" *ngIf="preview.fileError" role="alert">{{ preview.fileError | translate }}</p>
+          <ng-container *ngIf="!preview.fileError">
+            <div class="import-ready">{{ 'FOOD_IMPORT_READY' | translate:{ count: preview.validFoods, servings: preview.validServings } }}</div>
+            <div class="import-issues" *ngIf="preview.errors.length">
+              <div class="import-issues__title">{{ 'FOOD_IMPORT_SKIPPED' | translate:{ rows: preview.errorRows, foods: preview.invalidFoods } }}</div>
+              <ul>
+                <li *ngFor="let error of preview.errors">
+                  <strong>{{ 'FOOD_IMPORT_ROW' | translate:{ row: error.row } }}</strong>
+                  <span *ngIf="error.name"> · {{ error.name }}</span>
+                  · {{ importFieldLabel(error.field) | translate }} : {{ error.error | translate }}
+                </li>
+              </ul>
+            </div>
+          </ng-container>
+        </ng-container>
+
+        <ng-container *ngIf="importReport as report">
+          <div class="import-ready">{{ 'FOOD_IMPORT_CREATED' | translate:{ count: report.created } }}</div>
+          <div class="import-issues import-issues--muted" *ngIf="report.duplicates">
+            <div class="import-issues__title">{{ 'FOOD_IMPORT_DUPLICATES' | translate:{ count: report.duplicates } }}</div>
+            <ul><li *ngFor="let entry of importEntries('DUPLICATE')">{{ entry.name }}</li></ul>
+          </div>
+          <div class="import-issues" *ngIf="report.rejected">
+            <div class="import-issues__title">{{ 'FOOD_IMPORT_REJECTED' | translate:{ count: report.rejected } }}</div>
+            <ul><li *ngFor="let entry of importEntries('INVALID')"><strong>{{ entry.name || '—' }}</strong> : {{ entry.message }}</li></ul>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-btn" type="button" (click)="closeImportModal()" [disabled]="importing">{{ (importReport ? 'CLOSE' : 'CANCEL') | translate }}</button>
+        <button class="confirm-btn primary" type="button" *ngIf="!importReport" [disabled]="!canConfirmImport" [attr.aria-busy]="importing" (click)="confirmImport()">
+          {{ 'FOOD_IMPORT_CONFIRM' | translate:{ count: importPreview?.validFoods || 0 } }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete Food Modal -->
   <div class="modal-overlay" [class.show]="showDeleteModal" (click)="closeDeleteModal()">
     <div class="modal-content delete" (click)="$event.stopPropagation()">
@@ -306,7 +368,7 @@
           <i-feather name="trash-2" size="24"></i-feather>
         </div>
         <h3>{{ 'ARE_YOU_SURE' | translate }}</h3>
-        <p>{{ 'DELETE_FOOD_CONFIRMATION' | translate:{ name: foodToDelete?.name } }}</p>
+        <p>{{ (foodToDelete?.isGeneral ? 'ARCHIVE_FOOD_CONFIRMATION' : 'DELETE_FOOD_CONFIRMATION') | translate:{ name: foodToDelete?.name } }}</p>
       </div>
 
       <div class="modal-footer">

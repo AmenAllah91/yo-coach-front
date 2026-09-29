@@ -228,6 +228,10 @@ export class NutritionService {
     return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`).pipe(map(result => this.fromFoodApi(result)));
   }
 
+  importFoods(foods: { name: string; servings: FoodServing[] }[]): Observable<any> {
+    return this.http.post(`${environment.baseApiUrl}/api/food-ref/import`, foods);
+  }
+
   addFoodServing(id: string, serving: FoodServing): Observable<Food> {
     return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/servings`, serving).pipe(map(result => this.fromFoodApi(result)));
   }

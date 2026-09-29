@@ -2,11 +2,14 @@ import { SimpleChange } from '@angular/core';
 import { Subject, of, throwError } from 'rxjs';
 import { AddMealModalComponent } from './add-meal-modal.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { AuthService } from '@config/auth.service';
 import { FeatherModule } from 'angular-feather';
 import { allIcons } from 'angular-feather/icons';
 import { TranslateModule } from '@ngx-translate/core';
 import { MealsService } from 'app/service/meals.service';
 import { NutritionService } from 'app/service/nutrition.service';
+
+const auth = { extractRoles: () => Promise.resolve(['ROLE_COACH']) } as any;
 
 describe('Meals create and edit validation', () => {
   let component: AddMealModalComponent;
@@ -17,7 +20,7 @@ describe('Meals create and edit validation', () => {
     service = jasmine.createSpyObj('MealsService', ['createMeal', 'updateMeal', 'saveTemplate']);
     const nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient']);
     nutrition.getFoodForClient.and.returnValue(of({}));
-    component = new AddMealModalComponent(nutrition, service, { instant: (key: string) => key } as any);
+    component = new AddMealModalComponent(nutrition, service, { instant: (key: string) => key } as any, auth);
     component.choose('recipe');
     component.name = ' Lunch ';
     component.addFood(food);
@@ -136,7 +139,7 @@ describe('Meal ingredient servings', () => {
     meals = jasmine.createSpyObj('MealsService', ['createMeal', 'updateMeal', 'saveTemplate']);
     nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient', 'addFoodServing']);
     nutrition.getFoodForClient.and.returnValue(of({}));
-    component = new AddMealModalComponent(nutrition, meals, { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) } as any);
+    component = new AddMealModalComponent(nutrition, meals, { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) } as any, auth);
     component.choose('foods');
     component.name = 'Petit-déjeuner';
     component.addFood(eggs());
@@ -145,7 +148,7 @@ describe('Meal ingredient servings', () => {
   it('starts on the main serving and switches to another one with its own values', () => {
     const row = component.ingredients[0];
     expect(row.servingId).toBe('initial');
-    expect(row.quantity).toBe(100);
+    expect(row.quantity).toBe(1);
     expect(row.unit).toBe('g');
     component.onServingChange(row, select('egg'));
     expect(row.servingId).toBe('egg');
@@ -172,7 +175,7 @@ describe('Meal ingredient servings', () => {
     component.createServing(row, { size: 6, unit: ' œufs ', energy: 430, protein: 37.8, carbohydrates: 2.4, fat: 28.5 });
     expect(nutrition.addFoodServing).toHaveBeenCalledWith('eggs', jasmine.objectContaining({ size: 6 }));
     expect(row.servingId).toBe('box');
-    expect(row.quantity).toBe(6);
+    expect(row.quantity).toBe(1);
     expect(component.servingOptions(row).map((s) => s.id)).toEqual(['initial', 'egg', 'box']);
     expect(component.servingFormRowId).toBeNull();
   });
@@ -184,6 +187,43 @@ describe('Meal ingredient servings', () => {
     component.createServing(row, { size: 6, unit: 'œufs', energy: 1, protein: 1, carbohydrates: 1, fat: 1 });
     expect(component.servingError).toBe('MEAL_SERVING_NOT_OWNED');
     expect(component.servingFormRowId).toBe(row.id);
+  });
+
+  it('counts portions of the chosen unit and saves the resulting amount', () => {
+    const four = { id: 'four', size: 4, unit: 'oeufs', energy: 300, protein: 100, carbohydrates: 50, fat: 50 };
+    const row = component.ingredients[0];
+    row.foodRef = { ...row.foodRef, servings: [initial, egg, four] };
+    component.onServingChange(row, select('four'));
+    expect(row.quantity).toBe(1);
+    expect(component.ingredientTotal(row, 'calories')).toBe(300);
+    row.quantity = 1.5;
+    expect(component.ingredientTotal(row, 'calories')).toBe(450);
+    meals.createMeal.and.returnValue(of({}));
+    component.save();
+    expect(meals.createMeal.calls.mostRecent().args[0].foods[0]).toEqual(jasmine.objectContaining({ servingId: 'four', quantity: 6, unit: 'oeufs' }));
+  });
+
+  it('shows an existing line as portions and keeps its amount', () => {
+    component.isVisible = true;
+    component.meal = { id: 'meal', name: 'Snack', mealType: 'SNACK', foods: [{ id: 'line', name: 'Œufs', quantity: 150, unit: 'g', foodRef: eggs(), servingId: 'initial' }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    expect(component.ingredients[0].quantity).toBe(1.5);
+    meals.updateMeal.and.returnValue(of({}));
+    component.save();
+    expect(meals.updateMeal.calls.mostRecent().args[1].foods[0]).toEqual(jasmine.objectContaining({ quantity: 150, unit: 'g' }));
+  });
+
+  it('offers a new unit on a catalog food to admins only', () => {
+    expect(component.canAddServing(component.ingredients[0])).toBeTrue();
+    nutrition.getFoodForClient.and.returnValue(of({ general: true }));
+    component.isVisible = true;
+    component.meal = { id: 'meal', name: 'Snack', mealType: 'SNACK', foods: [{ id: 'line', name: 'Œufs', quantity: 1, unit: 'œuf', foodRef: eggs(), servingId: 'egg' }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    const row = component.ingredients[0];
+    expect(row.foodRef.general).toBeTrue();
+    expect(component.canAddServing(row)).toBeFalse();
+    component.isAdmin = true;
+    expect(component.canAddServing(row)).toBeTrue();
   });
 
   it('keeps the copy of a serving that no longer exists on the food', () => {
@@ -221,6 +261,7 @@ describe('Meals validation messages after interaction', () => {
       providers: [
         { provide: MealsService, useValue: {} },
         { provide: NutritionService, useValue: {} },
+        { provide: AuthService, useValue: auth },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(AddMealModalComponent);

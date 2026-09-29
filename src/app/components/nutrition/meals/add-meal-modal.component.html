@@ -137,7 +137,7 @@
                 <thead>
                   <tr>
                     <th>{{ 'FOOD' | translate }}</th>
-                    <th>{{ 'QUANTITY' | translate }}</th>
+                    <th>{{ 'FOOD_PORTIONS' | translate }}</th>
                     <th>{{ 'PROTEIN' | translate }}</th>
                     <th>{{ 'CARBS' | translate }}</th>
                     <th>{{ 'FAT' | translate }}</th>
@@ -182,7 +182,7 @@
                           (change)="onServingChange(ingredient, $any($event.target))"
                         >
                           <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
-                          <option [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
+                          <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
                         </select>
                         <ng-template #foodsUnitSelect>
                           <select
@@ -519,7 +519,7 @@
                 (change)="onServingChange(ingredient, $any($event.target))"
               >
                 <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
-                <option [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
+                <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
               </select>
               <ng-template #recipeUnitSelect>
                 <select
