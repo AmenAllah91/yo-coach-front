@@ -11,6 +11,32 @@ export interface MacroTargets {
 /* ================================
    FoodRef
 =================================*/
+export interface FoodServing {
+  id?: string;
+  size: number;
+  unit: string;
+  energy?: number | null;
+  protein?: number | null;
+  carbohydrates?: number | null;
+  fat?: number | null;
+  saturatedFat?: number | null;
+  polyunsaturatedFat?: number | null;
+  monounsaturatedFat?: number | null;
+  tranFat?: number | null;
+  cholesterol?: number | null;
+  sodium?: number | null;
+  potassium?: number | null;
+  fiber?: number | null;
+  sugar?: number | null;
+  polyols?: number | null;
+  vitaminA?: number | null;
+  vitaminC?: number | null;
+  calcium?: number | null;
+  iron?: number | null;
+  omega3?: number | null;
+  zinc?: number | null;
+}
+
 export interface FoodRef {
   imageUrl?: string;
   general?: boolean | number;
@@ -38,6 +64,8 @@ export interface FoodRef {
   servingSize?: number;
   servingDescription?: string;
   servingUnit?: string;
+  servings?: FoodServing[] | null;
+  defaultServingId?: string | null;
   calories?: number;
   image?: string;
 }
@@ -51,6 +79,8 @@ export interface Food {
   quantity: number;
   unit: string;
   foodRef?: FoodRef | null;
+  servingId?: string | null;
+  serving?: FoodServing | null;
   manual?: boolean;
   calories?: number | null;
   protein?: number | null;

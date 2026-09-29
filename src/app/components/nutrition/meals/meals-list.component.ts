@@ -8,6 +8,7 @@ import { MealsService } from 'app/service/meals.service';
 import { DeleteMealModalComponent } from './delete-meal-modal/delete-meal-modal.component';
 import { AddMealModalComponent } from './add-meal-modal.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { totalMacros } from '@shared/models/nutrition-math';
 
 @Component({
   selector: 'app-meals-list',
@@ -172,30 +173,7 @@ export class MealsListComponent implements OnInit, OnDestroy {
       };
     }
 
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-    let calories = 0;
-
-    for (const food of meal?.foods || []) {
-      if (food?.manual) {
-        protein += Number(food.protein) || 0;
-        carbs += Number(food.carbohydrates ?? food.carbs) || 0;
-        fat += Number(food.fat) || 0;
-        calories += Number(food.calories) || 0;
-        continue;
-      }
-
-      const ref = food?.foodRef;
-      if (!ref) continue;
-      const quantity = Number(food.quantity) || Number(ref.servingSize) || 100;
-      const servingSize = Number(ref.servingSize) || 100;
-      const ratio = quantity / servingSize;
-      protein += (Number(ref.protein) || 0) * ratio;
-      carbs += (Number(ref.carbohydrates) || 0) * ratio;
-      fat += (Number(ref.fat) || 0) * ratio;
-      calories += (Number(ref.energy ?? ref.calories) || 0) * ratio;
-    }
+    const { protein, carbs, fat, calories } = totalMacros(meal?.foods);
 
     return {
       protein: this.round1(protein),

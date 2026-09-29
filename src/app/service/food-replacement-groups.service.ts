@@ -8,6 +8,7 @@ export interface FoodReplacementGroupItem {
   foodRefId: string;
   quantity: number;
   unit: string;
+  servingId?: string | null;
 
   name?: string;
   energy?: number;

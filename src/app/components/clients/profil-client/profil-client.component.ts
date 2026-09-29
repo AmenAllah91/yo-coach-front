@@ -35,6 +35,7 @@ const CLIENT_NAV_OPEN_KEY = 'clientNavPanelOpen';
 import { ClientNutritionComponent } from '../client-nutrition/client-nutrition.component';
 import { MealplanDayService } from 'app/service/mealplan-day.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { totalMacros } from '@shared/models/nutrition-math';
 
 type TabId =
   | 'dashboard'
@@ -1531,20 +1532,7 @@ export class ProfilClientComponent {
     fat: number;
   } {
     const targets = meal?.mealTargets || {};
-    const foodTotals = (meal?.foods || []).reduce((sum: any, food: any) => {
-      const foodRef = food?.foodRef || {};
-      const quantity = Number(food?.quantity ?? foodRef?.servingSize ?? 100);
-      const servingSize = Number(foodRef?.servingSize ?? 100);
-      const ratio = servingSize > 0 ? quantity / servingSize : 1;
-      return {
-        calories: sum.calories + Number(food?.calories ?? foodRef?.energy ?? 0) * ratio,
-        protein: sum.protein + Number(food?.protein ?? foodRef?.protein ?? 0) * ratio,
-        carbs: sum.carbs + Number(
-          food?.carbs ?? food?.carbohydrates ?? foodRef?.carbohydrates ?? 0
-        ) * ratio,
-        fat: sum.fat + Number(food?.fat ?? foodRef?.fat ?? 0) * ratio,
-      };
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    const foodTotals = totalMacros(meal?.foods);
 
     return {
       calories: this.firstNutritionNumber(meal?.calories, targets?.calories, foodTotals.calories),

@@ -13,6 +13,7 @@ import { FeatherModule } from 'angular-feather';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MealsService } from 'app/service/meals.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { defaultServingOf, lineServing } from '@shared/models/nutrition-math';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -25,6 +26,8 @@ interface IngredientRow {
   quantity: number | null;
   unit: string;
   foodRef?: any;
+  servingId?: string | null;
+  servingSize?: number | null;
   calories: number | null;
   protein: number | null;
   carbs: number | null;
@@ -245,18 +248,21 @@ export class AddMealModalComponent implements OnChanges {
     if (this.foodAlreadyAdded(food) || this.saving) return;
     this.clearServerErrors();
 
-    const servingSize = this.positiveNumber(food.servingSize, 100);
+    const serving = defaultServingOf(food);
+    const servingSize = this.positiveNumber(serving.size, 100);
     this.ingredients.push({
       id: this.newId(),
       name: food.name || '',
       category: food.category || food.foodGroup || 'Food',
       quantity: servingSize,
-      unit: this.normalizeUnit(food.servingUnit || food.unit || 'g'),
+      unit: this.normalizeUnit(serving.unit || food.unit || 'g'),
       foodRef: food,
-      calories: this.nutrient(food, 'energy', 'calories'),
-      protein: this.nutrient(food, 'protein'),
-      carbs: this.nutrient(food, 'carbohydrates', 'carbs'),
-      fat: this.nutrient(food, 'fat'),
+      servingId: serving.id ?? null,
+      servingSize,
+      calories: this.nutrient(serving, 'energy', 'calories'),
+      protein: this.nutrient(serving, 'protein'),
+      carbs: this.nutrient(serving, 'carbohydrates', 'carbs'),
+      fat: this.nutrient(serving, 'fat'),
       manual: false,
     });
 
@@ -390,7 +396,7 @@ export class AddMealModalComponent implements OnChanges {
     if (!Number.isFinite(value)) return 0;
     if (item.manual) return value;
 
-    const baseServing = this.positiveNumber(item.foodRef?.servingSize, 100);
+    const baseServing = this.positiveNumber(item.servingSize ?? item.foodRef?.servingSize, 100);
     const quantity = Number(item.quantity) || 0;
     return value * (quantity / baseServing);
   }
@@ -472,6 +478,7 @@ export class AddMealModalComponent implements OnChanges {
         foodRef: ingredient.manual || !ingredient.foodRef?.id
           ? undefined
           : { id: ingredient.foodRef.id },
+        servingId: ingredient.manual ? undefined : ingredient.servingId ?? undefined,
         calories: ingredient.manual ? this.nullableNumber(ingredient.calories) : undefined,
         protein: ingredient.manual ? this.nullableNumber(ingredient.protein) : undefined,
         carbohydrates: ingredient.manual ? this.nullableNumber(ingredient.carbs) : undefined,
@@ -496,6 +503,7 @@ export class AddMealModalComponent implements OnChanges {
     this.ingredients = (meal?.foods || []).map((food: any) => {
       const ref = food?.foodRef;
       const manual = Boolean(food?.manual) || !ref;
+      const serving = manual ? null : lineServing(food);
       return {
         id: food?.id || this.newId(),
         name: food?.name || ref?.name || '',
@@ -503,10 +511,12 @@ export class AddMealModalComponent implements OnChanges {
         quantity: food?.quantity ?? null,
         unit: food?.unit ? this.normalizeUnit(food.unit) : '',
         foodRef: ref,
-        calories: manual ? food?.calories ?? null : this.nutrient(ref, 'energy', 'calories'),
-        protein: manual ? food?.protein ?? null : this.nutrient(ref, 'protein'),
-        carbs: manual ? food?.carbohydrates ?? food?.carbs ?? null : this.nutrient(ref, 'carbohydrates', 'carbs'),
-        fat: manual ? food?.fat ?? null : this.nutrient(ref, 'fat'),
+        servingId: manual ? null : food?.servingId ?? serving?.id ?? null,
+        servingSize: serving ? this.positiveNumber(serving.size, 100) : null,
+        calories: manual ? food?.calories ?? null : this.nutrient(serving, 'energy', 'calories'),
+        protein: manual ? food?.protein ?? null : this.nutrient(serving, 'protein'),
+        carbs: manual ? food?.carbohydrates ?? food?.carbs ?? null : this.nutrient(serving, 'carbohydrates', 'carbs'),
+        fat: manual ? food?.fat ?? null : this.nutrient(serving, 'fat'),
         manual,
       } as IngredientRow;
     });
