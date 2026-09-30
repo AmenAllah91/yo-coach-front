@@ -16,9 +16,9 @@ type ModalStep = 'type' | 'habits' | 'custom' | 'general' | 'progress' | 'metric
 type WeeksShown = 1 | 2 | 4;
 interface CalendarTask {
   id: string; occurrence: string; title: string; subtitle: string; kind: TaskKind; icon: string; status: TaskStatus; goalValue?: number; unit?: string; source: TaskCalendarItem;
-  /** Client progress task: poses the client must upload in Progress Pictures (not returned by the backend yet). */
+  /** Client progress task: poses the client must upload in Progress Pictures. */
   poses?: ProgressPose[];
-  /** Body metrics task: measurement types (Measurements module keys) the client must record (not returned by the backend yet). */
+  /** Body metrics task: Measurements module types the client must record. */
   measurements?: string[];
 }
 interface CalendarDay { date: Date; key: string; isToday: boolean; isPast: boolean; tasks: CalendarTask[]; }
@@ -70,6 +70,8 @@ export class ClientTasksTabComponent implements OnChanges {
   formsLoading = false;
   formsError = false;
   formAssignError = false;
+  taskSaving = false;
+  taskSaveError = '';
   readonly weekOptions: WeeksShown[] = [1, 2, 4];
   readonly weekdayInitials = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   readonly units = ['TIMES', 'MINUTES', 'HOURS', 'LITERS', 'SERVINGS', 'STEPS', 'CUSTOM'];
@@ -130,7 +132,7 @@ export class ClientTasksTabComponent implements OnChanges {
     const kind: TaskKind = item.itemType === 'HABIT' ? 'habit' : TYPE_TO_KIND[item.taskType || 'GENERAL'];
     const unit = item.unit === 'CUSTOM' ? item.customUnit : item.unit;
     const subtitle = kind === 'habit' ? `${item.goalValue ?? ''} ${unit || ''}`.trim() : kind === 'progress' ? 'Progress Pictures' : kind === 'metrics' ? 'Body Metrics' : kind === 'form' ? 'Form' : 'General task';
-    return { id: item.id, occurrence: item.occurrenceId, title: item.title, subtitle, kind, icon: KIND_ICON[kind], status: item.status.toLowerCase() as TaskStatus, goalValue: item.goalValue, unit: item.unit, source: item };
+    return { id: item.id, occurrence: item.occurrenceId, title: item.title, subtitle, kind, icon: KIND_ICON[kind], status: item.status.toLowerCase() as TaskStatus, goalValue: item.goalValue, unit: item.unit, source: item, poses: item.requestedPoses, measurements: item.requestedMeasurements };
   }
   toggleTaskMenu(event: MouseEvent, day: CalendarDay, task: CalendarTask): void {
     event.stopPropagation(); if (this.taskMenu?.task.occurrence === task.occurrence) { this.closeTaskMenu(); return; }
@@ -209,8 +211,6 @@ export class ClientTasksTabComponent implements OnChanges {
   }
 
   createProgressTask(): void {
-    // Prototype: the requested poses are not persisted yet. The backend will link the task to Progress Pictures:
-    // the client uploads the requested poses from the task, which then turns DONE automatically.
     if (!this.canCreateProgressTask) return;
     this.saveTaskRequest('CLIENT_PROGRESS', this.progressTask);
   }
@@ -220,6 +220,8 @@ export class ClientTasksTabComponent implements OnChanges {
     // Keep any requested type outside the first ones visible, e.g. when editing a task.
     this.addedMeasurements = new Set(this.metricsTask.measurements);
     this.measurementPickerOpen = false;
+    this.taskSaving = false;
+    this.taskSaveError = '';
     this.advancedOpen = false;
     this.modalStep = 'metrics';
   }
@@ -264,9 +266,7 @@ export class ClientTasksTabComponent implements OnChanges {
   }
 
   createMetricsTask(): void {
-    // Prototype: the requested measurement types are not persisted yet. The backend will link the task to Measurements:
-    // the client records each requested type there, and the task turns DONE once all are recorded.
-    if (!this.canCreateMetricsTask) return;
+    if (!this.canCreateMetricsTask || this.taskSaving) return;
     this.saveTaskRequest('BODY_METRICS', this.metricsTask);
   }
 
@@ -322,11 +322,26 @@ export class ClientTasksTabComponent implements OnChanges {
     this.router.navigate(['/forms/create-form']);
   }
 
-  /** Saves a client progress / body metrics task with the fields the Tasks backend already supports. */
-  private saveTaskRequest(type: ClientTaskType, form: TaskRequestForm): void {
+  private saveTaskRequest(type: ClientTaskType, form: TaskRequestForm & { poses?: ProgressPose[]; measurements?: string[] }): void {
     if (!this.clientId) return;
-    const payload: ClientTaskPayload = { clientId: this.clientId, type, title: form.title.trim(), instructions: form.note.trim(), date: form.date, reminderEnabled: form.reminder, reminderTime: form.reminder ? form.reminderTime : undefined, allowClientComment: form.allowComments };
-    (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
+    this.taskSaving = true;
+    this.taskSaveError = '';
+    const payload: ClientTaskPayload = { clientId: this.clientId, type, title: form.title.trim(), instructions: form.note.trim(), date: form.date, reminderEnabled: form.reminder, reminderTime: form.reminder ? form.reminderTime : undefined, allowClientComment: form.allowComments, requestedPoses: form.poses, requestedMeasurements: form.measurements };
+    (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload))
+      .pipe(finalize(() => this.taskSaving = false))
+      .subscribe({
+        next: () => { this.closeModal(); this.refresh(); },
+        error: (error) => {
+          const message = typeof error?.error === 'string' ? error.error.trim() : '';
+          this.taskSaveError = message || 'Unable to create this task. Please try again.';
+        },
+      });
+  }
+
+  openNativePicker(event: Event): void {
+    const input = event.currentTarget as HTMLInputElement & { showPicker?: () => void };
+    if (typeof input.showPicker !== 'function') return;
+    try { input.showPicker(); } catch { /* The browser can still use its normal date/time interaction. */ }
   }
 
   saveHabit(): void {

@@ -1,0 +1,40 @@
+<div class="onboarding-shell">
+  <header class="page-header"><img src="assets/logo/yocoach-logo.svg" alt="YoCoach" /><div><strong>{{ 'CLIENT_ONBOARDING.STEP' | translate }} {{ index + 1 }} of {{ steps.length }}</strong><span>— {{ ('CLIENT_ONBOARDING.STEPS.' + step.toUpperCase()) | translate }}</span></div></header>
+  <div class="progress-track"><span [style.width.%]="progress"></span></div>
+  <section *ngIf="loading" class="state-panel"><div class="spinner"></div><p>{{ 'CLIENT_ONBOARDING.LOADING' | translate }}</p></section>
+  <section *ngIf="!loading && loadError" class="state-panel"><h2>{{ 'CLIENT_ONBOARDING.LOAD_ERROR' | translate }}</h2><button class="primary-btn compact" (click)="load(true)">{{ 'CLIENT_ONBOARDING.RETRY' | translate }}</button></section>
+
+  <article *ngIf="!loading && !loadError" class="onboarding-card" [class.wide-card]="step === 'form'">
+    <main class="step-content">
+      <form *ngIf="step === 'language'" [formGroup]="languageForm">
+        <div class="title-block centered"><h1>{{ 'CLIENT_ONBOARDING.LANGUAGE_TITLE' | translate }}</h1><p>{{ 'CLIENT_ONBOARDING.LANGUAGE_SUBTITLE' | translate }}</p></div>
+        <div class="language-options"><button type="button" [class.selected]="languageForm.value.language === 'English'" (click)="languageForm.patchValue({language:'English'})">English</button><button type="button" [class.selected]="languageForm.value.language === 'French'" (click)="languageForm.patchValue({language:'French'})">Français</button></div>
+      </form>
+      <form *ngIf="step === 'goals'" [formGroup]="goalsForm">
+        <div class="title-block"><h1>{{ 'CLIENT_ONBOARDING.GOALS_TITLE' | translate }}</h1><p>{{ 'CLIENT_ONBOARDING.GOALS_SUBTITLE' | translate }}</p></div>
+        <div class="field-grid"><label>{{ 'CLIENT_ONBOARDING.CURRENT_WEIGHT' | translate }}<input class="field-control" type="number" min="1" formControlName="currentWeight" /></label><label>{{ 'CLIENT_ONBOARDING.GOAL_WEIGHT' | translate }}<input class="field-control" type="number" min="1" formControlName="goalWeight" /></label></div>
+        <label>{{ 'CLIENT_ONBOARDING.MAIN_OBJECTIVE' | translate }}<textarea class="field-control" rows="4" formControlName="mainObjective"></textarea></label>
+      </form>
+      <form *ngIf="step === 'units'" [formGroup]="unitsForm">
+        <div class="title-block centered"><h1>{{ 'COACH_ONBOARDING.UNITS_TITLE' | translate }}</h1><p>{{ 'COACH_ONBOARDING.UNITS_SUBTITLE' | translate }}</p></div>
+        <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.WEIGHT' | translate }}</strong><span>{{ 'COACH_ONBOARDING.WEIGHT_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.weightUnit === 'kg'" (click)="selectUnit('weightUnit','kg')">Kg</button><button type="button" [class.selected]="unitsForm.value.weightUnit === 'lbs'" (click)="selectUnit('weightUnit','lbs')">Lbs</button></div></div>
+        <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.DISTANCE' | translate }}</strong><span>{{ 'COACH_ONBOARDING.DISTANCE_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.distanceUnit === 'km'" (click)="selectUnit('distanceUnit','km')">Kilometers</button><button type="button" [class.selected]="unitsForm.value.distanceUnit === 'miles'" (click)="selectUnit('distanceUnit','miles')">Miles</button></div></div>
+        <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.MEASUREMENTS' | translate }}</strong><span>{{ 'COACH_ONBOARDING.MEASUREMENTS_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.measurementUnit === 'cm'" (click)="selectUnit('measurementUnit','cm')">Cm</button><button type="button" [class.selected]="unitsForm.value.measurementUnit === 'in'" (click)="selectUnit('measurementUnit','in')">In</button></div></div>
+        <div class="units-note">ⓘ {{ 'CLIENT_ONBOARDING.UNITS_HINT' | translate }}</div>
+      </form>
+      <section *ngIf="step === 'form'" class="signup-form">
+        <div class="title-block"><h1>{{ state?.signupFormTitle }}</h1><p>{{ 'CLIENT_ONBOARDING.FORM_SUBTITLE' | translate }}</p></div>
+        <div class="form-question" *ngFor="let q of questions; index as i"><label><span class="question-number">{{ i + 1 }}</span>{{ q.label }} <b *ngIf="q.required">*</b></label>
+          <small *ngIf="$any(q).helpText">{{ $any(q).helpText }}</small>
+          <input *ngIf="q.type === 'TEXT'" class="field-control" type="text" [value]="answer(q) || ''" (input)="setAnswer(q, $any($event.target).value)" />
+          <input *ngIf="q.type === 'DATE'" class="field-control" type="date" [value]="answer(q) || ''" (input)="setAnswer(q, $any($event.target).value)" />
+          <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="choice-stack"><button *ngFor="let option of q.options" type="button" [class.selected]="answer(q) === option.id" (click)="setAnswer(q, option.id)">{{ option.label }}<i class="radio"></i></button></div>
+          <div *ngIf="q.type === 'YES_NO'" class="language-options"><button type="button" [class.selected]="answer(q) === true" (click)="setAnswer(q,true)">{{ 'CLIENT_ONBOARDING.YES' | translate }}</button><button type="button" [class.selected]="answer(q) === false" (click)="setAnswer(q,false)">{{ 'CLIENT_ONBOARDING.NO' | translate }}</button></div>
+          <div *ngIf="q.type === 'STAR_RATING'" class="stars"><button *ngFor="let star of stars(q)" type="button" [class.selected]="star <= (answer(q) || 0)" (click)="setAnswer(q,star)">★</button></div>
+        </div>
+      </section>
+      <div *ngIf="submitError" class="submit-error">{{ submitError }}</div>
+    </main>
+    <footer class="onboarding-footer"><button *ngIf="index > 0" type="button" class="secondary-btn" [disabled]="saving" (click)="back()">← {{ 'COACH_ONBOARDING.BACK' | translate }}</button><span class="autosave">✓ {{ 'COACH_ONBOARDING.AUTOSAVE' | translate }}</span><button type="button" class="primary-btn" [disabled]="saving || (currentForm?.invalid ?? !formValid())" (click)="continue()">{{ saving ? ('COACH_ONBOARDING.SAVING' | translate) : ('COACH_ONBOARDING.CONTINUE' | translate) }} <span>→</span></button></footer>
+  </article>
+</div>

@@ -507,15 +507,30 @@
 
         <div class="habit-field">
           <label for="metricsDate">{{ 'TASKS_DATE' | translate }}</label>
-          <input id="metricsDate" name="metricsDate" type="date" class="habit-input" [(ngModel)]="metricsTask.date" required />
+          <input
+            id="metricsDate"
+            name="metricsDate"
+            type="date"
+            class="habit-input"
+            [(ngModel)]="metricsTask.date"
+            (click)="openNativePicker($event)"
+            required />
         </div>
 
         <ng-container *ngTemplateOutlet="reminderTpl; context: { $implicit: metricsTask, offKey: 'TASKS_REMINDER_AT_TIME', onKey: 'TASKS_REMINDER_AT_TIME', optional: true }"></ng-container>
         <ng-container *ngTemplateOutlet="advancedTpl; context: { $implicit: metricsTask, id: 'metrics', labelKey: 'TASKS_ALLOW_COMMENTS', hintKey: 'TASKS_ALLOW_COMMENTS_HINT' }"></ng-container>
 
+        <small *ngIf="taskSaveError" class="habit-hint habit-hint--error" role="alert">{{ taskSaveError }}</small>
+
         <footer class="tasks-modal__foot">
           <button type="button" class="tasks-btn-ghost" (click)="back()">{{ (editing ? 'CANCEL' : 'BACK') | translate }}</button>
-          <button type="submit" class="tasks-btn-primary" [disabled]="!canCreateMetricsTask">{{ (editing ? 'SAVE_CHANGES' : 'TASKS_CREATE_TASK') | translate }}</button>
+          <button
+            type="button"
+            class="tasks-btn-primary"
+            [disabled]="!canCreateMetricsTask || taskSaving"
+            (click)="createMetricsTask()">
+            {{ (editing ? 'SAVE_CHANGES' : 'TASKS_CREATE_TASK') | translate }}
+          </button>
         </footer>
       </form>
     </ng-container>
@@ -620,6 +635,7 @@
       class="habit-input habit-reminder__time"
       [(ngModel)]="form.reminderTime"
       [ngModelOptions]="{ standalone: true }"
+      (click)="openNativePicker($event)"
       [attr.aria-label]="'TASKS_REMINDER_TIME' | translate" />
   </div>
 </ng-template>

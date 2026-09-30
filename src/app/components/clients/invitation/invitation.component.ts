@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { InvitationService } from "../../../service/invitation.service";
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageService } from 'app/service/language.service';
+import { AuthService } from '@config/auth.service';
 
 interface InvitationView {
   coachName: string;
@@ -24,12 +25,16 @@ export class InvitationComponent implements OnInit {
 
   invitation?: InvitationView;
   loading = true;
+  accepting = false;
+  loadError = false;
+  actionError = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private invitationService: InvitationService,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private authService: AuthService
   ) {
     this.languageService.setLanguage(this.languageService.getCurrentLanguage());
   }
@@ -38,7 +43,8 @@ export class InvitationComponent implements OnInit {
     this.token = this.route.snapshot.paramMap.get('token')!;
 
     if (!this.token) {
-      this.router.navigate(['/']);
+      this.loading = false;
+      this.loadError = true;
       return;
     }
 
@@ -50,31 +56,60 @@ export class InvitationComponent implements OnInit {
       .subscribe({
         next: (invitation) => {
           if (!invitation) {
-            this.router.navigate(['/']);
+            this.loadError = true;
+            this.loading = false;
             return;
           }
 
           this.invitation = invitation;
           this.loading = false;
+          if (this.route.snapshot.queryParamMap.get('accept') === '1' &&
+              this.authService.isLoggedIn() &&
+              invitation.status === 'PENDING') {
+            void this.acceptInvitation();
+          }
         },
         error: () => {
-          this.router.navigate(['/']);
+          this.loadError = true;
+          this.loading = false;
         }
       });
   }
 
-  acceptInvitation() {
-    const userId = sessionStorage.getItem('userId');
-
-    if (!userId || !this.invitation) {
-      this.router.navigate(['/']);
+  async acceptInvitation(): Promise<void> {
+    if (!this.invitation || this.accepting) {
       return;
     }
 
+    this.actionError = false;
+    if (!this.authService.isLoggedIn()) {
+      await this.router.navigate(['/register'], {
+        queryParams: { invitationToken: this.token }
+      });
+      return;
+    }
+
+    const userId = await this.authService.getId();
+    if (!userId) {
+      const redirectUri = new URL(
+        `/invitation/${encodeURIComponent(this.token)}`,
+        window.location.origin
+      ).toString();
+      await this.authService.login(redirectUri);
+      return;
+    }
+
+    this.accepting = true;
     this.invitationService.acceptInvitation(this.token, userId)
-      .subscribe(() => {
-        this.invitation!.status = 'ACCEPTED';
-        setTimeout(() => this.router.navigate(['/']), 1000);
+      .subscribe({
+        next: () => {
+          this.invitation!.status = 'ACCEPTED';
+          void this.router.navigate(['/client-onboarding']);
+        },
+        error: () => {
+          this.accepting = false;
+          this.actionError = true;
+        }
       });
   }
 }
