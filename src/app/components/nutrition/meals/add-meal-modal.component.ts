@@ -4,6 +4,7 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnInit,
   Output,
   SimpleChanges,
 } from '@angular/core';
@@ -13,6 +14,12 @@ import { FeatherModule } from 'angular-feather';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MealsService } from 'app/service/meals.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { defaultServingOf, lineServing, servingsOf } from '@shared/models/nutrition-math';
+import { FoodServing } from '@shared/models/MealPlan';
+import { amountOf, editableUnit, portionsOf, servingKey } from '../food-servings/food-serving-rules';
+import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
+import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
+import { AuthService } from '@config/auth.service';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -25,6 +32,9 @@ interface IngredientRow {
   quantity: number | null;
   unit: string;
   foodRef?: any;
+  servingId?: string | null;
+  servingSize?: number | null;
+  serving?: FoodServing | null;
   calories: number | null;
   protein: number | null;
   carbs: number | null;
@@ -35,11 +45,11 @@ interface IngredientRow {
 @Component({
   selector: 'app-add-meal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe],
   templateUrl: './add-meal-modal.component.html',
   styleUrls: ['./add-meal-modal.component.scss'],
 })
-export class AddMealModalComponent implements OnChanges {
+export class AddMealModalComponent implements OnChanges, OnInit {
   @Input() isVisible = false;
   @Input() meal: any | null = null;
 
@@ -76,6 +86,10 @@ export class AddMealModalComponent implements OnChanges {
   draggedDirectionIndex: number | null = null;
 
   readonly units = ['g', 'ml', 'oz', 'cup', 'tbsp', 'tsp', 'piece', 'slice'];
+  readonly newServingOption = '__new_serving__';
+  servingFormRowId: string | null = null;
+  servingSaving = false;
+  servingError = '';
   readonly mealTypes = [
     { value: 'BREAKFAST', label: 'BREAKFAST' },
     { value: 'LUNCH', label: 'LUNCH' },
@@ -85,11 +99,22 @@ export class AddMealModalComponent implements OnChanges {
     { value: 'POST_WORKOUT', label: 'POST_WORKOUT' },
   ];
 
+  isAdmin = false;
+
   constructor(
     private nutritionService: NutritionService,
     private mealsService: MealsService,
     private translate: TranslateService,
+    private authService: AuthService,
   ) {}
+
+  async ngOnInit(): Promise<void> {
+    this.isAdmin = (await this.authService.extractRoles()).includes('ROLE_ADMIN');
+  }
+
+  canAddServing(item: IngredientRow): boolean {
+    return this.isAdmin || !(item.foodRef?.general ?? item.foodRef?.isGeneral);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isVisible']?.currentValue === true) {
@@ -245,22 +270,23 @@ export class AddMealModalComponent implements OnChanges {
     if (this.foodAlreadyAdded(food) || this.saving) return;
     this.clearServerErrors();
 
-    const servingSize = this.positiveNumber(food.servingSize, 100);
-    this.ingredients.push({
+    const row: IngredientRow = {
       id: this.newId(),
       name: food.name || '',
       category: food.category || food.foodGroup || 'Food',
-      quantity: servingSize,
-      unit: this.normalizeUnit(food.servingUnit || food.unit || 'g'),
+      quantity: null,
+      unit: '',
       foodRef: food,
-      calories: this.nutrient(food, 'energy', 'calories'),
-      protein: this.nutrient(food, 'protein'),
-      carbs: this.nutrient(food, 'carbohydrates', 'carbs'),
-      fat: this.nutrient(food, 'fat'),
+      calories: null,
+      protein: null,
+      carbs: null,
+      fat: null,
       manual: false,
-    });
+    };
+    this.applyServing(row, defaultServingOf(food));
+    this.ingredients.push(row);
 
-    this.loadFoodImages();
+    this.loadFoodDetails();
     this.closeIngredientPicker();
   }
 
@@ -283,7 +309,8 @@ export class AddMealModalComponent implements OnChanges {
   removeIngredient(index: number): void {
     this.foodsTouched = true;
     this.clearServerErrors();
-    this.ingredients.splice(index, 1);
+    const [removed] = this.ingredients.splice(index, 1);
+    if (removed?.id === this.servingFormRowId) this.closeServingForm();
   }
 
   addStep(): void {
@@ -390,9 +417,7 @@ export class AddMealModalComponent implements OnChanges {
     if (!Number.isFinite(value)) return 0;
     if (item.manual) return value;
 
-    const baseServing = this.positiveNumber(item.foodRef?.servingSize, 100);
-    const quantity = Number(item.quantity) || 0;
-    return value * (quantity / baseServing);
+    return value * (Number(item.quantity) || 0);
   }
 
   nutritionTotal(key: MacroKey): number {
@@ -466,12 +491,14 @@ export class AddMealModalComponent implements OnChanges {
       foods: this.ingredients.map((ingredient) => ({
         id: ingredient.id,
         name: ingredient.name.trim(),
-        quantity: ingredient.quantity == null ? null : Number(ingredient.quantity),
+        quantity: ingredient.quantity == null ? null
+          : ingredient.manual ? Number(ingredient.quantity) : amountOf(ingredient.quantity, ingredient.servingSize),
         unit: ingredient.unit.trim(),
         manual: ingredient.manual,
         foodRef: ingredient.manual || !ingredient.foodRef?.id
           ? undefined
           : { id: ingredient.foodRef.id },
+        servingId: ingredient.manual ? undefined : ingredient.servingId ?? undefined,
         calories: ingredient.manual ? this.nullableNumber(ingredient.calories) : undefined,
         protein: ingredient.manual ? this.nullableNumber(ingredient.protein) : undefined,
         carbohydrates: ingredient.manual ? this.nullableNumber(ingredient.carbs) : undefined,
@@ -496,42 +523,119 @@ export class AddMealModalComponent implements OnChanges {
     this.ingredients = (meal?.foods || []).map((food: any) => {
       const ref = food?.foodRef;
       const manual = Boolean(food?.manual) || !ref;
+      const serving = manual ? null : lineServing(food);
       return {
         id: food?.id || this.newId(),
         name: food?.name || ref?.name || '',
         category: manual ? 'Manual ingredient' : ref?.category || ref?.foodGroup || 'Food',
-        quantity: food?.quantity ?? null,
+        quantity: manual ? food?.quantity ?? null : portionsOf(food?.quantity, serving?.size),
         unit: food?.unit ? this.normalizeUnit(food.unit) : '',
         foodRef: ref,
-        calories: manual ? food?.calories ?? null : this.nutrient(ref, 'energy', 'calories'),
-        protein: manual ? food?.protein ?? null : this.nutrient(ref, 'protein'),
-        carbs: manual ? food?.carbohydrates ?? food?.carbs ?? null : this.nutrient(ref, 'carbohydrates', 'carbs'),
-        fat: manual ? food?.fat ?? null : this.nutrient(ref, 'fat'),
+        servingId: manual ? null : food?.servingId ?? serving?.id ?? null,
+        servingSize: serving ? this.positiveNumber(serving.size, 100) : null,
+        serving,
+        calories: manual ? food?.calories ?? null : this.nutrient(serving, 'energy', 'calories'),
+        protein: manual ? food?.protein ?? null : this.nutrient(serving, 'protein'),
+        carbs: manual ? food?.carbohydrates ?? food?.carbs ?? null : this.nutrient(serving, 'carbohydrates', 'carbs'),
+        fat: manual ? food?.fat ?? null : this.nutrient(serving, 'fat'),
         manual,
       } as IngredientRow;
     });
-    this.loadFoodImages();
+    this.loadFoodDetails(new Set(this.ingredients.filter((row) => !row.manual && row.foodRef?.id).map((row) => row.foodRef.id)));
   }
 
-  private loadFoodImages(): void {
-    this.ingredients
-      .filter(
-        (ingredient) =>
-          !ingredient.manual &&
-          ingredient.foodRef?.id &&
-          !ingredient.foodRef?.image &&
-          !ingredient.foodRef?.imageUrl,
-      )
-      .forEach((ingredient) => {
-        this.nutritionService.getFoodForClient(ingredient.foodRef.id).subscribe({
-          next: (detail: any) => {
-            if (detail?.imageUrl) {
-              ingredient.foodRef.imageUrl = detail.imageUrl;
-            }
-          },
-          error: () => {},
-        });
+  get unitSuggestions(): string[] {
+    return String(this.translate.instant('FOOD_UNIT_SUGGESTIONS')).split(',').map((unit) => unit.trim()).filter(Boolean);
+  }
+
+  servingOptions(item: IngredientRow): FoodServing[] {
+    const options = servingsOf(item.foodRef);
+    if (item.servingId && item.serving && !options.some((serving) => serving.id === item.servingId)) {
+      return [item.serving, ...options];
+    }
+    return options;
+  }
+
+  onServingChange(item: IngredientRow, select: HTMLSelectElement): void {
+    if (select.value === this.newServingOption) {
+      select.value = item.servingId ?? '';
+      this.openServingForm(item);
+      return;
+    }
+    const serving = this.servingOptions(item).find((option) => option.id === select.value);
+    if (serving) this.applyServing(item, serving);
+  }
+
+  openServingForm(item: IngredientRow): void {
+    if (this.saving || !item.foodRef?.id) return;
+    this.servingFormRowId = item.id;
+    this.servingError = '';
+  }
+
+  closeServingForm(): void {
+    this.servingFormRowId = null;
+    this.servingError = '';
+  }
+
+  createServing(item: IngredientRow, serving: FoodServing): void {
+    const foodId = item.foodRef?.id;
+    if (!foodId || this.servingSaving) return;
+    this.servingSaving = true;
+    this.servingError = '';
+    this.nutritionService.addFoodServing(foodId, serving).subscribe({
+      next: (food: any) => {
+        this.servingSaving = false;
+        this.ingredients
+          .filter((row) => row.foodRef?.id === foodId)
+          .forEach((row) => (row.foodRef = { ...row.foodRef, servings: food?.servings, defaultServingId: food?.defaultServingId }));
+        const created = servingsOf(food).find((option) => servingKey(option.size, option.unit) === servingKey(serving.size, serving.unit));
+        if (created) this.applyServing(item, created);
+        this.closeServingForm();
+      },
+      error: (error) => {
+        this.servingSaving = false;
+        this.servingError = error?.status === 403 ? 'MEAL_SERVING_NOT_OWNED' : 'MEAL_SERVING_SAVE_FAILED';
+      },
+    });
+  }
+
+  private applyServing(item: IngredientRow, serving: FoodServing): void {
+    item.servingId = serving.id ?? null;
+    item.serving = serving;
+    item.servingSize = this.positiveNumber(serving.size, 100);
+    item.quantity = 1;
+    item.unit = this.normalizeUnit(editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE')));
+    item.calories = this.nutrient(serving, 'energy', 'calories');
+    item.protein = this.nutrient(serving, 'protein');
+    item.carbs = this.nutrient(serving, 'carbohydrates', 'carbs');
+    item.fat = this.nutrient(serving, 'fat');
+  }
+
+  private loadFoodDetails(refresh: Set<string> = new Set()): void {
+    const wanted = new Set<string>();
+    for (const row of this.ingredients) {
+      const id = row.foodRef?.id;
+      if (row.manual || !id) continue;
+      if (refresh.has(id) || (!row.foodRef.image && !row.foodRef.imageUrl)) wanted.add(id);
+    }
+    wanted.forEach((id) => {
+      this.nutritionService.getFoodForClient(id).subscribe({
+        next: (detail: any) => {
+          this.ingredients
+            .filter((row) => row.foodRef?.id === id)
+            .forEach((row) => {
+              row.foodRef = {
+                ...row.foodRef,
+                imageUrl: row.foodRef.imageUrl || detail?.imageUrl,
+                servings: detail?.servings ?? row.foodRef.servings,
+                defaultServingId: detail?.defaultServingId ?? row.foodRef.defaultServingId,
+                general: detail?.general ?? row.foodRef.general,
+              };
+            });
+        },
+        error: () => {},
       });
+    });
   }
 
   private reset(): void {
@@ -543,6 +647,7 @@ export class AddMealModalComponent implements OnChanges {
     this.coverImage = null;
     this.coverImageName = '';
     this.ingredients = [];
+    this.closeServingForm();
     this.directions = [''];
     this.ingredientPickerOpen = false;
     this.foodSearch = '';

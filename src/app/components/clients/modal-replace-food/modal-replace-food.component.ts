@@ -6,6 +6,7 @@ import {
   FoodReplacementGroupItem
 } from 'app/service/food-replacement-groups.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { lineRatio, Macros, servingMacros } from '@shared/models/nutrition-math';
 
 export interface Food {
   id: string;
@@ -38,6 +39,7 @@ export class ModalReplaceFoodComponent implements OnChanges {
     replacementFoodRefId: string;
     quantity: number;
     unit: string;
+    servingId?: string | null;
   }>();
 
   groups: FoodReplacementGroup[] = [];
@@ -69,6 +71,10 @@ export class ModalReplaceFoodComponent implements OnChanges {
     const category = (this.originalFood?.category || '').trim();
     if (!category) return 'same';
     return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  }
+
+  optionMacros(food: FoodReplacementGroupItem): Macros {
+    return servingMacros(food, lineRatio(food.quantity, food.servingSize));
   }
 
   displayMacro(value: unknown): string {
@@ -149,6 +155,7 @@ export class ModalReplaceFoodComponent implements OnChanges {
       replacementFoodRefId: this.selectedFoodId,
       quantity: Number(this.selectedFood.quantity || 100),
       unit: this.selectedFood.unit || 'g',
+      servingId: this.selectedFood.servingId ?? null,
     });
   }
 

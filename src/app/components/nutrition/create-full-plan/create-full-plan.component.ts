@@ -14,11 +14,16 @@ import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-temp
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 import { nutritionDayState, nutritionDayValidationMessages, nutritionFoodValidationMessages } from '@shared/models/nutrition-publication';
+import { lineMacros, lineServing } from '@shared/models/nutrition-math';
+import { FoodServing } from '@shared/models/MealPlan';
+import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
+import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
+import { NEW_SERVING_OPTION, PlanFoodServing } from '../food-servings/plan-food-serving';
 
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent, FoodServingFormComponent, ServingUnitPipe],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
@@ -552,7 +557,7 @@ export class CreateFullPlanComponent implements OnInit {
       const copy: any = JSON.parse(JSON.stringify(food));
       copy.id = this.newLocalId();
       copy.quantity = this.multiplyNumber(
-        food.quantity ?? food.foodRef?.servingSize ?? 100,
+        food.quantity ?? lineServing(food)?.size ?? 100,
         multiplier,
       );
 
@@ -688,14 +693,15 @@ export class CreateFullPlanComponent implements OnInit {
   foodStep: 'list' | 'detail' = 'list';
   selectedFood: FoodRef | null = null;
 
-  foodQty = 100;
+  readonly foodServing = new PlanFoodServing(() => this.canCreateTemplate);
+  readonly newServingOption = NEW_SERVING_OPTION;
   foodValidationMessage = '';
-  adj = { calories: 0, protein: 0, carbohydrates: 0, fat: 0 };
 
   openFoodModal(meal: Meal) {
     this.foodValidationMessage = '';
     this.mealForModal = meal;
     this.foodStep = 'list';
+    this.foodSearch = '';
     this.isFoodModalOpen = true;
     this.filterFoods();
   }
@@ -799,8 +805,7 @@ export class CreateFullPlanComponent implements OnInit {
     this.foodValidationMessage = '';
     this.selectedFood = food;
     this.foodStep = 'detail';
-    this.foodQty = 100;
-    this.recomputeAdjusted();
+    this.foodServing.start(food);
   }
 
   backToList() {
@@ -811,19 +816,22 @@ export class CreateFullPlanComponent implements OnInit {
 
   recomputeAdjusted() {
     this.foodValidationMessage = '';
-    if (!this.selectedFood) return;
-    const factor = this.foodQty / 100;
+  }
 
-    const p = this.selectedFood.protein * factor;
-    const c = this.selectedFood.carbohydrates * factor;
-    const f = this.selectedFood.fat * factor;
+  get adj() {
+    const macros = this.foodServing.macros;
+    return { calories: macros.calories, protein: macros.protein, carbohydrates: macros.carbs, fat: macros.fat };
+  }
 
-    this.adj = {
-      protein: p,
-      carbohydrates: c,
-      fat: f,
-      calories: p * 4 + c * 4 + f * 9,
-    };
+  get unitSuggestions(): string[] {
+    return String(this.translate.instant('FOOD_UNIT_SUGGESTIONS')).split(',').map((unit) => unit.trim()).filter(Boolean);
+  }
+
+  createServing(serving: FoodServing): void {
+    this.foodServing.create(serving, (id, draft) => this.nutritionService.addFoodServing(id, draft), (food) => {
+      this.selectedFood = food;
+      this.filteredFoods = this.filteredFoods.map((item) => (item.id === food.id ? food : item));
+    });
   }
 
   private showFoodValidation(message: string): void {
@@ -841,10 +849,10 @@ export class CreateFullPlanComponent implements OnInit {
       return;
     }
 
+    const line = this.foodServing.line(this.translate.instant('FOOD_UNIT_PIECE'));
     const validationFood: Partial<Food> = {
       name: this.selectedFood.name,
-      quantity: this.foodQty,
-      unit: 'g',
+      ...line,
       foodRef: this.selectedFood,
     };
     const message = nutritionFoodValidationMessages(validationFood, { includeNutritionValues: false })[0];
@@ -857,8 +865,7 @@ export class CreateFullPlanComponent implements OnInit {
     const food: Food = {
       id: crypto.randomUUID?.() ?? Date.now().toString(),
       name: this.selectedFood.name,
-      quantity: this.foodQty,
-      unit: 'g',
+      ...line,
       foodRef: this.selectedFood,
     };
 
@@ -877,30 +884,7 @@ export class CreateFullPlanComponent implements OnInit {
   ==============================================*/
 
   computeFoodMacros(food: Food) {
-    if (food.manual || !food.foodRef) {
-      return {
-        calories: Number(food.calories) || 0,
-        protein: Number(food.protein) || 0,
-        carbs: Number(food.carbohydrates ?? food.carbs) || 0,
-        fat: Number(food.fat) || 0,
-      };
-    }
-
-    const servingSize = Number(food.foodRef.servingSize) || 100;
-    const factor = (Number(food.quantity) || servingSize) / servingSize;
-    const protein = (Number(food.foodRef.protein) || 0) * factor;
-    const carbs = (Number(food.foodRef.carbohydrates) || 0) * factor;
-    const fat = (Number(food.foodRef.fat) || 0) * factor;
-    const declaredCalories = Number(food.foodRef.energy ?? food.foodRef.calories);
-
-    return {
-      calories: Number.isFinite(declaredCalories)
-        ? declaredCalories * factor
-        : protein * 4 + carbs * 4 + fat * 9,
-      protein,
-      carbs,
-      fat,
-    };
+    return lineMacros(food);
   }
 
   computeMealMacros(meal: Meal) {

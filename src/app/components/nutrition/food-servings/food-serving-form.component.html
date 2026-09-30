@@ -1,0 +1,51 @@
+<div class="serving-form" (keydown.enter)="$event.preventDefault(); submit()">
+  <div class="serving-form__row">
+    <label class="serving-form__field serving-form__field--size">
+      <span>{{ 'FOOD_SERVING_QUANTITY' | translate }}</span>
+      <input type="text" inputmode="decimal" placeholder="1" [(ngModel)]="draft.size" (ngModelChange)="onSizeOrUnitChange('size')"
+        (blur)="touched.add('size')" [attr.aria-invalid]="!!error('size')" [disabled]="saving">
+    </label>
+    <label class="serving-form__field">
+      <span>{{ 'FOOD_SERVING_UNIT' | translate }}</span>
+      <input type="text" [attr.list]="listId" [placeholder]="'FOOD_SERVING_UNIT_PLACEHOLDER' | translate" [(ngModel)]="draft.unit"
+        (ngModelChange)="onSizeOrUnitChange('unit')" (blur)="touched.add('unit')" [attr.aria-invalid]="!!error('unit')" [disabled]="saving">
+    </label>
+  </div>
+  <datalist [id]="listId">
+    <option *ngFor="let unit of unitSuggestions" [value]="unit"></option>
+  </datalist>
+  <p class="serving-form__error" *ngIf="error('size')" role="alert">{{ error('size') | translate }}</p>
+  <p class="serving-form__error" *ngIf="error('unit')" role="alert">{{ error('unit') | translate }}</p>
+
+  <div class="serving-form__grid">
+    <label class="serving-form__field" *ngFor="let key of macros">
+      <span>{{ labels[key] | translate }} ({{ suffix(key) }})</span>
+      <input type="text" inputmode="decimal" [(ngModel)]="draft[key]" (ngModelChange)="onValueChange(key)" (blur)="touched.add(key)"
+        [attr.aria-invalid]="!!error(key)" [disabled]="saving">
+      <small class="serving-form__error" *ngIf="error(key)" role="alert">{{ error(key) | translate }}</small>
+    </label>
+  </div>
+
+  <p class="serving-form__hint" *ngIf="prefill">
+    {{ 'FOOD_SERVING_PREFILLED' | translate:{ source: (prefill.source.size | number:'1.0-2') + ' ' + (prefill.source.unit | servingUnit), factor: (prefill.factor | number:'1.0-2') } }}
+  </p>
+
+  <button type="button" class="serving-form__more" (click)="showMore = !showMore" [attr.aria-expanded]="showMore">
+    {{ (showMore ? 'FOOD_SERVING_LESS_NUTRIENTS' : 'FOOD_SERVING_MORE_NUTRIENTS') | translate }}
+  </button>
+  <div class="serving-form__grid" *ngIf="showMore">
+    <label class="serving-form__field" *ngFor="let key of extras">
+      <span>{{ labels[key] | translate }} ({{ suffix(key) }})</span>
+      <input type="text" inputmode="decimal" [(ngModel)]="draft[key]" (ngModelChange)="onValueChange(key)" (blur)="touched.add(key)"
+        [attr.aria-invalid]="!!error(key)" [disabled]="saving">
+      <small class="serving-form__error" *ngIf="error(key)" role="alert">{{ error(key) | translate }}</small>
+    </label>
+  </div>
+
+  <div class="serving-form__actions">
+    <button type="button" class="serving-form__cancel" (click)="cancelled.emit()" [disabled]="saving">{{ 'CANCEL' | translate }}</button>
+    <button type="button" class="serving-form__save" (click)="submit()" [disabled]="saving" [attr.aria-busy]="saving">
+      {{ (initial ? 'UPDATE' : 'ADD') | translate }}
+    </button>
+  </div>
+</div>

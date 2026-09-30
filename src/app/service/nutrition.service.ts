@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { MealPlan } from '@shared/models/MealPlan';
+import { FoodServing, MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
 
 export interface Food {
@@ -21,6 +21,8 @@ export interface Food {
   sodium?: number | null;
   servingSize: number;
   servingUnit: string;
+  servings?: FoodServing[] | null;
+  defaultServingId?: string | null;
   coachId?: string;
   isGeneral?: boolean;
   createdDate?: string;
@@ -53,6 +55,8 @@ export interface FoodRef {
   coachId: string | null;
   servingSize: number | null;
   servingDescription: string | null;
+  servings?: FoodServing[] | null;
+  defaultServingId?: string | null;
   createdDate: Date | null;
   lastModifiedDate: Date | null;
   general: boolean;
@@ -222,6 +226,14 @@ export class NutritionService {
 
   getFoodForClient(id: string): Observable<Food> {
     return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`).pipe(map(result => this.fromFoodApi(result)));
+  }
+
+  importFoods(foods: { name: string; servings: FoodServing[] }[]): Observable<any> {
+    return this.http.post(`${environment.baseApiUrl}/api/food-ref/import`, foods);
+  }
+
+  addFoodServing(id: string, serving: FoodServing): Observable<Food> {
+    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref/${id}/servings`, serving).pipe(map(result => this.fromFoodApi(result)));
   }
 
   // Nutrition plan management
@@ -402,6 +414,7 @@ export class NutritionService {
       replacementFoodRefId: string;
       quantity: number;
       unit: string;
+      servingId?: string | null;
     }
   ): Observable<any> {
     return this.http.patch<any>(

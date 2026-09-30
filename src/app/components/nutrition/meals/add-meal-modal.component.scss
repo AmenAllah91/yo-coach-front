@@ -326,7 +326,7 @@
 .foods-table__thumb { width: 38px; height: 38px; display: grid; place-items: center; overflow: hidden; border: 1px solid #e6e9ee; border-radius: 8px; background: #f8fafc; }
 .foods-table__thumb img { width: 100%; height: 100%; object-fit: cover; }
 .foods-table__thumb i-feather { width: 16px; height: 16px; color: #94a3b8; }
-.foods-table__quantity { min-width: 150px; display: grid; grid-template-columns: 80px 70px; gap: 8px; }
+.foods-table__quantity { min-width: 200px; display: grid; grid-template-columns: 80px minmax(104px, 1fr); gap: 8px; }
 .foods-table__quantity input,
 .foods-table__quantity select { height: 38px; padding: 0 8px; font-size: 13px; }
 .foods-table__delete { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #e6e9ee; border-radius: 50%; background: #fff; color: #94a3b8; cursor: pointer; }
@@ -561,7 +561,7 @@
 .ingredient-list { margin-top: 16px; }
 .ingredient-row {
   display: grid;
-  grid-template-columns: 20px 46px minmax(150px, 1.25fr) 84px 88px minmax(250px, 1.25fr) 30px;
+  grid-template-columns: 20px 46px minmax(150px, 1.25fr) 84px 120px minmax(230px, 1.25fr) 30px;
   gap: 10px;
   align-items: center;
   min-height: 62px;
@@ -657,7 +657,7 @@
 @media (max-width: 980px) {
   .time-metrics { grid-template-columns: 1fr; }
   .information-grid { grid-template-columns: 1fr 1fr; }
-  .ingredient-row { grid-template-columns: 20px 42px minmax(120px, 1fr) 76px 82px 30px; }
+  .ingredient-row { grid-template-columns: 20px 42px minmax(120px, 1fr) 76px 110px 30px; }
   .ingredient-row__macros,
   .manual-macros { grid-column: 3 / 6; }
 }
@@ -774,3 +774,13 @@
 }
 
 .inline-error { display: block; color: #dc3545; font-size: 12px; margin-top: 4px; }
+
+.serving-select { text-overflow: ellipsis; }
+.serving-form-row td { padding: 4px 8px 14px; border-top: 0; }
+.serving-form-row__title { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #0f172a; }
+.ingredient-serving-form { margin: 8px 0 8px 76px; }
+.ingredient-serving-form + .ingredient-row { margin-top: 8px; }
+
+@media (max-width: 980px) {
+  .ingredient-serving-form { margin-left: 0; }
+}

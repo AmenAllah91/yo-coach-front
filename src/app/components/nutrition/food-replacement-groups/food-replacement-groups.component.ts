@@ -20,6 +20,10 @@ import {
   REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH,
   REPLACEMENT_GROUP_NAME_MAX_LENGTH,
 } from './food-replacement-group-validation';
+import { FoodServing } from '@shared/models/MealPlan';
+import { defaultServingOf, lineRatio, Macros, servingMacros, servingsOf } from '@shared/models/nutrition-math';
+import { amountOf, editableUnit, portionsOf } from '../food-servings/food-serving-rules';
+import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
 
 
 type ViewMode = 'LIST' | 'EDITOR';
@@ -28,7 +32,7 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 @Component({
   selector: 'app-food-replacement-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, ServingUnitPipe],
   templateUrl: './food-replacement-groups.component.html',
   styleUrls: ['./food-replacement-groups.component.scss'],
 })
@@ -71,6 +75,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   selectedFood: any | null = null;
   selectedQuantity = 100;
   selectedUnit = 'g';
+  selectedServingId: string | null = null;
   editingFoodRefId: string | null = null;
   saving = false;
   readonly groupNameMaxLength = REPLACEMENT_GROUP_NAME_MAX_LENGTH;
@@ -344,6 +349,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       active: this.editingGroup?.active ?? true,
       foods: this.groupFoods.map((food) => ({
         foodRefId: food.foodRefId,
+        servingId: food.servingId ?? null,
         quantity: Number(food.quantity),
         unit: food.unit.trim(),
       })),
@@ -378,7 +384,8 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.foodTab = 'all';
     this.selectedFood = null;
     this.editingFoodRefId = null;
-    this.selectedQuantity = 100;
+    this.selectedServingId = null;
+    this.selectedQuantity = 1;
     this.selectedUnit = 'g';
     this.showAddFoodModal = true;
   }
@@ -395,26 +402,60 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       (item) => item.foodRefId === foodRefId && item.foodRefId !== this.editingFoodRefId,
     )) return;
     this.selectedFood = food;
-    this.selectedQuantity = this.getServingSize(food);
-    this.selectedUnit = this.getServingUnit(food);
+    this.applyServing(defaultServingOf(food));
+  }
+
+  get servingOptions(): FoodServing[] {
+    return this.selectedFood ? servingsOf(this.selectedFood) : [];
+  }
+
+  get selectedServing(): FoodServing | null {
+    return this.servingOptions.find((serving) => serving.id === this.selectedServingId) ?? null;
+  }
+
+  get selectedPreview(): Macros | null {
+    const serving = this.selectedServing;
+    return serving ? servingMacros(serving, lineRatio(this.selectedAmount, serving.size)) : null;
+  }
+
+  get selectedAmount(): number {
+    const serving = this.selectedServing;
+    return serving ? amountOf(this.selectedQuantity, serving.size) : 0;
+  }
+
+  selectServing(servingId: string): void {
+    const serving = this.servingOptions.find((option) => option.id === servingId);
+    if (serving) this.applyServing(serving);
+  }
+
+  itemMacros(food: FoodReplacementGroupItem): Macros {
+    return servingMacros(food, lineRatio(food.quantity, food.servingSize));
+  }
+
+  private applyServing(serving: FoodServing): void {
+    this.selectedServingId = serving.id ?? null;
+    this.selectedQuantity = 1;
+    this.selectedUnit = editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE'));
   }
 
   addSelectedFood(): void {
     if (!this.canAddSelectedFood) return;
 
     const foodRefId = this.getFoodId(this.selectedFood);
+    const serving = this.selectedServing ?? defaultServingOf(this.selectedFood);
 
     const item: FoodReplacementGroupItem = {
       foodRefId,
-      quantity: Number(this.selectedQuantity),
+      servingId: serving.id ?? null,
+      quantity: amountOf(this.selectedQuantity, serving.size),
       unit: this.selectedUnit.trim(),
       name: this.getFoodName(this.selectedFood),
-      energy: this.getCalories(this.selectedFood),
-      protein: this.getProtein(this.selectedFood),
-      carbohydrates: this.getCarbs(this.selectedFood),
-      fat: this.getFat(this.selectedFood),
-      servingSize: this.getServingSize(this.selectedFood),
-      servingDescription: this.getServingUnit(this.selectedFood),
+      energy: this.getCalories(serving),
+      protein: this.getProtein(serving),
+      carbohydrates: this.getCarbs(serving),
+      fat: this.getFat(serving),
+      servingSize: Number(serving.size),
+      servingDescription: serving.unit,
       general: this.isGeneralFood(this.selectedFood),
     };
 
@@ -433,6 +474,15 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   editGroupFood(food: FoodReplacementGroupItem): void {
     this.loadFoods();
     this.editingFoodRefId = food.foodRefId;
+    const itemServing: FoodServing = {
+      id: food.servingId ?? undefined,
+      size: Number(food.servingSize) > 0 ? Number(food.servingSize) : 100,
+      unit: food.servingDescription || food.unit,
+      energy: food.energy,
+      protein: food.protein,
+      carbohydrates: food.carbohydrates,
+      fat: food.fat,
+    };
     this.selectedFood = {
       id: food.foodRefId,
       name: food.name,
@@ -446,10 +496,22 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       servingDescription: food.servingDescription,
       servingUnit: food.servingDescription,
       general: food.general,
+      servings: food.servingId ? [itemServing] : undefined,
+      defaultServingId: food.servingId ?? undefined,
     };
-    this.selectedQuantity = food.quantity;
+    this.selectedServingId = food.servingId ?? servingsOf(this.selectedFood)[0]?.id ?? null;
+    this.selectedQuantity = portionsOf(food.quantity, food.servingSize) ?? 1;
     this.selectedUnit = food.unit;
     this.showAddFoodModal = true;
+    this.nutritionService.getFoodForClient(food.foodRefId).subscribe({
+      next: (detail: any) => {
+        if (this.editingFoodRefId !== food.foodRefId || !this.selectedFood) return;
+        const servings = servingsOf(detail);
+        const merged = food.servingId && !servings.some((serving) => serving.id === food.servingId) ? [itemServing, ...servings] : servings;
+        this.selectedFood = { ...this.selectedFood, servings: merged, defaultServingId: detail?.defaultServingId };
+      },
+      error: () => {},
+    });
   }
 
   removeGroupFood(foodRefId: string): void {

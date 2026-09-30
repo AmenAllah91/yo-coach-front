@@ -137,7 +137,7 @@
                 <thead>
                   <tr>
                     <th>{{ 'FOOD' | translate }}</th>
-                    <th>{{ 'QUANTITY' | translate }}</th>
+                    <th>{{ 'FOOD_PORTIONS' | translate }}</th>
                     <th>{{ 'PROTEIN' | translate }}</th>
                     <th>{{ 'CARBS' | translate }}</th>
                     <th>{{ 'FAT' | translate }}</th>
@@ -146,7 +146,8 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
+                  <ng-container *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
+                  <tr>
                     <td>
                       <div class="foods-table__food">
                         <span class="foods-table__thumb">
@@ -174,15 +175,27 @@
                           [class.foods-control--invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
                         />
                         <select
-                          [(ngModel)]="ingredient.unit" #unitControl="ngModel"
-                          [class.foods-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
+                          *ngIf="!ingredient.manual && ingredient.foodRef?.id; else foodsUnitSelect"
+                          class="serving-select"
+                          [attr.aria-label]="'UNIT' | translate"
+                          [class.foods-control--invalid]="submitted && !ingredient.unit.trim()"
+                          (change)="onServingChange(ingredient, $any($event.target))"
                         >
-                          <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                          <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
+                          <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
+                          <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
                         </select>
+                        <ng-template #foodsUnitSelect>
+                          <select
+                            [(ngModel)]="ingredient.unit" #unitControl="ngModel"
+                            [class.foods-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
+                          >
+                            <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                            <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
+                          </select>
+                        </ng-template>
                       </div>
                       <small class="inline-error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
-                      <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
+                      <small class="inline-error" *ngIf="submitted && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
                       <small class="inline-error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
                     </td>
                     <td><strong>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}</strong> <span>g</span></td>
@@ -195,6 +208,15 @@
                       </button>
                     </td>
                   </tr>
+                  <tr class="serving-form-row" *ngIf="servingFormRowId === ingredient.id">
+                    <td colspan="7">
+                      <p class="serving-form-row__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: ingredient.name } }}</p>
+                      <app-food-serving-form [others]="servingOptions(ingredient)" [unitSuggestions]="unitSuggestions" [saving]="servingSaving"
+                        (saved)="createServing(ingredient, $event)" (cancelled)="closeServingForm()"></app-food-serving-form>
+                      <small class="inline-error" *ngIf="servingError" role="alert">{{ servingError | translate }}</small>
+                    </td>
+                  </tr>
+                  </ng-container>
                 </tbody>
               </table>
             </div>
@@ -436,9 +458,9 @@
         </div>
 
         <div class="ingredient-list" *ngIf="ingredients.length">
+          <ng-container *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
           <article
             class="ingredient-row"
-            *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient"
             draggable="true"
             (dragstart)="onIngredientDragStart(i)"
             (dragover)="$event.preventDefault()"
@@ -491,14 +513,26 @@
             <label class="compact-field">
               <span class="sr-only">{{ 'UNIT' | translate }}</span>
               <select
-                [(ngModel)]="ingredient.unit" #unitControl="ngModel"
-                [class.field-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
+                *ngIf="!ingredient.manual && ingredient.foodRef?.id; else recipeUnitSelect"
+                class="serving-select"
+                [class.field-control--invalid]="submitted && !ingredient.unit.trim()"
+                (change)="onServingChange(ingredient, $any($event.target))"
               >
-                <option value="" disabled>{{ 'UNIT' | translate }}</option>
-                <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
+                <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
+                <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
               </select>
-              <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
+              <ng-template #recipeUnitSelect>
+                <select
+                  [(ngModel)]="ingredient.unit" #unitControl="ngModel"
+                  [class.field-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
+                >
+                  <option value="" disabled>{{ 'UNIT' | translate }}</option>
+                  <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                  <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
+                </select>
+                <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
+              </ng-template>
+              <small class="inline-error" *ngIf="submitted && !ingredient.manual && ingredient.foodRef?.id && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
             </label>
 
             <div class="ingredient-row__macros" *ngIf="!ingredient.manual">
@@ -524,6 +558,13 @@
               <i-feather name="trash-2"></i-feather>
             </button>
           </article>
+          <div class="ingredient-serving-form" *ngIf="servingFormRowId === ingredient.id">
+            <p class="serving-form-row__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: ingredient.name } }}</p>
+            <app-food-serving-form [others]="servingOptions(ingredient)" [unitSuggestions]="unitSuggestions" [saving]="servingSaving"
+              (saved)="createServing(ingredient, $event)" (cancelled)="closeServingForm()"></app-food-serving-form>
+            <small class="inline-error" *ngIf="servingError" role="alert">{{ servingError | translate }}</small>
+          </div>
+          </ng-container>
         </div>
 
         <div class="ingredient-validation" *ngIf="(submitted || foodsTouched) && ingredients.length === 0">

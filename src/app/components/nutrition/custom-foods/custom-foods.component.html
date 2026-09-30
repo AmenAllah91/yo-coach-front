@@ -5,10 +5,21 @@
       <h1>{{ 'CUSTOM_FOODS' | translate }}</h1>
       <p>{{ 'CUSTOM_FOODS_SUBTITLE' | translate }}</p>
     </div>
-    <button class="primary-btn" (click)="openAddModal()">
-      <i-feather name="plus"></i-feather>
-      {{ 'CREATE_FOOD' | translate }}
-    </button>
+    <div class="header-actions">
+      <button class="secondary-btn" type="button" (click)="downloadImportTemplate()">
+        <i-feather name="download"></i-feather>
+        <span>{{ 'FOOD_IMPORT_TEMPLATE' | translate }}</span>
+      </button>
+      <label class="secondary-btn">
+        <i-feather name="upload"></i-feather>
+        <span>{{ 'FOOD_IMPORT_BUTTON' | translate }}</span>
+        <input type="file" accept=".xlsx,.xls" (change)="onImportFile($any($event.target))" />
+      </label>
+      <button class="primary-btn" (click)="openAddModal()">
+        <i-feather name="plus"></i-feather>
+        {{ 'CREATE_FOOD' | translate }}
+      </button>
+    </div>
   </div>
 
   <div class="content">
@@ -45,7 +56,8 @@
             </div>
           </div>
           <div class="col-weight">
-            {{ food.servingSize }} {{ food.servingUnit }}
+            {{ mainServingOf(food).size | number:'1.0-2' }} {{ mainServingOf(food).unit | servingUnit }}
+            <span class="serving-count" *ngIf="servingCount(food) > 1">{{ 'FOOD_SERVINGS_MORE' | translate:{ count: servingCount(food) - 1 } }}</span>
           </div>
           <div class="col-macros">
             <div class="macro-info">
@@ -62,7 +74,7 @@
                 <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu">
-                <ng-container *ngIf="!food.isGeneral">
+                <ng-container *ngIf="canManage(food)">
                   <button class="dropdown-item" (click)="editFood(food)">
                     <i-feather name="edit"></i-feather>
                     {{ 'EDIT' | translate }}
@@ -72,7 +84,7 @@
                     {{ 'DELETE' | translate }}
                   </button>
                 </ng-container>
-                <ng-container *ngIf="food.isGeneral">
+                <ng-container *ngIf="!canManage(food)">
                   <span class="dropdown-item disabled">
                     <i-feather name="lock"></i-feather>
                     {{ 'GENERAL_FOOD' | translate }}
@@ -150,6 +162,26 @@
             <p class="field-error" *ngIf="fieldError('foodName')" role="alert">{{ fieldError('foodName') | translate }}</p>
         </div>
 
+        <div class="serving-section">
+          <h3 class="serving-section__title">{{ 'FOOD_MAIN_SERVING' | translate }}</h3>
+          <p class="serving-section__hint">{{ 'FOOD_MAIN_SERVING_HINT' | translate }}</p>
+          <div class="form-row serving-main-row">
+            <div class="form-group serving-main-row__size">
+              <label>{{ 'FOOD_SERVING_QUANTITY' | translate }}:</label>
+              <input type="text" inputmode="decimal" [(ngModel)]="servingSize" (ngModelChange)="touch('servingSize')" (blur)="touched.add('servingSize')" [attr.aria-invalid]="!!fieldError('servingSize')" placeholder="100">
+            </div>
+            <div class="form-group">
+              <label>{{ 'FOOD_SERVING_UNIT' | translate }}:</label>
+              <input type="text" list="food-main-units" [(ngModel)]="servingDescription" (ngModelChange)="touch('servingDescription')" (blur)="touched.add('servingDescription')" [attr.aria-invalid]="!!fieldError('servingDescription')" [placeholder]="'FOOD_SERVING_UNIT_PLACEHOLDER' | translate">
+              <datalist id="food-main-units">
+                <option *ngFor="let unit of unitSuggestions" [value]="unit"></option>
+              </datalist>
+            </div>
+          </div>
+          <p class="field-error" *ngIf="fieldError('servingSize')" role="alert">{{ fieldError('servingSize') | translate }}</p>
+          <p class="field-error" *ngIf="fieldError('servingDescription')" role="alert">{{ fieldError('servingDescription') | translate }}</p>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'CALORIES' | translate }} (kcal):</label>
@@ -221,22 +253,43 @@
             <input type="text" inputmode="decimal" [(ngModel)]="salt" (ngModelChange)="touch('salt')" (blur)="touched.add('salt')" [attr.aria-invalid]="!!fieldError('salt')" [placeholder]="'ENTER_TOTAL_SALT' | translate">
             <p class="field-error" *ngIf="fieldError('salt')" role="alert">{{ fieldError('salt') | translate }}</p>
           </div>
-          <div class="form-group">
-            <label>{{ 'SERVING_DESCRIPTION' | translate }}:</label>
-            <select [(ngModel)]="servingDescription" (ngModelChange)="touch('servingDescription')" (blur)="touched.add('servingDescription')" [attr.aria-invalid]="!!fieldError('servingDescription')">
-              <option value="">{{ 'FOOD_VALID_SELECT' | translate }}</option>
-              <option value="Grams">{{ 'GRAMS' | translate }}</option>
-              <option value="Qty">{{ 'QUANTITY_SHORT' | translate }}</option>
-              <option value="ml">ml</option>
-            </select>
-            <p class="field-error" *ngIf="fieldError('servingDescription')" role="alert">{{ fieldError('servingDescription') | translate }}</p>
-          </div>
+          <div class="form-group"></div>
         </div>
 
-        <div class="form-group">
-          <label>{{ 'SERVING_SIZE_GRAMS' | translate }}:</label>
-          <input type="text" inputmode="decimal" [(ngModel)]="servingSize" (ngModelChange)="touch('servingSize')" (blur)="touched.add('servingSize')" [attr.aria-invalid]="!!fieldError('servingSize')" [placeholder]="'ENTER_SERVING_SIZE' | translate">
-            <p class="field-error" *ngIf="fieldError('servingSize')" role="alert">{{ fieldError('servingSize') | translate }}</p>
+        <div class="serving-section">
+          <h3 class="serving-section__title">{{ 'FOOD_OTHER_SERVINGS' | translate }}</h3>
+          <p class="serving-section__hint" *ngIf="!extraServings.length && !servingFormOpen">{{ 'FOOD_OTHER_SERVINGS_EMPTY' | translate }}</p>
+          <ul class="serving-list" *ngIf="extraServings.length">
+            <li class="serving-item" *ngFor="let serving of extraServings; let i = index">
+              <ng-container *ngIf="!(servingFormOpen && editingServingIndex === i); else editServing">
+                <div class="serving-item__text">
+                  <strong>{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</strong>
+                  <span>{{ serving.energy | number:'1.0-0' }} kcal · {{ serving.protein | number:'1.0-1' }} g {{ 'FOOD_MACRO_SHORT_P' | translate }} · {{ serving.carbohydrates | number:'1.0-1' }} g {{ 'FOOD_MACRO_SHORT_C' | translate }} · {{ serving.fat | number:'1.0-1' }} g {{ 'FOOD_MACRO_SHORT_F' | translate }}</span>
+                </div>
+                <div class="serving-item__actions">
+                  <button type="button" (click)="setMainServing(i)" [disabled]="!mainServingValid || servingFormOpen" [title]="'FOOD_SERVING_SET_MAIN' | translate" [attr.aria-label]="'FOOD_SERVING_SET_MAIN' | translate">
+                    <i-feather name="star"></i-feather>
+                  </button>
+                  <button type="button" (click)="openServingForm(i)" [disabled]="servingFormOpen" [title]="'EDIT' | translate" [attr.aria-label]="'EDIT' | translate">
+                    <i-feather name="edit-2"></i-feather>
+                  </button>
+                  <button type="button" class="danger" (click)="removeServing(i)" [disabled]="servingFormOpen" [title]="'DELETE' | translate" [attr.aria-label]="'DELETE' | translate">
+                    <i-feather name="trash-2"></i-feather>
+                  </button>
+                </div>
+              </ng-container>
+              <ng-template #editServing>
+                <app-food-serving-form class="serving-item__form" [others]="servingFormOthers" [initial]="serving" [unitSuggestions]="unitSuggestions"
+                  (saved)="onServingSaved($event)" (cancelled)="closeServingForm()"></app-food-serving-form>
+              </ng-template>
+            </li>
+          </ul>
+          <app-food-serving-form *ngIf="servingFormOpen && editingServingIndex === null" [others]="servingFormOthers" [unitSuggestions]="unitSuggestions"
+            (saved)="onServingSaved($event)" (cancelled)="closeServingForm()"></app-food-serving-form>
+          <button type="button" class="serving-add-btn" *ngIf="!servingFormOpen && canAddServing" (click)="openServingForm(null)">
+            <i-feather name="plus"></i-feather>
+            {{ 'FOOD_ADD_SERVING' | translate }}
+          </button>
         </div>
         </fieldset>
         <p class="field-error" *ngIf="saveError" role="alert">{{ saveError | translate }}</p>
@@ -245,6 +298,57 @@
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeAddModal()">{{ 'CANCEL' | translate }}</button>
         <button class="confirm-btn primary" [disabled]="!canSave" [attr.aria-busy]="isSaving" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD') | translate }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" [class.show]="showImportModal" (click)="closeImportModal()">
+    <div class="modal-content import" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ 'FOOD_IMPORT_TITLE' | translate }}</h2>
+        <button class="close-btn" type="button" (click)="closeImportModal()" [disabled]="importing">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+
+      <div class="modal-body import-body">
+        <p class="field-error" *ngIf="importError" role="alert">{{ importError | translate }}</p>
+
+        <ng-container *ngIf="importPreview as preview">
+          <p class="field-error" *ngIf="preview.fileError" role="alert">{{ preview.fileError | translate }}</p>
+          <ng-container *ngIf="!preview.fileError">
+            <div class="import-ready">{{ 'FOOD_IMPORT_READY' | translate:{ count: preview.validFoods, servings: preview.validServings } }}</div>
+            <div class="import-issues" *ngIf="preview.errors.length">
+              <div class="import-issues__title">{{ 'FOOD_IMPORT_SKIPPED' | translate:{ rows: preview.errorRows, foods: preview.invalidFoods } }}</div>
+              <ul>
+                <li *ngFor="let error of preview.errors">
+                  <strong>{{ 'FOOD_IMPORT_ROW' | translate:{ row: error.row } }}</strong>
+                  <span *ngIf="error.name"> · {{ error.name }}</span>
+                  · {{ importFieldLabel(error.field) | translate }} : {{ error.error | translate }}
+                </li>
+              </ul>
+            </div>
+          </ng-container>
+        </ng-container>
+
+        <ng-container *ngIf="importReport as report">
+          <div class="import-ready">{{ 'FOOD_IMPORT_CREATED' | translate:{ count: report.created } }}</div>
+          <div class="import-issues import-issues--muted" *ngIf="report.duplicates">
+            <div class="import-issues__title">{{ 'FOOD_IMPORT_DUPLICATES' | translate:{ count: report.duplicates } }}</div>
+            <ul><li *ngFor="let entry of importEntries('DUPLICATE')">{{ entry.name }}</li></ul>
+          </div>
+          <div class="import-issues" *ngIf="report.rejected">
+            <div class="import-issues__title">{{ 'FOOD_IMPORT_REJECTED' | translate:{ count: report.rejected } }}</div>
+            <ul><li *ngFor="let entry of importEntries('INVALID')"><strong>{{ entry.name || '—' }}</strong> : {{ entry.message }}</li></ul>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-btn" type="button" (click)="closeImportModal()" [disabled]="importing">{{ (importReport ? 'CLOSE' : 'CANCEL') | translate }}</button>
+        <button class="confirm-btn primary" type="button" *ngIf="!importReport" [disabled]="!canConfirmImport" [attr.aria-busy]="importing" (click)="confirmImport()">
+          {{ 'FOOD_IMPORT_CONFIRM' | translate:{ count: importPreview?.validFoods || 0 } }}
+        </button>
       </div>
     </div>
   </div>
@@ -264,7 +368,7 @@
           <i-feather name="trash-2" size="24"></i-feather>
         </div>
         <h3>{{ 'ARE_YOU_SURE' | translate }}</h3>
-        <p>{{ 'DELETE_FOOD_CONFIRMATION' | translate:{ name: foodToDelete?.name } }}</p>
+        <p>{{ (foodToDelete?.isGeneral ? 'ARCHIVE_FOOD_CONFIRMATION' : 'DELETE_FOOD_CONFIRMATION') | translate:{ name: foodToDelete?.name } }}</p>
       </div>
 
       <div class="modal-footer">

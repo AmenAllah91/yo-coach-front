@@ -590,6 +590,10 @@
   line-height: 20px !important;
 }
 
+.np-searchwrap .np-searchwrap__input {
+  padding-left: 38px !important;
+}
+
 textarea.np-input,
 .np-textarea {
   height: auto !important;
@@ -1489,3 +1493,7 @@ textarea.np-input,
     margin-top: 0 !important;
   }
 }
+
+.np-serving-amount { margin: 8px 0 0; font-size: 13px; color: #64748b; }
+.np-serving-form { margin-top: 14px; }
+.np-serving-form__title { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #0f172a; }
