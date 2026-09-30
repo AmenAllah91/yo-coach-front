@@ -629,3 +629,316 @@
 .serving-add-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px dashed #cbd8e6; border-radius: 7px; background: #fff; color: #17324d; padding: 8px 12px; font-weight: 600; font-size: 0.8125rem; cursor: pointer; }
 .serving-add-btn i-feather { width: 16px; height: 16px; }
 .serving-count { display: inline-block; margin-left: 6px; padding: 1px 7px; border: 1px solid #9BD7EE; border-radius: 999px; background: #EAF7FD; color: #1EA2D2; font-size: 11px; font-weight: 600; }
+
+// Add custom food modal — Magic Patterns reference
+.modal-content.food-modal {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  width: min(600px, calc(100vw - 32px));
+  height: auto;
+  max-height: min(90vh, 760px);
+  border: 1px solid #e5e8ec;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px -16px rgba(11, 18, 32, 0.35);
+  transform: translate(-50%, -48%) scale(0.98);
+  transition: transform 180ms ease, opacity 180ms ease;
+
+  @media (max-width: 640px) {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+  }
+}
+
+.modal-overlay.show .modal-content.food-modal {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.food-modal {
+  color: #0b1220;
+
+  .modal-header {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #fff;
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #38a8e0;
+    color: #fff;
+
+    i-feather { width: 21px; height: 21px; }
+  }
+
+  &__heading {
+    min-width: 0;
+    flex: 1;
+
+    h2 {
+      overflow: hidden;
+      margin: 0;
+      color: #0b1220;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    p {
+      overflow: hidden;
+      margin: 0;
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .close-btn {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: #6b7280;
+
+    i-feather { width: 19px; height: 19px; }
+  }
+
+  .modal-body {
+    padding: 20px;
+    background: #fff;
+    scrollbar-color: #9a9a9a transparent;
+    scrollbar-width: thin;
+  }
+
+  .food-fields { display: block; }
+
+  .food-identity-row {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+    padding-bottom: 20px;
+  }
+
+  .food-name-block { min-width: 0; }
+
+  .food-name-block small {
+    display: block;
+    margin-top: 6px;
+    color: #7c8491;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .food-image-field { margin: 0; }
+
+  .food-image-control {
+    display: block;
+    width: 78px;
+    height: 78px;
+    cursor: pointer;
+
+    > input { display: none; }
+  }
+
+  .food-image-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 78px;
+    height: 78px;
+    border: 1px dashed #b8e2f4;
+    border-radius: 10px;
+    background: #f1fafe;
+    color: #2799d3;
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+
+    i-feather { width: 22px; height: 22px; }
+    span { color: inherit; font-size: inherit; line-height: 1.1; }
+  }
+
+  .image-remove-btn {
+    width: 100%;
+    padding: 5px 0 0;
+    color: #6b7280;
+    font-size: 10px;
+  }
+
+  .form-group { margin-bottom: 12px; }
+
+  .form-group label {
+    margin-bottom: 6px;
+    color: #273142;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .required-mark { color: #38a8e0; }
+
+  .form-group input,
+  .form-group select {
+    min-height: 40px;
+    padding: 10px 11px;
+    border-color: #e5e8ec;
+    border-radius: 8px;
+    color: #0b1220;
+    font-size: 13px;
+    background: #fff;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: #38a8e0;
+    box-shadow: 0 0 0 3px rgba(56, 168, 224, 0.13);
+  }
+
+  .serving-section {
+    margin: 0;
+    padding: 20px 0 0;
+    border-top: 1px solid #eef0f2;
+  }
+
+  .main-serving-section { padding-bottom: 20px; }
+
+  .serving-section .serving-section__title,
+  .modal-body .serving-section h3 {
+    margin: 0 0 2px;
+    color: #0b1220;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: left;
+  }
+
+  .serving-section .serving-section__hint,
+  .modal-body .serving-section p.serving-section__hint {
+    margin: 0 0 14px;
+    color: #6b7280;
+    font-size: 12.5px;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .serving-main-row { gap: 12px; }
+  .serving-main-row__size { flex-basis: 38% !important; }
+
+  .nutrition-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    strong { font-size: 13px; font-weight: 600; }
+
+    span {
+      max-width: 55%;
+      overflow: hidden;
+      padding: 3px 7px;
+      border-radius: 5px;
+      background: #eaf8fe;
+      color: #287da5;
+      font-size: 10.5px;
+      font-weight: 500;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .form-row { gap: 12px; }
+  .nutrition-primary-row .form-group { margin-bottom: 12px; }
+
+  .advanced-nutrients {
+    margin: 4px 0 22px;
+    border: 1px solid #e5e8ec;
+    border-radius: 10px;
+    background: #fff;
+
+    summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      list-style: none;
+
+      &::-webkit-details-marker { display: none; }
+      span { display: grid; gap: 2px; min-width: 0; }
+      strong { color: #0b1220; font-size: 12.5px; font-weight: 500; }
+      small { overflow: hidden; color: #7c8491; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+      i-feather { flex: 0 0 auto; width: 17px; height: 17px; color: #6b7280; transition: transform 150ms ease; }
+    }
+
+    &[open] summary { border-bottom: 1px solid #e5e8ec; }
+    &[open] summary i-feather { transform: rotate(180deg); }
+  }
+
+  .advanced-nutrients__body { padding: 14px 14px 2px; }
+
+  .other-servings-section {
+    padding-top: 20px;
+
+    .serving-add-btn {
+      width: 100%;
+      min-height: 56px;
+      justify-content: flex-start;
+      border-color: #cdebf8;
+      border-radius: 10px;
+      color: #287da5;
+      background: #fff;
+    }
+  }
+
+  .modal-footer {
+    gap: 12px;
+    padding: 12px 20px 14px;
+    background: #fff;
+  }
+
+  .modal-footer .cancel-btn,
+  .modal-footer .confirm-btn {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .modal-footer .cancel-btn {
+    border-color: #e5e8ec;
+    color: #0b1220;
+  }
+
+  .modal-footer .confirm-btn.primary {
+    background: #0b1220;
+    color: #fff;
+  }
+
+  .modal-footer .confirm-btn:disabled {
+    background: #e5e8ec;
+    color: #9ca3af;
+  }
+
+  @media (max-width: 480px) {
+    .modal-header { padding: 14px 16px; }
+    .modal-body { padding: 18px; }
+    .modal-footer { padding: 12px 18px 14px; }
+    .food-modal__heading p { font-size: 12px; }
+    .form-row { gap: 10px; }
+  }
+}
