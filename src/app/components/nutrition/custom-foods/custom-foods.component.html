@@ -133,45 +133,55 @@
   </div>
   <!-- Add/Edit Food Modal -->
   <div class="modal-overlay" [class.show]="showAddModal" (click)="closeAddModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content food-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ (editingFood ? 'EDIT_FOOD_ITEM_TITLE' : 'ADD_FOOD_ITEM_TITLE') | translate }}</h2>
-        <button class="close-btn" (click)="closeAddModal()">
+        <div class="food-modal__icon"><i-feather name="coffee"></i-feather></div>
+        <div class="food-modal__heading">
+          <h2>{{ (editingFood ? 'EDIT_FOOD_ITEM_TITLE' : 'ADD_CUSTOM_FOOD_TITLE') | translate }}</h2>
+          <p>{{ 'CUSTOM_FOOD_MODAL_SUBTITLE' | translate }}</p>
+        </div>
+        <button class="close-btn" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeAddModal()">
           <i-feather name="x"></i-feather>
         </button>
       </div>
 
       <div class="modal-body">
         <fieldset [disabled]="isSaving" class="food-fields">
-        <div class="form-group food-image-field">
-          <label>{{ 'FOOD_IMAGE' | translate }}:</label>
-          <div class="food-image-control">
-            <span class="food-image-preview">
-              <img *ngIf="foodImageUrl; else formInitial" [src]="foodImageUrl" [alt]="'FOOD_PREVIEW' | translate" />
-              <ng-template #formInitial>{{ (foodName || '?').charAt(0).toUpperCase() }}</ng-template>
-            </span>
-            <label class="image-upload-btn">{{ 'CHOOSE_IMAGE' | translate }}<input type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageSelected($event)" /></label>
+        <div class="food-identity-row">
+          <div class="form-group food-image-field">
+            <label class="food-image-control">
+              <span class="food-image-preview">
+                <img *ngIf="foodImageUrl; else formInitial" [src]="foodImageUrl" [alt]="'FOOD_PREVIEW' | translate" />
+                <ng-template #formInitial>
+                  <i-feather name="image"></i-feather>
+                  <span>{{ 'CHOOSE_IMAGE' | translate }}</span>
+                </ng-template>
+              </span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageSelected($event)" />
+            </label>
             <button *ngIf="foodImageUrl || imageError" type="button" class="image-remove-btn" (click)="removeSelectedImage()">{{ 'FOOD_VALID_REMOVE' | translate }}</button>
+            <p class="field-error" *ngIf="fieldError('image')" role="alert">{{ fieldError('image') | translate }}</p>
+          </div>
+          <div class="food-name-block">
+            <div class="form-group">
+              <label>{{ 'NAME' | translate }} <span class="required-mark">*</span></label>
+              <input type="text" [(ngModel)]="foodName" (ngModelChange)="touch('foodName')" (blur)="touched.add('foodName')" [attr.aria-invalid]="!!fieldError('foodName')" [placeholder]="'ENTER_FOOD_NAME' | translate">
+              <p class="field-error" *ngIf="fieldError('foodName')" role="alert">{{ fieldError('foodName') | translate }}</p>
+            </div>
+            <small>Photo optional · JPG, PNG, WEBP · 10 MB max</small>
           </div>
         </div>
-        <small>JPG / PNG / WEBP · 10 MB max</small>
-        <p class="field-error" *ngIf="fieldError('image')" role="alert">{{ fieldError('image') | translate }}</p>
-        <div class="form-group">
-          <label>{{ 'NAME' | translate }}:</label>
-          <input type="text" [(ngModel)]="foodName" (ngModelChange)="touch('foodName')" (blur)="touched.add('foodName')" [attr.aria-invalid]="!!fieldError('foodName')" [placeholder]="'ENTER_FOOD_NAME' | translate">
-            <p class="field-error" *ngIf="fieldError('foodName')" role="alert">{{ fieldError('foodName') | translate }}</p>
-        </div>
 
-        <div class="serving-section">
+        <div class="serving-section main-serving-section">
           <h3 class="serving-section__title">{{ 'FOOD_MAIN_SERVING' | translate }}</h3>
           <p class="serving-section__hint">{{ 'FOOD_MAIN_SERVING_HINT' | translate }}</p>
           <div class="form-row serving-main-row">
             <div class="form-group serving-main-row__size">
-              <label>{{ 'FOOD_SERVING_QUANTITY' | translate }}:</label>
+              <label>{{ 'FOOD_SERVING_QUANTITY' | translate }} <span class="required-mark">*</span></label>
               <input type="text" inputmode="decimal" [(ngModel)]="servingSize" (ngModelChange)="touch('servingSize')" (blur)="touched.add('servingSize')" [attr.aria-invalid]="!!fieldError('servingSize')" placeholder="100">
             </div>
             <div class="form-group">
-              <label>{{ 'FOOD_SERVING_UNIT' | translate }}:</label>
+              <label>{{ 'FOOD_SERVING_UNIT' | translate }} <span class="required-mark">*</span></label>
               <input type="text" list="food-main-units" [(ngModel)]="servingDescription" (ngModelChange)="touch('servingDescription')" (blur)="touched.add('servingDescription')" [attr.aria-invalid]="!!fieldError('servingDescription')" [placeholder]="'FOOD_SERVING_UNIT_PLACEHOLDER' | translate">
               <datalist id="food-main-units">
                 <option *ngFor="let unit of unitSuggestions" [value]="unit"></option>
@@ -182,32 +192,46 @@
           <p class="field-error" *ngIf="fieldError('servingDescription')" role="alert">{{ fieldError('servingDescription') | translate }}</p>
         </div>
 
-        <div class="form-row">
+        <div class="nutrition-section-title">
+          <strong>{{ 'NUTRITION_VALUES' | translate }}</strong>
+          <span>{{ 'NUTRITION_PER' | translate }} {{ servingSize || 100 }} {{ servingDescription }}</span>
+        </div>
+
+        <div class="form-row nutrition-primary-row">
           <div class="form-group">
-            <label>{{ 'CALORIES' | translate }} (kcal):</label>
+            <label>{{ 'CALORIES' | translate }} <span class="required-mark">*</span></label>
             <input type="text" inputmode="decimal" [(ngModel)]="calories" (ngModelChange)="touch('calories')" (blur)="touched.add('calories')" [attr.aria-invalid]="!!fieldError('calories')">
             <p class="field-error" *ngIf="fieldError('calories')" role="alert">{{ fieldError('calories') | translate }}</p>
           </div>
           <div class="form-group">
-            <label>{{ 'PROTEIN' | translate }} (g):</label>
+            <label>{{ 'PROTEIN' | translate }}</label>
             <input type="text" inputmode="decimal" [(ngModel)]="protein" (ngModelChange)="touch('protein')" (blur)="touched.add('protein')" [attr.aria-invalid]="!!fieldError('protein')" [placeholder]="'ENTER_TOTAL_PROTEIN' | translate">
             <p class="field-error" *ngIf="fieldError('protein')" role="alert">{{ fieldError('protein') | translate }}</p>
           </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-row nutrition-primary-row">
           <div class="form-group">
-            <label>{{ 'CARBS' | translate }} (g):</label>
+            <label>{{ 'CARBS' | translate }}</label>
             <input type="text" inputmode="decimal" [(ngModel)]="carbs" (ngModelChange)="touch('carbs')" (blur)="touched.add('carbs')" [attr.aria-invalid]="!!fieldError('carbs')" [placeholder]="'ENTER_TOTAL_CARBS' | translate">
             <p class="field-error" *ngIf="fieldError('carbs')" role="alert">{{ fieldError('carbs') | translate }}</p>
           </div>
           <div class="form-group">
-            <label>{{ 'FAT' | translate }} (g):</label>
+            <label>{{ 'FAT' | translate }}</label>
             <input type="text" inputmode="decimal" [(ngModel)]="fat" (ngModelChange)="touch('fat')" (blur)="touched.add('fat')" [attr.aria-invalid]="!!fieldError('fat')" [placeholder]="'ENTER_TOTAL_FAT' | translate">
             <p class="field-error" *ngIf="fieldError('fat')" role="alert">{{ fieldError('fat') | translate }}</p>
           </div>
         </div>
 
+        <details class="advanced-nutrients">
+          <summary>
+            <span>
+              <strong>{{ 'OTHER_NUTRIENTS' | translate }}</strong>
+              <small>{{ 'OTHER_NUTRIENTS_HINT' | translate }}</small>
+            </span>
+            <i-feather name="chevron-down"></i-feather>
+          </summary>
+          <div class="advanced-nutrients__body">
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'FIBER' | translate }} (g):</label>
@@ -255,8 +279,10 @@
           </div>
           <div class="form-group"></div>
         </div>
+          </div>
+        </details>
 
-        <div class="serving-section">
+        <div class="serving-section other-servings-section">
           <h3 class="serving-section__title">{{ 'FOOD_OTHER_SERVINGS' | translate }}</h3>
           <p class="serving-section__hint" *ngIf="!extraServings.length && !servingFormOpen">{{ 'FOOD_OTHER_SERVINGS_EMPTY' | translate }}</p>
           <ul class="serving-list" *ngIf="extraServings.length">
@@ -297,7 +323,7 @@
 
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeAddModal()">{{ 'CANCEL' | translate }}</button>
-        <button class="confirm-btn primary" [disabled]="!canSave" [attr.aria-busy]="isSaving" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD') | translate }}</button>
+        <button class="confirm-btn primary" [disabled]="!canSave" [attr.aria-busy]="isSaving" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD_CUSTOM_FOOD_ACTION') | translate }}</button>
       </div>
     </div>
   </div>
