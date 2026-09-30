@@ -1,7 +1,17 @@
-<!-- Rien n’est affiché tant que l’invitation n’existe pas -->
-<div class="inv-root" *ngIf="!loading && invitation">
+<div class="inv-root">
 
-  <div class="inv-container">
+  <div class="inv-state" *ngIf="loading">
+    <img src="assets/yocoachlogo.png" alt="YoCoach" class="inv-state__logo" />
+    <p>{{ 'INVITATION_LOADING' | translate }}</p>
+  </div>
+
+  <div class="inv-state" *ngIf="!loading && loadError">
+    <img src="assets/yocoachlogo.png" alt="YoCoach" class="inv-state__logo" />
+    <h1>{{ 'INVITATION_UNAVAILABLE' | translate }}</h1>
+    <p>{{ 'INVITATION_UNAVAILABLE_HELP' | translate }}</p>
+  </div>
+
+  <div class="inv-container" *ngIf="!loading && !loadError && invitation">
 
     <!-- Card -->
     <div class="inv-card">
@@ -29,10 +39,15 @@
         <!-- Bouton CTA -->
         <button
           class="inv-cta"
+          [disabled]="accepting"
           *ngIf="invitation.status === 'PENDING'"
           (click)="acceptInvitation()">
-          {{ 'ACCEPT_INVITATION' | translate }}
+          {{ (accepting ? 'INVITATION_ACCEPTING' : 'ACCEPT_INVITATION') | translate }}
         </button>
+
+        <p class="inv-error" *ngIf="actionError">
+          {{ 'INVITATION_ACCEPT_ERROR' | translate }}
+        </p>
 
       </div>
 
@@ -46,6 +61,8 @@
         </p>
         <button
           class="inv-fallback__link"
+          [disabled]="accepting"
+          *ngIf="invitation.status === 'PENDING'"
           (click)="acceptInvitation()">
           {{ 'ACCEPT_INVITATION' | translate }}
         </button>

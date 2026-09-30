@@ -18,6 +18,9 @@ export interface ClientTaskPayload {
   reminderTime?: string;
   allowClientComment: boolean;
   formId?: string;
+  formAssignmentId?: string;
+  requestedPoses?: ('FRONT' | 'SIDE' | 'BACK')[];
+  requestedMeasurements?: string[];
 }
 
 export interface HabitPayload {
@@ -58,6 +61,9 @@ export interface TaskCalendarItem {
   allowClientComment: boolean;
   clientComment?: string;
   formId?: string;
+  formAssignmentId?: string;
+  requestedPoses?: ('FRONT' | 'SIDE' | 'BACK')[];
+  requestedMeasurements?: string[];
 }
 
 export interface TaskCalendarResponse {

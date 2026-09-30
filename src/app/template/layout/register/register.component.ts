@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -30,6 +30,7 @@ export class RegisterComponent implements OnInit {
   selectedPlan: SubscriptionPlanDto | null = null;
   planId: number | null = null;
   planLoadError: string | null = null;
+  invitationToken: string | null = null;
   isSubmitting = false;
   showPassword = false;
   showConfirmPassword = false;
@@ -40,6 +41,7 @@ export class RegisterComponent implements OnInit {
     private onboardingService: SubscriptionOnboardingService,
     private authService: AuthService,
     private route: ActivatedRoute,
+    private router: Router,
     private translate: TranslateService,
     private languageService: LanguageService
 ) {}
@@ -55,8 +57,9 @@ export class RegisterComponent implements OnInit {
       confirmPassword: ['', [Validators.required]],
       isCoach: [false]
     }, { validators: this.passwordMatchValidator });
+    this.invitationToken = this.route.snapshot.queryParamMap.get('invitationToken');
     const planId = Number(this.route.snapshot.queryParamMap.get('planId'));
-    if (Number.isInteger(planId) && planId > 0) {
+    if (!this.invitationToken && Number.isInteger(planId) && planId > 0) {
       this.planId = planId;
       this.signupForm.patchValue({ isCoach: true });
       this.loadSelectedPlan(planId);
@@ -94,7 +97,9 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    const isCoachRegistration = Boolean(this.planId || formValues.isCoach);
+    const isCoachRegistration = this.invitationToken
+      ? false
+      : Boolean(this.planId || formValues.isCoach);
 
     const user: RegistrationUser = {
       login: formValues.username,
@@ -114,7 +119,9 @@ export class RegisterComponent implements OnInit {
       finalize(() => this.isSubmitting = false)
     ).subscribe({
       next: () => {
-        const targetPath = isCoachRegistration ? '/coach-onboarding' : '/';
+        const targetPath = this.invitationToken
+          ? this.invitationReturnPath()
+          : (isCoachRegistration ? '/coach-onboarding' : '/');
         const redirectUri = new URL(targetPath, window.location.origin).toString();
         void this.authService.login(redirectUri, formValues.username).catch(error => {
           this.generalError = this.translate.instant('UNEXPECTED_ERROR_RETRY');
@@ -141,6 +148,21 @@ export class RegisterComponent implements OnInit {
         console.error('Registration error:', error);
       }
     });
+  }
+
+  signIn(): void {
+    const targetPath = this.invitationToken
+      ? this.invitationReturnPath()
+      : '/';
+    const redirectUri = new URL(targetPath, window.location.origin).toString();
+    void this.authService.login(redirectUri).catch(error => {
+      this.generalError = this.translate.instant('UNEXPECTED_ERROR_RETRY');
+      console.error('Unable to start authentication:', error);
+    });
+  }
+
+  private invitationReturnPath(): string {
+    return `/invitation/${encodeURIComponent(this.invitationToken!)}?accept=1`;
   }
 
   getFieldError(controlName: string): string | null {

@@ -58,20 +58,31 @@ import { ContactFormManagerComponent } from './components/website/contact-form-m
 import { PublicContactFormComponent } from './components/website/public-contact-form/public-contact-form.component';
 import { CoachOnboardingComponent } from './components/coach-onboarding/coach-onboarding.component';
 import { coachOnboardingEntryGuard, coachOnboardingGuard } from './config/guard/coach-onboarding.guard';
+import { ClientOnboardingComponent } from './components/client-onboarding/client-onboarding.component';
+import { clientOnboardingEntryGuard, clientOnboardingGuard } from './config/guard/client-onboarding.guard';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
 
 export const APP_ROUTE: Route[] = [
   {
+    path: 'invitation/:token',
+    component: InvitationComponent,
+  },
+  {
     path: 'coach-onboarding',
     component: CoachOnboardingComponent,
     canActivate: [isAuthenticated, coachOnboardingEntryGuard],
   },
   {
+    path: 'client-onboarding',
+    component: ClientOnboardingComponent,
+    canActivate: [isAuthenticated, clientOnboardingEntryGuard],
+  },
+  {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [isAuthenticated, coachOnboardingGuard],
+    canActivate: [isAuthenticated, coachOnboardingGuard, clientOnboardingGuard],
     children: [
       {
         path: 'forms/create-form',
@@ -232,9 +243,6 @@ export const APP_ROUTE: Route[] = [
       },{
         path: 'chat',
         component: ChatComponent,
-      },{
-        path: 'invitation/:token',
-        component: InvitationComponent,
       },{
         path: 'edit-profile/:id',
         component: EditProfileComponent,

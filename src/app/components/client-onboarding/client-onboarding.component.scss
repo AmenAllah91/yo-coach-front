@@ -1,0 +1,19 @@
+@use '../coach-onboarding/coach-onboarding.component.scss';
+:host { display:block; }
+.onboarding-card { width:min(calc(100% - 40px),620px); }
+.wide-card { width:min(calc(100% - 40px),760px); }
+.language-options { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.language-options button,.choice-stack button { min-height:50px; padding:0 16px; border:1px solid #d7dee7; border-radius:10px; background:#fff; color:#475467; cursor:pointer; }
+.language-options button.selected,.choice-stack button.selected { border-color:#20afe0; background:#effaff; color:#087fa9; box-shadow:0 0 0 1px #20afe0 inset; font-weight:600; }
+.field-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+label { display:block; font-size:14px; font-weight:600; }
+textarea.field-control { resize:vertical; }
+.form-question { padding:22px 0; border-bottom:1px solid #e9eef3; }
+.form-question>label { display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+.question-number { width:25px; height:25px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:#eef8fd; color:#1597c6; font-size:12px; }
+.choice-stack { display:grid; gap:8px; }
+.choice-stack button { display:flex; justify-content:space-between; align-items:center; text-align:left; }
+.stars { display:flex; gap:8px; }
+.stars button { border:0; background:transparent; color:#d0d5dd; font-size:28px; cursor:pointer; }
+.stars button.selected { color:#22b5e8; }
+@media (max-width:640px) { .onboarding-card,.wide-card { width:100%; } .field-grid { grid-template-columns:1fr; } }

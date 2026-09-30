@@ -23,7 +23,7 @@ export const coachOnboardingGuard: CanActivateFn = async () => {
     return state.completed ? true : router.createUrlTree(['/coach-onboarding']);
   } catch (error) {
     console.error('Unable to verify coach onboarding state', error);
-    return router.createUrlTree(['/coach-onboarding']);
+    return true;
   }
 };
 
@@ -41,6 +41,6 @@ export const coachOnboardingEntryGuard: CanActivateFn = async () => {
     return state.completed ? router.createUrlTree(['/coach-dashboard']) : true;
   } catch (error) {
     console.error('Unable to load coach onboarding state', error);
-    return true;
+    return router.createUrlTree(['/coach-dashboard']);
   }
 };
