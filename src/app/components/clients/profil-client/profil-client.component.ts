@@ -1,3 +1,4 @@
+import { ToastService } from 'app/service/toast.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
@@ -682,7 +683,23 @@ export class ProfilClientComponent {
     }
   }
 
+  get clientArchived(): boolean { return !!this.client?.clientStatus && this.client.clientStatus !== 'ACTIVE'; }
+
+  private canCoach(): boolean {
+    if (!this.clientArchived) return true;
+    this.toastService.error('This client is archived. Reactivate the client to continue coaching.');
+    return false;
+  }
+
+  reactivateClient(): void {
+    this.clientService.updateClientStatus(this.clientId, 'ACTIVE').subscribe(client => {
+      this.client = client;
+      this.loadClientData();
+    });
+  }
+
   constructor(
+    private toastService: ToastService,
     private route: ActivatedRoute,
     private clientService: ClientService,
     private usersService: UsersService,
@@ -2077,6 +2094,7 @@ export class ProfilClientComponent {
   }
 
   openDirectWorkoutSelection(): void {
+    if (!this.canCoach()) return;
     this.assignType = 'WORKOUT';
     this.showAssignSelectModal = false;
     this.showProgramSelectionModal = true;
@@ -2107,6 +2125,7 @@ export class ProfilClientComponent {
   }
 
   openAssignProgramModal(type: 'WORKOUT' | 'NUTRITION'): void {
+    if (!this.canCoach()) return;
     this.assignType = type;
     this.showAssignSelectModal = true;
   }
@@ -2154,6 +2173,7 @@ export class ProfilClientComponent {
   }
 
   openImportNutritionFileFromProfile(): void {
+    if (!this.canCoach()) return;
     this.showNutritionFileImportModal = true;
     this.profileImportNutritionFile = null;
     this.profileImportNutritionName = '';
@@ -2165,6 +2185,7 @@ export class ProfilClientComponent {
   }
 
   openExistingNutritionPrograms(mode: 'APP' | 'FILES'): void {
+    if (!this.canCoach()) return;
     if (this.nutritionFileEnabled === false && mode === 'FILES') {
       return;
     }
@@ -2224,6 +2245,7 @@ export class ProfilClientComponent {
   }
 
   openClientNutritionCreateModal(): void {
+    if (!this.canCoach()) return;
     this.clientNutritionProgramName = '';
     this.clientNutritionDurationWeeks = 4;
     this.clientNutritionStartDate = new Date().toISOString().slice(0, 10);
@@ -2354,6 +2376,7 @@ export class ProfilClientComponent {
   }
 
   openClientWorkoutCreateModal(): void {
+    if (!this.canCoach()) return;
     this.clientWorkoutProgramName = '';
     this.clientWorkoutDurationWeeks = 4;
     this.clientWorkoutStartDate = new Date().toISOString().slice(0, 10);
@@ -2462,6 +2485,7 @@ export class ProfilClientComponent {
   }
 
   openFileWorkoutImportModal(): void {
+    if (!this.canCoach()) return;
     this.showFileWorkoutImportModal = true;
     this.profileImportWorkoutFile = null;
     this.profileImportWorkoutName = '';
@@ -2531,6 +2555,7 @@ export class ProfilClientComponent {
   }
 
   saveAndAssignProfileFileWorkout(): void {
+    if (!this.canCoach()) return;
     if (!this.canSaveProfileFileWorkout() || !this.profileImportWorkoutFile || !this.clientId) return;
 
     this.profileImportSaving = true;
@@ -2620,6 +2645,7 @@ export class ProfilClientComponent {
   }
 
   saveAndAssignProfileFileNutrition(): void {
+    if (!this.canCoach()) return;
     if (!this.canSaveProfileFileNutrition() || !this.profileImportNutritionFile || !this.client) return;
 
     this.profileImportNutritionSaving = true;
@@ -3010,6 +3036,7 @@ export class ProfilClientComponent {
   }
 
   openCheckinModal() {
+    if (!this.canCoach()) return;
     this.closeAllOverlays();
     this.assignType = 'CHECKIN';
     this.showAssignSelectModal = true;

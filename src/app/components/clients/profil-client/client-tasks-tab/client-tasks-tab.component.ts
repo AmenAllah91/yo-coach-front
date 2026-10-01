@@ -1,3 +1,4 @@
+import { ToastService } from 'app/service/toast.service';
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -39,6 +40,12 @@ const WEEK_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATU
 @Component({ selector: 'app-client-tasks-tab', standalone: true, imports: [CommonModule, FormsModule, TranslateModule, FeatherModule], templateUrl: './client-tasks-tab.component.html', styleUrls: ['./client-tasks-tab.component.scss'] })
 export class ClientTasksTabComponent implements OnChanges {
   @Input() clientId = '';
+  @Input() archived = false;
+  private canCoach(): boolean {
+    if (!this.archived) return true;
+    this.toast.error('This client is archived. Reactivate the client to continue coaching.');
+    return false;
+  }
   @Input() clientName = '';
   readonly today = startOfDay(new Date());
   weeksShown: WeeksShown = 2;
@@ -101,7 +108,7 @@ export class ClientTasksTabComponent implements OnChanges {
     ] },
   ];
 
-  constructor(private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router) { this.buildEmptyDays(); }
+  constructor(private toast: ToastService, private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router) { this.buildEmptyDays(); }
   ngOnChanges(changes: SimpleChanges): void { if (changes['clientId'] && this.clientId) this.refresh(); }
   get rangeEnd(): Date { return addDays(this.rangeStart, this.weeksShown * 7 - 1); }
   get weeks(): CalendarDay[][] { const result: CalendarDay[][] = []; for (let i = 0; i < this.days.length; i += 7) result.push(this.days.slice(i, i + 7)); return result; }
@@ -141,13 +148,13 @@ export class ClientTasksTabComponent implements OnChanges {
   }
   isMenuOpenFor(task: CalendarTask): boolean { return this.taskMenu?.task.occurrence === task.occurrence; }
   closeTaskMenu(): void { this.taskMenu = null; }
-  editTask(): void {
+  editTask(): void { if (!this.canCoach()) return;
     if (!this.taskMenu) return;
     const { task, day } = this.taskMenu;
     this.closeTaskMenu();
     this.editCalendarTask(day, task);
   }
-  editCalendarTask(day: CalendarDay, task: CalendarTask): void {
+  editCalendarTask(day: CalendarDay, task: CalendarTask): void { if (!this.canCoach()) return;
     this.closeTaskMenu(); this.modalDate = day.date; this.editing = true; this.editingId = task.id; const s = task.source;
     if (task.kind === 'habit') {
       this.habit = { name: s.title, icon: task.icon, tone: 'sky', goalValue: s.goalValue ?? null, unit: s.unit || 'TIMES', customUnit: s.customUnit || '', startDate: s.startDate || s.date, endDate: s.endDate || '', repeat: s.repeatType || 'DAILY', repeatDays: WEEK_DAYS.map(d => !!s.weekDays?.includes(d)), reminder: s.reminderEnabled, reminderTime: s.reminderTime || '08:00', allowComments: s.allowClientComment };
@@ -167,12 +174,12 @@ export class ClientTasksTabComponent implements OnChanges {
     }
     this.advancedOpen = false;
   }
-  deleteTask(): void {
+  deleteTask(): void { if (!this.canCoach()) return;
     if (!this.taskMenu) return; const task = this.taskMenu.task; this.closeTaskMenu();
     if (task.kind === 'habit' && !window.confirm('Delete habit?\nThis will remove this habit and all of its scheduled occurrences.')) return;
     (task.kind === 'habit' ? this.api.deleteHabit(task.id) : this.api.deleteTask(task.id)).subscribe(() => this.refresh());
   }
-  openCreateTask(date?: Date): void { this.closeTaskMenu(); this.editing = false; this.editingId = null; this.modalDate = date || this.today; this.modalStep = 'type'; }
+  openCreateTask(date?: Date): void { if (!this.canCoach()) return; this.closeTaskMenu(); this.editing = false; this.editingId = null; this.modalDate = date || this.today; this.modalStep = 'type'; }
   chooseTaskType(option: TaskTypeOption): void {
     if (option.kind === 'habit') { this.habitSearch = ''; this.modalStep = 'habits'; return; }
     this.selectedTaskType = KIND_TO_TYPE[option.kind] || 'GENERAL'; this.advancedOpen = false;
@@ -188,7 +195,7 @@ export class ClientTasksTabComponent implements OnChanges {
   }
   toggleRepeatDay(index: number): void { this.habit.repeatDays[index] = !this.habit.repeatDays[index]; }
   back(): void { if (this.editing) { this.closeModal(); return; } this.modalStep = this.modalStep === 'custom' ? 'habits' : 'type'; }
-  createGeneralTask(): void {
+  createGeneralTask(): void { if (!this.canCoach()) return;
     if (!this.generalTask.title.trim() || !this.clientId) return;
     const payload: ClientTaskPayload = { clientId: this.clientId, type: this.selectedTaskType, title: this.generalTask.title.trim(), instructions: this.generalTask.instructions.trim(), date: this.generalTask.date, reminderEnabled: this.generalTask.reminder, reminderTime: this.generalTask.reminder ? this.generalTask.reminderTime : undefined, allowClientComment: this.generalTask.allowComments, formId: this.generalTask.formId || undefined };
     (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
@@ -210,7 +217,7 @@ export class ClientTasksTabComponent implements OnChanges {
     return !!this.progressTask.title.trim() && this.progressTask.poses.length > 0 && !!this.progressTask.date;
   }
 
-  createProgressTask(): void {
+  createProgressTask(): void { if (!this.canCoach()) return;
     if (!this.canCreateProgressTask) return;
     this.saveTaskRequest('CLIENT_PROGRESS', this.progressTask);
   }
@@ -265,7 +272,7 @@ export class ClientTasksTabComponent implements OnChanges {
     return !!this.metricsTask.title.trim() && this.metricsTask.measurements.length > 0 && !!this.metricsTask.date;
   }
 
-  createMetricsTask(): void {
+  createMetricsTask(): void { if (!this.canCoach()) return;
     if (!this.canCreateMetricsTask || this.taskSaving) return;
     this.saveTaskRequest('BODY_METRICS', this.metricsTask);
   }
@@ -317,7 +324,7 @@ export class ClientTasksTabComponent implements OnChanges {
     });
   }
 
-  createNewForm(): void {
+  createNewForm(): void { if (!this.canCoach()) return;
     this.closeModal();
     this.router.navigate(['/forms/create-form']);
   }
@@ -344,7 +351,7 @@ export class ClientTasksTabComponent implements OnChanges {
     try { input.showPicker(); } catch { /* The browser can still use its normal date/time interaction. */ }
   }
 
-  saveHabit(): void {
+  saveHabit(): void { if (!this.canCoach()) return;
     if (!this.clientId || !this.habit.name.trim() || !this.habit.goalValue) return;
     const payload: HabitPayload = { clientId: this.clientId, name: this.habit.name.trim(), goalValue: this.habit.goalValue, unit: this.habit.unit as HabitUnit, customUnit: this.habit.unit === 'CUSTOM' ? this.habit.customUnit.trim() : undefined, startDate: this.habit.startDate, endDate: this.habit.endDate || null, repeatType: this.habit.repeat, weekDays: this.habit.repeat === 'WEEKLY' ? WEEK_DAYS.filter((_, i) => this.habit.repeatDays[i]) : [], reminderEnabled: this.habit.reminder, reminderTime: this.habit.reminder ? this.habit.reminderTime : undefined, allowClientComment: this.habit.allowComments };
     (this.editingId ? this.api.updateHabit(this.editingId, payload) : this.api.createHabit(payload)).subscribe(() => { this.closeModal(); this.refresh(); });

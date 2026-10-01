@@ -1,3 +1,4 @@
+import { CoachingAccessService } from '../service/coaching-access.service';
 import { Injectable } from '@angular/core';
 import {
   HttpEvent,
@@ -23,6 +24,7 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(
     private loaderService: LoaderService,
     private toastService: ToastService,
+    private coachingAccess: CoachingAccessService,
     private authService: AuthService
   ) {}
 
@@ -47,7 +49,12 @@ export class AuthInterceptor implements HttpInterceptor {
     const handle = (request: HttpRequest<any>) => {
       return next.handle(request).pipe(
         catchError(error => {
-          if (!this.isToastExcluded(request.url) && !skipToast) {
+          if (error.error?.code === 'CLIENT_ARCHIVED') {
+            this.coachingAccess.blocked$.next(true);
+          }
+          if (error.status === 403 && (error.error?.code === 'CLIENT_ARCHIVED' || String(typeof error.error === 'string' ? error.error : error.error?.detail || error.error?.message || '').includes('This client is archived'))) {
+            this.toastService.error('This client is archived. Reactivate the client to continue coaching.');
+          } else if (!this.isToastExcluded(request.url) && !skipToast) {
             this.showErrorToast(request.method);
           }
 
