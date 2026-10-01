@@ -39,12 +39,6 @@
         {{ 'CLIENT_STATUS_ACTIVE' | translate }} <span>{{ statusCounts.active }}</span>
       </button>
       <button
-        class="status-tab paused-tab"
-        [class.selected]="statusFilter === 'PAUSED'"
-        (click)="setStatusFilter('PAUSED')">
-        {{ 'PAUSED' | translate }} <span>{{ statusCounts.paused }}</span>
-      </button>
-      <button
         class="status-tab archived-tab"
         [class.selected]="statusFilter === 'ARCHIVED'"
         (click)="setStatusFilter('ARCHIVED')">
@@ -116,15 +110,7 @@
                 </button>
 
                 <button
-                  *ngIf="getClientStatus(client) === 'ACTIVE'"
-                  class="dropdown-item warning"
-                  (click)="openStatusModal(client, 'PAUSED', $event)">
-                  <i-feather name="pause-circle"></i-feather>
-                  {{ 'PAUSE_CLIENT' | translate }}
-                </button>
-
-                <button
-                  *ngIf="getClientStatus(client) === 'PAUSED' || getClientStatus(client) === 'ARCHIVED'"
+                  *ngIf="getClientStatus(client) === 'ARCHIVED'"
                   class="dropdown-item success"
                   (click)="openStatusModal(client, 'ACTIVE', $event)">
                   <i-feather name="rotate-ccw"></i-feather>
@@ -211,7 +197,6 @@
         </button>
         <button
           class="confirm-btn"
-          [class.warning]="pendingStatus === 'PAUSED'"
           [class.archive]="pendingStatus === 'ARCHIVED'"
           [class.success]="pendingStatus === 'ACTIVE'"
           (click)="confirmStatusChange()"

@@ -3,11 +3,10 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export type ClientStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+export type ClientStatus = 'ACTIVE' | 'ARCHIVED';
 
 export interface ClientStatusCounts {
   active: number;
-  paused: number;
   archived: number;
   total: number;
 }

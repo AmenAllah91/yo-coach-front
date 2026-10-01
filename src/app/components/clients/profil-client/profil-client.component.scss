@@ -5655,3 +5655,5 @@ body.client-preview-open { overflow: hidden; }
 .profile-tabs .tab-link.active::after {
   bottom: 0;
 }
+
+.archived-client-notice { padding: 16px; margin-bottom: 20px; border: 1px solid #dfe3e8; border-radius: 10px; background: #f3f4f6; color: #536174; display: flex; gap: 16px; align-items: center; justify-content: space-between; }

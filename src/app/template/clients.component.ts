@@ -15,7 +15,6 @@ import { UsersService } from '../service/users.service';
 
 interface StatusCountResponse {
   active: number;
-  paused: number;
   archived: number;
   total: number;
 }
@@ -57,7 +56,6 @@ export class ClientsComponent implements OnInit {
   activeClientLimit = 25;
   statusCounts: StatusCountResponse = {
     active: 0,
-    paused: 0,
     archived: 0,
     total: 0,
   };
@@ -179,7 +177,6 @@ export class ClientsComponent implements OnInit {
       next: (counts) => {
         this.statusCounts = {
           active: counts.active || 0,
-          paused: counts.paused || 0,
           archived: counts.archived || 0,
           total: counts.total || 0,
         };
@@ -374,8 +371,6 @@ export class ClientsComponent implements OnInit {
 
   getStatusModalTitle(): string {
     switch (this.pendingStatus) {
-      case 'PAUSED':
-        return this.translate.instant('PAUSE_CLIENT_QUESTION');
       case 'ARCHIVED':
         return this.translate.instant('ARCHIVE_CLIENT_QUESTION');
       case 'ACTIVE':
@@ -387,8 +382,6 @@ export class ClientsComponent implements OnInit {
 
   getStatusModalDescription(): string {
     switch (this.pendingStatus) {
-      case 'PAUSED':
-        return this.translate.instant('PAUSED_CLIENT_DESCRIPTION');
       case 'ARCHIVED':
         return this.translate.instant('ARCHIVED_CLIENT_DESCRIPTION');
       case 'ACTIVE':
@@ -400,8 +393,6 @@ export class ClientsComponent implements OnInit {
 
   getStatusConfirmLabel(): string {
     switch (this.pendingStatus) {
-      case 'PAUSED':
-        return this.translate.instant('PAUSE');
       case 'ARCHIVED':
         return this.translate.instant('ARCHIVE');
       case 'ACTIVE':
@@ -413,8 +404,6 @@ export class ClientsComponent implements OnInit {
 
   getStatusModalIcon(): string {
     switch (this.pendingStatus) {
-      case 'PAUSED':
-        return 'pause-circle';
       case 'ARCHIVED':
         return 'archive';
       case 'ACTIVE':
@@ -433,9 +422,6 @@ export class ClientsComponent implements OnInit {
       return this.translate.instant('ARCHIVE_CLIENT_ALTERNATIVE');
     }
 
-    if (this.pendingStatus === 'PAUSED') {
-      return this.translate.instant('PAUSE_CLIENT_ALTERNATIVE');
-    }
 
     return this.translate.instant('ACTIVE_CLIENTS_PLAN_NOTE');
   }
@@ -453,8 +439,8 @@ export class ClientsComponent implements OnInit {
   }
 
   normalizeStatus(status?: string | null): ClientStatus {
-    if (status === 'PAUSED' || status === 'ARCHIVED') {
-      return status;
+    if (status && status !== 'ACTIVE') {
+      return 'ARCHIVED';
     }
 
     return 'ACTIVE';

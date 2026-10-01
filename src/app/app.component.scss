@@ -149,3 +149,6 @@
   }
 }
 
+
+.coaching-unavailable { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; background: #f6f7fa; }
+.coaching-unavailable p { max-width: 560px; line-height: 1.6; }

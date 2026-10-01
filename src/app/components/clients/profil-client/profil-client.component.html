@@ -10,6 +10,10 @@
 
   <div class="client-workspace__main">
 <section *ngIf="!profileLoading" class="main-content" [class.progress-summary-collapsed]="!showClientStats">
+  <aside *ngIf="clientArchived" role="status" class="archived-client-notice">
+    This client is archived. Reactivate the client to continue coaching.
+    <button type="button" (click)="reactivateClient()">Reactivate client</button>
+  </aside>
   <div class="profile-header">
     <button class="profile-back app-page-back" type="button" [attr.aria-label]="'BACK_TO_CLIENTS' | translate" (click)="backToClients()">
       <i class="fas fa-arrow-left"></i>
@@ -1159,7 +1163,7 @@
     </div>
 
     <div class="tab-pane tasks-pane" *ngIf="activeTab === 'tasks'" [class.active]="true">
-      <app-client-tasks-tab [clientId]="clientId" [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
+      <app-client-tasks-tab [archived]="clientArchived" [clientId]="clientId" [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
     </div>
 
     <div class="tab-pane" *ngIf="activeTab === 'calendar'" [class.active]="true">

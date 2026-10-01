@@ -1,3 +1,4 @@
+import { CoachingAccessService } from './service/coaching-access.service';
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { LoaderService } from "./service/loader.service";
@@ -39,18 +40,25 @@ export class AppComponent implements OnInit {
   constructor(
     public loaderService: LoaderService,
     public toastService: ToastService,
+    public coachingAccess: CoachingAccessService,
     private router: Router
   ) {
     this.isLoading = this.loaderService.loading$;
   }
 
   ngOnInit(): void {
+    window.setInterval(() => { void this.coachingAccess.refresh(); }, 30000);
+    window.addEventListener('focus', () => { void this.coachingAccess.refresh(); });
     const host = window.location.hostname;
     const isCoachPublicSubdomain = isPublicCoachHostname(host);
 
     if (isCoachPublicSubdomain && this.router.url === '/') {
       this.router.navigateByUrl('/site');
     }
+  }
+
+  async retryCoachingAccess(): Promise<void> {
+    if (await this.coachingAccess.refresh()) await this.router.navigateByUrl('/client-dashboard');
   }
 
   getToastIcon(type: string): string {

@@ -1,3 +1,5 @@
+import { coachingAccessGuard } from './config/guard/coaching-access.guard';
+import { CoachingUnavailableComponent } from './components/clients/coaching-unavailable.component';
 import { AssignFullPlanComponent } from './components/nutrition/assign-full-plan/assign-full-plan.component';
 import { AssignMacroPlanTotalDayComponent } from './components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component';
 import { AssignMacroPlanComponent } from './components/nutrition/assign-macro-plan/assign-macro-plan.component';
@@ -65,6 +67,7 @@ const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
 
 export const APP_ROUTE: Route[] = [
+  { path: 'coaching-unavailable', component: CoachingUnavailableComponent, canActivate: [isAuthenticated] },
   {
     path: 'invitation/:token',
     component: InvitationComponent,
@@ -72,17 +75,18 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'coach-onboarding',
     component: CoachOnboardingComponent,
-    canActivate: [isAuthenticated, coachOnboardingEntryGuard],
+    canActivate: [isAuthenticated, coachingAccessGuard, coachOnboardingEntryGuard],
   },
   {
     path: 'client-onboarding',
     component: ClientOnboardingComponent,
-    canActivate: [isAuthenticated, clientOnboardingEntryGuard],
+    canActivate: [isAuthenticated, coachingAccessGuard, clientOnboardingEntryGuard],
   },
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [isAuthenticated, coachOnboardingGuard, clientOnboardingGuard],
+    canActivate: [isAuthenticated, coachingAccessGuard, coachOnboardingGuard, clientOnboardingGuard],
+    canActivateChild: [coachingAccessGuard],
     children: [
       {
         path: 'forms/create-form',

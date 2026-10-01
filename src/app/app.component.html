@@ -21,5 +21,10 @@
   </div>
 </div>
 
-<router-outlet></router-outlet>
+<section *ngIf="coachingAccess.blocked$ | async; else available" role="alert" class="coaching-unavailable">
+  <h1>Coaching access unavailable</h1>
+  <p>Your profile is currently archived by your coach. Your coaching content is temporarily unavailable. Please contact your coach to reactivate your access.</p>
+  <button type="button" (click)="retryCoachingAccess()">Check access</button>
+</section>
+<ng-template #available><router-outlet></router-outlet></ng-template>
 
