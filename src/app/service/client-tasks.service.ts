@@ -84,6 +84,10 @@ export class ClientTasksService {
   updateTask(id: string, value: ClientTaskPayload) { return this.http.put<ClientTaskPayload>(`${this.url}/${id}`, value); }
   deleteTask(id: string) { return this.http.delete<void>(`${this.url}/${id}`); }
   setTaskCompletion(id: string, completed: boolean) { return this.http.patch<void>(`${this.url}/${id}/completion`, { completed }); }
+  commentTask(id: string, comment: string) { return this.http.patch<void>(`${this.url}/${id}/comment`, { comment }); }
+  commentHabit(id: string, date: string, comment: string) {
+    return this.http.patch<void>(`${this.url}/habits/${id}/occurrences/${date}/comment`, { comment });
+  }
   createHabit(value: HabitPayload) { return this.http.post<HabitPayload>(`${this.url}/habits`, value); }
   updateHabit(id: string, value: HabitPayload) { return this.http.put<HabitPayload>(`${this.url}/habits/${id}`, value); }
   deleteHabit(id: string) { return this.http.delete<void>(`${this.url}/habits/${id}`); }

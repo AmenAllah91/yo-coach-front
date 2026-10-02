@@ -1,4 +1,4 @@
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MacroTrackingMode, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { nutritionDayState, nutritionMealState } from '@shared/models/nutrition-publication';
@@ -18,7 +18,8 @@ export class NutritionDraftState {
     private service: NutritionService,
     private route: ActivatedRoute,
     private trackingMode: MacroTrackingMode | null,
-    localeProvider?: () => string,
+    localeProvider: (() => string) | undefined,
+    private router: Router,
   ) { this.localeProvider = localeProvider; }
 
   load(plan: MealPlan): void {
@@ -30,11 +31,29 @@ export class NutritionDraftState {
     if (this.saving) return;
     const published = new Set(this.publishedWeeks);
     if (publishWeek && this.readyCount(plan.mealDays || [], publishWeek) === 7) published.add(publishWeek);
-    const payload: MealPlan = { ...plan, id: this.planId || plan.id, trackingMode: this.trackingMode, publishedWeeks: [...published].sort((a, b) => a - b), publicationWorkflow: true, durationWeeks: Math.max(1, Math.min(12, Math.ceil((plan.mealDays?.length || 0) / 7))) };
+    const id = this.planId || plan.id || this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId');
+    const payload: MealPlan = { ...plan, id: id || undefined, trackingMode: this.trackingMode, publishedWeeks: [...published].sort((a, b) => a - b), publicationWorkflow: true, durationWeeks: Math.max(1, Math.min(12, Math.ceil((plan.mealDays?.length || 0) / 7))) };
+    const saveUrl = this.router.url;
     this.saving = true; this.error = '';
     const request = payload.id ? this.service.updateNutritionPlan(payload) : this.service.createNutritionPlan(payload);
     request.subscribe({
-      next: saved => { this.planId = saved.id || this.planId; this.publishedWeeks = payload.publishedWeeks || []; this.savedAt = new Date(); this.saving = false; },
+      next: saved => {
+        this.planId = saved.id || payload.id || this.planId;
+        this.publishedWeeks = payload.publishedWeeks || [];
+        this.savedAt = new Date();
+        this.saving = false;
+
+        // Replace the creation history entry so refresh and Back resume this draft.
+        // A late response must not bring a user who has left back into the editor.
+        if (!payload.id && this.planId && this.router.url === saveUrl) {
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { draftId: this.planId },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        }
+      },
       error: err => { this.error = err?.error?.message || 'Unable to save the nutrition plan.'; this.saving = false; },
     });
   }

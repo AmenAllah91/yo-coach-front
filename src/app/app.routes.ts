@@ -236,6 +236,10 @@ export const APP_ROUTE: Route[] = [
         component: CoachDashboardComponent,
       },
       {
+        path: 'tasks',
+        loadComponent: () => import('./components/clients/my-tasks/my-tasks.component').then(m => m.MyTasksComponent),
+      },
+      {
         path: 'client-dashboard',
         component: ClientDashboardComponent,
       },{

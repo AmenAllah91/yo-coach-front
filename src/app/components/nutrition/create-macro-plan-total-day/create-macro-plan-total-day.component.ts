@@ -28,7 +28,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateMacroPlanTotalDayComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang);
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang, this.router);
 
   planName = '';
   planDescription = '';

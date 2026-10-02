@@ -1,3 +1,4 @@
+import { foodPageRange } from '../food-page-range';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -28,7 +29,7 @@ import { NEW_SERVING_OPTION, PlanFoodServing } from '../food-servings/plan-food-
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class CreateFullPlanComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang);
+  draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang, this.router);
 
   userId = sessionStorage.getItem('userId');
 
@@ -689,6 +690,7 @@ export class CreateFullPlanComponent implements OnInit {
   foodPage = 0;
   readonly foodPageSize = 3;
   foodTotalPages = 0;
+  get visibleFoodPages(): Array<number | null> { return foodPageRange(this.foodPage, this.foodTotalPages); }
 
   foodStep: 'list' | 'detail' = 'list';
   selectedFood: FoodRef | null = null;

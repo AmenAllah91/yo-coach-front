@@ -688,7 +688,14 @@
             </div></div>
           </li>
         </ul>
-        <div class="np-foodpager" *ngIf="foodTotalPages > 1"><button [disabled]="foodPage === 0" (click)="changeFoodPage(foodPage - 1)">‹</button><button *ngFor="let p of [].constructor(foodTotalPages); let i=index" [class.active]="i === foodPage" (click)="changeFoodPage(i)">{{ i + 1 }}</button><button [disabled]="foodPage >= foodTotalPages - 1" (click)="changeFoodPage(foodPage + 1)">›</button></div>
+        <nav class="np-foodpager" *ngIf="foodTotalPages > 1" aria-label="Food results pages">
+          <button type="button" aria-label="Previous page" [disabled]="foodPage === 0" (click)="changeFoodPage(foodPage - 1)">‹</button>
+          <ng-container *ngFor="let page of visibleFoodPages">
+            <span class="np-foodpager__gap" *ngIf="page === null" aria-hidden="true">…</span>
+            <button type="button" *ngIf="page !== null" [class.active]="page === foodPage" [attr.aria-current]="page === foodPage ? 'page' : null" [attr.aria-label]="'Page ' + (page + 1)" (click)="changeFoodPage(page)">{{ page + 1 }}</button>
+          </ng-container>
+          <button type="button" aria-label="Next page" [disabled]="foodPage >= foodTotalPages - 1" (click)="changeFoodPage(foodPage + 1)">›</button>
+        </nav>
       </ng-container>
 
       <ng-container *ngIf="foodStep === 'detail' && selectedFood">

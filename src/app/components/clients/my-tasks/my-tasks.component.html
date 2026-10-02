@@ -1,0 +1,59 @@
+<section class="client-tasks" [class.detail-view]="selected">
+  <ng-container *ngIf="!selected; else detail">
+    <header class="tasks-heading">
+      <button class="app-page-back" type="button" [attr.aria-label]="fr ? 'Retour' : 'Back'" (click)="goBack()"><span aria-hidden="true">←</span></button>
+      <div class="tasks-heading-copy">
+      <h1>{{ fr ? 'Tâches' : 'Tasks' }}</h1>
+      <p>{{ fr ? 'Vos tâches, check-ins et habitudes de ' + displayCoachName + '.' : 'Your to-dos, check-ins and habits from ' + displayCoachName + '.' }}</p>
+      </div>
+    </header>
+    <div class="task-tabs" role="tablist" [attr.aria-label]="fr ? 'Période' : 'Period'">
+      <button type="button" role="tab" [attr.aria-selected]="upcoming" [class.active]="upcoming" (click)="setTab(true)">{{ fr ? 'À venir' : 'Upcoming' }}</button>
+      <button type="button" role="tab" [attr.aria-selected]="!upcoming" [class.active]="!upcoming" (click)="setTab(false)">{{ fr ? 'Passées' : 'Past' }}</button>
+    </div>
+    <nav class="month-controls" [attr.aria-label]="fr ? 'Mois' : 'Month'">
+      <button type="button" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ fr ? 'Précédent' : 'Previous' }}</button>
+      <span>{{ monthLabel }}</span>
+      <button type="button" (click)="shiftMonth(1)">{{ fr ? 'Suivant' : 'Next' }}<i-feather name="chevron-right"></i-feather></button>
+    </nav>
+    <div class="tasks-divider"></div>
+    <div *ngIf="loading" class="loading-state" role="status"><span class="spinner"></span><span class="sr-only">{{ fr ? 'Chargement' : 'Loading' }}</span></div>
+    <div *ngIf="error" class="error-state" role="alert"><p>{{ error }}</p><button type="button" (click)="load()">{{ fr ? 'Réessayer' : 'Retry' }}</button></div>
+    <ng-container *ngIf="!loading && !error">
+      <div *ngIf="!days.length" class="empty-state">
+        <i-feather name="calendar"></i-feather>
+        <p>{{ upcoming ? (fr ? 'Aucune tâche à venir ce mois-ci' : 'No upcoming tasks this month') : (fr ? 'Aucune tâche passée ce mois-ci' : 'No past tasks this month') }}</p>
+      </div>
+      <div *ngFor="let day of days" class="task-day">
+        <h2>{{ day.label }}</h2>
+        <div class="task-group">
+          <button *ngFor="let item of day.items" type="button" class="task-row" (click)="open(item)">
+            <span class="task-icon" [ngClass]="tone(item)"><i-feather [name]="icon(item)"></i-feather></span>
+            <span class="task-copy"><strong>{{ item.title }}</strong><span>{{ subtitle(item) }}</span></span>
+            <i-feather *ngIf="item.status === 'DONE'; else chevron" name="check-circle" class="task-done"></i-feather>
+            <ng-template #chevron><i-feather name="chevron-right" class="task-chevron"></i-feather></ng-template>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+  <ng-template #detail>
+    <ng-container *ngIf="selected as item">
+      <header class="task-detail-heading">
+        <button type="button" class="app-page-back" (click)="closeDetail()" [attr.aria-label]="fr ? 'Retour' : 'Back'"><i-feather name="arrow-left"></i-feather></button>
+        <div><h1>{{ item.title }}</h1><p>{{ typeLabel(item) }} · {{ dueLabel(item) }}</p></div>
+      </header>
+      <div class="instructions-card">
+        <span class="coach-avatar">{{ coachInitials }}</span>
+        <div><h2>Instructions · {{ displayCoachName }}</h2><p>{{ item.instructions?.trim() || (fr ? 'Aucune instruction supplémentaire.' : 'No additional instructions.') }}</p></div>
+      </div>
+      <p *ngIf="error" class="error-state" role="alert">{{ error }}</p>
+      <footer *ngIf="canComplete(item)" class="detail-footer">
+        <button type="button" class="complete-button" [class.done]="item.status === 'DONE'" [disabled]="busy || item.status === 'DONE'" (click)="complete(item)">
+          <i-feather [name]="item.status === 'DONE' ? 'check-circle' : 'check'"></i-feather>
+          {{ busy ? (fr ? 'Enregistrement…' : 'Saving…') : item.status === 'DONE' ? (fr ? 'Terminée' : 'Completed') : (fr ? 'Marquer comme terminée' : 'Mark as done') }}
+        </button>
+      </footer>
+    </ng-container>
+  </ng-template>
+</section>

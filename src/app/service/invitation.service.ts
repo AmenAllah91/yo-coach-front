@@ -19,9 +19,10 @@ export class InvitationService {
     return this.http.get<any>(`${this.baseUrl}/token/${token}`);
   }
 
-  acceptInvitation(token: string, userId: string) {
+  acceptInvitation(token: string, userId: string, confirmedCoachId?: string) {
     return this.http.post(`${this.baseUrl}/token/${token}/accept`, null, {
-      params: { userId }
+      headers: { 'X-Skip-Toast': 'true' },
+      params: confirmedCoachId ? { userId, confirmedCoachId } : { userId }
     });
   }
 

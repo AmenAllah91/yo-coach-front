@@ -5,6 +5,8 @@ import { InvitationService } from "../../../service/invitation.service";
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageService } from 'app/service/language.service';
 import { AuthService } from '@config/auth.service';
+import Swal from 'sweetalert2';
+import { CoachingAccessService } from '../../../service/coaching-access.service';
 
 interface InvitationView {
   coachName: string;
@@ -34,7 +36,8 @@ export class InvitationComponent implements OnInit {
     private router: Router,
     private invitationService: InvitationService,
     private languageService: LanguageService,
-    private authService: AuthService
+    private authService: AuthService,
+    private coachingAccess: CoachingAccessService
   ) {
     this.languageService.setLanguage(this.languageService.getCurrentLanguage());
   }
@@ -76,7 +79,7 @@ export class InvitationComponent implements OnInit {
       });
   }
 
-  async acceptInvitation(): Promise<void> {
+  async acceptInvitation(confirmedCoachId?: string): Promise<void> {
     if (!this.invitation || this.accepting) {
       return;
     }
@@ -100,14 +103,30 @@ export class InvitationComponent implements OnInit {
     }
 
     this.accepting = true;
-    this.invitationService.acceptInvitation(this.token, userId)
+    this.invitationService.acceptInvitation(this.token, userId, confirmedCoachId)
       .subscribe({
-        next: () => {
+        next: async () => {
           this.invitation!.status = 'ACCEPTED';
+          await this.coachingAccess.refresh();
           void this.router.navigate(['/client-onboarding']);
         },
-        error: () => {
+        error: async (error) => {
           this.accepting = false;
+          if (error.status === 409 && error.error?.code === 'COACH_CHANGE_CONFIRMATION_REQUIRED') {
+            this.accepting = true;
+            const result = await Swal.fire({
+              title: 'Change coach?',
+              text: 'Accepting this invitation will end your current active coaching relationship. Your current coach will be moved to Archived.',
+              icon: 'warning',
+              showCancelButton: true,
+              cancelButtonText: 'Cancel',
+              confirmButtonText: 'Change coach',
+              focusCancel: true,
+            });
+            this.accepting = false;
+            if (result.isConfirmed) await this.acceptInvitation(error.error.currentCoachId);
+            return;
+          }
           this.actionError = true;
         }
       });

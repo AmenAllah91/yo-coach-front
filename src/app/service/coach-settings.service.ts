@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, map, switchMap } from 'rxjs';
 import { environment } from '@env/environment';
 
 export interface CoachSettingsConfig {
@@ -85,6 +85,26 @@ export interface DemoWorkspaceStatus {
   notificationCount: number;
 }
 
+export function normalizeDemoWorkspaceStatus(status: Record<string, any> | null): DemoWorkspaceStatus {
+  const count = (current: string, legacy: string): number => {
+    const value = Number(status?.[current] ?? status?.[legacy] ?? 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  };
+  const result: DemoWorkspaceStatus = {
+    active: status?.['active'] === true,
+    clientCount: count('demoClients', 'clientCount'),
+    workoutProgramCount: count('demoWorkoutPlans', 'workoutProgramCount'),
+    nutritionProgramCount: count('demoMealPlans', 'nutritionProgramCount'),
+    checkInCount: count('demoCheckIns', 'checkInCount'),
+    messageCount: count('demoMessages', 'messageCount'),
+    notificationCount: count('demoNotifications', 'notificationCount'),
+  };
+  result.active ||= Object.entries(status ?? {}).some(([key, value]) =>
+    (key.startsWith('demo') && typeof value === 'number' && value > 0)) ||
+    Object.entries(result).some(([key, value]) => key !== 'active' && Number(value) > 0);
+  return result;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -135,19 +155,25 @@ export class CoachSettingsService {
   }
 
   getDemoWorkspaceStatus(): Observable<DemoWorkspaceStatus> {
-    return this.http.get<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/status`);
+    return this.http.get<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/status`).pipe(map(normalizeDemoWorkspaceStatus));
   }
 
   generateDemoWorkspace(): Observable<DemoWorkspaceStatus> {
-    return this.http.post<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/generate`, {});
+    return this.http.post<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/generate`, {}).pipe(map(normalizeDemoWorkspaceStatus));
   }
 
   resetDemoWorkspace(): Observable<DemoWorkspaceStatus> {
-    return this.http.post<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/reset`, {});
+    return this.http.post<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/reset`, {}).pipe(map(normalizeDemoWorkspaceStatus));
   }
 
   removeDemoWorkspace(): Observable<DemoWorkspaceStatus> {
-    return this.http.delete<DemoWorkspaceStatus>(this.demoWorkspaceUrl);
+    return this.http.delete(this.demoWorkspaceUrl).pipe(
+      switchMap(() => this.getDemoWorkspaceStatus()),
+      map(status => {
+        if (status.active) throw new Error('Demo data remains. Please retry removal.');
+        return status;
+      }),
+    );
   }
 
   getConfig(): CoachSettingsConfig {
