@@ -4,7 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
@@ -31,7 +31,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignMacroPlanTotalDayComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang);
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang, this.router);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -73,7 +73,8 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
     private nutritionService: NutritionService,
     private coachSettingsService: CoachSettingsService,
     private clientService: ClientService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private router: Router,
   ) {}
 
   ngOnInit() {

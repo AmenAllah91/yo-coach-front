@@ -4,7 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
@@ -20,7 +20,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   styleUrls: ['./assign-macro-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignMacroPlanComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL', () => this.translate.currentLang);
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL', () => this.translate.currentLang, this.router);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -79,7 +79,8 @@ export class AssignMacroPlanComponent implements OnInit {
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
     private coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private router: Router,
   ) {}
 
   dayLabel(index: number): string { return this.translate.instant('DAY_NUMBER', { number: index + 1 }); }

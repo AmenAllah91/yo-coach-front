@@ -85,6 +85,10 @@ export const items: RouteInfo[] = [
     roles: ['ROLE_CLIENT'],
   },
   {
+    path: '/tasks', title: 'TASKS', iconType: 'feather', icon: 'check-square',
+    class: '', groupTitle: false, badge: '', badgeClass: '', submenu: [], roles: ['ROLE_CLIENT'],
+  },
+  {
     path: '',
     title: 'WORKOUT',
     iconType: 'feather',

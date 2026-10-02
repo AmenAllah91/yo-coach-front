@@ -37,6 +37,10 @@ function isPublicCoachHostname(host: string): boolean {
 export class AppComponent implements OnInit {
   isLoading: Observable<boolean>;
 
+  get isInvitationRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/invitation/');
+  }
+
   constructor(
     public loaderService: LoaderService,
     public toastService: ToastService,
@@ -55,10 +59,6 @@ export class AppComponent implements OnInit {
     if (isCoachPublicSubdomain && this.router.url === '/') {
       this.router.navigateByUrl('/site');
     }
-  }
-
-  async retryCoachingAccess(): Promise<void> {
-    if (await this.coachingAccess.refresh()) await this.router.navigateByUrl('/client-dashboard');
   }
 
   getToastIcon(type: string): string {

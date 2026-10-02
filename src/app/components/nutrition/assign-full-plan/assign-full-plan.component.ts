@@ -1,3 +1,4 @@
+import { foodPageRange } from '../food-page-range';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
@@ -28,7 +29,7 @@ import { NEW_SERVING_OPTION, PlanFoodServing } from '../food-servings/plan-food-
   styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
 })
 export class AssignFullPlanComponent implements OnInit {
-  draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang);
+  draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang, this.router);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -647,6 +648,7 @@ export class AssignFullPlanComponent implements OnInit {
   foodPage = 0;
   readonly foodPageSize = 3;
   foodTotalPages = 0;
+  get visibleFoodPages(): Array<number | null> { return foodPageRange(this.foodPage, this.foodTotalPages); }
 
   foodStep: 'list' | 'detail' = 'list';
   selectedFood: FoodRef | null = null;

@@ -1,8 +1,9 @@
 import { ToastService } from 'app/service/toast.service';
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { finalize } from 'rxjs/operators';
@@ -108,7 +109,16 @@ export class ClientTasksTabComponent implements OnChanges {
     ] },
   ];
 
-  constructor(private toast: ToastService, private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router) { this.buildEmptyDays(); }
+  constructor(private toast: ToastService, private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router, private route: ActivatedRoute) {
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      const date = params.get('date');
+      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        this.rangeStart = mondayOf(new Date(date + 'T12:00:00'));
+        this.refresh();
+      }
+    });
+    this.buildEmptyDays();
+  }
   ngOnChanges(changes: SimpleChanges): void { if (changes['clientId'] && this.clientId) this.refresh(); }
   get rangeEnd(): Date { return addDays(this.rangeStart, this.weeksShown * 7 - 1); }
   get weeks(): CalendarDay[][] { const result: CalendarDay[][] = []; for (let i = 0; i < this.days.length; i += 7) result.push(this.days.slice(i, i + 7)); return result; }

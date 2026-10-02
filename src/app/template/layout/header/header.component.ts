@@ -382,6 +382,11 @@ this.translate.use(lang);}
 
   notificationIcon(type: string): string {
     const icons: Record<string, string> = {
+      TASK_ASSIGNED: 'check-square', TASK_UPDATED: 'edit-3', TASK_ARCHIVED: 'archive',
+      TASK_COMPLETED: 'check-circle', TASK_REOPENED: 'rotate-ccw', TASK_COMMENTED: 'message-circle',
+      TASK_REMINDER: 'clock', TASK_OVERDUE: 'alert-circle', HABIT_ASSIGNED: 'repeat',
+      HABIT_UPDATED: 'edit-3', HABIT_ARCHIVED: 'archive', HABIT_COMPLETED: 'check-circle',
+      HABIT_REOPENED: 'rotate-ccw', HABIT_COMMENTED: 'message-circle', HABIT_REMINDER: 'clock', HABIT_OVERDUE: 'alert-circle',
       PUSH_NOTIF_MESSAGE: 'message-square', NEW_LEAD: 'user-plus', CHECK_IN_SUBMITTED: 'clipboard',
       WORKOUT_COMPLETED: 'activity', WORKOUT_MISSED: 'alert-circle', PROGRESS_ADDED: 'trending-up',
       BODY_MEASUREMENTS_UPDATED: 'maximize-2', PROGRAM_ENDING_SOON: 'calendar',
@@ -460,6 +465,10 @@ this.translate.use(lang);}
       return;
     }
 
+    if ((item.notificationType.startsWith('TASK_') || item.notificationType.startsWith('HABIT_')) && !item.redirectUrl) {
+      this.router.navigate(['/tasks'], { queryParams: { itemId: item.entityId } });
+      return;
+    }
     if (item.redirectUrl) this.router.navigateByUrl(item.redirectUrl);
   }
 

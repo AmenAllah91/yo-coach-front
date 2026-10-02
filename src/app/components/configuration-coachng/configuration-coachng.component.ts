@@ -6,6 +6,7 @@ import {
   CoachSettingsConfig,
   CoachSettingsService,
   DemoWorkspaceStatus,
+  normalizeDemoWorkspaceStatus,
 } from 'app/service/coach-settings.service';
 import { LanguageService } from 'app/service/language.service';
 import { AuthService } from 'app/config/auth.service';
@@ -421,21 +422,25 @@ export class ConfigurationCoachngComponent implements OnInit {
 
   loadDemoWorkspaceStatus(): void {
     this.demoLoading = true;
+    const revision = this.demoStatusRevision;
 
     this.coachSettingsService.getDemoWorkspaceStatus().subscribe({
       next: (status) => {
+        if (revision !== this.demoStatusRevision) return;
         this.demoStatus = this.normalizeDemoStatus(status);
         this.demoLoading = false;
       },
       error: (err) => {
+        if (revision !== this.demoStatusRevision) return;
         console.error('[DEMO WORKSPACE] Status failed', err);
-        this.demoStatus = this.normalizeDemoStatus(null);
         this.demoLoading = false;
       },
     });
   }
 
   onGenerateDemoData(): void {
+    if (this.demoActionLoading) return;
+    this.demoStatusRevision++;
     this.demoActionLoading = 'generate';
 
     this.coachSettingsService.generateDemoWorkspace().subscribe({
@@ -445,6 +450,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onResetDemoData(): void {
+    if (this.demoActionLoading) return;
     const confirmed = confirm(this.translate.instant('RESET_DEMO_CONFIRM'));
 
     if (!confirmed) {
@@ -452,6 +458,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     }
 
     this.demoActionLoading = 'reset';
+    this.demoStatusRevision++;
 
     this.coachSettingsService.resetDemoWorkspace().subscribe({
       next: (status) => this.handleDemoActionSuccess(status),
@@ -460,6 +467,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onRemoveDemoData(): void {
+    if (this.demoActionLoading) return;
     const confirmed = confirm(this.translate.instant('REMOVE_DEMO_CONFIRM'));
 
     if (!confirmed) {
@@ -467,6 +475,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     }
 
     this.demoActionLoading = 'remove';
+    this.demoStatusRevision++;
 
     this.coachSettingsService.removeDemoWorkspace().subscribe({
       next: (status) => this.handleDemoActionSuccess(status),
@@ -873,30 +882,22 @@ export class ConfigurationCoachngComponent implements OnInit {
   private handleDemoActionSuccess(status: DemoWorkspaceStatus): void {
     this.demoStatus = this.normalizeDemoStatus(status);
     this.demoActionLoading = null;
+    this.demoLoading = false;
     this.showPopup('success');
   }
 
   private handleDemoActionError(err: unknown): void {
     console.error('[DEMO WORKSPACE] Action failed', err);
     this.demoActionLoading = null;
+    this.demoLoading = false;
     this.showPopup('error');
   }
 
   private normalizeDemoStatus(status: Partial<DemoWorkspaceStatus> | null): DemoWorkspaceStatus {
-    const normalized: DemoWorkspaceStatus = {
-      active: Boolean(status?.active),
-      clientCount: Number(status?.clientCount || 0),
-      workoutProgramCount: Number(status?.workoutProgramCount || 0),
-      nutritionProgramCount: Number(status?.nutritionProgramCount || 0),
-      checkInCount: Number(status?.checkInCount || 0),
-      messageCount: Number(status?.messageCount || 0),
-      notificationCount: Number(status?.notificationCount || 0),
-    };
-
-    normalized.active = normalized.active || normalized.clientCount > 0;
-
-    return normalized;
+    return normalizeDemoWorkspaceStatus(status);
   }
+
+  private demoStatusRevision = 0;
 
   private showPopup(type: 'success' | 'error'): void {
     if (this.savePopupTimer) {
