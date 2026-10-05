@@ -41,3 +41,21 @@ export interface InvoicePaymentResponse {
   status?: string | null;
   message?: string | null;
 }
+
+/** SUB-23: polled by the payment return page (CE GET /api/billing/invoices/{id}/payment-status). */
+export interface InvoicePaymentStatus {
+  invoiceId: number;
+  status: string;
+  paid: boolean;
+  /** The latest attempt was refused at the gateway: the coach can try again. */
+  paymentFailed: boolean;
+}
+
+/** SUB-35: answer of cancel / resume. */
+export interface SubscriptionCancellation {
+  subscriptionId: number;
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  /** First instant without access (ISO). */
+  accessUntil?: string | null;
+}

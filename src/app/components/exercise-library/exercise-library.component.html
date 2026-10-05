@@ -10,14 +10,14 @@
       </div>
     </div>
 
-    <button class="primary-btn" (click)="openCreateModal()">
+    <button class="primary-btn" appWriteAction (click)="openCreateModal()">
       <i-feather name="plus"></i-feather>
       {{ 'CUSTOM_EXERCISE' | translate }}
     </button>
   </div>
 
   <div class="mobile-library-actions">
-    <button class="mobile-custom-btn" type="button" (click)="openCreateModal()">
+    <button class="mobile-custom-btn" type="button" appWriteAction (click)="openCreateModal()">
       <i-feather name="plus"></i-feather>
       {{ 'CUSTOM_EXERCISE' | translate }}
     </button>

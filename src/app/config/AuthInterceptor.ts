@@ -8,6 +8,7 @@ import {
 } from '@angular/common/http';
 import { LoaderService } from '../service/loader.service';
 import { ToastService } from '../service/toast.service';
+import { SubscriptionNoticeService } from '../service/subscription-notice.service';
 import { Observable, from, switchMap, catchError, finalize, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
@@ -25,7 +26,8 @@ export class AuthInterceptor implements HttpInterceptor {
     private loaderService: LoaderService,
     private toastService: ToastService,
     private coachingAccess: CoachingAccessService,
-    private authService: AuthService
+    private authService: AuthService,
+    private subscriptionNotices: SubscriptionNoticeService
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -51,6 +53,11 @@ export class AuthInterceptor implements HttpInterceptor {
         catchError(error => {
           if (error.error?.code === 'CLIENT_ARCHIVED') {
             this.coachingAccess.blocked$.next(true);
+          }
+          // SUB-29: subscription refusals get a clear message with the right button, not a technical error.
+          if (this.subscriptionNotices.publishIfSubscriptionRefusal(error.error)
+              || error.error?.code === 'COACH_CLIENT_LIMIT_REACHED') { // shown by the invitation page
+            return throwError(() => error);
           }
           if (error.status === 403 && (error.error?.code === 'CLIENT_ARCHIVED' || String(typeof error.error === 'string' ? error.error : error.error?.detail || error.error?.message || '').includes('This client is archived'))) {
             this.toastService.error('This client is archived. Reactivate the client to continue coaching.');

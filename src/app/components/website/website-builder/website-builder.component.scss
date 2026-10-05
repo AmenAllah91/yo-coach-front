@@ -1685,3 +1685,7 @@
   display: block;
   margin: 0 auto 12px;
 }
+
+/* SUB-29: locked during the trial. The fieldset only disables the fields; it adds no layout. */
+.yc-builder__lock { margin: 0; padding: 0; border: 0; min-width: 0; }
+.yc-builder__lock:disabled { opacity: 0.75; }

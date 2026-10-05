@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -13,7 +14,7 @@ import { totalMacros } from '@shared/models/nutrition-math';
 @Component({
   selector: 'app-meals-list',
   standalone: true,
-  imports: [
+  imports: [WriteActionDirective, 
     CommonModule,
     FormsModule,
     RouterModule,

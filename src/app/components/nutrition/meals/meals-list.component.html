@@ -5,7 +5,7 @@
       <h1>{{ 'MEALS_TITLE' | translate }}</h1>
       <p>{{ 'MEALS_SUBTITLE' | translate }}</p>
     </div>
-    <button class="btn-primary header-actions" type="button" (click)="openAddMealModal()">
+    <button class="btn-primary header-actions" type="button" appWriteAction (click)="openAddMealModal()">
       <i-feather name="plus"></i-feather>
       {{ 'CREATE_MEAL' | translate }}
     </button>

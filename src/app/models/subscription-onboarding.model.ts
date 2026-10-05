@@ -9,6 +9,8 @@ export interface SubscriptionPlanDto {
   pricingModel: 'FLAT_FEE' | 'STAIR_STEP' | 'FEATURE_BASED';
   billingCycle: SalesBillingCycle;
   freeTrialDays?: number | null;
+  /** Maximum active clients during the free trial (YoSales, SUB-09). */
+  trialMaxClients?: number | null;
   productId: number;
   extraFeePerUnit?: number | null;
   fromUnits?: number | null;
@@ -28,6 +30,8 @@ export interface RegistrationUser {
 export interface OnboardingRequest {
   user: RegistrationUser;
   planId: number;
+  /** IANA time zone of the browser (e.g. America/Montreal): trial and periods end at midnight there. */
+  timeZone?: string;
 }
 
 export interface OnboardingResponse {

@@ -21,6 +21,7 @@ describe('RegisterComponent', () => {
       onboardingService,
       authService,
       { snapshot: { queryParamMap: { get: () => null } } } as any,
+      { navigate: () => Promise.resolve(true) } as any,
       { use: () => undefined, instant: (key: string) => key } as any,
       { getCurrentLanguage: () => 'en' } as any
     );

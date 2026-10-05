@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +16,7 @@ type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 
 @Component({
   selector: 'app-workouts-client-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, WorkoutPublicationBadgeComponent],
+  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, WorkoutPublicationBadgeComponent],
   templateUrl: './workouts-client-tab.component.html',
   styleUrl: './workouts-client-tab.component.scss',
 })

@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -13,7 +14,7 @@ type NutritionSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' 
 @Component({
   selector: 'app-nutrition-client-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule],
   templateUrl: './nutrition-client-tab.component.html',
   styleUrl: './nutrition-client-tab.component.scss',
 })

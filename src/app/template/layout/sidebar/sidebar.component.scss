@@ -106,6 +106,69 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   border-top: 1px solid $sidebar-border;
 }
 
+.nav-lock {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  color: #f5c46b;
+}
+
+.sidebar-upgrade {
+  flex: 0 0 auto;
+  padding: 10px 10px 0;
+  background: $sidebar-bg;
+}
+
+.upgrade-cta {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  color: #0f1115;
+  text-decoration: none;
+  background: $accent;
+  border-radius: 8px;
+  transition: filter $transition-speed ease;
+
+  &:hover,
+  &:focus-visible {
+    color: #0f1115;
+    filter: brightness(1.08);
+  }
+
+  .upgrade-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .upgrade-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.2;
+
+    strong,
+    small {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    strong {
+      font-size: 0.85rem;
+    }
+
+    small {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+  }
+}
+
 .account-trigger {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 18px;
@@ -408,9 +471,21 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
     .submenu-arrow,
     .nav-group-title,
     .account-copy,
+    .upgrade-copy,
+    .nav-lock,
     .account-trigger > i-feather {
       opacity: 0;
       visibility: hidden;
+    }
+
+    .sidebar-upgrade {
+      padding-inline: 3px;
+    }
+
+    .upgrade-cta {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      padding-inline: 0;
     }
 
     .submenu.expanded {

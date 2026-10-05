@@ -1,0 +1,12 @@
+<div *ngIf="view as v" class="notice-backdrop" (click)="close()">
+  <div class="notice-card" role="alertdialog" aria-modal="true" aria-labelledby="subscription-notice-title"
+       (click)="$event.stopPropagation()">
+    <span class="notice-icon"><i-feather [name]="v.icon"></i-feather></span>
+    <h2 id="subscription-notice-title">{{ v.titleKey | translate: v.titleParams }}</h2>
+    <p>{{ v.textKey | translate: v.textParams }}</p>
+    <div class="notice-actions">
+      <button *ngIf="v.actionKey" type="button" class="btn-primary" (click)="act()">{{ v.actionKey | translate }}</button>
+      <button type="button" class="btn-secondary" (click)="close()">{{ 'CLOSE' | translate }}</button>
+    </div>
+  </div>
+</div>

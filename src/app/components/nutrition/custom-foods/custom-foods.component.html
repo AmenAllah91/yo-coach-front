@@ -15,7 +15,7 @@
         <span>{{ 'FOOD_IMPORT_BUTTON' | translate }}</span>
         <input type="file" accept=".xlsx,.xls" (change)="onImportFile($any($event.target))" />
       </label>
-      <button class="primary-btn" (click)="openAddModal()">
+      <button class="primary-btn" appWriteAction (click)="openAddModal()">
         <i-feather name="plus"></i-feather>
         {{ 'CREATE_FOOD' | translate }}
       </button>

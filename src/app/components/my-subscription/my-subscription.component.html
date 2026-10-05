@@ -1,0 +1,67 @@
+<section class="my-subscription">
+  <header class="page-heading">
+    <h1>{{ 'MY_SUBSCRIPTION' | translate }}</h1>
+    <p>{{ 'MY_SUB_SUBTITLE' | translate }}</p>
+  </header>
+
+  <div *ngIf="loading" class="state-box" role="status"><span class="spinner"></span></div>
+
+  <div *ngIf="!loading && loadError" class="state-box" role="alert">
+    <p>{{ 'CHECKOUT_LOAD_ERROR' | translate }}</p>
+    <button type="button" class="btn-secondary" (click)="load()">{{ 'RETRY' | translate }}</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !loadError && state">
+    <!-- Summary -->
+    <div class="card summary">
+      <div class="summary-top">
+        <div>
+          <span class="label">{{ 'MY_SUB_PLAN' | translate }}</span>
+          <strong class="plan-name">{{ state.planName || '—' }}</strong>
+          <small *ngIf="state.billingCycle">{{ (state.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</small>
+        </div>
+        <span class="status-badge" [ngClass]="'status-' + status.toLowerCase()">
+          {{ ('SUB_STATUS_' + status) | translate }}
+        </span>
+      </div>
+
+      <p *ngIf="dateLine as line" class="date-line">{{ line.key | translate: { date: line.date } }}</p>
+      <p *ngIf="state.maxActiveClients != null" class="muted">
+        {{ 'MY_SUB_CLIENTS' | translate: { count: state.activeClients ?? 0, max: state.maxActiveClients } }}
+      </p>
+      <p *ngIf="isReadOnly" class="read-only-note">{{ 'NOTICE_READ_ONLY_TEXT' | translate }}</p>
+
+      <div class="actions">
+        <button *ngIf="isTrial" type="button" class="btn-primary" (click)="reactivate()">{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</button>
+        <button *ngIf="isReadOnly" type="button" class="btn-primary" (click)="reactivate()">{{ 'BANNER_REACTIVATE' | translate }}</button>
+        <button *ngIf="canResume" type="button" class="btn-primary" [disabled]="busy" (click)="resume()">{{ 'MY_SUB_RESUME' | translate }}</button>
+        <button *ngIf="canCancel" type="button" class="btn-danger-link" [disabled]="busy" (click)="cancel()">{{ 'MY_SUB_CANCEL' | translate }}</button>
+      </div>
+      <p *ngIf="actionError" class="action-error" role="alert">{{ actionError | translate }}</p>
+    </div>
+
+    <!-- Invoices -->
+    <div class="card">
+      <h2>{{ 'MY_SUB_INVOICES' | translate }}</h2>
+      <p *ngIf="!invoices.length" class="muted">{{ 'MY_SUB_NO_INVOICE' | translate }}</p>
+      <ul *ngIf="invoices.length" class="invoice-list">
+        <li *ngFor="let invoice of invoices" class="invoice-row">
+          <div class="invoice-main">
+            <strong>{{ invoice.planName || ('MY_SUB_INVOICE' | translate) }}</strong>
+            <small>
+              {{ 'MY_SUB_INVOICE_DATE' | translate: { date: formatDay(invoice.invoiceDate) } }}
+              <ng-container *ngIf="invoice.dueDate"> · {{ 'MY_SUB_INVOICE_DUE' | translate: { date: formatDay(invoice.dueDate) } }}</ng-container>
+            </small>
+          </div>
+          <div class="invoice-side">
+            <strong class="amount">{{ invoice.amount | number: '1.0-3' }} {{ invoice.currency || 'TND' }}</strong>
+            <span class="invoice-status" [ngClass]="'invoice-' + (invoice.status || '').toLowerCase()">{{ statusKey(invoice.status) | translate }}</span>
+            <button *ngIf="isPayable(invoice)" type="button" class="btn-pay" [disabled]="payingInvoiceId != null" (click)="pay(invoice)">
+              {{ (payingInvoiceId === invoice.id ? 'CHECKOUT_REDIRECTING' : 'BANNER_PAY') | translate }}
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </ng-container>
+</section>

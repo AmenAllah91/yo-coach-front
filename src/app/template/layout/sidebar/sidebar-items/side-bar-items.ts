@@ -299,6 +299,19 @@ export const items: RouteInfo[] = [
     roles: ['ROLE_COACH'],
   },
   {
+    // SUB-37
+    path: '/subscription',
+    title: 'MY_SUBSCRIPTION',
+    iconType: 'feather',
+    icon: 'credit-card',
+    class: '',
+    groupTitle: false,
+    badge: '',
+    badgeClass: '',
+    submenu: [],
+    roles: ['ROLE_COACH'],
+  },
+  {
     path: '/configuration',
     title: 'SETTINGS',
     iconType: 'feather',

@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit } from '@angular/core';
 import { firstValueFrom, Observable, of, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -23,7 +24,7 @@ import { WorkoutPublicationBadgeComponent } from './workout-publication-badge.co
 @Component({
   selector: 'app-program-library',
   standalone: true,
-  imports: [
+  imports: [WriteActionDirective, 
     CommonModule,
     FormsModule,
     FeatherModule,

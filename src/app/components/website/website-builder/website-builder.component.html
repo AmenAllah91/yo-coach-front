@@ -28,7 +28,7 @@
           <span>{{ 'VIEW_PREVIEW' | translate }}</span>
         </button>
 
-        <button type="button" class="yc-builder__preview-btn" (click)="saveWebsite()">
+        <button type="button" class="yc-builder__preview-btn" (click)="saveWebsite()" [disabled]="brandingLocked">
           <span>{{ 'SAVE_WEBSITE' | translate }}</span>
         </button>
 
@@ -36,6 +36,9 @@
     </div>
   </div>
 
+  <app-branding-lock-banner *ngIf="brandingLocked"></app-branding-lock-banner>
+
+  <fieldset class="yc-builder__lock" [disabled]="brandingLocked">
   <!-- URL bar -->
   <div class="yc-builder__urlbar">
     <div class="yc-builder__urlbar-inner">
@@ -937,5 +940,6 @@
       </div>
     </div>
   </div>
+  </fieldset>
 </div>
 

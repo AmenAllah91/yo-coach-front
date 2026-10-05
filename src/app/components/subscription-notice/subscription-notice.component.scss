@@ -1,0 +1,11 @@
+.notice-backdrop { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(15, 17, 21, 0.45); }
+.notice-card { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 420px; padding: 28px 24px 22px; border-radius: 16px; background: #ffffff; color: #111827; text-align: center; box-shadow: 0 22px 55px rgba(0, 0, 0, 0.25); }
+.notice-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #e8f7fd; color: #1d6f8f; }
+.notice-icon i-feather { width: 24px; height: 24px; }
+h2 { margin: 4px 0 0; font-size: 19px; font-weight: 700; }
+p { margin: 0; color: #4b5563; font-size: 14px; line-height: 1.5; }
+.notice-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid #39aeef; outline-offset: 3px; }
+.btn-primary { min-height: 44px; border: 0; border-radius: 10px; background: #38ace0; color: #ffffff; font-weight: 700; }
+.btn-secondary { min-height: 40px; border: 1px solid #e5e7eb; border-radius: 10px; background: #ffffff; color: #111827; }

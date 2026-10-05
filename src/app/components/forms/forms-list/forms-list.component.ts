@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -17,7 +18,7 @@ type FormsViewMode = 'active' | 'unsaved' | 'archived';
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [
+  imports: [WriteActionDirective, 
     CommonModule,
     FeatherModule,
     ReactiveFormsModule,

@@ -9,6 +9,8 @@ import {WebsiteBuilderStateService} from "../../../service/website-builder-state
 import {UsersService} from "../../../service/users.service";
 import {DocumentService} from "../../../service/document.service";
 import {CoachSettingsService} from "../../../service/coach-settings.service";
+import { BrandingLockBannerComponent } from 'app/components/branding-lock-banner/branding-lock-banner.component';
+import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import {TranslateModule} from '@ngx-translate/core';
 
 type DescriptionBlockType = 'text' | 'heading' | 'image';
@@ -104,7 +106,7 @@ interface TestimonialItem {
 @Component({
   selector: 'app-yo-coach-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, CoachLandingPreviewComponent, TranslateModule],
+  imports: [CommonModule, FormsModule, CoachLandingPreviewComponent, TranslateModule, BrandingLockBannerComponent],
   templateUrl: './website-builder.component.html',
   styleUrls: ['./website-builder.component.scss']
 })
@@ -117,11 +119,16 @@ export class WebsiteBuilderComponent implements OnInit{
     private builderState: WebsiteBuilderStateService,
     private userService: UsersService,
     private documentService: DocumentService,
-    private coachSettingsService: CoachSettingsService
+    private coachSettingsService: CoachSettingsService,
+    private subscriptionState: CoachSubscriptionStateService
   ) {}
 
 
+  /** SUB-27/29: the whole website is a paid feature. Visible, but nothing can be changed during the trial. */
+  brandingLocked = false;
+
   ngOnInit(): void {
+    this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked));
     this.loadWebsiteOrUserData();
   }
 
@@ -576,6 +583,7 @@ export class WebsiteBuilderComponent implements OnInit{
 
 
   saveWebsite(): void {
+    if (this.brandingLocked) return;
     const payload = {
       slug: this.normalizedSlug,
       themeKey: this.selectedTheme.previewKey,

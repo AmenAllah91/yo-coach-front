@@ -1,0 +1,29 @@
+<section class="payment-return" [ngSwitch]="phase" aria-live="polite">
+  <div *ngSwitchCase="'checking'" class="card" role="status">
+    <span class="spinner"></span>
+    <h1>{{ 'PAYMENT_CHECKING_TITLE' | translate }}</h1>
+    <p>{{ 'PAYMENT_CHECKING_TEXT' | translate }}</p>
+  </div>
+
+  <div *ngSwitchCase="'paid'" class="card">
+    <i-feather name="check-circle" class="icon success"></i-feather>
+    <h1>{{ 'PAYMENT_PAID_TITLE' | translate }}</h1>
+    <p>{{ 'PAYMENT_PAID_TEXT' | translate }}</p>
+    <button type="button" class="btn-primary" (click)="goToDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
+  </div>
+
+  <div *ngSwitchCase="'failed'" class="card" role="alert">
+    <i-feather name="x-circle" class="icon failure"></i-feather>
+    <h1>{{ 'PAYMENT_FAILED_TITLE' | translate }}</h1>
+    <p>{{ 'PAYMENT_FAILED_TEXT' | translate }}</p>
+    <button type="button" class="btn-primary" (click)="retry()">{{ 'PAYMENT_TRY_AGAIN' | translate }}</button>
+    <button type="button" class="btn-link" (click)="goToDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
+  </div>
+
+  <div *ngSwitchCase="'timeout'" class="card">
+    <i-feather name="clock" class="icon pending"></i-feather>
+    <h1>{{ 'PAYMENT_TIMEOUT_TITLE' | translate }}</h1>
+    <p>{{ 'PAYMENT_TIMEOUT_TEXT' | translate }}</p>
+    <button type="button" class="btn-primary" (click)="goToDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
+  </div>
+</section>

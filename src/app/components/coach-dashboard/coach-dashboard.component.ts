@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -50,7 +51,7 @@ interface PendingAssign {
 @Component({
   selector: 'app-coach-dashboard',
   standalone: true,
-  imports: [
+  imports: [WriteActionDirective, 
     FormsModule,
     CommonModule,
     AddClientModalComponent,
