@@ -30,10 +30,16 @@
         {{ 'MY_SUB_CLIENTS' | translate: { count: state.activeClients ?? 0, max: state.maxActiveClients } }}
       </p>
       <p *ngIf="isReadOnly" class="read-only-note">{{ 'NOTICE_READ_ONLY_TEXT' | translate }}</p>
+      <p *ngIf="state.planArchived" class="muted archived-note">{{ 'MY_SUB_PLAN_ARCHIVED' | translate: { plan: state.planName } }}</p>
+      <p *ngIf="canChangePlan && state.suggestedDowngrade as d" class="muted">
+        {{ 'MY_SUB_SUGGESTED_DOWNGRADE' | translate: { plan: d.planName } }}
+        <button type="button" class="link" (click)="changePlan(d.planId)">{{ 'MY_SUB_SEE_PLAN' | translate }}</button>
+      </p>
 
       <div class="actions">
         <button *ngIf="isTrial" type="button" class="btn-primary" (click)="reactivate()">{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</button>
         <button *ngIf="isReadOnly" type="button" class="btn-primary" (click)="reactivate()">{{ 'BANNER_REACTIVATE' | translate }}</button>
+        <button *ngIf="canChangePlan" type="button" class="btn-primary" [disabled]="busy" (click)="changePlan()">{{ 'MY_SUB_CHANGE_PLAN' | translate }}</button>
         <button *ngIf="canResume" type="button" class="btn-primary" [disabled]="busy" (click)="resume()">{{ 'MY_SUB_RESUME' | translate }}</button>
         <button *ngIf="canCancel" type="button" class="btn-danger-link" [disabled]="busy" (click)="cancel()">{{ 'MY_SUB_CANCEL' | translate }}</button>
       </div>

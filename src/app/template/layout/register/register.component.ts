@@ -9,7 +9,8 @@ import { LanguageService } from '../../../service/language.service';
 import {
   OnboardingResponse,
   RegistrationUser,
-  SubscriptionPlanDto
+  SubscriptionPlanDto,
+  planFeatureText
 } from '../../../models/subscription-onboarding.model';
 import { RegisterService } from '../../../service/register.service';
 import { SubscriptionOnboardingService } from '../../../service/subscription-onboarding.service';
@@ -65,6 +66,15 @@ export class RegisterComponent implements OnInit {
       this.signupForm.patchValue({ isCoach: true });
       this.loadSelectedPlan(planId);
     }
+  }
+
+  /** SUB-57: the features of the chosen plan, in the order defined in YoSales, in the language of the app. */
+  get featureLines(): { text: string; lockedInTrial: boolean }[] {
+    const lang = this.languageService.getCurrentLanguage();
+    return (this.selectedPlan?.features ?? []).map((f) => ({
+      text: planFeatureText(f, lang),
+      lockedInTrial: f.includedInTrial === false
+    }));
   }
 
   passwordMatchValidator(formGroup: AbstractControl): ValidationErrors | null {

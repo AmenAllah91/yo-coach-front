@@ -113,3 +113,25 @@ button:disabled {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
 }
+
+.selected-plan .plan-features {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  text-align: start;
+
+  li {
+    padding: 0.2rem 0;
+    color: #344054;
+    font-size: 0.9rem;
+
+    &.locked {
+      color: #667085;
+    }
+
+    em {
+      font-style: normal;
+      font-size: 0.8rem;
+    }
+  }
+}

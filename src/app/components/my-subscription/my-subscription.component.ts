@@ -12,6 +12,7 @@ import { CoachSubscriptionStateService } from 'app/service/coach-subscription-st
 import { CoachInvoice } from 'app/models/coach-invoice.model';
 import { CoachSubscriptionState } from 'app/models/coach-subscription-state.model';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
+import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 
 /** Invoices the coach can still pay. */
 const PAYABLE = ['UNPAID', 'OVERDUE', 'PENDING'];
@@ -138,6 +139,11 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
           this.redirectTo(url);
           return;
         }
+        if (response?.status === 'PAID') {
+          // SUB-49: nothing to pay (100% promo code): already paid, no Flouci page.
+          void this.router.navigate(['/payment/success'], { queryParams: { invoiceId: invoice.id } });
+          return;
+        }
         this.payingInvoiceId = null;
         this.actionError = 'CHECKOUT_PAYMENT_PAGE_ERROR';
       },
@@ -168,6 +174,15 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
 
   reactivate(): void {
     void this.router.navigate([CHECKOUT_PATH]);
+  }
+
+  /** SUB-46: a paying coach changes plan (upgrade, downgrade, monthly / yearly). */
+  get canChangePlan(): boolean {
+    return this.status === 'ACTIVE';
+  }
+
+  changePlan(planId?: number): void {
+    void this.router.navigate([CHANGE_PLAN_PATH], { queryParams: planId ? { planId } : undefined });
   }
 
   protected redirectTo(url: string): void {

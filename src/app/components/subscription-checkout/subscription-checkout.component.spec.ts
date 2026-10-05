@@ -8,6 +8,11 @@ function plan(id: number, name: string, price: number, cycle: 'MONTHLY' | 'YEARL
   return { id, planCode: name, name, price, billingCycle: cycle, pricingModel: 'FLAT_FEE', productId: 8, toUnits };
 }
 
+function quote(planId: number, base: number, discount: number, applied: string[] = []) {
+  return { planId, baseAmount: base, addonAmount: 0, discountAmount: discount, amount: base - discount,
+    couponsApplied: applied, couponsNotApplied: [] };
+}
+
 const PLANS = [
   plan(1, 'Starter', 30, 'MONTHLY', 5),
   plan(2, 'Pro', 60, 'MONTHLY', 20),
@@ -17,13 +22,13 @@ const PLANS = [
 
 describe('SubscriptionCheckoutComponent (SUB-22)', () => {
   let stateService: jasmine.SpyObj<any>;
-  let onboarding: jasmine.SpyObj<any>;
   let billing: jasmine.SpyObj<any>;
+  let router: jasmine.SpyObj<any>;
   let assign: jasmine.Spy;
 
   function create(state: Partial<CoachSubscriptionState>): SubscriptionCheckoutComponent {
     stateService.refresh.and.returnValue(of({ readOnly: false, brandingAllowed: false, ...state }));
-    const component = new SubscriptionCheckoutComponent(stateService, onboarding, billing, { navigate: () => Promise.resolve(true) } as any);
+    const component = new SubscriptionCheckoutComponent(stateService, billing, router);
     assign = spyOn<any>(component, 'redirectTo');
     component.ngOnInit();
     return component;
@@ -31,9 +36,11 @@ describe('SubscriptionCheckoutComponent (SUB-22)', () => {
 
   beforeEach(() => {
     stateService = jasmine.createSpyObj('CoachSubscriptionStateService', ['refresh']);
-    onboarding = jasmine.createSpyObj('SubscriptionOnboardingService', ['getPlans']);
-    onboarding.getPlans.and.returnValue(of(PLANS));
-    billing = jasmine.createSpyObj('CoachBillingService', ['checkout', 'initiateInvoicePayment']);
+    billing = jasmine.createSpyObj('CoachBillingService', ['getPlans', 'getCheckoutQuote', 'applyCoupon', 'removeCoupon', 'checkout', 'initiateInvoicePayment']);
+    billing.getPlans.and.returnValue(of(PLANS));
+    router = jasmine.createSpyObj('Router', ['navigate']);
+    router.navigate.and.returnValue(Promise.resolve(true));
+    billing.getCheckoutQuote.and.callFake((planId: number) => of(quote(planId, PLANS.find((p) => p.id === planId)!.price, 0)));
   });
 
   it('preselects the plan of a coach in trial and shows the trial notice', () => {
@@ -90,6 +97,59 @@ describe('SubscriptionCheckoutComponent (SUB-22)', () => {
     expect(c.payError).toBe('CHECKOUT_PLAN_TOO_SMALL');
     expect(stateService.refresh).toHaveBeenCalledTimes(2);
     expect(assign).not.toHaveBeenCalled();
+  });
+
+  it('SUB-45: the amount shown is the quote of the selected plan', () => {
+    const c = create({ status: 'TRIAL', planId: 1, activeClients: 2 });
+    expect(billing.getCheckoutQuote).toHaveBeenCalledWith(1);
+    expect(c.selectedQuote?.amount).toBe(30);
+
+    c.select(PLANS[1]);
+    expect(billing.getCheckoutQuote).toHaveBeenCalledWith(2);
+    expect(c.selectedQuote?.amount).toBe(60);
+  });
+
+  it('SUB-45: a promo code updates the amount, and can be removed', () => {
+    billing.applyCoupon.and.returnValue(of(quote(1, 30, 6, ['WELCOME'])));
+    billing.removeCoupon.and.returnValue(of(quote(1, 30, 0)));
+    const c = create({ status: 'TRIAL', planId: 1, activeClients: 2 });
+
+    c.setPromoCode('  welcome ');
+    c.applyPromo();
+    expect(billing.applyCoupon).toHaveBeenCalledWith('welcome', 1);
+    expect(c.selectedQuote?.amount).toBe(24);
+    expect(c.selectedQuote?.couponsApplied).toEqual(['WELCOME']);
+    expect(c.promoCode).toBe('');
+
+    c.removePromo('WELCOME');
+    expect(billing.removeCoupon).toHaveBeenCalledWith('WELCOME', 1);
+    expect(c.selectedQuote?.amount).toBe(30);
+  });
+
+  it('SUB-45: a refused promo code shows its own message', () => {
+    billing.applyCoupon.and.returnValue(throwError(() => ({ error: { code: 'COUPON_EXPIRED' } })));
+    const c = create({ status: 'TRIAL', planId: 1, activeClients: 2 });
+
+    c.setPromoCode('OLD');
+    c.applyPromo();
+    expect(c.promoError).toBe('CHECKOUT_PROMO_COUPON_EXPIRED');
+
+    billing.applyCoupon.and.returnValue(throwError(() => ({ error: { code: 'SOMETHING_ELSE' } })));
+    c.applyPromo();
+    expect(c.promoError).toBe('CHECKOUT_PROMO_ERROR');
+  });
+
+  it('SUB-49: a 100% promo code activates the plan without the Flouci page', () => {
+    billing.getCheckoutQuote.and.returnValue(of(quote(1, 30, 30, ['FREE100'])));
+    billing.checkout.and.returnValue(of({ id: 90, status: 'PAID' }));
+    const c = create({ status: 'TRIAL', planId: 1, activeClients: 2 });
+    expect(c.nothingToPay).toBeTrue();
+
+    c.pay();
+
+    expect(billing.initiateInvoicePayment).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/payment/success'], { queryParams: { invoiceId: 90 } });
   });
 
   it('an active coach has nothing to pay here', () => {

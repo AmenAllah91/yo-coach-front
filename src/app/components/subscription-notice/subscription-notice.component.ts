@@ -6,6 +6,7 @@ import { FeatherModule } from 'angular-feather';
 import { Subject, takeUntil } from 'rxjs';
 
 import { SubscriptionNotice, SubscriptionNoticeService } from 'app/service/subscription-notice.service';
+import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
 
 export interface NoticeView {
@@ -17,6 +18,7 @@ export interface NoticeView {
   /** Main button: label and route. None = only "Close". */
   actionKey?: string;
   actionPath?: string;
+  actionQuery?: Record<string, unknown>;
 }
 
 /**
@@ -54,7 +56,7 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
     const path = this.view?.actionPath;
     this.view = null;
     if (path) {
-      void this.router.navigate([path]);
+      void this.router.navigate([path], { queryParams: this.view?.actionQuery });
     }
   }
 
@@ -89,13 +91,17 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
         actionPath: CHECKOUT_PATH,
       };
     }
-    if (notice.suggestedPlan?.name) {
-      // The plan-change screen comes with SUB-46; until then the suggestion is shown without a button.
+    if (notice.suggestedPlan?.planName) {
+      const plan = notice.suggestedPlan;
       return {
         icon: 'users',
         ...title,
-        textKey: 'NOTICE_LIMIT_PLAN_SUGGESTED_TEXT',
-        textParams: { plan: notice.suggestedPlan.name, price: notice.suggestedPlan.price ?? '' },
+        textKey: plan.proratedCost ? 'NOTICE_LIMIT_PLAN_SUGGESTED_NOW_TEXT' : 'NOTICE_LIMIT_PLAN_SUGGESTED_TEXT',
+        textParams: { plan: plan.planName, price: plan.price ?? '', now: plan.proratedCost ?? '' },
+        // SUB-46: the plan-change screen, the suggested plan preselected.
+        actionKey: 'NOTICE_CHANGE_TO_PLAN',
+        actionPath: CHANGE_PLAN_PATH,
+        actionQuery: plan.planId ? { planId: plan.planId } : undefined,
       };
     }
     return {

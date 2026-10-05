@@ -13,12 +13,19 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
   });
 
   it('plan limit with a suggested plan: "Upgrade to plan Y for Z TND"', () => {
-    const v = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20, suggestedPlan: { name: 'Pro', price: 90 } });
-    expect(v.textKey).toBe('NOTICE_LIMIT_PLAN_SUGGESTED_TEXT');
-    expect(v.textParams).toEqual({ plan: 'Pro', price: 90 });
+    const v = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20,
+      suggestedPlan: { planId: 7, planName: 'Pro', price: 90, proratedCost: 13.333 } });
+    expect(v.textKey).toBe('NOTICE_LIMIT_PLAN_SUGGESTED_NOW_TEXT');
+    expect(v.textParams).toEqual({ plan: 'Pro', price: 90, now: 13.333 });
+    // SUB-46: the plan-change screen, the suggested plan preselected.
+    expect(v.actionPath).toBe('/subscription/change-plan');
+    expect(v.actionQuery).toEqual({ planId: 7 });
+    const free = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20,
+      suggestedPlan: { planId: 7, planName: 'Pro', price: 90, proratedCost: null } });
+    expect(free.textKey).toBe('NOTICE_LIMIT_PLAN_SUGGESTED_TEXT');
   });
 
-  it('plan limit without suggestion (until SUB-40): archive a client or choose a bigger plan', () => {
+  it('plan limit without suggestion (no bigger plan): archive a client or choose a bigger plan', () => {
     const v = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20, suggestedPlan: null });
     expect(v.textKey).toBe('NOTICE_LIMIT_PLAN_TEXT');
     expect(v.actionPath).toBe('/clients');
@@ -55,7 +62,7 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
     c.act();
 
     expect(c.view).toBeNull();
-    expect(router.navigate).toHaveBeenCalledWith(['/subscription/checkout']);
+    expect(router.navigate).toHaveBeenCalledWith(['/subscription/checkout'], { queryParams: undefined });
     c.ngOnDestroy();
   });
 

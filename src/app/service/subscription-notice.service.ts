@@ -12,8 +12,8 @@ export interface SubscriptionNotice {
   current?: number | null;
   /** FEATURE_LOCKED: WEBSITE | MOBILE_THEME. */
   feature?: string | null;
-  /** CLIENT_LIMIT_REACHED with reason PLAN: plan to suggest (SUB-40, null until then). */
-  suggestedPlan?: { id?: number; name?: string; price?: number } | null;
+  /** CLIENT_LIMIT_REACHED with reason PLAN: smallest bigger plan (SUB-40); proratedCost = amount to pay now. Null when none fits. */
+  suggestedPlan?: { planId?: number; planName?: string; price?: number; proratedCost?: number | null } | null;
 }
 
 const CODES: SubscriptionNoticeCode[] = ['CLIENT_LIMIT_REACHED', 'FEATURE_LOCKED', 'SUBSCRIPTION_READ_ONLY'];
