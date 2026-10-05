@@ -27,5 +27,9 @@ export interface CoachSubscriptionState {
   pendingPlanChange?: { planId: number; planName: string; effectiveAt: string } | null;
   /** SUB-39: upgrade waiting for payment (the plan changes once it is paid; expires after 3 days). */
   pendingUpgrade?: { invoiceId: number; planId: number; planName: string; amount: number; expiresAt: string } | null;
+  /** SUB-41: smaller plan proposed from the usage; applied only if the coach confirms it. */
+  suggestedDowngrade?: { planId: number; planName: string } | null;
+  /** SUB-45: the plan is no longer offered; the coach keeps it at its price until changing. */
+  planArchived?: boolean;
   timeZone?: string | null;
 }

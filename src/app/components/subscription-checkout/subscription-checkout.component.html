@@ -76,16 +76,51 @@
       <div class="summary" *ngIf="selectedPlan as plan">
         <div class="summary-line">
           <span>{{ plan.name }} · {{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</span>
-          <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+          <strong>{{ (selectedQuote?.baseAmount ?? plan.price) | number: '1.0-3' }} TND</strong>
         </div>
-        <small>{{ 'CHECKOUT_AMOUNT_NOTE' | translate }}</small>
+        <ng-container *ngIf="selectedQuote as q">
+          <div *ngIf="q.addonAmount > 0" class="summary-line">
+            <span>{{ 'CHECKOUT_ADDONS' | translate }}</span>
+            <span>{{ q.addonAmount | number: '1.0-3' }} TND</span>
+          </div>
+          <div *ngIf="q.discountAmount > 0" class="summary-line discount">
+            <span>{{ 'CHECKOUT_DISCOUNT' | translate }} ({{ q.couponsApplied.join(', ') }})</span>
+            <span>− {{ q.discountAmount | number: '1.0-3' }} TND</span>
+          </div>
+          <div class="summary-line total">
+            <span>{{ 'CHECKOUT_TOTAL' | translate }}</span>
+            <strong>{{ q.amount | number: '1.0-3' }} TND</strong>
+          </div>
+          <small *ngFor="let code of q.couponsNotApplied" class="promo-note">
+            {{ 'CHECKOUT_PROMO_NOT_FOR_THIS_PLAN' | translate: { code: code } }}
+          </small>
+        </ng-container>
+        <small *ngIf="!selectedQuote">{{ 'CHECKOUT_AMOUNT_NOTE' | translate }}</small>
+
+        <div class="promo">
+          <label for="promo-code">{{ 'CHECKOUT_PROMO_LABEL' | translate }}</label>
+          <div class="promo-row">
+            <input id="promo-code" type="text" autocomplete="off" maxlength="40" [value]="promoCode"
+              [placeholder]="'CHECKOUT_PROMO_PLACEHOLDER' | translate" [disabled]="promoBusy || paying"
+              (input)="setPromoCode($any($event.target).value)" (keydown.enter)="applyPromo()" />
+            <button type="button" class="btn-secondary" [disabled]="!promoCode.trim() || promoBusy || paying" (click)="applyPromo()">
+              {{ 'CHECKOUT_PROMO_APPLY' | translate }}
+            </button>
+          </div>
+          <div *ngFor="let code of selectedQuote?.couponsApplied" class="promo-applied">
+            <i-feather name="tag"></i-feather>
+            <span>{{ 'CHECKOUT_PROMO_APPLIED' | translate: { code: code } }}</span>
+            <button type="button" class="link" [disabled]="promoBusy || paying" (click)="removePromo(code)">{{ 'CHECKOUT_PROMO_REMOVE' | translate }}</button>
+          </div>
+          <p *ngIf="promoError" class="pay-error" role="alert">{{ promoError | translate }}</p>
+        </div>
       </div>
 
       <p *ngIf="payError" class="pay-error" role="alert">{{ payError | translate }}</p>
 
       <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying" (click)="pay()">
         <span *ngIf="paying" class="spinner small"></span>
-        {{ (paying ? 'CHECKOUT_REDIRECTING' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate }}
+        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate }}
       </button>
       <p class="secure"><i-feather name="lock"></i-feather>{{ 'CHECKOUT_SECURE_FLOUCI' | translate }}</p>
     </ng-container>

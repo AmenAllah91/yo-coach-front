@@ -24,6 +24,13 @@
         {{ selectedPlan.price | number:'1.0-2' }} DT /
         {{ selectedPlan.billingCycle === 'YEARLY' ? 'year' : 'month' }}
       </small>
+      <ul class="plan-features" *ngIf="featureLines.length">
+        <li *ngFor="let line of featureLines" [class.locked]="line.lockedInTrial">
+          <span aria-hidden="true">{{ line.lockedInTrial ? '🔒' : '✓' }}</span>
+          {{ line.text }}
+          <em *ngIf="line.lockedInTrial">({{ 'REGISTER_FEATURE_AFTER_TRIAL' | translate }})</em>
+        </li>
+      </ul>
     </div>
 
     <div *ngIf="planLoadError" class="alert alert-danger text-center mt-2">

@@ -257,6 +257,11 @@ export const APP_ROUTE: Route[] = [
         loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent),
       },
       {
+        // SUB-46: plan-change screen (from "My subscription" and the client-limit notice).
+        path: 'subscription/change-plan',
+        loadComponent: () => import('./components/change-plan/change-plan.component').then(m => m.ChangePlanComponent),
+      },
+      {
         // SUB-22: payment screen ("Upgrade to a paid plan" in the sidebar).
         path: 'subscription/checkout',
         loadComponent: () => import('./components/subscription-checkout/subscription-checkout.component').then(m => m.SubscriptionCheckoutComponent),

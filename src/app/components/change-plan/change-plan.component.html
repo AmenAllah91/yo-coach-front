@@ -1,0 +1,112 @@
+<section class="change-plan">
+  <header class="heading">
+    <button type="button" class="back" (click)="backToSubscription()">
+      <i-feather name="arrow-left"></i-feather>{{ 'CHANGE_PLAN_BACK' | translate }}
+    </button>
+    <h1>{{ 'CHANGE_PLAN_TITLE' | translate }}</h1>
+    <p *ngIf="options?.currentPlanName">{{ 'CHANGE_PLAN_CURRENT' | translate: { plan: options?.currentPlanName } }}</p>
+  </header>
+
+  <div *ngIf="loading && !options" class="state-box" role="status"><span class="spinner"></span></div>
+
+  <div *ngIf="!loading && loadError" class="state-box" role="alert">
+    <p>{{ 'CHANGE_PLAN_LOAD_ERROR' | translate }}</p>
+    <button type="button" class="btn-secondary" (click)="load()">{{ 'RETRY' | translate }}</button>
+  </div>
+
+  <ng-container *ngIf="options as o">
+    <p *ngIf="success" class="success" role="status">
+      <i-feather name="check-circle"></i-feather>{{ success.key | translate: success.params }}
+    </p>
+
+    <!-- Nothing can change now: say what to do instead. -->
+    <div *ngIf="blockedCode" class="notice warning" role="note">
+      <i-feather name="alert-circle"></i-feather>
+      <div>
+        <p>{{ ('CHANGE_PLAN_BLOCKED_' + blockedCode) | translate }}</p>
+        <button *ngIf="blockedCode === 'PAY_FIRST' || blockedCode === 'UPGRADE_USE_CHECKOUT'" type="button" class="btn-secondary"
+          (click)="goToPayment()">{{ (o.status === 'PAST_DUE' ? 'CHANGE_PLAN_PAY_RENEWAL' : 'CHANGE_PLAN_GO_CHECKOUT') | translate }}</button>
+      </div>
+    </div>
+
+    <!-- A change waiting for payment (upgrade or yearly switch). -->
+    <div *ngIf="o.pendingRequest as p" class="pending card" role="region" [attr.aria-label]="'CHANGE_PLAN_PENDING_TITLE' | translate">
+      <h2>{{ 'CHANGE_PLAN_PENDING_TITLE' | translate }}</h2>
+      <p>{{ 'CHANGE_PLAN_PENDING_TEXT' | translate: { plan: p.planName, amount: amount(p.amount), date: day(p.expiresAt) } }}</p>
+      <p *ngIf="p.paymentInProgress" class="muted">{{ 'CHANGE_PLAN_PENDING_IN_PROGRESS' | translate }}</p>
+      <div class="actions">
+        <button type="button" class="btn-primary" [disabled]="busy || p.paymentInProgress" (click)="payPending()">
+          {{ 'CHANGE_PLAN_PAY_AMOUNT' | translate: { amount: amount(p.amount) } }}
+        </button>
+        <button type="button" class="btn-danger-link" [disabled]="busy || p.paymentInProgress" (click)="cancelPending()">
+          {{ 'CHANGE_PLAN_CANCEL_REQUEST' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- A change scheduled for the renewal (downgrade or yearly -> monthly). -->
+    <div *ngIf="o.scheduledChange as c" class="pending card" role="region" [attr.aria-label]="'CHANGE_PLAN_SCHEDULED_TITLE' | translate">
+      <h2>{{ 'CHANGE_PLAN_SCHEDULED_TITLE' | translate }}</h2>
+      <p>{{ 'CHANGE_PLAN_SCHEDULED_TEXT' | translate: { plan: c.planName, date: day(c.effectiveAt) } }}</p>
+      <div class="actions">
+        <button type="button" class="btn-danger-link" [disabled]="busy" (click)="cancelScheduled()">{{ 'CHANGE_PLAN_CANCEL_SCHEDULED' | translate }}</button>
+      </div>
+    </div>
+
+    <div *ngIf="showCycleToggle" class="cycle-toggle" role="radiogroup" [attr.aria-label]="'CHECKOUT_BILLING_CYCLE' | translate">
+      <button type="button" role="radio" [attr.aria-checked]="cycle === 'MONTHLY'" [class.active]="cycle === 'MONTHLY'"
+        [disabled]="busy" (click)="setCycle('MONTHLY')">{{ 'CHECKOUT_MONTHLY' | translate }}</button>
+      <button type="button" role="radio" [attr.aria-checked]="cycle === 'YEARLY'" [class.active]="cycle === 'YEARLY'"
+        [disabled]="busy" (click)="setCycle('YEARLY')">{{ 'CHECKOUT_YEARLY' | translate }}</button>
+    </div>
+
+    <p *ngIf="o.activeClients != null" class="muted">{{ 'CHECKOUT_ACTIVE_CLIENTS' | translate: { count: o.activeClients } }}</p>
+
+    <div class="plan-list" role="radiogroup" [attr.aria-label]="'CHECKOUT_PLANS' | translate">
+      <button *ngFor="let plan of visiblePlans" type="button" role="radio" class="plan-card"
+        [class.selected]="plan.planId === selectedPlanId" [class.current]="plan.kind === 'CURRENT'"
+        [class.refused]="plan.kind !== 'CURRENT' && !plan.allowed"
+        [attr.aria-checked]="plan.planId === selectedPlanId" [attr.aria-disabled]="!plan.allowed"
+        [disabled]="!plan.allowed || busy" (click)="select(plan)">
+        <span class="plan-main">
+          <strong class="plan-name">
+            {{ plan.planName }}
+            <span *ngIf="plan.kind === 'CURRENT'" class="plan-tag">{{ 'CHECKOUT_CURRENT_PLAN' | translate }}</span>
+          </strong>
+          <span class="plan-limit">
+            {{ plan.toUnits != null ? ('CHECKOUT_UP_TO_CLIENTS' | translate: { count: plan.toUnits }) : ('CHECKOUT_UNLIMITED_CLIENTS' | translate) }}
+          </span>
+          <span *ngIf="lineOf(plan) as line" class="plan-line" [class.warning]="!plan.allowed && plan.kind !== 'CURRENT'">
+            {{ line.key | translate: line.params }}
+          </span>
+        </span>
+        <span class="plan-price">
+          <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+          <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
+        </span>
+      </button>
+      <p *ngIf="!visiblePlans.length" class="empty">{{ 'CHECKOUT_NO_PLANS' | translate }}</p>
+    </div>
+
+    <!-- Confirmation: nothing is paid nor changed before this click. -->
+    <div *ngIf="selected as plan" class="confirm card" role="region" [attr.aria-label]="'CHANGE_PLAN_CONFIRM_TITLE' | translate">
+      <h2>{{ 'CHANGE_PLAN_CONFIRM_TITLE' | translate: { plan: plan.planName } }}</h2>
+      <p *ngIf="lineOf(plan) as line">{{ line.key | translate: line.params }}</p>
+      <p *ngIf="plan.kind === 'DOWNGRADE' || plan.kind === 'TO_MONTHLY'" class="muted">{{ 'CHANGE_PLAN_NO_REFUND' | translate }}</p>
+      <p *ngIf="plan.planTooBig as big" class="hint">
+        {{ (big.suggestedPlan ? 'CHANGE_PLAN_TOO_BIG_SUGGESTED' : 'CHANGE_PLAN_TOO_BIG')
+            | translate: { min: big.minClients, count: big.activeClients, plan: big.suggestedPlan?.planName } }}
+      </p>
+      <p *ngFor="let code of plan.couponsNotKept" class="hint">{{ 'CHANGE_PLAN_COUPON_NOT_KEPT' | translate: { code: code } }}</p>
+      <button type="button" class="btn-pay" [disabled]="busy" (click)="confirm()">
+        <span *ngIf="busy" class="spinner small"></span>
+        {{ paysNow(plan)
+            ? ('CHANGE_PLAN_CONFIRM_AND_PAY' | translate: { amount: amount(plan.amountNow) })
+            : ('CHANGE_PLAN_CONFIRM' | translate) }}
+      </button>
+      <p *ngIf="paysNow(plan)" class="secure"><i-feather name="lock"></i-feather>{{ 'CHECKOUT_SECURE_FLOUCI' | translate }}</p>
+    </div>
+
+    <p *ngIf="error" class="error" role="alert">{{ error | translate }}</p>
+  </ng-container>
+</section>

@@ -15,6 +15,38 @@ export interface SubscriptionPlanDto {
   extraFeePerUnit?: number | null;
   fromUnits?: number | null;
   toUnits?: number | null;
+  /** SUB-45: no longer offered; only listed for the coach who already has it. */
+  archived?: boolean | null;
+  /** SUB-57: what the plan brings, in display order (YoSales is the only source). */
+  features?: SubscriptionPlanFeatureDto[] | null;
+}
+
+/** SUB-57: one feature of a plan, with its texts in the languages of the app. */
+export interface SubscriptionPlanFeatureDto {
+  id?: number;
+  textFr: string;
+  textEn?: string | null;
+  textAr?: string | null;
+  icon?: string | null;
+  /** false = locked during the free trial. */
+  includedInTrial?: boolean | null;
+}
+
+/** SUB-57: the text of a feature in the given language; English and Arabic fall back on the French text. */
+export function planFeatureText(feature: SubscriptionPlanFeatureDto, lang: string): string {
+  const text = lang === 'en' ? feature.textEn : lang === 'ar' ? feature.textAr : feature.textFr;
+  return (text ?? '').trim() || feature.textFr;
+}
+
+/** SUB-45: amount of the first payment for a plan, promo codes included (no invoice created). */
+export interface CheckoutQuote {
+  planId: number;
+  baseAmount: number;
+  addonAmount: number;
+  discountAmount: number;
+  amount: number;
+  couponsApplied: string[];
+  couponsNotApplied: string[];
 }
 
 export interface RegistrationUser {

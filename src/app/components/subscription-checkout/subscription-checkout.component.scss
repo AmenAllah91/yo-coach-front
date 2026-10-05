@@ -40,6 +40,17 @@ button:disabled { cursor: not-allowed; }
 .summary { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e5e7eb; }
 .summary-line { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
 .summary small { display: block; margin-top: 6px; color: #6b7280; font-size: 12px; line-height: 1.4; }
+.summary-line + .summary-line { margin-top: 6px; }
+.summary-line.discount { color: #15803d; }
+.summary-line.total { padding-top: 8px; border-top: 1px solid #e5e7eb; }
+.promo { margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e5e7eb; }
+.promo label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.promo-row { display: flex; gap: 8px; }
+.promo-row input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px; font: inherit; font-size: 14px; text-transform: uppercase; }
+.promo-row input:focus-visible { outline: 2px solid #39aeef; outline-offset: 1px; }
+.promo-applied { display: flex; align-items: center; gap: 6px; margin-top: 8px; color: #15803d; font-size: 13px; }
+.promo-applied i-feather { width: 14px; height: 14px; }
+.promo-applied .link { margin-left: auto; padding: 0; border: 0; background: none; color: #b91c1c; font-size: 13px; text-decoration: underline; }
 
 .pay-error { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #fef2f2; color: #b91c1c; font-size: 14px; }
 
