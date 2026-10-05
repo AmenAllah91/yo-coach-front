@@ -9,7 +9,7 @@
     <button
       class="primary-btn header-actions"
       type="button"
-      (click)="onAdd()"
+      appWriteAction (click)="onAdd()"
       *ngIf="viewMode() === 'active'"
     >
       <i-feather name="plus"></i-feather>

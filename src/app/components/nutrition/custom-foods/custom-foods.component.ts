@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +19,7 @@ import { FoodImportPreview, FoodImportReport, foodImportTemplate, importFieldLab
 @Component({
   selector: 'app-custom-foods',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe],
+  imports: [WriteActionDirective, CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe],
   templateUrl: './custom-foods.component.html',
   styleUrls: ['./custom-foods.component.scss']
 })

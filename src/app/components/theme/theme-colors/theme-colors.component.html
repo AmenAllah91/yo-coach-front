@@ -1,6 +1,7 @@
 <div class="theme-builder-page">
   <div *ngIf="error" class="alert error">{{ error }}</div>
   <div *ngIf="success" class="alert success">{{ success }}</div>
+  <app-branding-lock-banner *ngIf="brandingLocked"></app-branding-lock-banner>
 
   <div class="builder-layout">
     <aside class="left-panel">
@@ -106,6 +107,7 @@
     </main>
 
     <aside class="right-panel">
+      <fieldset class="branding-lock-fieldset" [disabled]="brandingLocked">
       <div class="right-panel-scroll">
         <div class="settings-header">
           <h3>{{ 'BASIC_SETTINGS' | translate }}</h3>
@@ -221,6 +223,7 @@
           {{ (saving ? 'SAVING' : 'SAVE_USE_THEME') | translate }}
         </button>
       </div>
+      </fieldset>
     </aside>
   </div>
 </div>

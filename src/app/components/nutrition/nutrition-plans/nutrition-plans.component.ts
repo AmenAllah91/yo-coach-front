@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +19,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-nutrition-plans',
   standalone: true,
-  imports: [
+  imports: [WriteActionDirective, 
     CommonModule,
     FormsModule,
     FeatherModule,

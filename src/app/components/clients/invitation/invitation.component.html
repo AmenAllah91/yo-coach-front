@@ -45,6 +45,10 @@
           {{ (accepting ? 'INVITATION_ACCEPTING' : 'ACCEPT_INVITATION') | translate }}
         </button>
 
+        <p class="inv-error" *ngIf="coachLimitReached" role="alert">
+          {{ 'INVITATION_COACH_LIMIT_REACHED' | translate }}
+        </p>
+
         <p class="inv-error" *ngIf="actionError">
           {{ 'INVITATION_ACCEPT_ERROR' | translate }}
         </p>

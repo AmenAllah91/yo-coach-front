@@ -6,6 +6,8 @@ import { finalize } from 'rxjs';
 import { environment } from '@env/environment';
 import { AppThemeColors, AppThemeColorsPage } from '../../../core/models/app-theme-colors.model';
 import { AppThemeColorsService } from '../../../core/service/app-theme-colors.service';
+import { BrandingLockBannerComponent } from 'app/components/branding-lock-banner/branding-lock-banner.component';
+import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type ColorField = keyof Pick<
@@ -56,7 +58,7 @@ type ThemeSection =
 @Component({
   selector: 'app-theme-colors',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, BrandingLockBannerComponent],
   templateUrl: './theme-colors.component.html',
   styleUrls: ['./theme-colors.component.scss'],
 })
@@ -274,14 +276,19 @@ export class ThemeColorsComponent implements OnInit {
   constructor(
     private themeService: AppThemeColorsService,
     private sanitizer: DomSanitizer,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private subscriptionState: CoachSubscriptionStateService
   ) {
     this.flutterPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
       '/assets/mobile-preview/index.html'
     );
   }
 
+  /** SUB-27/29: the mobile theme is a paid feature. Visible, but nothing can be changed during the trial. */
+  brandingLocked = false;
+
   ngOnInit(): void {
+    this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked));
     this.groupedControls = this.buildGroupedControls();
     this.loadThemes();
   }
@@ -515,6 +522,7 @@ export class ThemeColorsComponent implements OnInit {
   }
 
   saveTheme(): void {
+    if (this.brandingLocked) return;
     this.error = null;
     this.success = null;
     this.normalizeAllColors();
@@ -705,6 +713,7 @@ export class ThemeColorsComponent implements OnInit {
   }
 
   saveAndUseTheme(): void {
+    if (this.brandingLocked) return;
     this.error = null;
     this.success = null;
     this.normalizeAllColors();

@@ -1,0 +1,7 @@
+<div *ngIf="view as v" class="subscription-banner" [ngClass]="'tone-' + v.tone" role="status">
+  <i-feather [name]="v.icon" class="banner-icon"></i-feather>
+  <span class="banner-text">{{ v.textKey | translate: v.textParams }}</span>
+  <button type="button" class="banner-action" [disabled]="paying" (click)="act()">
+    {{ (paying ? 'CHECKOUT_REDIRECTING' : v.actionKey) | translate }}
+  </button>
+</div>

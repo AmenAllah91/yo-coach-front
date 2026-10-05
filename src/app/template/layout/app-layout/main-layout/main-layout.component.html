@@ -15,6 +15,11 @@
   <app-sidebar #sidebar (sidebarToggle)="handleSidebarToggle($event)"></app-sidebar>
 
   <div class="content">
+    <!-- SUB-30: trial ending, late payment, read-only account. -->
+    <app-subscription-banner></app-subscription-banner>
     <router-outlet></router-outlet>
   </div>
 </div>
+
+<!-- SUB-29: subscription refusals (client limit, paid branding, blocked account). -->
+<app-subscription-notice></app-subscription-notice>

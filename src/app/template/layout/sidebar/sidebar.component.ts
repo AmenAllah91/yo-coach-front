@@ -12,10 +12,15 @@ import { Subject, takeUntil } from 'rxjs';
 import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 
 const DESKTOP_BREAKPOINT = 1024;
 const PINNED_STORAGE_KEY = 'sidebarPinned';
 const HOVER_OPEN_DELAY_MS = 80;
+/** Payment screen (SUB-22). */
+export const CHECKOUT_PATH = '/subscription/checkout';
+/** Paid branding pages (SUB-27): a lock is shown on them during the trial (decision SUB-03). */
+const BRANDING_PATHS = ['/theme', '/websites/create'];
 
 @Component({
   selector: 'app-sidebar',
@@ -46,6 +51,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   userPhotoUrl = '';
   userFullName = sessionStorage.getItem('username') || '';
   userRoleKey = 'CLIENT';
+  /** Days of free trial left, null when the coach is not in a trial (button hidden). */
+  trialDaysLeft: number | null = null;
+  readonly checkoutPath = CHECKOUT_PATH;
+  brandingLocked = false;
   private destroy$ = new Subject<void>();
   @Output() sidebarToggle = new EventEmitter<boolean>();
 
@@ -56,6 +65,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private usersService: UsersService,
     private documentService: DocumentService,
     private coachSettingsService: CoachSettingsService,
+    private subscriptionStateService: CoachSubscriptionStateService,
   ) {}
 
   async ngOnInit() {
@@ -69,6 +79,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     this.initializeSidebar();
     if (this.roles.includes('ROLE_COACH')) {
+      this.loadSubscriptionState();
       this.coachSettingsService.configChanges$
         .pipe(takeUntil(this.destroy$))
         .subscribe((config) => {
@@ -87,6 +98,33 @@ export class SidebarComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.syncActiveState();
       });
+  }
+
+  private loadSubscriptionState(): void {
+    // Follows every refresh (after a payment the button and the locks go away at once).
+    this.subscriptionStateService.getState().subscribe();
+    this.subscriptionStateService
+      .states$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((state) => {
+        this.trialDaysLeft =
+          state?.status === 'TRIAL' && state.trialDaysLeft != null ? Math.max(0, state.trialDaysLeft) : null;
+        this.brandingLocked = !!state && !state.brandingAllowed;
+      });
+  }
+
+  isBrandingLocked(item: RouteInfo): boolean {
+    return this.brandingLocked && BRANDING_PATHS.includes(item.path);
+  }
+
+  get trialDaysLeftKey(): string {
+    if (this.trialDaysLeft === 0) return 'TRIAL_LAST_DAY';
+    return this.trialDaysLeft === 1 ? 'TRIAL_ONE_DAY_LEFT' : 'TRIAL_DAYS_LEFT';
+  }
+
+  onUpgradeClick(): void {
+    // The mobile drawer closes like after any menu link.
+    if (!this.isDesktop) this.setExpanded(false);
   }
 
   ngOnDestroy(): void {

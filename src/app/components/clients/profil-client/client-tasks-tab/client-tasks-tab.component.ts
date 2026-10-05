@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { ToastService } from 'app/service/toast.service';
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, Input, OnChanges, SimpleChanges } from '@angular/core';
@@ -38,7 +39,7 @@ const TYPE_TO_KIND: Record<ClientTaskType, TaskKind> = { GENERAL: 'general', CLI
 const KIND_TO_TYPE: Partial<Record<TaskKind, ClientTaskType>> = { general: 'GENERAL', progress: 'CLIENT_PROGRESS', metrics: 'BODY_METRICS', form: 'FORM' };
 const WEEK_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-@Component({ selector: 'app-client-tasks-tab', standalone: true, imports: [CommonModule, FormsModule, TranslateModule, FeatherModule], templateUrl: './client-tasks-tab.component.html', styleUrls: ['./client-tasks-tab.component.scss'] })
+@Component({ selector: 'app-client-tasks-tab', standalone: true, imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, FeatherModule], templateUrl: './client-tasks-tab.component.html', styleUrls: ['./client-tasks-tab.component.scss'] })
 export class ClientTasksTabComponent implements OnChanges {
   @Input() clientId = '';
   @Input() archived = false;

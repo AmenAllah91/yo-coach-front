@@ -6,6 +6,10 @@
     <a href="" (click)="$event.preventDefault(); signIn()" class="d-block mb-4 text-decoration-none">{{ 'ALREADY_HAVE_ACCOUNT' | translate }}
       <u style="color: #0face4;">{{ 'SIGN_IN' | translate }}</u></a>
 
+    <div *ngIf="accountExists" class="alert alert-info text-center mt-2">
+      {{ 'ACCOUNT_ALREADY_EXISTS_SIGN_IN' | translate }}
+      <a href="" (click)="$event.preventDefault(); signIn()" class="alert-link">{{ 'SIGN_IN_NOW' | translate }}</a>
+    </div>
     <div *ngIf="generalError" class="alert alert-danger text-center mt-2">
       {{ generalError }}
     </div>

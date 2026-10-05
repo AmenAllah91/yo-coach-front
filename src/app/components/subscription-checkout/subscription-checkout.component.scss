@@ -1,0 +1,61 @@
+:host { display: block; min-height: 100vh; background: #f7f8fb; }
+.checkout { width: 100%; max-width: 640px; box-sizing: border-box; margin: 0 auto; padding: 0 16px 32px; color: #111827; }
+h1, p { margin: 0; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid #39aeef; outline-offset: 3px; }
+button:disabled { cursor: not-allowed; }
+
+.checkout-heading { padding: 20px 0 16px; }
+.checkout-heading h1 { margin-bottom: 5px; font-size: 24px; font-weight: 700; }
+.checkout-heading p { color: #6b7280; font-size: 13px; line-height: 1.5; }
+
+.state-box { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 16px; text-align: center; color: #4b5563; }
+.state-icon { width: 40px; height: 40px; color: #22c55e; }
+
+.notice { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 12px 14px; border: 1px solid #cfeaf3; border-radius: 12px; background: #eaf7fb; color: #1d6f8f; font-size: 14px; line-height: 1.4; }
+.notice i-feather { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px; }
+
+.cycle-toggle { display: flex; padding: 4px; margin-bottom: 14px; border-radius: 8px; background: #e8f7fd; }
+.cycle-toggle button { flex: 1; padding: 10px 0; border: 0; border-radius: 6px; background: transparent; color: #6b7280; font-size: 13px; font-weight: 600; }
+.cycle-toggle button.active { background: #38ace0; color: #ffffff; }
+
+.active-clients { margin-bottom: 10px; color: #6b7280; font-size: 13px; }
+
+.plan-list { display: flex; flex-direction: column; gap: 10px; }
+.plan-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 14px 16px; border: 1.5px solid #e5e7eb; border-radius: 14px; background: #ffffff; color: inherit; text-align: left; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.plan-card:hover:not(:disabled) { border-color: #9fd8ef; }
+.plan-card.selected { border-color: #38ace0; box-shadow: 0 0 0 3px rgba(56, 172, 224, 0.15); }
+.plan-card.too-small { background: #f3f4f6; color: #9ca3af; }
+.plan-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.plan-name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 15px; }
+.plan-tag { padding: 2px 7px; border-radius: 999px; background: #e8f7fd; color: #1d6f8f; font-size: 11px; font-weight: 600; }
+.plan-limit { font-size: 13px; color: #6b7280; }
+.plan-card.too-small .plan-limit { color: #9ca3af; }
+.plan-warning { font-size: 12px; color: #b45309; }
+.plan-price { display: flex; flex-direction: column; align-items: flex-end; flex: 0 0 auto; }
+.plan-price strong { font-size: 16px; white-space: nowrap; }
+.plan-price small { color: #6b7280; font-size: 12px; }
+.empty { padding: 24px 0; text-align: center; color: #6b7280; }
+
+.summary { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e5e7eb; }
+.summary-line { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.summary small { display: block; margin-top: 6px; color: #6b7280; font-size: 12px; line-height: 1.4; }
+
+.pay-error { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #fef2f2; color: #b91c1c; font-size: 14px; }
+
+.btn-pay { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 18px; border: 0; border-radius: 10px; background: #38ace0; color: #ffffff; font-size: 16px; font-weight: 700; }
+.btn-pay:hover:not(:disabled) { filter: brightness(1.05); }
+.btn-pay:disabled { opacity: 0.6; }
+.btn-secondary { padding: 8px 14px; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff; color: #111827; }
+.secure { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; color: #6b7280; font-size: 12px; }
+.secure i-feather { width: 14px; height: 14px; }
+
+.spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #d9eef9; border-top-color: #39aeef; border-radius: 50%; animation: spin 1s linear infinite; }
+.spinner.small { width: 16px; height: 16px; border-width: 2px; border-color: rgba(255, 255, 255, 0.4); border-top-color: #ffffff; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (max-width: 480px) {
+  .plan-card { padding: 12px; }
+  .plan-price strong { font-size: 15px; }
+}

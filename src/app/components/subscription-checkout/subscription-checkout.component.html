@@ -1,0 +1,93 @@
+<section class="checkout">
+  <header class="checkout-heading">
+    <h1>{{ 'CHECKOUT_TITLE' | translate }}</h1>
+    <p>{{ 'CHECKOUT_SUBTITLE' | translate }}</p>
+  </header>
+
+  <div *ngIf="loading" class="state-box" role="status">
+    <span class="spinner"></span>
+    <span class="sr-only">{{ 'LOADING' | translate }}</span>
+  </div>
+
+  <div *ngIf="!loading && loadError" class="state-box" role="alert">
+    <p>{{ 'CHECKOUT_LOAD_ERROR' | translate }}</p>
+    <button type="button" class="btn-secondary" (click)="load()">{{ 'RETRY' | translate }}</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !loadError && state">
+    <!-- Already paying: nothing to start here. -->
+    <div *ngIf="!canPay" class="state-box">
+      <i-feather name="check-circle" class="state-icon"></i-feather>
+      <p>{{ (state.status === 'PAST_DUE' ? 'CHECKOUT_PAST_DUE' : 'CHECKOUT_ALREADY_ACTIVE') | translate }}</p>
+      <button type="button" class="btn-secondary" (click)="goToDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
+    </div>
+
+    <ng-container *ngIf="canPay">
+      <div *ngIf="isTrial" class="notice" role="note">
+        <i-feather name="info"></i-feather>
+        <span>{{ 'CHECKOUT_TRIAL_ENDS_TODAY' | translate }}</span>
+      </div>
+
+      <div *ngIf="showCycleToggle" class="cycle-toggle" role="radiogroup" [attr.aria-label]="'CHECKOUT_BILLING_CYCLE' | translate">
+        <button type="button" role="radio" [attr.aria-checked]="cycle === 'MONTHLY'" [class.active]="cycle === 'MONTHLY'"
+          [disabled]="paying" (click)="setCycle('MONTHLY')">{{ 'CHECKOUT_MONTHLY' | translate }}</button>
+        <button type="button" role="radio" [attr.aria-checked]="cycle === 'YEARLY'" [class.active]="cycle === 'YEARLY'"
+          [disabled]="paying" (click)="setCycle('YEARLY')">{{ 'CHECKOUT_YEARLY' | translate }}</button>
+      </div>
+
+      <p *ngIf="state.activeClients != null" class="active-clients">
+        {{ 'CHECKOUT_ACTIVE_CLIENTS' | translate: { count: state.activeClients } }}
+      </p>
+
+      <div class="plan-list" role="radiogroup" [attr.aria-label]="'CHECKOUT_PLANS' | translate">
+        <button
+          *ngFor="let plan of visiblePlans"
+          type="button"
+          role="radio"
+          class="plan-card"
+          [class.selected]="plan.id === selectedPlanId"
+          [class.too-small]="isTooSmall(plan)"
+          [attr.aria-checked]="plan.id === selectedPlanId"
+          [attr.aria-disabled]="isTooSmall(plan)"
+          [disabled]="isTooSmall(plan) || paying"
+          (click)="select(plan)">
+          <span class="plan-main">
+            <strong class="plan-name">
+              {{ plan.name }}
+              <span *ngIf="isCurrent(plan)" class="plan-tag">{{ 'CHECKOUT_CURRENT_PLAN' | translate }}</span>
+            </strong>
+            <span class="plan-limit">
+              {{ plan.toUnits != null
+                  ? ('CHECKOUT_UP_TO_CLIENTS' | translate: { count: plan.toUnits })
+                  : ('CHECKOUT_UNLIMITED_CLIENTS' | translate) }}
+            </span>
+            <span *ngIf="isTooSmall(plan)" class="plan-warning">
+              {{ 'CHECKOUT_PLAN_TOO_SMALL_HINT' | translate: { count: state.activeClients, max: plan.toUnits } }}
+            </span>
+          </span>
+          <span class="plan-price">
+            <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+            <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
+          </span>
+        </button>
+        <p *ngIf="!visiblePlans.length" class="empty">{{ 'CHECKOUT_NO_PLANS' | translate }}</p>
+      </div>
+
+      <div class="summary" *ngIf="selectedPlan as plan">
+        <div class="summary-line">
+          <span>{{ plan.name }} · {{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</span>
+          <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+        </div>
+        <small>{{ 'CHECKOUT_AMOUNT_NOTE' | translate }}</small>
+      </div>
+
+      <p *ngIf="payError" class="pay-error" role="alert">{{ payError | translate }}</p>
+
+      <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying" (click)="pay()">
+        <span *ngIf="paying" class="spinner small"></span>
+        {{ (paying ? 'CHECKOUT_REDIRECTING' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate }}
+      </button>
+      <p class="secure"><i-feather name="lock"></i-feather>{{ 'CHECKOUT_SECURE_FLOUCI' | translate }}</p>
+    </ng-container>
+  </ng-container>
+</section>

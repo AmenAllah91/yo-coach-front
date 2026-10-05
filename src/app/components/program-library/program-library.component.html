@@ -7,7 +7,7 @@
       <h1>{{ 'PROGRAM_LIBRARY' | translate }}</h1>
       <p>{{ 'PROGRAM_LIBRARY_SUBTITLE' | translate }}</p>
     </div>
-    <button class="primary-btn" (click)="createProgram()">
+    <button class="primary-btn" appWriteAction (click)="createProgram()">
       <i-feather name="plus"></i-feather>
       {{ 'CREATE_PROGRAM' | translate }}
     </button>

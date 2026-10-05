@@ -30,6 +30,8 @@ export class InvitationComponent implements OnInit {
   accepting = false;
   loadError = false;
   actionError = false;
+  /** SUB-26/29: the coach has no free active-client slot; the invitation stays pending. */
+  coachLimitReached = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -85,6 +87,7 @@ export class InvitationComponent implements OnInit {
     }
 
     this.actionError = false;
+    this.coachLimitReached = false;
     if (!this.authService.isLoggedIn()) {
       await this.router.navigate(['/register'], {
         queryParams: { invitationToken: this.token }
@@ -125,6 +128,10 @@ export class InvitationComponent implements OnInit {
             });
             this.accepting = false;
             if (result.isConfirmed) await this.acceptInvitation(error.error.currentCoachId);
+            return;
+          }
+          if (error.error?.code === 'COACH_CLIENT_LIMIT_REACHED') {
+            this.coachLimitReached = true;
             return;
           }
           this.actionError = true;

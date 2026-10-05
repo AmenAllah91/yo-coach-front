@@ -50,6 +50,7 @@
                 <i-feather [name]="item.icon" class="nav-icon"></i-feather>
                 <span class="nav-label">{{ item.title | translate }}</span>
 
+                <i-feather *ngIf="isBrandingLocked(item)" name="lock" class="nav-lock" [attr.aria-label]="'BRANDING_PAID_FEATURE' | translate"></i-feather>
                 <ng-container *ngIf="item.badge">
                   <span class="nav-badge">
                     {{ item.badge }}
@@ -90,6 +91,7 @@
                       (click)="activateSubmenu(item, subItem)">
                       <i-feather [name]="subItem.icon" class="submenu-icon"></i-feather>
                       <span class="submenu-label">{{ subItem.title | translate }}</span>
+                      <i-feather *ngIf="isBrandingLocked(subItem)" name="lock" class="nav-lock" [attr.aria-label]="'BRANDING_PAID_FEATURE' | translate"></i-feather>
                     </a>
                   </li>
                 </ul>
@@ -99,6 +101,21 @@
         </ng-container>
       </ul>
     </ng-scrollbar>
+  </div>
+
+  <!-- SUB-21: only during the free trial. -->
+  <div class="sidebar-upgrade" *ngIf="trialDaysLeft !== null">
+    <a
+      class="upgrade-cta"
+      [routerLink]="checkoutPath"
+      (click)="onUpgradeClick()"
+      [attr.title]="'UPGRADE_TO_PAID_PLAN' | translate">
+      <i-feather name="zap" class="upgrade-icon"></i-feather>
+      <span class="upgrade-copy">
+        <strong>{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</strong>
+        <small>{{ trialDaysLeftKey | translate: { count: trialDaysLeft } }}</small>
+      </span>
+    </a>
   </div>
 
   <div class="sidebar-account">

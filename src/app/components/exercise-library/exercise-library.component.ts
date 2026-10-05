@@ -1,3 +1,4 @@
+import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ import { TranslateModule } from '@ngx-translate/core';
 @Component({
   selector: 'app-exercise-library',
   standalone: true,
-  imports: [
+  imports: [WriteActionDirective, 
     CommonModule,
     FormsModule,
     HttpClientModule,

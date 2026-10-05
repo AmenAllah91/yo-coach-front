@@ -27,6 +27,7 @@ export class RegisterComponent implements OnInit {
   usernameError: string | null = null;
   passwordError: string | null = null;
   generalError: string | null = null;
+  accountExists = false;
   selectedPlan: SubscriptionPlanDto | null = null;
   planId: number | null = null;
   planLoadError: string | null = null;
@@ -111,8 +112,9 @@ export class RegisterComponent implements OnInit {
     };
 
     this.isSubmitting = true;
+    this.accountExists = false;
     const registration$: Observable<void | OnboardingResponse> = this.planId
-      ? this.onboardingService.onboard({ user, planId: this.planId })
+      ? this.onboardingService.onboard({ user, planId: this.planId, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
       : this.registerService.registerUser(user);
 
     registration$.pipe(
@@ -130,6 +132,14 @@ export class RegisterComponent implements OnInit {
       },
       error: (error) => {
         const message = String(error?.error?.error || error?.error || error?.message || '');
+        if (error?.error?.code === 'ACCOUNT_ALREADY_EXISTS') {
+          // SUB-14: one trial per coach: point to the sign-in instead of a generic error.
+          this.accountExists = true;
+          this.signupForm.get('email')?.setErrors({ serverConflict: true });
+          this.signupForm.get('email')?.markAsTouched();
+          console.error('Registration error:', error);
+          return;
+        }
         if (message.includes('This username is already in use.')) {
           this.usernameError = this.translate.instant('USERNAME_ALREADY_IN_USE');
           this.signupForm.get('username')?.setErrors({ serverConflict: true });

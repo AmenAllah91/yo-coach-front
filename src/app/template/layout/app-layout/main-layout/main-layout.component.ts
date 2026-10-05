@@ -7,6 +7,8 @@ import { NgClass } from '@angular/common';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { LanguageService } from 'app/service/language.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { SubscriptionNoticeComponent } from 'app/components/subscription-notice/subscription-notice.component';
+import { SubscriptionBannerComponent } from 'app/components/subscription-banner/subscription-banner.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -19,6 +21,8 @@ import { TranslateModule } from '@ngx-translate/core';
     RouterOutlet,
     NgClass,
     TranslateModule,
+    SubscriptionNoticeComponent,
+    SubscriptionBannerComponent,
   ],
 })
 export class MainLayoutComponent implements OnInit {

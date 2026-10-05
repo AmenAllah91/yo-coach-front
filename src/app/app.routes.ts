@@ -236,6 +236,32 @@ export const APP_ROUTE: Route[] = [
         component: CoachDashboardComponent,
       },
       {
+        // SUB-37: "My subscription".
+        path: 'subscription',
+        loadComponent: () => import('./components/my-subscription/my-subscription.component').then(m => m.MySubscriptionComponent),
+      },
+      {
+        // SUB-36: "Pay my invoice" link of the billing emails.
+        path: 'billing/pay',
+        loadComponent: () => import('./components/pay-invoice/pay-invoice.component').then(m => m.PayInvoiceComponent),
+      },
+      {
+        // SUB-23: return from Flouci (the payment service redirects here).
+        path: 'payment/success',
+        data: { outcome: 'success' },
+        loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent),
+      },
+      {
+        path: 'payment/failed',
+        data: { outcome: 'failed' },
+        loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent),
+      },
+      {
+        // SUB-22: payment screen ("Upgrade to a paid plan" in the sidebar).
+        path: 'subscription/checkout',
+        loadComponent: () => import('./components/subscription-checkout/subscription-checkout.component').then(m => m.SubscriptionCheckoutComponent),
+      },
+      {
         path: 'tasks',
         loadComponent: () => import('./components/clients/my-tasks/my-tasks.component').then(m => m.MyTasksComponent),
       },
