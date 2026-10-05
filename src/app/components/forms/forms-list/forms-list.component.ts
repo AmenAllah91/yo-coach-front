@@ -18,7 +18,7 @@ type FormsViewMode = 'active' | 'unsaved' | 'archived';
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [WriteActionDirective, 
+  imports: [WriteActionDirective,
     CommonModule,
     FeatherModule,
     ReactiveFormsModule,
@@ -410,9 +410,10 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   loadUsers(): void {
     this.usersLoading.set(true);
+    this.allUsers.set([]);
     this.usersError.set(null);
 
-    this.clientService.getListClientsByCoachWithoutPagination(this.userId)
+    this.clientService.getActiveClientsForAssignment(this.userId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (users) => {

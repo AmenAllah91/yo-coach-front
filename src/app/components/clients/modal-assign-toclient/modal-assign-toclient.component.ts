@@ -89,8 +89,8 @@ export class ModalAssignToclientComponent implements OnInit {
   loadClient() {
     if (!this.userid) return;
 
-    this.clientService.getListClientsByCoachWithoutPagination(this.userid).subscribe((res) => {
-      this.clients = Array.isArray(res) ? res : (res?.content || []);
+    this.clientService.getActiveClientsForAssignment(this.userid).subscribe((res) => {
+      this.clients = res;
     });
   }
 

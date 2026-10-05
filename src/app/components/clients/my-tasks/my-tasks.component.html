@@ -12,9 +12,9 @@
       <button type="button" role="tab" [attr.aria-selected]="!upcoming" [class.active]="!upcoming" (click)="setTab(false)">{{ fr ? 'Passées' : 'Past' }}</button>
     </div>
     <nav class="month-controls" [attr.aria-label]="fr ? 'Mois' : 'Month'">
-      <button type="button" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ fr ? 'Précédent' : 'Previous' }}</button>
+      <button type="button" [disabled]="!canShiftMonth(-1)" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ fr ? 'Précédent' : 'Previous' }}</button>
       <span>{{ monthLabel }}</span>
-      <button type="button" (click)="shiftMonth(1)">{{ fr ? 'Suivant' : 'Next' }}<i-feather name="chevron-right"></i-feather></button>
+      <button type="button" [disabled]="!canShiftMonth(1)" (click)="shiftMonth(1)">{{ fr ? 'Suivant' : 'Next' }}<i-feather name="chevron-right"></i-feather></button>
     </nav>
     <div class="tasks-divider"></div>
     <div *ngIf="loading" class="loading-state" role="status"><span class="spinner"></span><span class="sr-only">{{ fr ? 'Chargement' : 'Loading' }}</span></div>
@@ -48,12 +48,6 @@
         <div><h2>Instructions · {{ displayCoachName }}</h2><p>{{ item.instructions?.trim() || (fr ? 'Aucune instruction supplémentaire.' : 'No additional instructions.') }}</p></div>
       </div>
       <p *ngIf="error" class="error-state" role="alert">{{ error }}</p>
-      <footer *ngIf="canComplete(item)" class="detail-footer">
-        <button type="button" class="complete-button" [class.done]="item.status === 'DONE'" [disabled]="busy || item.status === 'DONE'" (click)="complete(item)">
-          <i-feather [name]="item.status === 'DONE' ? 'check-circle' : 'check'"></i-feather>
-          {{ busy ? (fr ? 'Enregistrement…' : 'Saving…') : item.status === 'DONE' ? (fr ? 'Terminée' : 'Completed') : (fr ? 'Marquer comme terminée' : 'Mark as done') }}
-        </button>
-      </footer>
     </ng-container>
   </ng-template>
 </section>
