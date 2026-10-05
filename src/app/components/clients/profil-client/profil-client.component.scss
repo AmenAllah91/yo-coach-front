@@ -5421,6 +5421,7 @@ body.client-preview-open { overflow: hidden; }
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       'header  header'
+      'notice  notice'
       'summary summary'
       'tabs    toggle'
       'content content';
@@ -5428,6 +5429,7 @@ body.client-preview-open { overflow: hidden; }
   }
 
   .main-content > .profile-header { grid-area: header; }
+  .main-content > .archived-client-notice { grid-area: notice; min-width: 0; }
   .main-content > .progress-summary { grid-area: summary; }
   .main-content > .tab-content { grid-area: content; min-width: 0; }
 

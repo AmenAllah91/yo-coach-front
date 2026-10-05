@@ -22,7 +22,6 @@ export class MyTasksComponent implements OnInit, OnDestroy {
   selected: TaskCalendarItem | null = null;
   coachName = '';
   loading = false;
-  busy = false;
   error = '';
   private clientId = '';
   private pendingItemId = '';
@@ -91,10 +90,24 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     });
   }
   shiftMonth(delta: number): void {
+    if (!this.canShiftMonth(delta)) return;
     this.month = new Date(this.month.getFullYear(), this.month.getMonth() + delta, 1);
     this.selected = null; this.pendingItemId = ''; this.load();
   }
-  setTab(upcoming: boolean): void { this.upcoming = upcoming; }
+  canShiftMonth(delta: number): boolean {
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const target = new Date(this.month.getFullYear(), this.month.getMonth() + delta, 1);
+    return this.upcoming ? target >= currentMonth : target <= currentMonth;
+  }
+  setTab(upcoming: boolean): void {
+    this.upcoming = upcoming;
+    if (!this.canShiftMonth(0)) {
+      const now = new Date();
+      this.month = new Date(now.getFullYear(), now.getMonth(), 1);
+      this.selected = null; this.pendingItemId = ''; this.load();
+    }
+  }
   typeLabel(item: TaskCalendarItem): string {
     if (item.itemType === 'HABIT') return this.fr ? 'Habitude' : 'Habit';
     switch (item.taskType) {
@@ -125,15 +138,6 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     if (item.itemType === 'HABIT') return 'habit';
     return item.taskType === 'FORM' ? 'form' : item.taskType === 'CLIENT_PROGRESS' ? 'progress'
       : item.taskType === 'BODY_METRICS' ? 'metrics' : 'general';
-  }
-  canComplete(item: TaskCalendarItem): boolean { return item.itemType !== 'HABIT' && (!item.taskType || item.taskType === 'GENERAL'); }
-  complete(item: TaskCalendarItem): void {
-    if (this.busy || item.status === 'DONE' || !this.canComplete(item)) return;
-    this.busy = true; this.error = '';
-    this.subscriptions.add(this.api.setTaskCompletion(item.id, true).subscribe({
-      next: () => { this.busy = false; this.selected = null; this.load(); },
-      error: () => { this.busy = false; this.error = this.fr ? 'Impossible de terminer cette tâche. Réessayez.' : 'Unable to complete this task. Please try again.'; },
-    }));
   }
   open(item: TaskCalendarItem): void {
     if (item.taskType === 'FORM' && item.formAssignmentId) {

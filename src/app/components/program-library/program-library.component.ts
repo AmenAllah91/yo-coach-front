@@ -24,7 +24,7 @@ import { WorkoutPublicationBadgeComponent } from './workout-publication-badge.co
 @Component({
   selector: 'app-program-library',
   standalone: true,
-  imports: [WriteActionDirective, 
+  imports: [WriteActionDirective,
     CommonModule,
     FormsModule,
     FeatherModule,
@@ -745,11 +745,12 @@ export class ProgramLibraryComponent implements OnInit {
 
 
   async loadImportClients() {
-    if (this.importClients.length > 0 || this.importClientsLoading) {
+    if (this.importClientsLoading) {
       return;
     }
 
     this.importClientsLoading = true;
+    this.importClients = [];
 
     try {
       const coachId = await this.authService.extractUserId();
@@ -759,14 +760,14 @@ export class ProgramLibraryComponent implements OnInit {
         return;
       }
 
-      const service: any = this.clientService as any;
-      const request$ = service.getListClientsByCoachWithoutPagination
-        ? service.getListClientsByCoachWithoutPagination(coachId)
-        : service.getClientsByCoach(coachId, 0, 500);
+      const request$ = this.clientService.getActiveClientsForAssignment(coachId);
 
       request$.subscribe({
-        next: (response: any) => {
-          this.importClients = response?.content || response || [];
+        next: (clients) => {
+          this.importClients = clients;
+          this.selectedImportClientIds = this.selectedImportClientIds.filter(id =>
+            this.importClients.some(client => client.id === id)
+          );
           this.importClientsLoading = false;
         },
         error: (error: any) => {

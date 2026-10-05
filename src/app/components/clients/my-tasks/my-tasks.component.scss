@@ -13,6 +13,7 @@ button:focus-visible { outline: 2px solid #39aeef; outline-offset: 3px; }
 .month-controls { display: flex; align-items: center; justify-content: space-between; gap: 0; margin: 0; padding: 14px 20px; border-bottom: 1px solid #e5e7eb; }
 .month-controls button { display: inline-flex; align-items: center; gap: 8px; min-width: 92px; height: 34px; padding: 4px; border: 0; background: none; color: #334155; font-size: 13px; font-weight: 600; }
 .month-controls button:last-child { justify-content: flex-end; }
+.month-controls button:disabled { color: #b8c0cc; cursor: default; }
 .month-controls i-feather { width: 17px; height: 17px; }
 .month-controls span { flex: 1; text-align: center; font-size: 18px; font-weight: 800; }
 .tasks-divider { height: 0; margin: 12px 0; }
@@ -49,11 +50,6 @@ button:focus-visible { outline: 2px solid #39aeef; outline-offset: 3px; }
 .coach-avatar { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; background: #39aeef; color: white; font-size: 11px; font-weight: 800; }
 .instructions-card h2 { font-size: 11px; font-weight: 700; color: #2587a5; }
 .instructions-card p { margin-top: 4px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
-.detail-footer { margin-top: auto; padding: 24px 6px 0; }
-.complete-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; border: 0; border-radius: 12px; color: white; background: #39aeef; font-size: 14px; font-weight: 700; }
-.complete-button i-feather { width: 21px; height: 21px; }
-.complete-button.done { background: #22c55e; }
-.complete-button:disabled { cursor: default; opacity: .6; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
 @media (max-width: 768px) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export type ClientStatus = 'ACTIVE' | 'ARCHIVED';
@@ -74,6 +74,16 @@ export class ClientService {
 
   getClientStatusCounts(coachId: string): Observable<ClientStatusCounts> {
     return this.http.get<ClientStatusCounts>(`${this.apiUrl}/coach/${coachId}/status-counts`);
+  }
+
+  getActiveClientsForAssignment(coachId: string): Observable<(Client & { id: string })[]> {
+    return this.http.get<Client[]>(`${this.apiUrl}/coach/${coachId}/all`, {
+      params: new HttpParams().set('status', 'ACTIVE'),
+    }).pipe(
+      map(clients => clients.filter((client): client is Client & { id: string } =>
+        !!client.id && (client.clientStatus ?? 'ACTIVE') === 'ACTIVE'
+      ))
+    );
   }
 
   getClientById(id: string, silent = false): Observable<Client> {
