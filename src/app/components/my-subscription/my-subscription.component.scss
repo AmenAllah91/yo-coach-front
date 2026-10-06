@@ -59,3 +59,11 @@ button:disabled { opacity: 0.6; cursor: default; }
 .usd-approx {
   color: #667085;
 }
+
+/* SUB-62: saved card */
+.payment-method .card-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.payment-method .card-line small { color: #6b7280; font-size: 12px; }
+.payment-method .card-notice { margin: 0 0 10px; color: #166534; font-size: 14px; }
+.auto-charge { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.auto-charge label { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
+.auto-charge input { margin-top: 3px; }

@@ -125,7 +125,7 @@
 
       <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying" (click)="pay()">
         <span *ngIf="paying" class="spinner small"></span>
-        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : currency === 'USD' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate }}
+        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : savedCard ? 'MY_SUB_PAY_WITH_CARD' : currency === 'USD' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
       </button>
       <p class="secure"><i-feather name="lock"></i-feather>{{ (currency === 'USD' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
     </ng-container>

@@ -161,6 +161,24 @@ export class CoachBillingService {
   }
 
   /** SUB-35: take the cancellation back before the end of the access. */
+  /** SUB-62: link to the Stripe page where the coach saves another card. */
+  startCardChange(): Observable<{ redirectUrl: string }> {
+    return this.http.post<{ redirectUrl: string }>(
+      `${environment.baseApiUrl}/api/billing/subscription/card/setup`,
+      {},
+      { headers: new HttpHeaders({ 'X-Skip-Toast': 'true' }) }
+    );
+  }
+
+  /** SUB-62: automatic renewal on the saved card (true) or "I pay each invoice myself" (false). */
+  setAutoCharge(enabled: boolean): Observable<{ autoCharge: boolean }> {
+    return this.http.put<{ autoCharge: boolean }>(
+      `${environment.baseApiUrl}/api/billing/subscription/auto-charge`,
+      { enabled },
+      { headers: new HttpHeaders({ 'X-Skip-Toast': 'true' }) }
+    );
+  }
+
   resumeSubscription(): Observable<SubscriptionCancellation> {
     return this.http.post<SubscriptionCancellation>(
       `${environment.baseApiUrl}/api/billing/subscription/resume`,

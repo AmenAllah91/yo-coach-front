@@ -104,7 +104,8 @@
             ? ('CHANGE_PLAN_CONFIRM_AND_PAY' | translate: { amount: amount(plan.amountNow) })
             : ('CHANGE_PLAN_CONFIRM' | translate) }}
       </button>
-      <p *ngIf="paysNow(plan)" class="secure"><i-feather name="lock"></i-feather>{{ 'CHECKOUT_SECURE_FLOUCI' | translate }}</p>
+      <p *ngIf="paysNow(plan)" class="secure"><i-feather name="lock"></i-feather>{{ (savedCard ? 'CHANGE_PLAN_CHARGED_ON_CARD'
+          : (options?.currency ?? 'TND').toUpperCase() === 'USD' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate: { card: savedCard } }}</p>
     </div>
 
     <p *ngIf="error" class="error" role="alert">{{ error | translate }}</p>

@@ -110,4 +110,52 @@ describe('MySubscriptionComponent (SUB-37)', () => {
 
     expect(c.actionError).toBe('MY_SUB_RESUME_NOT_ALLOWED');
   });
+
+  describe('SUB-62: card saved at Stripe', () => {
+    const byCard: CoachSubscriptionState = {
+      ...active, paymentGateway: 'STRIPE', currency: 'USD', autoCharge: true,
+      card: { brand: 'visa', last4: '4242', expMonth: 3, expYear: 2028 },
+    };
+
+    beforeEach(() => {
+      billing.setAutoCharge = jasmine.createSpy('setAutoCharge').and.returnValue(of({ autoCharge: false }));
+      billing.startCardChange = jasmine.createSpy('startCardChange').and.returnValue(of({ redirectUrl: 'https://checkout.stripe.test/setup' }));
+    });
+
+    it('shows the card and the automatic renewal date', () => {
+      const c = create(byCard);
+      expect(c.paidByCard).toBeTrue();
+      expect(c.cardLabel).toBe('Visa •••• 4242');
+      expect(c.cardExpiry).toBe('03/28');
+      expect(c.dateLine).toEqual({ key: 'MY_SUB_NEXT_CHARGE', date: '15/11/2026' });
+    });
+
+    it('a coach paid by Flouci has no card section', () => {
+      const c = create(active);
+      expect(c.paidByCard).toBeFalse();
+      expect(c.dateLine?.key).toBe('MY_SUB_NEXT_PAYMENT');
+    });
+
+    it('"I pay each invoice myself" after confirmation, and back to the automatic renewal', async () => {
+      const c = create(byCard);
+      const confirm = spyOn<any>(c, 'confirm').and.returnValue(Promise.resolve(false));
+      await c.setAutoCharge(false);
+      expect(billing.setAutoCharge).not.toHaveBeenCalled();
+
+      confirm.and.returnValue(Promise.resolve(true));
+      await c.setAutoCharge(false);
+      expect(billing.setAutoCharge).toHaveBeenCalledWith(false);
+
+      c.state = { ...byCard, autoCharge: false };
+      await c.setAutoCharge(true);
+      expect(billing.setAutoCharge).toHaveBeenCalledWith(true);
+    });
+
+    it('opens the Stripe page to change the card', () => {
+      const c = create(byCard);
+      const redirect = spyOn<any>(c, 'redirectTo');
+      c.changeCard();
+      expect(redirect).toHaveBeenCalledWith('https://checkout.stripe.test/setup');
+    });
+  });
 });
