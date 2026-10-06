@@ -897,6 +897,8 @@
   "CHECKOUT_PROMO_ERROR": "The promo code could not be applied. Please try again.",
   "CHECKOUT_PLAN_ARCHIVED": "This plan is no longer offered. Choose another plan.",
   "CHECKOUT_PAY_WITH_FLOUCI": "Pay with Flouci",
+  "USD_APPROX": "≈ ${{amount}}",
+  "USD_CHARGED_IN_TND": "Indicative amount: you are charged in TND, your bank converts it at the day rate.",
   "REGISTER_FEATURE_AFTER_TRIAL": "available after the trial",
   "CHECKOUT_ACTIVATE_FREE": "Activate my subscription (nothing to pay)",
   "CHECKOUT_REDIRECTING": "Opening Flouci...",

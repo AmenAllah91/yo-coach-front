@@ -10,7 +10,7 @@ import Swal from 'sweetalert2';
 import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { CoachInvoice } from 'app/models/coach-invoice.model';
-import { CoachSubscriptionState } from 'app/models/coach-subscription-state.model';
+import { CoachSubscriptionState, indicativeUsd } from 'app/models/coach-subscription-state.model';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
 import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 
@@ -36,6 +36,11 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   loading = true;
   loadError = false;
   state: CoachSubscriptionState | null = null;
+
+  /** SUB-60: indicative whole-dollar amount for a coach outside Tunisia (null = not shown). */
+  usd(amountTnd: number | null | undefined, currency?: string | null): number | null {
+    return (currency ?? 'TND').toUpperCase() === 'TND' ? indicativeUsd(amountTnd, this.state) : null;
+  }
   invoices: CoachInvoice[] = [];
   busy = false;
   payingInvoiceId: number | null = null;

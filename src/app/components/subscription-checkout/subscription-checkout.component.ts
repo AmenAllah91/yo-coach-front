@@ -9,7 +9,7 @@ import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
 
 import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
-import { CoachSubscriptionState } from 'app/models/coach-subscription-state.model';
+import { CoachSubscriptionState, indicativeUsd } from 'app/models/coach-subscription-state.model';
 import { CheckoutQuote, SalesBillingCycle, SubscriptionPlanDto } from 'app/models/subscription-onboarding.model';
 
 /** Promo code refusals that have their own message (SUB-45); anything else gets the generic one. */
@@ -91,6 +91,11 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
   }
 
   /** The quote of the selected plan, when it is the one shown (it can arrive after a plan change). */
+  /** SUB-60: indicative whole-dollar amount for a coach outside Tunisia (null = not shown). */
+  usd(amountTnd: number | null | undefined): number | null {
+    return indicativeUsd(amountTnd, this.state);
+  }
+
   /** SUB-49: a 100% promo code: nothing to pay, the subscription is activated without Flouci. */
   get nothingToPay(): boolean {
     return this.selectedQuote?.amount === 0;

@@ -36,4 +36,21 @@ export interface CoachSubscriptionState {
   billingCountry?: string | null;
   /** SUB-58: currency the subscription is charged in (TND today). */
   currency?: string | null;
+  /** SUB-60: TND for 1 USD, reference rate set by the administrator (null = no dollar amount). */
+  usdRateTnd?: number | null;
+}
+
+/**
+ * SUB-60: indicative amount in WHOLE dollars (no decimals) of a TND amount, for a coach whose chosen country is not
+ * Tunisia, using the reference rate of the administrator. Display only: the coach is always charged in TND. Null when
+ * nothing must be shown (Tunisian coach, no country chosen yet, no rate, no amount, subscription not in TND).
+ */
+export function indicativeUsd(amountTnd: number | null | undefined, state: CoachSubscriptionState | null | undefined): number | null {
+  const country = (state?.billingCountry ?? '').toUpperCase();
+  const rate = state?.usdRateTnd ?? 0;
+  const currency = (state?.currency ?? 'TND').toUpperCase();
+  if (!country || country === 'TN' || currency !== 'TND' || !(rate > 0) || amountTnd == null || !(amountTnd > 0)) {
+    return null;
+  }
+  return Math.max(1, Math.round(amountTnd / rate));
 }
