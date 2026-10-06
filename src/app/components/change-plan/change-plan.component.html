@@ -81,7 +81,7 @@
           </span>
         </span>
         <span class="plan-price">
-          <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+          <strong>{{ money(plan.price) }}</strong>
           <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
         </span>
       </button>

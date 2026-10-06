@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { formatAmount } from 'app/models/subscription-onboarding.model';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -50,6 +51,11 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   selectedPlanId: number | null = null;
   private requestedPlanId: number | null = null;
   private destroy$ = new Subject<void>();
+
+  /** SUB-61: amounts in the currency of the subscription ("50 TND" / "15 $"). */
+  money(amount: number | null | undefined): string {
+    return formatAmount(amount, this.options?.currency ?? 'TND');
+  }
 
   constructor(
     private billing: CoachBillingService,
@@ -220,8 +226,9 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
     return instant ? MySubscriptionComponent.lastDay(instant, this.timeZone) : '';
   }
 
+  /** SUB-61: an amount with its currency ("50 TND", "4,33 $"): the texts no longer say TND themselves. */
   amount(value: number | null | undefined): string {
-    return (value ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+    return formatAmount(value ?? 0, this.options?.currency ?? 'TND');
   }
 
   protected redirectTo(url: string): void {

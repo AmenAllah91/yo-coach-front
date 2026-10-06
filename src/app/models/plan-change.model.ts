@@ -36,6 +36,8 @@ export interface PlanChangeOption {
 
 export interface PlanChangeOptions {
   status: string | null;
+  /** SUB-61: currency of every amount below (TND, or USD by Stripe). */
+  currency?: string | null;
   /** PAY_FIRST, UPGRADE_USE_CHECKOUT, PLAN_CHANGE_NOT_ALLOWED: nothing can be changed now. */
   blockedCode?: string | null;
   currentPlanId: number | null;

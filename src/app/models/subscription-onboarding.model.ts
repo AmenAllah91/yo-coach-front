@@ -49,6 +49,8 @@ export interface CheckoutQuote {
   amount: number;
   couponsApplied: string[];
   couponsNotApplied: string[];
+  /** SUB-61: currency of the amounts (TND by Flouci, USD by Stripe). */
+  currency?: string | null;
 }
 
 export interface RegistrationUser {
@@ -101,4 +103,21 @@ export interface SalesSubscriptionDto {
   customerEmail?: string | null;
   planName?: string | null;
   planPrice?: number | null;
+}
+
+/** SUB-61: price of a plan in the currency of the subscription (dollar price for USD). */
+export function priceInCurrency(plan: { price: number; priceUsd?: number | null }, currency: string | null | undefined): number | null {
+  return (currency ?? 'TND').toUpperCase() === 'USD' ? (plan.priceUsd ?? null) : plan.price;
+}
+
+/** SUB-61: "50,000 TND" / "15 $": TND with 3 decimals, dollars with 2 (none when whole). */
+export function formatAmount(amount: number | null | undefined, currency: string | null | undefined, locale = 'fr-FR'): string {
+  if (amount == null) {
+    return '';
+  }
+  if ((currency ?? 'TND').toUpperCase() === 'USD') {
+    const whole = Math.round(amount * 100) % 100 === 0;
+    return new Intl.NumberFormat(locale, { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 }).format(amount) + ' $';
+  }
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(amount) + ' TND';
 }
