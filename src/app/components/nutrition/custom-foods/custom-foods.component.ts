@@ -1,10 +1,10 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { FoodDraft, foodErrors, foodNumber, foodImageError } from './food-validation';
 import { NutritionService, Food } from '../../../service/nutrition.service';
 import { FoodServing } from '@shared/models/MealPlan';
@@ -23,7 +23,12 @@ import { FoodImportPreview, FoodImportReport, foodImportTemplate, importFieldLab
   templateUrl: './custom-foods.component.html',
   styleUrls: ['./custom-foods.component.scss']
 })
-export class CustomFoodsComponent implements OnInit {
+export class CustomFoodsComponent implements OnInit, OnDestroy {
+  loadError=false;
+  deleting=false;
+  deleteError='';
+  private loadRequest?:Subscription;
+  private closeDropdown=()=>{this.openDropdownId=null;};
   goBack(): void { window.history.back(); }
 
   getFoodIcon(name: string): string {
@@ -73,6 +78,7 @@ export class CustomFoodsComponent implements OnInit {
   selectedImageFile: File | null = null;
   private hadExistingImage = false;
   mainServingId: string | null = null;
+  private mainServingBase:Partial<FoodServing>={};
   extraServings: FoodServing[] = [];
   servingFormOpen = false;
   editingServingIndex: number | null = null;
@@ -148,7 +154,7 @@ export class CustomFoodsComponent implements OnInit {
   }
 
   canManage(food: Food): boolean {
-    return food.isGeneral ? this.isAdmin : true;
+    return this.isAdmin ? !!food.isGeneral : !food.isGeneral;
   }
 
   get unitSuggestions(): string[] {
@@ -165,6 +171,7 @@ export class CustomFoodsComponent implements OnInit {
 
   private mainServingFromForm(): FoodServing {
     const serving: FoodServing = {
+      ...this.mainServingBase,
       size: foodNumber(this.servingSize) as number,
       unit: cleanUnit(this.servingDescription),
       energy: foodNumber(this.calories),
@@ -184,6 +191,7 @@ export class CustomFoodsComponent implements OnInit {
   }
 
   private loadMainServing(serving: FoodServing): void {
+    this.mainServingBase={...serving};
     const text = (value: unknown) => (value === null || value === undefined ? '' : String(value));
     this.mainServingId = serving.id ?? null;
     this.servingSize = text(serving.size);
@@ -300,18 +308,19 @@ export class CustomFoodsComponent implements OnInit {
     this.loadCurrentUser();
     this.loadFoods();
     // Close dropdown when clicking outside
-    document.addEventListener('click', () => {
-      this.openDropdownId = null;
-    });
+    document.addEventListener('click', this.closeDropdown);
   }
+  ngOnDestroy() {this.loadRequest?.unsubscribe();document.removeEventListener('click',this.closeDropdown);}
 
   private async loadCurrentUser() {
     this.isAdmin = (await this.authService.extractRoles()).includes('ROLE_ADMIN');
   }
 
   loadFoods() {
+    this.loadRequest?.unsubscribe();
+    this.loadError=false;
     this.loading = true;
-    this.nutritionService.getFoods(this.currentPage, this.pageSize, this.searchTerm || undefined, this.customOnly).subscribe({
+    this.loadRequest=this.nutritionService.getFoods(this.currentPage, this.pageSize, this.searchTerm.trim() || undefined, this.customOnly).subscribe({
       next: (response) => {
         this.foods = response.content || [];
         this.totalElements = response.totalElements || 0;
@@ -319,7 +328,7 @@ export class CustomFoodsComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading foods:', error);
+        this.foods=[];this.totalElements=0;this.totalPages=0;this.loadError=true;
         this.loading = false;
       }
     });
@@ -366,10 +375,8 @@ export class CustomFoodsComponent implements OnInit {
   }
 
   editFood(food: Food) {
-    if (this.isSaving) return;
+    if (this.isSaving || !this.canManage(food)) return;
     this.resetForm();
-    // Allow editing general foods - backend will create a copy
-
     this.editingFood = food;
     this.foodName = food.name;
     const servings = servingsOf(food);
@@ -390,6 +397,7 @@ export class CustomFoodsComponent implements OnInit {
     let stage = 'save';
     try {
       const food: Food = {
+        ...this.editingFood,
         name: this.foodName.trim(), calories: foodNumber(this.calories)!, protein: foodNumber(this.protein)!,
         carbs: foodNumber(this.carbs)!, fat: foodNumber(this.fat)!, fiber: foodNumber(this.fiber),
         sugar: foodNumber(this.sugar), polyols: foodNumber(this.polyols), saturatedFat: foodNumber(this.saturated),
@@ -439,40 +447,35 @@ export class CustomFoodsComponent implements OnInit {
   }
 
   deleteFood(food: Food) {
-    if (!this.canManage(food)) return;
+    if (this.deleting || !this.canManage(food)) return;
 
+    this.deleteError='';
     this.foodToDelete = food;
     this.showDeleteModal = true;
     this.openDropdownId = null;
   }
 
   confirmDelete() {
-    if (this.foodToDelete) {
+    if (this.foodToDelete && !this.deleting) {
+      this.deleting=true;this.deleteError='';
       this.nutritionService.deleteFood(this.foodToDelete.id!).subscribe({
         next: () => {
+          this.deleting=false;
+          if(this.foods.length===1 && this.currentPage>0)this.currentPage--;
           this.loadFoods();
           this.closeDeleteModal();
         },
         error: (error) => {
-          console.error('Error deleting food:', error);
-          let errorMessage = 'Unable to delete this food item.';
-
-          if (error.status === 403) {
-            errorMessage = 'Cannot delete this food item. It may be a general food or not owned by you.';
-          } else if (error.status === 404) {
-            errorMessage = 'Food item not found.';
-          } else if (error.status === 409) {
-            errorMessage = 'Cannot delete this food item as it is used in existing meal plans.';
-          }
-
-          // You can replace this with a toast notification or other UI feedback
-          console.error(errorMessage);
+          this.deleting=false;
+          this.deleteError=error.status===403?'FOOD_DELETE_FORBIDDEN':error.status===404?'FOOD_DELETE_NOT_FOUND':error.status===409?'FOOD_DELETE_IN_USE':'FOOD_DELETE_ERROR';
         }
       });
     }
   }
 
   closeDeleteModal() {
+    if(this.deleting)return;
+    this.deleteError='';
     this.showDeleteModal = false;
     this.foodToDelete = null;
   }
@@ -506,6 +509,7 @@ export class CustomFoodsComponent implements OnInit {
     this.hadExistingImage = false;
     this.editingFood = null;
     this.mainServingId = null;
+    this.mainServingBase={};
     this.extraServings = [];
     this.closeServingForm();
   }

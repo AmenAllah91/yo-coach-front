@@ -4,8 +4,8 @@
 
 <!-- Toast Container -->
 <div class="toast-container">
-  <div 
-    *ngFor="let toast of toastService.toasts$ | async" 
+  <div
+    *ngFor="let toast of toastService.toasts$ | async"
     class="toast"
     [class]="'toast-' + toast.type">
     <div class="toast-icon">
@@ -21,9 +21,14 @@
   </div>
 </div>
 
+<ng-container *ngIf="accountAccess.state$ | async">
+<app-account-unavailable *ngIf="accountAccess.restricted; else accountAvailable"></app-account-unavailable>
+</ng-container>
+<ng-template #accountAvailable>
 <section *ngIf="(coachingAccess.blocked$ | async) && !isInvitationRoute; else available" role="alert" class="coaching-unavailable">
   <h1>Coaching access unavailable</h1>
   <p>Your profile is currently archived by your coach. Your coaching content is temporarily unavailable. Please contact your coach to reactivate your access.</p>
 </section>
 <ng-template #available><router-outlet></router-outlet></ng-template>
+</ng-template>
 

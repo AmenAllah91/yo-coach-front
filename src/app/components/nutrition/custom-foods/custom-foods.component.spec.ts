@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { CustomFoodsComponent } from './custom-foods.component';
 import { Food } from '../../../service/nutrition.service';
 import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
@@ -23,7 +23,7 @@ describe('CustomFoodsComponent servings', () => {
   } as Food);
 
   beforeEach(() => {
-    service = jasmine.createSpyObj('NutritionService', ['updateFood', 'createFood', 'getFoods']);
+    service = jasmine.createSpyObj('NutritionService', ['updateFood', 'createFood', 'getFoods','deleteFood']);
     service.updateFood.and.callFake((_id: string, food: Food) => of({ ...food, id: 'eggs' }));
     service.createFood.and.callFake((food: Food) => of({ ...food, id: 'new' }));
     service.getFoods.and.returnValue(of({ content: [] }));
@@ -42,6 +42,26 @@ describe('CustomFoodsComponent servings', () => {
     const payload = service.updateFood.calls.mostRecent().args[1];
     expect(payload.defaultServingId).toBe('initial');
     expect(payload.servings).toEqual([jasmine.objectContaining({ id: 'initial', size: 100, unit: 'g', energy: 143, carbohydrates: 0.7 })]);
+  });
+  it('admin saves Egg with 100 g, 1 egg and 2 eggs then edits nutrition without losing serving ids',async()=>{
+    component.isAdmin=true;component.openAddModal();Object.assign(component,{foodName:'Egg',servingSize:'100',servingDescription:'g',calories:'143',protein:'12.6',carbs:'0.7',fat:'9.5'});
+    component.onServingSaved({id:'egg',size:1,unit:'egg',energy:72,protein:6.3,carbohydrates:0.4,fat:4.8});component.onServingSaved({id:'eggs',size:2,unit:'eggs',energy:144,protein:12.6,carbohydrates:0.8,fat:9.6});
+    await component.saveFood();const payload=service.createFood.calls.mostRecent().args[0];expect(payload.servings.map((s:any)=>`${s.size} ${s.unit}`)).toEqual(['100 g','1 egg','2 eggs']);
+    payload.servings[0].vitaminA=12;component.editFood({...payload,id:'new',isGeneral:true,vitaminA:12} as Food);component.protein='13';await component.saveFood();expect(service.updateFood.calls.mostRecent().args[1].servings[0].protein).toBe(13);
+    expect(service.updateFood.calls.mostRecent().args[1].vitaminA).toBe(12);
+    expect(service.updateFood.calls.mostRecent().args[1].servings[0].vitaminA).toBe(12);
+    expect(service.updateFood.calls.mostRecent().args[1].servings.slice(1).map((s:any)=>s.id)).toEqual(['egg','eggs']);
+  });
+  it('admin archives only after confirmation, blocks double submit and keeps visible errors for retry',()=>{
+    component.isAdmin=true;const food={...legacyEggs(),isGeneral:true};const pending=new Subject<void>();service.deleteFood.and.returnValue(pending);
+    component.deleteFood(food);expect(service.deleteFood).not.toHaveBeenCalled();component.closeDeleteModal();expect(service.deleteFood).not.toHaveBeenCalled();
+    component.deleteFood(food);component.confirmDelete();component.confirmDelete();expect(service.deleteFood).toHaveBeenCalledTimes(1);component.closeDeleteModal();expect(component.showDeleteModal).toBeTrue();
+    pending.error({status:409});expect(component.deleteError).toBe('FOOD_DELETE_IN_USE');expect(component.deleting).toBeFalse();service.deleteFood.and.returnValue(of(undefined));component.confirmDelete();expect(component.showDeleteModal).toBeFalse();
+  });
+  it('cancels stale food searches and exposes load errors instead of an empty success state',()=>{
+    const first=new Subject<any>();const second=new Subject<any>();service.getFoods.and.returnValues(first,second);component.loadFoods();component.searchTerm=' Milk ';component.onSearch();
+    expect(first.observed).toBeFalse();second.next({content:[legacyEggs()],totalElements:1,totalPages:1});expect(component.foods.length).toBe(1);expect(service.getFoods.calls.mostRecent().args[2]).toBe('Milk');
+    service.getFoods.and.returnValue(throwError(()=>({status:503})));component.loadFoods();expect(component.loadError).toBeTrue();expect(component.foods).toEqual([]);component.ngOnDestroy();
   });
 
   it('swaps the main serving and saves both with their ids', async () => {

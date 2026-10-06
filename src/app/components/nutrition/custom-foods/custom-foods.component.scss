@@ -942,3 +942,5 @@
     .form-row { gap: 10px; }
   }
 }
+.food-status {padding:14px 16px;background:#eef6fc;color:#47627b;border-radius:8px;font-size:13px;}
+.food-status--error {background:#fff0ee;color:#a6352c;button{text-decoration:underline;margin-left:8px;}}

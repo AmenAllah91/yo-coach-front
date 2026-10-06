@@ -1,4 +1,5 @@
 import { CoachingAccessService } from '../service/coaching-access.service';
+import { AccountAccessService } from '../service/account-access.service';
 import { Injectable } from '@angular/core';
 import {
   HttpEvent,
@@ -27,7 +28,8 @@ export class AuthInterceptor implements HttpInterceptor {
     private toastService: ToastService,
     private coachingAccess: CoachingAccessService,
     private authService: AuthService,
-    private subscriptionNotices: SubscriptionNoticeService
+    private subscriptionNotices: SubscriptionNoticeService,
+    private accountAccess: AccountAccessService
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -51,8 +53,9 @@ export class AuthInterceptor implements HttpInterceptor {
     const handle = (request: HttpRequest<any>) => {
       return next.handle(request).pipe(
         catchError(error => {
+          if(this.accountAccess.publishIfRefusal(error.error)) return throwError(()=>error);
           if (error.error?.code === 'CLIENT_ARCHIVED') {
-            this.coachingAccess.blocked$.next(true);
+            void this.coachingAccess.markClientArchived();
           }
           // SUB-29: subscription refusals get a clear message with the right button, not a technical error.
           if (this.subscriptionNotices.publishIfSubscriptionRefusal(error.error)

@@ -1,0 +1,106 @@
+<main class="page-container" [attr.aria-busy]="loading">
+  <header class="page-header">
+    <a *ngIf="detailId; else listBack" class="app-page-back" routerLink="/admin/coaches" [queryParams]="listQuery" [attr.aria-label]="'BACK' | translate"><i-feather name="arrow-left"></i-feather></a>
+    <ng-template #listBack><button class="app-page-back" type="button" (click)="goBack()" [attr.aria-label]="'BACK' | translate"><i-feather name="arrow-left"></i-feather></button></ng-template>
+    <div class="header-content"><h1>{{ (detailId ? 'COACH_DETAIL' : 'COACH_MANAGEMENT') | translate }}</h1><p>{{ (detailId ? 'COACH_DETAIL_SUBTITLE' : 'COACH_MANAGEMENT_SUBTITLE') | translate }}</p></div>
+    <div class="header-actions"><button class="secondary-btn" type="button" (click)="refresh()" [disabled]="loading || actionBusy"><i-feather name="refresh-cw"></i-feather>{{ 'ADMIN_REFRESH' | translate }}</button></div>
+  </header>
+  <div class="content">
+    <div *ngIf="!detailId" class="toolbar">
+      <div class="search"><i-feather name="search"></i-feather><input type="search" [ngModel]="filters.search" (ngModelChange)="search($event)" [placeholder]="'COACH_SEARCH' | translate" [attr.aria-label]="'COACH_SEARCH' | translate"></div>
+      <label>{{ 'COACH_ACCOUNT_STATUS' | translate }}<select [(ngModel)]="filters.account" (change)="applyFilters()"><option value="">{{ 'COACH_ALL' | translate }}</option><option value="ACTIVE">{{ 'COACH_ACCOUNT_ACTIVE' | translate }}</option><option value="DISABLED">{{ 'COACH_ACCOUNT_DISABLED' | translate }}</option><option value="BANNED">{{ 'COACH_ACCOUNT_BANNED' | translate }}</option></select></label>
+      <label>{{ 'COACH_TRIAL_STATUS' | translate }}<select [(ngModel)]="filters.trial" (change)="applyFilters()"><option value="">{{ 'COACH_ALL' | translate }}</option><option value="RUNNING">{{ 'COACH_TRIAL_RUNNING' | translate }}</option><option value="ENDED">{{ 'COACH_TRIAL_ENDED' | translate }}</option><option value="NONE">{{ 'COACH_TRIAL_NONE' | translate }}</option><option value="UNKNOWN">{{ 'COACH_TRIAL_UNKNOWN' | translate }}</option></select></label>
+      <label>{{ 'COACH_PLAN' | translate }}<select [(ngModel)]="filters.planId" (change)="applyFilters()"><option value="">{{ 'COACH_ALL' | translate }}</option><option *ngFor="let plan of plans" [value]="plan.id">{{ plan.name }}</option></select></label>
+      <label>{{'COACH_USAGE_FILTER'|translate}}<select [(ngModel)]="filters.usage" (change)="applyFilters()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let status of ['NEAR','REACHED','EXCEEDED','UNLIMITED','BELOW','NO_PLAN','UNKNOWN']" [value]="status">{{('COACH_USAGE_'+status)|translate}}</option></select></label>
+      <button class="secondary-btn reset" type="button" (click)="reset()">{{ 'COACH_RESET' | translate }}</button>
+    </div>
+    <p *ngIf="loading" role="status" class="notice">{{ 'ADMIN_LOADING' | translate }}</p>
+    <div *ngIf="error" role="alert" class="notice error">{{ (detailId ? 'COACH_DETAIL_ERROR' : 'COACH_LIST_ERROR') | translate }} <button type="button" (click)="refresh()">{{ 'COACH_RETRY' | translate }}</button></div>
+    <ng-container *ngIf="result as data">
+      <p *ngIf="!data.billingAvailable" role="status" class="notice warning">{{ 'COACH_BILLING_WARNING' | translate }}</p>
+      <div class="coaches-table-wrap">
+        <table>
+          <thead><tr><th scope="col">{{ 'COACH_PERSON' | translate }}</th><th scope="col">{{ 'COACH_REGISTERED' | translate }}</th><th scope="col">{{ 'COACH_ACCOUNT_STATUS' | translate }}</th><th scope="col">{{ 'COACH_TRIAL_STATUS' | translate }}</th><th scope="col">{{ 'COACH_PLAN' | translate }}</th><th scope="col">{{ 'COACH_CLIENTS' | translate }}</th><th scope="col"><span class="sr-only">{{ 'COACH_DETAIL' | translate }}</span></th></tr></thead>
+          <tbody>
+            <tr *ngIf="!data.content.length"><td colspan="7" class="empty">{{ 'COACH_EMPTY' | translate }}</td></tr>
+            <tr *ngFor="let item of data.content">
+              <td><div class="person"><span class="avatar">{{ initials(item.name) }}</span><div><a class="coach-name" [routerLink]="['/admin/coaches', item.id]" [queryParams]="listQuery">{{ item.name }}</a><span class="email">{{ item.email }}</span><span class="id">{{ item.id }}</span></div></div></td>
+              <td>{{ item.registeredAt ? (item.registeredAt | date:'mediumDate') : '—' }}</td>
+              <td><span class="status" [attr.data-status]="item.accountStatus">{{ label('ACCOUNT', item.accountStatus) | translate }}</span></td>
+              <td><span class="status" [attr.data-status]="item.trialStatus">{{ label('TRIAL', item.trialStatus) | translate }}</span></td>
+              <td><span>{{ item.billingAvailable ? (item.subscription?.planName || ('COACH_NO_PLAN' | translate)) : ('COACH_UNAVAILABLE' | translate) }}</span><small *ngIf="item.subscription">{{ label('SUB', item.subscription.status) | translate }}</small></td>
+              <td class="usage"><strong>{{ item.activeClients }}</strong> / {{ limit(item) | translate }}<small>{{ 'COACH_ACTIVE_CLIENTS' | translate }}</small><span *ngIf="item.clientLimitStatus==='NEAR'||item.clientLimitStatus==='REACHED'||item.clientLimitStatus==='EXCEEDED'" class="usage-badge" [attr.data-usage]="item.clientLimitStatus">{{('COACH_USAGE_'+item.clientLimitStatus)|translate}}</span></td>
+              <td><a class="secondary-btn" [routerLink]="['/admin/coaches', item.id]" [queryParams]="listQuery">{{ 'COACH_OPEN' | translate }}<i-feather name="arrow-right"></i-feather></a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination"><span>{{ 'COACH_RESULTS' | translate:{count:data.totalElements} }}</span><div><button type="button" class="secondary-btn" [disabled]="filters.page === 0" (click)="page(-1)"><i-feather name="chevron-left"></i-feather>{{ 'COACH_PREVIOUS' | translate }}</button><span>{{ filters.page + 1 }}</span><button type="button" class="secondary-btn" [disabled]="lastPage" (click)="page(1)">{{ 'COACH_NEXT' | translate }}<i-feather name="chevron-right"></i-feather></button></div></div>
+    </ng-container>
+    <ng-container *ngIf="coach as item">
+      <p *ngIf="!item.billingAvailable" role="status" class="notice warning">{{ 'COACH_BILLING_WARNING' | translate }}</p>
+      <section class="profile"><span class="avatar avatar--large">{{ initials(item.name) }}</span><div><h2>{{ item.name }}</h2><p>{{ item.email }}</p><span class="id">{{ item.id }}</span></div><span class="status" [attr.data-status]="item.accountStatus">{{ label('ACCOUNT', item.accountStatus) | translate }}</span></section>
+      <div class="account-actions"><button *ngFor="let action of accountActions" class="secondary-btn" [class.danger-action]="action === 'BLOCK' || action === 'DISABLE'" type="button" [disabled]="actionBusy || loading" (click)="openAccountAction(action)">{{ label('ACTION', action) | translate }}</button></div>
+      <p *ngIf="actionSuccess" role="status" class="notice">{{ 'COACH_ACTION_SUCCESS' | translate }}</p>
+      <p *ngIf="billingSuccess" role="status" class="notice">{{'COACH_BILLING_ACTION_SUCCESS'|translate}}</p>
+      <div class="account-actions" *ngIf="item.billingAvailable&&item.subscription?.subscriptionId">
+        <button type="button" class="secondary-btn" [disabled]="actionBusy||billingBusy" (click)="openBillingAction('ASSIGN_PLAN')">{{'COACH_ASSIGN_PLAN'|translate}}</button>
+        <button *ngIf="canExtend" type="button" class="secondary-btn" [disabled]="actionBusy||billingBusy" (click)="openBillingAction('EXTEND_TRIAL')">{{'COACH_EXTEND_TRIAL'|translate}}</button>
+      </div>
+      <section *ngIf="item.accountStatus === 'BANNED'" class="block-reason notice warning"><strong>{{ 'COACH_BLOCK_REASON' | translate }}: {{ currentBlock?.reason ? (label('REASON', currentBlock?.reason) | translate) : ('COACH_NOT_RECORDED' | translate) }}</strong><p *ngIf="currentBlock?.note">{{ currentBlock?.note }}</p><small *ngIf="currentBlock">{{ currentBlock?.occurredAt | date:'medium' }}</small></section>
+      <nav class="detail-nav" aria-label="Coach sections"><button *ngFor="let tab of sections" type="button" [class.selected]="section === tab" [attr.aria-current]="section === tab ? 'page' : null" (click)="selectSection(tab)">{{ ('COACH_SECTION_' + tab.toUpperCase()) | translate }}</button></nav>
+      <div class="detail-grid" *ngIf="section === 'overview'">
+        <section class="detail-card"><h2><i-feather name="user"></i-feather>{{ 'COACH_ACCOUNT' | translate }}</h2><dl><dt>{{ 'NAME' | translate }}</dt><dd>{{ item.name }}</dd><dt>{{ 'EMAIL' | translate }}</dt><dd>{{ item.email }}</dd><dt>ID</dt><dd class="id">{{ item.id }}</dd><dt>{{ 'COACH_REGISTERED' | translate }}</dt><dd>{{ item.registeredAt ? (item.registeredAt | date:'medium') : '—' }}</dd><dt>{{ 'COACH_ACCOUNT_STATUS' | translate }}</dt><dd>{{ label('ACCOUNT', item.accountStatus) | translate }}</dd></dl><p *ngIf="item.subscription?.readOnly" class="hint">{{ 'COACH_READ_ONLY' | translate }}</p></section>
+        <section class="detail-card"><h2><i-feather name="clock"></i-feather>{{ 'COACH_TRIAL_STATUS' | translate }}</h2><dl><dt>{{ 'STATUS_LABEL' | translate }}</dt><dd>{{ label('TRIAL', item.trialStatus) | translate }}</dd><dt>{{ 'COACH_START' | translate }}</dt><dd>{{ item.subscription?.trialStartedAt ? (item.subscription?.trialStartedAt | date:'medium') : ('COACH_NOT_RECORDED' | translate) }}</dd><dt>{{ 'COACH_TRIAL_END' | translate }}</dt><dd>{{ item.subscription?.trialEndsAt ? (item.subscription?.trialEndsAt | date:'medium') : '—' }}</dd><dt>{{ 'COACH_TRIAL_LIMIT' | translate }}</dt><dd>{{ item.subscription?.trialMaxClients ?? '—' }}</dd><ng-container *ngIf="item.trialStatus === 'RUNNING'"><dt>{{ 'COACH_TRIAL_DAYS' | translate }}</dt><dd>{{ item.subscription?.trialDaysLeft ?? '—' }}</dd></ng-container></dl><p class="hint">{{ 'COACH_TRIAL_DATE_NOTE' | translate }}</p></section>
+      </div>
+      <section class="detail-card" *ngIf="section === 'subscription'"><h2><i-feather name="credit-card"></i-feather>{{ 'COACH_SECTION_SUBSCRIPTION' | translate }}</h2><dl><dt>{{ 'COACH_PLAN' | translate }}</dt><dd>{{ item.billingAvailable ? (item.subscription?.planName || ('COACH_NO_PLAN' | translate)) : ('COACH_UNAVAILABLE' | translate) }}</dd><dt>{{ 'COACH_CYCLE' | translate }}</dt><dd>{{ item.subscription?.billingCycle ? (label('CYCLE', item.subscription?.billingCycle) | translate) : '—' }}</dd><dt>{{ 'STATUS_LABEL' | translate }}</dt><dd>{{ item.billingAvailable ? (label('SUB', item.subscription?.status) | translate) : ('COACH_UNAVAILABLE' | translate) }}</dd><dt>{{ 'COACH_START' | translate }}</dt><dd>{{ (item.subscription?.currentPeriodStart || (item.trialStatus === 'RUNNING' ? item.subscription?.trialStartedAt : null)) ? ((item.subscription?.currentPeriodStart || item.subscription?.trialStartedAt) | date:'medium') : '—' }}</dd><dt>{{ 'COACH_PERIOD_END' | translate }}</dt><dd>{{ (item.subscription?.currentPeriodEnd || (item.trialStatus === 'RUNNING' ? item.subscription?.trialEndsAt : null)) ? ((item.subscription?.currentPeriodEnd || item.subscription?.trialEndsAt) | date:'medium') : '—' }}</dd><dt>{{ 'COACH_PLAN_LIMIT' | translate }}</dt><dd>{{ !item.billingAvailable ? ('COACH_UNAVAILABLE' | translate) : !item.subscription?.subscriptionId ? ('COACH_NO_PLAN' | translate) : item.subscription?.planMaxClients === null ? ('COACH_UNLIMITED' | translate) : (item.subscription?.planMaxClients ?? '—') }}</dd><dt>{{ 'COACH_SUB_ID' | translate }}</dt><dd>{{ item.subscription?.subscriptionId ?? '—' }}</dd></dl><p *ngIf="item.subscription?.cancelAtPeriodEnd" class="notice warning">{{ 'COACH_CANCELLATION' | translate }}</p></section>
+      <section class="detail-card clients-card" *ngIf="section === 'clients'"><h2><i-feather name="users"></i-feather>{{ 'COACH_CLIENTS' | translate }}</h2><p class="client-count">{{ item.activeClients }} <span>/ {{ limit(item) | translate }}</span></p><span *ngIf="item.clientLimitStatus" class="usage-badge" [attr.data-usage]="item.clientLimitStatus">{{('COACH_USAGE_'+item.clientLimitStatus)|translate}}</span><p>{{ 'COACH_ACTIVE_CLIENTS' | translate }} / {{ 'COACH_MAX_ALLOWED' | translate }}</p><p class="hint">{{ 'COACH_CLIENTS_HINT' | translate }} {{'COACH_USAGE_NOTE'|translate}}</p></section>
+      <ng-container *ngIf="section === 'payments' || section === 'history'">
+        <section *ngIf="section==='history'" class="detail-card">
+          <h2>{{'COACH_BILLING_ADMIN_HISTORY'|translate}}</h2>
+          <p *ngIf="historyLoading">{{'ADMIN_LOADING'|translate}}</p>
+          <p *ngIf="historyError" class="notice error" role="alert">{{'COACH_BILLING_HISTORY_ERROR'|translate}} <button type="button" (click)="loadSubscriptionHistory()">{{'COACH_RETRY'|translate}}</button></p>
+          <div class="history-entry" *ngFor="let e of subscriptionEvents"><div><strong>{{(e.action==='ASSIGN_PLAN'?'COACH_ASSIGN_PLAN':'COACH_EXTEND_TRIAL')|translate}}</strong>
+            <p *ngIf="e.action==='ASSIGN_PLAN'">{{e.oldPlanName}} (#{{e.oldPlanId}}) → {{e.newPlanName}} (#{{e.newPlanId}})</p>
+            <p *ngIf="e.action==='EXTEND_TRIAL'">{{e.oldTrialEnd|date:'medium'}} → {{e.newTrialEnd|date:'medium'}}</p>
+            <p class="audit-note">{{e.reason}}</p><small>{{e.occurredAt|date:'medium'}} · {{'COACH_ACTION_BY'|translate}}: {{e.actor}}</small></div></div>
+          <p *ngIf="!historyLoading&&!historyError&&!subscriptionEvents.length">{{'COACH_NO_HISTORY'|translate}}</p>
+        </section>
+        <p *ngIf="invoicesLoading" role="status" class="notice">{{ 'ADMIN_LOADING' | translate }}</p>
+        <p *ngIf="invoicesError" role="alert" class="notice error">{{ 'COACH_INVOICES_ERROR' | translate }} <button type="button" (click)="refresh()">{{ 'COACH_RETRY' | translate }}</button></p>
+        <section *ngIf="section === 'payments' && !invoicesLoading && !invoicesError" class="detail-card"><h2><i-feather name="credit-card"></i-feather>{{ 'COACH_SECTION_PAYMENTS' | translate }}</h2><p class="hint">{{ 'COACH_PAYMENTS_NOTE' | translate }}</p><div class="coaches-table-wrap"><table class="invoice-table"><thead><tr><th>{{ 'COACH_INVOICE' | translate }}</th><th>{{ 'COACH_PLAN' | translate }}</th><th>{{ 'COACH_ISSUED' | translate }}</th><th>{{ 'COACH_DUE' | translate }}</th><th>{{ 'COACH_AMOUNT' | translate }}</th><th>{{ 'STATUS_LABEL' | translate }}</th></tr></thead><tbody><tr *ngIf="!invoices.length"><td colspan="6" class="empty">{{ 'COACH_NO_INVOICES' | translate }}</td></tr><tr *ngFor="let invoice of invoices"><td>#{{ invoice.id }}</td><td>{{ invoice.planName || '—' }}</td><td>{{ invoice.invoiceDate ? (invoice.invoiceDate | date:'mediumDate') : '—' }}</td><td>{{ invoice.dueDate ? (invoice.dueDate | date:'mediumDate') : '—' }}</td><td>{{ invoice.amount | number:'1.2-3' }} {{ invoice.currency }}</td><td><span class="status" [attr.data-status]="invoice.status">{{ label('INVOICE', invoice.status) | translate }}</span></td></tr></tbody></table></div></section>
+        <section *ngIf="section === 'history'" class="detail-card"><h2><i-feather name="activity"></i-feather>{{ 'COACH_SECTION_HISTORY' | translate }}</h2><p class="hint">{{ 'COACH_HISTORY_NOTE' | translate }}</p><div class="history-entry"><i-feather name="user-plus"></i-feather><div><strong>{{ 'COACH_REGISTERED' | translate }}</strong><small>{{ item.registeredAt ? (item.registeredAt | date:'medium') : '—' }}</small></div></div><div class="history-entry" *ngFor="let event of accountHistory"><i-feather name="shield"></i-feather><div><strong>{{ label('ACTION', event.action) | translate }}</strong><small>{{ label('ACCOUNT', event.previousStatus) | translate }} → {{ label('ACCOUNT', event.status) | translate }} · {{ event.occurredAt | date:'medium' }}</small><small *ngIf="event.reason">{{ label('REASON', event.reason) | translate }}</small><p *ngIf="event.note" class="audit-note">{{ event.note }}</p><small *ngIf="event.actor">{{ 'COACH_ACTION_BY' | translate }}: {{ event.actor }}</small></div></div><ng-container *ngIf="!invoicesLoading && !invoicesError"><div class="history-entry" *ngFor="let event of history"><i-feather name="file-text"></i-feather><div><strong>{{ label('EVENT', event.eventType) | translate }}</strong><small>{{ 'COACH_INVOICE' | translate }} #{{ event.invoiceId }} · {{ event.occurredAt | date:'medium' }}</small></div></div><p *ngIf="!history.length" class="hint">{{ 'COACH_NO_HISTORY' | translate }}</p></ng-container></section>
+      </ng-container>
+    </ng-container>
+  </div>
+</main>
+
+<dialog #accountDialog class="account-dialog" aria-labelledby="account-action-title" aria-describedby="account-action-description" (cancel)="$event.preventDefault(); closeAccountAction()">
+  <h2 id="account-action-title">{{ label('ACTION', pendingAction) | translate }}</h2>
+  <p id="account-action-description">{{ 'COACH_ACTION_CONFIRM' | translate:{name:coach?.name} }}</p>
+  <p class="hint">{{ label('ACTION_NOTE', pendingAction) | translate }}</p>
+  <div *ngIf="pendingAction === 'BLOCK'" class="reason-form"><label for="block-reason">{{ 'COACH_BLOCK_REASON' | translate }}</label><select id="block-reason" [(ngModel)]="blockReason" [disabled]="actionBusy"><option *ngFor="let reason of blockReasons" [value]="reason">{{ label('REASON', reason) | translate }}</option></select><label for="block-note">{{ (blockReason === 'OTHER' ? 'COACH_BLOCK_DETAILS_REQUIRED' : 'COACH_BLOCK_DETAILS') | translate }}</label><textarea id="block-note" [(ngModel)]="blockNote" maxlength="1000" rows="4" [disabled]="actionBusy"></textarea></div>
+  <p *ngIf="actionError" role="alert" class="notice error">{{ actionError | translate }}</p>
+  <div class="dialog-actions"><button type="button" class="secondary-btn" [disabled]="actionBusy" (click)="closeAccountAction()" autofocus>{{ 'CANCEL' | translate }}</button><button *ngIf="actionError === 'COACH_ACTION_CONFLICT'" type="button" class="secondary-btn" (click)="refresh()">{{ 'ADMIN_REFRESH' | translate }}</button><button class="secondary-btn confirm-action" type="button" [disabled]="actionBusy || !validAction" (click)="confirmAccountAction()">{{ (actionBusy ? 'COACH_ACTION_SAVING' : 'COACH_ACTION_CONFIRM_BUTTON') | translate }}</button></div>
+</dialog>
+<dialog #billingDialog class="account-dialog" aria-labelledby="billing-action-title" (cancel)="$event.preventDefault();closeBillingAction()">
+  <h2 id="billing-action-title">{{(billingAction==='ASSIGN_PLAN'?'COACH_ASSIGN_PLAN':'COACH_EXTEND_TRIAL')|translate}}</h2>
+  <p>{{coach?.name}}</p><p>{{'COACH_CURRENT_PLAN'|translate}}: <strong>{{coach?.subscription?.planName}} (#{{coach?.subscription?.planId}})</strong></p>
+  <p class="hint">{{(billingAction==='ASSIGN_PLAN'?'COACH_ASSIGN_NOTE':'COACH_EXTEND_NOTE')|translate}}</p>
+  <div class="reason-form">
+    <ng-container *ngIf="billingAction==='ASSIGN_PLAN'">
+      <p *ngIf="billingPlansLoading">{{'ADMIN_LOADING'|translate}}</p><p *ngIf="billingPlansError" role="alert" class="notice error">{{'BILLING_LOAD_ERROR'|translate}}</p>
+      <label for="new-plan">{{'COACH_NEW_PLAN'|translate}}</label><select id="new-plan" [(ngModel)]="newPlanId" [disabled]="billingBusy||billingPlansLoading">
+        <option value="">{{'COACH_CHOOSE_PLAN'|translate}}</option><option *ngFor="let p of billingPlans" [value]="p.id" [disabled]="p.id===coach?.subscription?.planId">{{p.name}} · {{p.billingCycle}} · {{p.toUnits==null||p.toUnits===2147483647?('COACH_UNLIMITED'|translate):p.toUnits}}</option>
+      </select><p *ngIf="selectedNewPlan as p">{{'COACH_NEW_PLAN'|translate}}: <strong>{{p.name}} (#{{p.id}})</strong> · {{p.price}} {{p.currency}}</p>
+    </ng-container>
+    <ng-container *ngIf="billingAction==='EXTEND_TRIAL'">
+      <p>{{'COACH_TRIAL_END'|translate}}: {{coach?.subscription?.trialEndsAt|date:'medium'}}</p>
+      <label for="extend-days">{{'COACH_EXTEND_TRIAL'|translate}}</label><select id="extend-days" [(ngModel)]="extendDays" [disabled]="billingBusy"><option *ngFor="let days of [7,15,30]" [ngValue]="days">+{{days}} {{'BILLING_DAYS'|translate}}</option></select>
+      <p>{{'COACH_NEW_TRIAL_END'|translate}}: <strong>{{newTrialDay}}</strong> ({{coach?.subscription?.timeZone||'Africa/Tunis'}})</p>
+    </ng-container>
+    <label for="billing-reason">{{'COACH_BILLING_REASON'|translate}}</label><textarea id="billing-reason" [(ngModel)]="billingReason" [disabled]="billingBusy" maxlength="1000" rows="3"></textarea>
+  </div>
+  <p *ngIf="billingError" role="alert" class="notice error">{{billingError|translate}}</p>
+  <div class="dialog-actions"><button type="button" class="secondary-btn" [disabled]="billingBusy" (click)="closeBillingAction()">{{'CANCEL'|translate}}</button><button *ngIf="billingError==='COACH_BILLING_CONFLICT'" type="button" class="secondary-btn" (click)="refresh()">{{'ADMIN_REFRESH'|translate}}</button><button type="button" class="secondary-btn confirm-action" [disabled]="!validBillingAction" (click)="confirmBillingAction()">{{(billingBusy?'COACH_ACTION_SAVING':'COACH_ACTION_CONFIRM_BUTTON')|translate}}</button></div>
+</dialog>

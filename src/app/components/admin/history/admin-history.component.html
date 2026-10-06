@@ -1,0 +1,26 @@
+<main class="page-container" [attr.aria-busy]="loading">
+  <header class="page-header"><button type="button" class="app-page-back" (click)="back()" [attr.aria-label]="'BACK'|translate"><i-feather name="arrow-left"></i-feather></button>
+    <div class="header-content"><h1>{{'ADMIN_HISTORY'|translate}}</h1><p>{{'ADMIN_HISTORY_SUBTITLE'|translate}}</p></div>
+    <div class="header-actions"><button type="button" class="secondary-btn" [disabled]="loading" (click)="refresh()"><i-feather name="refresh-cw"></i-feather>{{'ADMIN_REFRESH'|translate}}</button></div>
+  </header>
+  <div class="content">
+    <div class="toolbar"><div class="search"><i-feather name="search"></i-feather><input type="search" [ngModel]="filters.search" (ngModelChange)="search($event)" [placeholder]="'ADMIN_HISTORY_SEARCH'|translate" [attr.aria-label]="'ADMIN_HISTORY_SEARCH'|translate"></div>
+      <label>{{'ADMIN_HISTORY_ACTION'|translate}}<select [(ngModel)]="filters.action" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let action of actions" [value]="action">{{('ADMIN_HISTORY_'+action)|translate}}</option></select></label>
+      <button type="button" class="secondary-btn" (click)="reset()">{{'COACH_RESET'|translate}}</button></div>
+    <p *ngIf="loading" role="status" class="notice">{{'LOADING'|translate}}</p>
+    <p *ngIf="error" role="alert" class="notice error">{{'ADMIN_HISTORY_ERROR'|translate}} <button type="button" (click)="refresh()">{{'COACH_RETRY'|translate}}</button></p>
+    <ng-container *ngIf="result as data">
+      <p *ngIf="!data.billingAvailable" role="alert" class="notice warning">{{'ADMIN_HISTORY_PARTIAL'|translate}} <button type="button" (click)="refresh()">{{'COACH_RETRY'|translate}}</button></p>
+      <div class="coaches-table-wrap"><table><thead><tr><th>{{'ADMIN_PAYMENT_DATE'|translate}}</th><th>{{'ADMIN_HISTORY_ADMIN'|translate}}</th><th>{{'ADMIN_HISTORY_ACTION'|translate}}</th><th>{{'ADMIN_HISTORY_TARGET'|translate}}</th><th>{{'ADMIN_HISTORY_CHANGES'|translate}}</th></tr></thead><tbody>
+        <tr *ngIf="!data.content.length"><td colspan="5" class="empty">{{'ADMIN_HISTORY_EMPTY'|translate}}</td></tr>
+        <tr *ngFor="let e of data.content"><td>{{e.occurredAt?(e.occurredAt|date:'medium'):'—'}}</td>
+          <td>{{e.adminName||e.actor||('COACH_NOT_RECORDED'|translate)}}<small class="id" *ngIf="e.adminName">{{e.actor}}</small></td>
+          <td><strong>{{('ADMIN_HISTORY_'+e.action)|translate}}</strong><p *ngIf="e.reason" class="audit-note">{{e.reason}}</p></td>
+          <td><a *ngIf="e.coachId" class="coach-name" [routerLink]="['/admin/coaches',e.coachId]">{{e.coachName}}</a><small *ngIf="e.coachId">{{e.email}}</small><small class="id" *ngIf="e.coachId">{{e.coachId}}</small>
+            <span *ngIf="!e.coachId">{{e.planName||'—'}}</span><small *ngIf="e.planId">{{'COACH_PLAN'|translate}} #{{e.planId}}</small></td>
+          <td><div class="change" *ngFor="let c of changes(e)"><small>{{('ADMIN_HISTORY_FIELD_'+c.key)|translate}}</small><span>{{value(c.key,c.before)|translate}} → <strong>{{value(c.key,c.after)|translate}}</strong></span></div></td>
+        </tr></tbody></table></div>
+      <div class="pagination"><span>{{'COACH_RESULTS'|translate:{count:data.totalElements} }}</span><div><button type="button" class="secondary-btn" [disabled]="filters.page===0" (click)="page(-1)">{{'COACH_PREVIOUS'|translate}}</button><span>{{filters.page+1}}</span><button type="button" class="secondary-btn" [disabled]="lastPage" (click)="page(1)">{{'COACH_NEXT'|translate}}</button></div></div>
+    </ng-container>
+  </div>
+</main>
