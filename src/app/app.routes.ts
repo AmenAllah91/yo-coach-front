@@ -1,3 +1,4 @@
+import { accountAccessGuard } from './config/guard/account-access.guard';
 import { coachingAccessGuard } from './config/guard/coaching-access.guard';
 import { CoachingUnavailableComponent } from './components/clients/coaching-unavailable.component';
 import { AssignFullPlanComponent } from './components/nutrition/assign-full-plan/assign-full-plan.component';
@@ -6,6 +7,7 @@ import { AssignMacroPlanComponent } from './components/nutrition/assign-macro-pl
 // app.routes.ts
 
 import { CanActivateFn, Route } from '@angular/router';
+import { adminGuard } from './config/guard/admin.guard';
 import { MainLayoutComponent } from './template/layout/app-layout/main-layout/main-layout.component';
 import { RegisterComponent } from './template/layout/register/register.component';
 import { ExerciseLibraryComponent } from './components/exercise-library/exercise-library.component';
@@ -47,7 +49,6 @@ import {PublicWebsiteComponent} from "./components/website/public-website/public
 import {ProgressPicturesComponent} from "./components/progress-pictures-module/progress-pictures/progress-pictures.component";
 import { BodyMeasurementsComponent } from './components/body-measurements/body-measurements.component';
 import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
-import {RevenueSubscriptionsComponent} from "./components/admin/revenue-subscriptions/revenue-subscriptions.component";
 import {UsersComponent} from "./components/admin/users/users.component";
 import {VideoViewerComponent} from "./components/video-viewer/video-viewer.component";
 import {
@@ -67,6 +68,7 @@ const isAuthenticated: CanActivateFn = (route, state) =>
   inject(AuthGuard).isAccessAllowed(route, state);
 
 export const APP_ROUTE: Route[] = [
+  { path: 'account-unavailable', canActivate: [isAuthenticated], loadComponent: () => import('./components/account-unavailable/account-unavailable.component').then(m=>m.AccountUnavailableComponent) },
   { path: 'coaching-unavailable', component: CoachingUnavailableComponent, canActivate: [isAuthenticated] },
   {
     path: 'invitation/:token',
@@ -75,19 +77,37 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'coach-onboarding',
     component: CoachOnboardingComponent,
-    canActivate: [isAuthenticated, coachingAccessGuard, coachOnboardingEntryGuard],
+    canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingEntryGuard],
   },
   {
     path: 'client-onboarding',
     component: ClientOnboardingComponent,
-    canActivate: [isAuthenticated, coachingAccessGuard, clientOnboardingEntryGuard],
+    canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, clientOnboardingEntryGuard],
   },
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [isAuthenticated, coachingAccessGuard, coachOnboardingGuard, clientOnboardingGuard],
-    canActivateChild: [coachingAccessGuard],
+    canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingGuard, clientOnboardingGuard],
+    canActivateChild: [accountAccessGuard, coachingAccessGuard],
     children: [
+      {path:'admin/subscriptions',canActivate:[adminGuard],data:{mode:'subscriptions'},loadComponent:()=>import('./components/admin/billing/admin-billing.component').then(m=>m.AdminBillingComponent)},
+      {path:'admin/plans',canActivate:[adminGuard],data:{mode:'plans'},loadComponent:()=>import('./components/admin/billing/admin-billing.component').then(m=>m.AdminBillingComponent)},
+      {path:'admin/payments',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/payments/admin-payments.component').then(m=>m.AdminPaymentsComponent)},
+      {path:'admin/foods',redirectTo:'nutrition/custom-foods',pathMatch:'full'},
+      {path:'admin/history',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/history/admin-history.component').then(m=>m.AdminHistoryComponent)},
+      {
+        path: 'admin/coaches', canActivate: [adminGuard],
+        loadComponent: () => import('./components/admin/coaches/admin-coaches.component').then(m => m.AdminCoachesComponent),
+      },
+      {
+        path: 'admin/coaches/:id', canActivate: [adminGuard],
+        loadComponent: () => import('./components/admin/coaches/admin-coaches.component').then(m => m.AdminCoachesComponent),
+      },
+      {
+        path: 'admin/dashboard',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./components/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+      },
       {
         path: 'forms/create-form',
         component: CreateFormComponent,
@@ -287,7 +307,7 @@ export const APP_ROUTE: Route[] = [
         component: EditProfileComponent,
       },{
         path: 'subscriptions',
-        component: RevenueSubscriptionsComponent,
+        redirectTo: 'admin/subscriptions', pathMatch: 'full',
       },{
         path: 'users',
         component: UsersComponent,

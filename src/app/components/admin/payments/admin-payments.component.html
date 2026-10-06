@@ -1,0 +1,38 @@
+<main class="page-container" [attr.aria-busy]="loading">
+  <header class="page-header">
+    <button type="button" class="app-page-back" (click)="back()" [attr.aria-label]="'BACK'|translate"><i-feather name="arrow-left"></i-feather></button>
+    <div class="header-content"><h1>{{'ADMIN_PAYMENTS'|translate}}</h1><p>{{'ADMIN_PAYMENTS_SUBTITLE'|translate}}</p></div>
+    <div class="header-actions"><button type="button" class="secondary-btn" (click)="refresh()" [disabled]="loading"><i-feather name="refresh-cw"></i-feather>{{'ADMIN_REFRESH'|translate}}</button></div>
+  </header>
+  <div class="content">
+    <div class="toolbar">
+      <div class="search"><i-feather name="search"></i-feather><input type="search" [ngModel]="filters.search" (ngModelChange)="search($event)" [placeholder]="'ADMIN_PAYMENTS_SEARCH'|translate" [attr.aria-label]="'ADMIN_PAYMENTS_SEARCH'|translate"></div>
+      <label>{{'STATUS_LABEL'|translate}}<select [(ngModel)]="filters.status" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let s of statuses" [value]="s">{{('ADMIN_PAYMENT_'+s)|translate}}</option></select></label>
+      <label>{{'ADMIN_PAYMENT_METHOD'|translate}}<select [(ngModel)]="filters.method" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let m of methods" [value]="m">{{m}}</option></select></label>
+      <label>{{'ADMIN_PAYMENT_CURRENCY'|translate}}<select [(ngModel)]="filters.currency" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let c of currencies" [value]="c">{{c}}</option></select></label>
+      <label>{{'COACH_CYCLE'|translate}}<select [(ngModel)]="filters.cycle" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option value="MONTHLY">{{'COACH_CYCLE_MONTHLY'|translate}}</option><option value="YEARLY">{{'COACH_CYCLE_YEARLY'|translate}}</option></select></label>
+      <button type="button" class="secondary-btn" (click)="reset()">{{'COACH_RESET'|translate}}</button>
+    </div>
+    <p class="hint">{{'ADMIN_PAYMENTS_NOTE'|translate}}</p>
+    <p *ngIf="loading" class="notice" role="status">{{'ADMIN_LOADING'|translate}}</p>
+    <p *ngIf="error" class="notice error" role="alert">{{'ADMIN_PAYMENTS_ERROR'|translate}} <button type="button" (click)="refresh()">{{'COACH_RETRY'|translate}}</button></p>
+    <ng-container *ngIf="result as data">
+      <div class="coaches-table-wrap"><table><thead><tr>
+        <th>{{'COACH_PERSON'|translate}}</th><th>{{'COACH_AMOUNT'|translate}}</th><th>{{'ADMIN_PAYMENT_CURRENCY'|translate}}</th><th>{{'COACH_PLAN'|translate}}</th><th>{{'COACH_CYCLE'|translate}}</th><th>{{'ADMIN_PAYMENT_METHOD'|translate}}</th><th>{{'ADMIN_PAYMENT_DATE'|translate}}</th><th>{{'STATUS_LABEL'|translate}}</th>
+      </tr></thead><tbody>
+        <tr *ngIf="!data.content.length"><td colspan="8" class="empty">{{'ADMIN_PAYMENTS_EMPTY'|translate}}</td></tr>
+        <tr *ngFor="let e of data.content">
+          <td><a class="coach-name" [routerLink]="['/admin/coaches',e.coachId]">{{e.coachName}}</a><small>{{e.email}}</small><small>#{{e.payment.id}} · {{'COACH_INVOICE'|translate}} #{{e.payment.invoiceId}}</small></td>
+          <td>{{e.payment.amount===null?'—':(e.payment.amount|number:'1.2-3')}}</td><td>{{e.payment.currency||'—'}}</td><td>{{e.payment.planName||'—'}}</td>
+          <td>{{e.payment.billingCycle?(('COACH_CYCLE_'+e.payment.billingCycle)|translate):('COACH_NOT_RECORDED'|translate)}}</td>
+          <td>{{e.payment.method||'—'}}</td><td>{{e.payment.date?(e.payment.date|date:'medium'):'—'}}<small *ngIf="e.payment.date">{{('ADMIN_PAYMENT_DATE_'+e.payment.dateKind)|translate}}</small></td>
+          <td><span class="status" [attr.data-status]="e.payment.status">{{e.payment.status?(('ADMIN_PAYMENT_'+e.payment.status)|translate):('COACH_NOT_RECORDED'|translate)}}</span></td>
+        </tr>
+      </tbody></table></div>
+      <div class="pagination"><span>{{'COACH_RESULTS'|translate:{count:data.totalElements} }}</span><div>
+        <button type="button" class="secondary-btn" [disabled]="filters.page===0" (click)="page(-1)">{{'COACH_PREVIOUS'|translate}}</button><span>{{filters.page+1}}</span>
+        <button type="button" class="secondary-btn" [disabled]="lastPage" (click)="page(1)">{{'COACH_NEXT'|translate}}</button>
+      </div></div>
+    </ng-container>
+  </div>
+</main>

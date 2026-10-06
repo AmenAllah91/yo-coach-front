@@ -2,8 +2,8 @@
   <div class="page-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
-      <h1>{{ 'CUSTOM_FOODS' | translate }}</h1>
-      <p>{{ 'CUSTOM_FOODS_SUBTITLE' | translate }}</p>
+      <h1>{{ (isAdmin?'ADMIN_FOODS_DATABASE':'CUSTOM_FOODS') | translate }}</h1>
+      <p>{{ (isAdmin?'ADMIN_FOODS_SUBTITLE':'CUSTOM_FOODS_SUBTITLE') | translate }}</p>
     </div>
     <div class="header-actions">
       <button class="secondary-btn" type="button" (click)="downloadImportTemplate()">
@@ -34,7 +34,9 @@
       </div>
     </div>
 
-    <div class="foods-table">
+    <p *ngIf="loading" class="food-status" role="status">{{'LOADING_FOODS'|translate}}</p>
+    <p *ngIf="loadError" class="food-status food-status--error" role="alert">{{'FOOD_CATALOG_LOAD_ERROR'|translate}} <button type="button" (click)="loadFoods()">{{'COACH_RETRY'|translate}}</button></p>
+    <div class="foods-table" *ngIf="!loading&&!loadError">
       <div class="table-header">
         <div class="col-name">{{ 'NAME' | translate }}</div>
         <div class="col-weight">{{ 'WEIGHT' | translate }}</div>
@@ -81,7 +83,7 @@
                   </button>
                   <button class="dropdown-item delete" (click)="deleteFood(food); $event.stopPropagation()">
                     <i-feather name="trash-2"></i-feather>
-                    {{ 'DELETE' | translate }}
+                    {{ (food.isGeneral?'ARCHIVE':'DELETE') | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngIf="!canManage(food)">
@@ -383,7 +385,7 @@
   <div class="modal-overlay" [class.show]="showDeleteModal" (click)="closeDeleteModal()">
     <div class="modal-content delete" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ 'DELETE_FOOD' | translate }}</h2>
+        <h2>{{ (foodToDelete?.isGeneral?'ARCHIVE_FOOD':'DELETE_FOOD') | translate }}</h2>
         <button class="close-btn" (click)="closeDeleteModal()">
           <i-feather name="x"></i-feather>
         </button>
@@ -395,11 +397,12 @@
         </div>
         <h3>{{ 'ARE_YOU_SURE' | translate }}</h3>
         <p>{{ (foodToDelete?.isGeneral ? 'ARCHIVE_FOOD_CONFIRMATION' : 'DELETE_FOOD_CONFIRMATION') | translate:{ name: foodToDelete?.name } }}</p>
+        <p *ngIf="deleteError" class="field-error" role="alert">{{deleteError|translate}}</p>
       </div>
 
       <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeDeleteModal()">{{ 'CANCEL' | translate }}</button>
-        <button class="confirm-btn danger" (click)="confirmDelete()">{{ 'DELETE' | translate }}</button>
+        <button class="cancel-btn" [disabled]="deleting" (click)="closeDeleteModal()">{{ 'CANCEL' | translate }}</button>
+        <button class="confirm-btn danger" [disabled]="deleting" (click)="confirmDelete()">{{ (deleting?'COACH_ACTION_SAVING':foodToDelete?.isGeneral?'ARCHIVE':'DELETE') | translate }}</button>
       </div>
     </div>
   </div>

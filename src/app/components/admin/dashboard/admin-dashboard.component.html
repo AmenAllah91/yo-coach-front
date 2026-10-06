@@ -1,0 +1,35 @@
+<main class="page-container admin-dashboard" [attr.aria-busy]="usersLoading || billingLoading">
+  <header class="page-header">
+    <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
+    <div class="header-content"><h1>{{ 'ADMIN_DASHBOARD' | translate }}</h1><p>{{ 'ADMIN_DASHBOARD_DESCRIPTION' | translate }}</p></div>
+    <div class="header-actions"><button class="secondary-btn refresh-btn" type="button" (click)="refresh()" [disabled]="usersLoading || billingLoading"><i-feather name="refresh-cw"></i-feather>{{ 'ADMIN_REFRESH' | translate }}</button></div>
+  </header>
+  <div class="dashboard-content">
+  <p *ngIf="usersLoading || billingLoading" role="status">{{ 'ADMIN_LOADING' | translate }}</p>
+  <p *ngIf="usersError" role="alert" class="error">{{ 'ADMIN_USERS_ERROR' | translate }}</p>
+  <p *ngIf="billingError" role="alert" class="error">{{ 'ADMIN_BILLING_ERROR' | translate }}</p>
+  <section class="metrics metrics--people" [attr.aria-label]="'USERS_MANAGEMENT' | translate">
+    <article><span class="metric-icon"><i-feather name="users"></i-feather></span><div><h2>{{ 'ADMIN_TOTAL_COACHES' | translate }}</h2><strong>{{ users?.totalCoaches ?? '—' }}</strong></div></article>
+    <article><span class="metric-icon"><i-feather name="user-plus"></i-feather></span><div><h2>{{ 'ADMIN_NEW_COACHES' | translate }}</h2><strong>{{ users?.newCoaches ?? '—' }}</strong><p>{{ 'ADMIN_LAST_30_DAYS' | translate }}</p></div></article>
+    <article><span class="metric-icon"><i-feather name="user-check"></i-feather></span><div><h2>{{ 'ADMIN_TOTAL_CLIENTS' | translate }}</h2><strong>{{ users?.totalClients ?? '—' }}</strong><p>{{ 'ADMIN_DEMO_EXCLUDED' | translate }}</p></div></article>
+  </section>
+  <section class="metrics metrics--subscriptions" [attr.aria-label]="'SUBSCRIPTIONS' | translate">
+    <article><span class="metric-icon metric-icon--trial"><i-feather name="clock"></i-feather></span><div><h2>{{ 'ADMIN_TRIAL_COACHES' | translate }}</h2><strong>{{ billing?.trialCoaches ?? '—' }}</strong></div></article>
+    <article><span class="metric-icon metric-icon--active"><i-feather name="check-circle"></i-feather></span><div><h2>{{ 'ADMIN_ACTIVE_SUBSCRIPTIONS' | translate }}</h2><strong>{{ billing?.activeSubscriptions ?? '—' }}</strong></div></article>
+    <article><span class="metric-icon metric-icon--expired"><i-feather name="alert-circle"></i-feather></span><div><h2>{{ 'ADMIN_EXPIRED_SUBSCRIPTIONS' | translate }}</h2><strong>{{ billing?.expiredSubscriptions ?? '—' }}</strong></div></article>
+    <article><span class="metric-icon metric-icon--blocked"><i-feather name="lock"></i-feather></span><div><h2>{{ 'ADMIN_BLOCKED_COACHES' | translate }}</h2><strong>{{ billing?.blockedCoaches ?? '—' }}</strong><p>{{ 'ADMIN_BLOCKED_DESCRIPTION' | translate }}</p></div></article>
+  </section>
+  <section class="payments" *ngIf="billing as data">
+    <div class="section-heading"><span class="metric-icon"><i-feather name="credit-card"></i-feather></span><div><h2>{{ 'ADMIN_PAYMENTS' | translate }}</h2><p>{{ 'ADMIN_PAYMENTS_DESCRIPTION' | translate }}</p></div></div>
+    <p class="empty-payments" *ngIf="!data.revenues.length">{{ 'ADMIN_NO_PAYMENTS' | translate }}</p>
+    <div class="payments-table-wrap" *ngIf="data.revenues.length">
+      <table>
+        <thead><tr><th scope="col">{{ 'ADMIN_CURRENCY' | translate }}</th><th scope="col">{{ 'ADMIN_TOTAL_RECEIVED' | translate }}</th><th scope="col">{{ 'ADMIN_MONTH_RECEIVED' | translate }}</th><th scope="col">{{ 'ADMIN_CONFIRMED_PAYMENTS' | translate }}</th></tr></thead>
+        <tbody><tr *ngFor="let revenue of data.revenues"><td><span class="currency-badge">{{ revenue.currency }}</span></td><td class="amount">{{ revenue.total | number:'1.2-3' }}</td><td class="amount">{{ revenue.currentMonth | number:'1.2-3' }}</td><td>{{ revenue.successfulPayments }}</td></tr></tbody>
+      </table>
+    </div>
+    <p class="updated"><i-feather name="clock"></i-feather>{{ 'ADMIN_UPDATED_AT' | translate }} {{ data.updatedAt | date:'short' }}</p>
+  </section>
+  <nav><a routerLink="/admin/coaches"><i-feather name="users"></i-feather>{{ 'COACH_MANAGEMENT' | translate }}<i-feather name="arrow-right"></i-feather></a><a routerLink="/users"><i-feather name="users"></i-feather>{{ 'USERS_MANAGEMENT' | translate }}<i-feather name="arrow-right"></i-feather></a><a routerLink="/subscriptions"><i-feather name="credit-card"></i-feather>{{ 'SUBSCRIPTIONS' | translate }}<i-feather name="arrow-right"></i-feather></a></nav>
+  </div>
+</main>

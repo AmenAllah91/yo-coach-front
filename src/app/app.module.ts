@@ -26,6 +26,7 @@ import { provideToastr, ToastrModule } from 'ngx-toastr';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { AccountUnavailableComponent } from './components/account-unavailable/account-unavailable.component';
 import { createTranslateLoader } from './app.config';
 import { APP_ROUTE } from './app.routes';
 import { LanguageService } from './template/core';
@@ -158,6 +159,7 @@ function initializeKeycloakAndSync(
     AppComponent,
   ],
   imports: [
+    AccountUnavailableComponent,
     BrowserAnimationsModule,
     CommonModule,
     RouterModule,

@@ -1,0 +1,55 @@
+<main class="page-container" [attr.aria-busy]="loading">
+  <header class="page-header">
+    <button class="app-page-back" type="button" (click)="back()" [attr.aria-label]="'BACK'|translate"><i-feather name="arrow-left"></i-feather></button>
+    <div class="header-content"><h1>{{(plansMode?'BILLING_PLANS':'SUBSCRIPTIONS')|translate}}</h1><p>{{(plansMode?'BILLING_PLANS_SUBTITLE':'BILLING_SUBSCRIPTIONS_SUBTITLE')|translate}}</p></div>
+    <button class="secondary-btn" type="button" (click)="refresh()" [disabled]="loading||busy">{{'ADMIN_REFRESH'|translate}}</button>
+    <button *ngIf="plansMode" class="secondary-btn confirm-action" type="button" (click)="edit()" [disabled]="busy">{{'BILLING_CREATE_PLAN'|translate}}</button>
+  </header>
+  <div class="content">
+    <p *ngIf="success" role="status" class="notice">{{'BILLING_SAVED'|translate}}</p>
+    <p *ngIf="loading" role="status" class="notice">{{'ADMIN_LOADING'|translate}}</p>
+    <div *ngIf="error||plansError" role="alert" class="notice error">{{'BILLING_LOAD_ERROR'|translate}} <button type="button" (click)="refresh()">{{'COACH_RETRY'|translate}}</button></div>
+    <ng-container *ngIf="!plansMode">
+      <div class="toolbar">
+        <label>{{'COACH_SEARCH'|translate}}<input type="search" [ngModel]="filters.search" (ngModelChange)="search($event)"></label>
+        <label>{{'BILLING_STATUS'|translate}}<select [(ngModel)]="filters.status" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let s of statuses" [value]="s">{{('COACH_SUB_'+s)|translate}}</option></select></label>
+        <label>{{'COACH_PLAN'|translate}}<select [(ngModel)]="filters.planId" (change)="apply()" [disabled]="plansError"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let p of plans" [value]="p.id">{{p.name}} · {{p.billingCycle}}</option></select></label>
+        <label>{{'COACH_ACCOUNT_STATUS'|translate}}<select [(ngModel)]="filters.account" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let s of ['ACTIVE','BANNED','DISABLED']" [value]="s">{{('COACH_ACCOUNT_'+s)|translate}}</option></select></label>
+      </div>
+      <div *ngIf="result as data" class="coaches-table-wrap"><table><thead><tr><th>{{'COACH_PERSON'|translate}}</th><th>{{'COACH_PLAN'|translate}}</th><th>{{'BILLING_CYCLE'|translate}}</th><th>{{'BILLING_START'|translate}}</th><th>{{'BILLING_END'|translate}}</th><th>{{'BILLING_STATUS'|translate}}</th><th>{{'COACH_ACCOUNT_STATUS'|translate}}</th></tr></thead>
+        <tbody><tr *ngFor="let row of data.content"><td><a class="coach-name" [routerLink]="['/admin/coaches',row.coachId]">{{row.coachName}}</a><small>{{row.email}}</small><small>#{{row.subscription.id}}</small></td><td>{{row.subscription.planName}}</td><td>{{row.subscription.billingCycle?('COACH_CYCLE_'+row.subscription.billingCycle|translate):'—'}}</td><td>{{row.subscription.start?(row.subscription.start|date:'mediumDate'):'—'}}</td><td>{{row.subscription.end?(row.subscription.end|date:'mediumDate'):'—'}}</td><td><span class="status">{{row.subscription.status?('COACH_SUB_'+row.subscription.status|translate):'—'}}</span><small *ngIf="row.subscription.cancelAtPeriodEnd">{{'BILLING_CANCEL_PERIOD_END'|translate}}</small></td><td>{{('COACH_ACCOUNT_'+row.accountStatus)|translate}}</td></tr>
+        <tr *ngIf="!data.content.length"><td colspan="7">{{'BILLING_NO_SUBSCRIPTIONS'|translate}}</td></tr></tbody></table></div>
+      <div class="pagination" *ngIf="result as data"><span>{{data.totalElements}} {{'SUBSCRIPTIONS'|translate}}</span><button type="button" class="secondary-btn" (click)="page(-1)" [disabled]="filters.page===0||loading">{{'COACH_PREVIOUS'|translate}}</button><span>{{filters.page+1}}</span><button type="button" class="secondary-btn" (click)="page(1)" [disabled]="(filters.page+1)*filters.size>=data.totalElements||loading">{{'COACH_NEXT'|translate}}</button></div>
+    </ng-container>
+    <ng-container *ngIf="plansMode">
+      <p class="notice">{{'BILLING_CYCLE_NOTE'|translate}}</p>
+      <div class="toolbar"><label>{{'BILLING_SEARCH_PLAN'|translate}}<input type="search" [(ngModel)]="planSearch"></label><label>{{'BILLING_PLAN_STATUS'|translate}}<select [(ngModel)]="planActive"><option value="">{{'COACH_ALL'|translate}}</option><option value="ACTIVE">{{'COACH_ACCOUNT_ACTIVE'|translate}}</option><option value="INACTIVE">{{'BILLING_INACTIVE'|translate}}</option></select></label><label>{{'BILLING_CYCLE'|translate}}<select [(ngModel)]="planCycle"><option value="">{{'COACH_ALL'|translate}}</option><option value="MONTHLY">{{'COACH_CYCLE_MONTHLY'|translate}}</option><option value="YEARLY">{{'COACH_CYCLE_YEARLY'|translate}}</option></select></label></div>
+      <div class="coaches-table-wrap" *ngIf="!loading&&!plansError"><table><thead><tr><th>{{'BILLING_PLAN_NAME'|translate}}</th><th>{{'BILLING_MONTHLY_PRICE'|translate}}</th><th>{{'BILLING_YEARLY_PRICE'|translate}}</th><th>maxClients</th><th>{{'BILLING_PLAN_TRIAL'|translate}}</th><th>{{'BILLING_PLAN_STATUS'|translate}}</th><th>{{'BILLING_ACTIONS'|translate}}</th></tr></thead><tbody>
+        <tr *ngFor="let p of visiblePlans"><td><strong>{{p.name}}</strong><small>{{p.planCode}}</small><small>{{p.description}}</small><small>{{p.pricingModel}}</small></td><td>{{p.billingCycle==='MONTHLY'?((p.price|number:'1.2-2')+' '+(p.currency||'')):'—'}}</td><td>{{p.billingCycle==='YEARLY'?((p.price|number:'1.2-2')+' '+(p.currency||'')):'—'}}</td><td>{{p.toUnits==null||p.toUnits===2147483647?('COACH_UNLIMITED'|translate):p.toUnits}}</td><td>{{p.freeTrialDays||0}} {{'BILLING_DAYS'|translate}}<small *ngIf="p.freeTrialDays">{{p.trialMaxClients}} {{'COACH_CLIENTS'|translate}}</small></td><td>{{(p.active===false?'BILLING_INACTIVE':'COACH_ACCOUNT_ACTIVE')|translate}}</td><td><button class="secondary-btn" type="button" (click)="edit(p)">{{'BILLING_EDIT'|translate}}</button> <button class="secondary-btn" type="button" (click)="toggle(p)">{{(p.active===false?'BILLING_ENABLE':'BILLING_DISABLE')|translate}}</button></td></tr>
+        <tr *ngIf="!visiblePlans.length"><td colspan="7">{{'BILLING_NO_PLANS'|translate}}</td></tr></tbody></table></div>
+    </ng-container>
+  </div>
+</main>
+<dialog #dialog class="plan-dialog" (cancel)="cancel($event)" aria-labelledby="plan-dialog-title">
+  <form (ngSubmit)="save()" #editor="ngForm">
+    <h2 id="plan-dialog-title">{{(togglePlan?(togglePlan.active===false?'BILLING_ENABLE':'BILLING_DISABLE'):form.id?'BILLING_EDIT':'BILLING_CREATE_PLAN')|translate}}</h2>
+    <ng-container *ngIf="togglePlan as p; else planEditor"><p>{{p.name}} · {{p.billingCycle}}</p><p>{{'BILLING_TOGGLE_NOTE'|translate}}</p></ng-container>
+    <ng-template #planEditor><div class="form-grid">
+      <label>{{'BILLING_PLAN_NAME'|translate}}<input name="name" [(ngModel)]="form.name" required maxlength="255"></label>
+      <label>{{'BILLING_PLAN_CODE'|translate}}<input name="code" [(ngModel)]="form.planCode" required maxlength="255"></label>
+      <label>{{'BILLING_CYCLE'|translate}}<select name="cycle" [(ngModel)]="form.billingCycle"><option value="MONTHLY">{{'COACH_CYCLE_MONTHLY'|translate}}</option><option value="YEARLY">{{'COACH_CYCLE_YEARLY'|translate}}</option></select></label>
+      <label>{{(form.billingCycle==='MONTHLY'?'BILLING_MONTHLY_PRICE':'BILLING_YEARLY_PRICE')|translate}}<input name="price" type="number" min="0" step="0.01" [(ngModel)]="form.price" required></label>
+      <label>{{'BILLING_PRICING_MODEL'|translate}}<select name="pricing" [(ngModel)]="form.pricingModel"><option *ngFor="let p of pricing" [value]="p">{{p}}</option></select></label>
+      <label>{{'BILLING_FROM_CLIENTS'|translate}}<input name="from" type="number" min="0" step="1" [(ngModel)]="form.fromUnits" required></label>
+      <label class="check"><input name="unlimited" type="checkbox" [(ngModel)]="unlimited">{{'COACH_UNLIMITED'|translate}}</label>
+      <label *ngIf="!unlimited">maxClients<input name="max" type="number" min="1" step="1" [(ngModel)]="form.toUnits" required></label>
+      <label>{{'BILLING_PLAN_TRIAL'|translate}} ({{'BILLING_DAYS'|translate}})<input name="days" type="number" min="0" step="1" [(ngModel)]="form.freeTrialDays" required></label>
+      <label *ngIf="form.freeTrialDays>0">{{'BILLING_TRIAL_LIMIT'|translate}}<input name="trial" type="number" min="1" step="1" [(ngModel)]="form.trialMaxClients" required></label>
+      <label>{{'BILLING_EXTRA_FEE'|translate}}<input name="extra" type="number" min="0" step="0.01" [(ngModel)]="form.extraFeePerUnit" required></label>
+      <label class="check"><input name="active" type="checkbox" [(ngModel)]="form.active">{{'COACH_ACCOUNT_ACTIVE'|translate}}</label>
+      <label class="wide">{{'BILLING_DESCRIPTION'|translate}}<textarea name="description" [(ngModel)]="form.description" maxlength="255"></textarea></label>
+    </div><p>{{'BILLING_SAVE_NOTE'|translate}}</p></ng-template>
+    <p *ngIf="saveError" role="alert" class="notice error">{{saveError|translate}}</p>
+    <div class="dialog-actions"><button class="secondary-btn" type="button" (click)="close()" [disabled]="busy">{{'BILLING_CANCEL'|translate}}</button><button class="secondary-btn confirm-action" type="submit" [disabled]="busy||(!togglePlan&&(!valid||editor.invalid))">{{(busy?'COACH_ACTION_SAVING':'COACH_ACTION_CONFIRM_BUTTON')|translate}}</button></div>
+  </form>
+</dialog>

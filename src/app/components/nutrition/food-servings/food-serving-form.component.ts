@@ -103,7 +103,7 @@ export class FoodServingFormComponent implements OnChanges {
   commit(): FoodServing | null {
     this.submitted = true;
     if (Object.keys(this.errors).length) return null;
-    return servingFromDraft(this.draft, this.initial?.id);
+    return {...this.initial,...servingFromDraft(this.draft, this.initial?.id)};
   }
 
   submit(): void {
