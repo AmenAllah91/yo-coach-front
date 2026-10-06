@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { cardLabel } from 'app/models/coach-subscription-state.model';
 import { formatAmount } from 'app/models/subscription-onboarding.model';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -52,6 +53,9 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   private requestedPlanId: number | null = null;
   private destroy$ = new Subject<void>();
 
+  /** SUB-62: "Visa •••• 4242" when the payment is charged on the saved card, empty otherwise. */
+  savedCard = '';
+
   /** SUB-61: amounts in the currency of the subscription ("50 TND" / "15 $"). */
   money(amount: number | null | undefined): string {
     return formatAmount(amount, this.options?.currency ?? 'TND');
@@ -91,6 +95,8 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
         }
         this.options = options;
         this.timeZone = state?.timeZone || undefined;
+        // SUB-62: the payment confirmed here is charged on the saved card (no page).
+        this.savedCard = state?.autoCharge && state?.card ? cardLabel(state.card) : '';
         const wanted = options.plans.find((p) => p.planId === (this.requestedPlanId ?? this.selectedPlanId));
         this.cycle = wanted?.billingCycle ?? options.currentCycle ?? 'MONTHLY';
         this.selectedPlanId = wanted && wanted.allowed ? wanted.planId : null;

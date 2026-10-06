@@ -9,7 +9,7 @@ import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
 
 import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
-import { CoachSubscriptionState, indicativeUsd } from 'app/models/coach-subscription-state.model';
+import { CoachSubscriptionState, indicativeUsd, cardLabel } from 'app/models/coach-subscription-state.model';
 import { CheckoutQuote, SalesBillingCycle, SubscriptionPlanDto, priceInCurrency, formatAmount } from 'app/models/subscription-onboarding.model';
 
 /** Promo code refusals that have their own message (SUB-45); anything else gets the generic one. */
@@ -94,6 +94,11 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
   /** SUB-61: currency of the payment (from the quote of YoSales: USD by Stripe abroad, TND by Flouci). */
   get currency(): string {
     return (this.selectedQuote?.currency ?? this.state?.currency ?? 'TND').toUpperCase();
+  }
+
+  /** SUB-62: "Visa •••• 4242" when the payment is charged on the saved card (reactivation), empty otherwise. */
+  get savedCard(): string {
+    return this.currency === 'USD' && this.state?.autoCharge && this.state?.card ? cardLabel(this.state.card) : '';
   }
 
   /** SUB-61: "50 TND" or "15 $". */

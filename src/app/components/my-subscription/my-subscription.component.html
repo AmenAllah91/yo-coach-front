@@ -25,7 +25,7 @@
         </span>
       </div>
 
-      <p *ngIf="dateLine as line" class="date-line">{{ line.key | translate: { date: line.date } }}</p>
+      <p *ngIf="dateLine as line" class="date-line">{{ line.key | translate: { date: line.date, card: cardLabel } }}</p>
       <p *ngIf="state.maxActiveClients != null" class="muted">
         {{ 'MY_SUB_CLIENTS' | translate: { count: state.activeClients ?? 0, max: state.maxActiveClients } }}
       </p>
@@ -46,6 +46,33 @@
       <p *ngIf="actionError" class="action-error" role="alert">{{ actionError | translate }}</p>
     </div>
 
+    <!-- SUB-62: card saved at Stripe -->
+    <div *ngIf="paidByCard" class="card payment-method">
+      <h2>{{ 'MY_SUB_PAYMENT_METHOD' | translate }}</h2>
+      <p *ngIf="cardNotice === 'saved'" class="card-notice" role="status">{{ 'MY_SUB_CARD_SAVED' | translate }}</p>
+      <div *ngIf="state.card; else noCard" class="card-line">
+        <strong>{{ cardLabel }}</strong>
+        <small *ngIf="cardExpiry">{{ 'MY_SUB_CARD_EXPIRES' | translate: { date: cardExpiry } }}</small>
+      </div>
+      <ng-template #noCard><p class="muted">{{ 'MY_SUB_NO_CARD' | translate }}</p></ng-template>
+
+      <div *ngIf="state.card" class="auto-charge" role="radiogroup" [attr.aria-label]="'MY_SUB_PAYMENT_METHOD' | translate">
+        <label>
+          <input type="radio" name="autoCharge" [checked]="state.autoCharge" [disabled]="busy" (change)="setAutoCharge(true)" />
+          <span>{{ 'MY_SUB_AUTO_CHARGE' | translate }}</span>
+        </label>
+        <label>
+          <input type="radio" name="autoCharge" [checked]="!state.autoCharge" [disabled]="busy" (change)="setAutoCharge(false)" />
+          <span>{{ 'MY_SUB_PAY_MYSELF' | translate }}</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn-secondary" [disabled]="busy" (click)="changeCard()">
+          {{ (state.card ? 'MY_SUB_CHANGE_CARD' : 'MY_SUB_ADD_CARD') | translate }}
+        </button>
+      </div>
+    </div>
+
     <!-- Invoices -->
     <div class="card">
       <h2>{{ 'MY_SUB_INVOICES' | translate }}</h2>
@@ -64,7 +91,7 @@
             <small *ngIf="usd(invoice.amount, invoice.currency) as d" class="usd-approx" [title]="'USD_CHARGED_IN_TND' | translate">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
             <span class="invoice-status" [ngClass]="'invoice-' + (invoice.status || '').toLowerCase()">{{ statusKey(invoice.status) | translate }}</span>
             <button *ngIf="isPayable(invoice)" type="button" class="btn-pay" [disabled]="payingInvoiceId != null" (click)="pay(invoice)">
-              {{ (payingInvoiceId === invoice.id ? 'CHECKOUT_REDIRECTING' : 'BANNER_PAY') | translate }}
+              {{ (payingInvoiceId === invoice.id ? 'CHECKOUT_REDIRECTING' : state.autoCharge && state.card ? 'MY_SUB_PAY_WITH_CARD' : 'BANNER_PAY') | translate: { card: cardLabel } }}
             </button>
           </div>
         </li>

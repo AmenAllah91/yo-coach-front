@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
 import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { CoachInvoice } from 'app/models/coach-invoice.model';
-import { CoachSubscriptionState, indicativeUsd } from 'app/models/coach-subscription-state.model';
+import { CoachSubscriptionState, cardExpiry, cardLabel, indicativeUsd } from 'app/models/coach-subscription-state.model';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
 import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 
@@ -60,8 +60,73 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     private router: Router,
   ) {}
 
+  /** SUB-62: back from the Stripe page of "change my card" (?card=saved or ?card=cancelled). */
+  cardNotice: 'saved' | 'cancelled' | null = null;
+
   ngOnInit(): void {
+    const card = this.router.url ? this.router.parseUrl(this.router.url).queryParams['card'] : null;
+    this.cardNotice = card === 'saved' || card === 'cancelled' ? card : null;
     this.load();
+  }
+
+  /** SUB-62: the subscription is paid by card (Stripe): card, automatic renewal, change of card. */
+  get paidByCard(): boolean {
+    return (this.state?.paymentGateway ?? '').toUpperCase() === 'STRIPE';
+  }
+
+  get cardLabel(): string {
+    return cardLabel(this.state?.card);
+  }
+
+  get cardExpiry(): string {
+    return cardExpiry(this.state?.card);
+  }
+
+  /** SUB-62: Stripe page where the coach saves another card (no money moves). */
+  changeCard(): void {
+    if (this.busy) return;
+    this.busy = true;
+    this.actionError = '';
+    this.billing.startCardChange().subscribe({
+      next: (link) => {
+        const url = link?.redirectUrl?.trim();
+        if (url) {
+          this.redirectTo(url);
+          return;
+        }
+        this.busy = false;
+        this.actionError = 'CHECKOUT_PAYMENT_PAGE_ERROR';
+      },
+      error: () => {
+        this.busy = false;
+        this.actionError = 'MY_SUB_CARD_ERROR';
+      },
+    });
+  }
+
+  /** SUB-62: automatic renewal on the saved card, or "I pay each invoice myself" (invoice by link). */
+  async setAutoCharge(enabled: boolean): Promise<void> {
+    if (this.busy || !this.state || this.state.autoCharge === enabled) return;
+    if (!enabled) {
+      const confirmed = await this.confirm(
+        this.translate.instant('MY_SUB_PAY_MYSELF_CONFIRM_TITLE'),
+        this.translate.instant('MY_SUB_PAY_MYSELF_CONFIRM_TEXT'),
+        this.translate.instant('MY_SUB_PAY_MYSELF'),
+      );
+      if (!confirmed) return;
+    }
+    this.busy = true;
+    this.actionError = '';
+    this.billing.setAutoCharge(enabled).subscribe({
+      next: () => {
+        this.busy = false;
+        this.load();
+      },
+      error: () => {
+        this.busy = false;
+        this.actionError = 'MY_SUB_CARD_ERROR';
+      },
+    });
   }
 
   ngOnDestroy(): void {
@@ -117,7 +182,9 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
       case 'TRIAL':
         return s.trialEndsAt ? { key: 'MY_SUB_TRIAL_UNTIL', date: MySubscriptionComponent.lastDay(s.trialEndsAt, zone) } : null;
       case 'ACTIVE':
-        return s.currentPeriodEnd ? { key: 'MY_SUB_NEXT_PAYMENT', date: MySubscriptionComponent.day(s.currentPeriodEnd, zone) } : null;
+        if (!s.currentPeriodEnd) return null;
+        // SUB-62: renewed on the saved card, no action of the coach.
+        return { key: s.autoCharge && s.card ? 'MY_SUB_NEXT_CHARGE' : 'MY_SUB_NEXT_PAYMENT', date: MySubscriptionComponent.day(s.currentPeriodEnd, zone) };
       case 'PAST_DUE':
         return s.openInvoiceDueDate ? { key: 'MY_SUB_PAY_BEFORE', date: MySubscriptionComponent.formatDay(s.openInvoiceDueDate) } : null;
       default:

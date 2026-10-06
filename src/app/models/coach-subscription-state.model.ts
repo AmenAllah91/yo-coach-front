@@ -38,6 +38,38 @@ export interface CoachSubscriptionState {
   currency?: string | null;
   /** SUB-60: TND for 1 USD, reference rate set by the administrator (null = no dollar amount). */
   usdRateTnd?: number | null;
+  /** SUB-62: how the subscription is paid (FLOUCI, STRIPE). */
+  paymentGateway?: string | null;
+  /** SUB-62: card saved at Stripe ("Visa •••• 4242, 12/28"); null when none. */
+  card?: SavedCardView | null;
+  /** SUB-62: the invoices are charged on the saved card on their due date (automatic renewal). */
+  autoCharge?: boolean;
+}
+
+/** SUB-62: what the coach sees of the card saved at Stripe (never the card number). */
+export interface SavedCardView {
+  brand?: string | null;
+  last4?: string | null;
+  expMonth?: number | null;
+  expYear?: number | null;
+}
+
+/** SUB-62: "Visa •••• 4242". */
+export function cardLabel(card: SavedCardView | null | undefined): string {
+  if (!card?.last4) {
+    return '';
+  }
+  const brand = (card.brand ?? '').trim();
+  const name = brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : '';
+  return (name ? name + ' ' : '') + '•••• ' + card.last4;
+}
+
+/** SUB-62: "12/28". */
+export function cardExpiry(card: SavedCardView | null | undefined): string {
+  if (!card?.expMonth || !card?.expYear) {
+    return '';
+  }
+  return String(card.expMonth).padStart(2, '0') + '/' + String(card.expYear % 100).padStart(2, '0');
 }
 
 /**
