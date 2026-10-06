@@ -32,4 +32,8 @@ export interface CoachSubscriptionState {
   /** SUB-45: the plan is no longer offered; the coach keeps it at its price until changing. */
   planArchived?: boolean;
   timeZone?: string | null;
+  /** SUB-58: ISO 3166 alpha-2 country chosen in the onboarding country list (null until then). */
+  billingCountry?: string | null;
+  /** SUB-58: currency the subscription is charged in (TND today). */
+  currency?: string | null;
 }
