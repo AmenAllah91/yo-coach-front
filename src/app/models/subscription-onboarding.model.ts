@@ -6,6 +6,8 @@ export interface SubscriptionPlanDto {
   name: string;
   description?: string | null;
   price: number;
+  /** SUB-59: price in whole US dollars (null = not offered in dollars). */
+  priceUsd?: number | null;
   pricingModel: 'FLAT_FEE' | 'STAIR_STEP' | 'FEATURE_BASED';
   billingCycle: SalesBillingCycle;
   freeTrialDays?: number | null;
