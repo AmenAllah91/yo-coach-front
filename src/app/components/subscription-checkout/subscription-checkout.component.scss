@@ -70,3 +70,19 @@ button:disabled { cursor: not-allowed; }
   .plan-card { padding: 12px; }
   .plan-price strong { font-size: 15px; }
 }
+
+/* SUB-60: indicative dollar amount */
+.usd-approx {
+  display: block;
+  color: #667085;
+}
+
+.summary-line.usd-line {
+  flex-wrap: wrap;
+  color: #667085;
+  font-size: 0.9rem;
+
+  small {
+    flex-basis: 100%;
+  }
+}

@@ -67,6 +67,7 @@
           </span>
           <span class="plan-price">
             <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+            <small *ngIf="usd(plan.price) as d" class="usd-approx">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
             <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
           </span>
         </button>
@@ -90,6 +91,10 @@
           <div class="summary-line total">
             <span>{{ 'CHECKOUT_TOTAL' | translate }}</span>
             <strong>{{ q.amount | number: '1.0-3' }} TND</strong>
+          </div>
+          <div *ngIf="usd(q.amount) as d" class="summary-line usd-line">
+            <span>{{ 'USD_APPROX' | translate: { amount: d } }}</span>
+            <small>{{ 'USD_CHARGED_IN_TND' | translate }}</small>
           </div>
           <small *ngFor="let code of q.couponsNotApplied" class="promo-note">
             {{ 'CHECKOUT_PROMO_NOT_FOR_THIS_PLAN' | translate: { code: code } }}

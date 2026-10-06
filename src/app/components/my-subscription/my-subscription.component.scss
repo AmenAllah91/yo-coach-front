@@ -54,3 +54,8 @@ button:disabled { opacity: 0.6; cursor: default; }
 }
 
 .link { padding: 0; border: 0; background: none; color: #1d6f8f; font: inherit; text-decoration: underline; cursor: pointer; }
+
+/* SUB-60: indicative dollar amount */
+.usd-approx {
+  color: #667085;
+}
