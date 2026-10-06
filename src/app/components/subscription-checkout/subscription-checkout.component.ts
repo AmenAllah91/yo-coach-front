@@ -10,7 +10,7 @@ import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
 import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { CoachSubscriptionState, indicativeUsd } from 'app/models/coach-subscription-state.model';
-import { CheckoutQuote, SalesBillingCycle, SubscriptionPlanDto } from 'app/models/subscription-onboarding.model';
+import { CheckoutQuote, SalesBillingCycle, SubscriptionPlanDto, priceInCurrency, formatAmount } from 'app/models/subscription-onboarding.model';
 
 /** Promo code refusals that have their own message (SUB-45); anything else gets the generic one. */
 const PROMO_ERRORS = ['COUPON_NOT_FOUND', 'COUPON_EXPIRED', 'COUPON_NOT_FOR_PLAN', 'COUPON_EXHAUSTED',
@@ -91,9 +91,24 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
   }
 
   /** The quote of the selected plan, when it is the one shown (it can arrive after a plan change). */
-  /** SUB-60: indicative whole-dollar amount for a coach outside Tunisia (null = not shown). */
+  /** SUB-61: currency of the payment (from the quote of YoSales: USD by Stripe abroad, TND by Flouci). */
+  get currency(): string {
+    return (this.selectedQuote?.currency ?? this.state?.currency ?? 'TND').toUpperCase();
+  }
+
+  /** SUB-61: "50 TND" or "15 $". */
+  money(amount: number | null | undefined): string {
+    return formatAmount(amount, this.currency);
+  }
+
+  /** SUB-61: price of a plan in the currency of the payment. */
+  planPrice(plan: SubscriptionPlanDto): number | null {
+    return priceInCurrency(plan, this.currency);
+  }
+
+  /** SUB-60: indicative whole-dollar amount for a coach outside Tunisia who pays in TND (null = not shown). */
   usd(amountTnd: number | null | undefined): number | null {
-    return indicativeUsd(amountTnd, this.state);
+    return this.currency === 'TND' ? indicativeUsd(amountTnd, this.state) : null;
   }
 
   /** SUB-49: a 100% promo code: nothing to pay, the subscription is activated without Flouci. */

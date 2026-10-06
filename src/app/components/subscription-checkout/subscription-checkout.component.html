@@ -66,7 +66,7 @@
             </span>
           </span>
           <span class="plan-price">
-            <strong>{{ plan.price | number: '1.0-3' }} TND</strong>
+            <strong>{{ money(planPrice(plan)) }}</strong>
             <small *ngIf="usd(plan.price) as d" class="usd-approx">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
             <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
           </span>
@@ -77,20 +77,20 @@
       <div class="summary" *ngIf="selectedPlan as plan">
         <div class="summary-line">
           <span>{{ plan.name }} · {{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</span>
-          <strong>{{ (selectedQuote?.baseAmount ?? plan.price) | number: '1.0-3' }} TND</strong>
+          <strong>{{ money(selectedQuote?.baseAmount ?? planPrice(plan)) }}</strong>
         </div>
         <ng-container *ngIf="selectedQuote as q">
           <div *ngIf="q.addonAmount > 0" class="summary-line">
             <span>{{ 'CHECKOUT_ADDONS' | translate }}</span>
-            <span>{{ q.addonAmount | number: '1.0-3' }} TND</span>
+            <span>{{ money(q.addonAmount) }}</span>
           </div>
           <div *ngIf="q.discountAmount > 0" class="summary-line discount">
             <span>{{ 'CHECKOUT_DISCOUNT' | translate }} ({{ q.couponsApplied.join(', ') }})</span>
-            <span>− {{ q.discountAmount | number: '1.0-3' }} TND</span>
+            <span>− {{ money(q.discountAmount) }}</span>
           </div>
           <div class="summary-line total">
             <span>{{ 'CHECKOUT_TOTAL' | translate }}</span>
-            <strong>{{ q.amount | number: '1.0-3' }} TND</strong>
+            <strong>{{ money(q.amount) }}</strong>
           </div>
           <div *ngIf="usd(q.amount) as d" class="summary-line usd-line">
             <span>{{ 'USD_APPROX' | translate: { amount: d } }}</span>
@@ -125,9 +125,9 @@
 
       <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying" (click)="pay()">
         <span *ngIf="paying" class="spinner small"></span>
-        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate }}
+        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : currency === 'USD' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate }}
       </button>
-      <p class="secure"><i-feather name="lock"></i-feather>{{ 'CHECKOUT_SECURE_FLOUCI' | translate }}</p>
+      <p class="secure"><i-feather name="lock"></i-feather>{{ (currency === 'USD' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
     </ng-container>
   </ng-container>
 </section>

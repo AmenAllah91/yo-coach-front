@@ -60,7 +60,7 @@
             </small>
           </div>
           <div class="invoice-side">
-            <strong class="amount">{{ invoice.amount | number: '1.0-3' }} {{ invoice.currency || 'TND' }}</strong>
+            <strong class="amount">{{ money(invoice.amount, invoice.currency) }}</strong>
             <small *ngIf="usd(invoice.amount, invoice.currency) as d" class="usd-approx" [title]="'USD_CHARGED_IN_TND' | translate">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
             <span class="invoice-status" [ngClass]="'invoice-' + (invoice.status || '').toLowerCase()">{{ statusKey(invoice.status) | translate }}</span>
             <button *ngIf="isPayable(invoice)" type="button" class="btn-pay" [disabled]="payingInvoiceId != null" (click)="pay(invoice)">

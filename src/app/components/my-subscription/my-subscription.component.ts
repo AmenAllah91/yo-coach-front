@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { formatAmount } from 'app/models/subscription-onboarding.model';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -36,6 +37,11 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   loading = true;
   loadError = false;
   state: CoachSubscriptionState | null = null;
+
+  /** SUB-61: "50 TND" or "15 $" (currency of the invoice). */
+  money(amount: number | null | undefined, currency?: string | null): string {
+    return formatAmount(amount, currency ?? this.state?.currency ?? 'TND');
+  }
 
   /** SUB-60: indicative whole-dollar amount for a coach outside Tunisia (null = not shown). */
   usd(amountTnd: number | null | undefined, currency?: string | null): number | null {
