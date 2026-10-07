@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { Client } from '@stomp/stompjs';
+import { Client, ReconnectionTimeMode } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { AuthService } from '@config/auth.service';
 import { environment } from "@env/environment";
@@ -13,6 +13,8 @@ export class WebsocketService {
 
   private WEBSOCKET_URL = environment.notificationApiUrl + "/ws";
   private stompClient: Client | null = null;
+  /** One warning per outage of the notification service, not one per reconnection attempt. */
+  private outageReported = false;
 
   private notificationSubject = new BehaviorSubject<Notification | null>(null);
   public notification$ = this.notificationSubject.asObservable();
@@ -38,6 +40,9 @@ export class WebsocketService {
     this.stompClient = new Client({
       webSocketFactory: socketFactory,
       reconnectDelay: 5000,
+      // Service down: retry after 5 s, 10 s, 20 s... at most every 5 minutes (reset once connected).
+      reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
+      maxReconnectDelay: 5 * 60 * 1000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       connectHeaders: {
@@ -46,6 +51,7 @@ export class WebsocketService {
     });
 
     this.stompClient.onConnect = () => {
+      this.outageReported = false;
       console.log('STOMP connected');
       this.subscribeToNotifications();
     };
@@ -59,10 +65,13 @@ export class WebsocketService {
     };
 
     this.stompClient.onWebSocketClose = (event) => {
-      console.warn('Notification WebSocket closed:', event.code, event.reason);
+      if (this.outageReported) return;
+      this.outageReported = true;
+      console.warn('Notification WebSocket closed:', event.code, event.reason, '(retrying, at most every 5 minutes)');
     };
 
     this.stompClient.onWebSocketError = (event) => {
+      if (this.outageReported) return;
       console.error('Notification WebSocket transport error:', event);
     };
 
