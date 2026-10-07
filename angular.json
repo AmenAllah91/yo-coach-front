@@ -158,6 +158,9 @@
             },
             "local": {
               "buildTarget": "yo-coach:build:local"
+            },
+            "integration": {
+              "buildTarget": "yo-coach:build:integration"
             }
           },
           "defaultConfiguration": "local"
