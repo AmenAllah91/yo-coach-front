@@ -130,23 +130,7 @@
   </section>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'plan'">
-    <h2>{{ 'PLAN' | translate }}</h2>
-    <div class="settings-card plan-card">
-      <div class="plan-content">
-        <div>
-          <p class="plan-name">{{ 'THIRTY_DAY_FREE_TRIAL' | translate }}</p>
-          <strong class="plan-price">0,00 $US</strong>
-          <p class="muted-text">{{ 'FREE_TRIAL_ENDS_ON' | translate:{date: ('FREE_TRIAL_DATE' | translate)} }}</p>
-        </div>
-        <div class="plan-usage">
-          <p><strong>0</strong> {{ 'CLIENTS_ON_UNLIMITED_TRIAL' | translate }}</p>
-          <div class="usage-track"><span style="width: 2%"></span></div>
-        </div>
-      </div>
-      <div class="card-footer-actions card-footer-actions--right">
-        <button class="btn btn--accent" type="button">{{ 'CHANGE_PLAN' | translate }}</button>
-      </div>
-    </div>
+    <app-plan-billing-tab></app-plan-billing-tab>
   </section>
 
   <section class="settings-tab-panel" *ngIf="activeTab === 'notifications'">
