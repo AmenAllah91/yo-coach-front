@@ -1,0 +1,104 @@
+<h2>{{ 'MY_SUB_PLAN' | translate }}</h2>
+
+<div *ngIf="loading" class="settings-card state-box" role="status"><span class="spinner"></span></div>
+
+<div *ngIf="!loading && loadError" class="settings-card state-box" role="alert">
+  <p>{{ 'CHECKOUT_LOAD_ERROR' | translate }}</p>
+  <button type="button" class="btn btn--outline" (click)="load()">{{ 'RETRY' | translate }}</button>
+</div>
+
+<ng-container *ngIf="!loading && !loadError && state">
+  <!-- Plan -->
+  <div class="settings-card">
+    <div class="plan-content">
+      <div>
+        <p class="plan-name">
+          <span *ngIf="state.billingCycle">{{ (state.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</span>
+          <span class="status-badge" [ngClass]="'status-' + status.toLowerCase()">{{ ('SUB_STATUS_' + status) | translate }}</span>
+        </p>
+        <strong class="plan-price">{{ state.planName || '—' }}</strong>
+        <p *ngIf="dateLine as line" class="muted-text">{{ line.key | translate: { date: line.date, card: cardLabel } }}</p>
+      </div>
+      <div *ngIf="state.maxActiveClients != null" class="plan-usage">
+        <p>{{ 'MY_SUB_CLIENTS' | translate: { count: state.activeClients ?? 0, max: state.maxActiveClients } }}</p>
+        <div class="usage-track"><span [style.width.%]="usagePercent"></span></div>
+      </div>
+    </div>
+
+    <div *ngIf="isReadOnly || state.planArchived || (canChangePlan && state.suggestedDowngrade) || actionError" class="plan-notes">
+      <p *ngIf="isReadOnly" class="read-only-note">{{ 'NOTICE_READ_ONLY_TEXT' | translate }}</p>
+      <p *ngIf="state.planArchived" class="muted-text">{{ 'MY_SUB_PLAN_ARCHIVED' | translate: { plan: state.planName } }}</p>
+      <p *ngIf="canChangePlan && state.suggestedDowngrade as d" class="muted-text">
+        {{ 'MY_SUB_SUGGESTED_DOWNGRADE' | translate: { plan: d.planName } }}
+        <button type="button" class="link" (click)="changePlan(d.planId)">{{ 'MY_SUB_SEE_PLAN' | translate }}</button>
+      </p>
+      <p *ngIf="actionError" class="action-error" role="alert">{{ actionError | translate }}</p>
+    </div>
+
+    <div *ngIf="hasPlanActions" class="card-footer-actions">
+      <button *ngIf="canCancel" type="button" class="danger-link" [disabled]="busy" (click)="cancel()">{{ 'MY_SUB_CANCEL' | translate }}</button>
+      <div class="footer-buttons">
+        <button *ngIf="isTrial" type="button" class="btn btn--accent" (click)="reactivate()">{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</button>
+        <button *ngIf="isReadOnly" type="button" class="btn btn--accent" (click)="reactivate()">{{ 'BANNER_REACTIVATE' | translate }}</button>
+        <button *ngIf="canChangePlan" type="button" class="btn btn--accent" [disabled]="busy" (click)="changePlan()">{{ 'MY_SUB_CHANGE_PLAN' | translate }}</button>
+        <button *ngIf="canResume" type="button" class="btn btn--accent" [disabled]="busy" (click)="resume()">{{ 'MY_SUB_RESUME' | translate }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-62: card saved at Stripe -->
+  <ng-container *ngIf="paidByCard">
+    <h2>{{ 'MY_SUB_PAYMENT_METHOD' | translate }}</h2>
+    <div class="settings-card">
+      <div class="card-body">
+        <p *ngIf="cardNotice === 'saved'" class="card-notice" role="status">{{ 'MY_SUB_CARD_SAVED' | translate }}</p>
+        <div *ngIf="state.card; else noCard" class="card-line">
+          <strong>{{ cardLabel }}</strong>
+          <small *ngIf="cardExpiry">{{ 'MY_SUB_CARD_EXPIRES' | translate: { date: cardExpiry } }}</small>
+        </div>
+        <ng-template #noCard><p class="muted-text">{{ 'MY_SUB_NO_CARD' | translate }}</p></ng-template>
+
+        <div *ngIf="state.card" class="auto-charge" role="radiogroup" [attr.aria-label]="'MY_SUB_PAYMENT_METHOD' | translate">
+          <label>
+            <input type="radio" name="autoCharge" [checked]="state.autoCharge" [disabled]="busy" (change)="setAutoCharge(true)" />
+            <span>{{ 'MY_SUB_AUTO_CHARGE' | translate }}</span>
+          </label>
+          <label>
+            <input type="radio" name="autoCharge" [checked]="!state.autoCharge" [disabled]="busy" (change)="setAutoCharge(false)" />
+            <span>{{ 'MY_SUB_PAY_MYSELF' | translate }}</span>
+          </label>
+        </div>
+      </div>
+      <div class="card-footer-actions card-footer-actions--right">
+        <button type="button" class="btn btn--outline" [disabled]="busy" (click)="changeCard()">
+          {{ (state.card ? 'MY_SUB_CHANGE_CARD' : 'MY_SUB_ADD_CARD') | translate }}
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Invoices -->
+  <h2>{{ 'MY_SUB_INVOICES' | translate }}</h2>
+  <div class="settings-card">
+    <p *ngIf="!invoices.length" class="empty muted-text">{{ 'MY_SUB_NO_INVOICE' | translate }}</p>
+    <ul *ngIf="invoices.length" class="invoice-list">
+      <li *ngFor="let invoice of invoices" class="invoice-row">
+        <div class="invoice-main">
+          <strong>{{ invoice.planName || ('MY_SUB_INVOICE' | translate) }}</strong>
+          <small>
+            {{ 'MY_SUB_INVOICE_DATE' | translate: { date: formatDay(invoice.invoiceDate) } }}
+            <ng-container *ngIf="invoice.dueDate"> · {{ 'MY_SUB_INVOICE_DUE' | translate: { date: formatDay(invoice.dueDate) } }}</ng-container>
+          </small>
+        </div>
+        <div class="invoice-side">
+          <strong class="amount">{{ money(invoice.amount, invoice.currency) }}</strong>
+          <small *ngIf="usd(invoice.amount, invoice.currency) as d" class="usd-approx" [title]="'USD_CHARGED_IN_TND' | translate">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
+          <span class="invoice-status" [ngClass]="'invoice-' + (invoice.status || '').toLowerCase()">{{ statusKey(invoice.status) | translate }}</span>
+          <button *ngIf="isPayable(invoice)" type="button" class="btn btn--accent btn--small" [disabled]="payingInvoiceId != null" (click)="pay(invoice)">
+            {{ (payingInvoiceId === invoice.id ? 'CHECKOUT_REDIRECTING' : state.autoCharge && state.card ? 'MY_SUB_PAY_WITH_CARD' : 'BANNER_PAY') | translate: { card: cardLabel } }}
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
+</ng-container>

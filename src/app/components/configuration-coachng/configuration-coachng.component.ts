@@ -13,11 +13,12 @@ import { AuthService } from 'app/config/auth.service';
 import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
 import { ToastrService } from 'ngx-toastr';
+import { PlanBillingTabComponent } from './plan-billing-tab/plan-billing-tab.component';
 
 @Component({
   selector: 'app-configuration-coachng',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, PlanBillingTabComponent],
   templateUrl: './configuration-coachng.component.html',
   styleUrl: './configuration-coachng.component.scss',
 })
