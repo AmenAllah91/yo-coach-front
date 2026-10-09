@@ -44,6 +44,7 @@ describe('Admin coaches flow', () => {
     subscription:{ subscriptionId:1, status:'ACTIVE', planId:10, planName:'Pro', maxActiveClients:10,
       trialEndsAt:null, trialDaysLeft:null, currentPeriodEnd:null, cancelAtPeriodEnd:false } };
   beforeEach(() => {
+    sessionStorage.setItem('roles',JSON.stringify(['ROLE_ADMIN']));
     detailId = null;
     TestBed.configureTestingModule({
       imports:[AdminCoachesComponent, HttpClientTestingModule, TranslateModule.forRoot(), FeatherModule.pick(allIcons)],
@@ -53,8 +54,24 @@ describe('Admin coaches flow', () => {
     });
     http = TestBed.inject(HttpTestingController);
   });
-  afterEach(() => http.verify());
+  afterEach(() => {http.verify();sessionStorage.removeItem('roles');});
   const page = (content: AdminCoach[]) => ({content,totalElements:content.length,page:0,size:10,billingAvailable:true,plans:[{id:10,name:'Pro'}]});
+
+  it('keeps headers and cells visible inside a narrow scrollable table despite global mobile card styles', () => {
+    const fixture = TestBed.createComponent(AdminCoachesComponent);
+    fixture.nativeElement.style.width = '320px';
+    fixture.detectChanges();
+    http.expectOne(r => r.url === url).flush(page([coach]));
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    const wrap: HTMLElement = root.querySelector('.coaches-table-wrap')!;
+    expect(getComputedStyle(root.querySelector('thead')!).display).toBe('table-header-group');
+    expect(getComputedStyle(root.querySelector('tbody tr')!).display).toBe('table-row');
+    expect(getComputedStyle(root.querySelector('td')!).display).toBe('table-cell');
+    expect(wrap.scrollWidth).toBeGreaterThan(wrap.clientWidth);
+    const content: HTMLElement = root.querySelector('.content')!;
+    expect(content.scrollWidth).toBeLessThanOrEqual(content.clientWidth + 1);
+  });
 
   it('loads usage, debounces search, sends account/trial/plan filters and opens the correct detail link', fakeAsync(() => {
     const fixture = TestBed.createComponent(AdminCoachesComponent); fixture.detectChanges();
@@ -89,10 +106,10 @@ describe('Admin coaches flow', () => {
     http.expectOne(`${url}/coach-1/invoices`).flush([{id:42,amount:6.667,currency:'TND',status:'PAID',invoiceDate:'2026-10-01',dueDate:'2026-10-05',planName:'Pro',events:[{id:1,eventType:'PAID',occurredAt:'2026-10-02T12:00:00'}]}]);
     fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('COACH_TRIAL_LIMIT');
     const tabs=fixture.nativeElement.querySelectorAll('.detail-nav button');
-    tabs[1].click(); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('COACH_CYCLE_YEARLY');
-    tabs[2].click(); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('6.667 TND'); expect(fixture.nativeElement.textContent).toContain('COACH_INVOICE_PAID');
-    tabs[3].click(); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('8 / 5');
-    tabs[4].click();http.expectOne(`${url}/coach-1/subscription/history`).flush([]); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('COACH_EVENT_PAID'); expect(fixture.nativeElement.textContent).toContain('#42');
+    tabs[2].click(); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('COACH_CYCLE_YEARLY');
+    tabs[3].click(); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('6.667 TND'); expect(fixture.nativeElement.textContent).toContain('COACH_INVOICE_PAID');
+    tabs[4].click(); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('8 / 5');
+    tabs[5].click();http.expectOne(`${url}/coach-1/subscription/history`).flush([]); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('COACH_EVENT_PAID'); expect(fixture.nativeElement.textContent).toContain('#42');
   });
   it('keeps list request errors visible and supports retry', () => {
     const fixture=TestBed.createComponent(AdminCoachesComponent); fixture.detectChanges();

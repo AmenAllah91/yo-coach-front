@@ -1,5 +1,6 @@
 @import '../../shared-styles/shared-styles.scss';
-:host { display: block; min-width: 0; }
+@import '../admin-tables';
+:host { display: block; width: 100%; min-width: 0; max-width: 100%; }
 .page-container { height: auto; min-height: calc(100vh - 56px); background: #f8fafc; color: #020c20; }
 .header-content { flex: 1; }
 .content { padding: 24px; min-width: 0; }
@@ -45,3 +46,32 @@ tr:last-child td { border-bottom: 0; } tbody tr:hover { background: #fafcfe; }
 .audit-note, .block-reason p { white-space: pre-wrap; overflow-wrap: anywhere; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 3px; }
 @media(max-width:768px) { .content { padding: 16px; } .toolbar label { flex: 1; min-width: 140px; } .search { max-width: none; flex-basis: 100%; } .detail-grid { grid-template-columns: 1fr; gap: 16px; } .profile { flex-wrap: wrap; padding: 18px; } .detail-card { padding: 18px; } .pagination { flex-wrap: wrap; } }
+
+// Keep wide data tables inside their own scroll area, including in flex layouts.
+.page-container, .content, .coaches-table-wrap, .detail-nav { min-width: 0; max-width: 100%; }
+.coaches-table-wrap { width: 100%; overscroll-behavior-inline: contain; }
+.toolbar > label { min-width: 0; max-width: 100%; }
+.toolbar input, .toolbar select, .reason-form input, .reason-form select, .reason-form textarea { width: 100%; min-width: 0; max-width: 100%; }
+.profile > div, .history-entry > div { min-width: 0; overflow-wrap: anywhere; }
+.detail-card dl { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+.detail-card dt { overflow-wrap: anywhere; }
+.header-actions { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.account-dialog { box-sizing: border-box; max-height: calc(100dvh - 32px); }
+
+@media (max-width: 768px) {
+  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; }
+  .toolbar > label { min-width: 0; }
+  .toolbar .search { grid-column: 1 / -1; min-width: 0; width: 100%; }
+  .toolbar > button { min-height: 42px; white-space: normal; }
+  .pagination > div { flex-wrap: wrap; max-width: 100%; gap: 10px; }
+  .secondary-btn { min-height: 44px; }
+  .account-actions .secondary-btn, .dialog-actions .secondary-btn { white-space: normal; max-width: 100%; }
+  .account-dialog { padding: 20px; }
+  .empty { padding: 24px; }
+}
+
+@media (max-width: 380px) {
+  .toolbar { grid-template-columns: minmax(0, 1fr); }
+  .detail-card dl { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .detail-card dd { margin-bottom: 12px; }
+}

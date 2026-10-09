@@ -1,0 +1,9 @@
+// Admin tables keep their columns. The global mobile card rules require
+// data-label attributes that these tables do not use.
+:is(.coaches-table-wrap, .payments-table-wrap, .table-wrapper) {
+  thead { display: table-header-group; }
+  tbody { display: table-row-group; }
+  tr { display: table-row; position: static; border-bottom-width: 0; }
+  td { display: table-cell; text-align: left; }
+  td::before { display: none; }
+}

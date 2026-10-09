@@ -7,7 +7,7 @@ import { AssignMacroPlanComponent } from './components/nutrition/assign-macro-pl
 // app.routes.ts
 
 import { CanActivateFn, Route } from '@angular/router';
-import { adminGuard } from './config/guard/admin.guard';
+import { adminGuard, coachDiagnosticsGuard } from './config/guard/admin.guard';
 import { MainLayoutComponent } from './template/layout/app-layout/main-layout/main-layout.component';
 import { RegisterComponent } from './template/layout/register/register.component';
 import { ExerciseLibraryComponent } from './components/exercise-library/exercise-library.component';
@@ -96,11 +96,11 @@ export const APP_ROUTE: Route[] = [
       {path:'admin/foods',redirectTo:'nutrition/custom-foods',pathMatch:'full'},
       {path:'admin/history',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/history/admin-history.component').then(m=>m.AdminHistoryComponent)},
       {
-        path: 'admin/coaches', canActivate: [adminGuard],
+        path: 'admin/coaches', canActivate: [coachDiagnosticsGuard],
         loadComponent: () => import('./components/admin/coaches/admin-coaches.component').then(m => m.AdminCoachesComponent),
       },
       {
-        path: 'admin/coaches/:id', canActivate: [adminGuard],
+        path: 'admin/coaches/:id', canActivate: [coachDiagnosticsGuard],
         loadComponent: () => import('./components/admin/coaches/admin-coaches.component').then(m => m.AdminCoachesComponent),
       },
       {

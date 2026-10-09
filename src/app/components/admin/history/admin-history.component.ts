@@ -11,7 +11,7 @@ import { AdminHistoryService, AdminHistoryEntry, AdminHistoryPage } from '../../
   templateUrl:'./admin-history.component.html',styleUrl:'./admin-history.component.scss'})
 export class AdminHistoryComponent implements OnInit {
   filters={search:'',action:'',page:0,size:10};result:AdminHistoryPage|null=null;loading=true;error=false;
-  readonly actions=['BLOCK','UNBLOCK','ACTIVATE','DISABLE','ASSIGN_PLAN','EXTEND_TRIAL','PLAN_CREATED','PLAN_UPDATED','PLAN_ENABLED','PLAN_DISABLED','PLAN_DELETED'];
+  readonly actions=['BLOCK','UNBLOCK','ACTIVATE','DISABLE','ASSIGN_PLAN','EXTEND_TRIAL','PLAN_CREATED','PLAN_UPDATED','PLAN_ENABLED','PLAN_DISABLED','PLAN_DELETED','OFFER_ACCESS','REVOKE_ACCESS','RESYNC'];
   private destroyRef=inject(DestroyRef);private reload$=new BehaviorSubject<void>(undefined);private search$=new Subject<string>();
   constructor(private api:AdminHistoryService,private location:Location){}
   ngOnInit(){this.reload$.pipe(tap(()=>{this.loading=true;this.error=false;this.result=null;}),switchMap(()=>this.api.list({...this.filters}).pipe(catchError(()=>{this.error=true;return of(null);}))),

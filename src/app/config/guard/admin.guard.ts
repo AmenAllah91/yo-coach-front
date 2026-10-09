@@ -6,7 +6,12 @@ export const adminGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const roles = await auth.extractRoles();
-  if (roles.includes('ROLE_ADMIN')) return true;
+  if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_SUPER_ADMIN')) return true;
   return router.createUrlTree([roles.includes('ROLE_COACH') ? '/coach-dashboard'
     : roles.includes('ROLE_CLIENT') ? '/client-dashboard' : '/landing-page']);
+};
+
+export const coachDiagnosticsGuard: CanActivateFn = async () => {
+  const auth=inject(AuthService);const router=inject(Router);const roles=await auth.extractRoles();
+  return roles.some(role=>['ROLE_ADMIN','ROLE_SUPER_ADMIN','ROLE_SUPPORT','ROLE_FINANCE'].includes(role)) ? true : router.createUrlTree(['/landing-page']);
 };

@@ -1,3 +1,4 @@
+import { CoachDiagnosticsComponent } from './coach-diagnostics.component';
 import { CommonModule, Location } from '@angular/common';
 import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +12,7 @@ import { AdminBillingService, SalesPlan } from '../../../service/admin-billing.s
 
 @Component({
   selector: 'app-admin-coaches', standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslateModule, FeatherModule],
+  imports: [CommonModule, FormsModule, RouterLink, TranslateModule, FeatherModule, CoachDiagnosticsComponent],
   templateUrl: './admin-coaches.component.html', styleUrl: './admin-coaches.component.scss'
 })
 export class AdminCoachesComponent implements OnInit {
@@ -24,7 +25,7 @@ export class AdminCoachesComponent implements OnInit {
   error = false;
   detailId: string | null = null;
   section = 'overview';
-  readonly sections = ['overview', 'subscription', 'payments', 'clients', 'history'];
+  readonly sections = ['overview', 'diagnostics', 'subscription', 'payments', 'clients', 'history'];
   invoices: CoachInvoice[] = [];
   invoicesLoading = false;
   invoicesError = false;
@@ -76,6 +77,9 @@ export class AdminCoachesComponent implements OnInit {
   readonly blockReasons = ['MANUAL_ADMIN_BLOCK', 'SUBSCRIPTION_EXPIRED', 'PAYMENT_PROBLEM', 'OTHER'];
   private confirmedStatus = '';
   @ViewChild('accountDialog', {static:true}) accountDialog!: ElementRef<HTMLDialogElement>;
+  get canManage():boolean {
+    try{return JSON.parse(sessionStorage.getItem('roles')||'[]').some((r:string)=>['ROLE_ADMIN','ROLE_SUPER_ADMIN'].includes(r));}catch{return false;}
+  }
   get accountActions(): CoachAccountAction[] {
     if (!this.coach) return [];
     return this.coach.accountStatus === 'BANNED' ? ['UNBLOCK'] : this.coach.accountStatus === 'DISABLED' ? ['ACTIVATE', 'BLOCK'] : ['BLOCK', 'DISABLE'];
@@ -100,6 +104,7 @@ export class AdminCoachesComponent implements OnInit {
       reason:this.pendingAction === 'BLOCK' ? this.blockReason : null, note:this.pendingAction === 'BLOCK' ? this.blockNote.trim() : null})
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:coach => {
         this.coach = coach; this.actionBusy = false; this.closeAccountAction(); this.actionSuccess = true;
+        if(this.section==='diagnostics')this.reload$.next();
       },error:error => { this.actionBusy = false; this.actionError = error.status === 409 ? 'COACH_ACTION_CONFLICT' : 'COACH_ACTION_ERROR'; }});
   }
   get history() {
@@ -145,7 +150,7 @@ export class AdminCoachesComponent implements OnInit {
   initials(name: string): string { return (name || '').split(' ').filter(Boolean).slice(0, 2).map(v => v[0]).join('').toUpperCase(); }
   limit(coach: AdminCoach): string {
     if (!coach.billingAvailable) return 'COACH_UNAVAILABLE';
-    if (!coach.subscription?.subscriptionId) return 'COACH_NO_PLAN';
+    if (!coach.subscription?.subscriptionId && !coach.subscription?.complimentary) return 'COACH_NO_PLAN';
     return coach.subscription.maxActiveClients == null ? 'COACH_UNLIMITED' : String(coach.subscription.maxActiveClients);
   }
   get lastPage(): boolean { return !this.result || (this.filters.page + 1) * this.filters.size >= this.result.totalElements; }

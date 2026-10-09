@@ -4,7 +4,7 @@ import { environment } from '@env/environment';
 export interface SalesPlan {
   id: number | null; productId?: number; currency?: string; planCode: string; name: string; description: string;
   price: number; billingCycle: string; pricingModel: string; fromUnits: number; toUnits: number;
-  freeTrialDays: number; trialMaxClients: number | null; extraFeePerUnit: number; active: boolean;
+  freeTrialDays: number; trialMaxClients: number | null; extraFeePerUnit: number; active: boolean; archived?: boolean;
 }
 export interface SubscriptionEntry {
   coachId: string; coachName: string; email: string; accountStatus: string;
