@@ -1,0 +1,10 @@
+@import './admin-coaches.component.scss';
+.health-heading {display:flex;align-items:center;gap:12px;margin-bottom:20px;h2{margin:0;font-size:20px;}button{margin-left:auto;}}
+.health-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;>div{padding:16px;background:white;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;}small{margin:0 0 10px;}}
+.health-badge{display:inline-block;border-radius:5px;padding:5px 8px;font-size:11px;background:#f1f5f9;color:#64748b;&[data-health='HEALTHY']{background:#ecfdf5;color:#047857;}&[data-health='WARNING']{background:#fff8e6;color:#876219;}&[data-health='ERROR']{background:#fff0ee;color:#a6352c;}}
+.attention{h3{font-size:15px;}ul{margin:0;padding-left:20px;}li{margin:8px 0;}}
+.client-count{font-size:28px;font-weight:600;}
+.health-heading { flex-wrap: wrap; }
+.health-summary { grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); }
+.health-summary > div { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .health-heading button { margin-left: 0; width: 100%; } }

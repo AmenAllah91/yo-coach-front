@@ -1,7 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+@import '../admin-tables';
 
 :host {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 * {
@@ -505,6 +508,8 @@
   border-radius: 18px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
   overflow: hidden;
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
   animation: modalIn 0.18s ease;
 }
 
@@ -817,4 +822,15 @@
   .modal-primary-btn {
     width: 100%;
   }
+}
+
+.users-page, .panel, .stat-card, .stat-content, .page-heading, .modal-user-meta, .form-field { min-width: 0; }
+.stat-label, .page-heading, .modal-user-meta, .info-item { overflow-wrap: anywhere; }
+.table-wrapper { max-width: 100%; overscroll-behavior-inline: contain; }
+.tabs { overflow-x: auto; }
+.tab-btn { flex-shrink: 0; }
+.modal-close-btn { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .toolbar, .table-wrapper { padding-left: 14px; padding-right: 14px; }
+  .add-user-btn, .tab-btn, .modal-secondary-btn, .modal-primary-btn { min-height: 44px; height: auto; }
 }

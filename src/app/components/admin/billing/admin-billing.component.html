@@ -2,8 +2,10 @@
   <header class="page-header">
     <button class="app-page-back" type="button" (click)="back()" [attr.aria-label]="'BACK'|translate"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content"><h1>{{(plansMode?'BILLING_PLANS':'SUBSCRIPTIONS')|translate}}</h1><p>{{(plansMode?'BILLING_PLANS_SUBTITLE':'BILLING_SUBSCRIPTIONS_SUBTITLE')|translate}}</p></div>
-    <button class="secondary-btn" type="button" (click)="refresh()" [disabled]="loading||busy">{{'ADMIN_REFRESH'|translate}}</button>
-    <button *ngIf="plansMode" class="secondary-btn confirm-action" type="button" (click)="edit()" [disabled]="busy">{{'BILLING_CREATE_PLAN'|translate}}</button>
+    <div class="header-actions">
+      <button class="secondary-btn" type="button" (click)="refresh()" [disabled]="loading||busy">{{'ADMIN_REFRESH'|translate}}</button>
+      <button *ngIf="plansMode" class="secondary-btn confirm-action" type="button" (click)="edit()" [disabled]="busy">{{'BILLING_CREATE_PLAN'|translate}}</button>
+    </div>
   </header>
   <div class="content">
     <p *ngIf="success" role="status" class="notice">{{'BILLING_SAVED'|translate}}</p>

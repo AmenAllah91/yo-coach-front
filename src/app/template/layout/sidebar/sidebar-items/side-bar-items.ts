@@ -46,11 +46,11 @@ export const items: RouteInfo[] = [
     groupTitle: false,
     badge: '',
     badgeClass: '',
-    roles: ['ROLE_ADMIN'],
+    roles: ['ROLE_ADMIN','ROLE_SUPER_ADMIN','ROLE_SUPPORT','ROLE_FINANCE'],
     submenu: [
       {
         path: '/admin/coaches', title: 'COACH_MANAGEMENT', iconType: 'feather', icon: 'users',
-        class: '', groupTitle: false, badge: '', badgeClass: '', submenu: [],
+        class: '', groupTitle: false, badge: '', badgeClass: '', roles: ['ROLE_ADMIN','ROLE_SUPER_ADMIN','ROLE_SUPPORT','ROLE_FINANCE'], submenu: [],
       },
       {
         path: '/admin/dashboard',
@@ -61,7 +61,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: [],
+        roles: ['ROLE_ADMIN','ROLE_SUPER_ADMIN'], submenu: [],
       },
       {
         path: '/users',
@@ -72,7 +72,7 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: [],
+        roles: ['ROLE_ADMIN','ROLE_SUPER_ADMIN'], submenu: [],
       },
       {
         path: '/admin/subscriptions',
@@ -83,11 +83,11 @@ export const items: RouteInfo[] = [
         groupTitle: false,
         badge: '',
         badgeClass: '',
-        submenu: [],
+        roles: ['ROLE_ADMIN','ROLE_SUPER_ADMIN'], submenu: [],
       },
-      {path:'/admin/plans',title:'BILLING_PLANS',iconType:'feather',icon:'layers',class:'',groupTitle:false,badge:'',badgeClass:'',submenu:[]},
-      {path:'/admin/payments',title:'ADMIN_PAYMENTS',iconType:'feather',icon:'dollar-sign',class:'',groupTitle:false,badge:'',badgeClass:'',submenu:[]},
-      {path:'/admin/history',title:'ADMIN_HISTORY',iconType:'feather',icon:'clock',class:'',groupTitle:false,badge:'',badgeClass:'',submenu:[]},
+      {path:'/admin/plans',title:'BILLING_PLANS',iconType:'feather',icon:'layers',class:'',groupTitle:false,badge:'',badgeClass:'',roles:['ROLE_ADMIN','ROLE_SUPER_ADMIN'],submenu:[]},
+      {path:'/admin/payments',title:'ADMIN_PAYMENTS',iconType:'feather',icon:'dollar-sign',class:'',groupTitle:false,badge:'',badgeClass:'',roles:['ROLE_ADMIN','ROLE_SUPER_ADMIN'],submenu:[]},
+      {path:'/admin/history',title:'ADMIN_HISTORY',iconType:'feather',icon:'clock',class:'',groupTitle:false,badge:'',badgeClass:'',roles:['ROLE_ADMIN','ROLE_SUPER_ADMIN'],submenu:[]},
     ],
   },
   {

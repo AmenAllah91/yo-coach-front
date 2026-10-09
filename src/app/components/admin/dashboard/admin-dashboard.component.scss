@@ -1,4 +1,5 @@
 @import '../../shared-styles/shared-styles.scss';
+@import '../admin-tables';
 
 :host { display: block; min-width: 0; }
 .admin-dashboard { width: 100%; height: auto; min-height: calc(100vh - 56px); background: #f8fafc; color: #020c20; }
@@ -67,4 +68,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid #0ea5e9; outline-offs
   .section-heading { padding: 18px; }
   .updated { padding: 14px 18px; }
 }
-@media (max-width: 480px) { .metrics--subscriptions { grid-template-columns: 1fr; } .header-actions { padding-left: 52px; } }
+@media (max-width: 480px) { .metrics--subscriptions { grid-template-columns: 1fr; } }
+
+:host, .admin-dashboard, .dashboard-content, .payments { min-width: 0; max-width: 100%; }
+.header-actions { flex-wrap: wrap; gap: 8px; }
+article h2, article p, article strong, nav a { overflow-wrap: anywhere; }
+.payments-table-wrap { max-width: 100%; overscroll-behavior-inline: contain; }
+.payments-table-wrap td:not(:first-child) { text-align: right; }
+@media (max-width: 768px) { .secondary-btn { min-height: 44px; } nav a { max-width: 100%; min-height: 44px; } }

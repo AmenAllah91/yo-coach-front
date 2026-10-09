@@ -28,6 +28,12 @@ export interface AdminCoach {
     trialMaxClients?: number | null;
     planMaxClients?: number | null;
     currentPeriodStart?: string | null;
+    complimentary?: boolean;
+    complimentaryId?: number;
+    complimentaryPlanId?: number;
+    complimentaryPlanName?: string;
+    complimentaryStartsAt?: string;
+    complimentaryEndsAt?: string | null;
     readOnly?: boolean;
     timeZone?: string;
     openInvoiceId?: number | null;
@@ -55,6 +61,19 @@ export interface CoachAccountEvent {
   note: string | null; occurredAt: string; actor: string | null;
 }
 
+export interface CoachDiagnostics {
+  coach: AdminCoach; enabled:boolean; blocked:boolean; customerId:number|null; localSubscriptionId:number|null;
+  archivedClients:number; pendingInvitations:number; remainingSlots:number|null;
+  lastPayment:{id:number;subscriptionId:number;status:string;amount:number;currency:string;date:string|null;method:string|null;transactionId:string|null;paymentMethod:string|null}|null;
+  paymentsAvailable:boolean; syncStatus:string; checkedAt:string;
+  interpreted:{known:boolean;status:string|null;readOnly:boolean;brandingAllowed:boolean;maxActiveClients:number|null}|null;
+  summary:{account:string;trial:string;subscription:string;payment:string;clientLimit:string;sync:string};
+  issues:{code:string;severity:string}[]; historyAvailable:boolean; allowedActions:string[];
+  complimentaryHistory:{id:number;planId:number;planName:string;startsAt:string;endsAt:string|null;revokedAt:string|null;reason:string;note:string|null;actor:string;revokedBy:string|null}[];
+  diagnosticHistory:{action:string;actor:string;occurredAt:string}[];
+  lastLogin:string|null;lastActivity:string|null;lastSync?:string|null;subscriptionEvents?:SubscriptionAdminEvent[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminCoachesService {
   private url = `${environment.baseApiUrl}/api/admin/coaches`;
@@ -66,6 +85,10 @@ export class AdminCoachesService {
     }
     return this.http.get<CoachPage>(this.url, { params });
   }
+  diagnostics(id:string){return this.http.get<CoachDiagnostics>(`${this.url}/${encodeURIComponent(id)}/diagnostics`);}
+  resync(id:string){return this.http.post<CoachDiagnostics>(`${this.url}/${encodeURIComponent(id)}/diagnostics/resync`,{});}
+  offerAccess(id:string,command:object){return this.http.post(`${this.url}/${encodeURIComponent(id)}/complimentary`,command);}
+  revokeAccess(id:string,grantId:number){return this.http.post(`${this.url}/${encodeURIComponent(id)}/complimentary/${grantId}/revoke`,{});}
   detail(id: string) { return this.http.get<AdminCoach>(`${this.url}/${encodeURIComponent(id)}`); }
   invoices(id: string) { return this.http.get<CoachInvoice[]>(`${this.url}/${encodeURIComponent(id)}/invoices`); }
   changeAccount(id: string, command: {action: CoachAccountAction; expectedStatus: string; reason: string | null; note: string | null}) {

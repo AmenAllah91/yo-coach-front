@@ -21,7 +21,7 @@ export class AccountAccessService {
     const revision=++this.revision;
     const roles=this.auth.isLoggedIn() ? await this.auth.extractRoles() : [];
     if(revision !== this.revision) return !this.restricted;
-    if(!roles.includes('ROLE_COACH') || roles.includes('ROLE_ADMIN')) { this.state$.next({status:'ACTIVE'}); return true; }
+    if(!roles.includes('ROLE_COACH') || roles.includes('ROLE_ADMIN') || roles.includes('ROLE_SUPER_ADMIN')) { this.state$.next({status:'ACTIVE'}); return true; }
     try {
       const data=await firstValueFrom(this.http.get<AccountAccess>(`${environment.baseApiUrl}/api/account/access`,
         {headers:{'X-Skip-Loader':'true','X-Skip-Toast':'true'}}).pipe(timeout(10000)));
