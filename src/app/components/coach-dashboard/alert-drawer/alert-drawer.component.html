@@ -1,0 +1,119 @@
+<div class="drawer-backdrop" *ngIf="open" (click)="close()"></div>
+
+<aside
+  #panel
+  class="drawer"
+  [class.drawer--open]="open"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-hidden]="!open"
+  [attr.aria-labelledby]="'alert-drawer-title'"
+  tabindex="-1"
+>
+  <ng-container *ngIf="type">
+    <header class="drawer-header">
+      <span class="drawer-icon" [attr.data-type]="type"><i-feather [name]="icon"></i-feather></span>
+      <div class="drawer-heading">
+        <h2 id="alert-drawer-title">{{ 'CDASH.ALERT.' + type + '.TITLE' | translate }}</h2>
+        <p>{{ 'CDASH.ALERT.' + type + '.HINT' | translate }}</p>
+      </div>
+      <span class="drawer-count" *ngIf="status === 'ready'">{{ total }}</span>
+      <button type="button" class="icon-btn" (click)="close()" [attr.aria-label]="'CLOSE' | translate">
+        <i-feather name="x"></i-feather>
+      </button>
+    </header>
+
+    <div class="drawer-body">
+      <app-widget-state
+        [status]="status"
+        [rows]="6"
+        [empty]="items.length === 0"
+        [emptyText]="'CDASH.ALERT.' + type + '.EMPTY'"
+        emptyIcon="check-circle"
+        (retry)="reload()"
+      ></app-widget-state>
+
+      <ul class="rows" *ngIf="status === 'ready' && items.length">
+        <li class="drow" *ngFor="let item of items; trackBy: trackByRow">
+          <button type="button" class="avatar tone-{{ tone(item) }}" (click)="viewProfile(item)" [attr.aria-label]="'VIEW_PROFILE' | translate">
+            <img *ngIf="item.avatarUrl && !brokenAvatars.has(item.clientId); else fallback"
+                 [src]="item.avatarUrl" alt="" (error)="brokenAvatars.add(item.clientId)" />
+            <ng-template #fallback>{{ initialsOf(item.clientName) }}</ng-template>
+          </button>
+
+          <div class="row-main">
+            <button type="button" class="name" (click)="viewProfile(item)">{{ item.clientName }}</button>
+
+            <ng-container [ngSwitch]="type">
+              <p class="meta" *ngSwitchCase="'EXPIRED_PROGRAMS'">
+                <span class="strong">{{ item.programName }}</span>
+                <span>{{ 'CDASH.ENDED_ON' | translate: { date: date(item.programEndDate) } }}</span>
+                <span class="pill pill--danger">{{ 'CDASH.DAYS_AGO' | translate: { count: item.days } }}</span>
+              </p>
+              <p class="meta" *ngSwitchCase="'ENDING_SOON'">
+                <span class="strong">{{ item.programName }}</span>
+                <span>{{ 'CDASH.ENDS_ON' | translate: { date: date(item.programEndDate) } }}</span>
+                <span class="pill pill--warn">{{ (item.days === 0 ? 'CDASH.ENDS_TODAY' : 'CDASH.IN_DAYS') | translate: { count: item.days } }}</span>
+              </p>
+              <p class="meta" *ngSwitchCase="'NO_PROGRAM'">{{ 'CDASH.NO_PROGRAM_ASSIGNED' | translate }}</p>
+              <p class="meta" *ngSwitchCase="'NO_NUTRITION'">{{ 'CDASH.NO_NUTRITION_ASSIGNED' | translate }}</p>
+              <p class="meta" *ngSwitchCase="'INACTIVE'">
+                <ng-container *ngIf="item.lastActivityAt; else neverActive">
+                  {{ 'CDASH.LAST_ACTIVITY' | translate: { when: ago(item.lastActivityAt) } }}
+                </ng-container>
+                <ng-template #neverActive>{{ 'CDASH.NO_ACTIVITY_RECORDED' | translate }}</ng-template>
+              </p>
+              <p class="meta" *ngSwitchCase="'CHECK_INS_TO_REVIEW'">
+                <span class="strong">{{ item.formName || ('CHECK_IN' | translate) }}</span>
+                <span>{{ 'CDASH.RECEIVED' | translate: { when: ago(item.submittedAt) } }}</span>
+              </p>
+              <p class="meta" *ngSwitchCase="'CHECK_INS_OVERDUE'">
+                <span class="strong">{{ item.formName || ('CHECK_IN' | translate) }}</span>
+                <span class="pill pill--danger">{{ 'CDASH.LATE_DAYS' | translate: { count: item.days } }}</span>
+              </p>
+            </ng-container>
+          </div>
+
+          <div class="row-actions" [ngSwitch]="type">
+            <ng-container *ngSwitchCase="'EXPIRED_PROGRAMS'">
+              <button type="button" class="btn btn--primary" (click)="assignProgram(item)">{{ 'CDASH.ASSIGN_PROGRAM' | translate }}</button>
+              <button type="button" class="btn" (click)="viewProgram(item)">{{ 'CDASH.VIEW_PROGRAM' | translate }}</button>
+            </ng-container>
+            <ng-container *ngSwitchCase="'ENDING_SOON'">
+              <button type="button" class="btn btn--primary" (click)="assignProgram(item)">{{ 'CDASH.PLAN_NEXT' | translate }}</button>
+              <button type="button" class="btn" (click)="viewProgram(item)">{{ 'CDASH.VIEW_PROGRAM' | translate }}</button>
+            </ng-container>
+            <ng-container *ngSwitchCase="'NO_PROGRAM'">
+              <button type="button" class="btn btn--primary" (click)="assignProgram(item)">{{ 'ASSIGN' | translate }}</button>
+            </ng-container>
+            <ng-container *ngSwitchCase="'NO_NUTRITION'">
+              <button type="button" class="btn btn--primary" (click)="assignNutrition(item)">{{ 'ASSIGN' | translate }}</button>
+            </ng-container>
+            <ng-container *ngSwitchCase="'INACTIVE'">
+              <button type="button" class="btn btn--primary" (click)="message(item)">
+                <i-feather name="message-square"></i-feather>{{ 'CDASH.MESSAGE' | translate }}
+              </button>
+            </ng-container>
+            <ng-container *ngSwitchCase="'CHECK_INS_TO_REVIEW'">
+              <button type="button" class="btn btn--primary" (click)="review(item)">{{ 'CDASH.REVIEW' | translate }}</button>
+            </ng-container>
+            <ng-container *ngSwitchCase="'CHECK_INS_OVERDUE'">
+              <button type="button" class="btn" (click)="message(item)">{{ 'CDASH.MESSAGE' | translate }}</button>
+            </ng-container>
+            <button type="button" class="btn btn--ghost" (click)="viewProfile(item)" [attr.aria-label]="'VIEW_PROFILE' | translate"
+                    [title]="'VIEW_PROFILE' | translate">
+              <i-feather name="user"></i-feather>
+            </button>
+          </div>
+        </li>
+      </ul>
+
+      <div class="load-more" *ngIf="status === 'ready' && (hasMore || loadMoreFailed)">
+        <p class="load-more-error" *ngIf="loadMoreFailed">{{ 'CDASH.WIDGET_ERROR' | translate }}</p>
+        <button type="button" class="btn" [disabled]="loadingMore" (click)="loadMore()">
+          {{ (loadingMore ? 'LOADING' : 'CDASH.LOAD_MORE') | translate }}
+        </button>
+      </div>
+    </div>
+  </ng-container>
+</aside>

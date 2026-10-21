@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, Observable, of, Subject, throwError} from 'rxjs';
-import {catchError, map, switchMap, timeout} from 'rxjs/operators';
+import {BehaviorSubject, forkJoin, Observable, of, Subject, throwError} from 'rxjs';
+import {catchError, map, shareReplay, switchMap, timeout} from 'rxjs/operators';
 import {Conversation} from "../components/chat/models/conversation";
 import {HttpClient, HttpHeaders, HttpParams} from "@angular/common/http";
 import {environment} from "@env/environment";
@@ -124,18 +124,19 @@ export class ChatService {
       .set('page', page.toString())
       .set('size', size.toString());
 
-    const conversations$ = this.http.get<PageDto<Conversation>>(`${this.apiUrl}/conversations`, { params });
+    // The chat shows its own loading state (list, profile chat tab): no full-screen loader.
+    const conversations$ = this.http.get<PageDto<Conversation>>(`${this.apiUrl}/conversations`, { params, headers: { 'X-Skip-Loader': 'true' } });
     if (!this.isClientUser()) return conversations$;
 
     const clientId = sessionStorage.getItem('userId') || '';
     if (!clientId) return of(this.emptyConversationPage(page, size));
 
-    return this.clientService.getClientById(clientId).pipe(
-      switchMap(client => {
-        const coachId = client.coachId || client.coach?.id || '';
+    // The coach of the client and the conversations are read at the same time (they were read one after the other).
+    return forkJoin({ coachId: this.coachOfClient(clientId), result: conversations$ }).pipe(
+      switchMap(({ coachId, result: page$ }) => {
         if (!coachId) return of(this.emptyConversationPage(page, size));
 
-        return conversations$.pipe(
+        return of(page$).pipe(
           map(result => {
             const content = (result.content || []).filter(conversation =>
               conversation.isGroup
@@ -157,6 +158,24 @@ export class ChatService {
         return of(this.emptyConversationPage(page, size));
       })
     );
+  }
+
+  /** Coach of the connected client, read once per session (silent: the chat has its own loading state). */
+  private clientCoach$?: Observable<string>;
+  private clientCoachFor = '';
+
+  private coachOfClient(clientId: string): Observable<string> {
+    if (!this.clientCoach$ || this.clientCoachFor !== clientId) {
+      this.clientCoachFor = clientId;
+      this.clientCoach$ = this.clientService.getClientById(clientId, true).pipe(
+        map(client => client.coachId || client.coach?.id || ''),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+      const request = this.clientCoach$;
+      // A failed read is not kept: the next opening asks again.
+      request.subscribe({ error: () => { if (this.clientCoach$ === request) this.clientCoach$ = undefined; } });
+    }
+    return this.clientCoach$;
   }
 
   private isClientUser(): boolean {
@@ -218,7 +237,7 @@ export class ChatService {
   }
 
   createConversation(request: { coachId: string, clientId: string }): Observable<Conversation> {
-    return this.http.post<Conversation>(`${this.apiUrl}/conversations`, request);
+    return this.http.post<Conversation>(`${this.apiUrl}/conversations`, request, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   createGroupConversation(request: { name: string, memberIds: string[] }): Observable<Conversation> {
@@ -311,7 +330,21 @@ export class ChatService {
     );
   }
 
+  private readonly attachmentBlobs = new Map<string, { at: number; blob$: Observable<Blob> }>();
+
+  /** The attachment file of a message: downloaded once for 10 minutes, even when two components ask for it. */
   getMessageAttachmentBlob(messageId: string): Observable<Blob> {
+    const known = this.attachmentBlobs.get(messageId);
+    if (known && Date.now() - known.at < 10 * 60 * 1000) return known.blob$;
+    const blob$ = this.fetchMessageAttachmentBlob(messageId).pipe(
+      catchError((error) => { this.attachmentBlobs.delete(messageId); return throwError(() => error); }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.attachmentBlobs.set(messageId, { at: Date.now(), blob$ });
+    return blob$;
+  }
+
+  private fetchMessageAttachmentBlob(messageId: string): Observable<Blob> {
     return this.http.get(
       `${this.apiUrl}/messages/${encodeURIComponent(messageId)}/attachment-content`,
       {
@@ -325,18 +358,35 @@ export class ChatService {
     ).pipe(timeout(10000));
   }
 
+  /**
+   * Signed media links of the messages: asked once per message for 10 minutes (the chat and the message list both
+   * asked them, so each voice note / attachment was asked twice at every opening of a conversation).
+   */
+  private readonly mediaUrls = new Map<string, { at: number; url$: Observable<string> }>();
+
+  private sharedMediaUrl(key: string, request: () => Observable<string>): Observable<string> {
+    const known = this.mediaUrls.get(key);
+    if (known && Date.now() - known.at < 10 * 60 * 1000) return known.url$;
+    const url$ = request().pipe(
+      catchError((error) => { this.mediaUrls.delete(key); return throwError(() => error); }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.mediaUrls.set(key, { at: Date.now(), url$ });
+    return url$;
+  }
+
   getMessageAttachmentUrl(messageId: string): Observable<string> {
-    return this.http.get<{ url: string }>(
+    return this.sharedMediaUrl(`attachment:${messageId}`, () => this.http.get<{ url: string }>(
       `${this.apiUrl}/messages/${encodeURIComponent(messageId)}/attachment-url`,
       { headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } }
-    ).pipe(timeout(10000), map(response => response.url));
+    ).pipe(timeout(10000), map(response => response.url)));
   }
 
   getMessagePlaybackUrl(messageId: string): Observable<string> {
-    return this.http.get<{ url: string }>(
+    return this.sharedMediaUrl(`playback:${messageId}`, () => this.http.get<{ url: string }>(
       `${this.apiUrl}/messages/${encodeURIComponent(messageId)}/playback-url`,
       { headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } }
-    ).pipe(map(response => response.url));
+    ).pipe(map(response => response.url)));
   }
 
   getAutoMessageSequences(
@@ -352,15 +402,16 @@ export class ChatService {
   }
 
   createAutoMessageSequence(request: AutoMessageSequenceRequest): Observable<AutoMessageSequenceDto> {
-    return this.http.post<AutoMessageSequenceDto>(`${this.apiUrl}/auto-messages`, request);
+    // The modal shows its own progress: no full-screen loader on the scheduled messages writes.
+    return this.http.post<AutoMessageSequenceDto>(`${this.apiUrl}/auto-messages`, request, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   updateAutoMessageSequence(id: string, request: AutoMessageSequenceRequest): Observable<AutoMessageSequenceDto> {
-    return this.http.put<AutoMessageSequenceDto>(`${this.apiUrl}/auto-messages/${id}`, request);
+    return this.http.put<AutoMessageSequenceDto>(`${this.apiUrl}/auto-messages/${id}`, request, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   deleteAutoMessageSequence(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/auto-messages/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/auto-messages/${id}`, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   uploadAutoMessageAttachment(file: File): Observable<AutoMessageItemDto> {

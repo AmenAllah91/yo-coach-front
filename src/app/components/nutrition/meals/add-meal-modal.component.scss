@@ -784,3 +784,92 @@
 @media (max-width: 980px) {
   .ingredient-serving-form { margin-left: 0; }
 }
+
+/* Recipe ingredients: manual ingredient next to the database search. */
+.section-heading__buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.ghost-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid #d8dde6;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ghost-button:hover { border-color: #44b4df; color: #1f8fbb; }
+.ghost-button i-feather { width: 16px; height: 16px; }
+@media (max-width: 760px) {
+  .section-heading__buttons { width: 100%; }
+  .section-heading__buttons > button { flex: 1 1 0; }
+}
+
+/* Meal total in the foods box: the total component brings its own card. */
+.foods-box__header {
+  display: block;
+  min-height: 0;
+  padding: 14px 16px;
+}
+
+/* Recipe: numbered sections, required marks, short helps. */
+.section-heading__icon--step {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #fff;
+  background: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+}
+.required-mark { color: #ef4444; font-weight: 800; }
+.field-help { color: #64748b; font-size: 12px; font-weight: 500; }
+.recipe-totals { margin: 0; }
+
+/* Recipe ingredients: database foods use the meal rows; a manual ingredient is a small editable card. */
+.recipe-foods { margin-top: 4px; }
+.manual-ingredient {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fbfcfe;
+}
+.manual-ingredient__top { display: flex; align-items: flex-end; gap: 12px; }
+.manual-ingredient__top .np-foods__thumb { color: #64748b; background: #f1f5f9; }
+.manual-ingredient__top .np-foods__thumb i-feather { width: 16px; height: 16px; }
+.manual-ingredient__name { display: grid; flex: 1 1 auto; gap: 5px; min-width: 0; }
+.manual-ingredient__name span,
+.manual-ingredient__fields span { color: #64748b; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.manual-ingredient__fields { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.manual-ingredient__fields label { display: grid; gap: 5px; min-width: 0; margin: 0; }
+.manual-ingredient input,
+.manual-ingredient select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d8dde6;
+  border-radius: 10px;
+  color: #0f172a;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+}
+.manual-ingredient input:focus,
+.manual-ingredient select:focus { border-color: #44b4df; outline: none; box-shadow: 0 0 0 3px rgba(68, 180, 223, .18); }
+@media (max-width: 760px) {
+  .manual-ingredient__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Recipe footer on a phone: Cancel and draft side by side, the main save across the width. */
+@media (max-width: 640px) {
+  .meal-modal__footer--recipe { flex-wrap: wrap; gap: 8px; }
+  .meal-modal__footer--recipe .meal-modal__footer-spacer { display: none; }
+  .meal-modal__footer--recipe > .button--secondary { flex: 1 1 0; }
+  .meal-modal__footer--recipe .meal-modal__footer-actions { display: contents; }
+  .meal-modal__footer--recipe .meal-modal__footer-actions .button--secondary { flex: 1 1 0; }
+  .meal-modal__footer--recipe .meal-modal__footer-actions .button--primary { flex: 1 0 100%; order: 3; }
+}

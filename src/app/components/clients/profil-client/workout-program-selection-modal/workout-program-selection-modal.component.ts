@@ -61,7 +61,9 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   constructor(private workoutService: WorkoutService, private translate: TranslateService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen']?.currentValue === true || changes['workoutFileEnabled']) {
+    if (changes['workoutFileEnabled']) this.programs = []; // the filter changed: read again on the next opening
+    // The library (up to 200 programs) is read when the modal opens, never while the profile loads.
+    if (this.isOpen && (changes['isOpen']?.currentValue === true || changes['workoutFileEnabled'])) {
       this.programs = [];
       this.ensureProgramsLoaded();
     }

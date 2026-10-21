@@ -18,7 +18,7 @@ describe('Meals create and edit validation', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj('MealsService', ['createMeal', 'updateMeal', 'saveTemplate']);
-    const nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient']);
+    const nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient', 'prefetchPickerFoods']);
     nutrition.getFoodForClient.and.returnValue(of({}));
     component = new AddMealModalComponent(nutrition, service, { instant: (key: string) => key } as any, auth);
     component.choose('recipe');
@@ -137,7 +137,7 @@ describe('Meal ingredient servings', () => {
 
   beforeEach(() => {
     meals = jasmine.createSpyObj('MealsService', ['createMeal', 'updateMeal', 'saveTemplate']);
-    nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient', 'addFoodServing']);
+    nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient', 'addFoodServing', 'prefetchPickerFoods']);
     nutrition.getFoodForClient.and.returnValue(of({}));
     component = new AddMealModalComponent(nutrition, meals, { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) } as any, auth);
     component.choose('foods');
@@ -260,7 +260,7 @@ describe('Meals validation messages after interaction', () => {
       imports: [AddMealModalComponent, TranslateModule.forRoot(), FeatherModule.pick(allIcons)],
       providers: [
         { provide: MealsService, useValue: {} },
-        { provide: NutritionService, useValue: {} },
+        { provide: NutritionService, useValue: { prefetchPickerFoods: () => {} } },
         { provide: AuthService, useValue: auth },
       ],
     }).compileComponents();
@@ -273,7 +273,8 @@ describe('Meals validation messages after interaction', () => {
     fixture.componentInstance.choose('foods'); fixture.detectChanges(); await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.ingredient-validation')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('TITLE_REQUIRED');
-    expect(fixture.nativeElement.querySelector('.button--primary').disabled).toBeTrue();
+    // Save stays clickable: an incomplete meal shows what to fix instead of a disabled button.
+    expect(fixture.nativeElement.querySelector('.button--primary').disabled).toBeFalse();
     fixture.nativeElement.querySelector('.foods-field--title input').dispatchEvent(new Event('blur'));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('TITLE_REQUIRED');
@@ -283,7 +284,7 @@ describe('Meals validation messages after interaction', () => {
     fixture.componentInstance.choose('recipe'); fixture.componentInstance.addManualIngredient();
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.inline-error')).toBeNull();
-    const quantity = fixture.nativeElement.querySelector('.compact-field input');
+    const quantity = fixture.nativeElement.querySelector('.manual-ingredient__fields input');
     quantity.value = '-1'; quantity.dispatchEvent(new Event('input'));
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('MEAL_QUANTITY_POSITIVE');

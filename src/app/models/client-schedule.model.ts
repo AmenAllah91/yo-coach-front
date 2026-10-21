@@ -34,4 +34,9 @@ export interface ClientScheduleItemDto {
   status?: string;
   schedule?: FormScheduleDto | null;
   questions?: FormQuestionDto[];
+  /** Recurrence end (planned sends). */
+  stopAt?: string | null;
+  reminderEnabled?: boolean;
+  /** "09:00:00" */
+  reminderTime?: string | null;
 }

@@ -14,6 +14,8 @@ import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
 import { ToastrService } from 'ngx-toastr';
 import { PlanBillingTabComponent } from './plan-billing-tab/plan-billing-tab.component';
+import { CoachBillingService } from 'app/service/coach-billing.service';
+import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 
 @Component({
   selector: 'app-configuration-coachng',
@@ -243,6 +245,8 @@ export class ConfigurationCoachngComponent implements OnInit {
     private documentService: DocumentService,
     private translate: TranslateService,
     private toastr: ToastrService,
+    private billing: CoachBillingService,
+    private subscriptionState: CoachSubscriptionStateService,
   ) {}
 
   ngOnInit(): void {
@@ -252,29 +256,35 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.authService.extractRoles().then((roles) => {
       this.isAdmin = roles.includes('ROLE_ADMIN');
       this.isClient = roles.includes('ROLE_CLIENT') && !roles.includes('ROLE_COACH');
+      // A coach: the subscription and the invoices (slow, from YoSales) are asked now, in the background, so the
+      // "Plan & Billing" tab shows them at once.
+      if (roles.includes('ROLE_COACH') && !this.isAdmin) {
+        this.billing.prefetchInvoices();
+        this.subscriptionState.getState().subscribe({ error: () => undefined });
+      }
     });
 
     this.loadDemoWorkspaceStatus();
 
-    this.coachSettingsService.loadConfig().subscribe({
+    // Shown at once with the last known settings (kept by the service), then refreshed in the background without the
+    // full-screen loader. The fresh copy replaces them only while the coach has changed nothing.
+    const cached = this.coachSettingsService.getConfig();
+    this.config = this.clone(cached);
+    this.savedConfig = this.clone(cached);
+    this.refreshPublicPhoto(cached.publicProfile.photoUrl);
+    this.syncNotificationToggles();
+    this.loading = false;
+
+    this.coachSettingsService.loadConfig(true).subscribe({
       next: (config) => {
+        if (this.hasConfigChanges) return;
+        const photoChanged = config.publicProfile.photoUrl !== this.config.publicProfile.photoUrl;
         this.config = this.clone(config);
         this.savedConfig = this.clone(config);
-        this.refreshPublicPhoto(config.publicProfile.photoUrl);
+        if (photoChanged) this.refreshPublicPhoto(config.publicProfile.photoUrl);
         this.syncNotificationToggles();
-
-        this.loading = false;
       },
-      error: () => {
-        const fallback = this.coachSettingsService.getConfig();
-
-        this.config = this.clone(fallback);
-        this.savedConfig = this.clone(fallback);
-        this.refreshPublicPhoto(fallback.publicProfile.photoUrl);
-        this.syncNotificationToggles();
-
-        this.loading = false;
-      },
+      error: () => undefined, // the cached settings stay on screen
     });
   }
 

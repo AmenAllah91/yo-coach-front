@@ -1,12 +1,12 @@
 <div class="tab-section-header">
   <h2 class="section-title">{{ 'WORKOUT_PROGRAMS' | translate }}</h2>
-  <button class="btn-assign-black" type="button" appWriteAction (click)="openAssignWorkout()">
+  <button class="btn-assign-black" type="button" *ngIf="!(loaded && hasNoProgram)" appWriteAction (click)="openAssignWorkout()">
     <i class="fas fa-plus"></i>
     {{ 'ASSIGN_NEW_PROGRAM' | translate }}
   </button>
 </div>
 
-<div class="workout-filter-tabs" *ngIf="workoutFileEnabled">
+<div class="workout-filter-tabs" *ngIf="workoutFileEnabled && !(loaded && hasNoProgram)">
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
     {{ 'ALL' | translate }}
   </button>
@@ -18,6 +18,10 @@
   </button>
 </div>
 
+<app-section-loader *ngIf="!loaded"></app-section-loader>
+<ng-container *ngIf="loaded">
+<app-client-plan-empty *ngIf="hasNoProgram" kind="workout" (assign)="openAssignWorkout()"></app-client-plan-empty>
+
 <div class="program-section" *ngIf="hasActivePrograms()">
   <h3 class="program-section-title">{{ 'CURRENT_ACTIVE_PROGRAM' | translate }}</h3>
   <ng-container *ngFor="let program of currentActivePrograms">
@@ -25,7 +29,7 @@
   </ng-container>
 </div>
 
-<div class="program-section">
+<div class="program-section" *ngIf="!hasNoProgram">
   <div class="all-programs-header">
     <h3 class="program-section-title">{{ 'ALL_PROGRAMS' | translate }}</h3>
 
@@ -62,6 +66,7 @@
   <ng-container *ngFor="let program of allOtherPrograms">
     <ng-container *ngTemplateOutlet="programCardTemplate; context: { $implicit: program }"></ng-container>
   </ng-container>
+  <p class="program-filter-empty" *ngIf="!allOtherPrograms.length">{{ 'NO_PROGRAM_FOR_FILTER' | translate }}</p>
 </div>
 
 <ng-template #programCardTemplate let-program>
@@ -230,7 +235,7 @@
 </div>
 </ng-template>
 
-<div class="pagination-wrapper">
+<div class="pagination-wrapper" *ngIf="loaded && workoutTotalPages > 1">
   <button
     class="page-btn"
     [disabled]="workoutPage === 0"
@@ -256,6 +261,7 @@
     &gt;
   </button>
 </div>
+</ng-container>
 
 <div class="upload-file-modal-backdrop" *ngIf="workoutFileEnabled && showUploadFileModal" (click)="closeUploadFileModal()">
   <div class="upload-file-modal import-style-modal" (click)="$event.stopPropagation()">

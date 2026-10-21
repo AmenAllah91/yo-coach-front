@@ -1,7 +1,7 @@
 <section class="client-tasks" [class.detail-view]="selected">
   <ng-container *ngIf="!selected; else detail">
     <header class="tasks-heading">
-      <button class="app-page-back" type="button" [attr.aria-label]="fr ? 'Retour' : 'Back'" (click)="goBack()"><span aria-hidden="true">←</span></button>
+      <button *ngIf="!previewMode" class="app-page-back" type="button" [attr.aria-label]="fr ? 'Retour' : 'Back'" (click)="goBack()"><span aria-hidden="true">←</span></button>
       <div class="tasks-heading-copy">
       <h1>{{ fr ? 'Tâches' : 'Tasks' }}</h1>
       <p>{{ fr ? 'Vos tâches, check-ins et habitudes de ' + displayCoachName + '.' : 'Your to-dos, check-ins and habits from ' + displayCoachName + '.' }}</p>

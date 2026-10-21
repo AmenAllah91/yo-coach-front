@@ -32,9 +32,7 @@
 
     <div class="panel">
       <div class="content">
-        <div *ngIf="loading" class="empty">
-          <div class="empty-title">{{ 'LOADING' | translate }}</div>
-        </div>
+        <app-section-loader *ngIf="loading"></app-section-loader>
 
         <div *ngIf="error && !loading" class="empty">
           <div class="empty-title">{{ error | translate }}</div>

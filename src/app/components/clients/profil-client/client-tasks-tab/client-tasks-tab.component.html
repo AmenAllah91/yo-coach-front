@@ -48,7 +48,8 @@
   </div>
 
   <!-- Calendar view -->
-  <div class="tasks-calendar" [class.compact]="compactCards" (scroll)="closeTaskMenu()">
+  <app-section-loader *ngIf="!loaded"></app-section-loader>
+  <div class="tasks-calendar" *ngIf="loaded" [class.compact]="compactCards" (scroll)="closeTaskMenu()">
     <div class="tasks-weekdays" aria-hidden="true">
       <span *ngFor="let day of weeks[0]">{{ day.date | date: 'EEE' }}</span>
     </div>
@@ -78,8 +79,10 @@
           class="task-chip"
           [ngClass]="['task-chip--' + task.status, 'kind-' + task.kind]"
           [class.menu-open]="isMenuOpenFor(task)"
+          [class.task-chip--pending]="task.pending"
+          [attr.aria-busy]="task.pending || null"
           [attr.title]="task.title"
-          (click)="editCalendarTask(day, task)">
+          (click)="!task.pending && editCalendarTask(day, task)">
           <span class="task-chip__icon"><i-feather [name]="task.icon"></i-feather></span>
           <span class="task-chip__text">
             <strong>{{ task.title }}</strong>
@@ -88,6 +91,7 @@
           <i-feather *ngIf="task.status === 'done'" name="check-circle" class="task-chip__done"></i-feather>
           <!-- Actions button shown on hover (replaces the status icon). -->
           <button
+            *ngIf="!task.pending"
             type="button"
             class="task-chip__menu-btn"
             aria-haspopup="menu"

@@ -61,7 +61,7 @@ describe('MySubscriptionComponent (SUB-37)', () => {
   it('cancels after confirmation, then can take the cancellation back', async () => {
     billing.cancelSubscription.and.returnValue(of({ cancelAtPeriodEnd: true }));
     const c = create(active);
-    spyOn<any>(c, 'confirm').and.returnValue(Promise.resolve(true));
+    spyOn<any>(c, 'confirmCancellation').and.returnValue(Promise.resolve(true));
     expect(c.canCancel).toBeTrue();
     expect(c.canResume).toBeFalse();
 
@@ -81,11 +81,28 @@ describe('MySubscriptionComponent (SUB-37)', () => {
 
   it('does not cancel when the coach keeps the subscription', async () => {
     const c = create(active);
-    spyOn<any>(c, 'confirm').and.returnValue(Promise.resolve(false));
+    spyOn<any>(c, 'confirmCancellation').and.returnValue(Promise.resolve(false));
 
     await c.cancel();
 
     expect(billing.cancelSubscription).not.toHaveBeenCalled();
+  });
+
+  it('asks in the cancellation dialog, with the last day of access, and cancels only on confirmation', async () => {
+    billing.cancelSubscription.and.returnValue(of({ cancelAtPeriodEnd: true }));
+    const c = create(active);
+
+    const kept = c.cancel();
+    expect(c.cancelDialog).toEqual({ until: '14/11/2026' });
+    c.closeCancelDialog(false);
+    await kept;
+    expect(c.cancelDialog).toBeNull();
+    expect(billing.cancelSubscription).not.toHaveBeenCalled();
+
+    const cancelled = c.cancel();
+    c.closeCancelDialog(true);
+    await cancelled;
+    expect(billing.cancelSubscription).toHaveBeenCalledTimes(1);
   });
 
   it('a read-only coach sees "Reactivate", which leads to the payment screen', () => {
@@ -109,6 +126,29 @@ describe('MySubscriptionComponent (SUB-37)', () => {
     c.resume();
 
     expect(c.actionError).toBe('MY_SUB_RESUME_NOT_ALLOWED');
+  });
+
+  it('shows the invoices 5 per page and keeps the page after a reload', () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ ...invoices[1], id: 100 + i }));
+    billing.getInvoices.and.returnValue(of(many));
+    const c = create(active);
+
+    expect(c.invoicePageCount).toBe(3);
+    expect(c.invoicePages).toEqual([0, 1, 2]);
+    expect(c.pagedInvoices.map((i) => i.id)).toEqual([100, 101, 102, 103, 104]);
+
+    c.goToInvoicePage(2);
+    expect(c.pagedInvoices.map((i) => i.id)).toEqual([110, 111]);
+    c.goToInvoicePage(3);
+    c.goToInvoicePage(-1);
+    expect(c.invoicePage).toBe(2);
+
+    c.load();
+    expect(c.invoicePage).toBe(2);
+    billing.getInvoices.and.returnValue(of(many.slice(0, 4)));
+    c.load();
+    expect(c.invoicePage).toBe(0);
+    expect(c.invoicePageCount).toBe(1);
   });
 
   describe('SUB-62: card saved at Stripe', () => {

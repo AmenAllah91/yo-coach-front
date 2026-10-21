@@ -1,12 +1,12 @@
 <div class="tab-section-header">
   <h2 class="section-title">{{ 'NUTRITION_PLANS' | translate }}</h2>
-  <button class="btn-assign-black" type="button" appWriteAction (click)="openAssignNutrition()">
+  <button class="btn-assign-black" type="button" *ngIf="!(loaded && hasNoPlan)" appWriteAction (click)="openAssignNutrition()">
     <i class="fas fa-plus"></i>
     {{ 'ASSIGN_NEW_PLAN' | translate }}
   </button>
 </div>
 
-<div class="workout-filter-tabs" *ngIf="nutritionFileEnabled !== false">
+<div class="workout-filter-tabs" *ngIf="nutritionFileEnabled !== false && !(loaded && hasNoPlan)">
   <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
     {{ 'ALL' | translate }}
   </button>
@@ -18,9 +18,9 @@
   </button>
 </div>
 
-<div *ngIf="!hasActivePlans() && allOtherPlans.length === 0" class="empty-nutrition-state">
-  {{ 'NO_NUTRITION_PLANS_ASSIGNED' | translate }}
-</div>
+<app-section-loader *ngIf="!loaded"></app-section-loader>
+<ng-container *ngIf="loaded">
+<app-client-plan-empty *ngIf="hasNoPlan" kind="nutrition" (assign)="openAssignNutrition()"></app-client-plan-empty>
 
 <div class="program-section" *ngIf="hasActivePlans()">
   <h3 class="program-section-title">{{ 'CURRENT_ACTIVE_PLAN' | translate }}</h3>
@@ -29,7 +29,7 @@
   </ng-container>
 </div>
 
-<div class="program-section">
+<div class="program-section" *ngIf="!hasNoPlan">
   <div class="all-programs-header">
     <h3 class="program-section-title">{{ 'ALL_PLANS' | translate }}</h3>
 
@@ -63,6 +63,7 @@
     </div>
   </div>
 
+  <p class="program-filter-empty" *ngIf="!allOtherPlans.length">{{ 'NO_PLAN_FOR_FILTER' | translate }}</p>
   <ng-container *ngFor="let plan of allOtherPlans">
     <ng-container *ngTemplateOutlet="planCardTemplate; context: { $implicit: plan }"></ng-container>
   </ng-container>
@@ -267,6 +268,7 @@
     &gt;
   </button>
 </div>
+</ng-container>
 
 
 <div class="change-dates-backdrop" *ngIf="showChangeDatesModal" (click)="closeChangeDatesModal()">

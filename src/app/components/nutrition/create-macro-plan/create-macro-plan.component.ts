@@ -1,5 +1,6 @@
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
+import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -14,11 +15,16 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent, ReadyWeeksModalComponent],
   templateUrl: './create-macro-plan.component.html',
-  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss'],
+  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss'],
 })
 export class CreateMacroPlanComponent implements OnInit {
+  /** Phones: the week/day structure opens over the page (same as the workout builder). */
+  mobileStructureOpen = false;
+  /** Used by the toolbar "Save draft" (through the ready-weeks check of the draft state). */
+  readonly savePlanFn = (publishWeeks?: number[]) => this.savePlan(publishWeeks);
+
   draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL', () => this.translate.currentLang, this.router);
 
   planName = '';
@@ -461,7 +467,7 @@ export class CreateMacroPlanComponent implements OnInit {
   /* ===================================================
       SAVE (CREATE OR UPDATE)
   ======================================================*/
-  savePlan(publishWeek?: number) {
+  savePlan(publishWeek?: number | number[]) {
     this.days.forEach(day => this.updateDayTotals(day));
 
     const plan = {

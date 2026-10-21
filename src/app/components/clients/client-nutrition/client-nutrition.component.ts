@@ -212,11 +212,21 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       });
   }
 
+  /** A plan of the list without any meal (older answers): its detail is read; the others are complete already. */
+  private needsDetail(summary: any): boolean {
+    if (!summary?.id || this.isFilePlan(summary)) return false;
+    const days: any[] = summary.mealDays || [];
+    return !days.length || days.every((day) => !day?.meals?.length);
+  }
+
   private hydrateNutritionPlans(plans: any[]) {
     if (!plans.length) return of([] as any[]);
+    // The client list already returns the full client view of each plan (the plan detail is the same view for the
+    // client, and for a coach preview it would add unpublished weeks): no request per plan.
+    if (!this.previewClientId || !plans.some((summary) => this.needsDetail(summary))) return of(plans);
 
     return forkJoin(plans.map((summary) => {
-      if (!summary?.id || this.isFilePlan(summary)) return of(summary);
+      if (!this.needsDetail(summary)) return of(summary);
       return this.nutritionService.getNutritionPlanById(summary.id).pipe(
         map((detail: any) => ({
           ...detail,
@@ -778,7 +788,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const foods = this.selectedDay.meals.flatMap(meal => meal.foods)
       .filter(food => !food.imageUrl && !!food.foodRefId);
     foods.forEach(food => {
-      this.nutritionService.getFoodForClient(food.foodRefId!).pipe(catchError(() => of(null))).subscribe((detail: any) => {
+      this.nutritionService.getFoodForClient(food.foodRefId!, true).pipe(catchError(() => of(null))).subscribe((detail: any) => {
         if (detail?.imageUrl) food.imageUrl = detail.imageUrl;
       });
     });

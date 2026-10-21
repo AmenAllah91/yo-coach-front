@@ -1,0 +1,48 @@
+<section class="widget" aria-labelledby="checkins-widget-title">
+  <header class="widget-header">
+    <div class="widget-heading">
+      <h2 id="checkins-widget-title">{{ 'CHECK_INS' | translate }}</h2>
+      <p *ngIf="counts">{{ 'CDASH.KPI.CHECK_INS_DETAIL' | translate: { review: counts.toReview, late: counts.overdue } }}</p>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab" [class.tab--active]="tab === 'toReview'" [attr.aria-selected]="tab === 'toReview'"
+            (click)="select('toReview')">
+      {{ 'CDASH.TO_REVIEW' | translate }}<span class="tab-count" *ngIf="counts">{{ counts.toReview }}</span>
+    </button>
+    <button type="button" role="tab" class="tab" [class.tab--active]="tab === 'overdue'" [attr.aria-selected]="tab === 'overdue'"
+            (click)="select('overdue')">
+      {{ 'CDASH.OVERDUE' | translate }}<span class="tab-count" *ngIf="counts">{{ counts.overdue }}</span>
+    </button>
+  </div>
+
+  <app-widget-state
+    [status]="status"
+    [rows]="3"
+    [empty]="items.length === 0"
+    [emptyText]="tab === 'toReview' ? 'CDASH.NO_CHECK_IN_TO_REVIEW' : 'CDASH.NO_CHECK_IN_OVERDUE'"
+    emptyIcon="check-circle"
+    (retry)="load()"
+  ></app-widget-state>
+
+  <div class="checkin-cards" *ngIf="status === 'ready' && items.length">
+    <a *ngFor="let item of items; trackBy: trackById"
+       [routerLink]="tab === 'toReview' ? ['/forms/manage-checkins'] : ['/clients/profil-client', item.clientId]"
+       [queryParams]="tab === 'toReview' ? { assignmentId: item.assignmentId } : { tab: 'checkins' }"
+       [attr.aria-label]="(tab === 'toReview' ? 'CDASH.REVIEW' : 'VIEW_PROFILE') | translate">
+      <app-checkin-card
+        [date]="tab === 'toReview' ? item.submittedAt : item.dueAt"
+        [lang]="lang"
+        [tone]="tab === 'toReview' ? 'warning' : 'danger'"
+        [title]="item.clientName"
+        [subtitle]="(item.formName || ('CHECK_IN' | translate)) + ' · ' + when(item)"
+        [status]="tab === 'toReview' ? ('CDASH.TO_REVIEW' | translate) : ('CDASH.LATE_DAYS' | translate: { count: item.days })"
+      ></app-checkin-card>
+    </a>
+  </div>
+
+  <footer class="widget-footer">
+    <a routerLink="/forms/manage-checkins" class="see-all">{{ 'CDASH.SEE_ALL_CHECK_INS' | translate }} <span aria-hidden="true">→</span></a>
+  </footer>
+</section>

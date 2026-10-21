@@ -954,3 +954,15 @@
   .program-progress { margin-top: 9px; padding-left: 43px; }
   .progress-bar-bg { height: 3px; }
 }
+
+/* A filter without result (the client has plans, just not for this filter). */
+.program-filter-empty {
+  margin: 4px 0 12px;
+  padding: 18px;
+  border: 1px dashed #d8dde6;
+  border-radius: 12px;
+  color: #64748b;
+  background: #fff;
+  font-size: 13px;
+  text-align: center;
+}

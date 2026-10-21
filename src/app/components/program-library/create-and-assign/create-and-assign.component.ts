@@ -20,12 +20,13 @@ import { Exercise } from '@shared/models/exercice.models';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { inject } from '@angular/core';
 import { WorkoutWeekPanelComponent } from '../workout-week-panel.component';
+import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
 import { workoutDayState, workoutWeekReady } from '@shared/models/workout-publication';
 
 @Component({
   selector: 'app-create-and-assign',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent, ReadyWeeksModalComponent],
   templateUrl: './create-and-assign.component.html',
   styleUrl: './create-and-assign.component.scss',
 })
@@ -994,13 +995,45 @@ export class CreateAndAssignComponent implements OnInit {
   }
 
   // ===== save (assign-specific) =====
+  /** Weeks shown by the "ready to publish" modal (null: closed), and the ones the coach chose to keep as drafts. */
+  readyWeeksPrompt: number[] | null = null;
+  private readyWeeksKeptAsDraft = new Set<number>();
+
   savePlan(publishWeek?: number) {
+    if (this.savingDraft || !this.workoutPlan.name.trim()) return;
+    if (publishWeek) {
+      this.persistPlan([publishWeek]);
+      return;
+    }
+    // The coach may not know a draft week stays hidden from the client: offer to publish the ready ones.
+    const ready = this.workoutWeeks.map((week, index) => index + 1)
+      .filter(week => !this.isWeekPublished(week) && workoutWeekReady(this.days, week) === 7
+        && !this.readyWeeksKeptAsDraft.has(week));
+    if (ready.length) {
+      this.readyWeeksPrompt = ready;
+      return;
+    }
+    this.persistPlan([]);
+  }
+
+  publishReadyWeeks(weeks: number[]): void {
+    this.readyWeeksPrompt = null;
+    this.persistPlan(weeks);
+  }
+
+  keepReadyWeeksAsDraft(): void {
+    (this.readyWeeksPrompt || []).forEach(week => this.readyWeeksKeptAsDraft.add(week));
+    this.readyWeeksPrompt = null;
+    this.persistPlan([]);
+  }
+
+  private persistPlan(publishWeeks: number[]) {
     if (this.savingDraft || !this.workoutPlan.name.trim()) return;
     this.savingDraft = true;
     this.saveError = '';
     const previous = [...(this.workoutPlan.publishedWeeks || [])];
     const publishedWeeks = previous.filter(w => workoutWeekReady(this.days, w) === 7);
-    if (publishWeek && workoutWeekReady(this.days, publishWeek) === 7) publishedWeeks.push(publishWeek);
+    publishedWeeks.push(...publishWeeks.filter(week => workoutWeekReady(this.days, week) === 7));
     this.cleanRestDayWorkoutSessions();
     this.updateAllDates();
     this.facade.setPlan({...this.workoutPlan, publishedWeeks: Array.from(new Set(publishedWeeks)), startDate: this.startDate, endDate: this.endDate,

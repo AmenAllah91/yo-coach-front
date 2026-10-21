@@ -53,7 +53,9 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const refresh=()=>{void this.accountAccess.refresh();void this.coachingAccess.refresh();};
+    // An answer under 20 s old is reused: the window focus (every click back into the page), the 30 s check and the
+    // route guards no longer each call the server; nothing is asked while the tab is hidden.
+    const refresh=()=>{ if (document.hidden) return; void this.accountAccess.allowed(20000); void this.coachingAccess.allowed(20000); };
     window.setInterval(refresh, 30000);
     window.addEventListener('focus', refresh);
     const host = window.location.hostname;

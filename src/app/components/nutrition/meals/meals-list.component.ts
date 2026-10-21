@@ -10,6 +10,7 @@ import { DeleteMealModalComponent } from './delete-meal-modal/delete-meal-modal.
 import { AddMealModalComponent } from './add-meal-modal.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { totalMacros } from '@shared/models/nutrition-math';
+import { ToastService } from 'app/service/toast.service';
 
 @Component({
   selector: 'app-meals-list',
@@ -50,7 +51,7 @@ export class MealsListComponent implements OnInit, OnDestroy {
     if (!target.closest('.dropdown')) this.activeMealMenuId = null;
   };
 
-  constructor(private mealsService: MealsService, private translate: TranslateService) {}
+  constructor(private mealsService: MealsService, private translate: TranslateService, private toast: ToastService) {}
 
   ngOnInit(): void {
     this.load();
@@ -75,13 +76,23 @@ export class MealsListComponent implements OnInit, OnDestroy {
     this.mealToEdit = null;
   }
 
-  onMealSaved(): void {
+  /** The saved meal is shown at once (first on the page when new), then the page is refreshed quietly. */
+  onMealSaved(meal?: any): void {
     this.closeAddMealModal();
-    this.load();
+    if (meal?.id) {
+      const index = this.meals.findIndex((item) => item.id === meal.id);
+      if (index >= 0) this.meals[index] = { ...this.meals[index], ...meal };
+      else if (this.currentPage === 0) {
+        this.meals = [meal, ...this.meals].slice(0, this.pageSize);
+        this.totalElements++;
+      }
+    }
+    this.load(true);
   }
 
-  load(): void {
-    this.loading = true;
+  /** quiet: refresh after a change, the list stays on screen (no skeleton). */
+  load(quiet = false): void {
+    this.loading = !quiet;
     this.mealsService.getMeals(this.currentPage, this.pageSize, this.search).subscribe({
       next: (response: any) => {
         this.meals = Array.isArray(response) ? response : response?.content || [];
@@ -140,21 +151,61 @@ export class MealsListComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** The copy appears right under the original at once; the server answer replaces it. */
   duplicateMeal(meal: any): void {
-    this.mealsService.duplicateMeal(meal.id).subscribe(() => this.load());
+    const placeholder = {
+      ...meal,
+      id: `pending-${Date.now()}`,
+      name: `${meal.name || ''} ${this.translate.instant('MEAL_COPY_SUFFIX')}`.trim(),
+      pending: true,
+      createdAt: new Date().toISOString(),
+    };
+    const index = this.meals.indexOf(meal);
+    this.meals = [...this.meals.slice(0, index + 1), placeholder, ...this.meals.slice(index + 1)];
+    this.mealsService.duplicateMeal(meal.id).subscribe({
+      next: (copy: any) => {
+        this.meals = this.meals.map((item) => (item === placeholder ? (copy?.id ? copy : { ...placeholder, pending: false }) : item));
+        this.totalElements++;
+        this.toast.success(this.translate.instant('MEAL_DUPLICATED'));
+        if (!copy?.id) this.load(true);
+      },
+      error: () => {
+        this.meals = this.meals.filter((item) => item !== placeholder);
+        this.toast.error(this.translate.instant('MEAL_DUPLICATE_ERROR'));
+      },
+    });
   }
+
+  /** Kept while the modal slides out, so its text does not empty during the animation. */
+  mealToDeleteName = '';
 
   deleteMeal(meal: any): void {
     this.mealToDelete = meal;
+    this.mealToDeleteName = meal?.name || '';
     this.showDeleteModal = true;
   }
 
+  /** The meal leaves the list at once; it comes back if the server refuses. */
   confirmDeleteMeal(): void {
-    if (!this.mealToDelete) return;
-    this.mealsService.deleteMeal(this.mealToDelete.id).subscribe(() => {
-      this.showDeleteModal = false;
-      this.mealToDelete = null;
-      this.load();
+    const meal = this.mealToDelete;
+    if (!meal) return;
+    const index = this.meals.indexOf(meal);
+    this.meals = this.meals.filter((item) => item !== meal);
+    this.totalElements = Math.max(0, this.totalElements - 1);
+    this.showDeleteModal = false;
+    this.mealToDelete = null;
+    this.mealsService.deleteMeal(meal.id).subscribe({
+      next: () => {
+        this.toast.success(this.translate.instant('MEAL_DELETED'));
+        if (!this.meals.length && this.currentPage > 0) this.onPageChange(this.currentPage - 1);
+      },
+      error: () => {
+        const meals = [...this.meals];
+        meals.splice(Math.min(index, meals.length), 0, meal);
+        this.meals = meals;
+        this.totalElements++;
+        this.toast.error(this.translate.instant('MEAL_DELETE_ERROR'));
+      },
     });
   }
 

@@ -158,6 +158,9 @@
     </div>
   </div>
 
+  <!-- Delete confirmation (the button opened it, but it was never on the page). -->
+  <app-delete-modal [show]="showDeleteModal" [programToDelete]="programToDelete" (close)="closeDeleteModal()" (confirm)="confirmDelete()"></app-delete-modal>
+
   <app-modal-assign-toclient
     *ngIf="showAssignModal"
     [programName]="programToAssign?.name"

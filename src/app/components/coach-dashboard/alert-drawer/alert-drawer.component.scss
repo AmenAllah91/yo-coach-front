@@ -1,0 +1,118 @@
+@use '../shared/dashboard-tokens' as *;
+
+:host { display: contents; }
+
+.drawer-backdrop {
+  position: fixed; inset: 0; z-index: 1040;
+  background: rgba(15, 23, 42, .32);
+  animation: fade-in .15s ease-out;
+}
+
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 1041;
+  width: min(460px, 100vw);
+  display: flex; flex-direction: column;
+  background: #fff; box-shadow: -12px 0 32px rgba(15, 23, 42, .14);
+  transform: translateX(105%); visibility: hidden;
+  transition: transform .22s ease, visibility .22s;
+  outline: none;
+
+  &--open { transform: none; visibility: visible; }
+}
+
+.drawer-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 18px 18px 14px; border-bottom: 1px solid $line;
+}
+
+.drawer-icon {
+  flex: none; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+  background: $brand-soft; color: $brand-strong;
+  i-feather { width: 17px; height: 17px; }
+  &[data-type='EXPIRED_PROGRAMS'], &[data-type='CHECK_INS_OVERDUE'] { background: $danger-soft; color: $danger; }
+  &[data-type='ENDING_SOON'] { background: $warn-soft; color: $warn; }
+  &[data-type='INACTIVE'] { background: #f1f5f9; color: $muted; }
+  &[data-type='NO_NUTRITION'] { background: $success-soft; color: $success; }
+  &[data-type='CHECK_INS_TO_REVIEW'] { background: $violet-soft; color: $violet; }
+}
+
+.drawer-heading {
+  flex: 1; min-width: 0;
+  h2 { margin: 0; font-size: 15px; font-weight: 650; color: $ink; line-height: 1.35; }
+  p { margin: 3px 0 0; font-size: 12px; color: $muted; line-height: 1.45; }
+}
+
+.drawer-count {
+  flex: none; min-width: 26px; padding: 3px 8px; border-radius: 999px; background: #f1f5f9;
+  font-size: 12px; font-weight: 650; color: $ink-soft; text-align: center; font-variant-numeric: tabular-nums;
+}
+
+.icon-btn {
+  flex: none; width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center;
+  color: $muted; cursor: pointer;
+  &:hover { background: #f1f5f9; color: $ink; }
+  i-feather { width: 17px; height: 17px; }
+}
+
+.drawer-body { flex: 1; overflow-y: auto; padding: 8px 18px 18px; overscroll-behavior: contain; }
+
+.rows { list-style: none; margin: 0; padding: 0; }
+
+.drow {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid $line-soft;
+}
+
+.avatar {
+  @include avatar;
+  grid-row: span 2; align-self: start; cursor: pointer;
+}
+
+.row-main { min-width: 0; }
+
+.name {
+  display: block; max-width: 100%; padding: 0; text-align: left;
+  font-size: 13.5px; font-weight: 600; color: $ink; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  &:hover { color: $brand-strong; }
+}
+
+.meta {
+  margin: 3px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  font-size: 12px; color: $muted; line-height: 1.4;
+  .strong { color: $ink-soft; font-weight: 550; }
+}
+
+.pill {
+  padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  &--danger { background: $danger-soft; color: $danger; }
+  &--warn { background: $warn-soft; color: $warn; }
+}
+
+.row-actions {
+  grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 10px; border: 1px solid $line-strong; border-radius: 6px;
+  background: #fff; color: $ink; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  &:hover:not(:disabled) { background: #f8fafc; border-color: #94a3b8; }
+  &:disabled { opacity: .6; cursor: wait; }
+  i-feather { width: 13px; height: 13px; }
+
+  &--primary { @include soft-action; height: 28px; }
+
+  &--ghost { border-color: transparent; color: $muted; padding: 0 7px; &:hover:not(:disabled) { background: #f1f5f9; border-color: transparent; } }
+}
+
+.load-more {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 14px;
+  .load-more-error { margin: 0; font-size: 12px; color: $danger; }
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 560px) {
+  .drawer { width: 100vw; }
+}

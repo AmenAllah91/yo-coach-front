@@ -37,7 +37,7 @@
       <div class="col-actions">{{ 'ACTIONS' | translate }}</div>
     </div>
 
-    <div class="table-row" *ngFor="let m of meals">
+    <div class="table-row" *ngFor="let m of meals" [class.table-row--pending]="m.pending" [attr.aria-busy]="m.pending || null">
       <div class="col-title">
         <div class="meal-name">{{ m.name }}</div>
       </div>
@@ -61,7 +61,7 @@
 
       <div class="col-actions">
         <div class="dropdown" [class.open]="activeMealMenuId === m.id">
-          <button class="actions-btn" (click)="toggleDropdown(m.id, $event)">
+          <button class="actions-btn" [disabled]="m.pending" (click)="toggleDropdown(m.id, $event)">
             {{ 'ACTIONS' | translate }}
             <i-feather name="chevron-down"></i-feather>
           </button>
@@ -121,7 +121,7 @@
 
 <app-delete-meal-modal
   [isVisible]="showDeleteModal"
-  [mealName]="mealToDelete?.name || ''"
+  [mealName]="mealToDeleteName"
   (onClose)="closeDeleteModal()"
   (onConfirm)="confirmDeleteMeal()"
 ></app-delete-meal-modal>
@@ -130,5 +130,5 @@
   [isVisible]="showAddMealModal"
   [meal]="mealToEdit"
   (closed)="closeAddMealModal()"
-  (saved)="onMealSaved()"
+  (saved)="onMealSaved($event)"
 ></app-add-meal-modal>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, map, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, of, shareReplay, tap, map, switchMap } from 'rxjs';
 import { environment } from '@env/environment';
 
 export interface CoachSettingsConfig {
@@ -120,26 +120,52 @@ export class CoachSettingsService {
 
   constructor(private http: HttpClient) {}
 
+  /** Time of the last answer from the server, and the request in progress (shared by every caller). */
+  private loadedAt = 0;
+  private loading$: Observable<CoachSettingsConfig> | null = null;
+
+  /**
+   * The layout, the header, the sidebar and the page all ask for the settings when a page opens: they share one
+   * request, and an answer under 30 s old is reused (a save here updates it at once).
+   */
   loadConfig(skipLoader = false): Observable<CoachSettingsConfig> {
-    return this.http.get<CoachSettingsConfig>(
+    if (Date.now() - this.loadedAt < 30000) return of(this.cachedConfig);
+    this.loading$ ??= this.http.get<CoachSettingsConfig>(
       this.baseUrl,
       skipLoader ? { headers: { 'X-Skip-Loader': 'true' } } : {},
     ).pipe(
-      tap((config) => {
-        this.cachedConfig = this.mergeWithDefaults(config);
-        localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
-        this.configSubject.next(this.cachedConfig);
+      tap({
+        next: (config) => {
+          this.cachedConfig = this.mergeWithDefaults(config);
+          localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
+          this.loadedAt = Date.now();
+          this.configSubject.next(this.cachedConfig);
+        },
+        finalize: () => { this.loading$ = null; },
       }),
+      map(() => this.cachedConfig),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    return this.loading$;
   }
 
+  /** Settings of another coach (client pages): one request per coach and minute, shared while it runs. */
+  private readonly coachConfigs = new Map<string, { at: number; config$: Observable<CoachSettingsConfig> }>();
+
   getConfigForCoach(coachId: string, skipLoader = false): Observable<CoachSettingsConfig> {
-    return this.http
+    const known = this.coachConfigs.get(coachId);
+    if (known && Date.now() - known.at < 60_000) return known.config$;
+    const config$ = this.http
       .get<CoachSettingsConfig>(
         `${this.baseUrl}/coach/${coachId}`,
         skipLoader ? { headers: { 'X-Skip-Loader': 'true' } } : {},
       )
-      .pipe(tap((config) => this.mergeWithDefaults(config)));
+      .pipe(
+        tap({ next: (config) => this.mergeWithDefaults(config), error: () => this.coachConfigs.delete(coachId) }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    this.coachConfigs.set(coachId, { at: Date.now(), config$ });
+    return config$;
   }
 
   saveConfig(config: CoachSettingsConfig): Observable<CoachSettingsConfig> {
@@ -147,15 +173,19 @@ export class CoachSettingsService {
 
     return this.http.put<CoachSettingsConfig>(this.baseUrl, payload).pipe(
       tap((saved) => {
+        this.coachConfigs.clear();
         this.cachedConfig = this.mergeWithDefaults(saved);
         localStorage.setItem(this.cacheKey, JSON.stringify(this.cachedConfig));
+        this.loadedAt = Date.now();
         this.configSubject.next(this.cachedConfig);
       }),
     );
   }
 
   getDemoWorkspaceStatus(): Observable<DemoWorkspaceStatus> {
-    return this.http.get<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/status`).pipe(map(normalizeDemoWorkspaceStatus));
+    // Background information on the settings page: no full-screen loader.
+    return this.http.get<DemoWorkspaceStatus>(`${this.demoWorkspaceUrl}/status`, { headers: { 'X-Skip-Loader': 'true' } })
+      .pipe(map(normalizeDemoWorkspaceStatus));
   }
 
   generateDemoWorkspace(): Observable<DemoWorkspaceStatus> {

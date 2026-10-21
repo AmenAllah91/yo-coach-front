@@ -117,7 +117,8 @@ export class AssignmentsApiService {
     direction: 'ASC' | 'DESC' = 'DESC',
     assigneeId?: string,
     statuses: AssignmentStatus[] = [],
-    search?: string
+    search?: string,
+    skipLoader = false
   ): Observable<PageResponse<FormAssignment>> {
     let params = new HttpParams()
       .set('page', page)
@@ -131,7 +132,10 @@ export class AssignmentsApiService {
     });
     if (search?.trim()) params = params.set('search', search.trim());
 
-    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, { params });
+    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/owner/page`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   pageOwnerAssignments(

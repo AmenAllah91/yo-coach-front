@@ -1,372 +1,158 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="page-heading">
-      <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
-        <span aria-hidden="true">←</span>
-      </button>
-      <div class="header-content">
-        <h1>{{ 'DASHBOARD' | translate }}</h1>
-        <p>{{ 'COACH_DASHBOARD_SUBTITLE' | translate }}</p>
-      </div>
+<div class="cdash">
+  <!-- ===================== HEADER ===================== -->
+  <header class="cdash-header">
+    <div class="cdash-heading">
+      <p class="cdash-date">{{ todayLabel }}</p>
+      <h1>
+        <ng-container *ngIf="firstName; else noName">{{ 'CDASH.WELCOME' | translate: { name: firstName } }}</ng-container>
+        <ng-template #noName>{{ 'CDASH.WELCOME_NO_NAME' | translate }}</ng-template>
+      </h1>
     </div>
-  </div>
 
-  <div class="content">
-    <section class="actions">
-      <button class="btn btn-primary" type="button" appWriteAction (click)="addClient()">
-        <span class="action-icon action-icon--plus" aria-hidden="true">+</span>
-        {{ 'ADD_CLIENT' | translate }}
-      </button>
-
-      <button class="btn btn-outline btn-workout" type="button" (click)="addWorkoutPlan()">
-        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6.5 9.5 9.5 6.5M14.5 17.5l3-3M5 12l-2 2 7 7 2-2M12 5l2-2 7 7-2 2M8 8l8 8"/>
-        </svg>
-        {{ 'ADD_WORKOUT_PLAN' | translate }}
-      </button>
-
-      <button class="btn btn-outline btn-nutrition" type="button" (click)="addNutritionPlan()">
-        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 7c-1.4-2.2-4.2-2.5-6-.8C3.5 8.5 4.4 16.9 8 20c1.3 1.1 2.5.2 4 .2s2.7.9 4-.2c3.6-3.1 4.5-11.5 2-13.8-1.8-1.7-4.6-1.4-6 .8Z"/>
-          <path d="M12 7c-.2-2.1.6-3.5 2.5-4"/>
-        </svg>
-        {{ 'ADD_NUTRITION_PLAN' | translate }}
-      </button>
-
-      <button class="btn btn-outline btn-message" type="button" (click)="sendMessage()">
-        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 5h16v12H8l-4 3V5Z"/>
-        </svg>
-        {{ 'SEND_MESSAGE' | translate }}
-      </button>
-
-      <button class="btn btn-outline btn-checkin" type="button" (click)="addCheckIn()">
-        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 5h16v15H4z"/>
-          <path d="m8 12 2.5 2.5L16 9"/>
-        </svg>
-        {{ 'ADD_CHECK_IN' | translate }}
-      </button>
-    </section>
-
-    <!-- ===================== MOBILE TABS ===================== -->
-    <div class="mobile-dashboard-tabs">
-      <div class="mobile-tabs-header">
-        <button
-          class="mobile-tab-btn"
-          [class.active]="selectedTab === 'clients'"
-          (click)="setTab('clients')"
-        >
-          {{ 'CLIENTS' | translate }}
+    <div class="cdash-actions">
+      <div class="menu">
+        <button type="button" class="btn" (click)="toggleQuickActions($event)" [attr.aria-expanded]="quickActionsOpen" aria-haspopup="menu">
+          <i-feather name="plus"></i-feather>{{ 'CDASH.NEW' | translate }}
         </button>
+        <div class="popover popover--menu" *ngIf="quickActionsOpen" role="menu" (click)="$event.stopPropagation()">
+          <button type="button" role="menuitem" appWriteAction (click)="addClient()"><i-feather name="user-plus"></i-feather>{{ 'ADD_CLIENT' | translate }}</button>
+          <button type="button" role="menuitem" (click)="addWorkoutPlan()"><i-feather name="activity"></i-feather>{{ 'ADD_WORKOUT_PLAN' | translate }}</button>
+          <button type="button" role="menuitem" (click)="addNutritionPlan()"><i-feather name="coffee"></i-feather>{{ 'ADD_NUTRITION_PLAN' | translate }}</button>
+          <button type="button" role="menuitem" (click)="addCheckIn()"><i-feather name="clipboard"></i-feather>{{ 'ADD_CHECK_IN' | translate }}</button>
+          <a role="menuitem" routerLink="/chat"><i-feather name="message-square"></i-feather>{{ 'SEND_MESSAGE' | translate }}</a>
+        </div>
+      </div>
 
-        <button
-          class="mobile-tab-btn"
-          [class.active]="selectedTab === 'checkins'"
-          (click)="setTab('checkins')"
-        >
-          {{ 'CHECK_INS' | translate }}
+      <div class="menu">
+        <button type="button" class="btn" (click)="toggleCustomize($event)" [attr.aria-expanded]="customizeOpen" aria-haspopup="true">
+          <i-feather name="grid"></i-feather>{{ 'CDASH.CUSTOMIZE' | translate }}
         </button>
-      </div>
-
-      <!-- MOBILE CLIENTS -->
-      <section *ngIf="selectedTab === 'clients'" class="mobile-section">
-        <article
-          class="client-card"
-          *ngFor="let client of paginatedClients; trackBy: trackByClientId"
-          (click)="openClient(client.id)"
-        >
-          <div class="avatar">
-            <img
-              *ngIf="client.avatar; else mobileClientAvatarFallback"
-              [src]="client.avatar"
-              [alt]="client.name"
-              (error)="onClientAvatarError(client)"
-            />
-            <ng-template #mobileClientAvatarFallback>{{ getInitials(client.name) }}</ng-template>
-          </div>
-          <div class="card-info">
-            <div class="name-row">
-              <h3>{{ client.name }}</h3>
-              <span class="online-dot" *ngIf="client.status === 'active'"></span>
-            </div>
-            <div class="meta-row">
-              <span class="plan">{{ client.package | translate }}</span>
-            </div>
-          </div>
-          <span class="chevron">›</span>
-        </article>
-        <div *ngIf="clients.length === 0" class="empty-state">{{ 'NO_CLIENTS_FOUND' | translate }}</div>
-
-        <div class="checkins-pagination dashboard-pagination" *ngIf="!loading && !error">
-          <button type="button" class="pagination-btn" [attr.aria-label]="'PREVIOUS_PAGE' | translate" [disabled]="!canGoPreviousClients" (click)="previousClientsPage($event)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <button
-            type="button"
-            *ngFor="let page of clientPageNumbers"
-            class="pagination-page"
-            [class.active]="page === clientsPage"
-            [class.dots]="page === '...'"
-            [disabled]="page === '...'"
-            (click)="goToClientsPage(page, $event)"
-          >{{ page }}</button>
-          <button type="button" class="pagination-btn" [attr.aria-label]="'NEXT_PAGE' | translate" [disabled]="!canGoNextClients" (click)="nextClientsPage($event)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-          </button>
-        </div>
-      </section>
-
-      <!-- MOBILE CHECK-INS -->
-      <section *ngIf="selectedTab === 'checkins'" class="mobile-section">
-        <article
-          class="checkin-card"
-          [class.overdue-card]="checkIn.overdue"
-          *ngFor="let checkIn of paginatedRecentCheckIns; trackBy: trackByCheckInId"
-          (click)="openCheckIn(checkIn)"
-        >
-          <div class="avatar icon-avatar">
-            <img *ngIf="checkIn.avatar; else mobileCheckInFallback" [src]="checkIn.avatar" [alt]="checkIn.clientName" />
-            <ng-template #mobileCheckInFallback>{{ getInitials(checkIn.clientName) }}</ng-template>
-          </div>
-          <div class="card-info">
-            <div class="name-row">
-              <h3>{{ checkIn.clientName }}</h3>
-              <span class="overdue-badge" *ngIf="checkIn.overdue">{{ 'OVERDUE_LABEL' | translate }}</span>
-            </div>
-            <div class="checkin-date-lines">
-              <span class="checkin-date-line">📅 {{ getCheckInActivityLabel(checkIn) | translate }}: {{ formatAssignmentDate(checkIn.submittedDate) }}</span>
-              <span class="checkin-date-line">🕘 {{ 'ANSWERED' | translate }}: {{ formatAssignmentDate(checkIn.answeredDate) }}</span>
-            </div>
-          </div>
-          <div class="status-side">
-            <span [class]="getStatusClass(checkIn.status)">{{ (checkIn.status || 'PENDING_STATUS') | translate }}</span>
-            <span class="due">{{ formatCheckInDate(checkIn) }}</span>
-          </div>
-        </article>
-        <div *ngIf="recentCheckIns.length === 0" class="empty-state">{{ 'NO_CHECK_INS_FOUND' | translate }}</div>
-
-        <div class="checkins-pagination dashboard-pagination" *ngIf="!loading && !error">
-          <button type="button" class="pagination-btn" [disabled]="!canGoPreviousCheckIns" (click)="previousCheckInsPage($event)">‹</button>
-          <button
-            type="button"
-            *ngFor="let page of checkInsPageNumbers"
-            class="pagination-page"
-            [class.active]="page === checkInsPage"
-            [class.dots]="page === '...'"
-            [disabled]="page === '...'"
-            (click)="goToCheckInsPage(page, $event)"
-          >{{ page }}</button>
-          <button type="button" class="pagination-btn" [disabled]="!canGoNextCheckIns" (click)="nextCheckInsPage($event)">›</button>
-        </div>
-      </section>
-    </div>
-
-    <!-- ===================== LOADING / ERROR ===================== -->
-    <div *ngIf="loading" class="loading-state">
-      <span>{{ 'LOADING' | translate }}</span>
-    </div>
-
-    <div *ngIf="error" class="error-state">
-      <span>{{ error }}</span>
-      <button type="button" class="retry-btn" (click)="loadData()">{{ 'RETRY' | translate }}</button>
-    </div>
-
-    <!-- ===================== DESKTOP GRID (no selectedTab) ===================== -->
-    <div class="dashboard-grid">
-
-      <!-- CLIENTS PANEL -->
-      <div class="dashboard-panel latest-clients-panel" *ngIf="!loading && !error">
-        <div class="panel-header">
-          <h2>{{ 'LATEST_CLIENTS' | translate }}</h2>
-          <p>{{ 'TOTAL' | translate }} {{ clients.length }} {{ 'CLIENTS_LOWER' | translate }}</p>
-        </div>
-
-        <div class="panel-body">
-          <article
-            class="client-card latest-client-card"
-            *ngFor="let client of paginatedClients; trackBy: trackByClientId"
-            (click)="openClient(client.id)"
-          >
-            <div class="avatar">
-              <img
-                *ngIf="client.avatar; else desktopClientAvatarFallback"
-                [src]="client.avatar"
-                [alt]="client.name"
-                (error)="onClientAvatarError(client)"
-              />
-              <ng-template #desktopClientAvatarFallback>{{ getInitials(client.name) }}</ng-template>
-            </div>
-            <div class="card-info">
-              <div class="name-row">
-                <h3>{{ client.name }}</h3>
-                <span class="online-dot" *ngIf="client.status === 'active'"></span>
-              </div>
-              <div class="meta-row">
-                <span class="plan">{{ client.package | translate }}</span>
-              </div>
-            </div>
-            <span class="chevron">›</span>
-          </article>
-          <div *ngIf="clients.length === 0" class="empty-state">{{ 'NO_CLIENTS_FOUND' | translate }}</div>
-
-          <div class="checkins-pagination dashboard-pagination">
-            <button type="button" class="pagination-btn" [attr.aria-label]="'PREVIOUS_PAGE' | translate" [disabled]="!canGoPreviousClients" (click)="previousClientsPage($event)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <button
-              type="button"
-              *ngFor="let page of clientPageNumbers"
-              class="pagination-page"
-              [class.active]="page === clientsPage"
-              [class.dots]="page === '...'"
-              [disabled]="page === '...'"
-              (click)="goToClientsPage(page, $event)"
-            >{{ page }}</button>
-            <button type="button" class="pagination-btn" [attr.aria-label]="'NEXT_PAGE' | translate" [disabled]="!canGoNextClients" (click)="nextClientsPage($event)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-          </div>
+        <div class="popover popover--customize" *ngIf="customizeOpen" (click)="$event.stopPropagation()" role="dialog"
+             [attr.aria-label]="'CDASH.CUSTOMIZE' | translate">
+          <p class="popover-title">{{ 'CDASH.WIDGETS' | translate }}</p>
+          <label class="switch-row" *ngFor="let widget of widgets">
+            <span>{{ 'CDASH.WIDGET.' + widget | translate }}</span>
+            <input type="checkbox" [checked]="!hidden.has(widget)" (change)="toggleWidget(widget)" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <p class="popover-title">{{ 'CDASH.ALERTS' | translate }}</p>
+          <label class="switch-row" *ngFor="let type of alertTypes">
+            <span>{{ 'CDASH.ALERT.' + type + '.TITLE' | translate }}</span>
+            <input type="checkbox" [checked]="!hidden.has('ALERT_' + type)" (change)="toggleWidget('ALERT_' + type)" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <p class="popover-error" *ngIf="preferencesError" role="alert">{{ 'CDASH.PREFERENCES_ERROR' | translate }}</p>
         </div>
       </div>
+    </div>
+  </header>
 
-      <!-- CHECKINS PANEL -->
-      <div class="dashboard-panel recent-checkins-panel" *ngIf="!loading && !error">
-        <div class="panel-header">
+  <!-- ===================== KPIs ===================== -->
+  <section class="kpis" *ngIf="isVisible('KPIS')" [attr.aria-label]="'CDASH.KPIS' | translate">
+    <a class="kpi" routerLink="/clients">
+      <span class="kpi-label">{{ 'CDASH.KPI.ACTIVE_CLIENTS' | translate }}</span>
+      <i-feather class="kpi-icon" name="users"></i-feather>
+      <ng-container *ngIf="summaryStatus === 'ready' && summary; else kpiPending">
+        <span class="kpi-value">{{ summary.activeClients.count }}</span>
+        <span class="kpi-sub">
+          <ng-container *ngIf="summary.activeClients.limit">{{ 'CDASH.KPI.OUT_OF' | translate: { limit: summary.activeClients.limit } }}</ng-container>
+          <ng-container *ngIf="summary.activeClients.limit && summary.activeClients.newLast30Days"> · </ng-container>
+          <ng-container *ngIf="summary.activeClients.newLast30Days">{{ 'CDASH.KPI.NEW_30_DAYS' | translate: { count: summary.activeClients.newLast30Days } }}</ng-container>
+        </span>
+      </ng-container>
+    </a>
+
+    <button type="button" class="kpi" (click)="scrollToTodo()" [title]="'CDASH.KPI.TO_WATCH_RULE' | translate">
+      <span class="kpi-label">{{ 'CDASH.KPI.TO_WATCH' | translate }}</span>
+      <i-feather class="kpi-icon kpi-icon--danger" name="alert-circle"></i-feather>
+      <ng-container *ngIf="summaryStatus === 'ready' && summary; else kpiPending">
+        <span class="kpi-value" [class.kpi-value--danger]="summary.clientsToWatch.count > 0">{{ summary.clientsToWatch.count }}</span>
+        <span class="kpi-sub">{{ watchDetail.key | translate: { count: watchDetail.count } }}</span>
+      </ng-container>
+    </button>
+
+    <button type="button" class="kpi" (click)="openCheckIns()">
+      <span class="kpi-label">{{ 'CDASH.KPI.CHECK_INS' | translate }}</span>
+      <i-feather class="kpi-icon" name="clipboard"></i-feather>
+      <ng-container *ngIf="summaryStatus === 'ready' && summary; else kpiPending">
+        <span class="kpi-value">{{ checkInsPending }}</span>
+        <span class="kpi-sub">{{ 'CDASH.KPI.LATE' | translate: { count: summary.checkIns.overdue } }}</span>
+      </ng-container>
+    </button>
+
+    <a class="kpi" routerLink="/chat">
+      <span class="kpi-label">{{ 'CDASH.KPI.UNREAD_MESSAGES' | translate }}</span>
+      <i-feather class="kpi-icon" name="message-circle"></i-feather>
+      <ng-container *ngIf="unreadKnown; else unreadPending">
+        <span class="kpi-value">{{ unreadConversations }}</span>
+        <span class="kpi-sub">{{ 'CDASH.KPI.MESSAGES_DETAIL' | translate: { count: unreadMessages } }}</span>
+      </ng-container>
+    </a>
+
+    <ng-template #unreadPending>
+      <span class="kpi-value kpi-value--pending" aria-busy="true"><span></span></span>
+    </ng-template>
+
+    <ng-template #kpiPending>
+      <span class="kpi-value kpi-value--pending" *ngIf="summaryStatus !== 'error'" aria-busy="true"><span></span></span>
+      <span class="kpi-sub kpi-sub--error" *ngIf="summaryStatus === 'error'">{{ 'CDASH.UNAVAILABLE' | translate }}</span>
+    </ng-template>
+  </section>
+
+  <!-- ===================== CONTENT ===================== -->
+  <div class="cdash-grid">
+    <div class="cdash-main">
+      <section class="card todo" id="cdash-todo" *ngIf="isVisible('TODO')" aria-labelledby="todo-title">
+        <header class="card-header">
+          <span class="card-icon"><i-feather name="bell"></i-feather></span>
           <div>
-            <h2>{{ 'RECENT_CHECK_INS' | translate }}</h2>
-            <p>{{ 'LATEST_CLIENT_UPDATES' | translate }}</p>
+            <h2 id="todo-title">{{ 'CDASH.TODO' | translate }}</h2>
+            <p *ngIf="summaryStatus === 'ready'">
+              {{ (allClear ? 'CDASH.TODO_ALL_CLEAR' : 'CDASH.TODO_CLIENTS') | translate: { count: summary?.todoClients ?? 0 } }}
+            </p>
           </div>
-          <span class="view-all">{{ 'VIEW_ALL' | translate }}</span>
+        </header>
+
+        <app-widget-state *ngIf="summaryStatus !== 'ready'" [status]="summaryStatus" [rows]="3" (retry)="loadSummary()"></app-widget-state>
+
+        <div class="todo-grid" *ngIf="summaryStatus === 'ready'">
+          <button type="button" class="todo-item" *ngFor="let type of visibleAlertTypes" [class.todo-item--zero]="!alertCount(type)"
+                  [attr.data-type]="type" (click)="openDrawer(type)">
+            <span class="todo-icon"><i-feather [name]="alertIcons[type]"></i-feather></span>
+            <span class="todo-text">
+              <span class="todo-title">{{ 'CDASH.ALERT.' + type + '.TITLE' | translate }}</span>
+              <span class="todo-hint">
+                {{ (type === 'CHECK_INS_TO_REVIEW' ? 'CDASH.N_CHECK_INS' : 'CDASH.N_CLIENTS') | translate: { count: alertCount(type) } }}
+                · {{ 'CDASH.ALERT.' + type + '.SHORT' | translate }}
+              </span>
+            </span>
+            <span class="todo-count">{{ alertCount(type) }}</span>
+            <i-feather class="todo-chevron" name="chevron-right"></i-feather>
+          </button>
+          <p class="todo-none" *ngIf="!visibleAlertTypes.length">{{ 'CDASH.ALL_ALERTS_HIDDEN' | translate }}</p>
         </div>
+      </section>
 
-        <div class="panel-body">
-          <article
-            class="checkin-card"
-            [class.overdue-card]="checkIn.overdue"
-            *ngFor="let checkIn of paginatedRecentCheckIns; trackBy: trackByCheckInId"
-            (click)="openCheckIn(checkIn)"
-          >
-            <div class="avatar icon-avatar">
-              <img *ngIf="checkIn.avatar; else desktopCheckInFallback" [src]="checkIn.avatar" [alt]="checkIn.clientName" />
-              <ng-template #desktopCheckInFallback>{{ getInitials(checkIn.clientName) }}</ng-template>
-            </div>
-            <div class="card-info">
-              <div class="name-row">
-                <h3>{{ checkIn.clientName }}</h3>
-                <span class="overdue-badge" *ngIf="checkIn.overdue">{{ 'OVERDUE_LABEL' | translate }}</span>
-              </div>
-              <div class="checkin-date-lines">
-                <span class="checkin-date-line">📅 {{ getCheckInActivityLabel(checkIn) | translate }}: {{ formatAssignmentDate(checkIn.submittedDate) }}</span>
-                <span class="checkin-date-line">🕘 {{ 'ANSWERED' | translate }}: {{ formatAssignmentDate(checkIn.answeredDate) }}</span>
-              </div>
-            </div>
-            <div class="status-side">
-              <span [class]="getStatusClass(checkIn.status)">{{ (checkIn.status || 'PENDING_STATUS') | translate }}</span>
-              <span class="due">{{ formatCheckInDate(checkIn) }}</span>
-            </div>
-          </article>
-          <div *ngIf="recentCheckIns.length === 0" class="empty-state">{{ 'NO_CHECK_INS_FOUND' | translate }}</div>
-
-          <div class="checkins-pagination dashboard-pagination">
-            <button type="button" class="pagination-btn" [disabled]="!canGoPreviousCheckIns" (click)="previousCheckInsPage($event)">‹</button>
-            <button
-              type="button"
-              *ngFor="let page of checkInsPageNumbers"
-              class="pagination-page"
-              [class.active]="page === checkInsPage"
-              [class.dots]="page === '...'"
-              [disabled]="page === '...'"
-              (click)="goToCheckInsPage(page, $event)"
-            >{{ page }}</button>
-            <button type="button" class="pagination-btn" [disabled]="!canGoNextCheckIns" (click)="nextCheckInsPage($event)">›</button>
-          </div>
-        </div>
-      </div>
-
+      <app-recent-activities *ngIf="isVisible('ACTIVITIES')" [lang]="lang" [refreshKey]="refreshKey"></app-recent-activities>
     </div>
-    <!-- ===================== END DESKTOP GRID ===================== -->
 
+    <aside class="cdash-side">
+      <app-checkins-widget *ngIf="isVisible('CHECK_INS')" [lang]="lang" [refreshKey]="refreshKey"
+                           [counts]="summary?.checkIns ?? null"></app-checkins-widget>
+      <app-messages-widget *ngIf="isVisible('MESSAGES')" [lang]="lang"></app-messages-widget>
+    </aside>
   </div>
 
-  <!-- ===================== MODALS ===================== -->
-  <app-add-client-modal
-    [isVisible]="showAddClientModal"
-    (onClose)="closeAddClientModal()"
-  ></app-add-client-modal>
+  <app-alert-drawer [type]="drawerType" [lang]="lang" (closed)="closeDrawer()"></app-alert-drawer>
+
+  <app-add-client-modal [isVisible]="showAddClientModal" (onClose)="showAddClientModal = false"></app-add-client-modal>
 
   <app-choose-plan-type-modal
     [isVisible]="showChoosePlanTypeModal"
     [returnUrl]="'/coach-dashboard'"
     [assignAfterCreate]="assignAfterNutrition"
-    (onClose)="closeChoosePlanTypeModal()"
+    (onClose)="showChoosePlanTypeModal = false"
   ></app-choose-plan-type-modal>
 
-  <div class="assign-overlay" *ngIf="showPostCreatePrompt">
-    <div class="assign-card">
-      <button class="assign-close" type="button" (click)="notNowAssign()">×</button>
-
-      <div class="assign-icon">{{ pendingAssignIcon }}</div>
-
-      <h2>{{ pendingAssignLabel }}</h2>
-      <p>{{ 'ASSIGN_CREATED_ITEM_PROMPT' | translate:{ title: pendingAssignTitle } }}</p>
-
-      <div class="assign-actions">
-        <button class="assign-primary" type="button" (click)="openAssignModal()">
-          {{ 'ASSIGN_NOW' | translate }}
-        </button>
-
-        <button class="assign-secondary" type="button" (click)="notNowAssign()">
-          {{ 'NOT_NOW' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="assign-overlay" *ngIf="showAssignModal">
-    <div class="assign-card assign-card--form">
-      <button class="assign-close" type="button" (click)="closeAssignModal()">×</button>
-
-      <div class="assign-icon">{{ pendingAssignIcon }}</div>
-
-      <h2>{{ 'ASSIGN_ITEM' | translate:{ title: pendingAssignTitle } }}</h2>
-      <p>{{ 'SELECT_CLIENT_AND_DATE' | translate:{ dateLabel: (assignDateLabel | lowercase) } }}</p>
-
-      <label class="assign-label">{{ 'CLIENT' | translate }}</label>
-      <select class="assign-input" [(ngModel)]="assignClientId">
-        <option value="" disabled>{{ 'SELECT_CLIENT' | translate }}</option>
-        <option *ngFor="let client of clients" [value]="client.id">
-          {{ client.name }}
-        </option>
-      </select>
-
-      <label class="assign-label">{{ assignDateLabel }}</label>
-      <input class="assign-input" type="date" [(ngModel)]="assignDate" />
-
-      <div class="assign-error" *ngIf="assignError">
-        {{ assignError }}
-      </div>
-
-      <div class="assign-actions">
-        <button
-          class="assign-primary"
-          type="button"
-          [disabled]="assignSaving"
-          (click)="confirmAssign()"
-        >
-          {{ assignSaving ? ('ASSIGNING' | translate) : ('ASSIGN' | translate) }}
-        </button>
-
-        <button
-          class="assign-secondary"
-          type="button"
-          [disabled]="assignSaving"
-          (click)="closeAssignModal()"
-        >
-          {{ 'CANCEL' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
-
+  <app-post-create-assign (assigned)="refresh()"></app-post-create-assign>
 </div>

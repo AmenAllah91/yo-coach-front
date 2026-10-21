@@ -1,0 +1,47 @@
+<section class="mt" [attr.aria-label]="title | translate">
+  <header class="mt__head">
+    <div class="mt__title">
+      <strong>{{ title | translate }}</strong>
+      <small>
+        {{ 'MEAL_TOTAL_ITEMS' | translate:{ count: itemCount } }}
+        <ng-container *ngIf="showServingSwitch && perServing"> · {{ 'MEAL_TOTAL_ONE_SERVING' | translate }}</ng-container>
+      </small>
+    </div>
+    <div class="mt__switch" *ngIf="showServingSwitch" role="group">
+      <button type="button" [class.active]="!perServing" [attr.aria-pressed]="!perServing" (click)="setPerServing(false)">
+        {{ 'MEAL_TOTAL_WHOLE' | translate }}
+      </button>
+      <button type="button" [class.active]="perServing" [attr.aria-pressed]="perServing" (click)="setPerServing(true)">
+        {{ 'MEAL_TOTAL_PER_SERVING' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <div class="mt__grid">
+    <div class="mt__kcal">
+      <span>{{ 'CALORIES' | translate }}</span>
+      <strong>{{ calories | number:'1.0-0' }}<em>kcal</em></strong>
+    </div>
+    <div class="mt__macro mt__macro--protein">
+      <span><i></i>{{ 'PROTEIN' | translate }}</span>
+      <strong>{{ protein | number:'1.0-1' }}<em>g</em></strong>
+      <small>{{ share(protein, 4) }} % {{ 'MEAL_TOTAL_OF_KCAL' | translate }}</small>
+    </div>
+    <div class="mt__macro mt__macro--carbs">
+      <span><i></i>{{ 'CARBS' | translate }}</span>
+      <strong>{{ carbs | number:'1.0-1' }}<em>g</em></strong>
+      <small>{{ share(carbs, 4) }} % {{ 'MEAL_TOTAL_OF_KCAL' | translate }}</small>
+    </div>
+    <div class="mt__macro mt__macro--fat">
+      <span><i></i>{{ 'FAT' | translate }}</span>
+      <strong>{{ fat | number:'1.0-1' }}<em>g</em></strong>
+      <small>{{ share(fat, 9) }} % {{ 'MEAL_TOTAL_OF_KCAL' | translate }}</small>
+    </div>
+  </div>
+
+  <div class="mt__bar" aria-hidden="true">
+    <i class="mt__bar--protein" [style.width.%]="share(protein, 4)"></i>
+    <i class="mt__bar--carbs" [style.width.%]="share(carbs, 4)"></i>
+    <i class="mt__bar--fat" [style.width.%]="share(fat, 9)"></i>
+  </div>
+</section>

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
@@ -10,12 +10,20 @@ import { ClientTasksService, TaskCalendarItem } from 'app/service/client-tasks.s
 
 interface TaskDay { date: string; label: string; items: TaskCalendarItem[]; }
 
+/** Tasks of each client and month seen in this session: a revisit shows them at once. */
+const TASKS_SNAPSHOT = new Map<string, TaskCalendarItem[]>();
+const COACH_NAMES = new Map<string, string>();
+
 @Component({
   selector: 'app-my-tasks', standalone: true,
   imports: [CommonModule, FeatherModule],
   templateUrl: './my-tasks.component.html', styleUrl: './my-tasks.component.scss',
 })
 export class MyTasksComponent implements OnInit, OnDestroy {
+  /** Coach "client view" preview: the tasks of this client, read only (nothing opens outside the preview). */
+  @Input() previewClientId = '';
+  @Input() previewMode = false;
+  @Input() previewCoachName = '';
   items: TaskCalendarItem[] = [];
   month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   upcoming = true;
@@ -51,11 +59,20 @@ export class MyTasksComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit(): Promise<void> {
+    if (this.previewMode) {
+      this.clientId = this.previewClientId;
+      this.coachName = this.previewCoachName;
+      if (this.clientId) this.load();
+      return;
+    }
     this.clientId = await this.auth.getId() || '';
     if (this.destroyed) return;
     if (!this.clientId) { this.error = this.fr ? 'Client introuvable.' : 'Client not found.'; return; }
-    this.subscriptions.add(this.chat.getConversations(0, 10).subscribe({
-      next: page => { this.coachName = page.content[0]?.name?.trim() || ''; }, error: () => {},
+    // The coach name only needs the conversations once per session.
+    const knownCoach = COACH_NAMES.get(this.clientId);
+    if (knownCoach !== undefined) this.coachName = knownCoach;
+    else this.subscriptions.add(this.chat.getConversations(0, 10).subscribe({
+      next: page => { this.coachName = page.content[0]?.name?.trim() || ''; COACH_NAMES.set(this.clientId, this.coachName); }, error: () => {},
     }));
     this.subscriptions.add(this.route.queryParamMap.subscribe(params => {
       const date = params.get('date');
@@ -75,11 +92,17 @@ export class MyTasksComponent implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void { this.destroyed = true; this.subscriptions.unsubscribe(); this.request?.unsubscribe(); }
   load(): void {
-    this.request?.unsubscribe(); this.loading = true; this.error = '';
+    this.request?.unsubscribe(); this.error = '';
     const last = new Date(this.month.getFullYear(), this.month.getMonth() + 1, 0);
-    this.request = this.api.calendar(this.clientId, this.dateKey(this.month), this.dateKey(last)).subscribe({
+    // Month seen before in this session: shown at once, the fresh answer replaces it.
+    const key = `${this.clientId}|${this.dateKey(this.month)}`;
+    const known = TASKS_SNAPSHOT.get(key);
+    if (known) this.items = known;
+    this.loading = !known;
+    this.request = this.api.calendar(this.clientId, this.dateKey(this.month), this.dateKey(last), true).subscribe({
       next: response => {
         this.items = response.items; this.loading = false;
+        TASKS_SNAPSHOT.set(key, response.items);
         const target = this.pendingItemId ? this.items.find(item => item.id === this.pendingItemId
           && (!this.pendingDate || item.date === this.pendingDate)
           && (!this.pendingType || item.itemType === this.pendingType)) : null;
@@ -140,6 +163,7 @@ export class MyTasksComponent implements OnInit, OnDestroy {
       : item.taskType === 'BODY_METRICS' ? 'metrics' : 'general';
   }
   open(item: TaskCalendarItem): void {
+    if (this.previewMode) { this.selected = item; return; } // the preview never leaves the client view
     if (item.taskType === 'FORM' && item.formAssignmentId) {
       this.router.navigate(['/assignments', item.formAssignmentId, 'fill']); return;
     }

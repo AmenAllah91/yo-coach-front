@@ -15,6 +15,7 @@ import { ChoosePlanTypeModalComponent } from '../choose-plan-type-modal/choose-p
 import { ModalAssignToclientComponent } from 'app/components/clients/modal-assign-toclient/modal-assign-toclient.component';
 import * as XLSX from 'xlsx';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ToastService } from 'app/service/toast.service';
 
 @Component({
   selector: 'app-nutrition-plans',
@@ -105,7 +106,8 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     private nutritionService: NutritionService,
     private router: Router,
     private coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private toast: ToastService
   ) {}
 
   goBack(): void {
@@ -122,7 +124,7 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   private loadNutritionFileSetting(): void {
     this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
 
-    this.coachSettingsService.loadConfig().pipe(takeUntil(this.destroy$)).subscribe({
+    this.coachSettingsService.loadConfig(true).pipe(takeUntil(this.destroy$)).subscribe({
       next: (config) => {
         this.nutritionFileEnabled = config.nutrition?.nutritionFileEnabled !== false;
         if (!this.nutritionFileEnabled && this.programTypeFilter !== 'APP') {
@@ -171,8 +173,9 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     this.error = null;
 
     const request$ = this.activeTab === 'templates'
-      ? this.nutritionService.getNutritionPlansTemplates(0, NutritionPlansComponent.initialFetchSize, this.searchTerm)
-      : this.nutritionService.getNutritionPlans(0, NutritionPlansComponent.initialFetchSize, this.programTypeFilter, this.searchTerm);
+      // The page shows its own loading state (or the cached plans): no full-screen loader.
+      ? this.nutritionService.getNutritionPlansTemplates(0, NutritionPlansComponent.initialFetchSize, this.searchTerm, true)
+      : this.nutritionService.getNutritionPlans(0, NutritionPlansComponent.initialFetchSize, this.programTypeFilter, this.searchTerm, true);
 
     request$
       .pipe(takeUntil(this.destroy$))
@@ -1142,25 +1145,49 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     this.selectedPlan = null;
   }
 
+  /**
+   * Removed from the screen (and the cached lists) at once, without a full-screen loader nor reloading the list;
+   * put back if the server refuses.
+   */
   confirmDelete() {
-    if (!this.selectedPlan) {
+    const plan = this.selectedPlan;
+    if (!plan?.id) {
       return;
     }
 
+    const previousPlans = this.plans;
+    this.closeDeleteModal();
+    this.applyLoadedPlans(this.plans.filter((item) => item.id !== plan.id));
+    this.forgetCachedPlan(plan.id);
+
     this.nutritionService
-      .deleteNutritionPlan(this.selectedPlan.id!)
+      .deleteNutritionPlan(plan.id, true)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.closeDeleteModal();
-          this.loadPlans();
-        },
+        next: () => this.toast.success(this.translate.instant('PROGRAM_DELETED')),
         error: (error) => {
           console.error('Error deleting plan:', error);
           this.error = 'Failed to delete nutrition plan';
-          this.closeDeleteModal();
+          this.applyLoadedPlans(previousPlans);
+          this.loadPlans(); // the cached lists get the plan back
         },
       });
+  }
+
+  private forgetCachedPlan(planId: string): void {
+    NutritionPlansComponent.plansCache.forEach((plans, key) => {
+      NutritionPlansComponent.plansCache.set(key, plans.filter((item) => item.id !== planId));
+    });
+    try {
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (!key?.startsWith('yo-coach:nutrition-plans:')) continue;
+        const plans = JSON.parse(sessionStorage.getItem(key) || '[]') as NutritionPlan[];
+        sessionStorage.setItem(key, JSON.stringify(plans.filter((item) => item.id !== planId)));
+      }
+    } catch {
+      // The memory cache is already up to date.
+    }
   }
 
   toggleDropdown = (planId: string, event: Event): void => {
@@ -1326,21 +1353,52 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     return `${year}-${month}-${day}`;
   }
 
+  /** Plan being duplicated (one at a time). */
+  duplicatingId: string | null = null;
+
+  /** Like the workout library: no full-screen loader, the copy shows at once on top, without reloading the list. */
   duplicatePlan(id: string | undefined) {
-    if (!id) {
+    if (!id || this.duplicatingId) {
       return;
     }
 
+    this.openDropdownId = null;
+    this.duplicatingId = id;
     this.nutritionService
-      .duplicate(id)
+      .duplicate(id, true)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.loadPlans();
-          this.openDropdownId = null;
+        next: (copy: NutritionPlan) => {
+          this.duplicatingId = null;
+          if (copy?.id && this.activeTab !== 'templates') {
+            this.applyLoadedPlans([copy, ...this.plans]);
+            this.currentPage = 0;
+            this.rememberCachedPlan(copy);
+          }
+          this.toast.success(this.translate.instant('PROGRAM_DUPLICATED'));
         },
-        error: (error) => console.error('Error duplicating program:', error),
+        error: (error) => {
+          this.duplicatingId = null;
+          console.error('Error duplicating program:', error);
+        },
       });
+  }
+
+  /** The copy also goes into the cached lists of "My plans", so coming back to the page shows it at once. */
+  private rememberCachedPlan(plan: NutritionPlan): void {
+    NutritionPlansComponent.plansCache.forEach((plans, key) => {
+      if (!key.startsWith('templates|')) NutritionPlansComponent.plansCache.set(key, [plan, ...plans]);
+    });
+    try {
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (!key?.startsWith('yo-coach:nutrition-plans:') || key.startsWith('yo-coach:nutrition-plans:templates|')) continue;
+        const plans = JSON.parse(sessionStorage.getItem(key) || '[]') as NutritionPlan[];
+        sessionStorage.setItem(key, JSON.stringify([plan, ...plans]));
+      }
+    } catch {
+      // The memory cache is already up to date.
+    }
   }
 
   formatDate(date: string | Date | undefined): string {

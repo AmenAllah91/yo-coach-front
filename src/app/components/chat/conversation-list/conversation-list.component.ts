@@ -192,7 +192,7 @@ export class ConversationListComponent implements OnInit {
       : of(null);
 
     return forkJoin({
-      user: this.userService.getUserById(otherUserId),
+      user: this.userService.getUserById(otherUserId, true, true),
       coachPhoto: coachPhoto$,
     }).pipe(
       map(({ user, coachPhoto }) => {

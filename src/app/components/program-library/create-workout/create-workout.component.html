@@ -1,19 +1,41 @@
-<div class="np-root" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen">
-  <!-- Mobile header mirrors the client editor template. Desktop keeps the original header inside .np-main. -->
-  <div class="np-pagehead np-pagehead--mobile-only">
-    <button type="button" class="np-back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
-      <svg viewBox="0 0 24 24" class="np-ico">
+<div class="np-root np-layout" [class.plan-loading]="planLoading || planLoadError" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen">
+  <!-- One compact toolbar for every screen size: back, title, structure (small screens), save. -->
+  <header class="np-toolbar">
+    <button type="button" class="np-toolbar__back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
+      <svg viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </button>
-    <div class="np-pagehead__copy">
-      <h1 class="np-h5">{{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}</h1>
-      <p class="np-pagehead__meta">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</p>
+    <div class="np-toolbar__title">
+      <h1>{{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}</h1>
+      <p class="np-toolbar__meta" *ngIf="!planLoading">
+        <span class="np-toolbar__name" *ngIf="workoutPlan.name?.trim()">{{ workoutPlan.name }}</span>
+        <span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</span>
+      </p>
     </div>
-    <button type="button" class="np-mobile-weeks-btn" (click)="toggleMobileStructure()" [attr.aria-expanded]="mobileStructureOpen">
-      <i-feather name="list" class="np-ico"></i-feather> Weeks
+    <button type="button" class="np-toolbar__weeks" (click)="toggleMobileStructure()" [attr.aria-expanded]="mobileStructureOpen" [attr.aria-label]="'PROGRAM_STRUCTURE' | translate">
+      <i-feather name="list" class="np-ico"></i-feather>
+      <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
     </button>
-  </div>
+    <div class="np-toolbar__save">
+      <span class="np-toolbar__status" [class.is-error]="!savingDraft && saveError" [attr.title]="saveError || null" role="status" aria-live="polite">
+        <ng-container *ngIf="savingDraft">{{ 'SAVING' | translate }}</ng-container>
+        <ng-container *ngIf="!savingDraft && saveError">{{ saveError }}</ng-container>
+        <ng-container *ngIf="!savingDraft && !saveError && savedAt">{{ 'WORKOUT_SAVED' | translate }} {{ savedAt | date:'HH:mm' }}</ng-container>
+        <ng-container *ngIf="!savingDraft && !saveError && !savedAt && !workoutPlan.id && !planLoading">{{ 'UNSAVED' | translate }}</ng-container>
+      </span>
+      <button type="button" class="np-toolbar__savebtn" [class.is-saved]="justSaved" (click)="savePlan()" [disabled]="savingDraft || planLoading || planLoadError" [attr.aria-label]="'SAVE_DRAFT' | translate">
+        <svg *ngIf="!justSaved" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
+          <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <svg *ngIf="justSaved" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="np-toolbar__savelabel">{{ (savingDraft ? 'SAVING' : 'SAVE_DRAFT') | translate }}</span>
+        <span class="np-toolbar__savelabel np-toolbar__savelabel--short">{{ savingDraft ? '…' : ((justSaved ? 'SAVED_SHORT' : 'SAVE') | translate) }}</span>
+      </button>
+    </div>
+  </header>
   <div class="np-shell">
     <aside class="np-aside">
       <div class="np-aside__head">
@@ -98,38 +120,14 @@
     <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="closeMobileStructure()" aria-label="Close weeks"></button>
 
     <main class="np-main">
-      <button
-        type="button"
-        class="wkex-quickchoose"
-        (click)="openExerciseSelector()"
-        [attr.aria-label]="'CHOOSE_EXERCISE' | translate"
-      >
-        <span class="wkex-plus" aria-hidden="true">＋</span>
-        {{ 'CHOOSE_EXERCISE' | translate }}
-      </button>
-      <div class="np-pagehead np-pagehead--desktop-only">
-        <button type="button" class="np-back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-
-        <div class="np-pagehead__copy">
-          <h1 class="np-h5">{{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}</h1>
-          <p class="np-pagehead__meta">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</p>
-        </div>
-        <button type="button" class="np-mobile-weeks-btn" (click)="toggleMobileStructure()" [attr.aria-expanded]="mobileStructureOpen">
-          <i-feather name="list" class="np-ico"></i-feather> Weeks
-        </button>
+      <!-- Edit mode: the plan loads in place (no full-screen loader). -->
+      <app-section-loader *ngIf="planLoading"></app-section-loader>
+      <div class="np-load-error" *ngIf="planLoadError" role="alert">
+        <p>{{ 'WORKOUT_LOAD_ERROR' | translate }}</p>
+        <button type="button" class="np-load-error__retry" (click)="retryLoadPlan()">{{ 'RETRY' | translate }}</button>
       </div>
 
+      <ng-container *ngIf="!planLoading && !planLoadError">
       <section class="np-card np-card--settings">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
@@ -215,7 +213,7 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="''" [saving]="savingDraft" [savedAt]="savedAt" [error]="saveError" [narrow]="showExerciseSelector" (save)="savePlan()" (publish)="publishSelectedWeek()"></app-workout-week-panel>
+      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="''" [saving]="savingDraft" [showSave]="false" [narrow]="showExerciseSelector" (publish)="publishSelectedWeek()"></app-workout-week-panel>
 
       <section class="np-card np-card--day">
 
@@ -715,22 +713,205 @@
         </div>
       </section>
 
-      <div class="np-sticky">
-        <button class="np-btn np-btn--save np-btn--full" (click)="savePlan()" [disabled]="savingDraft">
-          <svg viewBox="0 0 24 24" class="np-ico">
-            <path
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-              stroke-linecap="round"
-              [attr.d]="isEditMode ? 'M5 12h14m-7-7v14' : 'M12 5v14m7-7H5'"
-            />
-          </svg>
-
-          {{ 'SAVE_DRAFT' | translate }}
-        </button>
-      </div>
+      </ng-container>
     </main>
+
+    <!-- Exercise panel: a column next to the content on wide screens, a sheet over it on small ones. -->
+    <div class="np-drawer-slot" *ngIf="showExerciseSelector">
+      <div class="wkdrawer__backdrop" (click)="closeExerciseSelector()"></div>
+
+      <aside class="wkdrawer" role="dialog" [attr.aria-label]="'CHOOSE_EXERCISE' | translate">
+        <div class="wkdrawer__head">
+          <div class="wkdrawer__heading">
+            <h2 class="wkdrawer__title">{{ 'CHOOSE_EXERCISE' | translate }}</h2>
+            <p class="wkdrawer__count">{{ 'EXERCISES_AVAILABLE' | translate:{ count: totalExercises } }}</p>
+          </div>
+          <button type="button" class="wkdrawer__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeExerciseSelector()">✕</button>
+        </div>
+
+        <div class="wkdrawer__body">
+          <div class="wkdrawer__search">
+            <svg viewBox="0 0 24 24" class="wkdrawer__searchico">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"></circle>
+              <path
+                d="M20 20l-3.5-3.5"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+
+            <input
+              class="wkinput wkinput--search"
+              type="text"
+              [placeholder]="'SEARCH_BY_NAME' | translate"
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onFilterChange()"
+            />
+          </div>
+
+          <div class="wkdrawer__filters">
+            <div class="wkselectwrap">
+              <select class="wkselect" [(ngModel)]="muscleFilter" (ngModelChange)="onFilterChange()">
+                <option value="">{{ 'MUSCLES' | translate }}</option>
+                <option value="CHEST">{{ 'EXERCISE_MUSCLE_CHEST' | translate }}</option>
+                <option value="BACK">{{ 'EXERCISE_MUSCLE_BACK' | translate }}</option>
+                <option value="SHOULDERS">{{ 'EXERCISE_MUSCLE_SHOULDERS' | translate }}</option>
+                <option value="ARMS">{{ 'EXERCISE_MUSCLE_ARMS' | translate }}</option>
+                <option value="LEGS">{{ 'EXERCISE_MUSCLE_LEGS' | translate }}</option>
+                <option value="CORE">{{ 'EXERCISE_MUSCLE_CORE' | translate }}</option>
+              </select>
+
+              <svg class="wkselect__chev" viewBox="0 0 24 24">
+                <polyline
+                  points="6 9 12 15 18 9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></polyline>
+              </svg>
+            </div>
+
+            <div class="wkselectwrap">
+              <select class="wkselect" [(ngModel)]="equipmentFilter" (ngModelChange)="onFilterChange()">
+                <option value="">{{ 'EQUIPMENT' | translate }}</option>
+                <option value="BARBELL">{{ 'EXERCISE_EQUIPMENT_BARBELL' | translate }}</option>
+                <option value="DUMBBELL">{{ 'EXERCISE_EQUIPMENT_DUMBBELL' | translate }}</option>
+                <option value="CABLE">{{ 'EXERCISE_EQUIPMENT_CABLE' | translate }}</option>
+                <option value="MACHINE">{{ 'EXERCISE_EQUIPMENT_MACHINE' | translate }}</option>
+                <option value="BODYWEIGHT">{{ 'EXERCISE_EQUIPMENT_BODYWEIGHT' | translate }}</option>
+              </select>
+
+              <svg class="wkselect__chev" viewBox="0 0 24 24">
+                <polyline
+                  points="6 9 12 15 18 9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></polyline>
+              </svg>
+            </div>
+
+            <div class="wkselectwrap">
+              <select class="wkselect" [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
+                <option value="">{{ 'ALL_TYPES' | translate }}</option>
+                <option value="CARDIO">{{ 'EXERCISE_TYPE_CARDIO' | translate }}</option>
+                <option value="MUSCULATION">{{ 'EXERCISE_TYPE_MUSCULATION' | translate }}</option>
+                <option value="STRENGTH">{{ 'EXERCISE_TYPE_STRENGTH' | translate }}</option>
+              </select>
+
+              <svg class="wkselect__chev" viewBox="0 0 24 24">
+                <polyline
+                  points="6 9 12 15 18 9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <div *ngIf="loading" class="wkloader">{{ 'LOADING_EXERCISES' | translate }}</div>
+
+          <ul class="wkdrawer__list" *ngIf="!loading">
+            <li
+              class="wkdrawer__item"
+              [class.is-added]="isExerciseAdded(ex)"
+              *ngFor="let ex of exerciseDatabase"
+              (mouseenter)="hoveringExerciseId = ex.id"
+              (mouseleave)="hoveringExerciseId = null"
+            >
+              <div class="wkdrawer__thumb">
+                <img
+                  *ngIf="getExerciseThumbnail(ex); else drawerThumbFallback"
+                  [src]="getExerciseThumbnail(ex)"
+                  [alt]="ex.name"
+                  loading="lazy"
+                />
+
+                <ng-template #drawerThumbFallback>
+                  <div class="wkdrawer__thumbFallback">
+                    <i-feather name="activity" class="np-ico"></i-feather>
+                  </div>
+                </ng-template>
+
+                <div class="wkdrawer__thumbPlay" *ngIf="getExerciseVideoLink(ex)">
+                  ▶
+                </div>
+              </div>
+
+              <div class="wkdrawer__meta">
+                <div class="wkdrawer__name">{{ ex.name }}</div>
+                <div class="wkdrawer__sub">
+                  {{ ex.type || "Exercise" }}
+                  <ng-container *ngIf="ex.muscle || ex.exerciseRef?.muscle">
+                    · {{ ex.muscle || ex.exerciseRef?.muscle }}
+                  </ng-container>
+                </div>
+              </div>
+
+              <button
+                *ngIf="!isExerciseAdded(ex)"
+                type="button"
+                class="wkdrawer__add"
+                [title]="'ADD_EXERCISE' | translate"
+                [attr.aria-label]="('ADD_EXERCISE_NAMED' | translate:{ name: ex.name })"
+                (click)="handleSelectExercise(ex)"
+              >
+                ＋
+              </button>
+              <span class="wkdrawer__added" *ngIf="isExerciseAdded(ex)">
+                <i-feather name="check"></i-feather>
+                 {{ 'ADDED' | translate }}
+              </span>
+            </li>
+          </ul>
+
+          <div class="wkdrawer__pagination" *ngIf="totalPages > 1 && !loading" role="navigation" aria-label="Exercise pages">
+            <button
+              type="button"
+              class="wkdrawer__pageNav"
+              (click)="prevPage()"
+              [disabled]="page === 0"
+            >
+              <span aria-hidden="true">‹</span>
+              <span>{{ 'PREVIOUS' | translate }}</span>
+            </button>
+
+            <div class="wkdrawer__pageNumbers" aria-label="Page numbers">
+              <button
+                *ngFor="let pageIndex of exercisePageNumbers"
+                type="button"
+                class="wkdrawer__pageNumber"
+                [class.is-active]="pageIndex === page"
+                [attr.aria-current]="pageIndex === page ? 'page' : null"
+                [attr.aria-label]="'Page ' + (pageIndex + 1)"
+                (click)="goToExercisePage(pageIndex)"
+              >
+                {{ pageIndex + 1 }}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="wkdrawer__pageNav"
+              (click)="nextPage()"
+              [disabled]="page + 1 >= totalPages"
+            >
+              <span>{{ 'NEXT' | translate }}</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
   </div>
 </div>
 
@@ -894,201 +1075,15 @@
   </div>
 </div>
 
-<div *ngIf="showExerciseSelector">
-  <div class="wkdrawer__backdrop" (click)="closeExerciseSelector()"></div>
 
-  <aside class="wkdrawer" role="dialog" [attr.aria-label]="'CHOOSE_EXERCISE' | translate">
-    <div class="wkdrawer__head">
-      <div class="wkdrawer__heading">
-        <h2 class="wkdrawer__title">{{ 'CHOOSE_EXERCISE' | translate }}</h2>
-        <p class="wkdrawer__count">{{ exerciseDatabase.length }} exercises available</p>
-      </div>
-      <button class="wkdrawer__close" (click)="closeExerciseSelector()">✕</button>
-    </div>
-
-    <div class="wkdrawer__body">
-      <div class="wkdrawer__search">
-        <svg viewBox="0 0 24 24" class="wkdrawer__searchico">
-          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"></circle>
-          <path
-            d="M20 20l-3.5-3.5"
-            stroke="currentColor"
-            stroke-width="2"
-            fill="none"
-            stroke-linecap="round"
-          ></path>
-        </svg>
-
-        <input
-          class="wkinput wkinput--search"
-          type="text"
-          [placeholder]="'SEARCH_BY_NAME' | translate"
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onFilterChange()"
-        />
-      </div>
-
-      <div class="wkdrawer__filters">
-        <div class="wkselectwrap">
-          <select class="wkselect" [(ngModel)]="muscleFilter" (ngModelChange)="onFilterChange()">
-            <option value="">{{ 'MUSCLES' | translate }}</option>
-            <option value="CHEST">{{ 'EXERCISE_MUSCLE_CHEST' | translate }}</option>
-            <option value="BACK">{{ 'EXERCISE_MUSCLE_BACK' | translate }}</option>
-            <option value="SHOULDERS">{{ 'EXERCISE_MUSCLE_SHOULDERS' | translate }}</option>
-            <option value="ARMS">{{ 'EXERCISE_MUSCLE_ARMS' | translate }}</option>
-            <option value="LEGS">{{ 'EXERCISE_MUSCLE_LEGS' | translate }}</option>
-            <option value="CORE">{{ 'EXERCISE_MUSCLE_CORE' | translate }}</option>
-          </select>
-
-          <svg class="wkselect__chev" viewBox="0 0 24 24">
-            <polyline
-              points="6 9 12 15 18 9"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            ></polyline>
-          </svg>
-        </div>
-
-        <div class="wkselectwrap">
-          <select class="wkselect" [(ngModel)]="equipmentFilter" (ngModelChange)="onFilterChange()">
-            <option value="">{{ 'EQUIPMENT' | translate }}</option>
-            <option value="BARBELL">{{ 'EXERCISE_EQUIPMENT_BARBELL' | translate }}</option>
-            <option value="DUMBBELL">{{ 'EXERCISE_EQUIPMENT_DUMBBELL' | translate }}</option>
-            <option value="CABLE">{{ 'EXERCISE_EQUIPMENT_CABLE' | translate }}</option>
-            <option value="MACHINE">{{ 'EXERCISE_EQUIPMENT_MACHINE' | translate }}</option>
-            <option value="BODYWEIGHT">{{ 'EXERCISE_EQUIPMENT_BODYWEIGHT' | translate }}</option>
-          </select>
-
-          <svg class="wkselect__chev" viewBox="0 0 24 24">
-            <polyline
-              points="6 9 12 15 18 9"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            ></polyline>
-          </svg>
-        </div>
-
-        <div class="wkselectwrap">
-          <select class="wkselect" [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
-            <option value="">{{ 'ALL_TYPES' | translate }}</option>
-            <option value="CARDIO">{{ 'EXERCISE_TYPE_CARDIO' | translate }}</option>
-            <option value="MUSCULATION">{{ 'EXERCISE_TYPE_MUSCULATION' | translate }}</option>
-            <option value="STRENGTH">{{ 'EXERCISE_TYPE_STRENGTH' | translate }}</option>
-          </select>
-
-          <svg class="wkselect__chev" viewBox="0 0 24 24">
-            <polyline
-              points="6 9 12 15 18 9"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            ></polyline>
-          </svg>
-        </div>
-      </div>
-
-      <div *ngIf="loading" class="wkloader">{{ 'LOADING_EXERCISES' | translate }}</div>
-
-      <ul class="wkdrawer__list" *ngIf="!loading">
-        <li
-          class="wkdrawer__item"
-          [class.is-added]="isExerciseAdded(ex)"
-          *ngFor="let ex of exerciseDatabase"
-          (mouseenter)="hoveringExerciseId = ex.id"
-          (mouseleave)="hoveringExerciseId = null"
-        >
-          <div class="wkdrawer__thumb">
-            <img
-              *ngIf="getExerciseThumbnail(ex); else drawerThumbFallback"
-              [src]="getExerciseThumbnail(ex)"
-              [alt]="ex.name"
-              loading="lazy"
-            />
-
-            <ng-template #drawerThumbFallback>
-              <div class="wkdrawer__thumbFallback">
-                <i-feather name="activity" class="np-ico"></i-feather>
-              </div>
-            </ng-template>
-
-            <div class="wkdrawer__thumbPlay" *ngIf="getExerciseVideoLink(ex)">
-              ▶
-            </div>
-          </div>
-
-          <div class="wkdrawer__meta">
-            <div class="wkdrawer__name">{{ ex.name }}</div>
-            <div class="wkdrawer__sub">
-              {{ ex.type || "Exercise" }}
-              <ng-container *ngIf="ex.muscle || ex.exerciseRef?.muscle">
-                · {{ ex.muscle || ex.exerciseRef?.muscle }}
-              </ng-container>
-            </div>
-          </div>
-
-          <button
-            *ngIf="!isExerciseAdded(ex)"
-            type="button"
-            class="wkdrawer__add"
-            [title]="'ADD_EXERCISE' | translate"
-            [attr.aria-label]="('ADD_EXERCISE_NAMED' | translate:{ name: ex.name })"
-            (click)="handleSelectExercise(ex)"
-          >
-            ＋
-          </button>
-          <span class="wkdrawer__added" *ngIf="isExerciseAdded(ex)">
-            <i-feather name="check"></i-feather>
-             {{ 'ADDED' | translate }}
-          </span>
-        </li>
-      </ul>
-
-      <div class="wkdrawer__pagination" *ngIf="totalPages > 1 && !loading" role="navigation" aria-label="Exercise pages">
-        <button
-          type="button"
-          class="wkdrawer__pageNav"
-          (click)="prevPage()"
-          [disabled]="page === 0"
-        >
-          <span aria-hidden="true">‹</span>
-          <span>{{ 'PREVIOUS' | translate }}</span>
-        </button>
-
-        <div class="wkdrawer__pageNumbers" aria-label="Page numbers">
-          <button
-            *ngFor="let pageIndex of exercisePageNumbers"
-            type="button"
-            class="wkdrawer__pageNumber"
-            [class.is-active]="pageIndex === page"
-            [attr.aria-current]="pageIndex === page ? 'page' : null"
-            [attr.aria-label]="'Page ' + (pageIndex + 1)"
-            (click)="goToExercisePage(pageIndex)"
-          >
-            {{ pageIndex + 1 }}
-          </button>
-        </div>
-
-        <button
-          type="button"
-          class="wkdrawer__pageNav"
-          (click)="nextPage()"
-          [disabled]="page + 1 >= totalPages"
-        >
-          <span>{{ 'NEXT' | translate }}</span>
-          <span aria-hidden="true">›</span>
-        </button>
-      </div>
-    </div>
-  </aside>
-</div>
+<app-ready-weeks-modal
+  *ngIf="readyWeeksPrompt"
+  [weeks]="readyWeeksPrompt"
+  [saving]="savingDraft"
+  (publish)="publishReadyWeeks($event)"
+  (keepDraft)="keepReadyWeeksAsDraft()"
+  (close)="readyWeeksPrompt = null"
+></app-ready-weeks-modal>
 
 <div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
   <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>

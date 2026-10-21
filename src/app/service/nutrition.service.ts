@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, concat, finalize, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FoodServing, MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
@@ -174,8 +174,10 @@ export class NutritionService {
     ).pipe(map(response => ({ ...response, content: (response.content || []).map(food => this.fromFoodApi(food)) })));
   }
 
-  duplicate(id: string): Observable<any> {
-    return this.http.post<any>(`${this.mealPlanUrl}${id}/duplicate`, {});
+  duplicate(id: string, skipLoader = false): Observable<any> {
+    return this.http.post<any>(`${this.mealPlanUrl}${id}/duplicate`, {}, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   filteredFoods(
@@ -191,6 +193,48 @@ export class NutritionService {
     return this.http.get<any>(
       `${environment.baseApiUrl}/api/food-ref/filtered?${params}`
     );
+  }
+
+  /** Foods of the Add Food modal (first 100, custom foods first), by search: kept 2 min, the modal opens at once. */
+  private readonly pickerFoods = new Map<string, { at: number; foods: any[] }>();
+
+  pickerFoodsSnapshot(search: string, maxAgeMs = 120_000): any[] | null {
+    const known = this.pickerFoods.get(search.trim().toLowerCase());
+    return known && Date.now() - known.at < maxAgeMs ? known.foods : null;
+  }
+
+  private readonly pickerRequests = new Map<string, Observable<any[]>>();
+
+  loadPickerFoods(search: string): Observable<any[]> {
+    const key = search.trim().toLowerCase();
+    const running = this.pickerRequests.get(key);
+    if (running) return running; // the prefetch and the modal share one request
+    const params = new HttpParams().set('page', 0).set('size', 100).set('search', search.trim());
+    const request = this.http
+      .get<any>(`${environment.baseApiUrl}/api/food-ref/filtered`, { params, headers: { 'X-Skip-Loader': 'true' } })
+      .pipe(
+        map((response) => [...(response?.content || [])].sort((a: any, b: any) => Number(!!a.general) - Number(!!b.general))),
+        tap((foods) => {
+          if (this.pickerFoods.size > 50) this.pickerFoods.clear();
+          this.pickerFoods.set(key, { at: Date.now(), foods });
+        }),
+        finalize(() => this.pickerRequests.delete(key)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    this.pickerRequests.set(key, request);
+    return request;
+  }
+
+  /** Loads the first list in the background (editor opened): the Add Food modal then opens at once. */
+  prefetchPickerFoods(): void {
+    if (!this.pickerFoodsSnapshot('')) this.loadPickerFoods('').subscribe({ error: () => {} });
+  }
+
+  /** A serving was added to a food: the cached lists show it too. */
+  rememberPickerFood(food: any): void {
+    this.pickerFoods.forEach((entry) => {
+      entry.foods = entry.foods.map((item) => (item.id === food?.id ? { ...item, ...food } : item));
+    });
   }
 
   createFood(food: Food): Observable<Food> {
@@ -224,8 +268,10 @@ export class NutritionService {
     return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/${id}`).pipe(map(result => this.fromFoodApi(result)));
   }
 
-  getFoodForClient(id: string): Observable<Food> {
-    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`).pipe(map(result => this.fromFoodApi(result)));
+  /** quiet: background lookup (a food's picture): no loader, no error toast (a removed food answers 404). */
+  getFoodForClient(id: string, quiet = false): Observable<Food> {
+    const headers = quiet ? { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } : {};
+    return this.http.get<Food>(`${environment.baseApiUrl}/api/food-ref/client-view/${id}`, { headers }).pipe(map(result => this.fromFoodApi(result)));
   }
 
   importFoods(foods: { name: string; servings: FoodServing[] }[]): Observable<any> {
@@ -258,7 +304,8 @@ export class NutritionService {
   getNutritionPlansTemplates(
     page: number = 0,
     size: number = 10,
-    search: string = ''
+    search: string = '',
+    skipLoader = false
   ): Observable<Page<NutritionPlan>> {
     const params: any = { page, size };
 
@@ -266,7 +313,10 @@ export class NutritionService {
       params.search = search.trim();
     }
 
-    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`, { params });
+    return this.http.get<Page<NutritionPlan>>(`${this.mealPlanUrl}templates`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
   getNutritionPlanById(id: string, skipLoader = false): Observable<any> {
     return this.http.get<any>(`${this.mealPlanUrl}${id}`, {
@@ -363,8 +413,10 @@ export class NutritionService {
   }
 
 
-  deleteNutritionPlan(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.mealPlanUrl}${id}`);
+  deleteNutritionPlan(id: string, skipLoader = false): Observable<void> {
+    return this.http.delete<void>(`${this.mealPlanUrl}${id}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   updateNutritionPlanDates(id: string, startDate: string, endDate: string): Observable<NutritionPlan> {
@@ -401,8 +453,15 @@ export class NutritionService {
     );
   }
 
+  /** Last plans of each client (client app): a revisit shows them at once, the fresh answer follows. */
+  private readonly clientPlans = new Map<string, any>();
+
   getNutritionPlanByClientId(clientId: string): Observable<any> {
-    return this.http.get<any>(`${this.mealPlanUrl}client/${clientId}`);
+    const known = this.clientPlans.get(clientId);
+    const request$ = this.http
+      .get<any>(`${this.mealPlanUrl}client/${clientId}`, known ? { headers: { 'X-Skip-Loader': 'true' } } : {})
+      .pipe(tap((response) => this.clientPlans.set(clientId, response)));
+    return known ? concat(of(known), request$) : request$;
   }
 
   replaceAssignedMealFood(

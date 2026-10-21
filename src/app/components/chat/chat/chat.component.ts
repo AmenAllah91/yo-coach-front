@@ -13,8 +13,8 @@ import { ClientService } from '../../../service/client.service';
 import { Conversation } from '../models/conversation';
 import { ChatMessage } from '../models/chat-message';
 import { ProfilClientComponent } from '../../clients/profil-client/profil-client.component';
-import { Subject, Observable, take, takeUntil, forkJoin, of } from 'rxjs';
-import { switchMap, catchError, debounceTime, map, tap } from 'rxjs/operators';
+import { Subject, Observable, take, takeUntil, forkJoin, merge, of } from 'rxjs';
+import { switchMap, catchError, debounceTime, finalize, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { ChatUnreadService } from '../../../service/chat-unread.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -26,6 +26,11 @@ export interface Member { id: string; name: string; avatar: string; }
 type AutoMessageSequence = AutoMessageSequenceDto;
 type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT';
 
+
+/** Last page of messages of each conversation (this session): reopening a conversation shows it at once. */
+const MESSAGES_SNAPSHOT = new Map<string, ChatMessage[]>();
+/** Last conversation list of the connected user (names and avatars included), this session. */
+const CHAT_LIST_SNAPSHOT = new Map<string, { conversations: Conversation[]; contacts: Client[] }>();
 
 @Component({
   selector: 'app-chat',
@@ -45,6 +50,14 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   @Input() embeddedMode = false;
   @Input() embeddedClientId = '';
   @Input() embeddedCoachId = '';
+  /** Coach "client view" preview: the conversation as the client sees it, read only, without the coach tools. */
+  @Input() clientPreview = false;
+
+  /** Message written by the person whose view is shown (the client in the preview). */
+  isOwnMessage(message: { senderId?: string } | null | undefined): boolean {
+    const viewer = this.clientPreview ? this.embeddedClientId : this.currentUserId;
+    return !!message && message.senderId === viewer;
+  }
 
 
   // ── Responsive ────────────────────────────────────────────────────────────
@@ -91,6 +104,11 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   // ── Client Profile ─────────────────────────────────────────────────────────
   showClientProfile = false;
+  /**
+   * Client whose profile panel was opened once: the panel (eight requests) is built only then, not each time a
+   * conversation opens with the panel closed; it stays built afterwards so closing / reopening reloads nothing.
+   */
+  profileBuiltFor: string | null = null;
 
   get selectedClientId(): string {
     if (!this.selectedConv || this.selectedConv.isGroup) return '';
@@ -104,6 +122,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
   toggleClientProfile(): void {
     this.showClientProfile = !this.showClientProfile;
+    if (this.showClientProfile) this.profileBuiltFor = this.selectedClientId || null;
 
     if (this.showClientProfile && !this.isMobile) {
       this.showList = false;
@@ -170,6 +189,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   get canCreateChats(): boolean {
+    if (this.clientPreview) return false;
     const roles = this.getCurrentRoles();
     return roles.includes('ROLE_COACH') || roles.includes('ROLE_ADMIN');
   }
@@ -230,12 +250,29 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.checkMobile();
+    // The list shows as soon as the conversations and the contacts are here (names and avatars from the contacts);
+    // only the missing people and the coaches' public photos are completed afterwards, in the background.
+    // Back on the chat in this session: the last list is shown and the conversation opened at once, then refreshed.
+    const known = this.embeddedMode ? undefined : CHAT_LIST_SNAPSHOT.get(this.currentUserId);
+    if (known) {
+      this.conversations = known.conversations;
+      this.filteredConversationsCache = known.conversations;
+      this.allClients = known.contacts;
+      this.subscribeToAllConversations(known.conversations);
+      if (!this.openRequestedConversation()) {
+        this.openExpandedConversation();
+        this.openDefaultClientConversation();
+      }
+    }
     forkJoin({
       convs: this.loadConversations(),
-      users: this.loadUserSuggestions()
+      // The contacts serve the coach (new chat, names); a client only talks with their coach.
+      users: this.canCreateChats ? this.loadUserSuggestions() : of(null)
     }).pipe(takeUntil(this.destroy$)).subscribe(() => {
-      this.addMissingConvClients();
+      this.enrichConversationsInBackground(); // also adds the people missing from the contacts
       this.tryOpenEmbeddedConversation();
+      if (known) return; // already opened from the last list
+      if (this.openRequestedConversation()) return;
       this.openExpandedConversation();
       this.openDefaultClientConversation();
     });
@@ -268,7 +305,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         if (!msg || !this.selectedConv || msg.conversationId !== this.selectedConv.id) return;
         this.upsertDisplayMessage(msg);
         this.updateConversationPreview(msg);
-        this.loadAutoMessageSequences(this.selectedConv.id);
+        // A message of a scheduled sequence may just have been sent: refreshed once for a burst of messages.
+        this.scheduleAutoMessagesRefresh(this.selectedConv.id);
         this.scrollPending = true;
       });
 
@@ -326,6 +364,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   ngOnDestroy(): void {
+    if (!this.embeddedMode && this.conversations.length) {
+      CHAT_LIST_SNAPSHOT.set(this.currentUserId, { conversations: this.conversations, contacts: this.allClients });
+    }
+    clearTimeout(this.autoMessagesRefreshTimer);
     this.stopAutoSequenceValidationClock();
     this.chatService.notifyConversationOpened(null);
     this.cancelVoiceRecording();
@@ -351,26 +393,20 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   // ── Load Conversations ────────────────────────────────────────────────────
+  /** Conversations as stored: shown at once, named from the contacts list (see enrichConversationsInBackground). */
   private loadConversations(): Observable<any> {
     return this.chatService.getConversations(0, 100).pipe(
       takeUntil(this.destroy$),
-      switchMap((pageDto) => {
-        console.log('🔵 [loadConversations] RAW from backend:', JSON.parse(JSON.stringify(pageDto.content)));
-        const observables = (pageDto.content || []).map(conv =>
-          this.enrichConversation(conv)
-        );
-        if (!observables.length) {
-          this.conversations = [];
-          this.filteredConversationsCache = [];
-          return of([]);
-        }
-        return forkJoin(observables).pipe(tap(finalConvs => {
-          console.log('🔵 [loadConversations] AFTER enrich:', JSON.parse(JSON.stringify(finalConvs)));
-          const uniqueConvs = this.dedupeConversations(finalConvs);
-          this.conversations = uniqueConvs;
-          this.filteredConversationsCache = uniqueConvs;
-          this.subscribeToAllConversations(uniqueConvs);
-        }));
+      tap((pageDto) => {
+        // Names and avatars already known (last list) are kept until the background enrichment refreshes them.
+        const previous = new Map(this.conversations.map((conv) => [conv.id, conv]));
+        const uniqueConvs = this.dedupeConversations(pageDto.content || []).map((conv) => {
+          const before: any = previous.get(conv.id);
+          return before ? ({ ...conv, name: conv.name || before.name, avatar: (conv as any).avatar || before.avatar } as Conversation) : conv;
+        });
+        this.conversations = uniqueConvs;
+        this.filteredConversationsCache = uniqueConvs;
+        this.subscribeToAllConversations(uniqueConvs);
       }),
       catchError((err) => {
         console.error('Error loading conversations:', err);
@@ -379,6 +415,47 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         return of(null);
       })
     );
+  }
+
+  /**
+   * Names and avatars: from the contacts already loaded when possible (no request per conversation); the other people,
+   * and a coach's public photo (seen by a client), are fetched in the background and patched in as they arrive.
+   */
+  private enrichConversationsInBackground(): void {
+    const contacts = new Map(this.allClients.map((client) => [client.id, client]));
+    const toFetch: Conversation[] = [];
+    const named = this.conversations.map((conv) => {
+      if (conv.isGroup) return conv;
+      const otherId = this.currentUserId === conv.clientId ? conv.coachId : conv.clientId;
+      const contact = otherId ? contacts.get(otherId) : undefined;
+      if (contact && otherId !== conv.coachId) return { ...conv, name: contact.name, avatar: contact.avatar || '' } as Conversation;
+      if (otherId) toFetch.push(conv);
+      return contact ? { ...conv, name: contact.name } as Conversation : conv;
+    });
+    this.conversations = named;
+    this.filteredConversationsCache = named;
+
+    merge(...toFetch.map((conv) => this.enrichConversation({ ...conv })))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((enriched) => {
+        this.patchConversation(enriched);
+        // The person was not in the contacts: added now (no second request for them).
+        const otherId = this.currentUserId === enriched.clientId ? enriched.coachId : enriched.clientId;
+        if (otherId && otherId !== this.currentUserId && enriched.name && !this.allClients.some((client) => client.id === otherId)) {
+          this.allClients = [...this.allClients, { id: otherId, name: enriched.name, avatar: enriched.avatar || '' } as Client];
+        }
+      });
+  }
+
+  private patchConversation(enriched: Conversation): void {
+    const patch = (list: Conversation[]) => list.map((conv) => conv.id === enriched.id
+      ? { ...conv, name: enriched.name || conv.name, avatar: enriched.avatar ?? conv.avatar } as Conversation
+      : conv);
+    this.conversations = patch(this.conversations);
+    this.filteredConversationsCache = patch(this.filteredConversationsCache);
+    if (this.selectedConv?.id === enriched.id) {
+      this.selectedConv = { ...this.selectedConv, name: enriched.name || this.selectedConv.name, avatar: enriched.avatar ?? this.selectedConv.avatar } as Conversation;
+    }
   }
 
   private enrichConversation(conv: Conversation): Observable<Conversation> {
@@ -405,7 +482,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       : of(null);
 
     return forkJoin({
-      user: this.userService.getUserById(otherUserId),
+      user: this.userService.getUserById(otherUserId, true, true), // background: no full-screen loader nor error toast
       coachPhoto: coachPhoto$,
     }).pipe(
       map(({ user, coachPhoto }) => {
@@ -469,40 +546,17 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     return this.userService.getUsersSuggestions(0, 100).pipe(
       takeUntil(this.destroy$),
       tap((res) => {
-        console.log('🟢 [loadUserSuggestions] RAW from backend:', JSON.parse(JSON.stringify(res.content)));
         this.allClients = (res.content || []).map((user: any) => ({
           id: user.id,
           name: user.firstName + " " + user.lastName,
           avatar: user.avatarUrl && user.avatarUrl !== 'not found' ? user.avatarUrl : ''
         }));
-        console.log('🟢 [loadUserSuggestions] MAPPED allClients:', JSON.parse(JSON.stringify(this.allClients)));
       }),
       catchError((err) => {
         console.error('Error loading user suggestions:', err);
         return of(null);
       })
     );
-  }
-
-  private addMissingConvClients(): void {
-    const existingIds = new Set(this.allClients.map(c => c.id));
-    const toFetch: string[] = [];
-    for (const conv of this.conversations) {
-      if (conv.isGroup) continue;
-      const otherId = this.currentUserId === conv.clientId ? conv.coachId : conv.clientId;
-      if (otherId && !existingIds.has(otherId) && otherId !== this.currentUserId) {
-        toFetch.push(otherId);
-        existingIds.add(otherId);
-      }
-    }
-    if (!toFetch.length) return;
-    forkJoin(toFetch.map(id => this.userService.getUserById(id).pipe(
-      map(u => ({ id, name: u.firstName + ' ' + u.lastName, avatar: u.avatarUrl === 'not found' ? '' : u.avatarUrl })),
-      catchError(() => of(null))
-    ))).subscribe(users => {
-      const valid = users.filter((u): u is Client => u !== null);
-      if (valid.length) this.allClients = [...this.allClients, ...valid];
-    });
   }
 
 
@@ -554,6 +608,33 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
         this.selectConversation(conversation);
       });
+  }
+
+  /**
+   * Links of the coach dashboard: ?conversationId= opens that conversation, ?clientId= the existing private
+   * conversation with that client (or starts it). The parameters are then removed from the address.
+   */
+  private openRequestedConversation(): boolean {
+    if (this.embeddedMode) return false;
+    const tree = this.router.parseUrl(this.router.url);
+    const conversationId = tree.queryParams['conversationId'];
+    const clientId = tree.queryParams['clientId'];
+    if (!conversationId && !clientId) return false;
+
+    const target = conversationId
+      ? this.conversations.find((conv) => conv.id === conversationId)
+      : this.findExistingPrivateConversation(clientId);
+    if (target) {
+      this.selectConversation(target);
+    } else if (clientId) {
+      const client = this.allClients.find((item) => String(item.id) === String(clientId));
+      if (client) this.startPrivateChat(client);
+    }
+
+    delete tree.queryParams['conversationId'];
+    delete tree.queryParams['clientId'];
+    void this.router.navigateByUrl(tree, { replaceUrl: true });
+    return true;
   }
 
   private openExpandedConversation(): void {
@@ -645,7 +726,6 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
    selectConversation(conv: Conversation): void {
-     console.log('🟣 [selectConversation] conv:', JSON.parse(JSON.stringify(conv)));
      this.selectedConv = conv;
      this.chatService.notifyConversationOpened(conv.id);
      conv.unreadCount = 0;
@@ -654,10 +734,14 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      if (idx !== -1) this.conversations = [...this.conversations];
      this.selectedConvMembers = [];
      this.showAllMembers = false;
-     this.displayMessages = [];
+     // Last messages seen in this conversation: shown at once, the fresh page replaces them.
+     const knownMessages = MESSAGES_SNAPSHOT.get(conv.id) || [];
+     this.displayMessages = [...knownMessages].reverse().map((msg: ChatMessage) => this.mapMessageToUi(msg));
+     if (knownMessages.length) this.scrollPending = true;
      this.wsService.subscribeToConversation(conv.id);
      this.loadMessages(conv.id);
-     this.loadAutoMessageSequences(conv.id);
+     // Scheduled messages are a coach tool: a client never sees them.
+     if (this.canCreateChats) this.loadAutoMessageSequences(conv.id);
      if (conv.isGroup && conv.memberIds?.length) {
        this.resolveGroupMembers(conv.memberIds);
      }
@@ -666,13 +750,12 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
 
    private resolveGroupMembers(memberIds: string[]): void {
      const requests = memberIds.map(id =>
-       this.userService.getUserById(id).pipe(
+       this.userService.getUserById(id, true, true).pipe(
          map(user => ({ id, name: user.firstName + ' ' + user.lastName, avatar: user.avatarUrl === 'not found' ? '' : user.avatarUrl })),
          catchError(() => of({ id, name: 'Unknown', avatar: '' }))
        )
      );
      forkJoin(requests).pipe(takeUntil(this.destroy$)).subscribe(members => {
-       console.log('🟠 [resolveGroupMembers] resolved:', JSON.parse(JSON.stringify(members)));
        this.selectedConvMembers = members;
        this.displayMessages = this.displayMessages.map((m: any) => ({
          ...m,
@@ -686,7 +769,6 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
    }
 
    private loadMessages(conversationId: string): void {
-     console.log('Loading messages for conversation:', conversationId);
      // The page-level loader already covered the conversation list. Messages
      // refresh inside the selected conversation without blocking the whole UI.
      this.chatService.getMessages(conversationId, 0, 50, true)
@@ -694,11 +776,11 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
        .subscribe({
           next: (pageDto) => {
             if (this.selectedConv?.id !== conversationId) return;
-            console.log('Messages loaded:', pageDto);
             if (!pageDto.content || pageDto.content.length === 0) {
               console.log('No stored messages received');
               return;
             }
+            MESSAGES_SNAPSHOT.set(conversationId, [...pageDto.content]);
             const loadedMessages = pageDto.content
              .reverse()
              .map((msg: ChatMessage) => this.mapMessageToUi(msg));
@@ -706,12 +788,11 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
             const liveMessages = this.displayMessages.filter((message: any) => !loadedIds.has(message.id));
             this.displayMessages = [...loadedMessages, ...liveMessages]
               .sort((a: any, b: any) => this.getTimelineTime(a.createdAtRaw) - this.getTimelineTime(b.createdAtRaw));
-           console.log('🟣 [loadMessages] displayMessages:', this.displayMessages.map((m: any) => ({ id: m.id, senderId: m.senderId, text: m.text })));
            this.scrollPending = true;
          },
          error: (err) => {
            console.error('Error loading messages:', err);
-           this.displayMessages = [];
+           if (!MESSAGES_SNAPSHOT.has(conversationId)) this.displayMessages = [];
          }
        });
    }
@@ -1478,10 +1559,21 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     this.groupSelectAll  = false;
   }
 
+  private readonly autoMessagesLoading = new Set<string>();
+  private autoMessagesRefreshTimer?: ReturnType<typeof setTimeout>;
+
+  private scheduleAutoMessagesRefresh(conversationId: string): void {
+    clearTimeout(this.autoMessagesRefreshTimer);
+    this.autoMessagesRefreshTimer = setTimeout(() => this.loadAutoMessageSequences(conversationId), 1500);
+  }
+
+  /** One read at a time per conversation (opening a conversation could ask the same list twice). */
   private loadAutoMessageSequences(conversationId: string): void {
+    if (this.autoMessagesLoading.has(conversationId)) return;
+    this.autoMessagesLoading.add(conversationId);
     this.chatService
       .getAutoMessageSequences(conversationId, true)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntil(this.destroy$), finalize(() => this.autoMessagesLoading.delete(conversationId)))
       .subscribe({
         next: (sequences) => {
           this.autoMessagesByConversation = {
@@ -1573,19 +1665,19 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     if (!this.selectedConv) return;
 
     const conversationId = this.selectedConv.id;
+    // Removed at once; put back if the server refuses.
+    const before = this.autoMessagesByConversation[conversationId] || [];
+    this.autoMessagesByConversation = {
+      ...this.autoMessagesByConversation,
+      [conversationId]: before.filter(item => item.id !== sequence.id),
+    };
     this.chatService
       .deleteAutoMessageSequence(sequence.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.autoMessagesByConversation = {
-            ...this.autoMessagesByConversation,
-            [conversationId]: (this.autoMessagesByConversation[conversationId] || [])
-              .filter(item => item.id !== sequence.id),
-          };
-        },
         error: (err) => {
           console.error('Error deleting auto message sequence:', err);
+          this.autoMessagesByConversation = { ...this.autoMessagesByConversation, [conversationId]: before };
         }
       });
   }
@@ -1659,10 +1751,20 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     save$
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
+        next: (saved) => {
           this.isSavingAutoSequence = false;
           this.closeAutoMessageModal();
-          this.loadAutoMessageSequences(conversationId);
+          // The saved sequence comes back from the server: shown at once, no second request.
+          if (saved?.id) {
+            const current = this.autoMessagesByConversation[conversationId] || [];
+            const exists = current.some(item => item.id === saved.id);
+            this.autoMessagesByConversation = {
+              ...this.autoMessagesByConversation,
+              [conversationId]: exists ? current.map(item => (item.id === saved.id ? saved : item)) : [...current, saved],
+            };
+          } else {
+            this.loadAutoMessageSequences(conversationId);
+          }
         },
         error: (err) => {
           this.isSavingAutoSequence = false;
@@ -1788,7 +1890,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       this.autoSequenceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
       return;
     }
-    this.userService.getUserById(clientId, true).pipe(take(1)).subscribe({
+    this.userService.getUserById(clientId, true, true).pipe(take(1)).subscribe({
       next: (user: any) => {
         const candidate = user?.timeZone || user?.timezone || user?.zoneId || user?.zone;
         try {

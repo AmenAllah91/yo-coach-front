@@ -44,8 +44,10 @@ export class ProgressPicturesService {
     return this.http.put<ProgressPicture>(`${this.apiUrl}${id}`, body);
   }
 
-  getProgressPicturesByClient(clientId: string): Observable<ProgressPicture[]> {
-    return this.http.get<ProgressPicture[]>(`${this.apiUrl}client/${clientId}`);
+  getProgressPicturesByClient(clientId: string, skipLoader = false): Observable<ProgressPicture[]> {
+    return this.http.get<ProgressPicture[]>(`${this.apiUrl}client/${clientId}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   deleteProgressPicture(id: string): Observable<void> {

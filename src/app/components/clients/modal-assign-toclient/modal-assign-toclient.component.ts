@@ -59,6 +59,10 @@ export class ModalAssignToclientComponent implements OnInit {
   searchTerm = '';
   conflicts: ScheduleConflict[] = [];
   checkingConflicts = false;
+  clientsLoading = true;
+  /** Programs of each client already fetched in this modal: ticking or changing the date does not ask again. */
+  private readonly programsByClient = new Map<string, any[]>();
+  private pendingChecks = 0;
 
   userid = sessionStorage.getItem('userId');
 
@@ -89,8 +93,13 @@ export class ModalAssignToclientComponent implements OnInit {
   loadClient() {
     if (!this.userid) return;
 
-    this.clientService.getActiveClientsForAssignment(this.userid).subscribe((res) => {
-      this.clients = res;
+    // Shown in the modal (its own loading line): no full-screen loader over the page.
+    this.clientService.getActiveClientsForAssignment(this.userid, true).subscribe({
+      next: (res) => {
+        this.clients = res;
+        this.clientsLoading = false;
+      },
+      error: () => (this.clientsLoading = false),
     });
   }
 
@@ -191,44 +200,48 @@ export class ModalAssignToclientComponent implements OnInit {
       return;
     }
 
+    // Only the clients not checked yet are asked, without the full-screen loader (it flashed over the page at each
+    // tick). The overlaps are then computed here, also when the start date changes.
+    const missing = this.selectedClients.filter((client) => client.id && !this.programsByClient.has(String(client.id)));
+    if (!missing.length) {
+      this.computeConflicts();
+      return;
+    }
+
+    const visibleProgramType = this.includeFilePrograms ? 'ALL' : 'APP';
+    this.pendingChecks++;
     this.checkingConflicts = true;
+    forkJoin(missing.map((client) => {
+      const request$ = this.assignmentType === 'nutrition'
+        ? this.nutritionService.getNutritionPlanByCoachIdAndClient(this.userid!, client.id!, 0, 200, visibleProgramType, 'ALL', 'ALL', 'RECOMMENDED', true)
+        : this.workoutService.getWorkoutByCoachIdAndClient(this.userid!, client.id!, 0, 200, visibleProgramType, 'ALL', 'ALL', 'RECOMMENDED', true);
+      return request$.pipe(
+        map((response: any) => [String(client.id), Array.isArray(response) ? response : (response?.content || [])] as [string, any[]]),
+        catchError(() => of([String(client.id), []] as [string, any[]])),
+      );
+    })).subscribe((rows) => {
+      rows.forEach(([clientId, programs]) => this.programsByClient.set(clientId, programs));
+      this.pendingChecks--;
+      this.checkingConflicts = this.pendingChecks > 0;
+      this.computeConflicts();
+    });
+  }
+
+  private computeConflicts(): void {
     const previousResolutions = new Map(
       this.conflicts
         .filter((conflict) => conflict.client.id && conflict.resolution)
         .map((conflict) => [conflict.client.id, conflict.resolution])
     );
 
-    const checks = this.selectedClients.map((client) => {
-      if (!client.id) {
-        return of(null);
-      }
-
-      const visibleProgramType = this.includeFilePrograms ? 'ALL' : 'APP';
-      const request$ = this.assignmentType === 'nutrition'
-        ? this.nutritionService.getNutritionPlanByCoachIdAndClient(this.userid!, client.id, 0, 200, visibleProgramType)
-        : this.workoutService.getWorkoutByCoachIdAndClient(this.userid!, client.id, 0, 200, visibleProgramType);
-
-      return request$.pipe(
-        map((response: any) => {
-          const programs = Array.isArray(response) ? response : (response?.content || []);
-          const conflictProgram = programs.find((program: any) => this.overlaps(program));
-
-          if (!conflictProgram) return null;
-
-          return {
-            client,
-            program: conflictProgram,
-            resolution: previousResolutions.get(client.id),
-          } as ScheduleConflict;
-        }),
-        catchError(() => of(null))
-      );
-    });
-
-    forkJoin(checks).subscribe((results) => {
-      this.conflicts = results.filter((result): result is ScheduleConflict => !!result);
-      this.checkingConflicts = false;
-    });
+    this.conflicts = this.selectedClients
+      .map((client) => {
+        const programs = client.id ? this.programsByClient.get(String(client.id)) : undefined;
+        const conflictProgram = programs?.find((program: any) => this.overlaps(program));
+        if (!conflictProgram) return null;
+        return { client, program: conflictProgram, resolution: previousResolutions.get(client.id) } as ScheduleConflict;
+      })
+      .filter((result): result is ScheduleConflict => !!result);
   }
 
   private overlaps(program: any): boolean {

@@ -36,7 +36,8 @@ export class ContactFormService {
   constructor(private http: HttpClient) {}
 
   getMine(): Observable<CoachContactForm> {
-    return this.http.get<CoachContactForm>(`${this.baseUrl}/me`);
+    // The page shows its own loading state: no full-screen loader.
+    return this.http.get<CoachContactForm>(`${this.baseUrl}/me`, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   saveMine(payload: CoachContactFormPayload): Observable<CoachContactForm> {

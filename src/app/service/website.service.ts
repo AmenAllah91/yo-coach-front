@@ -160,7 +160,8 @@ export class WebsiteService {
 
   getMyLeads(search = '', page = 0, size = 10): Observable<PageResponse<CoachWebsiteLead>> {
     return this.http.get<PageResponse<CoachWebsiteLead>>(
-      `${this.leadsUrl}/me?search=${encodeURIComponent(search)}&page=${page}&size=${size}`
+      `${this.leadsUrl}/me?search=${encodeURIComponent(search)}&page=${page}&size=${size}`,
+      { headers: { 'X-Skip-Loader': 'true' } } // the leads page shows its own loading state
     );
   }
 

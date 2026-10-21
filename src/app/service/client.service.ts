@@ -72,13 +72,16 @@ export class ClientService {
     });
   }
 
-  getClientStatusCounts(coachId: string): Observable<ClientStatusCounts> {
-    return this.http.get<ClientStatusCounts>(`${this.apiUrl}/coach/${coachId}/status-counts`);
+  getClientStatusCounts(coachId: string, skipLoader = false): Observable<ClientStatusCounts> {
+    return this.http.get<ClientStatusCounts>(`${this.apiUrl}/coach/${coachId}/status-counts`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
-  getActiveClientsForAssignment(coachId: string): Observable<(Client & { id: string })[]> {
+  getActiveClientsForAssignment(coachId: string, skipLoader = false): Observable<(Client & { id: string })[]> {
     return this.http.get<Client[]>(`${this.apiUrl}/coach/${coachId}/all`, {
       params: new HttpParams().set('status', 'ACTIVE'),
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
     }).pipe(
       map(clients => clients.filter((client): client is Client & { id: string } =>
         !!client.id && (client.clientStatus ?? 'ACTIVE') === 'ACTIVE'

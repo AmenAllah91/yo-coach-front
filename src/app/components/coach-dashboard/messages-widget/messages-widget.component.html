@@ -1,0 +1,42 @@
+<section class="widget" aria-labelledby="messages-widget-title">
+  <header class="widget-header">
+    <div class="widget-heading">
+      <h2 id="messages-widget-title">{{ 'MESSAGES' | translate }}</h2>
+      <p *ngIf="status === 'ready'">{{ 'CDASH.UNREAD_CONVERSATIONS' | translate: { count: unreadTotal } }}</p>
+    </div>
+  </header>
+
+  <app-widget-state
+    [status]="status"
+    [rows]="3"
+    [empty]="conversations.length === 0"
+    emptyText="CDASH.NO_UNREAD_MESSAGES"
+    emptyIcon="message-circle"
+    (retry)="retry()"
+  ></app-widget-state>
+
+  <ul class="rows" *ngIf="status === 'ready' && conversations.length">
+    <li *ngFor="let conversation of conversations; trackBy: trackById">
+      <a class="wrow" routerLink="/chat" [queryParams]="{ conversationId: conversation.id }">
+        <span class="avatar tone-{{ tone(conversation) }}">
+          <img *ngIf="conversation.avatarUrl && !brokenAvatars.has(conversation.id); else fallback" [src]="conversation.avatarUrl"
+               alt="" (error)="brokenAvatars.add(conversation.id)" />
+          <ng-template #fallback>{{ initialsOf(displayName(conversation)) }}</ng-template>
+          <span class="unread-dot" aria-hidden="true"></span>
+        </span>
+        <span class="row-text">
+          <span class="row-title">{{ displayName(conversation) }}</span>
+          <span class="row-sub">{{ conversation.lastMessage || ('CDASH.ATTACHMENT' | translate) }}</span>
+        </span>
+        <span class="row-side">
+          <span class="row-time row-time--accent">{{ time(conversation) }}</span>
+          <span class="badge" [attr.aria-label]="'CDASH.UNREAD_COUNT' | translate: { count: conversation.unread }">{{ conversation.unread }}</span>
+        </span>
+      </a>
+    </li>
+  </ul>
+
+  <footer class="widget-footer">
+    <a routerLink="/chat" class="see-all">{{ 'CDASH.SEE_ALL_MESSAGES' | translate }} <span aria-hidden="true">→</span></a>
+  </footer>
+</section>

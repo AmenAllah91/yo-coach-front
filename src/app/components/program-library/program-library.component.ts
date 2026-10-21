@@ -20,6 +20,8 @@ import * as XLSX from 'xlsx';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { WorkoutPublicationBadgeComponent } from './workout-publication-badge.component';
+import { DeleteModalComponent } from './delete-modal/delete-modal.component';
+import { ToastService } from 'app/service/toast.service';
 
 @Component({
   selector: 'app-program-library',
@@ -32,6 +34,7 @@ import { WorkoutPublicationBadgeComponent } from './workout-publication-badge.co
     ModalAssignToclientComponent,
     TranslateModule,
     WorkoutPublicationBadgeComponent,
+    DeleteModalComponent,
   ],
   templateUrl: './program-library.component.html',
   styleUrls: [
@@ -129,8 +132,13 @@ export class ProgramLibraryComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private toast: ToastService,
   ) {}
+
+  /** Program being duplicated / deleted (one at a time; the list updates without being reloaded). */
+  duplicatingId: string | null = null;
+  deleting = false;
 
   goBack(): void {
     window.history.back();
@@ -146,36 +154,42 @@ export class ProgramLibraryComponent implements OnInit {
       return;
     }
     console.log('Program Library - User is logged in, loading data');
-    this.coachSettingsService.loadConfig().subscribe({
+    // Everything loads at once: the programs are filtered on screen, so the file option (from the cached
+    // settings, refreshed silently) only filters them again when it turns out different.
+    this.applyWorkoutFileSetting();
+    this.loadPrograms();
+    this.loadEnums();
+    this.loadAllCounts();
+    this.coachSettingsService.loadConfig(true).subscribe({
       next: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        if (!this.workoutFileEnabled && this.programTypeFilter !== 'APP') {
-          this.programTypeFilter = 'ALL';
-        }
-        this.loadPrograms();
-        this.loadEnums();
-        this.loadAllCounts();
+        const before = this.workoutFileEnabled;
+        this.applyWorkoutFileSetting();
+        if (before !== this.workoutFileEnabled) this.applyProgramFilters();
       },
-      error: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        this.loadPrograms();
-        this.loadEnums();
-        this.loadAllCounts();
-      },
+      error: () => undefined,
     });
   }
 
-  loadAllCounts() {
-    // Load My Library count
-    this.workoutService.getMyLibrary(0, 1).subscribe({
-      next: (response: PageResponse<WorkoutPlan>) => {
-        this.myLibraryCount = response.totalElements || 0;
-      },
-      error: (error) => console.error('Error loading my library count:', error),
-    });
+  private applyWorkoutFileSetting(): void {
+    this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+    if (!this.workoutFileEnabled && this.programTypeFilter !== 'APP') {
+      this.programTypeFilter = 'ALL';
+    }
+  }
 
-    // Load Templates count
-    this.workoutService.getTemplates(0, 1).subscribe({
+  /** Always called with loadPrograms, whose answer already gives the count of the open tab: only the other one is asked. */
+  loadAllCounts() {
+    if (this.activeTab === 'templates') {
+      this.workoutService.getMyLibrary(0, 1, true).subscribe({
+        next: (response: PageResponse<WorkoutPlan>) => {
+          this.myLibraryCount = response.totalElements || 0;
+        },
+        error: (error) => console.error('Error loading my library count:', error),
+      });
+      return;
+    }
+
+    this.workoutService.getTemplates(0, 1, true).subscribe({
       next: (response: PageResponse<WorkoutPlan>) => {
         this.templatesCount = response.totalElements || 0;
       },
@@ -185,15 +199,14 @@ export class ProgramLibraryComponent implements OnInit {
 
   loadPrograms() {
     this.isLoading = true;
-    const startTime = Date.now();
 
     // Filters PDF / Excel / App cannot be applied safely after backend pagination,
     // because page 1 can be empty while page 2 contains matches.
     // So we load a large library page once, then paginate the filtered result locally.
     const serviceCall =
       this.activeTab === 'templates'
-        ? this.workoutService.getTemplates(0, 500)
-        : this.workoutService.getMyLibrary(0, 500);
+        ? this.workoutService.getTemplates(0, 500, true) // the page shows its own loading state
+        : this.workoutService.getMyLibrary(0, 500, true);
 
     serviceCall.subscribe({
       next: (response: PageResponse<WorkoutPlan>) => {
@@ -207,13 +220,7 @@ export class ProgramLibraryComponent implements OnInit {
         } else {
           this.myLibraryCount = response.totalElements || this.allPrograms.length;
         }
-
-        const elapsed = Date.now() - startTime;
-        const minDelay = 250;
-        const remainingDelay = Math.max(0, minDelay - elapsed);
-        setTimeout(() => {
-          this.isLoading = false;
-        }, remainingDelay);
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading programs:', error);
@@ -584,18 +591,31 @@ export class ProgramLibraryComponent implements OnInit {
 
 
   editProgram(id: string) {
-    const url = 'workout/edit-workout/' + id;
-    this.router.navigateByUrl(url);
+    // The list already holds the whole program: the editor shows it at once instead of loading it again.
+    const workoutPlan = this.allPrograms.find((program) => program.id === id);
+    this.router.navigateByUrl('workout/edit-workout/' + id, { state: workoutPlan ? { workoutPlan } : {} });
   }
 
   duplicateProgram(program: WorkoutPlan) {
-    this.workoutService.duplicateWorkout(program.id!).subscribe({
-      next: () => {
-        this.loadPrograms();
-        this.loadAllCounts(); // Refresh sidebar counts
-        this.openDropdownId = null;
+    if (!program.id || this.duplicatingId) return;
+    this.openDropdownId = null;
+    this.duplicatingId = program.id;
+    this.workoutService.duplicateWorkout(program.id, true).subscribe({
+      next: (copy) => {
+        this.duplicatingId = null;
+        // The copy goes to "My library": shown at once on top, without reloading the whole library.
+        if (this.activeTab !== 'templates' && copy?.id && this.isLibraryOnlyProgram(copy)) {
+          this.allPrograms = this.sortNewestFirst([copy, ...this.allPrograms]);
+          this.currentPage = 0;
+          this.applyProgramFilters();
+        }
+        this.myLibraryCount += 1;
+        this.toast.success(this.translate.instant('PROGRAM_DUPLICATED'));
       },
-      error: (error) => console.error('Error duplicating program:', error),
+      error: (error) => {
+        this.duplicatingId = null;
+        console.error('Error duplicating program:', error);
+      },
     });
   }
 
@@ -611,16 +631,31 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   confirmDelete() {
-    if (this.programToDelete) {
-      this.workoutService.deleteWorkout(this.programToDelete.id!).subscribe({
-        next: () => {
-          this.loadPrograms();
-          this.loadAllCounts(); // Refresh sidebar counts
-          this.closeDeleteModal();
-        },
-        error: (error) => console.error('Error deleting program:', error),
-      });
-    }
+    const program = this.programToDelete;
+    if (!program?.id || this.deleting) return;
+    this.deleting = true;
+    // Removed from the screen at once, without waiting for the server (nor reloading the library); put back if the
+    // server refuses.
+    const countKey = this.activeTab === 'templates' ? 'templatesCount' : 'myLibraryCount';
+    this.allPrograms = this.allPrograms.filter((item) => item.id !== program.id);
+    this.applyProgramFilters();
+    this[countKey] = Math.max(0, this[countKey] - 1);
+    this.closeDeleteModal();
+    this.workoutService.deleteWorkout(program.id, true).subscribe({
+      next: () => {
+        this.deleting = false;
+        this.toast.success(this.translate.instant('PROGRAM_DELETED'));
+      },
+      error: (error) => {
+        this.deleting = false;
+        console.error('Error deleting program:', error);
+        if (!this.allPrograms.some((item) => item.id === program.id)) {
+          this.allPrograms = this.sortNewestFirst([...this.allPrograms, program]);
+          this.applyProgramFilters();
+          this[countKey] += 1;
+        }
+      },
+    });
   }
 
   closeDeleteModal() {
@@ -656,29 +691,13 @@ export class ProgramLibraryComponent implements OnInit {
     if (!name) return;
 
     const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, 12));
-    const days = Array.from({ length: durationWeeks * 7 }, (_, index) => ({
-      name: `Day ${(index % 7) + 1}`,
-      title: `Day ${(index % 7) + 1}`,
-      dayNumber: index + 1,
-      restDay: false,
-      status: 'PENDING',
-      workoutSessions: [],
-    }));
-    const draft: WorkoutPlan = {
-      name,
-      details: '',
-      workoutDays: days,
-      isWorkoutPlanTemplate: this.activeTab === 'templates',
-      publishedWeeks: [],
-    };
 
     this.showWorkoutCreateModal = false;
-    this.workoutService.createWorkout(draft).subscribe({
-      next: (created) => { this.loadPrograms(); void this.router.navigate(['/workout/edit-workout', created.id]); },
-      error: (error) => {
-        console.error('Unable to create workout draft:', error);
-        this.showWorkoutCreateModal = true;
-      },
+    // The editor opens at once and creates the program itself, in the background (autoCreate): no full-screen wait
+    // for the server before the page shows.
+    void this.router.navigate(['/workout/create-workout'], {
+      queryParams: { name, durationWeeks, ...(this.activeTab === 'templates' ? { template: '1' } : {}) },
+      state: { autoCreate: true },
     });
   }
 

@@ -43,7 +43,7 @@ button:disabled { opacity: 0.6; cursor: default; }
 .invoice-paid { background: #dcfce7; color: #166534; }
 .invoice-unpaid, .invoice-pending { background: #e8f7fd; color: #1d6f8f; }
 .invoice-overdue { background: #fff4db; color: #92400e; }
-.invoice-void { background: #f3f4f6; color: #6b7280; }
+.invoice-void { background: #fee2e2; color: #b91c1c; }
 .btn-pay { padding: 6px 14px; border: 0; border-radius: 8px; background: #38ace0; color: #ffffff; font-size: 13px; font-weight: 700; }
 .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #d9eef9; border-top-color: #39aeef; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -67,3 +67,10 @@ button:disabled { opacity: 0.6; cursor: default; }
 .auto-charge { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .auto-charge label { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
 .auto-charge input { margin-top: 3px; }
+
+/* Invoice pagination: same look as the other lists of the app (.app-pagination). */
+.app-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 18px 0 8px; }
+.app-pagination .page-btn { min-width: 34px; height: 34px; border: 1px solid #d8e2ef; background: #fff; color: #344054; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.app-pagination .page-btn:hover:not(:disabled) { background: #f1f7ff; border-color: #8ec5ff; }
+.app-pagination .page-btn.active { background: #44b4df; border-color: #44b4df; color: #fff; }
+.app-pagination .page-btn:disabled { opacity: 0.55; cursor: not-allowed; }

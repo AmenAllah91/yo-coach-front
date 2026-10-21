@@ -1441,3 +1441,6 @@ i-feather {
   .tasks-modal__head .tasks-btn-primary--sm,
   .tasks-modal__head .tasks-btn-soft { order: 3; width: 100%; }
 }
+
+/* Just created: shown at once while the server saves it. */
+.task-chip--pending { opacity: .55; cursor: progress; }

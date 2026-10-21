@@ -1,5 +1,5 @@
-import {Component, OnInit, HostListener, ViewChild, ElementRef} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {Component, OnInit, AfterViewInit, OnDestroy, HostListener, ViewChild, ElementRef} from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -15,15 +15,18 @@ import {
 } from '@shared/models/workout.models';
 import { Exercise } from '@shared/models/exercice.models';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
+import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
 
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent, SectionLoaderComponent, ReadyWeeksModalComponent],
   templateUrl: './create-workout.component.html',
   styleUrls: ['./create-workout.component.scss'],
 })
-export class CreateWorkoutComponent implements OnInit {
+export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy {
+  /** Bottom of the app header, measured: the toolbar sticks right under it (no strip where the content shows). */
   isEditMode = false;
   isVisibleToOthers = false;
   durationWeeks = 4;
@@ -36,6 +39,15 @@ export class CreateWorkoutComponent implements OnInit {
   savedAt: Date | null = null;
   savingDraft = false;
   saveError = '';
+  /** Short "saved" confirmation on the toolbar button, right after a successful save. */
+  justSaved = false;
+  private justSavedTimer: ReturnType<typeof setTimeout> | null = null;
+  private headerObserver: ResizeObserver | null = null;
+  private destroyed = false;
+  /** Edit mode: the plan is loading (the page shows its own loader), or could not be loaded. */
+  planLoading = false;
+  planLoadError = false;
+  private readonly embedUrls = new Map<string, SafeResourceUrl>();
   private returnUrl: string | null = null;
   private assignOnly = false;
   activeVideoExerciseId: string | null = null;
@@ -48,6 +60,8 @@ export class CreateWorkoutComponent implements OnInit {
     private router: Router,
     private sanitizer: DomSanitizer,
     private translate: TranslateService,
+    private host: ElementRef<HTMLElement>,
+    private location: Location,
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     this.assignOnly = this.route.snapshot.queryParamMap.get('assignOnly') === '1';
@@ -215,10 +229,16 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
 
-  get canCreateTemplate(): boolean {
-    const roles = this.getCurrentRoles();
+  private canCreateTemplateValue?: boolean;
 
-    console.log('[ADMIN CHECK CURRENT ROLES]', roles);
+  // Read by the template at every change detection: the roles (token decoding) are computed once per page.
+  get canCreateTemplate(): boolean {
+    this.canCreateTemplateValue ??= this.computeCanCreateTemplate();
+    return this.canCreateTemplateValue;
+  }
+
+  private computeCanCreateTemplate(): boolean {
+    const roles = this.getCurrentRoles();
 
     return roles.some((role) =>
       role === 'ROLE_ADMIN' ||
@@ -335,23 +355,14 @@ export class CreateWorkoutComponent implements OnInit {
 
     if (planId) {
       this.isEditMode = true;
-      this.facade.loadPlanForEdit(planId).subscribe({
-        next: (plan: WorkoutPlan) => {
-          this.facade.applyPlanForEdit(plan);
-          this.isVisibleToOthers = this.canCreateTemplate
-            ? Boolean(plan.isWorkoutPlanTemplate)
-            : false;
-          this.facade.setPlan({
-            ...this.facade.plan,
-            isWorkoutPlanTemplate: this.isVisibleToOthers,
-          });
-          this.durationWeeks = this.normalizeDurationWeeks(
-            Math.ceil((this.days.length || 28) / 7)
-          );
-        },
-        error: (err) =>
-          console.error('Erreur lors du chargement du plan :', err),
-      });
+      this.facade.initEdit();
+      // Opened from the library (or just created): the program is already here, shown at once.
+      const handedOver = history.state?.workoutPlan as WorkoutPlan | undefined;
+      if (handedOver?.id === planId && Array.isArray(handedOver.workoutDays)) {
+        this.applyLoadedPlan(handedOver);
+      } else {
+        this.loadPlan(planId);
+      }
     } else {
       this.isEditMode = false;
       this.facade.initCreate();
@@ -362,9 +373,98 @@ export class CreateWorkoutComponent implements OnInit {
         name: requestedName || this.facade.plan.name,
         isWorkoutPlanTemplate: this.isVisibleToOthers,
       });
+      if (history.state?.autoCreate && requestedName) this.createInBackground();
     }
 
-    this.facade.loadExercisesFromAPI();
+    // The exercises are only needed when the panel opens: fetch them once the page is shown, in the background.
+    this.scheduleExercisePrefetch();
+  }
+
+  /**
+   * "New program" from the library: the program is created as soon as the editor opens, without waiting for the
+   * server to show the page. Saving stays disabled until it exists (no second program); on failure, "Save draft"
+   * creates it.
+   */
+  private createInBackground(): void {
+    // A reload of this page must not create it a second time (the first request may already have done it).
+    history.replaceState({...history.state, autoCreate: false}, '');
+    this.isEditMode = true;
+    this.savingDraft = true;
+    this.facade.createPlan().subscribe({
+      next: (created) => {
+        // Page left meanwhile: the shared facade and the address now belong to another page.
+        if (this.destroyed) return;
+        this.savingDraft = false;
+        this.facade.setPlan({...this.facade.plan, id: created.id, publishedWeeks: created.publishedWeeks || []});
+        // The program's own address, without reloading the editor: a reload or a shared link opens this program.
+        this.location.replaceState(`/workout/edit-workout/${created.id}`, '', history.state);
+      },
+      error: () => {
+        if (this.destroyed) return;
+        this.savingDraft = false;
+        this.saveError = this.translate.instant('WORKOUT_SAVE_ERROR');
+      },
+    });
+  }
+
+  retryLoadPlan(): void {
+    const planId = this.route.snapshot.paramMap.get('id');
+    if (planId) this.loadPlan(planId);
+  }
+
+  private loadPlan(planId: string): void {
+    this.planLoading = true;
+    this.planLoadError = false;
+    this.facade.loadPlanForEdit(planId).subscribe({
+        next: (plan: WorkoutPlan) => this.applyLoadedPlan(plan),
+        error: (err) => {
+          console.error('Erreur lors du chargement du plan :', err);
+          this.planLoading = false;
+          this.planLoadError = true;
+        },
+      });
+  }
+
+  private applyLoadedPlan(plan: WorkoutPlan): void {
+    this.planLoading = false;
+    this.facade.applyPlanForEdit(plan);
+    this.isVisibleToOthers = this.canCreateTemplate
+      ? Boolean(plan.isWorkoutPlanTemplate)
+      : false;
+    this.facade.setPlan({
+      ...this.facade.plan,
+      isWorkoutPlanTemplate: this.isVisibleToOthers,
+    });
+    this.durationWeeks = this.normalizeDurationWeeks(
+      Math.ceil((this.days.length || 28) / 7)
+    );
+  }
+
+  /** The toolbar sticks right under the app header, whatever its real height (it changes with the screen and the
+   *  header content), so the page never shows through between them. */
+  ngAfterViewInit(): void {
+    const header = document.querySelector<HTMLElement>('app-header .navbar, app-header nav');
+    if (!header) return;
+    const measure = () => {
+      const height = Math.round(header.getBoundingClientRect().height);
+      if (height > 0) this.host.nativeElement.style.setProperty('--wb-app-header', `${height}px`);
+    };
+    measure();
+    if (typeof ResizeObserver !== 'undefined') {
+      this.headerObserver = new ResizeObserver(measure);
+      this.headerObserver.observe(header);
+    }
+  }
+
+  private scheduleExercisePrefetch(): void {
+    const run = () => this.facade.prefetchExercises();
+    const win = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
+    if (win.requestIdleCallback) win.requestIdleCallback(run, { timeout: 1500 });
+    else setTimeout(run, 300);
+  }
+
+  get totalExercises(): number {
+    return this.facade.totalExercises;
   }
 
   get workoutWeeks(): { label: string; days: WorkoutDay[] }[] {
@@ -657,8 +757,8 @@ export class CreateWorkoutComponent implements OnInit {
   }
 
   openExerciseSelector() {
-    this.facade.showExerciseSelector = true;
-    this.facade.loadExercisesFromAPI();
+    // Already fetched in the background: the panel opens with its list.
+    this.facade.openExerciseSelector();
   }
 
   closeExerciseSelector() {
@@ -973,7 +1073,13 @@ export class CreateWorkoutComponent implements OnInit {
 
     if (!videoId) return null;
 
-    return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${videoId}`);
+    // Same object for the same video: a new one at each change detection reloaded the player and slowed the page.
+    let url = this.embedUrls.get(videoId);
+    if (!url) {
+      url = this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${videoId}`);
+      this.embedUrls.set(videoId, url);
+    }
+    return url;
   }
 
   private cleanRestDayWorkoutSessions(): void {
@@ -987,11 +1093,55 @@ export class CreateWorkoutComponent implements OnInit {
     });
   }
 
+  /** Weeks shown by the "ready to publish" modal (null: closed), and the ones the coach chose to keep as drafts. */
+  readyWeeksPrompt: number[] | null = null;
+  private readyWeeksKeptAsDraft = new Set<number>();
+
+  /** Weeks whose 7 days are ready and which are not published yet. */
+  private readyUnpublishedWeeks(): number[] {
+    return this.workoutWeeks
+      .map((week, index) => index + 1)
+      .filter((week) => !this.isWeekPublished(week)
+        && this.getWeekReadyCount(this.workoutWeeks[week - 1].days) === 7);
+  }
+
   savePlan() {
+    if (this.savingDraft) return;
+    // The coach may not know a draft week stays hidden from the client: offer to publish the ready ones.
+    const ready = this.readyUnpublishedWeeks().filter((week) => !this.readyWeeksKeptAsDraft.has(week));
+    if (ready.length) {
+      this.readyWeeksPrompt = ready;
+      return;
+    }
     this.persistDraft(false);
   }
 
-  private persistDraft(navigateAfterSave: boolean, publishWeek?: number) {
+  publishReadyWeeks(weeks: number[]): void {
+    this.readyWeeksPrompt = null;
+    this.persistDraft(false, weeks);
+  }
+
+  keepReadyWeeksAsDraft(): void {
+    (this.readyWeeksPrompt || []).forEach((week) => this.readyWeeksKeptAsDraft.add(week));
+    this.readyWeeksPrompt = null;
+    this.persistDraft(false);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    if (this.justSavedTimer) clearTimeout(this.justSavedTimer);
+    this.headerObserver?.disconnect();
+  }
+
+  private markSaved(): void {
+    this.savingDraft = false;
+    this.savedAt = new Date();
+    this.justSaved = true;
+    if (this.justSavedTimer) clearTimeout(this.justSavedTimer);
+    this.justSavedTimer = setTimeout(() => { this.justSaved = false; this.justSavedTimer = null; }, 2500);
+  }
+
+  private persistDraft(navigateAfterSave: boolean, publishWeek?: number | number[]) {
     if (this.savingDraft) return;
     this.saveError = '';
     if (!this.workoutPlan.name.trim()) {
@@ -1010,7 +1160,7 @@ export class CreateWorkoutComponent implements OnInit {
     this.savingDraft = true;
     const previous = [...(this.workoutPlan.publishedWeeks || [])];
     const publishedWeeks = previous.filter(week => this.getWeekReadyCount(this.days.slice((week - 1) * 7, week * 7)) === 7);
-    if (publishWeek) publishedWeeks.push(publishWeek);
+    publishedWeeks.push(...(Array.isArray(publishWeek) ? publishWeek : publishWeek ? [publishWeek] : []));
     this.facade.setPlan({...this.workoutPlan, publishedWeeks: Array.from(new Set(publishedWeeks))});
     this.cleanRestDayWorkoutSessions();
     this.facade.days.forEach((day, index) => {
@@ -1032,18 +1182,10 @@ export class CreateWorkoutComponent implements OnInit {
       workoutDays: this.facade.days,
     });
 
-    console.log(
-      '[CreateWorkoutComponent] final isWorkoutPlanTemplate =',
-      finalTemplateValue,
-      this.facade.plan,
-    );
-
     if (this.facade.plan.id) {
       this.facade.updatePlan().subscribe({
         next: (res) => {
-          console.log('Workout plan updated:', res);
-          this.savedAt = new Date();
-          this.savingDraft = false;
+          this.markSaved();
           this.facade.setPlan({...this.facade.plan, publishedWeeks: res.publishedWeeks || []});
           if (navigateAfterSave) this.router.navigate(['/workout/program-library']);
         },
@@ -1052,9 +1194,7 @@ export class CreateWorkoutComponent implements OnInit {
     } else {
       this.facade.createPlan().subscribe({
         next: (res) => {
-          console.log('Workout plan created:', res);
-          this.savingDraft = false;
-          this.savedAt = new Date();
+          this.markSaved();
           this.facade.setPlan({...this.facade.plan, id: res.id, publishedWeeks: res.publishedWeeks || []});
           this.isEditMode = true;
 

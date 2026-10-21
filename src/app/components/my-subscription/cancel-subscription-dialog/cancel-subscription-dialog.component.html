@@ -1,0 +1,34 @@
+<div class="csd-backdrop" (click)="keep()">
+  <section
+    class="csd"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="cancelSubscriptionTitle"
+    aria-describedby="cancelSubscriptionText"
+    (click)="$event.stopPropagation()"
+  >
+    <button type="button" class="csd__close" [attr.aria-label]="'CLOSE' | translate" (click)="keep()">
+      <i-feather name="x"></i-feather>
+    </button>
+
+    <div class="csd__icon" aria-hidden="true">
+      <i-feather name="alert-circle"></i-feather>
+    </div>
+
+    <h2 id="cancelSubscriptionTitle">{{ 'MY_SUB_CANCEL_CONFIRM_TITLE' | translate }}</h2>
+    <p id="cancelSubscriptionText">{{ 'MY_SUB_CANCEL_CONFIRM_TEXT' | translate: { date: until } }}</p>
+
+    <div *ngIf="until" class="csd__access">
+      <span class="csd__access-icon" aria-hidden="true"><i-feather name="calendar"></i-feather></span>
+      <span class="csd__access-text">
+        <small>{{ 'MY_SUB_ACCESS_UNTIL_LABEL' | translate }}</small>
+        <strong>{{ until }}</strong>
+      </span>
+    </div>
+
+    <div class="csd__actions">
+      <button type="button" class="csd__btn csd__btn--outline" (click)="confirmCancellation()">{{ 'MY_SUB_CANCEL' | translate }}</button>
+      <button #keepButton type="button" class="csd__btn csd__btn--dark" (click)="keep()">{{ 'MY_SUB_KEEP' | translate }}</button>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,1075 @@
+/* =====================================================================
+   Library workout builder (create / edit): page layout. Imported LAST by
+   create-workout.component.scss, so it wins over the older layers.
+
+   The page lives inside the app layout: the app header and sidebar stay
+   visible (the older layers pinned the builder over the whole screen).
+
+     [ toolbar: back · title · structure (small screens) · save           ]
+     [ structure rail | content (as wide as possible) | exercise panel *  ]
+                                                   * only when opened
+
+   - Wide screens (>= 1100px): the rail and the exercise panel are sticky
+     columns next to the content; the page scrolls normally.
+   - Smaller screens: the rail opens from the left with the structure
+     button, the exercise panel opens over the content from the right.
+   ===================================================================== */
+
+:host {
+  --wb-app-header: 3.5rem;
+  --wb-toolbar: 56px;
+  --wb-rail: clamp(216px, 16vw, 264px);
+  --wb-drawer: clamp(320px, 25vw, 384px);
+  --wb-gap: 14px;
+  --wb-sticky-top: calc(var(--wb-app-header) + var(--wb-toolbar) + 12px);
+  --wb-border: #dce3ea;
+  --wb-text: #102038;
+  --wb-muted: #64748b;
+  --wb-primary: #0d1b33;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  :host {
+    --wb-app-header: 80px;
+    --wb-toolbar: 52px;
+  }
+}
+
+/* ---------- Page: back in the normal flow of the app layout ---------- */
+.np-root.np-layout,
+.np-root.np-layout.exercise-drawer-open {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+  background: #f7f9fb !important;
+}
+
+/* ---------- Toolbar ---------- */
+.np-root.np-layout .np-toolbar {
+  position: sticky;
+  top: var(--wb-app-header);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--wb-toolbar);
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--wb-border);
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.np-root.np-layout .np-toolbar__back {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #eef0f3;
+  color: #536173;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+
+  .np-ico { width: 18px; height: 18px; }
+  &:hover { background: #dfe4ea; color: #071426; }
+  &:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+}
+
+.np-root.np-layout .np-toolbar__title {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0%; // takes the space left, never squeezes the save button
+  flex-direction: column;
+  gap: 1px;
+
+  h1 {
+    margin: 0 !important;
+    overflow: hidden;
+    color: var(--wb-text);
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    line-height: 22px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.np-root.np-layout .np-toolbar__meta {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--wb-muted);
+  font-size: 12.5px;
+  line-height: 16px;
+  white-space: nowrap;
+
+  > span { flex: 0 0 auto; }
+}
+
+.np-root.np-layout .np-toolbar__name {
+  overflow: hidden;
+  flex: 0 1 auto !important;
+  color: #334155;
+  font-weight: 500;
+  text-overflow: ellipsis;
+
+  &::after { content: '·'; margin-left: 6px; color: #94a3b8; }
+}
+
+.np-root.np-layout .np-toolbar__weeks {
+  display: none;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #cbd6e2;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--wb-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  .np-ico { width: 15px; height: 15px; }
+}
+
+.np-root.np-layout .np-toolbar__save {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.np-root.np-layout .np-toolbar__status {
+  max-width: 300px;
+  overflow: hidden;
+  color: var(--wb-muted);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.is-error { color: #c62828; }
+}
+
+.np-root.np-layout .np-toolbar__savebtn {
+  display: inline-flex;
+  min-height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--wb-primary);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .15s ease;
+
+  .np-ico { width: 17px; height: 17px; }
+  &:hover:not(:disabled) { background: #1e2f4d; }
+  &:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+  &:disabled { cursor: not-allowed; opacity: .55; }
+
+  /* Right after a successful save: short green confirmation. */
+  &.is-saved,
+  &.is-saved:hover:not(:disabled) { background: #15803d; }
+}
+
+.np-root.np-layout .np-toolbar__savelabel--short {
+  display: none;
+}
+
+/* Edit mode while the plan loads (or failed to load): one centred loader, no empty structure rail. */
+.np-root.np-layout.plan-loading .np-aside,
+.np-root.np-layout.plan-loading .np-toolbar__weeks,
+.np-root.np-layout.plan-loading .np-mobile-structure-backdrop {
+  display: none !important;
+}
+
+.np-root.np-layout.plan-loading .np-shell {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.np-root.np-layout.plan-loading .np-main {
+  min-height: calc(100vh - var(--wb-app-header) - var(--wb-toolbar) - 48px) !important;
+  justify-content: center !important;
+}
+
+/* ---------- Columns ---------- */
+.np-root.np-layout .np-shell {
+  display: grid !important;
+  grid-template-columns: var(--wb-rail) minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: var(--wb-gap) !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 14px 20px 32px !important;
+  box-sizing: border-box !important;
+}
+
+.np-root.np-layout.exercise-drawer-open .np-shell {
+  grid-template-columns: var(--wb-rail) minmax(0, 1fr) var(--wb-drawer) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Structure rail */
+.np-root.np-layout .np-aside {
+  position: sticky !important;
+  inset: auto !important;
+  top: var(--wb-sticky-top) !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: calc(100dvh - var(--wb-sticky-top) - 16px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  border: 1px solid var(--wb-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.np-root.np-layout .np-aside__head {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  padding: 14px 14px 10px !important;
+  border-bottom: 1px solid #eef2f6 !important;
+
+  .np-h6 { margin: 0 !important; font-size: 15px !important; line-height: 20px !important; }
+  .np-link { margin-top: 6px !important; font-size: 12.5px !important; }
+}
+
+.np-root.np-layout .np-aside__sub {
+  margin: 2px 0 0 !important;
+  font-size: 12px !important;
+}
+
+.np-root.np-layout .np-aside__body {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 8px 8px 12px !important;
+  overflow-y: auto !important;
+}
+
+.np-root.np-layout .np-week-card__head-top {
+  min-width: 0 !important;
+  flex-wrap: nowrap !important;
+}
+
+.np-root.np-layout .np-week-card__count {
+  margin-left: auto !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-day,
+.np-root.np-layout .np-dayrow {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.np-root.np-layout .np-day__title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-mobile-structure-close,
+.np-root.np-layout .np-mobile-structure-backdrop {
+  display: none !important;
+}
+
+/* Content: everything stacks in one column and takes the full width. */
+.np-root.np-layout .np-main {
+  position: static !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  container-type: inline-size;
+}
+
+.np-root.np-layout .np-main > * {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  float: none !important;
+  box-sizing: border-box !important;
+}
+
+.np-root.np-layout .np-main > app-workout-week-panel {
+  display: block !important;
+}
+
+.np-root.np-layout .np-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+
+  p { margin: 0; }
+}
+
+.np-root.np-layout .np-load-error__retry {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fff;
+  color: #991b1b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Global plan settings: balanced, responsive grid ---------- */
+.np-root.np-layout .np-main > .np-card--settings {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px) !important;
+  align-items: end !important;
+  gap: 12px 16px !important;
+  min-height: 0 !important;
+  padding: 0 18px 16px !important;
+  overflow: visible !important;
+  border: 1px solid var(--wb-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
+.np-root.np-layout.settings-collapsed .np-main > .np-card--settings {
+  padding-bottom: 0 !important;
+}
+
+/* The heading line runs edge to edge of the card (its separator), within the card padding. */
+.np-root.np-layout .np-main > .np-card--settings > .np-settings-kicker {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 -18px !important;
+  padding: 0 18px !important;
+}
+
+.np-root.np-layout .np-card--settings > .np-settings-kicker > span:not(.np-settings-kicker__dot) {
+  min-width: 0 !important;
+  flex: 0 1 auto !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-card--settings .np-settings-summary {
+  flex: 1 1 auto !important;
+}
+
+.np-root.np-layout .np-card--settings .np-settings-toggle {
+  flex: 0 0 auto !important;
+  margin: 0 0 0 auto !important;
+}
+
+.np-root.np-layout .np-card--settings > .np-field {
+  position: static !important;
+  inset: auto !important;
+  display: flex !important;
+  min-width: 0 !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  width: auto !important;
+  margin: 0 !important;
+  float: none !important;
+  vertical-align: baseline !important;
+}
+
+.np-root.np-layout .np-card--settings > .np-field.np-plan-title {
+  grid-column: 1 !important;
+}
+
+.np-root.np-layout .np-card--settings > .np-field.np-global-duration {
+  grid-column: 2 !important;
+  grid-row: auto !important;
+}
+
+.np-root.np-layout .np-card--settings > .np-link,
+.np-root.np-layout .np-card--settings > .np-field:not(.np-plan-title):not(.np-global-duration) {
+  grid-column: 1 / -1 !important;
+}
+
+.np-root.np-layout .np-card--settings > .np-link {
+  justify-self: start !important;
+  margin: 0 !important;
+  clear: none !important;
+}
+
+.np-root.np-layout .np-card--settings .np-label {
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+}
+
+.np-root.np-layout .np-card--settings .np-input:not(.np-textarea) {
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.np-root.np-layout .np-card--settings .np-textarea {
+  width: 100% !important;
+  min-height: 88px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+@container (max-width: 560px) {
+  .np-root.np-layout .np-main > .np-card--settings {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 0 14px 14px !important;
+  }
+
+  .np-root.np-layout .np-card--settings .np-settings-summary {
+    display: none !important;
+  }
+
+  .np-root.np-layout .np-main > .np-card--settings > .np-settings-kicker {
+    margin: 0 -14px !important;
+    padding: 0 14px !important;
+  }
+
+  .np-root.np-layout .np-card--settings > .np-field.np-plan-title,
+  .np-root.np-layout .np-card--settings > .np-field.np-global-duration {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* ---------- Exercise panel: a docked column next to the content ---------- */
+.np-root.np-layout .np-drawer-slot {
+  position: sticky;
+  top: var(--wb-sticky-top);
+  min-width: 0;
+  align-self: start;
+}
+
+.np-root.np-layout .wkdrawer__backdrop {
+  display: none !important;
+}
+
+.np-root.np-layout .wkdrawer.wkdrawer {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: calc(100dvh - var(--wb-sticky-top) - 16px) !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  transform: none !important;
+  border: 1px solid var(--wb-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05) !important;
+}
+
+.np-root.np-layout .wkdrawer__head.wkdrawer__head {
+  height: auto !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  padding: 14px 16px 12px !important;
+}
+
+.np-root.np-layout .wkdrawer__body.wkdrawer__body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* The structure rail as a panel opening from the left, with the toolbar button (small screens, and medium
+   screens while the exercise panel is open, so the content keeps most of the width). */
+@mixin wb-offcanvas-rail($root, $animate: true) {
+  #{$root} .np-toolbar__weeks {
+    display: inline-flex;
+  }
+
+  #{$root} .np-aside {
+    position: fixed !important;
+    top: var(--wb-app-header) !important;
+    right: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 1045 !important;
+    width: min(86vw, 320px) !important;
+    max-height: none !important;
+    border-radius: 0 12px 12px 0 !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, .2) !important;
+    transform: translateX(-105%) !important;
+    @if $animate {
+      transition: transform .2s ease !important;
+    } @else {
+      transition: none !important; // the rail leaves the page at once when the exercise panel opens
+    }
+    pointer-events: none !important;
+  }
+
+  #{$root}.mobile-structure-open .np-aside {
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  #{$root} .np-aside__head {
+    padding-right: 52px !important;
+  }
+
+  #{$root} .np-mobile-structure-close {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    display: inline-flex !important;
+    width: 32px !important;
+    height: 32px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: #f4f7fa !important;
+    color: #405b7d !important;
+  }
+
+  #{$root} .np-mobile-structure-backdrop {
+    position: fixed !important;
+    inset: var(--wb-app-header) 0 0 0 !important;
+    z-index: 1040 !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: rgba(15, 23, 42, .34) !important;
+  }
+}
+
+/* Tablets and zoomed-in desktops: the rail and the exercise panel stay columns (only phones get the off-canvas
+   layout), a little narrower so the content keeps room. */
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  :host {
+    --wb-rail: 184px;
+    --wb-drawer: 280px;
+    --wb-gap: 10px;
+  }
+
+  .np-root.np-layout .np-shell,
+  .np-root.np-layout.exercise-drawer-open .np-shell {
+    padding: 12px 12px 24px !important;
+  }
+
+  /* Narrow rail: title, count, then "Expand all" under them (not over the title). */
+  .np-root.np-layout .np-aside__head {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .np-root.np-layout .np-aside__head > .np-link {
+    position: static !important;
+    display: inline-flex !important;
+    margin: 6px 0 0 !important;
+  }
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 767.98px) {
+  .np-root.np-layout .np-shell,
+  .np-root.np-layout.exercise-drawer-open .np-shell {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 12px 14px 24px !important;
+  }
+
+  .np-root.np-layout .np-toolbar {
+    padding: 8px 14px;
+  }
+
+  @include wb-offcanvas-rail('.np-root.np-layout');
+
+  .np-root.np-layout .wkdrawer__backdrop {
+    position: fixed !important;
+    inset: var(--wb-app-header) 0 0 0 !important;
+    z-index: 1040 !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: rgba(15, 23, 42, .34) !important;
+  }
+
+  /* Exercise panel: opens over the content from the right. */
+  .np-root.np-layout .np-drawer-slot {
+    position: static;
+  }
+
+  .np-root.np-layout .wkdrawer.wkdrawer {
+    position: fixed !important;
+    top: var(--wb-app-header) !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: auto !important;
+    z-index: 1045 !important;
+    width: min(100vw, 420px) !important;
+    height: auto !important;
+    border-radius: 12px 0 0 12px !important;
+    box-shadow: -16px 0 40px rgba(15, 23, 42, .2) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .np-root.np-layout .np-toolbar {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .np-root.np-layout .np-toolbar__title h1 {
+    font-size: 15px !important;
+  }
+
+  .np-root.np-layout .np-toolbar__status,
+  .np-root.np-layout .np-toolbar__weeks span {
+    display: none;
+  }
+
+  /* A save error stays readable on phones: a strip right under the toolbar. */
+  .np-root.np-layout .np-toolbar__status.is-error {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: block;
+    max-width: none;
+    padding: 7px 12px;
+    border-bottom: 1px solid #f5c2c0;
+    background: #fdecea;
+    font-size: 12.5px;
+    line-height: 17px;
+    white-space: normal;
+  }
+
+  .np-root.np-layout .np-toolbar__weeks {
+    width: 38px;
+    min-height: 38px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Save: icon + short label, easy to tap. */
+  .np-root.np-layout .np-toolbar__savebtn {
+    min-width: 0;
+    min-height: 38px;
+    gap: 6px;
+    padding: 0 13px 0 11px;
+    border-radius: 999px;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(13, 27, 51, .18);
+
+    .np-ico { width: 16px; height: 16px; }
+  }
+
+  .np-root.np-layout .np-toolbar__save {
+    flex: 0 0 auto;
+  }
+
+  .np-root.np-layout .np-toolbar__savelabel { display: none; }
+  .np-root.np-layout .np-toolbar__savelabel--short { display: inline; }
+
+  .np-root.np-layout .np-shell,
+  .np-root.np-layout.exercise-drawer-open .np-shell {
+    padding: 10px 8px 20px !important;
+  }
+
+  .np-root.np-layout .wkdrawer.wkdrawer {
+    width: 100vw !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* ---------- Exercise sets: a compact table on every screen size ---------- */
+/* The set number has its own column (the badge is 36px wide), clearly apart from the first input. */
+.np-root.np-layout .wkex-sets__head,
+.np-root.np-layout .wkex-sets__row {
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.45fr) 28px !important;
+  column-gap: 12px !important;
+}
+
+.np-root.np-layout .wkex-sets--no-weight .wkex-sets__head,
+.np-root.np-layout .wkex-sets--no-weight .wkex-sets__row {
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.45fr) 28px !important;
+}
+
+.np-root.np-layout .wkex-sets__cell--idx {
+  justify-content: flex-start !important;
+}
+
+.np-root.np-layout .wkex-settype__trigger {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 36px !important;
+}
+
+.np-root.np-layout .wkex-sets__cell--action {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.np-root.np-layout .wkex-sets__cell--action .wkex-action {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.np-root.np-layout .wkex-sets__cell--action .wkex-action__icon {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Narrow rail, whatever the screen (zoomed-in page, exercise panel open): "Expand all" goes under the title and the
+   count instead of over them. */
+.np-root.np-layout .np-aside {
+  container-type: inline-size;
+}
+
+@container (max-width: 250px) {
+  .np-root.np-layout .np-aside__head {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .np-root.np-layout .np-aside__head > .np-link {
+    position: static !important;
+    display: inline-flex !important;
+    margin: 6px 0 0 !important;
+  }
+}
+
+/* Number fields of the sets: no spin arrows, the value keeps the whole width (keyboard and wheel still work). */
+.np-root.np-layout .wkex-sets input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.np-root.np-layout .wkex-sets input[type='number']::-webkit-inner-spin-button,
+.np-root.np-layout .wkex-sets input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Narrow sets table (exercise panel open, zoomed-in page, tablet): the "Min / Sec" label goes above its value, so the
+   rest fields can always be read and typed in. Based on the table's own width, not the screen's. */
+.np-root.np-layout .wkex-sets {
+  container-type: inline-size;
+}
+
+@container (max-width: 640px) {
+  .np-root.np-layout .wkex-restbox {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    gap: 1px !important;
+    padding: 2px 7px !important;
+  }
+
+  .np-root.np-layout .wkex-restbox__label {
+    font-size: 9.5px !important;
+    line-height: 11px !important;
+    letter-spacing: .02em !important;
+    text-transform: uppercase !important;
+    color: #7a8ba3 !important;
+  }
+
+  .np-root.np-layout .wkex-restbox__input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 19px !important;
+    padding: 0 !important;
+    font-size: 13px !important;
+    line-height: 19px !important;
+  }
+}
+
+/* Very narrow table (app sidebar + structure + exercise panel all open): the rest goes on a second line of the set,
+   under weight / reps, with the whole width for "Min" and "Sec". */
+@container (max-width: 440px) {
+  .np-root.np-layout .wkex-sets__head,
+  .np-root.np-layout .wkex-sets__row {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 28px !important;
+    row-gap: 6px !important;
+  }
+
+  .np-root.np-layout .wkex-sets--no-weight .wkex-sets__head,
+  .np-root.np-layout .wkex-sets--no-weight .wkex-sets__row {
+    grid-template-columns: 40px minmax(0, 1fr) 28px !important;
+  }
+
+  /* "Rest" heading: the Min / Sec labels name the fields on the second line. */
+  .np-root.np-layout .wkex-sets__head .wkex-sets__th:nth-last-child(2) {
+    display: none !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--rest {
+    grid-row: 2 !important;
+    grid-column: 2 / -2 !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--action {
+    grid-row: 1 !important;
+    grid-column: -2 / -1 !important;
+  }
+
+  .np-root.np-layout .wkex-restbox {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 0 8px !important;
+  }
+
+  .np-root.np-layout .wkex-restbox__input {
+    height: 34px !important;
+    line-height: 34px !important;
+  }
+}
+
+/* Phones and tablets: the exercise card keeps its header (photo, name, type · sets, note / video / delete) and the sets stay
+   a table — header "Set · Minutes (or Weight · Reps) · Rest", one line per set, then "+ Add set". */
+@media (max-width: 900px) { // same breakpoint as the older phone layers it replaces
+  .np-root.np-layout .np-card--day .builder-rail > .wkex {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .np-root.np-layout .wkex-card__inner {
+    padding: 12px !important;
+  }
+
+  .np-root.np-layout .wkex-sets {
+    min-width: 0 !important;
+    margin-top: 12px !important;
+    padding: 10px !important;
+    overflow: visible !important;
+    border: 1px solid #edf1f5 !important;
+    border-radius: 10px !important;
+    background: #f8fafc !important;
+  }
+
+  .np-root.np-layout .wkex-sets__head,
+  .np-root.np-layout .wkex-sets__row {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.7fr) 24px !important;
+    align-items: center !important;
+    column-gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .np-root.np-layout .wkex-sets--no-weight .wkex-sets__head,
+  .np-root.np-layout .wkex-sets--no-weight .wkex-sets__row {
+    grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1.5fr) 24px !important;
+  }
+
+  .np-root.np-layout .wkex-sets__head {
+    margin-bottom: 6px !important;
+  }
+
+  .np-root.np-layout .wkex-sets__th {
+    overflow: hidden;
+    color: #64748b !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: .04em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .np-root.np-layout .wkex-sets__rows {
+    display: grid !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  /* One line per set: the older phone layers stacked the cells (labels above inputs). */
+  .np-root.np-layout .wkex-sets__row > .wkex-sets__cell.wkex-sets__cell {
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    width: auto !important;
+    height: auto !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    align-self: center !important;
+  }
+
+  /* (An older phone layer spans the cardio "minutes" field over the whole line.) */
+  .np-root.np-layout .wkex-sets.wkex-sets--no-weight .wkex-sets__row > .wkex-sets__cell.wkex-sets__cell:not(.wkex-sets__cell--idx):not(.wkex-sets__cell--rest):not(.wkex-sets__cell--action) {
+    grid-column: auto !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row > .wkex-sets__cell.wkex-sets__cell::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .np-root.np-layout .wkex-settype__trigger {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-input {
+    width: 100% !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 6px !important;
+    background: #fff !important;
+    font-size: 14px !important;
+    text-align: center;
+  }
+
+  /* Rest: two fields on the set line, "Min" / "Sec" written inside each field (the column header says Rest). */
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--rest.wkex-sets__cell--rest {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--rest .wkex-restbox.wkex-restbox {
+    position: relative !important;
+    display: block !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--rest .wkex-restbox.wkex-restbox::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--rest .wkex-restbox__label.wkex-restbox__label {
+    position: absolute !important;
+    top: 50% !important;
+    left: 6px !important;
+    z-index: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translateY(-50%) !important;
+    color: #8393aa !important;
+    font-size: 9.5px !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+  }
+
+  .np-root.np-layout .wkex-sets__row .wkex-sets__cell--rest .wkex-restbox__input.wkex-restbox__input {
+    width: 100% !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 4px 0 25px !important;
+    border: 1px solid #cbd8e8 !important;
+    border-radius: 7px !important;
+    background: #fff !important;
+    font-size: 13px !important;
+    text-align: center;
+  }
+
+  /* With a weight column the rest fields are narrow: "Min" / "Sec" go above the value, inside the field. */
+  .np-root.np-layout .wkex-sets:not(.wkex-sets--no-weight) .wkex-sets__row .wkex-sets__cell--rest .wkex-restbox__label.wkex-restbox__label {
+    top: 4px !important;
+    right: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    font-size: 8.5px !important;
+    text-align: center;
+  }
+
+  .np-root.np-layout .wkex-sets:not(.wkex-sets--no-weight) .wkex-sets__row .wkex-sets__cell--rest .wkex-restbox__input.wkex-restbox__input {
+    padding: 11px 2px 0 !important;
+  }
+
+  .np-root.np-layout .wkex-sets__cell--action .wkex-action {
+    width: 24px !important;
+    height: 24px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .np-root.np-layout .wkex-addset {
+    width: 100% !important;
+    min-height: 40px !important;
+    margin-top: 10px !important;
+  }
+}

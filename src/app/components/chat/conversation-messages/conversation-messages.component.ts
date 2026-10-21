@@ -184,7 +184,7 @@ export class ConversationMessagesComponent implements OnInit, OnDestroy{
 
   private resolveGroupMembers(memberIds: string[]): void {
     const requests = memberIds.map(id =>
-      this.userService.getUserById(id).pipe(
+      this.userService.getUserById(id, true, true).pipe(
         map(user => ({ id, name: user.firstName + ' ' + user.lastName, avatar: user.avatarUrl === 'not found' ? '' : user.avatarUrl })),
         catchError(() => of({ id, name: 'Unknown', avatar: '' }))
       )

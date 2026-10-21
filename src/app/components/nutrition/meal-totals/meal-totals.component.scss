@@ -1,0 +1,195 @@
+/* Meal / recipe total. Brand: navy #0f172a, blue #44b4df; macro colours: protein blue, carbs amber, fat violet. */
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+.mt {
+  padding: 16px;
+  border: 1px solid #e6e9ee;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.mt__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mt__title {
+  display: grid;
+  gap: 2px;
+}
+
+.mt__title strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mt__title small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.mt__switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+
+.mt__switch button {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  color: #475569;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mt__switch button.active {
+  color: #0f172a;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.mt__grid {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mt__kcal,
+.mt__macro {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.mt__kcal {
+  color: #fff;
+  background: #0f172a;
+}
+
+.mt__macro {
+  border: 1px solid #e6e9ee;
+  background: #f8fafc;
+}
+
+.mt__kcal span,
+.mt__macro span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mt__kcal span {
+  color: #cbd5e1;
+}
+
+.mt__macro span {
+  color: #64748b;
+}
+
+.mt__macro span i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.mt__kcal strong,
+.mt__macro strong {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.mt__macro strong {
+  color: #0f172a;
+}
+
+.mt__kcal em,
+.mt__macro em {
+  margin-left: 3px;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.mt__macro small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.mt__macro--protein span i,
+.mt__bar--protein {
+  background: #44b4df;
+}
+
+.mt__macro--carbs span i,
+.mt__bar--carbs {
+  background: #f59e0b;
+}
+
+.mt__macro--fat span i,
+.mt__bar--fat {
+  background: #8b5cf6;
+}
+
+.mt__bar {
+  display: flex;
+  height: 8px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef2f6;
+}
+
+.mt__bar i {
+  display: block;
+  height: 100%;
+  transition: width 0.25s ease;
+}
+
+@container (max-width: 560px) {
+  .mt__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mt__kcal {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .mt__kcal strong {
+    font-size: 24px;
+  }
+
+  .mt__macro {
+    padding: 10px;
+  }
+
+  .mt__macro strong {
+    font-size: 17px;
+  }
+}

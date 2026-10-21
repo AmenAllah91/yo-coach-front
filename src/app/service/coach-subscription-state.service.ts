@@ -19,6 +19,9 @@ export class CoachSubscriptionStateService {
   /** SUB-30: every state read (first load and each refresh), for what must follow changes (banner, buttons). */
   readonly states$: Observable<CoachSubscriptionState | null> = this.latest$.asObservable();
 
+  /** Last state read in this session (undefined: none yet), shown at once while a fresh one is asked. */
+  snapshot: CoachSubscriptionState | null | undefined;
+
   constructor(private http: HttpClient) {}
 
   getState(): Observable<CoachSubscriptionState | null> {
@@ -30,12 +33,16 @@ export class CoachSubscriptionStateService {
       this.state$ = this.http
         .get<CoachSubscriptionState>(`${environment.baseApiUrl}/api/billing/subscription-state`, { headers })
         .pipe(
-          // No state (YoSales down, coach without customer): show nothing rather than an error.
-          catchError(() => {
-            this.state$ = undefined;
+          // No state (YoSales down, coach without customer): show nothing rather than an error. A coach without
+          // subscription (404) keeps that answer; another failure is asked again a minute later, not on every screen.
+          catchError((error) => {
+            if (error?.status !== 404) {
+              const failed = this.state$;
+              setTimeout(() => { if (this.state$ === failed) this.state$ = undefined; }, 60000);
+            }
             return of(null);
           }),
-          tap((state) => this.latest$.next(state)),
+          tap((state) => { this.snapshot = state; this.latest$.next(state); }),
           shareReplay({ bufferSize: 1, refCount: false })
         );
     }

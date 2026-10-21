@@ -8,7 +8,18 @@ import { environment } from '../../environments/environment';
 export class CoachingAccessService {
   readonly blocked$ = new BehaviorSubject(false);
   private revision = 0;
+  /** Time of the last answer (a failed check is not kept). */
+  private checkedAt = 0;
   constructor(private http: HttpClient, private auth: AuthService) {}
+
+  /**
+   * For the route guards. The app checks again every 30 s, on window focus and when the server reports an archived
+   * client, so a page change reuses an answer under a minute old instead of waiting for the server.
+   */
+  async allowed(maxAgeMs = 60000): Promise<boolean> {
+    if (Date.now() - this.checkedAt < maxAgeMs) return !this.blocked$.value;
+    return this.refresh();
+  }
 
   private clientOnly(roles: string[]): boolean {
     return roles.includes('ROLE_CLIENT') && !roles.includes('ROLE_COACH') && !roles.includes('ROLE_ADMIN');
@@ -18,15 +29,15 @@ export class CoachingAccessService {
   async markClientArchived(): Promise<void> {
     const revision = ++this.revision;
     const roles = this.auth.isLoggedIn() ? await this.auth.extractRoles() : [];
-    if (revision === this.revision) this.blocked$.next(this.clientOnly(roles));
+    if (revision === this.revision) { this.blocked$.next(this.clientOnly(roles)); this.checkedAt = Date.now(); }
   }
 
   async refresh(): Promise<boolean> {
     const revision = ++this.revision;
-    if (!this.auth.isLoggedIn()) { this.blocked$.next(false); return true; }
+    if (!this.auth.isLoggedIn()) { this.blocked$.next(false); this.checkedAt = 0; return true; }
     const roles = await this.auth.extractRoles();
     if (revision !== this.revision) return !this.blocked$.value;
-    if (!this.clientOnly(roles)) { this.blocked$.next(false); return true; }
+    if (!this.clientOnly(roles)) { this.blocked$.next(false); this.checkedAt = Date.now(); return true; }
     try {
       const result = await firstValueFrom(this.http.get<{status: string}>(
         `${environment.baseApiUrl}/gym_coaching/clients/access`,
@@ -34,10 +45,11 @@ export class CoachingAccessService {
       const active = result.status === 'ACTIVE';
       if (revision !== this.revision) return !this.blocked$.value;
       this.blocked$.next(!active);
+      this.checkedAt = Date.now();
       return active;
     } catch {
       // Cached coaching content must not be exposed when access cannot be verified.
-      if (revision === this.revision) this.blocked$.next(true);
+      if (revision === this.revision) { this.blocked$.next(true); this.checkedAt = 0; }
       return !this.blocked$.value;
     }
   }

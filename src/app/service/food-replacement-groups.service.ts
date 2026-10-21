@@ -86,19 +86,19 @@ export class FoodReplacementGroupsService {
   }
 
   createGroup(group: FoodReplacementGroup): Observable<FoodReplacementGroup> {
-    return this.http.post<FoodReplacementGroup>(this.baseUrl, group).pipe(
+    return this.http.post<FoodReplacementGroup>(this.baseUrl, group, { headers: { 'X-Skip-Loader': 'true' } }).pipe(
       tap(() => this.groupsCache.clear()),
     );
   }
 
   updateGroup(id: string, group: FoodReplacementGroup): Observable<FoodReplacementGroup> {
-    return this.http.put<FoodReplacementGroup>(`${this.baseUrl}/${id}`, group).pipe(
+    return this.http.put<FoodReplacementGroup>(`${this.baseUrl}/${id}`, group, { headers: { 'X-Skip-Loader': 'true' } }).pipe(
       tap(() => this.groupsCache.clear()),
     );
   }
 
   deleteGroup(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`).pipe(
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, { headers: { 'X-Skip-Loader': 'true' } }).pipe(
       tap(() => this.groupsCache.clear()),
     );
   }

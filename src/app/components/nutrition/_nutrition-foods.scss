@@ -1,0 +1,394 @@
+/*
+ * Foods of a meal (create-full-plan, assign-full-plan).
+ * Wide: one compact row per food, columns aligned with the header, quantity editable in place.
+ * Narrow (container query): two lines per food: name + calories, then quantity + macros.
+ * Brand colors: blue #44b4df, navy #0f172a, borders #e6e9ee, muted #64748b.
+ */
+.np-foods {
+  container-type: inline-size;
+  border: 1px solid #e6e9ee;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.np-foods + .np-center {
+  margin-top: 16px;
+}
+
+.np-foods__head,
+.np-foods__row {
+  display: grid;
+  grid-template-columns: 40px minmax(120px, 1fr) 216px repeat(3, 70px) 80px 36px;
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 12px;
+}
+
+.np-foods__head {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #e6e9ee;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.np-foods__head-food {
+  grid-column: span 2;
+}
+
+.np-foods__head-kcal {
+  text-align: right;
+}
+
+.np-foods__row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+/* Row messages (meal editor) and an extra block under a row (new unit form). */
+.np-foods__error {
+  grid-column: 2 / -1;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.np-foods__qty input.is-invalid {
+  border-color: #ef4444;
+}
+
+.np-foods__extra {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.np-foods__row:last-child {
+  border-bottom: 0;
+}
+
+.np-foods__row:hover {
+  background: #f8fbfd;
+}
+
+.np-foods__thumb {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #dce8f2;
+  border-radius: 8px;
+  color: #44b4df;
+  background: #eef8fc;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.np-foods__thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #fff;
+}
+
+.np-foods__name {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Wide: the quantity and the macros are cells of the row grid. */
+.np-foods__meta {
+  display: contents;
+}
+
+.np-foods__qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.np-foods__qty b {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.np-foods__qty input,
+.np-foods__qty select {
+  width: 58px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  color: #0f172a;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.np-foods__qty select {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 150px;
+  padding: 0 26px 0 10px;
+  text-align: left;
+  font-weight: 600;
+  appearance: none;
+  -moz-appearance: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 9l6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 9px center;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.np-foods__times {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.np-foods__qty input::-webkit-outer-spin-button,
+.np-foods__qty input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.np-foods__qty input:hover,
+.np-foods__qty select:hover {
+  border-color: #b9c6d3;
+}
+
+.np-foods__qty input:focus,
+.np-foods__qty select:focus {
+  border-color: #44b4df;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.18);
+}
+
+.np-foods__macro {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.np-foods__macro b {
+  margin-right: 2px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.np-foods__macro i {
+  display: none;
+  font-style: normal;
+}
+
+.np-foods__kcal {
+  color: #64748b;
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.np-foods__kcal b {
+  margin-right: 2px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.np-foods__remove {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #94a3b8;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.np-foods__remove:hover,
+.np-foods__remove:focus-visible {
+  color: #ef4444;
+  background: #fef2f2;
+  outline: none;
+}
+
+.np-foods__remove i-feather {
+  width: 16px;
+  height: 16px;
+}
+
+/* Medium: tighter columns before switching to the stacked layout. */
+@container (max-width: 760px) {
+  .np-foods__head,
+  .np-foods__row {
+    grid-template-columns: 36px minmax(90px, 1fr) 190px repeat(3, 58px) 68px 32px;
+    column-gap: 8px;
+  }
+
+  .np-foods__thumb {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Narrow: two lines per food, no header. */
+@container (max-width: 600px) {
+  .np-foods__head {
+    display: none;
+  }
+
+  .np-foods__row {
+    grid-template-columns: 40px minmax(0, 1fr) auto 32px;
+    grid-template-areas:
+      'thumb name kcal remove'
+      'thumb meta meta meta';
+    column-gap: 10px;
+    row-gap: 6px;
+    padding: 10px 10px 10px 12px;
+  }
+
+  .np-foods__thumb {
+    grid-area: thumb;
+    align-self: start;
+    width: 40px;
+    height: 40px;
+  }
+
+  .np-foods__name {
+    grid-area: name;
+  }
+
+  .np-foods__kcal {
+    grid-area: kcal;
+  }
+
+  .np-foods__remove {
+    grid-area: remove;
+  }
+
+  .np-foods__meta {
+    display: flex;
+    grid-area: meta;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .np-foods__qty input,
+  .np-foods__qty select {
+    height: 30px;
+  }
+
+  .np-foods__qty input {
+    width: 52px;
+  }
+
+  .np-foods__macro {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    font-size: 11px;
+  }
+
+  .np-foods__macro b {
+    margin-right: 0;
+    font-size: 12px;
+  }
+
+  .np-foods__macro i {
+    display: inline;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .np-foods__macro .np-foods__abbr {
+    display: none;
+  }
+}
+
+/* Phone: macro names shortened (P / G / L) and tighter spacing so a food stays on two lines. */
+@container (max-width: 400px) {
+  .np-foods__row {
+    grid-template-columns: 34px minmax(0, 1fr) auto 28px;
+    column-gap: 8px;
+    padding: 10px 8px 10px 10px;
+  }
+
+  .np-foods__thumb {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .np-foods__remove {
+    width: 28px;
+    height: 28px;
+  }
+
+  .np-foods__meta {
+    gap: 4px;
+  }
+
+  .np-foods__qty {
+    gap: 4px;
+    margin-right: 2px;
+  }
+
+  .np-foods__qty input {
+    width: 46px;
+    padding: 0 6px;
+  }
+
+  .np-foods__qty select {
+    max-width: 118px;
+  }
+
+  .np-foods__macro {
+    padding: 3px 7px;
+  }
+}
+
+/* Short macro names (P / G / L) as soon as the full words would push the macros to a third line. */
+@container (max-width: 560px) {
+  .np-foods__macro .np-foods__word {
+    display: none;
+  }
+
+  .np-foods__macro .np-foods__abbr {
+    display: inline;
+  }
+}

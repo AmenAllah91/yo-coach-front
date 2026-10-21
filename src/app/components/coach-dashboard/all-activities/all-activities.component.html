@@ -1,0 +1,74 @@
+<div class="activities-page">
+  <header class="page-head">
+    <a class="back" routerLink="/coach-dashboard" [attr.aria-label]="'BACK' | translate">
+      <i-feather name="arrow-left"></i-feather>
+    </a>
+    <div>
+      <h1>{{ 'CDASH.ALL_ACTIVITIES' | translate }}</h1>
+      <p>{{ 'CDASH.ALL_ACTIVITIES_HINT' | translate }}</p>
+    </div>
+  </header>
+
+  <section class="filters" [attr.aria-label]="'CDASH.FILTER' | translate">
+    <div class="chips" role="group">
+      <button type="button" class="chip" [class.chip--active]="!filters.category" [attr.aria-pressed]="!filters.category"
+              (click)="setCategory(null)">{{ 'CDASH.CAT.ALL' | translate }}</button>
+      <button type="button" class="chip" *ngFor="let category of categories" [class.chip--active]="filters.category === category"
+              [attr.aria-pressed]="filters.category === category" (click)="setCategory(category)">
+        {{ 'CDASH.CAT.' + category | translate }}
+      </button>
+    </div>
+
+    <div class="selects">
+      <label class="field">
+        <span>{{ 'CLIENT' | translate }}</span>
+        <select [ngModel]="filters.clientId || ''" (ngModelChange)="setClient($event)">
+          <option value="">{{ 'CDASH.ALL_CLIENTS' | translate }}</option>
+          <option *ngFor="let client of clients" [value]="client.id">{{ client.name }}</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>{{ 'CDASH.PERIOD' | translate }}</span>
+        <select [ngModel]="filters.period" (ngModelChange)="setPeriod($event)">
+          <option *ngFor="let period of periods" [value]="period">{{ 'CDASH.PERIODS.' + period | translate }}</option>
+        </select>
+      </label>
+
+      <ng-container *ngIf="filters.period === 'custom'">
+        <label class="field">
+          <span>{{ 'CDASH.FROM' | translate }}</span>
+          <input type="date" [ngModel]="filters.from" [max]="filters.to" (change)="setRange($any($event.target).value, filters.to)" />
+        </label>
+        <label class="field">
+          <span>{{ 'CDASH.TO' | translate }}</span>
+          <input type="date" [ngModel]="filters.to" [min]="filters.from" (change)="setRange(filters.from, $any($event.target).value)" />
+        </label>
+      </ng-container>
+
+      <button type="button" class="reset" *ngIf="hasFilters" (click)="resetFilters()">
+        <i-feather name="x"></i-feather>{{ 'CDASH.RESET_FILTERS' | translate }}
+      </button>
+    </div>
+  </section>
+
+  <section class="list-card">
+    <app-widget-state
+      [status]="status"
+      [rows]="8"
+      [empty]="items.length === 0"
+      [emptyText]="hasFilters ? 'CDASH.NO_ACTIVITY_FILTERED' : 'CDASH.NO_ACTIVITY'"
+      emptyIcon="activity"
+      (retry)="load()"
+    ></app-widget-state>
+
+    <app-activity-list *ngIf="status === 'ready' && items.length" [activities]="items" [lang]="lang"></app-activity-list>
+
+    <div class="more" *ngIf="status === 'ready' && (nextCursor || loadMoreFailed)">
+      <p class="more-error" *ngIf="loadMoreFailed" role="alert">{{ 'CDASH.WIDGET_ERROR' | translate }}</p>
+      <button type="button" class="more-btn" *ngIf="nextCursor" [disabled]="loadingMore" (click)="loadMore()">
+        {{ (loadingMore ? 'LOADING' : 'CDASH.LOAD_MORE') | translate }}
+      </button>
+    </div>
+  </section>
+</div>
