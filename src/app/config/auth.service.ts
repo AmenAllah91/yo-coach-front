@@ -22,8 +22,8 @@ function isPublicCoachHostname(host: string): boolean {
     'account.yo-coach.app',
     'www.account.yo-coach.app',
 
-    'login.yo-coach.app',
-    'www.login.yo-coach.app',
+    'login-int.yo-coach.app',
+    'www.login-int.yo-coach.app',
 
     'login-int.yo-coach.app',
     'www.login-int.yo-coach.app',
