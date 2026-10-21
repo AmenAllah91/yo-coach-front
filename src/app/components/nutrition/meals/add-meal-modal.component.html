@@ -111,114 +111,109 @@
 
         <section class="foods-box">
           <header class="foods-box__header">
-            <div class="foods-macros">
-              <article>
-                <span>{{ 'CALORIES' | translate }}</span>
-                <strong>{{ nutritionTotal('calories') | number:'1.0-0' }} Kcal</strong>
-              </article>
-              <article>
-                <span>{{ 'PROTEIN' | translate }}</span>
-                <strong>{{ nutritionTotal('protein') | number:'1.0-1' }} g</strong>
-              </article>
-              <article>
-                <span>{{ 'CARBS' | translate }}</span>
-                <strong>{{ nutritionTotal('carbs') | number:'1.0-1' }} g</strong>
-              </article>
-              <article>
-                <span>{{ 'FAT' | translate }}</span>
-                <strong>{{ nutritionTotal('fat') | number:'1.0-1' }} g</strong>
-              </article>
-            </div>
+            <app-meal-totals
+              title="MEAL_TOTAL"
+              [itemCount]="ingredients.length"
+              [calories]="nutritionTotal('calories')"
+              [protein]="nutritionTotal('protein')"
+              [carbs]="nutritionTotal('carbs')"
+              [fat]="nutritionTotal('fat')"
+            ></app-meal-totals>
           </header>
 
           <div class="foods-box__body">
-            <div class="foods-table-wrap" *ngIf="ingredients.length">
-              <table class="foods-table">
-                <thead>
-                  <tr>
-                    <th>{{ 'FOOD' | translate }}</th>
-                    <th>{{ 'FOOD_PORTIONS' | translate }}</th>
-                    <th>{{ 'PROTEIN' | translate }}</th>
-                    <th>{{ 'CARBS' | translate }}</th>
-                    <th>{{ 'FAT' | translate }}</th>
-                    <th>{{ 'CALORIES' | translate }}</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <ng-container *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
-                  <tr>
-                    <td>
-                      <div class="foods-table__food">
-                        <span class="foods-table__thumb">
-                          <img
-                            *ngIf="ingredient.foodRef?.image || ingredient.foodRef?.imageUrl"
-                            [src]="ingredient.foodRef.image || ingredient.foodRef.imageUrl"
-                            alt=""
-                          />
-                          <i-feather
-                            *ngIf="!ingredient.foodRef?.image && !ingredient.foodRef?.imageUrl"
-                            name="package"
-                          ></i-feather>
-                        </span>
-                        <strong>{{ ingredient.name }}</strong>
-                        <small class="inline-error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="foods-table__quantity">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          [(ngModel)]="ingredient.quantity" #quantityControl="ngModel"
-                          [class.foods-control--invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
-                        />
-                        <select
-                          *ngIf="!ingredient.manual && ingredient.foodRef?.id; else foodsUnitSelect"
-                          class="serving-select"
-                          [attr.aria-label]="'UNIT' | translate"
-                          [class.foods-control--invalid]="submitted && !ingredient.unit.trim()"
-                          (change)="onServingChange(ingredient, $any($event.target))"
-                        >
-                          <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
-                          <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
+            <div class="np-foods" *ngIf="ingredients.length">
+              <div class="np-foods__head" aria-hidden="true">
+                <span class="np-foods__head-food">{{ 'FOOD' | translate }}</span>
+                <span>{{ 'FOOD_PORTIONS' | translate }}</span>
+                <span>{{ 'PROTEIN' | translate }}</span>
+                <span>{{ 'CARBS' | translate }}</span>
+                <span>{{ 'FAT' | translate }}</span>
+                <span class="np-foods__head-kcal">{{ 'CALORIES' | translate }}</span>
+                <span></span>
+              </div>
+
+              <ng-container *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
+                <div class="np-foods__row">
+                  <span class="np-foods__thumb" aria-hidden="true">
+                    {{ (ingredient.name || '?').charAt(0).toUpperCase() }}
+                    <img
+                      *ngIf="ingredient.foodRef?.image || ingredient.foodRef?.imageUrl"
+                      [src]="ingredient.foodRef.image || ingredient.foodRef.imageUrl"
+                      alt=""
+                      (error)="$any($event.target).hidden = true"
+                    />
+                  </span>
+
+                  <span class="np-foods__name" [title]="ingredient.name">{{ ingredient.name }}</span>
+
+                  <div class="np-foods__meta">
+                    <div class="np-foods__qty">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        inputmode="decimal"
+                        [(ngModel)]="ingredient.quantity"
+                        #quantityControl="ngModel"
+                        [class.is-invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
+                        [attr.aria-label]="('FOOD_PORTIONS' | translate) + ' · ' + ingredient.name"
+                      />
+                      <span class="np-foods__times" aria-hidden="true">×</span>
+                      <select
+                        *ngIf="!ingredient.manual && ingredient.foodRef?.id; else foodsUnitSelect"
+                        [attr.aria-label]="('UNIT' | translate) + ' · ' + ingredient.name"
+                        (change)="onServingChange(ingredient, $any($event.target))"
+                      >
+                        <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
+                        <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
+                      </select>
+                      <ng-template #foodsUnitSelect>
+                        <select [(ngModel)]="ingredient.unit" [attr.aria-label]="'UNIT' | translate">
+                          <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                          <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
                         </select>
-                        <ng-template #foodsUnitSelect>
-                          <select
-                            [(ngModel)]="ingredient.unit" #unitControl="ngModel"
-                            [class.foods-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
-                          >
-                            <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                            <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
-                          </select>
-                        </ng-template>
-                      </div>
-                      <small class="inline-error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
-                      <small class="inline-error" *ngIf="submitted && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
-                      <small class="inline-error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
-                    </td>
-                    <td><strong>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}</strong> <span>g</span></td>
-                    <td><strong>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}</strong> <span>g</span></td>
-                    <td><strong>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}</strong> <span>g</span></td>
-                    <td><strong>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</strong> <span>Kcal</span></td>
-                    <td>
-                      <button class="foods-table__delete" type="button" [attr.aria-label]="'REMOVE_FOOD' | translate" (click)="removeIngredient(i)">
-                        <i-feather name="trash-2"></i-feather>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr class="serving-form-row" *ngIf="servingFormRowId === ingredient.id">
-                    <td colspan="7">
-                      <p class="serving-form-row__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: ingredient.name } }}</p>
-                      <app-food-serving-form [others]="servingOptions(ingredient)" [unitSuggestions]="unitSuggestions" [saving]="servingSaving"
-                        (saved)="createServing(ingredient, $event)" (cancelled)="closeServingForm()"></app-food-serving-form>
-                      <small class="inline-error" *ngIf="servingError" role="alert">{{ servingError | translate }}</small>
-                    </td>
-                  </tr>
-                  </ng-container>
-                </tbody>
-              </table>
+                      </ng-template>
+                    </div>
+
+                    <span class="np-foods__macro" [title]="'PROTEIN' | translate">
+                      <i class="np-foods__word">{{ 'PROTEIN' | translate }}</i><i class="np-foods__abbr">{{ 'PROTEIN_ABBR' | translate }}</i>
+                      <b>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}</b>g
+                    </span>
+                    <span class="np-foods__macro" [title]="'CARBS' | translate">
+                      <i class="np-foods__word">{{ 'CARBS' | translate }}</i><i class="np-foods__abbr">{{ 'CARBS_ABBR' | translate }}</i>
+                      <b>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}</b>g
+                    </span>
+                    <span class="np-foods__macro" [title]="'FAT' | translate">
+                      <i class="np-foods__word">{{ 'FAT' | translate }}</i><i class="np-foods__abbr">{{ 'FAT_ABBR' | translate }}</i>
+                      <b>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}</b>g
+                    </span>
+                  </div>
+
+                  <span class="np-foods__kcal"><b>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</b>kcal</span>
+
+                  <button
+                    type="button"
+                    class="np-foods__remove"
+                    [title]="'REMOVE_FOOD' | translate"
+                    [attr.aria-label]="('REMOVE_FOOD' | translate) + ' · ' + ingredient.name"
+                    (click)="removeIngredient(i)"
+                  >
+                    <i-feather name="trash-2"></i-feather>
+                  </button>
+
+                  <small class="np-foods__error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
+                  <small class="np-foods__error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
+                  <small class="np-foods__error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
+                </div>
+
+                <div class="np-foods__extra" *ngIf="servingFormRowId === ingredient.id">
+                  <p class="serving-form-row__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: ingredient.name } }}</p>
+                  <app-food-serving-form [others]="servingOptions(ingredient)" [unitSuggestions]="unitSuggestions" [saving]="servingSaving"
+                    (saved)="createServing(ingredient, $event)" (cancelled)="closeServingForm()"></app-food-serving-form>
+                  <small class="inline-error" *ngIf="servingError" role="alert">{{ servingError | translate }}</small>
+                </div>
+              </ng-container>
             </div>
 
             <div class="foods-empty" *ngIf="!ingredients.length">
@@ -231,49 +226,6 @@
                 <i-feather name="plus"></i-feather>
                 {{ 'ADD_FOOD' | translate }}
               </button>
-            </div>
-
-            <div class="food-picker food-picker--foods" *ngIf="ingredientPickerOpen">
-              <div class="food-picker__search">
-                <i-feather name="search"></i-feather>
-                <input
-                  [(ngModel)]="foodSearch"
-                  (input)="searchFoods()"
-                  [placeholder]="'SEARCH_FOODS_DATABASE' | translate"
-                  autofocus
-                />
-                <button type="button" [attr.aria-label]="'CLOSE_FOOD_SEARCH' | translate" (click)="closeIngredientPicker()">
-                  <i-feather name="x"></i-feather>
-                </button>
-              </div>
-
-              <div class="food-picker__results">
-                <div class="food-picker__state" *ngIf="searchingFoods">{{ 'SEARCHING_FOODS' | translate }}</div>
-                <button
-                  class="food-result"
-                  type="button"
-                  *ngFor="let food of foods; trackBy: trackByFood"
-                  [disabled]="foodAlreadyAdded(food) || saving"
-                  (click)="addFood(food)"
-                >
-                  <span class="food-result__thumb">
-                    <img *ngIf="food.image || food.imageUrl" [src]="food.image || food.imageUrl" alt="" />
-                    <i-feather *ngIf="!food.image && !food.imageUrl" name="package"></i-feather>
-                  </span>
-                  <span class="food-result__identity">
-                    <strong>{{ food.name }}</strong>
-                    <small>{{ food.category || food.foodGroup || ('FOOD' | translate) }}</small>
-                  </span>
-                  <span class="food-result__energy">
-                    {{ (food.energy || food.calories || 0) | number:'1.0-0' }} kcal /
-                    {{ food.servingSize || 100 }}{{ food.servingUnit || 'g' }}
-                  </span>
-                </button>
-
-                <div class="food-picker__state" *ngIf="!searchingFoods && !foods.length">
-                  {{ 'NO_DATABASE_FOODS_FOUND' | translate }}
-                </div>
-              </div>
             </div>
 
             <div class="ingredient-validation" *ngIf="(submitted || foodsTouched) && ingredients.length === 0">
@@ -289,16 +241,16 @@
     <main class="builder" *ngIf="step === 'recipe'">
       <section class="builder-card recipe-information">
         <div class="section-heading">
-          <span class="section-heading__icon"><i-feather name="image"></i-feather></span>
+          <span class="section-heading__icon section-heading__icon--step">1</span>
           <div>
             <h3>{{ (isRecipe ? 'RECIPE_INFORMATION' : 'MEAL_INFORMATION') | translate }}</h3>
-            <p *ngIf="!isRecipe">{{ 'MEAL_INFORMATION_SUBTITLE' | translate }}</p>
+            <p>{{ (isRecipe ? 'RECIPE_STEP_INFO_HELP' : 'MEAL_INFORMATION_SUBTITLE') | translate }}</p>
           </div>
         </div>
 
         <div class="information-grid" [class.information-grid--meal]="!isRecipe">
           <label class="field field--name">
-            <span>{{ (isRecipe ? 'RECIPE_NAME' : 'MEAL_TITLE') | translate }}</span>
+            <span>{{ (isRecipe ? 'RECIPE_NAME' : 'MEAL_TITLE') | translate }} <b class="required-mark" aria-hidden="true">*</b></span>
             <input
               [(ngModel)]="name"
               #nameControl="ngModel"
@@ -311,7 +263,7 @@
           </label>
 
           <label class="field">
-            <span>{{ 'MEAL_TYPE' | translate }}</span>
+            <span>{{ 'MEAL_TYPE' | translate }} <b class="required-mark" aria-hidden="true">*</b></span>
             <select [(ngModel)]="mealType" #mealTypeControl="ngModel">
               <option value="">{{ 'MEAL_TYPE' | translate }}</option>
               <option *ngFor="let type of mealTypes" [value]="type.value">
@@ -324,7 +276,8 @@
 
           <label class="field" *ngIf="isRecipe">
             <span>{{ 'SERVINGS' | translate }}</span>
-            <input type="number" min="1" step="any" [(ngModel)]="servings" #servingsControl="ngModel" />
+            <input type="number" min="1" step="1" [(ngModel)]="servings" #servingsControl="ngModel" />
+            <small class="field-help">{{ 'RECIPE_SERVINGS_HELP' | translate }}</small>
             <small class="inline-error" *ngIf="(submitted || servingsControl.touched || servingsControl.dirty) && servingsError">{{ servingsError | translate }}</small>
             <small class="inline-error" *ngIf="fieldErrors['servings']">{{ fieldErrors['servings'] }}</small>
           </label>
@@ -386,184 +339,180 @@
       <section class="builder-card ingredients-card">
         <div class="section-heading section-heading--actions">
           <div class="section-heading__group">
-            <span class="section-heading__icon section-heading__icon--blue">
-              <i-feather name="edit-3"></i-feather>
-            </span>
+            <span class="section-heading__icon section-heading__icon--step">2</span>
             <div>
-              <h3>{{ 'INGREDIENTS' | translate }}</h3>
-              <p>{{ 'INGREDIENTS_SUBTITLE' | translate }}</p>
+              <h3>{{ 'INGREDIENTS' | translate }} <b class="required-mark" aria-hidden="true">*</b></h3>
+              <p>{{ 'RECIPE_INGREDIENTS_HELP' | translate }}</p>
             </div>
           </div>
-          <button class="blue-button" type="button" (click)="openIngredientPicker()">
-            <i-feather name="plus"></i-feather>
-            {{ 'ADD_INGREDIENTS' | translate }}
-          </button>
-        </div>
-
-        <div class="food-picker" *ngIf="ingredientPickerOpen">
-          <div class="food-picker__search">
-            <i-feather name="search"></i-feather>
-            <input
-              [(ngModel)]="foodSearch"
-              (input)="searchFoods()"
-              [placeholder]="'SEARCH_FOODS_DATABASE' | translate"
-              autofocus
-            />
-            <button type="button" [attr.aria-label]="'CLOSE_FOOD_SEARCH' | translate" (click)="closeIngredientPicker()">
-              <i-feather name="x"></i-feather>
+          <div class="section-heading__buttons">
+            <button class="ghost-button" type="button" (click)="addManualIngredient()" [title]="'MANUAL_INGREDIENT_SUBTITLE' | translate">
+              <i-feather name="edit-2"></i-feather>
+              {{ 'ADD_MANUAL_INGREDIENT' | translate }}
+            </button>
+            <button class="blue-button" type="button" (click)="openIngredientPicker()">
+              <i-feather name="plus"></i-feather>
+              {{ 'ADD_INGREDIENTS' | translate }}
             </button>
           </div>
-
-          <div class="food-picker__results">
-            <div class="food-picker__state" *ngIf="searchingFoods">{{ 'SEARCHING_FOODS' | translate }}</div>
-            <button
-              class="food-result"
-              type="button"
-              *ngFor="let food of foods; trackBy: trackByFood"
-              [disabled]="foodAlreadyAdded(food) || saving"
-                  (click)="addFood(food)"
-            >
-              <span class="food-result__thumb">
-                <img *ngIf="food.image || food.imageUrl" [src]="food.image || food.imageUrl" alt="" />
-                <i-feather *ngIf="!food.image && !food.imageUrl" name="package"></i-feather>
-              </span>
-              <span class="food-result__identity">
-                <strong>{{ food.name }}</strong>
-                <small>{{ food.category || food.foodGroup || ('FOOD' | translate) }}</small>
-              </span>
-              <span class="food-result__energy">
-                {{ (food.energy || food.calories || 0) | number:'1.0-0' }} kcal /
-                {{ food.servingSize || 100 }}{{ food.servingUnit || 'g' }}
-              </span>
-            </button>
-
-            <div class="food-picker__state" *ngIf="!searchingFoods && !foods.length">
-              {{ 'NO_DATABASE_FOODS_FOUND' | translate }}
-            </div>
-          </div>
-
-          <button class="manual-result" *ngIf="isRecipe" type="button" (click)="addManualIngredient()">
-            <span><i-feather name="edit-2"></i-feather></span>
-            <span>
-              <strong>{{ 'ADD_MANUAL_INGREDIENT' | translate }}</strong>
-              <small>{{ 'MANUAL_INGREDIENT_SUBTITLE' | translate }}</small>
-            </span>
-          </button>
         </div>
 
-        <div class="ingredient-empty" *ngIf="!ingredients.length && !ingredientPickerOpen">
+        <div class="ingredient-empty" *ngIf="!ingredients.length">
           <i-feather name="shopping-bag"></i-feather>
           <strong>{{ 'MEAL_LOOKING_EMPTY' | translate }}</strong>
           <span>{{ 'ADD_ITEM_ABOVE' | translate }}</span>
         </div>
 
-        <div class="ingredient-list" *ngIf="ingredients.length">
-          <ng-container *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
-          <article
-            class="ingredient-row"
-            draggable="true"
-            (dragstart)="onIngredientDragStart(i)"
-            (dragover)="$event.preventDefault()"
-            (drop)="onIngredientDrop(i)"
-          >
-            <span class="drag-handle" [title]="'DRAG_TO_REORDER' | translate">
-              <i-feather name="more-vertical"></i-feather>
-            </span>
-
-            <span class="ingredient-row__thumb">
-              <img
-                *ngIf="!ingredient.manual && (ingredient.foodRef?.image || ingredient.foodRef?.imageUrl)"
-                [src]="ingredient.foodRef.image || ingredient.foodRef.imageUrl"
-                alt=""
-              />
-              <i-feather
-                *ngIf="ingredient.manual || (!ingredient.foodRef?.image && !ingredient.foodRef?.imageUrl)"
-                [name]="ingredient.manual ? 'edit-2' : 'package'"
-              ></i-feather>
-            </span>
-
-            <div class="ingredient-row__identity">
-              <ng-container *ngIf="ingredient.manual">
-              <input
-                [(ngModel)]="ingredient.name" #ingredientNameControl="ngModel"
-                [class.field-control--invalid]="(submitted || ingredientNameControl.touched || ingredientNameControl.dirty) && !ingredient.name.trim()"
-                [placeholder]="'INGREDIENT_NAME' | translate"
-              />
-              <small class="inline-error" *ngIf="(submitted || ingredientNameControl.touched || ingredientNameControl.dirty) && !ingredient.name.trim()">{{ 'MEAL_INGREDIENT_NAME_REQUIRED' | translate }}</small>
-              </ng-container>
-              <strong *ngIf="!ingredient.manual">{{ ingredient.name }}</strong>
-              <small>{{ ingredient.category }}</small>
-              <small class="inline-error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
-            </div>
-
-            <label class="compact-field">
-              <span class="sr-only">{{ 'QUANTITY' | translate }}</span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                [(ngModel)]="ingredient.quantity" #quantityControl="ngModel"
-                [class.field-control--invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
-                [placeholder]="'QUANTITY_SHORT' | translate"
-              />
-              <small class="inline-error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
-              <small class="inline-error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
-            </label>
-
-            <label class="compact-field">
-              <span class="sr-only">{{ 'UNIT' | translate }}</span>
-              <select
-                *ngIf="!ingredient.manual && ingredient.foodRef?.id; else recipeUnitSelect"
-                class="serving-select"
-                [class.field-control--invalid]="submitted && !ingredient.unit.trim()"
-                (change)="onServingChange(ingredient, $any($event.target))"
-              >
-                <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
-                <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
-              </select>
-              <ng-template #recipeUnitSelect>
-                <select
-                  [(ngModel)]="ingredient.unit" #unitControl="ngModel"
-                  [class.field-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
-                >
-                  <option value="" disabled>{{ 'UNIT' | translate }}</option>
-                  <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
-                  <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
-                </select>
-                <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
-              </ng-template>
-              <small class="inline-error" *ngIf="submitted && !ingredient.manual && ingredient.foodRef?.id && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
-            </label>
-
-            <div class="ingredient-row__macros" *ngIf="!ingredient.manual">
-              <span><strong>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</strong>KCAL</span>
-              <span><strong>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}g</strong>P</span>
-              <span><strong>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}g</strong>C</span>
-              <span><strong>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}g</strong>F</span>
-            </div>
-
-            <div class="manual-macros" *ngIf="ingredient.manual">
-              <label><span>Kcal</span><input type="number" min="0" [(ngModel)]="ingredient.calories" placeholder="—" /></label>
-              <label><span>{{ 'PROTEIN' | translate }}</span><input type="number" min="0" [(ngModel)]="ingredient.protein" placeholder="—" /></label>
-              <label><span>{{ 'CARBS' | translate }}</span><input type="number" min="0" [(ngModel)]="ingredient.carbs" placeholder="—" /></label>
-              <label><span>{{ 'FAT' | translate }}</span><input type="number" min="0" [(ngModel)]="ingredient.fat" placeholder="—" /></label>
-            </div>
-
-            <button
-              class="row-delete"
-              type="button"
-              [attr.aria-label]="'REMOVE_INGREDIENT' | translate"
-              (click)="removeIngredient(i)"
-            >
-              <i-feather name="trash-2"></i-feather>
-            </button>
-          </article>
-          <div class="ingredient-serving-form" *ngIf="servingFormRowId === ingredient.id">
-            <p class="serving-form-row__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: ingredient.name } }}</p>
-            <app-food-serving-form [others]="servingOptions(ingredient)" [unitSuggestions]="unitSuggestions" [saving]="servingSaving"
-              (saved)="createServing(ingredient, $event)" (cancelled)="closeServingForm()"></app-food-serving-form>
-            <small class="inline-error" *ngIf="servingError" role="alert">{{ servingError | translate }}</small>
+        <div class="np-foods recipe-foods" *ngIf="ingredients.length">
+          <div class="np-foods__head" aria-hidden="true">
+            <span class="np-foods__head-food">{{ 'INGREDIENTS' | translate }}</span>
+            <span>{{ 'FOOD_PORTIONS' | translate }}</span>
+            <span>{{ 'PROTEIN' | translate }}</span>
+            <span>{{ 'CARBS' | translate }}</span>
+            <span>{{ 'FAT' | translate }}</span>
+            <span class="np-foods__head-kcal">{{ 'CALORIES' | translate }}</span>
+            <span></span>
           </div>
+
+          <ng-container *ngFor="let ingredient of ingredients; let i = index; trackBy: trackByIngredient">
+            <!-- Food from the database: same row as the meals and the meal plans. -->
+            <div
+              class="np-foods__row"
+              *ngIf="!ingredient.manual"
+              draggable="true"
+              [title]="'DRAG_TO_REORDER' | translate"
+              (dragstart)="onIngredientDragStart(i)"
+              (dragover)="$event.preventDefault()"
+              (drop)="onIngredientDrop(i)"
+            >
+              <span class="np-foods__thumb" aria-hidden="true">
+                {{ (ingredient.name || '?').charAt(0).toUpperCase() }}
+                <img
+                  *ngIf="ingredient.foodRef?.image || ingredient.foodRef?.imageUrl"
+                  [src]="ingredient.foodRef.image || ingredient.foodRef.imageUrl"
+                  alt=""
+                  (error)="$any($event.target).hidden = true"
+                />
+              </span>
+
+              <span class="np-foods__name" [title]="ingredient.name">{{ ingredient.name }}</span>
+
+              <div class="np-foods__meta">
+                <div class="np-foods__qty">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    inputmode="decimal"
+                    [(ngModel)]="ingredient.quantity"
+                    #quantityControl="ngModel"
+                    [class.is-invalid]="(submitted || quantityControl.touched || quantityControl.dirty) && !!quantityError(ingredient.quantity)"
+                    [attr.aria-label]="('FOOD_PORTIONS' | translate) + ' · ' + ingredient.name"
+                  />
+                  <span class="np-foods__times" aria-hidden="true">×</span>
+                  <select [attr.aria-label]="('UNIT' | translate) + ' · ' + ingredient.name" (change)="onServingChange(ingredient, $any($event.target))">
+                    <option *ngFor="let serving of servingOptions(ingredient)" [value]="serving.id" [selected]="serving.id === ingredient.servingId">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
+                    <option *ngIf="canAddServing(ingredient)" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
+                  </select>
+                </div>
+
+                <span class="np-foods__macro" [title]="'PROTEIN' | translate">
+                  <i class="np-foods__word">{{ 'PROTEIN' | translate }}</i><i class="np-foods__abbr">{{ 'PROTEIN_ABBR' | translate }}</i>
+                  <b>{{ ingredientTotal(ingredient, 'protein') | number:'1.0-1' }}</b>g
+                </span>
+                <span class="np-foods__macro" [title]="'CARBS' | translate">
+                  <i class="np-foods__word">{{ 'CARBS' | translate }}</i><i class="np-foods__abbr">{{ 'CARBS_ABBR' | translate }}</i>
+                  <b>{{ ingredientTotal(ingredient, 'carbs') | number:'1.0-1' }}</b>g
+                </span>
+                <span class="np-foods__macro" [title]="'FAT' | translate">
+                  <i class="np-foods__word">{{ 'FAT' | translate }}</i><i class="np-foods__abbr">{{ 'FAT_ABBR' | translate }}</i>
+                  <b>{{ ingredientTotal(ingredient, 'fat') | number:'1.0-1' }}</b>g
+                </span>
+              </div>
+
+              <span class="np-foods__kcal"><b>{{ ingredientTotal(ingredient, 'calories') | number:'1.0-0' }}</b>kcal</span>
+
+              <button
+                type="button"
+                class="np-foods__remove"
+                [title]="'REMOVE_INGREDIENT' | translate"
+                [attr.aria-label]="('REMOVE_INGREDIENT' | translate) + ' · ' + ingredient.name"
+                (click)="removeIngredient(i)"
+              >
+                <i-feather name="trash-2"></i-feather>
+              </button>
+
+              <small class="np-foods__error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
+              <small class="np-foods__error" *ngIf="(submitted || quantityControl.touched || quantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
+              <small class="np-foods__error" *ngIf="fieldErrors['foods[' + i + '].quantity']">{{ fieldErrors['foods[' + i + '].quantity'] }}</small>
+            </div>
+
+            <!-- Manual ingredient: the coach types its name, quantity, unit and values. -->
+            <article
+              class="manual-ingredient"
+              *ngIf="ingredient.manual"
+              draggable="true"
+              (dragstart)="onIngredientDragStart(i)"
+              (dragover)="$event.preventDefault()"
+              (drop)="onIngredientDrop(i)"
+            >
+              <div class="manual-ingredient__top">
+                <span class="np-foods__thumb" aria-hidden="true"><i-feather name="edit-2"></i-feather></span>
+                <label class="manual-ingredient__name">
+                  <span>{{ 'INGREDIENT_NAME' | translate }} <b class="required-mark" aria-hidden="true">*</b></span>
+                  <input
+                    [(ngModel)]="ingredient.name"
+                    #ingredientNameControl="ngModel"
+                    [class.field-control--invalid]="(submitted || ingredientNameControl.touched || ingredientNameControl.dirty) && !ingredient.name.trim()"
+                    [placeholder]="'INGREDIENT_NAME' | translate"
+                  />
+                </label>
+                <button type="button" class="np-foods__remove" [attr.aria-label]="'REMOVE_INGREDIENT' | translate" (click)="removeIngredient(i)">
+                  <i-feather name="trash-2"></i-feather>
+                </button>
+              </div>
+              <small class="inline-error" *ngIf="(submitted || ingredientNameControl.touched || ingredientNameControl.dirty) && !ingredient.name.trim()">{{ 'MEAL_INGREDIENT_NAME_REQUIRED' | translate }}</small>
+
+              <div class="manual-ingredient__fields">
+                <label>
+                  <span>{{ 'QUANTITY' | translate }}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    [(ngModel)]="ingredient.quantity"
+                    #manualQuantityControl="ngModel"
+                    [class.field-control--invalid]="(submitted || manualQuantityControl.touched || manualQuantityControl.dirty) && !!quantityError(ingredient.quantity)"
+                  />
+                </label>
+                <label>
+                  <span>{{ 'UNIT' | translate }}</span>
+                  <select
+                    [(ngModel)]="ingredient.unit"
+                    #unitControl="ngModel"
+                    [class.field-control--invalid]="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()"
+                  >
+                    <option value="" disabled>{{ 'UNIT' | translate }}</option>
+                    <option *ngFor="let unit of units" [value]="unit">{{ unit }}</option>
+                    <option *ngIf="ingredient.unit && !units.includes(ingredient.unit)" [value]="ingredient.unit">{{ ingredient.unit }}</option>
+                  </select>
+                </label>
+                <label><span>Kcal</span><input type="number" min="0" [(ngModel)]="ingredient.calories" placeholder="0" /></label>
+                <label><span>{{ 'PROTEIN' | translate }} (g)</span><input type="number" min="0" [(ngModel)]="ingredient.protein" placeholder="0" /></label>
+                <label><span>{{ 'CARBS' | translate }} (g)</span><input type="number" min="0" [(ngModel)]="ingredient.carbs" placeholder="0" /></label>
+                <label><span>{{ 'FAT' | translate }} (g)</span><input type="number" min="0" [(ngModel)]="ingredient.fat" placeholder="0" /></label>
+              </div>
+              <small class="inline-error" *ngIf="(submitted || manualQuantityControl.touched || manualQuantityControl.dirty) && quantityError(ingredient.quantity)">{{ quantityError(ingredient.quantity) | translate }}</small>
+              <small class="inline-error" *ngIf="(submitted || unitControl.touched || unitControl.dirty) && !ingredient.unit.trim()">{{ 'MEAL_UNIT_REQUIRED' | translate }}</small>
+              <small class="inline-error" *ngIf="(submitted || foodsTouched) && duplicateIngredient(ingredient)">{{ 'MEAL_DUPLICATE_INGREDIENT' | translate }}</small>
+            </article>
+
+            <div class="np-foods__extra" *ngIf="servingFormRowId === ingredient.id">
+              <p class="serving-form-row__title">{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: ingredient.name } }}</p>
+              <app-food-serving-form [others]="servingOptions(ingredient)" [unitSuggestions]="unitSuggestions" [saving]="servingSaving"
+                (saved)="createServing(ingredient, $event)" (cancelled)="closeServingForm()"></app-food-serving-form>
+              <small class="inline-error" *ngIf="servingError" role="alert">{{ servingError | translate }}</small>
+            </div>
           </ng-container>
         </div>
 
@@ -574,18 +523,31 @@
           {{ 'INGREDIENT_VALIDATION' | translate }}
         </div>
 
-        <div class="ingredients-note" *ngIf="isRecipe">
+        <div class="ingredients-note" *ngIf="isRecipe && hasManualIngredient">
           <span>{{ 'NUTRITION_MANUAL' | translate }}</span>
           <small>{{ 'EMPTY_FIELDS_COUNT_ZERO' | translate }}</small>
         </div>
       </section>
 
+      <app-meal-totals
+        class="recipe-totals"
+        title="RECIPE_TOTAL"
+        [itemCount]="ingredients.length"
+        [servings]="servings"
+        [perServing]="nutritionView === 'serving'"
+        (perServingChange)="nutritionView = $event ? 'serving' : 'whole'"
+        [calories]="nutritionTotal('calories')"
+        [protein]="nutritionTotal('protein')"
+        [carbs]="nutritionTotal('carbs')"
+        [fat]="nutritionTotal('fat')"
+      ></app-meal-totals>
+
       <section class="builder-card directions-card" *ngIf="isRecipe">
         <div class="section-heading">
-          <span class="section-heading__icon"><i-feather name="list"></i-feather></span>
+          <span class="section-heading__icon section-heading__icon--step">3</span>
           <div>
             <h3>{{ 'DIRECTIONS' | translate }}</h3>
-            <p>{{ 'DIRECTIONS_SUBTITLE' | translate }}</p>
+            <p>{{ 'RECIPE_DIRECTIONS_HELP' | translate }}</p>
           </div>
         </div>
 
@@ -613,34 +575,6 @@
         </button>
       </section>
 
-      <section class="nutrition-section">
-        <div class="nutrition-section__header">
-          <h3>{{ 'NUTRITION' | translate }}</h3>
-        </div>
-
-        <div class="nutrition-cards">
-          <article>
-            <span><i-feather name="zap"></i-feather></span>
-            <strong>{{ nutritionTotal('calories') | number:'1.0-0' }}</strong>
-            <small>{{ 'CALORIES' | translate }}</small>
-          </article>
-          <article>
-            <span><i-feather name="target"></i-feather></span>
-            <strong>{{ nutritionTotal('protein') | number:'1.0-1' }}<em>g</em></strong>
-            <small>{{ 'PROTEIN' | translate }}</small>
-          </article>
-          <article>
-            <span><i-feather name="grid"></i-feather></span>
-            <strong>{{ nutritionTotal('carbs') | number:'1.0-1' }}<em>g</em></strong>
-            <small>{{ 'CARBS' | translate }}</small>
-          </article>
-          <article>
-            <span><i-feather name="droplet"></i-feather></span>
-            <strong>{{ nutritionTotal('fat') | number:'1.0-1' }}<em>g</em></strong>
-            <small>{{ 'FAT' | translate }}</small>
-          </article>
-        </div>
-      </section>
 
       <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
     </main>
@@ -666,7 +600,7 @@
           <button
             class="button button--secondary"
             type="button"
-            [disabled]="!canSaveDraft"
+            [disabled]="saving"
             (click)="save(true)"
           >
             {{ 'SAVE_DRAFT' | translate }}
@@ -674,7 +608,8 @@
           <button
             class="button button--primary"
             type="button"
-            [disabled]="!canSave"
+            [disabled]="saving"
+            [attr.aria-busy]="saving"
             (click)="save(false)"
           >
             {{ (saving ? 'SAVING' : 'SAVE_RECIPE') | translate }}
@@ -687,7 +622,8 @@
           <button
             class="button button--primary"
             type="button"
-            [disabled]="!canSave"
+            [disabled]="saving"
+            [attr.aria-busy]="saving"
             (click)="save(false)"
           >
             {{ (saving ? 'SAVING' : 'SAVE_MEAL') | translate }}
@@ -700,3 +636,11 @@
     </footer>
   </section>
 </div>
+
+<app-add-food-modal
+  *ngIf="ingredientPickerOpen"
+  [canEditCatalog]="isAdmin"
+  [excludedIds]="addedFoodIds"
+  (added)="onFoodPicked($event)"
+  (closed)="closeIngredientPicker()"
+></app-add-food-modal>

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { MySubscriptionComponent } from 'app/components/my-subscription/my-subscription.component';
+import { CancelSubscriptionDialogComponent } from 'app/components/my-subscription/cancel-subscription-dialog/cancel-subscription-dialog.component';
 
 /**
  * "Plan & Billing" tab of the coach settings: the same information and actions as "My subscription" (SUB-37),
@@ -11,7 +12,7 @@ import { MySubscriptionComponent } from 'app/components/my-subscription/my-subsc
 @Component({
   selector: 'app-plan-billing-tab',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, CancelSubscriptionDialogComponent],
   templateUrl: './plan-billing-tab.component.html',
   styleUrl: './plan-billing-tab.component.scss',
 })

@@ -18,11 +18,15 @@ import localeFr from '@angular/common/locales/fr';
 registerLocaleData(localeFr);
 
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
+
+/** Last pictures of each client (with their signed links, valid a few hours): shown at once on the next visit. */
+const PICTURES_SNAPSHOT = new Map<string, { at: number; pictures: any[] }>();
 
 @Component({
   selector: 'app-progress-pictures',
   standalone: true,
-  imports: [CommonModule, TranslateModule, AddProgressPictureModalComponent],
+  imports: [CommonModule, TranslateModule, AddProgressPictureModalComponent, SectionLoaderComponent],
   templateUrl: './progress-pictures.component.html',
   styleUrls: ['./progress-pictures.component.scss']
 })
@@ -81,54 +85,47 @@ export class ProgressPicturesComponent implements OnInit {
   loadPictures(): void {
     if (!this.clientId) return;
 
-    this.loading = true;
+    const clientId = this.clientId;
+    const known = PICTURES_SNAPSHOT.get(clientId);
+    if (known && Date.now() - known.at < 10 * 60_000) this.pictures = known.pictures; // signed links still valid
+    this.loading = !known;
     this.error = null;
 
-    const folderPath = `${this.progressPicturesDirectory}/${this.clientId}`;
+    const folderPath = `${this.progressPicturesDirectory}/${clientId}`;
 
-    this.progressPicturesService
-      .getProgressPicturesByClient(this.clientId)
+    // The pictures and the fresh links of their folder are read at the same time (they were read one after the other).
+    forkJoin({
+      pictures: this.progressPicturesService.getProgressPicturesByClient(clientId, true), // shown in place by the section loader
+      freshUrls: this.documentService.getFilesInFolder(folderPath, true).pipe(
+        catchError((err) => {
+          console.error('getFilesInFolder failed:', err);
+          return of([] as string[]);
+        })
+      ),
+    })
       .pipe(
-        switchMap((pictures) => {
+        map(({ pictures, freshUrls }) => {
           const backendPictures = (pictures ?? []).sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
+          if (!backendPictures.length || !freshUrls?.length) return backendPictures;
 
-          if (!backendPictures.length) {
-            return of([]);
-          }
-
-          return this.documentService.getFilesInFolder(folderPath).pipe(
-            map((freshUrls: string[]) => {
-              if (!freshUrls?.length) {
-                return backendPictures;
-              }
-
-              return backendPictures.map((picture) => {
-                const currentFileName = this.extractFileName(picture.imageUrl);
-
-                const freshUrl = freshUrls.find((url) => {
-                  const freshFileName = this.extractFileName(url);
-                  return !!currentFileName && currentFileName === freshFileName;
-                });
-
-                return {
-                  ...picture,
-                  imageUrl: freshUrl || picture.imageUrl
-                };
-              });
-            }),
-            catchError((err) => {
-              console.error('getFilesInFolder failed:', err);
-              return of(backendPictures);
-            })
-          );
+          return backendPictures.map((picture) => {
+            const currentFileName = this.extractFileName(picture.imageUrl);
+            const freshUrl = freshUrls.find((url) => {
+              const freshFileName = this.extractFileName(url);
+              return !!currentFileName && currentFileName === freshFileName;
+            });
+            return { ...picture, imageUrl: freshUrl || picture.imageUrl };
+          });
         }),
         finalize(() => (this.loading = false))
       )
       .subscribe({
         next: (pictures) => {
+          if (clientId !== this.clientId) return;
           this.pictures = pictures;
+          PICTURES_SNAPSHOT.set(clientId, { at: Date.now(), pictures });
         },
         error: (err) => {
           console.error('loadPictures failed:', err);

@@ -5,5 +5,5 @@ import { CoachingAccessService } from '../../service/coaching-access.service';
 export const coachingAccessGuard: CanActivateFn = async () => {
   const access = inject(CoachingAccessService);
   const router = inject(Router);
-  return await access.refresh() ? true : router.createUrlTree(['/coaching-unavailable']);
+  return await access.allowed() ? true : router.createUrlTree(['/coaching-unavailable']);
 };

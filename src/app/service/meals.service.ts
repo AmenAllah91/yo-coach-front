@@ -21,6 +21,8 @@ export interface MealTemplateDto {
 export class MealsService {
   private readonly base = `${environment.baseApiUrl}/api/meals`;
   private readonly templatesBase = `${environment.baseApiUrl}/api/meal-templates`;
+  /** Writes show their own progress (button, optimistic list): no full-screen loader. */
+  private readonly quiet = { headers: { 'X-Skip-Loader': 'true' } };
 
   constructor(private http: HttpClient) {}
 
@@ -49,19 +51,19 @@ export class MealsService {
   }
 
   createMeal(payload: any): Observable<any> {
-    return this.http.post<any>(this.base, payload);
+    return this.http.post<any>(this.base, payload, this.quiet);
   }
 
   updateMeal(id: string, payload: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/${id}`, payload);
+    return this.http.put<any>(`${this.base}/${id}`, payload, this.quiet);
   }
 
   deleteMeal(id: string): Observable<any> {
-    return this.http.delete<any>(`${this.base}/${id}`);
+    return this.http.delete<any>(`${this.base}/${id}`, this.quiet);
   }
 
   duplicateMeal(id: string): Observable<any> {
-    return this.http.post<any>(`${this.base}/${id}/duplicate`, {});
+    return this.http.post<any>(`${this.base}/${id}/duplicate`, {}, this.quiet);
   }
 
   getTemplates(): Observable<MealTemplateDto[]> {
@@ -69,6 +71,6 @@ export class MealsService {
   }
 
   saveTemplate(payload: MealTemplateDto): Observable<any> {
-    return this.http.post<any>(this.templatesBase, payload);
+    return this.http.post<any>(this.templatesBase, payload, this.quiet);
   }
 }

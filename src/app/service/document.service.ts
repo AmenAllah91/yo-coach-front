@@ -19,9 +19,12 @@ export class DocumentService {
     return this.http.post<{ photoUrl: string }>(`${this.apiUrl}/api/users/me/public-photo`, formData);
   }
 
-  getFilesInFolder(path: string): Observable<string[]> {
+  getFilesInFolder(path: string, skipLoader = false): Observable<string[]> {
     const url = `${this.documentUrl}/files/list`;
-    return this.http.get<string[]>(url, { params: { path } });
+    return this.http.get<string[]>(url, {
+      params: { path },
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   simpleUploadPhoto(file: File,directoryUrl:string):Observable<any>
@@ -50,10 +53,10 @@ export class DocumentService {
       headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
     });
   }
-  simpleGenerateFileUrl(pathToFile:string){
+  simpleGenerateFileUrl(pathToFile:string, skipLoader = false){
     const getPhototUrl = `${this.documentUrl}/client-photo/client-photo/generate-url`;
     const body = {objectPath:  pathToFile};
-    return this.http.post(getPhototUrl, body, {responseType: 'text'});
+    return this.http.post(getPhototUrl, body, {responseType: 'text', headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {}});
   }
 
   refreshStoredFileUrl(storedUrl: string): Observable<string> {
@@ -70,7 +73,7 @@ export class DocumentService {
         return throwError(() => new Error('Invalid stored document URL'));
       }
 
-      return this.simpleGenerateFileUrl(segments.slice(1).join('/'));
+      return this.simpleGenerateFileUrl(segments.slice(1).join('/'), true); // a display refresh: no full-screen loader
     } catch (error) {
       return throwError(() => error);
     }

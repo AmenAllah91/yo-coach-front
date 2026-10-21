@@ -1,0 +1,39 @@
+<div class="assign-overlay" *ngIf="showPrompt">
+  <div class="assign-card" role="dialog" aria-modal="true">
+    <button class="assign-close" type="button" (click)="notNow()" [attr.aria-label]="'CLOSE' | translate">×</button>
+    <div class="assign-icon">{{ icon }}</div>
+    <h2>{{ label | translate }}</h2>
+    <p>{{ 'ASSIGN_CREATED_ITEM_PROMPT' | translate: { title: title } }}</p>
+    <div class="assign-actions">
+      <button class="assign-primary" type="button" (click)="openForm()">{{ 'ASSIGN_NOW' | translate }}</button>
+      <button class="assign-secondary" type="button" (click)="notNow()">{{ 'NOT_NOW' | translate }}</button>
+    </div>
+  </div>
+</div>
+
+<div class="assign-overlay" *ngIf="showForm">
+  <div class="assign-card assign-card--form" role="dialog" aria-modal="true">
+    <button class="assign-close" type="button" (click)="closeForm()" [attr.aria-label]="'CLOSE' | translate">×</button>
+    <div class="assign-icon">{{ icon }}</div>
+    <h2>{{ 'ASSIGN_ITEM' | translate: { title: title } }}</h2>
+    <p>{{ 'SELECT_CLIENT_AND_DATE' | translate: { dateLabel: ((dateLabel | translate) | lowercase) } }}</p>
+
+    <label class="assign-label" for="post-create-client">{{ 'CLIENT' | translate }}</label>
+    <select id="post-create-client" class="assign-input" [(ngModel)]="clientId">
+      <option value="" disabled>{{ 'SELECT_CLIENT' | translate }}</option>
+      <option *ngFor="let client of clients" [value]="client.id">{{ client.name }}</option>
+    </select>
+
+    <label class="assign-label" for="post-create-date">{{ dateLabel | translate }}</label>
+    <input id="post-create-date" class="assign-input" type="date" [(ngModel)]="date" />
+
+    <div class="assign-error" *ngIf="error">{{ error }}</div>
+
+    <div class="assign-actions">
+      <button class="assign-primary" type="button" [disabled]="saving" (click)="confirm()">
+        {{ (saving ? 'ASSIGNING' : 'ASSIGN') | translate }}
+      </button>
+      <button class="assign-secondary" type="button" [disabled]="saving" (click)="closeForm()">{{ 'CANCEL' | translate }}</button>
+    </div>
+  </div>
+</div>

@@ -395,7 +395,7 @@ export const items: RouteInfo[] = [
   },
   {
     path: 'progress-pictures',
-    title: 'PROGRESS_PICTURES',
+    title: 'SIDEBAR_PROGRESS',
     iconType: 'feather',
     icon: 'camera',
     class: '',

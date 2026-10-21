@@ -8,13 +8,15 @@ import {
 } from 'app/service/body-measurements.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ClientService } from 'app/service/client.service';
+import { ClientProfileCacheService } from 'app/service/client-profile-cache.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MEASUREMENT_TYPES, MeasurementTypeItem } from 'app/models/measurement-type.model';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 
 @Component({
   selector: 'app-body-measurements',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, SectionLoaderComponent],
   templateUrl: './body-measurements.component.html',
   styleUrls: ['./body-measurements.component.scss'],
 })
@@ -34,6 +36,8 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
   @Input() targetWeight: number | null | undefined = null;
 
   loading = false;
+  /** The measurements arrived once: the chart and history show from then on (the section loader before). */
+  loaded = false;
   saving = false;
   deletingId: string | null = null;
   error: string | null = null;
@@ -65,7 +69,8 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     private coachSettingsService: CoachSettingsService,
     private clientService: ClientService,
     private translate: TranslateService,
-    private location: Location
+    private location: Location,
+    private profileCache: ClientProfileCacheService,
   ) {}
 
   ngOnInit(): void {
@@ -105,18 +110,30 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.loading = true;
+    const clientId = this.clientId;
     this.error = null;
+    // The client profile already read them (dashboard): shown at once, refreshed when older than a minute.
+    const known = this.profileCache.snapshot<BodyMeasurement[]>('measurements', clientId);
+    if (known) {
+      this.measurements = known;
+      this.loaded = true;
+      if (this.profileCache.isFresh('measurements', clientId)) return;
+    }
+    this.loading = !known;
 
-    this.bodyMeasurementsService.getByClient(this.clientId).subscribe({
+    // Shown in place by the section loader, without the full-screen loader.
+    this.profileCache.load<BodyMeasurement[]>('measurements', '', clientId).subscribe({
       next: (items) => {
+        if (clientId !== this.clientId) return;
         this.measurements = items || [];
         this.loading = false;
+        this.loaded = true;
       },
       error: (err) => {
         console.error('loadMeasurements failed:', err);
         this.error = this.translate.instant('LOAD_MEASUREMENTS_ERROR');
         this.loading = false;
+        this.loaded = true;
       },
     });
   }
@@ -132,7 +149,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.bodyMeasurementsService.getClientProfile(this.clientId).subscribe({
+    this.bodyMeasurementsService.getClientProfile(this.clientId, true).subscribe({
       next: (profile) => {
         this.targetWeight = this.toNullableNumber(profile?.targetWeight);
       },
@@ -192,6 +209,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       next: () => {
         this.saving = false;
         this.showAddModal = false;
+        this.profileCache.forget('measurements', this.clientId);
         this.loadMeasurements();
       },
       error: (err) => {
@@ -474,6 +492,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     this.bodyMeasurementsService.delete(item.id).subscribe({
       next: () => {
         this.measurements = this.measurements.filter((measurement) => measurement.id !== item.id);
+        this.profileCache.forget('measurements', this.clientId);
         this.deletingId = null;
       },
       error: (err) => {
@@ -525,7 +544,7 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
     if (!this.clientId) return;
 
     if (this.clientId === sessionStorage.getItem('userId')) {
-      this.coachSettingsService.loadConfig().subscribe({
+      this.coachSettingsService.loadConfig(true).subscribe({
         next: (config) => {
           this.weightUnit = config.defaults?.weightUnit === 'lbs' ? 'lbs' : 'kg';
           this.measurementUnit = config.defaults?.measurementUnit === 'in' ? 'in' : 'cm';
@@ -535,12 +554,27 @@ export class BodyMeasurementsComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.clientService.getClientById(this.clientId).subscribe({
+    // A coach looking at their own client: the units are the coach's own settings (already loaded and shared).
+    const knownClient = this.profileCache.snapshot<any>('client', this.clientId);
+    const knownCoachId = knownClient?.coachId || knownClient?.coach?.id;
+    if (knownCoachId && knownCoachId === sessionStorage.getItem('userId')) {
+      this.coachSettingsService.loadConfig(true).subscribe({
+        next: (config) => {
+          this.weightUnit = config.defaults?.weightUnit === 'lbs' ? 'lbs' : 'kg';
+          this.measurementUnit = config.defaults?.measurementUnit === 'in' ? 'in' : 'cm';
+        },
+        error: (err) => console.warn('Could not load coach unit preferences:', err),
+      });
+      return;
+    }
+
+    // The units only refine the display (the cached ones are shown meanwhile): no full-screen loader.
+    this.clientService.getClientById(this.clientId, true).subscribe({
       next: (client) => {
         const coachId = client.coachId || client.coach?.id;
         if (!coachId) return;
 
-        this.coachSettingsService.getConfigForCoach(coachId).subscribe({
+        this.coachSettingsService.getConfigForCoach(coachId, true).subscribe({
           next: (config) => {
             this.weightUnit = config.defaults?.weightUnit === 'lbs' ? 'lbs' : 'kg';
             this.measurementUnit = config.defaults?.measurementUnit === 'in' ? 'in' : 'cm';

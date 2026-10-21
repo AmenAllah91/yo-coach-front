@@ -1,9 +1,12 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { finalize, forkJoin, skip } from 'rxjs';
+import { ClientPlanEmptyComponent } from '../client-plan-empty/client-plan-empty.component';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
@@ -16,7 +19,7 @@ type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 
 @Component({
   selector: 'app-workouts-client-tab',
   standalone: true,
-  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, WorkoutPublicationBadgeComponent],
+  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, WorkoutPublicationBadgeComponent, SectionLoaderComponent, ClientPlanEmptyComponent],
   templateUrl: './workouts-client-tab.component.html',
   styleUrl: './workouts-client-tab.component.scss',
 })
@@ -24,6 +27,9 @@ export class WorkoutsClientTabComponent implements OnInit {
   @Input() clientId!: string;
   @Input() coachId!: string;
   @Output() assignNew = new EventEmitter<void>();
+  /** The programs arrived once: later reloads (filters, pages, assignments) keep the list on screen. */
+  loaded = false;
+  private readonly destroyRef = inject(DestroyRef);
   workoutPlan: WorkoutPlan[] = [];
   activeWorkoutPrograms: WorkoutPlan[] = [];
   activeTab: 'ALL' | 'APP' | 'FILES' = 'ALL';
@@ -66,23 +72,29 @@ export class WorkoutsClientTabComponent implements OnInit {
   private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
 
   ngOnInit(): void {
-    this.coachSettingsService.loadConfig().subscribe({
-      next: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        if (!this.workoutFileEnabled && this.activeTab === 'FILES') {
-          this.activeTab = 'ALL';
-        }
-        if (this.clientId && this.coachId) {
+    // The client profile refreshes the coach settings when it opens: the programs load right away with them,
+    // and load again only if the file option turns out different.
+    this.applyWorkoutFileSetting();
+    this.coachSettingsService.configChanges$
+      .pipe(skip(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const before = `${this.workoutFileEnabled}|${this.activeTab}`;
+        this.applyWorkoutFileSetting();
+        if (before !== `${this.workoutFileEnabled}|${this.activeTab}` && this.clientId && this.coachId) {
           this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
         }
-      },
-      error: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        if (this.clientId && this.coachId) {
-          this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
-        }
-      },
-    });
+      });
+
+    if (this.clientId && this.coachId) {
+      this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+    }
+  }
+
+  private applyWorkoutFileSetting(): void {
+    this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+    if (!this.workoutFileEnabled && this.activeTab === 'FILES') {
+      this.activeTab = 'ALL';
+    }
   }
 
   isFileWorkoutProgram(program: WorkoutPlan): boolean {
@@ -150,6 +162,13 @@ export class WorkoutsClientTabComponent implements OnInit {
 
   get allOtherPrograms(): WorkoutPlan[] {
     return this.displayedPrograms;
+  }
+
+  /** No program at all for this client (not only for the chosen filter, type or page). */
+  get hasNoProgram(): boolean {
+    return !this.hasActivePrograms() && this.allOtherPrograms.length === 0
+      // Without the files option the tab always shows the app programs: that is the full list too.
+      && this.allProgramsFilter === 'ALL' && (this.activeTab === 'ALL' || !this.workoutFileEnabled) && this.workoutPage === 0;
   }
 
   hasActivePrograms(): boolean {
@@ -318,7 +337,8 @@ export class WorkoutsClientTabComponent implements OnInit {
         backendType,
         'ACTIVE',
         'ALL',
-        'RECOMMENDED'
+        'RECOMMENDED',
+        true
       ),
       allPrograms: this.workoutService.getWorkoutByCoachIdAndClient(
         idCoach,
@@ -328,9 +348,10 @@ export class WorkoutsClientTabComponent implements OnInit {
         backendType,
         'NON_ACTIVE',
         this.allProgramsFilter,
-        this.allProgramsSort
+        this.allProgramsSort,
+        true
       ),
-    }).subscribe(({ active, allPrograms }) => {
+    }).pipe(finalize(() => (this.loaded = true))).subscribe(({ active, allPrograms }) => {
         const activePrograms = this.normalizeAndDedupeWorkoutPrograms(active.content || [])
           .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramEndDateAsc(a, b));
         const dedupedPrograms = this.normalizeAndDedupeWorkoutPrograms(allPrograms.content || [])

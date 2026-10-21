@@ -1,0 +1,55 @@
+// Coach dashboard palette (YoCoach brand #44b4df, neutral slate surfaces as in the admin dashboard).
+$brand: #44b4df;
+$brand-strong: #1f8fbd;
+$brand-soft: #e8f5fb;
+$ink: #0f172a;
+$ink-soft: #334155;
+$muted: #64748b;
+$faint: #94a3b8;
+$line: #e2e8f0;
+$line-soft: #f1f4f8;
+$line-strong: #d9e2ec;
+$surface: #ffffff;
+$page: #f8fafc;
+$danger: #c2412d;
+$danger-soft: #fdeeea;
+$warn: #b7791f;
+$warn-soft: #fdf5e4;
+$success: #15803d;
+$success-soft: #eaf7ee;
+$violet: #6d4fc9;
+$violet-soft: #f0ecfb;
+$radius: 12px;
+$shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .03);
+
+@mixin card {
+  background: $surface;
+  border: 1px solid $line;
+  border-radius: $radius;
+  box-shadow: $shadow;
+}
+
+// Pastel avatars, one tone per client (see avatarTone()).
+$avatar-tones: (
+  0: (#e6f2fa, #1f78ad),
+  1: (#e7f6ed, #1d8450),
+  2: (#efebfb, #6a4fc4),
+  3: (#fdf0e3, #b4661c),
+  4: (#fbe9ef, #b0416b),
+);
+
+@mixin avatar {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+  background: #e6f2fa; color: #1f78ad; font-size: 11.5px; font-weight: 700; letter-spacing: .02em;
+  img { width: 100%; height: 100%; object-fit: cover; }
+  @each $tone, $pair in $avatar-tones {
+    &.tone-#{$tone} { background: nth($pair, 1); color: nth($pair, 2); }
+  }
+}
+
+// Pale blue outlined action of the mockup ("Examiner").
+@mixin soft-action {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border: 1px solid #bfe1f2; border-radius: 6px;
+  background: #eef8fd; color: $brand-strong; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer;
+  &:hover { background: #e0f2fb; border-color: #9fd2ec; }
+}

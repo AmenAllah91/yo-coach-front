@@ -1,5 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { catchError, forkJoin, of, Subject, takeUntil } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -75,6 +75,10 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
 
   private readonly formNameMap = new Map<string, string>();
 
+  /** Coach "client view" preview: this client's check-ins, read only (answers can be viewed, nothing is sent). */
+  @Input() previewClientId = '';
+  @Input() previewMode = false;
+
   constructor(
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
@@ -126,8 +130,10 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set(null);
 
-    this.assignmentsApi
-      .pageMyAssignments(this.pageIndex(), this.pageSize(), 'assignedAt', 'DESC', undefined)
+    const page$ = this.previewMode
+      ? this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(this.pageIndex(), this.pageSize(), 'assignedAt', 'DESC', this.previewClientId)
+      : this.assignmentsApi.pageMyAssignments(this.pageIndex(), this.pageSize(), 'assignedAt', 'DESC', undefined);
+    page$
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
@@ -234,6 +240,8 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
   // ─── Modal methods ────────────────────────────────────────────
 
   openAssignment(a: FormAssignment): void {
+    // Preview: only the answers already sent can be read; an open check-in is the client's to fill.
+    if (this.previewMode && a.status !== 'SUBMITTED') return;
     this.selectedAssignment = a;
     this.isModalOpen = true;
     this.isViewMode = a.status === 'SUBMITTED';
@@ -244,7 +252,7 @@ export class MyAssignmentsComponent implements OnInit, OnDestroy {
     this.modalError.set(null);
     this.modalLoading.set(true);
 
-    if (a.status === 'ASSIGNED') {
+    if (a.status === 'ASSIGNED' && !this.previewMode) {
       this.assignmentsApi.markOpened(a.id).subscribe({ error: () => {} });
     }
 

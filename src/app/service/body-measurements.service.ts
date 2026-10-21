@@ -43,8 +43,10 @@ export class BodyMeasurementsService {
     );
   }
 
-  getClientProfile(clientId: string): Observable<BodyMeasurementUserProfile> {
-    return this.http.get<BodyMeasurementUserProfile>(`${this.usersUrl}/${clientId}`);
+  getClientProfile(clientId: string, skipLoader = false): Observable<BodyMeasurementUserProfile> {
+    return this.http.get<BodyMeasurementUserProfile>(`${this.usersUrl}/${clientId}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   create(payload: BodyMeasurement): Observable<BodyMeasurement> {

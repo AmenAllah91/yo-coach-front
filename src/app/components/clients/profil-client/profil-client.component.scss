@@ -294,10 +294,7 @@ body.client-preview-open { overflow: hidden; }
 .profile-tabs {
   display: flex;
   gap: 30px;
-  border-bottom: 1px solid #dce5ef;
-  margin-top: 14px;
   padding: 0 4px;
-  overflow-x: auto;
 }
 
 .tab-link {
@@ -657,40 +654,15 @@ body.client-preview-open { overflow: hidden; }
   background: #44b4df;
 }
 
-.checkin-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
-.checkin-row {
-  background: #ffffff;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
-}
 
-.checkin-row:hover {
-  border-color: #cbd5f5;
-  background: #f9fafb;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
 
-.checkin-title {
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 4px;
-}
 
-.checkin-date {
-  font-size: 13px;
-  color: #6b7280;
-}
+
+
+
+
+
 
 /* Status pills */
 .status-pill {
@@ -717,81 +689,29 @@ body.client-preview-open { overflow: hidden; }
   color: #d97706;
 }
 
-/* Assigned table */
-.assigned-table {
-  background: #ffffff;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-}
 
-.assigned-header-row,
-.assigned-row {
-  display: grid;
-  grid-template-columns: 3fr 2fr 2fr 1.5fr 1.5fr;
-  align-items: center;
-  padding: 12px 16px;
-}
 
-.assigned-header-row {
-  border-bottom: 1px solid #e5e7eb;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-size: 13px;
-}
 
-.assigned-row {
-  font-size: 14px;
-  border-top: 1px solid #f3f4f6;
-  cursor: pointer;
-}
 
-.assigned-row:first-of-type {
-  border-top: none;
-}
 
-.assigned-row:hover {
-  background: #f9fafb;
-}
 
-.assigned-name {
-  font-weight: 500;
-  color: #111827;
-}
 
-.assigned-date {
-  display: flex;
-  align-items: center;
-  color: #4b5563;
-}
 
-.assigned-date i {
-  margin-right: 6px;
-  font-size: 14px;
-}
 
-.actions-cell {
-  text-align: right;
-}
 
-.link-view {
-  border: none;
-  background: transparent;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #44b4df;
-  cursor: pointer;
-}
 
-.link-view:hover {
-  text-decoration: underline;
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 .text-right {
   text-align: right;
@@ -2831,73 +2751,6 @@ body.client-preview-open { overflow: hidden; }
   color: #44b4df;
 }
 
-/* Summary bar */
-.scheduled-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #4b5563;
-  margin-bottom: 16px;
-}
-.summary-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-}
-.summary-dot--active  { background: #22c55e; }
-.summary-dot--paused  { background: #d1d5db; }
-.summary-label--muted { color: #9ca3af; }
-
-/* Schedule card */
-.schedule-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: box-shadow .18s, border-color .18s;
-}
-.schedule-card:hover {
-  box-shadow: 0 4px 14px rgba(0,0,0,.08);
-  border-color: rgba(68,180,223,.4);
-}
-.schedule-card--paused { opacity: .6; }
-.schedule-card--paused:hover { opacity: .85; }
-
-/* Card header */
-.schedule-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px 10px;
-}
-.schedule-card-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.schedule-status-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.schedule-status-dot--active { background: #22c55e; }
-.schedule-status-dot--paused { background: #d1d5db; }
-
-.schedule-card-title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.schedule-card-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-.schedule-qcount { font-size: 12px; color: #9ca3af; }
 
 /* Frequency badge */
 .freq-badge {
@@ -2928,62 +2781,6 @@ body.client-preview-open { overflow: hidden; }
   border: 1px solid #e5e7eb;
 }
 
-/* Card action buttons */
-.schedule-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-.schedule-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px; height: 30px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 15px;
-  transition: background .15s, color .15s;
-}
-.schedule-action-btn--pause  { color: #f59e0b; }
-.schedule-action-btn--pause:hover  { background: #fffbeb; }
-.schedule-action-btn--resume { color: #22c55e; }
-.schedule-action-btn--resume:hover { background: #f0fdf4; }
-.schedule-action-btn--delete { color: #9ca3af; }
-.schedule-action-btn--delete:hover { background: #fef2f2; color: #ef4444; }
-
-/* Card details grid */
-.schedule-card-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  background: #f9fafb;
-  border-radius: 8px;
-  margin: 0 14px 14px;
-  padding: 12px 14px;
-}
-@media (min-width: 600px) {
-  .schedule-card-details { grid-template-columns: repeat(4, 1fr); }
-}
-.schedule-detail-label {
-  display: block;
-  font-size: 11px;
-  color: #9ca3af;
-  margin-bottom: 4px;
-}
-.schedule-detail-value {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
-}
-.schedule-detail-value--active { color: #44b4df; }
-.schedule-detail-value--muted  { color: #9ca3af; }
 
 /* Day pills */
 .schedule-days { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -4688,14 +4485,7 @@ body.client-preview-open { overflow: hidden; }
 
   .profile-tabs {
     gap: 24px;
-    margin-top: 20px;
   }
-}
-
-.stats-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  margin: clamp(0.65rem, 1.2vw, 0.9rem) 0 clamp(0.6rem, 1.1vw, 0.85rem);
 }
 
 .stats-toggle-btn {
@@ -4725,14 +4515,6 @@ body.client-preview-open { overflow: hidden; }
 
 .stats-toggle-btn i {
   font-size: 0.75rem;
-}
-
-.progress-summary-collapsed .stats-toggle-row {
-  margin-bottom: 0;
-}
-
-.progress-summary-collapsed .profile-tabs {
-  margin-top: 0;
 }
 
 .progress-summary-collapsed .profile-header {
@@ -4767,48 +4549,99 @@ body.client-preview-open { overflow: hidden; }
   padding-top: 0;
 }
 
-.profile-tabs {
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+/* =========================================
+   PROFILE NAVIGATION
+   Row 1: the 5 main tabs and the progress summary button. Row 2, under "Overview" only: its sub-tabs.
+   Nothing scrolls sideways: short of room the button goes above the tabs, then the tabs wrap.
+========================================= */
+.profile-tabs-bar {
+  display: flex;
+  flex-wrap: wrap-reverse; // a wrapped button lands above the tabs, never over them
+  align-items: flex-start; // with wrap-reverse this is the bottom edge: the tabs sit on the bar border
+  gap: 8px 16px;
+  border-bottom: 1px solid #dce5ef;
 }
 
-.profile-tabs::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+.profile-tabs-bar .profile-tabs {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  row-gap: 0;
+  min-width: 0;
 }
 
-@media (min-width: 75rem) {
-  .profile-tabs {
-    overflow-x: visible;
-  }
+.profile-tabs-bar .tab-link {
+  flex: 0 0 auto;
+}
 
-  .progress-summary-collapsed .stats-toggle-row {
-    float: right;
-    margin-top: 0;
-  }
+.profile-tabs-bar .stats-toggle-btn {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: auto;
+  white-space: nowrap;
+}
 
-  .progress-summary-collapsed .profile-tabs {
-    padding-right: 280px;
-  }
+.profile-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.subtab-link {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #dce5ef;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #405777;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.subtab-link:hover {
+  border-color: #9fd8f2;
+  color: #007cc7;
+}
+
+.subtab-link.active {
+  border-color: #44b4df;
+  background: #e8f6fd;
+  color: #007cc7;
+  font-weight: 600;
+}
+
+.subtab-link:focus-visible,
+.profile-tabs-bar .tab-link:focus-visible {
+  outline: 2px solid #44b4df;
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .profile-subtabs { padding-top: 10px; }
+  .subtab-link { height: 30px; padding: 0 12px; font-size: 12px; }
 }
 
 @media (max-width: 48rem) {
-  .stats-toggle-row {
-    justify-content: stretch;
-  }
-
   .stats-toggle-btn {
     width: 100%;
   }
+}
 
-  .progress-summary-collapsed .profile-tabs {
-    width: 100%;
-    min-width: 0;
-    padding-right: 0;
-    margin-top: 12px;
+/* Phones: the 5 tabs share the width on one line (they still wrap on the narrowest screens),
+   the 4 sub-tabs form a 2 x 2 grid. */
+@media (max-width: 480px) {
+  .profile-tabs-bar .profile-tabs {
+    justify-content: space-between;
+    column-gap: 6px;
+    padding: 0 6px;
+  }
+
+  .profile-subtabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -4842,42 +4675,21 @@ body.client-preview-open { overflow: hidden; }
   .header-actions { width: auto; margin: 0; gap: 8px; }
   .btn-send-message { width: auto; flex: none; height: 30px; padding: 0 10px; font-size: 9px; }
   .btn-send-message i { font-size: 10px; }
-  .stats-toggle-row { margin: 0 0 8px; }
   .stats-toggle-btn { min-height: 30px; padding: 0 10px; font-size: 9px; border-radius: 6px; }
   .progress-summary-collapsed .profile-header { margin-bottom: 10px; }
-  /* All tabs on one swipeable row (scrollbar hidden by the base .profile-tabs rules). */
-  .profile-tabs, .progress-summary-collapsed .profile-tabs {
-    flex-wrap: nowrap; gap: 22px; margin-top: 0; padding: 0 12px; background: #fff; border-radius: 0;
-    overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
-    scroll-padding-inline: 12px;
-  }
+  /* White tab strip; the tabs wrap instead of scrolling sideways. */
+  .profile-tabs { gap: 0 20px; padding: 0 12px; background: #fff; }
   .tab-link { flex: 0 0 auto; padding: 12px 0 11px; font-size: 12px; }
   .tab-content { margin-top: 4px; }
   .tab-pane, .progress-summary-collapsed .tab-pane { padding-top: 6px; }
 
-  /* Assigned check-ins mobile cards. */
+  /* Check-ins on small screens. */
   .checkins-subtabs { gap: 24px; overflow-x: auto; }
   .checkins-subtabs .tab-link { font-size: 10px; padding: 10px 0; }
   .checkins-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin: 10px 0 14px; }
   .search-input-wrapper { width: 100%; }
   .search-input-wrapper input { height: 38px; font-size: 10px; border-radius: 999px; }
   .btn-add-checkin { height: 38px; padding: 0 13px; font-size: 10px; white-space: nowrap; }
-  .assigned-table { display: grid; gap: 9px; border: 0; background: transparent; overflow: visible; }
-  .assigned-header-row { display: none; }
-  .assigned-row {
-    position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto;
-    grid-template-areas: 'icon name status' 'icon dates action'; gap: 5px 10px;
-    min-height: 76px; padding: 12px 10px; border: 1px solid #e3e9f1 !important;
-    border-radius: 9px; background: #fff;
-  }
-  .assigned-row::before { content: '\f46d'; grid-area: icon; width: 34px; height: 42px; display: grid; place-items: center; align-self: center; border-radius: 7px; background: #eef7ff; color: #159ee4; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
-  .assigned-name { grid-area: name; align-self: end; font-size: 11px; font-weight: 700; }
-  .assigned-date { grid-area: dates; display: inline-flex; margin-right: 12px; font-size: 8px; }
-  .assigned-date:nth-of-type(3) { margin-left: 88px; }
-  .assigned-row > div:nth-child(4) { grid-area: status; }
-  .assigned-row .status-pill { padding: 4px 8px; font-size: 8px; }
-  .assigned-row .actions-cell { grid-area: action; }
-  .assigned-row .link-view { font-size: 8px; }
   .checkins-tab .profile-pagination { gap: 7px; margin: 14px 0 5px; flex-wrap: nowrap; }
   .checkins-tab .profile-page-btn { min-width: 30px; width: 30px; height: 30px; padding: 0; font-size: 10px; }
 
@@ -5132,6 +4944,10 @@ body.client-preview-open { overflow: hidden; }
 }
 
 /* Client switcher in the profile header. */
+/* From 1024px the client list panel (client-nav-panel) switches clients: the header picker is only for smaller screens. */
+@media (min-width: 1024px) {
+  .client-picker { display: none; }
+}
 .client-picker { position: relative; z-index: 20; }
 .client-picker__trigger {
   min-width: 275px; height: 68px; padding: 8px 14px 8px 10px; border: 1px solid #dce5ef;
@@ -5423,7 +5239,7 @@ body.client-preview-open { overflow: hidden; }
       'header  header'
       'notice  notice'
       'summary summary'
-      'tabs    toggle'
+      'tabs    tabs'
       'content content';
     align-content: start;
   }
@@ -5457,35 +5273,14 @@ body.client-preview-open { overflow: hidden; }
     gap: clamp(6px, 0.6vw, 10px);
   }
 
-  .main-content > .profile-tabs,
-  .progress-summary-collapsed > .profile-tabs {
+  .main-content > .profile-nav {
     grid-area: tabs;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    column-gap: clamp(14px, 1.4vw, 22px);
     min-width: 0;
-    margin: 0;
+  }
+
+  .profile-tabs {
+    column-gap: clamp(14px, 1.4vw, 22px);
     padding: 0 2px;
-    // Normal row when it fits, horizontal scroll (hidden scrollbar) when it does not.
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .main-content > .profile-tabs .tab-link {
-    flex: 0 0 auto;
-  }
-
-  // Sits at the end of the tabs row; its bottom border continues the tabs line.
-  .main-content > .stats-toggle-row,
-  .progress-summary-collapsed > .stats-toggle-row {
-    grid-area: toggle;
-    float: none;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin: 0;
-    padding: 0 0 6px clamp(10px, 1.2vw, 16px);
-    border-bottom: 1px solid #dce5ef;
   }
 
   .stats-toggle-btn {
@@ -5653,9 +5448,73 @@ body.client-preview-open { overflow: hidden; }
   }
 }
 
-// The tab strip is a scroll container: keep the active underline inside it so it is not clipped.
-.profile-tabs .tab-link.active::after {
-  bottom: 0;
+.archived-client-notice { padding: 16px; margin-bottom: 20px; border: 1px solid #dfe3e8; border-radius: 10px; background: #f3f4f6; color: #536174; display: flex; gap: 16px; align-items: center; justify-content: space-between; }
+
+/* Header info line: one line like the original "last workout" line (cut with … when short of room). */
+.last-workout { min-width: 0; }
+.last-workout-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-info { min-width: 0; }
+.profile-picture { background: #f1f5f9; }
+
+/* Client view preview: menu icons as in the client app (feather / lucide), settings note. */
+.client-preview-sidebar button .client-preview-nav-icon { width: 19px; height: 19px; opacity: .92; }
+.client-preview-sidebar button .client-preview-nav-icon ::ng-deep svg { width: 19px; height: 19px; }
+.client-preview-settings {
+  display: grid;
+  gap: 8px;
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 24px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  color: #64748b;
+  background: #fff;
+  text-align: center;
+  justify-items: center;
+}
+.client-preview-settings i-feather { width: 26px; height: 26px; color: #94a3b8; }
+.client-preview-settings strong { color: #0f172a; font-size: 16px; }
+.client-preview-settings p { margin: 0; font-size: 13px; line-height: 1.5; }
+
+/* Profile chat: as high as the window allows (set by the component), the message bar always visible. */
+.chat-profile-pane { padding-bottom: 0; }
+.chat-profile-pane ::ng-deep .chat-root--embedded,
+.chat-profile-pane ::ng-deep .chat-root {
+  height: var(--chat-embedded-height, 660px) !important;
+  min-height: 0 !important;
 }
 
-.archived-client-notice { padding: 16px; margin-bottom: 20px; border: 1px solid #dfe3e8; border-radius: 10px; background: #f3f4f6; color: #536174; display: flex; gap: 16px; align-items: center; justify-content: space-between; }
+/* Check-ins as in the mobile app: one card per form with its date tile. */
+.checkin-cards {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Scheduled check-ins: summary (date tile, form, frequency) and every setting of the schedule. */
+.sched-count { margin: 12px 0 8px; font-size: 13px; font-weight: 600; color: #64748b; }
+.sched-list { display: grid; gap: 10px; }
+.sched-card {
+  background: #fff; border: 1px solid #e5e9f0; border-radius: 14px; overflow: hidden; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  &:hover { border-color: #cbd5e1; box-shadow: 0 3px 10px rgba(15, 23, 42, .05); }
+}
+.sched-head { display: flex; align-items: center; gap: 4px; padding-right: 10px; }
+.sched-summary { flex: 1; min-width: 0; }
+.sched-summary ::ng-deep .ci-card { border: 0; border-radius: 0; }
+.sched-delete {
+  flex: none; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center;
+  border: 0; background: transparent; color: #94a3b8; cursor: pointer;
+  &:hover { background: #fdeeea; color: #c2412d; }
+}
+.sched-facts {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; margin: 0;
+  padding: 12px 16px 14px; border-top: 1px solid #f1f4f8; background: #fafbfc;
+  div { min-width: 0; }
+  dt { font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: #94a3b8; }
+  dd { margin: 2px 0 0; font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
+  dd.sched-off { color: #94a3b8; font-weight: 500; }
+}
+@media (max-width: 640px) {
+  .sched-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

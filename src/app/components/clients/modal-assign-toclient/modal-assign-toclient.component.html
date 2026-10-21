@@ -87,7 +87,10 @@
         </div>
       </div>
 
-      <div *ngIf="filteredClients.length === 0" class="no-results">
+      <div *ngIf="clientsLoading" class="no-results">
+        {{ 'LOADING' | translate }}
+      </div>
+      <div *ngIf="!clientsLoading && filteredClients.length === 0" class="no-results">
         {{ 'NO_CLIENTS_FOUND' | translate }}
       </div>
     </div>

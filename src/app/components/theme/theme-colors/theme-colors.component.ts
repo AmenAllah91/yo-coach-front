@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { finalize } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of } from 'rxjs';
 import { environment } from '@env/environment';
 import { AppThemeColors, AppThemeColorsPage } from '../../../core/models/app-theme-colors.model';
 import { AppThemeColorsService } from '../../../core/service/app-theme-colors.service';
@@ -290,7 +290,7 @@ export class ThemeColorsComponent implements OnInit {
   ngOnInit(): void {
     this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked));
     this.groupedControls = this.buildGroupedControls();
-    this.loadThemes();
+    this.loadThemes(true);
   }
 
   goBack(): void { window.history.back(); }
@@ -394,90 +394,66 @@ export class ThemeColorsComponent implements OnInit {
     return `${apiBase}/${url}`;
   }
 
-  loadThemes(): void {
-    this.loading = true;
+  /**
+   * The active theme and the coach's themes are asked at the same time, without the full-screen loader.
+   * fromSnapshot: the themes of the last visit are shown at once, then replaced by the fresh answer
+   * (unless the coach already changed something in the meantime).
+   */
+  loadThemes(fromSnapshot = false): void {
     this.error = null;
-    this.success = null;
-
-    this.themeService
-      .getCurrent()
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (theme) => {
-          this.selectedTheme = this.normalizeTheme(theme);
-          this.themes = [this.selectedTheme];
-
-          setTimeout(() => {
-            this.sendThemeToFlutter();
-          }, 500);
-
-          this.loadAllThemesSilently();
-        },
-        error: (err) => {
-          if (err?.status === 404) {
-            this.loadThemesWithoutActive();
-            return;
-          }
-
-          this.error = this.extractError(err);
-          this.selectedTheme = this.createDefaultTheme();
-          this.sendThemeToFlutter();
-        },
-      });
-  }
-
-  private loadThemesWithoutActive(): void {
+    if (fromSnapshot && this.themeService.currentSnapshot) {
+      this.applyThemes(this.themeService.currentSnapshot, this.themeService.listSnapshot, null);
+    }
+    const shown = JSON.stringify(this.selectedTheme);
     this.loading = true;
 
-    this.themeService
-      .getAll(0, 50)
+    forkJoin({
+      current: this.themeService.getCurrent(true).pipe(
+        map((theme) => ({ theme, failure: null as any })),
+        catchError((failure) => of({ theme: null as AppThemeColors | null, failure }))
+      ),
+      list: this.themeService.getAll(0, 50, true).pipe(catchError(() => of(null))),
+    })
       .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (response) => {
-          const content = Array.isArray(response)
-            ? response
-            : (response as AppThemeColorsPage).content ?? [];
-
-          this.themes = content.map((theme) => this.normalizeTheme(theme));
-
-          if (this.themes.length > 0) {
-            this.selectedTheme = { ...this.themes[0] };
-            this.error = this.translate.instant('NO_ACTIVE_THEME_HINT');
-          } else {
-            this.selectedTheme = this.createDefaultTheme();
-            this.themes = [];
-            this.error = this.translate.instant('NO_THEME_FOUND_HINT');
-          }
-
+      .subscribe(({ current, list }) => {
+        const edited = JSON.stringify(this.selectedTheme) !== shown;
+        const kept = this.selectedTheme;
+        this.applyThemes(current.theme, list, current.failure);
+        if (edited) {
+          this.selectedTheme = kept;
           this.sendThemeToFlutter();
-        },
-        error: (error) => {
-          this.error = this.extractError(error);
-          this.selectedTheme = this.createDefaultTheme();
-          this.sendThemeToFlutter();
-        },
+        }
       });
   }
 
-  private loadAllThemesSilently(): void {
-    this.themeService.getAll(0, 50).subscribe({
-      next: (response) => {
-        const content = Array.isArray(response)
-          ? response
-          : (response as AppThemeColorsPage).content ?? [];
+  private applyThemes(
+    current: AppThemeColors | null,
+    list: AppThemeColorsPage | AppThemeColors[] | null,
+    failure: any
+  ): void {
+    const content = !list ? [] : Array.isArray(list) ? list : list.content ?? [];
+    const themes = content.map((theme) => this.normalizeTheme(theme));
 
-        if (content.length > 0) {
-          this.themes = content.map((theme) => this.normalizeTheme(theme));
-
-          const active = this.themes.find((theme) => theme.active);
-          if (active) {
-            this.selectedTheme = { ...active };
-            this.sendThemeToFlutter();
-          }
-        }
-      },
-      error: () => {},
-    });
+    if (current) {
+      this.selectedTheme = this.normalizeTheme(current);
+      this.themes = themes.length ? themes : [this.selectedTheme];
+      const active = this.themes.find((theme) => theme.active);
+      if (active) this.selectedTheme = { ...active };
+      setTimeout(() => this.sendThemeToFlutter(), 500);
+    } else if (failure?.status === 404) {
+      this.themes = themes;
+      if (themes.length) {
+        this.selectedTheme = { ...themes[0] };
+        this.error = this.translate.instant('NO_ACTIVE_THEME_HINT');
+      } else {
+        this.selectedTheme = this.createDefaultTheme();
+        this.error = this.translate.instant('NO_THEME_FOUND_HINT');
+      }
+    } else {
+      this.error = this.extractError(failure);
+      this.selectedTheme = this.createDefaultTheme();
+    }
+    this.sendThemeToFlutter();
   }
 
   selectTheme(theme: AppThemeColors): void {

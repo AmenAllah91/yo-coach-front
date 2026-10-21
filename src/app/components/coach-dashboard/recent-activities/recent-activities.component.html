@@ -1,0 +1,30 @@
+<section class="widget" aria-labelledby="recent-activities-title">
+  <header class="widget-header">
+    <span class="widget-icon"><i-feather name="activity"></i-feather></span>
+    <div class="widget-heading">
+      <h2 id="recent-activities-title">{{ 'CDASH.RECENT_ACTIVITIES' | translate }}</h2>
+      <p>{{ 'CDASH.RECENT_ACTIVITIES_HINT' | translate }}</p>
+    </div>
+    <a class="header-link" routerLink="/coach-dashboard/activities" [queryParams]="category ? { category: category } : {}">
+      {{ 'CDASH.SEE_ALL' | translate }} <span aria-hidden="true">→</span>
+    </a>
+  </header>
+
+  <div class="chips" role="group" [attr.aria-label]="'CDASH.FILTER' | translate">
+    <button type="button" class="chip" [class.chip--active]="category === null" [attr.aria-pressed]="category === null"
+            (click)="select(null)">{{ 'CDASH.CAT.ALL' | translate }}</button>
+    <button type="button" class="chip" *ngFor="let item of categories" [class.chip--active]="category === item"
+            [attr.aria-pressed]="category === item" (click)="select(item)">{{ 'CDASH.CAT.' + item | translate }}</button>
+  </div>
+
+  <app-widget-state
+    [status]="status"
+    [rows]="5"
+    [empty]="activities.length === 0"
+    emptyText="CDASH.NO_ACTIVITY"
+    emptyIcon="activity"
+    (retry)="load()"
+  ></app-widget-state>
+
+  <app-activity-list *ngIf="status === 'ready' && activities.length" [activities]="activities" [lang]="lang"></app-activity-list>
+</section>

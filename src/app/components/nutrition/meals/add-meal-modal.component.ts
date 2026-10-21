@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnChanges,
@@ -20,6 +21,9 @@ import { amountOf, editableUnit, portionsOf, servingKey } from '../food-servings
 import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
 import { AuthService } from '@config/auth.service';
+import { AddedFood, AddFoodModalComponent } from '../add-food-modal/add-food-modal.component';
+import { MealTotalsComponent } from '../meal-totals/meal-totals.component';
+import { ToastService } from 'app/service/toast.service';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -45,16 +49,17 @@ interface IngredientRow {
 @Component({
   selector: 'app-add-meal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe, AddFoodModalComponent, MealTotalsComponent],
   templateUrl: './add-meal-modal.component.html',
-  styleUrls: ['./add-meal-modal.component.scss'],
+  styleUrls: ['./add-meal-modal.component.scss', '../_nutrition-foods.scss'],
 })
 export class AddMealModalComponent implements OnChanges, OnInit {
   @Input() isVisible = false;
   @Input() meal: any | null = null;
 
   @Output() closed = new EventEmitter<void>();
-  @Output() saved = new EventEmitter<void>();
+  /** The saved meal as returned by the server (the list shows it without reloading). */
+  @Output() saved = new EventEmitter<any>();
 
   step: BuilderStep = 'choice';
   name = '';
@@ -106,6 +111,8 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     private mealsService: MealsService,
     private translate: TranslateService,
     private authService: AuthService,
+    private toast?: ToastService,
+    private host?: ElementRef<HTMLElement>,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -124,6 +131,10 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     if (changes['meal'] && this.isVisible && this.meal) {
       this.loadMeal(this.meal);
     }
+  }
+
+  get hasManualIngredient(): boolean {
+    return this.ingredients.some((row) => row.manual);
   }
 
   get isRecipe(): boolean {
@@ -217,6 +228,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
   choose(step: 'foods' | 'recipe'): void {
     if (this.saving) return;
     this.step = step;
+    this.nutritionService.prefetchPickerFoods();
     this.ingredientPickerOpen = false;
     this.foodSearch = '';
     this.foods = [];
@@ -238,9 +250,39 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     this.closed.emit();
   }
 
+  /** Opens the Add Food modal shared with the meal plans (servings x unit, nutrition values). */
   openIngredientPicker(): void {
+    if (this.saving) return;
     this.ingredientPickerOpen = true;
-    this.searchFoods();
+  }
+
+  /** Foods of the meal: shown in the modal, but not addable twice. */
+  get addedFoodIds(): string[] {
+    return this.ingredients.filter((row) => !row.manual && row.foodRef?.id).map((row) => String(row.foodRef.id));
+  }
+
+  /** A food chosen in the modal, with the servings and the unit picked there. */
+  onFoodPicked(line: AddedFood): void {
+    const food = line.foodRef;
+    if (!food || this.foodAlreadyAdded(food) || this.saving) return;
+    this.clearServerErrors();
+    const row: IngredientRow = {
+      id: this.newId(),
+      name: food.name || line.name || '',
+      category: food.category || food.foodGroup || this.translate.instant('FOOD'),
+      quantity: null,
+      unit: '',
+      foodRef: food,
+      calories: null,
+      protein: null,
+      carbs: null,
+      fat: null,
+      manual: false,
+    };
+    this.applyServing(row, line.serving ?? defaultServingOf(food));
+    row.quantity = portionsOf(line.quantity, row.servingSize) ?? 1;
+    this.ingredients.push(row);
+    this.closeIngredientPicker();
   }
 
   closeIngredientPicker(): void {
@@ -273,7 +315,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     const row: IngredientRow = {
       id: this.newId(),
       name: food.name || '',
-      category: food.category || food.foodGroup || 'Food',
+      category: food.category || food.foodGroup || this.translate.instant('FOOD'),
       quantity: null,
       unit: '',
       foodRef: food,
@@ -436,7 +478,12 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     if (this.saving) return;
     this.submitted = true;
     this.saveError = '';
-    if (asDraft ? !this.canSaveDraft : !this.canSave) return;
+    if (asDraft ? !this.canSaveDraft : !this.canSave) {
+      this.foodsTouched = true;
+      this.toast?.error(this.translate.instant('MEAL_FIX_ERRORS'));
+      this.focusFirstError();
+      return;
+    }
 
     this.saving = true;
     const payload = this.buildPayload(asDraft);
@@ -446,10 +493,12 @@ export class AddMealModalComponent implements OnChanges, OnInit {
         ? this.mealsService.saveTemplate(payload)
         : this.mealsService.createMeal(payload);
 
+    const recipe = this.isRecipe;
     request.subscribe({
-      next: () => {
+      next: (result: any) => {
         this.saving = false;
-        this.saved.emit();
+        this.toast?.success(this.translate.instant(recipe ? 'RECIPE_SAVED' : 'MEAL_SAVED'));
+        this.saved.emit(result);
         this.reset();
         this.closed.emit();
       },
@@ -459,6 +508,18 @@ export class AddMealModalComponent implements OnChanges, OnInit {
         this.saveError =
           error?.error?.message || error?.message || this.translate.instant('MEAL_SAVE_ERROR');
       },
+    });
+  }
+
+  /** Brings the first field to fix into view (after the error messages are rendered). */
+  private focusFirstError(): void {
+    setTimeout(() => {
+      const root = this.host?.nativeElement;
+      const target = root?.querySelector<HTMLElement>(
+        '.field-control--invalid, .foods-control--invalid, .is-invalid, .inline-error, .ingredient-validation, small[class*="error"]',
+      );
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) target.focus({ preventScroll: true });
     });
   }
 
@@ -509,6 +570,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
 
   private loadMeal(meal: any): void {
     this.reset();
+    this.nutritionService.prefetchPickerFoods();
     this.meal = meal;
     this.step = meal?.template ? 'recipe' : 'foods';
     this.name = meal?.name || meal?.title || '';
@@ -527,7 +589,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
       return {
         id: food?.id || this.newId(),
         name: food?.name || ref?.name || '',
-        category: manual ? 'Manual ingredient' : ref?.category || ref?.foodGroup || 'Food',
+        category: manual ? this.translate.instant('MANUAL_INGREDIENT') : ref?.category || ref?.foodGroup || this.translate.instant('FOOD'),
         quantity: manual ? food?.quantity ?? null : portionsOf(food?.quantity, serving?.size),
         unit: food?.unit ? this.normalizeUnit(food.unit) : '',
         foodRef: ref,

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, concat, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { WorkoutPlan } from '@shared/models/workout.models';
 
@@ -71,19 +71,23 @@ export class WorkoutService {
 
   getTemplates(
     page: number = 0,
-    size: number = 12
+    size: number = 12,
+    skipLoader = false
   ): Observable<PageResponse<WorkoutPlan>> {
     return this.http.get<PageResponse<WorkoutPlan>>(
-      `${this.apiUrl}templates?page=${page}&size=${size}`
+      `${this.apiUrl}templates?page=${page}&size=${size}`,
+      { headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} }
     );
   }
 
   getMyLibrary(
     page: number = 0,
-    size: number = 12
+    size: number = 12,
+    skipLoader = false
   ): Observable<PageResponse<WorkoutPlan>> {
     return this.http.get<PageResponse<WorkoutPlan>>(
-      `${this.apiUrl}my-library?page=${page}&size=${size}`
+      `${this.apiUrl}my-library?page=${page}&size=${size}`,
+      { headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} }
     );
   }
 
@@ -91,31 +95,33 @@ export class WorkoutService {
     return this.http.get<PageResponse<WorkoutPlan>>(`${this.apiUrl}my-library`);
   }
 
-  createWorkout(workout: WorkoutPlan): Observable<WorkoutPlan> {
-    console.log('[WORKOUT SERVICE CREATE] workout =', workout);
-    console.log('[WORKOUT SERVICE CREATE] workout.isWorkoutPlanTemplate =', workout.isWorkoutPlanTemplate);
-    console.log('[WORKOUT SERVICE CREATE] JSON.stringify =', JSON.stringify(workout));
-    return this.http.post<WorkoutPlan>(this.apiUrl, workout);
+  createWorkout(workout: WorkoutPlan, skipLoader = false): Observable<WorkoutPlan> {
+    return this.http.post<WorkoutPlan>(this.apiUrl, workout, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
 
-  updateWorkout(id: string, workout: WorkoutPlan): Observable<WorkoutPlan> {
-    console.log('[WORKOUT SERVICE UPDATE] workout =', workout);
-    console.log('[WORKOUT SERVICE UPDATE] workout.isWorkoutPlanTemplate =', workout.isWorkoutPlanTemplate);
-    console.log('[WORKOUT SERVICE UPDATE] JSON.stringify =', JSON.stringify(workout));
-    return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}`, workout);
+  updateWorkout(id: string, workout: WorkoutPlan, skipLoader = false): Observable<WorkoutPlan> {
+    return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}`, workout, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
   assignWorkout(id: string, workout: WorkoutPlan): Observable<WorkoutPlan> {
     return this.http.put<WorkoutPlan>(`${this.apiUrl}assign`, workout);
   }
 
-  deleteWorkout(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}${id}`);
+  deleteWorkout(id: string, skipLoader = false): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}${id}`, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
-  duplicateWorkout(id: string): Observable<WorkoutPlan> {
-    return this.http.post<WorkoutPlan>(`${this.apiUrl}${id}/duplicate`, {});
+  duplicateWorkout(id: string, skipLoader = false): Observable<WorkoutPlan> {
+    return this.http.post<WorkoutPlan>(`${this.apiUrl}${id}/duplicate`, {}, {
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
 
@@ -234,10 +240,20 @@ export class WorkoutService {
     });
   }
 
+  /** Last plans of each client (client app): a revisit shows them at once, the fresh answer follows. */
+  private readonly clientPlans = new Map<string, WorkoutPlan[]>();
+
   getWorkoutPlansByClient(clientId: string): Observable<WorkoutPlan[]> {
+    const known = this.clientPlans.get(clientId);
+    const request$ = this.fetchWorkoutPlansByClient(clientId, !!known).pipe(tap((plans) => this.clientPlans.set(clientId, plans)));
+    return known ? concat(of(known), request$) : request$;
+  }
+
+  private fetchWorkoutPlansByClient(clientId: string, quiet: boolean): Observable<WorkoutPlan[]> {
     return this.http.get<WorkoutPlan[]>(`${this.apiUrl}client/${clientId}`, {
       params: { t: Date.now().toString() },
       headers: {
+        ...(quiet ? { 'X-Skip-Loader': 'true' } : {}),
         'Cache-Control': 'no-cache',
         Pragma: 'no-cache',
       },

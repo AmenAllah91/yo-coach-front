@@ -76,9 +76,10 @@
     <!-- Invoices -->
     <div class="card">
       <h2>{{ 'MY_SUB_INVOICES' | translate }}</h2>
-      <p *ngIf="!invoices.length" class="muted">{{ 'MY_SUB_NO_INVOICE' | translate }}</p>
+      <p *ngIf="invoicesLoading" class="muted" role="status">{{ 'LOADING' | translate }}</p>
+      <p *ngIf="!invoicesLoading && !invoices.length" class="muted">{{ 'MY_SUB_NO_INVOICE' | translate }}</p>
       <ul *ngIf="invoices.length" class="invoice-list">
-        <li *ngFor="let invoice of invoices" class="invoice-row">
+        <li *ngFor="let invoice of pagedInvoices" class="invoice-row">
           <div class="invoice-main">
             <strong>{{ invoice.planName || ('MY_SUB_INVOICE' | translate) }}</strong>
             <small>
@@ -96,6 +97,13 @@
           </div>
         </li>
       </ul>
+      <div class="app-pagination" *ngIf="invoicePageCount > 1">
+        <button type="button" class="page-btn" [disabled]="invoicePage === 0" [attr.aria-label]="'PREVIOUS_PAGE' | translate" (click)="goToInvoicePage(invoicePage - 1)">&lt;</button>
+        <button type="button" class="page-btn" *ngFor="let page of invoicePages" [class.active]="page === invoicePage" [attr.aria-current]="page === invoicePage ? 'page' : null" (click)="goToInvoicePage(page)">{{ page + 1 }}</button>
+        <button type="button" class="page-btn" [disabled]="invoicePage === invoicePageCount - 1" [attr.aria-label]="'NEXT_PAGE' | translate" (click)="goToInvoicePage(invoicePage + 1)">&gt;</button>
+      </div>
     </div>
   </ng-container>
 </section>
+
+<app-cancel-subscription-dialog *ngIf="cancelDialog as dialog" [until]="dialog.until" (answer)="closeCancelDialog($event)"></app-cancel-subscription-dialog>

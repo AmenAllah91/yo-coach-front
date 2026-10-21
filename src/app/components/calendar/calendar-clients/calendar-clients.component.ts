@@ -1,3 +1,4 @@
+import { ClientProfileCacheService } from 'app/service/client-profile-cache.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import {
@@ -9,6 +10,7 @@ import {
   SimpleChanges,
   HostListener,
 } from '@angular/core';
+import { finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -22,6 +24,7 @@ import { WorkoutPlan } from '@shared/models/workout.models';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { lineMacros } from '@shared/models/nutrition-math';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 
 interface ExerciseSet {
   id: string;
@@ -127,11 +130,23 @@ type CalendarType = 'workout' | 'nutrition';
 @Component({
   selector: 'app-calendar-clients',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, TranslateModule],
+  imports: [CommonModule, FormsModule, DragDropModule, TranslateModule, SectionLoaderComponent],
   templateUrl: './calendar-clients.component.html',
   styleUrl: './calendar-clients.component.scss',
 })
 export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
+
+  /** The client's programs arrived once: the section loader shows before (the client profile tab). */
+  private workoutsLoaded = false;
+  private nutritionLoaded = false;
+  get programsLoaded(): boolean {
+    return this.workoutsLoaded && this.nutritionLoaded;
+  }
+
+  /** Inside the client profile, the calendar loads in place, without the full-screen loader. */
+  private get embedded(): boolean {
+    return !!this.embeddedClientId;
+  }
 
   workoutFileEnabled = true;
   nutritionFileEnabled = true;
@@ -224,7 +239,8 @@ currentDate = new Date();
     private sanitizer: DomSanitizer,
     private coachSettingsService: CoachSettingsService,
     private exerciseService: ExerciseService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private profileCache: ClientProfileCacheService,
   ) {}
 
   @HostListener('document:click')
@@ -233,7 +249,7 @@ currentDate = new Date();
   }
 
   ngOnInit(): void {
-    this.coachSettingsService.loadConfig().subscribe({
+    this.coachSettingsService.loadConfig(this.embedded).subscribe({
       next: () => {
         this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
         this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
@@ -275,7 +291,8 @@ currentDate = new Date();
       this.coachId = this.embeddedCoachId;
     }
 
-    if (changes['embeddedClientId']) {
+    // The first value is loaded by ngOnInit: loading it here too fetched every program twice.
+    if (changes['embeddedClientId'] && !changes['embeddedClientId'].firstChange) {
       this.selectedClient = this.embeddedClientId || '';
       this.getWorkout();
       this.getNutrition();
@@ -307,15 +324,46 @@ currentDate = new Date();
     this.getNutrition();
   }
 
+  /**
+   * Client profile: the plans the profile dashboard already read are shown at once (and shared while they load).
+   * A list of 100 may be cut (dashboard page size): the calendar then reads up to 500 as before.
+   */
+  private fromProfile(part: 'workouts' | 'nutrition', apply: (plans: any[]) => void, done: () => void): boolean {
+    if (!this.embedded || !this.coachId || !this.selectedClient) return false;
+    const clientId = this.selectedClient;
+    const known = this.profileCache.snapshot<any[]>(part, clientId);
+    if (known && known.length >= 100) return false;
+    if (known) {
+      apply(known);
+      done();
+      if (this.profileCache.isFresh(part, clientId)) return true;
+    }
+    this.profileCache.load<any[]>(part, this.coachId, clientId).subscribe({
+      next: (plans) => {
+        if (clientId !== this.selectedClient) return;
+        apply(plans || []);
+        done();
+      },
+      error: () => done(),
+    });
+    return true;
+  }
+
   getNutrition(): void {
     if (!this.coachId || !this.selectedClient || this.selectedClient === 'all') {
       this.nutritionPrograms = [];
+      this.nutritionLoaded = true;
       this.updateMonthGrid();
       return;
     }
+    if (this.fromProfile('nutrition', (plans) => {
+      this.nutritionPrograms = this.mapBackendToNutritionPrograms(plans);
+      this.updateMonthGrid();
+    }, () => (this.nutritionLoaded = true))) return;
 
     this.nutritionService
-      .getNutritionPlanByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL')
+      .getNutritionPlanByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', this.embedded)
+      .pipe(finalize(() => (this.nutritionLoaded = true)))
       .subscribe({
         next: (res) => {
           this.nutritionPrograms = this.mapBackendToNutritionPrograms(res.content || []);
@@ -334,12 +382,18 @@ currentDate = new Date();
     if (!this.coachId) {
       console.error('No coach id found in sessionStorage');
       this.workoutPrograms = [];
+      this.workoutsLoaded = true;
       return;
     }
 
     if (this.selectedClient && this.selectedClient !== 'all') {
+      if (this.fromProfile('workouts', (plans) => {
+        this.workoutPrograms = this.mapBackendToWorkoutPrograms(plans);
+        this.updateMonthGrid();
+      }, () => (this.workoutsLoaded = true))) return;
       this.workoutService
-        .getWorkoutByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL')
+        .getWorkoutByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', this.embedded)
+        .pipe(finalize(() => (this.workoutsLoaded = true)))
         .subscribe({
           next: (res) => {
             this.workoutPrograms = this.mapBackendToWorkoutPrograms(
@@ -361,6 +415,7 @@ currentDate = new Date();
     }
 
     this.workoutPrograms = [];
+    this.workoutsLoaded = true;
     this.updateMonthGrid();
   }
 

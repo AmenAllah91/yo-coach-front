@@ -62,6 +62,9 @@
       <div class="table-body">
         <div class="client-row" *ngFor="let client of filteredClients"
              (click)="viewProfile(client)"
+             (mouseenter)="prefetchProfile(client)"
+             (mouseleave)="cancelProfilePrefetch()"
+             (focusin)="prefetchProfile(client)"
              style="cursor: pointer;">
           <div class="col-client">
             <div class="client-info">

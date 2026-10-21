@@ -133,7 +133,14 @@ p { margin: 0; }
 .invoice-paid { background: #dcfce7; color: #166534; }
 .invoice-unpaid, .invoice-pending { background: #e8f7fd; color: #1d6f8f; }
 .invoice-overdue { background: #fff4db; color: #92400e; }
-.invoice-void { background: $gray-100; color: $gray-500; }
+.invoice-void { background: #fee2e2; color: #b91c1c; }
+
+// Invoice pagination: same look as the other lists of the app (.app-pagination), at the bottom of the card.
+.app-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: .9rem 1rem; border-top: 1px solid #edf1f5; }
+.app-pagination .page-btn { min-width: 34px; height: 34px; border: 1px solid #d8e2ef; background: #fff; color: #344054; border-radius: 6px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; }
+.app-pagination .page-btn:hover:not(:disabled) { background: #f1f7ff; border-color: #8ec5ff; }
+.app-pagination .page-btn.active { background: #44b4df; border-color: #44b4df; color: #fff; }
+.app-pagination .page-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 @media (max-width: $md) {
   .plan-content { grid-template-columns: 1fr; gap: 1.25rem; padding: 1.25rem 1rem; }

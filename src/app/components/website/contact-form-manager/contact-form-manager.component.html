@@ -55,7 +55,8 @@
     </div>
   </div>
 
-  <app-website-leads *ngIf="form && !loading" [embedded]="true"></app-website-leads>
+  <!-- Loaded at the same time as the form (it used to wait for it). -->
+  <app-website-leads [embedded]="true"></app-website-leads>
 </section>
 
 <div class="modal-backdrop" *ngIf="modalOpen" (mousedown)="closeCustomize()">

@@ -76,21 +76,24 @@ export class ClientTasksService {
   private readonly url = `${environment.baseApiUrl}/api/client-tasks`;
   constructor(private http: HttpClient) {}
 
-  calendar(clientId: string, from: string, to: string): Observable<TaskCalendarResponse> {
+  calendar(clientId: string, from: string, to: string, skipLoader = false): Observable<TaskCalendarResponse> {
     const params = new HttpParams().set('clientId', clientId).set('from', from).set('to', to);
-    return this.http.get<TaskCalendarResponse>(`${this.url}/calendar`, { params });
+    return this.http.get<TaskCalendarResponse>(`${this.url}/calendar`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
-  createTask(value: ClientTaskPayload) { return this.http.post<ClientTaskPayload>(this.url, value); }
-  updateTask(id: string, value: ClientTaskPayload) { return this.http.put<ClientTaskPayload>(`${this.url}/${id}`, value); }
-  deleteTask(id: string) { return this.http.delete<void>(`${this.url}/${id}`); }
+  createTask(value: ClientTaskPayload) { return this.http.post<ClientTaskPayload>(this.url, value, { headers: { 'X-Skip-Loader': 'true' } }); }
+  updateTask(id: string, value: ClientTaskPayload) { return this.http.put<ClientTaskPayload>(`${this.url}/${id}`, value, { headers: { 'X-Skip-Loader': 'true' } }); }
+  deleteTask(id: string) { return this.http.delete<void>(`${this.url}/${id}`, { headers: { 'X-Skip-Loader': 'true' } }); }
   setTaskCompletion(id: string, completed: boolean) { return this.http.patch<void>(`${this.url}/${id}/completion`, { completed }); }
   commentTask(id: string, comment: string) { return this.http.patch<void>(`${this.url}/${id}/comment`, { comment }); }
   commentHabit(id: string, date: string, comment: string) {
     return this.http.patch<void>(`${this.url}/habits/${id}/occurrences/${date}/comment`, { comment });
   }
-  createHabit(value: HabitPayload) { return this.http.post<HabitPayload>(`${this.url}/habits`, value); }
-  updateHabit(id: string, value: HabitPayload) { return this.http.put<HabitPayload>(`${this.url}/habits/${id}`, value); }
-  deleteHabit(id: string) { return this.http.delete<void>(`${this.url}/habits/${id}`); }
+  createHabit(value: HabitPayload) { return this.http.post<HabitPayload>(`${this.url}/habits`, value, { headers: { 'X-Skip-Loader': 'true' } }); }
+  updateHabit(id: string, value: HabitPayload) { return this.http.put<HabitPayload>(`${this.url}/habits/${id}`, value, { headers: { 'X-Skip-Loader': 'true' } }); }
+  deleteHabit(id: string) { return this.http.delete<void>(`${this.url}/habits/${id}`, { headers: { 'X-Skip-Loader': 'true' } }); }
   setHabitCompletion(id: string, date: string, completed: boolean, completedValue?: number) {
     return this.http.patch<void>(`${this.url}/habits/${id}/occurrences/${date}/completion`, { completed, completedValue });
   }

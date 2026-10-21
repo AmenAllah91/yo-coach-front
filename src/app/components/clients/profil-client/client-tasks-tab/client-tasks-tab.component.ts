@@ -7,11 +7,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { finalize } from 'rxjs/operators';
+import { finalize, switchMap } from 'rxjs/operators';
 import { ClientTaskPayload, ClientTasksService, ClientTaskType, HabitPayload, HabitUnit, TaskCalendarItem, TaskCalendarResponse } from 'app/service/client-tasks.service';
 import { ProgressPose } from 'app/components/progress-pictures-module/add-progress-picture-modal/add-progress-picture-modal.component';
 import { MANUAL_MEASUREMENT_TYPES, MeasurementTypeItem } from 'app/models/measurement-type.model';
 import { Form, FormsApiService } from 'app/components/forms/services/forms-api.service';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 
 type TaskKind = 'general' | 'progress' | 'metrics' | 'form' | 'habit';
 type TaskStatus = 'done' | 'missed' | 'upcoming';
@@ -23,6 +24,8 @@ interface CalendarTask {
   poses?: ProgressPose[];
   /** Body metrics task: Measurements module types the client must record. */
   measurements?: string[];
+  /** Just created, the server is saving it (shown greyed, not clickable). */
+  pending?: boolean;
 }
 interface CalendarDay { date: Date; key: string; isToday: boolean; isPast: boolean; tasks: CalendarTask[]; }
 interface TaskMenu { day: CalendarDay; task: CalendarTask; top: number; left: number; }
@@ -39,7 +42,7 @@ const TYPE_TO_KIND: Record<ClientTaskType, TaskKind> = { GENERAL: 'general', CLI
 const KIND_TO_TYPE: Partial<Record<TaskKind, ClientTaskType>> = { general: 'GENERAL', progress: 'CLIENT_PROGRESS', metrics: 'BODY_METRICS', form: 'FORM' };
 const WEEK_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-@Component({ selector: 'app-client-tasks-tab', standalone: true, imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, FeatherModule], templateUrl: './client-tasks-tab.component.html', styleUrls: ['./client-tasks-tab.component.scss'] })
+@Component({ selector: 'app-client-tasks-tab', standalone: true, imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, FeatherModule, SectionLoaderComponent], templateUrl: './client-tasks-tab.component.html', styleUrls: ['./client-tasks-tab.component.scss'] })
 export class ClientTasksTabComponent implements OnChanges {
   @Input() clientId = '';
   @Input() archived = false;
@@ -55,6 +58,8 @@ export class ClientTasksTabComponent implements OnChanges {
   days: CalendarDay[] = [];
   summary = { completionPercent: 0, done: 0, missed: 0, upcoming: 0 };
   loading = false;
+  /** The calendar arrived once: the section loader shows before, the grid after (also while changing weeks). */
+  loaded = false;
   private expandedDays = new Set<string>();
   taskMenu: TaskMenu | null = null;
   editing = false;
@@ -134,9 +139,52 @@ export class ClientTasksTabComponent implements OnChanges {
   expandDay(day: CalendarDay): void { this.expandedDays.add(day.key); }
   trackByKey(_: number, day: CalendarDay): string { return day.key; }
 
-  private refresh(): void {
-    this.buildEmptyDays(); if (!this.clientId) return; this.loading = true;
-    this.api.calendar(this.clientId, toInputDate(this.rangeStart), toInputDate(this.rangeEnd)).pipe(finalize(() => this.loading = false)).subscribe(response => this.applyCalendar(response));
+  private refreshVersion = 0;
+  /** silent: after a change, the calendar stays on screen and is replaced when the new one arrives (no flicker). */
+  private refresh(silent = false): void {
+    if (!silent) this.buildEmptyDays(); if (!this.clientId) return; this.loading = !silent;
+    const version = ++this.refreshVersion;
+    this.api.calendar(this.clientId, toInputDate(this.rangeStart), toInputDate(this.rangeEnd), true).pipe(finalize(() => { if (version === this.refreshVersion) { this.loading = false; this.loaded = true; } })).subscribe(response => {
+      if (version !== this.refreshVersion) return;
+      if (silent) this.buildEmptyDays();
+      this.applyCalendar(response);
+    });
+  }
+
+  /** Created items shown at once on their days while the server saves them; the silent refresh replaces them. */
+  private showPending(title: string, kind: TaskKind, subtitle: string, dates: string[]): string[] {
+    const byDate = new Map(this.days.map(day => [day.key, day]));
+    const stamp = Date.now();
+    return dates.filter(date => byDate.has(date)).map((date, index) => {
+      const occurrence = `pending-${stamp}-${index}`;
+      byDate.get(date)!.tasks.push({ id: occurrence, occurrence, title, subtitle, kind, icon: KIND_ICON[kind], status: 'upcoming', pending: true, source: {} as TaskCalendarItem });
+      return occurrence;
+    });
+  }
+
+  private dropPending(occurrences: string[]): void {
+    this.days.forEach(day => day.tasks = day.tasks.filter(task => !occurrences.includes(task.occurrence)));
+  }
+
+  /** Days of the visible range where a new habit occurs (same repeat rules as the server). */
+  private habitDates(start: string, end: string | null, repeat: 'DAILY' | 'WEEKLY', weekDays: string[]): string[] {
+    return this.days
+      .filter(day => day.key >= start && (!end || day.key <= end)
+        && (repeat !== 'WEEKLY' || weekDays.includes(WEEK_DAYS[(day.date.getDay() + 6) % 7])))
+      .map(day => day.key);
+  }
+
+  /** Creation: the modal closes at once and the item shows greyed until the server answers. */
+  private createInBackground(request$: import('rxjs').Observable<unknown>, pending: string[]): void {
+    this.closeModal();
+    request$.subscribe({
+      next: () => this.refresh(true),
+      error: (error) => {
+        this.dropPending(pending);
+        const message = typeof error?.error === 'string' ? error.error.trim() : '';
+        this.toast.error(message || this.translate.instant('TASK_CREATE_ERROR'));
+      },
+    });
   }
   private buildEmptyDays(): void {
     this.expandedDays.clear();
@@ -188,7 +236,12 @@ export class ClientTasksTabComponent implements OnChanges {
   deleteTask(): void { if (!this.canCoach()) return;
     if (!this.taskMenu) return; const task = this.taskMenu.task; this.closeTaskMenu();
     if (task.kind === 'habit' && !window.confirm('Delete habit?\nThis will remove this habit and all of its scheduled occurrences.')) return;
-    (task.kind === 'habit' ? this.api.deleteHabit(task.id) : this.api.deleteTask(task.id)).subscribe(() => this.refresh());
+    // Removed at once; the calendar comes back as it was if the server refuses.
+    this.days.forEach(day => day.tasks = day.tasks.filter(item => item.id !== task.id));
+    (task.kind === 'habit' ? this.api.deleteHabit(task.id) : this.api.deleteTask(task.id)).subscribe({
+      next: () => this.refresh(true),
+      error: () => { this.toast.error(this.translate.instant('TASK_DELETE_ERROR')); this.refresh(true); },
+    });
   }
   openCreateTask(date?: Date): void { if (!this.canCoach()) return; this.closeTaskMenu(); this.editing = false; this.editingId = null; this.modalDate = date || this.today; this.modalStep = 'type'; }
   chooseTaskType(option: TaskTypeOption): void {
@@ -209,7 +262,12 @@ export class ClientTasksTabComponent implements OnChanges {
   createGeneralTask(): void { if (!this.canCoach()) return;
     if (!this.generalTask.title.trim() || !this.clientId) return;
     const payload: ClientTaskPayload = { clientId: this.clientId, type: this.selectedTaskType, title: this.generalTask.title.trim(), instructions: this.generalTask.instructions.trim(), date: this.generalTask.date, reminderEnabled: this.generalTask.reminder, reminderTime: this.generalTask.reminder ? this.generalTask.reminderTime : undefined, allowClientComment: this.generalTask.allowComments, formId: this.generalTask.formId || undefined };
-    (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
+    if (!this.editingId) {
+      const kind = TYPE_TO_KIND[payload.type];
+      this.createInBackground(this.api.createTask(payload), this.showPending(payload.title, kind, kind === 'form' ? 'Form' : 'General task', [payload.date]));
+      return;
+    }
+    this.api.updateTask(this.editingId, payload).subscribe(() => { this.closeModal(); this.refresh(true); });
   }
 
   isPoseSelected(pose: ProgressPose): boolean {
@@ -329,10 +387,18 @@ export class ClientTasksTabComponent implements OnChanges {
     if (!this.canAssignForm) return;
     this.formAssignError = false;
     // As when assigning from Check-ins: a draft form is published first so the client can fill it in.
-    this.formsApi.ensurePublished(this.generalTask.formId).subscribe({
-      next: () => this.createGeneralTask(),
-      error: () => this.formAssignError = true,
-    });
+    if (this.editingId) {
+      this.formsApi.ensurePublished(this.generalTask.formId).subscribe({
+        next: () => this.createGeneralTask(),
+        error: () => this.formAssignError = true,
+      });
+      return;
+    }
+    // New form task: shown at once; the form is published (if it is a draft) then the task is created.
+    const payload: ClientTaskPayload = { clientId: this.clientId, type: 'FORM', title: this.generalTask.title.trim(), instructions: this.generalTask.instructions.trim(), date: this.generalTask.date, reminderEnabled: this.generalTask.reminder, reminderTime: this.generalTask.reminder ? this.generalTask.reminderTime : undefined, allowClientComment: this.generalTask.allowComments, formId: this.generalTask.formId || undefined };
+    if (!payload.title || !this.clientId) return;
+    const pending = this.showPending(payload.title, 'form', 'Form', [payload.date]);
+    this.createInBackground(this.formsApi.ensurePublished(this.generalTask.formId).pipe(switchMap(() => this.api.createTask(payload))), pending);
   }
 
   createNewForm(): void { if (!this.canCoach()) return;
@@ -345,10 +411,16 @@ export class ClientTasksTabComponent implements OnChanges {
     this.taskSaving = true;
     this.taskSaveError = '';
     const payload: ClientTaskPayload = { clientId: this.clientId, type, title: form.title.trim(), instructions: form.note.trim(), date: form.date, reminderEnabled: form.reminder, reminderTime: form.reminder ? form.reminderTime : undefined, allowClientComment: form.allowComments, requestedPoses: form.poses, requestedMeasurements: form.measurements };
+    if (!this.editingId) {
+      this.taskSaving = false;
+      const kind = TYPE_TO_KIND[type];
+      this.createInBackground(this.api.createTask(payload), this.showPending(payload.title, kind, kind === 'progress' ? 'Progress Pictures' : 'Body Metrics', [payload.date]));
+      return;
+    }
     (this.editingId ? this.api.updateTask(this.editingId, payload) : this.api.createTask(payload))
       .pipe(finalize(() => this.taskSaving = false))
       .subscribe({
-        next: () => { this.closeModal(); this.refresh(); },
+        next: () => { this.closeModal(); this.refresh(true); },
         error: (error) => {
           const message = typeof error?.error === 'string' ? error.error.trim() : '';
           this.taskSaveError = message || 'Unable to create this task. Please try again.';
@@ -365,7 +437,12 @@ export class ClientTasksTabComponent implements OnChanges {
   saveHabit(): void { if (!this.canCoach()) return;
     if (!this.clientId || !this.habit.name.trim() || !this.habit.goalValue) return;
     const payload: HabitPayload = { clientId: this.clientId, name: this.habit.name.trim(), goalValue: this.habit.goalValue, unit: this.habit.unit as HabitUnit, customUnit: this.habit.unit === 'CUSTOM' ? this.habit.customUnit.trim() : undefined, startDate: this.habit.startDate, endDate: this.habit.endDate || null, repeatType: this.habit.repeat, weekDays: this.habit.repeat === 'WEEKLY' ? WEEK_DAYS.filter((_, i) => this.habit.repeatDays[i]) : [], reminderEnabled: this.habit.reminder, reminderTime: this.habit.reminder ? this.habit.reminderTime : undefined, allowClientComment: this.habit.allowComments };
-    (this.editingId ? this.api.updateHabit(this.editingId, payload) : this.api.createHabit(payload)).subscribe(() => { this.closeModal(); this.refresh(); });
+    if (!this.editingId) {
+      const dates = this.habitDates(payload.startDate, payload.endDate || null, payload.repeatType, payload.weekDays || []);
+      this.createInBackground(this.api.createHabit(payload), this.showPending(payload.name, 'habit', `${payload.goalValue ?? ''} ${payload.unit === 'CUSTOM' ? payload.customUnit || '' : payload.unit}`.trim(), dates));
+      return;
+    }
+    this.api.updateHabit(this.editingId, payload).subscribe(() => { this.closeModal(); this.refresh(true); });
   }
   closeModal(): void { this.modalStep = null; this.editingId = null; }
   @HostListener('document:click') @HostListener('window:resize') onOutsideInteraction(): void { if (this.taskMenu) this.closeTaskMenu(); this.measurementPickerOpen = false; }

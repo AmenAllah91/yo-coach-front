@@ -164,7 +164,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
     }
 
     this.api
-      .getMyFormsPage(this.pageIndex(), this.pageSize(), status, excludeArchived)
+      .getMyFormsPage(this.pageIndex(), this.pageSize(), status, excludeArchived, undefined, true) // the page shows its own loading state
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {

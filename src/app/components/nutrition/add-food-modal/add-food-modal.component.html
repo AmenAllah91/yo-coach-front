@@ -1,0 +1,114 @@
+<div class="afm" role="dialog" aria-modal="true" aria-labelledby="afm-title" (keydown.escape)="close()">
+  <div class="afm__backdrop" (click)="close()"></div>
+
+  <div class="afm__panel">
+    <header class="afm__head">
+      <button type="button" class="afm__back" *ngIf="step === 'detail'" [attr.aria-label]="'BACK' | translate" (click)="backToList()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <h3 id="afm-title">{{ 'ADD_FOOD' | translate }}</h3>
+      <button type="button" class="afm__close" [attr.aria-label]="'CLOSE' | translate" (click)="close()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+
+    <div class="afm__body" *ngIf="step === 'list'">
+      <label class="afm__search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        <input type="text" [placeholder]="'SEARCH_FOODS' | translate" [(ngModel)]="search" (input)="onSearch()" autofocus />
+      </label>
+
+      <div class="afm__section">{{ 'RESULTS' | translate }}</div>
+
+      <ul class="afm__list">
+        <li *ngFor="let food of pagedFoods">
+          <button type="button" class="afm__food" [disabled]="isExcluded(food)" (click)="choose(food)">
+            <span class="afm__thumb" aria-hidden="true">
+              {{ (food.name || '?').charAt(0).toUpperCase() }}
+              <img *ngIf="foodImage(food)" [src]="foodImage(food)" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+            </span>
+            <span class="afm__food-copy">
+              <strong>
+                {{ food.name }}
+                <span class="afm__badge" *ngIf="!food.general">{{ 'CUSTOM' | translate }}</span>
+                <span class="afm__badge afm__badge--muted" *ngIf="isExcluded(food)">{{ 'ALREADY_ADDED' | translate }}</span>
+              </strong>
+              <small>
+                {{ food.protein ?? 0 }} g {{ 'PROTEIN' | translate }} · {{ food.carbohydrates ?? 0 }} g {{ 'CARBS' | translate }} ·
+                {{ food.fat ?? 0 }} g {{ 'FAT' | translate }}
+              </small>
+            </span>
+            <svg class="afm__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+          </button>
+        </li>
+      </ul>
+
+      <div class="afm__state" *ngIf="loading && !foods.length">
+        <span class="afm__spinner"></span>{{ 'LOADING_FOODS' | translate }}
+      </div>
+      <div class="afm__state" *ngIf="!loading && !foods.length">{{ 'NO_FOODS_FOUND' | translate }}</div>
+
+      <nav class="afm__pager" *ngIf="totalPages > 1" [attr.aria-label]="'PAGE' | translate">
+        <button type="button" [attr.aria-label]="'PREVIOUS' | translate" [disabled]="page === 0" (click)="changePage(page - 1)">‹</button>
+        <ng-container *ngFor="let item of visiblePages">
+          <span class="afm__pager-gap" *ngIf="item === null" aria-hidden="true">…</span>
+          <button type="button" *ngIf="item !== null" [class.active]="item === page" [attr.aria-current]="item === page ? 'page' : null" (click)="changePage(item)">
+            {{ item + 1 }}
+          </button>
+        </ng-container>
+        <button type="button" [attr.aria-label]="'NEXT' | translate" [disabled]="page >= totalPages - 1" (click)="changePage(page + 1)">›</button>
+      </nav>
+    </div>
+
+    <div class="afm__body" *ngIf="step === 'detail' && selectedFood">
+      <div class="afm__selected">
+        <span class="afm__thumb" aria-hidden="true">
+          {{ (selectedFood.name || '?').charAt(0).toUpperCase() }}
+          <img *ngIf="foodImage(selectedFood)" [src]="foodImage(selectedFood)" alt="" (error)="$any($event.target).hidden = true" />
+        </span>
+        <strong>{{ selectedFood.name }}</strong>
+      </div>
+
+      <div class="afm__grid">
+        <label class="afm__field">
+          <span>{{ 'FOOD_PORTIONS' | translate }}</span>
+          <input type="number" min="0" step="0.25" inputmode="decimal" [(ngModel)]="serving.portions" (ngModelChange)="validationMessage = ''" />
+        </label>
+        <label class="afm__field">
+          <span>{{ 'UNIT' | translate }}</span>
+          <select (change)="serving.choose($any($event.target))">
+            <option *ngFor="let option of serving.options" [value]="option.id" [selected]="option.id === serving.servingId">
+              {{ option.size | number:'1.0-2' }} {{ option.unit | servingUnit }}
+            </option>
+            <option *ngIf="serving.canAdd" [value]="newServingOption">{{ 'MEAL_NEW_SERVING' | translate }}</option>
+          </select>
+        </label>
+      </div>
+      <p class="afm__amount" *ngIf="serving.serving as current">= {{ serving.quantity | number:'1.0-2' }} {{ current.unit | servingUnit }}</p>
+      <p class="afm__error" *ngIf="validationMessage" role="alert">{{ validationMessage }}</p>
+
+      <div class="afm__serving-form" *ngIf="serving.formOpen">
+        <p>{{ 'MEAL_NEW_SERVING_FOR' | translate:{ name: selectedFood.name } }}</p>
+        <app-food-serving-form [others]="serving.options" [unitSuggestions]="unitSuggestions" [saving]="serving.saving"
+          (saved)="createServing($event)" (cancelled)="serving.formOpen = false"></app-food-serving-form>
+        <p class="afm__error" *ngIf="serving.error" role="alert">{{ serving.error | translate }}</p>
+      </div>
+
+      <div class="afm__section">{{ 'NUTRITION_VALUES' | translate }}</div>
+      <div class="afm__macros">
+        <div><span>{{ 'CALORIES' | translate }}</span><strong>{{ macros.calories | number:'1.0-0' }} Kcal</strong></div>
+        <div><span>{{ 'PROTEIN' | translate }}</span><strong>{{ macros.protein | number:'1.0-1' }} g</strong></div>
+        <div><span>{{ 'CARBS' | translate }}</span><strong>{{ macros.carbs | number:'1.0-1' }} g</strong></div>
+        <div><span>{{ 'FAT' | translate }}</span><strong>{{ macros.fat | number:'1.0-1' }} g</strong></div>
+      </div>
+    </div>
+
+    <footer class="afm__foot" *ngIf="step === 'list'">
+      <button type="button" class="afm__btn afm__btn--ghost afm__btn--full" (click)="close()">{{ 'CANCEL' | translate }}</button>
+    </footer>
+    <footer class="afm__foot afm__foot--two" *ngIf="step === 'detail' && !serving.formOpen">
+      <button type="button" class="afm__btn afm__btn--ghost" (click)="backToList()">{{ 'BACK' | translate }}</button>
+      <button type="button" class="afm__btn afm__btn--primary" (click)="add()">{{ 'ADD_FOOD' | translate }}</button>
+    </footer>
+  </div>
+</div>

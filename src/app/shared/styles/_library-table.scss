@@ -1,0 +1,72 @@
+/* Library tables (workout programs, nutrition plans): imported LAST by both list components.
+   The columns follow the table's own width (zoom, open side panels), so the Actions button always stays inside
+   the table, on the right. The less useful columns leave first: "Last modified", then "Type" and "Created".
+   Below 1100px the lists keep their own card layout. */
+@media (min-width: 1100.02px) {
+  .programs-table.programs-table--cap {
+    container-type: inline-size;
+  }
+
+  .programs-table.programs-table--cap .table-header,
+  .programs-table.programs-table--cap .program-row {
+    grid-template-columns: minmax(200px, 1fr) minmax(96px, 150px) minmax(96px, 140px) minmax(96px, 150px) max-content !important;
+    column-gap: 20px !important;
+  }
+
+  .programs-table.programs-table--cap.programs-table--without-type .table-header,
+  .programs-table.programs-table--cap.programs-table--without-type .program-row {
+    grid-template-columns: minmax(200px, 1fr) minmax(96px, 140px) minmax(96px, 150px) max-content !important;
+  }
+
+  .programs-table.programs-table--cap .col-program,
+  .programs-table.programs-table--cap .col-type,
+  .programs-table.programs-table--cap .col-created,
+  .programs-table.programs-table--cap .col-modified,
+  .programs-table.programs-table--cap .col-actions {
+    grid-column: auto !important;
+    min-width: 0 !important;
+  }
+
+  .programs-table.programs-table--cap .col-actions {
+    justify-self: end !important;
+  }
+
+  .programs-table.programs-table--cap .program-copy {
+    min-width: 0 !important;
+  }
+
+  .programs-table.programs-table--cap .program-name {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  @container (max-width: 999.98px) {
+    .programs-table.programs-table--cap .col-modified {
+      display: none !important;
+    }
+
+    .programs-table.programs-table--cap .table-header,
+    .programs-table.programs-table--cap .program-row {
+      grid-template-columns: minmax(200px, 1fr) minmax(96px, 150px) minmax(96px, 140px) max-content !important;
+    }
+
+    .programs-table.programs-table--cap.programs-table--without-type .table-header,
+    .programs-table.programs-table--cap.programs-table--without-type .program-row {
+      grid-template-columns: minmax(200px, 1fr) minmax(96px, 140px) max-content !important;
+    }
+  }
+
+  @container (max-width: 819.98px) {
+    .programs-table.programs-table--cap .col-type,
+    .programs-table.programs-table--cap .col-created {
+      display: none !important;
+    }
+
+    .programs-table.programs-table--cap .table-header,
+    .programs-table.programs-table--cap .program-row,
+    .programs-table.programs-table--cap.programs-table--without-type .table-header,
+    .programs-table.programs-table--cap.programs-table--without-type .program-row {
+      grid-template-columns: minmax(0, 1fr) max-content !important;
+    }
+  }
+}

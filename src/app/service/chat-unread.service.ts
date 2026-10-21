@@ -13,6 +13,10 @@ export class ChatUnreadService implements OnDestroy {
   private readonly unreadCountsSubject = new BehaviorSubject<Map<string, number>>(new Map());
   readonly unreadCounts$ = this.unreadCountsSubject.asObservable();
 
+  /** null until the first answer of the notification service, then true (read) or false (failed). */
+  private readonly syncedSubject = new BehaviorSubject<boolean | null>(null);
+  readonly synced$ = this.syncedSubject.asObservable();
+
   private readonly destroy$ = new Subject<void>();
   private notificationCache: Notification[] = [];
 
@@ -68,6 +72,11 @@ export class ChatUnreadService implements OnDestroy {
     return this.unreadCountsSubject.value.get(conversationId) || 0;
   }
 
+  /** Reads the unread messages again now (dashboard "Retry"). */
+  refresh(): void {
+    this.syncFromNotifications();
+  }
+
   private syncFromNotifications(): void {
     const userId = sessionStorage.getItem('userId');
     if (!userId) return;
@@ -78,8 +87,11 @@ export class ChatUnreadService implements OnDestroy {
         next: (notifications) => {
           this.notificationCache = notifications || [];
           this.recomputeUnread();
+          this.syncedSubject.next(true);
         },
-        error: () => {}
+        error: () => {
+          if (this.syncedSubject.value !== true) this.syncedSubject.next(false);
+        }
       });
   }
 

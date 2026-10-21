@@ -169,9 +169,9 @@
         <div
           *ngIf="entry.kind === 'message'"
           class="message"
-          [ngClass]="entry.message.senderId === currentUserId ? 'me' : 'other'"
+          [ngClass]="isOwnMessage(entry.message) ? 'me' : 'other'"
         >
-          <span class="message-sender" *ngIf="selectedConv?.isGroup && entry.message.senderId !== currentUserId">{{ entry.message.sender?.name }}</span>
+          <span class="message-sender" *ngIf="selectedConv?.isGroup && !isOwnMessage(entry.message)">{{ entry.message.sender?.name }}</span>
 
           <ng-container [ngSwitch]="entry.message.type">
             <div class="message-content" *ngSwitchCase="'TEXT'">
@@ -221,7 +221,7 @@
 
           <div class="message-time">
             {{ entry.message.timestamp }}
-            <ng-container *ngIf="entry.message.senderId === currentUserId">
+            <ng-container *ngIf="isOwnMessage(entry.message)">
               · {{ (entry.message.deliveryStatus === 'sending' ? 'SENDING' : entry.message.deliveryStatus === 'failed' ? 'FAILED' : 'SENT') | translate }}
               <button *ngIf="entry.message.deliveryStatus === 'failed'" type="button" class="message-retry" (click)="retryMessage(entry.message)">
                 · {{ 'RETRY' | translate }}
@@ -262,7 +262,7 @@
         </ng-container>
       </div>
 
-      <div class="chat-input-bar">
+      <div class="chat-input-bar" *ngIf="!clientPreview">
         <input #documentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onDocumentSelected($event)" />
 
         <div class="pending-attachment" *ngIf="pendingDocument">
@@ -333,7 +333,7 @@
        CLIENT PROFILE — slide-in panel
   ═══════════════════════════════════════════ -->
   <aside class="chat-profile" *ngIf="!embeddedMode" [class.chat-profile--open]="showClientProfile && !selectedConv?.isGroup">
-    <app-profil-client *ngIf="selectedClientId" [clientIdInput]="selectedClientId"></app-profil-client>
+    <app-profil-client *ngIf="selectedClientId && (showClientProfile || profileBuiltFor === selectedClientId)" [clientIdInput]="selectedClientId"></app-profil-client>
   </aside>
 </div>
 

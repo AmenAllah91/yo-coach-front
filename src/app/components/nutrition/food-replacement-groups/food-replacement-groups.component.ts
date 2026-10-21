@@ -24,17 +24,25 @@ import { FoodServing } from '@shared/models/MealPlan';
 import { defaultServingOf, lineRatio, Macros, servingMacros, servingsOf } from '@shared/models/nutrition-math';
 import { amountOf, editableUnit, portionsOf } from '../food-servings/food-serving-rules';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
+import { ToastService } from 'app/service/toast.service';
+import { DeleteConfirmModalComponent } from '../delete-confirm-modal/delete-confirm-modal.component';
 
 
 type ViewMode = 'LIST' | 'EDITOR';
+
+interface FoodSelection {
+  food: any;
+  servingId: string | null;
+  portions: number;
+}
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 @Component({
   selector: 'app-food-replacement-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, ServingUnitPipe],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, ServingUnitPipe, DeleteConfirmModalComponent],
   templateUrl: './food-replacement-groups.component.html',
-  styleUrls: ['./food-replacement-groups.component.scss'],
+  styleUrls: ['./food-replacement-groups.component.scss', './_replacement-add-modal.scss', './_replacement-editor.scss'],
 })
 export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   goBack(): void { window.history.back(); }
@@ -72,16 +80,16 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
   showAddFoodModal = false;
   foodSearchTerm = '';
   foodTab: 'all' | 'custom' = 'all';
-  selectedFood: any | null = null;
-  selectedQuantity = 100;
-  selectedUnit = 'g';
-  selectedServingId: string | null = null;
+  /** Foods ticked in the Add Food modal, each with its number of servings of one of its units. */
+  selections: FoodSelection[] = [];
+  /** The last ticked food: the single-food API below (selectedFood, selectedQuantity...) works on it. */
+  private activeSelection: FoodSelection | null = null;
   editingFoodRefId: string | null = null;
   saving = false;
   readonly groupNameMaxLength = REPLACEMENT_GROUP_NAME_MAX_LENGTH;
   readonly clientGuidanceMaxLength = REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH;
   foodPage = 0;
-  readonly foodPageSize = 3;
+  readonly foodPageSize = 6;
   openGroupActionsId: string | null = null;
 
   constructor(
@@ -89,6 +97,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     private nutritionService: NutritionService,
     private hostElement: ElementRef<HTMLElement>,
     private translate: TranslateService,
+    private toast?: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -165,6 +174,27 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       : this.groupFoods;
   }
 
+  /** Errors appear once the coach left the field or tried to save, never on an untouched form. */
+  submitted = false;
+  nameTouched = false;
+
+  get nameError(): string {
+    if (!this.groupName.trim()) return 'REPLACEMENT_GROUP_NAME_REQUIRED';
+    return this.groupNameValid ? '' : 'REPLACEMENT_GROUP_NAME_MAX_LENGTH';
+  }
+
+  get nameErrorShown(): boolean {
+    return !!this.nameError && (this.submitted || this.nameTouched || this.groupName.length > this.groupNameMaxLength);
+  }
+
+  get foodsStepDone(): boolean {
+    return this.groupFoods.length >= 2 && this.groupFoodsUnique && this.groupFoodsValid;
+  }
+
+  get foodsErrorShown(): boolean {
+    return (this.submitted && this.groupFoods.length < 2) || !this.groupFoodsUnique || !this.groupFoodsValid;
+  }
+
   get groupNameValid(): boolean {
     return isReplacementGroupNameValid(this.groupName);
   }
@@ -189,30 +219,36 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     );
   }
 
-  get selectedFoodValid(): boolean {
-    return Boolean(this.selectedFood && this.getFoodId(this.selectedFood));
+  get selectedFood(): any | null {
+    return this.activeSelection?.food ?? null;
   }
 
-  get selectedQuantityValid(): boolean {
-    return Number.isFinite(Number(this.selectedQuantity)) && Number(this.selectedQuantity) > 0;
+  get selectedServingId(): string | null {
+    return this.activeSelection?.servingId ?? null;
   }
 
-  get selectedUnitValid(): boolean {
-    return Boolean(this.selectedUnit?.trim());
+  get selectedQuantity(): number {
+    return this.activeSelection?.portions ?? 1;
   }
 
+  set selectedQuantity(portions: number) {
+    if (this.activeSelection) this.activeSelection.portions = portions;
+  }
+
+  get selectedUnit(): string {
+    return this.activeSelection ? this.unitOf(this.activeSelection) : 'g';
+  }
+
+  /** Every ticked food is valid (servings > 0, a unit) and none is already in the group. */
   get canAddSelectedFood(): boolean {
-    if (!this.selectedFoodValid || !this.selectedQuantityValid || !this.selectedUnitValid) {
-      return false;
-    }
-    const foodRefId = this.getFoodId(this.selectedFood);
-    return !this.groupFoods.some(
-      (food) => food.foodRefId === foodRefId && food.foodRefId !== this.editingFoodRefId,
-    );
+    return this.selections.length > 0 && this.selections.every((selection) =>
+      !!this.getFoodId(selection.food) && this.portionsValid(selection) && !!this.servingOf(selection)
+      && !this.groupFoods.some((food) => food.foodRefId === this.getFoodId(selection.food) && food.foodRefId !== this.editingFoodRefId));
   }
 
-  loadGroups(): void {
-    this.loading = true;
+  /** quiet: refresh after a change, the list stays on screen (no skeleton). */
+  loadGroups(quiet = false): void {
+    this.loading = !quiet;
 
     const active =
       this.statusFilter === 'all'
@@ -292,6 +328,8 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.groupFoods = [];
     this.groupFoodSearchTerm = '';
     this.saving = false;
+    this.submitted = false;
+    this.nameTouched = false;
     this.view = 'EDITOR';
     setTimeout(() => this.hideLayoutBackButton());
   }
@@ -304,6 +342,8 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.groupFoods = (group.foods || []).map((food) => ({ ...food }));
     this.groupFoodSearchTerm = '';
     this.saving = false;
+    this.submitted = false;
+    this.nameTouched = false;
     this.view = 'EDITOR';
     setTimeout(() => this.hideLayoutBackButton());
   }
@@ -334,8 +374,13 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.layoutBackButton = null;
   }
 
+  /** Save is always clickable: with something missing, it shows what to complete and goes to it. */
   saveGroup(): void {
+    if (this.saving) return;
+    this.submitted = true;
     if (!this.canSaveGroup) {
+      this.toast?.error(this.translate.instant('RGE_FIX_ERRORS'));
+      this.focusFirstError();
       return;
     }
 
@@ -360,20 +405,70 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       : this.replacementGroupsService.createGroup(payload);
 
     request.pipe(finalize(() => this.saving = false)).subscribe({
-      next: () => {
-        this.loadGroups();
+      next: (saved) => {
+        this.toast?.success(this.translate.instant('RGE_SAVED'));
+        if (saved?.id) {
+          const index = this.groups.findIndex((group) => group.id === saved.id);
+          if (index >= 0) this.groups[index] = saved;
+          else if (this.currentPage === 0) this.groups = [saved, ...this.groups].slice(0, this.pageSize);
+        }
         this.closeEditor();
+        this.loadGroups(true);
       },
-      error: (error) => console.error('Error saving food replacement group:', error),
+      error: (error) => {
+        console.error('Error saving food replacement group:', error);
+        this.toast?.error(this.translate.instant('RGE_SAVE_ERROR'));
+      },
     });
   }
 
+  private focusFirstError(): void {
+    setTimeout(() => {
+      const host = this.hostElement.nativeElement;
+      const target = !this.groupNameValid ? host.querySelector<HTMLElement>('#rge-name')
+        : !this.clientGuidanceValid ? host.querySelector<HTMLElement>('#rge-guidance')
+        : host.querySelector<HTMLElement>('#rge-foods');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) target.focus({ preventScroll: true });
+    });
+  }
+
+  /** Group waiting for the coach's confirmation in the delete modal. */
+  groupToDelete: FoodReplacementGroup | null = null;
+  /** Kept while the modal slides out, so its text does not empty during the animation. */
+  groupToDeleteName = '';
+
   deleteGroup(group: FoodReplacementGroup): void {
     if (!group.id) return;
+    this.groupToDelete = group;
+    this.groupToDeleteName = group.name;
+  }
 
+  cancelDeleteGroup(): void {
+    this.groupToDelete = null;
+  }
+
+  /** The group leaves the list at once; it comes back if the server refuses. */
+  confirmDeleteGroup(): void {
+    const group = this.groupToDelete;
+    this.groupToDelete = null;
+    if (!group?.id) return;
+    const index = this.groups.indexOf(group);
+    this.groups = this.groups.filter((item) => item !== group);
+    this.totalElements = Math.max(0, this.totalElements - 1);
     this.replacementGroupsService.deleteGroup(group.id).subscribe({
-      next: () => this.loadGroups(),
-      error: (error) => console.error('Error deleting replacement group:', error),
+      next: () => {
+        this.toast?.success(this.translate.instant('GROUP_DELETED'));
+        if (!this.groups.length && this.currentPage > 0) this.onPageChange(this.currentPage - 1);
+      },
+      error: (error) => {
+        console.error('Error deleting replacement group:', error);
+        const groups = [...this.groups];
+        groups.splice(Math.min(index, groups.length), 0, group);
+        this.groups = groups;
+        this.totalElements++;
+        this.toast?.error(this.translate.instant('GROUP_DELETE_ERROR'));
+      },
     });
   }
 
@@ -382,93 +477,152 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.foodSearchTerm = '';
     this.foodPage = 0;
     this.foodTab = 'all';
-    this.selectedFood = null;
+    this.selections = [];
+    this.activeSelection = null;
     this.editingFoodRefId = null;
-    this.selectedServingId = null;
-    this.selectedQuantity = 1;
-    this.selectedUnit = 'g';
     this.showAddFoodModal = true;
   }
 
   closeAddFoodModal(): void {
     this.showAddFoodModal = false;
-    this.selectedFood = null;
+    this.selections = [];
+    this.activeSelection = null;
     this.editingFoodRefId = null;
   }
 
+  isFoodSelected(food: any): boolean {
+    const foodRefId = this.getFoodId(food);
+    return this.selections.some((selection) => this.getFoodId(selection.food) === foodRefId);
+  }
+
+  /** A click on a food of the list ticks it (one serving of its main unit) or unticks it. */
+  toggleFood(food: any): void {
+    const foodRefId = this.getFoodId(food);
+    const ticked = this.selections.find((selection) => this.getFoodId(selection.food) === foodRefId);
+    if (ticked) {
+      this.removeSelection(ticked);
+      return;
+    }
+    this.selectFood(food);
+  }
+
+  /** Ticks a food (or makes it the active one when already ticked). */
   selectFood(food: any): void {
     const foodRefId = this.getFoodId(food);
     if (!foodRefId || this.groupFoods.some(
       (item) => item.foodRefId === foodRefId && item.foodRefId !== this.editingFoodRefId,
     )) return;
-    this.selectedFood = food;
-    this.applyServing(defaultServingOf(food));
+    let selection = this.selections.find((item) => this.getFoodId(item.food) === foodRefId);
+    if (!selection) {
+      const serving = defaultServingOf(food);
+      selection = { food, servingId: serving.id ?? null, portions: 1 };
+      this.selections = [...this.selections, selection];
+    }
+    this.activeSelection = selection;
+  }
+
+  removeSelection(selection: FoodSelection): void {
+    this.selections = this.selections.filter((item) => item !== selection);
+    if (this.activeSelection === selection) this.activeSelection = this.selections[this.selections.length - 1] ?? null;
+  }
+
+  optionsOf(selection: FoodSelection): FoodServing[] {
+    return servingsOf(selection.food);
+  }
+
+  servingOf(selection: FoodSelection): FoodServing | null {
+    const options = this.optionsOf(selection);
+    return options.find((serving) => serving.id === selection.servingId) ?? options[0] ?? null;
+  }
+
+  unitOf(selection: FoodSelection): string {
+    const serving = this.servingOf(selection);
+    return serving ? editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE')) : 'g';
+  }
+
+  amountOfSelection(selection: FoodSelection): number {
+    const serving = this.servingOf(selection);
+    return serving ? amountOf(selection.portions, serving.size) : 0;
+  }
+
+  macrosOf(selection: FoodSelection): Macros | null {
+    const serving = this.servingOf(selection);
+    return serving ? servingMacros(serving, lineRatio(this.amountOfSelection(selection), serving.size)) : null;
+  }
+
+  portionsValid(selection: FoodSelection): boolean {
+    return Number.isFinite(Number(selection.portions)) && Number(selection.portions) > 0;
+  }
+
+  /** Another unit: one serving of it, as when the food is ticked. */
+  setSelectionServing(selection: FoodSelection, servingId: string): void {
+    if (!this.optionsOf(selection).some((serving) => serving.id === servingId)) return;
+    selection.servingId = servingId;
+    selection.portions = 1;
   }
 
   get servingOptions(): FoodServing[] {
-    return this.selectedFood ? servingsOf(this.selectedFood) : [];
+    return this.activeSelection ? this.optionsOf(this.activeSelection) : [];
   }
 
   get selectedServing(): FoodServing | null {
-    return this.servingOptions.find((serving) => serving.id === this.selectedServingId) ?? null;
+    return this.activeSelection ? this.servingOf(this.activeSelection) : null;
   }
 
   get selectedPreview(): Macros | null {
-    const serving = this.selectedServing;
-    return serving ? servingMacros(serving, lineRatio(this.selectedAmount, serving.size)) : null;
+    return this.activeSelection ? this.macrosOf(this.activeSelection) : null;
   }
 
   get selectedAmount(): number {
-    const serving = this.selectedServing;
-    return serving ? amountOf(this.selectedQuantity, serving.size) : 0;
+    return this.activeSelection ? this.amountOfSelection(this.activeSelection) : 0;
   }
 
   selectServing(servingId: string): void {
-    const serving = this.servingOptions.find((option) => option.id === servingId);
-    if (serving) this.applyServing(serving);
+    if (this.activeSelection) this.setSelectionServing(this.activeSelection, servingId);
+  }
+
+  /** Number of servings of the item unit (quantity / serving size). */
+  itemPortions(food: FoodReplacementGroupItem): number {
+    return portionsOf(food.quantity, food.servingSize) ?? 1;
   }
 
   itemMacros(food: FoodReplacementGroupItem): Macros {
     return servingMacros(food, lineRatio(food.quantity, food.servingSize));
   }
 
-  private applyServing(serving: FoodServing): void {
-    this.selectedServingId = serving.id ?? null;
-    this.selectedQuantity = 1;
-    this.selectedUnit = editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE'));
-  }
-
+  /** Adds every ticked food to the group (or replaces the food being edited). */
   addSelectedFood(): void {
     if (!this.canAddSelectedFood) return;
 
-    const foodRefId = this.getFoodId(this.selectedFood);
-    const serving = this.selectedServing ?? defaultServingOf(this.selectedFood);
+    const items = this.selections.map((selection) => this.itemOf(selection));
+    const editingIndex = this.editingFoodRefId
+      ? this.groupFoods.findIndex((food) => food.foodRefId === this.editingFoodRefId)
+      : -1;
+    if (editingIndex >= 0) {
+      this.groupFoods.splice(editingIndex, 1, ...items);
+    } else {
+      this.groupFoods.push(...items);
+    }
 
-    const item: FoodReplacementGroupItem = {
-      foodRefId,
+    this.closeAddFoodModal();
+  }
+
+  private itemOf(selection: FoodSelection): FoodReplacementGroupItem {
+    const serving = this.servingOf(selection) ?? defaultServingOf(selection.food);
+    return {
+      foodRefId: this.getFoodId(selection.food),
       servingId: serving.id ?? null,
-      quantity: amountOf(this.selectedQuantity, serving.size),
-      unit: this.selectedUnit.trim(),
-      name: this.getFoodName(this.selectedFood),
+      quantity: amountOf(selection.portions, serving.size),
+      unit: editableUnit(serving.unit, this.translate.instant('FOOD_UNIT_PIECE')).trim(),
+      name: this.getFoodName(selection.food),
       energy: this.getCalories(serving),
       protein: this.getProtein(serving),
       carbohydrates: this.getCarbs(serving),
       fat: this.getFat(serving),
       servingSize: Number(serving.size),
       servingDescription: serving.unit,
-      general: this.isGeneralFood(this.selectedFood),
+      general: this.isGeneralFood(selection.food),
     };
-
-    const editingIndex = this.editingFoodRefId
-      ? this.groupFoods.findIndex((food) => food.foodRefId === this.editingFoodRefId)
-      : -1;
-    if (editingIndex >= 0) {
-      this.groupFoods[editingIndex] = item;
-    } else {
-      this.groupFoods.push(item);
-    }
-
-    this.closeAddFoodModal();
   }
 
   editGroupFood(food: FoodReplacementGroupItem): void {
@@ -483,7 +637,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       carbohydrates: food.carbohydrates,
       fat: food.fat,
     };
-    this.selectedFood = {
+    const itemFood = {
       id: food.foodRefId,
       name: food.name,
       energy: food.energy,
@@ -499,16 +653,20 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
       servings: food.servingId ? [itemServing] : undefined,
       defaultServingId: food.servingId ?? undefined,
     };
-    this.selectedServingId = food.servingId ?? servingsOf(this.selectedFood)[0]?.id ?? null;
-    this.selectedQuantity = portionsOf(food.quantity, food.servingSize) ?? 1;
-    this.selectedUnit = food.unit;
+    const selection: FoodSelection = {
+      food: itemFood,
+      servingId: food.servingId ?? servingsOf(itemFood)[0]?.id ?? null,
+      portions: portionsOf(food.quantity, food.servingSize) ?? 1,
+    };
+    this.selections = [selection];
+    this.activeSelection = selection;
     this.showAddFoodModal = true;
     this.nutritionService.getFoodForClient(food.foodRefId).subscribe({
       next: (detail: any) => {
-        if (this.editingFoodRefId !== food.foodRefId || !this.selectedFood) return;
+        if (this.editingFoodRefId !== food.foodRefId || this.activeSelection !== selection) return;
         const servings = servingsOf(detail);
         const merged = food.servingId && !servings.some((serving) => serving.id === food.servingId) ? [itemServing, ...servings] : servings;
-        this.selectedFood = { ...this.selectedFood, servings: merged, defaultServingId: detail?.defaultServingId };
+        selection.food = { ...selection.food, servings: merged, defaultServingId: detail?.defaultServingId };
       },
       error: () => {},
     });

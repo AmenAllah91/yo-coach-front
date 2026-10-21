@@ -1286,3 +1286,12 @@
     </div>
   </section>
 </div>
+
+<app-ready-weeks-modal
+  *ngIf="readyWeeksPrompt"
+  [weeks]="readyWeeksPrompt"
+  [saving]="savingDraft"
+  (publish)="publishReadyWeeks($event)"
+  (keepDraft)="keepReadyWeeksAsDraft()"
+  (close)="readyWeeksPrompt = null"
+></app-ready-weeks-modal>

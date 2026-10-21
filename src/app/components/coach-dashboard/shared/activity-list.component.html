@@ -1,0 +1,24 @@
+<section class="day" *ngFor="let day of days; trackBy: trackByDay">
+  <h3 class="day-label">{{ day.label }}</h3>
+  <ul class="activity-list">
+    <li class="activity" *ngFor="let row of day.rows; trackBy: trackById">
+      <a class="activity-main" [routerLink]="row.link.commands" [queryParams]="row.link.queryParams">
+        <span class="avatar tone-{{ row.tone }}">
+          <img *ngIf="row.activity.avatarUrl && !brokenAvatars.has(row.activity.clientId); else fallback"
+               [src]="row.activity.avatarUrl" alt="" (error)="brokenAvatars.add(row.activity.clientId)" />
+          <ng-template #fallback>{{ row.initials }}</ng-template>
+          <span class="category" [attr.data-category]="row.activity.category"><i-feather [name]="row.icon"></i-feather></span>
+        </span>
+        <span class="text">
+          <span class="sentence"><strong>{{ row.activity.clientName }}</strong> {{ row.sentence.key | translate: row.sentence.params }}</span>
+          <span class="detail" *ngIf="row.detail">{{ row.detail.key | translate: row.detail.params }}</span>
+        </span>
+      </a>
+      <span class="side">
+        <time *ngIf="row.time" [attr.datetime]="row.activity.occurredAt">{{ row.time }}</time>
+        <a class="review" *ngIf="row.reviewable" routerLink="/forms/manage-checkins"
+           [queryParams]="{ assignmentId: row.activity.refId }">{{ 'CDASH.REVIEW' | translate }}</a>
+      </span>
+    </li>
+  </ul>
+</section>

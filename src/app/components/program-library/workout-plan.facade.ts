@@ -52,6 +52,9 @@ export class WorkoutPlanFacade {
 
   exerciseDatabase: Exercise[] = [];
   loading = false;
+  /** Total of the current search (all pages), and whether the list was fetched once. */
+  totalExercises = 0;
+  exercisesLoaded = false;
 
   page = 0;
   size = 10;
@@ -122,6 +125,16 @@ export class WorkoutPlanFacade {
     }));
   }
 
+  /**
+   * Opening a plan for editing: this service is shared by the whole app, so the previous page's plan, days and
+   * open panels are cleared first (they used to show until the new plan arrived).
+   */
+  initEdit() {
+    this.days = [];
+    this.selectedDay = null;
+    this.resetUiState();
+  }
+
   initCreate() {
     this.days = [];
     this.selectedDay = null;
@@ -153,6 +166,7 @@ export class WorkoutPlanFacade {
     this.page = 0;
     this.size = 10;
     this.totalPages = 1;
+    this.exercisesLoaded = false; // filters are back to default: fetch the first page again (in the background)
 
     this.isExerciseModalOpen = false;
     this.exerciseStep = 'list';
@@ -226,7 +240,8 @@ export class WorkoutPlanFacade {
   }
 
   loadPlanForEdit(id: string) {
-    return this.workoutService.getWorkoutById(id);
+    // The page shows its own loading state: no full-screen loader.
+    return this.workoutService.getWorkoutById(id, true);
   }
 
   private buildSavePayload(): WorkoutPlan {
@@ -247,12 +262,12 @@ export class WorkoutPlanFacade {
 
   createPlan() {
     const payload = this.buildSavePayload();
-    return this.workoutService.createWorkout(payload);
+    return this.workoutService.createWorkout(payload, true); // the toolbar shows the saving state
   }
 
   updatePlan() {
     const payload = this.buildSavePayload();
-    return this.workoutService.updateWorkout(payload.id!, payload);
+    return this.workoutService.updateWorkout(payload.id!, payload, true);
   }
 
   private clean(value: any): string {
@@ -519,8 +534,9 @@ export class WorkoutPlanFacade {
       type: this.typeFilter,
     };
 
+    // The exercise panel shows its own loading state: no full-screen loader.
     this.exerciseRefService
-      .getExercises(this.page, this.size, filters)
+      .getExercises(this.page, this.size, filters, true)
       .subscribe({
         next: (res: PageResponse<Exercise>) => {
           this.exerciseDatabase = (res.content || []).map((e: Exercise) =>
@@ -528,6 +544,8 @@ export class WorkoutPlanFacade {
           );
 
           this.totalPages = res.totalPages ?? 1;
+          this.totalExercises = res.totalElements ?? this.exerciseDatabase.length;
+          this.exercisesLoaded = true;
           this.loading = false;
         },
         error: (error) => {
@@ -566,7 +584,12 @@ export class WorkoutPlanFacade {
 
   openExerciseSelector() {
     this.showExerciseSelector = true;
-    this.loadExercisesFromAPI();
+    if (!this.exercisesLoaded && !this.loading) this.loadExercisesFromAPI();
+  }
+
+  /** Fetches the first exercises in the background, so the panel opens with its list already there. */
+  prefetchExercises() {
+    if (!this.exercisesLoaded && !this.loading) this.loadExercisesFromAPI();
   }
 
   closeExerciseSelector() {

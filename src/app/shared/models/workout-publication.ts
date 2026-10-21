@@ -92,24 +92,18 @@ export function workoutDayValidationMessages(
 
   const dayNumber = day.dayNumber ?? dayIndex + 1;
   const messages: string[] = [];
-  const started = sessions.length > 0 || !!day.description?.trim();
-  if (!started) return [];
+  // A draft may keep days in progress: a session without exercise (the default "Main Session" the editor gives every
+  // day, or a named one) does not block the save. Publishing a week still needs its 7 days ready (workoutDayState).
+  // Sessions with exercises must be valid: workout name, exercise names, at least one valid set.
+  const started = sessions.filter((session) => !!session?.exercises?.length);
+  if (!started.length) return [];
 
-  if (!sessions.length) {
-    messages.push(`Day ${dayNumber}: add at least one exercise before saving.`);
-    return messages;
-  }
-
-  sessions.forEach((session, sessionIndex) => {
+  started.forEach((session) => {
     if (!session?.name?.trim()) {
       messages.push(`Day ${dayNumber}: enter a workout name before saving.`);
     }
-    if (!session?.exercises?.length) {
-      messages.push(`Day ${dayNumber}: workout ${sessionIndex + 1} needs at least one exercise.`);
-      return;
-    }
 
-    session.exercises.forEach((exercise, exerciseIndex) => {
+    session.exercises!.forEach((exercise, exerciseIndex) => {
       const exerciseNumber = exerciseIndex + 1;
       if (!exercise?.name?.trim()) {
         messages.push(`Day ${dayNumber}: exercise ${exerciseNumber} needs a name.`);

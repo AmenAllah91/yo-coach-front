@@ -1,0 +1,214 @@
+/* =====================================================================
+   Nutrition builders: the week/day structure rail looks exactly like the
+   workout builder's (values measured on the workout page). Loaded last by
+   the nutrition builders, after ../program-library/_workout-builder-layout.scss.
+   ===================================================================== */
+
+.np-root.np-layout .np-shell > .np-aside .np-aside__head {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 0 !important;
+  align-items: start !important;
+  min-height: 86px !important;
+  margin: 0 !important;
+  padding: 14px 14px 10px !important;
+  border-bottom: 1px solid #eef2f6 !important;
+  color: #102038 !important;
+  letter-spacing: .25px !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-aside__head .np-h6 {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #142033 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-aside__sub {
+  margin: 3px 0 0 !important;
+  color: #607087 !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-aside__head > .np-link {
+  position: absolute !important;
+  top: 25px !important;
+  right: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin: 6px 0 0 !important;
+  padding: 0 !important;
+  color: #079dd3 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 17.5px !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-aside__body {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 8px 8px 12px !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card__head {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: auto !important;
+  justify-content: space-between !important;
+  min-height: 50px !important;
+  margin: 0 !important;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card__head-top {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  height: auto !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card__head-top strong {
+  color: #182235 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 22px !important;
+  letter-spacing: .45px !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card__status {
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 18px !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card__status.is-published {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card__count {
+  margin-left: auto !important;
+  color: #6d7f99 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 44px !important;
+  margin: 0 0 0 20px !important;
+  padding: 0 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: 45px !important;
+  padding: 8px 12px 8px 14px !important;
+  border: 0 !important;
+  border-radius: 0 9px 9px 0 !important;
+  background: transparent !important;
+  color: #35445b !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.is-active {
+  background: #e5f5fb !important;
+  color: #1ea2d2 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-day__title {
+  color: #35445b !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 22px !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-day__meta {
+  margin-left: auto !important;
+  color: #079bd4 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 15px !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-day-state {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 19px !important;
+  width: 19px !important;
+  height: 19px !important;
+  color: #c0c7d0 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-day-state.ready {
+  color: #12bf94 !important;
+}
+
+/* The nutrition stylesheet hid the rail at 900px and below (its old phone layout). The workout layout decides now:
+   a column from 768px, the off-canvas panel opened from the toolbar on phones. */
+.np-root.np-layout .np-shell > .np-aside {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Narrow rail (tablets, zoomed-in desktops): "Expand all" goes under the title instead of over it, as in workout. */
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  .np-root.np-layout .np-shell > .np-aside .np-aside__head {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .np-root.np-layout .np-shell > .np-aside .np-aside__head > .np-link {
+    position: static !important;
+    display: inline-flex !important;
+    margin: 6px 0 0 !important;
+  }
+}
+
+/* Narrow rail whatever the screen (zoomed-in page): same as workout, "Expand all" under the title and the count. */
+@container (max-width: 250px) {
+  .np-root.np-layout .np-shell > .np-aside .np-aside__head {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .np-root.np-layout .np-shell > .np-aside .np-aside__head > .np-link {
+    position: static !important;
+    display: inline-flex !important;
+    margin: 6px 0 0 !important;
+  }
+}

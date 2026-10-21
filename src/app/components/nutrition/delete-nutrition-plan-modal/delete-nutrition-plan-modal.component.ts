@@ -8,7 +8,8 @@ import { TranslateModule } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, FeatherModule, TranslateModule],
   templateUrl: './delete-nutrition-plan-modal.component.html',
-  styleUrls: ['./delete-nutrition-plan-modal.component.scss']
+  // Same look as the workout program delete modal.
+  styleUrls: ['../../program-library/delete-modal/delete-modal.component.scss']
 })
 export class DeleteNutritionPlanModalComponent {
   @Input() isVisible = false;

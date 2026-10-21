@@ -88,7 +88,7 @@ export class FormsApiService {
   private userUrl = `${environment.baseApiUrl}/clients/clients`;
   constructor(private http: HttpClient) {}
 
-  getMyFormsPage(page: number, size: number, status?: FormStatus, excludeArchived?: boolean, clientId?: string | null) {
+  getMyFormsPage(page: number, size: number, status?: FormStatus, excludeArchived?: boolean, clientId?: string | null, skipLoader = false) {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size)
@@ -98,11 +98,12 @@ export class FormsApiService {
     if (status) params = params.set('status', status);
     if (excludeArchived) params = params.set('excludeArchived', 'true');
     if (clientId) params = params.set('clientId', clientId);
-    return this.http.get<PageResponse<Form>>(`${this.baseUrl}/page`, { params });
+    return this.http.get<PageResponse<Form>>(`${this.baseUrl}/page`, { params, headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} });
   }
 
   getCounts() {
-    return this.http.get<{active: number; archived: number}>(`${this.baseUrl}/counts`);
+    // Small badges: never the full-screen loader.
+    return this.http.get<{active: number; archived: number}>(`${this.baseUrl}/counts`, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   /** ✅ EXISTANT */

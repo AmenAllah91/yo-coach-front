@@ -2,6 +2,7 @@ import { foodPageRange } from '../food-page-range';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
+import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -19,16 +20,30 @@ import { lineMacros, lineServing } from '@shared/models/nutrition-math';
 import { FoodServing } from '@shared/models/MealPlan';
 import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
-import { NEW_SERVING_OPTION, PlanFoodServing } from '../food-servings/plan-food-serving';
+import { AddedFood, AddFoodModalComponent } from '../add-food-modal/add-food-modal.component';
+import {
+  linePortions,
+  lineServingIndex,
+  lineServingOptions,
+  NEW_SERVING_OPTION,
+  PlanFoodServing,
+  setLinePortions,
+  setLineServing,
+} from '../food-servings/plan-food-serving';
 
 @Component({
   selector: 'app-assign-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent, FoodServingFormComponent, ServingUnitPipe],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, TranslateModule, WorkoutWeekPanelComponent, FoodServingFormComponent, ServingUnitPipe, ReadyWeeksModalComponent, AddFoodModalComponent],
   templateUrl: './assign-full-plan.component.html',
-  styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss'],
+  styleUrls: ['./assign-full-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../_nutrition-foods.scss'],
 })
 export class AssignFullPlanComponent implements OnInit {
+  /** Phones: the week/day structure opens over the page (same as the workout builder). */
+  mobileStructureOpen = false;
+  /** Used by the toolbar "Save draft" (through the ready-weeks check of the draft state). */
+  readonly savePlanFn = (publishWeeks?: number[]) => this.savePlan(publishWeeks);
+
   draft = new NutritionDraftState(this.nutritionService, this.route, null, () => this.translate.currentLang, this.router);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -100,6 +115,7 @@ export class AssignFullPlanComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.nutritionService.prefetchPickerFoods();
     this.planId = (this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId'));
     const clientId = this.route.snapshot.paramMap.get('idClient');
     if (this.planId) {
@@ -292,6 +308,27 @@ export class AssignFullPlanComponent implements OnInit {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  /* A food of a meal: number of servings of one of its units, as in the Add Food modal (macros follow). */
+  readonly servingOptions = lineServingOptions;
+  readonly servingIndex = lineServingIndex;
+  readonly foodPortions = linePortions;
+
+  onFoodPortionsChange(food: Food, meal: Meal, portions: unknown): void {
+    if (setLinePortions(food, portions)) this.onFoodLineChange(meal);
+  }
+
+  onFoodServingChange(food: Food, meal: Meal, index: string): void {
+    const serving = lineServingOptions(food)[Number(index)];
+    if (setLineServing(food, serving, this.translate.instant('FOOD_UNIT_PIECE'))) this.onFoodLineChange(meal);
+  }
+
+  private onFoodLineChange(meal: Meal): void {
+    this.recalcMealTargets(meal);
+    if (this.selectedDay) {
+      this.recalcDayTargets(this.selectedDay);
+    }
   }
 
   removeFood(food: Food, meal: Meal) {
@@ -663,7 +700,6 @@ export class AssignFullPlanComponent implements OnInit {
     this.foodStep = 'list';
     this.foodSearch = '';
     this.isFoodModalOpen = true;
-    this.filterFoods();
   }
 
   closeFoodModal() {
@@ -718,7 +754,7 @@ export class AssignFullPlanComponent implements OnInit {
       if (this.pendingFoodImages.has(foodId)) return;
 
       this.pendingFoodImages.add(foodId);
-      this.nutritionService.getFoodForClient(foodId).subscribe({
+      this.nutritionService.getFoodForClient(foodId, true).subscribe({
         next: (detail: any) => {
           const imageUrl = detail?.imageUrl || detail?.image || detail?.photoUrl || '';
           if (imageUrl) {
@@ -727,7 +763,7 @@ export class AssignFullPlanComponent implements OnInit {
           }
           this.pendingFoodImages.delete(foodId);
         },
-        error: () => this.pendingFoodImages.delete(foodId),
+        error: () => {}, // kept as pending: a food without detail is not asked again
       });
     });
   }
@@ -796,6 +832,18 @@ export class AssignFullPlanComponent implements OnInit {
   private showFoodValidation(message: string): void {
     this.foodValidationMessage = message;
     this.toastService.error('Nutrition validation', message);
+  }
+
+  /** A food chosen in the shared Add Food modal: added to the meal the modal was opened for. */
+  onFoodAdded(line: AddedFood): void {
+    const meal = this.mealForModal;
+    if (!meal) return;
+    meal.foods.push({ id: crypto.randomUUID?.() ?? Date.now().toString(), ...line } as Food);
+    this.recalcMealTargets(meal);
+    if (this.selectedDay) {
+      this.recalcDayTargets(this.selectedDay);
+    }
+    this.closeFoodModal();
   }
 
   addFoodToMeal() {
@@ -931,7 +979,7 @@ export class AssignFullPlanComponent implements OnInit {
   }
 
 
-  savePlan(publishWeek?: number) {
+  savePlan(publishWeek?: number | number[]) {
     this.draft.error = '';
     if (!this.planName.trim()) {
       this.draft.error = 'Nutrition plan name is required.';
@@ -946,7 +994,7 @@ export class AssignFullPlanComponent implements OnInit {
       return;
     }
 
-    if (publishWeek) {
+    if (typeof publishWeek === 'number') {
       const weekDays = this.days.slice((publishWeek - 1) * 7, publishWeek * 7);
       if (weekDays.length < 7 || this.draft.readyCount(this.days, publishWeek) !== 7) {
         const firstNotReady = weekDays.findIndex((day) => !['READY', 'CHEAT'].includes(nutritionDayState(day)));

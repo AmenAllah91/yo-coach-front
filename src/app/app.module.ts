@@ -11,7 +11,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule, provideAnimations } from '@angular/platform-browser/animations';
-import { provideRouter, RouterModule } from '@angular/router';
+import { PreloadAllModules, provideRouter, RouterModule, withPreloading } from '@angular/router';
 import { AuthInterceptor } from '@config/AuthInterceptor';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
@@ -188,7 +188,7 @@ function initializeKeycloakAndSync(
   providers: [
     KeycloakService,
     provideHttpClient(withInterceptorsFromDi()),
-    provideRouter(APP_ROUTE),
+    provideRouter(APP_ROUTE, withPreloading(PreloadAllModules)),
     provideToastr(),
     provideAnimations(),
     // {provide: LocationStrategy, useClass: HashLocationStrategy},

@@ -3,13 +3,15 @@ import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
-import {catchError, finalize, forkJoin, of} from 'rxjs';
+import {catchError, finalize, forkJoin, map, of, switchMap} from 'rxjs';
+import { UsersService } from '../../../service/users.service';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
 import { FormsApiService, FormDetails } from '../services/forms-api.service';
 import {SubmissionsApiService} from "../services/submissions-api.service";
 import {Answer, QuestionType, Submission} from "../../../models/forms.model";
 import {ClientService} from "../../../service/client.service";
-import {DocumentService} from "../../../service/document.service";
+import {ActivatedRoute, Router} from '@angular/router';
 
 export interface OptionItem {
   id: string;
@@ -64,7 +66,7 @@ const ITEMS_PER_PAGE = 5;
 @Component({
   selector: 'app-manage-checkins',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, SectionLoaderComponent],
   templateUrl: './manage-checkins.component.html',
   styleUrl: './manage-checkins.component.scss'
 })
@@ -91,8 +93,10 @@ export class ManageCheckinsComponent implements OnInit{
     { id: 'upcoming', labelKey: 'UPCOMING_STATUS' },
   ];
 
-  clients: ClientData[];
+  clients: ClientData[] = [];
   loading = false;
+  /** The rows show once their client and form names are known (not the raw ids); a loader before. */
+  listReady = false;
   error: string | null = null;
 
   assignments: FormAssignment[] = [];
@@ -102,8 +106,10 @@ export class ManageCheckinsComponent implements OnInit{
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private clientService: ClientService,
-    private documentService: DocumentService,
     private translate: TranslateService,
+    private usersService: UsersService,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -116,35 +122,49 @@ export class ManageCheckinsComponent implements OnInit{
     this.loading = true;
     this.error = null;
 
-    this.assignmentsApi.pageOwnerAssignments(0, 200, 'dueAt', 'DESC')
+    this.assignmentsApi.pageOwnerAssignments(0, 200, 'dueAt', 'DESC', true)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (res) => {
           this.assignments = res.content ?? [];
-
-          this.clients = this.assignments.map(a => this.assignmentToClient(a));
-
+          // The rows (and the previous ones on a reload) stay until the names are known.
           this.enrichClients(this.assignments);
         },
         error: (err) => {
           this.error = err?.error?.message ?? this.translate.instant('LOAD_ASSIGNMENTS_ERROR');
+          this.listReady = true;
         }
       });
   }
 
   private enrichClients(assignments: FormAssignment[]) {
+    if (!assignments.length) {
+      this.clients = [];
+      this.listReady = true;
+      return;
+    }
     const uniqueClientIds = Array.from(new Set(assignments.map(a => a.assigneeId).filter(Boolean)));
     const uniqueFormIds = Array.from(new Set(assignments.map(a => a.formId).filter(Boolean)));
+    const coachId = sessionStorage.getItem('userId') || '';
 
-    const clients$ = uniqueClientIds.length
-      ? forkJoin(
-        uniqueClientIds.map(id =>
-          this.clientService.getClientById(id, true).pipe(
-            catchError(() => of(null))
-          )
-        )
+    // The names come from one request for all the coach's clients (one per client before); a client missing from
+    // it (moved to another coach) is still asked on its own.
+    const clients$ = (coachId
+      ? this.clientService.getListClientsByCoachWithoutPagination(coachId, true).pipe(
+        map((res: any) => (Array.isArray(res) ? res : res?.content ?? []) as any[]),
+        catchError(() => of([] as any[])),
       )
-      : of([]);
+      : of([] as any[])
+    ).pipe(
+      switchMap((known) => {
+        const knownIds = new Set(known.map((c: any) => String(c?.id)));
+        const missing = uniqueClientIds.filter(id => !knownIds.has(String(id)));
+        return missing.length
+          ? forkJoin(missing.map(id => this.clientService.getClientById(id, true).pipe(catchError(() => of(null)))))
+            .pipe(map(extra => [...known, ...extra.filter(Boolean)]))
+          : of(known);
+      }),
+    );
 
     const forms$ = uniqueFormIds.length
       ? forkJoin(
@@ -156,18 +176,8 @@ export class ManageCheckinsComponent implements OnInit{
       )
       : of([]);
 
-    const photos$ = uniqueClientIds.length
-      ? forkJoin(
-        uniqueClientIds.map(id =>
-          this.documentService.getPhoto(id, 'user-profile-photos').pipe(
-            catchError(() => of(''))
-          )
-        )
-      )
-      : of([]);
-
-    forkJoin([clients$, forms$, photos$]).subscribe({
-      next: ([clients, forms, photos]: any[]) => {
+    forkJoin([clients$, forms$]).pipe(finalize(() => (this.listReady = true))).subscribe({
+      next: ([clients, forms]: any[]) => {
         const clientMap = new Map<string, any>();
         (clients ?? []).forEach((c: any) => {
           if (c?.id) clientMap.set(String(c.id), c);
@@ -178,16 +188,8 @@ export class ManageCheckinsComponent implements OnInit{
           if (f?.id) formMap.set(String(f.id), f);
         });
 
-        const photoMap = new Map<string, string>();
-        uniqueClientIds.forEach((id, index) => {
-          const photoUrl = String(photos?.[index] ?? '').trim();
-          if (photoUrl && photoUrl.toLowerCase() !== 'not found') {
-            photoMap.set(String(id), photoUrl);
-          }
-        });
-
-        this.clients = this.clients.map(row => {
-          const assignment = this.assignments.find(a => a.id === row.id);
+        this.clients = assignments.map(a => this.assignmentToClient(a)).map(row => {
+          const assignment = assignments.find(a => a.id === row.id);
           if (!assignment) return row;
 
           const c = clientMap.get(String(assignment.assigneeId));
@@ -200,8 +202,7 @@ export class ManageCheckinsComponent implements OnInit{
           return {
             ...row,
             name: fullName || row.name,
-            avatar: photoMap.get(String(assignment.assigneeId))
-              || c?.avatarUrl
+            avatar: c?.avatarUrl
               || c?.avatar
               || c?.image
               || row.avatar,
@@ -209,9 +210,26 @@ export class ManageCheckinsComponent implements OnInit{
             formName: f?.title ?? f?.name ?? row.formName,
           };
         });
+
+        this.openPendingAssignment();
+        this.loadClientPhotos(uniqueClientIds);
       },
-      error: () => {
-      }
+    });
+  }
+
+  /** Photos fill in once the list shows (shared with the other client pages, fetched once per hour). */
+  private loadClientPhotos(clientIds: string[]): void {
+    if (!clientIds.length) return;
+    forkJoin(clientIds.map(id => this.usersService.getAvatarUrl(String(id)))).subscribe((photos) => {
+      const photoMap = new Map<string, string>();
+      clientIds.forEach((id, index) => {
+        if (photos[index]) photoMap.set(String(id), photos[index]);
+      });
+      this.clients = this.clients.map(row => {
+        const assignment = this.assignments.find(a => a.id === row.id);
+        const photo = assignment ? photoMap.get(String(assignment.assigneeId)) : undefined;
+        return photo ? { ...row, avatar: photo } : row;
+      });
     });
   }
 
@@ -417,7 +435,9 @@ export class ManageCheckinsComponent implements OnInit{
         const idx = this.assignments.findIndex(a => a.id === updated.id);
         if (idx >= 0) this.assignments[idx] = updated;
 
-        this.clients = this.assignments.map(a => this.assignmentToClient(a));
+        // Only the reviewed row changes (rebuilding all rows showed the raw ids instead of the names).
+        this.clients = this.clients.map(row =>
+          row.id === updated.id ? { ...row, status: this.mapAssignmentToClientStatus(updated) } : row);
 
         if (this.selectedClient) {
           this.selectedClient.status = 'reviewed';

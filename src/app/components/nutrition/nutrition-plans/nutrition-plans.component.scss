@@ -239,7 +239,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 2000; // above the app sidebar (1040) and header (1100)
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2060,3 +2060,6 @@
     position: relative !important;
   }
 }
+
+/* Table columns that follow the table width (shared with the workout library) — keep last. */
+@import "../../../shared/styles/library-table";

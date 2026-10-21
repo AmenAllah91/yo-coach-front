@@ -605,45 +605,8 @@ textarea.np-input,
   font-size: 13px !important;
 }
 
-/* Week card: force the shared week panel to behave like the Workout template.
-   ::ng-deep is intentional here because the week panel is a child component. */
-:host ::ng-deep app-workout-week-panel .week-panel,
-.np-root ::ng-deep app-workout-week-panel .week-panel {
-  box-sizing: border-box !important;
-  border-color: #dce3ea !important;
-  border-radius: 12px !important;
-  background: #fff !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, .06) !important;
-}
 
-:host ::ng-deep app-workout-week-panel .week-panel__progress,
-.np-root ::ng-deep app-workout-week-panel .week-panel__progress {
-  display: block !important;
-  width: 100% !important;
-  max-width: 180px !important;
-  height: 5px !important;
-  min-height: 5px !important;
-  max-height: 5px !important;
-  flex: 0 0 5px !important;
-  overflow: hidden !important;
-  border-radius: 999px !important;
-  background: #e4eaf0 !important;
-}
 
-:host ::ng-deep app-workout-week-panel .week-panel__progress i,
-.np-root ::ng-deep app-workout-week-panel .week-panel__progress i {
-  display: block !important;
-  width: auto;
-  height: 100% !important;
-  min-height: 0 !important;
-  max-height: 5px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: inherit !important;
-  background: #1aa7d8 !important;
-  box-shadow: none !important;
-}
 
 /* The old duplicated week text inside the day card remains hidden. */
 .np-card--day > .np-week-actions {
@@ -744,10 +707,6 @@ textarea.np-input,
     margin: 0 auto !important;
   }
 
-  :host ::ng-deep app-workout-week-panel .week-panel.compact,
-  .np-root ::ng-deep app-workout-week-panel .week-panel.compact {
-    margin: 16px 0 0 !important;
-  }
 }
 
 /* Mobile: Workout-style card stack. No giant widths, no accidental green
@@ -848,99 +807,16 @@ textarea.np-input,
     margin: 0 12px !important;
   }
 
-  :host ::ng-deep app-workout-week-panel .week-panel,
-  :host ::ng-deep app-workout-week-panel .week-panel.compact,
-  .np-root ::ng-deep app-workout-week-panel .week-panel,
-  .np-root ::ng-deep app-workout-week-panel .week-panel.compact {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    margin: 12px 0 0 !important;
-    padding: 14px !important;
-    gap: 12px !important;
-    border-radius: 11px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__title,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__title {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    gap: 7px !important;
-    white-space: normal !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel h2,
-  .np-root ::ng-deep app-workout-week-panel .week-panel h2 {
-    font-size: 16px !important;
-    line-height: 22px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__status,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__status {
-    padding: 3px 7px !important;
-    font-size: 11px !important;
-    line-height: 16px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__title strong,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__title strong {
-    font-size: 11px !important;
-    line-height: 16px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__support,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__support {
-    display: grid !important;
-    grid-template-columns: 92px minmax(0, 1fr) !important;
-    align-items: start !important;
-    gap: 10px !important;
-    margin-top: 0 !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__progress,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__progress {
-    width: 92px !important;
-    max-width: 92px !important;
-    height: 4px !important;
-    min-height: 4px !important;
-    max-height: 4px !important;
-    flex: 0 0 4px !important;
-    margin-top: 6px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__progress i,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__progress i {
-    height: 4px !important;
-    max-height: 4px !important;
-    border-radius: 999px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__hint,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__hint {
-    max-width: none !important;
-    margin: 0 !important;
-    font-size: 10px !important;
-    line-height: 1.35 !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__buttons,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__buttons {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    width: 100% !important;
-    gap: 8px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel button,
-  .np-root ::ng-deep app-workout-week-panel .week-panel button {
-    width: 100% !important;
-    min-height: 40px !important;
-    padding: 8px 10px !important;
-    font-size: 11px !important;
-  }
 
   /* Workout mobile does not use a concatenated horizontal day rail. */
   .np-mobile-days {
@@ -1333,38 +1209,10 @@ textarea.np-input,
     white-space: nowrap !important;
   }
 
-  /* Week publication panel: give every element breathing room. */
-  :host ::ng-deep app-workout-week-panel .week-panel,
-  :host ::ng-deep app-workout-week-panel .week-panel.compact,
-  .np-root ::ng-deep app-workout-week-panel .week-panel,
-  .np-root ::ng-deep app-workout-week-panel .week-panel.compact {
-    padding: 15px 14px !important;
-    gap: 13px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__title,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__title {
-    gap: 8px !important;
-    row-gap: 6px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__title h2,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__title h2 {
-    margin-right: 1px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__support,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__support {
-    grid-template-columns: 86px minmax(0,1fr) !important;
-    column-gap: 12px !important;
-    margin-top: 1px !important;
-  }
 
-  :host ::ng-deep app-workout-week-panel .week-panel__buttons,
-  .np-root ::ng-deep app-workout-week-panel .week-panel__buttons {
-    gap: 9px !important;
-    margin-top: 1px !important;
-  }
 }
 
 /* ========================================================================== */

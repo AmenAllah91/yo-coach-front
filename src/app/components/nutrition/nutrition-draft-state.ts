@@ -6,7 +6,8 @@ import { nutritionDayState, nutritionMealState } from '@shared/models/nutrition-
 export class NutritionDraftState {
   collapsedWeeks = new Set<number>(Array.from({ length: 11 }, (_, i) => i + 2));
   publishedWeeks: number[] = [];
-  settingsVisible = true;
+  /** Collapsed to one line by default, like the workout builder. */
+  settingsVisible = false;
   copyTargetIndex: number | null = null;
   saving = false;
   savedAt: Date | null = null;
@@ -22,15 +23,68 @@ export class NutritionDraftState {
     private router: Router,
   ) { this.localeProvider = localeProvider; }
 
+  /** The plan exists on the server (created, or opened for edit): the page title says "Edit". */
+  get hasPlan(): boolean {
+    return !!(this.planId || this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId'));
+  }
+
   load(plan: MealPlan): void {
     this.planId = plan.id || this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId');
     this.publishedWeeks = [...(plan.publishedWeeks || [])];
   }
 
-  save(plan: MealPlan, publishWeek?: number): void {
+  /** Weeks shown by the "ready to publish" modal (null: closed). */
+  readyWeeksPrompt: number[] | null = null;
+  private readyWeeksKeptAsDraft = new Set<number>();
+  private readyWeeksActions: { publish: (weeks: number[]) => void; keep: () => void } | null = null;
+
+  /** Weeks whose 7 days are ready and which are not published yet. */
+  readyUnpublishedWeeks(days: MealDay[]): number[] {
+    const weeks = Math.ceil((days?.length || 0) / 7);
+    return Array.from({ length: weeks }, (_, i) => i + 1)
+      .filter(week => !this.isPublished(week) && this.readyCount(days, week) === 7);
+  }
+
+  /**
+   * The "Save draft" button: when weeks are ready but not published, the coach may not know a draft week stays
+   * hidden from the client, so the modal comes first (publish them, or keep them as drafts).
+   */
+  saveDraft(days: MealDay[], save: (publishWeeks?: number[]) => void): void {
+    if (this.saving) return;
+    const ready = this.readyUnpublishedWeeks(days).filter(week => !this.readyWeeksKeptAsDraft.has(week));
+    if (!ready.length) {
+      save();
+      return;
+    }
+    this.readyWeeksPrompt = ready;
+    this.readyWeeksActions = {
+      publish: weeks => save(weeks),
+      keep: () => { ready.forEach(week => this.readyWeeksKeptAsDraft.add(week)); save(); },
+    };
+  }
+
+  publishReadyWeeks(weeks: number[]): void {
+    const actions = this.readyWeeksActions;
+    this.closeReadyWeeks();
+    actions?.publish(weeks);
+  }
+
+  keepReadyWeeksAsDraft(): void {
+    const actions = this.readyWeeksActions;
+    this.closeReadyWeeks();
+    actions?.keep();
+  }
+
+  closeReadyWeeks(): void {
+    this.readyWeeksPrompt = null;
+    this.readyWeeksActions = null;
+  }
+
+  save(plan: MealPlan, publishWeek?: number | number[]): void {
     if (this.saving) return;
     const published = new Set(this.publishedWeeks);
-    if (publishWeek && this.readyCount(plan.mealDays || [], publishWeek) === 7) published.add(publishWeek);
+    const toPublish = Array.isArray(publishWeek) ? publishWeek : publishWeek ? [publishWeek] : [];
+    toPublish.filter(week => this.readyCount(plan.mealDays || [], week) === 7).forEach(week => published.add(week));
     const id = this.planId || plan.id || this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('draftId');
     const payload: MealPlan = { ...plan, id: id || undefined, trackingMode: this.trackingMode, publishedWeeks: [...published].sort((a, b) => a - b), publicationWorkflow: true, durationWeeks: Math.max(1, Math.min(12, Math.ceil((plan.mealDays?.length || 0) / 7))) };
     const saveUrl = this.router.url;

@@ -1,67 +1,14 @@
 import { accountAccessGuard } from './config/guard/account-access.guard';
 import { coachingAccessGuard } from './config/guard/coaching-access.guard';
-import { CoachingUnavailableComponent } from './components/clients/coaching-unavailable.component';
-import { AssignFullPlanComponent } from './components/nutrition/assign-full-plan/assign-full-plan.component';
-import { AssignMacroPlanTotalDayComponent } from './components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component';
-import { AssignMacroPlanComponent } from './components/nutrition/assign-macro-plan/assign-macro-plan.component';
 // app.routes.ts
 
 import { CanActivateFn, Route } from '@angular/router';
 import { adminGuard, coachDiagnosticsGuard } from './config/guard/admin.guard';
 import { MainLayoutComponent } from './template/layout/app-layout/main-layout/main-layout.component';
-import { RegisterComponent } from './template/layout/register/register.component';
-import { ExerciseLibraryComponent } from './components/exercise-library/exercise-library.component';
-import { ClientsComponent } from './template/clients.component';
-import { ProgramLibraryComponent } from './components/program-library/program-library.component';
-import { FoodsComponent } from './components/nutrition/foods/foods.component';
-import { CustomFoodsComponent } from './components/nutrition/custom-foods/custom-foods.component';
-import { NutritionPlansComponent } from './components/nutrition/nutrition-plans/nutrition-plans.component';
-import { CreateMacroPlanComponent } from './components/nutrition/create-macro-plan/create-macro-plan.component';
-import { CreateFullPlanComponent } from './components/nutrition/create-full-plan/create-full-plan.component';
 
 import { inject } from '@angular/core';
 import { AuthGuard } from '@config/guard/auth.guard';
-import { CreateMacroPlanTotalDayComponent } from './components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component';
-import { CreateWorkoutComponent } from './components/program-library/create-workout/create-workout.component';
-import { CreateFormComponent } from './components/forms/create-form/create-form.component';
-import { ProfilClientComponent } from './components/clients/profil-client/profil-client.component';
-import { ClientWorkoutsComponent } from './components/clients/client-workouts/client-workouts.component';
-import { ClientNutritionComponent } from './components/clients/client-nutrition/client-nutrition.component';
-import { CalendarClientsComponent } from './components/calendar/calendar-clients/calendar-clients.component';
-import { LandingPageComponent } from './components/website/landing-page/landing-page.component';
-import { YosoftLandingPageComponent } from './components/website/yosoft-landing-page/yosoft-landing-page.component';
-import {CoachDashboardComponent} from "./components/coach-dashboard/coach-dashboard.component";
-import {ClientDashboardComponent} from "./components/clients/client-dashboard/client-dashboard.component";
-import { CreateAndAssignComponent } from './components/program-library/create-and-assign/create-and-assign.component';
-import {FormsListComponent} from "./components/forms/forms-list/forms-list.component";
-import {MyAssignmentsComponent} from "./components/forms/my-assignments-component/my-assignments.component";
-import {AssignmentFillComponent} from "./components/forms/assignment-fill-component/assignment-fill.component";
-import {MyCheckinsComponent} from "./components/forms/my-checkins/my-checkins.component";
-import {ManageCheckinsComponent} from "./components/forms/manage-checkins/manage-checkins.component";
-import {ChatComponent} from "./components/chat/chat/chat.component";
-import {InvitationComponent} from "./components/clients/invitation/invitation.component";
-import {EditProfileComponent} from "./components/profile/edit-profile/edit-profile.component";
-import {WebsiteBuilderComponent} from "./components/website/website-builder/website-builder.component";
-import {
-  CoachLandingPreviewPageComponent
-} from "./components/website/coach-landing-preview-page/coach-landing-preview-page.component";
-import {PublicWebsiteComponent} from "./components/website/public-website/public-website.component";
-import {ProgressPicturesComponent} from "./components/progress-pictures-module/progress-pictures/progress-pictures.component";
-import { BodyMeasurementsComponent } from './components/body-measurements/body-measurements.component';
-import {WebsiteLeadsComponent} from "./components/website/website-leads/website-leads.component";
-import {UsersComponent} from "./components/admin/users/users.component";
-import {VideoViewerComponent} from "./components/video-viewer/video-viewer.component";
-import {
-  FoodReplacementGroupsComponent
-} from "./components/nutrition/food-replacement-groups/food-replacement-groups.component";
-import {ConfigurationCoachngComponent} from "./components/configuration-coachng/configuration-coachng.component";
-import { ThemeColorsComponent } from './components/theme/theme-colors/theme-colors.component';
-import { PlansLandingPageComponent } from './components/website/plans-landing-page/plans-landing-page.component';
-import { ContactFormManagerComponent } from './components/website/contact-form-manager/contact-form-manager.component';
-import { PublicContactFormComponent } from './components/website/public-contact-form/public-contact-form.component';
-import { CoachOnboardingComponent } from './components/coach-onboarding/coach-onboarding.component';
 import { coachOnboardingEntryGuard, coachOnboardingGuard } from './config/guard/coach-onboarding.guard';
-import { ClientOnboardingComponent } from './components/client-onboarding/client-onboarding.component';
 import { clientOnboardingEntryGuard, clientOnboardingGuard } from './config/guard/client-onboarding.guard';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
@@ -69,19 +16,19 @@ const isAuthenticated: CanActivateFn = (route, state) =>
 
 export const APP_ROUTE: Route[] = [
   { path: 'account-unavailable', canActivate: [isAuthenticated], loadComponent: () => import('./components/account-unavailable/account-unavailable.component').then(m=>m.AccountUnavailableComponent) },
-  { path: 'coaching-unavailable', component: CoachingUnavailableComponent, canActivate: [isAuthenticated] },
+  { path: 'coaching-unavailable', loadComponent: () => import('./components/clients/coaching-unavailable.component').then((m) => m.CoachingUnavailableComponent), canActivate: [isAuthenticated] },
   {
     path: 'invitation/:token',
-    component: InvitationComponent,
+    loadComponent: () => import('./components/clients/invitation/invitation.component').then((m) => m.InvitationComponent),
   },
   {
     path: 'coach-onboarding',
-    component: CoachOnboardingComponent,
+    loadComponent: () => import('./components/coach-onboarding/coach-onboarding.component').then((m) => m.CoachOnboardingComponent),
     canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingEntryGuard],
   },
   {
     path: 'client-onboarding',
-    component: ClientOnboardingComponent,
+    loadComponent: () => import('./components/client-onboarding/client-onboarding.component').then((m) => m.ClientOnboardingComponent),
     canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, clientOnboardingEntryGuard],
   },
   {
@@ -110,66 +57,66 @@ export const APP_ROUTE: Route[] = [
       },
       {
         path: 'forms/create-form',
-        component: CreateFormComponent,
+        loadComponent: () => import('./components/forms/create-form/create-form.component').then((m) => m.CreateFormComponent),
       },
-      { path: 'assignments/me', component: MyAssignmentsComponent },
-      { path: 'assignments/:id/fill', component: AssignmentFillComponent },
+      { path: 'assignments/me', loadComponent: () => import('./components/forms/my-assignments-component/my-assignments.component').then((m) => m.MyAssignmentsComponent) },
+      { path: 'assignments/:id/fill', loadComponent: () => import('./components/forms/assignment-fill-component/assignment-fill.component').then((m) => m.AssignmentFillComponent) },
       {
         path: 'forms/:id/edit',
-        component: CreateFormComponent,
+        loadComponent: () => import('./components/forms/create-form/create-form.component').then((m) => m.CreateFormComponent),
       },
-      { path: 'forms', component: FormsListComponent },
+      { path: 'forms', loadComponent: () => import('./components/forms/forms-list/forms-list.component').then((m) => m.FormsListComponent) },
       {
         path: 'workout/exercise-library',
-        component: ExerciseLibraryComponent,
+        loadComponent: () => import('./components/exercise-library/exercise-library.component').then((m) => m.ExerciseLibraryComponent),
       },
       {
         path: 'clients',
-        component: ClientsComponent,
+        loadComponent: () => import('./template/clients.component').then((m) => m.ClientsComponent),
       },
       {
         path: 'clients/profil-client/:id',
-        component: ProfilClientComponent,
+        loadComponent: () => import('./components/clients/profil-client/profil-client.component').then((m) => m.ProfilClientComponent),
       },
       {
         path: 'clients/client-workouts',
-        component: ClientWorkoutsComponent,
+        loadComponent: () => import('./components/clients/client-workouts/client-workouts.component').then((m) => m.ClientWorkoutsComponent),
       },
       {
         path: 'clients/client-nutrition',
-        component: ClientNutritionComponent,
+        loadComponent: () => import('./components/clients/client-nutrition/client-nutrition.component').then((m) => m.ClientNutritionComponent),
       },
       {
         path: 'workout/program-library',
-        component: ProgramLibraryComponent,
+        loadComponent: () => import('./components/program-library/program-library.component').then((m) => m.ProgramLibraryComponent),
       },
       {
         path: 'workout/create-workout',
-        component: CreateWorkoutComponent,
+        loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
       },
       {
         path: 'clients/create-workout/:idClient',
-        component: CreateAndAssignComponent,
+        loadComponent: () => import('./components/program-library/create-and-assign/create-and-assign.component').then((m) => m.CreateAndAssignComponent),
       },
       {
         path: 'clients/create-workout/:idClient/edit/:id',
-        component: CreateAndAssignComponent,
+        loadComponent: () => import('./components/program-library/create-and-assign/create-and-assign.component').then((m) => m.CreateAndAssignComponent),
       },
       {
         path: 'workout/edit-workout/:id',
-        component: CreateWorkoutComponent,
+        loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
       },
       {
         path: 'calendar',
-        component: CalendarClientsComponent,
+        loadComponent: () => import('./components/calendar/calendar-clients/calendar-clients.component').then((m) => m.CalendarClientsComponent),
       },
       {
         path: 'nutrition/foods',
-        component: FoodsComponent,
+        loadComponent: () => import('./components/nutrition/foods/foods.component').then((m) => m.FoodsComponent),
       },
       {
         path: 'nutrition/custom-foods',
-        component: CustomFoodsComponent,
+        loadComponent: () => import('./components/nutrition/custom-foods/custom-foods.component').then((m) => m.CustomFoodsComponent),
       },
       {
         path: 'nutrition/meals',
@@ -185,75 +132,79 @@ export const APP_ROUTE: Route[] = [
       },
       {
         path: 'nutrition/food-replacement-groups',
-        component: FoodReplacementGroupsComponent,
+        loadComponent: () => import('./components/nutrition/food-replacement-groups/food-replacement-groups.component').then((m) => m.FoodReplacementGroupsComponent),
       },
       {
         path: 'nutrition/plans',
-        component: NutritionPlansComponent,
+        loadComponent: () => import('./components/nutrition/nutrition-plans/nutrition-plans.component').then((m) => m.NutritionPlansComponent),
       },
       {
         path: 'nutrition/create-macro-plan',
-        component: CreateMacroPlanComponent,
+        loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
       },
       {
         path: 'nutrition/create-macro-plan/:id',
-        component: CreateMacroPlanComponent,
+        loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
       },
       {
         path: 'nutrition/create-macro-plan-total-day',
-        component: CreateMacroPlanTotalDayComponent,
+        loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
       },
       {
         path: 'clients/create-macro-plan/:idClient',
-        component: AssignMacroPlanComponent,
+        loadComponent: () => import('./components/nutrition/assign-macro-plan/assign-macro-plan.component').then((m) => m.AssignMacroPlanComponent),
       },
       {
         path: 'clients/create-macro-plan/:idClient/edit/:id',
-        component: AssignMacroPlanComponent,
+        loadComponent: () => import('./components/nutrition/assign-macro-plan/assign-macro-plan.component').then((m) => m.AssignMacroPlanComponent),
       },
       {
         path: 'clients/create-macro-plan-total-day/:idClient',
-        component: AssignMacroPlanTotalDayComponent,
+        loadComponent: () => import('./components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component').then((m) => m.AssignMacroPlanTotalDayComponent),
       },
       {
         path: 'clients/create-macro-plan-total-day/:idClient/edit/:id',
-        component: AssignMacroPlanTotalDayComponent,
+        loadComponent: () => import('./components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component').then((m) => m.AssignMacroPlanTotalDayComponent),
       },
       {
         path: 'clients/create-full-plan/:idClient',
-        component: AssignFullPlanComponent,
+        loadComponent: () => import('./components/nutrition/assign-full-plan/assign-full-plan.component').then((m) => m.AssignFullPlanComponent),
       },
       {
         path: 'clients/create-full-plan/:idClient/edit/:id',
-        component: AssignFullPlanComponent,
+        loadComponent: () => import('./components/nutrition/assign-full-plan/assign-full-plan.component').then((m) => m.AssignFullPlanComponent),
       },
       {
         path: 'nutrition/create-macro-plan-total-day/:id',
-        component: CreateMacroPlanTotalDayComponent,
+        loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
       },
       {
         path: 'nutrition/create-full-plan',
-        component: CreateFullPlanComponent,
+        loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
       },
       {
         path: 'nutrition/create-full-plan/:id',
-        component: CreateFullPlanComponent,
+        loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
       },
       {
         path: 'grow/contact-form',
-        component: ContactFormManagerComponent,
+        loadComponent: () => import('./components/website/contact-form-manager/contact-form-manager.component').then((m) => m.ContactFormManagerComponent),
       },
       {
         path: 'websites/create',
-        component: WebsiteBuilderComponent,
+        loadComponent: () => import('./components/website/website-builder/website-builder.component').then((m) => m.WebsiteBuilderComponent),
       },
       {
         path: 'websites/leads',
-        component: WebsiteLeadsComponent
+        loadComponent: () => import('./components/website/website-leads/website-leads.component').then((m) => m.WebsiteLeadsComponent)
       },
       {
         path: 'coach-dashboard',
-        component: CoachDashboardComponent,
+        loadComponent: () => import('./components/coach-dashboard/coach-dashboard.component').then((m) => m.CoachDashboardComponent),
+      },
+      {
+        path: 'coach-dashboard/activities',
+        loadComponent: () => import('./components/coach-dashboard/all-activities/all-activities.component').then((m) => m.AllActivitiesComponent),
       },
       {
         // SUB-37: "My subscription".
@@ -292,75 +243,75 @@ export const APP_ROUTE: Route[] = [
       },
       {
         path: 'client-dashboard',
-        component: ClientDashboardComponent,
+        loadComponent: () => import('./components/clients/client-dashboard/client-dashboard.component').then((m) => m.ClientDashboardComponent),
       },{
         path: 'forms/my-checkins',
-        component: MyCheckinsComponent,
+        loadComponent: () => import('./components/forms/my-checkins/my-checkins.component').then((m) => m.MyCheckinsComponent),
       },{
         path: 'forms/manage-checkins',
-        component: ManageCheckinsComponent,
+        loadComponent: () => import('./components/forms/manage-checkins/manage-checkins.component').then((m) => m.ManageCheckinsComponent),
       },{
         path: 'chat',
-        component: ChatComponent,
+        loadComponent: () => import('./components/chat/chat/chat.component').then((m) => m.ChatComponent),
       },{
         path: 'edit-profile/:id',
-        component: EditProfileComponent,
+        loadComponent: () => import('./components/profile/edit-profile/edit-profile.component').then((m) => m.EditProfileComponent),
       },{
         path: 'subscriptions',
         redirectTo: 'admin/subscriptions', pathMatch: 'full',
       },{
         path: 'users',
-        component: UsersComponent,
+        loadComponent: () => import('./components/admin/users/users.component').then((m) => m.UsersComponent),
       },
       {
         path: 'progress-pictures',
-        component: ProgressPicturesComponent,
+        loadComponent: () => import('./components/progress-pictures-module/progress-pictures/progress-pictures.component').then((m) => m.ProgressPicturesComponent),
       },
       {
         path: 'body-measurements',
-        component: BodyMeasurementsComponent,
+        loadComponent: () => import('./components/body-measurements/body-measurements.component').then((m) => m.BodyMeasurementsComponent),
       },
       {
         path: 'configuration',
-        component: ConfigurationCoachngComponent,
+        loadComponent: () => import('./components/configuration-coachng/configuration-coachng.component').then((m) => m.ConfigurationCoachngComponent),
       },
       {
         path: 'theme',
-        component: ThemeColorsComponent,
+        loadComponent: () => import('./components/theme/theme-colors/theme-colors.component').then((m) => m.ThemeColorsComponent),
       },
     ],
   },
   {
     path: 'register',
-    component: RegisterComponent,
+    loadComponent: () => import('./template/layout/register/register.component').then((m) => m.RegisterComponent),
   },
   {
     path: 'landing-page',
-    component: LandingPageComponent,
+    loadComponent: () => import('./components/website/landing-page/landing-page.component').then((m) => m.LandingPageComponent),
   },
   {
     path: 'plans-landing',
-    component: PlansLandingPageComponent,
+    loadComponent: () => import('./components/website/plans-landing-page/plans-landing-page.component').then((m) => m.PlansLandingPageComponent),
   },
   {
     path: 'yosoft-landing-page',
-    component: YosoftLandingPageComponent,
+    loadComponent: () => import('./components/website/yosoft-landing-page/yosoft-landing-page.component').then((m) => m.YosoftLandingPageComponent),
   },
   {
     path: 'websites/preview',
-    component: CoachLandingPreviewPageComponent
+    loadComponent: () => import('./components/website/coach-landing-preview-page/coach-landing-preview-page.component').then((m) => m.CoachLandingPreviewPageComponent)
   },
   {
     path: 'site',
-    component: PublicWebsiteComponent
+    loadComponent: () => import('./components/website/public-website/public-website.component').then((m) => m.PublicWebsiteComponent)
   },
   {
     path: 'contact/:slug',
-    component: PublicContactFormComponent,
+    loadComponent: () => import('./components/website/public-contact-form/public-contact-form.component').then((m) => m.PublicContactFormComponent),
   },
   {
     path: 'video-viewer',
-    component: VideoViewerComponent,
+    loadComponent: () => import('./components/video-viewer/video-viewer.component').then((m) => m.VideoViewerComponent),
   },
 
 ];

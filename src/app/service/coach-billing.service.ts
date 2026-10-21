@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, finalize, shareReplay, tap } from 'rxjs';
 
 import { environment } from '@env/environment';
 import {
@@ -17,18 +17,33 @@ import { PaidPlanChangeResult, PlanChangeOptions, ScheduledPlanChangeResult } fr
   providedIn: 'root'
 })
 export class CoachBillingService {
+  /** Last invoices read in this session (null: none yet): shown at once while a fresh list is asked to YoSales. */
+  invoicesSnapshot: CoachInvoice[] | null = null;
+  private invoicesRequest$: Observable<CoachInvoice[]> | null = null;
+
   constructor(private http: HttpClient) {}
 
+  /** YoSales is slow to answer: callers at the same time share one request, and the answer is kept as the snapshot. */
   getInvoices(): Observable<CoachInvoice[]> {
     const headers = new HttpHeaders({
       'X-Skip-Toast': 'true',
       'X-Skip-Loader': 'true'
     });
 
-    return this.http.get<CoachInvoice[]>(
+    this.invoicesRequest$ ??= this.http.get<CoachInvoice[]>(
       `${environment.baseApiUrl}/api/billing/invoices`,
       { headers }
+    ).pipe(
+      tap((invoices) => { this.invoicesSnapshot = invoices ?? []; }),
+      finalize(() => { this.invoicesRequest$ = null; }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    return this.invoicesRequest$;
+  }
+
+  /** Settings page opened: the invoices are asked in the background, ready when the "Plan & Billing" tab opens. */
+  prefetchInvoices(): void {
+    this.getInvoices().subscribe({ error: () => undefined });
   }
 
   getInvoicePaymentGateways(invoiceId: number): Observable<InvoicePaymentGateway[]> {

@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
 import {environment} from "@env/environment";
 import {HttpClient, HttpParams} from "@angular/common/http";
-import {Observable} from "rxjs";
+import {Observable, catchError, map, of, shareReplay} from "rxjs";
 import {User} from "../template/core";
 import {PageDto} from "../models/pageDto";
 import {UserDto, UserStatsDto} from "../components/admin/models/user-models";
+
+/** Photo links are signed for 2 hours by the document service: one is reused for 1 hour. */
+export const AVATAR_REUSE_MS = 60 * 60 * 1000;
 
 @Injectable({
   providedIn: 'root'
@@ -12,13 +15,38 @@ import {UserDto, UserStatsDto} from "../components/admin/models/user-models";
 export class UsersService {
 
   private userServiceUrl = environment.baseApiUrl;
+  private avatars = new Map<string, { until: number; url$: Observable<string> }>();
 
   constructor(private http: HttpClient) { }
 
-  getUserById(userId: string, skipLoader = false): Observable<User> {
-    return this.http.get<User>(`${this.userServiceUrl}/api/users/${userId}`, {
-      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
-    });
+  /** quiet: background lookup with its own fallback (a removed user answers 404): no loader, no error toast. */
+  getUserById(userId: string, skipLoader = false, quiet = false): Observable<User> {
+    const headers: Record<string, string> = skipLoader || quiet ? { 'X-Skip-Loader': 'true' } : {};
+    if (quiet) headers['X-Skip-Toast'] = 'true';
+    return this.http.get<User>(`${this.userServiceUrl}/api/users/${userId}`, { headers });
+  }
+
+  /**
+   * Photo link of a user ('' when there is none), without the page loader. The client list, the client profile
+   * and its client panel share it, so going from one to the other does not fetch every photo again.
+   */
+  getAvatarUrl(userId: string): Observable<string> {
+    const known = this.avatars.get(userId);
+    if (known && known.until > Date.now()) return known.url$;
+
+    const url$ = this.getUserById(userId, true).pipe(
+      map((user) => {
+        const url = String(user?.avatarUrl || '').trim();
+        return url.toLowerCase() === 'not found' ? '' : url;
+      }),
+      catchError(() => {
+        this.avatars.delete(userId); // a failure is not remembered: the next read asks again
+        return of('');
+      }),
+      shareReplay(1),
+    );
+    this.avatars.set(userId, { until: Date.now() + AVATAR_REUSE_MS, url$ });
+    return url$;
   }
 
 
@@ -35,7 +63,7 @@ export class UsersService {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<PageDto<User>>(
       `${this.userServiceUrl}/api/users/chat`,
-      { params }
+      { params, headers: { 'X-Skip-Loader': 'true' } }
     );
   }
 

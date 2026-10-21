@@ -83,7 +83,9 @@
   </div>
 
   <!-- ====== VUE MOIS ====== -->
-  <div class="calendar-month" *ngIf="hasSelectedClient() && currentView === 'month'">
+  <app-section-loader *ngIf="hasSelectedClient() && !programsLoaded"></app-section-loader>
+
+  <div class="calendar-month" *ngIf="hasSelectedClient() && programsLoaded && currentView === 'month'">
     <div class="month-header-row">
       <div class="month-header-cell" *ngFor="let d of weekDays">
         {{ d | translate }}
@@ -267,7 +269,7 @@
   </div>
 
   <!-- ====== VUE SEMAINE ====== -->
-  <div class="calendar-week" *ngIf="hasSelectedClient() && currentView === 'week'">
+  <div class="calendar-week" *ngIf="hasSelectedClient() && programsLoaded && currentView === 'week'">
     <div class="week-grid">
       <div
         class="week-column"
@@ -434,7 +436,7 @@
   </div>
 
   <!-- ====== VUE JOUR ====== -->
-  <div class="calendar-day" *ngIf="hasSelectedClient() && currentView === 'day'">
+  <div class="calendar-day" *ngIf="hasSelectedClient() && programsLoaded && currentView === 'day'">
     <div class="day-header">
       <div class="day-header-left">
         <div class="day-weekday">{{ dayLabelWeekday }}</div>

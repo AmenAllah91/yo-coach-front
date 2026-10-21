@@ -80,7 +80,9 @@ export class AuthService {
     if (!this.isAuthEnabled()) return;
 
     try {
-      const profile = await this.keycloak.loadUserProfile();
+      // The Keycloak profile only completes names missing from the token (getCurrentUserDetails): it loads in
+      // the background instead of delaying the start of the app.
+      void this.keycloak.loadUserProfile().catch(() => undefined);
       const token = await this.keycloak.getToken();
       const decoded: any = jwtDecode(token);
 
@@ -122,9 +124,7 @@ export class AuthService {
   }
 
   isLoggedIn():  boolean {
-    const loggedIn = this.keycloak.isLoggedIn();
-    console.log('AuthService - isLoggedIn:', loggedIn);
-    return loggedIn;
+    return this.keycloak.isLoggedIn();
   }
 
   getUsername(): string {

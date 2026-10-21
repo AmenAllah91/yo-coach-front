@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, shareReplay, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 
@@ -53,8 +53,18 @@ export class ExerciseService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  private enums$?: Observable<EnumResponse>;
+
+  /** Server constants (categories, equipment...): asked once per session, without the page loader. */
   getEnums(): Observable<EnumResponse> {
-    return this.http.get<EnumResponse>(`${this.enumUrl}/`);
+    this.enums$ ??= this.http.get<EnumResponse>(`${this.enumUrl}/`, { headers: { 'X-Skip-Loader': 'true' } }).pipe(
+      catchError((error) => {
+        this.enums$ = undefined; // a failure is not kept: the next page asks again
+        return throwError(() => error);
+      }),
+      shareReplay(1),
+    );
+    return this.enums$;
   }
 
   getTemplateExercises(
@@ -75,7 +85,7 @@ export class ExerciseService {
     );
   }
 
-  getExercises(page: number, size: number, filters: any): Observable<PageResponse<Exercise>> {
+  getExercises(page: number, size: number, filters: any, skipLoader = false): Observable<PageResponse<Exercise>> {
     let params = new HttpParams().set('page', page).set('size', size);
 
     if (filters.name) params = params.set('name', filters.name);
@@ -83,6 +93,9 @@ export class ExerciseService {
     if (filters.equipment) params = params.set('equipment', filters.equipment);
     if (filters.type) params = params.set('type', filters.type);
 
-    return this.http.get<PageResponse<Exercise>>(this.apiUrl + '/', { params });
+    return this.http.get<PageResponse<Exercise>>(this.apiUrl + '/', {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 }

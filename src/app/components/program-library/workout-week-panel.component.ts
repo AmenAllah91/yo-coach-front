@@ -22,19 +22,19 @@ import { TranslateModule } from '@ngx-translate/core';
           <div class="week-panel__progress" aria-hidden="true">
             <i [style.width.%]="ready / 7 * 100"></i>
           </div>
-          <p class="week-panel__hint">
+          <p class="week-panel__hint" *ngIf="(published ? 'WORKOUT_PUBLISHED_HINT' : 'WORKOUT_DRAFT_HINT') | translate as hint" [attr.title]="hint">
             <span class="week-panel__info" aria-hidden="true">i</span>
-            {{ published ? ('WORKOUT_PUBLISHED_HINT' | translate) : ('WORKOUT_DRAFT_HINT' | translate) }}
+            <span class="week-panel__hint-text">{{ hint }}</span>
           </p>
         </div>
 
-        <small class="saved" *ngIf="savedAt">
+        <small class="saved" *ngIf="savedAt && showSave">
           {{ 'WORKOUT_SAVED' | translate }} {{ savedAt | date:'HH:mm' }}
         </small>
       </div>
 
       <div class="week-panel__buttons">
-        <button type="button" (click)="save.emit()" [disabled]="saving">
+        <button type="button" *ngIf="showSave" (click)="save.emit()" [disabled]="saving">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" />
           </svg>
@@ -378,6 +378,171 @@ import { TranslateModule } from '@ngx-translate/core';
         flex: 1 1 0;
       }
     }
+
+    /* Full (non compact) panel: it follows the width it is given (the workout builder content gets narrower when
+       the exercise panel opens), not the screen.
+       - wide: one line (title, progress, explanation as an (i) tooltip, publish button);
+       - medium: two compact lines;
+       - narrow: stacked, without empty space.
+       The explanation text keeps a natural height (a flex basis on it became a 240px height in column layout). */
+    :host {
+      container-type: inline-size;
+    }
+
+    .week-panel:not(.compact) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px 16px;
+      min-height: 0;
+      margin: 0;
+      padding: 14px 18px;
+    }
+
+    .week-panel:not(.compact) h2 {
+      font-size: 18px;
+      line-height: 24px;
+    }
+
+    .week-panel:not(.compact) .week-panel__title {
+      flex-wrap: wrap;
+      row-gap: 4px;
+      white-space: normal;
+    }
+
+    .week-panel:not(.compact) .week-panel__support {
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .week-panel:not(.compact) .week-panel__progress {
+      width: auto;
+      height: 6px;
+      flex: 0 1 180px;
+      min-width: 72px;
+      margin-top: 0;
+    }
+
+    .week-panel:not(.compact) .week-panel__hint {
+      flex: 1 1 auto;
+      max-width: 560px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .week-panel:not(.compact) .week-panel__buttons {
+      width: auto;
+      justify-self: end;
+      flex-wrap: wrap;
+    }
+
+    .week-panel:not(.compact) button {
+      width: auto;
+      flex: 0 0 auto;
+      min-height: 40px;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    @container (min-width: 720px) {
+      .week-panel:not(.compact) .week-panel__identity {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .week-panel:not(.compact) .week-panel__title {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+      }
+
+      .week-panel:not(.compact) .week-panel__support {
+        min-width: 0;
+        flex: 1 1 auto;
+        margin-top: 0;
+      }
+
+      .week-panel:not(.compact) .week-panel__hint {
+        flex: 0 0 auto;
+        cursor: help;
+      }
+
+      .week-panel:not(.compact) .week-panel__hint-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      .week-panel:not(.compact) .saved {
+        flex: 0 0 auto;
+        margin-top: 0;
+      }
+    }
+
+    /* Phones: three short lines — week + status, progress bar with the publish button beside it, the hint. */
+    @container (max-width: 480px) {
+      .week-panel:not(.compact) {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          'title title'
+          'progress buttons'
+          'hint hint';
+        gap: 8px 12px;
+        padding: 12px 14px;
+      }
+
+      .week-panel:not(.compact) .week-panel__identity,
+      .week-panel:not(.compact) .week-panel__support {
+        display: contents;
+      }
+
+      .week-panel:not(.compact) .week-panel__title {
+        grid-area: title;
+      }
+
+      .week-panel:not(.compact) h2 {
+        font-size: 17px;
+      }
+
+      .week-panel:not(.compact) .week-panel__progress {
+        grid-area: progress;
+        width: 100%;
+        min-width: 0;
+        align-self: center;
+      }
+
+      .week-panel:not(.compact) .week-panel__hint {
+        grid-area: hint;
+        max-width: none;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .week-panel:not(.compact) .week-panel__buttons {
+        grid-area: buttons;
+        justify-self: end;
+        flex-wrap: nowrap;
+      }
+
+      .week-panel:not(.compact) button {
+        min-height: 34px;
+        padding: 6px 12px;
+        font-size: 12.5px;
+      }
+
+      .week-panel:not(.compact) .saved,
+      .week-panel:not(.compact) .error {
+        grid-column: 1 / -1;
+        margin-top: 0;
+      }
+    }
   `],
 })
 export class WorkoutWeekPanelComponent {
@@ -390,6 +555,8 @@ export class WorkoutWeekPanelComponent {
   @Input() range = '';
   @Input() compact = false;
   @Input() narrow = false;
+  /** False when the page already has its own save button (the workout builder toolbar). */
+  @Input() showSave = true;
 
   @Output() save = new EventEmitter<void>();
   @Output() publish = new EventEmitter<void>();

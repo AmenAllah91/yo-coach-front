@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
-import { Subject, forkJoin, of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
@@ -14,6 +14,7 @@ import { CoachInvoice } from 'app/models/coach-invoice.model';
 import { CoachSubscriptionState, cardExpiry, cardLabel, indicativeUsd } from 'app/models/coach-subscription-state.model';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
 import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
+import { CancelSubscriptionDialogComponent } from './cancel-subscription-dialog/cancel-subscription-dialog.component';
 
 /** Invoices the coach can still pay. */
 const PAYABLE = ['UNPAID', 'OVERDUE', 'PENDING'];
@@ -21,6 +22,8 @@ const PAYABLE = ['UNPAID', 'OVERDUE', 'PENDING'];
 const CANCELLABLE = ['ACTIVE', 'TRIAL', 'PAST_DUE'];
 /** Read-only statuses: the coach reactivates through the payment screen (SUB-18). */
 const READ_ONLY = ['EXPIRED', 'CANCELLED', 'PENDING'];
+/** Invoices per page of the invoice list. */
+export const INVOICES_PER_PAGE = 5;
 
 /**
  * SUB-37: "My subscription": plan, status, next payment date, invoices (pay an open one), cancel / take the
@@ -29,7 +32,7 @@ const READ_ONLY = ['EXPIRED', 'CANCELLED', 'PENDING'];
 @Component({
   selector: 'app-my-subscription',
   standalone: true,
-  imports: [CommonModule, TranslateModule, FeatherModule],
+  imports: [CommonModule, TranslateModule, FeatherModule, CancelSubscriptionDialogComponent],
   templateUrl: './my-subscription.component.html',
   styleUrl: './my-subscription.component.scss',
 })
@@ -48,7 +51,14 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     return (currency ?? 'TND').toUpperCase() === 'TND' ? indicativeUsd(amountTnd, this.state) : null;
   }
   invoices: CoachInvoice[] = [];
+  /** The invoices come from YoSales, slower than the plan: they load in their own block. */
+  invoicesLoading = false;
+  /** Page of the invoice list, from 0. */
+  invoicePage = 0;
   busy = false;
+  /** SUB-35: cancellation dialog shown, with the last day of access. */
+  cancelDialog: { until: string } | null = null;
+  private resolveCancelDialog?: (confirmed: boolean) => void;
   payingInvoiceId: number | null = null;
   actionError = '';
   private destroy$ = new Subject<void>();
@@ -130,24 +140,60 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeCancelDialog(false);
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  /**
+   * The plan shows at once with the state already read in this session, then refreshes; the invoices (slower,
+   * from YoSales) arrive in their own block instead of holding the whole page.
+   */
   load(): void {
-    this.loading = true;
+    const known = this.stateService.snapshot;
+    this.loading = !known;
     this.loadError = false;
-    forkJoin({
-      state: this.stateService.refresh(),
-      invoices: this.billing.getInvoices().pipe(catchError(() => of(null))),
-    })
+    if (known) this.state = known;
+    this.stateService.refresh()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(({ state, invoices }) => {
+      .subscribe((state) => {
         this.loading = false;
-        this.state = state;
-        this.invoices = invoices ?? [];
-        this.loadError = !state;
+        this.state = state ?? (known || null);
+        this.loadError = !this.state;
       });
+
+    // The invoices already read in this session (or prefetched by the settings page) show at once, then refresh.
+    const knownInvoices = this.billing.invoicesSnapshot;
+    if (knownInvoices) this.invoices = knownInvoices;
+    this.invoicesLoading = !knownInvoices;
+    this.billing.getInvoices()
+      .pipe(catchError(() => of(null)), takeUntil(this.destroy$))
+      .subscribe((invoices) => {
+        this.invoicesLoading = false;
+        this.invoices = invoices ?? [];
+        // After a reload (payment, cancellation) the coach stays on the same page when it still exists.
+        this.invoicePage = Math.min(this.invoicePage, Math.max(0, this.invoicePageCount - 1));
+      });
+  }
+
+  get invoicePageCount(): number {
+    return Math.ceil(this.invoices.length / INVOICES_PER_PAGE);
+  }
+
+  /** Page numbers of the invoice list, from 0. */
+  get invoicePages(): number[] {
+    return Array.from({ length: this.invoicePageCount }, (_, page) => page);
+  }
+
+  /** The invoices of the current page. */
+  get pagedInvoices(): CoachInvoice[] {
+    const start = this.invoicePage * INVOICES_PER_PAGE;
+    return this.invoices.slice(start, start + INVOICES_PER_PAGE);
+  }
+
+  goToInvoicePage(page: number): void {
+    if (page < 0 || page >= this.invoicePageCount || page === this.invoicePage) return;
+    this.invoicePage = page;
   }
 
   get status(): string {
@@ -236,13 +282,23 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     if (!this.canCancel || this.busy) return;
     const until = this.state?.accessUntil
       ? MySubscriptionComponent.lastDay(this.state.accessUntil, this.state.timeZone || undefined) : '';
-    const confirmed = await this.confirm(
-      this.translate.instant('MY_SUB_CANCEL_CONFIRM_TITLE'),
-      this.translate.instant('MY_SUB_CANCEL_CONFIRM_TEXT', { date: until }),
-      this.translate.instant('MY_SUB_CANCEL'),
-    );
+    const confirmed = await this.confirmCancellation(until);
     if (!confirmed) return;
     this.run(this.billing.cancelSubscription());
+  }
+
+  /** Opens the cancellation dialog; the coach's answer settles the returned promise. */
+  protected confirmCancellation(until: string): Promise<boolean> {
+    this.resolveCancelDialog?.(false);
+    this.cancelDialog = { until };
+    return new Promise((resolve) => (this.resolveCancelDialog = resolve));
+  }
+
+  closeCancelDialog(confirmed: boolean): void {
+    const resolve = this.resolveCancelDialog;
+    this.cancelDialog = null;
+    this.resolveCancelDialog = undefined;
+    resolve?.(confirmed);
   }
 
   resume(): void {

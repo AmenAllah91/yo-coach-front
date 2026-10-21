@@ -12,6 +12,7 @@ import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { UsersService } from '../service/users.service';
+import { ClientProfileCacheService } from '../service/client-profile-cache.service';
 
 interface StatusCountResponse {
   active: number;
@@ -77,8 +78,21 @@ export class ClientsComponent implements OnInit {
     private workoutPlanService: WorkoutPlanService,
     private router: Router,
     private usersService: UsersService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private profileCache: ClientProfileCacheService,
   ) {}
+
+  private profilePrefetchTimer?: ReturnType<typeof setTimeout>;
+
+  /** A short hover (or keyboard focus) on a client starts loading their profile: it opens at once on click. */
+  prefetchProfile(client: Client): void {
+    clearTimeout(this.profilePrefetchTimer);
+    this.profilePrefetchTimer = setTimeout(() => this.profileCache.prefetch(sessionStorage.getItem('userId'), client.id), 150);
+  }
+
+  cancelProfilePrefetch(): void {
+    clearTimeout(this.profilePrefetchTimer);
+  }
 
   ngOnInit() {
     this.loadClients();
@@ -154,14 +168,9 @@ export class ClientsComponent implements OnInit {
   private enrichClientPhotos(clients: Client[]): void {
     clients.forEach((client) => {
       if (!client.id || this.getClientPhoto(client)) return;
-      this.usersService.getUserById(client.id, true).subscribe({
-        next: (user: any) => {
-          const avatarUrl = String(user?.avatarUrl || '').trim();
-          if (avatarUrl && avatarUrl.toLowerCase() !== 'not found') {
-            client.avatarUrl = avatarUrl;
-          }
-        },
-        error: () => {},
+      // Shared with the client profile: opening a profile does not fetch the photos again.
+      this.usersService.getAvatarUrl(client.id).subscribe((avatarUrl) => {
+        if (avatarUrl) client.avatarUrl = avatarUrl;
       });
     });
   }
@@ -173,7 +182,8 @@ export class ClientsComponent implements OnInit {
       return;
     }
 
-    this.clientService.getClientStatusCounts(resolvedCoachId).subscribe({
+    // The counters fill in next to the list (which shows its own loading state): no full-screen loader.
+    this.clientService.getClientStatusCounts(resolvedCoachId, true).subscribe({
       next: (counts) => {
         this.statusCounts = {
           active: counts.active || 0,
@@ -263,6 +273,7 @@ export class ClientsComponent implements OnInit {
 
   viewProfile(client: Client) {
     console.log('View profile:', client);
+    this.profileCache.prefetch(sessionStorage.getItem('userId'), client.id);
     const url = 'clients/profil-client/' + client.id;
     this.router.navigateByUrl(url, { state: { profileClient: client } });
   }

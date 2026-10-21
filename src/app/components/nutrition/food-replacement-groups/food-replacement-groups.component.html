@@ -134,293 +134,322 @@
   </div>
 </div>
 
-<div class="page-container editor-page" *ngIf="view === 'EDITOR'">
-  <div class="page-header editor-header">
-    <button class="editor-back-btn app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="closeEditor()"><i-feather name="arrow-left"></i-feather></button>
-    <div class="header-content">
+<div class="rge" *ngIf="view === 'EDITOR'">
+  <header class="rge__header">
+    <button class="rge__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="closeEditor()">
+      <i-feather name="arrow-left"></i-feather>
+    </button>
+    <div class="rge__title">
       <h1>{{ (editingGroup ? 'EDIT_REPLACEMENT_GROUP' : 'CREATE_REPLACEMENT_GROUP') | translate }}</h1>
+      <p>{{ 'RGE_SUBTITLE' | translate }}</p>
     </div>
-
-    <div class="header-actions">
-      <button class="secondary-btn" (click)="closeEditor()">{{ 'CANCEL' | translate }}</button>
-      <button
-        class="primary-btn"
-        [disabled]="!canSaveGroup"
-        (click)="saveGroup()"
-      >
-        {{ 'SAVE' | translate }}
+    <div class="rge__actions">
+      <button class="rge-btn rge-btn--ghost" type="button" (click)="closeEditor()">{{ 'CANCEL' | translate }}</button>
+      <button class="rge-btn rge-btn--save" type="button" [disabled]="saving" [attr.aria-busy]="saving" (click)="saveGroup()">
+        <span class="rge-btn__spinner" *ngIf="saving"></span>
+        <i-feather name="save" *ngIf="!saving"></i-feather>
+        {{ (saving ? 'SAVING' : 'SAVE') | translate }}
       </button>
     </div>
-  </div>
+  </header>
 
-  <section class="panel group-information-panel">
-    <div class="section-heading">
-      <h2>{{ 'GROUP' | translate }}</h2>
-    </div>
+  <ol class="rge-steps">
+    <li [class.is-done]="groupNameValid">
+      <span class="rge-steps__dot"><i-feather name="check" *ngIf="groupNameValid"></i-feather><b *ngIf="!groupNameValid">1</b></span>
+      <span><strong>{{ 'RGE_STEP_NAME' | translate }}</strong><small>{{ 'RGE_STEP_NAME_HINT' | translate }}</small></span>
+    </li>
+    <li [class.is-done]="foodsStepDone">
+      <span class="rge-steps__dot"><i-feather name="check" *ngIf="foodsStepDone"></i-feather><b *ngIf="!foodsStepDone">2</b></span>
+      <span><strong>{{ 'RGE_STEP_FOODS' | translate }}</strong><small>{{ 'RGE_STEP_FOODS_HINT' | translate }}</small></span>
+    </li>
+    <li [class.is-current]="groupNameValid && foodsStepDone">
+      <span class="rge-steps__dot"><b>3</b></span>
+      <span><strong>{{ 'RGE_STEP_SAVE' | translate }}</strong><small>{{ 'RGE_STEP_SAVE_HINT' | translate }}</small></span>
+    </li>
+  </ol>
 
-    <div class="group-information-fields">
-      <div class="form-field">
-        <label>{{ 'GROUP_NAME' | translate }}</label>
-        <input
-          type="text"
-          [placeholder]="'GROUP_NAME_EXAMPLE' | translate"
-          [(ngModel)]="groupName"
-          #groupNameInput="ngModel"
-          required
-          [class.field-invalid]="groupNameInput.touched && !groupNameValid"
-        />
-        <span class="field-error" *ngIf="groupNameInput.touched && !groupName.trim()">
-          {{ 'REPLACEMENT_GROUP_NAME_REQUIRED' | translate }}
-        </span>
-        <span class="field-error" *ngIf="groupName.length > groupNameMaxLength">
-          {{ 'REPLACEMENT_GROUP_NAME_MAX_LENGTH' | translate }}
-        </span>
-      </div>
-      <div class="form-field">
-        <label>{{ 'CLIENT_GUIDANCE' | translate }}</label>
-        <input
-          type="text"
-          [placeholder]="'CLIENT_GUIDANCE_PLACEHOLDER' | translate"
-          [(ngModel)]="groupDescription"
-          [class.field-invalid]="!clientGuidanceValid"
-        />
-        <span class="field-error" *ngIf="!clientGuidanceValid">
-          {{ 'REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH' | translate }}
-        </span>
-      </div>
-    </div>
-  </section>
+  <div class="rge__layout">
+    <div class="rge__main">
+      <section class="rge-card">
+        <header class="rge-card__head">
+          <span class="rge-card__num">1</span>
+          <h2>{{ 'RGE_INFO_TITLE' | translate }}</h2>
+        </header>
 
-  <section class="panel foods-panel editor-foods-panel">
-      <div class="panel-header editor-foods-header">
-        <div class="section-heading">
-          <div class="title-with-count">
-            <h2>{{ 'FOODS' | translate }}</h2>
-            <span>{{ groupFoods.length }}</span>
+        <div class="rge-field" [class.has-error]="nameErrorShown">
+          <label for="rge-name">{{ 'RGE_NAME_LABEL' | translate }} <span class="rge-required" aria-hidden="true">*</span></label>
+          <input
+            id="rge-name"
+            type="text"
+            [placeholder]="'RGE_NAME_PLACEHOLDER' | translate"
+            [(ngModel)]="groupName"
+            (blur)="nameTouched = true"
+            [attr.aria-invalid]="nameErrorShown"
+            aria-describedby="rge-name-help"
+            [attr.maxlength]="groupNameMaxLength + 20"
+          />
+          <small id="rge-name-help" class="rge-field__help" *ngIf="!nameErrorShown">{{ 'RGE_NAME_HELP' | translate }}</small>
+          <small class="rge-field__error" role="alert" *ngIf="nameErrorShown">
+            <i-feather name="alert-circle"></i-feather>{{ nameError | translate }}
+          </small>
+        </div>
+
+        <div class="rge-field" [class.has-error]="!clientGuidanceValid">
+          <label for="rge-guidance">
+            {{ 'CLIENT_GUIDANCE' | translate }} <span class="rge-optional">{{ 'OPTIONAL' | translate }}</span>
+          </label>
+          <textarea
+            id="rge-guidance"
+            rows="2"
+            [placeholder]="'RGE_GUIDANCE_PLACEHOLDER' | translate"
+            [(ngModel)]="groupDescription"
+            [attr.aria-invalid]="!clientGuidanceValid"
+          ></textarea>
+          <div class="rge-field__foot">
+            <small class="rge-field__help" *ngIf="clientGuidanceValid">{{ 'RGE_GUIDANCE_HELP' | translate }}</small>
+            <small class="rge-field__error" role="alert" *ngIf="!clientGuidanceValid">
+              <i-feather name="alert-circle"></i-feather>{{ 'REPLACEMENT_GROUP_GUIDANCE_MAX_LENGTH' | translate }}
+            </small>
+            <small class="rge-field__count" [class.is-over]="!clientGuidanceValid">{{ groupDescription.trim().length }} / {{ clientGuidanceMaxLength }}</small>
           </div>
         </div>
-        <button class="outline-blue-btn" (click)="openAddFoodModal()">
-          <i-feather name="plus"></i-feather>
-          {{ 'ADD_FOOD' | translate }}
-        </button>
-      </div>
+      </section>
 
-      <div class="group-food-search search-box small">
-        <i-feather name="search" class="search-icon"></i-feather>
-        <input type="text" [placeholder]="'SEARCH' | translate" [(ngModel)]="groupFoodSearchTerm" />
-      </div>
+      <section class="rge-card" id="rge-foods" [class.has-error]="foodsErrorShown">
+        <header class="rge-card__head">
+          <span class="rge-card__num">2</span>
+          <h2>{{ 'RGE_FOODS_TITLE' | translate }}</h2>
+          <span class="rge-chip" [class.is-done]="foodsStepDone">{{ 'RGE_FOODS_PROGRESS' | translate:{ count: groupFoods.length } }}</span>
+          <button class="rge-btn rge-btn--brand rge-card__action" type="button" (click)="openAddFoodModal()" *ngIf="groupFoods.length">
+            <i-feather name="plus"></i-feather>{{ 'RGE_ADD_FOODS' | translate }}
+          </button>
+        </header>
+        <p class="rge-card__help">{{ 'RGE_FOODS_HELP' | translate }}</p>
 
-      <div class="foods-table" *ngIf="groupFoods.length > 0">
-        <div class="table-head">
-          <span>{{ 'FOOD' | translate }}</span>
-          <span>{{ 'SERVING' | translate }}</span>
-          <span>{{ 'CALORIES' | translate }}</span>
-          <span>{{ 'ACTIONS' | translate }}</span>
+        <label class="rge-search" *ngIf="groupFoods.length > 6">
+          <i-feather name="search"></i-feather>
+          <input type="text" [placeholder]="'SEARCH' | translate" [(ngModel)]="groupFoodSearchTerm" />
+        </label>
+
+        <div class="rge-empty" *ngIf="!groupFoods.length">
+          <span class="rge-empty__icon"><i-feather name="shuffle"></i-feather></span>
+          <strong>{{ 'RGE_FOODS_EMPTY_TITLE' | translate }}</strong>
+          <span>{{ 'RGE_FOODS_EMPTY_TEXT' | translate }}</span>
+          <button class="rge-btn rge-btn--brand" type="button" (click)="openAddFoodModal()">
+            <i-feather name="plus"></i-feather>{{ 'RGE_ADD_FOODS' | translate }}
+          </button>
         </div>
 
-        <div class="table-row" *ngFor="let food of filteredGroupFoods">
-          <span class="food-name-cell"><span class="food-initial">{{ (food.name || '?').charAt(0) }}</span><strong>{{ food.name }}</strong></span>
-          <span>{{ food.quantity }} {{ food.unit }}</span>
-          <span>{{ itemMacros(food).calories | number:'1.0-0' }} kcal</span>
-          <span class="row-actions">
-            <button [title]="'EDIT_FOOD' | translate" (click)="editGroupFood(food)">
-              <i-feather name="edit-2"></i-feather>
-            </button>
-            <button [title]="'REMOVE_FOOD' | translate" (click)="removeGroupFood(food.foodRefId)">
-              <i-feather name="trash-2"></i-feather>
-            </button>
-          </span>
-        </div>
-        <div class="table-no-results" *ngIf="filteredGroupFoods.length === 0">{{ 'NO_FOODS_MATCH_SEARCH' | translate }}</div>
-      </div>
-      <span class="field-error section-error" *ngIf="groupFoods.length < 2">
-        {{ 'REPLACEMENT_GROUP_MIN_FOODS' | translate }}
-      </span>
-      <span class="field-error section-error" *ngIf="!groupFoodsUnique">
-        {{ 'REPLACEMENT_GROUP_DUPLICATE_FOOD' | translate }}
-      </span>
-      <span class="field-error section-error" *ngIf="!groupFoodsValid">
-        {{ 'REPLACEMENT_GROUP_INVALID_FOOD' | translate }}
-      </span>
-  </section>
+        <ul class="rge-foods" *ngIf="groupFoods.length">
+          <li class="rge-food" *ngFor="let food of filteredGroupFoods">
+            <span class="rge-food__thumb" aria-hidden="true">{{ (food.name || '?').charAt(0).toUpperCase() }}</span>
+            <span class="rge-food__copy">
+              <strong [title]="food.name">{{ food.name }}</strong>
+              <small>
+                {{ itemPortions(food) | number:'1.0-2' }} × {{ (food.servingSize || 100) | number:'1.0-2' }} {{ (food.servingDescription || food.unit) | servingUnit }}
+                · {{ 'PROTEIN_ABBR' | translate }} {{ itemMacros(food).protein | number:'1.0-1' }} g
+                · {{ 'CARBS_ABBR' | translate }} {{ itemMacros(food).carbs | number:'1.0-1' }} g
+                · {{ 'FAT_ABBR' | translate }} {{ itemMacros(food).fat | number:'1.0-1' }} g
+              </small>
+            </span>
+            <span class="rge-food__kcal"><b>{{ itemMacros(food).calories | number:'1.0-0' }}</b> kcal</span>
+            <span class="rge-food__actions">
+              <button type="button" [title]="'EDIT_FOOD' | translate" [attr.aria-label]="('EDIT_FOOD' | translate) + ' · ' + food.name" (click)="editGroupFood(food)">
+                <i-feather name="edit-2"></i-feather>
+              </button>
+              <button type="button" class="is-danger" [title]="'REMOVE_FOOD' | translate" [attr.aria-label]="('REMOVE_FOOD' | translate) + ' · ' + food.name" (click)="removeGroupFood(food.foodRefId)">
+                <i-feather name="trash-2"></i-feather>
+              </button>
+            </span>
+          </li>
+          <li class="rge-foods__none" *ngIf="filteredGroupFoods.length === 0">{{ 'NO_FOODS_MATCH_SEARCH' | translate }}</li>
+        </ul>
 
-  <section class="panel preview-panel">
-    <div class="preview-copy">
-      <h2>{{ 'CLIENT_PREVIEW' | translate }}</h2>
+        <div class="rge-card__errors" role="alert" *ngIf="foodsErrorShown">
+          <small class="rge-field__error" *ngIf="groupFoods.length < 2"><i-feather name="alert-circle"></i-feather>{{ 'REPLACEMENT_GROUP_MIN_FOODS' | translate }}</small>
+          <small class="rge-field__error" *ngIf="!groupFoodsUnique"><i-feather name="alert-circle"></i-feather>{{ 'REPLACEMENT_GROUP_DUPLICATE_FOOD' | translate }}</small>
+          <small class="rge-field__error" *ngIf="!groupFoodsValid"><i-feather name="alert-circle"></i-feather>{{ 'REPLACEMENT_GROUP_INVALID_FOOD' | translate }}</small>
+        </div>
+      </section>
     </div>
 
-    <div class="preview-flow" *ngIf="previewSourceFood as source">
-      <div class="preview-food preview-source">
-        <div class="food-emoji">🥚</div>
-        <div class="preview-copy-block">
-          <strong>{{ source.name }}</strong>
-          <span>{{ source.quantity }} {{ source.unit }}</span>
+    <aside class="rge-card rge-preview">
+      <header class="rge-card__head">
+        <span class="rge-card__num">3</span>
+        <h2>{{ 'CLIENT_PREVIEW' | translate }}</h2>
+      </header>
+      <p class="rge-card__help">{{ 'RGE_PREVIEW_HELP' | translate }}</p>
+
+      <div class="rge-phone" *ngIf="previewSourceFood as source; else previewEmpty">
+        <p class="rge-phone__group">{{ groupName.trim() || ('RGE_NAME_LABEL' | translate) }}</p>
+        <p class="rge-phone__guidance" *ngIf="groupDescription.trim()">{{ groupDescription.trim() }}</p>
+        <div class="rge-phone__food is-source">
+          <span class="rge-food__thumb">{{ (source.name || '?').charAt(0).toUpperCase() }}</span>
+          <span><strong>{{ source.name }}</strong><small>{{ source.quantity | number:'1.0-2' }} {{ source.unit | servingUnit }}</small></span>
+        </div>
+        <div class="rge-phone__swap"><i-feather name="repeat"></i-feather>{{ 'REPLACE' | translate }}</div>
+        <div class="rge-phone__food" *ngFor="let food of previewReplacementFoods">
+          <span class="rge-food__thumb">{{ (food.name || '?').charAt(0).toUpperCase() }}</span>
+          <span><strong>{{ food.name }}</strong><small>{{ food.quantity | number:'1.0-2' }} {{ food.unit | servingUnit }}</small></span>
         </div>
       </div>
-
-      <div class="preview-connect">
-        <div class="connector left"></div>
-        <button class="replace-link" type="button"><i-feather name="chevron-left"></i-feather> {{ 'REPLACE' | translate }} <i-feather name="chevron-right"></i-feather></button>
-        <div class="connector right"></div>
-      </div>
-
-      <div class="preview-food preview-target" *ngIf="previewReplacementFoods.length">
-        <div class="food-emoji">🍗</div>
-        <div class="preview-copy-block">
-          <strong>{{ previewReplacementFoods[0].name }}</strong>
-          <span>{{ previewReplacementFoods[0].quantity }} {{ previewReplacementFoods[0].unit }}</span>
+      <ng-template #previewEmpty>
+        <div class="rge-preview__empty">
+          <i-feather name="smartphone"></i-feather>
+          <span>{{ 'ADD_TWO_FOODS_TO_PREVIEW' | translate }}</span>
         </div>
-      </div>
-    </div>
-
-    <div class="preview-placeholder" *ngIf="!previewSourceFood">
-      {{ 'ADD_TWO_FOODS_TO_PREVIEW' | translate }}
-    </div>
-  </section>
+      </ng-template>
+    </aside>
+  </div>
 </div>
 
-<div
-  class="modal-overlay"
-  [class.show]="showAddFoodModal"
-  (click)="closeAddFoodModal()"
->
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <div>
-        <h2>{{ 'ADD_FOOD_TO_GROUP' | translate }}</h2>
-        <p>{{ 'ADD_FOOD_TO_GROUP_SUBTITLE' | translate }}</p>
-      </div>
+<app-delete-confirm-modal
+  [isVisible]="!!groupToDelete"
+  title="DELETE_REPLACEMENT_GROUP"
+  message="DELETE_REPLACEMENT_GROUP_CONFIRMATION"
+  [name]="groupToDeleteName"
+  (confirm)="confirmDeleteGroup()"
+  (cancel)="cancelDeleteGroup()"
+></app-delete-confirm-modal>
 
-      <button class="close-btn" (click)="closeAddFoodModal()">
+<div class="rg-modal" *ngIf="showAddFoodModal" (click)="closeAddFoodModal()">
+  <div
+    class="rg-modal__dialog"
+    [class.rg-modal__dialog--edit]="editingFoodRefId"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rg-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="rg-modal__head">
+      <div>
+        <h2 id="rg-modal-title">{{ (editingFoodRefId ? 'EDIT_FOOD' : 'ADD_FOODS_TO_GROUP') | translate }}</h2>
+        <p *ngIf="!editingFoodRefId">{{ 'ADD_FOODS_TO_GROUP_SUBTITLE' | translate }}</p>
+      </div>
+      <button type="button" class="rg-modal__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeAddFoodModal()">
         <i-feather name="x"></i-feather>
       </button>
-    </div>
+    </header>
 
-    <div class="modal-layout">
-      <div class="food-picker">
-        <div class="picker-toolbar">
-          <div class="search-box small">
-            <i-feather name="search" class="search-icon"></i-feather>
-            <input
-              type="text"
-              [placeholder]="'SEARCH_FOODS' | translate"
-              [(ngModel)]="foodSearchTerm"
-              (input)="onFoodSearch()"
-            />
-          </div>
+    <div class="rg-modal__body">
+      <section class="rg-picker" *ngIf="!editingFoodRefId">
+        <label class="rg-search">
+          <i-feather name="search"></i-feather>
+          <input type="text" [placeholder]="'SEARCH_FOODS' | translate" [(ngModel)]="foodSearchTerm" (input)="onFoodSearch()" />
+        </label>
+
+        <div class="rg-picker__meta">
+          <span>{{ 'AVAILABLE_FOODS_SUBTITLE' | translate }}</span>
+          <span class="rg-picker__total">{{ filteredFoods.length }} {{ 'FOODS_LOWERCASE' | translate }}</span>
         </div>
 
-        <div class="picker-heading">
-          <div><h3>{{ 'AVAILABLE_FOODS' | translate }}</h3><p>{{ 'AVAILABLE_FOODS_SUBTITLE' | translate }}</p></div>
-          <span>{{ filteredFoods.length }} {{ 'FOODS_LOWERCASE' | translate }}</span>
-        </div>
-
-        <div
-          class="food-choice"
-          *ngFor="let food of pagedFoods"
-          [class.selected]="getFoodId(food) === getFoodId(selectedFood || {})"
-          (click)="selectFood(food)"
-        >
-          <span class="radio-dot"></span>
-          <span class="food-thumb">
-            <img *ngIf="getFoodImage(food); else foodInitial" [src]="getFoodImage(food)" [alt]="getFoodName(food)" />
-            <ng-template #foodInitial>{{ getFoodName(food).charAt(0).toUpperCase() }}</ng-template>
-          </span>
-          <div>
-            <h4>{{ getFoodName(food) }} <span class="custom-badge" *ngIf="!isGeneralFood(food)">{{ 'CUSTOM' | translate }}</span></h4>
-            <p>{{ foodMacroLabel(food) }}</p>
-          </div>
-        </div>
-
-        <div class="food-pagination" *ngIf="foodTotalPages > 1">
-          <button [disabled]="foodPage === 0" (click)="changeFoodPage(foodPage - 1)">&lsaquo;</button>
-          <button *ngFor="let page of [].constructor(foodTotalPages); let i = index" [class.active]="i === foodPage" (click)="changeFoodPage(i)">{{ i + 1 }}</button>
-          <button [disabled]="foodPage >= foodTotalPages - 1" (click)="changeFoodPage(foodPage + 1)">&rsaquo;</button>
-        </div>
-
-        <div class="food-picker-loading" *ngIf="foodsLoading">
-          <span class="loading-spinner"></span>
-          {{ 'LOADING_FOODS' | translate }}
-        </div>
-
-        <div class="food-picker-empty" *ngIf="!foodsLoading && filteredFoods.length === 0">
-          {{ 'NO_FOODS_FOUND' | translate }}
-        </div>
-
-        <div class="modal-info">
-          <i-feather name="info"></i-feather>
-          {{ 'FOOD_INTERCHANGEABLE_INFO' | translate }}
-        </div>
-      </div>
-
-      <aside class="add-summary">
-        <h3>{{ 'ADD_TO_GROUP' | translate }}</h3>
-
-        <label>{{ 'SELECTED_FOOD' | translate }}</label>
-        <div class="selected-food" *ngIf="selectedFood; else noFoodSelected">
-          <span class="food-thumb">
-            <img *ngIf="getFoodImage(selectedFood); else selectedInitial" [src]="getFoodImage(selectedFood)" [alt]="getFoodName(selectedFood)" />
-            <ng-template #selectedInitial>{{ getFoodName(selectedFood).charAt(0).toUpperCase() }}</ng-template>
-          </span>
-          <strong>{{ getFoodName(selectedFood) }}</strong>
-        </div>
-
-        <ng-template #noFoodSelected>
-          <div class="selected-food muted">{{ 'NO_FOOD_SELECTED' | translate }}</div>
-          <span class="field-error">{{ 'REPLACEMENT_GROUP_FOOD_REQUIRED' | translate }}</span>
-        </ng-template>
-
-        <div class="summary-grid">
-          <div>
-            <label>{{ 'FOOD_PORTIONS' | translate }}</label>
-            <input
-              type="number"
-              min="0"
-              step="any"
-              [(ngModel)]="selectedQuantity"
-              #quantityInput="ngModel"
-              required
-              [class.field-invalid]="quantityInput.touched && !selectedQuantityValid"
-            />
-            <span class="field-error" *ngIf="quantityInput.touched && !selectedQuantityValid">
-              {{ 'REPLACEMENT_GROUP_QUANTITY_POSITIVE' | translate }}
+        <div class="rg-picker__list">
+          <button
+            type="button"
+            class="rg-food"
+            *ngFor="let food of pagedFoods"
+            [class.is-selected]="isFoodSelected(food)"
+            [attr.aria-pressed]="isFoodSelected(food)"
+            (click)="toggleFood(food)"
+          >
+            <span class="rg-check" aria-hidden="true">
+              <svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
             </span>
-          </div>
+            <span class="rg-thumb" aria-hidden="true">
+              {{ getFoodName(food).charAt(0).toUpperCase() }}
+              <img *ngIf="getFoodImage(food)" [src]="getFoodImage(food)" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+            </span>
+            <span class="rg-food__copy">
+              <strong>{{ getFoodName(food) }}<span class="rg-badge" *ngIf="!isGeneralFood(food)">{{ 'CUSTOM' | translate }}</span></strong>
+              <small>{{ foodMacroLabel(food) }}</small>
+            </span>
+          </button>
 
-          <div>
-            <label>{{ 'UNIT' | translate }}</label>
-            <select
-              [ngModel]="selectedServingId"
-              (ngModelChange)="selectServing($event)"
-              #unitInput="ngModel"
-              required
-              [disabled]="!selectedFood"
-              [class.field-invalid]="unitInput.touched && !selectedUnitValid"
+          <div class="rg-picker__state" *ngIf="foodsLoading">
+            <span class="loading-spinner"></span>{{ 'LOADING_FOODS' | translate }}
+          </div>
+          <div class="rg-picker__state" *ngIf="!foodsLoading && filteredFoods.length === 0">{{ 'NO_FOODS_FOUND' | translate }}</div>
+        </div>
+
+        <nav class="rg-pager" *ngIf="foodTotalPages > 1">
+          <button type="button" [disabled]="foodPage === 0" [attr.aria-label]="'PREVIOUS' | translate" (click)="changeFoodPage(foodPage - 1)">
+            <i-feather name="chevron-left"></i-feather>
+          </button>
+          <span>{{ 'PAGE_OF' | translate:{ page: foodPage + 1, total: foodTotalPages } }}</span>
+          <button type="button" [disabled]="foodPage >= foodTotalPages - 1" [attr.aria-label]="'NEXT' | translate" (click)="changeFoodPage(foodPage + 1)">
+            <i-feather name="chevron-right"></i-feather>
+          </button>
+        </nav>
+      </section>
+
+      <section class="rg-selection">
+        <h3 *ngIf="!editingFoodRefId">
+          {{ 'SELECTED_FOODS' | translate }}
+          <span class="rg-count">{{ selections.length }}</span>
+        </h3>
+
+        <div class="rg-selection__empty" *ngIf="!selections.length">
+          <i-feather name="check-square"></i-feather>
+          <span>{{ 'SELECT_FOODS_HINT' | translate }}</span>
+        </div>
+
+        <div class="rg-item" *ngFor="let selection of selections">
+          <div class="rg-item__top">
+            <span class="rg-thumb" aria-hidden="true">
+              {{ getFoodName(selection.food).charAt(0).toUpperCase() }}
+              <img *ngIf="getFoodImage(selection.food)" [src]="getFoodImage(selection.food)" alt="" (error)="$any($event.target).hidden = true" />
+            </span>
+            <strong [title]="getFoodName(selection.food)">{{ getFoodName(selection.food) }}</strong>
+            <button
+              type="button"
+              class="rg-item__remove"
+              *ngIf="!editingFoodRefId"
+              [attr.aria-label]="('REMOVE' | translate) + ' · ' + getFoodName(selection.food)"
+              (click)="removeSelection(selection)"
             >
-              <option *ngFor="let serving of servingOptions" [value]="serving.id">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
-            </select>
-            <span class="field-error" *ngIf="unitInput.touched && !selectedUnitValid">
-              {{ 'REPLACEMENT_GROUP_UNIT_REQUIRED' | translate }}
-            </span>
+              <i-feather name="x"></i-feather>
+            </button>
           </div>
+
+          <div class="rg-item__fields">
+            <label class="rg-field rg-field--portions">
+              <span [title]="'FOOD_PORTIONS' | translate">{{ 'PORTIONS' | translate }}</span>
+              <input type="number" min="0" step="0.25" inputmode="decimal" [(ngModel)]="selection.portions" [class.is-invalid]="!portionsValid(selection)" />
+            </label>
+            <span class="rg-times" aria-hidden="true">×</span>
+            <label class="rg-field rg-field--unit">
+              <span>{{ 'UNIT' | translate }}</span>
+              <select (change)="setSelectionServing(selection, $any($event.target).value)">
+                <option *ngFor="let serving of optionsOf(selection)" [value]="serving.id" [selected]="serving.id === servingOf(selection)?.id">{{ serving.size | number:'1.0-2' }} {{ serving.unit | servingUnit }}</option>
+              </select>
+            </label>
+          </div>
+
+          <p class="rg-item__result" *ngIf="portionsValid(selection) && macrosOf(selection) as macros; else invalidPortions">
+            <span>= {{ amountOfSelection(selection) | number:'1.0-2' }} {{ unitOf(selection) }}</span>
+            <b>{{ macros.calories | number:'1.0-0' }} kcal</b>
+            <span>{{ 'PROTEIN_ABBR' | translate }} {{ macros.protein | number:'1.0-1' }} g</span>
+            <span>{{ 'CARBS_ABBR' | translate }} {{ macros.carbs | number:'1.0-1' }} g</span>
+            <span>{{ 'FAT_ABBR' | translate }} {{ macros.fat | number:'1.0-1' }} g</span>
+          </p>
+          <ng-template #invalidPortions>
+            <p class="rg-item__error" role="alert">{{ 'REPLACEMENT_GROUP_QUANTITY_POSITIVE' | translate }}</p>
+          </ng-template>
         </div>
-
-        <div class="nutrition-preview" *ngIf="selectedPreview as preview">
-          = {{ selectedAmount | number:'1.0-2' }} {{ selectedUnit }} • {{ preview.calories | number:'1.0-0' }} kcal • {{ preview.protein | number:'1.0-1' }}g {{ 'PROTEIN_LOWERCASE' | translate }}
-        </div>
-
-        <button
-          class="primary-btn full"
-          [disabled]="!canAddSelectedFood"
-          (click)="addSelectedFood()"
-        >
-          {{ 'ADD_FOOD' | translate }}
-        </button>
-
-        <button class="secondary-btn full" (click)="closeAddFoodModal()">
-          {{ 'CANCEL' | translate }}
-        </button>
-      </aside>
+      </section>
     </div>
+
+    <footer class="rg-modal__foot">
+      <p class="rg-modal__info" *ngIf="!editingFoodRefId">
+        <i-feather name="info"></i-feather>
+        {{ 'FOODS_INTERCHANGEABLE_INFO' | translate }}
+      </p>
+      <div class="rg-modal__actions">
+        <button type="button" class="rg-btn rg-btn--ghost" (click)="closeAddFoodModal()">{{ 'CANCEL' | translate }}</button>
+        <button type="button" class="rg-btn rg-btn--primary" [disabled]="!canAddSelectedFood" (click)="addSelectedFood()">
+          {{ editingFoodRefId ? ('UPDATE' | translate) : ('ADD_FOODS_COUNT' | translate:{ count: selections.length }) }}
+        </button>
+      </div>
+    </footer>
   </div>
 </div>

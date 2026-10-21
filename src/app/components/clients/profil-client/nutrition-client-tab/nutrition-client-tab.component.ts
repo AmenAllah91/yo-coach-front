@@ -1,9 +1,12 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { finalize, forkJoin, skip } from 'rxjs';
+import { ClientPlanEmptyComponent } from '../client-plan-empty/client-plan-empty.component';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -14,7 +17,7 @@ type NutritionSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' 
 @Component({
   selector: 'app-nutrition-client-tab',
   standalone: true,
-  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule],
+  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, ClientPlanEmptyComponent],
   templateUrl: './nutrition-client-tab.component.html',
   styleUrl: './nutrition-client-tab.component.scss',
 })
@@ -24,6 +27,9 @@ export class NutritionClientTabComponent implements OnInit {
   @Input() clientId!: string;
   @Input() coachId!: string;
   @Output() assignNew = new EventEmitter<void>();
+  /** The plans arrived once: later reloads (filters, pages, assignments) keep the list on screen. */
+  loaded = false;
+  private readonly destroyRef = inject(DestroyRef);
 
   mealPlan: any[] = [];
   activeMealPlans: any[] = [];
@@ -55,7 +61,19 @@ export class NutritionClientTabComponent implements OnInit {
   private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
 
   ngOnInit(): void {
-    this.loadNutritionFileSetting();
+    // The client profile refreshes the coach settings when it opens: the plans load once right away with them,
+    // and load again only if the file option turns out different.
+    this.applyNutritionFileSetting();
+    this.coachSettingsService.configChanges$
+      .pipe(skip(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const before = `${this.nutritionFileEnabled}|${this.activeTab}`;
+        this.applyNutritionFileSetting();
+        if (before !== `${this.nutritionFileEnabled}|${this.activeTab}` && this.clientId && this.coachId) {
+          this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+        }
+      });
+
     if (this.clientId && this.coachId) {
       this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
     }
@@ -71,6 +89,13 @@ export class NutritionClientTabComponent implements OnInit {
 
   get allOtherPlans(): any[] {
     return this.displayedPlans;
+  }
+
+  /** No plan at all for this client (not only for the chosen filter, type or page). */
+  get hasNoPlan(): boolean {
+    return !this.hasActivePlans() && this.allOtherPlans.length === 0
+      // Without the files option the tab always shows the app plans (APP): that is the full list too.
+      && this.allPlansFilter === 'ALL' && (this.activeTab === 'ALL' || this.nutritionFileEnabled === false) && this.page === 0;
   }
 
   hasActivePlans(): boolean {
@@ -132,7 +157,8 @@ export class NutritionClientTabComponent implements OnInit {
         this.activeTab,
         'ACTIVE',
         'ALL',
-        'RECOMMENDED'
+        'RECOMMENDED',
+        true
       ),
       allPlans: this.nutritionService.getNutritionPlanByCoachIdAndClient(
         idCoach,
@@ -142,9 +168,10 @@ export class NutritionClientTabComponent implements OnInit {
         this.activeTab,
         'NON_ACTIVE',
         this.allPlansFilter,
-        this.allPlansSort
+        this.allPlansSort,
+        true
       ),
-    }).subscribe(({ active, allPlans }) => {
+    }).pipe(finalize(() => (this.loaded = true))).subscribe(({ active, allPlans }) => {
         this.totalPages = allPlans.totalPages || 0;
         this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
 
@@ -1052,23 +1079,11 @@ export class NutritionClientTabComponent implements OnInit {
   }
 
 
-  private loadNutritionFileSetting(): void {
+  private applyNutritionFileSetting(): void {
     this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
-
-    this.coachSettingsService.loadConfig().subscribe({
-      next: (config) => {
-        this.nutritionFileEnabled = config.nutrition?.nutritionFileEnabled !== false;
-        if (this.nutritionFileEnabled === false) {
-          this.activeTab = 'APP';
-        }
-        if (this.clientId && this.coachId) {
-          this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
-        }
-      },
-      error: () => {
-        this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
-      },
-    });
+    if (this.nutritionFileEnabled === false) {
+      this.activeTab = 'APP';
+    }
   }
 
   openAssignNutrition() {

@@ -18,11 +18,11 @@
     <button class="profile-back app-page-back" type="button" [attr.aria-label]="'BACK_TO_CLIENTS' | translate" (click)="backToClients()">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <img *ngIf="profilePhotoUrl"
-      [src]="profilePhotoUrl"
+    <img
+      [src]="profilePhotoUrl || defaultAvatarUrl"
       [alt]="fullName || ('PROFILE_PHOTO' | translate)"
       class="profile-picture"
-      (error)="onProfilePhotoError()"
+      (error)="onHeaderPhotoError($event)"
     />
 
     <div class="profile-info">
@@ -30,9 +30,14 @@
       <p class="profile-email">
         {{ client?.email || ('NOT_PROVIDED' | translate) }}
       </p>
-      <p class="last-workout">
+      <p class="last-workout" [title]="headerFactsTitle">
         <span class="last-workout-dot"></span>
-        {{ 'LAST_WORKOUT' | translate }} —
+        <span class="last-workout-text">
+          <ng-container *ngIf="clientAge !== null">{{ 'PROFILE_AGE_YEARS' | translate:{ age: clientAge } }} · </ng-container>
+          <ng-container *ngIf="headerCurrentWeight !== null">{{ formatWeight(headerCurrentWeight) }} · </ng-container>
+          {{ 'LAST_WORKOUT' | translate }} —
+          {{ lastWorkoutDate ? (lastWorkoutDate | date:'d MMM':undefined:dateLocale) : ('PROFILE_NO_WORKOUT' | translate) }}
+        </span>
       </p>
     </div>
 
@@ -104,29 +109,17 @@
         </div>
       </div>
 
-      <button class="btn-client-preview" type="button" (click)="openClientPreview()">
+      <button class="btn-client-preview" type="button" [title]="'VIEW_CLIENT' | translate" (click)="openClientPreview()">
         <i class="far fa-eye"></i>
         <span>{{ 'VIEW_CLIENT' | translate }}</span>
       </button>
 
-      <button class="btn-send-message" type="button" (click)="setTab('chat')">
+      <button class="btn-send-message" type="button" [title]="'SEND_MESSAGE' | translate" (click)="setTab('chat')">
         <i class="far fa-comment"></i>
         <span>{{ 'SEND_MESSAGE' | translate }}</span>
       </button>
 
     </div>
-  </div>
-
-  <div class="stats-toggle-row">
-    <button
-      class="stats-toggle-btn"
-      type="button"
-      (click)="toggleClientStats()"
-      [attr.aria-expanded]="showClientStats"
-    >
-      <span>{{ (showClientStats ? 'HIDE_PROGRESS_SUMMARY' : 'SHOW_PROGRESS_SUMMARY') | translate }}</span>
-      <i class="fas" [class.fa-chevron-up]="showClientStats" [class.fa-chevron-down]="!showClientStats"></i>
-    </button>
   </div>
 
   <div class="progress-summary" *ngIf="showClientStats">
@@ -195,72 +188,56 @@
   </section>
   </div>
 
-  <nav class="profile-tabs" #profileTabs>
-    <button
-      class="tab-link"
-      [class.active]="activeTab === 'dashboard'"
-      (click)="setTab('dashboard')"
-    >
-      {{ 'DASHBOARD' | translate }}
-    </button>
-    <button
-      class="tab-link"
-      [class.active]="activeTab === 'workouts'"
-      (click)="setTab('workouts')"
-    >
-      {{ 'PROFILE_WORKOUTS_TAB' | translate }}
-    </button>
-    <button
-      class="tab-link"
-      [class.active]="activeTab === 'nutrition'"
-      (click)="setTab('nutrition')"
-    >
-      {{ 'NUTRITION' | translate }}
-    </button>
-    <button
-      class="tab-link"
-      [class.active]="activeTab === 'checkins'"
-      (click)="setTab('checkins')"
-    >
-      {{ 'CHECK_INS' | translate }}
-    </button>
+  <!-- Profile navigation: 5 main tabs on one row (with the summary button), and under "Overview" a second row
+       of sub-tabs. Same sections as before, only grouped; the chat opens from "Send a message". -->
+  <div class="profile-nav">
+    <div class="profile-tabs-bar">
+      <nav class="profile-tabs">
+        <button type="button" class="tab-link" [class.active]="isOverviewTab" (click)="openOverview()">
+          {{ 'PROFILE_OVERVIEW_TAB' | translate }}
+        </button>
+        <button type="button" class="tab-link" [class.active]="activeTab === 'workouts'" (click)="setTab('workouts')">
+          {{ 'PROFILE_WORKOUTS_TAB' | translate }}
+        </button>
+        <button type="button" class="tab-link" [class.active]="activeTab === 'nutrition'" (click)="setTab('nutrition')">
+          {{ 'NUTRITION' | translate }}
+        </button>
+        <button type="button" class="tab-link tasks-tab" [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">
+          {{ 'TASKS' | translate }}
+        </button>
+        <button type="button" class="tab-link calendar-tab" [class.active]="activeTab === 'calendar'" (click)="setTab('calendar')">
+          {{ 'CALENDAR' | translate }}
+        </button>
+        <button type="button" class="tab-link chat-tab" [class.active]="activeTab === 'chat'" (click)="setTab('chat')">
+          {{ 'CHAT' | translate }}
+        </button>
+      </nav>
+      <button
+        class="stats-toggle-btn"
+        type="button"
+        (click)="toggleClientStats()"
+        [attr.aria-expanded]="showClientStats"
+      >
+        <span>{{ (showClientStats ? 'HIDE_PROGRESS_SUMMARY' : 'SHOW_PROGRESS_SUMMARY') | translate }}</span>
+        <i class="fas" [class.fa-chevron-up]="showClientStats" [class.fa-chevron-down]="!showClientStats"></i>
+      </button>
+    </div>
 
-    <button
-      class="tab-link"
-      [class.active]="activeTab === 'measurements'"
-      (click)="setTab('measurements')"
-    >
-      {{ 'MEASUREMENTS' | translate }}
-    </button>
-    <button
-      class="tab-link pictures-tab"
-      [class.active]="activeTab === 'pictures'"
-      (click)="setTab('pictures')"
-    >
-      {{ 'PROGRESS_PICTURES' | translate }}
-    </button>
-    <button
-      class="tab-link tasks-tab"
-      [class.active]="activeTab === 'tasks'"
-      (click)="setTab('tasks')"
-    >
-      {{ 'TASKS' | translate }}
-    </button>
-    <button
-      class="tab-link calendar-tab"
-      [class.active]="activeTab === 'calendar'"
-      (click)="setTab('calendar')"
-    >
-      {{ 'CALENDAR' | translate }}
-    </button>
-    <button
-      class="tab-link chat-tab"
-      [class.active]="activeTab === 'chat'"
-      (click)="setTab('chat')"
-    >
-      {{ 'CHAT' | translate }}
-    </button>
-  </nav>
+    <nav class="profile-subtabs" *ngIf="isOverviewTab" [attr.aria-label]="'PROFILE_OVERVIEW_TAB' | translate">
+      <button type="button" class="subtab-link" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
+        {{ 'DASHBOARD' | translate }}
+      </button>
+      <button type="button" class="subtab-link" [class.active]="activeTab === 'measurements'" (click)="setTab('measurements')">
+        {{ 'MEASUREMENTS' | translate }}
+      </button>
+      <button type="button" class="subtab-link" [class.active]="activeTab === 'pictures'" (click)="setTab('pictures')">
+        {{ 'PROGRESS_PICTURES' | translate }}
+      </button>
+      <button type="button" class="subtab-link" [class.active]="activeTab === 'checkins'" (click)="setTab('checkins')">
+        {{ 'CHECK_INS' | translate }}
+      </button>
+    </nav>
+  </div>
 
   <div class="tab-content">
     <div
@@ -846,7 +823,9 @@
       </section>
     </div>
 
-    <div class="tab-pane" *ngIf="activeTab === 'workouts'" [class.active]="true">
+    <!-- Tabs with their own data: created on the first visit, then kept while on this client (see openedTabs). -->
+    <ng-container *ngFor="let key of clientKey">
+    <div class="tab-pane" *ngIf="isTabOpened('workouts')" [class.active]="activeTab === 'workouts'">
       <app-workouts-client-tab
         [clientId]="clientId"
         [coachId]="userid"
@@ -854,13 +833,14 @@
       />
     </div>
 
-    <div class="tab-pane" *ngIf="activeTab === 'nutrition'" [class.active]="true">
+    <div class="tab-pane" *ngIf="isTabOpened('nutrition')" [class.active]="activeTab === 'nutrition'">
       <app-nutrition-client-tab
         [clientId]="clientId"
         [coachId]="userid"
         (assignNew)="openAssignProgramModal('NUTRITION')"
       />
     </div>
+    </ng-container>
 
     <section
       class="checkins-tab tab-pane"
@@ -902,7 +882,8 @@
         </nav>
       </div>
 
-      <div *ngIf="activeSubTab === 'submissions'">
+      <app-section-loader *ngIf="activeSubTab === 'submissions' && !submissionsLoaded"></app-section-loader>
+      <div *ngIf="activeSubTab === 'submissions' && submissionsLoaded">
         <div class="checkins-toolbar">
           <div class="search-input-wrapper full-width">
             <i class="fas fa-search"></i>
@@ -915,31 +896,17 @@
           </div>
         </div>
 
-        <div class="checkin-list">
-          <div
-            class="checkin-row"
+        <div class="checkin-cards">
+          <app-checkin-card
             *ngFor="let a of submissionsList"
             (click)="openSubmissionAssignment(a)"
-          >
-            <div class="checkin-row-main">
-              <div class="checkin-title">{{ a.formName }}</div>
-              <div class="checkin-date">
-                {{ (a.submittedAt || a.assignedAt) | date : "dd/MM/yyyy" }}
-              </div>
-            </div>
-            <div class="checkin-status">
-              <span
-                class="status-pill"
-                [ngClass]="{
-                  'status-pill--reviewed': a.status === 'REVIEWED',
-                  'status-pill--pending-review': a.status === 'SUBMITTED'
-                }"
-              >
-                <i *ngIf="a.status === 'REVIEWED'" class="far fa-check-circle"></i>
-                {{ (a.status === 'REVIEWED' ? 'REVIEWED' : 'PENDING_REVIEW') | translate }}
-              </span>
-            </div>
-          </div>
+            [date]="a.submittedAt || a.assignedAt"
+            [lang]="currentLang"
+            [tone]="a.status === 'REVIEWED' ? 'success' : 'warning'"
+            [title]="a.formName"
+            [subtitle]="('SUBMITTED_ON' | translate) + ' ' + ((a.submittedAt || a.assignedAt) | date: 'd MMM · HH:mm')"
+            [status]="(a.status === 'REVIEWED' ? 'REVIEWED' : 'PENDING_REVIEW') | translate"
+          ></app-checkin-card>
         </div>
 
         <div class="profile-pagination" *ngIf="submissionsTotalPages > 1">
@@ -957,7 +924,8 @@
         </div>
       </div>
 
-      <div *ngIf="activeSubTab === 'assigned'">
+      <app-section-loader *ngIf="activeSubTab === 'assigned' && !assignedLoaded"></app-section-loader>
+      <div *ngIf="activeSubTab === 'assigned' && assignedLoaded">
         <div class="checkins-toolbar">
           <div class="search-input-wrapper">
             <i class="fas fa-search"></i>
@@ -974,41 +942,17 @@
           </button>
         </div>
 
-        <div class="assigned-table">
-          <div class="assigned-header-row">
-            <div>{{ 'FORM_NAME' | translate }}</div>
-            <div>{{ 'ASSIGNED_DATE' | translate }}</div>
-            <div>{{ 'DUE_DATE' | translate }}</div>
-            <div>{{ 'STATUS' | translate }}</div>
-            <div class="text-right">{{ 'ACTIONS' | translate }}</div>
-          </div>
-
-          <div
-            class="assigned-row"
+        <div class="checkin-cards">
+          <app-checkin-card
             *ngFor="let a of assignedList"
             (click)="openAssignedAssignment(a)"
-          >
-            <div class="assigned-name">{{ a.formName }}</div>
-            <div class="assigned-date">
-              <i class="far fa-calendar-alt"></i>
-              {{ a.assignedAt | date : "dd/MM/yyyy" }}
-            </div>
-            <div class="assigned-date">
-              <i class="far fa-calendar-alt"></i>
-              {{ a.dueAt | date : "dd/MM/yyyy" }}
-            </div>
-            <div>
-              <span class="status-pill status-pill--pending">
-                {{ (a.status === 'OPENED' ? 'OPENED' : 'PENDING') | translate }}
-              </span>
-            </div>
-            <div class="actions-cell">
-              <button class="link-view" (click)="openAssignedAssignment(a, $event)">
-                <i class="far fa-eye"></i>
-                {{ 'VIEW' | translate }}
-              </button>
-            </div>
-          </div>
+            [date]="a.dueAt || a.assignedAt"
+            [lang]="currentLang"
+            [tone]="isCheckinLate(a) ? 'danger' : 'info'"
+            [title]="a.formName"
+            [subtitle]="('ASSIGNED_ON' | translate) + ' ' + (a.assignedAt | date: 'd MMM') + ' · ' + ('DUE' | translate) + ' ' + (a.dueAt | date: 'd MMM')"
+            [status]="(isCheckinLate(a) ? 'OVERDUE_LABEL' : a.status === 'OPENED' ? 'OPENED' : 'PENDING') | translate"
+          ></app-checkin-card>
         </div>
 
         <div class="profile-pagination" *ngIf="assignedTotalPages > 1">
@@ -1040,78 +984,61 @@
         </div>
 
         <ng-container *ngIf="scheduledItems.length > 0">
-          <div class="scheduled-summary">
-            <span class="summary-dot summary-dot--active"></span>
-            <span class="summary-label">{{ 'ITEMS_COUNT' | translate:{ count: activeSchedulesCount } }}</span>
-          </div>
+          <p class="sched-count">{{ 'SCHED.TITLE_COUNT' | translate: { count: activeSchedulesCount } }}</p>
 
-          <div
-            class="schedule-card"
-            *ngFor="let s of scheduledItems"
-            (click)="openScheduleDetail(s)"
-          >
-            <div class="schedule-card-header">
-              <div class="schedule-card-left">
-                <span class="schedule-status-dot schedule-status-dot--active"></span>
-
-                <div class="schedule-card-meta">
-                  <div class="schedule-card-title-row">
-                    <span class="schedule-card-name">{{ s.formTitle }}</span>
-
-                    <span class="freq-badge" *ngIf="s.schedule?.frequency">
-                      <i class="fas fa-sync-alt"></i>
-                      {{ ('FREQUENCY_' + (s.schedule.frequency | uppercase)) | translate }}
-                    </span>
-
-                    <span class="kind-badge" *ngIf="s.kind === 'PLANNED'">{{ 'PLANNED' | translate }}</span>
-                    <span class="kind-badge" *ngIf="s.kind === 'ASSIGNED'">{{ 'ASSIGNED' | translate }}</span>
-
-                    <span class="schedule-qcount" *ngIf="s.questions?.length">
-                      {{ s.questions.length }} {{ (s.questions.length === 1 ? 'QUESTION' : 'QUESTIONS') | translate }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="schedule-card-actions" (click)="$event.stopPropagation()">
+          <div class="sched-list">
+            <article class="sched-card" *ngFor="let s of scheduledItems" (click)="openScheduleDetail(s)">
+              <header class="sched-head">
+                <app-checkin-card
+                  class="sched-summary"
+                  [date]="s.dueAt"
+                  [lang]="currentLang"
+                  [tone]="s.kind === 'PLANNED' ? 'info' : 'warning'"
+                  [title]="s.formTitle"
+                  [subtitle]="scheduleFrequencyLabel(s)"
+                  [status]="(s.kind === 'PLANNED' ? 'SCHED.KIND_PLANNED' : 'SCHED.KIND_ASSIGNED') | translate"
+                  [clickable]="false"
+                ></app-checkin-card>
                 <button
-                  class="schedule-action-btn schedule-action-btn--delete"
+                  type="button"
+                  class="sched-delete"
                   (click)="openDeleteScheduled(s, $event)"
-                  [title]="'DELETE' | translate"
+                  [title]="'SCHED.DELETE' | translate"
+                  [attr.aria-label]="'SCHED.DELETE' | translate"
                 >
                   <i class="fas fa-trash-alt"></i>
                 </button>
-              </div>
-            </div>
+              </header>
 
-            <div class="schedule-card-details">
-              <div class="schedule-detail-item" *ngIf="s.schedule?.daysOfWeek?.length">
-                <span class="schedule-detail-label">{{ 'DAYS' | translate }}</span>
-                <div class="schedule-days">
-                  <span class="day-pill" *ngFor="let day of s.schedule.daysOfWeek">{{ ('DAY_' + (day | uppercase)) | translate }}</span>
+              <dl class="sched-facts">
+                <div>
+                  <dt>{{ 'SCHED.NEXT_SEND' | translate }}</dt>
+                  <dd>{{ s.dueAt | date: 'EEE d MMM · HH:mm' }}</dd>
                 </div>
-              </div>
-
-              <div class="schedule-detail-item" *ngIf="s.schedule?.time">
-                <span class="schedule-detail-label">{{ 'SEND_TIME' | translate }}</span>
-                <span class="schedule-detail-value">
-                  <i class="far fa-clock"></i> {{ s.schedule.time }}
-                </span>
-              </div>
-
-              <div class="schedule-detail-item">
-                <span class="schedule-detail-label">{{ 'DUE' | translate }}</span>
-                <span class="schedule-detail-value">
-                  <i class="far fa-calendar-alt"></i>
-                  {{ s.dueAt | date:'dd/MM/yyyy' }}
-                </span>
-              </div>
-
-              <div class="schedule-detail-item" *ngIf="s.status">
-                <span class="schedule-detail-label">{{ 'STATUS' | translate }}</span>
-                <span class="schedule-detail-value">{{ ('CHECKIN_STATUS_' + (s.status | uppercase)) | translate }}</span>
-              </div>
-            </div>
+                <div>
+                  <dt>{{ 'SCHED.FREQUENCY' | translate }}</dt>
+                  <dd>{{ scheduleFrequencyLabel(s) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'SCHED.ENDS' | translate }}</dt>
+                  <dd>{{ s.stopAt ? (s.stopAt | date: 'd MMM y') : ('SCHED.NO_END' | translate) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'SCHED.REMINDER' | translate }}</dt>
+                  <dd [class.sched-off]="!s.reminderEnabled">
+                    {{ s.reminderEnabled ? ('SCHED.REMINDER_AT' | translate: { time: shortTime(s.reminderTime) || '—' }) : ('SCHED.REMINDER_OFF' | translate) }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{{ 'SCHED.QUESTIONS' | translate }}</dt>
+                  <dd>{{ s.questions?.length || 0 }}</dd>
+                </div>
+                <div *ngIf="s.status">
+                  <dt>{{ 'STATUS' | translate }}</dt>
+                  <dd>{{ ('CHECKIN_STATUS_' + (s.status | uppercase)) | translate }}</dd>
+                </div>
+              </dl>
+            </article>
           </div>
         </ng-container>
         <div class="profile-pagination" *ngIf="scheduledTotalPages > 1">
@@ -1130,7 +1057,14 @@
       </div>
     </section>
 
-    <div class="tab-pane chat-profile-pane" [class.active]="activeTab === 'chat'">
+    <ng-container *ngFor="let key of clientKey">
+    <!-- Created on the first visit only: the chat loads every conversation and marks this one as read. -->
+    <div
+      class="tab-pane chat-profile-pane"
+      *ngIf="isTabOpened('chat')"
+      [class.active]="activeTab === 'chat'"
+      [style.--chat-embedded-height.px]="chatPaneHeight"
+    >
       <app-chat
         [embeddedMode]="true"
         [embeddedClientId]="clientId"
@@ -1140,8 +1074,8 @@
 
     <div
       class="tab-pane measurements-pane"
-      *ngIf="activeTab === 'measurements'"
-      [class.active]="true"
+      *ngIf="isTabOpened('measurements')"
+      [class.active]="activeTab === 'measurements'"
     >
       <app-body-measurements
         [clientId]="clientId"
@@ -1153,8 +1087,8 @@
 
     <div
       class="tab-pane progress-pictures-pane"
-      *ngIf="activeTab === 'pictures'"
-      [class.active]="true"
+      *ngIf="isTabOpened('pictures')"
+      [class.active]="activeTab === 'pictures'"
     >
       <app-progress-pictures
         [clientId]="clientId"
@@ -1162,17 +1096,18 @@
       ></app-progress-pictures>
     </div>
 
-    <div class="tab-pane tasks-pane" *ngIf="activeTab === 'tasks'" [class.active]="true">
+    <div class="tab-pane tasks-pane" *ngIf="isTabOpened('tasks')" [class.active]="activeTab === 'tasks'">
       <app-client-tasks-tab [archived]="clientArchived" [clientId]="clientId" [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
     </div>
 
-    <div class="tab-pane" *ngIf="activeTab === 'calendar'" [class.active]="true">
+    <div class="tab-pane" *ngIf="isTabOpened('calendar')" [class.active]="activeTab === 'calendar'">
       <app-calendar-clients
         [embeddedClientId]="clientId"
         [embeddedCoachId]="userid"
         [hideClientFilter]="true"
       ></app-calendar-clients>
     </div>
+    </ng-container>
   </div>
 </section>
   </div>
@@ -1212,15 +1147,17 @@
           [class.open]="clientPreviewSidebarOpen"
           [class.closed]="!clientPreviewSidebarOpen"
         >
-          <div class="client-preview-sidebar__brand"><img src="assets/yocoachlogo.png" alt="Yo Coach" /></div>
+          <div class="client-preview-sidebar__brand"><img src="assets/logo/yocoach-logo.svg" alt="Yo Coach" /></div>
           <div class="client-preview-sidebar__nav">
-            <button type="button" [class.active]="clientPreviewSection === 'workouts'" (click)="setClientPreviewSection('workouts')"><i class="fas fa-bolt"></i>{{ 'WORKOUTS' | translate }}</button>
-            <button type="button" [class.active]="clientPreviewSection === 'nutrition'" (click)="setClientPreviewSection('nutrition')"><i class="far fa-heart"></i>{{ 'NUTRITION' | translate }}</button>
-            <button type="button" [class.active]="clientPreviewSection === 'chat'" (click)="setClientPreviewSection('chat')"><i class="far fa-comment-alt"></i>{{ 'CHAT' | translate }}</button>
-            <button type="button"><i class="far fa-comment-alt"></i>{{ 'MY_CHECK_INS' | translate }}</button>
-            <button type="button"><i class="fas fa-cog"></i>{{ 'SETTINGS' | translate }}</button>
-            <button type="button" [class.active]="clientPreviewSection === 'measurements'" (click)="setClientPreviewSection('measurements')"><i class="fas fa-wave-square"></i>{{ 'BODY_MEASUREMENTS' | translate }}</button>
-            <button type="button" [class.active]="clientPreviewSection === 'pictures'" (click)="setClientPreviewSection('pictures')"><i class="far fa-camera"></i>{{ 'PROGRESS_PICTURES' | translate }}</button>
+            <button
+              type="button"
+              *ngFor="let item of clientPreviewMenu"
+              [class.active]="clientPreviewSection === item.key"
+              [attr.aria-current]="clientPreviewSection === item.key ? 'page' : null"
+              (click)="setClientPreviewSection(item.key)"
+            >
+              <i-feather [name]="item.icon" class="client-preview-nav-icon"></i-feather>{{ item.title | translate }}
+            </button>
           </div>
         </aside>
         <main class="client-preview-content">
@@ -1230,13 +1167,20 @@
               <span class="client-preview-language"><img src="assets/images/flags/french.jpg" alt="" />{{ 'LANGUAGE' | translate }}<i class="fas fa-caret-down"></i></span>
               <i class="far fa-comment-alt"></i>
               <span class="client-preview-bell"><i class="far fa-bell"></i></span>
-              <span class="client-preview-avatar"><img *ngIf="profilePhotoUrl" [src]="profilePhotoUrl" [alt]="fullName" /><i class="fas fa-caret-down"></i></span>
+              <span class="client-preview-avatar"><img [src]="profilePhotoUrl || defaultAvatarUrl" [alt]="fullName" (error)="$any($event.target).src = defaultAvatarUrl" /><i class="fas fa-caret-down"></i></span>
             </div>
           </div>
           <div class="client-preview-real-content" (click)="$event.stopPropagation()">
             <app-client-workouts *ngIf="clientPreviewSection === 'workouts'" [previewClientId]="clientId" [previewMode]="true"></app-client-workouts>
             <app-client-nutrition *ngIf="clientPreviewSection === 'nutrition'" [previewClientId]="clientId" [previewMode]="true"></app-client-nutrition>
-            <app-chat *ngIf="clientPreviewSection === 'chat'" [embeddedMode]="true" [embeddedClientId]="clientId" [embeddedCoachId]="userid || ''"></app-chat>
+            <app-my-tasks *ngIf="clientPreviewSection === 'tasks'" [previewMode]="true" [previewClientId]="clientId"></app-my-tasks>
+            <app-chat *ngIf="clientPreviewSection === 'chat'" [embeddedMode]="true" [clientPreview]="true" [embeddedClientId]="clientId" [embeddedCoachId]="userid || ''"></app-chat>
+            <app-my-assignments *ngIf="clientPreviewSection === 'checkins'" [previewMode]="true" [previewClientId]="clientId"></app-my-assignments>
+            <div class="client-preview-settings" *ngIf="clientPreviewSection === 'settings'">
+              <i-feather name="settings"></i-feather>
+              <strong>{{ 'SETTINGS' | translate }}</strong>
+              <p>{{ 'CLIENT_PREVIEW_SETTINGS_NOTE' | translate }}</p>
+            </div>
             <app-body-measurements *ngIf="clientPreviewSection === 'measurements'" [clientId]="clientId"></app-body-measurements>
             <app-progress-pictures *ngIf="clientPreviewSection === 'pictures'" [clientId]="clientId"></app-progress-pictures>
           </div>

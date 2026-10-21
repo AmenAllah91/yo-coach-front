@@ -4431,3 +4431,6 @@ color: #757272;
     font-weight: 500 !important;
   }
 }
+
+/* Page layout (toolbar, columns, exercise panel) — must stay the last import. */
+@import "../_workout-builder-layout.scss";

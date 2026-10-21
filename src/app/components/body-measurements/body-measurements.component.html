@@ -34,7 +34,7 @@
         <div>
           <h2>{{ currentType.label | translate }}</h2>
           <p *ngIf="latestMeasurement">{{ 'LATEST_RECORD_FROM' | translate }} {{ formatDate(latestMeasurement.date) }}</p>
-          <p *ngIf="!latestMeasurement">{{ 'NO_RECORDS_YET' | translate }}</p>
+          <p *ngIf="loaded && !latestMeasurement">{{ 'NO_RECORDS_YET' | translate }}</p>
         </div>
 
         <button
@@ -48,6 +48,8 @@
         </button>
       </div>
 
+      <app-section-loader *ngIf="!loaded"></app-section-loader>
+      <ng-container *ngIf="loaded">
       <div class="chart-card">
         <div class="chart-header">
           <span>{{ 'LAST' | translate }}</span>
@@ -156,6 +158,7 @@
           {{ 'NO_MEASUREMENT_HISTORY' | translate }}
         </div>
       </div>
+      </ng-container>
     </section>
   </div>
 </div>

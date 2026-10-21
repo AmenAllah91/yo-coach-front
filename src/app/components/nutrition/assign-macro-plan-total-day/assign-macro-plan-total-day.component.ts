@@ -1,6 +1,7 @@
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { Component, OnInit } from '@angular/core';
+import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
 import { CommonModule, DecimalPipe, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -25,12 +26,16 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
     FormsModule,
     DragDropModule,
     TranslateModule,
-    WorkoutWeekPanelComponent,
-  ],
+    WorkoutWeekPanelComponent, ReadyWeeksModalComponent],
   templateUrl: './assign-macro-plan-total-day.component.html',
-  styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss'],
+  styleUrls: ['./assign-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss'],
 })
 export class AssignMacroPlanTotalDayComponent implements OnInit {
+  /** Phones: the week/day structure opens over the page (same as the workout builder). */
+  mobileStructureOpen = false;
+  /** Used by the toolbar "Save draft" (through the ready-weeks check of the draft state). */
+  readonly savePlanFn = (publishWeeks?: number[]) => this.savePlan(publishWeeks);
+
   draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang, this.router);
   durationWeeks = 4;
   readonly durationOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -357,7 +362,7 @@ export class AssignMacroPlanTotalDayComponent implements OnInit {
   /* ----------------------------------------------
       SAVE PLAN
   ------------------------------------------------*/
-  savePlan(publishWeek?: number) {
+  savePlan(publishWeek?: number | number[]) {
     this.days.forEach(day => this.updateCaloriesForDay(day));
     this.updateAllDates();
     const plan = {

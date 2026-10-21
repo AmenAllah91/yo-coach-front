@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '@env/environment';
 import {
   AppThemeColors,
@@ -13,15 +13,23 @@ import {
 export class AppThemeColorsService {
   private readonly baseUrl = `${environment.baseApiUrl}/api/app-colors`;
 
+  /** Last answers of the Branding page: shown at once on the next visit, then refreshed. */
+  currentSnapshot: AppThemeColors | null = null;
+  listSnapshot: AppThemeColorsPage | AppThemeColors[] | null = null;
+
   constructor(private http: HttpClient) {}
 
-  getCurrent(): Observable<AppThemeColors> {
-    return this.http.get<AppThemeColors>(`${this.baseUrl}/current`);
+  getCurrent(skipLoader = false): Observable<AppThemeColors> {
+    return this.http
+      .get<AppThemeColors>(`${this.baseUrl}/current`, { headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} })
+      .pipe(tap((theme) => (this.currentSnapshot = theme)));
   }
 
-  getAll(page = 0, size = 50): Observable<AppThemeColorsPage | AppThemeColors[]> {
+  getAll(page = 0, size = 50, skipLoader = false): Observable<AppThemeColorsPage | AppThemeColors[]> {
     const params = new HttpParams().set('page', page).set('size', size);
-    return this.http.get<AppThemeColorsPage | AppThemeColors[]>(this.baseUrl, { params });
+    return this.http
+      .get<AppThemeColorsPage | AppThemeColors[]>(this.baseUrl, { params, headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} })
+      .pipe(tap((response) => (this.listSnapshot = response)));
   }
 
   getOne(id: string): Observable<AppThemeColors> {

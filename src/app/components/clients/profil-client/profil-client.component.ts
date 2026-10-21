@@ -1,15 +1,17 @@
+import { CheckinCardComponent } from '@shared/components/checkin-card/checkin-card.component';
 import { ToastService } from 'app/service/toast.service';
 import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { Component, HostListener, Input, ViewChild, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Client, ClientService } from 'app/service/client.service';
 import { UsersService } from 'app/service/users.service';
 
 import { ChoosePlanTypeModalComponent, NutritionPlanChoice } from 'app/components/nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
+import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 import { WorkoutsClientTabComponent } from './workouts-client-tab/workouts-client-tab.component';
 import { NutritionClientTabComponent } from './nutrition-client-tab/nutrition-client-tab.component';
 import { NutritionSelectionModalComponent } from './nutrition-selection-modal/nutrition-selection-modal.component';
@@ -21,12 +23,16 @@ import { Subject, takeUntil, from, of, Observable, forkJoin } from 'rxjs';
 import { FormDetails, FormsApiService, Form } from '../../forms/services/forms-api.service';
 import { Answer, QuestionType } from '../../../models/forms.model';
 import { SubmissionsApiService } from '../../forms/services/submissions-api.service';
-import { switchMap, finalize, map, catchError, startWith } from 'rxjs/operators';
+import { switchMap, finalize, map, catchError } from 'rxjs/operators';
 import { ClientScheduleItemDto } from '../../../models/client-schedule.model';
 import { CalendarClientsComponent } from '../../calendar/calendar-clients/calendar-clients.component';
 import { ProgressPicturesComponent } from 'app/components/progress-pictures-module/progress-pictures/progress-pictures.component';
 import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
 import { BodyMeasurement, BodyMeasurementsService } from 'app/service/body-measurements.service';
+import { FeatherModule } from 'angular-feather';
+import { MyTasksComponent } from '../my-tasks/my-tasks.component';
+import { MyAssignmentsComponent } from '../../forms/my-assignments-component/my-assignments.component';
+import { ClientProfileCacheService } from 'app/service/client-profile-cache.service';
 import { ChatComponent } from '../../chat/chat/chat.component';
 import { ClientWorkoutsComponent } from '../client-workouts/client-workouts.component';
 import { ClientNavPanelComponent } from '../client-nav-panel/client-nav-panel.component';
@@ -48,6 +54,9 @@ type TabId =
   | 'pictures'
   | 'tasks'
   | 'calendar';
+
+/** Sections grouped under the "Overview" main tab. */
+const OVERVIEW_TABS: readonly TabId[] = ['dashboard', 'measurements', 'pictures', 'checkins'];
 
 type WorkoutConflictResolution = 'START_AFTER' | 'REPLACE';
 
@@ -154,12 +163,15 @@ export interface ScheduledCheckIn {
   description?: string;
   questions?: Array<{ id: string; label: string; type: string; required: boolean }>;
 }
+type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'checkins' | 'settings' | 'measurements' | 'pictures';
+
 @Component({
   selector: 'app-profil-client',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
+    SectionLoaderComponent,
     ChoosePlanTypeModalComponent,
     WorkoutsClientTabComponent,
     NutritionClientTabComponent,
@@ -170,11 +182,15 @@ export interface ScheduledCheckIn {
     CalendarClientsComponent,
     ProgressPicturesComponent,
     BodyMeasurementsComponent,
-    ChatComponent,
+    forwardRef(() => ChatComponent), // ChatComponent also imports this component: lazy reference breaks the cycle
     ClientWorkoutsComponent,
     ClientNutritionComponent,
     ClientNavPanelComponent,
     ClientTasksTabComponent,
+    MyTasksComponent,
+    MyAssignmentsComponent,
+    CheckinCardComponent,
+    FeatherModule,
     TranslateModule
   ],
   templateUrl: './profil-client.component.html',
@@ -215,14 +231,36 @@ export class ProfilClientComponent {
   }
 
   @ViewChild(WorkoutsClientTabComponent) workoutsTab: WorkoutsClientTabComponent;
-  @ViewChild('profileTabs') profileTabsRef?: ElementRef<HTMLElement>;
   @ViewChild(NutritionClientTabComponent) nutritionTab: NutritionClientTabComponent;
 
   activeTab: TabId = 'dashboard';
+  /**
+   * Tabs opened for the current client. A tab is created on its first visit, then kept (hidden) while the coach
+   * stays on this client: coming back to it is instant, without loading again. `clientKey` changes with the client,
+   * which creates the opened tabs again for the new one (the chat included: it marks the conversation as read).
+   */
+  private openedTabs = new Set<TabId>(['dashboard']);
+  clientKey: string[] = [];
+  /** First page of each check-ins list received for this client (the section loader shows before). */
+  submissionsLoaded = false;
+  assignedLoaded = false;
+  /** Form names do not change while on the profile: each form is asked once. */
+  private formNames = new Map<string, string>();
   showClientStats = false;
   clientPreviewOpen = false;
   clientPreviewDevice: 'desktop' | 'mobile' = 'desktop';
-  clientPreviewSection: 'workouts' | 'nutrition' | 'chat' | 'measurements' | 'pictures' = 'workouts';
+  clientPreviewSection: ClientPreviewSection = 'workouts';
+  /** Same entries, order and icons as the client's own menu (sidebar items of ROLE_CLIENT). */
+  readonly clientPreviewMenu: Array<{ key: ClientPreviewSection; title: string; icon: string }> = [
+    { key: 'workouts', title: 'WORKOUTS', icon: 'dumbbell' },
+    { key: 'nutrition', title: 'NUTRITION', icon: 'apple' },
+    { key: 'tasks', title: 'TASKS', icon: 'check-square' },
+    { key: 'chat', title: 'CHAT', icon: 'message-square' },
+    { key: 'checkins', title: 'MY_CHECK_INS', icon: 'message-square' },
+    { key: 'settings', title: 'SETTINGS', icon: 'settings' },
+    { key: 'measurements', title: 'BODY_MEASUREMENTS', icon: 'activity' },
+    { key: 'pictures', title: 'SIDEBAR_PROGRESS', icon: 'camera' },
+  ];
   clientPreviewSidebarOpen = false;
   private checkinsLoaded = false;
 
@@ -230,30 +268,60 @@ export class ProfilClientComponent {
     this.activeTab = tab;
     this.loadTabData(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    this.scrollActiveTabIntoView();
   }
 
-  // On narrow screens the tab strip scrolls horizontally: keep the active tab visible.
-  private scrollActiveTabIntoView(): void {
-    setTimeout(() => {
-      const strip = this.profileTabsRef?.nativeElement;
-      const tab = strip?.querySelector<HTMLElement>('.tab-link.active');
-      if (!strip || !tab || strip.scrollWidth <= strip.clientWidth) return;
+  /** "Overview" is a main tab grouping these sections, shown as sub-tabs on a second row. */
+  get isOverviewTab(): boolean {
+    return OVERVIEW_TABS.includes(this.activeTab);
+  }
 
-      const edge = 16;
-      const stripBox = strip.getBoundingClientRect();
-      const tabBox = tab.getBoundingClientRect();
-      if (tabBox.left < stripBox.left + edge) {
-        strip.scrollBy({ left: tabBox.left - stripBox.left - edge, behavior: 'smooth' });
-      } else if (tabBox.right > stripBox.right - edge) {
-        strip.scrollBy({ left: tabBox.right - stripBox.right + edge, behavior: 'smooth' });
-      }
-    });
+  /** "Overview" opens on the dashboard; clicking it again keeps the current sub-tab. */
+  openOverview(): void {
+    if (!this.isOverviewTab) this.setTab('dashboard');
   }
 
   toggleClientStats(): void {
     this.showClientStats = !this.showClientStats;
+    if (this.activeTab === 'chat') this.fitChatPane();
   }
+
+  /** Height of the profile chat: it fills the window below the tabs, the message bar is visible without scrolling. */
+  chatPaneHeight: number | null = null;
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (this.activeTab === 'chat') this.fitChatPane(false);
+  }
+
+  /**
+   * Below the tabs when there is room (computer); on a short screen (phone, tall profile header) the chat takes the
+   * screen under the app bar and the page scrolls to it. scroll=false on resize (a phone keyboard resizes the window).
+   */
+  private fitChatPane(scroll = true): void {
+    const measure = (withScroll: boolean) => {
+      // The chat box itself (it has a top margin inside the chat component).
+      const chat = document.querySelector<HTMLElement>('app-profil-client .chat-profile-pane.active .chat-root')
+        || document.querySelector<HTMLElement>('app-profil-client .chat-profile-pane.active app-chat');
+      if (!chat) return;
+      const top = chat.getBoundingClientRect().top + window.scrollY;
+      const pane = chat.closest<HTMLElement>('.chat-profile-pane');
+      // The pane top does not move while the chat loads; the chat box sits a fixed offset below it.
+      const paneTop = pane ? pane.getBoundingClientRect().top + window.scrollY : top;
+      const offset = Math.max(0, top - paneTop);
+      const appBar = document.querySelector<HTMLElement>('app-header .navbar')?.getBoundingClientRect().height || 0;
+      const roomBelow = Math.round(window.innerHeight - top - 12);
+      if (roomBelow >= 420) {
+        this.chatPaneHeight = roomBelow;
+        return;
+      }
+      this.chatPaneHeight = Math.max(320, Math.round(window.innerHeight - appBar - offset - 12));
+      if (withScroll) setTimeout(() => window.scrollTo({ top: Math.max(0, paneTop - appBar), behavior: 'smooth' }), 50);
+    };
+    // Once the tab is shown, and again when the page has settled (chat toolbar, smooth scroll back to the top).
+    setTimeout(() => measure(false));
+    setTimeout(() => measure(scroll), 450);
+  }
+
 
   userid = sessionStorage.getItem('userId');
   clientId: string = '';
@@ -285,6 +353,64 @@ export class ProfilClientComponent {
 
   get profilePhotoUrl(): string {
     return this.getClientPickerPhoto(this.client);
+  }
+
+  /** Shown when the client has no photo (or the link of their photo does not answer). */
+  readonly defaultAvatarUrl = 'assets/avatar.png';
+
+  /** Age from the birth date, null when unknown. */
+  get clientAge(): number | null {
+    const birth = this.safeDate((this.client as any)?.birthDate);
+    if (!birth) return null;
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+    return age > 0 && age < 120 ? age : null;
+  }
+
+  get clientGenderKey(): string {
+    const gender = String((this.client as any)?.gender || '').toUpperCase();
+    if (gender.startsWith('M') || gender === 'HOMME') return 'GENDER_MALE';
+    if (gender.startsWith('F')) return 'GENDER_FEMALE';
+    return '';
+  }
+
+
+  /** Weight shown in the header: last measurement, else the weight given at onboarding. */
+  get headerCurrentWeight(): number | null {
+    if (this.currentWeight !== null) return this.currentWeight;
+    const value = Number((this.client as any)?.currentWeight);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+
+  /** Last day with a workout up to today (client workout dates). */
+  get lastWorkoutDate(): Date | null {
+    const today = this.startOfDay(new Date()).getTime();
+    const past = (this.client?.workoutDates || [])
+      .map((value) => this.safeDate(value))
+      .filter((date): date is Date => !!date && this.startOfDay(date).getTime() <= today)
+      .sort((a, b) => b.getTime() - a.getTime());
+    return past[0] || null;
+  }
+
+  /** Full text of the header info line (shown on hover when the line is cut). */
+  get headerFactsTitle(): string {
+    const parts: string[] = [];
+    if (this.clientAge !== null) parts.push(this.translate.instant('PROFILE_AGE_YEARS', { age: this.clientAge }));
+    if (this.clientGenderKey) parts.push(this.translate.instant(this.clientGenderKey));
+    if (this.headerCurrentWeight !== null) parts.push(this.formatWeight(this.headerCurrentWeight));
+    if (this.clientTargetWeight !== null) parts.push(`${this.translate.instant('GOAL_WEIGHT')} ${this.formatWeight(this.clientTargetWeight)}`);
+    return parts.join(' · ');
+  }
+
+  get dateLocale(): string {
+    return this.translate.currentLang === 'en' ? 'en-US' : 'fr-FR';
+  }
+
+  onHeaderPhotoError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (!image.src.endsWith(this.defaultAvatarUrl)) image.src = this.defaultAvatarUrl;
+    this.onProfilePhotoError();
   }
 
   getClientInitials(client: Client): string {
@@ -342,9 +468,17 @@ export class ProfilClientComponent {
 
   private loadCoachClients(): void {
     if (this.coachClientsLoaded || this.loadingCoachClients || !this.userid) return;
+    const known = this.profileCache.coachClientsSnapshot(this.userid);
+    if (known) {
+      // Same coach, read less than 2 min ago (previous profile): the panel shows at once, no request.
+      this.coachClients = known;
+      this.coachClientsLoaded = true;
+      return;
+    }
 
     this.loadingCoachClients = true;
-    this.clientService.getListClientsByCoachWithoutPagination(this.userid).subscribe({
+    // The client panel fills in behind the profile: it never shows the page loader.
+    this.clientService.getListClientsByCoachWithoutPagination(this.userid, true).subscribe({
       next: (response) => {
         const clients = Array.isArray(response) ? response : response?.content || [];
         const validClients = clients.filter((client: Client) => !!client.id);
@@ -360,21 +494,16 @@ export class ProfilClientComponent {
         this.coachClients = validClients;
 
         // The clients endpoint does not include the account avatar. Enrich each
-        // row from the user profile, which is also the source used by Discussion.
+        // row from the user profile (photos shared with the client list page).
         const clientProfiles$: Observable<Client>[] = validClients.map((client: Client) =>
-          this.usersService.getUserById(client.id!, true).pipe(
-            map((user: any) => ({
-              ...client,
-              avatarUrl: user?.avatarUrl && user.avatarUrl !== 'not found'
-                ? user.avatarUrl
-                : '',
-            })),
-            catchError(() => of(client)),
+          this.usersService.getAvatarUrl(client.id!).pipe(
+            map((avatarUrl) => ({ ...client, avatarUrl })),
           )
         );
 
         forkJoin(clientProfiles$).subscribe((enrichedClients) => {
           this.coachClients = enrichedClients;
+          this.profileCache.rememberCoachClients(this.userid!, enrichedClients);
           this.coachClientsLoaded = true;
           this.loadingCoachClients = false;
         });
@@ -472,13 +601,26 @@ export class ProfilClientComponent {
     return this.coachSettingsService.formatWeight(valueKg);
   }
 
-  loadBodyMeasurements(): void {
+  loadBodyMeasurements(force = true): void {
     if (!this.clientId) {
       return;
     }
+    const clientId = this.clientId;
+    if (force) {
+      this.profileCache.forget('measurements', clientId);
+    } else {
+      const known = this.profileCache.snapshot<BodyMeasurement[]>('measurements', clientId);
+      if (known) {
+        this.bodyMeasurements = known;
+        this.measurementsLoaded = true;
+        this.finishProfileLoading();
+        if (this.profileCache.isFresh('measurements', clientId)) return;
+      }
+    }
 
-    this.bodyMeasurementsService.getByClient(this.clientId, true).subscribe({
+    this.profileCache.load<BodyMeasurement[]>('measurements', this.userid || '', clientId).subscribe({
       next: (items) => {
+        if (clientId !== this.clientId) return;
         this.bodyMeasurements = items || [];
         this.measurementsLoaded = true;
         this.finishProfileLoading();
@@ -694,6 +836,7 @@ export class ProfilClientComponent {
   reactivateClient(): void {
     this.clientService.updateClientStatus(this.clientId, 'ACTIVE').subscribe(client => {
       this.client = client;
+      this.profileCache.forget('client', this.clientId);
       this.loadClientData();
     });
   }
@@ -712,7 +855,8 @@ export class ProfilClientComponent {
     private bodyMeasurementsService: BodyMeasurementsService,
     private mealplanDayService: MealplanDayService,
     public coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private profileCache: ClientProfileCacheService,
   ) {
     const seededClient = history.state?.profileClient as Client | undefined;
     if (seededClient?.id) {
@@ -733,7 +877,6 @@ export class ProfilClientComponent {
       if (tab) {
         this.activeTab = tab;
         this.loadTabData(tab);
-        this.scrollActiveTabIntoView();
       }
       this.notificationAssignmentId = params['assignmentId'] || null;
 
@@ -748,11 +891,18 @@ export class ProfilClientComponent {
         });
       }
 
+      // Coach dashboard "Assign": the profile's own assignment flow, this client already selected.
+      const openProgramAssign = params['openAssign'] === 'workout' ? 'WORKOUT'
+        : params['openAssign'] === 'nutrition' ? 'NUTRITION' : null;
+      if (openProgramAssign) {
+        Promise.resolve().then(() => this.openAssignProgramModal(openProgramAssign));
+      }
+
       if (typeof preselectFormId === 'string' && preselectFormId.trim() !== '') {
         this.preselectFormId = preselectFormId;
       }
 
-      if (openAssign || preselectFormId) {
+      if (openAssign || openProgramAssign || preselectFormId) {
         this.router.navigate([], {
           relativeTo: this.route,
           queryParams: { openAssign: null },
@@ -803,6 +953,11 @@ export class ProfilClientComponent {
 
   private loadClientData(): void {
     if (!this.clientId) return;
+    const cachedClient = this.profileCache.snapshot<Client>('client', this.clientId);
+    if (cachedClient && this.seededClientId !== String(this.clientId)) {
+      this.client = cachedClient;
+      this.seededClientId = String(this.clientId);
+    }
     const hasSeededClient = this.seededClientId === String(this.clientId);
     this.profileLoading = !hasSeededClient;
     this.clientHeaderLoaded = hasSeededClient;
@@ -810,13 +965,27 @@ export class ProfilClientComponent {
     this.workoutDashboardLoaded = false;
     this.nutritionDashboardLoaded = false;
     this.checkinsLoaded = false;
-    this.getClientById(this.clientId, hasSeededClient);
-    this.loadBodyMeasurements();
-    this.loadDashboardPrograms();
+    this.submissionsLoaded = false;
+    this.assignedLoaded = false;
+    this.openedTabs = new Set<TabId>([this.activeTab]);
+    this.clientKey = [this.clientId];
+    if (!(hasSeededClient && this.profileCache.isFresh('client', this.clientId))) {
+      this.getClientById(this.clientId, hasSeededClient);
+    } else {
+      this.applyClient(this.profileCache.snapshot<Client>('client', this.clientId)!, this.clientId);
+    }
+    this.loadBodyMeasurements(false);
+    this.loadDashboardPrograms(false);
     this.loadTabData(this.activeTab);
   }
 
+  isTabOpened(tab: TabId): boolean {
+    return this.openedTabs.has(tab);
+  }
+
   private loadTabData(tab: TabId): void {
+    this.openedTabs.add(tab);
+    if (tab === 'chat') this.fitChatPane();
     if (tab === 'checkins' && !this.checkinsLoaded) {
       this.checkinsLoaded = true;
       this.loadClientAssignments();
@@ -828,31 +997,36 @@ export class ProfilClientComponent {
   }
 
   getClientById(id: string, silent = false) {
-    this.clientService.getClientById(id, silent).subscribe({
+    // Silent (identity already shown): shared with a prefetch from the list and kept for the next opening.
+    // Kept for the next opening and shared with the tabs (measurements units) and a prefetch from the list.
+    this.profileCache.load<Client>('client', this.userid || '', id).subscribe({
       next: (res) => {
-        this.client = res;
-        this.enrichProfilePhoto(id);
-        this.clientHeaderLoaded = true;
-        this.finishProfileLoading();
-        this.assignPendingCreatedWorkoutIfNeeded();
-        this.assignPendingCreatedNutritionIfNeeded();
+        if (String(id) !== String(this.clientId)) return;
+        this.applyClient(res, id);
       },
       error: (err) => {
         console.error('Failed to load client profile:', err);
+        if (!silent) this.toastService.error(this.translate.instant('FAILED_TO_LOAD_CLIENT'));
         this.clientHeaderLoaded = true;
         this.finishProfileLoading();
       },
     });
   }
 
+  private applyClient(res: Client, id: string): void {
+    const avatarUrl = this.client && String(this.client.id) === String(id) ? this.client.avatarUrl : undefined;
+    this.client = avatarUrl && !res.avatarUrl ? { ...res, avatarUrl } : res;
+    this.enrichProfilePhoto(id);
+    this.clientHeaderLoaded = true;
+    this.finishProfileLoading();
+    this.assignPendingCreatedWorkoutIfNeeded();
+    this.assignPendingCreatedNutritionIfNeeded();
+  }
+
   private enrichProfilePhoto(id: string): void {
-    this.usersService.getUserById(id, true).subscribe({
-      next: (user: any) => {
-        const avatarUrl = String(user?.avatarUrl || '').trim();
-        if (!this.client || !avatarUrl || avatarUrl.toLowerCase() === 'not found') return;
-        this.client = { ...this.client, avatarUrl };
-      },
-      error: () => {},
+    this.usersService.getAvatarUrl(id).subscribe((avatarUrl) => {
+      if (!this.client || !avatarUrl || String(this.client.id) !== String(id)) return;
+      this.client = { ...this.client, avatarUrl };
     });
   }
 
@@ -860,41 +1034,71 @@ export class ProfilClientComponent {
     // Only the identity request blocks opening the profile. Measurements and
     // program details enrich the already visible dashboard in the background.
     this.profileLoading = !this.clientHeaderLoaded;
+    this.warmUpMainTabs();
+  }
+
+  /** Workouts and nutrition tabs prepared once per client, after the dashboard. */
+  private tabsWarmedFor = '';
+
+  /**
+   * The two most used tabs are created (hidden) once the dashboard is loaded: their lists load in the background
+   * and the first click on them is instant. The tabs stay as they are when the coach already opened them.
+   */
+  private warmUpMainTabs(): void {
+    const clientId = this.clientId;
+    if (!clientId || this.tabsWarmedFor === clientId || !this.workoutDashboardLoaded || !this.nutritionDashboardLoaded) return;
+    this.tabsWarmedFor = clientId;
+    setTimeout(() => {
+      if (this.clientId !== clientId) return;
+      this.openedTabs.add('workouts');
+      this.openedTabs.add('nutrition');
+      this.openedTabs.add('tasks');
+    }, 400);
   }
 
 
-  private loadDashboardPrograms(): void {
+  private loadDashboardPrograms(force = true): void {
     if (!this.clientId || !this.userid) {
       this.workoutDashboardLoaded = true;
       this.nutritionDashboardLoaded = true;
       this.finishProfileLoading();
       return;
     }
+    const clientId = this.clientId;
 
-    this.loadingDashboardPrograms = true;
+    // Plans changed (or another client): the calendar tab shows them, it is created again on its next visit.
+    if (this.activeTab !== 'calendar') this.openedTabs.delete('calendar');
+
     this.dashboardProgramsError = null;
-    this.todaysWorkout = null;
-    this.activeNutritionPlan = null;
-    this.workoutActivities = [];
-    this.nutritionActivities = [];
+    if (force) {
+      this.profileCache.forget('workouts', clientId);
+      this.profileCache.forget('nutrition', clientId);
+    }
+    const knownWorkouts = force ? null : this.profileCache.snapshot<any[]>('workouts', clientId);
+    const knownNutrition = force ? null : this.profileCache.snapshot<any[]>('nutrition', clientId);
+    if (knownWorkouts) this.applyWorkoutPlans(knownWorkouts);
+    else {
+      this.todaysWorkout = null;
+      this.workoutActivities = [];
+    }
+    if (knownNutrition) this.applyNutritionPlans(knownNutrition);
+    else {
+      this.activeNutritionPlan = null;
+      this.nutritionActivities = [];
+    }
+    const workoutsFresh = !!knownWorkouts && this.profileCache.isFresh('workouts', clientId);
+    const nutritionFresh = !!knownNutrition && this.profileCache.isFresh('nutrition', clientId);
+    this.loadingDashboardPrograms = !nutritionFresh;
 
-    this.workoutService
-      .getWorkoutByCoachIdAndClient(this.userid, this.clientId, 0, 100, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', true)
-      .pipe(
-        switchMap((res: any) => {
-          const summaries = res?.content || [];
-          return this.hydrateWorkoutDashboardPlans(summaries);
-        })
-      )
-      .subscribe({
-        next: (plans: any[]) => {
-          this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
-          this.todaysWorkout = this.extractTodaysWorkout(plans);
-          this.workoutActivities = this.buildWorkoutActivities(plans);
-          this.workoutDashboardLoaded = true;
-          this.finishProfileLoading();
+    // The assigned-plan lists already hold the full plans (days, sessions, meals and the client logs), with
+    // the assignment dates computed by the server: the dashboard is built from them in one request each.
+    if (!workoutsFresh) {
+      this.profileCache.load<any[]>('workouts', this.userid, clientId).subscribe({
+        next: (plans) => {
+          if (clientId === this.clientId) this.applyWorkoutPlans(plans);
         },
         error: (err) => {
+          if (clientId !== this.clientId) return;
           console.error('Failed to load today workout:', err);
           this.assignedWorkoutPrograms = [];
           this.todaysWorkout = null;
@@ -904,27 +1108,17 @@ export class ProfilClientComponent {
           this.finishProfileLoading();
         },
       });
+    }
 
-    this.nutritionService
-      .getNutritionPlanByCoachIdAndClient(this.userid, this.clientId, 0, 100, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', true)
-      .pipe(
-        switchMap((res: any) => {
-          const summaries = res?.content || [];
-          return this.hydrateNutritionDashboardPlans(summaries).pipe(
-            map((plans) => ({ res, plans }))
-          );
-        })
-      )
-      .subscribe({
-        next: ({ plans }) => {
-          this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
-          this.activeNutritionPlan = this.extractTodaysNutrition(plans);
-          this.nutritionActivities = this.buildNutritionActivities(plans);
-          this.nutritionDashboardLoaded = true;
-          this.finishProfileLoading();
+    if (!nutritionFresh) {
+      this.profileCache.load<any[]>('nutrition', this.userid, clientId).subscribe({
+        next: (plans) => {
+          if (clientId !== this.clientId) return;
+          this.applyNutritionPlans(plans);
           this.loadingDashboardPrograms = false;
         },
         error: (err) => {
+          if (clientId !== this.clientId) return;
           console.error('Failed to load active nutrition plan:', err);
           this.assignedNutritionPrograms = [];
           this.activeNutritionPlan = null;
@@ -935,117 +1129,23 @@ export class ProfilClientComponent {
           this.finishProfileLoading();
         },
       });
+    }
   }
 
-  private hydrateWorkoutDashboardPlans(summaries: any[]): Observable<any[]> {
-    if (!summaries.length) return of([]);
-
-    const plansToHydrate = this.sortPlansByStartDate(summaries).slice(0, 12);
-
-    return forkJoin(plansToHydrate.map((summary: any) => {
-      if (!summary?.id || this.isFileWorkoutPlan(summary)) return of(summary);
-
-      return this.workoutService.getWorkoutById(summary.id, true).pipe(
-        map((detail: any) => ({
-          ...summary,
-          ...detail,
-          workoutDays: this.mergeWorkoutDashboardDays(
-            summary?.workoutDays || [],
-            detail?.workoutDays || []
-          ),
-        })),
-        catchError(() => of(summary))
-      );
-    })).pipe(
-      map((hydratedPlans) => this.mergeHydratedPlans(summaries, hydratedPlans)),
-      // List responses are sufficient to paint the profile immediately. Full
-      // details arrive afterwards without keeping the page visually blocked.
-      startWith(summaries)
-    );
+  private applyWorkoutPlans(plans: any[]): void {
+    this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
+    this.todaysWorkout = this.extractTodaysWorkout(plans);
+    this.workoutActivities = this.buildWorkoutActivities(plans);
+    this.workoutDashboardLoaded = true;
+    this.finishProfileLoading();
   }
 
-  private mergeWorkoutDashboardDays(summaryDays: any[], detailDays: any[]): any[] {
-    if (!detailDays.length) return summaryDays;
-
-    return detailDays.map((detailDay: any, index: number) => {
-      const summaryDay = summaryDays.find((candidate: any) =>
-        (detailDay?.id && candidate?.id === detailDay.id) ||
-        (detailDay?.dayNumber && candidate?.dayNumber === detailDay.dayNumber)
-      ) || summaryDays[index] || {};
-
-      return {
-        ...detailDay,
-        ...summaryDay,
-        workoutSessions: detailDay?.workoutSessions?.length
-          ? detailDay.workoutSessions
-          : (summaryDay?.workoutSessions || []),
-        clientExerciseLogs: summaryDay?.clientExerciseLogs
-          ?? detailDay?.clientExerciseLogs
-          ?? [],
-      };
-    });
-  }
-
-  /**
-   * Assignment list responses can contain only a summary of each meal day.
-   * Daily client feedback and meal reports live on the full assigned plan, so
-   * use that as the source for the activity table while preserving assignment
-   * metadata returned by the list endpoint.
-   */
-  private hydrateNutritionDashboardPlans(summaries: any[]): Observable<any[]> {
-    if (!summaries.length) return of([]);
-
-    const plansToHydrate = this.sortPlansByStartDate(summaries).slice(0, 12);
-
-    return forkJoin(plansToHydrate.map((summary: any) => {
-      if (!summary?.id || this.isFileNutritionPlan(summary)) return of(summary);
-
-      return this.nutritionService.getNutritionPlanById(summary.id, true).pipe(
-        map((detail: any) => ({
-          ...summary,
-          ...detail,
-          mealDays: this.mergeNutritionDashboardDays(
-            summary?.mealDays || [],
-            detail?.mealDays || []
-          ),
-        })),
-        catchError(() => of(summary))
-      );
-    })).pipe(
-      map((hydratedPlans) => this.mergeHydratedPlans(summaries, hydratedPlans)),
-      startWith(summaries)
-    );
-  }
-
-  private mergeHydratedPlans(summaries: any[], hydratedPlans: any[]): any[] {
-    const hydratedById = new Map(
-      hydratedPlans
-        .filter((plan) => plan?.id)
-        .map((plan) => [plan.id, plan])
-    );
-
-    return summaries.map((summary) => hydratedById.get(summary?.id) || summary);
-  }
-
-  private mergeNutritionDashboardDays(summaryDays: any[], detailDays: any[]): any[] {
-    if (!detailDays.length) return summaryDays;
-
-    return detailDays.map((detailDay: any, index: number) => {
-      const summaryDay = summaryDays.find((candidate: any) =>
-        (detailDay?.id && candidate?.id === detailDay.id) ||
-        (detailDay?.dayNumber && candidate?.dayNumber === detailDay.dayNumber)
-      ) || summaryDays[index] || {};
-
-      return {
-        ...summaryDay,
-        ...detailDay,
-        meals: detailDay?.meals?.length ? detailDay.meals : (summaryDay?.meals || []),
-        clientMealLogs: detailDay?.clientMealLogs ?? summaryDay?.clientMealLogs ?? [],
-        dayTargets: Object.keys(detailDay?.dayTargets || {}).length
-          ? detailDay.dayTargets
-          : (summaryDay?.dayTargets || {}),
-      };
-    });
+  private applyNutritionPlans(plans: any[]): void {
+    this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
+    this.activeNutritionPlan = this.extractTodaysNutrition(plans);
+    this.nutritionActivities = this.buildNutritionActivities(plans);
+    this.nutritionDashboardLoaded = true;
+    this.finishProfileLoading();
   }
 
   private extractTodaysWorkout(plans: any[]): TodaysWorkout | null {
@@ -1259,7 +1359,8 @@ export class ProfilClientComponent {
         'DESC',
         this.clientId,
         ['SUBMITTED', 'REVIEWED'],
-        this.submissionSearch
+        this.submissionSearch,
+        true // shown in place by the section loader
       )
       .subscribe({
         next: async (res) => {
@@ -1270,6 +1371,7 @@ export class ProfilClientComponent {
           this.submissionsPagesArray = Array.from({ length: this.submissionsTotalPages }, (_, i) => i);
           this.syncAssignmentsCache();
           this.loadingAssignments = false;
+          this.submissionsLoaded = true;
           if (this.notificationAssignmentId) {
             const assignment = this.submissionAssignments.find(item => item.id === this.notificationAssignmentId);
             if (assignment) {
@@ -1285,6 +1387,7 @@ export class ProfilClientComponent {
         error: () => {
           this.assignmentsError = 'Failed to load submissions';
           this.loadingAssignments = false;
+          this.submissionsLoaded = true;
         },
       });
   }
@@ -1867,7 +1970,8 @@ export class ProfilClientComponent {
         'DESC',
         this.clientId,
         ['ASSIGNED', 'OPENED'],
-        this.assignedSearch
+        this.assignedSearch,
+        true // shown in place by the section loader
       )
       .subscribe({
         next: async (res) => {
@@ -1878,10 +1982,12 @@ export class ProfilClientComponent {
           this.assignedPagesArray = this.buildCompactPages(this.assignedPage, this.assignedTotalPages);
           this.syncAssignmentsCache();
           this.loadingAssignments = false;
+          this.assignedLoaded = true;
         },
         error: () => {
           this.assignmentsError = 'Failed to load assigned check-ins';
           this.loadingAssignments = false;
+          this.assignedLoaded = true;
         },
       });
   }
@@ -1926,21 +2032,21 @@ export class ProfilClientComponent {
   }
 
   private async attachFormNames(assignments: FormAssignment[]): Promise<void> {
-    const uniqueFormIds = Array.from(new Set(assignments.map(a => a.formId)));
-    const map = new Map<string, string>();
+    const missingFormIds = Array.from(new Set(assignments.map(a => a.formId)))
+      .filter(formId => !this.formNames.has(formId));
 
     await Promise.all(
-      uniqueFormIds.map(formId =>
-        this.formsApi.getFormById(formId).toPromise().then((f: any) => {
-          map.set(formId, f?.name ?? f?.title ?? formId);
+      missingFormIds.map(formId =>
+        this.formsApi.getFormById(formId, true).toPromise().then((f: any) => {
+          this.formNames.set(formId, f?.name ?? f?.title ?? formId);
         }).catch(() => {
-          map.set(formId, formId);
+          // Not remembered: the next list asks for this form again.
         })
       )
     );
 
     assignments.forEach(a => {
-      a.formName = map.get(a.formId) ?? a.formId;
+      a.formName = this.formNames.get(a.formId) ?? a.formId;
     });
   }
 
@@ -1968,6 +2074,53 @@ export class ProfilClientComponent {
           this.reviewError = err?.error?.message ?? 'Failed to mark as reviewed.';
         }
       });
+  }
+
+  /** Language of the check-in date tiles. */
+  get currentLang(): string {
+    return this.translate.currentLang;
+  }
+
+  /** "Every week · Mon, Wed at 09:00", "Every month · day 15", "One time"… */
+  scheduleFrequencyLabel(item: ClientScheduleItemDto): string {
+    const schedule = item.schedule;
+    const frequency = (schedule?.frequency || '').toUpperCase();
+    const days = (schedule?.daysOfWeek || []).map((day) => this.translate.instant('DAY_' + day.toUpperCase())).join(', ');
+    let label: string;
+    switch (frequency) {
+      case 'DAILY':
+        label = this.translate.instant('SCHED.EVERY_DAY');
+        break;
+      case 'WEEKLY':
+        label = this.translate.instant('SCHED.WEEKLY_ON', { days: days || '—' });
+        break;
+      case 'BIWEEKLY': {
+        const weeks = schedule?.biweeklyWeeks ? ' (' + this.translate.instant('SCHED.BIWEEKLY_WEEKS_' + schedule.biweeklyWeeks) + ')' : '';
+        label = this.translate.instant('SCHED.BIWEEKLY_ON', { days: days || '—' }) + weeks;
+        break;
+      }
+      case 'MONTHLY':
+        label = schedule?.monthlyMode === 'START'
+          ? this.translate.instant('SCHED.MONTHLY_START')
+          : schedule?.monthlyMode === 'END'
+            ? this.translate.instant('SCHED.MONTHLY_END')
+            : this.translate.instant('SCHED.MONTHLY_DAY', { day: schedule?.monthlyDay ?? '—' });
+        break;
+      default:
+        return this.translate.instant('SCHED.ONE_TIME_DETAIL');
+    }
+    const time = this.shortTime(schedule?.time);
+    return time ? label + ' ' + this.translate.instant('SCHED.AT_TIME', { time }) : label;
+  }
+
+  /** "09:00:00" → "09:00". */
+  shortTime(value?: string | null): string {
+    return value ? String(value).slice(0, 5) : '';
+  }
+
+  /** Assigned and not answered after its real due date. */
+  isCheckinLate(a: FormAssignment): boolean {
+    return !!a.dueAt && new Date(a.dueAt).getTime() < Date.now() && a.status !== 'SUBMITTED' && a.status !== 'REVIEWED';
   }
 
   openAssignmentModal(a: FormAssignment): void {
@@ -2119,9 +2272,10 @@ export class ProfilClientComponent {
     this.clientPreviewSidebarOpen = device === 'desktop';
   }
 
-  setClientPreviewSection(section: 'workouts' | 'nutrition' | 'chat' | 'measurements' | 'pictures'): void {
+  setClientPreviewSection(section: ClientPreviewSection): void {
     this.clientPreviewSection = section;
-    this.clientPreviewSidebarOpen = false;
+    // As in the client app: the menu stays on a computer, the drawer closes on a phone.
+    if (this.clientPreviewDevice === 'mobile') this.clientPreviewSidebarOpen = false;
   }
 
   openAssignProgramModal(type: 'WORKOUT' | 'NUTRITION'): void {
