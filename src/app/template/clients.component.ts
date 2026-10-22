@@ -13,6 +13,8 @@ import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { UsersService } from '../service/users.service';
 import { ClientProfileCacheService } from '../service/client-profile-cache.service';
+import { CoachInvitation, InvitationService } from '../service/invitation.service';
+import { ToastService } from '../service/toast.service';
 
 interface StatusCountResponse {
   active: number;
@@ -80,7 +82,83 @@ export class ClientsComponent implements OnInit {
     private usersService: UsersService,
     private translate: TranslateService,
     private profileCache: ClientProfileCacheService,
+    private invitationService: InvitationService,
+    private toastService: ToastService,
   ) {}
+
+  /** "Invited" tab: invitations sent but not accepted yet (they take no active-client slot). */
+  showInvited = false;
+  invitations: CoachInvitation[] = [];
+  invitationsLoading = false;
+  busyInvitationId: string | null = null;
+  copiedInvitationId: string | null = null;
+  private readonly inviteBaseUrl = environment.apiUrl + '/invitation/';
+
+  loadInvitations(): void {
+    this.invitationsLoading = true;
+    this.invitationService.getMyInvitations().subscribe({
+      next: (invitations) => {
+        this.invitations = invitations || [];
+        this.invitationsLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading invitations:', error);
+        this.invitationsLoading = false;
+      },
+    });
+  }
+
+  openInvited(): void {
+    this.showInvited = true;
+    this.openDropdownId = null;
+    this.loadInvitations();
+  }
+
+  /** Days left before the link stops working (0 on its last day). */
+  invitationDaysLeft(invitation: CoachInvitation): number {
+    if (!invitation.expiresAt) return 0;
+    return Math.max(0, Math.floor((new Date(invitation.expiresAt).getTime() - Date.now()) / 86400000));
+  }
+
+  copyInvitationLink(invitation: CoachInvitation): void {
+    if (invitation.status === 'EXPIRED') return;
+    navigator.clipboard.writeText(this.inviteBaseUrl + invitation.token).catch(() => {});
+    this.copiedInvitationId = invitation.id;
+    setTimeout(() => {
+      if (this.copiedInvitationId === invitation.id) this.copiedInvitationId = null;
+    }, 2000);
+  }
+
+  resendInvitation(invitation: CoachInvitation): void {
+    if (this.busyInvitationId) return;
+    this.busyInvitationId = invitation.id;
+    this.invitationService.resendInvitation(invitation.id).subscribe({
+      next: () => {
+        this.busyInvitationId = null;
+        this.toastService.success(this.translate.instant('INVITATION_SENT_SUCCESSFULLY'));
+        this.loadInvitations();
+      },
+      error: () => {
+        this.busyInvitationId = null;
+        this.toastService.error(this.translate.instant('UNABLE_TO_SEND_INVITATION'));
+      },
+    });
+  }
+
+  cancelInvitation(invitation: CoachInvitation): void {
+    if (this.busyInvitationId || !confirm(this.translate.instant('CANCEL_INVITATION_CONFIRM', { email: invitation.email }))) return;
+    this.busyInvitationId = invitation.id;
+    this.invitationService.deleteInvitationByToken(invitation.token).subscribe({
+      next: () => {
+        this.busyInvitationId = null;
+        this.invitations = this.invitations.filter((item) => item.id !== invitation.id);
+      },
+      error: () => {
+        this.busyInvitationId = null;
+        this.toastService.error(this.translate.instant('UNEXPECTED_ERROR_RETRY'));
+      },
+    });
+  }
 
   private profilePrefetchTimer?: ReturnType<typeof setTimeout>;
 
@@ -96,6 +174,7 @@ export class ClientsComponent implements OnInit {
 
   ngOnInit() {
     this.loadClients();
+    this.loadInvitations();
   }
 
   goBack(): void {
@@ -219,6 +298,7 @@ export class ClientsComponent implements OnInit {
   }
 
   setStatusFilter(status: ClientStatus) {
+    this.showInvited = false;
     this.statusFilter = status;
     this.currentPage = 0;
     this.openDropdownId = null;
@@ -269,6 +349,7 @@ export class ClientsComponent implements OnInit {
   closeAddModal() {
     this.showAddModal = false;
     this.resetForm();
+    this.loadInvitations();
   }
 
   viewProfile(client: Client) {

@@ -35,4 +35,24 @@ export class InvitationService {
   deleteInvitationByToken(token: string) {
     return this.http.delete(`${this.baseUrl}/token/${token}`);
   }
+
+  /** "Invited" tab: the connected coach's invitations not accepted yet. */
+  getMyInvitations() {
+    return this.http.get<CoachInvitation[]>(`${this.baseUrl}/mine`, { headers: { 'X-Skip-Loader': 'true' } });
+  }
+
+  /** New link valid again, sent to the client's email (the old link stops working). */
+  resendInvitation(id: string) {
+    return this.http.post<{ invitationLink: string }>(`${this.baseUrl}/${id}/resend`, null);
+  }
+}
+
+export interface CoachInvitation {
+  id: string;
+  email: string;
+  token: string;
+  status: 'PENDING' | 'EXPIRED' | 'BLOCKED';
+  createdAt: string | null;
+  sentAt: string | null;
+  expiresAt: string | null;
 }

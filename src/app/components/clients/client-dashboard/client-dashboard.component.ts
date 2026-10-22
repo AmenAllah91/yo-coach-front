@@ -1,446 +1,387 @@
-import { Component, OnInit } from '@angular/core';
-import {FormsModule} from "@angular/forms";
-import {CommonModule} from "@angular/common";
-import { BodyMeasurementsComponent } from 'app/components/body-measurements/body-measurements.component';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { FeatherModule } from 'angular-feather';
+import { TranslateService } from '@ngx-translate/core';
+import { Subscription, catchError, forkJoin, map, of, timeout } from 'rxjs';
+import { AuthService } from '@config/auth.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { NutritionService } from 'app/service/nutrition.service';
-import { CoachSettingsService } from 'app/service/coach-settings.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-type Direction = 'prev' | 'next';
-interface Coach {
-  name: string;
-  image: string;
-  specialty: string;
-}
+import { ChatService } from 'app/service/chat.service';
+import { ChatUnreadService } from 'app/service/chat-unread.service';
+import { ClientTasksService, TaskCalendarItem } from 'app/service/client-tasks.service';
+import { CoachPublicProfile, CoachSettingsService } from 'app/service/coach-settings.service';
+import { DocumentService } from 'app/service/document.service';
+import { ClientThemeService } from 'app/core/service/client-theme.service';
+import { AssignmentsApiService, FormAssignment } from 'app/components/forms/services/assignments-api.service';
+import { ClientTaskRowComponent } from '../shared/client-task-row.component';
+import { CoachProfileSheetComponent } from '../shared/coach-profile-sheet.component';
+import { isHabit, isTaskDone, openClientTask } from '../shared/client-task-utils';
+import {
+  allExercises, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, estimatedWorkoutMinutes, findPlanDay,
+  initials, isMealReported, isRestDay, planDate, programWeek, targetTotals, titleCase, workoutDayTitle,
+  workoutSetCount, workoutThumbnails,
+} from '../shared/client-plan-utils';
 
-interface WorkoutExercise {
-  label: string;
-  name: string;
-}
+interface PlanDayItem { plan: any; day: any; }
+interface HomeCoach { id: string; name: string; }
 
-interface TasksDayData {
-  checkIn: {
-    date: string;
-    weight: number;
-    energy: number;
-    sleep: number;
-    stress: number;
-    notes: string;
-    photos: any[];
-    responded: boolean;
-    coachResponse?: string;
-  };
-  nutrition: {
-    planName: string;
-    program: string;
-    meals: number;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  workout: {
-    name: string;
-    program: string;
-    exercises: WorkoutExercise[];
-    totalExercises: number;
-  };
-}
+/** Last dashboard of the session: a revisit shows it at once, the fresh answer replaces it. */
+let HOME_SNAPSHOT: {
+  clientId: string; workout: PlanDayItem | null; nutrition: PlanDayItem | null;
+  checkIn: FormAssignment | null; coach: HomeCoach | null; tasks: TaskCalendarItem[];
+} | null = null;
 
-type CheckInQuestion =
-  | { id: string; questionKey: string; type: 'number'; unit?: string }
-  | { id: string; questionKey: string; type: 'scale'; min: number; max: number }
-  | { id: string; questionKey: string; type: 'textarea' }
+/**
+ * Client Home, same content and logic as the mobile ClientHomeScreen: greeting, coach card, today's plan
+ * (workout or rest day, nutrition), today's tasks and habits, and the check-in due today.
+ */
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [FormsModule, CommonModule, BodyMeasurementsComponent, TranslateModule],
+  imports: [CommonModule, FeatherModule, ClientTaskRowComponent, CoachProfileSheetComponent],
   templateUrl: './client-dashboard.component.html',
-  styleUrl: './client-dashboard.component.scss'
+  styleUrl: './client-dashboard.component.scss',
 })
-export class ClientDashboardComponent implements OnInit {
+export class ClientDashboardComponent implements OnInit, OnDestroy {
+  status: 'loading' | 'loaded' | 'error' = 'loading';
+  errorMessage = '';
+  firstName = '';
+  clientId = '';
+
+  todayWorkoutItem: PlanDayItem | null = null;
+  todayNutritionItem: PlanDayItem | null = null;
+  todayCheckIn: FormAssignment | null = null;
+  coach: HomeCoach | null = null;
+  todayHabits: TaskCalendarItem[] = [];
+  todayTasks: TaskCalendarItem[] = [];
+  toggling = new Set<string>();
+  unreadMessages = 0;
+
+  coachProfile: CoachPublicProfile | null = null;
+  coachPhotoUrl = '';
+  coachPhotoFailed = false;
+  showCoachProfile = false;
+  coachProfileLoading = false;
+  toast = '';
+
+  private loadRequest = 0;
+  private subscriptions = new Subscription();
+  private loadSubscriptions = new Subscription();
+  private toastTimer?: ReturnType<typeof setTimeout>;
+
   constructor(
+    private router: Router,
+    private auth: AuthService,
+    private translate: TranslateService,
     private workoutService: WorkoutService,
     private nutritionService: NutritionService,
-    private coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private chatService: ChatService,
+    private chatUnread: ChatUnreadService,
+    private tasksApi: ClientTasksService,
+    private coachSettings: CoachSettingsService,
+    private documents: DocumentService,
+    private assignments: AssignmentsApiService,
+    private theme: ClientThemeService,
   ) {}
-  today = new Date()
-  currentDate = new Date()
-  userId = sessionStorage.getItem('userId') || ''
 
-  showCheckInModal = false
-  showWorkoutModal = false
-  showNutritionModal = false
+  get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
+  private get locale(): string { return this.fr ? 'fr-FR' : 'en-US'; }
 
-  checkInAnswers: Record<string, any> = {}
-
-  coach = {
-    name: 'John Smith',
-    image:
-      'https://uploadthingy.s3.us-west-1.amazonaws.com/ebTntKycKC49WQn1hoxmG4/image.png',
-    specialty: 'Strength & Conditioning Coach',
-  }
-
-  checkInQuestions: CheckInQuestion[] = [
-    { id: 'weight', questionKey: 'CURRENT_WEIGHT_QUESTION', type: 'number', unit: this.coachSettingsService.getWeightUnit() },
-    { id: 'energy', questionKey: 'ENERGY_LEVEL_QUESTION', type: 'scale', min: 1, max: 10 },
-    { id: 'sleep', questionKey: 'SLEEP_QUALITY_QUESTION', type: 'scale', min: 1, max: 10 },
-    { id: 'stress', questionKey: 'STRESS_LEVEL_QUESTION', type: 'scale', min: 1, max: 10 },
-    { id: 'notes', questionKey: 'ADDITIONAL_NOTES_QUESTION', type: 'textarea' },
-  ]
-
-  tasksData: Record<string, any> = {
-    '2025-01-15': {
-      checkIn: {
-        date: 'January 15, 2025',
-        weight: 207,
-        energy: 8,
-        sleep: 7,
-        stress: 4,
-        notes: 'Feeling good today, ready for the workout. Had a great sleep last night.',
-        photos: [],
-        responded: false,
-      },
-      nutrition: {
-        planName: 'Balanced Diet Plan',
-        program: 'Weight Loss Program',
-        meals: 4,
-        calories: 2000,
-        protein: 169,
-        carbs: 180,
-        fat: 60,
-      },
-      workout: {
-        name: 'At-Home Workout',
-        program: 'Full Body Program',
-        exercises: [
-          { label: '🔥', name: 'Warm up' },
-          { label: 'A1', name: 'Single Arm Dumbbell Row' },
-          { label: 'A2', name: 'Dumbbell Hex Press' },
-          { label: 'A3', name: 'Kettlebell Sumo Wide Stance Roman Deadlift' },
-          { label: 'B', name: ':30 work / :30 rest for 30 min' },
-          { label: 'C', name: 'Arch Hold' },
-        ],
-        totalExercises: 6,
-      },
-    },
-    '2025-01-16': {
-      checkIn: {
-        date: 'January 16, 2025',
-        weight: 206.5,
-        energy: 9,
-        sleep: 8,
-        stress: 3,
-        notes: 'Great progress! Feeling stronger each day.',
-        photos: [],
-        responded: true,
-        coachResponse: 'Excellent work! Keep up the great progress. Your consistency is paying off.',
-      },
-      nutrition: {
-        planName: 'High Protein Plan',
-        program: 'Muscle Gain Program',
-        meals: 5,
-        calories: 2500,
-        protein: 200,
-        carbs: 220,
-        fat: 70,
-      },
-      workout: {
-        name: 'Upper Body Focus',
-        program: 'Strength Program',
-        exercises: [
-          { label: '🔥', name: 'Dynamic Stretching' },
-          { label: 'A1', name: 'Bench Press' },
-          { label: 'A2', name: 'Pull Ups' },
-          { label: 'B1', name: 'Dumbbell Rows' },
-          { label: 'B2', name: 'Shoulder Press' },
-        ],
-        totalExercises: 5,
-      },
-    },
-  }
-
-
-  loadingTodayData = false
-  todayWorkout: any = null
-  todayNutrition: any = null
-  workoutDates: string[] = []
-
-  ngOnInit(): void {
-    this.loadTodayData()
-  }
-
-  loadTodayData(): void {
-    if (!this.userId) return
-
-    this.loadingTodayData = true
-    this.workoutService.getWorkoutPlansByClient(this.userId).subscribe({
-      next: (plans: any[]) => {
-        this.todayWorkout = this.findWorkoutForDate(plans || [], this.currentDate)
-        this.workoutDates = this.extractWorkoutDates(plans || [])
-        this.loadingTodayData = false
-      },
-      error: () => {
-        this.todayWorkout = null
-        this.workoutDates = []
-        this.loadingTodayData = false
-      },
-    })
-
-    this.nutritionService.getNutritionPlanByClientId(this.userId).subscribe({
-      next: (plans: any[]) => {
-        this.todayNutrition = this.findNutritionForDate(plans || [], this.currentDate)
-      },
-      error: () => {
-        this.todayNutrition = null
-      },
-    })
-  }
-
-  // ✅ getters (évite la logique dans le template)
-  get dateKey(): string {
-    return this.getDateKey(this.currentDate)
-  }
-
-  get currentTasks(): any {
-    return {
-      checkIn: this.tasksData[this.dateKey]?.checkIn || this.tasksData['2025-01-15'].checkIn,
-      workout: this.toWorkoutTask(this.todayWorkout),
-      nutrition: this.toNutritionTask(this.todayNutrition),
+  async ngOnInit(): Promise<void> {
+    this.theme.ensureLoaded();
+    this.subscriptions.add(this.chatUnread.unreadCounts$.subscribe(counts => {
+      this.unreadMessages = Array.from(counts.values()).reduce((total, count) => total + count, 0);
+    }));
+    const user = await this.auth.getCurrentUserDetails();
+    this.firstName = (user?.firstName || '').trim();
+    this.clientId = user?.id || sessionStorage.getItem('userId') || '';
+    if (!this.clientId) { this.status = 'error'; this.errorMessage = this.somethingWentWrong; return; }
+    if (HOME_SNAPSHOT?.clientId === this.clientId) {
+      this.todayWorkoutItem = HOME_SNAPSHOT.workout; this.todayNutritionItem = HOME_SNAPSHOT.nutrition;
+      this.todayCheckIn = HOME_SNAPSHOT.checkIn; this.coach = HOME_SNAPSHOT.coach;
+      this.splitTasks(HOME_SNAPSHOT.tasks);
+      this.status = 'loaded';
     }
+    this.load();
   }
 
-  get hasWorkoutToday(): boolean {
-    return !!this.todayWorkout
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+    this.loadSubscriptions.unsubscribe();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
   }
 
-  get hasNutritionToday(): boolean {
-    return !!this.todayNutrition
+  // -------------------------------------------------------------------------
+  // Loading (mobile ClientHomeProvider.load)
+  // -------------------------------------------------------------------------
+  load(): void {
+    const request = ++this.loadRequest;
+    this.loadSubscriptions.unsubscribe();
+    this.loadSubscriptions = new Subscription();
+    if (this.status !== 'loaded') this.status = 'loading';
+    this.errorMessage = '';
+    const today = new Date();
+
+    // Tasks are requested in parallel but applied after the main dashboard: a slow task endpoint must never
+    // keep Home on a spinner, and a failure leaves the rest usable.
+    const tasks$ = this.tasksApi.calendar(this.clientId, dateKey(today), dateKey(today), true).pipe(
+      timeout(10_000), map(response => response.items || []), catchError(() => of([] as TaskCalendarItem[])));
+
+    const workout$ = this.workoutService.getWorkoutPlansByClient(this.clientId).pipe(
+      map(plans => findPlanDay(plans as any[], 'workoutDays', today)));
+    const nutrition$ = this.nutritionService.getNutritionPlanByClientId(this.clientId).pipe(
+      map(plans => findPlanDay(Array.isArray(plans) ? plans : [], 'mealDays', today)));
+    const checkIn$ = this.assignments.pageMyAssignments(0, 20, 'assignedAt', 'DESC', undefined, true).pipe(map(page => this.checkInDueToday(page?.content || [])));
+    const coach$ = this.chatService.getConversations(0, 10).pipe(
+      map(page => {
+        const conversation = page?.content?.[0];
+        const name = conversation?.name?.trim() || '';
+        return name ? { id: conversation!.coachId || '', name } as HomeCoach : null;
+      }),
+      catchError(() => of(null)));
+
+    // The plan services answer from their cache first, then fresh: forkJoin keeps the last answer of each.
+    this.loadSubscriptions.add(forkJoin({ workout: workout$, nutrition: nutrition$, checkIn: checkIn$, coach: coach$ })
+      .pipe(timeout(20_000)).subscribe({
+      next: result => {
+        if (request !== this.loadRequest) return;
+        this.todayWorkoutItem = result.workout;
+        this.todayNutritionItem = result.nutrition;
+        this.todayCheckIn = result.checkIn;
+        this.coach = result.coach ?? this.coachFromPlans();
+        this.status = 'loaded';
+        this.saveSnapshot();
+        this.loadCoachProfile();
+        this.loadSubscriptions.add(tasks$.subscribe(items => {
+          if (request !== this.loadRequest) return;
+          this.splitTasks(items);
+          this.saveSnapshot();
+        }));
+      },
+      error: error => {
+        if (request !== this.loadRequest) return;
+        this.status = 'error';
+        this.errorMessage = error?.message || this.somethingWentWrong;
+      },
+    }));
   }
 
-  get weekDays(): Date[] {
-    const days: Date[] = []
-    const startOfWeek = new Date(this.currentDate)
-    startOfWeek.setDate(this.currentDate.getDate() - this.currentDate.getDay())
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(startOfWeek)
-      d.setDate(startOfWeek.getDate() + i)
-      days.push(d)
+  private splitTasks(items: TaskCalendarItem[]): void {
+    this.todayHabits = items.filter(item => isHabit(item));
+    this.todayTasks = items.filter(item => !isHabit(item));
+  }
+
+  private saveSnapshot(): void {
+    HOME_SNAPSHOT = {
+      clientId: this.clientId, workout: this.todayWorkoutItem, nutrition: this.todayNutritionItem,
+      checkIn: this.todayCheckIn, coach: this.coach, tasks: [...this.todayHabits, ...this.todayTasks],
+    };
+  }
+
+  /** Mobile getLatestCheckInIfDueToday: the first open assignment due today. */
+  private checkInDueToday(items: FormAssignment[]): FormAssignment | null {
+    const today = dateKey(new Date());
+    return items.find(item => item.status !== 'SUBMITTED' && item.status !== 'CANCELED' && item.status !== 'REVIEWED'
+      && !!item.dueAt && dateKey(planDate(item.dueAt) || new Date(0)) === today) || null;
+  }
+
+  private coachFromPlans(): HomeCoach | null {
+    const coach = this.todayWorkoutItem?.plan?.coach || this.todayNutritionItem?.plan?.coach;
+    const name = `${coach?.firstName || ''} ${coach?.lastName || ''}`.trim();
+    return name ? { id: coach?.id || '', name } : null;
+  }
+
+  get coachId(): string {
+    return this.coach?.id || this.todayWorkoutItem?.plan?.coach?.id || this.todayWorkoutItem?.plan?.clientCoachId
+      || this.todayNutritionItem?.plan?.coach?.id || '';
+  }
+
+  get displayCoachName(): string {
+    if (this.coach?.name.trim()) return titleCase(this.coach.name);
+    const coach = this.todayWorkoutItem?.plan?.coach;
+    const name = `${coach?.firstName || ''} ${coach?.lastName || ''}`.trim();
+    return name ? titleCase(name) : (this.fr ? 'Votre coach' : 'Your Coach');
+  }
+
+  get coachInitials(): string { return initials(this.displayCoachName); }
+
+  /** Public profile with a fresh photo url (mobile loadCoachPublicProfile). */
+  private loadCoachProfile(): void {
+    const coachId = this.coachId.trim();
+    if (!coachId || this.coachProfile) return;
+    this.loadSubscriptions.add(this.coachSettings.getConfigForCoach(coachId, true).subscribe({
+      next: config => {
+        const profile = config?.publicProfile || null;
+        this.coachProfile = profile;
+        const stored = profile?.photoVisible ? (profile.photoUrl || '').trim() : '';
+        this.coachPhotoUrl = stored;
+        if (stored) {
+          this.loadSubscriptions.add(this.documents.refreshStoredFileUrl(stored).subscribe({
+            next: fresh => {
+              const url = (fresh || '').trim();
+              if (url && this.coachProfile) { this.coachPhotoUrl = url; this.coachProfile = { ...this.coachProfile, photoUrl: url }; }
+            },
+            error: () => {},
+          }));
+        }
+      },
+      error: () => {},
+    }));
+  }
+
+  // -------------------------------------------------------------------------
+  // Greeting
+  // -------------------------------------------------------------------------
+  get greeting(): string {
+    const hour = new Date().getHours();
+    const word = hour < 12 ? (this.fr ? 'Bonjour' : 'Good morning')
+      : hour < 18 ? (this.fr ? 'Bon après-midi' : 'Good afternoon') : (this.fr ? 'Bonsoir' : 'Good evening');
+    return this.firstName ? `${word}, ${this.firstName}` : word;
+  }
+
+  get todayLabel(): string {
+    const text = new Intl.DateTimeFormat(this.locale, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
+    return text ? text[0].toUpperCase() + text.slice(1) : text;
+  }
+
+  // -------------------------------------------------------------------------
+  // Today's workout
+  // -------------------------------------------------------------------------
+  get hasWorkout(): boolean {
+    const day = this.todayWorkoutItem?.day;
+    return !!day && !isRestDay(day) && allExercises(day).length > 0;
+  }
+
+  get workoutStatus(): string { return String(this.todayWorkoutItem?.day?.status || 'PENDING').toUpperCase(); }
+  get workoutCompleted(): boolean { return this.workoutStatus === 'COMPLETED'; }
+  get workoutInProgress(): boolean { return this.workoutStatus === 'IN_PROGRESS' || this.workoutStatus === 'PAUSED'; }
+  get workoutMinutes(): number { return estimatedWorkoutMinutes(this.todayWorkoutItem?.day); }
+  get workoutTitle(): string { return workoutDayTitle(this.todayWorkoutItem?.day, this.fr); }
+  get workoutThumbs(): string[] { return workoutThumbnails(this.todayWorkoutItem?.day); }
+  get workoutSubtitle(): string {
+    const item = this.todayWorkoutItem!;
+    const week = programWeek(item.plan?.startDate, planDate(item.day?.date) || new Date());
+    return `${capitalizeFirst(item.plan?.name)} · ${this.fr ? 'Semaine' : 'Week'} ${week}`;
+  }
+  get workoutCounts(): string {
+    const exercises = allExercises(this.todayWorkoutItem?.day).length;
+    const sets = workoutSetCount(this.todayWorkoutItem?.day);
+    const plural = exercises > 1 ? 's' : '';
+    return this.fr ? `${exercises} exercice${plural} · ${sets} séries` : `${exercises} exercise${plural} · ${sets} sets`;
+  }
+  get workoutButtonLabel(): string {
+    if (this.workoutCompleted) return this.fr ? 'Voir la séance' : 'View workout';
+    if (this.workoutInProgress) return this.fr ? 'Reprendre la séance' : 'Continue workout';
+    return this.fr ? 'Commencer la séance' : 'Start workout';
+  }
+
+  openWorkout(): void {
+    const item = this.todayWorkoutItem;
+    this.router.navigate(['/clients/client-workouts'], {
+      queryParams: { dayId: item?.day?.id || null, planId: item?.plan?.id || null },
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Today's nutrition
+  // -------------------------------------------------------------------------
+  get hasNutrition(): boolean {
+    return !!this.todayNutritionItem && clientVisibleMeals(this.todayNutritionItem.day).length > 0;
+  }
+
+  get nutritionLabel(): string {
+    const label = capitalizeFirst(this.todayNutritionItem?.plan?.description);
+    return label ? `Nutrition · ${label}` : 'Nutrition';
+  }
+  get meals(): any[] { return clientVisibleMeals(this.todayNutritionItem?.day); }
+  get consumed() { return consumedTotals(this.todayNutritionItem?.day); }
+  get target() { return targetTotals(this.todayNutritionItem?.day); }
+  get reportedMeals(): number { return this.meals.filter(meal => isMealReported(this.todayNutritionItem?.day, meal)).length; }
+  get nutritionProgress(): number {
+    const target = this.target.calories;
+    return target <= 0 ? 0 : Math.min(Math.max(this.consumed.calories / target, 0), 1);
+  }
+  get nextMealName(): string {
+    const next = this.meals.find(meal => !isMealReported(this.todayNutritionItem?.day, meal));
+    return next ? capitalizeFirst(next.name) : '';
+  }
+  formatNumber(value: number): string { return new Intl.NumberFormat(this.locale).format(Math.round(value)); }
+
+  openNutrition(): void {
+    const item = this.todayNutritionItem;
+    this.router.navigate(['/clients/client-nutrition'], {
+      queryParams: { dayId: item?.day?.id || null, planId: item?.plan?.id || null },
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Tasks
+  // -------------------------------------------------------------------------
+  get tasks(): TaskCalendarItem[] { return [...this.todayHabits, ...this.todayTasks]; }
+  get doneTasks(): number { return this.tasks.filter(task => isTaskDone(task)).length; }
+  get checkInRepresentedByTask(): boolean {
+    const id = this.todayCheckIn?.id;
+    return !!id && this.todayTasks.some(task => task.formAssignmentId === id);
+  }
+  get showCheckInRow(): boolean { return !!this.todayCheckIn && !this.checkInRepresentedByTask; }
+
+  /** Optimistic: the checkmark flips at once, the request runs after, and the previous state comes back on failure. */
+  toggleHabit(habit: TaskCalendarItem): void {
+    if (this.toggling.has(habit.occurrenceId)) return;
+    this.toggling.add(habit.occurrenceId);
+    const done = isTaskDone(habit);
+    const index = this.todayHabits.findIndex(item => item.occurrenceId === habit.occurrenceId);
+    const previous = index >= 0 ? this.todayHabits[index] : null;
+    if (previous) {
+      this.todayHabits = this.todayHabits.map((item, i) => i === index
+        ? { ...item, status: done ? 'UPCOMING' : 'DONE', completedValue: done ? undefined : item.goalValue } : item);
     }
-    return days
+    this.subscriptions.add(this.tasksApi.setHabitCompletion(habit.id, habit.date, !done, done ? undefined : habit.goalValue).subscribe({
+      next: () => { this.toggling.delete(habit.occurrenceId); this.saveSnapshot(); },
+      error: () => {
+        this.toggling.delete(habit.occurrenceId);
+        if (previous) this.todayHabits = this.todayHabits.map(item => item.occurrenceId === habit.occurrenceId ? previous : item);
+        this.showToast(this.fr ? "Impossible de mettre à jour l'habitude." : 'Could not update the habit.');
+      },
+    }));
   }
 
-  // helpers
-  isToday(date: Date): boolean {
-    return this.isSameDay(date, this.today)
-  }
-
-  isSameDay(d1: Date, d2: Date): boolean {
-    return (
-      d1.getDate() === d2.getDate() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getFullYear() === d2.getFullYear()
-    )
-  }
-
-  formatDayName(date: Date): string {
-    return date.toLocaleDateString(this.dateLocale, { weekday: 'short' })
-  }
-
-  formatMonthYear(date: Date): string {
-    return date.toLocaleDateString(this.dateLocale, { month: 'long', year: 'numeric' })
-  }
-
-  private get dateLocale(): string {
-    return this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US'
-  }
-
-  get coachName(): string {
-    const coach = this.todayWorkout?.plan?.coach || this.todayNutrition?.plan?.coach
-    return `${coach?.firstName || ''} ${coach?.lastName || ''}`.trim() || this.translate.instant('YOUR_COACH')
-  }
-
-  get coachImage(): string {
-    const coach = this.todayWorkout?.plan?.coach || this.todayNutrition?.plan?.coach
-    return coach?.profilePicture || coach?.image || 'assets/images/avatar-placeholder.png'
-  }
-
-  get coachSpecialty(): string {
-    const coach = this.todayWorkout?.plan?.coach || this.todayNutrition?.plan?.coach
-    return coach?.specialty || this.translate.instant('FITNESS_COACH')
-  }
-
-  getDateKey(date: Date): string {
-    // local YYYY-MM-DD, same day as mobile calendar
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  }
-
-  changeWeek(direction: 'prev' | 'next'): void {
-    const newDate = new Date(this.currentDate)
-    newDate.setDate(this.currentDate.getDate() + (direction === 'next' ? 7 : -7))
-    this.currentDate = newDate
-    this.loadTodayData()
-  }
-
-  selectDay(date: Date): void {
-    this.currentDate = date
-    this.loadTodayData()
-  }
+  openTask(task: TaskCalendarItem): void { void openClientTask(this.router, task); }
+  seeAllTasks(): void { void this.router.navigate(['/tasks']); }
 
   openCheckIn(): void {
-    this.showCheckInModal = true
-  }
-  openWorkout(): void {
-    this.showWorkoutModal = true
-  }
-  openNutrition(): void {
-    this.showNutritionModal = true
+    void this.router.navigate(['/assignments/me'], { queryParams: { assignmentId: this.todayCheckIn?.id || null } });
   }
 
-  closeModals(): void {
-    this.showCheckInModal = false
-    this.showWorkoutModal = false
-    this.showNutritionModal = false
+  // -------------------------------------------------------------------------
+  // Coach
+  // -------------------------------------------------------------------------
+  openCoachProfile(): void {
+    if (!this.coachId) return;
+    this.showCoachProfile = true;
+    this.coachProfileLoading = !this.coachProfile;
+    if (this.coachProfile) return;
+    this.subscriptions.add(this.coachSettings.getConfigForCoach(this.coachId, true).subscribe({
+      next: config => { this.coachProfile = config?.publicProfile || null; this.coachProfileLoading = false; },
+      error: () => { this.coachProfileLoading = false; },
+    }));
   }
 
-  answerChange(questionId: string, value: any): void {
-    this.checkInAnswers = { ...this.checkInAnswers, [questionId]: value }
+  /** Like the mobile Home: straight into the conversation with the coach (back leaves the chat). */
+  openCoachConversation(): void {
+    this.showCoachProfile = false;
+    void this.router.navigate(['/chat'], { queryParams: { coach: 1 } });
   }
 
-  toNumber(v: any): number {
-    const n = Number(v)
-    return Number.isFinite(n) ? n : 0
+  // -------------------------------------------------------------------------
+  private get somethingWentWrong(): string { return this.fr ? 'Une erreur est survenue' : 'Something went wrong'; }
+
+  private showToast(message: string): void {
+    this.toast = message;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => (this.toast = ''), 3500);
   }
 
-  submitCheckIn(): void {
-    console.log('Submitting check-in:', this.checkInAnswers)
-    this.showCheckInModal = false
-    this.checkInAnswers = {}
-  }
-
-
-  private normalizeDate(date: any): Date | null {
-    if (!date) return null
-    const d = new Date(date)
-    return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  }
-
-  private findWorkoutForDate(plans: any[], targetDate: Date): any | null {
-    const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime()
-
-    for (const plan of plans) {
-      const days = plan?.workoutDays || []
-      for (const day of days) {
-        const dayDate = this.normalizeDate(day?.date) || this.scheduledDateFromPlan(plan, day)
-        if (dayDate && dayDate.getTime() === target) {
-          return { plan, day }
-        }
-      }
-    }
-
-    return null
-  }
-
-  private findNutritionForDate(plans: any[], targetDate: Date): any | null {
-    const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime()
-
-    for (const plan of plans) {
-      const days = plan?.mealDays || []
-      for (const day of days) {
-        const dayDate = this.normalizeDate(day?.date) || this.scheduledDateFromPlan(plan, day)
-        if (dayDate && dayDate.getTime() === target) {
-          return { plan, day }
-        }
-      }
-    }
-
-    return null
-  }
-
-
-  private scheduledDateFromPlan(plan: any, day: any): Date | null {
-    const start = this.normalizeDate(plan?.startDate)
-    const dayNumber = Number(day?.dayNumber)
-    if (!start || !Number.isFinite(dayNumber) || dayNumber <= 0) return null
-    const d = new Date(start)
-    d.setDate(start.getDate() + dayNumber - 1)
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  }
-
-  private extractWorkoutDates(plans: any[]): string[] {
-    const dates = new Set<string>()
-    for (const plan of plans) {
-      for (const day of plan?.workoutDays || []) {
-        const d = this.normalizeDate(day?.date) || this.scheduledDateFromPlan(plan, day)
-        if (d) dates.add(this.getDateKey(d))
-      }
-    }
-    return Array.from(dates)
-  }
-
-  hasWorkoutOn(date: Date): boolean {
-    return this.workoutDates.includes(this.getDateKey(date))
-  }
-
-  private toWorkoutTask(item: any): any {
-    if (!item) {
-      return {
-        name: this.translate.instant('NO_WORKOUT_PLANNED_DAY'),
-        program: this.translate.instant('NO_SESSION_SCHEDULED'),
-        exercises: [],
-        totalExercises: 0,
-      }
-    }
-
-    const plan = item.plan || {}
-    const day = item.day || {}
-    const sessions = day.workoutSessions || []
-    const exercises = sessions.flatMap((session: any) => session?.exercises || [])
-
-    return {
-      name: day.title || day.name || plan.name || this.translate.instant('WORKOUT'),
-      program: plan.name || this.translate.instant('WORKOUT_PROGRAM'),
-      exercises: exercises.map((ex: any, index: number) => ({
-        label: ex?.type === 'CARDIO' ? '🔥' : String(index + 1),
-        name: ex?.name || ex?.exerciseName || this.translate.instant('EXERCISE'),
-      })),
-      totalExercises: exercises.length,
-    }
-  }
-
-  private toNutritionTask(item: any): any {
-    if (!item) {
-      return {
-        planName: this.translate.instant('NO_NUTRITION_PLAN'),
-        program: this.translate.instant('NO_ACTIVE_NUTRITION_DAY'),
-        meals: 0,
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-      }
-    }
-
-    const plan = item.plan || {}
-    const day = item.day || {}
-    const targets = day.dayTargets || {}
-    const meals = day.meals || []
-    const sum = (field: string) => meals.reduce((total: number, meal: any) => total + Number(meal?.[field] || 0), 0)
-
-    return {
-      planName: day.name || plan.name || this.translate.instant('NUTRITION_PLAN'),
-      program: plan.name || this.translate.instant('DAILY_NUTRITION_GOAL'),
-      meals: meals.length,
-      calories: day.totalCalories || sum('calories') || targets.calories || 0,
-      protein: day.totalProtein || sum('protein') || targets.proteinG || 0,
-      carbs: day.totalCarbs || sum('carbs') || targets.carbsG || 0,
-      fat: day.totalFat || sum('fat') || targets.fatG || 0,
-    }
-  }
-
-  // trackBy
-  trackByDate = (_: number, d: Date) => d.toISOString()
-  trackByQuestionId = (_: number, q: any) => q.id
-  trackByExercise = (_: number, ex: any) => `${ex.label}-${ex.name}`
+  trackByOccurrence = (_: number, task: TaskCalendarItem) => task.occurrenceId;
 }

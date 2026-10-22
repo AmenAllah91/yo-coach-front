@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -14,13 +14,15 @@ import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
 import { ToastrService } from 'ngx-toastr';
 import { PlanBillingTabComponent } from './plan-billing-tab/plan-billing-tab.component';
+import { FeatherModule } from 'angular-feather';
+import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 
 @Component({
   selector: 'app-configuration-coachng',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, PlanBillingTabComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, PlanBillingTabComponent, FeatherModule],
   templateUrl: './configuration-coachng.component.html',
   styleUrl: './configuration-coachng.component.scss',
 })
@@ -256,6 +258,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     this.authService.extractRoles().then((roles) => {
       this.isAdmin = roles.includes('ROLE_ADMIN');
       this.isClient = roles.includes('ROLE_CLIENT') && !roles.includes('ROLE_COACH');
+      if (this.isClient) this.clientTheme.ensureLoaded();
       // A coach: the subscription and the invoices (slow, from YoSales) are asked now, in the background, so the
       // "Plan & Billing" tab shows them at once.
       if (roles.includes('ROLE_COACH') && !this.isAdmin) {
@@ -513,6 +516,34 @@ export class ConfigurationCoachngComponent implements OnInit {
       this.config.nutrition.nutritionFileEnabled === false;
   }
 
+
+  // ── Client: same as the mobile settings hub (rows Account / Password / Preferences, then the section) ──
+  clientHub = true;
+  private clientTheme = inject(ClientThemeService);
+
+  get clientFr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
+  ct(en: string, fr: string): string { return this.clientFr ? fr : en; }
+
+  get clientRows(): { icon: string; title: string; subtitle: string; tab: 'account' | 'password' | 'preferences' }[] {
+    const email = (this.profile.email || '').trim();
+    return [
+      { icon: 'user', title: this.ct('Account', 'Compte'), subtitle: email || this.ct('Your details', 'Vos informations'), tab: 'account' },
+      { icon: 'key', title: this.ct('Password', 'Mot de passe'), subtitle: this.ct('Change your password', 'Changer votre mot de passe'), tab: 'password' },
+      { icon: 'sliders', title: this.ct('Preferences', 'Préférences'), subtitle: this.ct('Language and units', 'Langue et unités'), tab: 'preferences' },
+    ];
+  }
+
+  openClientSection(tab: 'account' | 'password' | 'preferences'): void {
+    this.setActiveTab(tab);
+    this.clientHub = false;
+    window.scrollTo({ top: 0 });
+  }
+
+  backToClientHub(): void { this.clientHub = true; }
+
+  get clientSectionTitle(): string {
+    return this.clientRows.find(row => row.tab === this.activeTab)?.title || this.ct('Settings', 'Paramètres');
+  }
 
   setActiveTab(tab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'preferences'): void {
     this.activeTab = tab;

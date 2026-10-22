@@ -1497,3 +1497,64 @@
   width: 14px !important;
   height: 14px !important;
 }
+
+/* "Invited" tab: invitations not accepted yet */
+.status-tabs .invited-tab span {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.clients-table.invited-table {
+  .table-header,
+  .table-body .client-row {
+    grid-template-columns: 2fr 1fr 1fr 132px;
+  }
+
+  .client-details h4 {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .col-status .status-badge {
+    &.pending { background: #fef3c7; color: #92400e; }
+    &.expired { background: #fee2e2; color: #991b1b; }
+    &.blocked { background: #ffedd5; color: #9a3412; }
+  }
+
+  .invitation-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+
+    .action-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+
+      &:hover:not(:disabled) { background: #f8fafc; border-color: #bae6fd; }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+      i-feather { width: 16px; height: 16px; }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .clients-table.invited-table .table-header { display: none; }
+  .clients-table.invited-table .table-body .client-row {
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+  }
+  .clients-table.invited-table .table-body .client-row .col-actions {
+    position: static;
+    transform: none;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}

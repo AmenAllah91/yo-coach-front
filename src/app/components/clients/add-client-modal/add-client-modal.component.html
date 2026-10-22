@@ -15,19 +15,9 @@
       <!-- Description -->
       <p class="acm-desc">
         {{ 'INVITE_CLIENTS_EXPLANATION' | translate }}
-        <a href="#" class="acm-link">{{ 'LEARN_MORE' | translate }}</a>
       </p>
 
-      <!-- Invite Link -->
-      <div class="acm-invite-box">
-        <span class="acm-invite-url">{{ inviteLink }}</span>
-        <button type="button" class="acm-copy-btn" (click)="copyLink()">
-          <i-feather name="copy" class="acm-copy-ico"></i-feather>
-          <span>{{ copied ? ('COPIED' | translate) : ('COPY_LINK' | translate) }}</span>
-        </button>
-      </div>
-
-      <!-- Email Input -->
+      <!-- Email Input: the link is created for this email only -->
       <div class="acm-email-field">
         <input
           class="acm-email-input"
@@ -38,21 +28,20 @@
           (ngModelChange)="onEmailChange($event)"
           (blur)="onEmailBlur()"
           [attr.aria-invalid]="!!emailError"
-          [attr.aria-describedby]="emailError ? 'acm-email-error' : null"
+          [attr.aria-describedby]="emailError ? 'acm-email-error' : 'acm-email-hint'"
           name="email"
         />
         <p *ngIf="emailError" id="acm-email-error" class="acm-email-error" role="alert">
           {{ emailError }}
         </p>
-        <button
-          *ngIf="pendingInvitation"
-          class="acm-resend-btn"
-          type="button"
-          (click)="sendInvitation()"
-          [disabled]="isSending"
-        >
-          {{ (isSending ? 'SENDING' : 'RESEND_INVITATION') | translate }}
-        </button>
+        <p *ngIf="!emailError" id="acm-email-hint" class="acm-desc">
+          {{ 'INVITATION_LINK_FOR_THIS_EMAIL_ONLY' | translate }}
+        </p>
+      </div>
+
+      <!-- Invite Link, once created -->
+      <div class="acm-invite-box" *ngIf="inviteLink">
+        <span class="acm-invite-url">{{ inviteLink }}</span>
       </div>
 
       <!-- Submit -->
@@ -60,11 +49,15 @@
         class="acm-submit-btn"
         type="button"
         (click)="sendInvitation()"
-        [disabled]="!canSubmit || pendingInvitation"
+        [disabled]="!canSubmit"
       >
         {{ isSending
           ? ('SENDING' | translate)
           : ('SEND_INVITATION' | translate) }}
+      </button>
+      <button type="button" class="acm-resend-btn" (click)="copyLink()" [disabled]="!canSubmit">
+        <i-feather name="copy" class="acm-copy-ico"></i-feather>
+        <span>{{ copied ? ('COPIED' | translate) : ('COPY_LINK' | translate) }}</span>
       </button>
 
     </div>

@@ -6,6 +6,7 @@ import { CalendarClientsComponent } from './calendar-clients.component';
 describe('CalendarClientsComponent (tab of the client profile)', () => {
   let workoutService: jasmine.SpyObj<any>;
   let nutritionService: jasmine.SpyObj<any>;
+  let profileCache: jasmine.SpyObj<any>;
   let settings: any;
 
   beforeEach(() => {
@@ -13,6 +14,11 @@ describe('CalendarClientsComponent (tab of the client profile)', () => {
     workoutService.getWorkoutByCoachIdAndClient.and.returnValue(of({ content: [] }));
     nutritionService = jasmine.createSpyObj('NutritionService', ['getNutritionPlanByCoachIdAndClient']);
     nutritionService.getNutritionPlanByCoachIdAndClient.and.returnValue(of({ content: [] }));
+    // Nothing read yet by the profile dashboard: the calendar loads the plans through the shared cache.
+    profileCache = jasmine.createSpyObj('ClientProfileCacheService', ['snapshot', 'isFresh', 'load']);
+    profileCache.snapshot.and.returnValue(null);
+    profileCache.isFresh.and.returnValue(false);
+    profileCache.load.and.returnValue(of([]));
     settings = {
       loadConfig: jasmine.createSpy('loadConfig').and.returnValue(of({})),
       shouldUseWorkoutFiles: () => true,
@@ -24,6 +30,7 @@ describe('CalendarClientsComponent (tab of the client profile)', () => {
     const calendar = new CalendarClientsComponent(
       workoutService, nutritionService, {} as any, {} as any, {} as any, settings, {} as any,
       { instant: (k: string) => k, currentLang: 'fr' } as any,
+      profileCache,
     );
     calendar.embeddedClientId = 'client-1';
     calendar.embeddedCoachId = 'coach-1';
@@ -36,16 +43,17 @@ describe('CalendarClientsComponent (tab of the client profile)', () => {
     });
     calendar.ngOnInit();
 
-    expect(workoutService.getWorkoutByCoachIdAndClient).toHaveBeenCalledTimes(1);
-    expect(nutritionService.getNutritionPlanByCoachIdAndClient).toHaveBeenCalledTimes(1);
-    expect(workoutService.getWorkoutByCoachIdAndClient.calls.mostRecent().args[8]).toBeTrue();
-    expect(nutritionService.getNutritionPlanByCoachIdAndClient.calls.mostRecent().args[8]).toBeTrue();
+    expect(profileCache.load).toHaveBeenCalledTimes(2);
+    expect(profileCache.load).toHaveBeenCalledWith('workouts', 'coach-1', 'client-1');
+    expect(profileCache.load).toHaveBeenCalledWith('nutrition', 'coach-1', 'client-1');
+    expect(workoutService.getWorkoutByCoachIdAndClient).not.toHaveBeenCalled();
+    expect(nutritionService.getNutritionPlanByCoachIdAndClient).not.toHaveBeenCalled();
     expect(settings.loadConfig).toHaveBeenCalledWith(true);
     expect(calendar.programsLoaded).toBeTrue();
 
     calendar.embeddedClientId = 'client-2';
     calendar.ngOnChanges({ embeddedClientId: new SimpleChange('client-1', 'client-2', false) });
-    expect(workoutService.getWorkoutByCoachIdAndClient).toHaveBeenCalledTimes(2);
-    expect(workoutService.getWorkoutByCoachIdAndClient.calls.mostRecent().args[1]).toBe('client-2');
+    expect(profileCache.load).toHaveBeenCalledTimes(4);
+    expect(profileCache.load.calls.mostRecent().args[2]).toBe('client-2');
   });
 });

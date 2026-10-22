@@ -1,468 +1,379 @@
-import { CommonModule, Location } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit, computed, signal } from '@angular/core';
-import { catchError, forkJoin, of, Subject, takeUntil } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Observable, Subject, catchError, forkJoin, map, of, shareReplay, takeUntil } from 'rxjs';
 
-import { FormDetails, FormsApiService, PageResponse } from "../services/forms-api.service";
-import { AssignmentsApiService, AssignmentStatus, FormAssignment } from "../services/assignments-api.service";
-import { SubmissionsApiService } from "../services/submissions-api.service";
-import { Answer, QuestionType, SubmissionPayload } from "../../../models/forms.model";
+import { FormDetails, FormsApiService, PageResponse } from '../services/forms-api.service';
+import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
+import { SubmissionsApiService } from '../services/submissions-api.service';
+import { ClientThemeService } from 'app/core/service/client-theme.service';
+import { capitalizeFirst, capitalizeSentences, initials, planDate } from 'app/components/clients/shared/client-plan-utils';
 
-type Tab = 'pending' | 'submitted';
+/** Answer being filled (mobile SubmissionAnswer): every field is sent, like the mobile app. */
+interface DraftAnswer {
+  questionId: string; type: string; text: string | null; selectedOptionId: string | null;
+  rating: number | null; yes: boolean | null; date: string | null;
+}
 
+const SUBMITTED = ['SUBMITTED', 'REVIEWED'];
+
+/**
+ * Client check-ins, same content and logic as the mobile CheckInScreen and CheckInFormPage: "To complete"
+ * (due soon / overdue) and "Submitted" lists loaded page by page, the form to fill on its own page, and the
+ * answers already sent (with the coach review) in a sheet. Also shown read only in the coach "client view".
+ */
 @Component({
   selector: 'app-my-assignments',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './my-assignments.component.html',
-  styleUrls: ['./my-assignments.component.css'],
+  styleUrls: ['./my-assignments.component.scss'],
 })
-export class MyAssignmentsComponent implements OnInit, OnDestroy {
-  private readonly destroy$ = new Subject<void>();
-
-  // ─── List state ───────────────────────────────────────────────
-  activeTab: Tab = 'pending';
-
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly pageIndex = signal(0);
-  readonly pageSize = signal(10);
-  readonly pageData = signal<PageResponse<FormAssignment> | null>(null);
-
-  readonly assignments = computed(() => this.pageData()?.content ?? []);
-  readonly totalPages = computed(() => this.pageData()?.totalPages ?? 0);
-  readonly totalElements = computed(() => this.pageData()?.totalElements ?? 0);
-
-  readonly pendingAssignments = computed(() =>
-    this.assignments().filter(a => a.status === 'ASSIGNED' || a.status === 'OPENED')
-  );
-
-  readonly submittedAssignments = computed(() =>
-    this.assignments().filter(a => a.status === 'SUBMITTED')
-  );
-
-  readonly pendingCount = computed(() => this.pendingAssignments().length);
-
-  // ─── Modal state ──────────────────────────────────────────────
-  isModalOpen = false;
-  isViewMode = false;
-  selectedAssignment: FormAssignment | null = null;
-
-  readonly modalLoading = signal(false);
-  readonly modalError = signal<string | null>(null);
-  readonly submitting = signal(false);
-
-  currentForm: FormDetails | null = null;
-
-  modalAnswers: Answer[] = [];
-  submittedAnswers: Answer[] = [];
-
-  /**
-   * UI-only selection state for multiple choice.
-   *
-   * Important:
-   * We cannot use selectedOptionId for selected CSS because some forms can have
-   * duplicated/empty option ids. If duplicated ids are used for CSS selection,
-   * selecting one option visually selects all options with that same id.
-   *
-   * This map stores the selected option index per question id for UI only.
-   * The submitted payload still sends the real backend option id.
-   */
-  selectedOptionIndexes: Record<string, number> = {};
-
-  QuestionType = QuestionType;
-
-  private readonly formNameMap = new Map<string, string>();
-
+export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Coach "client view" preview: this client's check-ins, read only (answers can be viewed, nothing is sent). */
   @Input() previewClientId = '';
   @Input() previewMode = false;
+
+  tab = 0;
+  assignments: FormAssignment[] = [];
+  loading = false;
+  loadingMore = false;
+  error = '';
+  private pageIndex = 0;
+  private readonly pageSize = 10;
+  private totalPages = 0;
+  private hasMore = true;
+
+  // Opened assignment
+  view: 'list' | 'form' = 'list';
+  sheetOpen = false;
+  opening = false;
+  formError = '';
+  submitError = '';
+  submitting = false;
+  selected: FormAssignment | null = null;
+  form: FormDetails | null = null;
+  answers: DraftAnswer[] = [];
+  submittedAnswers: any[] = [];
+
+  @ViewChild('sentinel') sentinel?: ElementRef<HTMLElement>;
+  private observer?: IntersectionObserver;
+  private readonly destroy$ = new Subject<void>();
+  private readonly formCache = new Map<string, Observable<FormDetails>>();
+  private requestedAssignmentId = '';
 
   constructor(
     private assignmentsApi: AssignmentsApiService,
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private translate: TranslateService,
-    private location: Location,
+    private route: ActivatedRoute,
+    private theme: ClientThemeService,
   ) {}
 
-  goBack(): void {
-    this.location.back();
-  }
+  get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
+  private get locale(): string { return this.fr ? 'fr-FR' : 'en-US'; }
+  t(en: string, fr: string): string { return this.fr ? fr : en; }
 
   ngOnInit(): void {
-    this.loadPage();
+    this.theme.ensureLoaded();
+    if (!this.previewMode) {
+      this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+        this.requestedAssignmentId = params.get('assignmentId') || '';
+        this.loadPage(true);
+      });
+    } else {
+      this.loadPage(true);
+    }
+  }
+
+  /** Infinite scroll: the next page loads when the end of the list comes into view. */
+  ngAfterViewInit(): void {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) this.loadMore();
+    }, { rootMargin: '200px' });
+    setTimeout(() => this.observeSentinel());
+  }
+
+  private observeSentinel(): void {
+    this.observer?.disconnect();
+    if (this.sentinel?.nativeElement) this.observer?.observe(this.sentinel.nativeElement);
   }
 
   ngOnDestroy(): void {
+    this.observer?.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  formatDateTilePart(
-    value: string | Date | null | undefined,
-    part: 'weekday' | 'day' | 'month',
-  ): string {
-    if (!value) return '--';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '--';
-
-    const locale = this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US';
-    if (part === 'day') {
-      return date.toLocaleDateString(locale, { day: '2-digit' });
-    }
-
-    return date
-      .toLocaleDateString(locale, part === 'weekday' ? { weekday: 'short' } : { month: 'short' })
-      .replace('.', '')
-      .toUpperCase();
+  // -------------------------------------------------------------------------
+  // List (mobile CheckInProvider.loadPage / loadMore)
+  // -------------------------------------------------------------------------
+  private page$(page: number): Observable<PageResponse<FormAssignment>> {
+    return this.previewMode
+      ? this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(page, this.pageSize, 'assignedAt', 'DESC', this.previewClientId)
+      : this.assignmentsApi.pageMyAssignments(page, this.pageSize, 'assignedAt', 'DESC', undefined, true);
   }
 
-  // ─── List methods ─────────────────────────────────────────────
-
-  setTab(tab: Tab): void {
-    this.activeTab = tab;
-  }
-
-  loadPage(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    const page$ = this.previewMode
-      ? this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(this.pageIndex(), this.pageSize(), 'assignedAt', 'DESC', this.previewClientId)
-      : this.assignmentsApi.pageMyAssignments(this.pageIndex(), this.pageSize(), 'assignedAt', 'DESC', undefined);
-    page$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res) => {
-          this.pageData.set(res);
-          this.loading.set(false);
-          this.attachFormNames(res.content ?? []);
-        },
-        error: (err) => {
-          this.loading.set(false);
-          this.error.set(err?.error?.message ?? this.translate.instant('LOAD_ASSIGNMENTS_ERROR'));
-        },
-      });
-  }
-
-  private attachFormNames(list: FormAssignment[]): void {
-    const ids = Array.from(new Set(list.map(a => a.formId).filter(Boolean)));
-
-    const missing = ids.filter(id => !this.formNameMap.has(String(id)));
-
-    if (missing.length === 0) {
-      this.applyFormNamesToPage();
-      return;
-    }
-
-    forkJoin(
-      missing.map(id =>
-        this.formsApi.getFormById(id).pipe(
-          takeUntil(this.destroy$),
-          catchError(() => of(null))
-        )
-      )
-    ).subscribe((forms: any[]) => {
-      forms.forEach((f: any, idx: number) => {
-        const id = String(missing[idx]);
-        const title = f?.title ?? f?.name ?? id;
-        this.formNameMap.set(id, title);
-      });
-
-      this.applyFormNamesToPage();
+  loadPage(reset: boolean): void {
+    if (reset) { this.loading = true; this.error = ''; this.pageIndex = 0; this.hasMore = true; }
+    this.page$(this.pageIndex).pipe(takeUntil(this.destroy$)).subscribe({
+      next: page => {
+        const content = page?.content || [];
+        this.totalPages = page?.totalPages ?? 0;
+        this.hasMore = this.pageIndex + 1 < this.totalPages && content.length > 0;
+        this.attachFormNames(content).subscribe(named => {
+          this.assignments = reset ? named : [...this.assignments, ...named];
+          this.loading = false;
+          this.loadingMore = false;
+          setTimeout(() => this.observeSentinel());
+          if (reset) this.openRequestedAssignment();
+        });
+      },
+      error: err => {
+        this.loading = false;
+        if (this.loadingMore) { this.pageIndex = Math.max(this.pageIndex - 1, 0); this.loadingMore = false; }
+        this.error = err?.error?.message || err?.message || this.t('Something went wrong', 'Une erreur est survenue');
+      },
     });
   }
 
-  private applyFormNamesToPage(): void {
-    const pd = this.pageData();
-
-    if (!pd) return;
-
-    const updated = {
-      ...pd,
-      content: (pd.content ?? []).map(a => ({
-        ...a,
-        formName: this.formNameMap.get(String(a.formId)) ?? a.formName ?? a.formId,
-      })),
-    };
-
-    this.pageData.set(updated);
+  loadMore(): void {
+    if (this.loadingMore || this.loading || !this.hasMore || this.view !== 'list') return;
+    this.loadingMore = true;
+    this.pageIndex += 1;
+    this.loadPage(false);
   }
 
-  changePageSize(size: number): void {
-    this.pageSize.set(size);
-    this.pageIndex.set(0);
-    this.loadPage();
-  }
-
-  goToPrev(): void {
-    if (this.pageIndex() <= 0) return;
-
-    this.pageIndex.set(this.pageIndex() - 1);
-    this.loadPage();
-  }
-
-  goToNext(): void {
-    if (this.pageIndex() >= this.totalPages() - 1) return;
-
-    this.pageIndex.set(this.pageIndex() + 1);
-    this.loadPage();
-  }
-
-  isOverdue(dueDate?: string): boolean {
-    if (!dueDate) return false;
-
-    return new Date(dueDate) < new Date();
-  }
-
-  statusLabel(status: AssignmentStatus): string {
-    switch (status) {
-      case 'ASSIGNED':
-        return this.translate.instant('ASSIGNED_STATUS');
-      case 'OPENED':
-        return this.translate.instant('OPENED_STATUS');
-      case 'SUBMITTED':
-        return this.translate.instant('SUBMITTED_STATUS');
-      case 'CANCELED':
-        return this.translate.instant('CANCELED_STATUS');
-      default:
-        return status;
+  /** Forms rarely change: cached so names and re-opened forms are instant. */
+  private form$(formId: string): Observable<FormDetails> {
+    let cached = this.formCache.get(formId);
+    if (!cached) {
+      cached = this.formsApi.getFormById(formId).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+      this.formCache.set(formId, cached);
     }
+    return cached;
   }
 
-  trackById(_: number, a: FormAssignment): string {
-    return a.id;
+  private attachFormNames(list: FormAssignment[]): Observable<FormAssignment[]> {
+    if (!list.length) return of([]);
+    return forkJoin(list.map(item => (item.formName?.trim() || !item.formId) ? of(item)
+      : this.form$(item.formId).pipe(map(form => ({ ...item, formName: form?.title || item.formName })), catchError(() => of(item)))));
   }
 
-  // ─── Modal methods ────────────────────────────────────────────
+  setTab(index: number): void { this.tab = index; }
 
-  openAssignment(a: FormAssignment): void {
+  get pending(): FormAssignment[] { return this.assignments.filter(item => item.status === 'ASSIGNED' || item.status === 'OPENED'); }
+  get submitted(): FormAssignment[] { return this.assignments.filter(item => SUBMITTED.includes(item.status)); }
+
+  private daysUntil(value: string | undefined | null): number | null {
+    const due = planDate(value);
+    if (!due) return null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  }
+
+  private byDue = (a: FormAssignment, b: FormAssignment) => {
+    const ad = planDate(a.dueAt)?.getTime(); const bd = planDate(b.dueAt)?.getTime();
+    if (ad == null && bd == null) return 0;
+    if (ad == null) return 1;
+    if (bd == null) return -1;
+    return ad - bd;
+  };
+
+  get dueSoon(): FormAssignment[] {
+    return this.pending.filter(item => (this.daysUntil(item.dueAt) ?? 0) >= 0).sort(this.byDue);
+  }
+  get overdue(): FormAssignment[] {
+    return this.pending.filter(item => (this.daysUntil(item.dueAt) ?? 0) < 0).sort(this.byDue);
+  }
+
+  title(item: FormAssignment | null): string { return capitalizeFirst(item?.formName || item?.formId || ''); }
+
+  /** Due / submitted chip of a card (mobile _assignmentCard). */
+  chip(item: FormAssignment, submitted: boolean): { label: string; color: string; icon?: string } | null {
+    if (submitted) {
+      return { label: item.status === 'REVIEWED' ? this.t('Reviewed', 'Revu') : this.t('Submitted', 'Soumis'), color: '#1E8E4E', icon: 'check' };
+    }
+    return this.dueChip(item);
+  }
+
+  dueChip(item: FormAssignment | null): { label: string; color: string } | null {
+    const days = this.daysUntil(item?.dueAt);
+    if (days == null) return null;
+    if (days < 0) {
+      const n = -days;
+      return { label: this.fr ? `En retard de ${n} jour${n > 1 ? 's' : ''}` : `${n} day${n > 1 ? 's' : ''} overdue`, color: 'var(--yc-error)' };
+    }
+    if (days === 0) return { label: this.t('Due today', "Pour aujourd'hui"), color: '#D97706' };
+    return { label: this.fr ? `Dans ${days} jour${days > 1 ? 's' : ''}` : `Due in ${days} day${days > 1 ? 's' : ''}`, color: 'var(--yc-text-secondary)' };
+  }
+
+  meta(item: FormAssignment, submitted: boolean): string {
+    const format = (value?: string) => {
+      const date = value ? new Date(value) : null;
+      return date && !Number.isNaN(date.getTime()) ? new Intl.DateTimeFormat(this.locale, { month: 'short', day: 'numeric' }).format(date) : '';
+    };
+    if (submitted) { const d = format(item.submittedAt); return d ? `${this.t('Submitted on', 'Soumis le')} ${d}` : ''; }
+    const d = format(item.assignedAt);
+    return d ? `${this.t('Assigned', 'Assigné le')} ${d}` : '';
+  }
+
+  // -------------------------------------------------------------------------
+  // Opening (mobile CheckInProvider.openAssignment)
+  // -------------------------------------------------------------------------
+  private openRequestedAssignment(): void {
+    const id = this.requestedAssignmentId.trim();
+    if (!id) return;
+    this.requestedAssignmentId = '';
+    const known = this.assignments.find(item => item.id === id);
+    if (known) { this.open(known); return; }
+    this.assignmentsApi.getById(id).pipe(takeUntil(this.destroy$)).subscribe({ next: item => this.open(item), error: () => {} });
+  }
+
+  open(item: FormAssignment): void {
+    const submitted = SUBMITTED.includes(item.status);
     // Preview: only the answers already sent can be read; an open check-in is the client's to fill.
-    if (this.previewMode && a.status !== 'SUBMITTED') return;
-    this.selectedAssignment = a;
-    this.isModalOpen = true;
-    this.isViewMode = a.status === 'SUBMITTED';
-    this.currentForm = null;
-    this.modalAnswers = [];
+    if (this.previewMode && !submitted) return;
+    this.selected = item;
+    this.form = null;
+    this.answers = [];
     this.submittedAnswers = [];
-    this.selectedOptionIndexes = {};
-    this.modalError.set(null);
-    this.modalLoading.set(true);
+    this.formError = '';
+    this.submitError = '';
+    this.opening = true;
+    if (submitted) this.sheetOpen = true; else { this.view = 'form'; window.scrollTo({ top: 0 }); }
 
-    if (a.status === 'ASSIGNED' && !this.previewMode) {
-      this.assignmentsApi.markOpened(a.id).subscribe({ error: () => {} });
-    }
-
-    this.formsApi.getFormById(a.formId).subscribe({
-      next: (form) => {
-        this.currentForm = {
-          ...form,
-          questions: form.questions.slice().sort((x, y) => (x.order ?? 0) - (y.order ?? 0)),
-        };
-
-        if (this.isViewMode) {
-          this.submissionsApi.getByAssignmentId(a.id).subscribe({
-            next: (submission) => {
-              this.submittedAnswers = submission.answers ?? [];
-              this.modalLoading.set(false);
-            },
-            error: () => {
-              this.modalLoading.set(false);
-              this.modalError.set(this.translate.instant('LOAD_ANSWERS_ERROR'));
-            },
-          });
-        } else {
-          this.modalAnswers = this.currentForm.questions.map((q): Answer => {
-            switch (q.type) {
-              case 'MULTIPLE_CHOICE':
-                return {
-                  questionId: q.id,
-                  type: QuestionType.MULTIPLE_CHOICE,
-                  selectedOptionId: null,
-                };
-
-              case 'STAR_RATING':
-                return {
-                  questionId: q.id,
-                  type: QuestionType.STAR_RATING,
-                  rating: null,
-                };
-
-              case 'YES_NO':
-                return {
-                  questionId: q.id,
-                  type: QuestionType.YES_NO,
-                  yes: null,
-                };
-
-              case 'DATE':
-                return {
-                  questionId: q.id,
-                  type: QuestionType.DATE,
-                  date: null,
-                };
-
-              default:
-                return {
-                  questionId: q.id,
-                  type: QuestionType.TEXT,
-                  text: null,
-                };
-            }
-          });
-
-          this.modalLoading.set(false);
-        }
-      },
-      error: () => {
-        this.modalLoading.set(false);
-        this.modalError.set(this.translate.instant('LOAD_FORM_ERROR'));
-      },
-    });
-  }
-
-  closeModal(): void {
-    this.isModalOpen = false;
-    this.isViewMode = false;
-    this.selectedAssignment = null;
-    this.currentForm = null;
-    this.modalAnswers = [];
-    this.submittedAnswers = [];
-    this.selectedOptionIndexes = {};
-    this.modalError.set(null);
-    this.submitting.set(false);
-  }
-
-  selectOption(
-    questionIndex: number,
-    questionId: string,
-    optionIndex: number,
-    optionId: string | null | undefined,
-  ): void {
-    this.selectedOptionIndexes[questionId] = optionIndex;
-
-    const answer = this.modalAnswers[questionIndex];
-
-    if (answer?.type === QuestionType.MULTIPLE_CHOICE) {
-      answer.selectedOptionId = optionId ?? null;
-    }
-  }
-
-  isOptionSelected(questionId: string, optionIndex: number): boolean {
-    return this.selectedOptionIndexes[questionId] === optionIndex;
-  }
-
-  submitModal(): void {
-    if (!this.selectedAssignment || !this.isValid()) {
-      this.modalError.set(this.translate.instant('REQUIRED_QUESTIONS_ERROR'));
-      return;
-    }
-
-    this.submitting.set(true);
-    this.modalError.set(null);
-
-    const payload: SubmissionPayload = {
-      answers: this.modalAnswers.map((a): Answer => {
-        switch (a.type) {
-          case QuestionType.MULTIPLE_CHOICE:
-            return {
-              questionId: a.questionId,
-              type: a.type,
-              selectedOptionId: a.selectedOptionId ?? null,
-            };
-
-          case QuestionType.STAR_RATING:
-            return {
-              questionId: a.questionId,
-              type: a.type,
-              rating: a.rating ?? null,
-            };
-
-          case QuestionType.YES_NO:
-            return {
-              questionId: a.questionId,
-              type: a.type,
-              yes: a.yes ?? null,
-            };
-
-          case QuestionType.TEXT:
-            return {
-              questionId: a.questionId,
-              type: a.type,
-              text: a.text ?? null,
-            };
-
-          case QuestionType.DATE:
-            return {
-              questionId: a.questionId,
-              type: a.type,
-              date: a.date ?? null,
-            };
-        }
-      }),
-    };
-
-    this.submissionsApi.submit(this.selectedAssignment.id, payload).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.closeModal();
-        this.loadPage();
-      },
-      error: (err) => {
-        this.submitting.set(false);
-        this.modalError.set(
-          err?.error?.error ??
-          err?.error?.message ??
-          this.translate.instant('SUBMISSION_ERROR')
-        );
-      },
-    });
-  }
-
-  isValid(): boolean {
-    if (!this.currentForm) return false;
-
-    return this.currentForm.questions.every((question, index) => {
-      // Optional questions do not block submission.
-      if (!question.required) return true;
-
-      const answer = this.modalAnswers[index];
-      if (!answer) return false;
-
-      switch (answer.type) {
-        case QuestionType.YES_NO:
-          return answer.yes !== null && answer.yes !== undefined;
-
-        case QuestionType.STAR_RATING:
-          return answer.rating !== null && answer.rating !== undefined;
-
-        case QuestionType.MULTIPLE_CHOICE:
-          return !!answer.selectedOptionId;
-
-        case QuestionType.TEXT:
-          return !!answer.text && answer.text.trim().length > 0;
-
-        case QuestionType.DATE:
-          return !!answer.date;
-
-        default:
-          return false;
+    const assignment$ = this.previewMode ? of(item) : this.assignmentsApi.getById(item.id).pipe(catchError(() => of(item)));
+    assignment$.pipe(takeUntil(this.destroy$)).subscribe(current => {
+      if (current.status === 'ASSIGNED' && !this.previewMode) {
+        this.assignmentsApi.markOpened(current.id).subscribe({
+          next: opened => this.updateListed({ ...current, status: opened?.status || 'OPENED', openedAt: opened?.openedAt }),
+          error: () => {},
+        });
       }
+      this.form$(current.formId).pipe(takeUntil(this.destroy$)).subscribe({
+        next: form => {
+          this.form = { ...form, questions: [...(form.questions || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) };
+          this.selected = { ...item, ...current, formName: current.formName || item.formName || form.title };
+          if (SUBMITTED.includes(current.status)) {
+            this.submissionsApi.getByAssignmentId(current.id).pipe(takeUntil(this.destroy$)).subscribe({
+              next: submission => { this.submittedAnswers = submission?.answers || []; this.opening = false; },
+              error: () => { this.opening = false; this.formError = this.t('Unable to load the answers.', 'Impossible de charger les réponses.'); },
+            });
+          } else {
+            this.answers = this.form.questions.map(question => ({
+              questionId: question.id, type: question.type, text: null, selectedOptionId: null, rating: null, yes: null, date: null,
+            }));
+            this.opening = false;
+          }
+        },
+        error: () => { this.opening = false; this.formError = this.t('Unable to load the form', 'Impossible de charger le formulaire'); },
+      });
     });
   }
 
-  getSubmittedAnswer(questionId: string): Answer | undefined {
-    return this.submittedAnswers.find(a => a.questionId === questionId);
+  retryOpen(): void { if (this.selected) this.open(this.selected); }
+
+  private updateListed(item: FormAssignment): void {
+    this.assignments = this.assignments.map(value => value.id === item.id ? { ...value, ...item } : value);
   }
 
-  getOptionLabel(question: any, optionId: string): string {
-    return question.options?.find((o: any) => o.id === optionId)?.label ?? optionId;
+  closeForm(): void { this.view = 'list'; this.selected = null; this.form = null; setTimeout(() => this.observeSentinel()); }
+  closeSheet(): void { this.sheetOpen = false; this.selected = null; this.form = null; }
+
+  // -------------------------------------------------------------------------
+  // Form page (mobile CheckInFormPage)
+  // -------------------------------------------------------------------------
+  get viewMode(): boolean { return this.previewMode || SUBMITTED.includes(this.selected?.status || ''); }
+  get questions(): any[] { return (this.form?.questions || []) as any[]; }
+
+  answered(question: any, index: number): boolean {
+    const answer = this.answers[index];
+    if (!answer) return false;
+    switch (question.type) {
+      case 'YES_NO': return answer.yes != null;
+      case 'STAR_RATING': case 'SCALE': case 'OPINION_RATING': return answer.rating != null;
+      case 'MULTIPLE_CHOICE': return !!(answer.selectedOptionId || '').trim();
+      case 'DATE': return !!(answer.date || '').trim();
+      default: return !!(answer.text || '').trim();
+    }
   }
 
-  getStarsArray(max: number = 5): number[] {
-    return Array.from({ length: max }, (_, i) => i + 1);
+  get answeredCount(): number { return this.questions.filter((q, i) => this.answered(q, i)).length; }
+  get requiredLeft(): number { return this.questions.filter((q, i) => !!(q.required ?? q.requiredField) && !this.answered(q, i)).length; }
+
+  get formSubtitle(): string {
+    if (!this.form) return '';
+    if (this.viewMode) {
+      const date = this.selected?.submittedAt ? new Date(this.selected.submittedAt) : null;
+      return date && !Number.isNaN(date.getTime())
+        ? `${this.t('Submitted', 'Soumis')}: ${new Intl.DateTimeFormat(this.locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(date)}` : '';
+    }
+    return this.fr ? `${this.answeredCount} sur ${this.questions.length} répondues` : `${this.answeredCount} of ${this.questions.length} answered`;
   }
+
+  get description(): string { return capitalizeSentences(this.form?.description); }
+  get minutes(): number { return Math.min(Math.max(Math.ceil(this.questions.length * 0.5), 1), 60); }
+  get ownerName(): string { return String((this.selected as any)?.ownerName || (this.selected as any)?.coachName || 'Coach'); }
+  get ownerInitials(): string { return initials(this.ownerName); }
+  get coachFeedback(): string {
+    const item: any = this.selected || {};
+    return String(item.coachFeedback || item.feedback || item.review?.feedback || item.submission?.coachFeedback || '').trim();
+  }
+
+  label(question: any): string { return capitalizeFirst(question?.label); }
+  helpText(question: any): string { return capitalizeSentences(question?.helpText); }
+  isRequired(question: any): boolean { return !!(question?.required ?? question?.requiredField); }
+  maxStars(question: any): number { const n = Number(question?.maxStars) || 0; return n <= 0 ? 5 : n; }
+  range(n: number): number[] { return Array.from({ length: n }, (_, i) => i + 1); }
+  optionLabel(option: any): string { return String(option?.label || '').trim() ? capitalizeFirst(option.label) : this.t('Option', 'Option'); }
+
+  submittedAnswer(question: any): any { return this.submittedAnswers.find(answer => answer.questionId === question.id); }
+  value(question: any, index: number): any { return this.viewMode ? this.submittedAnswer(question) : this.answers[index]; }
+
+  setOption(index: number, optionId: string): void { if (!this.viewMode) this.answers[index].selectedOptionId = optionId; }
+  setYesNo(index: number, value: boolean): void { if (!this.viewMode) this.answers[index].yes = value; }
+  setRating(index: number, value: number): void { if (!this.viewMode) this.answers[index].rating = value; }
+  setDate(index: number, value: string): void { if (!this.viewMode) this.answers[index].date = value || null; }
+  setText(index: number, value: string): void { if (!this.viewMode) this.answers[index].text = value; }
+
+  submit(): void {
+    if (!this.selected || this.requiredLeft > 0 || this.submitting) return;
+    this.submitting = true;
+    this.submitError = '';
+    const id = this.selected.id;
+    this.submissionsApi.submit(id, { answers: this.answers as any }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.submitting = false;
+        // Reflected at once; the authoritative list follows without a loader.
+        this.updateListed({ ...this.selected!, status: 'SUBMITTED', submittedAt: new Date().toISOString() });
+        this.closeForm();
+        this.refreshSilently();
+      },
+      error: err => {
+        this.submitting = false;
+        this.submitError = err?.error?.error || err?.error?.message || this.t('Unable to submit the check-in.', "Impossible d'envoyer le check-in.");
+      },
+    });
+  }
+
+  private refreshSilently(): void {
+    this.page$(0).pipe(takeUntil(this.destroy$)).subscribe({
+      next: page => this.attachFormNames(page?.content || []).subscribe(named => {
+        this.assignments = named;
+        this.pageIndex = 0;
+        this.totalPages = page?.totalPages ?? 0;
+        this.hasMore = this.totalPages > 1;
+      }),
+      error: () => {},
+    });
+  }
+
+  trackById = (_: number, item: FormAssignment) => item.id;
 }

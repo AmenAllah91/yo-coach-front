@@ -1,1469 +1,882 @@
-import { MealplanDayService } from './../../../service/mealplan-day.service';
-import { NutritionService } from 'app/service/nutrition.service';
-import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { ModalConfirmComponent } from '../modal-confirm/modal-confirm.component';
-import { ModalReplaceFoodComponent } from '../modal-replace-food/modal-replace-food.component';
-import { FoodReplacementGroupsService } from 'app/service/food-replacement-groups.service';
+import { ActivatedRoute } from '@angular/router';
+import { FeatherModule } from 'angular-feather';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subscription, catchError, forkJoin, map, of } from 'rxjs';
 import * as XLSX from 'xlsx';
 import { environment } from '@env/environment';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AuthService } from '@config/auth.service';
-import { Location } from '@angular/common';
-import { lineMacros, lineServing } from '@shared/models/nutrition-math';
+import { NutritionService } from 'app/service/nutrition.service';
+import { MealplanDayService } from 'app/service/mealplan-day.service';
+import { FoodReplacementGroupItem, FoodReplacementGroupsService } from 'app/service/food-replacement-groups.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { DocumentService } from 'app/service/document.service';
+import { ClientThemeService } from 'app/core/service/client-theme.service';
+import {
+  NutritionTotals, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, foodMacros, isMealReported,
+  mealMacros, mealReportStatus, planDate, programWeek, targetTotals,
+} from '../shared/client-plan-utils';
 
-type PlanStatus = 'COMPLETED' | 'OFF_PLAN' | 'IN_PROGRESS' | 'PENDING';
-type MealReportStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
+type MealStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
+interface DayItem { plan: any; day: any; date: Date; }
+interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
+interface ReplacementOption { item: FoodReplacementGroupItem; name: string; calories: number; protein: number; carbs: number; fat: number; }
 
-interface Food {
-  id: string;
-  name: string;
-  quantity: string;
-  protein: number;
-  carbs: number;
-  fat: number;
-  calories: number;
-  foodRefId?: string;
-  imageUrl?: string;
-  category?: string;
-}
-
-interface Meal {
-  id: string;
-  name: string;
-  foods: Food[];
-  mealType?: string;
-  mealTime?: string;
-  actualMealTime?: string;
-  servings?: number;
-  totalTimeMinutes?: number;
-  coverImage?: string;
-  directions?: string[];
-  tags?: string[];
-  expanded?: boolean;
-  mealTargets?: {
-    proteinG: number;
-    carbsG: number;
-    fatG: number;
-    calories: number;
-  };
-  reportStatus?: MealReportStatus;
-  note?: string;
-  photoUrl?: string;
-}
-
-interface NutritionDay {
-  id: string;
-  date: string;
-  displayDate: string;
-  planId: string;
-  programName: string;
-  programType: string;
-  status: PlanStatus;
-  mealCount: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  totalCalories: number;
-  meals: Meal[];
-  dayTargets?: {
-    proteinG: number;
-    carbsG: number;
-    fatG: number;
-    calories: number;
-  };
-  hunger?: string;
-  energy?: string;
-  digestion?: string;
-  overallNote?: string;
-}
-
-
-interface NutritionFileProgram {
-  id: string;
-  name: string;
-  coachName: string;
-  resourceType: string;
-  originalFileName?: string;
-  fileName?: string;
-  fileUrl?: string;
-  fileSizeBytes?: number;
-  startDate?: string;
-  endDate?: string;
-  addedLabel: string;
-  isCurrent: boolean;
-  pageCountLabel: string;
-}
-
+/**
+ * Client nutrition, same content and logic as the mobile NutritionScreen and NutritionDetailScreen: month list
+ * (upcoming / past), nutrition files, the day page (summary ring, meals with recipe, foods and swaps, meal
+ * reports and photos, daily feedback, complete day / off-plan).
+ */
 @Component({
   selector: 'app-client-nutrition',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalConfirmComponent, ModalReplaceFoodComponent, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
   templateUrl: './client-nutrition.component.html',
   styleUrl: './client-nutrition.component.scss',
 })
 export class ClientNutritionComponent implements OnInit, OnDestroy {
   @Input() previewClientId = '';
   @Input() previewMode = false;
-  coachNutritionFileEnabled = new Map<string, boolean>();
-  nutritionFileEnabled = false;
-  fileSettingsResolved = false;
-  private allPlans: any[] = [];
 
-  userid = sessionStorage.getItem('userId');
-  nutritionDays: NutritionDay[] = [];
-  currentDate: Date = new Date();
-  activeTab: 'upcoming' | 'past' = 'upcoming';
-  selectedDay: NutritionDay | null = null;
-  clientViewMode: 'calendar' | 'file' = 'calendar';
-  selectedFileProgram: NutritionFileProgram | null = null;
-  selectedFileBlobUrl: string | null = null;
-  selectedFileLoading = false;
-  selectedFileError = '';
-  filePrograms: NutritionFileProgram[] = [];
-  filteredFilePrograms: NutritionFileProgram[] = [];
-  searchProgram = '';
+  view: 'list' | 'files' | 'file' | 'day' = 'list';
+  loading = true;
+  error = '';
+  upcoming = true;
+  month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  plans: any[] = [];
+  filesEnabled = false;
+  toast: { message: string; tone: 'success' | 'error' | 'info' } | null = null;
 
-  pdfBlobUrl: string | null = null;
-  pdfSafeUrl: SafeResourceUrl | null = null;
+  // Day page
+  item: DayItem | null = null;
+  expandedMeal: number | null = 0;
+  hunger = '';
+  energy = '';
+  digestion = '';
+  overallNote = '';
+  savingDay = false;
+  uploadingMealId: string | null = null;
+  mealPhotoUrls = new Map<string, string>();
+  coverUrls = new Map<string, string>();
+  foodImages = new Map<string, string>();
+  viewedPhoto: string | null = null;
+
+  // Meal report sheet
+  reportMeal: any | null = null;
+  reportStatus: MealStatus = 'AS_PLANNED';
+  reportNote = '';
+
+  // Food swap sheet
+  loadingSwapFoodId: string | null = null;
+  replacingFoodId: string | null = null;
+  swapMeal: any | null = null;
+  swapFood: any | null = null;
+  swapOptions: ReplacementOption[] = [];
+  swapSelected: ReplacementOption | null = null;
+
+  showPdfPreview = false;
+
+  // Files
+  openedFile: FileProgram | null = null;
+  fileLoading = false;
+  fileError = '';
   excelSheets: string[] = [];
-  selectedExcelSheetName = '';
+  excelSheet = '';
   excelRows: any[][] = [];
   excelHeaders: string[] = [];
-  excelLoading = false;
-  selectedExcelWorkbook: any | null = null;
+  pdfCurrentPage = 1;
+  pdfTotalPages = 0;
+  pdfZoom = 100;
+  @ViewChild('pdfCanvas') pdfCanvas?: ElementRef<HTMLCanvasElement>;
+  private pdfDocument: any = null;
+  private pdfRenderTask: any = null;
+  private workbook: XLSX.WorkBook | null = null;
 
-  showConfirmModal = false;
-  pendingStatus: PlanStatus | null = null;
-
-  showReplaceModal = false;
-  foodToReplace: Food | null = null;
-  mealToUpdate: Meal | null = null;
-
-  private replacementCache = new Map<string, boolean>();
-
-  userName = sessionStorage.getItem('username') || '';
-
-  coaches: any[] = [];
-
-  selectedCoachId: string | 'all' = 'all';
-  showMealReportModal = false;
-  showMealViewModal = false;
-  showNutritionPdfPreview = false;
-  reportMeal: Meal | null = null;
-  viewedMeal: Meal | null = null;
-  viewedMealIndex = 0;
-  reportMealIndex = 0;
-  reportStatus: MealReportStatus = 'AS_PLANNED';
-  reportNote = '';
-  savingMealReport = false;
-  uploadingMealId: string | null = null;
-  dailySaveMessage = '';
+  private clientId = sessionStorage.getItem('userId') || '';
+  private initialDayId = '';
+  private initialPlanId = '';
+  private openedInitial = false;
+  private feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private subscriptions = new Subscription();
+  private plansRequest?: Subscription;
 
   constructor(
-    private mealplanDayService: MealplanDayService,
     private nutritionService: NutritionService,
-    private foodReplacementGroupsService: FoodReplacementGroupsService,
-    private sanitizer: DomSanitizer,
-    private coachSettingsService: CoachSettingsService,
+    private mealplanDayService: MealplanDayService,
+    private replacementGroups: FoodReplacementGroupsService,
+    private coachSettings: CoachSettingsService,
+    private documents: DocumentService,
     private translate: TranslateService,
-    private authService: AuthService,
-    private location: Location
+    private route: ActivatedRoute,
+    private theme: ClientThemeService,
   ) {}
 
-  goBack(): void {
-    this.location.back();
-  }
+  get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
+  private get locale(): string { return this.fr ? 'fr-FR' : 'en-US'; }
+  t(en: string, fr: string): string { return this.fr ? fr : en; }
 
   ngOnInit(): void {
-    if (this.previewClientId) this.userid = this.previewClientId;
-    this.loadCurrentUserName();
-    this.getMealPlan();
-  }
-
-  private async loadCurrentUserName(): Promise<void> {
-    const user = await this.authService.getCurrentUserDetails();
-    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-    this.userName = fullName || user?.username || sessionStorage.getItem('username') || this.translate.instant('ATHLETE');
+    this.theme.ensureLoaded();
+    if (this.previewClientId) this.clientId = this.previewClientId;
+    if (!this.previewMode) {
+      this.subscriptions.add(this.route.queryParamMap.subscribe(params => {
+        this.initialDayId = params.get('dayId') || '';
+        this.initialPlanId = params.get('planId') || '';
+        this.openedInitial = false;
+        this.load();
+      }));
+    } else {
+      this.load();
+    }
   }
 
   ngOnDestroy(): void {
-    this.revokeSelectedFileBlob();
+    if (this.feedbackTimer) { clearTimeout(this.feedbackTimer); this.sendFeedback(); }
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.subscriptions.unsubscribe();
+    this.plansRequest?.unsubscribe();
+    this.revokeFile();
+    document.body.classList.remove('client-workout-detail-open');
   }
 
-  hasReplacementGroup(food: any): boolean {
-    if (!food?.id) return false;
-    return this.replacementCache.get(food.id) === true;
-  }
-
-  getMealPlan() {
-    this.nutritionService
-      .getNutritionPlanByClientId(this.userid)
-      .subscribe((response: any) => {
+  // -------------------------------------------------------------------------
+  // Loading (mobile NutritionProvider.load)
+  // -------------------------------------------------------------------------
+  load(): void {
+    if (!this.clientId) { this.loading = false; this.error = this.somethingWentWrong; return; }
+    this.plansRequest?.unsubscribe();
+    this.loading = !this.plans.length;
+    this.error = '';
+    this.plansRequest = this.nutritionService.getNutritionPlanByClientId(this.clientId, true).subscribe({
+      next: (response: any) => {
         const plans: any[] = Array.isArray(response) ? response : (response?.content || []);
-        this.hydrateNutritionPlans(plans).subscribe((hydratedPlans) => {
-          this.applyLoadedPlans(hydratedPlans);
-        });
-      });
-  }
-
-  /** A plan of the list without any meal (older answers): its detail is read; the others are complete already. */
-  private needsDetail(summary: any): boolean {
-    if (!summary?.id || this.isFilePlan(summary)) return false;
-    const days: any[] = summary.mealDays || [];
-    return !days.length || days.every((day) => !day?.meals?.length);
-  }
-
-  private hydrateNutritionPlans(plans: any[]) {
-    if (!plans.length) return of([] as any[]);
-    // The client list already returns the full client view of each plan (the plan detail is the same view for the
-    // client, and for a coach preview it would add unpublished weeks): no request per plan.
-    if (!this.previewClientId || !plans.some((summary) => this.needsDetail(summary))) return of(plans);
-
-    return forkJoin(plans.map((summary) => {
-      if (!this.needsDetail(summary)) return of(summary);
-      return this.nutritionService.getNutritionPlanById(summary.id).pipe(
-        map((detail: any) => ({
-          ...detail,
-          ...summary,
-          coach: detail?.coach || summary?.coach,
-          client: detail?.client || summary?.client,
-          mealDays: this.mergeMealDays(summary?.mealDays || [], detail?.mealDays || []),
-        })),
-        catchError(() => of(summary))
-      );
-    }));
-  }
-
-  private mergeMealDays(summaryDays: any[], detailDays: any[]): any[] {
-    if (!summaryDays.length) return detailDays;
-
-    return summaryDays.map((summaryDay, index) => {
-      const detailDay = detailDays.find((candidate: any) =>
-        (summaryDay?.id && candidate?.id === summaryDay.id) ||
-        (summaryDay?.dayNumber && candidate?.dayNumber === summaryDay.dayNumber)
-      ) || detailDays[index] || {};
-
-      return {
-        ...detailDay,
-        ...summaryDay,
-        meals: summaryDay?.meals?.length ? summaryDay.meals : (detailDay?.meals || []),
-        dayTargets: Object.keys(summaryDay?.dayTargets || {}).length
-          ? summaryDay.dayTargets
-          : (detailDay?.dayTargets || {}),
-      };
+        this.subscriptions.add(this.hydrate(plans).subscribe(full => {
+          this.plans = [...full].sort((a, b) =>
+            (planDate(b.createdAt)?.getTime() ?? -Infinity) - (planDate(a.createdAt)?.getTime() ?? -Infinity));
+          this.loading = false;
+          this.loadCoachSettings();
+          this.openInitialTarget();
+        }));
+      },
+      error: err => { this.loading = false; this.error = err?.message || this.somethingWentWrong; },
     });
   }
 
-  private applyLoadedPlans(plans: any[]): void {
-    this.allPlans = plans;
-    const coachMap = new Map<string, any>();
-    plans.forEach((plan) => {
-      if (plan.coach && plan.coach.id) {
-        const fullName = `${plan.coach.firstName || 'Coach'} ${
-          plan.coach.lastName || ''
-        }`.trim();
-        coachMap.set(plan.coach.id, {
-          id: plan.coach.id,
-          firstName: plan.coach.firstName || 'Coach',
-          lastName: plan.coach.lastName || '',
-          fullName: fullName || 'Unknown Coach',
-        });
+  /** Coach preview: plans listed without meals are read in detail (the client list is already complete). */
+  private hydrate(plans: any[]) {
+    const needsDetail = (plan: any) => !!plan?.id && !this.isFileProgram(plan)
+      && (!(plan.mealDays || []).length || (plan.mealDays || []).every((day: any) => !day?.meals?.length));
+    if (!this.previewClientId || !plans.some(needsDetail)) return of(plans);
+    return forkJoin(plans.map(plan => needsDetail(plan)
+      ? this.nutritionService.getNutritionPlanById(plan.id, true).pipe(map((detail: any) => ({ ...detail, ...plan, mealDays: detail?.mealDays || plan.mealDays })), catchError(() => of(plan)))
+      : of(plan)));
+  }
+
+  private loadCoachSettings(): void {
+    const coachId = this.plans.map(plan => String(plan?.coach?.id || plan?.coachId || '').trim()).find(Boolean);
+    if (!coachId) { this.filesEnabled = false; return; }
+    this.subscriptions.add(this.coachSettings.getConfigForCoach(coachId, true).pipe(catchError(() => of(null))).subscribe(config => {
+      const nutrition: any = (config as any)?.nutrition;
+      this.filesEnabled = !!config && nutrition?.nutritionFileEnabled !== false;
+    }));
+  }
+
+  private openInitialTarget(): void {
+    if (this.openedInitial || this.view === 'day') return;
+    if (this.initialPlanId) {
+      const plan = this.plans.find(item => item.id === this.initialPlanId);
+      if (plan) {
+        this.openedInitial = true;
+        if (this.isFileProgram(plan)) { this.view = 'files'; return; }
+        const first = plan.mealDays?.[0];
+        const focus = planDate(plan.startDate) || (first ? this.dayDate(first) : null);
+        if (focus) this.month = new Date(focus.getFullYear(), focus.getMonth(), 1);
+        const day = this.initialDayId ? (plan.mealDays || []).find((d: any) => d.id === this.initialDayId) : first;
+        if (day) this.openDay({ plan, day, date: this.dayDate(day) });
+        return;
       }
-    });
-
-    this.coaches = Array.from(coachMap.values());
-    this.selectedCoachId = this.resolveCurrentCoachId(plans) || this.coaches[0]?.id || 'all';
-    this.fileSettingsResolved = false;
-    this.nutritionFileEnabled = false;
-    this.coachNutritionFileEnabled.clear();
-    this.processPlansWithFilter(plans);
-    this.loadCoachNutritionFileSettings(plans);
-  }
-
-  private applyCoachFilter(plans?: any[]) {
-    this.processPlansWithFilter(plans || this.allPlans);
-  }
-
-
-  getPlanCoachId(plan: any): string | null {
-    return (
-      plan?.coach?.id ||
-      plan?.coach?._id ||
-      plan?.coach ||
-      plan?.createdBy ||
-      plan?.client?.coachId ||
-      null
-    );
-  }
-
-  private resolveCurrentCoachId(plans: any[]): string | null {
-    const clientCoachId = (plans || [])
-      .map((plan) => plan?.client?.coachId || plan?.client?.coach?.id || plan?.client?.coach?._id)
-      .find((coachId) => !!coachId);
-
-    if (clientCoachId) {
-      return clientCoachId;
     }
-
-    const activePlanCoachId = (plans || [])
-      .filter((plan) => this.isPlanCurrent(plan))
-      .map((plan) => this.getPlanCoachId(plan))
-      .find((coachId) => !!coachId);
-
-    return activePlanCoachId || null;
-  }
-
-  private isPlanCurrent(plan: any): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = plan?.startDate ? new Date(plan.startDate) : null;
-    const end = plan?.endDate ? new Date(plan.endDate) : null;
-    if (start) start.setHours(0, 0, 0, 0);
-    if (end) end.setHours(0, 0, 0, 0);
-    return (!start || start <= today) && (!end || end >= today);
-  }
-
-
-  private loadCoachNutritionFileSettings(plans: any[]): void {
-    const coachIds = this.selectedCoachId !== 'all'
-      ? [this.selectedCoachId]
-      : Array.from(
-          new Set(
-            (plans || [])
-              .map((plan) => this.getPlanCoachId(plan))
-              .filter((id): id is string => !!id)
-          )
-        );
-
-    if (!coachIds.length) {
-      this.fileSettingsResolved = true;
-      this.processPlansWithFilter(plans);
-      return;
-    }
-
-    forkJoin(
-      coachIds.map((coachId) =>
-        this.coachSettingsService.getConfigForCoach(coachId, true).pipe(
-          map((config) => ({
-            coachId,
-            enabled: config.nutrition?.nutritionFileEnabled !== false,
-          })),
-          catchError(() => of({ coachId, enabled: false }))
-        )
-      )
-    ).subscribe({
-      next: (items) => {
-        items.forEach((item) => {
-          this.coachNutritionFileEnabled.set(item.coachId, item.enabled);
-        });
-        this.fileSettingsResolved = true;
-        this.processPlansWithFilter(plans);
-      },
-      error: () => {
-        this.fileSettingsResolved = true;
-        this.processPlansWithFilter(plans);
-      },
-    });
-  }
-
-  isNutritionFileEnabledForCoach(coachId: string | null): boolean {
-    if (!coachId) {
-      return this.nutritionFileEnabled !== false;
-    }
-
-    if (!this.coachNutritionFileEnabled.has(coachId)) {
-      return false;
-    }
-
-    return this.coachNutritionFileEnabled.get(coachId) !== false;
-  }
-
-  private processPlansWithFilter(plans: any[]) {
-    let filteredPlans = plans || [];
-
-    if (this.selectedCoachId !== 'all') {
-      filteredPlans = filteredPlans.filter((plan) => {
-        const coachId = this.getPlanCoachId(plan);
-        return !coachId || coachId === this.selectedCoachId;
-      });
-    }
-
-    const appPlans = filteredPlans.filter((plan) => !this.isFilePlan(plan));
-    const filePlans = filteredPlans.filter((plan) => this.isFilePlan(plan) && this.isNutritionFileEnabledForCoach(this.getPlanCoachId(plan)));
-
-    this.nutritionFileEnabled = this.fileSettingsResolved && (this.selectedCoachId === 'all'
-      ? this.coaches.some((coach) => this.isNutritionFileEnabledForCoach(coach.id))
-      : this.isNutritionFileEnabledForCoach(this.selectedCoachId));
-
-    this.nutritionDays = this.mapApiResponseToNutritionDays(appPlans);
-    this.filePrograms = this.mapPlansToFilePrograms(filePlans);
-    this.filteredFilePrograms = [...this.filePrograms];
-
-    this.selectedFileProgram =
-      this.filePrograms.find((p) => p.id === this.selectedFileProgram?.id) ||
-      this.currentPrograms[0] ||
-      this.historyPrograms[0] ||
-      null;
-
-    if (this.filePrograms.length > 0) {
-      this.clientViewMode = 'file';
-      this.loadSelectedFilePreview();
-    } else {
-      this.clientViewMode = 'calendar';
-      this.revokeSelectedFileBlob();
-    }
-
-    this.selectedDay = null;
-  }
-
-  onCoachChange(coachId: string | 'all') {
-    this.selectedCoachId = coachId;
-    this.fileSettingsResolved = false;
-    this.nutritionFileEnabled = false;
-    this.applyCoachFilter();
-    this.loadCoachNutritionFileSettings(this.allPlans);
-  }
-
-  private mapApiResponseToNutritionDays(plans: any[]): NutritionDay[] {
-    const days: NutritionDay[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    plans.forEach((plan) => {
-      if (this.isFilePlan(plan) || !plan.mealDays?.length) return;
-      const planStart = this.parseCalendarDate(plan.startDate);
-
-      plan.mealDays.forEach((mealDay: any, index: number) => {
-        const explicitDate = this.parseCalendarDate(mealDay?.date);
-        const dayOffset = Number(mealDay?.dayNumber || index + 1) - 1;
-        const mealDate = explicitDate || (planStart ? new Date(planStart) : null);
-        if (!mealDate) return;
-        if (!explicitDate) {
-          mealDate.setDate(planStart!.getDate() + Math.max(0, dayOffset));
-        }
-
-        const totals = mealDay.dayTargets || {};
-
-        const dateStr = this.toCalendarDate(mealDate);
-
-        days.push({
-          id: mealDay.id,
-          date: dateStr,
-          displayDate: this.getDisplayDate(dateStr),
-          planId: plan.id,
-          programName: plan.name,
-          programType: 'Nutrition Program',
-          status: mealDay.status ?? this.calculateStatus(dateStr),
-          mealCount: this.clientVisibleMeals(mealDay.meals || [], mealDay.clientMealLogs || []).length,
-          totalProtein: totals.proteinG || 0,
-          totalCarbs: totals.carbsG || 0,
-          totalFat: totals.fatG || 0,
-          totalCalories: totals.calories || 0,
-          dayTargets: totals,
-          meals: this.mapMeals(mealDay.meals || [], mealDay.clientMealLogs || []),
-          hunger: mealDay.hunger || '',
-          energy: mealDay.energy || '',
-          digestion: mealDay.digestion || '',
-          overallNote: mealDay.overallNote || '',
-        });
-        const mappedDay = days[days.length - 1];
-        (mealDay.clientMealLogs || []).forEach((log: any) => {
-          const meal = mappedDay.meals.find(item => item.id === log.mealId);
-          if (!meal) return;
-          meal.reportStatus = log.status;
-          meal.note = log.note || '';
-          meal.actualMealTime = log.actualMealTime || log.eatenTime || log.mealTime || '';
-          if (log.photoPath) {
-            meal.photoUrl = `${environment.baseApiUrl}/api/meal-day/${plan.id}/days/${mealDay.id}/meals/${meal.id}/photo`;
-          }
-        });
-      });
-    });
-
-    return days;
-  }
-
-  private parseCalendarDate(value: any): Date | null {
-    if (!value) return null;
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime())
-        ? null
-        : new Date(value.getFullYear(), value.getMonth(), value.getDate());
-    }
-
-    const text = String(value);
-    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
-    const date = dateOnly
-      ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
-      : new Date(text);
-    if (Number.isNaN(date.getTime())) return null;
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  }
-
-  private toCalendarDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  private calculateStatus(dateStr: string): PlanStatus {
-    const dayDate = new Date(dateStr);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    dayDate.setHours(0, 0, 0, 0);
-
-    return dayDate <= today ? 'IN_PROGRESS' : 'PENDING';
-  }
-
-  private getDisplayDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    const today = new Date();
-    if (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    ) {
-      return this.translate.instant('TODAY');
-    }
-    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-
-  private mapMeals(meals: any[], logs: any[] = []): Meal[] {
-    return this.clientVisibleMeals(meals, logs).map((meal) => ({
-      id: meal.id,
-      name: meal.name,
-      mealType: meal.mealType || '',
-      mealTime: meal.mealTime || '',
-      actualMealTime: '',
-      servings: meal.servings || 1,
-      totalTimeMinutes: meal.totalTimeMinutes || 0,
-      coverImage: meal.coverImage || '',
-      directions: Array.isArray(meal.directions) ? meal.directions : [],
-      tags: Array.isArray(meal.tags) ? meal.tags : [],
-      expanded: true,
-      foods: (meal.foods || []).map((food: any) => {
-        const foodRef = food.foodRef || {};
-        const serving = lineServing(food);
-        const quantity = Number(food.quantity ?? serving?.size ?? 100);
-        const unit = food.unit || serving?.unit || 'g';
-        const macros = lineMacros(food);
-
-        return {
-          id: food.id,
-          name: food.name || foodRef.name || this.translate.instant('FOOD'),
-          quantity: `${quantity} ${unit}`,
-          protein: Math.round(macros.protein),
-          carbs: Math.round(macros.carbs),
-          fat: Math.round(macros.fat),
-          calories: Math.round(macros.calories),
-          foodRefId: foodRef.id,
-          imageUrl: foodRef.imageUrl || food.imageUrl || '',
-          category: this.foodCategory(foodRef, food),
-        };
-      }),
-      mealTargets: meal.mealTargets || {
-        proteinG: 0,
-        carbsG: 0,
-        fatG: 0,
-        calories: 0,
-      },
-    }));
-  }
-
-  private clientVisibleMeals(meals: any[], logs: any[] = []): any[] {
-    return meals.filter((meal) => {
-      const untouchedName = !String(meal?.name || '').trim() || /^meal\s+\d+$/i.test(String(meal.name).trim());
-      const hasContent = Boolean(
-        (meal?.foods || []).length || meal?.template || meal?.draft || meal?.coverImage ||
-        meal?.totalTimeMinutes || (meal?.directions || []).some((step: string) => step?.trim()) ||
-        (meal?.tags || []).length || meal?.note?.trim() || meal?.photoPath || meal?.photoUrl ||
-        meal?.mealTargets && Object.values(meal.mealTargets).some((value) => Number(value) > 0) ||
-        logs.some((log) => log?.mealId === meal?.id)
-      );
-      return !untouchedName || hasContent;
-    });
-  }
-
-  isRecipeMeal(meal: Meal): boolean {
-    return !!(meal?.coverImage || meal?.directions?.length || meal?.totalTimeMinutes || meal?.tags?.length);
-  }
-
-  mealVariantLabel(meal: Meal): string {
-    return this.translate.instant(this.isRecipeMeal(meal) ? 'RECIPE_MEAL' : 'WITH_FOODS');
-  }
-
-  toggleMealCard(meal: Meal): void {
-    meal.expanded = meal.expanded === false;
-  }
-
-  openMealView(meal: Meal, index: number): void {
-    this.viewedMeal = meal;
-    this.viewedMealIndex = index;
-    this.showMealViewModal = true;
-  }
-
-  closeMealView(): void {
-    this.showMealViewModal = false;
-    this.viewedMeal = null;
-  }
-
-  updateActualMealTime(meal: Meal, value: string): void {
-    meal.actualMealTime = value;
-  }
-
-  saveMealTiming(meal: Meal): void {
-    if (!this.selectedDay) return;
-    if (!meal.actualMealTime && meal.mealTime) {
-      meal.actualMealTime = meal.mealTime;
-    }
-    this.persistNutritionDay(this.selectedDay.status === 'PENDING' ? 'IN_PROGRESS' : this.selectedDay.status);
-  }
-
-  formatMealTime(value?: string): string {
-    const raw = String(value || '').trim();
-    if (!raw) return this.translate.instant('NO_TIME');
-    const match = raw.match(/^(\d{1,2}):(\d{2})/);
-    if (!match) return raw;
-    let hours = Number(match[1]);
-    const minutes = match[2];
-    const suffix = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    return `${hours}:${minutes} ${suffix}`;
-  }
-
-  mealHeaderTitle(meal: Meal, index: number): string {
-    const type = String(meal.mealType || '').trim();
-    const prefix = `${this.translate.instant('MEAL')} ${index + 1}`;
-    return type ? `${prefix} · ${type.charAt(0).toUpperCase() + type.slice(1)}` : `${prefix} · ${meal.name}`;
-  }
-
-  mealMetaLine(meal: Meal): string {
-    const parts = [];
-    if (meal.actualMealTime) {
-      parts.push(this.formatMealTime(meal.actualMealTime));
-    } else if (meal.mealTime) {
-      parts.push(this.formatMealTime(meal.mealTime));
-    }
-    if (meal.mealTargets?.calories || meal.mealTargets?.calories === 0) {
-      parts.push(`${meal.mealTargets?.calories || 0} kcal`);
-    }
-    return parts.join(' · ');
-  }
-
-  get filteredDays(): NutritionDay[] {
-    return this.nutritionDays
-      .filter((day) => this.isSameMonthAndYear(day.date, this.currentDate))
-      .filter((day) => {
-        if (this.activeTab === 'upcoming') {
-          return day.status === 'PENDING';
-        }
-        return day.status === 'COMPLETED' || day.status === 'OFF_PLAN' || day.status === 'IN_PROGRESS';
-      });
-  }
-
-  private isSameMonthAndYear(dateStr: string, reference: Date): boolean {
-    const date = new Date(dateStr);
-    return (
-      date.getMonth() === reference.getMonth() &&
-      date.getFullYear() === reference.getFullYear()
-    );
-  }
-
-  formatMonthYear(date: Date): string {
-    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { month: 'long', year: 'numeric' });
-  }
-
-  listStatusLabel(status: unknown): string {
-    let key = 'PLANNED_LABEL';
-    switch (String(status || '').toUpperCase()) {
-      case 'COMPLETED': key = 'COMPLETED_LABEL'; break;
-      case 'UPCOMING': key = 'UPCOMING'; break;
-      case 'IN_PROGRESS': key = 'IN_PROGRESS_LABEL'; break;
-      case 'PENDING':
-      case 'PLANNED':
-      case 'NOT_STARTED': key = 'PLANNED_LABEL'; break;
-      case 'MISSED': key = 'MISSED_LABEL'; break;
-      case 'OFF_PLAN': key = 'OFF_PLAN'; break;
-      case 'OVERDUE': key = 'OVERDUE_LABEL'; break;
-    }
-    return this.translate.instant(key);
-  }
-
-  listStatusIcon(status: unknown): string {
-    switch (String(status || '').toUpperCase()) {
-      case 'COMPLETED': return '✓';
-      case 'MISSED':
-      case 'OFF_PLAN': return '×';
-      case 'OVERDUE': return '!';
-      case 'UPCOMING':
-      case 'IN_PROGRESS': return '◷';
-      default: return '▣';
+    if (this.initialDayId) {
+      for (const plan of this.plans) {
+        const day = (plan.mealDays || []).find((d: any) => d.id === this.initialDayId);
+        if (day) { this.openedInitial = true; this.openDay({ plan, day, date: this.dayDate(day) }); return; }
+      }
     }
   }
 
-  get emptyStateMessage(): string {
-    const month = this.formatMonthYear(this.currentDate);
-    return this.activeTab === 'upcoming'
-      ? `No upcoming nutrition plans for ${month}`
-      : `No past nutrition plans for ${month}`;
+  // -------------------------------------------------------------------------
+  // List
+  // -------------------------------------------------------------------------
+  private get today(): Date { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+  private dayDate(day: any): Date { return planDate(day?.date) || this.today; }
+
+  /** NutritionDay.status on mobile: the stored one, else IN_PROGRESS from the day itself, PENDING before. */
+  dayStatus(item: DayItem): string {
+    const stored = String(item.day?.status || '').trim().toUpperCase();
+    if (stored) return stored;
+    return item.date.getTime() <= this.today.getTime() ? 'IN_PROGRESS' : 'PENDING';
   }
 
-  handlePrevMonth(): void {
-    if (!this.canGoPrevMonth) return;
-    this.currentDate = new Date(
-      this.currentDate.getFullYear(),
-      this.currentDate.getMonth() - 1,
-      1
-    );
-  }
-
-  handleNextMonth(): void {
-    if (!this.canGoNextMonth) return;
-    this.currentDate = new Date(
-      this.currentDate.getFullYear(),
-      this.currentDate.getMonth() + 1,
-      1
-    );
-  }
-
-  setActiveTab(tab: 'upcoming' | 'past'): void {
-    this.activeTab = tab;
-    this.selectedDay = null;
-    if (!this.isMonthValidForTab()) {
-      this.currentDate = new Date();
+  private get dayItems(): DayItem[] {
+    const items: DayItem[] = [];
+    for (const plan of this.plans) {
+      if (this.isFileProgram(plan)) continue;
+      for (const day of plan.mealDays || []) items.push({ plan, day, date: this.dayDate(day) });
     }
+    return items;
   }
 
-  get canGoPrevMonth(): boolean {
-    if (this.activeTab === 'upcoming') return !this.isCurrentMonth();
-    return true;
+  /** Upcoming: days still PENDING. Past: COMPLETED, OFF_PLAN and IN_PROGRESS days (mobile use cases). */
+  get visibleItems(): DayItem[] {
+    return this.dayItems
+      .filter(item => {
+        const status = this.dayStatus(item);
+        return this.upcoming ? status === 'PENDING' : ['COMPLETED', 'OFF_PLAN', 'IN_PROGRESS'].includes(status);
+      })
+      .filter(item => item.date.getFullYear() === this.month.getFullYear() && item.date.getMonth() === this.month.getMonth())
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
-  get canGoNextMonth(): boolean {
-    if (this.activeTab === 'past') return !this.isCurrentMonth();
-    return true;
-  }
-
-  private isCurrentMonth(): boolean {
+  private get isCurrentMonth(): boolean {
     const now = new Date();
-    return (
-      this.currentDate.getMonth() === now.getMonth() &&
-      this.currentDate.getFullYear() === now.getFullYear()
-    );
+    return this.month.getFullYear() === now.getFullYear() && this.month.getMonth() === now.getMonth();
+  }
+  get canGoPrevious(): boolean { return this.upcoming ? !this.isCurrentMonth : true; }
+  get canGoNext(): boolean { return this.upcoming ? true : !this.isCurrentMonth; }
+  get monthLabel(): string {
+    const label = new Intl.DateTimeFormat(this.locale, { month: 'long', year: 'numeric' }).format(this.month);
+    return label ? label[0].toUpperCase() + label.slice(1) : label;
   }
 
-  private isMonthValidForTab(): boolean {
+  setTab(upcoming: boolean): void {
+    this.upcoming = upcoming;
     const now = new Date();
     const nowIndex = now.getFullYear() * 12 + now.getMonth();
-    const viewIndex = this.currentDate.getFullYear() * 12 + this.currentDate.getMonth();
-    return this.activeTab === 'upcoming' ? viewIndex >= nowIndex : viewIndex <= nowIndex;
+    const viewIndex = this.month.getFullYear() * 12 + this.month.getMonth();
+    if (upcoming ? viewIndex < nowIndex : viewIndex > nowIndex) this.month = new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
-  selectDay(day: NutritionDay): void {
-    this.selectedDay = {
-      ...day,
-      meals: day.meals.map(meal => ({
-        ...meal,
-        foods: meal.foods.map(food => ({ ...food })),
-      })),
-    };
-    this.checkFoodReplacements(day);
-    this.loadFoodImages();
-    this.loadMealPhotoUrls();
+  shiftMonth(delta: number): void {
+    if (delta < 0 ? !this.canGoPrevious : !this.canGoNext) return;
+    this.month = new Date(this.month.getFullYear(), this.month.getMonth() + delta, 1);
   }
 
-  private loadFoodImages(): void {
-    if (!this.selectedDay) return;
-    const foods = this.selectedDay.meals.flatMap(meal => meal.foods)
-      .filter(food => !food.imageUrl && !!food.foodRefId);
-    foods.forEach(food => {
-      this.nutritionService.getFoodForClient(food.foodRefId!, true).pipe(catchError(() => of(null))).subscribe((detail: any) => {
-        if (detail?.imageUrl) food.imageUrl = detail.imageUrl;
+  isToday(item: DayItem): boolean { return item.date.getTime() === this.today.getTime(); }
+  highlighted(item: DayItem): boolean {
+    const status = this.dayStatus(item);
+    return this.isToday(item) && status !== 'COMPLETED' && status !== 'OFF_PLAN';
+  }
+
+  listTitle(item: DayItem): string {
+    const name = String(item.day?.name || '').trim() || item.plan?.name;
+    return `${capitalizeFirst(name)} · ${this.t('Week', 'Semaine')} ${programWeek(item.plan?.startDate, item.date)}`;
+  }
+
+  planLine(item: DayItem): string {
+    const tag = capitalizeFirst(item.plan?.description);
+    return tag ? `${capitalizeFirst(item.plan?.name)} · ${tag}` : capitalizeFirst(item.plan?.name);
+  }
+
+  meals(item: DayItem): any[] { return clientVisibleMeals(item.day); }
+  previewMeals(item: DayItem): any[] { return this.meals(item).slice(0, 4); }
+  target(item: DayItem): NutritionTotals { return targetTotals(item.day); }
+  mealsCount(n: number): string { return this.fr ? `${n} repas` : (n === 1 ? '1 meal' : `${n} meals`); }
+  formatNumber(value: number): string { return new Intl.NumberFormat(this.locale).format(Math.round(value)); }
+
+  listStatus(item: DayItem): { label: string; color: string; icon?: string } {
+    const status = this.dayStatus(item);
+    const today = this.isToday(item);
+    switch (status) {
+      case 'COMPLETED': return { label: this.t('Completed', 'Terminé'), color: '#1E8E4E' };
+      case 'OFF_PLAN': return { label: this.t('Off-plan', 'Hors plan'), color: '#7455D9' };
+      case 'IN_PROGRESS': return { label: this.t('In progress', 'En cours'), color: 'var(--yc-primary)' };
+      default: return today ? { label: this.t('Today', 'Aujourd’hui'), color: 'var(--yc-primary)' }
+        : { label: this.t('Planned', 'Prévu'), color: 'var(--yc-text-secondary)', icon: 'calendar' };
+    }
+  }
+
+  /** Lead badge of a meal row: [icon, color, filled] or null for the plain number. */
+  mealLead(day: any, meal: any): { icon: string; color: string; filled: boolean } | null {
+    switch (mealReportStatus(day, meal)) {
+      case 'AS_PLANNED': return { icon: 'check', color: '#1E8E4E', filled: true };
+      case 'MODIFIED': return { icon: 'edit-2', color: '#D97706', filled: true };
+      case 'SKIPPED': return { icon: 'minus', color: 'var(--yc-text-hint)', filled: false };
+      default: return null;
+    }
+  }
+
+  mealCalories(meal: any): number { return mealMacros(meal).calories; }
+  capitalize(value: string): string { return capitalizeFirst(value); }
+  weekdayShort(date: Date): string { return new Intl.DateTimeFormat(this.locale, { weekday: 'short' }).format(date).toUpperCase().replace('.', ''); }
+  dayNumber(date: Date): string { return String(date.getDate()).padStart(2, '0'); }
+  monthShort(date: Date): string { return new Intl.DateTimeFormat(this.locale, { month: 'short' }).format(date).toUpperCase().replace('.', ''); }
+
+  // -------------------------------------------------------------------------
+  // Files (mobile _filesEntry / _openFilesPage)
+  // -------------------------------------------------------------------------
+  isFileProgram(plan: any): boolean {
+    const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
+    const type = String(plan?.resourceType || '').toUpperCase();
+    return mode === 'FILE' || ['PDF', 'EXCEL', 'XLS', 'XLSX'].includes(type) || !!plan?.fileName || !!plan?.fileUrl;
+  }
+
+  private fileType(plan: any): 'PDF' | 'EXCEL' {
+    const type = String(plan?.resourceType || '').toUpperCase();
+    if (['XLS', 'XLSX', 'EXCEL'].includes(type)) return 'EXCEL';
+    if (type === 'PDF') return 'PDF';
+    const combined = [plan?.originalFileName || plan?.fileName, plan?.fileContentType, plan?.fileUrl].map(v => String(v || '').toLowerCase()).join(' ');
+    if (combined.includes('pdf')) return 'PDF';
+    return /xlsx|xls|excel|spreadsheet/.test(combined) ? 'EXCEL' : 'PDF';
+  }
+
+  private isCurrentFile(plan: any): boolean {
+    const end = planDate(plan?.endDate);
+    return !end || end.getTime() >= this.today.getTime();
+  }
+
+  get filePrograms(): FileProgram[] {
+    if (!this.filesEnabled) return [];
+    return this.plans.filter(plan => this.isFileProgram(plan))
+      .map(plan => ({ plan, type: this.fileType(plan), isCurrent: this.isCurrentFile(plan) }) as FileProgram)
+      .sort((a, b) => {
+        if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+        const ad = (planDate(a.plan.startDate) || planDate(a.plan.createdAt) || new Date(0)).getTime();
+        const bd = (planDate(b.plan.startDate) || planDate(b.plan.createdAt) || new Date(0)).getTime();
+        return bd - ad;
       });
-    });
+  }
+  get currentFiles(): FileProgram[] { return this.filePrograms.filter(file => file.isCurrent); }
+  get historyFiles(): FileProgram[] { return this.filePrograms.filter(file => !file.isCurrent); }
+  get filesSummary(): string {
+    const n = this.filePrograms.length; const active = this.currentFiles.length; const s = n > 1 ? 's' : '';
+    return this.fr ? `${n} document${s} de votre coach${active > 0 ? ` · ${active} actif${active > 1 ? 's' : ''}` : ''}`
+      : `${n} document${s} from your coach${active > 0 ? ` · ${active} active` : ''}`;
   }
 
-  private loadMealPhotoUrls(): void {
-    if (!this.selectedDay) return;
-    const day = this.selectedDay;
-    day.meals.filter(meal => !!meal.photoUrl).forEach(meal => {
-      this.mealplanDayService.getMealPhotoUrl(day.planId, day.id, meal.id)
-        .pipe(catchError(() => of(null)))
-        .subscribe(result => {
-          if (result?.photoUrl) meal.photoUrl = result.photoUrl;
-        });
-    });
+  fileDateRange(file: FileProgram): string {
+    const start = planDate(file.plan.startDate); const end = planDate(file.plan.endDate);
+    const format = (date: Date) => new Intl.DateTimeFormat(this.locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+    if (!start && !end) return this.t('No dates', 'Aucune date');
+    if (start && !end) return this.t(`From ${format(start)}`, `À partir du ${format(start)}`);
+    if (!start && end) return this.t(`Until ${format(end)}`, `Jusqu’au ${format(end)}`);
+    return `${format(start!)} - ${format(end!)}`;
   }
 
-  private foodCategory(foodRef: any, food: any): string {
-    const value = String(foodRef?.category || foodRef?.foodCategory || food?.category || '').trim();
-    if (value) return value;
-    const protein = Number(foodRef?.protein || 0);
-    const carbs = Number(foodRef?.carbohydrates || 0);
-    const fat = Number(foodRef?.fat || 0);
-    if (protein >= carbs && protein >= fat) return 'Protein';
-    if (fat > carbs) return 'Fat';
-    return 'Carb';
+  fileSize(file: FileProgram): string {
+    const bytes = Number(file.plan.fileSizeBytes || 0);
+    if (bytes <= 0) return 'File';
+    return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  openMealReport(meal: Meal, index: number): void {
-    this.reportMeal = meal;
-    this.reportMealIndex = index;
-    this.reportStatus = meal.reportStatus || 'AS_PLANNED';
-    this.reportNote = meal.note || '';
-    this.showMealReportModal = true;
-  }
+  openFile(file: FileProgram): void { this.openedFile = file; this.view = 'file'; this.loadFile(); }
+  closeFile(): void { this.revokeFile(); this.openedFile = null; this.view = 'files'; }
 
-  closeMealReport(): void {
-    this.showMealReportModal = false;
-    this.reportMeal = null;
-    this.savingMealReport = false;
-  }
+  private revokeFile(): void { this.pdfDocument = null; this.workbook = null; }
 
-  saveMealReport(): void {
-    if (!this.selectedDay || !this.reportMeal || this.savingMealReport) return;
-    this.reportMeal.reportStatus = this.reportStatus;
-    this.reportMeal.note = this.reportNote.trim();
-    this.savingMealReport = true;
-    this.persistNutritionDay('IN_PROGRESS', () => this.closeMealReport());
-  }
-
-  saveMealNote(meal: Meal): void {
-    if (!this.selectedDay) return;
-    this.persistNutritionDay(this.selectedDay.status === 'PENDING' ? 'IN_PROGRESS' : this.selectedDay.status);
-  }
-
-  uploadMealPhoto(event: Event, meal: Meal): void {
-    if (!this.selectedDay) return;
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
+  private loadFile(): void {
+    const file = this.openedFile;
     if (!file) return;
-    this.uploadingMealId = meal.id;
-    this.mealplanDayService.uploadMealPhoto(this.selectedDay.planId, this.selectedDay.id, meal.id, file).subscribe({
-      next: (result) => {
-        meal.photoUrl = result.photoUrl.startsWith('http')
-          ? result.photoUrl
-          : `${environment.baseApiUrl}${result.photoUrl}`;
-        this.uploadingMealId = null;
+    this.revokeFile();
+    this.fileLoading = true;
+    this.fileError = '';
+    this.subscriptions.add(this.nutritionService.downloadNutritionFile(file.plan).subscribe({
+      next: async (blob: Blob) => {
+        try {
+          if (file.type === 'EXCEL') {
+            this.workbook = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
+            this.excelSheets = this.workbook.SheetNames || [];
+            this.showExcelSheet(this.excelSheets[0] || '');
+          } else {
+            const pdf = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+            const pdfjs: any = await import('pdfjs-dist');
+            pdfjs.GlobalWorkerOptions.workerSrc = 'assets/pdf.worker.min.mjs';
+            this.pdfDocument = await pdfjs.getDocument({ data: await pdf.arrayBuffer() }).promise;
+            this.pdfTotalPages = this.pdfDocument.numPages || 0;
+            this.pdfCurrentPage = 1;
+            setTimeout(() => this.renderPdfPage(), 0);
+          }
+        } catch (error: any) {
+          this.fileError = this.t(`Could not open file: ${error?.message || error}`, `Impossible d’ouvrir le fichier : ${error?.message || error}`);
+        }
+        this.fileLoading = false;
       },
-      error: () => this.uploadingMealId = null,
-    });
-  }
-
-  completeNutritionDay(): void {
-    if (!this.selectedDay) return;
-    this.persistNutritionDay('COMPLETED', () => {
-      this.dailySaveMessage = this.translate.instant('DAILY_FEEDBACK_SAVED');
-      setTimeout(() => this.dailySaveMessage = '', 3000);
-    });
-  }
-
-  markDayOffPlan(): void {
-    if (!this.selectedDay) return;
-    this.selectedDay.meals.forEach(meal => meal.reportStatus = 'SKIPPED');
-    this.persistNutritionDay('OFF_PLAN');
-  }
-
-  private persistNutritionDay(status: PlanStatus, onSuccess?: () => void): void {
-    if (!this.selectedDay) return;
-    const day = this.selectedDay;
-    const previousStatus = day.status;
-    day.status = status;
-    const clientMealLogs = day.meals.map(meal => ({
-      mealId: meal.id,
-      status: meal.reportStatus || null,
-      note: meal.note?.trim() || '',
-      actualMealTime: meal.actualMealTime || '',
+      error: (error: any) => {
+        this.fileLoading = false;
+        this.fileError = this.t(`Could not open file: ${error?.message || error}`, `Impossible d’ouvrir le fichier : ${error?.message || error}`);
+      },
     }));
-    this.mealplanDayService.updatePlanDay({
-      id: day.id,
-      status,
-      clientMealLogs,
-      hunger: day.hunger || '',
-      energy: day.energy || '',
-      digestion: day.digestion || '',
-      overallNote: day.overallNote?.trim() || '',
-    }, day.planId).subscribe({
-      next: () => {
-        const listed = this.nutritionDays.find(item => item.id === day.id && item.planId === day.planId);
-        if (listed) Object.assign(listed, day);
-        onSuccess?.();
+  }
+
+  showExcelSheet(name: string): void {
+    this.excelSheet = name;
+    const sheet = this.workbook?.Sheets[name];
+    if (!sheet) { this.excelHeaders = []; this.excelRows = []; return; }
+    const rows = (XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' }) as any[][])
+      .filter(row => row.some(cell => String(cell || '').trim() !== '')).slice(0, 200);
+    const columns = Math.min(26, Math.max(1, ...rows.map(row => row.length)));
+    this.excelHeaders = Array.from({ length: columns }, (_, index) => String.fromCharCode(65 + index));
+    this.excelRows = rows.map(row => Array.from({ length: columns }, (_, index) => row[index] ?? ''));
+  }
+
+  async renderPdfPage(): Promise<void> {
+    const canvas = this.pdfCanvas?.nativeElement;
+    if (!this.pdfDocument || !canvas) return;
+    try { this.pdfRenderTask?.cancel(); } catch { /* finished already */ }
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const page = await this.pdfDocument.getPage(this.pdfCurrentPage);
+    const available = Math.max(280, (canvas.parentElement?.clientWidth || 800) - 16);
+    const base = page.getViewport({ scale: 1 });
+    const viewport = page.getViewport({ scale: (available / base.width) * (this.pdfZoom / 100) });
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    this.pdfRenderTask = page.render({ canvasContext: context, viewport });
+    try { await this.pdfRenderTask.promise; } catch { /* cancelled by a newer render */ }
+    this.pdfRenderTask = null;
+  }
+
+  pdfPage(delta: number): void {
+    const next = this.pdfCurrentPage + delta;
+    if (next < 1 || (this.pdfTotalPages && next > this.pdfTotalPages)) return;
+    this.pdfCurrentPage = next;
+    this.renderPdfPage();
+  }
+
+  pdfZoomBy(delta: number): void { this.pdfZoom = Math.min(200, Math.max(50, this.pdfZoom + delta)); this.renderPdfPage(); }
+
+  downloadFile(file: FileProgram): void {
+    this.subscriptions.add(this.nutritionService.downloadNutritionFile(file.plan).subscribe({
+      next: (blob: Blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = String(file.plan.originalFileName || file.plan.fileName || `${file.plan.name}.${file.type === 'EXCEL' ? 'xlsx' : 'pdf'}`)
+          .replace(/[\\/:*?"<>|]/g, '_');
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        this.showToast(this.t(`File downloaded: ${link.download}`, `Fichier téléchargé : ${link.download}`), 'success');
       },
-      error: () => {
-        day.status = previousStatus;
-        this.savingMealReport = false;
-      },
-    });
+      error: (error: any) => this.showToast(this.t(`Could not download file: ${error?.message || error}`, `Impossible de télécharger le fichier : ${error?.message || error}`), 'error'),
+    }));
   }
 
-  nutritionDayStatusLabel(day: NutritionDay): string {
-    if (day.status === 'OFF_PLAN') return this.translate.instant('OFF_PLAN');
-    if (day.status === 'COMPLETED') return this.translate.instant('COMPLETED_LABEL');
-    return this.translate.instant('IN_PROGRESS_LABEL');
-  }
-
-  mealStatusLabel(status?: MealReportStatus): string {
-    if (status === 'AS_PLANNED') return this.translate.instant('AS_PLANNED');
-    if (status === 'MODIFIED') return this.translate.instant('MODIFIED');
-    if (status === 'SKIPPED') return this.translate.instant('SKIPPED');
-    return '';
-  }
-
-  extractNutritionPdf(): void {
-    this.showNutritionPdfPreview = true;
-  }
-
-  closeNutritionPdfPreview(): void {
-    this.showNutritionPdfPreview = false;
-  }
-
-  get selectedNutritionPlan(): any {
-    return this.allPlans.find(plan => plan.id === this.selectedDay?.planId) || null;
-  }
-
-  get pdfNutritionDays(): NutritionDay[] {
-    if (!this.selectedDay) return [];
-    return this.nutritionDays
-      .filter(day => day.planId === this.selectedDay!.planId)
-      .sort((a, b) => this.parseCalendarDate(a.date)!.getTime() - this.parseCalendarDate(b.date)!.getTime());
-  }
-
-  get pdfNutritionWeeks(): { number: number; days: NutritionDay[] }[] {
-    const weeks = new Map<number, NutritionDay[]>();
-    this.pdfNutritionDays.forEach((day, index) => {
-      const number = Math.floor(index / 7) + 1;
-      weeks.set(number, [...(weeks.get(number) || []), day]);
-    });
-    return Array.from(weeks, ([number, days]) => ({ number, days }));
-  }
-
-  get pdfNutritionClientName(): string {
-    const client = this.selectedNutritionPlan?.client || {};
-    return `${client.firstName || client.firstname || ''} ${client.lastName || client.lastname || ''}`.trim() || 'Client';
-  }
-
-  get pdfNutritionCoachName(): string {
-    const coach = this.selectedNutritionPlan?.coach || {};
-    return `${coach.firstName || ''} ${coach.lastName || ''}`.trim() || 'Coach';
-  }
-
-  get pdfNutritionMealCount(): number {
-    return this.pdfNutritionDays.reduce((total, day) => total + day.meals.length, 0);
-  }
-
-  downloadNutritionPdf(): void {
-    const preview = document.querySelector('.nutrition-pdf-document');
-    if (!preview) return;
-    const printWindow = window.open('', '_blank', 'width=960,height=800');
-    if (!printWindow) return;
-    const title = this.escapeNutritionPdfHtml(this.selectedDay?.programName || 'nutrition-program');
-    printWindow.document.write(
-      `<!doctype html><html><head><title>${title}</title><style>${this.nutritionPdfPrintStyles()}</style></head><body>${preview.outerHTML}</body></html>`
-    );
-    printWindow.document.close();
-    printWindow.focus();
-    window.setTimeout(() => printWindow.print(), 250);
-  }
-
-  private escapeNutritionPdfHtml(value: string): string {
-    return value.replace(/[&<>"']/g, character => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
-    }[character] || character));
-  }
-
-  private nutritionPdfPrintStyles(): string {
-    return `
-      @page{size:A4;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
-      body{margin:0;background:#fff;color:#07172b;font-family:Arial,sans-serif}.nutrition-pdf-document{width:100%;background:#fff}.nutrition-pdf-cover{min-height:270mm;padding:18mm 10mm}
-      .nutrition-pdf-brand{display:flex;align-items:center;gap:12px;color:#078fc9;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase}.nutrition-pdf-brand>span:last-child{display:flex;flex-direction:column}.nutrition-pdf-brand strong{font:inherit}.nutrition-pdf-brand small{margin-top:3px;color:#8ba0b5;font-size:8px;letter-spacing:0;text-transform:none;font-weight:500}.nutrition-pdf-brand-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:#12a7e5!important;color:#fff;font-size:21px}
-      .nutrition-pdf-cover h1{margin:35px 0 10px;font-size:32px}.nutrition-pdf-description{color:#52677e;line-height:1.6}.nutrition-pdf-meta{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.nutrition-pdf-meta div{padding:13px;border:1px solid #d8e2ec;border-radius:8px}.nutrition-pdf-meta small{display:block;color:#8295aa;font-size:9px;text-transform:uppercase}.nutrition-pdf-meta strong{display:block;margin-top:7px;font-size:12px}
-      .nutrition-pdf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.nutrition-pdf-stats div{padding:14px;border-radius:8px;background:#12a7e5!important;color:#fff!important}.nutrition-pdf-stats strong{display:block;font-size:23px}.nutrition-pdf-stats small{font-size:9px;font-weight:700}
-      .nutrition-pdf-week{break-before:page;padding:4mm 2mm}.nutrition-pdf-week-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:1px solid #d9e3ec}.nutrition-pdf-week-header>div:last-child{display:flex;align-items:flex-end;flex-direction:column;gap:3px}.nutrition-pdf-week-header h2{margin:3px 0 0;font-size:22px}.nutrition-pdf-week-header small{color:#7890a8;font-size:8px;text-transform:uppercase}.nutrition-pdf-week-header strong{color:#34495f;font-size:9px}
-      .nutrition-pdf-day{margin-top:14px;border:1px solid #cad8e4;border-radius:7px;overflow:hidden;break-inside:avoid}.nutrition-pdf-day-head{display:flex;justify-content:space-between;padding:9px 12px;background:#12a7e5!important;color:#fff!important;font-size:10px;font-weight:700}.nutrition-pdf-day-head em{padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.25)!important;font-size:7px;font-style:normal;text-transform:uppercase}
-      .nutrition-pdf-totals{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #e3eaf0}.nutrition-pdf-totals span{padding:7px 9px;border-right:1px solid #e3eaf0}.nutrition-pdf-totals span:last-child{border:0}.nutrition-pdf-totals strong,.nutrition-pdf-totals small{display:block}.nutrition-pdf-totals strong{font-size:9px}.nutrition-pdf-totals small{margin-top:2px;color:#8293a5;font-size:6px;text-transform:uppercase}
-      .nutrition-pdf-meal{margin:9px;border:1px solid #dce5ed;border-radius:5px;overflow:hidden;break-inside:avoid}.nutrition-pdf-meal-head{display:flex;justify-content:space-between;align-items:center;padding:7px 9px;background:#f7fafc!important;font-size:8px}.nutrition-pdf-meal-head strong{font-size:9px}.nutrition-pdf-meal-head em{padding:2px 5px;border-radius:4px;background:#e7f6fd!important;color:#087fae;font-size:6px;font-style:normal}.nutrition-pdf-meal table{width:100%;border-collapse:collapse;font-size:8px}.nutrition-pdf-meal th,.nutrition-pdf-meal td{padding:5px 8px;border-top:1px solid #e6edf3;text-align:left}.nutrition-pdf-meal th{color:#8093a8;font-size:7px;text-transform:uppercase}.nutrition-pdf-meal th:not(:first-child),.nutrition-pdf-meal td:not(:first-child){text-align:right}
-      .nutrition-pdf-empty{padding:18px;text-align:center;color:#8a9bb0;font-size:9px;font-style:italic}
-    `;
-  }
-
-  private checkFoodReplacements(day: NutritionDay): void {
-    if (!day.planId) return;
-
-    day.meals.forEach(meal => {
-      meal.foods.forEach(food => {
-        this.foodReplacementGroupsService
-          .getReplacementGroupsForAssignedFood(day.planId!, day.id, meal.id, food.id)
-          .pipe(catchError(() => of([])))
-          .subscribe(groups => {
-            this.replacementCache.set(food.id, groups.length > 0);
-          });
-      });
-    });
+  // -------------------------------------------------------------------------
+  // Day page (mobile NutritionDetailScreen)
+  // -------------------------------------------------------------------------
+  openDay(item: DayItem): void {
+    this.item = item;
+    const day = item.day;
+    this.hunger = day.hunger || '';
+    this.energy = day.energy || '';
+    this.digestion = day.digestion || '';
+    this.overallNote = day.overallNote || '';
+    this.expandedMeal = clientVisibleMeals(day).length ? 0 : null;
+    this.view = 'day';
+    if (!this.previewMode) document.body.classList.add('client-workout-detail-open');
+    window.scrollTo({ top: 0 });
+    this.loadFoodImages();
+    this.loadMealPhotos();
+    this.loadCovers();
   }
 
   backToList(): void {
-    this.selectedDay = null;
+    if (this.feedbackTimer) { clearTimeout(this.feedbackTimer); this.feedbackTimer = null; this.sendFeedback(); }
+    this.item = null;
+    this.view = 'list';
+    document.body.classList.remove('client-workout-detail-open');
+    this.load();
   }
 
-  calculateMealTotals(meal: Meal) {
-    return meal.foods.reduce(
-      (acc, food) => ({
-        protein: acc.protein + food.protein,
-        carbs: acc.carbs + food.carbs,
-        fat: acc.fat + food.fat,
-        calories: acc.calories + food.calories,
-      }),
-      { protein: 0, carbs: 0, fat: 0, calories: 0 }
-    );
-  }
-
-  get greeting(): string {
-    const hour = new Date().getHours();
-    if (hour < 12) return this.translate.instant('GOOD_MORNING');
-    if (hour < 18) return this.translate.instant('GOOD_AFTERNOON');
-    return this.translate.instant('GOOD_EVENING');
-  }
-
-  openConfirmModal(status: PlanStatus): void {
-    this.pendingStatus = status;
-    this.showConfirmModal = true;
-  }
-
-  closeConfirmModal(): void {
-    this.showConfirmModal = false;
-    this.pendingStatus = null;
-  }
-
-  confirmStatusUpdate(): void {
-    if (this.selectedDay && this.pendingStatus) {
-      this.updatePlanStatus(this.selectedDay, this.pendingStatus);
+  get day(): any { return this.item?.day; }
+  get status(): string { return this.item ? this.dayStatus(this.item) : 'PENDING'; }
+  get finished(): boolean { return this.status === 'COMPLETED' || this.status === 'OFF_PLAN'; }
+  get visibleMeals(): any[] { return clientVisibleMeals(this.day); }
+  get isFullMealPlan(): boolean { return this.visibleMeals.some(meal => (meal.foods || []).length > 0); }
+  get isMacroEachMeal(): boolean { return this.visibleMeals.length > 0 && this.visibleMeals.every(meal => !(meal.foods || []).length); }
+  get isMacroTotalDay(): boolean { return this.visibleMeals.length === 0; }
+  get reported(): number { return this.visibleMeals.filter(meal => isMealReported(this.day, meal)).length; }
+  get dayTarget(): NutritionTotals { return targetTotals(this.day); }
+  get consumed(): NutritionTotals {
+    if (this.isMacroTotalDay) {
+      const t = this.day?.dayTargets || {};
+      return { calories: Number(t.calories || 0), protein: Number(t.proteinG || 0), carbs: Number(t.carbsG || 0), fat: Number(t.fatG || 0) };
     }
-    this.closeConfirmModal();
+    return consumedTotals(this.day);
+  }
+  ratio(value: number, goal: number): number { return goal > 0 ? Math.min(Math.max(value / goal, 0), 1) : 0; }
+  /** Stroke offset of the calories ring (r = 47, circumference ≈ 295.3). */
+  ringOffset(value: number, goal: number): number { return 295.3 * (1 - this.ratio(value, goal)); }
+
+  get headerTitle(): string {
+    if (!this.item) return '';
+    const text = new Intl.DateTimeFormat(this.locale, { weekday: 'long', month: 'long', day: 'numeric' }).format(this.item.date);
+    return text[0].toUpperCase() + text.slice(1);
   }
 
-  updatePlanStatus(day: NutritionDay, status: PlanStatus): void {
-    day.status = status;
-
-    this.nutritionDays = this.nutritionDays.map((d) =>
-      d.id === day.id ? { ...d, status } : d
-    );
-
-    this.mealplanDayService
-      .updatePlanDay({ id: day.id, status }, day.planId)
-      .subscribe({
-        next: () => {},
-        error: () => {
-          day.status = 'PENDING';
-          this.nutritionDays = [...this.nutritionDays];
-        },
-      });
+  get headerSubtitle(): string {
+    if (!this.item) return '';
+    const name = capitalizeFirst(String(this.day?.name || '').trim() || this.item.plan?.name);
+    return `${name} · ${this.t('Week', 'Semaine')} ${programWeek(this.item.plan?.startDate, this.item.date)} · ${this.dayKind}`;
   }
 
-  openReplaceModal(food: Food, meal: Meal): void {
-    this.foodToReplace = food;
-    this.mealToUpdate = meal;
-    this.showReplaceModal = true;
+  /** Mobile _subtitleFor: the day description, else its dominant macro. */
+  private get dayKind(): string {
+    const description = String(this.day?.description || '').trim();
+    if (description) return description;
+    const t = this.day?.dayTargets || {};
+    const p = Number(t.proteinG || 0); const c = Number(t.carbsG || 0); const f = Number(t.fatG || 0);
+    if (p >= c && p >= f) return this.t('High Protein', 'Riche en protéines');
+    if (c <= p && c <= f) return this.t('Low Carb', 'Faible en glucides');
+    if (f >= p && f >= c) return this.t('Higher Fat', 'Plus riche en lipides');
+    return this.t('Meal Plan', 'Plan de repas');
   }
 
-  closeReplaceModal(): void {
-    this.showReplaceModal = false;
-    this.foodToReplace = null;
-    this.mealToUpdate = null;
-  }
-
-  get showNutritionFiles(): boolean {
-    return this.fileSettingsResolved && this.nutritionFileEnabled && this.filePrograms.length > 0;
-  }
-
-  get calendarCountLabel(): string {
-    const count = this.filteredDays.length;
-    return this.translate.instant(count === 1 ? 'ONE_DAY_THIS_MONTH' : 'DAYS_THIS_MONTH', { count });
-  }
-
-  get currentPrograms(): NutritionFileProgram[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this.filteredFilePrograms.filter((program) => {
-      if (!program.endDate) return true;
-      const end = new Date(program.endDate);
-      end.setHours(0, 0, 0, 0);
-      return end >= today;
-    });
-  }
-
-  get historyPrograms(): NutritionFileProgram[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this.filteredFilePrograms.filter((program) => {
-      if (!program.endDate) return false;
-      const end = new Date(program.endDate);
-      end.setHours(0, 0, 0, 0);
-      return end < today;
-    });
-  }
-
-  isFilePlan(plan: any): boolean {
-    const mode = String(plan?.nutritionPlanMode || plan?.mealPlanMode || plan?.planMode || '').toUpperCase();
-    const type = String(plan?.resourceType || plan?.fileType || plan?.documentType || '').toUpperCase();
-    const name = String(plan?.originalFileName || plan?.fileName || plan?.fileUrl || plan?.name || '').toLowerCase();
-
-    return (
-      mode === 'FILE' ||
-      mode === 'DOCUMENT' ||
-      ['PDF', 'EXCEL', 'XLS', 'XLSX'].includes(type) ||
-      !!plan?.fileName ||
-      !!plan?.originalFileName ||
-      !!plan?.fileUrl ||
-      name.endsWith('.pdf') ||
-      name.endsWith('.xls') ||
-      name.endsWith('.xlsx')
-    );
-  }
-
-  mapPlansToFilePrograms(plans: any[]): NutritionFileProgram[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return (plans || []).map((plan: any, index: number) => {
-      const rawType = String(plan.resourceType || plan.fileType || plan.documentType || '').toUpperCase();
-      const fileName = String(plan.originalFileName || plan.fileName || plan.fileUrl || plan.name || '').toLowerCase();
-      const resourceType =
-        rawType === 'PDF' || fileName.endsWith('.pdf')
-          ? 'PDF'
-          : 'EXCEL';
-
-      const coachName =
-        `${plan.coach?.firstName || ''} ${plan.coach?.lastName || ''}`.trim() ||
-        plan.coach?.fullName ||
-        'Coach';
-
-      const start = plan.startDate ? new Date(plan.startDate) : null;
-      const end = plan.endDate ? new Date(plan.endDate) : null;
-
-      if (start) start.setHours(0, 0, 0, 0);
-      if (end) end.setHours(0, 0, 0, 0);
-
-      const isCurrent = (!start || start <= today) && (!end || end >= today);
-
-      return {
-        id: plan.id || plan._id || `${resourceType}-${index}`,
-        name: plan.name || plan.originalFileName || plan.fileName || 'Nutrition file',
-        coachName,
-        resourceType,
-        originalFileName: plan.originalFileName,
-        fileName: plan.fileName,
-        fileUrl: plan.fileUrl,
-        fileSizeBytes: plan.fileSizeBytes || plan.sizeBytes || plan.fileSize,
-        startDate: plan.startDate,
-        endDate: plan.endDate,
-        addedLabel: plan.startDate ? this.formatFrenchDate(plan.startDate) : '',
-        isCurrent,
-        pageCountLabel: resourceType === 'PDF' ? 'PDF' : 'Feuille Excel',
-      } as NutritionFileProgram;
-    }).sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent));
-  }
-
-
-  applyFileSearch() {
-    const q = this.searchProgram.trim().toLowerCase();
-    this.filteredFilePrograms = !q
-      ? [...this.filePrograms]
-      : this.filePrograms.filter((p) =>
-          [p.name, p.originalFileName, p.resourceType].filter(Boolean).join(' ').toLowerCase().includes(q)
-        );
-  }
-
-  setClientViewMode(mode: 'calendar' | 'file') {
-    this.clientViewMode = mode;
-    if (mode === 'file' && !this.selectedFileProgram) {
-      this.selectedFileProgram = this.currentPrograms[0] || this.filePrograms[0] || null;
-    }
-    if (mode === 'file') {
-      this.loadSelectedFilePreview();
+  get statusBadge(): { label: string; color: string } {
+    switch (this.status) {
+      case 'IN_PROGRESS': return { label: this.t('In progress', 'En cours'), color: 'var(--yc-primary)' };
+      case 'COMPLETED': return { label: this.t('Completed', 'Terminé'), color: '#1E8E4E' };
+      case 'OFF_PLAN': return { label: this.t('Off-plan', 'Hors plan'), color: '#7455D9' };
+      default: return { label: this.t('Pending', 'En attente'), color: 'var(--yc-text-secondary)' };
     }
   }
 
-  selectFileProgram(program: NutritionFileProgram) {
-    this.selectedFileProgram = program;
-    this.clientViewMode = 'file';
-    this.loadSelectedFilePreview();
-  }
+  toggleMeal(index: number): void { this.expandedMeal = this.expandedMeal === index ? null : index; }
 
-  private revokeSelectedFileBlob() {
-    if (this.selectedFileBlobUrl) {
-      window.URL.revokeObjectURL(this.selectedFileBlobUrl);
-      this.selectedFileBlobUrl = null;
+  macros(meal: any): NutritionTotals { return mealMacros(meal); }
+  mealStatus(meal: any): string { return mealReportStatus(this.day, meal); }
+  mealChip(meal: any): { label: string; color: string } {
+    const status = this.mealStatus(meal);
+    switch (status) {
+      case 'AS_PLANNED': return { label: this.t('As planned', 'Comme prévu'), color: '#1E8E4E' };
+      case 'MODIFIED': return { label: this.t('Modified', 'Modifié'), color: '#D97706' };
+      case 'SKIPPED': return { label: this.t('Skipped', 'Sauté'), color: 'var(--yc-text-secondary)' };
+      default: return { label: status, color: 'var(--yc-text-secondary)' };
     }
   }
 
-  loadSelectedFilePreview() {
-    this.revokeSelectedFileBlob();
-    this.selectedFileError = '';
-    this.pdfBlobUrl = null;
-    this.pdfSafeUrl = null;
+  mealLog(meal: any): any {
+    return (this.day?.clientMealLogs || []).find((log: any) => String(log?.mealId) === String(meal?.id));
+  }
+  mealNote(meal: any): string { return String(this.mealLog(meal)?.note ?? meal?.note ?? '').trim(); }
+  hasPhoto(meal: any): boolean { return !!String(this.mealLog(meal)?.photoPath ?? meal?.photoPath ?? '').trim() || this.mealPhotoUrls.has(meal.id); }
 
-    const resourceType = String(this.selectedFileProgram?.resourceType || '').toUpperCase();
+  isRecipe(meal: any): boolean {
+    return !!String(meal?.coverImage || '').trim() || Number(meal?.totalTimeMinutes || 0) > 0
+      || this.directions(meal).length > 0 || (meal?.tags || []).length > 0;
+  }
+  directions(meal: any): string[] { return (meal?.directions || []).map((step: any) => String(step ?? '').trim()).filter(Boolean); }
+  recipeChips(meal: any): { icon: string; text: string }[] {
+    const chips: { icon: string; text: string }[] = [];
+    const time = Number(meal?.totalTimeMinutes || 0);
+    const servings = Number(meal?.servings || 0);
+    if (time > 0) chips.push({ icon: 'clock', text: `${this.number(time)} min` });
+    if (servings > 0) chips.push({ icon: 'users', text: this.fr ? `${this.number(servings)} portion${servings > 1 ? 's' : ''}` : `${this.number(servings)} serving${servings > 1 ? 's' : ''}` });
+    for (const tag of meal?.tags || []) chips.push({ icon: 'tag', text: String(tag) });
+    return chips;
+  }
 
-    if (!this.selectedFileProgram) {
-      this.selectedFileLoading = false;
-      return;
+  foodsLabel(meal: any): string {
+    const n = (meal?.foods || []).length;
+    if (!n) return '';
+    return ` · ${this.fr ? `${n} aliment${n > 1 ? 's' : ''}` : `${n} food${n > 1 ? 's' : ''}`}`;
+  }
+
+  foodMacros(food: any): NutritionTotals { return foodMacros(food); }
+  foodUnit(food: any): string { return String(food?.unit || food?.foodRef?.servingDescription || food?.foodRef?.unit || 'g'); }
+  foodImage(food: any): string | null {
+    const own = String(food?.imageUrl || food?.foodRef?.imageUrl || '').trim();
+    if (own) return own;
+    const refId = this.foodRefId(food);
+    return refId ? this.foodImages.get(refId) || null : null;
+  }
+  private foodRefId(food: any): string {
+    const ref = food?.foodRef;
+    return String(ref?.id || ref?._id || food?.foodRefId || (typeof ref === 'string' ? ref : '') || '').trim();
+  }
+  foodTint(index: number): string { return ['#E5484D', '#D97706', '#1E9E63', '#0C86C8', '#7455D9'][index % 5]; }
+  number(value: number): string { return Number.isInteger(value) ? String(value) : value.toFixed(1); }
+  quantity(value: any): string { const n = Number(value); return Number.isFinite(n) ? String(n) : String(value ?? ''); }
+
+  private loadFoodImages(): void {
+    const ids = new Set<string>();
+    for (const meal of this.day?.meals || []) {
+      for (const food of meal.foods || []) {
+        if (!String(food?.imageUrl || food?.foodRef?.imageUrl || '').trim() && this.foodRefId(food)) ids.add(this.foodRefId(food));
+      }
     }
+    ids.forEach(id => this.subscriptions.add(this.nutritionService.getFoodForClient(id, true).pipe(catchError(() => of(null))).subscribe((food: any) => {
+      const url = String(food?.imageUrl || '').trim();
+      if (url) this.foodImages.set(id, url);
+    })));
+  }
 
-    if (resourceType === 'EXCEL' || resourceType === 'XLS' || resourceType === 'XLSX') {
-      this.loadSelectedExcelPreview();
-      return;
+  private loadMealPhotos(): void {
+    const item = this.item;
+    if (!item) return;
+    for (const meal of item.day.meals || []) {
+      if (!String(this.mealLog(meal)?.photoPath ?? meal?.photoPath ?? '').trim()) continue;
+      this.subscriptions.add(this.mealplanDayService.getMealPhotoUrl(item.plan.id, item.day.id, meal.id).pipe(catchError(() => of(null))).subscribe(result => {
+        if (result?.photoUrl) this.mealPhotoUrls.set(meal.id, this.absolute(result.photoUrl));
+      }));
     }
+  }
 
-    if (resourceType !== 'PDF') {
-      this.selectedFileLoading = false;
-      return;
+  /** Cover images may be stored as a document path: resolved once. */
+  private loadCovers(): void {
+    for (const meal of this.day?.meals || []) {
+      const cover = String(meal?.coverImage || '').trim();
+      if (!cover || this.coverUrls.has(cover)) continue;
+      if (cover.startsWith('http') && !cover.includes('X-Amz')) { this.coverUrls.set(cover, cover); continue; }
+      this.subscriptions.add(this.documents.refreshStoredFileUrl(cover).pipe(catchError(() => of(cover.startsWith('http') ? cover : ''))).subscribe(url => {
+        if (url) this.coverUrls.set(cover, String(url).trim());
+      }));
     }
+  }
+  coverUrl(meal: any): string { return this.coverUrls.get(String(meal?.coverImage || '').trim()) || ''; }
 
-    this.selectedFileLoading = true;
+  private absolute(url: string): string { return url.startsWith('http') ? url : `${environment.baseApiUrl}${url}`; }
 
-    this.nutritionService.downloadNutritionFile(this.selectedFileProgram).subscribe({
-      next: async (blob) => {
-        try {
-          const pdfBlob = blob.type === 'application/pdf'
-            ? blob
-            : new Blob([blob], { type: 'application/pdf' });
+  uploadMealPhoto(event: Event, meal: any): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !this.item) return;
+    if (file.size > 8 * 1024 * 1024) { this.showToast(this.t('The photo must not exceed 8 MB.', 'La photo ne doit pas dépasser 8 MB.'), 'error'); return; }
+    const item = this.item;
+    this.uploadingMealId = meal.id;
+    this.subscriptions.add(this.mealplanDayService.uploadMealPhoto(item.plan.id, item.day.id, meal.id, file).subscribe({
+      next: result => {
+        this.uploadingMealId = null;
+        this.mealPhotoUrls.set(meal.id, result?.photoUrl ? this.absolute(result.photoUrl) : URL.createObjectURL(file));
+        this.showToast(this.t('Meal photo uploaded.', 'Photo du repas importée.'), 'success');
+      },
+      error: () => { this.uploadingMealId = null; this.showToast(this.t('Photo upload failed', 'Échec de l’envoi de la photo'), 'error'); },
+    }));
+  }
 
-          this.pdfBlobUrl = window.URL.createObjectURL(pdfBlob);
-          this.pdfSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
-          this.selectedFileBlobUrl = this.pdfBlobUrl;
-          this.selectedFileLoading = false;
-        } catch (error) {
-          console.error('Error preparing PDF preview:', error);
-          this.selectedFileError = this.translate.instant('PDF_PREVIEW_ERROR');
-          this.selectedFileLoading = false;
+  // Meal report (mobile _openMealReportSheet)
+  openReport(meal: any): void {
+    if (this.previewMode) return;
+    this.reportMeal = meal;
+    this.reportStatus = (this.mealStatus(meal) as MealStatus) || 'AS_PLANNED';
+    if (!['AS_PLANNED', 'MODIFIED', 'SKIPPED'].includes(this.reportStatus)) this.reportStatus = 'AS_PLANNED';
+    this.reportNote = this.mealNote(meal);
+  }
+
+  get reportTitle(): string {
+    const name = String(this.reportMeal?.name || '');
+    return this.fr ? `Rapport · ${capitalizeFirst(name)}` : `Report ${name.toLowerCase()}`;
+  }
+
+  /** Optimistic: the report shows at once and comes back if the request fails. */
+  saveReport(): void {
+    const meal = this.reportMeal;
+    const item = this.item;
+    this.reportMeal = null;
+    if (!meal || !item) return;
+    const day = item.day;
+    const previous = { status: day.status, logs: (day.clientMealLogs || []).map((log: any) => ({ ...log })) };
+    const note = this.reportNote.trim();
+    const logs: any[] = [...(day.clientMealLogs || [])];
+    const index = logs.findIndex(log => String(log?.mealId) === String(meal.id));
+    const next = { ...(index >= 0 ? logs[index] : {}), mealId: meal.id, status: this.reportStatus, note };
+    if (index >= 0) logs[index] = next; else logs.push(next);
+    day.clientMealLogs = logs;
+    if (this.status === 'PENDING') day.status = 'IN_PROGRESS';
+    this.subscriptions.add(this.mealplanDayService.updatePlanDay({
+      id: day.id, status: 'IN_PROGRESS', clientMealLogs: logs, ...this.feedbackPayload(),
+    }, item.plan.id).subscribe({
+      next: () => { day.status = 'IN_PROGRESS'; this.showToast(this.t('Meal report saved.', 'Rapport du repas enregistré.'), 'success'); },
+      error: () => {
+        day.status = previous.status; day.clientMealLogs = previous.logs;
+        this.showToast(this.t('The report could not be saved. Please try again.', 'Le rapport n\'a pas pu être enregistré. Réessayez.'), 'error');
+      },
+    }));
+  }
+
+  // Food swap (mobile _openReplaceFoodSheet)
+  openSwap(meal: any, food: any): void {
+    if (this.previewMode || !this.item || this.loadingSwapFoodId || this.replacingFoodId) return;
+    const item = this.item;
+    this.loadingSwapFoodId = food.id;
+    this.subscriptions.add(this.replacementGroups.getReplacementGroupsForAssignedFood(item.plan.id, item.day.id, meal.id, food.id).subscribe({
+      next: groups => {
+        this.loadingSwapFoodId = null;
+        const originalName = String(food?.name || food?.foodRef?.name || '').trim().toLowerCase();
+        const originalRef = this.foodRefId(food);
+        const options = (groups || []).flatMap(group => group.foods || []).filter(option =>
+          !(originalRef && option.foodRefId === originalRef) && String(option.name || '').trim().toLowerCase() !== originalName);
+        if (!options.length) { this.showToast(this.t('No replacement foods found', 'Aucun aliment de remplacement trouvé')); return; }
+        this.swapMeal = meal;
+        this.swapFood = food;
+        this.swapSelected = null;
+        this.swapOptions = options.map(option => {
+          const serving = Number(option.servingSize) > 0 ? Number(option.servingSize) : 100;
+          const factor = Number(option.quantity ?? 100) / serving;
+          return {
+            item: option, name: option.name ? capitalizeFirst(option.name) : 'Food',
+            calories: Math.round(Number(option.energy || 0) * factor), protein: Math.round(Number(option.protein || 0) * factor),
+            carbs: Math.round(Number(option.carbohydrates || 0) * factor), fat: Math.round(Number(option.fat || 0) * factor),
+          };
+        });
+      },
+      error: () => { this.loadingSwapFoodId = null; this.showToast(this.t('Failed to load replacement foods', 'Impossible de charger les aliments de remplacement'), 'error'); },
+    }));
+  }
+
+  closeSwap(): void { this.swapMeal = null; this.swapFood = null; this.swapOptions = []; this.swapSelected = null; }
+
+  swapDelta(option: ReplacementOption): number { return option.calories - Math.round(foodMacros(this.swapFood).calories); }
+
+  confirmSwap(): void {
+    const option = this.swapSelected; const meal = this.swapMeal; const food = this.swapFood; const item = this.item;
+    this.closeSwap();
+    if (!option || !meal || !food || !item) return;
+    this.replacingFoodId = food.id;
+    this.subscriptions.add(this.nutritionService.replaceAssignedMealFood(item.plan.id, item.day.id, meal.id, food.id, {
+      replacementFoodRefId: option.item.foodRefId, servingId: option.item.servingId ?? null,
+      quantity: option.item.quantity, unit: option.item.unit,
+    }).subscribe({
+      next: (updatedPlan: any) => {
+        this.replacingFoodId = null;
+        const updatedDay = (updatedPlan?.mealDays || []).find((d: any) => d.id === item.day.id);
+        if (updatedPlan) {
+          const index = this.plans.findIndex(plan => plan.id === updatedPlan.id);
+          const merged = { ...item.plan, ...updatedPlan };
+          if (index >= 0) this.plans[index] = merged;
+          this.item = { plan: merged, day: updatedDay || item.day, date: item.date };
         }
+        this.loadFoodImages();
+        this.showToast(this.t('Food replaced successfully', 'Aliment remplacé avec succès'), 'success');
       },
-      error: (error) => {
-        console.error('Error loading PDF preview:', error);
-        this.selectedFileError = this.translate.instant('PDF_PREVIEW_ERROR');
-        this.selectedFileLoading = false;
+      error: () => { this.replacingFoodId = null; this.showToast(this.t('Failed to replace food', 'Échec du remplacement de l\'aliment'), 'error'); },
+    }));
+  }
+
+  // Daily feedback (mobile _buildDailyFeedback)
+  get feedbackRows(): { key: 'hunger' | 'energy' | 'digestion'; title: string; options: [string, string][] }[] {
+    return [
+      { key: 'hunger', title: this.t('Hunger', 'Faim'), options: [['LOW', this.t('Low', 'Faible')], ['GOOD', this.t('Balanced', 'Équilibrée')], ['HIGH', this.t('High', 'Élevée')]] },
+      { key: 'energy', title: this.t('Energy', 'Énergie'), options: [['LOW', this.t('Low', 'Basse')], ['GOOD', this.t('Steady', 'Stable')], ['HIGH', this.t('High', 'Haute')]] },
+      { key: 'digestion', title: 'Digestion', options: [['POOR', this.t('Poor', 'Mauvaise')], ['GOOD', this.t('Good', 'Bonne')], ['GREAT', this.t('Great', 'Super')]] },
+    ];
+  }
+
+  feedbackValue(key: 'hunger' | 'energy' | 'digestion'): string { return this[key]; }
+  /** The mobile app may have stored the French words: both are read. */
+  isFeedback(key: 'hunger' | 'energy' | 'digestion', value: string): boolean {
+    return this.normalizeFeedback(this[key]) === value;
+  }
+  private normalizeFeedback(value: string): string {
+    const v = String(value || '').trim().toLowerCase();
+    if (['low', 'faible'].includes(v)) return 'LOW';
+    if (['good', 'bien', 'balanced', 'steady', 'well_balanced', 'fine'].includes(v)) return 'GOOD';
+    if (['high', 'élevé', 'eleve'].includes(v)) return 'HIGH';
+    if (['poor', 'mauvaise'].includes(v)) return 'POOR';
+    if (['great', 'excellente'].includes(v)) return 'GREAT';
+    return v.toUpperCase();
+  }
+  /** Stored value of an option: the English word the coach pages read ('Low', 'Good', 'High', 'Poor', 'Great'). */
+  private storedFeedback(value: string): string {
+    const words: Record<string, string> = { LOW: 'Low', GOOD: 'Good', HIGH: 'High', POOR: 'Poor', GREAT: 'Great' };
+    return words[value] || value;
+  }
+
+  setFeedback(key: 'hunger' | 'energy' | 'digestion', value: string): void {
+    this[key] = this.storedFeedback(value);
+    this.scheduleFeedbackSave();
+  }
+
+  scheduleFeedbackSave(): void {
+    if (this.previewMode) return;
+    if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
+    this.feedbackTimer = setTimeout(() => { this.feedbackTimer = null; this.sendFeedback(); }, 400);
+  }
+
+  private feedbackPayload(): any {
+    return { hunger: this.hunger, energy: this.energy, digestion: this.digestion, overallNote: this.overallNote.trim() };
+  }
+
+  private sendFeedback(): void {
+    const item = this.item;
+    if (!item) return;
+    Object.assign(item.day, this.feedbackPayload());
+    this.mealplanDayService.updatePlanDay({
+      id: item.day.id, status: this.dayStatus(item), clientMealLogs: item.day.clientMealLogs || [], ...this.feedbackPayload(),
+    }, item.plan.id).subscribe({ error: () => undefined });
+  }
+
+  // Complete day / off-plan (mobile _saveDayStatus)
+  saveDayStatus(status: 'COMPLETED' | 'OFF_PLAN'): void {
+    const item = this.item;
+    if (!item || this.savingDay) return;
+    if (this.feedbackTimer) { clearTimeout(this.feedbackTimer); this.feedbackTimer = null; }
+    this.savingDay = true;
+    const day = item.day;
+    const logs = status === 'OFF_PLAN'
+      ? this.visibleMeals.map(meal => ({ ...(this.mealLog(meal) || {}), mealId: meal.id, status: 'SKIPPED', note: '' }))
+      : (day.clientMealLogs || []);
+    this.subscriptions.add(this.mealplanDayService.updatePlanDay({
+      id: day.id, status, clientMealLogs: logs, ...this.feedbackPayload(),
+    }, item.plan.id).subscribe({
+      next: () => {
+        this.savingDay = false;
+        Object.assign(day, { status, clientMealLogs: logs, ...this.feedbackPayload() });
+        this.showToast(status === 'COMPLETED' ? this.t('Nutrition day completed.', 'Journée nutrition terminée.')
+          : this.t('Nutrition day marked off-plan.', 'Journée nutrition marquée hors plan.'), 'success');
+        this.backToList();
       },
-    });
+      error: () => { this.savingDay = false; this.showToast(this.t('Failed to update nutrition day.', 'Échec de la mise à jour de la journée nutrition.'), 'error'); },
+    }));
   }
 
-  loadSelectedExcelPreview() {
-    this.excelLoading = true;
-    this.selectedFileLoading = true;
-    this.selectedFileError = '';
-
-    if (!this.selectedFileProgram) {
-      this.excelLoading = false;
-      this.selectedFileLoading = false;
-      return;
-    }
-
-    this.nutritionService.downloadNutritionFile(this.selectedFileProgram).subscribe({
-      next: (blob) => {
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            this.excelSheets = workbook.SheetNames;
-            this.selectedExcelSheetName = this.excelSheets[0] || '';
-            this.parseExcelSheet(workbook, this.selectedExcelSheetName);
-          } catch (err) {
-            console.error('Excel parse error:', err);
-            this.selectedFileError = this.translate.instant('EXCEL_READ_ERROR');
-          }
-          this.excelLoading = false;
-          this.selectedFileLoading = false;
-        };
-        reader.onerror = () => {
-          this.excelLoading = false;
-          this.selectedFileLoading = false;
-          this.selectedFileError = this.translate.instant('FILE_READ_ERROR');
-        };
-        reader.readAsArrayBuffer(blob);
-      },
-      error: (error) => {
-        console.error('Error loading Excel preview:', error);
-        this.excelLoading = false;
-        this.selectedFileLoading = false;
-        this.selectedFileError = this.translate.instant('FILE_PREVIEW_LOAD_ERROR');
-      },
-    });
+  // PDF of the plan (web print preview, mobile "Export PDF")
+  get pdfDays(): { date: Date; day: any }[] {
+    if (!this.item) return [];
+    return (this.item.plan.mealDays || []).map((day: any) => ({ date: this.dayDate(day), day }))
+      .sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
+  }
+  pdfMeals(day: any): any[] { return clientVisibleMeals(day); }
+  pdfTarget(day: any): NutritionTotals { return targetTotals(day); }
+  formatLongDate(date: Date | null): string {
+    return date ? new Intl.DateTimeFormat(this.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }).format(date) : '—';
   }
 
-  selectExcelSheet(sheetName: string) {
-    this.selectedExcelSheetName = sheetName;
-
-    if (!this.selectedExcelWorkbook) {
-      return;
-    }
-
-    const worksheet = this.selectedExcelWorkbook.Sheets[sheetName];
-
-    if (!worksheet) {
-      this.excelRows = [];
-      this.excelHeaders = [];
-      return;
-    }
-
-    const rows = XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      raw: false,
-      defval: '',
-    }) as any[][];
-
-    this.excelRows = rows.slice(0, 80);
-    const maxColumns = Math.max(0, ...this.excelRows.map((row) => row.length));
-    this.excelHeaders = Array.from({ length: maxColumns }, (_, i) => this.getExcelColumnLabel(i));
+  downloadPdf(): void {
+    const preview = document.querySelector('.cn-pdf-document');
+    if (!preview) return;
+    const win = window.open('', '_blank', 'width=960,height=800');
+    if (!win) return;
+    const title = String(this.item?.plan?.name || 'nutrition-plan').replace(/[<>&"']/g, '');
+    win.document.write(`<!doctype html><html><head><title>${title}</title><style>${PDF_PRINT_STYLES}</style></head><body>${preview.outerHTML}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 250);
   }
 
-  private parseExcelSheet(workbook: any, sheetName: string) {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) {
-      this.excelHeaders = [];
-      this.excelRows = [];
-      return;
-    }
-    const json: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    this.excelHeaders = json[0] || [];
-    this.excelRows = json.slice(1) || [];
+  // -------------------------------------------------------------------------
+  private get somethingWentWrong(): string { return this.t('Something went wrong', 'Une erreur est survenue'); }
+
+  showToast(message: string, tone: 'success' | 'error' | 'info' = 'info'): void {
+    this.toast = { message, tone };
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => (this.toast = null), 3500);
   }
 
-  switchToFileTab() {
-    this.setClientViewMode('file');
-  }
-
-  switchToCalendarTab() {
-    this.clientViewMode = 'calendar';
-    this.selectedFileBlobUrl = null;
-    this.pdfSafeUrl = null;
-    this.pdfBlobUrl = null;
-  }
-
-  downloadSelectedFile() {
-    if (!this.selectedFileProgram) return;
-
-    this.nutritionService.downloadNutritionFile(this.selectedFileProgram).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = this.selectedFileProgram!.originalFileName || this.selectedFileProgram!.fileName || 'nutrition-file';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      },
-      error: (err) => {
-        console.error('Download error:', err);
-      },
-    });
-  }
-
-  private formatFrenchDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-  }
-
-  replaceFood(replacement: {
-    replacementFoodRefId: string;
-    quantity: number;
-    unit: string;
-    servingId?: string | null;
-  }): void {
-    if (!this.selectedDay || !this.mealToUpdate || !this.foodToReplace) return;
-
-    this.nutritionService
-      .replaceAssignedMealFood(
-        this.selectedDay.planId,
-        this.selectedDay.id,
-        this.mealToUpdate.id,
-        this.foodToReplace.id,
-        replacement
-      )
-      .subscribe({
-        next: (updatedPlan: any) => {
-          const updatedDay = updatedPlan?.mealDays?.find(
-            (d: any) => d.id === this.selectedDay!.id
-          );
-
-          if (updatedDay) {
-            const totals = updatedDay.dayTargets || {};
-            const mappedDay: NutritionDay = {
-              ...this.selectedDay!,
-              mealCount: this.clientVisibleMeals(updatedDay.meals || [], updatedDay.clientMealLogs || []).length,
-              totalProtein: totals.proteinG || 0,
-              totalCarbs: totals.carbsG || 0,
-              totalFat: totals.fatG || 0,
-              totalCalories: totals.calories || 0,
-              dayTargets: totals,
-              meals: this.mapMeals(updatedDay.meals || [], updatedDay.clientMealLogs || []),
-            };
-
-            this.selectedDay = mappedDay;
-            this.nutritionDays = this.nutritionDays.map((d) =>
-              d.id === mappedDay.id ? mappedDay : d
-            );
-          }
-
-          this.closeReplaceModal();
-        },
-        error: (error) => {
-          console.error('Error replacing food:', error);
-        },
-      });
-  }  onExcelSheetChange(sheetName: string): void {
-    this.selectedExcelSheetName = sheetName;
-
-    if (this.selectedExcelWorkbook) {
-      this.selectExcelSheet(sheetName);
-    }
-  }
-
-  formatFileSize(bytes?: number): string {
-    const value = Number(bytes || 0);
-
-    if (!value || Number.isNaN(value)) {
-      return '';
-    }
-
-    if (value < 1024) {
-      return `${value} B`;
-    }
-
-    if (value < 1024 * 1024) {
-      return `${Math.round(value / 1024)} KB`;
-    }
-
-    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-
-  getExcelColumnLabel(index: number): string {
-    let label = '';
-    let current = index + 1;
-
-    while (current > 0) {
-      const remainder = (current - 1) % 26;
-      label = String.fromCharCode(65 + remainder) + label;
-      current = Math.floor((current - 1) / 26);
-    }
-
-    return label;
-  }
-
-
+  trackByDay = (_: number, item: DayItem) => `${item.plan?.id}-${item.day?.id}-${dateKey(item.date)}`;
+  trackByMeal = (index: number, meal: any) => meal?.id || index;
 }
+
+const PDF_PRINT_STYLES = `
+  @page{size:A4;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{margin:0;color:#0f1b2d;font-family:Arial,Helvetica,sans-serif}
+  .cn-pdf-brand{color:#1e9e63;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase}
+  h1{margin:20px 0 8px;font-size:26px}p{color:#546175;line-height:1.5}
+  .cn-pdf-day{margin-top:14px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;break-inside:avoid}
+  .cn-pdf-day h2{margin:0;padding:9px 12px;background:#1e9e63;color:#fff;font-size:12px}
+  .cn-pdf-totals{padding:8px 12px;font-size:11px;color:#546175;border-bottom:1px solid #eef1f4}
+  .cn-pdf-meal{padding:8px 12px 2px;font-size:12px;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 12px;border-top:1px solid #eef1f4;text-align:left}th{color:#7d889b;font-size:9px;text-transform:uppercase}
+`;

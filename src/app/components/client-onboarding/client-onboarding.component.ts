@@ -8,6 +8,10 @@ import { ClientOnboardingState, ClientOnboardingStep } from '../../models/client
 import { QuestionBE } from '../forms/services/forms-api.service';
 import { ClientOnboardingService } from '../../service/client-onboarding.service';
 import { LanguageService } from '../../service/language.service';
+import { APP_STORE_URL, PLAY_STORE_URL, mobilePlatform } from '../../config/app-store-links';
+
+/** Remembered for the tab: the client chose to go on with the onboarding on the web. */
+const CONTINUE_ON_WEB_KEY = 'clientOnboardingOnWeb';
 
 @Component({ selector: 'app-client-onboarding', standalone: true, imports: [CommonModule, ReactiveFormsModule, TranslateModule], templateUrl: './client-onboarding.component.html', styleUrl: './client-onboarding.component.scss' })
 export class ClientOnboardingComponent implements OnInit {
@@ -18,6 +22,14 @@ export class ClientOnboardingComponent implements OnInit {
   readonly goalsForm: FormGroup;
   readonly unitsForm: FormGroup;
   formAnswers: Record<string, any> = {};
+  /**
+   * The app is offered first: before the first step ('start'), and again once the web onboarding is done ('done').
+   * The onboarding resumes at the same step in the app, signed in with the same account.
+   */
+  appOffer: 'start' | 'done' | null = null;
+  readonly appStoreUrl = APP_STORE_URL;
+  readonly playStoreUrl = PLAY_STORE_URL;
+  readonly platform = mobilePlatform();
 
   constructor(private fb: FormBuilder, private onboarding: ClientOnboardingService, private languages: LanguageService, private router: Router) {
     this.languageForm = fb.group({ language: [languages.languageCodeToName(languages.getCurrentLanguage()), Validators.required] });
@@ -53,11 +65,16 @@ export class ClientOnboardingComponent implements OnInit {
     this.saving = true;
     this.onboarding.saveStep(savingStep, payload).pipe(finalize(() => this.saving = false)).subscribe({ next: state => {
       if (savingStep === 'language') this.languages.setLanguage(this.languages.languageNameToCode(payload.language));
-      if (state.completed) { this.router.navigate(['/client-dashboard']); return; }
+      if (state.completed) { this.appOffer = 'done'; window.scrollTo({top: 0, behavior: 'smooth'}); return; }
       this.apply(state); window.scrollTo({top: 0, behavior: 'smooth'});
     }, error: error => this.submitError = String(error?.error?.error || error?.error?.message || 'Unable to save this step. Please try again.') });
   }
   back(): void { if (this.index > 0 && !this.saving) this.step = this.steps[this.index - 1]; }
+  continueOnWeb(): void {
+    try { sessionStorage.setItem(CONTINUE_ON_WEB_KEY, '1'); } catch {}
+    this.appOffer = null;
+  }
+  goToDashboard(): void { this.router.navigate(['/client-dashboard']); }
   private toAnswer(q: QuestionBE, value: any): any {
     const answer: any = { questionId: q.id, type: q.type };
     if (q.type === 'MULTIPLE_CHOICE') answer.selectedOptionId = value;
@@ -70,6 +87,9 @@ export class ClientOnboardingComponent implements OnInit {
   private apply(state: ClientOnboardingState): void {
     if (state.completed) { this.router.navigate(['/client-dashboard']); return; }
     this.state = state; this.step = state.currentStep;
+    let onWeb = false;
+    try { onWeb = sessionStorage.getItem(CONTINUE_ON_WEB_KEY) === '1'; } catch {}
+    if (!state.completedSteps?.length && !onWeb) this.appOffer = 'start';
     this.languageForm.patchValue({language: state.language || 'English'});
     this.goalsForm.patchValue({currentWeight: state.currentWeight, goalWeight: state.goalWeight, mainObjective: state.mainObjective || ''});
     if (state.completedSteps?.includes('units')) {

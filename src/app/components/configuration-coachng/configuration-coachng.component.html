@@ -1,4 +1,5 @@
-<div class="coach-settings">
+<div class="coach-settings" [class.coach-settings--client]="isClient">
+  <ng-container *ngIf="!isClient">
   <div class="settings-page-header page-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
     <div class="header-content">
@@ -15,7 +16,38 @@
     <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">{{ 'NOTIFICATIONS' | translate }}</button>
     <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">{{ 'PREFERENCES' | translate }}</button>
   </nav>
+  </ng-container>
 
+  <!-- Client: the mobile settings hub, then one section at a time. -->
+  <div *ngIf="isClient" class="client-settings">
+    <ng-container *ngIf="clientHub; else clientSectionHeader">
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="ct('Back', 'Retour')" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">{{ ct('Settings', 'Paramètres') }}</h1>
+          <p class="yc-page-header__subtitle">{{ ct('Account, password and preferences', 'Compte, mot de passe et préférences') }}</p>
+        </div>
+      </header>
+      <section class="yc-card yc-card--flush client-rows">
+        <ng-container *ngFor="let row of clientRows; let i = index">
+          <hr *ngIf="i > 0" class="yc-divider client-rows__divider" />
+          <button type="button" class="client-row" (click)="openClientSection(row.tab)">
+            <span class="yc-icon-tile" style="--tile-size: 36px"><i-feather [name]="row.icon"></i-feather></span>
+            <span class="client-row__copy"><strong>{{ row.title }}</strong><span>{{ row.subtitle }}</span></span>
+            <i-feather class="client-row__chevron" name="chevron-right"></i-feather>
+          </button>
+        </ng-container>
+      </section>
+    </ng-container>
+    <ng-template #clientSectionHeader>
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="ct('Back', 'Retour')" (click)="backToClientHub()"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy"><h1 class="yc-page-header__title">{{ clientSectionTitle }}</h1></div>
+      </header>
+    </ng-template>
+  </div>
+
+  <ng-container *ngIf="!isClient || !clientHub">
   <section class="settings-tab-panel" *ngIf="activeTab === 'account'">
     <div class="tab-heading">
       <h2>{{ 'ACCOUNT' | translate }}</h2>
@@ -807,6 +839,7 @@
       </div>
     </div>
   </section>
+</ng-container>
 </div>
 
 <div class="delete-account-modal-backdrop" *ngIf="showRemovePhotoModal" (click)="closeRemovePhotoModal()">

@@ -250,12 +250,21 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.checkMobile();
+    if (this.clientLayout) {
+      const tree = this.router.parseUrl(this.router.url);
+      this.clientWantsCoach = !!tree.queryParams['coach'];
+      if (this.clientWantsCoach) {
+        delete tree.queryParams['coach'];
+        void this.router.navigateByUrl(tree, { replaceUrl: true });
+      }
+    }
     // The list shows as soon as the conversations and the contacts are here (names and avatars from the contacts);
     // only the missing people and the coaches' public photos are completed afterwards, in the background.
     // Back on the chat in this session: the last list is shown and the conversation opened at once, then refreshed.
     const known = this.embeddedMode ? undefined : CHAT_LIST_SNAPSHOT.get(this.currentUserId);
     if (known) {
       this.conversations = known.conversations;
+      this.conversationsLoaded = true;
       this.filteredConversationsCache = known.conversations;
       this.allClients = known.contacts;
       this.subscribeToAllConversations(known.conversations);
@@ -406,12 +415,14 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         });
         this.conversations = uniqueConvs;
         this.filteredConversationsCache = uniqueConvs;
+        this.conversationsLoaded = true;
         this.subscribeToAllConversations(uniqueConvs);
       }),
       catchError((err) => {
         console.error('Error loading conversations:', err);
         this.conversations = [];
         this.filteredConversationsCache = [];
+        this.conversationsLoaded = true;
         return of(null);
       })
     );
@@ -620,6 +631,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     const conversationId = tree.queryParams['conversationId'];
     const clientId = tree.queryParams['clientId'];
     if (!conversationId && !clientId) return false;
+    if (this.isClientUser) this.clientOpenedDirectly = true;
 
     const target = conversationId
       ? this.conversations.find((conv) => conv.id === conversationId)
@@ -655,6 +667,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   // ── Conversations ─────────────────────────────────────────────────────────
   private openDefaultClientConversation(): void {
     if (this.embeddedMode || !this.isClientUser || this.selectedConv) return;
+    // Like the mobile app: Messages shows the list; only Home's "Message" (?coach=1) opens the coach conversation.
+    if (!this.clientWantsCoach) return;
+    this.clientWantsCoach = false;
+    this.clientOpenedDirectly = true;
 
     const coachConversation = this.conversations.find((conv) =>
       !conv.isGroup &&
@@ -1246,6 +1262,122 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       console.error('Microphone permission denied or unavailable:', err);
       this.cleanupRecording();
     }
+  }
+
+  // ── Client layout: same as the mobile ConversationListScreen / ConversationMessagesScreen ──────────────
+  clientFilter: 'ALL' | 'UNREAD' | 'GROUPS' = 'ALL';
+  /** False until the first list answer: the client list shows a spinner instead of "No conversations". */
+  conversationsLoaded = false;
+  /** Opened on a conversation (Home "Message", a notification link): going back leaves the page. */
+  private clientOpenedDirectly = false;
+  clientWantsCoach = false;
+
+  get clientLayout(): boolean { return this.isClientUser && !this.embeddedMode; }
+  private get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
+  ct(en: string, fr: string): string { return this.fr ? fr : en; }
+
+  clientUnreadCount(conv: Conversation): number {
+    return Math.max(this.unreadCounts.get(conv.id) || 0, conv.unreadCount || 0);
+  }
+
+  get clientUnreadConversations(): number {
+    return this.conversations.filter(conv => this.clientUnreadCount(conv) > 0).length;
+  }
+
+  get clientSubtitle(): string {
+    const n = this.clientUnreadConversations;
+    if (n > 0) return this.fr ? `${n} conversation${n === 1 ? '' : 's'} non lue${n === 1 ? '' : 's'}` : `${n} unread conversation${n === 1 ? '' : 's'}`;
+    return this.ct('Your coach and your groups', 'Votre coach et vos groupes');
+  }
+
+  get clientConversations(): Conversation[] {
+    return this.filteredConversations().filter(conv =>
+      this.clientFilter === 'UNREAD' ? this.clientUnreadCount(conv) > 0 : this.clientFilter === 'GROUPS' ? conv.isGroup : true);
+  }
+
+  clientName(conv: Conversation | null): string {
+    const name = (conv?.name || '').trim();
+    if (!name) return this.ct('Unknown', 'Inconnu');
+    return name.split(' ').map(word => word.split('-').map(part => part ? part[0].toUpperCase() + part.slice(1) : part).join('-')).join(' ');
+  }
+
+  clientInitials(name: string | undefined | null): string {
+    const words = (name || '').trim().split(/\s+/).filter(Boolean);
+    return words.length ? words.slice(0, 2).map(word => word[0].toUpperCase()).join('') : '?';
+  }
+
+  /** "14:05", "Yesterday", "Oct 3" or "Oct 3 2025" (mobile _buildMetaLine). */
+  clientTimeLabel(conv: Conversation): string {
+    const msgs = conv.messages || [];
+    const raw = msgs.length ? msgs[msgs.length - 1].createdAt : conv.lastMessageAt;
+    const date = raw ? new Date(raw) : null;
+    if (!date || Number.isNaN(date.getTime())) return '';
+    const days = this.daysAgo(date);
+    if (days === 0) return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    if (days === 1) return this.ct('Yesterday', 'Hier');
+    const label = `${new Intl.DateTimeFormat(this.fr ? 'fr-FR' : 'en-US', { month: 'short' }).format(date).replace('.', '')} ${date.getDate()}`;
+    return date.getFullYear() === new Date().getFullYear() ? label : `${label} ${date.getFullYear()}`;
+  }
+
+  clientMembersLabel(conv: Conversation): string {
+    const n = conv.memberIds?.length || 0;
+    return n > 0 ? `${n} ${this.ct(n === 1 ? 'member' : 'members', n === 1 ? 'membre' : 'membres')}` : '';
+  }
+
+  private daysAgo(date: Date): number {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    return Math.round((today - day) / 86_400_000);
+  }
+
+  clientOpen(conv: Conversation): void {
+    conv.unreadCount = 0;
+    this.clientOpenedDirectly = false;
+    this.selectConversation(conv);
+  }
+
+  clientBack(): void {
+    if (this.clientOpenedDirectly) { window.history.back(); return; }
+    this.selectedConv = null;
+    this.displayMessages = [];
+    this.chatService.notifyConversationOpened(null);
+  }
+
+  /** Date label shown above the first message of each day (mobile _buildDateSeparator). */
+  clientDaySeparator(index: number): string {
+    const entries = this.conversationTimeline;
+    const current = entries[index];
+    if (!current || current.kind !== 'message') return '';
+    const at = new Date(current.at || current.message.createdAtRaw);
+    if (Number.isNaN(at.getTime())) return '';
+    const previous = index > 0 ? entries[index - 1] : null;
+    if (previous) {
+      const before = new Date(previous.at);
+      if (before.getFullYear() === at.getFullYear() && before.getMonth() === at.getMonth() && before.getDate() === at.getDate()) return '';
+    }
+    const days = this.daysAgo(at);
+    if (days === 0) return this.ct('Today', "Aujourd'hui");
+    if (days === 1) return this.ct('Yesterday', 'Hier');
+    return new Intl.DateTimeFormat(this.fr ? 'fr-FR' : 'en-US', at.getFullYear() === new Date().getFullYear()
+      ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' }).format(at);
+  }
+
+  /** Enter sends, Shift+Enter adds a line. */
+  clientEnter(event: KeyboardEvent): void {
+    if (event.shiftKey) return;
+    event.preventDefault();
+    this.sendMessage();
+  }
+
+  clientMessageTime(message: any): string {
+    const date = message?.createdAtRaw ? new Date(message.createdAtRaw) : null;
+    return date && !Number.isNaN(date.getTime()) ? `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '';
+  }
+
+  clientDelivery(message: any): string {
+    return message?.deliveryStatus === 'sending' ? this.ct('Sending', 'Envoi…')
+      : message?.deliveryStatus === 'failed' ? this.ct('Failed', 'Échec') : this.ct('Sent', 'Envoyé');
   }
 
   // --- Helpers for conversation preview / unread state used by sidebar template ---

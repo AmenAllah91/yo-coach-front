@@ -1,509 +1,198 @@
-<div class="page">
-  <div class="wrap">
+<div class="yc-page checkins">
+  <div class="yc-container">
 
-    <div class="header">
-      <button *ngIf="!previewMode" class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
-      <div class="header-copy">
-        <h1 class="h1">{{ 'MY_CHECK_INS' | translate }}</h1>
-        <p class="sub">{{ 'ASSIGNED_FORMS_SUBTITLE' | translate }}</p>
-      </div>
-    </div>
+    <!-- ===================== LIST (mobile CheckInScreen) ===================== -->
+    <ng-container *ngIf="view === 'list'">
+      <header class="yc-page-header">
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">Check-ins</h1>
+          <p class="yc-page-header__subtitle">{{ t('Forms from your coach', 'Formulaires de votre coach') }}</p>
+        </div>
+      </header>
 
-    <div class="panel">
-      <!-- Tabs -->
-      <div class="tabs">
-        <button
-          type="button"
-          class="tab"
-          [class.is-active]="activeTab === 'pending'"
-          (click)="setTab('pending')"
-        >
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="10" stroke-width="2"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
-          </svg>
-          <span class="tab-label">{{ 'TO_COMPLETE' | translate }}</span>
-          <span class="tab-pill" *ngIf="pendingCount() > 0">{{ pendingCount() }}</span>
-          <span class="tab-underline" *ngIf="activeTab === 'pending'"></span>
+      <div class="yc-segmented tabs" role="tablist">
+        <button type="button" role="tab" [class.active]="tab === 0" [attr.aria-selected]="tab === 0" (click)="setTab(0)">
+          {{ t('To complete', 'À compléter') }}
+          <span *ngIf="tab === 0 && pending.length" class="yc-count">{{ pending.length }}</span>
         </button>
-
-        <button
-          type="button"
-          class="tab"
-          [class.is-active]="activeTab === 'submitted'"
-          (click)="setTab('submitted')"
-        >
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="10" stroke-width="2"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
-          </svg>
-          <span class="tab-label">{{ 'SUBMITTED_STATUS' | translate }}</span>
-          <span class="tab-underline" *ngIf="activeTab === 'submitted'"></span>
-        </button>
+        <button type="button" role="tab" [class.active]="tab === 1" [attr.aria-selected]="tab === 1" (click)="setTab(1)">{{ t('Submitted', 'Soumis') }}</button>
       </div>
 
-      <!-- Filters bar -->
-      <div class="filters-bar">
-        <div class="filters-left">
-          <span class="total-label">
-            {{ 'TOTAL' | translate }} : <strong>{{ totalElements() }}</strong>
-          </span>
-        </div>
+      <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
+      <p *ngIf="!loading && error && !assignments.length" class="yc-subtitle center-text">{{ error }}</p>
 
-        <div class="filters-right">
-          <div class="filter-group">
-            <label class="filter-label">{{ 'PAGE_SIZE' | translate }} :</label>
-            <select
-              class="select"
-              [value]="pageSize()"
-              (change)="changePageSize(+($any($event.target).value))"
-            >
-              <option [value]="5">5</option>
-              <option [value]="10">10</option>
-              <option [value]="20">20</option>
-              <option [value]="50">50</option>
-            </select>
+      <ng-container *ngIf="!loading && !(error && !assignments.length)">
+        <!-- To complete -->
+        <ng-container *ngIf="tab === 0">
+          <div *ngIf="!pending.length" class="empty">
+            <span class="yc-icon-tile" style="--tile-color: var(--yc-success); --tile-size: 64px"><i-feather name="check-circle"></i-feather></span>
+            <h3>{{ t('All up to date', 'Tout est à jour') }}</h3>
+            <p class="yc-subtitle">{{ t('No pending check-ins', 'Aucun check-in en attente') }}</p>
           </div>
-        </div>
-      </div>
-
-      <!-- Page error -->
-      <div *ngIf="error()" class="alert">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="alert-icon">
-          <circle cx="12" cy="12" r="10" stroke-width="2"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/>
-        </svg>
-        {{ error() }}
-      </div>
-
-      <!-- Content -->
-      <div class="content">
-
-        <div class="loading-state" *ngIf="loading()">
-          <div class="spinner"></div>
-          <span>{{ 'LOADING' | translate }}</span>
-        </div>
-
-        <!-- Pending -->
-        <ng-container *ngIf="activeTab === 'pending' && !loading()">
-          <div class="list" *ngIf="pendingAssignments().length > 0; else emptyPending">
-            <button
-              type="button"
-              class="card"
-              *ngFor="let a of pendingAssignments(); trackBy: trackById"
-              (click)="openAssignment(a)"
-            >
-              <time class="checkin-date-tile" [attr.datetime]="a.dueDate || a.assignedAt">
-                <span>{{ formatDateTilePart(a.dueDate || a.assignedAt, 'weekday') }}</span>
-                <strong>{{ formatDateTilePart(a.dueDate || a.assignedAt, 'day') }}</strong>
-                <span>{{ formatDateTilePart(a.dueDate || a.assignedAt, 'month') }}</span>
-              </time>
-              <div class="card-body">
-                <div class="card-header-row">
-                  <div class="card-title-group">
-                    <h3 class="card-title">{{ a.formName || a.formId }}</h3>
-
-                    <span
-                      class="badge"
-                      [class.badge-overdue]="isOverdue(a.dueDate)"
-                      [class.badge-pending]="!isOverdue(a.dueDate)"
-                    >
-                      <svg
-                        class="badge-icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        *ngIf="isOverdue(a.dueDate)"
-                      >
-                        <circle cx="12" cy="12" r="10" stroke-width="2"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/>
-                      </svg>
-
-                      <svg
-                        class="badge-icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        *ngIf="!isOverdue(a.dueDate)"
-                      >
-                        <circle cx="12" cy="12" r="10" stroke-width="2"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
-                      </svg>
-
-                      {{ isOverdue(a.dueDate) ? ('OVERDUE_LABEL' | translate) : statusLabel(a.status) }}
-                    </span>
-                  </div>
-
-                  <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </div>
-
-                <div class="card-meta">
-                  <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
-                  </svg>
-
-                  <span class="meta-text">
-                    {{ 'ASSIGNED_ON' | translate }} : {{ a.assignedAt | date:'dd/MM/yyyy' }}
-                  </span>
-
-                  <span class="meta-sep" *ngIf="a.dueDate">·</span>
-
-                  <span class="meta-text meta-text--due" *ngIf="a.dueDate">
-                    {{ 'DUE_DATE' | translate }} : {{ a.dueDate | date:'dd/MM/yyyy' }}
-                  </span>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <ng-template #emptyPending>
-            <div class="empty">
-              <div class="empty-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="12" cy="12" r="10" stroke-width="2"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
-                </svg>
-              </div>
-              <div class="empty-title">{{ 'ALL_UP_TO_DATE' | translate }}</div>
-              <div class="empty-sub">{{ 'NO_PENDING_ASSIGNMENTS' | translate }}</div>
+          <ng-container *ngIf="dueSoon.length">
+            <div class="section-head"><h2>{{ t('Due soon', 'Bientôt dus') }}</h2></div>
+            <ng-container *ngFor="let item of dueSoon; trackBy: trackById">
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: false }"></ng-container>
+            </ng-container>
+          </ng-container>
+          <ng-container *ngIf="overdue.length">
+            <div class="section-head section-head--overdue">
+              <h2>{{ t('Overdue', 'En retard') }} <span class="badge">{{ overdue.length }}</span></h2>
+              <p>{{ t('You can still submit these — late answers help your coach too.', 'Vous pouvez toujours les soumettre — des réponses tardives aident aussi votre coach.') }}</p>
             </div>
-          </ng-template>
+            <ng-container *ngFor="let item of overdue; trackBy: trackById">
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: false }"></ng-container>
+            </ng-container>
+          </ng-container>
         </ng-container>
 
         <!-- Submitted -->
-        <ng-container *ngIf="activeTab === 'submitted' && !loading()">
-          <div class="list" *ngIf="submittedAssignments().length > 0; else emptySubmitted">
-            <button
-              type="button"
-              class="card card--completed"
-              *ngFor="let a of submittedAssignments(); trackBy: trackById"
-              (click)="openAssignment(a)"
-            >
-              <time class="checkin-date-tile" [attr.datetime]="a.submittedAt || a.dueDate || a.assignedAt">
-                <span>{{ formatDateTilePart(a.submittedAt || a.dueDate || a.assignedAt, 'weekday') }}</span>
-                <strong>{{ formatDateTilePart(a.submittedAt || a.dueDate || a.assignedAt, 'day') }}</strong>
-                <span>{{ formatDateTilePart(a.submittedAt || a.dueDate || a.assignedAt, 'month') }}</span>
-              </time>
-              <div class="card-body">
-                <div class="card-header-row">
-                  <div class="card-title-group">
-                    <h3 class="card-title">{{ a.formName || a.formId }}</h3>
-
-                    <span class="badge badge-completed">
-                      <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <circle cx="12" cy="12" r="10" stroke-width="2"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
-                      </svg>
-                      {{ 'SUBMITTED_STATUS' | translate }}
-                    </span>
-                  </div>
-
-                  <svg class="chevron chevron--gray" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </div>
-
-                <div class="card-meta">
-                  <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
-                  </svg>
-
-                  <span class="meta-text">
-                    {{ 'SUBMITTED_ON' | translate }} : {{ a.submittedAt ? (a.submittedAt | date:'dd/MM/yyyy') : '-' }}
-                  </span>
-                </div>
-              </div>
-            </button>
+        <ng-container *ngIf="tab === 1">
+          <div *ngIf="!submitted.length" class="empty">
+            <span class="yc-icon-tile" style="--tile-color: var(--yc-text-hint); --tile-size: 64px"><i-feather name="clipboard-list"></i-feather></span>
+            <h3>{{ t('No submitted check-ins', 'Aucun check-in soumis') }}</h3>
+            <p class="yc-subtitle">{{ t('No completed check-ins', 'Aucun check-in terminé') }}</p>
           </div>
-
-          <ng-template #emptySubmitted>
-            <div class="empty">
-              <div class="empty-icon empty-icon--gray">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="12" cy="12" r="10" stroke-width="2"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
-                </svg>
-              </div>
-              <div class="empty-title">{{ 'NO_SUBMITTED_FORMS' | translate }}</div>
-              <div class="empty-sub">{{ 'SUBMITTED_FORMS_APPEAR_HERE' | translate }}</div>
-            </div>
-          </ng-template>
+          <ng-container *ngFor="let item of submitted; trackBy: trackById">
+            <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: true }"></ng-container>
+          </ng-container>
         </ng-container>
 
-      </div>
+        <div *ngIf="loadingMore" class="more-loading"><span class="yc-spinner"></span></div>
+      </ng-container>
+      <div #sentinel class="sentinel"></div>
+    </ng-container>
 
-      <!-- Pagination -->
-      <div class="pager" *ngIf="totalPages() > 1">
-        <button
-          class="btn btn--ghost"
-          type="button"
-          (click)="goToPrev()"
-          [disabled]="pageIndex() === 0 || loading()"
-        >
-          ← {{ 'PREVIOUS' | translate }}
-        </button>
+    <ng-template #card let-item let-submitted="submitted">
+      <button type="button" class="yc-card assignment-card" [class.locked]="previewMode && !submitted" (click)="open(item)">
+        <span class="yc-icon-tile" style="--tile-color: #7455D9; --tile-size: 46px"><i-feather name="clipboard-list"></i-feather></span>
+        <span class="assignment-card__copy">
+          <strong>{{ title(item) }}</strong>
+          <span class="assignment-card__meta">
+            <span *ngIf="chip(item, submitted) as c" class="yc-chip" [style.--chip-color]="c.color">
+              <i-feather *ngIf="c.icon" [name]="c.icon"></i-feather>{{ c.label }}
+            </span>
+            <span *ngIf="meta(item, submitted)" class="yc-caption">{{ meta(item, submitted) }}</span>
+          </span>
+        </span>
+        <i-feather class="chevron" name="chevron-right"></i-feather>
+      </button>
+    </ng-template>
 
-        <div class="pager__info">
-          {{ 'PAGE' | translate }} <span class="mono">{{ pageIndex() + 1 }}</span> /
-          <span class="mono">{{ totalPages() }}</span>
+    <!-- ===================== FORM PAGE (mobile CheckInFormPage) ===================== -->
+    <ng-container *ngIf="view === 'form'">
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="closeForm()"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">{{ title(selected) || 'Check-in' }}</h1>
+          <p *ngIf="formSubtitle" class="yc-page-header__subtitle">{{ formSubtitle }}</p>
         </div>
-
-        <button
-          class="btn btn--ghost"
-          type="button"
-          (click)="goToNext()"
-          [disabled]="pageIndex() >= totalPages() - 1 || loading()"
-        >
-          {{ 'NEXT' | translate }} →
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ======== MODAL ======== -->
-<div *ngIf="isModalOpen && selectedAssignment" class="modal-backdrop" (click)="closeModal()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
-
-    <!-- Header -->
-    <div class="modal-header">
-      <div>
-        <h2 class="modal-title">
-          {{ selectedAssignment.formName || selectedAssignment.formId }}
-        </h2>
-
-        <p class="modal-subtitle">
-          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
-            <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
-            <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
-            <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
-          </svg>
-
-          <ng-container *ngIf="!isViewMode && selectedAssignment.dueDate">
-            {{ 'DUE_DATE' | translate }} : {{ selectedAssignment.dueDate | date:'dd/MM/yyyy' }}
-          </ng-container>
-
-          <ng-container *ngIf="!isViewMode && !selectedAssignment.dueDate">
-            {{ 'ASSIGNED_ON' | translate }} : {{ selectedAssignment.assignedAt | date:'dd/MM/yyyy' }}
-          </ng-container>
-
-          <ng-container *ngIf="isViewMode">
-            {{ 'SUBMITTED_ON' | translate }} : {{ selectedAssignment.submittedAt ? (selectedAssignment.submittedAt | date:'dd/MM/yyyy') : '—' }}
-          </ng-container>
+      </header>
+      <ng-container *ngTemplateOutlet="formBody"></ng-container>
+      <footer *ngIf="form && !viewMode" class="submit-bar">
+        <p *ngIf="requiredLeft > 0" class="yc-caption">
+          {{ fr ? requiredLeft + ' question' + (requiredLeft > 1 ? 's' : '') + ' obligatoire' + (requiredLeft > 1 ? 's' : '') + ' restante' + (requiredLeft > 1 ? 's' : '')
+            : requiredLeft + ' required question' + (requiredLeft > 1 ? 's' : '') + ' left' }}
         </p>
-      </div>
-
-      <button class="close-button" (click)="closeModal()" type="button">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="modal-content">
-
-      <!-- Loading -->
-      <div class="modal-loading" *ngIf="modalLoading()">
-        <div class="spinner"></div>
-        <span>{{ 'LOADING_FORM' | translate }}</span>
-      </div>
-
-      <!-- Modal level error -->
-      <div *ngIf="modalError() && !modalLoading() && !currentForm" class="alert alert--modal">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="alert-icon">
-          <circle cx="12" cy="12" r="10" stroke-width="2"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"/>
-        </svg>
-        {{ modalError() }}
-      </div>
-
-      <!-- Questions -->
-      <div class="questions-container" *ngIf="!modalLoading() && currentForm">
-        <div *ngFor="let q of currentForm.questions; let i = index" class="question-block">
-
-          <label class="question-label">
-            {{ i + 1 }}. {{ q.label }}
-            <span *ngIf="q.required && !isViewMode" class="required-mark">*</span>
-          </label>
-
-          <p *ngIf="q.helpText && !isViewMode" class="help-text">
-            {{ q.helpText }}
-          </p>
-
-          <!-- ══ VIEW MODE (SUBMITTED) ══ -->
-          <ng-container *ngIf="isViewMode">
-            <ng-container *ngIf="getSubmittedAnswer(q.id) as ans">
-
-              <!-- TEXT -->
-              <div *ngIf="q.type === 'TEXT'" class="answer-display">
-                {{ ans.text || '—' }}
-              </div>
-
-              <!-- MULTIPLE_CHOICE -->
-              <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="answer-display answer-badge">
-                {{ getOptionLabel(q, ans.selectedOptionId || '') }}
-              </div>
-
-              <!-- YES_NO -->
-              <div *ngIf="q.type === 'YES_NO'" class="answer-display">
-                <span
-                  class="yes-no-display"
-                  [class.yes]="ans.yes === true"
-                  [class.no]="ans.yes === false"
-                >
-                  {{ ans.yes === true ? ('YES' | translate) : ('NO' | translate) }}
-                </span>
-              </div>
-
-              <!-- STAR_RATING -->
-              <div *ngIf="q.type === 'STAR_RATING'" class="star-rating-display">
-                <svg
-                  *ngFor="let star of getStarsArray(q.maxStars || 5)"
-                  class="star-icon-display"
-                  [class.filled]="(ans.rating || 0) >= star"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-
-              <!-- DATE -->
-              <div *ngIf="q.type === 'DATE'" class="answer-display">
-                {{ ans.date || '—' }}
-              </div>
-
-            </ng-container>
-
-            <!-- No answer found fallback -->
-            <ng-container *ngIf="!getSubmittedAnswer(q.id)">
-              <div class="answer-display answer-empty">—</div>
-            </ng-container>
-          </ng-container>
-
-          <!-- ══ FILL MODE (PENDING / OPENED) ══ -->
-          <ng-container *ngIf="!isViewMode">
-
-            <!-- TEXT -->
-            <textarea
-              *ngIf="q.type === 'TEXT'"
-              [(ngModel)]="modalAnswers[i].text"
-              class="input-textarea"
-              rows="3"
-              [placeholder]="'YOUR_ANSWER' | translate"
-            ></textarea>
-
-            <!-- MULTIPLE_CHOICE -->
-            <div *ngIf="q.type === 'MULTIPLE_CHOICE'" class="options-container">
-              <button
-                *ngFor="let opt of (q.options || []); let optionIndex = index"
-                type="button"
-                (click)="selectOption(i, q.id, optionIndex, opt.id)"
-                [class.selected]="isOptionSelected(q.id, optionIndex)"
-                class="option-button"
-              >
-                {{ opt.label }}
-              </button>
-            </div>
-
-            <!-- YES_NO -->
-            <div *ngIf="q.type === 'YES_NO'" class="yes-no-container">
-              <button
-                type="button"
-                (click)="modalAnswers[i].yes = true"
-                [class.selected]="modalAnswers[i].yes === true"
-                class="yes-no-button"
-              >
-                {{ 'YES' | translate }}
-              </button>
-
-              <button
-                type="button"
-                (click)="modalAnswers[i].yes = false"
-                [class.selected]="modalAnswers[i].yes === false"
-                class="yes-no-button"
-              >
-                {{ 'NO' | translate }}
-              </button>
-            </div>
-
-            <!-- STAR_RATING -->
-            <div *ngIf="q.type === 'STAR_RATING'" class="star-rating-container">
-              <button
-                *ngFor="let star of getStarsArray(q.maxStars || 5)"
-                type="button"
-                (click)="modalAnswers[i].rating = star"
-                class="star-button"
-              >
-                <svg
-                  class="star-icon"
-                  [class.filled]="(modalAnswers[i].rating || 0) >= star"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- DATE -->
-            <input
-              *ngIf="q.type === 'DATE'"
-              type="date"
-              [(ngModel)]="modalAnswers[i].date"
-              class="input-date"
-            >
-
-          </ng-container>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer: fill mode -->
-    <div class="modal-footer" *ngIf="!modalLoading() && currentForm && !isViewMode">
-      <div *ngIf="modalError()" class="submit-error">
-        {{ modalError() }}
-      </div>
-
-      <button
-        type="button"
-        (click)="submitModal()"
-        class="submit-button"
-        [disabled]="submitting()"
-      >
-        <div class="spinner spinner--sm" *ngIf="submitting()"></div>
-
-        <svg
-          *ngIf="!submitting()"
-          class="icon-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        </svg>
-
-        {{ submitting() ? ('SUBMITTING' | translate) : ('SUBMIT' | translate) }}
-      </button>
-    </div>
-
-    <!-- Footer: view mode -->
-    <div class="modal-footer modal-footer--view" *ngIf="!modalLoading() && currentForm && isViewMode">
-      <button type="button" (click)="closeModal()" class="close-view-button">
-        {{ 'CLOSE' | translate }}
-      </button>
-    </div>
-
+        <button type="button" class="yc-btn yc-btn--brand" [disabled]="requiredLeft > 0 || submitting" (click)="submit()">
+          <span *ngIf="submitting" class="yc-spinner"></span>
+          <ng-container *ngIf="!submitting">{{ t('Submit check-in', 'Envoyer le check-in') }}</ng-container>
+        </button>
+      </footer>
+    </ng-container>
   </div>
+
+  <!-- Answers already sent: read only in a sheet -->
+  <div *ngIf="sheetOpen" class="yc-sheet-backdrop" (click)="closeSheet()">
+    <section class="yc-sheet answers-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy">
+          <h2 class="yc-sheet-header__title">{{ title(selected) || 'Check-in' }}</h2>
+          <p *ngIf="formSubtitle" class="yc-sheet-header__subtitle">{{ formSubtitle }}</p>
+        </div>
+        <button type="button" class="yc-sheet-header__close" (click)="closeSheet()"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body"><ng-container *ngTemplateOutlet="formBody"></ng-container></div>
+    </section>
+  </div>
+
+  <ng-template #formBody>
+    <div *ngIf="opening" class="yc-loading"><span class="yc-spinner"></span></div>
+    <div *ngIf="!opening && !form" class="form-error">
+      <span class="yc-icon-tile" style="--tile-color: var(--yc-error); --tile-size: 60px"><i-feather name="alert-circle"></i-feather></span>
+      <h3 class="yc-card-title">{{ t('Unable to load form', 'Impossible de charger le formulaire') }}</h3>
+      <p *ngIf="formError" class="yc-caption">{{ formError }}</p>
+      <button type="button" class="yc-link" (click)="retryOpen()"><i-feather name="refresh-cw"></i-feather>{{ t('Retry', 'Réessayer') }}</button>
+    </div>
+
+    <ng-container *ngIf="!opening && form">
+      <section *ngIf="description || (!viewMode && dueChip(selected))" class="yc-card intro">
+        <span class="yc-avatar" style="--avatar-size: 40px">{{ ownerInitials }}</span>
+        <div>
+          <p *ngIf="description" class="intro__text">{{ description }}</p>
+          <div *ngIf="!viewMode && dueChip(selected) as due" class="intro__due">
+            <span class="yc-chip" [style.--chip-color]="due.color">{{ due.label }}</span>
+            <span class="yc-caption">~{{ minutes }} min</span>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="!previewMode && viewMode && coachFeedback" class="review">
+        <i-feather name="check-circle"></i-feather>
+        <div><strong>{{ t('Reviewed by coach', 'Revu par le coach') }}</strong><p>{{ coachFeedback }}</p></div>
+      </section>
+
+      <section class="yc-card yc-card--flush questions">
+        <ng-container *ngFor="let question of questions; let i = index">
+          <hr *ngIf="i > 0" class="yc-divider" />
+          <div class="question">
+            <p class="question__label"><span>{{ i + 1 }}. </span>{{ label(question) }}<b *ngIf="isRequired(question)"> *</b></p>
+            <p *ngIf="!viewMode && helpText(question)" class="question__help">{{ helpText(question) }}</p>
+
+            <ng-container [ngSwitch]="question.type">
+              <div *ngSwitchCase="'MULTIPLE_CHOICE'" class="choices">
+                <button *ngFor="let option of question.options || []" type="button" class="choice"
+                        [class.selected]="value(question, i)?.selectedOptionId === option.id" [disabled]="viewMode" (click)="setOption(i, option.id)">
+                  {{ optionLabel(option) }}
+                </button>
+              </div>
+
+              <div *ngSwitchCase="'YES_NO'" class="choices choices--split">
+                <button type="button" class="choice" [class.selected]="value(question, i)?.yes === true" [disabled]="viewMode" (click)="setYesNo(i, true)">{{ t('Yes', 'Oui') }}</button>
+                <button type="button" class="choice" [class.selected]="value(question, i)?.yes === false" [disabled]="viewMode" (click)="setYesNo(i, false)">{{ t('No', 'Non') }}</button>
+              </div>
+
+              <div *ngSwitchCase="'STAR_RATING'" class="stars">
+                <button *ngFor="let n of range(maxStars(question))" type="button" [class.on]="(value(question, i)?.rating || 0) >= n"
+                        [disabled]="viewMode" [attr.aria-label]="n" (click)="setRating(i, n)">
+                  <svg viewBox="0 0 24 24"><path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.53L12 17.5l-5.87 3.07 1.12-6.53L2.5 9.41l6.56-.95L12 2.5z"/></svg>
+                </button>
+              </div>
+
+              <div *ngSwitchCase="'SCALE'" class="scale" [class.scale--wrap]="maxStars(question) > 10">
+                <button *ngFor="let n of range(maxStars(question))" type="button" [class.selected]="value(question, i)?.rating === n" [disabled]="viewMode" (click)="setRating(i, n)">{{ n }}</button>
+              </div>
+              <div *ngSwitchCase="'OPINION_RATING'" class="scale" [class.scale--wrap]="maxStars(question) > 10">
+                <button *ngFor="let n of range(maxStars(question))" type="button" [class.selected]="value(question, i)?.rating === n" [disabled]="viewMode" (click)="setRating(i, n)">{{ n }}</button>
+              </div>
+
+              <ng-container *ngSwitchCase="'DATE'">
+                <input *ngIf="!viewMode; else dateView" type="date" class="yc-input date-input" [value]="value(question, i)?.date || ''"
+                       [min]="question.minDate || null" [max]="question.maxDate || null" (change)="setDate(i, $any($event.target).value)" />
+                <ng-template #dateView><div class="answer-view" [class.empty]="!value(question, i)?.date">{{ value(question, i)?.date || '-' }}</div></ng-template>
+              </ng-container>
+
+              <ng-container *ngSwitchDefault>
+                <textarea *ngIf="!viewMode; else textView" class="yc-input text-answer" rows="2" [value]="value(question, i)?.text || ''"
+                          [placeholder]="t('Your answer...', 'Votre réponse...')" (input)="setText(i, $any($event.target).value)"></textarea>
+                <ng-template #textView><div class="answer-view" [class.empty]="!(value(question, i)?.text || '').trim()">{{ (value(question, i)?.text || '').trim() || '-' }}</div></ng-template>
+              </ng-container>
+            </ng-container>
+          </div>
+        </ng-container>
+      </section>
+
+      <p *ngIf="!viewMode && submitError" class="submit-error">{{ submitError }}</p>
+    </ng-container>
+  </ng-template>
 </div>

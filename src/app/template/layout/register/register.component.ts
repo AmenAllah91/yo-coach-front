@@ -56,15 +56,16 @@ export class RegisterComponent implements OnInit {
       lastName: ['', [this.trimmedRequired, this.trimmedMaxLength(100)]],
       email: ['', [this.trimmedRequired, this.trimmedMaxLength(254), Validators.email]],
       password: ['', [Validators.required, Validators.minLength(12), Validators.maxLength(128)]],
-      confirmPassword: ['', [Validators.required]],
-      isCoach: [false]
+      confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
     this.invitationToken = this.route.snapshot.queryParamMap.get('invitationToken');
     const planId = Number(this.route.snapshot.queryParamMap.get('planId'));
     if (!this.invitationToken && Number.isInteger(planId) && planId > 0) {
       this.planId = planId;
-      this.signupForm.patchValue({ isCoach: true });
       this.loadSelectedPlan(planId);
+    } else if (!this.invitationToken) {
+      // Clients sign up from their coach's invitation; anyone else is a coach and starts from a plan (trial included).
+      void this.router.navigate(['/plans-landing'], { replaceUrl: true });
     }
   }
 
@@ -108,9 +109,11 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    const isCoachRegistration = this.invitationToken
-      ? false
-      : Boolean(this.planId || formValues.isCoach);
+    const isCoachRegistration = !this.invitationToken;
+    if (isCoachRegistration && !this.planId) {
+      void this.router.navigate(['/plans-landing']);
+      return;
+    }
 
     const user: RegistrationUser = {
       login: formValues.username,
@@ -123,8 +126,8 @@ export class RegisterComponent implements OnInit {
 
     this.isSubmitting = true;
     this.accountExists = false;
-    const registration$: Observable<void | OnboardingResponse> = this.planId
-      ? this.onboardingService.onboard({ user, planId: this.planId, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+    const registration$: Observable<void | OnboardingResponse> = isCoachRegistration
+      ? this.onboardingService.onboard({ user, planId: this.planId!, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
       : this.registerService.registerUser(user);
 
     registration$.pipe(

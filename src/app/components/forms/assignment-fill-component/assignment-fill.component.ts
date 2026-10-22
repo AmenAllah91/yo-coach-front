@@ -46,7 +46,8 @@ export class AssignmentFillComponent implements OnInit {
 
   ngOnInit(): void {
     this.assignmentId = this.route.snapshot.paramMap.get('id')!;
-    this.load();
+    // A check-in is filled on the Check-ins page, like on mobile: old links open it there.
+    void this.router.navigate(['/assignments/me'], { queryParams: { assignmentId: this.assignmentId }, replaceUrl: true });
   }
 
   load(): void {

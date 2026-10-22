@@ -456,10 +456,10 @@ export class NutritionService {
   /** Last plans of each client (client app): a revisit shows them at once, the fresh answer follows. */
   private readonly clientPlans = new Map<string, any>();
 
-  getNutritionPlanByClientId(clientId: string): Observable<any> {
+  getNutritionPlanByClientId(clientId: string, skipLoader = false): Observable<any> {
     const known = this.clientPlans.get(clientId);
     const request$ = this.http
-      .get<any>(`${this.mealPlanUrl}client/${clientId}`, known ? { headers: { 'X-Skip-Loader': 'true' } } : {})
+      .get<any>(`${this.mealPlanUrl}client/${clientId}`, known || skipLoader ? { headers: { 'X-Skip-Loader': 'true' } } : {})
       .pipe(tap((response) => this.clientPlans.set(clientId, response)));
     return known ? concat(of(known), request$) : request$;
   }

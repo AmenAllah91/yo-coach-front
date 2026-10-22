@@ -4,7 +4,28 @@
   <section *ngIf="loading" class="state-panel"><div class="spinner"></div><p>{{ 'CLIENT_ONBOARDING.LOADING' | translate }}</p></section>
   <section *ngIf="!loading && loadError" class="state-panel"><h2>{{ 'CLIENT_ONBOARDING.LOAD_ERROR' | translate }}</h2><button class="primary-btn compact" (click)="load(true)">{{ 'CLIENT_ONBOARDING.RETRY' | translate }}</button></section>
 
-  <article *ngIf="!loading && !loadError" class="onboarding-card" [class.wide-card]="step === 'form'">
+  <!-- The mobile app is offered first; the onboarding resumes at the same step there -->
+  <article *ngIf="!loading && !loadError && appOffer" class="onboarding-card app-offer">
+    <main class="step-content">
+      <div class="title-block centered">
+        <h1>{{ (appOffer === 'done' ? 'CLIENT_ONBOARDING.APP_DONE_TITLE' : 'CLIENT_ONBOARDING.APP_TITLE') | translate }}</h1>
+        <p>{{ (appOffer === 'done' ? 'CLIENT_ONBOARDING.APP_DONE_SUBTITLE' : 'CLIENT_ONBOARDING.APP_SUBTITLE') | translate }}</p>
+      </div>
+      <div class="store-buttons" *ngIf="appStoreUrl || playStoreUrl; else searchStore">
+        <a *ngIf="appStoreUrl && platform !== 'android'" class="primary-btn" [href]="appStoreUrl" target="_blank" rel="noopener">App Store</a>
+        <a *ngIf="playStoreUrl && platform !== 'ios'" class="primary-btn" [href]="playStoreUrl" target="_blank" rel="noopener">Google Play</a>
+      </div>
+      <ng-template #searchStore><p class="units-note">ⓘ {{ 'CLIENT_ONBOARDING.APP_SEARCH_STORE' | translate }}</p></ng-template>
+      <p class="units-note">{{ 'CLIENT_ONBOARDING.APP_SAME_ACCOUNT' | translate }}</p>
+    </main>
+    <footer class="onboarding-footer">
+      <span></span>
+      <button *ngIf="appOffer === 'start'" type="button" class="secondary-btn" (click)="continueOnWeb()">{{ 'CLIENT_ONBOARDING.CONTINUE_ON_WEB' | translate }} →</button>
+      <button *ngIf="appOffer === 'done'" type="button" class="secondary-btn" (click)="goToDashboard()">{{ 'CLIENT_ONBOARDING.GO_TO_DASHBOARD' | translate }} →</button>
+    </footer>
+  </article>
+
+  <article *ngIf="!loading && !loadError && !appOffer" class="onboarding-card" [class.wide-card]="step === 'form'">
     <main class="step-content">
       <form *ngIf="step === 'language'" [formGroup]="languageForm">
         <div class="title-block centered"><h1>{{ 'CLIENT_ONBOARDING.LANGUAGE_TITLE' | translate }}</h1><p>{{ 'CLIENT_ONBOARDING.LANGUAGE_SUBTITLE' | translate }}</p></div>

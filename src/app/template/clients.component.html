@@ -34,13 +34,19 @@
     <div class="status-tabs">
       <button
         class="status-tab active-tab"
-        [class.selected]="statusFilter === 'ACTIVE'"
+        [class.selected]="!showInvited && statusFilter === 'ACTIVE'"
         (click)="setStatusFilter('ACTIVE')">
         {{ 'CLIENT_STATUS_ACTIVE' | translate }} <span>{{ statusCounts.active }}</span>
       </button>
       <button
+        class="status-tab invited-tab"
+        [class.selected]="showInvited"
+        (click)="openInvited()">
+        {{ 'CLIENT_STATUS_INVITED' | translate }} <span>{{ invitations.length }}</span>
+      </button>
+      <button
         class="status-tab archived-tab"
-        [class.selected]="statusFilter === 'ARCHIVED'"
+        [class.selected]="!showInvited && statusFilter === 'ARCHIVED'"
         (click)="setStatusFilter('ARCHIVED')">
         {{ 'ARCHIVED' | translate }} <span>{{ statusCounts.archived }}</span>
       </button>
@@ -48,10 +54,56 @@
 
     <div class="helper-line">
       <i-feather name="info"></i-feather>
-      {{ 'CLIENT_STATUS_TABS_HINT' | translate }}
+      {{ (showInvited ? 'INVITED_TAB_HINT' : 'CLIENT_STATUS_TABS_HINT') | translate }}
     </div>
 
-    <div class="clients-table">
+    <!-- Invited: sent but not accepted yet -->
+    <div class="clients-table invited-table" *ngIf="showInvited">
+      <div class="table-header">
+        <div class="col-client">{{ 'EMAIL' | translate }}</div>
+        <div class="col-workouts">{{ 'INVITATION_SENT_ON' | translate }}</div>
+        <div class="col-status">{{ 'STATUS' | translate }}</div>
+        <div class="col-actions"></div>
+      </div>
+      <div class="table-body">
+        <div class="client-row" *ngFor="let invitation of invitations">
+          <div class="col-client">
+            <div class="client-details"><h4>{{ invitation.email }}</h4></div>
+          </div>
+          <div class="col-workouts">{{ (invitation.sentAt || invitation.createdAt) | date:'dd/MM/yyyy' }}</div>
+          <div class="col-status">
+            <span class="status-badge" [class]="invitation.status.toLowerCase()">
+              <ng-container [ngSwitch]="invitation.status">
+                <ng-container *ngSwitchCase="'EXPIRED'">{{ 'INVITATION_STATUS_EXPIRED' | translate }}</ng-container>
+                <ng-container *ngSwitchCase="'BLOCKED'">{{ 'INVITATION_STATUS_BLOCKED' | translate }}</ng-container>
+                <ng-container *ngSwitchDefault>{{ 'INVITATION_STATUS_PENDING' | translate: { days: invitationDaysLeft(invitation) } }}</ng-container>
+              </ng-container>
+            </span>
+          </div>
+          <div class="col-actions invitation-actions">
+            <button type="button" class="action-btn" (click)="resendInvitation(invitation)"
+                    [disabled]="busyInvitationId === invitation.id" [title]="'RESEND_INVITATION' | translate">
+              <i-feather name="send"></i-feather>
+            </button>
+            <button type="button" class="action-btn" (click)="copyInvitationLink(invitation)"
+                    [disabled]="invitation.status === 'EXPIRED'"
+                    [title]="(copiedInvitationId === invitation.id ? 'COPIED' : 'COPY_LINK') | translate">
+              <i-feather [name]="copiedInvitationId === invitation.id ? 'check' : 'copy'"></i-feather>
+            </button>
+            <button type="button" class="action-btn" (click)="cancelInvitation(invitation)"
+                    [disabled]="busyInvitationId === invitation.id" [title]="'CANCEL_INVITATION' | translate">
+              <i-feather name="x"></i-feather>
+            </button>
+          </div>
+        </div>
+      </div>
+      <app-scroll-loader [isLoading]="invitationsLoading" loadingText="LOADING_CLIENTS"></app-scroll-loader>
+      <div class="no-clients" *ngIf="invitations.length === 0 && !invitationsLoading">
+        <p>{{ 'NO_PENDING_INVITATIONS' | translate }}</p>
+      </div>
+    </div>
+
+    <div class="clients-table" *ngIf="!showInvited">
       <div class="table-header">
         <div class="col-client">{{ 'CLIENT' | translate }}</div>
         <div class="col-workouts">{{ 'WORKOUTS_LAST_7_DAYS' | translate }}</div>

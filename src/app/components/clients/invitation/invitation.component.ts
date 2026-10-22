@@ -32,6 +32,8 @@ export class InvitationComponent implements OnInit {
   actionError = false;
   /** SUB-26/29: the coach has no free active-client slot; the invitation stays pending. */
   coachLimitReached = false;
+  /** Refusal with its own message: INVITATION_EXPIRED or INVITATION_EMAIL_MISMATCH. */
+  actionErrorKey = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -87,6 +89,7 @@ export class InvitationComponent implements OnInit {
     }
 
     this.actionError = false;
+    this.actionErrorKey = '';
     this.coachLimitReached = false;
     if (!this.authService.isLoggedIn()) {
       await this.router.navigate(['/register'], {
@@ -133,6 +136,9 @@ export class InvitationComponent implements OnInit {
           if (error.error?.code === 'COACH_CLIENT_LIMIT_REACHED') {
             this.coachLimitReached = true;
             return;
+          }
+          if (['INVITATION_EXPIRED', 'INVITATION_EMAIL_MISMATCH'].includes(error.error?.code)) {
+            this.actionErrorKey = error.error.code;
           }
           this.actionError = true;
         }

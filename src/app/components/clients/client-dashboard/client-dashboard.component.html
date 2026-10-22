@@ -1,289 +1,150 @@
-<div class="page">
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>{{ 'WELCOME_BACK' | translate }}</h1>
-            <p>{{ 'OVERVIEW_FOR' | translate }} {{ formatMonthYear(currentDate) }}</p>
-        </div>
+<div class="yc-page home">
+  <div class="yc-container">
+    <div *ngIf="status === 'loading'" class="yc-loading" role="status"><span class="yc-spinner"></span></div>
 
-        <!-- Coach -->
-        <div class="card">
-            <h2>{{ 'YOUR_COACH' | translate }}</h2>
-
-            <div class="coach-row">
-                <div class="coach-left">
-                    <div class="avatar">
-                        <img [src]="coachImage" [alt]="coachName" />
-                    </div>
-                    <div>
-                        <div class="coach-name">{{ coachName }}</div>
-                        <div class="coach-spec">{{ coachSpecialty }}</div>
-                    </div>
-                </div>
-
-                <button class="btn primary" type="button">
-                    {{ 'MESSAGE' | translate }}
-                </button>
-            </div>
-        </div>
-
-        <!-- Tasks -->
-        <div class="card card-pad0">
-            <div class="card-head">
-                <h2>{{ 'TASKS_TO_DO' | translate }}</h2>
-            </div>
-
-            <!-- Week view -->
-            <div class="week">
-                <div class="week-top">
-                    <div class="week-title">{{ 'WEEK_VIEW' | translate }}</div>
-                    <div class="week-actions">
-                        <button type="button" class="icon-btn" (click)="changeWeek('prev')">‹</button>
-                        <button type="button" class="icon-btn" (click)="changeWeek('next')">›</button>
-                    </div>
-                </div>
-
-                <div class="week-grid">
-                    <button
-                            type="button"
-                            class="day"
-                            *ngFor="let day of weekDays; trackBy: trackByDate"
-                            (click)="selectDay(day)"
-                            [ngClass]="{
-              selected: isSameDay(day, currentDate),
-              today: isToday(day) && !isSameDay(day, currentDate),
-              hasWorkout: hasWorkoutOn(day)
-            }"
-                    >
-                        <div class="day-name">{{ formatDayName(day) }}</div>
-                        <div class="day-num">{{ day.getDate() }}</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Check-in button -->
-            <div class="section">
-                <button type="button" class="checkin-btn" (click)="openCheckIn()">
-                    <div class="checkin-left">
-                        <div class="checkin-kicker">{{ 'CHECK_IN' | translate }}</div>
-                        <div class="checkin-title">{{ 'CHECK_IN_IS_TODAY' | translate }}</div>
-                    </div>
-                    <div class="chev">›</div>
-                </button>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Workout row -->
-            <button
-                    class="task-row"
-                    type="button"
-                    (click)="hasWorkoutToday && openWorkout()"
-                    [class.empty-task]="!hasWorkoutToday"
-            >
-                <div class="task-left">
-                    <div class="badge purple">🏋️</div>
-                    <span class="task-day">
-            {{ isSameDay(currentDate, today) ? ('TODAY' | translate) : formatDayName(currentDate) }}
-          </span>
-                </div>
-
-                <div class="task-main" *ngIf="hasWorkoutToday; else noWorkoutTpl">
-                    <h3 class="task-title">{{ currentTasks.workout.name }}</h3>
-                    <p class="task-program">{{ currentTasks.workout.program }}</p>
-                    <div class="pill">
-                        <span class="pill-num">{{ currentTasks.workout.totalExercises }}</span>
-                        <span>{{ 'EXERCISES' | translate }}</span>
-                    </div>
-                </div>
-
-                <ng-template #noWorkoutTpl>
-                    <div class="task-main">
-                        <h3 class="task-title">{{ 'NO_WORKOUT_PLANNED_DAY' | translate }}</h3>
-                        <p class="task-sub">{{ 'NO_SESSION_SCHEDULED' | translate }}</p>
-                    </div>
-                </ng-template>
-
-                <div class="chev muted" *ngIf="hasWorkoutToday">›</div>
-            </button>
-
-            <div class="divider"></div>
-
-            <!-- Nutrition row -->
-            <button
-                    class="task-row"
-                    type="button"
-                    (click)="hasNutritionToday && openNutrition()"
-                    [class.empty-task]="!hasNutritionToday"
-            >
-                <div class="task-left">
-                    <div class="badge green">🍏</div>
-                    <span class="task-day">
-            {{ isSameDay(currentDate, today) ? ('TODAY' | translate) : formatDayName(currentDate) }}
-          </span>
-                </div>
-
-                <div class="task-main" *ngIf="hasNutritionToday; else noNutritionTpl">
-                    <h3 class="task-title">{{ currentTasks.nutrition.planName }}</h3>
-                    <p class="task-sub">{{ currentTasks.nutrition.program }}</p>
-
-                    <div class="meals">{{ currentTasks.nutrition.meals }} {{ 'MEALS_LOWER' | translate }}</div>
-
-                    <div class="macros">
-                        <div class="macro">
-                            <div class="macro-num">{{ currentTasks.nutrition.calories }}</div>
-                            <div class="macro-lbl">kcal</div>
-                        </div>
-                        <div class="macro red">
-                            <div class="macro-num">{{ currentTasks.nutrition.protein }}</div>
-                            <div class="macro-lbl">{{ 'PROTEIN_LOWER' | translate }}</div>
-                        </div>
-                        <div class="macro yellow">
-                            <div class="macro-num">{{ currentTasks.nutrition.carbs }}</div>
-                            <div class="macro-lbl">{{ 'CARBS_LOWER' | translate }}</div>
-                        </div>
-                        <div class="macro green">
-                            <div class="macro-num">{{ currentTasks.nutrition.fat }}</div>
-                            <div class="macro-lbl">{{ 'FAT_LOWER' | translate }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <ng-template #noNutritionTpl>
-                    <div class="task-main">
-                        <h3 class="task-title">{{ 'NO_ACTIVE_NUTRITION_DAY' | translate }}</h3>
-                        <p class="task-sub">{{ 'NO_NUTRITION_TARGET' | translate }}</p>
-                    </div>
-                </ng-template>
-
-                <div class="chev muted" *ngIf="hasNutritionToday">›</div>
-            </button>
-        </div>
-
+    <div *ngIf="status === 'error'" class="home-error" role="alert">
+      <p class="yc-subtitle">{{ errorMessage }}</p>
+      <button type="button" class="yc-link" (click)="load()">{{ fr ? 'Réessayer' : 'Retry' }}</button>
     </div>
 
-    <app-body-measurements [clientId]="userId" [allowAdd]="true" [allowDelete]="true"></app-body-measurements>
+    <ng-container *ngIf="status === 'loaded'">
+      <!-- Greeting -->
+      <header class="greeting">
+        <p class="greeting__date">{{ todayLabel }}</p>
+        <h1 class="yc-display greeting__title">{{ greeting }}</h1>
+      </header>
 
-    <!-- Check-in Modal -->
-    <div class="modal-overlay" *ngIf="showCheckInModal">
-        <div class="modal">
-            <div class="modal-head">
-                <div>
-                    <div class="modal-title">{{ 'DAILY_CHECK_IN' | translate }}</div>
-                    <div class="modal-sub">{{ formatMonthYear(currentDate) }}</div>
-                </div>
-                <button class="close-btn" type="button" (click)="showCheckInModal = false">✕</button>
-            </div>
-
-            <div class="modal-body">
-                <div class="q" *ngFor="let question of checkInQuestions; let i = index; trackBy: trackByQuestionId">
-                    <label class="q-label">{{ i + 1 }}. {{ question.questionKey | translate }}</label>
-
-                    <div *ngIf="question.type === 'number'" class="number-wrap">
-                        <input
-                                type="number"
-                                class="input"
-                                [ngModel]="checkInAnswers[question.id] || ''"
-                                (ngModelChange)="answerChange(question.id, $event)"
-                                [placeholder]="'ENTER_VALUE' | translate"
-                        />
-                        <span class="unit" *ngIf="question.unit">{{ question.unit }}</span>
-                    </div>
-
-                    <div *ngIf="question.type === 'scale'" class="scale">
-                        <input
-                                type="range"
-                                class="range"
-                                [min]="question.min"
-                                [max]="question.max"
-                                [ngModel]="checkInAnswers[question.id] ?? question.min"
-                                (ngModelChange)="answerChange(question.id, toNumber($event))"
-                        />
-                        <div class="scale-row">
-                            <span>{{ question.min }}</span>
-                            <span class="scale-val">{{ checkInAnswers[question.id] ?? question.min }}</span>
-                            <span>{{ question.max }}</span>
-                        </div>
-                    </div>
-
-                    <textarea
-                            *ngIf="question.type === 'textarea'"
-                            class="textarea"
-                            rows="3"
-                            [ngModel]="checkInAnswers[question.id] || ''"
-                            (ngModelChange)="answerChange(question.id, $event)"
-                            [placeholder]="'TYPE_YOUR_ANSWER' | translate"
-                    ></textarea>
-                </div>
-            </div>
-
-            <div class="modal-foot">
-                <button class="btn primary full" type="button" (click)="submitCheckIn()">
-                    {{ 'SUBMIT_CHECK_IN' | translate }}
-                </button>
-            </div>
+      <!-- Coach card -->
+      <section class="yc-card coach-card">
+        <span class="yc-avatar" style="--avatar-size: 50px">
+          <img *ngIf="coachPhotoUrl && !coachPhotoFailed; else coachInitialsTpl" [src]="coachPhotoUrl" [alt]="displayCoachName" (error)="coachPhotoFailed = true" />
+          <ng-template #coachInitialsTpl>{{ coachInitials }}</ng-template>
+        </span>
+        <div class="coach-card__copy">
+          <span class="coach-card__kicker">{{ fr ? 'Votre coach' : 'Your coach' }}</span>
+          <strong class="coach-card__name">{{ displayCoachName }}</strong>
+          <button type="button" class="coach-card__profile" [disabled]="!coachId" (click)="openCoachProfile()">
+            {{ fr ? 'Voir le profil' : 'View profile' }}
+          </button>
         </div>
-    </div>
+        <button type="button" class="coach-card__message" (click)="openCoachConversation()">
+          <i-feather name="message-circle"></i-feather>Message
+          <span *ngIf="unreadMessages > 0" class="coach-card__badge">{{ unreadMessages > 9 ? '9+' : unreadMessages }}</span>
+        </button>
+      </section>
 
-    <!-- Workout Modal -->
-    <div class="modal-overlay" *ngIf="showWorkoutModal && hasWorkoutToday">
-        <div class="modal">
-            <div class="modal-head">
-                <div>
-                    <div class="modal-title">{{ currentTasks.workout.name }}</div>
-                    <div class="modal-sub blue">{{ currentTasks.workout.program }}</div>
-                </div>
-                <button class="close-btn" type="button" (click)="showWorkoutModal = false">✕</button>
-            </div>
+      <!-- Today's plan -->
+      <h2 class="section-title">{{ fr ? "Programme d'aujourd'hui" : "Today's plan" }}</h2>
 
-            <div class="modal-body">
-                <div class="ex" *ngFor="let ex of currentTasks.workout.exercises; trackBy: trackByExercise">
-                    <div class="ex-badge" [ngClass]="{ fire: ex.label === '🔥' }">{{ ex.label }}</div>
-                    <div class="ex-name">{{ ex.name }}</div>
-                </div>
-            </div>
+      <section *ngIf="hasWorkout; else restDay" class="workout-card">
+        <div class="workout-card__top">
+          <span>{{ fr ? 'Séance' : 'Workout' }}</span>
+          <span *ngIf="workoutCompleted" class="workout-card__pill">{{ fr ? 'Terminée' : 'Completed' }}</span>
+          <span class="workout-card__spacer"></span>
+          <span *ngIf="workoutMinutes > 0">~{{ workoutMinutes }} min</span>
         </div>
-    </div>
-
-    <!-- Nutrition Modal -->
-    <div class="modal-overlay" *ngIf="showNutritionModal && hasNutritionToday">
-        <div class="modal">
-            <div class="modal-head">
-                <div>
-                    <div class="modal-title">{{ currentTasks.nutrition.planName }}</div>
-                    <div class="modal-sub">{{ currentTasks.nutrition.program }}</div>
-                </div>
-                <button class="close-btn" type="button" (click)="showNutritionModal = false">✕</button>
-            </div>
-
-            <div class="modal-body">
-                <div class="kcal">
-                    <div class="kcal-num">{{ currentTasks.nutrition.calories }}</div>
-                    <div class="kcal-lbl">{{ 'CALORIES_PER_DAY' | translate }}</div>
-                </div>
-
-                <div class="macro3">
-                    <div class="macro3-card red">
-                        <div class="macro3-lbl">{{ 'PROTEIN' | translate }}</div>
-                        <div class="macro3-num">{{ currentTasks.nutrition.protein }}</div>
-                        <div class="macro3-unit">{{ 'GRAMS' | translate }}</div>
-                    </div>
-                    <div class="macro3-card yellow">
-                        <div class="macro3-lbl">{{ 'CARBS' | translate }}</div>
-                        <div class="macro3-num">{{ currentTasks.nutrition.carbs }}</div>
-                        <div class="macro3-unit">{{ 'GRAMS' | translate }}</div>
-                    </div>
-                    <div class="macro3-card green">
-                        <div class="macro3-lbl">{{ 'FAT' | translate }}</div>
-                        <div class="macro3-num">{{ currentTasks.nutrition.fat }}</div>
-                        <div class="macro3-unit">{{ 'GRAMS' | translate }}</div>
-                    </div>
-                </div>
-
-                <div class="meals-card">
-                    <span>{{ currentTasks.nutrition.meals }} {{ 'MEALS_PER_DAY' | translate }}</span>
-                </div>
-            </div>
+        <h3 class="workout-card__title">{{ workoutTitle }}</h3>
+        <p class="workout-card__subtitle">{{ workoutSubtitle }}</p>
+        <div class="workout-card__thumbs">
+          <img *ngFor="let url of workoutThumbs" [src]="url" alt="" loading="lazy" />
+          <span *ngIf="!workoutThumbs.length" class="workout-card__thumb-fallback"><i-feather name="dumbbell"></i-feather></span>
+          <span class="workout-card__counts">{{ workoutCounts }}</span>
         </div>
-    </div>
+        <button type="button" class="yc-btn yc-btn--brand workout-card__button" (click)="openWorkout()">
+          <i-feather [name]="workoutCompleted ? 'eye' : 'play'"></i-feather>{{ workoutButtonLabel }}
+        </button>
+      </section>
+      <ng-template #restDay>
+        <section class="yc-card rest-card">
+          <span class="rest-card__tile"><i-feather name="moon"></i-feather></span>
+          <div>
+            <h3 class="yc-card-title">{{ fr ? 'Jour de repos' : 'Rest day' }}</h3>
+            <p class="yc-subtitle">
+              {{ fr ? "Pas d'entraînement aujourd'hui. Récupérez bien : dormez, hydratez-vous et bougez doucement."
+                : 'No workout today. Recover well: sleep, hydrate and keep moving gently.' }}
+            </p>
+          </div>
+        </section>
+      </ng-template>
+
+      <button *ngIf="hasNutrition; else noNutrition" type="button" class="yc-card nutrition-card" (click)="openNutrition()">
+        <div class="nutrition-card__head">
+          <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 46px"><i-feather name="utensils"></i-feather></span>
+          <div class="nutrition-card__copy">
+            <span class="nutrition-card__label">{{ nutritionLabel }}</span>
+            <span class="nutrition-card__kcal"><strong>{{ formatNumber(consumed.calories) }}</strong> / {{ formatNumber(target.calories) }} kcal</span>
+          </div>
+          <i-feather class="chevron" name="chevron-right"></i-feather>
+        </div>
+        <div class="yc-progress nutrition-card__bar"><span [style.width.%]="nutritionProgress * 100"></span></div>
+        <div class="nutrition-card__macros">
+          <span>P {{ target.protein }}g · C {{ target.carbs }}g · F {{ target.fat }}g</span>
+          <strong>{{ reportedMeals }}/{{ meals.length }} {{ fr ? 'repas' : 'meals' }}</strong>
+        </div>
+        <div *ngIf="nextMealName" class="nutrition-card__next">
+          {{ fr ? 'Prochain : ' : 'Next: ' }}<strong>{{ nextMealName }}</strong>
+        </div>
+      </button>
+      <ng-template #noNutrition>
+        <section class="yc-card no-nutrition-card">
+          <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 46px"><i-feather name="utensils"></i-feather></span>
+          <div>
+            <h3 class="yc-card-title">{{ fr ? 'Pas de plan nutrition' : 'No nutrition plan today' }}</h3>
+            <p class="yc-subtitle">
+              {{ fr ? "Rien de prévu aujourd'hui. Mangez à votre faim et restez hydraté." : 'Nothing planned today. Eat to your hunger and stay hydrated.' }}
+            </p>
+          </div>
+        </section>
+      </ng-template>
+
+      <!-- Tasks -->
+      <div class="tasks-head">
+        <h2>{{ fr ? 'Tâches' : 'Tasks' }}</h2>
+        <span *ngIf="tasks.length" class="tasks-head__count">{{ doneTasks }}/{{ tasks.length }} {{ fr ? 'faites' : 'done' }}</span>
+        <span class="tasks-head__spacer"></span>
+        <button type="button" class="yc-link tasks-head__all" (click)="seeAllTasks()">{{ fr ? 'Tout voir' : 'See all' }}</button>
+      </div>
+
+      <section *ngIf="!tasks.length && !showCheckInRow; else taskList" class="yc-card no-tasks-card">
+        <span class="yc-icon-tile" style="--tile-color: var(--yc-success); --tile-size: 44px"><i-feather name="check-circle"></i-feather></span>
+        <div>
+          <h3 class="yc-card-title">{{ fr ? 'Aucune tâche prévue aujourd’hui' : 'No tasks scheduled for today' }}</h3>
+          <p class="yc-subtitle">{{ fr ? 'Votre coach n’a assigné aucun check-in, entraînement ou nutrition pour aujourd’hui' : 'Your coach hasn’t assigned any check-in, workout, or nutrition for today' }}</p>
+        </div>
+      </section>
+      <ng-template #taskList>
+        <section class="yc-card yc-card--flush">
+          <app-client-task-row
+            *ngFor="let task of tasks; let i = index; trackBy: trackByOccurrence"
+            [task]="task"
+            [fr]="fr"
+            [showDivider]="i < tasks.length - 1 || showCheckInRow"
+            [toggling]="toggling.has(task.occurrenceId)"
+            (toggleHabit)="toggleHabit($event)"
+            (open)="openTask($event)">
+          </app-client-task-row>
+          <button *ngIf="showCheckInRow" type="button" class="checkin-row" (click)="openCheckIn()">
+            <span class="checkin-row__tile"><i-feather name="clipboard-list"></i-feather></span>
+            <span class="checkin-row__copy">
+              <strong>{{ fr ? 'Check-in' : 'Check-In' }}</strong>
+              <span>{{ fr ? 'Votre check-in est aujourd’hui' : 'Your check-in is today' }}</span>
+            </span>
+            <span class="checkin-row__action">{{ fr ? 'Remplir' : 'Fill in' }}<i-feather name="chevron-right"></i-feather></span>
+          </button>
+        </section>
+      </ng-template>
+    </ng-container>
+  </div>
+
+  <div *ngIf="toast" class="home-toast" role="status">{{ toast }}</div>
+
+  <app-coach-profile-sheet
+    *ngIf="showCoachProfile"
+    [fr]="fr"
+    [name]="displayCoachName"
+    [profile]="coachProfile"
+    [loading]="coachProfileLoading"
+    (closed)="showCoachProfile = false"
+    (message)="openCoachConversation()">
+  </app-coach-profile-sheet>
 </div>

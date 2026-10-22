@@ -1,53 +1,92 @@
-<section class="client-tasks" [class.detail-view]="selected">
-  <ng-container *ngIf="!selected; else detail">
-    <header class="tasks-heading">
-      <button *ngIf="!previewMode" class="app-page-back" type="button" [attr.aria-label]="fr ? 'Retour' : 'Back'" (click)="goBack()"><span aria-hidden="true">←</span></button>
-      <div class="tasks-heading-copy">
-      <h1>{{ fr ? 'Tâches' : 'Tasks' }}</h1>
-      <p>{{ fr ? 'Vos tâches, check-ins et habitudes de ' + displayCoachName + '.' : 'Your to-dos, check-ins and habits from ' + displayCoachName + '.' }}</p>
+<div class="yc-page client-tasks">
+  <div class="yc-container">
+    <ng-container *ngIf="!selected; else detail">
+      <header class="yc-root-header">
+        <div class="yc-root-header__copy">
+          <h1 class="yc-display">{{ fr ? 'Tâches' : 'Tasks' }}</h1>
+          <p class="yc-root-subtitle">{{ fr ? 'Habitudes, check-ins et mensurations' : 'Habits, check-ins and measurements' }}</p>
+        </div>
+      </header>
+
+      <div class="yc-segmented" role="tablist" [attr.aria-label]="fr ? 'Période' : 'Period'">
+        <button type="button" role="tab" [attr.aria-selected]="upcoming" [class.active]="upcoming" (click)="setTab(true)">{{ fr ? 'À venir' : 'Upcoming' }}</button>
+        <button type="button" role="tab" [attr.aria-selected]="!upcoming" [class.active]="!upcoming" (click)="setTab(false)">{{ fr ? 'Passées' : 'Past' }}</button>
       </div>
-    </header>
-    <div class="task-tabs" role="tablist" [attr.aria-label]="fr ? 'Période' : 'Period'">
-      <button type="button" role="tab" [attr.aria-selected]="upcoming" [class.active]="upcoming" (click)="setTab(true)">{{ fr ? 'À venir' : 'Upcoming' }}</button>
-      <button type="button" role="tab" [attr.aria-selected]="!upcoming" [class.active]="!upcoming" (click)="setTab(false)">{{ fr ? 'Passées' : 'Past' }}</button>
-    </div>
-    <nav class="month-controls" [attr.aria-label]="fr ? 'Mois' : 'Month'">
-      <button type="button" [disabled]="!canShiftMonth(-1)" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ fr ? 'Précédent' : 'Previous' }}</button>
-      <span>{{ monthLabel }}</span>
-      <button type="button" [disabled]="!canShiftMonth(1)" (click)="shiftMonth(1)">{{ fr ? 'Suivant' : 'Next' }}<i-feather name="chevron-right"></i-feather></button>
-    </nav>
-    <div class="tasks-divider"></div>
-    <div *ngIf="loading" class="loading-state" role="status"><span class="spinner"></span><span class="sr-only">{{ fr ? 'Chargement' : 'Loading' }}</span></div>
-    <div *ngIf="error" class="error-state" role="alert"><p>{{ error }}</p><button type="button" (click)="load()">{{ fr ? 'Réessayer' : 'Retry' }}</button></div>
-    <ng-container *ngIf="!loading && !error">
-      <div *ngIf="!days.length" class="empty-state">
-        <i-feather name="calendar"></i-feather>
-        <p>{{ upcoming ? (fr ? 'Aucune tâche à venir ce mois-ci' : 'No upcoming tasks this month') : (fr ? 'Aucune tâche passée ce mois-ci' : 'No past tasks this month') }}</p>
+
+      <nav class="yc-month-nav month-nav" [attr.aria-label]="fr ? 'Mois' : 'Month'">
+        <button type="button" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ fr ? 'Précédent' : 'Previous' }}</button>
+        <span>{{ monthLabel }}</span>
+        <button type="button" (click)="shiftMonth(1)">{{ fr ? 'Suivant' : 'Next' }}<i-feather name="chevron-right"></i-feather></button>
+      </nav>
+
+      <div *ngIf="loading" class="yc-loading" role="status"><span class="yc-spinner"></span></div>
+      <div *ngIf="!loading && error" class="tasks-error" role="alert">
+        <p class="yc-subtitle">{{ error }}</p>
+        <button type="button" class="yc-link" (click)="load()">{{ fr ? 'Réessayer' : 'Retry' }}</button>
       </div>
-      <div *ngFor="let day of days" class="task-day">
-        <h2>{{ day.label }}</h2>
-        <div class="task-group">
-          <button *ngFor="let item of day.items" type="button" class="task-row" (click)="open(item)">
-            <span class="task-icon" [ngClass]="tone(item)"><i-feather [name]="icon(item)"></i-feather></span>
-            <span class="task-copy"><strong>{{ item.title }}</strong><span>{{ subtitle(item) }}</span></span>
-            <i-feather *ngIf="item.status === 'DONE'; else chevron" name="check-circle" class="task-done"></i-feather>
-            <ng-template #chevron><i-feather name="chevron-right" class="task-chevron"></i-feather></ng-template>
+
+      <ng-container *ngIf="!loading && !error">
+        <div *ngIf="!days.length" class="tasks-empty">
+          <span class="yc-icon-tile" style="--tile-size: 60px"><i-feather name="calendar"></i-feather></span>
+          <p class="yc-card-title">
+            {{ upcoming ? (fr ? 'Aucune tâche à venir ce mois-ci' : 'No upcoming tasks this month')
+              : (fr ? 'Aucune tâche passée ce mois-ci' : 'No past tasks this month') }}
+          </p>
+        </div>
+
+        <section *ngFor="let day of days; trackBy: trackByDay" class="yc-card yc-card--flush task-day" [class.yc-card--today]="day.isToday">
+          <header class="task-day__head">
+            <span class="yc-overline">{{ day.weekday }}</span>
+            <strong>{{ day.label }}</strong>
+            <span *ngIf="day.isToday" class="yc-chip">{{ fr ? "Aujourd'hui" : 'Today' }}</span>
+            <span class="task-day__spacer"></span>
+            <span class="yc-caption">{{ day.done }}/{{ day.items.length }} {{ fr ? 'faites' : 'done' }}</span>
+          </header>
+          <hr class="yc-divider" />
+          <app-client-task-row
+            *ngFor="let item of day.items; let i = index; trackBy: trackByOccurrence"
+            [task]="item"
+            [fr]="fr"
+            [showDivider]="i < day.items.length - 1"
+            [toggling]="toggling.has(item.occurrenceId)"
+            [canToggle]="canToggle(item)"
+            (toggleHabit)="toggleHabit($event)"
+            (open)="open($event)">
+          </app-client-task-row>
+        </section>
+      </ng-container>
+    </ng-container>
+
+    <ng-template #detail>
+      <ng-container *ngIf="selected as item">
+        <header class="yc-page-header">
+          <button type="button" class="yc-back" (click)="closeDetail()" [attr.aria-label]="fr ? 'Retour' : 'Back'"><i-feather name="arrow-left"></i-feather></button>
+          <div class="yc-page-header__copy">
+            <h1 class="yc-page-header__title">{{ title(item) }}</h1>
+            <p class="yc-page-header__subtitle">{{ detailSubtitle(item) }}</p>
+          </div>
+        </header>
+        <section class="yc-card instructions-card">
+          <div class="instructions-card__head">
+            <span class="instructions-card__tile" [style.background]="colors(item)[1]" [style.color]="colors(item)[0]">
+              <i-feather [name]="icon(item)"></i-feather>
+            </span>
+            <span class="yc-label">Instructions · {{ displayCoachName }}</span>
+          </div>
+          <p class="instructions-card__text">{{ instructions(item) }}</p>
+        </section>
+        <div *ngIf="canComplete(item)" class="detail-footer">
+          <button type="button" class="yc-btn yc-btn--primary" [disabled]="isDone(item) || saving" (click)="markAsDone(item)">
+            <span *ngIf="saving" class="yc-spinner"></span>
+            <ng-container *ngIf="!saving">
+              <i-feather [name]="isDone(item) ? 'check-circle' : 'check'"></i-feather>
+              {{ isDone(item) ? (fr ? 'Terminée' : 'Completed') : (fr ? 'Marquer comme terminée' : 'Mark as done') }}
+            </ng-container>
           </button>
         </div>
-      </div>
-    </ng-container>
-  </ng-container>
-  <ng-template #detail>
-    <ng-container *ngIf="selected as item">
-      <header class="task-detail-heading">
-        <button type="button" class="app-page-back" (click)="closeDetail()" [attr.aria-label]="fr ? 'Retour' : 'Back'"><i-feather name="arrow-left"></i-feather></button>
-        <div><h1>{{ item.title }}</h1><p>{{ typeLabel(item) }} · {{ dueLabel(item) }}</p></div>
-      </header>
-      <div class="instructions-card">
-        <span class="coach-avatar">{{ coachInitials }}</span>
-        <div><h2>Instructions · {{ displayCoachName }}</h2><p>{{ item.instructions?.trim() || (fr ? 'Aucune instruction supplémentaire.' : 'No additional instructions.') }}</p></div>
-      </div>
-      <p *ngIf="error" class="error-state" role="alert">{{ error }}</p>
-    </ng-container>
-  </ng-template>
-</section>
+      </ng-container>
+    </ng-template>
+  </div>
+
+  <div *ngIf="toast" class="tasks-toast" role="status">{{ toast }}</div>
+</div>
