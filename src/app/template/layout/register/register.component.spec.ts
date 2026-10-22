@@ -7,25 +7,35 @@ describe('RegisterComponent', () => {
   let component: RegisterComponent;
   let registerService: jasmine.SpyObj<any>;
   let authService: jasmine.SpyObj<any>;
+  let onboardingService: jasmine.SpyObj<any>;
+  let router: jasmine.SpyObj<any>;
+
+  function create(query: Record<string, string>): RegisterComponent {
+    const created = new RegisterComponent(
+      new FormBuilder(),
+      registerService,
+      onboardingService,
+      authService,
+      { snapshot: { queryParamMap: { get: (key: string) => query[key] ?? null } } } as any,
+      router,
+      { use: () => undefined, instant: (key: string) => key } as any,
+      { getCurrentLanguage: () => 'en' } as any
+    );
+    created.ngOnInit();
+    return created;
+  }
 
   beforeEach(() => {
     registerService = jasmine.createSpyObj('RegisterService', ['registerUser']);
     authService = jasmine.createSpyObj('AuthService', ['login']);
     authService.login.and.returnValue(Promise.resolve());
-    const onboardingService = jasmine.createSpyObj('SubscriptionOnboardingService', ['onboard', 'getPlans']);
+    onboardingService = jasmine.createSpyObj('SubscriptionOnboardingService', ['onboard', 'getPlans']);
     onboardingService.getPlans.and.returnValue(of([]));
+    router = jasmine.createSpyObj('Router', ['navigate']);
+    router.navigate.and.returnValue(Promise.resolve(true));
 
-    component = new RegisterComponent(
-      new FormBuilder(),
-      registerService,
-      onboardingService,
-      authService,
-      { snapshot: { queryParamMap: { get: () => null } } } as any,
-      { navigate: () => Promise.resolve(true) } as any,
-      { use: () => undefined, instant: (key: string) => key } as any,
-      { getCurrentLanguage: () => 'en' } as any
-    );
-    component.ngOnInit();
+    // By default an invited client: the only sign-up without a plan.
+    component = create({ invitationToken: 'tok' });
   });
 
   it('enforces the username boundaries after trimming', () => {
@@ -106,27 +116,48 @@ describe('RegisterComponent', () => {
       login: 'coach',
       firstName: 'Yo',
       lastName: 'Coach',
-      email: 'coach@example.com'
+      email: 'coach@example.com',
+      authorities: ['ROLE_CLIENT']
     }));
     expect(authService.login).toHaveBeenCalledOnceWith(
-      `${window.location.origin}/`,
+      `${window.location.origin}/invitation/tok?accept=1`,
       'coach'
     );
   });
 
-  it('returns a newly registered coach to onboarding after authentication', () => {
-    registerService.registerUser.and.returnValue(of(undefined));
+  it('sends a coach without a plan to the plan choice instead of creating an account', () => {
+    component = create({});
+    expect(router.navigate).toHaveBeenCalledWith(['/plans-landing'], { replaceUrl: true });
+    component.signupForm.patchValue({
+      username: 'coach', firstName: 'Yo', lastName: 'Coach', email: 'coach@example.com',
+      password: 'Letters 123!', confirmPassword: 'Letters 123!'
+    });
+
+    component.onSubmit();
+
+    expect(registerService.registerUser).not.toHaveBeenCalled();
+    expect(onboardingService.onboard).not.toHaveBeenCalled();
+  });
+
+  it('registers a coach with their plan and returns them to onboarding after authentication', () => {
+    onboardingService.onboard.and.returnValue(of({}));
+    component = create({ planId: '42' });
     component.signupForm.patchValue({
       username: 'coach',
       firstName: 'Yo',
       lastName: 'Coach',
       email: 'coach@example.com',
       password: 'Letters 123!',
-      confirmPassword: 'Letters 123!',
-      isCoach: true
+      confirmPassword: 'Letters 123!'
     });
 
     component.onSubmit();
+
+    expect(registerService.registerUser).not.toHaveBeenCalled();
+    expect(onboardingService.onboard).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      planId: 42,
+      user: jasmine.objectContaining({ authorities: ['ROLE_COACH'] })
+    }));
 
     expect(authService.login).toHaveBeenCalledOnceWith(
       `${window.location.origin}/coach-onboarding`,

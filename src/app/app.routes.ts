@@ -264,12 +264,14 @@ export const APP_ROUTE: Route[] = [
         loadComponent: () => import('./components/admin/users/users.component').then((m) => m.UsersComponent),
       },
       {
+        // Client page (the coach sees the pictures inside the client profile).
         path: 'progress-pictures',
-        loadComponent: () => import('./components/progress-pictures-module/progress-pictures/progress-pictures.component').then((m) => m.ProgressPicturesComponent),
+        loadComponent: () => import('./components/clients/client-progress/client-progress.component').then((m) => m.ClientProgressComponent),
       },
       {
+        // Client page (the coach sees the measurements inside the client profile).
         path: 'body-measurements',
-        loadComponent: () => import('./components/body-measurements/body-measurements.component').then((m) => m.BodyMeasurementsComponent),
+        loadComponent: () => import('./components/clients/client-measurements/client-measurements.component').then((m) => m.ClientMeasurementsComponent),
       },
       {
         path: 'configuration',

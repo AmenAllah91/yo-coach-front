@@ -1,6763 +1,1098 @@
-/* ===========================
-   NUTRITION – LAYOUT GLOBAL
-   =========================== */
+// Client nutrition: same layout as the mobile NutritionScreen / NutritionDetailScreen
+// (shared classes in shared/styles/client-ui.scss and ../shared/plan-page.scss).
+@import '../shared/plan-page';
 
-.cn-root,
-.cn-detail-root {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: #ffffff;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-}
-
-/* Header (Good morning, Kolton...) */
-.client-header {
-  padding: 20px 16px 12px;
-  text-align: center;
-}
-
-.client-header-title {
-  margin: 0 0 4px;
-  font-size: 24px;
+.day-card__meta strong {
   font-weight: 700;
-  color: #111827;
+  color: var(--yc-text-primary);
 }
 
-.client-header-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
+.day-card__meta {
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 
-/* Standard client page heading: title and subtitle always start at the left. */
-.cw-root .client-header {
-  display: flex !important;
-  justify-content: flex-start !important;
-  align-items: center !important;
-  gap: 16px !important;
-  padding: 20px 12px 18px !important;
-  text-align: left !important;
-}
-.cw-root .client-header-copy { flex: 1 1 auto; min-width: 0; text-align: left; }
-.cw-root .client-header-title { margin: 0 0 5px !important; text-align: left !important; }
-.cw-root .client-header-subtitle { margin: 0 !important; text-align: left !important; }
-
-/* Onglets Upcoming / Past – EXACTEMENT comme Workouts */
-
-.client-tabs {
-  display: flex;
-  border-top: 1px solid #edf0f3;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.client-tab {
-  flex: 1;
-  padding: 10px 0;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #6b7280;
-  position: relative;
-}
-
-.client-tab--active {
-  color: #44b4df;
-}
-
-.client-tab--active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background-color: #44b4df;
-}
-
-/* Navigation mois – même barre que Workouts */
-
-.client-month-nav {
-  margin-top: 12px;
-  margin-bottom: 12px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.month-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.month-nav-btn {
-  border: none;
-  background: transparent;
-  padding: 4px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.month-nav-btn:hover {
-  background-color: rgba(68, 180, 223, 0.08);
-}
-
-.month-nav-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-/* Petites flèches custom */
-
-.chevron {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #44b4df;
-  border-right: 2px solid #44b4df;
-}
-
-.chevron-left {
-  transform: rotate(-135deg);
-}
-
-.chevron-right {
-  transform: rotate(45deg);
-}
-
-/* Conteneur de liste – partagé Nutrition / Workouts */
-
-.client-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ===========================
-   NUTRITION – LIST VIEW
-   =========================== */
-
-/* Card jour – même gabarit que .workout-card */
-
-.cn-day-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.05s ease,
-    border-color 0.15s ease;
-}
-
-.cn-day-card:hover {
-  border-color: rgba(68, 180, 223, 0.45);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
-}
-
-.cn-day-header {
-  padding: 12px 14px 10px;
-  background-color: #f9fcff;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.cn-day-header-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.cn-day-chip-date {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background-color: transparent;
-  color: #44b4df;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
-}
-
-.cn-day-title {
-  margin: 0 0 2px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cn-day-subtitle {
-  margin: 0;
-  font-size: 12px;
-  color: #4b5563;
-  font-weight: 500;
-}
-
-/* statut à droite (rond bleu/vert) */
-
-.cn-day-status-icon {
-  flex-shrink: 0;
-}
-
-.cn-status-circle {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #e5f0ff;
-  color: #44b4df;
-  font-size: 13px;
-}
-
-.cn-status-circle--completed {
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.cn-status-circle--upcoming {
-  background-color: #e5f0ff;
-  color: #44b4df;
-}
-
-/* ligne "X meals" */
-
-.cn-day-meals-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px 6px;
-}
-
-.cn-utensils-icon {
-  font-size: 14px;
-}
-
-.cn-day-meals-text {
-  font-size: 12px;
-  color: #4b5563;
-  font-weight: 500;
-}
-
-/* bloc macros en bas de la carte */
-
-.cn-day-macros {
-  padding: 8px 12px 12px;
-  background-color: #f3f4f6;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.cn-macro-card {
-  text-align: center;
-  padding: 6px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.cn-macro-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-macro-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-/* Empty state */
-
-.cn-empty {
-  margin-top: 16px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 24px 16px;
-  text-align: center;
-}
-
-.cn-empty-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 8px;
-  font-size: 26px;
-}
-
-.cn-empty-title {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-empty-text {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* ===========================
-   NUTRITION – DETAIL VIEW
-   =========================== */
-
-.cn-detail-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* header détail proche de cw-detail-header */
-
-.cn-detail-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  padding: 12px 12px;
-  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
-  background-color: #ffffff;
-}
-
-.cn-back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  margin-right: 8px;
-  cursor: pointer;
-  background: transparent;
-  font-size: 1.2rem;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cn-back-btn:hover {
-  background-color: rgba(68, 180, 223, 0.1);
-}
-
-.cn-detail-header-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.cn-detail-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-detail-program-line {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.cn-calendar-icon {
-  font-size: 12px;
-}
-
-/* pill statut à droite */
-
-.cn-detail-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid #bfdbfe;
-  background-color: #eff6ff;
-}
-
-.cn-detail-status-pill--completed {
-  border-color: #bbf7d0;
-  background-color: #dcfce7;
-}
-
-.cn-detail-status-pill--upcoming {
-  border-color: #bfdbfe;
-  background-color: #eff6ff;
-}
-
-.cn-detail-status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-}
-
-.cn-detail-status-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.cn-detail-status-pill--completed .cn-detail-status-text {
-  color: #15803d;
-}
-
-/* main body */
-
-.cn-detail-main {
-  flex: 1;
-  padding: 16px;
-  padding-bottom: 80px; /* pour laisser la place au footer */
-  background-color: #f9fafb;
-}
-
-/* carte des totaux */
-
-.cn-totals-card {
-  background-color: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-  margin-bottom: 16px;
-}
-
-.cn-totals-card-header {
-  padding: 10px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fcff;
-  font-size: 13px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-totals-card-body {
-  padding: 14px 16px 16px;
-}
-
-.cn-totals-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-@media (min-width: 768px) {
-  .cn-totals-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.cn-total-box {
-  text-align: center;
-  padding: 10px 8px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-}
-
-.cn-total-box--orange {
-  background-color: #fff7ed;
-  border-color: #fed7aa;
-}
-
-.cn-total-box--red {
-  background-color: #fef2f2;
-  border-color: #fecaca;
-}
-
-.cn-total-box--yellow {
-  background-color: #fffbeb;
-  border-color: #fef3c7;
-}
-
-.cn-total-box--green {
-  background-color: #ecfdf5;
-  border-color: #bbf7d0;
-}
-
-.cn-total-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-total-label {
-  margin-top: 4px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  color: #4b5563;
-}
-
-/* section Meals */
-
-.cn-meals-section {
-  margin-top: 8px;
-}
-
-.cn-meals-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.cn-meals-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: #111827;
-}
-
-/* cartes repas */
-
-.cn-meal-card {
-  background-color: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-  margin-bottom: 10px;
-  overflow: hidden;
-}
-
-.cn-meal-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fcff;
-}
-
-.cn-meal-header-left {
+.meal-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
-}
 
-.cn-meal-index {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background-color: #44b4df;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.cn-meal-name {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-meal-macros-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.cn-meal-macro-card {
-  text-align: center;
-  padding: 6px;
-  border-radius: 10px;
-  background-color: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.cn-meal-macro-value {
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-meal-macro-label {
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: lowercase;
-}
-
-/* liste des aliments */
-
-.cn-meal-foods {
-  padding: 8px 12px 10px;
-}
-
-.cn-food-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 8px;
-  border-radius: 10px;
-  transition: background-color 0.12s ease;
-}
-
-.cn-food-row--bordered {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.cn-food-row:hover {
-  background-color: #f9fafb;
-}
-
-.cn-food-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.cn-food-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cn-food-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.cn-food-qty {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.cn-food-macros {
-  display: flex;
-  gap: 8px;
-  margin-left: 10px;
-  font-size: 12px;
-}
-
-.cn-food-macro {
-  min-width: 40px;
-  text-align: center;
-}
-
-.cn-food-macro-value {
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-food-macro-label {
-  font-size: 10px;
-  color: #9ca3af;
-}
-
-/* footer sticky (boutons Completed / Missed) */
-
-.cn-food-replace-btn {
-  background: transparent;
-  color: #2196F3;
-  border: 1px solid #2196F3;
-  border-radius: 999px;
-  padding: 2px 10px;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 600;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  line-height: 1.4;
-
-  &:hover {
-    background: #2196F3;
-    color: white;
-  }
-}
-
-.cn-detail-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-  padding: 10px 16px 12px;
-  display: flex;
-  gap: 8px;
-}
-
-.cn-footer-btn {
-  flex: 1;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease,
-    box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.cn-footer-btn--green {
-  background-color: #ffffff;
-  border: 2px solid #16a34a;
-  color: #16a34a;
-}
-
-.cn-footer-btn--red {
-  background-color: #ffffff;
-  border: 2px solid #dc2626;
-  color: #dc2626;
-}
-
-.cn-footer-btn--green:hover {
-  background-color: #f0fdf4;
-}
-
-.cn-footer-btn--red:hover {
-  background-color: #fef2f2;
-}
-
-.cn-footer-btn--active.cn-footer-btn--green {
-  background-color: #16a34a;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35);
-}
-
-.cn-footer-btn--active.cn-footer-btn--red {
-  background-color: #dc2626;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.35);
-}
-
-/* responsive */
-
-@media (max-width: 640px) {
-  .cn-detail-main {
-    padding-inline: 12px;
+  & + & {
+    margin-top: 9px;
   }
 
-  .cn-detail-footer {
-    flex-direction: column;
-  }
-}
-/* --- STATUS ICONS (mêmes que workouts) --- */
-.cn-status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &--small {
-    width: 14px;
-    height: 14px;
-  }
-
-  &--completed {
-    background: #4caf50;
-  }
-
-  &--missed {
-    background: #e53935;
-  }
-
-  &--pending {
-    border: 2px solid #9e9e9e;
-  }
-}
-
-.cn-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #9e9e9e;
-}
-/* --- TOP RIGHT STATUS BUTTONS --- */
-.cn-detail-status-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.cn-detail-status-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
-  border: 2px solid #ccc;
-  background: white;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &--completed {
-    border-color: #4caf50;
-    background: #4caf50;
-    color: white;
-  }
-
-  &--missed {
-    border-color: #e53935;
-    background: #e53935;
-    color: white;
-  }
-
-  &:hover {
-    transform: scale(1.06);
-  }
-}
-/* --- STATUS PILL --- */
-.cn-detail-status-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #f5f5f5;
-  font-weight: 500;
-}
-.cn-detail-status-text--completed {
-  color: #4caf50;
-}
-.cn-detail-status-text--missed {
-  color: #e53935;
-}
-.cn-detail-status-text--pending {
-  color: #9e9e9e;
-}
-
-/* Boutons ✓ / ✕ à droite (copie de cn-detail-status-actions/btn) */
-.cw-detail-status-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.cw-detail-status-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
-  border: 2px solid #ccc;
-  background: white;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &--completed {
-    border-color: #4caf50;
-    background: #4caf50;
-    color: white;
-  }
-
-  &--missed {
-    border-color: #e53935;
-    background: #e53935;
-    color: white;
-  }
-
-  &:hover {
-    transform: scale(1.06);
-  }
-}
-
-/* infobar */
-
-.cw-detail-infobar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: rgba(68, 180, 223, 0.05);
-}
-
-.cw-detail-date {
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.cw-detail-program {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #111827;
-}
-
-.cw-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background-color: #d1d5db;
-}
-.cw-status-icon--small {
-  width: 22px;
-  height: 22px;
-}
-
-.cw-status-icon--completed {
-  border-color: #22c55e;
-}
-
-.cw-status-icon--missed {
-  border-color: #ef4444;
-}
-
-.cw-status-icon--pending {
-  border-color: #d1d5db;
-}
-.cw-status-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  border: 2px solid #d1d5db;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cw-detail-status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  gap: 6px;
-}
-
-.cw-detail-status-text {
-  font-size: 0.8rem;
-}
-
-.cw-detail-status-text--completed {
-  color: #16a34a;
-}
-
-.cw-detail-status-text--missed {
-  color: #dc2626;
-}
-
-.cw-detail-status-text--pending {
-  color: #6b7280;
-}
-
-/* body */
-
-.cw-detail-body {
-  flex: 1;
-  background-color: #f9fafb;
-  overflow-y: auto;
-  padding: 8px 0 0;
-}
-
-.cw-detail-exercise {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px 16px 14px;
-}
-
-.cw-detail-exercise-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cw-detail-exercise-label {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #0284c7;
-}
-
-.cw-detail-exercise-label--warmup {
-  background-color: #fee2e2;
-  color: #ef4444;
-}
-
-.cw-detail-exercise-info {
-  flex: 1;
-}
-
-.cw-detail-exercise-name {
-  margin: 0;
-  font-size: 0.98rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.cw-detail-exercise-meta {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.cw-detail-video-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  background-color: transparent;
-  color: #44b4df;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-}
-
-.cw-detail-video-btn--active {
-  background-color: #44b4df;
-  color: #ffffff;
-}
-
-/* sets */
-
-.cw-detail-sets {
-  background-color: #f3f4f6;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 8px;
-  font-size: 0.8rem;
-}
-
-.cw-detail-sets-header,
-.cw-detail-set-row {
-  display: grid;
-  grid-template-columns: 40px 1fr 1fr;
-  column-gap: 8px;
-}
-
-.cw-detail-sets-header {
-  font-weight: 600;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.cw-detail-set-row {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 4px;
-  margin-top: 4px;
-}
-
-.cw-detail-set-cell {
-  color: #111827;
-}
-
-.cw-detail-set-cell--index {
-  font-weight: 600;
-}
-
-/* cardio */
-
-.cw-detail-cardio {
-  background-color: #f3f4f6;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 8px;
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.85rem;
-  color: #374151;
-}
-
-.cw-detail-cardio-icon {
-  margin-right: 8px;
-}
-
-.cw-detail-cardio-text strong {
-  font-weight: 600;
-}
-
-/* video */
-
-.cw-detail-video-wrapper {
-  margin-top: 8px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.cw-detail-video-ratio {
-  position: relative;
-  padding-bottom: 56.25%;
-}
-
-.cw-detail-video-ratio iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* rest day detail */
-
-.cw-restday-detail {
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.cw-restday-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 999px;
-  background-color: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.75rem;
-  margin: 0 auto 12px;
-}
-
-.cw-restday-detail h3 {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
-  color: #111827;
-}
-
-.cw-restday-detail p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-/* footer buttons */
-
-.cw-detail-footer {
-  padding: 12px 16px;
-  border-top: 1px solid #e5e7eb;
-  background-color: #ffffff;
-  display: flex;
-  gap: 8px;
-}
-.cw-detail-main-btn {
-  flex: 1;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.cw-detail-main-btn--completed {
-  background-color: #ffffff;
-  border: 2px solid #16a34a;
-  color: #16a34a;
-}
-
-.cw-detail-main-btn--missed {
-  background-color: #ffffff;
-  border: 2px solid #dc2626;
-  color: #dc2626;
-}
-
-.cw-detail-main-btn--active.cw-detail-main-btn--completed {
-  background-color: #16a34a;
-  color: #ffffff;
-}
-
-.cw-detail-main-btn--active.cw-detail-main-btn--missed {
-  background-color: #dc2626;
-  color: #ffffff;
-}
-
-/* responsive */
-
-@media (max-width: 768px) {
-  .cw-month-bar {
-    padding-inline: 16px;
-  }
-
-  .cw-detail-header {
-    padding-inline: 10px;
-  }
-
-  .cw-detail-footer {
-    flex-direction: column;
-  }
-}
-/* ===== Layout commun Nutrition / Workouts ===== */
-
-.client-page {
-  min-height: 100vh;
-  background-color: #f7f8fb;
-}
-
-.client-page-inner {
-  margin: 0 auto;
-  padding: 0 16px 20px;
-}
-
-/* Header (Good morning, Kolton...) */
-.client-header-wrapper {
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.client-header {
-  padding: 20px 16px 12px;
-  text-align: center;
-}
-
-.client-header-title {
-  margin: 0 0 4px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.client-header-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* Onglets Upcoming / Past */
-
-.client-tabs {
-  display: flex;
-  border-top: 1px solid #edf0f3;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.client-tab {
-  flex: 1;
-  padding: 10px 0;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #6b7280;
-  position: relative;
-}
-
-.client-tab--active {
-  color: #44b4df;
-}
-
-.client-tab--active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background-color: #44b4df;
-}
-
-/* Navigation mois */
-
-.client-month-nav {
-  margin-top: 12px;
-  margin-bottom: 12px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.month-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.month-nav-btn {
-  border: none;
-  background: transparent;
-  padding: 4px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.month-nav-btn:hover {
-  background-color: rgba(68, 180, 223, 0.08);
-}
-
-/* Petites flèches custom (remplace les icônes lucide) */
-.chevron {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #44b4df;
-  border-right: 2px solid #44b4df;
-}
-
-.chevron-left {
-  transform: rotate(-135deg);
-}
-
-.chevron-right {
-  transform: rotate(45deg);
-}
-
-/* Liste Workouts */
-
-.client-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Carte workout – mêmes proportions que cartes nutrition */
-
-.workout-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.05s ease,
-    border-color 0.15s ease;
-}
-
-.workout-card:hover {
-  border-color: rgba(68, 180, 223, 0.45);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
-}
-
-.workout-card-inner {
-  padding: 12px 14px 12px;
-}
-
-/* Date + statut */
-
-.workout-card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.workout-date {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-/* petit rond de statut, même style que Nutrition */
-
-.status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 2px solid #e5e7eb;
-  position: relative;
-}
-
-.status-icon::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: inherit;
-}
-
-.status-icon--completed {
-  border-color: #4ade80;
-}
-
-.status-icon--completed::after {
-  background-color: #4ade80;
-}
-
-.status-icon--missed {
-  border-color: #f97373;
-}
-
-.status-icon--missed::after {
-  background-color: #f97373;
-}
-
-.status-icon--pending::after {
-  background-color: #d1d5db;
-}
-
-/* Titre + programme */
-
-.workout-title {
-  margin: 0 0 2px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.workout-program {
-  font-size: 13px;
-  color: #44b4df;
-  margin-bottom: 6px;
-}
-
-/* Résumé exercices */
-
-.workout-exercises {
-  margin-top: 4px;
-}
-
-.workout-exercises-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.chevron-small {
-  font-size: 14px;
-  color: #44b4df;
-}
-
-.workout-exercises-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.exercise-line {
-  display: flex;
-  align-items: center;
-}
-
-.exercise-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.08);
-  color: #0284c7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.exercise-badge--warmup {
-  background-color: #fee2e2;
-}
-
-.exercise-name {
-  font-size: 13px;
-  color: #111827;
-}
-
-.exercise-more {
-  font-size: 12px;
-  color: #44b4df;
-  margin-left: 30px;
-}
-
-/* État vide */
-
-.client-empty {
-  margin-top: 16px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  text-align: center;
-  padding: 24px 16px;
-}
-
-.client-empty-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 8px;
-  font-size: 26px;
-}
-
-.client-empty-title {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.client-empty-text {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-/* ===== WORKOUT DETAIL HEADER (même style que Nutrition) ===== */
-
-.cw-detail-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  padding: 12px 12px;
-  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
-  background-color: #ffffff;
-}
-
-.cw-back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  margin-right: 8px;
-  cursor: pointer;
-  background: transparent;
-  font-size: 1.2rem;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cw-back-btn:hover {
-  background-color: rgba(68, 180, 223, 0.1);
-}
-
-.cw-detail-header-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.cw-detail-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cw-detail-program-line {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.cw-calendar-icon {
-  font-size: 12px;
-}
-
-.cw-header-date {
-  color: #6b7280;
-}
-
-/* Boutons ✓ / ✕ à droite (copie de cn-detail-status-actions/btn) */
-.cw-detail-status-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.cw-detail-status-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
-  border: 2px solid #ccc;
-  background: white;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &--completed {
-    border-color: #4caf50;
-    background: #4caf50;
-    color: white;
-  }
-
-  &--missed {
-    border-color: #e53935;
-    background: #e53935;
-    color: white;
-  }
-
-  &:hover {
-    transform: scale(1.06);
-  }
-}
-
-.coach-filter-container {
-  border-radius: 12px;
-  margin: 16px 20px;
-}
-
-.coach-filter-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-}
-
-.coach-select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  background: white;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.coach-current {
-  padding: 16px 20px;
-  text-align: center;
-  color: #444;
-  font-size: 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  margin: 16px 20px;
-}
-
-
-/* =========================================================
-   CLIENT NUTRITION FILE VIEW - SAME IDEA AS CLIENT WORKOUT FILE VIEW
-   ========================================================= */
-.file-toggle-wrap {
-  padding: 0 16px 12px;
-}
-
-.file-mode-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border: 1px solid #e4e7ec;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.file-mode-btn {
-  border: none;
-  background: #fff;
-  padding: 12px 10px;
-  color: #667085;
-  font-weight: 800;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  align-items: center;
-  justify-content: center;
-}
-
-.file-mode-btn--active {
-  background: #111827;
-  color: #fff;
-}
-
-.file-mode-btn small {
-  font-size: 11px;
-  opacity: 0.75;
-  font-weight: 600;
-}
-
-.file-mode-hint {
-  margin: 8px 2px 0;
-  color: #667085;
-  font-size: 12px;
-  text-align: center;
-}
-
-.file-client-layout {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 16px;
-  padding: 0 16px 20px;
-  min-height: 560px;
-}
-
-.file-sidebar {
-  border: 1px solid #e4e7ec;
-  border-radius: 16px;
-  background: #fff;
-  overflow: hidden;
-  height: fit-content;
-}
-
-.file-search-box {
-  padding: 12px;
-  border-bottom: 1px solid #edf0f3;
-  background: #f9fafb;
-}
-
-.file-search-box input {
-  width: 100%;
-  height: 38px;
-  border: 1px solid #d0d5dd;
-  border-radius: 10px;
-  padding: 0 12px;
-  outline: none;
-  color: #111827;
-}
-
-.sidebar-section {
-  padding: 12px;
-}
-
-.sidebar-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #667085;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-
-.sidebar-program {
-  width: 100%;
-  border: 1px solid transparent;
-  background: #fff;
-  border-radius: 14px;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  text-align: left;
-  margin-bottom: 8px;
-}
-
-.sidebar-program:hover,
-.sidebar-program--active {
-  border-color: rgba(68, 180, 223, 0.35);
-  background: #f7fbff;
-}
-
-.sidebar-program--history {
-  opacity: 0.92;
-}
-
-.sidebar-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #eff6ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.sidebar-copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar-title {
-  color: #111827;
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-meta {
-  color: #667085;
-  font-size: 11px;
-  margin-top: 2px;
-}
-
-.sidebar-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: #22c55e;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-.file-main {
-  min-width: 0;
-  border: 1px solid #e4e7ec;
-  border-radius: 16px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.file-main--empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 18px;
-}
-
-.file-empty-state {
-  text-align: center;
-  max-width: 360px;
-}
-
-.file-empty-icon {
-  font-size: 42px;
-  margin-bottom: 10px;
-}
-
-.file-empty-state h2 {
-  margin: 0 0 6px;
-  color: #111827;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.file-empty-state p {
-  margin: 0;
-  color: #667085;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.file-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-  border-bottom: 1px solid #edf0f3;
-  background: #fff;
-}
-
-.file-card-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.file-card-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: #e6f5ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.file-card-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.file-card-title-row h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 18px;
-  font-weight: 900;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.file-card-title-wrap p {
-  margin: 4px 0 0;
-  color: #667085;
-  font-size: 12px;
-}
-
-.file-status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #15803d;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.file-download-btn {
-  border: 1px solid #e4e7ec;
-  background: #fff;
-  color: #111827;
-  padding: 9px 14px;
-  border-radius: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.file-download-btn:hover {
-  background: #f9fafb;
-}
-
-.file-date-range {
-  display: inline-flex;
-  margin: 12px 18px 0;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #f8fafc;
-  border: 1px solid #e4e7ec;
-  color: #475467;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.file-preview-panel {
-  margin: 14px 18px 18px;
-  border: 1px solid #e4e7ec;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.file-preview-title {
-  background: #111827;
-  color: #fff;
-  padding: 12px 14px;
-  font-weight: 900;
-  font-size: 13px;
-}
-
-.file-preview-loading,
-.file-preview-error,
-.file-preview-empty {
-  padding: 22px;
-  color: #667085;
-  font-weight: 700;
-}
-
-.file-preview-error {
-  color: #dc2626;
-}
-
-.file-preview-content {
-  min-height: 520px;
-  background: #f8fafc;
-}
-
-.pdf-iframe {
-  width: 100%;
-  min-height: 720px;
-  border: 0;
-  background: #fff;
-}
-
-.excel-preview {
-  background: #fff;
-}
-
-.excel-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #e4e7ec;
-}
-
-.excel-file-name {
-  min-width: 0;
-  color: #111827;
-  font-weight: 900;
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.excel-toolbar select {
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  padding: 6px 8px;
-  background: #fff;
-}
-
-.excel-table-wrap {
-  width: 100%;
-  max-width: 100%;
-  min-height: 520px;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.excel-table {
-  width: max-content;
-  min-width: max-content;
-  border-collapse: collapse;
-  background: #fff;
-}
-
-.excel-table th,
-.excel-table td {
-  display: table-cell;
-  min-width: 120px;
-  max-width: 240px;
-  border: 1px solid #e4e7ec;
-  padding: 8px 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-}
-
-.excel-table .row-index {
-  position: sticky;
-  left: 0;
-  min-width: 48px;
-  width: 48px;
-  max-width: 48px;
-  background: #f8fafc;
-  color: #475467;
-  text-align: center;
-  z-index: 2;
-}
-
-@media (max-width: 900px) {
-  .file-client-layout {
-    grid-template-columns: 1fr;
-    padding: 0 10px 18px;
-  }
-
-  .file-card-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .file-download-btn {
-    width: 100%;
-  }
-
-  .pdf-iframe {
-    min-height: 620px;
-  }
-}
-
-
-/* ===========================
-   NUTRITION – LAYOUT GLOBAL
-   =========================== */
-
-.cn-root,
-.cn-detail-root {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: #ffffff;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-}
-
-/* Header (Good morning, Kolton...) */
-.client-header {
-  padding: 20px 16px 12px;
-  text-align: center;
-}
-
-.client-header-title {
-  margin: 0 0 4px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.client-header-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* Onglets Upcoming / Past – EXACTEMENT comme Nutritions */
-
-.client-tabs {
-  display: flex;
-  border-top: 1px solid #edf0f3;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.client-tab {
-  flex: 1;
-  padding: 10px 0;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #6b7280;
-  position: relative;
-}
-
-.client-tab--active {
-  color: #44b4df;
-}
-
-.client-tab--active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background-color: #44b4df;
-}
-
-/* Navigation mois – même barre que Nutritions */
-
-.client-month-nav {
-  margin-top: 12px;
-  margin-bottom: 12px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.month-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.month-nav-btn {
-  border: none;
-  background: transparent;
-  padding: 4px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.month-nav-btn:hover {
-  background-color: rgba(68, 180, 223, 0.08);
-}
-
-/* Petites flèches custom */
-
-.chevron {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #44b4df;
-  border-right: 2px solid #44b4df;
-}
-
-.chevron-left {
-  transform: rotate(-135deg);
-}
-
-.chevron-right {
-  transform: rotate(45deg);
-}
-
-/* Conteneur de liste – partagé Nutrition / Nutritions */
-
-.client-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ===========================
-   NUTRITION – LIST VIEW
-   =========================== */
-
-/* Card jour – même gabarit que .nutrition-card */
-
-.cn-day-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.05s ease,
-    border-color 0.15s ease;
-}
-
-.cn-day-card:hover {
-  border-color: rgba(68, 180, 223, 0.45);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
-}
-
-.cn-day-header {
-  padding: 12px 14px 10px;
-  background-color: #f9fcff;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.cn-day-header-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.cn-day-chip-date {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background-color: transparent;
-  color: #44b4df;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
-}
-
-.cn-day-title {
-  margin: 0 0 2px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cn-day-subtitle {
-  margin: 0;
-  font-size: 12px;
-  color: #4b5563;
-  font-weight: 500;
-}
-
-/* statut à droite (rond bleu/vert) */
-
-.cn-day-status-icon {
-  flex-shrink: 0;
-}
-
-.cn-status-circle {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #e5f0ff;
-  color: #44b4df;
-  font-size: 13px;
-}
-
-.cn-status-circle--completed {
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.cn-status-circle--upcoming {
-  background-color: #e5f0ff;
-  color: #44b4df;
-}
-
-/* ligne "X meals" */
-
-.cn-day-meals-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px 6px;
-}
-
-.cn-utensils-icon {
-  font-size: 14px;
-}
-
-.cn-day-meals-text {
-  font-size: 12px;
-  color: #4b5563;
-  font-weight: 500;
-}
-
-/* bloc macros en bas de la carte */
-
-.cn-day-macros {
-  padding: 8px 12px 12px;
-  background-color: #f3f4f6;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.cn-macro-card {
-  text-align: center;
-  padding: 6px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.cn-macro-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-macro-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-/* Empty state */
-
-.cn-empty {
-  margin-top: 16px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 24px 16px;
-  text-align: center;
-}
-
-.cn-empty-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 8px;
-  font-size: 26px;
-}
-
-.cn-empty-title {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-empty-text {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* ===========================
-   NUTRITION – DETAIL VIEW
-   =========================== */
-
-.cn-detail-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* header détail proche de cw-detail-header */
-
-.cn-detail-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  padding: 12px 12px;
-  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
-  background-color: #ffffff;
-}
-
-.cn-back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  margin-right: 8px;
-  cursor: pointer;
-  background: transparent;
-  font-size: 1.2rem;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cn-back-btn:hover {
-  background-color: rgba(68, 180, 223, 0.1);
-}
-
-.cn-detail-header-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.cn-detail-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-detail-program-line {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.cn-calendar-icon {
-  font-size: 12px;
-}
-
-/* pill statut à droite */
-
-.cn-detail-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid #bfdbfe;
-  background-color: #eff6ff;
-}
-
-.cn-detail-status-pill--completed {
-  border-color: #bbf7d0;
-  background-color: #dcfce7;
-}
-
-.cn-detail-status-pill--upcoming {
-  border-color: #bfdbfe;
-  background-color: #eff6ff;
-}
-
-.cn-detail-status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-}
-
-.cn-detail-status-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.cn-detail-status-pill--completed .cn-detail-status-text {
-  color: #15803d;
-}
-
-/* main body */
-
-.cn-detail-main {
-  flex: 1;
-  padding: 16px;
-  padding-bottom: 80px; /* pour laisser la place au footer */
-  background-color: #f9fafb;
-}
-
-/* carte des totaux */
-
-.cn-totals-card {
-  background-color: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-  margin-bottom: 16px;
-}
-
-.cn-totals-card-header {
-  padding: 10px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fcff;
-  font-size: 13px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-totals-card-body {
-  padding: 14px 16px 16px;
-}
-
-.cn-totals-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-@media (min-width: 768px) {
-  .cn-totals-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.cn-total-box {
-  text-align: center;
-  padding: 10px 8px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-}
-
-.cn-total-box--orange {
-  background-color: #fff7ed;
-  border-color: #fed7aa;
-}
-
-.cn-total-box--red {
-  background-color: #fef2f2;
-  border-color: #fecaca;
-}
-
-.cn-total-box--yellow {
-  background-color: #fffbeb;
-  border-color: #fef3c7;
-}
-
-.cn-total-box--green {
-  background-color: #ecfdf5;
-  border-color: #bbf7d0;
-}
-
-.cn-total-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-total-label {
-  margin-top: 4px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  color: #4b5563;
-}
-
-/* section Meals */
-
-.cn-meals-section {
-  margin-top: 8px;
-}
-
-.cn-meals-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.cn-meals-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: #111827;
-}
-
-/* cartes repas */
-
-.cn-meal-card {
-  background-color: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-  margin-bottom: 10px;
-  overflow: hidden;
-}
-
-.cn-meal-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fcff;
-}
-
-.cn-meal-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.cn-meal-index {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background-color: #44b4df;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.cn-meal-name {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-meal-macros-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.cn-meal-macro-card {
-  text-align: center;
-  padding: 6px;
-  border-radius: 10px;
-  background-color: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.cn-meal-macro-value {
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-meal-macro-label {
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: lowercase;
-}
-
-/* liste des aliments */
-
-.cn-meal-foods {
-  padding: 8px 12px 10px;
-}
-
-.cn-food-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 8px;
-  border-radius: 10px;
-  transition: background-color 0.12s ease;
-}
-
-.cn-food-row--bordered {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.cn-food-row:hover {
-  background-color: #f9fafb;
-}
-
-.cn-food-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.cn-food-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.cn-food-qty {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.cn-food-macros {
-  display: flex;
-  gap: 8px;
-  margin-left: 10px;
-  font-size: 12px;
-}
-
-.cn-food-macro {
-  min-width: 40px;
-  text-align: center;
-}
-
-.cn-food-macro-value {
-  font-weight: 700;
-  color: #111827;
-}
-
-.cn-food-macro-label {
-  font-size: 10px;
-  color: #9ca3af;
-}
-
-/* footer sticky (boutons Completed / Missed) */
-
-.cn-detail-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-  padding: 10px 16px 12px;
-  display: flex;
-  gap: 8px;
-}
-
-.cn-footer-btn {
-  flex: 1;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease,
-    box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.cn-footer-btn--green {
-  background-color: #ffffff;
-  border: 2px solid #16a34a;
-  color: #16a34a;
-}
-
-.cn-footer-btn--red {
-  background-color: #ffffff;
-  border: 2px solid #dc2626;
-  color: #dc2626;
-}
-
-.cn-footer-btn--green:hover {
-  background-color: #f0fdf4;
-}
-
-.cn-footer-btn--red:hover {
-  background-color: #fef2f2;
-}
-
-.cn-footer-btn--active.cn-footer-btn--green {
-  background-color: #16a34a;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35);
-}
-
-.cn-footer-btn--active.cn-footer-btn--red {
-  background-color: #dc2626;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.35);
-}
-
-/* responsive */
-
-@media (max-width: 640px) {
-  .cn-detail-main {
-    padding-inline: 12px;
-  }
-
-  .cn-detail-footer {
-    flex-direction: column;
-  }
-}
-/* --- STATUS ICONS (mêmes que nutritions) --- */
-.cn-status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &--small {
-    width: 14px;
-    height: 14px;
-  }
-
-  &--completed {
-    background: #4caf50;
-  }
-
-  &--missed {
-    background: #e53935;
-  }
-
-  &--pending {
-    border: 2px solid #9e9e9e;
-  }
-}
-
-.cn-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #9e9e9e;
-}
-/* --- TOP RIGHT STATUS BUTTONS --- */
-.cn-detail-status-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.cn-detail-status-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
-  border: 2px solid #ccc;
-  background: white;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &--completed {
-    border-color: #4caf50;
-    background: #4caf50;
-    color: white;
-  }
-
-  &--missed {
-    border-color: #e53935;
-    background: #e53935;
-    color: white;
-  }
-
-  &:hover {
-    transform: scale(1.06);
-  }
-}
-/* --- STATUS PILL --- */
-.cn-detail-status-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #f5f5f5;
-  font-weight: 500;
-}
-.cn-detail-status-text--completed {
-  color: #4caf50;
-}
-.cn-detail-status-text--missed {
-  color: #e53935;
-}
-.cn-detail-status-text--pending {
-  color: #9e9e9e;
-}
-
-/* Boutons ✓ / ✕ à droite (copie de cn-detail-status-actions/btn) */
-.cw-detail-status-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.cw-detail-status-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
-  border: 2px solid #ccc;
-  background: white;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &--completed {
-    border-color: #4caf50;
-    background: #4caf50;
-    color: white;
-  }
-
-  &--missed {
-    border-color: #e53935;
-    background: #e53935;
-    color: white;
-  }
-
-  &:hover {
-    transform: scale(1.06);
-  }
-}
-
-/* infobar */
-
-.cw-detail-infobar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: rgba(68, 180, 223, 0.05);
-}
-
-.cw-detail-date {
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.cw-detail-program {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #111827;
-}
-
-.cw-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background-color: #d1d5db;
-}
-.cw-status-icon--small {
-  width: 22px;
-  height: 22px;
-}
-
-.cw-status-icon--completed {
-  border-color: #22c55e;
-}
-
-.cw-status-icon--missed {
-  border-color: #ef4444;
-}
-
-.cw-status-icon--pending {
-  border-color: #d1d5db;
-}
-.cw-status-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  border: 2px solid #d1d5db;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cw-detail-status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  gap: 6px;
-}
-
-.cw-detail-status-text {
-  font-size: 0.8rem;
-}
-
-.cw-detail-status-text--completed {
-  color: #16a34a;
-}
-
-.cw-detail-status-text--missed {
-  color: #dc2626;
-}
-
-.cw-detail-status-text--pending {
-  color: #6b7280;
-}
-
-/* body */
-
-.cw-detail-body {
-  flex: 1;
-  background-color: #f9fafb;
-  overflow-y: auto;
-  padding: 8px 0 0;
-}
-
-.cw-detail-exercise {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px 16px 14px;
-}
-
-.cw-detail-exercise-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cw-detail-exercise-label {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #0284c7;
-}
-
-.cw-detail-exercise-label--warmup {
-  background-color: #fee2e2;
-  color: #ef4444;
-}
-
-.cw-detail-exercise-info {
-  flex: 1;
-}
-
-.cw-detail-exercise-name {
-  margin: 0;
-  font-size: 0.98rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.cw-detail-exercise-meta {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.cw-detail-video-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  background-color: transparent;
-  color: #44b4df;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-}
-
-.cw-detail-video-btn--active {
-  background-color: #44b4df;
-  color: #ffffff;
-}
-
-/* sets */
-
-.cw-detail-sets {
-  background-color: #f3f4f6;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 8px;
-  font-size: 0.8rem;
-}
-
-.cw-detail-sets-header,
-.cw-detail-set-row {
-  display: grid;
-  grid-template-columns: 52px 1fr 1fr 1fr;
-  column-gap: 8px;
-  align-items: center;
-}
-
-.cw-detail-sets-header {
-  font-weight: 600;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.cw-detail-set-row {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 4px;
-  margin-top: 4px;
-}
-
-.cw-detail-set-cell {
-  color: #111827;
-}
-
-.cw-detail-set-cell--index {
-  font-weight: 600;
-}
-
-.cw-set-type-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 0 6px;
-}
-
-.cw-set-type--regular {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-
-.cw-set-type--warmup {
-  background-color: #fee2e2;
-  color: #ef4444;
-}
-
-.cw-set-type--dropset {
-  background-color: #dbeafe;
-  color: #2563eb;
-}
-
-.cw-set-type--failure {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-/* cardio */
-
-.cw-detail-cardio {
-  background-color: #f3f4f6;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 8px;
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.85rem;
-  color: #374151;
-}
-
-.cw-detail-cardio-icon {
-  margin-right: 8px;
-}
-
-.cw-detail-cardio-text strong {
-  font-weight: 600;
-}
-
-/* video */
-
-.cw-detail-video-wrapper {
-  margin-top: 8px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.cw-detail-video-ratio {
-  position: relative;
-  padding-bottom: 56.25%;
-}
-
-.cw-detail-video-ratio iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* rest day detail */
-
-.cw-restday-detail {
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.cw-restday-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 999px;
-  background-color: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.75rem;
-  margin: 0 auto 12px;
-}
-
-.cw-restday-detail h3 {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
-  color: #111827;
-}
-
-.cw-restday-detail p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-/* footer buttons */
-
-.cw-detail-footer {
-  padding: 12px 16px;
-  border-top: 1px solid #e5e7eb;
-  background-color: #ffffff;
-  display: flex;
-  gap: 8px;
-}
-.cw-detail-main-btn {
-  flex: 1;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.cw-detail-main-btn--completed {
-  background-color: #ffffff;
-  border: 2px solid #16a34a;
-  color: #16a34a;
-}
-
-.cw-detail-main-btn--missed {
-  background-color: #ffffff;
-  border: 2px solid #dc2626;
-  color: #dc2626;
-}
-
-.cw-detail-main-btn--active.cw-detail-main-btn--completed {
-  background-color: #16a34a;
-  color: #ffffff;
-}
-
-.cw-detail-main-btn--active.cw-detail-main-btn--missed {
-  background-color: #dc2626;
-  color: #ffffff;
-}
-
-/* responsive */
-
-@media (max-width: 768px) {
-  .cw-month-bar {
-    padding-inline: 16px;
-  }
-
-  .cw-detail-header {
-    padding-inline: 10px;
-  }
-
-  .cw-detail-footer {
-    flex-direction: column;
-  }
-}
-/* ===== Layout commun Nutrition / Nutritions ===== */
-
-.client-page {
-  min-height: 100vh;
-  background-color: #f7f8fb;
-}
-
-.client-page-inner {
-  margin: 0 auto;
-  padding: 0 16px 20px;
-}
-
-/* Header (Good morning, Kolton...) */
-.client-header-wrapper {
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.client-header {
-  padding: 20px 16px 12px;
-  text-align: center;
-}
-
-.client-header-title {
-  margin: 0 0 4px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.client-header-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* Onglets Upcoming / Past */
-
-.client-tabs {
-  display: flex;
-  border-top: 1px solid #edf0f3;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.client-tab {
-  flex: 1;
-  padding: 10px 0;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #6b7280;
-  position: relative;
-}
-
-.client-tab--active {
-  color: #44b4df;
-}
-
-.client-tab--active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background-color: #44b4df;
-}
-
-/* Navigation mois */
-
-.client-month-nav {
-  margin-top: 12px;
-  margin-bottom: 12px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.month-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.month-nav-btn {
-  border: none;
-  background: transparent;
-  padding: 4px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.month-nav-btn:hover {
-  background-color: rgba(68, 180, 223, 0.08);
-}
-
-/* Petites flèches custom (remplace les icônes lucide) */
-.chevron {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #44b4df;
-  border-right: 2px solid #44b4df;
-}
-
-.chevron-left {
-  transform: rotate(-135deg);
-}
-
-.chevron-right {
-  transform: rotate(45deg);
-}
-
-/* Liste Nutritions */
-
-.client-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Carte nutrition – mêmes proportions que cartes nutrition */
-
-.nutrition-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.05s ease,
-    border-color 0.15s ease;
-}
-
-.nutrition-card:hover {
-  border-color: rgba(68, 180, 223, 0.45);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
-}
-
-.nutrition-card-inner {
-  padding: 12px 14px 12px;
-}
-
-/* Date + statut */
-
-.nutrition-card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.nutrition-date {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-/* petit rond de statut, même style que Nutrition */
-
-.status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 2px solid #e5e7eb;
-  position: relative;
-}
-
-.status-icon::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: inherit;
-}
-
-.status-icon--completed {
-  border-color: #4ade80;
-}
-
-.status-icon--completed::after {
-  background-color: #4ade80;
-}
-
-.status-icon--missed {
-  border-color: #f97373;
-}
-
-.status-icon--missed::after {
-  background-color: #f97373;
-}
-
-.status-icon--pending::after {
-  background-color: #d1d5db;
-}
-
-/* Titre + programme */
-
-.nutrition-title {
-  margin: 0 0 2px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.nutrition-program {
-  font-size: 13px;
-  color: #44b4df;
-  margin-bottom: 6px;
-}
-
-/* Résumé exercices */
-
-.nutrition-exercises {
-  margin-top: 4px;
-}
-
-.nutrition-exercises-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.chevron-small {
-  font-size: 14px;
-  color: #44b4df;
-}
-
-.nutrition-exercises-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.exercise-line {
-  display: flex;
-  align-items: center;
-}
-
-.exercise-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.08);
-  color: #0284c7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.exercise-badge--warmup {
-  background-color: #fee2e2;
-}
-
-.exercise-name {
-  font-size: 13px;
-  color: #111827;
-}
-
-.exercise-more {
-  font-size: 12px;
-  color: #44b4df;
-  margin-left: 30px;
-}
-
-/* État vide */
-
-.client-empty {
-  margin-top: 16px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  text-align: center;
-  padding: 24px 16px;
-}
-
-.client-empty-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background-color: rgba(68, 180, 223, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 8px;
-  font-size: 26px;
-}
-
-.client-empty-title {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.client-empty-text {
-  margin: 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-/* ===== WORKOUT DETAIL HEADER (même style que Nutrition) ===== */
-
-.cw-detail-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  padding: 12px 12px;
-  border-bottom: 1px solid rgba(68, 180, 223, 0.2);
-  background-color: #ffffff;
-}
-
-.cw-back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  margin-right: 8px;
-  cursor: pointer;
-  background: transparent;
-  font-size: 1.2rem;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cw-back-btn:hover {
-  background-color: rgba(68, 180, 223, 0.1);
-}
-
-.cw-detail-header-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.cw-detail-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.cw-detail-program-line {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.cw-calendar-icon {
-  font-size: 12px;
-}
-
-.cw-header-date {
-  color: #6b7280;
-}
-
-/* Boutons ✓ / ✕ à droite (copie de cn-detail-status-actions/btn) */
-.cw-detail-status-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.cw-detail-status-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
-  border: 2px solid #ccc;
-  background: white;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &--completed {
-    border-color: #4caf50;
-    background: #4caf50;
-    color: white;
-  }
-
-  &--missed {
-    border-color: #e53935;
-    background: #e53935;
-    color: white;
-  }
-
-  &:hover {
-    transform: scale(1.06);
-  }
-}
-
-.coach-filter-container {
-
-
-  border-radius: 12px;
-  margin: 16px 20px;
-
-}
-
-.coach-filter-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-}
-
-.coach-select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  background: white;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.coach-current {
-  padding: 16px 20px;
-  text-align: center;
-  color: #444;
-  font-size: 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  margin: 16px 20px;
-}
-
-
-.file-toggle-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0 18px;
-}
-
-.file-mode-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  background: #fff;
-  border: 1px solid #d8e2ec;
-  border-radius: 999px;
-  padding: 3px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.file-mode-btn {
-  min-width: 180px;
-  border: none;
-  background: transparent;
-  border-radius: 999px;
-  padding: 10px 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #334155;
-}
-.file-mode-btn small { color: #64748b; font-size: 11px; }
-.file-mode-btn--active {
-  background: linear-gradient(90deg, #1f9dc2 0%, #0d95b8 100%);
-  color: #fff;
-}
-.file-mode-btn--active small { color: rgba(255,255,255,0.9); }
-.file-mode-hint { margin: 0; font-size: 12px; color: #64748b; }
-
-.file-client-layout {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.file-sidebar {
-  background: #fff;
-  border: 1px solid #d9e3ee;
-  border-radius: 14px;
-  padding: 12px;
-}
-
-.file-search-box { margin-bottom: 12px; }
-.file-search-box input {
-  width: 100%;
-  border: 1px solid #d8e2ec;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 13px;
-}
-
-.sidebar-section + .sidebar-section { margin-top: 16px; }
-.sidebar-heading {
-  display:flex; justify-content:space-between; align-items:center;
-  font-size: 11px; font-weight: 700; color:#6b7280; margin-bottom: 10px;
-}
-.sidebar-program {
-  width: 100%; text-align:left; border:1px solid transparent; background:#fff; border-radius:10px;
-  padding: 10px; display:grid; grid-template-columns: 28px 1fr auto; gap:10px; cursor:pointer;
-}
-.sidebar-program + .sidebar-program { margin-top: 8px; }
-.sidebar-program--active {
-  background: #edfafd; border-color:#9bdff1; box-shadow: inset 0 0 0 1px #bfeaf5;
-}
-.sidebar-icon { font-size: 18px; line-height: 1; }
-.sidebar-title { font-size: 13px; font-weight: 700; color:#0f172a; margin-bottom: 2px; }
-.sidebar-meta { font-size: 11px; color:#64748b; }
-.sidebar-check { color:#0ea5b7; font-weight: 700; }
-
-.file-main {
-  background: #fff;
-  border: 1px solid #d9e3ee;
-  border-radius: 14px;
-  overflow: hidden;
-}
-.file-card-header {
-  display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding: 18px 18px 12px;
-}
-.file-card-title-wrap { display:flex; gap:12px; align-items:flex-start; }
-.file-card-icon { width: 36px; height:36px; border-radius: 10px; background:#fff1f2; display:flex; align-items:center; justify-content:center; }
-.file-card-title-row { display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
-.file-card-title-row h2 { margin:0; font-size: 18px; color:#0f172a; }
-.active-pill { font-size: 11px; font-weight:700; color:#059669; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:999px; padding: 3px 8px; }
-.file-card-meta-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; color:#64748b; font-size:12px; }
-.date-range-chip { border:1px solid #d8e2ec; background:#f8fafc; border-radius:999px; padding: 6px 10px; font-size:12px; color:#475569; }
-.file-preview-shell { margin: 0 18px 18px; border:1px solid #d8e2ec; border-radius: 10px; overflow:hidden; }
-.file-preview-topbar { background:#1e293b; color:#fff; display:flex; justify-content:space-between; padding:10px 12px; font-size:12px; }
-.file-preview-topbar small { color: rgba(255,255,255,0.7); }
-.file-preview-body { background:#f5f7fb; height: 520px; display:flex; align-items:center; justify-content:center; }
-.file-preview-body iframe { width:100%; height:100%; border:0; background:#fff; }
-.file-preview-empty { display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center; color:#64748b; padding: 24px; }
-.file-preview-empty-icon { font-size: 36px; }
-.file-actions-bar { display:flex; gap:10px; justify-content:flex-end; padding: 0 18px 18px; }
-.file-actions-bar button {
-  border:1px solid #d1d5db; background:#fff; color:#0f172a; border-radius:8px; padding:10px 14px; cursor:pointer; font-weight:600;
-}
-.file-actions-bar .primary-action { background:#0f9dc0; border-color:#0f9dc0; color:white; }
-.file-actions-bar .ghost-action { background:#fff; }
-
-@media (max-width: 1100px) {
-  .file-client-layout { grid-template-columns: 1fr; }
-}
-
-.file-main--empty {
-  min-height: 480px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.file-empty-state {
-  text-align: center;
-  max-width: 420px;
-  padding: 40px;
-  color: #64748b;
-}
-.file-empty-icon {
-  font-size: 44px;
-  margin-bottom: 14px;
-}
-.file-empty-state h2 {
-  color: #0f172a;
-  margin: 0 0 8px;
-  font-size: 22px;
-}
-.file-empty-state p {
-  margin: 0;
-  line-height: 1.6;
-}
-
-/* Client file viewer actions: only fullscreen/download, aligned right */
-.file-actions-bar {
-  justify-content: flex-end;
-}
-
-
-/* ===========================
-   YOCOACH CUSTOM PDF VIEWER
-   =========================== */
-
-.yo-pdf-card {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #d7e3f0;
-  border-radius: 14px;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-}
-
-.yo-pdf-card--fullscreen {
-  position: fixed !important;
-  inset: 12px !important;
-  z-index: 4000 !important;
-  background: #ffffff !important;
-  border-radius: 16px !important;
-  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.35) !important;
-}
-
-.yo-pdf-card .file-preview-topbar {
-  flex: 0 0 auto;
-  height: 42px;
-  padding: 0 14px;
-  background: #1e293b;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.yo-pdf-card .file-preview-topbar small {
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 700;
-}
-
-.yo-pdf-stage {
-  height: clamp(640px, 72vh, 920px);
-  background: #f8fafc;
-  overflow: hidden;
-  position: relative;
-}
-
-.yo-pdf-card--fullscreen .yo-pdf-stage {
-  height: calc(100vh - 126px);
-}
-
-.yo-pdf-viewer-shell {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: #f8fafc;
-}
-
-.yo-pdf-viewer-shell ::ng-deep #viewerContainer {
-  top: 0 !important;
-  background: #f8fafc !important;
-}
-
-.yo-pdf-viewer-shell ::ng-deep .page {
-  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.14) !important;
-  border-radius: 3px !important;
-  border: none !important;
-}
-
-.yo-pdf-viewer-shell ::ng-deep .toolbar,
-.yo-pdf-viewer-shell ::ng-deep #toolbarContainer,
-.yo-pdf-viewer-shell ::ng-deep #sidebarContainer,
-.yo-pdf-viewer-shell ::ng-deep #secondaryToolbar {
-  display: none !important;
-}
-
-.yo-pdf-bottom-bar {
-  flex: 0 0 auto;
-  min-height: 58px;
-  padding: 10px 14px;
-  border-top: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.96);
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 14px;
-  align-items: center;
-}
-
-.yo-pdf-nav-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.yo-pdf-nav-group--center {
-  justify-self: center;
-}
-
-.yo-pdf-icon-btn,
-.yo-pdf-zoom-label,
-.yo-pdf-scroll-btn {
-  border: 1px solid #d8e2ec;
-  background: #ffffff;
-  color: #0f172a;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 900;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.yo-pdf-icon-btn:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-
-.yo-pdf-page-label {
-  min-width: 112px;
-  text-align: center;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.yo-pdf-zoom-label {
-  min-width: 92px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.yo-pdf-scroll-btn {
-  justify-self: end;
-  background: #f8fafc;
-}
-
-.yo-pdf-scroll-btn span {
-  display: inline-block;
-  font-size: 22px;
-  line-height: 1;
-  transform: translateY(-2px);
-}
-
-.yo-pdf-actions {
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.yo-pdf-actions .ghost-action,
-.yo-pdf-actions .primary-action {
-  height: 40px;
-  border-radius: 10px;
-  font-weight: 800;
-  padding: 0 16px;
-  cursor: pointer;
-}
-
-.yo-pdf-actions .ghost-action {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #0f172a;
-}
-
-.yo-pdf-actions .primary-action {
-  background: #0ea5c6;
-  border: 1px solid #0ea5c6;
-  color: #ffffff;
-}
-
-.excel-preview-empty {
-  min-height: 560px;
-}
-
-@media (max-width: 900px) {
-  .yo-pdf-bottom-bar {
-    grid-template-columns: 1fr;
-    justify-items: stretch;
-  }
-
-  .yo-pdf-nav-group,
-  .yo-pdf-nav-group--center,
-  .yo-pdf-actions {
-    justify-self: stretch;
+  &__number,
+  &__lead {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
   }
 
-  .yo-pdf-scroll-btn {
-    justify-self: center;
+  &__number {
+    background: color-mix(in srgb, var(--yc-primary) 10%, transparent);
+    color: var(--yc-primary);
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+
+  &__lead {
+    --lead-color: #1e8e4e;
+    color: var(--lead-color);
+    background: color-mix(in srgb, var(--lead-color) 15%, transparent);
+
+    &.filled {
+      background: var(--lead-color);
+      color: #fff;
+    }
+
+    i-feather {
+      width: 13px;
+      height: 13px;
+    }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__kcal {
+    flex: none;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--yc-text-secondary);
   }
 }
 
+.open-btn {
+  margin-top: 14px;
+  height: 48px;
+  border-radius: 13px;
 
-/* Canvas PDF viewer fallback: no ngx-extended-pdf-viewer */
-.yo-pdf-stage {
-  overflow: auto !important;
+  i-feather {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+// Files
+.file-card__copy strong {
+  font-size: 15.5px;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.file-card__chips {
+  margin-top: 6px;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 20px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.yo-pdf-canvas-wrap {
-  width: 100%;
+.file-meta {
+  margin-top: 12px !important;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--yc-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  i-feather {
+    flex: none;
+    width: 13px;
+    height: 13px;
+    color: var(--yc-text-hint);
+  }
+
+  &--row {
+    margin-top: 8px !important;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+  }
 }
 
-.yo-pdf-canvas {
-  display: block;
-  background: #ffffff;
-  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.14);
-  border-radius: 4px;
-  max-width: none;
+// Day page
+.banner {
+  --banner-color: #1e8e4e;
+  --banner-tint: #e9f6ee;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--banner-tint);
+  border: 1px solid color-mix(in srgb, var(--banner-color) 25%, transparent);
+  color: var(--banner-color);
+  font-size: 13.5px;
+  font-weight: 600;
+
+  i-feather {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
 }
 
-
-/* ===========================
-   YOCOACH EXCEL PREVIEW
-   =========================== */
-.yo-excel-stage {
-  min-height: 640px;
-  background: #f8fafc;
-  padding: 18px;
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
-.yo-excel-preview {
-  height: 100%;
+.ring {
+  position: relative;
+  flex: none;
+  width: 104px;
+  height: 104px;
+
+  svg {
+    width: 104px;
+    height: 104px;
+    transform: rotate(-90deg);
+  }
+
+  circle {
+    fill: none;
+    stroke-width: 10;
+  }
+
+  &__track {
+    stroke: #e8ebf0;
+  }
+
+  &__value {
+    stroke: var(--yc-primary);
+    stroke-linecap: round;
+    stroke-dasharray: 295.3;
+    transition: stroke-dashoffset 0.3s ease;
+  }
+
+  &__label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    strong {
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    small {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--yc-text-secondary);
+    }
+  }
+}
+
+.macro-bars {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-
-.yo-excel-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: #ffffff;
-  border: 1px solid #dbe7f2;
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.yo-excel-file {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  min-width: 0;
 }
 
-.yo-excel-file-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #ecfdf5;
+.macro-bar {
+  &__row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+
+    .yc-label {
+      flex: 1;
+      font-size: 13px;
+    }
+
+    strong {
+      font-size: 12px;
+      font-weight: 600;
+    }
+  }
+
+  .yc-progress {
+    background: #e8ebf0;
+  }
+}
+
+.total-day {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .yc-display {
+    font-size: 24px;
+  }
+
+  &__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    span {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #f1f3f7;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: pre;
+    }
+  }
+}
+
+.meals-head {
+  display: flex;
+  align-items: center;
+  margin: 18px 2px 10px;
+
+  h2 {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+
+  .yc-caption {
+    font-size: 12.5px;
+  }
+}
+
+.meal-card {
+  margin-bottom: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--yc-hairline);
+  background: var(--yc-surface);
+  box-shadow: var(--yc-shadow-card);
+  overflow: hidden;
+
+  &.open {
+    border: 1.4px solid var(--yc-primary);
+  }
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 12px 13px 14px;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  &__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .yc-caption {
+      font-size: 12.5px;
+    }
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    strong {
+      min-width: 0;
+      font-size: 15.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .chevron {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.meal-number,
+.meal-lead {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.yo-excel-file strong {
-  display: block;
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 520px;
-}
-
-.yo-excel-file small {
-  display: block;
-  color: #64748b;
-  font-size: 12px;
-  margin-top: 2px;
-}
-
-.yo-excel-toolbar select {
-  height: 38px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 0 12px;
-  background: #ffffff;
-  color: #0f172a;
+.meal-number {
+  background: color-mix(in srgb, var(--yc-primary) 10%, transparent);
+  color: var(--yc-primary);
+  font-size: 13.5px;
   font-weight: 700;
 }
 
-.yo-excel-table-wrap {
-  flex: 1;
-  min-height: 560px;
-  overflow: auto;
-  border: 1px solid #dbe7f2;
-  border-radius: 12px;
-  background: #ffffff;
-}
+.meal-lead {
+  --lead-color: #1e8e4e;
+  color: var(--lead-color);
+  background: color-mix(in srgb, var(--lead-color) 15%, transparent);
 
-.yo-excel-table {
-  border-collapse: collapse;
-  min-width: 100%;
-  width: max-content;
-  font-size: 13px;
-}
-
-.yo-excel-table th,
-.yo-excel-table td {
-  border: 1px solid #e2e8f0;
-  padding: 9px 12px;
-  min-width: 110px;
-  max-width: 280px;
-  color: #334155;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.yo-excel-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: #f1f5f9;
-  color: #475569;
-  font-weight: 900;
-  text-align: center;
-}
-
-.yo-excel-table .row-index {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  min-width: 54px;
-  width: 54px;
-  background: #f8fafc;
-  color: #64748b;
-  text-align: center;
-  font-weight: 900;
-}
-
-.yo-excel-table tbody .row-index {
-  z-index: 1;
-}
-
-.yo-excel-table tbody tr:nth-child(even) td {
-  background: #fbfdff;
-}
-
-.yo-excel-table tbody tr:hover td,
-.yo-excel-table tbody tr:hover .row-index {
-  background: #eff6ff;
-}
-
-@media (max-width: 900px) {
-  .yo-excel-toolbar {
-    align-items: stretch;
-    flex-direction: column;
+  &.filled {
+    background: var(--lead-color);
+    color: #fff;
   }
 
-  .yo-excel-file strong {
-    max-width: 280px;
+  i-feather {
+    width: 16px;
+    height: 16px;
   }
 }
 
+.meal-macros {
+  display: flex;
+  padding: 11px 0;
+  background: #f6f8fa;
 
-/* =========================================================
-   MOBILE FILE VIEW FIX — Client > Nutritions > Fichier
-   Fixes PDF + Excel previews on small screens.
-   ========================================================= */
-
-@media (max-width: 768px) {
-  .client-page-inner {
-    padding: 0 10px 16px;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  .file-toggle-wrap {
-    margin: 6px 0 12px;
-    padding: 0 2px;
-  }
-
-  .file-mode-switch {
-    width: 100%;
-    max-width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-radius: 999px;
-  }
-
-  .file-mode-btn {
-    min-width: 0;
-    width: 100%;
-    padding: 9px 8px;
-    gap: 4px;
-    flex-direction: column;
-    line-height: 1.1;
-  }
-
-  .file-mode-btn span {
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .file-mode-btn small {
-    font-size: 10px;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .file-mode-hint {
-    padding: 0 4px;
-    text-align: center;
-    font-size: 11px;
-    line-height: 1.35;
-  }
-
-  .file-client-layout {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .file-sidebar {
-    width: 100%;
-    max-width: 100%;
-    padding: 10px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .file-search-box input {
-    height: 38px;
-    font-size: 12px;
-  }
-
-  .sidebar-section + .sidebar-section {
-    margin-top: 10px;
-  }
-
-  .sidebar-heading {
-    font-size: 10px;
-    margin-bottom: 8px;
-  }
-
-  .sidebar-program {
-    grid-template-columns: 24px minmax(0, 1fr) 18px;
-    gap: 8px;
-    padding: 9px;
-    border-radius: 9px;
-  }
-
-  .sidebar-icon {
-    font-size: 15px;
-  }
-
-  .sidebar-title {
-    font-size: 12px;
-    line-height: 1.25;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .sidebar-meta {
-    font-size: 10px;
-  }
-
-  .file-main {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .file-card-header {
+  span {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 12px;
+    align-items: center;
+    gap: 1px;
   }
 
-  .file-card-title-wrap {
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .file-card-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    flex: 0 0 30px;
-    font-size: 14px;
-  }
-
-  .file-card-title-row {
-    gap: 7px;
-  }
-
-  .file-card-title-row h2 {
+  strong {
     font-size: 15px;
-    line-height: 1.25;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    font-weight: 700;
   }
 
-  .active-pill {
-    font-size: 9px;
-    padding: 2px 7px;
+  small {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--yc-text-secondary);
   }
+}
 
-  .file-card-meta-row {
-    gap: 6px 10px;
-    font-size: 10px;
-    line-height: 1.35;
-  }
+.recipe-head {
+  padding: 14px 14px 0;
+}
 
-  .date-range-chip {
-    align-self: flex-start;
-    max-width: 100%;
-    padding: 6px 9px;
-    font-size: 10px;
-    white-space: normal;
-    line-height: 1.25;
-  }
+.recipe-cover {
+  width: 100%;
+  height: 150px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  object-fit: cover;
+}
 
-  .file-preview-shell {
-    margin: 0 8px 12px;
-    border-radius: 10px;
-    max-width: calc(100vw - 20px);
-    overflow: hidden;
-  }
+.recipe-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 
-  .file-preview-topbar {
-    padding: 9px 10px;
-    gap: 8px;
-    font-size: 10px;
-    line-height: 1.25;
-  }
-
-  .file-preview-topbar span,
-  .file-preview-topbar small {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .file-preview-empty {
-    padding: 22px 14px;
-  }
-
-  .file-preview-empty h3 {
-    font-size: 15px;
-    margin: 0;
-  }
-
-  .file-preview-empty p {
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    background: #f1f3f7;
     font-size: 12px;
+    font-weight: 600;
+    color: var(--yc-text-secondary);
+  }
+
+  i-feather {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.recipe-label {
+  padding: 14px 14px 2px;
+}
+
+.food-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 14px;
+  border-top: 1px solid #eff1f4;
+
+  &__image {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__fallback {
+    --tint: #0c86c8;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tint);
+    background: color-mix(in srgb, var(--tint) 10%, transparent);
+
+    i-feather {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--yc-text-secondary);
+    white-space: pre-wrap;
+
+    strong {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--yc-text-primary);
+    }
+  }
+
+  &__macros {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--yc-text-secondary);
+    white-space: pre-wrap;
+
+    strong {
+      font-weight: 700;
+    }
+  }
+}
+
+.swap-btn {
+  flex: none;
+  min-width: 70px;
+  height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--yc-primary) 9%, transparent);
+  color: var(--yc-primary) !important;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  i-feather {
+    width: 14px;
+    height: 14px;
+  }
+
+  .yc-spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+  }
+}
+
+.directions {
+  padding: 14px 14px 4px;
+
+  ol {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
     line-height: 1.45;
   }
 
-  /* PDF mobile */
-  .yo-pdf-stage {
-    height: 58vh !important;
-    min-height: 360px;
-    padding: 8px !important;
-    overflow: auto !important;
-    justify-content: flex-start !important;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .yo-pdf-canvas-wrap {
-    width: max-content;
-    min-width: 100%;
+  li span {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--yc-primary) 10%, transparent);
+    color: var(--yc-primary);
+    font-size: 11.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-  }
-
-  .yo-pdf-canvas {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-
-  .yo-pdf-card--fullscreen {
-    inset: 4px !important;
-    border-radius: 12px !important;
-  }
-
-  .yo-pdf-card--fullscreen .yo-pdf-stage {
-    height: calc(100vh - 116px) !important;
-  }
-
-  .yo-pdf-bottom-bar {
-    min-height: auto;
-    padding: 8px;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .yo-pdf-nav-group,
-  .yo-pdf-nav-group--center,
-  .yo-pdf-actions {
-    width: 100%;
-    justify-self: stretch;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .yo-pdf-page-label {
-    min-width: 96px;
-    font-size: 11px;
-  }
-
-  .yo-pdf-icon-btn,
-  .yo-pdf-zoom-label,
-  .yo-pdf-scroll-btn {
-    height: 34px;
-    min-width: 34px;
-    border-radius: 9px;
-  }
-
-  .yo-pdf-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .yo-pdf-actions .ghost-action,
-  .yo-pdf-actions .primary-action {
-    width: 100%;
-    height: 38px;
-    padding: 0 8px;
-    font-size: 12px;
-  }
-
-  /* Excel mobile */
-  .yo-excel-stage {
-    min-height: 0;
-    height: 58vh;
-    padding: 8px;
-    overflow: hidden;
-    background: #f8fafc;
-  }
-
-  .yo-excel-preview {
-    height: 100%;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .yo-excel-toolbar {
-    padding: 9px;
-    border-radius: 10px;
-    gap: 8px;
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .yo-excel-file {
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .yo-excel-file-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    flex: 0 0 30px;
-    font-size: 13px;
-  }
-
-  .yo-excel-file strong {
-    max-width: 100%;
-    font-size: 12px;
-    line-height: 1.25;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .yo-excel-file small {
-    font-size: 10px;
-  }
-
-  .yo-excel-toolbar select {
-    width: 100%;
-    height: 36px;
-    font-size: 12px;
-  }
-
-  .yo-excel-table-wrap {
-    min-height: 0;
-    height: calc(58vh - 86px);
-    max-height: calc(58vh - 86px);
-    overflow: auto;
-    border-radius: 10px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .yo-excel-table {
-    font-size: 11px;
-    min-width: max-content;
-    width: max-content;
-  }
-
-  .yo-excel-table th,
-  .yo-excel-table td {
-    min-width: 74px;
-    max-width: 150px;
-    padding: 7px 8px;
-    font-size: 11px;
-    line-height: 1.25;
-  }
-
-  .yo-excel-table .row-index {
-    min-width: 38px;
-    width: 38px;
-    padding: 7px 4px;
   }
 }
 
-@media (max-width: 480px) {
-  .client-header {
-    padding: 14px 8px 8px;
-  }
+.meal-photo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 14px 4px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #f6f8fa;
 
-  .client-header-title {
-    font-size: 18px;
-  }
-
-  .client-header-subtitle {
-    font-size: 11px;
-  }
-
-  .file-mode-switch {
-    border-radius: 16px;
-  }
-
-  .file-mode-btn {
-    border-radius: 14px;
-  }
-
-  .file-main {
-    border-left: 0;
-    border-right: 0;
-  }
-
-  .file-preview-shell {
-    margin-left: 6px;
-    margin-right: 6px;
-    max-width: calc(100vw - 12px);
-  }
-
-  .yo-excel-stage,
-  .yo-pdf-stage {
-    height: 56vh !important;
-    min-height: 330px;
-  }
-
-  .yo-excel-table-wrap {
-    height: calc(56vh - 82px);
-    max-height: calc(56vh - 82px);
-  }
-
-  .yo-excel-table th,
-  .yo-excel-table td {
-    min-width: 66px;
-    max-width: 128px;
-    padding: 6px 7px;
-  }
-
-  .yo-excel-table .row-index {
-    min-width: 34px;
-    width: 34px;
-  }
-}
-
-
-/* =========================================================
-   CLIENT WORKOUTS - EXCEL MOBILE NORMAL TABLE
-   Keep Excel as a real horizontal table on mobile.
-   Prevent the sheet from collapsing into one vertical/long line.
-   ========================================================= */
-@media (max-width: 768px) {
-  .yo-excel-stage {
-    width: 100%;
-    max-width: 100%;
-    min-height: 540px;
-    padding: 10px;
+  &__thumb {
+    flex: none;
+    width: 76px;
+    height: 62px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
     overflow: hidden;
+    background: #e9edf3;
+    color: var(--yc-text-hint);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
   }
 
-  .yo-excel-preview {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .yo-excel-toolbar {
-    width: 100%;
-    min-width: 0;
+  &__actions {
+    margin-top: 6px;
     display: flex;
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .yo-excel-file {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .yo-excel-file strong {
-    max-width: calc(100vw - 130px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .yo-excel-table-wrap {
-    width: 100%;
-    max-width: 100%;
-    min-height: 520px;
-    overflow: auto !important;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 12px;
-  }
-
-  .yo-excel-table {
-    width: max-content !important;
-    min-width: max-content !important;
-    table-layout: auto !important;
-    border-collapse: collapse !important;
-  }
-
-  .yo-excel-table thead,
-  .yo-excel-table tbody,
-  .yo-excel-table tr {
-    width: auto !important;
-  }
-
-  .yo-excel-table th,
-  .yo-excel-table td {
-    display: table-cell !important;
-    min-width: 120px !important;
-    max-width: 220px !important;
-    width: auto !important;
-    padding: 9px 10px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    vertical-align: middle !important;
-  }
-
-  .yo-excel-table .row-index {
-    position: sticky !important;
-    left: 0 !important;
-    z-index: 4 !important;
-    min-width: 48px !important;
-    width: 48px !important;
-    max-width: 48px !important;
-    background: #f8fafc !important;
-    text-align: center !important;
-  }
-
-  .yo-excel-table thead .row-index {
-    z-index: 6 !important;
-  }
-}
-
-
-
-
-/* =========================================================
-   NUTRITION CLIENT - EXACT WORKOUT FLOW OVERRIDE
-   Keep file mode identical to workout mode.
-   ========================================================= */
-.cw-root .file-client-layout {
-  display: grid !important;
-  grid-template-columns: 280px minmax(0, 1fr) !important;
-  gap: 16px !important;
-  width: 100% !important;
-}
-
-.cw-root .file-toggle-wrap {
-  margin-top: 12px !important;
-}
-
-.cw-root .file-main,
-.cw-root .file-sidebar {
-  background: #fff !important;
-}
-
-.cw-root .pdf-iframe {
-  width: 100% !important;
-  min-height: 720px !important;
-  border: 0 !important;
-  background: #fff !important;
-}
-
-.cw-root .excel-table-wrap {
-  overflow: auto !important;
-  max-width: 100% !important;
-  min-height: 520px !important;
-}
-
-.cw-root .excel-table {
-  width: max-content !important;
-  min-width: max-content !important;
-  border-collapse: collapse !important;
-}
-
-.cw-root .excel-table th,
-.cw-root .excel-table td {
-  min-width: 120px !important;
-  max-width: 240px !important;
-  border: 1px solid #e4e7ec !important;
-  padding: 8px 10px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-.cw-root .excel-table .row-index {
-  position: sticky !important;
-  left: 0 !important;
-  background: #f8fafc !important;
-  z-index: 2 !important;
-  width: 48px !important;
-  min-width: 48px !important;
-  max-width: 48px !important;
-  text-align: center !important;
-}
-
-.cw-root .file-actions-row {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 20px 20px;
-}
-
-@media (max-width: 900px) {
-  .cw-root .file-client-layout {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-
-
-
-
-
-/* =========================================================
-   EXACT WORKOUT SIDEBAR / FILE CARD OVERRIDE FOR NUTRITION
-   ========================================================= */
-
-.cw-root .file-toggle-wrap {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 8px !important;
-  margin: 8px 0 18px !important;
-}
-
-.cw-root .file-mode-switch {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 0 !important;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  background: #fff !important;
-  border: 1px solid #d8e2ec !important;
-  border-radius: 999px !important;
-  padding: 3px !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-}
-
-.cw-root .file-mode-btn {
-  min-width: 180px !important;
-  height: auto !important;
-  border: none !important;
-  background: transparent !important;
-  border-radius: 999px !important;
-  padding: 10px 18px !important;
-  cursor: pointer !important;
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 10px !important;
-  color: #334155 !important;
-  box-shadow: none !important;
-}
-
-.cw-root .file-mode-btn small {
-  color: #64748b !important;
-  font-size: 11px !important;
-  line-height: normal !important;
-  font-weight: 700 !important;
-  text-transform: none !important;
-  opacity: 1 !important;
-}
-
-.cw-root .file-mode-btn--active {
-  background: linear-gradient(90deg, #1f9dc2 0%, #0d95b8 100%) !important;
-  color: #fff !important;
-}
-
-.cw-root .file-mode-btn--active small {
-  color: rgba(255,255,255,0.9) !important;
-}
-
-.cw-root .file-mode-hint {
-  margin: 0 !important;
-  font-size: 12px !important;
-  color: #64748b !important;
-}
-
-.cw-root .file-client-layout {
-  display: grid !important;
-  grid-template-columns: 260px minmax(0, 1fr) !important;
-  gap: 16px !important;
-  align-items: start !important;
-  max-width: none !important;
-  width: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.cw-root .file-sidebar {
-  background: #fff !important;
-  border: 1px solid #d9e3ee !important;
-  border-radius: 14px !important;
-  padding: 12px !important;
-  min-height: auto !important;
-  overflow: visible !important;
-  box-shadow: none !important;
-}
-
-.cw-root .file-search-box {
-  margin-bottom: 12px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border-bottom: none !important;
-}
-
-.cw-root .file-search-box input {
-  width: 100% !important;
-  height: auto !important;
-  border: 1px solid #d8e2ec !important;
-  border-radius: 8px !important;
-  padding: 10px 12px !important;
-  font-size: 13px !important;
-  color: #111827 !important;
-}
-
-.cw-root .sidebar-section {
-  padding: 0 !important;
-}
-
-.cw-root .sidebar-section + .sidebar-section {
-  margin-top: 16px !important;
-}
-
-.cw-root .sidebar-heading {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #6b7280 !important;
-  margin: 0 0 10px !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-}
-
-.cw-root .sidebar-program {
-  width: 100% !important;
-  text-align: left !important;
-  border: 1px solid transparent !important;
-  background: #fff !important;
-  border-radius: 10px !important;
-  padding: 10px !important;
-  display: grid !important;
-  grid-template-columns: 28px 1fr auto !important;
-  gap: 10px !important;
-  cursor: pointer !important;
-  min-height: auto !important;
-}
-
-.cw-root .sidebar-program + .sidebar-program {
-  margin-top: 8px !important;
-}
-
-.cw-root .sidebar-program--active {
-  background: #edfafd !important;
-  border-color: #9bdff1 !important;
-  box-shadow: inset 0 0 0 1px #bfeaf5 !important;
-}
-
-.cw-root .sidebar-icon {
-  width: auto !important;
-  height: auto !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  font-size: 18px !important;
-  line-height: 1 !important;
-  display: block !important;
-}
-
-.cw-root .sidebar-title {
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  color: #0f172a !important;
-  margin-bottom: 2px !important;
-}
-
-.cw-root .sidebar-meta {
-  font-size: 11px !important;
-  color: #64748b !important;
-  margin-top: 0 !important;
-}
-
-.cw-root .sidebar-check {
-  color: #0ea5b7 !important;
-  font-weight: 700 !important;
-  background: transparent !important;
-  width: auto !important;
-  height: auto !important;
-  border-radius: 0 !important;
-}
-
-.cw-root .file-main {
-  background: #fff !important;
-  border: 1px solid #d9e3ee !important;
-  border-radius: 14px !important;
-  overflow: hidden !important;
-  min-height: auto !important;
-  box-shadow: none !important;
-}
-
-.cw-root .file-card-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: flex-start !important;
-  gap: 16px !important;
-  padding: 18px 18px 12px !important;
-  background: #fff !important;
-  border-bottom: none !important;
-}
-
-.cw-root .file-card-title-wrap {
-  display: flex !important;
-  gap: 12px !important;
-  align-items: flex-start !important;
-}
-
-.cw-root .file-card-icon {
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 10px !important;
-  background: #fff1f2 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.cw-root .file-card-title-row {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  flex-wrap: wrap !important;
-}
-
-.cw-root .file-card-title-row h2 {
-  margin: 0 !important;
-  font-size: 18px !important;
-  color: #0f172a !important;
-  font-weight: 800 !important;
-}
-
-.cw-root .active-pill {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #059669 !important;
-  background: #ecfdf5 !important;
-  border: 1px solid #a7f3d0 !important;
-  border-radius: 999px !important;
-  padding: 3px 8px !important;
-}
-
-.cw-root .file-card-meta-row {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 10px !important;
-  margin-top: 6px !important;
-  color: #64748b !important;
-  font-size: 12px !important;
-}
-
-.cw-root .date-range-chip {
-  border: 1px solid #d8e2ec !important;
-  background: #f8fafc !important;
-  border-radius: 999px !important;
-  padding: 6px 10px !important;
-  font-size: 12px !important;
-  color: #475569 !important;
-}
-
-.cw-root .file-preview-shell {
-  margin: 0 18px 18px !important;
-  border: 1px solid #d8e2ec !important;
-  border-radius: 10px !important;
-  overflow: hidden !important;
-}
-
-.cw-root .file-preview-topbar,
-.cw-root .file-preview-title {
-  background: #1e293b !important;
-  color: #fff !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  padding: 10px 12px !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  height: auto !important;
-}
-
-.cw-root .file-preview-content {
-  background: #f5f7fb !important;
-  min-height: 520px !important;
-}
-
-.cw-root .excel-table-wrap {
-  overflow: auto !important;
-  max-width: 100% !important;
-  min-height: 520px !important;
-  background: #fff !important;
-}
-
-.cw-root .excel-table {
-  width: max-content !important;
-  min-width: 100% !important;
-  border-collapse: collapse !important;
-  background: #fff !important;
-}
-
-.cw-root .excel-table th,
-.cw-root .excel-table td {
-  border: 1px solid #e5e7eb !important;
-  padding: 8px 10px !important;
-  font-size: 12px !important;
-  white-space: nowrap !important;
-}
-
-.cw-root .excel-table .row-index {
-  min-width: 44px !important;
-  width: 44px !important;
-  text-align: center !important;
-  background: #f8fafc !important;
-  color: #475569 !important;
-  position: sticky !important;
-  left: 0 !important;
-  z-index: 2 !important;
-}
-
-@media (max-width: 1100px) {
-  .cw-root .file-client-layout {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-
-/* ===== Nutrition client profile aligned with Workout profile cards ===== */
-.client-nutrition-page,.nutrition-client-tab,.nutrition-section{background:#f7f8fb;color:#0f172a;}
-.file-mode-switch,.client-tabs{display:inline-flex;gap:6px;padding:4px;border:1px solid #dbe4ee;border-radius:999px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.04);}
-.file-mode-btn,.client-tab{border:0;background:transparent;border-radius:999px;padding:9px 14px;color:#64748b;font-weight:800;cursor:pointer;}
-.file-mode-btn--active,.client-tab--active{background:#eaf7fd!important;color:#0ea5e9!important;box-shadow:inset 0 0 0 1px #bde8f7;}
-.file-mode-hint{color:#64748b;font-size:12px;font-weight:600;margin:8px 0 0;}
-.file-client-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start;}
-.file-sidebar,.file-main,.cn-day-card{background:#fff!important;border:1px solid #d8e3ef!important;border-radius:10px!important;box-shadow:0 10px 28px rgba(15,23,42,.04)!important;}
-.file-sidebar{padding:14px;}.file-main{padding:16px;min-height:280px;}
-.sidebar-heading{display:flex;align-items:center;justify-content:space-between;color:#7184a2;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin:14px 0 8px;}
-.sidebar-program{width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid transparent;border-radius:8px;background:#fff;text-align:left;cursor:pointer;}
-.sidebar-program:hover{background:#f8fbfd;}.sidebar-program--active{background:#eaf7fd!important;border-color:#bde8f7!important;}.sidebar-title{font-weight:900;color:#0f172a;}.sidebar-meta{font-size:12px;color:#64748b;font-weight:700;}.sidebar-icon,.file-card-icon{width:34px;height:34px;border-radius:10px;background:#eaf7fd;display:inline-flex;align-items:center;justify-content:center;}
-.file-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #e6e9ee;}.file-card-title-wrap{display:flex;gap:12px;align-items:flex-start;}.file-card-title-row{display:flex;gap:8px;align-items:center;}.file-card-title-row h2{margin:0;font-size:20px;font-weight:900;color:#0f172a;}.active-pill,.date-range-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border:1px solid #bde8f7;border-radius:999px;background:#eaf7fd;color:#0ea5e9;font-size:11px;font-weight:900;}.file-card-meta-row{display:flex;flex-wrap:wrap;gap:8px;color:#64748b;font-size:12px;font-weight:700;margin-top:4px;}
-.file-preview-panel{border:1px solid #e6e9ee;border-radius:10px;background:#fbfdff;overflow:hidden;}.file-preview-title{padding:12px 14px;border-bottom:1px solid #e6e9ee;color:#7184a2;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}.file-preview-content{background:#fff;}.pdf-iframe{width:100%;min-height:640px;border:0;}.excel-table-wrap{overflow:auto;max-height:640px;}.excel-table{width:100%;border-collapse:collapse;background:#fff;}.excel-table td,.excel-table th{border:1px solid #e6e9ee;padding:8px;color:#0f172a;}.excel-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-bottom:1px solid #e6e9ee;background:#f8fafc;}.file-actions-row{display:flex;justify-content:flex-end;margin-top:14px;}.file-download-btn{height:40px;padding:0 16px;border:1px solid #cfeaf7;border-radius:8px;background:#eaf7fd;color:#0ea5e9;font-weight:900;cursor:pointer;}
-.client-month-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;}.month-title{font-weight:900;color:#0f172a;}.month-nav-btn{min-width:92px;height:34px;border:0;border-radius:999px;background:transparent;display:inline-flex;align-items:center;gap:8px;color:#334155;font-size:13px;font-weight:600;}.month-nav-btn:last-child{justify-content:flex-end}.month-nav-btn:disabled{color:#aeb7c4;opacity:1;cursor:not-allowed}.month-nav-btn:disabled .chevron{border-color:#c7ced8}
-
-.cw-root .cn-empty-illustration {
-  position: relative;
-  width: 104px;
-  height: 104px;
-  margin: 0 auto 12px;
-  overflow: hidden;
-}
-
-.cw-root .cn-empty-illustration--nutrition img {
-  position: absolute;
-  top: -220px;
-  left: -499px;
-  width: 1479px;
-  height: 832px;
-  max-width: none;
-}
-.client-list{display:grid;gap:12px;}.cn-day-card{padding:14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}.cn-day-card:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(15,23,42,.07)!important;}.cn-day-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}.cn-day-chip-date{display:inline-flex;height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#eaf7fd;color:#0ea5e9;font-size:11px;font-weight:900;}.cn-day-title{margin:8px 0 2px;font-size:16px;font-weight:900;color:#0f172a;}.cn-day-subtitle{margin:0;color:#64748b;font-size:12px;font-weight:700;}.cn-day-meals-line{display:flex;align-items:center;gap:8px;margin:12px 0;color:#475569;font-weight:800;}.cn-day-macros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}.cn-macro-card{border:1px solid #e6e9ee;border-radius:8px;background:#fbfdff;padding:9px;text-align:center;}.cn-macro-value{font-weight:900;color:#0f172a;}.cn-macro-label{font-size:11px;color:#8a94a6;font-weight:800;text-transform:uppercase;}
-@media(max-width:767px){.file-client-layout{grid-template-columns:1fr;}.file-sidebar{order:2;}.file-main{order:1;padding:12px;}.file-card-header{flex-direction:column;}.cn-day-macros{grid-template-columns:repeat(2,minmax(0,1fr));}.pdf-iframe{min-height:520px;}.file-mode-switch,.client-tabs{width:100%;}.file-mode-btn,.client-tab{flex:1;}}
-
-.client-list .cn-empty {
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-  padding: 46px 16px;
-}
-
-.client-list .cn-day-card {
-  padding: 0;
-  border-radius: 8px !important;
-  border-color: #e8edf2 !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
-  overflow: hidden;
-}
-
-.client-list .cn-day-header {
-  padding: 20px 20px 0;
-  background: #ffffff;
-  border-bottom: 0;
-}
-
-.client-list .cn-day-chip-date {
-  padding: 0;
-  background: transparent;
-  color: #475569;
-  font-size: 15px;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0;
-  margin-bottom: 12px;
-}
-
-.client-list .cn-day-title {
-  color: #020617;
-  font-size: 22px;
-  line-height: 1.15;
-  font-weight: 900;
-  margin-bottom: 8px;
-}
-
-.client-list .cn-day-subtitle {
-  color: #38ace0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.client-list .cn-day-meals-line {
-  padding: 18px 20px 16px;
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.client-list .cn-day-meals-line .chevron-small {
-  margin-left: auto;
-  color: #38ace0;
-  font-size: 20px;
-}
-
-.nutrition-meals-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 20px 22px;
-}
-
-.nutrition-meal-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.nutrition-meal-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background-color: #eaf7fd;
-  color: #020617;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 32px;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.nutrition-meal-copy {
-  min-width: 0;
-}
-
-.nutrition-meal-name {
-  color: #020617;
-  font-size: 16px;
-  line-height: 1.35;
-  font-weight: 500;
-}
-
-.nutrition-foods-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  margin-top: 4px;
-}
-
-.nutrition-food-item {
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.nutrition-food-qty {
-  color: #94a3b8;
-}
-
-.cw-root .client-tabs {
-  display: flex;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  border-bottom: 1px solid #e5e7eb;
-  background: transparent;
-  box-shadow: none;
-  gap: 0;
-}
-
-.cw-root .client-tab {
-  flex: 1;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 14px 0 12px;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.cw-root .client-tab--active {
-  background: transparent !important;
-  box-shadow: none !important;
-  color: #38ace0 !important;
-}
-
-.cw-root .client-tab--active::after {
-  height: 2px;
-  bottom: -1px;
-  background-color: #38ace0;
-}
-
-.cw-root .client-month-nav {
-  margin: 0;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid #e5e7eb;
-  border-radius: 0;
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0;
-}
-
-.cw-root .month-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.cw-root .month-nav-btn {
-  width: auto;
-  height: auto;
-  border: 0;
-  background: transparent;
-  padding: 4px;
-  border-radius: 999px;
-}
-
-.cw-root .month-nav-btn:hover {
-  background-color: rgba(68, 180, 223, 0.08);
-}
-
-/* Client meal-plan dashboard */
-.meal-day-page {
-  min-height: calc(100vh - 72px);
-  background: #f7f9fc;
-  color: #10233d;
-  padding-bottom: 88px;
-}
-
-.meal-day-header {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 28px 24px 18px;
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  align-items: start;
-  gap: 14px;
-}
-
-.meal-day-back {
-  border: 0;
-  background: none;
-  color: #536b85;
-  font-size: 22px;
-  padding: 2px 0;
-  cursor: pointer;
-}
-
-.meal-day-heading > div { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.meal-day-heading h1 { margin:0; font-size:25px; line-height:1.2; font-weight:800; color:#0b1d35; }
-.meal-day-heading span { padding:5px 9px; border-radius:999px; background:#e9f7fd; color:#078fc7; font-size:11px; font-weight:700; }
-.meal-day-heading span[data-status='COMPLETED'] { background:#e7f9f1; color:#07966b; }
-.meal-day-heading span[data-status='OFF_PLAN'] { background:#f3edff; color:#7550ba; }
-.meal-day-heading p { margin:7px 0 0; color:#7890aa; font-size:13px; }
-
-.extract-nutrition-pdf {
-  min-height:42px;
-  padding:0 16px;
-  border:1px solid #d3deea;
-  border-radius:9px;
-  background:#fff;
-  color:#18304c;
-  font-weight:700;
-  box-shadow:0 2px 5px rgba(15,35,55,.04);
-  cursor:pointer;
-  transition:.18s ease;
-}
-.extract-nutrition-pdf:hover { border-color:#31b2e3; color:#079bd8; transform:translateY(-1px); box-shadow:0 5px 14px rgba(7,155,216,.12); }
-.nutrition-pdf-backdrop { position:fixed;z-index:4000;inset:0;padding:24px;display:grid;place-items:center;background:rgba(18,29,45,.66); }
-.nutrition-pdf-modal { width:min(1040px,100%);height:min(94vh,920px);display:flex;flex-direction:column;overflow:hidden;border-radius:14px;background:#eef2f6;box-shadow:0 28px 90px rgba(0,0,0,.38); }
-.nutrition-pdf-modal__header { min-height:76px;padding:13px 18px 13px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;background:#fff;border-bottom:1px solid #d9e2eb; }
-.nutrition-pdf-modal__header h2 { margin:0;color:#0c1a2c;font-size:18px; }.nutrition-pdf-modal__header p { margin:3px 0 0;color:#64788d;font-size:11px; }
-.nutrition-pdf-modal__actions { display:flex;align-items:center;gap:10px; }.nutrition-pdf-download { min-height:40px;padding:0 16px;border:0;border-radius:8px;background:#0a1424;color:#fff;font-weight:700; }.nutrition-pdf-download:hover { background:#162941; }.nutrition-pdf-close { width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#5d7187;font-size:25px; }.nutrition-pdf-close:hover { background:#edf2f6; }
-.nutrition-pdf-scroll { flex:1;overflow:auto;padding:24px; }.nutrition-pdf-document { width:min(760px,100%);margin:0 auto;background:#fff;color:#07172b;font-family:"Inter",Arial,sans-serif;box-shadow:0 4px 24px rgba(17,34,51,.18); }
-.nutrition-pdf-cover { min-height:980px;padding:50px 38px; }.nutrition-pdf-brand { display:flex;align-items:center;gap:12px;color:#078fc9;font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase; }.nutrition-pdf-brand > span:last-child { display:flex;flex-direction:column; }.nutrition-pdf-brand strong { font:inherit; }.nutrition-pdf-brand small { margin-top:3px;color:#8ba0b5;font-size:8px;letter-spacing:0;text-transform:none;font-weight:500; }.nutrition-pdf-brand-mark { width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:#12a7e5;color:#fff;font-size:21px; }
-.nutrition-pdf-cover h1 { margin:38px 0 12px;font-size:32px; }.nutrition-pdf-description { max-width:620px;color:#52677e;font-size:12px;line-height:1.6; }.nutrition-pdf-meta { margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:12px; }.nutrition-pdf-meta div { padding:13px;border:1px solid #d8e2ec;border-radius:8px; }.nutrition-pdf-meta small { display:block;color:#8295aa;font-size:9px;text-transform:uppercase; }.nutrition-pdf-meta strong { display:block;margin-top:7px;font-size:12px; }.nutrition-pdf-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px; }.nutrition-pdf-stats div { padding:14px;border-radius:8px;background:#12a7e5;color:#fff; }.nutrition-pdf-stats strong { display:block;font-size:23px; }.nutrition-pdf-stats small { font-size:9px;font-weight:700; }
-.nutrition-pdf-week { min-height:980px;padding:30px 22px;border-top:18px solid #eef2f6; }.nutrition-pdf-week-header { display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:1px solid #d9e3ec; }.nutrition-pdf-week-header > div:last-child { display:flex;align-items:flex-end;flex-direction:column;gap:3px; }.nutrition-pdf-week-header h2 { margin:3px 0 0;font-size:22px; }.nutrition-pdf-week-header small { color:#7890a8;font-size:8px;text-transform:uppercase; }.nutrition-pdf-week-header strong { color:#34495f;font-size:9px; }
-.nutrition-pdf-day { margin-top:14px;border:1px solid #cad8e4;border-radius:7px;overflow:hidden; }.nutrition-pdf-day-head { display:flex;justify-content:space-between;padding:9px 12px;background:#12a7e5;color:#fff;font-size:10px;font-weight:700; }.nutrition-pdf-day-head em { padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.25);font-size:7px;font-style:normal;text-transform:uppercase; }.nutrition-pdf-totals { display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #e3eaf0; }.nutrition-pdf-totals span { padding:7px 9px;border-right:1px solid #e3eaf0; }.nutrition-pdf-totals span:last-child { border:0; }.nutrition-pdf-totals strong,.nutrition-pdf-totals small { display:block; }.nutrition-pdf-totals strong { font-size:9px; }.nutrition-pdf-totals small { margin-top:2px;color:#8293a5;font-size:6px;text-transform:uppercase; }
-.nutrition-pdf-meal { margin:9px;border:1px solid #dce5ed;border-radius:5px;overflow:hidden; }.nutrition-pdf-meal-head { display:flex;justify-content:space-between;align-items:center;padding:7px 9px;background:#f7fafc;font-size:8px; }.nutrition-pdf-meal-head strong { font-size:9px; }.nutrition-pdf-meal-head em { padding:2px 5px;border-radius:4px;background:#e7f6fd;color:#087fae;font-size:6px;font-style:normal; }.nutrition-pdf-meal table { width:100%;border-collapse:collapse;font-size:8px; }.nutrition-pdf-meal th,.nutrition-pdf-meal td { padding:5px 8px;border-top:1px solid #e6edf3;text-align:left; }.nutrition-pdf-meal th { color:#8093a8;font-size:7px;text-transform:uppercase; }.nutrition-pdf-meal th:not(:first-child),.nutrition-pdf-meal td:not(:first-child) { text-align:right; }.nutrition-pdf-empty { padding:18px;text-align:center;color:#8a9bb0;font-size:9px;font-style:italic; }
-@media (max-width:760px) { .nutrition-pdf-backdrop { padding:0; }.nutrition-pdf-modal { width:100%;height:100vh;border-radius:0; }.nutrition-pdf-modal__header { padding:11px 12px; }.nutrition-pdf-modal__header p { display:none; }.nutrition-pdf-download { padding:0 10px;font-size:11px; }.nutrition-pdf-scroll { padding:10px; }.nutrition-pdf-cover { min-height:720px;padding:32px 22px; }.nutrition-pdf-week { min-height:720px;padding:22px 12px; }.nutrition-pdf-day-head { gap:8px;font-size:8px; }.nutrition-pdf-meal th,.nutrition-pdf-meal td { padding:4px;font-size:6px; } }
-
-.meal-day-content { max-width:1120px; margin:0 auto; padding:0 24px 24px; }
-.meal-day-totals, .meal-plan-card, .daily-feedback-card, .meal-day-empty {
-  background:#fff;
-  border:1px solid #dce5ef;
-  border-radius:15px;
-  box-shadow:0 2px 4px rgba(15,35,55,.04);
-}
-.meal-day-totals { padding:17px 20px 20px; margin-bottom:16px; }
-.meal-day-totals h2 { margin:0 0 13px; color:#69809b; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; }
-.meal-day-totals > div { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-.meal-day-totals article { min-height:68px; background:#f6f8fb; border:1px solid #edf1f6; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.meal-day-totals strong { color:#10233d; font-size:20px; line-height:1.1; }
-.meal-day-totals article:first-child strong { color:#049edb; }
-.meal-day-totals small, .meal-plan-macros small, .meal-food-macros small { margin-top:6px; color:#8ca0b9; font-size:9px; font-weight:700; text-transform:uppercase; }
-
-.meal-plan-card { overflow:hidden; margin-bottom:16px; }
-.meal-plan-card > header { min-height:62px; padding:13px 18px; display:flex; justify-content:space-between; align-items:center; gap:15px; border-bottom:1px solid #e6edf4; }
-.meal-plan-name { display:flex; align-items:center; gap:10px; min-width:0; }
-.meal-plan-name b { width:29px; height:29px; display:grid; place-items:center; border-radius:50%; background:#27afe0; color:#fff; font-size:13px; flex:0 0 29px; }
-.meal-plan-name h2 { margin:0; font-size:16px; color:#10233d; white-space:nowrap; }
-.meal-plan-name em { padding:4px 8px; border-radius:999px; background:#eef3f8; color:#61738a; font-size:11px; font-style:normal; font-weight:700; white-space:nowrap; }
-.meal-plan-name em[data-status='AS_PLANNED'] { background:#e9f8fd; color:#078fc7; }
-.meal-plan-name em[data-status='MODIFIED'] { background:#fff6df; color:#cc8200; }
-
-.meal-card-actions { display:flex; align-items:center; gap:8px; }
-.meal-card-actions input { display:none; }
-.meal-card-actions label, .meal-card-actions button {
-  min-height:36px; padding:0 13px; display:flex; align-items:center; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:.18s ease;
-}
-.upload-meal-photo { border:1px solid #d6e0eb; color:#435d78; background:#fff; }
-.upload-meal-photo:hover { border-color:#27afe0; color:#078fc7; background:#f4fbfe; }
-.meal-card-actions button { border:1px solid #10233d; background:#10233d; color:#fff; }
-.meal-card-actions button:hover { background:#1b3658; transform:translateY(-1px); box-shadow:0 5px 12px rgba(16,35,61,.18); }
-
-.meal-plan-macros { min-height:75px; display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid #e6edf4; }
-.meal-plan-macros > div { display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.meal-plan-macros strong { font-size:17px; color:#10233d; }
-.meal-plan-macros > div:first-child strong { color:#049edb; }
-
-.meal-food-row { min-height:76px; padding:10px 18px; display:grid; grid-template-columns:62px minmax(180px,1fr) 270px 92px; align-items:center; gap:13px; border-bottom:1px solid #e8eef4; }
-.meal-food-image { width:58px; height:54px; border-radius:8px; background:#f0f4f8; overflow:hidden; display:grid; place-items:center; color:#b5c4d5; font-size:25px; }
-.meal-food-image img { width:100%; height:100%; object-fit:cover; }
-.meal-food-name > div { display:flex; align-items:center; gap:7px; }
-.meal-food-name strong { color:#10233d; font-size:14px; }
-.meal-food-name em { padding:3px 6px; border-radius:5px; background:#eef3f8; color:#687e96; font-size:9px; font-style:normal; font-weight:800; text-transform:uppercase; }
-.meal-food-name > small { display:block; margin-top:4px; color:#8da0b7; font-size:12px; }
-.meal-food-macros { display:grid; grid-template-columns:1.4fr repeat(3,1fr); text-align:center; }
-.meal-food-macros > div { display:flex; flex-direction:column; }
-.meal-food-macros strong { font-size:14px; color:#10233d; }
-.meal-food-macros .food-calories strong { color:#079bd8; }
-.meal-food-replace { min-height:34px; border:1px solid #d6e0eb; border-radius:8px; background:#fff; color:#49627c; font-size:12px; font-weight:700; cursor:pointer; }
-.meal-food-replace:hover { border-color:#27afe0; color:#078fc7; background:#f4fbfe; }
-.meal-photo-preview { margin:10px 18px; padding:10px 14px 12px; display:block; border:1px solid #dce7f0; border-radius:8px; background:#fbfdff; color:#38516a; font-size:12px; }
-.meal-photo-preview > strong { display:flex; align-items:center; gap:7px; color:#14283d; font-size:12px; }.meal-photo-preview > strong i { color:#079ee1; }
-.meal-photo-preview__content { margin-top:8px; display:flex; align-items:center; gap:16px; }.meal-photo-preview img { width:130px; height:82px; border-radius:7px; object-fit:cover; }.meal-photo-preview__content > span { display:flex; flex-direction:column; gap:3px; }.meal-photo-preview__content b { color:#516b84; font-size:11px; }.meal-photo-preview__content small { color:#8a9bad; font-size:10px; }.meal-photo-preview__content a,.replace-meal-photo { width:max-content; margin-top:6px; padding:7px 12px; display:inline-flex; align-items:center; gap:6px; border:1px solid #d7e1eb; border-radius:6px; background:#fff; color:#415c76; font-size:10px; font-weight:700; text-decoration:none; cursor:pointer; }.replace-meal-photo { margin:0 0 0 auto; }.replace-meal-photo:hover,.meal-photo-preview__content a:hover { border-color:#27afe0; color:#078fc7; }.replace-meal-photo input { display:none; }
-@media (max-width:760px) { .meal-photo-preview { margin:8px; padding:9px; }.meal-photo-preview__content { align-items:flex-start; flex-wrap:wrap; gap:9px; }.meal-photo-preview img { width:92px; height:62px; }.meal-photo-preview__content > span { flex:1; min-width:100px; }.replace-meal-photo { margin:0; flex:1 0 100%; justify-content:center; } }
-.meal-note { display:block; padding:13px 18px 16px; }
-.meal-note > span { display:block; color:#637a94; font-size:11px; font-weight:800; text-transform:uppercase; }
-.meal-note textarea { width:100%; margin-top:9px; padding:12px 14px; resize:vertical; border:1px solid #d6e0eb; border-radius:10px; color:#314b67; font:inherit; outline:none; }
-.meal-note textarea:focus { border-color:#27afe0; box-shadow:0 0 0 3px rgba(39,175,224,.1); }
-.meal-note button { padding:7px 0 0; border:0; background:none; color:#607791; font-weight:600; cursor:pointer; }
-.meal-note button:hover { color:#079bd8; }
-
-.daily-feedback-card { margin-top:22px; padding:22px; }
-.daily-feedback-card > header h2 { margin:0; color:#10233d; font-size:18px; }
-.daily-feedback-card > header p { margin:6px 0 19px; color:#71869f; font-size:14px; }
-.feedback-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-.feedback-group { padding:18px; border:1px solid #dce5ef; border-radius:12px; background:#fbfcfe; }
-.feedback-group h3 { margin:0 0 15px; display:flex; gap:9px; color:#0f2741; font-size:14px; }
-.feedback-group h3 span, .feedback-group h3 small { display:block; }
-.feedback-group h3 small { margin-top:3px; color:#8ca0b8; font-size:12px; font-weight:400; }
-.feedback-group > div { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.feedback-group button { min-height:67px; padding:8px 5px; border:1px solid #d7e1ec; border-radius:9px; background:#fff; color:#243c58; cursor:pointer; transition:.16s ease; }
-.feedback-group button strong, .feedback-group button small { display:block; }
-.feedback-group button small { margin-top:4px; color:#8fa2ba; font-size:10px; }
-.feedback-group button:hover { border-color:#38b6e4; background:#f4fbfe; }
-.feedback-group button.selected { border-color:#24afe1; background:#eaf8fd; box-shadow:inset 0 0 0 1px #24afe1; color:#068fc7; }
-.overall-note { display:block; margin-top:20px; }
-.overall-note strong { display:block; margin-bottom:9px; font-size:14px; }
-.overall-note textarea { width:100%; padding:14px 16px; border:1px solid #d7e1ec; border-radius:10px; color:#314b67; font:inherit; resize:vertical; outline:none; }
-.overall-note textarea:focus { border-color:#27afe0; box-shadow:0 0 0 3px rgba(39,175,224,.1); }
-
-.meal-day-empty { padding:65px 20px; text-align:center; }
-.meal-day-empty span { font-size:30px; }.meal-day-empty h2 { font-size:16px; }.meal-day-empty p { color:#7b90a8; }
-.meal-day-footer { position:fixed; z-index:20; left:0; right:0; bottom:0; min-height:72px; padding:12px max(24px,calc((100vw - 1072px)/2)); display:flex; align-items:center; justify-content:flex-end; gap:12px; background:rgba(255,255,255,.96); border-top:1px solid #dce5ef; box-shadow:0 -4px 18px rgba(20,42,65,.06); backdrop-filter:blur(8px); }
-.meal-day-footer > span { color:#0a9b6b; font-size:12px; }
-.meal-day-footer button { min-height:44px; padding:0 19px; border-radius:9px; font-weight:800; cursor:pointer; }
-.off-plan-action { border:1px solid #d6e0eb; background:#fff; color:#526b85; }
-.off-plan-action:hover { border-color:#8b6bc4; color:#7550ba; background:#faf8ff; }
-.complete-day-action { max-width:210px; border:1px solid #10233d; background:#10233d; color:#fff; }
-.complete-day-action:hover { background:#1b3658; box-shadow:0 5px 14px rgba(16,35,61,.18); }
-
-.meal-report-backdrop { position:fixed; z-index:1100; inset:0; padding:20px; display:grid; place-items:center; background:rgba(19,38,58,.48); backdrop-filter:blur(3px); }
-.meal-report-modal { position:relative; width:min(560px,100%); overflow:hidden; border-radius:20px; background:#fff; box-shadow:0 24px 70px rgba(7,24,42,.3); }
-.meal-report-close { position:absolute; top:24px; right:28px; border:0; background:none; color:#8ba0b8; font-size:31px; font-weight:300; cursor:pointer; }
-.meal-report-modal > header { padding:28px 26px 23px; border-bottom:1px solid #e7edf4; }
-.meal-report-modal h2 { margin:0; color:#10233d; font-size:24px; }
-.meal-report-modal header p { margin:7px 0 0; color:#6e839d; font-size:16px; }
-.meal-report-options { padding:25px 26px 8px; display:grid; gap:12px; }
-.meal-report-options button { min-height:80px; padding:14px 18px; display:flex; align-items:center; gap:15px; text-align:left; border:2px solid #dce5ef; border-radius:14px; background:#fff; color:#10233d; cursor:pointer; transition:.16s ease; }
-.meal-report-options button:hover { border-color:#7bcdeb; background:#f7fcfe; }
-.meal-report-options button.selected { border-color:#24afe1; background:#e9f8fd; }
-.meal-report-options button > span { width:42px; height:42px; display:grid; place-items:center; border-radius:10px; background:#f2f5f9; color:#68809a; font-size:23px; }
-.meal-report-options button.selected > span { background:#35b3e2; color:#fff; }
-.meal-report-options strong, .meal-report-options small { display:block; }
-.meal-report-options strong { font-size:18px; }.meal-report-options small { margin-top:4px; color:#70849d; font-size:14px; font-weight:400; }
-.meal-report-note { display:block; padding:10px 26px 24px; }
-.meal-report-note > strong { display:block; margin-bottom:10px; font-size:16px; }.meal-report-note em { color:#9badc1; font-style:normal; font-weight:400; }
-.meal-report-note textarea { width:100%; padding:14px 16px; border:1px solid #d7e1ec; border-radius:13px; resize:vertical; font:inherit; outline:none; }
-.meal-report-note textarea:focus { border-color:#24afe1; box-shadow:0 0 0 3px rgba(36,175,225,.1); }
-.meal-report-modal > footer { padding:20px 26px 25px; display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #e7edf4; }
-.meal-report-modal > footer button { min-height:50px; padding:0 22px; border-radius:12px; font-size:16px; font-weight:800; cursor:pointer; }
-.report-cancel { border:1px solid #d6e0eb; background:#fff; color:#435b75; }.report-cancel:hover { background:#f6f8fb; }
-.report-save { border:1px solid #35b3e2; background:#35b3e2; color:#fff; }.report-save:hover { background:#159fd5; }.report-save:disabled { opacity:.6; cursor:wait; }
-
-@media (max-width: 700px) {
-  .meal-day-page { padding-bottom:82px; }
-  .meal-day-header { padding:16px 14px 12px; grid-template-columns:40px 1fr auto; gap:10px; }
-  .meal-day-heading h1 { font-size:20px; max-width:190px; }
-  .meal-day-heading p { font-size:11px; }
-  .extract-nutrition-pdf { min-height:38px; padding:0 10px; font-size:11px; }
-  .meal-day-content { padding:0 10px 18px; }
-  .meal-day-totals { padding:13px; }
-  .meal-day-totals > div { grid-template-columns:repeat(2,1fr); gap:9px; }
-  .meal-day-totals article { min-height:63px; }
-  .meal-plan-card > header { align-items:stretch; padding:12px; flex-direction:column; }
-  .meal-plan-name { gap:7px; flex-wrap:wrap; }
-  .meal-plan-name h2 { font-size:13px; }
-  .meal-plan-name b { width:25px; height:25px; flex-basis:25px; }
-  .meal-card-actions { width:100%; gap:8px; }
-  .meal-card-actions label, .meal-card-actions button { min-height:42px; flex:1; justify-content:center; padding:0 10px; font-size:11px; }
-  .meal-plan-macros { min-height:65px; }
-  .meal-plan-macros strong { font-size:15px; }
-  .meal-food-row { min-height:66px; padding:8px 10px; grid-template-columns:57px minmax(82px,1fr) 132px auto; gap:7px; }
-  .meal-food-image { width:54px; height:50px; }
-  .meal-food-name strong { font-size:11px; }.meal-food-name em { font-size:7px; }.meal-food-name > small { font-size:9px; }
-  .meal-food-macros strong { font-size:10px; }.meal-food-macros small { font-size:7px; }
-  .meal-food-replace { width:32px; min-width:32px; height:32px; min-height:32px; padding:0; display:grid; place-items:center; border-color:#27afe0; border-radius:8px; background:#f4fbfe; color:#078fc7; font-size:16px; line-height:1; }
-  .meal-food-replace:hover,
-  .meal-food-replace:focus-visible { border-color:#27afe0; background:#f4fbfe; color:#078fc7; outline:none; }
-  .meal-food-replace-label { display:none; }
-  .meal-note { padding:11px 12px 14px; }
-  .daily-feedback-card { padding:17px; }
-  .daily-feedback-card > header h2 { font-size:16px; }.daily-feedback-card > header p { font-size:12px; line-height:1.4; }
-  .feedback-grid { grid-template-columns:1fr; gap:14px; }
-  .feedback-group { padding:14px; }
-  .feedback-group button { min-height:61px; }
-  .meal-day-footer { min-height:68px; padding:10px 13px; }
-  .meal-day-footer button { flex:1; padding:0 10px; font-size:12px; }
-  .meal-day-footer > span { display:none; }
-  .meal-report-backdrop { padding:10px; align-items:end; }
-  .meal-report-modal { border-radius:18px 18px 0 0; max-height:94vh; overflow:auto; }
-  .meal-report-modal > header { padding:22px 20px 18px; }.meal-report-modal h2 { font-size:21px; }
-  .meal-report-options { padding:20px 20px 7px; }
-  .meal-report-options button { min-height:72px; }
-  .meal-report-note { padding:10px 20px 20px; }
-  .meal-report-modal > footer { padding:16px 20px 20px; }
-}
-
-@media print {
-  .meal-day-back, .extract-nutrition-pdf, .meal-card-actions, .meal-food-replace, .meal-day-footer { display:none !important; }
-  .meal-day-page { background:#fff; padding:0; }
-  .meal-day-content, .meal-day-header { max-width:none; padding-left:0; padding-right:0; }
-}
-
-/* ===== Client meal cards redesign ===== */
-.meal-plan-card {
-  overflow: hidden;
-}
-
-.meal-plan-card > .meal-plan-card__header {
-  display: block;
-  min-height: auto;
-}
-
-.meal-plan-card__header {
-  padding: 16px 18px;
-  border-bottom: 1px solid #e6edf4;
-}
-
-.meal-plan-card__header-main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.meal-plan-title-wrap {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.meal-plan-title-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.meal-plan-submeta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  color: #7f93aa;
-  font-size: 12px;
-}
-
-.meal-plan-kind,
-.meal-plan-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.meal-plan-toggle {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #d8e1eb;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #72859c;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  transition: .16s ease;
-}
-
-.meal-plan-toggle:hover {
-  border-color: #27afe0;
-  color: #078fc7;
-  background: #f4fbfe;
-}
-
-.meal-plan-card__body {
-  display: block;
-}
-
-.meal-plan-card__body .meal-plan-macros {
-  margin: 0 18px;
-  border: 1px solid #e6edf4;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.meal-recipe-preview {
-  margin: 12px 18px 0;
-  padding: 12px;
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 14px;
-  border: 1px solid #e6edf4;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.meal-recipe-preview__image {
-  width: 100%;
-  height: 130px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #f0f4f8;
-  display: grid;
-  place-items: center;
-  color: #b5c4d5;
-  font-size: 28px;
-}
-
-.meal-recipe-preview__image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.meal-recipe-preview__copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.meal-recipe-preview__copy h3 {
-  margin: 0;
-  color: #10233d;
-  font-size: 28px;
-  line-height: 1.15;
-}
-
-.meal-recipe-preview__facts {
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  color: #647b95;
-  font-size: 14px;
-}
-
-.meal-foods-panel {
-  margin-top: 12px;
-}
-
-.meal-foods-head {
-  margin: 0 18px;
-  padding: 0 0 8px;
-  display: grid;
-  grid-template-columns: 62px minmax(180px, 1fr) 270px 92px;
-  align-items: center;
-  gap: 13px;
-  color: #8fa2b8;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.meal-foods-head span:first-child {
-  grid-column: 1 / span 2;
-}
-
-.meal-foods-head span:nth-child(2) {
-  margin-left: 10px;
-}
-
-.meal-foods-head span:nth-child(3),
-.meal-foods-head span:nth-child(4),
-.meal-foods-head span:nth-child(5) {
-  justify-self: center;
-}
-
-.meal-foods-head span:last-child {
-  justify-self: end;
-}
-
-.meal-card-actions--footer {
-  padding: 0 18px 18px;
-  justify-content: stretch;
-}
-
-.meal-card-actions--footer > * {
-  flex: 1 1 0;
-  justify-content: center;
-}
-
-.meal-card-actions__ghost {
-  border: 1px solid #d6e0eb !important;
-  background: #fff !important;
-  color: #425d78 !important;
-}
-
-.meal-card-actions__ghost:hover {
-  border-color: #27afe0 !important;
-  background: #f4fbfe !important;
-  color: #078fc7 !important;
-}
-
-/* View meal modal */
-.meal-view-backdrop {
-  position: fixed;
-  z-index: 1200;
-  inset: 0;
-  padding: 18px;
-  display: grid;
-  place-items: center;
-  background: rgba(19, 38, 58, .56);
-  backdrop-filter: blur(4px);
-}
-
-.meal-view-modal {
-  position: relative;
-  width: min(720px, 100%);
-  max-height: 94vh;
-  overflow: auto;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 28px 90px rgba(7, 24, 42, .32);
-}
-
-.meal-view-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  color: #8396ad;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.meal-view-cover {
-  height: 240px;
-  background: #f1f5f8;
-}
-
-.meal-view-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.meal-view-body {
-  padding: 18px;
-}
-
-.meal-view-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.meal-view-head h2 {
-  margin: 0;
-  color: #10233d;
-  font-size: 32px;
-  line-height: 1.15;
-}
-
-.meal-view-head p {
-  margin: 8px 0 0;
-  color: #7b8fa7;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.meal-view-timebox {
-  min-width: 178px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.meal-view-timebox small {
-  color: #7d92aa;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.meal-view-timebox label {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid #cfe3ef;
-  border-radius: 10px;
-  background: #f8fcff;
-}
-
-.meal-view-timebox label span {
-  color: #28a9df;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.meal-view-timebox input {
-  border: 0;
-  background: transparent;
-  color: #24506e;
-  font: inherit;
-  font-weight: 700;
-  outline: none;
-}
-
-.meal-view-stats {
-  margin-top: 18px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  border: 1px solid #e3ebf2;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.meal-view-stats article {
-  min-height: 78px;
-  padding: 10px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-right: 1px solid #e3ebf2;
-}
-
-.meal-view-stats article:last-child {
-  border-right: 0;
-}
-
-.meal-view-stats small {
-  color: #8ba0b6;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.meal-view-stats strong {
-  color: #10233d;
-  font-size: 18px;
-}
-
-.meal-view-stats article:nth-child(2) strong {
-  color: #079bd8;
-}
-
-.meal-view-section {
-  margin-top: 18px;
-}
-
-.meal-view-section h3 {
-  margin: 0 0 10px;
-  color: #1c334d;
-  font-size: 14px;
-}
-
-.meal-view-servings {
-  min-height: 40px;
-  padding: 10px 12px;
-  border: 1px solid #e0e8f0;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #61778f;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.meal-view-ingredients {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 16px;
-}
-
-.meal-view-ingredient {
-  min-height: 54px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border: 1px solid #e1e9f0;
-  border-radius: 10px;
-  background: #fff;
-}
-
-.meal-view-ingredient span,
-.meal-view-ingredient strong {
-  display: block;
-}
-
-.meal-view-ingredient span {
-  color: #30abdf;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.meal-view-ingredient strong {
-  margin-top: 4px;
-  color: #233d58;
-  font-size: 13px;
-}
-
-.meal-view-replace {
-  min-height: 32px;
-  padding: 0 11px;
-  border: 1px solid #d6e0eb;
-  border-radius: 8px;
-  background: #fff;
-  color: #49627c;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.meal-view-replace:hover {
-  border-color: #27afe0;
-  color: #078fc7;
-  background: #f4fbfe;
-}
-
-.meal-view-directions {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 8px;
-}
-
-.meal-view-directions li {
-  position: relative;
-  min-height: 42px;
-  padding: 10px 12px 10px 40px;
-  border: 1px solid #dfe7ef;
-  border-radius: 10px;
-  background: #fbfdff;
-  color: #3b536d;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.meal-view-directions li::before {
-  content: counter(list-item);
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #25afe1;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.meal-view-note {
-  display: block;
-  margin-top: 20px;
-}
-
-.meal-view-note strong {
-  display: block;
-  margin-bottom: 10px;
-  color: #1b334c;
-  font-size: 13px;
-}
-
-.meal-view-note textarea {
-  width: 100%;
-  min-height: 90px;
-  padding: 13px 14px;
-  border: 1px solid #d6e0eb;
-  border-radius: 10px;
-  color: #314b67;
-  font: inherit;
-  resize: vertical;
-  outline: none;
-}
-
-.meal-view-note textarea:focus {
-  border-color: #27afe0;
-  box-shadow: 0 0 0 3px rgba(39,175,224,.1);
-}
-
-@media (max-width: 700px) {
-  .meal-plan-card__header {
-    padding: 14px 14px 12px;
-  }
-
-  .meal-plan-card__header-main {
-    align-items: flex-start;
-  }
-
-  .meal-plan-name {
-    align-items: flex-start;
-    flex-wrap: nowrap;
-  }
-
-  .meal-plan-title-line {
+    flex-wrap: wrap;
     gap: 8px;
-  }
 
-  .meal-plan-name h2 {
-    font-size: 13px;
-    white-space: normal;
-  }
+    button,
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0;
+      padding: 6px 9px;
+      border-radius: 9px;
+      border: 1px solid #dde2e9;
+      background: var(--yc-surface);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--yc-text-primary);
+      cursor: pointer;
 
-  .meal-plan-submeta {
-    gap: 10px;
-    font-size: 11px;
-  }
+      &:disabled,
+      &.disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+    }
 
-  .meal-plan-toggle {
-    width: 30px;
-    height: 30px;
-    flex-basis: 30px;
-    font-size: 16px;
-    border-radius: 9px;
+    i-feather {
+      width: 13px;
+      height: 13px;
+    }
   }
+}
 
-  .meal-plan-card__body .meal-plan-macros {
-    margin: 0 10px;
+.meal-note {
+  width: calc(100% - 28px);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 14px 4px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #f6f8fa;
+  text-align: left;
+  font-size: 13.5px;
+  cursor: pointer;
+
+  i-feather {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    color: var(--yc-text-hint);
   }
+}
 
-  .meal-recipe-preview {
-    margin: 8px 10px 0;
-    padding: 10px;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+.meal-actions {
+  display: flex;
+  gap: 10px;
+  padding: 6px 14px 14px;
 
-  .meal-recipe-preview__image {
-    height: 128px;
-  }
-
-  .meal-recipe-preview__copy h3 {
+  .yc-btn {
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    margin: 0;
     font-size: 14px;
   }
 
-  .meal-recipe-preview__facts {
+  label.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+.feedback {
+  margin-top: 10px;
+  margin-bottom: 12px;
+
+  .yc-card-title {
+    font-size: 16px;
+  }
+
+  .yc-subtitle {
+    margin-top: 2px !important;
+    margin-bottom: 14px !important;
+  }
+
+  &__divider {
+    margin: 11px 0;
+  }
+
+  &__note-label {
+    display: block;
+    margin-top: 16px;
+
+    small {
+      font-weight: 500;
+      color: var(--yc-text-hint);
+    }
+  }
+
+  &__note {
     margin-top: 8px;
-    gap: 10px;
-    font-size: 12px;
+    background: #f6f8fa;
+    font-size: 14.5px;
+  }
+}
+
+.feedback-row {
+  display: flex;
+  align-items: center;
+
+  .yc-label {
+    flex: none;
+    width: 82px;
+    font-size: 14px;
   }
 
-  .meal-foods-head {
-    display: none;
+  &__options {
+    flex: 1;
+    display: flex;
+    height: 40px;
+    padding: 3px;
+    border-radius: 11px;
+    background: #edf0f4;
+
+    button {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--yc-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+
+      &.active {
+        background: var(--yc-surface);
+        color: var(--yc-primary);
+        font-weight: 700;
+        box-shadow: 0 1px 5px rgba(15, 27, 45, 0.08);
+      }
+    }
+  }
+}
+
+.day-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  margin: 0 -16px;
+  padding: 10px 16px;
+  background: var(--yc-surface);
+  border-top: 1px solid var(--yc-hairline);
+
+  @media (min-width: 768px) {
+    margin: 0;
+    border: 1px solid var(--yc-hairline);
+    border-radius: 16px;
   }
 
-  .meal-foods-panel {
-    margin-top: 8px;
-  }
-
-  .meal-food-row {
-    grid-template-columns: 57px minmax(82px,1fr) 132px auto;
-  }
-
-  .meal-card-actions--footer {
-    padding: 0 10px 12px;
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .meal-card-actions--footer > * {
-    width: 100%;
-    min-height: 42px;
-    padding: 0 10px;
-    font-size: 11px;
-  }
-
-  .meal-note {
-    padding: 11px 10px 12px;
-  }
-
-  .meal-view-backdrop {
-    padding: 0;
-    align-items: end;
-  }
-
-  .meal-view-modal {
-    width: 100%;
-    max-height: 96vh;
-    border-radius: 18px 18px 0 0;
-  }
-
-  .meal-view-cover {
-    height: 170px;
-  }
-
-  .meal-view-body {
-    padding: 14px;
-  }
-
-  .meal-view-head {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .meal-view-head h2 {
-    font-size: 18px;
-  }
-
-  .meal-view-timebox {
+  .yc-btn {
+    flex: 1;
     min-width: 0;
-    width: 100%;
-    align-items: stretch;
+    height: 50px;
+    border-radius: 13px;
   }
 
-  .meal-view-timebox label {
-    width: 100%;
+  .grow-2 {
+    flex: 2;
   }
 
-  .meal-view-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .meal-view-stats article {
-    min-height: 70px;
-    border-bottom: 1px solid #e3ebf2;
-  }
-
-  .meal-view-stats article:nth-child(2n) {
-    border-right: 0;
-  }
-
-  .meal-view-stats article:nth-last-child(-n + 2) {
-    border-bottom: 0;
-  }
-
-  .meal-view-ingredients {
-    grid-template-columns: 1fr;
-  }
-
-  .meal-view-ingredient {
-    align-items: flex-start;
-  }
-
-  .meal-view-replace {
-    min-width: 70px;
+  .yc-spinner {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
   }
 }
 
-/* ===== Compact client calendar cards (nutrition + workout) ===== */
-.client-list {
-  display: grid !important;
-  gap: 10px !important;
-}
-
-.cn-day-card.client-schedule-card {
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 12px 14px !important;
-  display: grid !important;
-  grid-template-columns: 70px minmax(0, 1fr) !important;
-  align-items: start !important;
-  gap: 14px !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 13px !important;
-  background: #fff !important;
-  box-shadow: 0 2px 8px rgba(15, 35, 55, .05) !important;
-  cursor: pointer;
-  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
-}
-
-.cn-day-card.client-schedule-card:hover {
-  transform: translateY(-1px) !important;
-  border-color: #cfe1ed !important;
-  box-shadow: 0 5px 14px rgba(15, 35, 55, .08) !important;
-}
-
-.client-date-tile {
-  width: 70px;
-  min-height: 70px;
-  padding: 7px 5px 6px;
+// Sheets
+.report {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e1e8ef;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #16253a;
-  text-align: center;
-  line-height: 1;
+  gap: 10px;
+
+  &__label {
+    margin-top: 12px;
+
+    small {
+      font-weight: 500;
+      color: var(--yc-text-hint);
+    }
+  }
+
+  &__note {
+    background: #f6f8fa;
+    font-size: 14.5px;
+  }
 }
 
-.client-date-tile__weekday,
-.client-date-tile__month {
-  display: block;
-  color: #687b91;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
-.client-date-tile__day {
-  display: block;
-  margin: 4px 0 3px;
-  color: #10233d;
-  font-size: 24px;
-  font-weight: 850;
-}
-
-.client-schedule-card__content {
-  min-width: 0;
-}
-
-.client-schedule-card__top {
-  min-height: 70px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.client-schedule-card__title-block {
-  min-width: 0;
-}
-
-.client-schedule-card .cn-day-title {
-  margin: 1px 0 2px !important;
-  color: #10233d !important;
-  font-size: 16px !important;
-  font-weight: 800 !important;
-  line-height: 1.25 !important;
-}
-
-.client-schedule-card .cn-day-subtitle {
-  margin: 0 !important;
-  color: #109fda !important;
-  font-size: 12px !important;
-  font-weight: 750 !important;
-  line-height: 1.25 !important;
-}
-
-.client-schedule-card__meta {
-  margin-top: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #61758c;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.client-schedule-card__meta > span:first-child {
-  font-size: 12px;
-  line-height: 1;
-}
-
-.client-schedule-card__state {
-  flex: 0 0 auto;
+.report-option {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-top: 7px;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--yc-border);
+  background: var(--yc-surface);
+  text-align: left;
+  cursor: pointer;
+
+  &.selected {
+    border: 1.5px solid var(--yc-primary);
+    background: color-mix(in srgb, var(--yc-primary) 7%, transparent);
+  }
+
+  &__icon {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: #f1f3f7;
+    color: var(--yc-text-hint);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    i-feather {
+      width: 19px;
+      height: 19px;
+    }
+  }
+
+  &.selected &__icon {
+    color: #fff;
+  }
+
+  > span:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  strong {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  small {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--yc-text-secondary);
+  }
 }
 
-.client-day-status {
-  min-height: 30px;
-  padding: 0 12px;
-  display: inline-flex;
+.sheet-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  padding-bottom: 6px;
+
+  .yc-btn {
+    flex: 1;
+    height: 50px;
+  }
+}
+
+.yc-sheet__footer.sheet-actions {
+  margin-top: 0;
+}
+
+.swap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.swap-option {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid #dfe7ef;
-  border-radius: 999px;
-  background: #f6f8fb;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
+  gap: 12px;
+  width: 100%;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid var(--yc-border);
+  background: var(--yc-surface);
+  text-align: left;
+  cursor: pointer;
 
-.client-day-status__icon {
-  width: 15px;
-  height: 15px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 50%;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.client-day-status[data-status='COMPLETED'] {
-  border-color: #cfeeda;
-  background: #edf9f1;
-  color: #20a85b;
-}
-.client-day-status[data-status='COMPLETED'] .client-day-status__icon {
-  background: #34c76f;
-  color: #fff;
-}
-
-.client-day-status[data-status='UPCOMING'],
-.client-day-status[data-status='IN_PROGRESS'] {
-  border-color: #cfe8f8;
-  background: #eef8fe;
-  color: #078fd0;
-}
-.client-day-status[data-status='UPCOMING'] .client-day-status__icon,
-.client-day-status[data-status='IN_PROGRESS'] .client-day-status__icon {
-  color: #078fd0;
-}
-
-.client-day-status[data-status='PENDING'],
-.client-day-status[data-status='PLANNED'],
-.client-day-status[data-status='NOT_STARTED'] {
-  border-color: #e0e6ed;
-  background: #f7f9fb;
-  color: #718096;
-}
-
-.client-day-status[data-status='MISSED'],
-.client-day-status[data-status='OFF_PLAN'] {
-  border-color: #f4d5d9;
-  background: #fff3f4;
-  color: #d44352;
-}
-.client-day-status[data-status='MISSED'] .client-day-status__icon,
-.client-day-status[data-status='OFF_PLAN'] .client-day-status__icon {
-  background: #e55361;
-  color: #fff;
-}
-
-.client-day-status[data-status='OVERDUE'] {
-  border-color: #f2dfb9;
-  background: #fff8e9;
-  color: #bb7a10;
-}
-.client-day-status[data-status='OVERDUE'] .client-day-status__icon {
-  background: #d7992d;
-  color: #fff;
-}
-
-.client-card-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #079fdb;
-  font-size: 30px;
-  font-weight: 300;
-  line-height: 1;
-}
-
-/* Compact nutrition rows */
-.client-schedule-card .nutrition-meals-list {
-  margin: 2px 0 0 !important;
-  padding: 0 !important;
-  border-top: 1px solid #e8edf2;
-}
-
-.client-schedule-card .nutrition-meal-line {
-  min-height: 40px !important;
-  padding: 6px 0 !important;
-  display: grid !important;
-  grid-template-columns: 28px minmax(0, 1fr) !important;
-  align-items: center !important;
-  gap: 10px !important;
-  border-bottom: 1px solid #edf1f5 !important;
-}
-
-.client-schedule-card .nutrition-meal-line:last-child {
-  border-bottom: 0 !important;
-}
-
-.client-schedule-card .nutrition-meal-badge {
-  width: 27px !important;
-  height: 27px !important;
-  min-width: 27px !important;
-  display: grid !important;
-  place-items: center !important;
-  border-radius: 50% !important;
-  background: #eef8fd !important;
-  color: #119ed7 !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-}
-
-.client-schedule-card .nutrition-meal-name {
-  color: #1a2b40 !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-}
-
-.client-schedule-card .nutrition-foods-list {
-  margin-top: 2px !important;
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 0 !important;
-  color: #6d7f94 !important;
-  font-size: 10px !important;
-  line-height: 1.3 !important;
-}
-
-.client-schedule-card .nutrition-food-item {
-  display: inline-flex !important;
-  align-items: center !important;
-  white-space: nowrap;
-}
-
-.client-schedule-card .nutrition-food-item:not(:last-child)::after {
-  content: '•';
-  margin: 0 8px;
-  color: #a3b1bf;
-}
-
-.client-schedule-card .nutrition-food-qty {
-  margin-left: 3px !important;
-  color: #718399 !important;
-}
-
-/* Compact workout rows */
-.client-schedule-card .workout-exercises,
-.client-schedule-card .client-schedule-card__list {
-  margin: 2px 0 0 !important;
-  padding: 0 !important;
-  border-top: 1px solid #e8edf2 !important;
-  background: transparent !important;
-}
-
-.client-schedule-card .workout-exercises-header,
-.client-schedule-card .cn-day-meals-line {
-  display: none !important;
-}
-
-.client-schedule-card .workout-exercises-list {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.client-schedule-card .exercise-line {
-  min-height: 38px !important;
-  padding: 5px 0 !important;
-  display: grid !important;
-  grid-template-columns: 28px minmax(0, 1fr) !important;
-  align-items: center !important;
-  gap: 10px !important;
-  border-bottom: 1px solid #edf1f5 !important;
-}
-
-.client-schedule-card .exercise-line:last-child {
-  border-bottom: 0 !important;
-}
-
-.client-schedule-card .exercise-badge {
-  width: 27px !important;
-  height: 27px !important;
-  min-width: 27px !important;
-  display: grid !important;
-  place-items: center !important;
-  border-radius: 50% !important;
-  background: #eef8fd !important;
-  color: #119ed7 !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-}
-
-.client-schedule-card .exercise-name {
-  color: #1a2b40 !important;
-  font-size: 12px !important;
-  font-weight: 750 !important;
-  line-height: 1.25 !important;
-}
-
-@media (max-width: 700px) {
-  .client-list {
-    gap: 8px !important;
+  &.original {
+    cursor: default;
   }
 
-  .cn-day-card.client-schedule-card {
-    grid-template-columns: 58px minmax(0, 1fr) !important;
-    gap: 10px !important;
-    padding: 10px !important;
-    border-radius: 12px !important;
+  &.selected {
+    border: 1.5px solid var(--yc-primary);
+    background: color-mix(in srgb, var(--yc-primary) 6%, transparent);
   }
 
-  .client-date-tile {
-    width: 58px;
-    min-height: 64px;
-    padding: 6px 4px;
-    border-radius: 9px;
+  &__icon {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--yc-primary) 9%, transparent);
+    color: var(--yc-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    i-feather {
+      width: 18px;
+      height: 18px;
+    }
   }
 
-  .client-date-tile__weekday,
-  .client-date-tile__month {
-    font-size: 9px;
-  }
-
-  .client-date-tile__day {
-    margin: 4px 0 3px;
-    font-size: 21px;
-  }
-
-  .client-schedule-card__top {
-    min-height: 64px;
-    gap: 8px;
-  }
-
-  .client-schedule-card .cn-day-title {
-    font-size: 14px !important;
-  }
-
-  .client-schedule-card .cn-day-subtitle {
-    font-size: 11px !important;
-  }
-
-  .client-schedule-card__meta {
-    margin-top: 5px;
-    font-size: 10px;
-  }
-
-  .client-schedule-card__state {
-    gap: 7px;
-    padding-top: 2px;
-  }
-
-  .client-day-status {
-    min-height: 27px;
-    padding: 0 9px;
-    gap: 4px;
-    font-size: 9px;
-  }
-
-  .client-day-status__icon {
-    width: 13px;
-    height: 13px;
-    font-size: 8px;
-  }
-
-  .client-card-chevron {
-    font-size: 25px;
-  }
-
-  .client-schedule-card .nutrition-meal-line,
-  .client-schedule-card .exercise-line {
-    min-height: 36px !important;
-    padding: 5px 0 !important;
-    grid-template-columns: 25px minmax(0, 1fr) !important;
-    gap: 8px !important;
-  }
-
-  .client-schedule-card .nutrition-meal-badge,
-  .client-schedule-card .exercise-badge {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    font-size: 10px !important;
-  }
-
-  .client-schedule-card .nutrition-meal-name,
-  .client-schedule-card .exercise-name {
-    font-size: 11px !important;
-  }
-
-  .client-schedule-card .nutrition-foods-list {
-    font-size: 9px !important;
-  }
-}
-
-@media (max-width: 420px) {
-  .cn-day-card.client-schedule-card {
-    grid-template-columns: 54px minmax(0, 1fr) !important;
-    gap: 9px !important;
-    padding: 9px !important;
-  }
-
-  .client-date-tile {
-    width: 54px;
-    min-height: 60px;
-  }
-
-  .client-schedule-card__state {
-    gap: 4px;
-  }
-
-  .client-day-status {
-    padding: 0 7px;
-  }
-
-  .client-day-status__icon {
-    display: none;
-  }
-}
-
-/* Match the segmented Upcoming/Past control used by the mobile client. */
-.cw-root .client-tabs {
-  margin: 8px 0 14px !important;
-  padding: 4px !important;
-  gap: 0 !important;
-  border: 0 !important;
-  border-radius: 8px !important;
-  background: #e8f7fd !important;
-  overflow: hidden;
-}
-
-.cw-root .client-tab {
-  padding: 10px 0 !important;
-  border-radius: 6px !important;
-  color: #64748b !important;
-}
-
-.cw-root .client-tab--active {
-  background: #38ace0 !important;
-  color: #ffffff !important;
-  box-shadow: none !important;
-}
-
-.cw-root .client-tab--active::after {
-  display: none !important;
-}
-
-.cw-root .client-tab:focus {
-  outline: none;
-}
-
-/* ===== Nutrition detail: use the available desktop workspace ===== */
-@media (min-width: 701px) {
-  .meal-day-page {
-    width: 100%;
+  &__copy {
+    flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      font-size: 14.5px;
+      font-weight: 600;
+    }
+
+    small {
+      font-size: 12.5px;
+      color: var(--yc-text-secondary);
+
+      b {
+        font-weight: 700;
+        color: #d97706;
+
+        &.down {
+          color: #1e8e4e;
+        }
+      }
+    }
   }
 
-  .meal-day-header,
-  .meal-day-content {
-    width: 100%;
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
+  .radio {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.6px solid #c3cad4;
+
+    &.on {
+      border-color: var(--yc-primary);
+      background: radial-gradient(circle, var(--yc-primary) 0 5.5px, transparent 6px);
+    }
   }
 
-  .meal-day-header {
-    padding: 14px 20px 12px;
-  }
-
-  .meal-day-content {
-    padding: 0 20px 24px;
-  }
-
-  .meal-day-footer {
-    padding: 10px 20px;
+  &.original .radio {
+    border-color: var(--yc-border);
   }
 }
 
-@media (min-width: 1500px) {
-  .meal-day-header {
-    padding-left: 24px;
-    padding-right: 24px;
+.macro-pills {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  em {
+    --pill: #0c86c8;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-style: normal;
+    color: var(--pill);
+    background: color-mix(in srgb, var(--pill) 10%, transparent);
+  }
+}
+
+.photo-viewer {
+  align-items: center;
+  padding: 24px;
+
+  img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px;
+    object-fit: contain;
   }
 
-  .meal-day-content,
-  .meal-day-footer {
-    padding-left: 24px;
-    padding-right: 24px;
+  &__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+}
+
+.cn-pdf-document {
+  font-size: 13px;
+
+  .cn-pdf-brand {
+    color: #1e9e63;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 12px 0 6px;
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .cn-pdf-day {
+    margin-top: 12px;
+    border: 1px solid var(--yc-hairline);
+    border-radius: 8px;
+    overflow: hidden;
+
+    h2 {
+      margin: 0;
+      padding: 8px 12px;
+      background: #1e9e63;
+      color: #fff;
+      font-size: 12.5px;
+    }
+  }
+
+  .cn-pdf-totals {
+    padding: 8px 12px;
+    color: var(--yc-text-secondary);
+    border-bottom: 1px solid #eef1f4;
+  }
+
+  .cn-pdf-meal {
+    padding: 8px 12px 2px;
+    font-weight: 700;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+
+    th,
+    td {
+      display: table-cell;
+      padding: 5px 12px;
+      border-top: 1px solid #eef1f4;
+      text-align: left;
+      background: none !important;
+    }
+
+    th {
+      font-size: 10.5px;
+      color: var(--yc-text-hint);
+      text-transform: uppercase;
+    }
+
+    td::before {
+      display: none;
+    }
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    display: table-row;
+    border: 0;
   }
 }

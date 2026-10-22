@@ -1281,3 +1281,6 @@ body .table-wrap thead th:last-child {
 
 @import './app/components/program-library/workout-visual-reference';
 
+
+// Client pages: same look as the mobile app.
+@import './app/shared/styles/client-ui';

@@ -76,11 +76,15 @@ export class AssignmentsApiService {
     size: number,
     sortBy = 'assignedAt',
     direction: 'ASC' | 'DESC' = 'DESC',
-    status?: AssignmentStatus
+    status?: AssignmentStatus,
+    skipLoader = false
   ) {
     const params: any = { page, size, sortBy, direction };
     if (status) params.status = status;
-    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/me/page`, { params });
+    return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/me/page`, {
+      params,
+      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+    });
   }
 
 

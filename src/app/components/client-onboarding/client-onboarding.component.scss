@@ -17,3 +17,13 @@ textarea.field-control { resize:vertical; }
 .stars button { border:0; background:transparent; color:#d0d5dd; font-size:28px; cursor:pointer; }
 .stars button.selected { color:#22b5e8; }
 @media (max-width:640px) { .onboarding-card,.wide-card { width:100%; } .field-grid { grid-template-columns:1fr; } }
+
+.app-offer .store-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 8px 0 16px;
+
+  a { text-decoration: none; min-width: 160px; text-align: center; }
+}

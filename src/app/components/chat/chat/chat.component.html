@@ -1,3 +1,5 @@
+<!-- A client sees the mobile layout (#clientChat below); coaches and the embedded views keep this one. -->
+<ng-container *ngIf="!clientLayout; else clientChat">
 <div class="chat-page-header" *ngIf="!embeddedMode && (!isMobile || showList)">
   <div class="chat-page-header__left">
     <button class="app-page-back chat-page-header__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
@@ -336,6 +338,148 @@
     <app-profil-client *ngIf="selectedClientId && (showClientProfile || profileBuiltFor === selectedClientId)" [clientIdInput]="selectedClientId"></app-profil-client>
   </aside>
 </div>
+</ng-container>
+
+<!-- ═══════════════════════════════════════════
+     CLIENT — same as the mobile ConversationListScreen / ConversationMessagesScreen
+═══════════════════════════════════════════ -->
+<ng-template #clientChat>
+  <div class="yc-page cc">
+    <!-- Conversation list -->
+    <div *ngIf="!selectedConv" class="yc-container cc-list">
+      <header class="yc-root-header">
+        <div class="yc-root-header__copy">
+          <h1 class="yc-display">Messages</h1>
+          <p class="cc-subtitle" [class.cc-subtitle--unread]="clientUnreadConversations > 0">{{ clientSubtitle }}</p>
+        </div>
+      </header>
+
+      <label class="cc-search">
+        <i-feather name="search"></i-feather>
+        <input type="text" [(ngModel)]="searchTerm" [placeholder]="ct('Search conversations', 'Rechercher des conversations')" />
+        <button *ngIf="searchTerm" type="button" [attr.aria-label]="ct('Clear', 'Effacer')" (click)="searchTerm = ''"><i-feather name="x"></i-feather></button>
+      </label>
+
+      <div class="cc-pills">
+        <button type="button" [class.active]="clientFilter === 'ALL'" (click)="clientFilter = 'ALL'">{{ ct('All', 'Tous') }}</button>
+        <button type="button" [class.active]="clientFilter === 'UNREAD'" (click)="clientFilter = 'UNREAD'">
+          {{ ct('Unread', 'Non lus') }}<span *ngIf="clientUnreadConversations > 0">{{ clientUnreadConversations }}</span>
+        </button>
+        <button type="button" [class.active]="clientFilter === 'GROUPS'" (click)="clientFilter = 'GROUPS'">{{ ct('Groups', 'Groupes') }}</button>
+      </div>
+
+      <div *ngIf="!conversationsLoaded || clientWantsCoach" class="yc-loading"><span class="yc-spinner"></span></div>
+      <div *ngIf="conversationsLoaded && !clientWantsCoach && !clientConversations.length" class="cc-empty">
+        <i-feather name="message-square"></i-feather>
+        <p>{{ ct('No conversations', 'Aucune conversation') }}</p>
+      </div>
+
+      <section *ngIf="conversationsLoaded && !clientWantsCoach && clientConversations.length" class="yc-card yc-card--flush cc-rows">
+        <ng-container *ngFor="let conv of clientConversations; let i = index">
+          <hr *ngIf="i > 0" class="yc-divider" />
+          <button type="button" class="cc-row" [class.unread]="clientUnreadCount(conv) > 0" (click)="clientOpen(conv)">
+            <span class="cc-avatar">
+              <img *ngIf="!conv.isGroup && conv.avatar; else rowFallback" [src]="conv.avatar" [alt]="conv.name" (error)="onConversationAvatarError(conv)" />
+              <ng-template #rowFallback>
+                <span class="cc-avatar__fallback"><i-feather *ngIf="conv.isGroup; else rowInitials" name="users"></i-feather><ng-template #rowInitials>{{ clientInitials(conv.name) }}</ng-template></span>
+              </ng-template>
+              <span *ngIf="clientUnreadCount(conv) > 0" class="cc-avatar__dot"></span>
+            </span>
+            <span class="cc-row__copy">
+              <span class="cc-row__top">
+                <strong>{{ clientName(conv) }}</strong>
+                <span *ngIf="!conv.isGroup" class="cc-coach"><i-feather name="check-circle"></i-feather>Coach</span>
+                <span class="cc-row__spacer"></span>
+                <span *ngIf="clientTimeLabel(conv)" class="cc-row__time">{{ clientTimeLabel(conv) }}</span>
+              </span>
+              <span *ngIf="getLastMessageText(conv)" class="cc-row__last">
+                <span>{{ getLastMessageText(conv) }}</span>
+                <b *ngIf="clientUnreadCount(conv) > 0">{{ clientUnreadCount(conv) > 99 ? '99+' : clientUnreadCount(conv) }}</b>
+              </span>
+              <span *ngIf="conv.isGroup && clientMembersLabel(conv)" class="cc-row__members">{{ clientMembersLabel(conv) }}</span>
+            </span>
+          </button>
+        </ng-container>
+      </section>
+    </div>
+
+    <!-- Conversation -->
+    <div *ngIf="selectedConv" class="cc-conv">
+      <header class="cc-header">
+        <button type="button" class="cc-header__back" [attr.aria-label]="ct('Back', 'Retour')" (click)="clientBack()"><i-feather name="arrow-left"></i-feather></button>
+        <span class="cc-avatar cc-avatar--sm">
+          <img *ngIf="!selectedConv.isGroup && selectedConv.avatar; else headFallback" [src]="selectedConv.avatar" [alt]="selectedConv.name" (error)="onConversationAvatarError(selectedConv)" />
+          <ng-template #headFallback>
+            <span class="cc-avatar__fallback"><i-feather *ngIf="selectedConv.isGroup; else headInitials" name="users"></i-feather><ng-template #headInitials>{{ clientInitials(selectedConv.name) }}</ng-template></span>
+          </ng-template>
+        </span>
+        <span class="cc-header__copy">
+          <strong>{{ selectedConv.name }}</strong>
+          <small *ngIf="!selectedConv.isGroup">Coach</small>
+          <small *ngIf="selectedConv.isGroup" class="cc-header__members">{{ clientMembersLabel(selectedConv) }}</small>
+        </span>
+      </header>
+
+      <div class="cc-messages" #messagesContainer>
+        <ng-container *ngFor="let entry of conversationTimeline; let i = index; trackBy: trackTimelineEntry">
+          <ng-container *ngIf="entry.kind === 'message'">
+            <p *ngIf="clientDaySeparator(i) as day" class="cc-day">{{ day }}</p>
+            <div class="cc-msg" [class.me]="isOwnMessage(entry.message)">
+              <span class="cc-msg__sender" *ngIf="selectedConv.isGroup && !isOwnMessage(entry.message)">{{ entry.message.sender?.name }}</span>
+              <div class="cc-bubble" [ngSwitch]="entry.message.type">
+                <span *ngSwitchCase="'TEXT'" class="cc-bubble__text">{{ entry.message.text }}</span>
+                <div *ngSwitchCase="'VOICE'" class="cc-voice">
+                  <i-feather name="mic"></i-feather>
+                  <audio [src]="entry.message.playbackUrl" (error)="refreshVoicePlayback(entry.message)" controls preload="metadata"></audio>
+                  <span>{{ formatDuration(entry.message.durationSeconds) }}</span>
+                </div>
+                <ng-container *ngSwitchCase="'DOCUMENT'">
+                  <button *ngIf="isImageAttachment(entry.message); else docTpl" type="button" class="cc-image" (click)="openImagePreview(entry.message, $event)">
+                    <img *ngIf="entry.message.imageUrl; else imgLoading" [src]="entry.message.imageUrl" [alt]="entry.message.attachmentName" (error)="refreshImagePlayback(entry.message)" />
+                    <ng-template #imgLoading><span class="cc-image__loading">{{ entry.message.imageLoadError ? ct('Image unavailable', 'Image indisponible') : ct('Loading image…', 'Chargement de l’image…') }}</span></ng-template>
+                  </button>
+                  <ng-template #docTpl>
+                    <button type="button" class="cc-doc" (click)="downloadDocument(entry.message, $event)">
+                      <i-feather name="file"></i-feather><strong>{{ entry.message.attachmentName || 'Document' }}</strong>
+                    </button>
+                  </ng-template>
+                  <span *ngIf="entry.message.text" class="cc-bubble__caption">{{ entry.message.text }}</span>
+                </ng-container>
+              </div>
+              <span class="cc-msg__meta">
+                {{ clientMessageTime(entry.message) }}<ng-container *ngIf="isOwnMessage(entry.message)"> · {{ clientDelivery(entry.message) }}</ng-container>
+                <button *ngIf="isOwnMessage(entry.message) && entry.message.deliveryStatus === 'failed'" type="button" (click)="retryMessage(entry.message)"> · {{ ct('Retry', 'Réessayer') }}</button>
+              </span>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+
+      <footer class="cc-input">
+        <input #clientDocumentInput type="file" hidden [accept]="acceptedDocumentExtensions" (change)="onDocumentSelected($event)" />
+        <div *ngIf="pendingDocument" class="cc-pending">
+          <i-feather name="paperclip"></i-feather><strong>{{ pendingDocument.name }}</strong>
+          <button type="button" [attr.aria-label]="ct('Remove', 'Retirer')" (click)="removePendingDocument()"><i-feather name="x"></i-feather></button>
+        </div>
+        <p *ngIf="attachmentError || messageError" class="cc-error">{{ attachmentError || messageError }}</p>
+        <div class="cc-input__row">
+          <button type="button" class="cc-tool" [attr.aria-label]="ct('Attach a file', 'Joindre un fichier')" (click)="clientDocumentInput.click()"><i-feather name="paperclip"></i-feather></button>
+          <button type="button" class="cc-tool" [class.recording]="isRecording" [attr.aria-label]="ct('Voice message', 'Message vocal')" (click)="toggleVoiceRecording()">
+            <i-feather [name]="isRecording ? 'stop-circle' : 'mic'"></i-feather>
+          </button>
+          <span *ngIf="isRecording" class="cc-recording">{{ formatDuration(recordingSeconds) }}<button type="button" (click)="cancelVoiceRecording()">×</button></span>
+          <textarea class="cc-field" rows="1" [(ngModel)]="messageText" (ngModelChange)="onMessageTextChange($event)" [disabled]="isRecording"
+                    (keydown.enter)="clientEnter($any($event))"
+                    [placeholder]="pendingDocument ? ct('Add a message', 'Ajouter un message') : ct('Type a message...', 'Écrire un message...')"></textarea>
+          <button type="button" class="cc-send" [class.active]="messageText.trim() || pendingDocument" [attr.aria-label]="ct('Send', 'Envoyer')"
+                  [disabled]="(!messageText.trim() && !pendingDocument) || messageText.trim().length > maxMessageLength || isRecording" (click)="sendMessage()">
+            <i-feather name="send"></i-feather>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+</ng-template>
 
 <div class="am-overlay" *ngIf="showAutoMessageModal" (click)="closeAutoMessageModal()">
   <div class="am-modal am-modal--schedule" (click)="$event.stopPropagation()">

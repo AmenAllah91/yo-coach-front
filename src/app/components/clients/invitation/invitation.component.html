@@ -49,7 +49,15 @@
           {{ 'INVITATION_COACH_LIMIT_REACHED' | translate }}
         </p>
 
-        <p class="inv-error" *ngIf="actionError">
+        <p class="inv-error" *ngIf="invitation.status === 'EXPIRED' || actionErrorKey === 'INVITATION_EXPIRED'" role="alert">
+          {{ 'INVITATION_EXPIRED_ASK_COACH' | translate }}
+        </p>
+
+        <p class="inv-error" *ngIf="actionErrorKey === 'INVITATION_EMAIL_MISMATCH'" role="alert">
+          {{ 'INVITATION_FOR_ANOTHER_EMAIL' | translate }}
+        </p>
+
+        <p class="inv-error" *ngIf="actionError && !actionErrorKey">
           {{ 'INVITATION_ACCEPT_ERROR' | translate }}
         </p>
 
