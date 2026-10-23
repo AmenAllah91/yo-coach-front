@@ -145,15 +145,6 @@ export class ChatWebsocketService {
     return new Date().toISOString();
   }
 
-  sendMessage(conversationId: string, content: string, senderId: string): void {
-    if (!this.stompClient?.connected) return;
-
-    this.stompClient.publish({
-      destination: '/app/chat.send',
-      body: JSON.stringify({ conversationId, content, senderId, type: 'TEXT' })
-    });
-  }
-
   disconnect(): void {
     this.conversationSubscriptions.forEach(subscription => subscription?.unsubscribe());
     this.conversationSubscriptions.clear();
