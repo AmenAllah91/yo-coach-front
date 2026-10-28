@@ -265,9 +265,9 @@ export class WorkoutPlanFacade {
     return this.workoutService.createWorkout(payload, true); // the toolbar shows the saving state
   }
 
-  updatePlan() {
+  updatePlan(overlap?: 'SHIFT' | 'REMOVE' | null) {
     const payload = this.buildSavePayload();
-    return this.workoutService.updateWorkout(payload.id!, payload, true);
+    return this.workoutService.updateWorkout(payload.id!, payload, true, overlap);
   }
 
   private clean(value: any): string {

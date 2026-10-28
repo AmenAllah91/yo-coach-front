@@ -1,311 +1,47 @@
-<div class="tab-section-header">
-  <h2 class="section-title">{{ 'NUTRITION_PLANS' | translate }}</h2>
-  <button class="btn-assign-black" type="button" *ngIf="!(loaded && hasNoPlan)" appWriteAction (click)="openAssignNutrition()">
-    <i class="fas fa-plus"></i>
-    {{ 'ASSIGN_NEW_PLAN' | translate }}
-  </button>
-</div>
+<!-- The client's « Programmes » tab (backlog-programmes.md P1-P8) -->
+<app-client-programs
+  kind="NUTRITION"
+  [clientId]="clientId"
+  [clientName]="clientName"
+  (action)="onProgramAction($event)"
+></app-client-programs>
 
-<div class="workout-filter-tabs" *ngIf="nutritionFileEnabled !== false && !(loaded && hasNoPlan)">
-  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'ALL'" (click)="setActiveTab('ALL')">
-    {{ 'ALL' | translate }}
-  </button>
-  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'APP'" (click)="setActiveTab('APP')">
-    {{ 'APP_PLANS' | translate }}
-  </button>
-  <button class="workout-filter-tab" [class.workout-filter-tab--active]="activeTab === 'FILES'" (click)="setActiveTab('FILES')">
-    {{ 'UPLOADED_FILES' | translate }}
-  </button>
-</div>
-
-<app-section-loader *ngIf="!loaded"></app-section-loader>
-<ng-container *ngIf="loaded">
-<app-client-plan-empty *ngIf="hasNoPlan" kind="nutrition" (assign)="openAssignNutrition()"></app-client-plan-empty>
-
-<div class="program-section" *ngIf="hasActivePlans()">
-  <h3 class="program-section-title">{{ 'CURRENT_ACTIVE_PLAN' | translate }}</h3>
-  <ng-container *ngFor="let plan of currentActivePlans">
-    <ng-container *ngTemplateOutlet="planCardTemplate; context: { $implicit: plan }"></ng-container>
-  </ng-container>
-</div>
-
-<div class="program-section" *ngIf="!hasNoPlan">
-  <div class="all-programs-header">
-    <h3 class="program-section-title">{{ 'ALL_PLANS' | translate }}</h3>
-
-    <div class="all-programs-controls">
-      <div class="program-status-filters" [attr.aria-label]="'NUTRITION_STATUS_FILTERS' | translate">
-        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'ALL'" (click)="setAllPlansFilter('ALL')">
-          {{ 'ALL' | translate }}
-        </button>
-        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'UPCOMING'" (click)="setAllPlansFilter('UPCOMING')">
-          {{ 'UPCOMING' | translate }}
-        </button>
-        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'COMPLETED'" (click)="setAllPlansFilter('COMPLETED')">
-          {{ 'COMPLETED' | translate }}
-        </button>
-        <button type="button" class="program-status-filter" [class.program-status-filter--active]="allPlansFilter === 'OVERLAP'" (click)="setAllPlansFilter('OVERLAP')">
-          {{ 'OVERLAP' | translate }}
-        </button>
-      </div>
-
-      <label class="program-sort-control">
-        <i class="fas fa-sort"></i>
-        <span>{{ 'SORT' | translate }}:</span>
-        <select [ngModel]="allPlansSort" (ngModelChange)="setAllPlansSort($event)">
-          <option value="RECOMMENDED">{{ 'RECOMMENDED' | translate }}</option>
-          <option value="START_ASC">{{ 'START_DATE_ASC' | translate }}</option>
-          <option value="START_DESC">{{ 'START_DATE_DESC' | translate }}</option>
-          <option value="END_ASC">{{ 'END_DATE_ASC' | translate }}</option>
-          <option value="END_DESC">{{ 'END_DATE_DESC' | translate }}</option>
-        </select>
-      </label>
-    </div>
-  </div>
-
-  <p class="program-filter-empty" *ngIf="!allOtherPlans.length">{{ 'NO_PLAN_FOR_FILTER' | translate }}</p>
-  <ng-container *ngFor="let plan of allOtherPlans">
-    <ng-container *ngTemplateOutlet="planCardTemplate; context: { $implicit: plan }"></ng-container>
-  </ng-container>
-</div>
-
-<ng-template #planCardTemplate let-plan>
-<div
-  class="program-card"
-  [class.program-card-app]="!isFilePlan(plan)"
-  [class.program-card-pdf]="isFilePlan(plan) && getFileKind(plan) === 'pdf'"
-  [class.program-card-excel]="isFilePlan(plan) && getFileKind(plan) === 'excel'"
-  [class.program-card--file]="isFilePlan(plan)"
-  [class.program-card--pdf]="isFilePlan(plan) && getFileKind(plan) === 'pdf'"
-  [class.program-card--excel]="isFilePlan(plan) && getFileKind(plan) === 'excel'"
->
-  <div class="program-card-top">
-    <div class="program-main">
-      <div
-        class="program-icon"
-        [ngClass]="{
-          'program-icon-blue': !isFilePlan(plan),
-          'program-icon-red': isFilePlan(plan) && getFileKind(plan) === 'pdf',
-          'program-icon-green': isFilePlan(plan) && getFileKind(plan) === 'excel'
-        }"
-      >
-        <i *ngIf="!isFilePlan(plan)" class="fas fa-apple-alt"></i>
-        <i *ngIf="isFilePlan(plan) && getFileKind(plan) === 'pdf'" class="far fa-file-alt"></i>
-        <i *ngIf="isFilePlan(plan) && getFileKind(plan) === 'excel'" class="far fa-file-excel"></i>
-      </div>
-
-      <div class="program-text">
-        <div class="program-title-row">
-          <h5 class="program-name">{{ plan.name }}</h5>
-          <small *ngIf="!isFilePlan(plan)">{{ plan.publishedWeeks?.length === 0 ? 'Draft · ' : '' }}{{ plan.publishedWeeks?.length ?? getPlanTotalWeeks(plan) }}/{{ getPlanTotalWeeks(plan) }} weeks published</small>
-
-          <span
-            *ngIf="!isFilePlan(plan)"
-            class="status-pill"
-            [ngClass]="{
-              'status-pill--active': plan.status === 'active',
-              'status-pill--upcoming': plan.status === 'upcoming',
-              'status-pill--completed': plan.status === 'completed'
-            }"
-          >
-            {{ ('PROGRAM_STATUS_' + (plan.status | uppercase)) | translate }}
-          </span>
-
-          <span *ngIf="!isFilePlan(plan)" class="program-type-pill program-type-pill--app">
-            {{ 'APP_PLAN' | translate }}
-          </span>
-          <span *ngIf="isPlanOverlap(plan)" class="status-pill status-pill--overlap">{{ 'OVERLAP' | translate }}</span>
-
-          <span
-            *ngIf="isFilePlan(plan)"
-            class="file-type-pill"
-            [ngClass]="{
-              'file-type-pill--pdf': getFileKind(plan) === 'pdf',
-              'file-type-pill--excel': getFileKind(plan) === 'excel'
-            }"
-          >
-            {{ getFileLabel(plan) }}
-          </span>
-        </div>
-
-        <div class="program-meta">
-          <span *ngIf="plan.startDate || plan.endDate">
-            <i class="far fa-calendar-alt me-1"></i>
-            {{ formatPlanDate(plan.startDate) }}
-            <ng-container *ngIf="getDisplayEndDate(plan)"> - {{ formatPlanDate(getDisplayEndDate(plan)) }}</ng-container>
-          </span>
-
-          <ng-container *ngIf="!isFilePlan(plan)">
-            <span *ngIf="getPlanTotalWeeks(plan) > 0">
-              <i class="far fa-clock me-1"></i>
-              {{ 'WEEKS_COUNT' | translate:{ count: getPlanTotalWeeks(plan) } }}
-            </span>
-            <span *ngIf="getCurrentWeekNumber(plan) > 0" class="program-meta-highlight">
-              <i class="far fa-dot-circle me-1"></i>
-              {{ 'WEEK' | translate }} {{ getCurrentWeekNumber(plan) }}
-            </span>
-          </ng-container>
-
-          <ng-container *ngIf="isFilePlan(plan)">
-            <span *ngIf="plan.fileUploadedAt">
-              <i class="far fa-calendar-alt me-1"></i>
-              {{ 'UPLOADED' | translate }} {{ plan.fileUploadedAt | date : "MMM dd, y" }}
-            </span>
-
-            <span *ngIf="plan.fileSizeBytes">
-              <i class="far fa-file-alt me-1"></i>
-              {{ formatFileSize(plan.fileSizeBytes) }}
-            </span>
-          </ng-container>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="program-actions" (click)="$event.stopPropagation()">
-      <ng-container *ngIf="isFilePlan(plan); else appActions">
-        <button class="file-action-btn" type="button" (click)="previewFile(plan)">
-          <i class="far fa-eye"></i>
-          {{ 'PREVIEW' | translate }}
-        </button>
-
-        <button class="file-action-btn" type="button" (click)="downloadFile(plan)">
-          <i class="fas fa-download"></i>
-          {{ 'DOWNLOAD' | translate }}
-        </button>
-
-        <div class="file-actions-menu-wrap">
-          <button class="file-action-btn" type="button" (click)="toggleActions(plan, $event)">
-            {{ 'ACTIONS' | translate }}
-            <i class="fas" [ngClass]="isActionsOpen(plan) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-          </button>
-
-          <div class="file-actions-menu" *ngIf="isActionsOpen(plan)">
-            <button type="button" (click)="previewFile(plan)">
-              <i class="far fa-eye"></i>
-              {{ 'PREVIEW_FILE' | translate }}
-            </button>
-            <button type="button" (click)="downloadFile(plan)">
-              <i class="fas fa-download"></i>
-              {{ 'DOWNLOAD_FILE' | translate }}
-            </button>
-            <button type="button" (click)="replaceFile(plan)">
-              <i class="fas fa-sync-alt"></i>
-              {{ 'REPLACE_FILE' | translate }}
-            </button>
-            <button type="button" (click)="changeDates(plan)">
-              <i class="far fa-calendar-alt"></i>
-              {{ 'CHANGE_DATES' | translate }}
-            </button>
-            <button type="button" class="danger" (click)="removeProgram(plan)">
-              <i class="far fa-trash-alt"></i>
-              {{ 'REMOVE_PROGRAM' | translate }}
-            </button>
-          </div>
-        </div>
-      </ng-container>
-
-      <ng-template #appActions>
-        <div class="file-actions-menu-wrap">
-          <button class="file-action-btn" type="button" (click)="toggleActions(plan, $event)">
-            {{ 'ACTIONS' | translate }}
-            <i class="fas" [ngClass]="isActionsOpen(plan) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-          </button>
-
-          <div class="file-actions-menu" *ngIf="isActionsOpen(plan)">
-            <button type="button" (click)="editPlan(plan)">
-              <i class="far fa-edit"></i>
-              {{ 'EDIT_PROGRAM' | translate }}
-            </button>
-            <button type="button" (click)="changeDates(plan)">
-              <i class="far fa-calendar-alt"></i>
-              {{ 'CHANGE_DATES' | translate }}
-            </button>
-            <button type="button" class="danger" (click)="removeProgram(plan)">
-              <i class="far fa-trash-alt"></i>
-              {{ 'REMOVE_PROGRAM' | translate }}
-            </button>
-          </div>
-        </div>
-      </ng-template>
-    </div>
-  </div>
-
-  <div *ngIf="!isFilePlan(plan) && plan.status === 'active'" class="program-progress">
-    <div class="progress-bar-bg">
-      <div
-        class="progress-bar-fill"
-        [style.width.%]="plan.progressPercent"
-      ></div>
-    </div>
-  </div>
-</div>
-</ng-template>
-
-<div class="pagination-wrapper" *ngIf="totalPages > 1">
-  <button
-    class="page-btn"
-    [disabled]="page === 0"
-    (click)="changePage(page - 1)"
-  >
-    &lt;
-  </button>
-
-  <button
-    *ngFor="let p of pagesArray"
-    class="page-btn"
-    [class.page-btn--active]="p === page"
-    (click)="changePage(p)"
-  >
-    {{ p + 1 }}
-  </button>
-
-  <button
-    class="page-btn"
-    [disabled]="page === totalPages - 1"
-    (click)="changePage(page + 1)"
-  >
-    &gt;
-  </button>
-</div>
-</ng-container>
+<app-remove-program-confirm
+  *ngIf="removeTarget"
+  [item]="removeTarget"
+  kind="NUTRITION"
+  [clientName]="clientName"
+  [busy]="removing"
+  (confirmed)="confirmRemove()"
+  (cancelled)="removeTarget = null"
+></app-remove-program-confirm>
 
 
-<div class="change-dates-backdrop" *ngIf="showChangeDatesModal" (click)="closeChangeDatesModal()">
-  <div class="change-dates-modal" (click)="$event.stopPropagation()">
-    <div class="change-dates-header">
-      <h3>{{ 'CHANGE_DATES' | translate }}</h3>
-      <button type="button" class="change-dates-close" (click)="closeChangeDatesModal()" [attr.aria-label]="'CLOSE' | translate">×</button>
-    </div>
+<!-- « Décaler la suite » and pause (backlog-programmes.md DS-10/DS-11) -->
+<app-program-shift-modal
+  *ngIf="shiftTarget"
+  kind="NUTRITION"
+  [item]="shiftTarget"
+  [clientName]="clientName"
+  (closed)="shiftTarget = null"
+  (saved)="onShiftSaved()"
+></app-program-shift-modal>
+<app-client-pause-modal
+  *ngIf="showPauseModal"
+  [clientId]="clientId"
+  [clientName]="clientName"
+  (closed)="showPauseModal = false"
+  (saved)="onShiftSaved()"
+></app-client-pause-modal>
 
-    <div class="change-dates-body">
-      <p class="change-dates-description">
-        {{ 'UPDATE_PROGRAM_SCHEDULE' | translate:{ name: dateTargetPlan?.name } }}
-      </p>
-
-      <div class="change-dates-fields">
-        <div class="change-date-field">
-          <label>{{ 'START_DATE' | translate }}</label>
-          <input type="date" [(ngModel)]="dateStart" />
-        </div>
-
-        <div class="change-date-field">
-          <label>{{ 'END_DATE' | translate }}</label>
-          <input type="date" [(ngModel)]="dateEnd" />
-        </div>
-      </div>
-
-      <div class="upload-error" *ngIf="dateError">{{ dateError }}</div>
-    </div>
-
-    <div class="change-dates-footer">
-      <button type="button" class="change-dates-cancel" (click)="closeChangeDatesModal()" [disabled]="dateSaving">
-        {{ 'CANCEL' | translate }}
-      </button>
-
-      <button type="button" class="change-dates-save" (click)="saveChangedDates()" [disabled]="!dateStart || !dateEnd || dateSaving">
-        {{ (dateSaving ? 'SAVING' : 'SAVE_CHANGES') | translate }}
-      </button>
-    </div>
-  </div>
-</div>
+<!-- « Modifier les dates »: same rule as an assignment (backlog-programmes.md A8) -->
+<app-change-dates-modal
+  *ngIf="showChangeDatesModal && dateTargetPlan"
+  kind="NUTRITION"
+  [plan]="dateTargetPlan"
+  [isFile]="dateTargetIsFile"
+  [clientId]="clientId"
+  [clientName]="clientName"
+  (closed)="closeChangeDatesModal()"
+  (saved)="onDatesSaved()"
+></app-change-dates-modal>

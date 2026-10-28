@@ -51,6 +51,8 @@ export interface CheckoutQuote {
   couponsNotApplied: string[];
   /** SUB-61: currency of the amounts (TND by Flouci, USD by Stripe). */
   currency?: string | null;
+  /** Payment method of this plan for this coach (FLOUCI, STRIPE), decided by YoSales. */
+  gateway?: string | null;
 }
 
 export interface RegistrationUser {
@@ -105,19 +107,49 @@ export interface SalesSubscriptionDto {
   planPrice?: number | null;
 }
 
-/** SUB-61: price of a plan in the currency of the subscription (dollar price for USD). */
-export function priceInCurrency(plan: { price: number; priceUsd?: number | null }, currency: string | null | undefined): number | null {
-  return (currency ?? 'TND').toUpperCase() === 'USD' ? (plan.priceUsd ?? null) : plan.price;
+/**
+ * SUB-61 / generic billing model: price of a plan in a currency: the price set for it (prices), the base price when
+ * it is the base currency of the product, the older whole-dollar price for USD; null when not sold in it.
+ */
+export function priceInCurrency(
+  plan: { price: number; priceUsd?: number | null; prices?: Record<string, number> | null; currency?: string | null },
+  currency: string | null | undefined,
+): number | null {
+  const code = (currency ?? 'TND').toUpperCase();
+  const base = (plan.currency ?? 'TND').toUpperCase();
+  const set = plan.prices?.[code];
+  if (set != null) {
+    return set;
+  }
+  if (code === base) {
+    return plan.price;
+  }
+  return code === 'USD' ? (plan.priceUsd ?? null) : null;
 }
 
-/** SUB-61: "50,000 TND" / "15 $": TND with 3 decimals, dollars with 2 (none when whole). */
+/** Decimals of a currency (TND 3, USD 2, JPY 0), from the browser; 2 when unknown. */
+function decimalsOf(code: string): number {
+  try {
+    return new Intl.NumberFormat('en', { style: 'currency', currency: code }).resolvedOptions().maximumFractionDigits ?? 2;
+  } catch {
+    return 2;
+  }
+}
+
+/**
+ * SUB-61: "50,000 TND" / "15 $" / "13,50 EUR": each currency with its own decimals (none when whole, except TND), the
+ * code after the amount ("$" for dollars). Payment audit D6: never "TND" for another currency.
+ */
 export function formatAmount(amount: number | null | undefined, currency: string | null | undefined, locale = 'fr-FR'): string {
   if (amount == null) {
     return '';
   }
-  if ((currency ?? 'TND').toUpperCase() === 'USD') {
-    const whole = Math.round(amount * 100) % 100 === 0;
-    return new Intl.NumberFormat(locale, { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 }).format(amount) + ' $';
+  const code = (currency ?? 'TND').toUpperCase();
+  if (code === 'TND') {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(amount) + ' TND';
   }
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(amount) + ' TND';
+  const decimals = decimalsOf(code);
+  const whole = Math.round(amount * 10 ** decimals) % 10 ** decimals === 0;
+  const text = new Intl.NumberFormat(locale, { minimumFractionDigits: whole ? 0 : decimals, maximumFractionDigits: decimals }).format(amount);
+  return text + ' ' + (code === 'USD' ? '$' : code);
 }

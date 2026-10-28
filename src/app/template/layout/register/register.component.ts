@@ -16,6 +16,15 @@ import { RegisterService } from '../../../service/register.service';
 import { SubscriptionOnboardingService } from '../../../service/subscription-onboarding.service';
 import { AuthService } from '../../../config/auth.service';
 
+/**
+ * Refusal codes of the sign-up (CE, YoSales) with their text, read before the generic 409 / 429 handling.
+ * TOO_MANY_SIGN_UPS: the sign-up limit per network (429).
+ */
+const REGISTER_ERROR_KEYS: Record<string, string> = {
+  PLAN_ARCHIVED: 'CHECKOUT_PLAN_ARCHIVED',
+  TOO_MANY_SIGN_UPS: 'PLEASE_TRY_AGAIN_LATER',
+};
+
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -153,12 +162,29 @@ export class RegisterComponent implements OnInit{
           console.error('Registration error:', error);
           return;
         }
+        // The code of CE / YoSales comes before the generic 409 / 429 text (a plan no longer offered is not an
+        // existing account).
+        const code = String(error?.error?.code ?? '');
+        if (code === 'USERNAME_TAKEN') {
+          this.usernameError = this.translate.instant('USERNAME_ALREADY_IN_USE');
+          this.signupForm.get('username')?.setErrors({ serverConflict: true });
+          this.signupForm.get('username')?.markAsTouched();
+          console.error('Registration error:', error);
+          return;
+        }
+        const codeKey = REGISTER_ERROR_KEYS[code] ?? (error?.status === 429 ? 'PLEASE_TRY_AGAIN_LATER' : null);
+        if (codeKey) {
+          this.generalError = this.translate.instant(codeKey);
+          console.error('Registration error:', error);
+          return;
+        }
         if (message.includes('This username is already in use.')) {
           this.usernameError = this.translate.instant('USERNAME_ALREADY_IN_USE');
           this.signupForm.get('username')?.setErrors({ serverConflict: true });
         } else if (message.includes('An account already exists with this email.')) {
           this.signupForm.get('email')?.setErrors({ serverConflict: true });
-        } else if (error?.status === 409) {
+        } else if (error?.status === 409 && !code) {
+          // Without a code, a 409 of the sign-up is an account conflict (Keycloak).
           this.generalError = this.translate.instant('USER_ALREADY_EXISTS');
         } else {
           this.generalError = this.translate.instant('UNEXPECTED_ERROR_RETRY');

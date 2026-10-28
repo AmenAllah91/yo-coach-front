@@ -54,7 +54,7 @@ describe('MySubscriptionComponent (SUB-37)', () => {
 
     c.pay(c.invoices[0]);
 
-    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90, 'FLOUCI');
+    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90);
     expect(redirect).toHaveBeenCalledWith('https://flouci.example/pay/90');
   });
 
@@ -117,6 +117,12 @@ describe('MySubscriptionComponent (SUB-37)', () => {
   it('a late coach sees the last day to pay', () => {
     const c = create({ ...active, status: 'PAST_DUE', openInvoiceDueDate: '2026-11-22' });
     expect(c.dateLine).toEqual({ key: 'MY_SUB_PAY_BEFORE', date: '22/11/2026' });
+  });
+
+  it('shows the scheduled plan change with its plan and day (coach zone)', () => {
+    expect(create(active).pendingChange).toBeNull();
+    const c = create({ ...active, pendingPlanChange: { planId: 4, planName: 'Starter', effectiveAt: '2026-11-14T23:00:00Z' } });
+    expect(c.pendingChange).toEqual({ plan: 'Starter', date: '15/11/2026' });
   });
 
   it('a resume refused after the end shows a clear message', () => {

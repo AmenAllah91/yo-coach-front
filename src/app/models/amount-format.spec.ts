@@ -20,4 +20,19 @@ describe('formatAmount / priceInCurrency', () => {
     expect(priceInCurrency(plan, 'TND')).toBe(50);
     expect(priceInCurrency({ price: 50, priceUsd: null }, 'USD')).toBeNull();
   });
+
+  /** Payment audit D6: any currency keeps its own code and decimals, never "TND". */
+  it('shows other currencies with their code and decimals', () => {
+    expect(nbsp(formatAmount(13.5, 'EUR'))).toBe('13,50 EUR');
+    expect(nbsp(formatAmount(1200, 'JPY'))).toBe('1 200 JPY');
+    expect(nbsp(formatAmount(29, 'usd'))).toBe('29 $');
+  });
+
+  it('takes the price set for a currency, and the base price in the base currency of the product', () => {
+    const plan = { price: 29, priceUsd: null, prices: { EUR: 27 }, currency: 'USD' };
+    expect(priceInCurrency(plan, 'EUR')).toBe(27);
+    expect(priceInCurrency(plan, 'USD')).toBe(29);
+    expect(priceInCurrency(plan, 'TND')).toBeNull();
+    expect(priceInCurrency({ price: 50, priceUsd: 17, prices: { USD: 15.99 } }, 'USD')).toBe(15.99);
+  });
 });

@@ -1,5 +1,5 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, DestroyRef, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +11,15 @@ import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { WorkoutPublicationBadgeComponent } from '../../../program-library/workout-publication-badge.component';
+import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
+import { ChangeDatesModalComponent } from '@shared/components/change-dates-modal/change-dates-modal.component';
+import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
+import { ClientPauseModalComponent } from '@shared/components/client-pause-modal/client-pause-modal.component';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ToastService } from 'app/service/toast.service';
+import { OverviewItem, canChangeDates, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { ClientProgramAction, ClientProgramsComponent } from '@shared/components/client-programs/client-programs.component';
+import { RemoveProgramConfirmComponent } from '@shared/components/remove-program-confirm/remove-program-confirm.component';
 
 type ProgramStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
 type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
@@ -19,14 +27,22 @@ type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 
 @Component({
   selector: 'app-workouts-client-tab',
   standalone: true,
-  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, WorkoutPublicationBadgeComponent, SectionLoaderComponent, ClientPlanEmptyComponent],
+  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, ProgramDaysBadgeComponent, SectionLoaderComponent, ClientPlanEmptyComponent, ChangeDatesModalComponent, ProgramShiftModalComponent, ClientPauseModalComponent, ClientProgramsComponent, RemoveProgramConfirmComponent],
   templateUrl: './workouts-client-tab.component.html',
   styleUrl: './workouts-client-tab.component.scss',
 })
 export class WorkoutsClientTabComponent implements OnInit {
   @Input() clientId!: string;
   @Input() coachId!: string;
-  @Output() assignNew = new EventEmitter<void>();
+  @Input() clientName = '';
+  /** « Assigner un programme », with the start to propose (a gap's first day) when there is one. */
+  @Output() assignNew = new EventEmitter<string | null>();
+  /** « Voir le suivi » / a past day: the client's calendar. */
+  @Output() openCalendar = new EventEmitter<string | null>();
+  @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
+  /** The program the coach asked to remove (P10). */
+  removeTarget: OverviewItem | null = null;
+  removing = false;
   /** The programs arrived once: later reloads (filters, pages, assignments) keep the list on screen. */
   loaded = false;
   private readonly destroyRef = inject(DestroyRef);
@@ -53,7 +69,12 @@ export class WorkoutsClientTabComponent implements OnInit {
   replaceError: string | null = null;
 
   showChangeDatesModal = false;
+  /** « Décaler la suite » of that program (DS-10). */
+  shiftTarget: OverviewItem | null = null;
+  /** « Mettre en pause » the client (DS-11). */
+  showPauseModal = false;
   dateTargetProgram: WorkoutPlan | null = null;
+  dateTargetIsFile = false;
   dateStart = '';
   dateEnd = '';
   dateSaving = false;
@@ -67,7 +88,8 @@ export class WorkoutsClientTabComponent implements OnInit {
   allProgramsFilter: ProgramStatusFilter = 'ALL';
   allProgramsSort: ProgramSortMode = 'RECOMMENDED';
 
-  constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService, private translate: TranslateService) {}
+  constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService, private translate: TranslateService,
+              public programSchedule: ProgramScheduleService, private toast: ToastService) {}
 
   private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
 
@@ -84,10 +106,75 @@ export class WorkoutsClientTabComponent implements OnInit {
           this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
         }
       });
+  }
 
-    if (this.clientId && this.coachId) {
-      this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
+  /* ---------------- the tab (P1-P10) ---------------- */
+
+  onProgramAction(action: ClientProgramAction): void {
+    const id = action.programId || action.item?.id;
+    switch (action.type) {
+      case 'assign':
+        this.assignNew.emit(action.date || null);
+        return;
+      case 'calendar':
+        this.openCalendar.emit(action.date || null);
+        return;
+      case 'edit':
+      case 'view':
+        if (id) this.openEditor(id, action.dayNumber);
+        return;
+      case 'remove':
+        this.removeTarget = action.item || null;
+        return;
+      case 'shift':
+        // « Décaler la suite » (DS-10): the window reads what it proposes itself.
+        this.shiftTarget = action.item || null;
+        return;
+      case 'pause':
+        this.showPauseModal = true;
+        return;
+      case 'dates':
+        // The tab already has its dates: the window opens at once, the server checks the rest (CD-11).
+        if (action.item) {
+          this.changeDatesOf(action.item);
+          return;
+        }
+        break;
     }
+    if (!id) return;
+    // The windows below work on the whole program: it is read when the coach asks.
+    this.workoutService.getWorkoutById(id, true).subscribe({
+      next: plan => {
+        if (action.type === 'dates') this.changeDates(plan);
+        else if (action.type === 'duplicate') this.duplicateToLibrary(plan);
+        else if (action.type === 'open') this.previewFile(plan);
+        else if (action.type === 'download') this.downloadFile(plan);
+        else if (action.type === 'replace') this.replaceFile(plan);
+      },
+      error: () => this.toast.show({ type: 'error', title: this.translate.instant('ASSIGN_FLOW.REASON_UNEXPECTED') }),
+    });
+  }
+
+  private openEditor(id: string, dayNumber?: number | null): void {
+    this.router.navigate(['/clients/create-workout', this.clientId, 'edit', id], dayNumber ? { queryParams: { day: dayNumber } } : {});
+  }
+
+  confirmRemove(): void {
+    const target = this.removeTarget;
+    if (!target || this.removing) return;
+    this.removing = true;
+    this.workoutService.deleteWorkout(target.id, true).subscribe({
+      next: () => {
+        this.removing = false;
+        this.removeTarget = null;
+        this.toast.show({ type: 'success', title: this.translate.instant('CLIENT_PROGRAMS.REMOVED') });
+        this.programs?.reload();
+      },
+      error: () => {
+        this.removing = false;
+        this.toast.show({ type: 'error', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_FAILED') });
+      },
+    });
   }
 
   private applyWorkoutFileSetting(): void {
@@ -325,50 +412,10 @@ export class WorkoutsClientTabComponent implements OnInit {
       });
   }
 
-  getWorkOutPlanByCoachAndClient(idCoach: string, idClient: string) {
-    const backendType = this.workoutFileEnabled ? this.activeTab : 'APP';
-
-    forkJoin({
-      active: this.workoutService.getWorkoutByCoachIdAndClient(
-        idCoach,
-        idClient,
-        0,
-        100,
-        backendType,
-        'ACTIVE',
-        'ALL',
-        'RECOMMENDED',
-        true
-      ),
-      allPrograms: this.workoutService.getWorkoutByCoachIdAndClient(
-        idCoach,
-        idClient,
-        this.workoutPage,
-        this.workoutSize,
-        backendType,
-        'NON_ACTIVE',
-        this.allProgramsFilter,
-        this.allProgramsSort,
-        true
-      ),
-    }).pipe(finalize(() => (this.loaded = true))).subscribe(({ active, allPrograms }) => {
-        const activePrograms = this.normalizeAndDedupeWorkoutPrograms(active.content || [])
-          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramEndDateAsc(a, b));
-        const dedupedPrograms = this.normalizeAndDedupeWorkoutPrograms(allPrograms.content || [])
-          .sort((a: WorkoutPlan, b: WorkoutPlan) => this.compareProgramsByBusinessStatus(a, b));
-
-        this.workoutTotalPages = Math.max(1, allPrograms.totalPages || Math.ceil((allPrograms.totalElements || dedupedPrograms.length) / this.workoutSize));
-        this.workoutPagesArray = Array.from(
-          { length: this.workoutTotalPages },
-          (_, i) => i
-        );
-
-        this.activeWorkoutPrograms = activePrograms;
-        this.allVisibleWorkoutPrograms = dedupedPrograms;
-        this.appPrograms = dedupedPrograms.filter((program) => !this.isFileWorkout(program));
-        this.uploadedFiles = dedupedPrograms.filter((program) => this.isFileWorkout(program));
-        this.workoutPlan = dedupedPrograms;
-      });
+  /** After a change made here (file, dates): the tab is read again. */
+  getWorkOutPlanByCoachAndClient(_idCoach: string, _idClient: string) {
+    this.loaded = true;
+    this.programs?.reload();
   }
 
   private normalizeAndDedupeWorkoutPrograms(programs: WorkoutPlan[]): WorkoutPlan[] {
@@ -489,6 +536,7 @@ export class WorkoutsClientTabComponent implements OnInit {
   private compareDateOnly(a: string, b: string): number {
     return a.localeCompare(b);
   }
+
 
   getProgramEndTime(program: any): number {
     if (!program?.endDate) return -8640000000000000;
@@ -633,11 +681,9 @@ export class WorkoutsClientTabComponent implements OnInit {
 
     const [year, month, day] = dateOnly.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric',
-    });
+    // In the coach's language ("18 oct. 2026" / "18 Oct 2026").
+    const locale = (this.translate.currentLang || this.translate.defaultLang || 'fr').startsWith('en') ? 'en-GB' : 'fr-FR';
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   toggleActions(program: WorkoutPlan, event: MouseEvent) {
@@ -896,6 +942,7 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   replaceFile(program: WorkoutPlan) {
+    if (this.isLocked(program)) return;
     this.openedActionsId = null;
     this.replaceTargetProgram = program;
     this.replaceError = null;
@@ -950,9 +997,20 @@ export class WorkoutsClientTabComponent implements OnInit {
 
   changeDates(program: WorkoutPlan) {
     this.openedActionsId = null;
+    if (!this.canMoveDates(program)) return;
     this.dateTargetProgram = program;
+    this.dateTargetIsFile = this.isFileWorkout(program);
     this.dateStart = this.toDateInputValue(program.startDate);
     this.dateEnd = this.toDateInputValue(program.endDate);
+    this.dateError = null;
+    this.showChangeDatesModal = true;
+  }
+
+  /** « Modifier les dates » from the tab: its menu offers it only when the program can move (CD-11). */
+  private changeDatesOf(item: OverviewItem): void {
+    this.openedActionsId = null;
+    this.dateTargetProgram = { id: item.id, name: item.name, startDate: item.startDate, endDate: item.endDate } as any;
+    this.dateTargetIsFile = item.file;
     this.dateError = null;
     this.showChangeDatesModal = true;
   }
@@ -966,47 +1024,6 @@ export class WorkoutsClientTabComponent implements OnInit {
     this.dateError = null;
   }
 
-  recalculateDateEnd() {
-    if (!this.dateTargetProgram || this.isFileWorkout(this.dateTargetProgram) || !this.dateStart) return;
-    const start = new Date(`${this.dateStart}T12:00:00`);
-    const days = Math.max(7, Math.ceil(this.getWorkoutDaySpan(this.dateTargetProgram) / 7) * 7);
-    start.setDate(start.getDate() + days - 1);
-    this.dateEnd = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-  }
-
-  saveChangedDates() {
-    if (!this.dateTargetProgram?.id) return;
-
-    if (!this.dateStart || !this.dateEnd) {
-      this.dateError = 'Start date and end date are required.';
-      return;
-    }
-
-    if (this.dateEnd < this.dateStart) {
-      this.dateError = 'End date must be after start date.';
-      return;
-    }
-
-    if (!this.isFileWorkout(this.dateTargetProgram) && !confirm(this.translate.instant('WORKOUT_DATE_CONFIRM'))) return;
-    this.recalculateDateEnd();
-    this.dateSaving = true;
-    this.dateError = null;
-
-    this.workoutService.updateWorkoutPlanDates(this.dateTargetProgram.id, this.dateStart, this.dateEnd).subscribe({
-      next: () => {
-        this.dateSaving = false;
-        this.closeChangeDatesModal();
-        this.workoutPage = 0;
-        this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
-      },
-      error: (error) => {
-        console.error('Error updating workout dates:', error);
-        this.dateSaving = false;
-        this.dateError = 'Could not update dates.';
-      },
-    });
-  }
-
   private toDateInputValue(value: any): string {
     if (!value) return '';
     if (typeof value === 'string') return value.slice(0, 10);
@@ -1016,6 +1033,44 @@ export class WorkoutsClientTabComponent implements OnInit {
     } catch {
       return '';
     }
+  }
+
+
+  /** A stopped or finished client program: open it or duplicate it, no more changes (backlog-programmes.md A9). */
+  isLocked(program: any): boolean {
+    return isPlanLocked(program, todayIso());
+  }
+
+  /** Not once the client did a session in it: their history keeps its dates (a file only moves its end). */
+  canMoveDates(program: any): boolean {
+    return canChangeDates(program, 'WORKOUT', this.isFileWorkout(program), todayIso());
+  }
+
+  stoppedLabel(program: any): string {
+    return program?.stoppedAt ? this.translate.instant('ASSIGN_FLOW.STOPPED_ON', { date: this.programSchedule.formatDate(program.stoppedAt) }) : '';
+  }
+
+  /** A full copy in the library, without the client's progress, ready to edit and assign again. */
+  duplicateToLibrary(program: any): void {
+    this.openedActionsId = null;
+    if (!program?.id) return;
+    this.workoutService.duplicateWorkout(program.id).subscribe({
+      next: () => this.toast.success(this.translate.instant('ASSIGN_FLOW.DUPLICATED')),
+      error: () => this.toast.error(this.translate.instant('ASSIGN_FLOW.DUPLICATE_FAILED')),
+    });
+  }
+
+  /** « Décaler la suite » or a pause saved: the tab is read again (the message already said what changed). */
+  onShiftSaved(): void {
+    this.shiftTarget = null;
+    this.showPauseModal = false;
+  }
+
+  onDatesSaved(): void {
+    this.showChangeDatesModal = false;
+    this.dateTargetProgram = null;
+    this.workoutPage = 0;
+    this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
   }
 
   removeProgram(program: WorkoutPlan) {

@@ -1,3 +1,6 @@
+import { AssignVisibilityNoteComponent } from '@shared/components/assign-visibility-note/assign-visibility-note.component';
+import { AssignScheduleComponent } from '@shared/components/assign-schedule/assign-schedule.component';
+import { AssignConfirmComponent, AssignConfirmRow } from '@shared/components/assign-confirm/assign-confirm.component';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -11,21 +14,18 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Client } from 'app/service/client.service';
 import { PageResponse, WorkoutService } from 'app/service/workout.service';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
-import { catchError, map, Observable, of, switchMap } from 'rxjs';
+import { ClientSchedulePreview, changeSentence, programLengthDays } from '@shared/models/program-schedule';
 
-type ConflictResolution = 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH';
-
-interface ScheduleConflict {
-  client: Client;
-  program: any;
-  resolution?: ConflictResolution;
-}
-
+/**
+ * Client profile: choose a library workout program for this client (backlog-programmes.md A2-A7). One start date,
+ * what changes on the client's calendar under it, a confirmation only when something changes, « Annuler » after.
+ */
 @Component({
   selector: 'app-workout-program-selection-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, AssignVisibilityNoteComponent, AssignScheduleComponent, AssignConfirmComponent],
   templateUrl: './workout-program-selection-modal.component.html',
   styleUrls: ['./workout-program-selection-modal.component.scss'],
 })
@@ -34,15 +34,16 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() fullName = '';
   @Input() client: Client | null = null;
+  /** A start to propose (the first day of a gap on the client's calendar). */
+  @Input() initialStart: string | null = null;
   @Input() workoutFileEnabled = true;
 
   // ===== Outputs =====
   @Output() closed = new EventEmitter<void>();
   @Output() backClicked = new EventEmitter<void>();
-  @Output() assigned = new EventEmitter<any>(); // optionnel (si tu veux refresh dans parent)
+  @Output() assigned = new EventEmitter<any>();
   @Output() assignProgram = new EventEmitter<any>();
 
-  // ===== programSelectionList (maintenant ici) =====
   programs: any[] = [];
   loadingPrograms = false;
 
@@ -53,14 +54,18 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   startDate = '';
   endDate = '';
   assigning = false;
-  selectedClientChecked = true;
-  conflict: ScheduleConflict | null = null;
-  checkingConflicts = false;
-  readonly isAssignModalTitle = 'Assign Workout Program';
+  checking = false;
+  step: 'pick' | 'confirm' = 'pick';
+  previews: Record<string, ClientSchedulePreview> = {};
+  confirmRows: AssignConfirmRow[] = [];
+  /** A stable list for the schedule (a new array at each check would ask the server again and again). */
+  clientIds: string[] = [];
 
-  constructor(private workoutService: WorkoutService, private translate: TranslateService) {}
+  constructor(private workoutService: WorkoutService, private translate: TranslateService,
+              public schedule: ProgramScheduleService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['client']) this.clientIds = this.client?.id ? [String(this.client.id)] : [];
     if (changes['workoutFileEnabled']) this.programs = []; // the filter changed: read again on the next opening
     // The library (up to 200 programs) is read when the modal opens, never while the profile loads.
     if (this.isOpen && (changes['isOpen']?.currentValue === true || changes['workoutFileEnabled'])) {
@@ -117,6 +122,11 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     });
   }
 
+  /** The program's length, to show its end at once (the server confirms it). */
+  lengthOf(program: any): number | null {
+    return programLengthDays(program, 'WORKOUT');
+  }
+
   isFileProgram(program: any): boolean {
     const mode = String(program?.workoutPlanMode || '').toUpperCase();
     const type = String(program?.resourceType || '').toUpperCase();
@@ -132,22 +142,18 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     return this.translate.instant('FILE');
   }
 
-
   // ===== UI logic =====
   get filteredPrograms(): any[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) return this.programs;
-    return this.programs.filter((p) =>
-      (p?.name || '').toLowerCase().includes(term)
-    );
+    return this.programs.filter((p) => (p?.name || '').toLowerCase().includes(term));
   }
 
   selectProgram(program: any): void {
     this.selectedProgramItem = program;
     this.selectedProgramId = program.id;
     if (!this.isFileProgram(program)) this.endDate = '';
-    this.conflict = null;
-    this.refreshConflicts();
+    if (this.initialStart && !this.startDate) this.startDate = this.initialStart;
   }
 
   get selectedProgram(): any | null {
@@ -155,34 +161,10 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     return this.programs.find((p) => p.id === this.selectedProgramId) || null;
   }
 
-  get calculatedEndDate(): string | null {
-    if (!this.selectedProgram || !this.startDate) return null;
-
-    if (this.isFileProgram(this.selectedProgram)) {
-      return this.endDate || null;
-    }
-
-    const start = new Date(this.startDate);
-    const end = new Date(start);
-    end.setDate(end.getDate() + Math.max((this.selectedProgram.totalDays || 1) - 1, 0));
-    return end.toISOString().slice(0, 10);
-  }
-
   get canAssign(): boolean {
-    if (!this.selectedClientChecked || !this.selectedProgramItem || !this.startDate || this.assigning || this.checkingConflicts) {
-      return false;
-    }
-
-    if (this.isFileProgram(this.selectedProgramItem) && !this.endDate) {
-      return false;
-    }
-
-    return !this.conflict || !!this.conflict.resolution;
-  }
-
-  get assignmentButtonLabel(): string {
-    if (this.assigning) return this.translate.instant('ASSIGNING');
-    return this.translate.instant(this.conflict ? 'CONFIRM_ASSIGNMENT' : 'ASSIGN_PROGRAM');
+    if (!this.client?.id || !this.selectedProgramItem || !this.startDate || this.assigning || this.checking) return false;
+    if (this.isFileProgram(this.selectedProgramItem) && (!this.endDate || this.endDate < this.startDate)) return false;
+    return true;
   }
 
   get clientDisplayName(): string {
@@ -190,86 +172,56 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     return `${this.client.firstName || ''} ${this.client.lastName || ''}`.trim() || this.client.email || this.fullName || 'Client';
   }
 
-  getProgramName(program: any): string {
-    return program?.name || program?.programName || 'Existing program';
-  }
-
-  formatDate(value?: string): string {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-
-    return date.toLocaleDateString('en-GB');
-  }
-
-  onToggleClient(): void {
-    this.selectedClientChecked = !this.selectedClientChecked;
-    this.refreshConflicts();
-  }
-
-  onStartDateChange(): void {
-    this.refreshConflicts();
-  }
-
-  onEndDateChange(): void {
-    this.refreshConflicts();
-  }
-
-  setConflictResolution(resolution: ConflictResolution): void {
-    if (this.conflict) {
-      this.conflict.resolution = resolution;
-    }
-  }
-
   // ===== actions =====
   close(): void {
+    if (this.assigning) return;
     this.resetState();
     this.closed.emit();
   }
 
   back(): void {
+    if (this.assigning) return;
     this.resetState();
     this.backClicked.emit();
   }
 
   assign(): void {
-    if (!this.canAssign || !this.client) return;
+    if (!this.canAssign || !this.client?.id) return;
+    const lines = (this.previews[String(this.client.id)]?.changes || [])
+      .map(change => this.schedule.text(changeSentence(change, this.schedule.formatDate)));
+    if (lines.length) {
+      this.confirmRows = [{ id: String(this.client.id), name: this.clientDisplayName, lines }];
+      this.step = 'confirm';
+      return;
+    }
+    this.doAssign();
+  }
 
-    const item = { ...this.selectedProgramItem };
-    const resolution = this.conflict?.resolution
-      ? { resolution: this.conflict.resolution, conflict: this.conflict.program }
-      : null;
-    item.startDate = this.getResolvedStartDate(this.startDate, resolution);
-    item.endDate = this.getCalculatedEndDateForStart(item.startDate);
-    item.client = this.client;
-
+  doAssign(): void {
+    if (!this.client?.id || !this.selectedProgramItem) return;
     this.assigning = true;
-
-    const replace$ = resolution?.resolution === 'REPLACE'
-      ? this.stopExistingWorkoutBefore(resolution.conflict, item.startDate)
-      : of(null);
-
-    replace$.pipe(
-      switchMap(() => this.workoutService.assignWorkout(item.id, item))
-    ).subscribe({
-      next: (res) => {
+    const clientId = String(this.client.id);
+    this.schedule.run({
+      kind: 'WORKOUT',
+      programId: String(this.selectedProgramItem.id),
+      startDate: this.startDate,
+      endDate: this.isFileProgram(this.selectedProgramItem) ? this.endDate : null,
+      clientIds: [clientId],
+    }, { [clientId]: this.clientDisplayName }).subscribe({
+      next: (result) => {
         this.assigning = false;
-        this.assigned.emit(res);
-        this.assignProgram.emit({
-          program: item,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          result: res,
-          clients: [this.client],
-          conflictResolutions: resolution && this.client?.id
-            ? { [this.client.id]: resolution }
-            : {},
-        });
-        this.close();
+        if (!result.results.some(item => item.ok)) {
+          this.step = 'pick';
+          return;
+        }
+        this.assigned.emit(result);
+        this.assignProgram.emit({ program: this.selectedProgramItem, startDate: this.startDate, result });
+        this.resetState();
+        this.closed.emit();
       },
-      error: () => {
+      error: (error) => {
         this.assigning = false;
+        this.schedule.announceError(error);
       },
     });
   }
@@ -281,111 +233,9 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
     this.startDate = '';
     this.endDate = '';
     this.assigning = false;
-    this.selectedClientChecked = true;
-    this.conflict = null;
-    this.checkingConflicts = false;
-  }
-
-  private refreshConflicts(): void {
-    if (!this.selectedClientChecked || !this.client?.id || !this.startDate || !this.calculatedEndDate) {
-      this.conflict = null;
-      return;
-    }
-
-    this.checkingConflicts = true;
-    const previousResolution = this.conflict?.resolution;
-    const coachId = sessionStorage.getItem('userId');
-
-    if (!coachId) {
-      this.checkingConflicts = false;
-      this.conflict = null;
-      return;
-    }
-
-    const visibleProgramType = this.workoutFileEnabled ? 'ALL' : 'APP';
-    this.workoutService.getWorkoutByCoachIdAndClient(coachId, this.client.id, 0, 200, visibleProgramType).pipe(
-      map((response: any) => {
-        const programs = Array.isArray(response) ? response : (response?.content || []);
-        const conflictProgram = programs.find((program: any) => this.overlaps(program));
-
-        if (!conflictProgram || !this.client) return null;
-
-        return {
-          client: this.client,
-          program: conflictProgram,
-          resolution: previousResolution,
-        } as ScheduleConflict;
-      }),
-      catchError(() => of(null))
-    ).subscribe((result) => {
-      this.conflict = result;
-      this.checkingConflicts = false;
-    });
-  }
-
-  private overlaps(program: any): boolean {
-    if (!program?.startDate || !program?.endDate || !this.calculatedEndDate) return false;
-
-    const existingStart = this.toDayTime(program.startDate);
-    const existingEnd = this.toDayTime(program.endDate);
-    const nextStart = this.toDayTime(this.startDate);
-    const nextEnd = this.toDayTime(this.calculatedEndDate);
-
-    return existingStart <= nextEnd && nextStart <= existingEnd;
-  }
-
-  private getResolvedStartDate(defaultStartDate: string, resolution: any | null): string {
-    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
-      return this.addDays(resolution.conflict.endDate, 1);
-    }
-
-    return defaultStartDate;
-  }
-
-  private getCalculatedEndDateForStart(startDate: string): string | null {
-    if (!this.selectedProgramItem || !startDate) return null;
-
-    if (this.isFileProgram(this.selectedProgramItem)) {
-      if (!this.endDate) return null;
-      const durationDays = this.daysBetweenInclusive(this.startDate, this.endDate);
-      return this.addDays(startDate, durationDays - 1);
-    }
-
-    return this.addDays(startDate, Math.max((this.selectedProgramItem.totalDays || 1) - 1, 0));
-  }
-
-  private stopExistingWorkoutBefore(conflict: any, nextStartDate: string): Observable<unknown> {
-    if (!conflict?.id || !conflict.startDate) return of(null);
-
-    const replacementEndDate = this.addDays(nextStartDate, -1);
-    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
-      return this.workoutService.deleteWorkout(conflict.id);
-    }
-
-    return this.workoutService.updateWorkoutPlanDates(conflict.id, conflict.startDate, replacementEndDate);
-  }
-
-  private addDays(value: string, days: number): string {
-    const date = new Date(`${value}T00:00:00`);
-    date.setDate(date.getDate() + days);
-    return this.toDateInputValue(date);
-  }
-
-  private toDayTime(value: string): number {
-    return new Date(`${value}T00:00:00`).getTime();
-  }
-
-  private daysBetweenInclusive(startDate: string, endDate: string): number {
-    const start = new Date(`${startDate}T00:00:00`).getTime();
-    const end = new Date(`${endDate}T00:00:00`).getTime();
-    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 1;
-    return Math.floor((end - start) / 86400000) + 1;
-  }
-
-  private toDateInputValue(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    this.checking = false;
+    this.step = 'pick';
+    this.previews = {};
+    this.confirmRows = [];
   }
 }

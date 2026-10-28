@@ -33,6 +33,10 @@ export class MealsService {
   }
 
 
+  /**
+   * Only used by the "Add a meal from a template" modal, which shows its own skeletons: without the quiet header,
+   * the preload and the refresh at each opening put the full-screen loader over the modal.
+   */
   getMealLibrary(recipe: boolean, page = 0, size = 3, search = ''): Observable<any> {
     let params = new HttpParams()
       .set('recipe', String(recipe))
@@ -43,7 +47,18 @@ export class MealsService {
       params = params.set('search', search.trim());
     }
 
-    return this.http.get<any>(`${this.base}/library`, { params });
+    return this.http.get<any>(`${this.base}/library`, { params, ...this.quiet });
+  }
+
+  /** First rows of each library list, kept for the whole session: the modal opens filled in the next editor too. */
+  private readonly librarySnapshots = new Map<boolean, { meals: any[]; total: number }>();
+
+  librarySnapshot(recipe: boolean): { meals: any[]; total: number } | null {
+    return this.librarySnapshots.get(recipe) ?? null;
+  }
+
+  rememberLibrary(recipe: boolean, meals: any[], total: number): void {
+    this.librarySnapshots.set(recipe, { meals, total });
   }
 
   getMeal(id: string): Observable<any> {

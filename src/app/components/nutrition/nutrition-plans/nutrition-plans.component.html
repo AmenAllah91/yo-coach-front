@@ -47,10 +47,11 @@
     <div class="plans-state plans-state--error" *ngIf="!loading && error">{{ error }}</div>
     <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div>
 
-    <div class="programs-table programs-table--cap" [class.programs-table--without-type]="nutritionFileEnabled === false" *ngIf="!loading && !error && filteredPlans.length > 0">
+    <!-- The Type column always shows: it tells apart the 3 kinds of plan (foods, daily macros, macros per meal). -->
+    <div class="programs-table programs-table--cap" *ngIf="!loading && !error && filteredPlans.length > 0">
       <div class="table-header">
         <div class="col-program">{{ 'PROGRAM' | translate }}</div>
-        <div class="col-type" *ngIf="nutritionFileEnabled !== false">{{ 'TYPE' | translate }}</div>
+        <div class="col-type">{{ 'TYPE' | translate }}</div>
         <div class="col-created">{{ 'CREATED' | translate }}</div>
         <div class="col-modified">{{ 'LAST_MODIFIED' | translate }}</div>
         <div class="col-actions"></div>
@@ -60,14 +61,7 @@
         <div class="program-row" *ngFor="let plan of filteredPlans; trackBy: trackByProgram">
           <div class="col-program">
             <div class="program-info">
-              <div
-                class="program-icon"
-                [ngClass]="{
-                  'program-icon--app': getProgramTypeKey(plan) === 'APP',
-                  'program-icon--pdf': getProgramTypeKey(plan) === 'PDF',
-                  'program-icon--excel': getProgramTypeKey(plan) === 'EXCEL'
-                }"
-              >
+              <div class="program-icon" [ngClass]="'program-icon--' + getPlanKind(plan).toLowerCase()" [attr.title]="getPlanTypeLabel(plan)">
                 <i-feather [name]="getProgramIconName(plan)"></i-feather>
               </div>
 
@@ -75,7 +69,7 @@
                 <div class="program-name">{{ plan.name || ('UNNAMED_NUTRITION_PLAN' | translate) }}</div>
                 <div class="program-meta">{{ getProgramDescription(plan) }}</div>
                 <div class="program-week-meta" *ngIf="!isFilePlan(plan)">
-                  <span>{{ plan.publishedWeeks?.length === 0 ? 'Draft · ' : '' }}{{ plan.publishedWeeks?.length ?? getPlanTotalWeeks(plan) }}/{{ getPlanTotalWeeks(plan) }} weeks published</span>
+                  <app-program-days-badge [plan]="plan" kind="nutrition"></app-program-days-badge>
                   <span *ngIf="getPlanTotalWeeks(plan) > 0">
                     <i-feather name="clock"></i-feather>
                     {{ 'WEEKS_COUNT' | translate:{ count: getPlanTotalWeeks(plan) } }}
@@ -89,15 +83,8 @@
             </div>
           </div>
 
-          <div class="col-type" data-label="Type" *ngIf="nutritionFileEnabled !== false">
-            <span
-              class="type-badge"
-              [ngClass]="{
-                'type-badge--app': getProgramTypeKey(plan) === 'APP',
-                'type-badge--pdf': getProgramTypeKey(plan) === 'PDF',
-                'type-badge--excel': getProgramTypeKey(plan) === 'EXCEL'
-              }"
-            >
+          <div class="col-type" data-label="Type">
+            <span class="type-badge" [ngClass]="'type-badge--' + getPlanKind(plan).toLowerCase()">
               <i-feather [name]="getProgramIconName(plan)"></i-feather>
               {{ getPlanTypeLabel(plan) }}
             </span>
@@ -289,12 +276,13 @@
   <app-modal-assign-toclient
     *ngIf="showAssignModal"
     [programName]="programToAssign?.name"
+    [program]="programToAssign"
     [showEndDate]="programToAssign ? isFilePlan(programToAssign) : false"
     [assignmentType]="'nutrition'"
     [durationDays]="getProgramDurationDays(programToAssign)"
     [includeFilePrograms]="nutritionFileEnabled !== false"
     (closeModal)="closeAssignModal()"
     (cancel)="closeAssignModal()"
-    (assignProgram)="onProgramAssigned($event)"
+    (assigned)="onAssignmentDone()"
   ></app-modal-assign-toclient>
 

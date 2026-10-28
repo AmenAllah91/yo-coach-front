@@ -1,0 +1,234 @@
+<!-- Opened from the coach dashboard: the day is read from the client's plans first. -->
+<div class="activity-modal-backdrop" *ngIf="!workout && !nutrition && (loading || notice)" (click)="closed.emit()">
+  <section class="activity-modal activity-modal--notice" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="activity-modal__header">
+      <span><strong>{{ clientName }}</strong></span>
+      <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closed.emit()">×</button>
+    </header>
+    <div class="activity-modal__body activity-notice">
+      <p *ngIf="loading" role="status"><i class="fas fa-circle-notch fa-spin"></i> {{ 'LOADING' | translate }}</p>
+      <p *ngIf="!loading && notice">{{ notice | translate }}</p>
+      <button *ngIf="!loading && showProfileLink" class="activity-send-message activity-detail-profile" type="button" (click)="openProfile.emit()">
+        <i class="far fa-user"></i> <span>{{ 'VIEW_PROFILE' | translate }}</span>
+      </button>
+    </div>
+  </section>
+</div>
+
+<div class="nutrition-report-backdrop" *ngIf="nutrition as activity" (click)="closed.emit()">
+  <section class="nutrition-report" role="dialog" aria-modal="true" [attr.aria-label]="nutritionReportTitle(activity)" (click)="$event.stopPropagation()">
+    <header class="nutrition-report__header">
+      <div>
+        <span class="nutrition-report__title">
+          <strong>{{ nutritionReportTitle(activity) }}</strong>
+          <span class="nutrition-status-pill" [attr.data-status]="activity.status"><i></i>{{ nutritionDayStatusLabel(activity) }}</span>
+        </span>
+        <small><i class="far fa-calendar"></i> {{ activity.scheduledDate | date:'EEEE d MMMM':undefined:dateLocale }} · {{ 'WEEK' | translate }} {{ activity.week }} · {{ activity.programName }}</small>
+      </div>
+      <span class="nutrition-report__actions">
+        <button *ngIf="showProfileLink" class="nutrition-report__message activity-detail-profile" type="button" (click)="openProfile.emit()">
+          <i class="far fa-user"></i> <span>{{ 'VIEW_PROFILE' | translate }}</span>
+        </button>
+        <button class="nutrition-report__message" type="button" [attr.aria-label]="'MESSAGE_CLIENT' | translate" (click)="message.emit()">
+          <i class="far fa-comment"></i> <span>{{ 'MESSAGE_CLIENT' | translate }}</span>
+        </button>
+        <button class="nutrition-report__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closed.emit()">×</button>
+      </span>
+    </header>
+
+    <div class="nutrition-report__body">
+      <div class="nutrition-report__metrics">
+        <section>
+          <small>{{ 'MEAL_LOGGING' | translate }}</small>
+          <div class="nutrition-report__metric-cards">
+            <span><i class="fas fa-utensils"></i><b><small>{{ 'LOGGED' | translate }}</small><strong>{{ activity.loggedMeals }} / {{ activity.plannedMeals }}</strong></b></span>
+            <span><i class="far fa-check-circle"></i><b><small>{{ 'AS_PLANNED' | translate }}</small><strong>{{ activity.asPlannedMeals }}</strong></b></span>
+            <span><i class="fas fa-pencil-alt"></i><b><small>{{ 'MODIFIED' | translate }}</small><strong>{{ activity.modifiedMeals }}</strong></b></span>
+            <span><i class="far fa-dot-circle"></i><b><small>{{ 'NUTRITION_MEAL_SKIPPED' | translate }}</small><strong>{{ activity.skippedMeals }}</strong></b></span>
+          </div>
+        </section>
+        <section *ngIf="activity.totals.calories || activity.totals.protein || activity.totals.carbs || activity.totals.fat">
+          <!-- The plan's targets for the day (not what the client ate). -->
+          <small>{{ 'DAY_TARGETS' | translate }}</small>
+          <div><span><small>{{ 'CALORIES' | translate }}</small><strong>{{ activity.totals.calories | number:'1.0-0' }} <em>kcal</em></strong></span>
+            <span><small>{{ 'PROTEIN' | translate }}</small><strong>{{ activity.totals.protein | number:'1.0-0' }} <em>g</em></strong></span>
+            <span><small>{{ 'CARBS' | translate }}</small><strong>{{ activity.totals.carbs | number:'1.0-0' }} <em>g</em></strong></span>
+            <span><small>{{ 'FAT' | translate }}</small><strong>{{ activity.totals.fat | number:'1.0-0' }} <em>g</em></strong></span></div>
+        </section>
+      </div>
+
+      <div class="nutrition-report__nothing" *ngIf="activity.status === 'NOT_LOGGED'">
+        <span><i class="fas fa-utensils"></i></span>
+        <strong>{{ 'NOTHING_LOGGED_YET' | translate }}</strong>
+        <p>{{ 'CLIENT_NO_NUTRITION_REPORT' | translate }}</p>
+      </div>
+
+      <div class="nutrition-report__grid" *ngIf="activity.status !== 'NOT_LOGGED'">
+        <section class="nutrition-report__meals">
+          <h3>{{ 'MEAL_REPORTS' | translate }}</h3>
+          <div class="nutrition-report__empty" *ngIf="!activity.meals.length">{{ 'NO_PLANNED_MEALS_FOR_DAY' | translate }}</div>
+          <article *ngFor="let meal of activity.meals; let mealIndex = index">
+            <ng-container *ngIf="nutritionMealLog(activity, mealIndex) as mealLog; else unloggedMeal">
+              <header>
+                <b>{{ mealIndex + 1 }}</b><strong>{{ meal.name || (('MEAL' | translate) + ' ' + (mealIndex + 1)) }}</strong>
+                <em [attr.data-state]="nutritionMealState(mealLog)">{{ nutritionMealStateLabel(mealLog) }}</em>
+                <ng-container *ngIf="nutritionMealState(mealLog) !== 'Skipped'">
+                  <span>{{ mealLog.calories || meal.calories || 0 }} kcal</span>
+                  <span>{{ mealLog.protein || meal.protein || 0 }} g {{ 'PROTEIN' | translate }}</span>
+                  <span>{{ mealLog.carbs || meal.carbs || 0 }} g {{ 'CARBS' | translate }}</span>
+                  <span>{{ mealLog.fat || meal.fat || 0 }} g {{ 'FAT' | translate }}</span>
+                </ng-container>
+              </header>
+              <div class="nutrition-meal__content">
+                <div><small>{{ 'ITEMS' | translate }}</small><ul><li *ngFor="let food of mealLog.items || mealLog.foods || meal.foods || []">{{ food.name }}<span *ngIf="food.quantity"> ({{ food.quantity }} {{ food.unit }})</span></li></ul></div>
+                <div><small><i class="far fa-comment-alt"></i> {{ 'CLIENT_NOTE' | translate }}</small><p [class.is-empty]="!mealLog.note && !mealLog.clientNote">{{ mealLog.note || mealLog.clientNote || ('NO_NOTE' | translate) }}</p></div>
+                <figure *ngIf="mealLog.photoUrl || mealLog.imageUrl; else noMealPhoto"><img [src]="mealLog.photoUrl || mealLog.imageUrl" [alt]="meal.name || ('MEAL_PHOTO' | translate)"><figcaption><i class="far fa-image"></i> {{ 'MEAL_PHOTO' | translate }}</figcaption></figure>
+                <ng-template #noMealPhoto><div class="nutrition-meal__no-photo"><i class="fas fa-camera"></i><small>{{ 'NO_PHOTO' | translate }}</small></div></ng-template>
+              </div>
+            </ng-container>
+            <ng-template #unloggedMeal>
+              <header class="is-unlogged"><b>{{ mealIndex + 1 }}</b><strong>{{ meal.name || (('MEAL' | translate) + ' ' + (mealIndex + 1)) }}</strong><em data-state="Not logged">{{ 'NUTRITION_MEAL_NOT_LOGGED' | translate }}</em></header>
+              <p class="nutrition-meal__missing">{{ 'NO_CLIENT_ENTRY_FOR_MEAL' | translate }}</p>
+            </ng-template>
+          </article>
+          <footer *ngIf="activity.loggedAt"><i class="far fa-clock"></i> {{ 'LOGGED_ON_DATE' | translate:{ date: (activity.loggedAt | date:'d MMM y, HH:mm':undefined:dateLocale) } }}</footer>
+        </section>
+
+        <aside class="nutrition-report__aside">
+          <section>
+            <h3>{{ 'DAILY_FEEDBACK' | translate }}</h3>
+            <div class="nutrition-daily-feedback"><span><i class="fas fa-fire"></i><b>{{ 'HUNGER' | translate }}<small>{{ 'HUNGER_FEELING_QUESTION' | translate }}</small></b><strong>{{ activity.hunger || '—' }}</strong></span>
+              <span><i class="fas fa-bolt"></i><b>{{ 'ENERGY' | translate }}<small>{{ 'ENERGY_LEVELS_QUESTION' | translate }}</small></b><strong>{{ activity.energy || '—' }}</strong></span>
+              <span><i class="far fa-heart"></i><b>{{ 'DIGESTION' | translate }}<small>{{ 'DIGESTION_FEELING_QUESTION' | translate }}</small></b><strong>{{ activity.digestion || '—' }}</strong></span></div>
+          </section>
+          <section><h3><i class="far fa-file-alt"></i> {{ 'OVERALL_NOTE' | translate }}</h3><p [class.is-empty]="!activity.overallNote">{{ activity.overallNote || ('NO_OVERALL_NOTE' | translate) }}</p></section>
+          <section><h3><i class="far fa-image"></i> {{ 'ATTACHED_PHOTOS' | translate }} <small>{{ 'PHOTOS_COUNT' | translate:{ count: activity.photos.length } }}</small></h3>
+            <div class="nutrition-report__photos" *ngIf="activity.photos.length; else noAttachedPhotos"><figure *ngFor="let photo of activity.photos"><a [href]="photo.url" target="_blank" rel="noopener"><img [src]="photo.url" [alt]="photo.label"></a><figcaption>{{ photo.label }}</figcaption></figure></div>
+            <ng-template #noAttachedPhotos><p class="is-empty">{{ 'NO_PHOTOS_ATTACHED' | translate }}</p></ng-template>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="activity-modal-backdrop" *ngIf="workout as activity" (click)="closed.emit()">
+  <section class="activity-modal activity-modal--detail" role="dialog" aria-modal="true" [attr.aria-label]="workoutActivityDetailTitle(activity)" (click)="$event.stopPropagation()">
+    <header class="activity-modal__header">
+      <span class="activity-detail-title">
+        <span><strong class="activity-detail-name" [title]="workoutActivityDetailTitle(activity)">{{ workoutActivityDetailTitle(activity) }}</strong>
+          <span class="activity-status activity-detail-status" [attr.data-status]="activity.status"><i></i>{{ workoutActivityStatusLabel(activity) }}</span>
+          <small class="activity-detail-mode"><i class="fas fa-wave-square"></i>{{ workoutActivityMode(activity) }}</small>
+        </span>
+        <small><i class="far fa-user"></i> {{ clientName }} &nbsp; <i class="far fa-calendar"></i> {{ formatActivityDate(activity.scheduledDate) }} · {{ activity.programName }} · {{ 'WEEK' | translate }} {{ activity.week }} · {{ 'DAY' | translate }} {{ activity.dayInWeek }}</small>
+      </span>
+      <span class="activity-detail-actions">
+        <button *ngIf="showProfileLink" class="activity-send-message activity-detail-profile" type="button" (click)="openProfile.emit()">
+          <i class="far fa-user"></i> <span>{{ 'VIEW_PROFILE' | translate }}</span>
+        </button>
+        <button class="activity-send-message" type="button" [attr.aria-label]="'SEND_MESSAGE' | translate" (click)="message.emit()">
+          <i class="far fa-comment-alt"></i> <span>{{ 'SEND_MESSAGE' | translate }}</span>
+        </button>
+        <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closed.emit()">×</button>
+      </span>
+    </header>
+    <div class="activity-modal__body">
+      <div class="activity-detail-summary" *ngIf="activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED' && activity.status !== 'OVERDUE'">
+        <div><i class="far fa-clock"></i><span><strong>{{ workoutActivityDuration(activity) }}</strong><small>{{ 'DURATION' | translate }}</small></span></div>
+        <div><i class="far fa-check-circle"></i><span><strong>{{ activity.completedCount }} / {{ activity.totalExercises }}</strong><small>{{ 'EXERCISES_COMPLETED' | translate }}</small><small class="summary-detail">{{ 'COMPLETED_PARTIAL_SUMMARY' | translate:{ completed: activity.completedCount - activity.partialCount, partial: activity.partialCount } }}</small></span></div>
+        <div><i class="fas fa-circle-minus"></i><span><strong>{{ activity.status === 'MISSED' ? activity.totalExercises : activity.skippedCount }}</strong><small>{{ (activity.status === 'MISSED' ? 'WORKOUT_ACTIVITY_STATUS_MISSED' : 'EXERCISE_ACTIVITY_SKIPPED') | translate }}</small></span></div>
+        <div><i class="fas fa-dumbbell"></i><span><strong>{{ activity.completedSets }} / {{ activity.totalSets }}</strong><small>{{ 'SETS_COMPLETED' | translate }}</small><small class="summary-detail">{{ 'MISSED_ADHERENCE_SUMMARY' | translate:{ missed: activity.missedSets, percent: (activity.totalSets ? (activity.completedSets * 100 / activity.totalSets | number:'1.0-0') : 0) } }}</small></span></div>
+        <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'MISSED' ? ('NO_ACTIVITY' | translate) : workoutActivityMode(activity) }}</strong><small>{{ 'COMPLETION_MODE' | translate }}</small></span></div>
+      </div>
+
+      <div class="activity-note" *ngIf="activity.status !== 'MISSED' && activity.overallNote">
+        <i class="far fa-file-alt"></i>
+        <span><strong>{{ 'CLIENT_NOTE' | translate }}</strong><p>{{ activity.overallNote }}</p></span>
+      </div>
+      <div class="activity-note activity-note--missed" *ngIf="activity.status === 'MISSED'">
+        <i class="fas fa-circle-info"></i>
+        <span>
+          <strong>{{ 'WORKOUT_MISSED' | translate }}</strong>
+          <p>{{ 'NO_PERFORMANCE_DATA_RECORDED' | translate }}</p>
+          <p *ngIf="activity.missedReason">{{ 'REASON' | translate }} : {{ activity.missedReason }}</p>
+        </span>
+      </div>
+      <!-- Past and never logged: the coach can only see what was planned and write to the client. -->
+      <div class="activity-note activity-note--overdue" *ngIf="activity.status === 'OVERDUE'">
+        <i class="fas fa-circle-info"></i>
+        <span>
+          <strong>{{ 'WORKOUT_NOT_LOGGED_TITLE' | translate }}</strong>
+          <p>{{ 'WORKOUT_NOT_LOGGED_TEXT' | translate }}</p>
+        </span>
+        <button type="button" (click)="message.emit()"><i class="far fa-comment-alt"></i> {{ 'SEND_MESSAGE' | translate }}</button>
+      </div>
+
+      <div class="activity-exercises-heading">
+        <strong>{{ 'EXERCISES' | translate }}</strong>
+        <span><i class="legend-dot legend-dot--done"></i>{{ 'COMPLETED' | translate }}</span>
+        <span><i class="legend-dot legend-dot--partial"></i>{{ 'PARTIALLY_COMPLETED' | translate }}</span>
+        <span><i class="legend-dot legend-dot--missed"></i>{{ 'EXERCISE_ACTIVITY_SKIPPED' | translate }}</span>
+      </div>
+
+      <article class="activity-exercise" *ngFor="let exercise of activity.exercises; let exerciseIndex = index">
+        <header>
+          <span class="exercise-letter">{{ exerciseIndex + 1 }}</span>
+          <img class="activity-exercise-image" *ngIf="exercise.imageUrl || exercise.exerciseRef?.imageUrl || exercise.exerciseRef?.image || exercise.exerciseRef?.thumbnailUrl" [src]="exercise.imageUrl || exercise.exerciseRef?.imageUrl || exercise.exerciseRef?.image || exercise.exerciseRef?.thumbnailUrl" alt="">
+          <span class="activity-exercise-copy">
+            <strong>{{ exercise.name || exercise.exerciseRef?.name || ('EXERCISE' | translate) }}</strong>
+            <small *ngIf="(exercise.type || exercise.exerciseRef?.type) || exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">
+              <ng-container *ngIf="exercise.type || exercise.exerciseRef?.type">{{ ('EXERCISE_TYPE_' + ((exercise.type || exercise.exerciseRef?.type) | uppercase)) | translate }}</ng-container>
+              <em *ngIf="exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">{{ exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle }}</em>
+            </small>
+          </span>
+          <span class="activity-exercise-state" [attr.data-state]="exerciseActivityState(activity, exercise, exerciseIndex)">
+            <i class="fas" [ngClass]="exerciseStateIcon(activity, exercise, exerciseIndex)"></i>{{ exerciseActivityStateLabel(activity, exercise, exerciseIndex) }}
+            <small>{{ exerciseSetSummary(activity, exercise, exerciseIndex) }}</small>
+          </span>
+        </header>
+        <ng-container *ngIf="workoutActivityLog(activity, exercise, exerciseIndex) as exerciseLog">
+          <p class="activity-skip-reason" *ngIf="exerciseLog.skipped">
+            <i class="fas fa-circle-minus"></i>
+            <strong>{{ 'EXERCISE_ACTIVITY_SKIPPED' | translate }} :</strong> {{ exerciseLog.skipReason || exerciseLog.reason || ('NO_REASON_PROVIDED' | translate) }}
+          </p>
+        </ng-container>
+        <div class="activity-set-table" *ngIf="exerciseActivityState(activity, exercise, exerciseIndex) !== 'Skipped'">
+          <div
+            class="activity-set-row activity-set-row--head"
+            [class.activity-set-row--planned-only]="activity.status === 'MISSED' || activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED' || activity.status === 'OVERDUE'"
+          >
+            <span>{{ 'SET' | translate }}</span><span>{{ 'TYPE' | translate }}</span><span>{{ 'PLANNED' | translate }}</span>
+            <span *ngIf="activity.status !== 'MISSED' && activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED' && activity.status !== 'OVERDUE'">{{ 'ACTUAL' | translate }}</span>
+            <span>{{ 'REST' | translate }}</span><span>{{ 'STATUS' | translate }}</span>
+          </div>
+          <div
+            class="activity-set-row"
+            *ngFor="let set of exercise.sets || []; let setIndex = index"
+            [class.activity-set-row--planned-only]="activity.status === 'MISSED' || activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED' || activity.status === 'OVERDUE'"
+          >
+            <span class="set-cell set-cell--number" [attr.data-label]="'SET' | translate">{{ set.setNumber || setIndex + 1 }}</span>
+            <span class="set-cell set-cell--type" [attr.data-label]="'TYPE' | translate"><em [attr.data-type]="set.type || 'REGULAR'">{{ workoutSetTypeLabel(set.type) }}</em></span>
+            <span class="set-cell set-cell--planned" [attr.data-label]="'PLANNED' | translate">{{ formatActivitySet(set, exercise) }}</span>
+            <span class="set-cell set-cell--actual" [attr.data-label]="'ACTUAL' | translate" *ngIf="activity.status !== 'MISSED' && activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED' && activity.status !== 'OVERDUE'">
+              <ng-container *ngIf="performedSet(workoutActivityLog(activity, exercise, exerciseIndex), set, setIndex) as actual; else noActual">
+                {{ formatActivitySet(actual, exercise) }}
+              </ng-container>
+              <ng-template #noActual>—</ng-template>
+            </span>
+            <span class="set-cell set-cell--rest" [attr.data-label]="'REST' | translate">{{ formatActivityRest(set) }}</span>
+            <span class="activity-set-status" [attr.data-status]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex)">
+              <i class="fas" [class.fa-circle-check]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) === 'Done'" [class.fa-circle-minus]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) === 'Missed'" [class.fa-clock]="workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex) === 'Pending'"></i>
+              {{ workoutSetStatusLabel(activity, exercise, exerciseIndex, set, setIndex) }}
+            </span>
+          </div>
+        </div>
+        <p class="activity-coach-note" *ngIf="exercise.notes || exercise.description">
+          <strong>{{ 'COACH_NOTE' | translate }} :</strong> {{ exercise.notes || exercise.description }}
+        </p>
+        <ng-container *ngIf="workoutActivityLog(activity, exercise, exerciseIndex) as log">
+          <p class="activity-client-note" *ngIf="log.note"><strong>{{ 'CLIENT_NOTE' | translate }} :</strong> {{ log.note }}</p>
+        </ng-container>
+      </article>
+    </div>
+  </section>
+</div>

@@ -67,9 +67,12 @@ export class ClientProfileCacheService {
   /** Clients of the coach (client panel of the profile, with their photos): kept 2 min between profiles. */
   private coachClients: { coachId: string; at: number; clients: any[] } | null = null;
 
-  coachClientsSnapshot(coachId: string): any[] | null {
+  /** Kept 30 min; `fresh` (under 2 min) means no refresh is needed, otherwise it is shown and refreshed behind. */
+  coachClientsSnapshot(coachId: string): { clients: any[]; fresh: boolean } | null {
     const known = this.coachClients;
-    return known && known.coachId === coachId && Date.now() - known.at < 120_000 ? known.clients : null;
+    if (!known || known.coachId !== coachId) return null;
+    const age = Date.now() - known.at;
+    return age < 30 * 60_000 ? { clients: known.clients, fresh: age < 120_000 } : null;
   }
 
   rememberCoachClients(coachId: string, clients: any[]): void {

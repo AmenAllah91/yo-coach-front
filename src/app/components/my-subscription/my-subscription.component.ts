@@ -238,6 +238,13 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Plan change scheduled by YoSales (downgrade, yearly -> monthly, renewal paid ahead): target plan and day. */
+  get pendingChange(): { plan: string; date: string } | null {
+    const change = this.state?.pendingPlanChange;
+    if (!change?.planName || !change.effectiveAt) return null;
+    return { plan: change.planName, date: MySubscriptionComponent.day(change.effectiveAt, this.state?.timeZone || undefined) };
+  }
+
   /** For the template: yyyy-MM-dd as dd/MM/yyyy. */
   formatDay(day: string | null | undefined): string {
     return MySubscriptionComponent.formatDay(day);
@@ -256,7 +263,7 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     this.payingInvoiceId = invoice.id;
     this.actionError = '';
     // The system chooses Flouci (SUB-20).
-    this.billing.initiateInvoicePayment(invoice.id, 'FLOUCI').subscribe({
+    this.billing.initiateInvoicePayment(invoice.id).subscribe({
       next: (response) => {
         const url = response?.redirectUrl?.trim();
         if (url) {

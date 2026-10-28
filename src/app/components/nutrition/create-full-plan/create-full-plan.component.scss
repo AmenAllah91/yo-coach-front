@@ -2053,49 +2053,6 @@ textarea.np-input,.np-textarea{min-height:108px!important;height:auto!important;
 
 .np-meal-title-row .np-h6 { margin: 0; }
 
-.np-meal-time {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #61758d;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .02em;
-}
-
-.np-meal-time > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-
-.np-meal-time i-feather {
-  width: 13px;
-  height: 13px;
-  color: #7790a8;
-}
-
-.np-meal-time input {
-  height: 34px;
-  min-width: 105px;
-  padding: 0 9px;
-  border: 1px solid #d9e4ee;
-  border-radius: 7px;
-  outline: 0;
-  color: #1b2a3c;
-  background: #fff;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0;
-}
-
-.np-meal-time input:focus {
-  border-color: #49b5df;
-  box-shadow: 0 0 0 3px rgba(73,181,223,.12);
-}
-
 .np-recipe-overview {
   position: relative;
   margin-bottom: 15px;

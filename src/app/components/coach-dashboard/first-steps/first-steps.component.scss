@@ -1,0 +1,67 @@
+@use '../shared/dashboard-tokens' as *;
+
+:host { display: block; min-width: 0; }
+
+.first-steps { @include card; padding: 16px 18px 6px; margin-bottom: 14px; }
+
+.fs-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  h2 { margin: 0; font-size: 15px; font-weight: 650; color: $ink; }
+  p { margin: 3px 0 0; font-size: 12.5px; color: $muted; }
+}
+.fs-title { flex: 1; min-width: 0; }
+.fs-count { flex: none; font-size: 12.5px; font-weight: 650; color: $ink-soft; padding-top: 2px; }
+
+.fs-bar {
+  height: 6px; margin: 12px 0 4px; border-radius: 999px; background: $line-soft; overflow: hidden;
+  span { display: block; height: 100%; border-radius: inherit; background: $brand; transition: width .3s ease; }
+}
+
+.fs-part {
+  margin-top: 14px;
+  h3 { margin: 0 0 4px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: $muted; }
+}
+
+.fs-steps { list-style: none; margin: 0; padding: 0; }
+.fs-steps li {
+  display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid $line-soft;
+  &:last-child { border-bottom: 0; }
+  &.done strong { color: $muted; text-decoration: line-through; text-decoration-color: $faint; }
+}
+.fs-mark {
+  flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid $line-strong; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; color: #1e8e4e;
+  .done & { border-color: #1e8e4e; }
+}
+.fs-text {
+  flex: 1; min-width: 0; display: grid; gap: 1px;
+  strong { font-size: 13.5px; font-weight: 600; color: $ink; }
+  em { font-style: normal; font-weight: 500; color: $faint; font-size: 12px; }
+  small { font-size: 12px; color: $muted; line-height: 1.4; }
+}
+
+.fs-action { @include soft-action; height: 30px; padding: 0 12px; }
+.fs-action:disabled { opacity: .6; cursor: default; }
+.fs-link {
+  flex: none; border: 0; background: none; padding: 2px 0; color: $muted; font-size: 12.5px; cursor: pointer; text-decoration: underline;
+  &:hover { color: $ink-soft; }
+}
+.fs-danger {
+  height: 30px; padding: 0 12px; border: 1px solid #f0c4bb; border-radius: 6px; background: $surface; color: $danger;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  &:disabled { opacity: .6; cursor: default; }
+}
+
+.fs-example {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; padding: 11px 0 10px;
+  border-top: 1px solid $line; font-size: 12.5px; color: $muted;
+  > span:first-child { flex: 1; min-width: 200px; }
+}
+.fs-buttons { display: inline-flex; align-items: center; gap: 12px; }
+.fs-error { flex-basis: 100%; margin: 0; color: $danger; }
+
+@media (max-width: 640px) {
+  .first-steps { padding: 14px 14px 4px; }
+  .fs-steps li { flex-wrap: wrap; }
+  .fs-action { margin-left: 32px; }
+}

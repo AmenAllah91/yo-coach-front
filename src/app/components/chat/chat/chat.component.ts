@@ -1,6 +1,6 @@
 import {
   Component, OnInit, AfterViewChecked,
-  ViewChild, ElementRef, HostListener, OnDestroy, Input, OnChanges, SimpleChanges, forwardRef
+  ViewChild, ElementRef, HostListener, OnDestroy, Input, OnChanges, SimpleChanges, forwardRef, NgZone
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -20,11 +20,16 @@ import { ChatUnreadService } from '../../../service/chat-unread.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CoachSettingsService } from '../../../service/coach-settings.service';
 import { DocumentService } from '../../../service/document.service';
+import { VideoCallService } from '../../../service/video-call.service';
+import { CallKind, CallManagerService } from '../../../service/call-manager.service';
 
 export interface Client { id: string; name: string; avatar: string; }
 export interface Member { id: string; name: string; avatar: string; }
 type AutoMessageSequence = AutoMessageSequenceDto;
-type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT';
+type ChatUiMessageType = 'TEXT' | 'VOICE' | 'DOCUMENT' | 'CALL';
+
+/** A "call started" message offers "join the call" for this long (a call rarely lasts longer). */
+const CALL_JOINABLE_MS = 2 * 60 * 60 * 1000;
 
 
 /** Last page of messages of each conversation (this session): reopening a conversation shows it at once. */
@@ -64,6 +69,15 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   isMobile = false;
   showList = true;
 
+  /** Width of the chat card from which the conversation (phone width) and the client profile fit side by side. */
+  private static readonly PROFILE_SIDE_BY_SIDE_MIN_WIDTH = 880;
+
+  /** Whether "Show client" is offered: the chat card is wide enough for the conversation and the profile. */
+  profileFits = false;
+
+  @ViewChild('chatRoot', { static: true }) private chatRootRef?: ElementRef<HTMLElement>;
+  private chatRootObserver?: ResizeObserver;
+
   // ── Sidebar search ────────────────────────────────────────────────────────
   searchTerm = '';
   filteredConversationsCache: Conversation[] = [];
@@ -76,6 +90,16 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   messageError = '';
   private scrollPending = false;
   displayMessages: any[] = [];
+
+  /** Messages are read newest first: page 0 is the end of the conversation, the next pages are older. */
+  private static readonly MESSAGES_PAGE_SIZE = 50;
+  private messagesPage = 0;
+  private messagesHasMore = true;
+  loadingOlderMessages = false;
+  /** The reader is at (or near) the bottom: new messages and late images keep the view there. */
+  private stickToBottom = true;
+  /** Scroll height before older messages were prepended: the view is put back on the same message once rendered. */
+  private restoreScrollFromHeight: number | null = null;
   private optimisticMessageSeq = 0;
   private composerDispatchLocked = false;
   private readonly voicePlaybackRequests = new Set<string>();
@@ -121,6 +145,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   toggleClientProfile(): void {
+    if (!this.showClientProfile && !this.profileFits) return;
     this.showClientProfile = !this.showClientProfile;
     if (this.showClientProfile) this.profileBuiltFor = this.selectedClientId || null;
 
@@ -233,9 +258,35 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     private chatUnreadService: ChatUnreadService,
     private coachSettingsService: CoachSettingsService,
     private documentService: DocumentService,
+    private videoCallService: VideoCallService,
+    private calls: CallManagerService,
     private router: Router,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private zone: NgZone
   ) {}
+
+  // ── Calls (voice and video) ───────────────────────────────────────────────
+  /** Whether the call buttons are shown (calls turned on server-side). */
+  videoCallEnabled = false;
+
+  /** Header buttons: the backend joins the call in progress, or starts a new one (invite, ringing, push). */
+  startCall(kind: CallKind): void {
+    if (!this.selectedConv?.id) return;
+    this.calls.start(this.selectedConv.id, kind, this.selectedConv.name || '');
+  }
+
+  /** "Join the call" on a call message: a token only, nothing posted (no new invite, no ringing). */
+  joinCall(message: { callKind?: CallKind } | null | undefined): void {
+    if (!this.selectedConv?.id) return;
+    this.calls.join(this.selectedConv.id, message?.callKind === 'audio' ? 'audio' : 'video', this.selectedConv.name || '');
+  }
+
+  /** A recent "call started" message, while calls are available. */
+  canJoinCall(message: { type?: string; createdAtRaw?: string } | null | undefined): boolean {
+    if (!this.videoCallEnabled || !message || message.type !== 'CALL') return false;
+    const sentAt = Date.parse(message.createdAtRaw || '');
+    return Number.isNaN(sentAt) || Date.now() - sentAt < CALL_JOINABLE_MS;
+  }
 
   goBack(): void {
     window.history.back();
@@ -250,11 +301,15 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.checkMobile();
+    this.watchChatWidth();
+    this.videoCallService.isEnabled().pipe(takeUntil(this.destroy$)).subscribe((enabled) => this.videoCallEnabled = enabled);
     if (this.clientLayout) {
       const tree = this.router.parseUrl(this.router.url);
       this.clientWantsCoach = !!tree.queryParams['coach'];
-      if (this.clientWantsCoach) {
+      this.pendingDraft = String(tree.queryParams['draft'] || '').slice(0, this.maxMessageLength) || null;
+      if (this.clientWantsCoach || this.pendingDraft) {
         delete tree.queryParams['coach'];
+        delete tree.queryParams['draft'];
         void this.router.navigateByUrl(tree, { replaceUrl: true });
       }
     }
@@ -316,7 +371,15 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         this.updateConversationPreview(msg);
         // A message of a scheduled sequence may just have been sent: refreshed once for a burst of messages.
         this.scheduleAutoMessagesRefresh(this.selectedConv.id);
-        this.scrollPending = true;
+        // A reader who scrolled up to older messages is not pulled down by someone else's message.
+        this.scrollPending = this.stickToBottom || msg.senderId === this.currentUserId;
+      });
+
+    // Messages sent while the connection was down: the latest page is read again (the subscription alone misses them).
+    this.wsService.reconnected$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (this.selectedConv?.id) this.loadMessages(this.selectedConv.id, false);
       });
 
     // Keep conversation previews in sync when another component updates the active
@@ -363,13 +426,37 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   ngAfterViewChecked(): void {
+    if (this.restoreScrollFromHeight !== null) {
+      const el = this.msgContainer?.nativeElement;
+      const previousHeight = this.restoreScrollFromHeight;
+      this.restoreScrollFromHeight = null;
+      if (el) el.scrollTop += el.scrollHeight - previousHeight;
+    }
     if (this.scrollPending) {
       this.scrollPending = false;
       requestAnimationFrame(() => {
         this.scrollToBottom();
-        setTimeout(() => this.scrollToBottom(), 0);
+        setTimeout(() => {
+          this.scrollToBottom();
+          // Nothing to scroll (short conversation): the older page is fetched without waiting for a scroll.
+          const el = this.msgContainer?.nativeElement;
+          if (el && el.scrollHeight <= el.clientHeight) this.loadOlderMessages();
+        }, 0);
       });
     }
+  }
+
+  /** The conversation scroll: remembers whether the reader is at the bottom; near the top, the older page is loaded. */
+  onMessagesScroll(): void {
+    const el = this.msgContainer?.nativeElement;
+    if (!el) return;
+    this.stickToBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (el.scrollTop < 80) this.loadOlderMessages();
+  }
+
+  /** An image bubble just got its picture: the view stays at the bottom if the reader was there. */
+  onMessageImageLoaded(): void {
+    if (this.stickToBottom) this.scrollPending = true;
   }
 
   ngOnDestroy(): void {
@@ -387,6 +474,26 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     this.voiceObjectUrls.clear();
     this.imageObjectUrls.forEach(url => URL.revokeObjectURL(url));
     this.imageObjectUrls.clear();
+    this.chatRootObserver?.disconnect();
+  }
+
+  /** The chat card's width (window, app menu opened or closed): "Show client" only when the profile fits beside. */
+  private watchChatWidth(): void {
+    const root = this.chatRootRef?.nativeElement;
+    if (!root || typeof ResizeObserver === 'undefined') return;
+    this.chatRootObserver = new ResizeObserver((entries) => {
+      const width = entries[entries.length - 1]?.contentRect.width ?? 0;
+      // 0: the page is hidden, nothing to change.
+      if (!width) return;
+      const fits = width >= ChatComponent.PROFILE_SIDE_BY_SIDE_MIN_WIDTH;
+      if (fits === this.profileFits) return;
+      this.zone.run(() => {
+        this.profileFits = fits;
+        // Too narrow now: the profile closes, the conversation takes the whole card again.
+        if (!fits) this.showClientProfile = false;
+      });
+    });
+    this.chatRootObserver.observe(root);
   }
 
   @HostListener('window:resize')
@@ -754,6 +861,10 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      const knownMessages = MESSAGES_SNAPSHOT.get(conv.id) || [];
      this.displayMessages = [...knownMessages].reverse().map((msg: ChatMessage) => this.mapMessageToUi(msg));
      if (knownMessages.length) this.scrollPending = true;
+     this.messagesPage = 0;
+     this.messagesHasMore = true;
+     this.loadingOlderMessages = false;
+     this.stickToBottom = true;
      this.wsService.subscribeToConversation(conv.id);
      this.loadMessages(conv.id);
      // Scheduled messages are a coach tool: a client never sees them.
@@ -762,6 +873,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
        this.resolveGroupMembers(conv.memberIds);
      }
      if (this.isMobile || this.embeddedMode) this.showList = false;
+     if (this.pendingDraft && !this.messageText.trim()) this.messageText = this.pendingDraft;
+     this.pendingDraft = null;
    }
 
    private resolveGroupMembers(memberIds: string[]): void {
@@ -784,31 +897,69 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      });
    }
 
-   private loadMessages(conversationId: string): void {
+   /**
+    * The latest page of the conversation. `opening` (the conversation was just selected): the view goes to the bottom
+    * and the older pages start again. Otherwise (reconnection) the messages already shown and the reader's place stay.
+    */
+   private loadMessages(conversationId: string, opening = true): void {
      // The page-level loader already covered the conversation list. Messages
      // refresh inside the selected conversation without blocking the whole UI.
-     this.chatService.getMessages(conversationId, 0, 50, true)
+     this.chatService.getMessages(conversationId, 0, ChatComponent.MESSAGES_PAGE_SIZE, true)
        .pipe(takeUntil(this.destroy$))
        .subscribe({
           next: (pageDto) => {
             if (this.selectedConv?.id !== conversationId) return;
-            if (!pageDto.content || pageDto.content.length === 0) {
+            const content = pageDto.content || [];
+            if (opening) this.messagesHasMore = content.length >= ChatComponent.MESSAGES_PAGE_SIZE;
+            if (content.length === 0) {
               console.log('No stored messages received');
               return;
             }
-            MESSAGES_SNAPSHOT.set(conversationId, [...pageDto.content]);
-            const loadedMessages = pageDto.content
+            MESSAGES_SNAPSHOT.set(conversationId, [...content]);
+            const loadedMessages = [...content]
              .reverse()
              .map((msg: ChatMessage) => this.mapMessageToUi(msg));
             const loadedIds = new Set(loadedMessages.map((message: any) => message.id));
             const liveMessages = this.displayMessages.filter((message: any) => !loadedIds.has(message.id));
             this.displayMessages = [...loadedMessages, ...liveMessages]
               .sort((a: any, b: any) => this.getTimelineTime(a.createdAtRaw) - this.getTimelineTime(b.createdAtRaw));
-           this.scrollPending = true;
+           if (opening || this.stickToBottom) this.scrollPending = true;
          },
          error: (err) => {
            console.error('Error loading messages:', err);
            if (!MESSAGES_SNAPSHOT.has(conversationId)) this.displayMessages = [];
+         }
+       });
+   }
+
+   /** Scrolled to the top: the previous page is prepended and the view stays on the message that was first. */
+   loadOlderMessages(): void {
+     const conversationId = this.selectedConv?.id;
+     if (!conversationId || !this.messagesHasMore || this.loadingOlderMessages) return;
+     const nextPage = this.messagesPage + 1;
+     this.loadingOlderMessages = true;
+     this.chatService.getMessages(conversationId, nextPage, ChatComponent.MESSAGES_PAGE_SIZE, true)
+       .pipe(takeUntil(this.destroy$))
+       .subscribe({
+         next: (pageDto) => {
+           this.loadingOlderMessages = false;
+           if (this.selectedConv?.id !== conversationId) return;
+           const content = pageDto.content || [];
+           this.messagesPage = nextPage;
+           this.messagesHasMore = content.length >= ChatComponent.MESSAGES_PAGE_SIZE;
+           // Messages received since the opening shift the pages: the ones already shown are skipped.
+           const shown = new Set(this.displayMessages.map((message: any) => message.id));
+           const older = content
+             .filter((msg: ChatMessage) => !shown.has(msg.id))
+             .reverse()
+             .map((msg: ChatMessage) => this.mapMessageToUi(msg));
+           if (!older.length) return;
+           this.restoreScrollFromHeight = this.msgContainer?.nativeElement?.scrollHeight ?? null;
+           this.displayMessages = [...older, ...this.displayMessages];
+         },
+         error: (err) => {
+           this.loadingOlderMessages = false;
+           console.error('Error loading older messages:', err);
          }
        });
    }
@@ -825,6 +976,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
         senderId: msg.senderId,
         text: msg.content || '',
         type,
+        callKind: (msg.type || '').toUpperCase() === 'AUDIO_CALL' ? 'audio' : 'video',
         attachmentUrl,
         playbackUrl: msg.playbackUrl || (type === 'VOICE' && attachmentUrl.startsWith('blob:') ? attachmentUrl : ''),
         imageUrl: type === 'DOCUMENT' && this.isImageAttachment(msg) && attachmentUrl.startsWith('blob:') ? attachmentUrl : '',
@@ -1026,6 +1178,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
      const value = (type || 'TEXT').toUpperCase();
      if (value === 'VOICE' || value === 'AUDIO') return 'VOICE';
      if (value === 'DOCUMENT' || value === 'DOC' || value === 'FILE') return 'DOCUMENT';
+     if (value === 'VIDEO_CALL' || value === 'AUDIO_CALL') return 'CALL';
      return 'TEXT';
    }
 
@@ -1271,6 +1424,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   /** Opened on a conversation (Home "Message", a notification link): going back leaves the page. */
   private clientOpenedDirectly = false;
   clientWantsCoach = false;
+  /** Text prepared by the link that opened the chat (a check-in's "Reply"): put in the field of the first conversation opened. */
+  private pendingDraft: string | null = null;
 
   get clientLayout(): boolean { return this.isClientUser && !this.embeddedMode; }
   private get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }

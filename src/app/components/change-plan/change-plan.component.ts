@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { cardLabel } from 'app/models/coach-subscription-state.model';
+import { cardLabel, planChangePaidAhead } from 'app/models/coach-subscription-state.model';
 import { formatAmount } from 'app/models/subscription-onboarding.model';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -26,6 +26,8 @@ const MY_SUBSCRIPTION_PATH = '/subscription';
 /** Refusals with their own message; anything else gets the generic one. */
 const KNOWN_ERRORS = ['PLAN_TOO_SMALL', 'UPGRADE_PENDING', 'PAY_FIRST', 'UPGRADE_USE_CHECKOUT', 'PLAN_ARCHIVED',
   'NOT_SAME_LEVEL', 'PAYMENT_IN_PROGRESS', 'NO_PENDING_REQUEST', 'NO_PENDING_DOWNGRADE'];
+/** Blocked codes with their own text; another one (PLAN_PAID_AHEAD...) gets the generic "not possible now" text. */
+const BLOCKED_TEXTS = ['PAY_FIRST', 'UPGRADE_USE_CHECKOUT', 'PLAN_CHANGE_NOT_ALLOWED'];
 
 /**
  * SUB-46: plan-change screen. Every amount and date comes from YoSales (plan-change-options), computed as the change
@@ -55,6 +57,10 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
 
   /** SUB-62: "Visa •••• 4242" when the payment is charged on the saved card, empty otherwise. */
   savedCard = '';
+  /** How the subscription is paid (decided by YoSales): the label follows the method, not the currency. */
+  paymentMethod = 'FLOUCI';
+  /** The scheduled change is already paid (renewal paid ahead with that plan): it can no longer be cancelled. */
+  scheduledPaidAhead = false;
 
   /** SUB-61: amounts in the currency of the subscription ("50 TND" / "15 $"). */
   money(amount: number | null | undefined): string {
@@ -97,6 +103,8 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
         this.timeZone = state?.timeZone || undefined;
         // SUB-62: the payment confirmed here is charged on the saved card (no page).
         this.savedCard = state?.autoCharge && state?.card ? cardLabel(state.card) : '';
+        this.paymentMethod = (state?.paymentGateway ?? 'FLOUCI').toUpperCase();
+        this.scheduledPaidAhead = options.blockedCode === 'PLAN_PAID_AHEAD' || planChangePaidAhead(state);
         const wanted = options.plans.find((p) => p.planId === (this.requestedPlanId ?? this.selectedPlanId));
         this.cycle = wanted?.billingCycle ?? options.currentCycle ?? 'MONTHLY';
         this.selectedPlanId = wanted && wanted.allowed ? wanted.planId : null;
@@ -120,6 +128,12 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   /** Nothing can be changed now (late, blocked, trial): the screen says what to do instead. */
   get blockedCode(): string | null {
     return this.options?.blockedCode ?? null;
+  }
+
+  /** Text of the blocked notice: CHANGE_PLAN_BLOCKED_PLAN_PAID_AHEAD does not exist yet, so the generic one. */
+  get blockedKey(): string {
+    const code = this.blockedCode ?? '';
+    return BLOCKED_TEXTS.includes(code) ? `CHANGE_PLAN_BLOCKED_${code}` : 'CHANGE_PLAN_BLOCKED_PLAN_CHANGE_NOT_ALLOWED';
   }
 
   setCycle(cycle: SalesBillingCycle): void {
@@ -209,7 +223,7 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   }
 
   cancelScheduled(): void {
-    if (!this.options?.scheduledChange || this.busy) return;
+    if (!this.options?.scheduledChange || this.busy || this.scheduledPaidAhead) return;
     this.run(this.billing.cancelScheduledChange(), { key: 'CHANGE_PLAN_SCHEDULED_CANCELLED', params: {} });
   }
 
@@ -265,7 +279,7 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   }
 
   private pay(invoiceId: number): void {
-    this.billing.initiateInvoicePayment(invoiceId, 'FLOUCI').pipe(takeUntil(this.destroy$)).subscribe({
+    this.billing.initiateInvoicePayment(invoiceId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response) => {
         const url = response?.redirectUrl?.trim();
         if (url) {

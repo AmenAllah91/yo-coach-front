@@ -59,7 +59,8 @@ $speed: 0.24s;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 10px 8px 8px 12px;
+  // Same top as the profile's first card (main content padding: 18px): the title lines up with it.
+  padding: 18px 8px 10px 12px;
 }
 
 .client-nav__title {

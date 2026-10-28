@@ -1,47 +1,34 @@
 import { CommonModule } from '@angular/common';
-import {Component, Input, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {CoachLandingPreviewComponent} from "../coach-landing-preview/coach-landing-preview.component";
-import {Router} from "@angular/router";
-import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
-import {WebsiteService} from "../../../service/website.service";
-import {WebsiteBuilderStateService} from "../../../service/website-builder-state.service";
-import {UsersService} from "../../../service/users.service";
-import {DocumentService} from "../../../service/document.service";
-import {CoachSettingsService} from "../../../service/coach-settings.service";
+import { Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { FeatherModule } from 'angular-feather';
+import { CustomDomainCheck, WebsiteService } from '../../../service/website.service';
+import { WebsiteBuilderStateService } from '../../../service/website-builder-state.service';
+import { UsersService } from '../../../service/users.service';
+import { DocumentService } from '../../../service/document.service';
+import { CoachSettingsService } from '../../../service/coach-settings.service';
 import { BrandingLockBannerComponent } from 'app/components/branding-lock-banner/branding-lock-banner.component';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
-import {TranslateModule} from '@ngx-translate/core';
+import { toWebsiteVideoEmbedUrl } from '../models/website-video';
+import {
+  ButtonStyle, EMPTY_SOCIAL_LINKS, FontPairing, HeroBackground, HeroLayout, Radius, SECTION_KEYS, SectionKey, SiteColors,
+  SiteMode, SocialLinks, StatItem, THEME_PRESETS, ThemePreset, WebsiteDesign, ensureWebsiteFontsLoaded, normalizeDesign,
+  readableTextOn,
+} from '../models/website-design';
 
 type DescriptionBlockType = 'text' | 'heading' | 'image';
 
-type CoachThemeKey = 'elegance' | 'dynamic' | 'trust' | 'serenity';
+export type BuilderSection =
+  | 'address' | 'domain' | 'theme' | 'sections' | 'profile' | 'video' | 'description' | 'stats' | 'results' | 'services'
+  | 'certificates' | 'testimonials' | 'social' | 'announcement' | 'cta' | 'leadForm';
 
 interface DescriptionBlock {
   id: string;
   type: DescriptionBlockType;
   content: string;
-}
-
-interface ThemeColors {
-  primary: string;
-  secondary: string;
-  accent: string;
-  background: string;
-  text: string;
-  announcementBg: string;
-  announcementText: string;
-}
-
-interface ThemePreset {
-  name: string;
-  description?: string;
-  bestFor?: string;
-  mood?: string;
-  layoutLabel?: string;
-  selected: boolean;
-  previewKey: CoachThemeKey;
-  colors: ThemeColors;
 }
 
 interface ProfileSection {
@@ -103,14 +90,32 @@ interface TestimonialItem {
   text: string;
 }
 
+interface NavItem { key: BuilderSection; label: string; icon: string; }
+
+/** One choice of a design option, shown as a small card. */
+interface DesignOption<T extends string> { value: T; label: string; hint?: string; }
+
+/** Same list as the API (CoachWebsiteServiceImpl.RESERVED_SLUGS): these subdomains belong to the platform. */
+const RESERVED_SLUGS = new Set([
+  'www', 'app', 'api', 'account', 'admin', 'integration', 'login', 'login-int', 'auth', 'mail', 'smtp',
+  'minio', 'minio-int', 'minio-console', 'minio-console-int', 'static', 'assets', 'cdn', 'support', 'help',
+  'blog', 'status', 'yocoach', 'yo-coach', 'test', 'staging', 'dev', 'monsite', 'sites',
+]);
+
+/** Sites saved with the first four themes: the preset whose look is the closest, so the picker shows a selection. */
+const LEGACY_PRESET: Record<string, string> = { elegance: 'editorial', dynamic: 'energy', trust: 'prestige', serenity: 'nature' };
+
+const DOMAIN_PATTERN = /^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+
+/** Builder of the coach's public website: one section edited at a time, saved explicitly. */
 @Component({
   selector: 'app-yo-coach-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, CoachLandingPreviewComponent, TranslateModule, BrandingLockBannerComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, RouterModule, TranslateModule, BrandingLockBannerComponent],
   templateUrl: './website-builder.component.html',
   styleUrls: ['./website-builder.component.scss']
 })
-export class WebsiteBuilderComponent implements OnInit{
+export class WebsiteBuilderComponent implements OnInit {
 
   constructor(
     private router: Router,
@@ -120,12 +125,117 @@ export class WebsiteBuilderComponent implements OnInit{
     private userService: UsersService,
     private documentService: DocumentService,
     private coachSettingsService: CoachSettingsService,
-    private subscriptionState: CoachSubscriptionStateService
+    private subscriptionState: CoachSubscriptionStateService,
+    private translate: TranslateService,
   ) {}
-
 
   /** SUB-27/29: the whole website is a paid feature. Visible, but nothing can be changed during the trial. */
   brandingLocked = false;
+
+  readonly navGroups: { title: string; items: NavItem[] }[] = [
+    {
+      title: 'WB_GROUP_SETUP',
+      items: [
+        { key: 'address', label: 'WB_SECTION_ADDRESS', icon: 'link' },
+        { key: 'domain', label: 'WB_SECTION_DOMAIN', icon: 'globe' },
+        { key: 'theme', label: 'WB_SECTION_THEME', icon: 'droplet' },
+        { key: 'sections', label: 'WB_SECTION_LAYOUT', icon: 'layout' },
+      ],
+    },
+    {
+      title: 'WB_GROUP_CONTENT',
+      items: [
+        { key: 'profile', label: 'PROFILE', icon: 'user' },
+        { key: 'video', label: 'VIDEO', icon: 'video' },
+        { key: 'description', label: 'DESCRIPTION', icon: 'align-left' },
+        { key: 'stats', label: 'WB_SECTION_STATS', icon: 'bar-chart-2' },
+        { key: 'services', label: 'SERVICES', icon: 'briefcase' },
+        { key: 'results', label: 'WEBSITE_RESULTS', icon: 'trending-up' },
+        { key: 'certificates', label: 'CERTIFICATES', icon: 'award' },
+        { key: 'testimonials', label: 'TESTIMONIALS', icon: 'message-square' },
+        { key: 'social', label: 'WB_SECTION_SOCIAL', icon: 'share-2' },
+      ],
+    },
+    {
+      title: 'WB_GROUP_CONVERSION',
+      items: [
+        { key: 'leadForm', label: 'WB_SECTION_LEAD_FORM', icon: 'inbox' },
+        { key: 'cta', label: 'ACTION_BUTTON', icon: 'mouse-pointer' },
+        { key: 'announcement', label: 'ANNOUNCEMENT_BAR', icon: 'volume-2' },
+      ],
+    },
+  ];
+
+  readonly presets: ThemePreset[] = THEME_PRESETS;
+  readonly sectionKeys: SectionKey[] = SECTION_KEYS;
+
+  readonly layoutOptions: DesignOption<HeroLayout>[] = [
+    { value: 'split', label: 'WB_LAYOUT_SPLIT', hint: 'WB_LAYOUT_SPLIT_HINT' },
+    { value: 'centered', label: 'WB_LAYOUT_CENTERED', hint: 'WB_LAYOUT_CENTERED_HINT' },
+    { value: 'cover', label: 'WB_LAYOUT_COVER', hint: 'WB_LAYOUT_COVER_HINT' },
+    { value: 'card', label: 'WB_LAYOUT_CARD', hint: 'WB_LAYOUT_CARD_HINT' },
+  ];
+  readonly fontOptions: DesignOption<FontPairing>[] = [
+    { value: 'modern', label: 'WB_FONT_MODERN', hint: 'Inter' },
+    { value: 'editorial', label: 'WB_FONT_EDITORIAL', hint: 'Playfair Display' },
+    { value: 'bold', label: 'WB_FONT_BOLD', hint: 'Montserrat' },
+    { value: 'friendly', label: 'WB_FONT_FRIENDLY', hint: 'Nunito' },
+    { value: 'classic', label: 'WB_FONT_CLASSIC', hint: 'Cormorant' },
+  ];
+  readonly radiusOptions: DesignOption<Radius>[] = [
+    { value: 'sharp', label: 'WB_RADIUS_SHARP' },
+    { value: 'soft', label: 'WB_RADIUS_SOFT' },
+    { value: 'round', label: 'WB_RADIUS_ROUND' },
+  ];
+  readonly buttonOptions: DesignOption<ButtonStyle>[] = [
+    { value: 'square', label: 'WB_BTN_SQUARE' },
+    { value: 'rounded', label: 'WB_BTN_ROUNDED' },
+    { value: 'pill', label: 'WB_BTN_PILL' },
+  ];
+  readonly modeOptions: DesignOption<SiteMode>[] = [
+    { value: 'light', label: 'WB_MODE_LIGHT' },
+    { value: 'dark', label: 'WB_MODE_DARK' },
+  ];
+  readonly heroBackgroundOptions: DesignOption<HeroBackground>[] = [
+    { value: 'solid', label: 'WB_HERO_SOLID' },
+    { value: 'gradient', label: 'WB_HERO_GRADIENT' },
+    { value: 'image', label: 'WB_HERO_IMAGE' },
+  ];
+
+  activeSection: BuilderSection = 'profile';
+  siteSlug = '';
+  published = true;
+  /** The coach already has a saved website (its public address works). */
+  hasSavedSite = false;
+  loading = true;
+  saving = false;
+  saveError = '';
+  savedRecently = false;
+  uploadingCount = 0;
+  uploadError = '';
+  private savedSnapshot = '';
+  private embedSource: string | null = null;
+  private embedUrl: SafeResourceUrl | null = null;
+  private savedTimer?: ReturnType<typeof setTimeout>;
+
+  /** Preset the coach started from (saved as themeKey); the options below can then differ from it. */
+  selectedPresetKey = THEME_PRESETS[0].key;
+  design: WebsiteDesign = normalizeDesign(null);
+  colors: SiteColors = { ...THEME_PRESETS[0].colors };
+  socialLinks: SocialLinks = { ...EMPTY_SOCIAL_LINKS };
+  stats: StatItem[] = [];
+
+  /** Custom domain, as typed; the saved one and its state come from the API. */
+  customDomain = '';
+  savedCustomDomain = '';
+  customDomainStatus: 'PENDING' | 'VERIFIED' | '' = '';
+  customDomainToken = '';
+  customDomainTarget = 'sites.yo-coach.app';
+  publicHost = 'yo-coach.app';
+  domainCheck: CustomDomainCheck | null = null;
+  verifyingDomain = false;
+  domainError = '';
+  copiedValue = '';
 
   ngOnInit(): void {
     this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked));
@@ -133,19 +243,31 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   goBack(): void { window.history.back(); }
+
   loadWebsiteOrUserData(): void {
     const saved = this.builderState.getDraft();
 
     if (saved) {
+      // Back from the preview: the edits are kept, and so is what was last saved (to show unsaved changes).
       this.populateFromDraft(saved);
+      this.savedSnapshot = saved.savedSnapshot || '';
+      this.hasSavedSite = !!saved.hasSavedSite;
+      this.published = saved.published !== false;
+      this.activeSection = saved.activeSection || this.activeSection;
+      this.builderState.clearDraft();
+      this.loading = false;
       this.loadPublicProfilePhoto();
       return;
     }
 
     this.websiteService.getMyWebsite().subscribe({
-      next: async (website) => {
+      next: (website) => {
         if (website) {
           this.populateFromWebsite(website);
+          this.hasSavedSite = true;
+          this.published = website.published !== false;
+          this.savedSnapshot = this.snapshot();
+          this.loading = false;
           this.loadPublicProfilePhoto();
         } else {
           this.loadUserProfile();
@@ -158,56 +280,66 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   populateFromDraft(saved: any): void {
-    this.siteSlug = saved.slug || this.siteSlug;
-
-    this.applySelectedTheme(saved.themeName, saved.themeKey);
-
-    this.profile = saved.profile || this.profile;
+    this.populateCommon(saved);
     this.video.url = saved.videoUrl || '';
-    this.descriptionBlocks = saved.descriptionBlocks || [];
-    this.announcement = saved.announcement || this.announcement;
-    this.cta = saved.cta || this.cta;
-    this.leadFields = saved.leadFields || this.leadFields;
-    this.colors = saved.colors || this.colors;
-    this.services = saved.services || [];
-    this.results = saved.results || [];
-    this.certificates = saved.certificates || [];
-    this.testimonials = saved.testimonials || [];
+    this.savedCustomDomain = saved.savedCustomDomain || '';
+    this.customDomainStatus = saved.customDomainStatus || '';
+    this.customDomainToken = saved.customDomainToken || '';
+    this.customDomainTarget = saved.customDomainTarget || this.customDomainTarget;
+    this.publicHost = saved.publicHost || this.publicHost;
   }
 
   populateFromWebsite(site: any): void {
-    this.siteSlug = site.slug || this.siteSlug;
-
-    this.applySelectedTheme(site.themeName, site.themeKey);
-
-    this.profile = site.profile || this.profile;
+    this.populateCommon(site);
     this.video.url = site.video?.url || '';
-    this.descriptionBlocks = site.descriptionBlocks || [];
-    this.announcement = site.announcement || this.announcement;
-    this.cta = site.cta || this.cta;
-    this.leadFields = site.leadFields || this.leadFields;
-    this.colors = site.colors || this.colors;
+    // The email box used to do nothing: a website saved with it unchecked still asks for an email, as before.
+    if (!this.leadFields.email && !this.leadFields.phone) this.leadFields = { ...this.leadFields, email: true };
+    this.savedCustomDomain = site.customDomain || '';
+    this.customDomainStatus = site.customDomainStatus || '';
+    this.customDomainToken = site.customDomainToken || '';
+    this.customDomainTarget = site.customDomainTarget || this.customDomainTarget;
+    this.publicHost = site.publicHost || this.publicHost;
+  }
 
-    this.services = site.services || [];
-    this.results = site.results || [];
-    this.certificates = site.certificates || [];
-    this.testimonials = site.testimonials || [];
+  /** Fields the saved site and the preview draft share. */
+  private populateCommon(data: any): void {
+    this.siteSlug = data.slug || this.siteSlug;
+    this.selectedPresetKey = this.presets.some((p) => p.key === data.themeKey)
+      ? data.themeKey : (LEGACY_PRESET[data.themeKey] || this.selectedPresetKey);
+    this.design = normalizeDesign(data.design, data.themeKey);
+    ensureWebsiteFontsLoaded(this.design.font);
+
+    this.profile = data.profile || this.profile;
+    this.descriptionBlocks = data.descriptionBlocks || [];
+    this.announcement = data.announcement || this.announcement;
+    this.cta = data.cta || this.cta;
+    this.leadFields = data.leadFields || this.leadFields;
+    this.colors = data.colors || this.colors;
+    this.socialLinks = { ...EMPTY_SOCIAL_LINKS, ...(data.socialLinks || {}) };
+    this.stats = Array.isArray(data.stats) ? data.stats.map((s: any) => ({ value: s?.value || '', label: s?.label || '' })) : [];
+    this.customDomain = data.customDomain || '';
+    this.services = data.services || [];
+    this.results = data.results || [];
+    this.certificates = data.certificates || [];
+    this.testimonials = data.testimonials || [];
   }
 
   loadUserProfile(): void {
     this.userService.getUserById(sessionStorage.getItem('userId')).subscribe({
-      next: async (user) => {
-        this.profile.fullName = `${user.firstName} ${user.lastName}`;
-        this.profile.title = 'Coach';
-        this.profile.slogan = 'Transformez votre vie';
-        this.profile.bio = 'Parlez de vous ici...';
-        this.siteSlug = `${user.firstName}-${user.lastName}`;
+      next: (user) => {
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+        this.profile.fullName = fullName;
+        // get(), not instant(): on a fresh load the language file may still be on its way.
+        this.translate.get('WB_DEFAULT_TITLE').subscribe((title) => { if (!this.profile.title) this.profile.title = title; });
+        this.siteSlug = this.normalizeSlug(fullName || user.login || '');
 
         const avatarUrl = user.avatarUrl?.trim();
         this.profile.image = avatarUrl && avatarUrl.toLowerCase() !== 'not found' ? avatarUrl : '';
+        this.savedSnapshot = '';
+        this.loading = false;
         this.loadPublicProfilePhoto();
       },
-      error: () => {}
+      error: () => (this.loading = false),
     });
   }
 
@@ -215,343 +347,293 @@ export class WebsiteBuilderComponent implements OnInit{
     this.coachSettingsService.loadConfig(true).subscribe({
       next: config => {
         const publicPhoto = config.publicProfile?.photoUrl?.trim();
-        if (publicPhoto) this.profile.image = publicPhoto;
+        if (publicPhoto && !this.profile.image) this.profile.image = publicPhoto;
       },
       error: () => {}
     });
   }
 
-  descriptionBlocks: DescriptionBlock[] = [
-    {
-      id: this.generateId(),
-      type: 'text',
-      content: 'Parlez ici de votre approche, de votre méthode et des résultats que vous apportez.'
-    }
-  ];
-  previewOpen = false;
-
-  tabs = [
-    'Profil',
-    'Vidéo',
-    'Description',
-    'Résultats',
-    'Services',
-    'Certificats',
-    'Témoignages'
-  ];
-
-  activeTab = 'Profil';
-  siteSlug = 'monsite';
-
-  themes: ThemePreset[] = [
-    {
-      name: 'Élégance',
-      description: 'Un site premium, calme et éditorial avec une forte mise en valeur du profil.',
-      bestFor: 'Coaching de vie, mindset, accompagnement haut de gamme',
-      mood: 'Raffiné, minimal, personnel',
-      layoutLabel: 'Portrait central + sections éditoriales',
-      selected: true,
-      previewKey: 'elegance',
-      colors: {
-        primary: '#26384a',
-        secondary: '#edf5f8',
-        accent: '#c9782f',
-        background: '#ffffff',
-        text: '#27313f',
-        announcementBg: '#26384a',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Dynamique',
-      description: 'Une présentation impactante avec un hero fort et un appel à l action visible.',
-      bestFor: 'Fitness, performance, coaching business, programmes intensifs',
-      mood: 'Énergique, direct, moderne',
-      layoutLabel: 'Hero split + blocs puissants',
-      selected: false,
-      previewKey: 'dynamic',
-      colors: {
-        primary: '#151936',
-        secondary: '#eef4f8',
-        accent: '#f04a67',
-        background: '#ffffff',
-        text: '#1f2937',
-        announcementBg: '#151936',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Confiance',
-      description: 'Une structure rassurante qui met les preuves, services et certifications en avant.',
-      bestFor: 'Coaching professionnel, reconversion, leadership, entreprise',
-      mood: 'Sérieux, crédible, structuré',
-      layoutLabel: 'Preuves + services détaillés',
-      selected: false,
-      previewKey: 'trust',
-      colors: {
-        primary: '#18314d',
-        secondary: '#e7eef4',
-        accent: '#d98732',
-        background: '#f8fafc',
-        text: '#243a55',
-        announcementBg: '#18314d',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Sérénité',
-      description: 'Une ambiance douce, respirante et centrée sur la relation coach-client.',
-      bestFor: 'Bien-être, nutrition, thérapie douce, coaching holistique',
-      mood: 'Apaisant, humain, naturel',
-      layoutLabel: 'Portrait doux + parcours fluide',
-      selected: false,
-      previewKey: 'serenity',
-      colors: {
-        primary: '#4f6f75',
-        secondary: '#e7f1df',
-        accent: '#d99540',
-        background: '#fbfdfb',
-        text: '#34464a',
-        announcementBg: '#4f6f75',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Autorité',
-      description: 'Un thème sobre et institutionnel pour inspirer confiance dès le premier écran.',
-      bestFor: 'Executive coaching, consultants, dirigeants, B2B',
-      mood: 'Expert, premium, décisif',
-      layoutLabel: 'Structure confiance + palette executive',
-      selected: false,
-      previewKey: 'trust',
-      colors: {
-        primary: '#10233f',
-        secondary: '#edf2f7',
-        accent: '#b7791f',
-        background: '#f7fafc',
-        text: '#1f2937',
-        announcementBg: '#10233f',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Vitalité',
-      description: 'Un thème lumineux et actif pour vendre une transformation visible et motivante.',
-      bestFor: 'Sport, nutrition, énergie, coaching performance',
-      mood: 'Vif, positif, motivant',
-      layoutLabel: 'Layout dynamique + couleurs solaires',
-      selected: false,
-      previewKey: 'dynamic',
-      colors: {
-        primary: '#12343b',
-        secondary: '#e6f5f2',
-        accent: '#ef7b45',
-        background: '#ffffff',
-        text: '#1f2937',
-        announcementBg: '#12343b',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Clarté',
-      description: 'Un thème net et lisible pour expliquer une méthode et convertir sans distraction.',
-      bestFor: 'Coaching scolaire, organisation, productivité, accompagnement familial',
-      mood: 'Simple, clair, accessible',
-      layoutLabel: 'Layout élégance + lecture confortable',
-      selected: false,
-      previewKey: 'elegance',
-      colors: {
-        primary: '#24536b',
-        secondary: '#eaf6fb',
-        accent: '#2f9e8f',
-        background: '#ffffff',
-        text: '#243447',
-        announcementBg: '#24536b',
-        announcementText: '#ffffff'
-      }
-    },
-    {
-      name: 'Ancrage',
-      description: 'Un thème naturel et profond pour un positionnement calme, mature et authentique.',
-      bestFor: 'Coaching holistique, respiration, transitions de vie, accompagnement émotionnel',
-      mood: 'Naturel, stable, chaleureux',
-      layoutLabel: 'Layout sérénité + palette organique',
-      selected: false,
-      previewKey: 'serenity',
-      colors: {
-        primary: '#3f5f55',
-        secondary: '#edf3e8',
-        accent: '#c47c4a',
-        background: '#fbfcf8',
-        text: '#34433d',
-        announcementBg: '#3f5f55',
-        announcementText: '#ffffff'
-      }
-    }
-  ];
+  descriptionBlocks: DescriptionBlock[] = [];
 
   profile: ProfileSection = {
     image: '',
     fullName: '',
-    title: 'Coach Certifiée en Développement Personnel',
-    slogan: 'Transformez votre vie, révélez votre potentiel',
-    bio: `Passionnée par l'humain, j'accompagne les professionnels et les particuliers dans l'atteinte de leurs objectifs. Mon approche bienveillante et orientée solutions vous aide à surmonter les obstacles et à construire une vie alignée avec vos valeurs profondes.`
+    title: '',
+    slogan: '',
+    bio: '',
   };
 
-  video: VideoSection = {
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-  };
+  video: VideoSection = { url: '' };
 
   announcement: AnnouncementSection = {
-    enabled: true,
-    message: '🎉 Offre spéciale : -20% sur votre première séance de coaching ! Réservez maintenant ❤️',
-    bgColor: '#1a1a2e',
-    textColor: '#ffffff'
+    enabled: false,
+    message: '',
+    bgColor: THEME_PRESETS[0].colors.announcementBg,
+    textColor: THEME_PRESETS[0].colors.announcementText,
   };
 
   cta: CtaSection = {
     enabled: true,
-    label: 'Commencer le coaching',
+    label: '',
     sticky: false
   };
 
   leadFields: LeadFieldsSection = {
     firstName: true,
-    lastName: false,
-    email: false,
+    lastName: true,
+    email: true,
     phone: true,
-    buttonLabel: 'Réserver un appel découverte'
+    buttonLabel: ''
   };
 
-  colors: ThemeColors = {
-    primary: '#2c3e50',
-    secondary: '#e8f4f8',
-    accent: '#e67e22',
-    background: '#ffffff',
-    text: '#333333',
-    announcementBg: '#1a1a2e',
-    announcementText: '#ffffff'
-  };
+  // A new website starts empty: example testimonials, certificates or prices must never be published by mistake.
+  results: ResultItem[] = [];
+  services: ServiceItem[] = [];
+  certificates: CertificateItem[] = [];
+  testimonials: TestimonialItem[] = [];
 
-  results: ResultItem[] = [
-    {
-      beforeImage: 'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      afterImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      text: 'Retrouver confiance en soi après 3 mois de coaching'
+  setSection(section: BuilderSection): void {
+    this.activeSection = section;
+    if (window.innerWidth < 900) {
+      setTimeout(() => document.querySelector('.wb-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     }
-  ];
-
-  services: ServiceItem[] = [
-    {
-      image: '',
-      title: 'Coaching Individuel',
-      price: '120€ / séance',
-      description: 'Séances personnalisées pour surmonter vos blocages et atteindre vos objectifs personnels ou professionnels.'
-    },
-    {
-      image: '',
-      title: 'Bilan de Compétences',
-      price: '1500€',
-      description: 'Un accompagnement complet pour faire le point sur votre carrière et définir un nouveau projet professionnel.'
-    },
-    {
-      image: '',
-      title: 'Atelier Confiance en Soi',
-      price: '80€ / personne',
-      description: 'Session de groupe interactive pour développer votre estime personnelle et oser passer à l’action.'
-    }
-  ];
-
-  certificates: CertificateItem[] = [
-    {
-      image: '',
-      title: 'Master Coach Certifié (MCC)',
-      organization: 'International Coaching Federation',
-      year: '2020'
-    },
-    {
-      image: '',
-      title: 'Praticien PNL',
-      organization: 'Institut Français de PNL',
-      year: '2018'
-    }
-  ];
-
-  testimonials: TestimonialItem[] = [
-    {
-      author: 'Julien D.',
-      rating: 5,
-      text: `L'accompagnement de Sophie a été un véritable tournant dans ma carrière. J'ai pu prendre des décisions difficiles avec clarté et sérénité.`
-    },
-    {
-      author: 'Marie L.',
-      rating: 5,
-      text: `Une écoute exceptionnelle et des outils concrets. Je me sens enfin alignée avec mes choix de vie.`
-    }
-  ];
-
-  setTab(tab: string): void {
-    this.activeTab = tab;
   }
 
-  tabLabelKey(tab: string): string {
-    const keys: Record<string, string> = {
-      Profil: 'PROFILE',
-      'Vidéo': 'VIDEO',
-      Description: 'DESCRIPTION',
-      'Résultats': 'WEBSITE_RESULTS',
-      Services: 'SERVICES',
-      'Certificats': 'CERTIFICATES',
-      'Témoignages': 'TESTIMONIALS',
-    };
-    return keys[tab] || tab;
+  /** Short summary shown next to a section in the menu (a count, or nothing). */
+  sectionMeta(section: BuilderSection): string {
+    switch (section) {
+      case 'services': return this.services.length ? `${this.services.length}` : '';
+      case 'results': return this.results.length ? `${this.results.length}` : '';
+      case 'certificates': return this.certificates.length ? `${this.certificates.length}` : '';
+      case 'testimonials': return this.testimonials.length ? `${this.testimonials.length}` : '';
+      case 'description': return this.filledBlocks().length ? `${this.filledBlocks().length}` : '';
+      case 'stats': return this.filledStats().length ? `${this.filledStats().length}` : '';
+      case 'social': { const n = this.socialCount; return n ? `${n}` : ''; }
+      default: return '';
+    }
   }
 
-  selectTheme(index: number): void {
-    this.themes = this.themes.map((theme, i) => ({
-      ...theme,
-      selected: i === index
-    }));
-
-    const selected = this.selectedTheme;
-    this.colors = { ...selected.colors };
-    this.announcement.bgColor = selected.colors.announcementBg;
-    this.announcement.textColor = selected.colors.announcementText;
+  /** Whether a section has what the page needs (a dot in the menu tells the coach what is left). */
+  sectionDone(section: BuilderSection): boolean {
+    switch (section) {
+      case 'address': return !this.slugError;
+      case 'domain': return !this.customDomain.trim() || this.customDomainStatus === 'VERIFIED';
+      case 'theme': return true;
+      case 'sections': return true;
+      case 'profile': return !!(this.profile.fullName?.trim() && this.profile.title?.trim() && this.profile.bio?.trim());
+      case 'video': return !!this.videoEmbedUrl;
+      case 'description': return this.filledBlocks().length > 0;
+      case 'stats': return this.filledStats().length > 0;
+      case 'services': return this.services.length > 0;
+      case 'results': return this.results.length > 0;
+      case 'certificates': return this.certificates.length > 0;
+      case 'testimonials': return this.testimonials.length > 0;
+      case 'social': return this.socialCount > 0;
+      case 'leadForm': return this.leadFields.email || this.leadFields.phone;
+      case 'cta': return this.cta.enabled;
+      case 'announcement': return this.announcement.enabled && !!this.announcement.message.trim();
+    }
   }
 
-  get selectedTheme(): ThemePreset {
-    return this.themes.find(t => t.selected) ?? this.themes[0];
+  get completion(): number {
+    const keys: BuilderSection[] = ['profile', 'description', 'services', 'results', 'testimonials', 'video', 'social'];
+    return Math.round(keys.filter((key) => this.sectionDone(key)).length / keys.length * 100);
   }
+
+  get socialCount(): number {
+    return Object.values(this.socialLinks).filter((v) => !!v?.trim()).length;
+  }
+
+  // ---------- Design ----------
+
+  get selectedPreset(): ThemePreset {
+    return this.presets.find((p) => p.key === this.selectedPresetKey) ?? this.presets[0];
+  }
+
+  /** The preset fills the look; the coach's own hero photo and the order of the sections are kept. */
+  applyPreset(preset: ThemePreset): void {
+    this.selectedPresetKey = preset.key;
+    this.design = { ...this.design, ...preset.design };
+    this.colors = { ...preset.colors };
+    this.announcement.bgColor = preset.colors.announcementBg;
+    this.announcement.textColor = preset.colors.announcementText;
+    ensureWebsiteFontsLoaded(this.design.font);
+  }
+
+  resetThemeColors(): void {
+    this.colors = { ...this.selectedPreset.colors };
+  }
+
+  setDesign<K extends keyof WebsiteDesign>(key: K, value: WebsiteDesign[K]): void {
+    this.design = { ...this.design, [key]: value };
+    if (key === 'font') ensureWebsiteFontsLoaded(value as FontPairing);
+  }
+
+  /** Text color that reads on a color (for the swatches and samples). */
+  readableOn(color: string): string { return readableTextOn(color); }
+
+  onHeroImageSelected(event: Event): void {
+    const file = this.pickImage(event);
+    if (file) this.uploadWebsiteImage(file, url => this.setDesign('heroImage', url));
+  }
+
+  removeHeroImage(): void { this.setDesign('heroImage', ''); }
+
+  // ---------- Sections order ----------
+
+  sectionHidden(key: SectionKey): boolean { return this.design.hiddenSections.includes(key); }
+
+  toggleSectionVisible(key: SectionKey): void {
+    if (key === 'contact') return;
+    const hidden = this.sectionHidden(key)
+      ? this.design.hiddenSections.filter((k) => k !== key)
+      : [...this.design.hiddenSections, key];
+    this.setDesign('hiddenSections', hidden);
+  }
+
+  moveSection(key: SectionKey, direction: -1 | 1): void {
+    const order = [...this.design.sectionOrder];
+    const index = order.indexOf(key);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= order.length) return;
+    [order[index], order[target]] = [order[target], order[index]];
+    this.setDesign('sectionOrder', order);
+  }
+
+  resetSectionOrder(): void {
+    this.setDesign('sectionOrder', [...SECTION_KEYS]);
+  }
+
+  /** Whether the page has something to show in a section (hidden or not). */
+  sectionHasContent(key: SectionKey): boolean {
+    switch (key) {
+      case 'video': return !!this.videoEmbedUrl;
+      case 'about': return this.filledBlocks().length > 0 || !!this.profile.bio?.trim();
+      case 'stats': return this.filledStats().length > 0;
+      case 'services': return this.services.length > 0;
+      case 'results': return this.results.length > 0;
+      case 'certificates': return this.certificates.length > 0;
+      case 'testimonials': return this.testimonials.length > 0;
+      case 'contact': return true;
+    }
+  }
+
+  // ---------- Stats ----------
+
+  addStat(): void {
+    if (this.stats.length >= 4) return;
+    this.stats.push({ value: '', label: '' });
+  }
+
+  removeStat(index: number): void {
+    this.stats.splice(index, 1);
+  }
+
+  private filledStats(): StatItem[] {
+    return this.stats.filter((s) => s.value?.trim() && s.label?.trim());
+  }
+
+  // ---------- Address / domain ----------
 
   get normalizedSlug(): string {
-    return this.normalizeSlug(this.siteSlug) || 'monsite';
+    return this.normalizeSlug(this.siteSlug);
   }
 
+  get slugError(): string {
+    const slug = this.normalizedSlug;
+    if (slug.length < 3 || slug.length > 40) return 'WB_SLUG_LENGTH_ERROR';
+    if (RESERVED_SLUGS.has(slug)) return 'WB_SLUG_RESERVED_ERROR';
+    return '';
+  }
+
+  get slugSiteUrl(): string {
+    return `https://${this.normalizedSlug || '…'}.${this.publicHost}`;
+  }
+
+  /** The address visitors use: the coach's domain once it is verified, the slug otherwise. */
   get publicSiteUrl(): string {
-    return `https://${this.normalizedSlug}.yo-coach.app`;
+    return this.customDomainStatus === 'VERIFIED' && this.savedCustomDomain && this.savedCustomDomain === this.normalizedDomain
+      ? `https://${this.savedCustomDomain}` : this.slugSiteUrl;
   }
 
+  get normalizedDomain(): string {
+    return this.customDomain.trim().toLowerCase()
+      .replace(/^[a-z]+:\/\//, '').replace(/[/?#].*$/, '').replace(/:\d+$/, '').replace(/^www\./, '').replace(/\.$/, '');
+  }
+
+  get customDomainError(): string {
+    const domain = this.normalizedDomain;
+    if (!domain) return '';
+    if (!DOMAIN_PATTERN.test(domain)) return 'WB_DOMAIN_INVALID';
+    if (domain === this.publicHost || domain.endsWith('.' + this.publicHost)) return 'WB_DOMAIN_PLATFORM';
+    return '';
+  }
+
+  /** The DNS records can only be checked once the domain typed is the one saved. */
+  get domainSaved(): boolean {
+    return this.hasSavedSite && !!this.savedCustomDomain && this.savedCustomDomain === this.normalizedDomain;
+  }
+
+  verifyDomain(): void {
+    if (!this.domainSaved || this.verifyingDomain) return;
+    this.verifyingDomain = true;
+    this.domainError = '';
+    this.websiteService.verifyCustomDomain().subscribe({
+      next: (check) => {
+        this.verifyingDomain = false;
+        this.domainCheck = check;
+        this.customDomainStatus = check.status;
+      },
+      error: (err) => {
+        this.verifyingDomain = false;
+        this.domainError = err?.error?.error || this.translate.instant('WB_DOMAIN_CHECK_ERROR');
+      },
+    });
+  }
+
+  copyValue(value: string): void {
+    if (!value) return;
+    navigator.clipboard?.writeText(value).then(() => {
+      this.copiedValue = value;
+      setTimeout(() => (this.copiedValue = ''), 1800);
+    });
+  }
+
+  /** Created again only when the link changes: a new object on every check would reload the iframe each time. */
   get videoEmbedUrl(): SafeResourceUrl | null {
-    const embedUrl = this.toEmbedUrl(this.video.url);
-    return embedUrl ? this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl) : null;
+    if (this.embedSource !== this.video.url) {
+      this.embedSource = this.video.url;
+      const embed = toWebsiteVideoEmbedUrl(this.video.url);
+      this.embedUrl = embed ? this.sanitizer.bypassSecurityTrustResourceUrl(embed) : null;
+    }
+    return this.embedUrl;
+  }
+
+  get videoUrlInvalid(): boolean {
+    return !!this.video.url.trim() && !this.videoEmbedUrl;
+  }
+
+  get dirty(): boolean {
+    return !this.loading && this.snapshot() !== this.savedSnapshot;
+  }
+
+  get canSave(): boolean {
+    return !this.brandingLocked && !this.saving && !this.uploadingCount && !this.slugError && !this.customDomainError
+      && (this.dirty || !this.hasSavedSite);
   }
 
   openPreview(): void {
     const data = {
-      slug: this.normalizedSlug,
-      themeKey: this.selectedTheme.previewKey,
-      themeName: this.selectedTheme.name,
-      descriptionBlocks: this.descriptionBlocks,
-      profile: this.profile,
+      ...this.payload(),
       videoUrl: this.video.url,
-      announcement: this.announcement,
-      cta: this.cta,
-      leadFields: this.leadFields,
-      colors: this.colors,
-      services: this.services,
-      results: this.results,
-      certificates: this.certificates,
-      testimonials: this.testimonials
+      savedSnapshot: this.savedSnapshot,
+      hasSavedSite: this.hasSavedSite,
+      activeSection: this.activeSection,
+      savedCustomDomain: this.savedCustomDomain,
+      customDomainStatus: this.customDomainStatus,
+      customDomainToken: this.customDomainToken,
+      customDomainTarget: this.customDomainTarget,
+      publicHost: this.publicHost,
     };
     this.builderState.setDraft(data);
 
@@ -560,39 +642,98 @@ export class WebsiteBuilderComponent implements OnInit{
     });
   }
 
-  closePreview(): void {
-    this.previewOpen = false;
-    document.body.style.overflow = '';
+  openPublicSite(): void {
+    if (this.hasSavedSite) window.open(this.publicSiteUrl, '_blank', 'noopener');
   }
-
-  private toEmbedUrl(url: string): string {
-    if (!url) return '';
-
-    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/i);
-    if (youtubeMatch?.[1]) {
-      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-    }
-
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/i);
-    if (vimeoMatch?.[1]) {
-      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-    }
-
-    return url;
-  }
-
 
   saveWebsite(): void {
-    if (this.brandingLocked) return;
-    const payload = {
-      slug: this.normalizedSlug,
-      themeKey: this.selectedTheme.previewKey,
-      themeName: this.selectedTheme.name,
-      descriptionBlocks: this.descriptionBlocks,
-      profile: this.profile,
-      video: {
-        url: this.video.url
+    if (!this.canSave) {
+      if (this.slugError) this.activeSection = 'address';
+      else if (this.customDomainError) this.activeSection = 'domain';
+      return;
+    }
+    const payload = this.payload();
+    this.saving = true;
+    this.saveError = '';
+    this.websiteService.saveMyWebsite(payload).subscribe({
+      next: (saved) => {
+        this.saving = false;
+        this.hasSavedSite = true;
+        this.siteSlug = saved?.slug || payload.slug;
+        this.descriptionBlocks = this.filledBlocks();
+        this.stats = this.filledStats();
+        this.customDomain = saved?.customDomain || '';
+        this.savedCustomDomain = saved?.customDomain || '';
+        this.customDomainStatus = saved?.customDomainStatus || '';
+        this.customDomainToken = saved?.customDomainToken || '';
+        this.customDomainTarget = saved?.customDomainTarget || this.customDomainTarget;
+        this.publicHost = saved?.publicHost || this.publicHost;
+        if (!this.savedCustomDomain) this.domainCheck = null;
+        this.savedSnapshot = this.snapshot();
+        this.savedRecently = true;
+        clearTimeout(this.savedTimer);
+        this.savedTimer = setTimeout(() => (this.savedRecently = false), 3000);
       },
+      error: (err) => {
+        this.saving = false;
+        const body = err?.error;
+        this.saveError = body?.error || body?.message || (typeof body === 'string' && body.length < 200 ? body : '')
+          || this.translate.instant('WB_SAVE_ERROR');
+      }
+    });
+  }
+
+  togglePublished(): void {
+    this.published = !this.published;
+  }
+
+  /** At least one way to reach the visitor stays in the form. */
+  toggleContactField(field: 'email' | 'phone'): void {
+    const other = field === 'email' ? 'phone' : 'email';
+    if (this.leadFields[field] && !this.leadFields[other]) return;
+    this.leadFields = { ...this.leadFields, [field]: !this.leadFields[field] };
+  }
+
+  onProfileImageSelected(event: Event): void {
+    const file = this.pickImage(event);
+    if (file) this.uploadWebsiteImage(file, url => this.profile.image = url);
+  }
+
+  removeProfileImage(): void {
+    this.profile.image = '';
+  }
+
+  private generateId(): string {
+    return Math.random().toString(36).substring(2, 11);
+  }
+
+  private normalizeSlug(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private filledBlocks(): DescriptionBlock[] {
+    return this.descriptionBlocks.filter((block) => block.content?.trim());
+  }
+
+  private payload() {
+    return {
+      slug: this.normalizedSlug,
+      themeKey: this.selectedPreset.key,
+      themeName: this.selectedPreset.name,
+      design: this.design,
+      socialLinks: this.socialLinks,
+      stats: this.filledStats(),
+      customDomain: this.normalizedDomain,
+      descriptionBlocks: this.filledBlocks(),
+      profile: this.profile,
+      video: { url: this.video.url.trim() },
       announcement: this.announcement,
       cta: this.cta,
       leadFields: this.leadFields,
@@ -601,69 +742,12 @@ export class WebsiteBuilderComponent implements OnInit{
       results: this.results,
       certificates: this.certificates,
       testimonials: this.testimonials,
-      published: true
+      published: this.published,
     };
-
-    this.websiteService.saveMyWebsite(payload).subscribe({
-      next: res => {
-        console.log('Site enregistré avec succès', res);
-      },
-      error: err => {
-        console.error('Erreur lors de l’enregistrement du site', err);
-      }
-    });
   }
 
-  onProfileImageSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      console.error('Le fichier sélectionné n’est pas une image');
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      this.uploadWebsiteImage(file, url => this.profile.image = url);
-    };
-
-    reader.onerror = () => {
-      console.error('Erreur lors de la lecture de l’image');
-    };
-
-    reader.readAsDataURL(file);
-  }
-
-  private generateId(): string {
-    return Math.random().toString(36).substring(2, 11);
-  }
-
-  private applySelectedTheme(themeName?: string, themeKey?: CoachThemeKey): void {
-    const selectedIndex = this.themes.findIndex(theme => theme.name === themeName);
-    const fallbackIndex = this.themes.findIndex(theme => theme.previewKey === themeKey);
-    const index = selectedIndex >= 0 ? selectedIndex : fallbackIndex >= 0 ? fallbackIndex : 0;
-
-    this.themes = this.themes.map((theme, i) => ({
-      ...theme,
-      selected: i === index
-    }));
-  }
-
-  private normalizeSlug(value: string): string {
-    return (value || '')
-      .toLowerCase()
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+  private snapshot(): string {
+    return JSON.stringify(this.payload());
   }
 
   addBlock(type: DescriptionBlockType): void {
@@ -705,11 +789,7 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   addResult(): void {
-    this.results.push({
-      beforeImage: '',
-      afterImage: '',
-      text: ''
-    });
+    this.results.push({ beforeImage: '', afterImage: '', text: '' });
   }
 
   removeResult(index: number): void {
@@ -717,12 +797,7 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   addService(): void {
-    this.services.push({
-      image: '',
-      title: 'Nouveau service',
-      price: '',
-      description: ''
-    });
+    this.services.push({ image: '', title: '', price: '', description: '' });
   }
 
   removeService(index: number): void {
@@ -730,12 +805,7 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   addCertificate(): void {
-    this.certificates.push({
-      image: '',
-      title: 'Nouveau certificat',
-      organization: '',
-      year: new Date().getFullYear().toString()
-    });
+    this.certificates.push({ image: '', title: '', organization: '', year: new Date().getFullYear().toString() });
   }
 
   removeCertificate(index: number): void {
@@ -743,11 +813,7 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   addTestimonial(): void {
-    this.testimonials.push({
-      author: 'Nouveau client',
-      rating: 5,
-      text: ''
-    });
+    this.testimonials.push({ author: '', rating: 5, text: '' });
   }
 
   removeTestimonial(index: number): void {
@@ -755,59 +821,57 @@ export class WebsiteBuilderComponent implements OnInit{
   }
 
   onBlockImageSelected(id: string, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.uploadWebsiteImage(file, url => this.updateBlock(id, { content: url }));
-    };
-    reader.readAsDataURL(file);
+    const file = this.pickImage(event);
+    if (file) this.uploadWebsiteImage(file, url => this.updateBlock(id, { content: url }));
   }
 
   onServiceImageSelected(index: number, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.uploadWebsiteImage(file, url => this.services[index].image = url);
-    };
-    reader.readAsDataURL(file);
+    const file = this.pickImage(event);
+    if (file) this.uploadWebsiteImage(file, url => this.services[index].image = url);
   }
 
   onCertificateImageSelected(index: number, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.uploadWebsiteImage(file, url => this.certificates[index].image = url);
-    };
-    reader.readAsDataURL(file);
+    const file = this.pickImage(event);
+    if (file) this.uploadWebsiteImage(file, url => this.certificates[index].image = url);
   }
 
   onResultImageSelected(index: number, type: 'before' | 'after', event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (type === 'before') {
-        this.uploadWebsiteImage(file, url => this.results[index].beforeImage = url);
-      } else {
-        this.uploadWebsiteImage(file, url => this.results[index].afterImage = url);
-      }
-    };
-    reader.readAsDataURL(file);
+    const file = this.pickImage(event);
+    if (!file) return;
+    this.uploadWebsiteImage(file, url => {
+      if (type === 'before') this.results[index].beforeImage = url; else this.results[index].afterImage = url;
+    });
   }
 
   trackByBlockId(index: number, block: DescriptionBlock): string {
     return block.id;
+  }
+
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  /** CSS background for an uploaded image; quoted so a URL with parentheses keeps the rule valid. */
+  cssImage(url?: string): string {
+    return url ? `url("${url.replace(/"/g, '%22')}")` : '';
+  }
+
+  /** The selected file when it is an image of at most 5 MB; the input is cleared so the same file can be picked again. */
+  private pickImage(event: Event): File | null {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    input.value = '';
+    this.uploadError = '';
+    if (!file) return null;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.uploadError = this.translate.instant('CONTACT_IMAGE_TYPE_ERROR');
+      return null;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.uploadError = this.translate.instant('CONTACT_IMAGE_SIZE_ERROR');
+      return null;
+    }
+    return file;
   }
 
   private uploadWebsiteImage(file: File, onUploaded: (url: string) => void): void {
@@ -818,9 +882,16 @@ export class WebsiteBuilderComponent implements OnInit{
       { type: file.type, lastModified: file.lastModified }
     );
     const ownerId = sessionStorage.getItem('userId') || 'coach';
+    this.uploadingCount++;
     this.documentService.uploadFileInPath(storedFile, `coach-websites/${ownerId}`).subscribe({
-      next: onUploaded,
-      error: err => console.error('Erreur upload image MinIO', err)
+      next: (url) => {
+        this.uploadingCount--;
+        onUploaded(url);
+      },
+      error: () => {
+        this.uploadingCount--;
+        this.uploadError = this.translate.instant('CONTACT_IMAGE_UPLOAD_ERROR');
+      }
     });
   }
 }

@@ -41,11 +41,22 @@
             <input type="checkbox" [checked]="!hidden.has('ALERT_' + type)" (change)="toggleWidget('ALERT_' + type)" />
             <span class="switch" aria-hidden="true"></span>
           </label>
+          <ng-container *ngIf="firstSteps?.status?.started">
+            <p class="popover-title">{{ 'COACH_GUIDE.TITLE' | translate }}</p>
+            <label class="switch-row">
+              <span>{{ 'COACH_GUIDE.SHOW_ON_DASHBOARD' | translate }}</span>
+              <input type="checkbox" [checked]="!firstSteps!.status!.hidden" (change)="firstSteps!.setHidden(!firstSteps!.status!.hidden)" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+          </ng-container>
           <p class="popover-error" *ngIf="preferencesError" role="alert">{{ 'CDASH.PREFERENCES_ERROR' | translate }}</p>
         </div>
       </div>
     </div>
   </header>
+
+  <!-- First steps of a new coach (discover with the example client, then start for real). -->
+  <app-first-steps class="cdash-first-steps" (exampleChanged)="refresh()"></app-first-steps>
 
   <!-- ===================== KPIs ===================== -->
   <section class="kpis" *ngIf="isVisible('KPIS')" [attr.aria-label]="'CDASH.KPIS' | translate">

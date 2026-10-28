@@ -8,8 +8,10 @@ export interface CoachSubscriptionState {
   status?: CoachSubscriptionStatus | null;
   readOnly: boolean;
   trialEndsAt?: string | null;
-  /** Days of trial left in the coach's time zone (0 = last day). Null outside a trial. */
+  /** Days of trial left in the coach's time zone, today included (1 = last day, 0 = over). Null outside a trial. */
   trialDaysLeft?: number | null;
+  /** Start of the current paid period (ISO); null before the first payment. */
+  currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
   planId?: number | null;
   planName?: string | null;
@@ -40,6 +42,10 @@ export interface CoachSubscriptionState {
   usdRateTnd?: number | null;
   /** SUB-62: how the subscription is paid (FLOUCI, STRIPE). */
   paymentGateway?: string | null;
+  /** Payment audit D11: currency of the next payment (before the first one: from the country, decided by YoSales). */
+  checkoutCurrency?: string | null;
+  /** Payment audit D11: payment method of the next payment (FLOUCI, STRIPE). */
+  checkoutPaymentGateway?: string | null;
   /** SUB-62: card saved at Stripe ("Visa •••• 4242, 12/28"); null when none. */
   card?: SavedCardView | null;
   /** SUB-62: the invoices are charged on the saved card on their due date (automatic renewal). */
@@ -52,6 +58,16 @@ export interface SavedCardView {
   last4?: string | null;
   expMonth?: number | null;
   expYear?: number | null;
+}
+
+/**
+ * The scheduled plan change is already paid (renewal paid ahead with that plan): it takes effect at the start of the
+ * current period, not at its end, and cannot be cancelled (YoSales PlanChangeRules.planPaidAhead, code PLAN_PAID_AHEAD).
+ */
+export function planChangePaidAhead(state: CoachSubscriptionState | null | undefined): boolean {
+  const effectiveAt = Date.parse(state?.pendingPlanChange?.effectiveAt ?? '');
+  const periodStart = Date.parse(state?.currentPeriodStart ?? '');
+  return Number.isFinite(effectiveAt) && Number.isFinite(periodStart) && effectiveAt <= periodStart;
 }
 
 /** SUB-62: "Visa •••• 4242". */

@@ -9,10 +9,11 @@ import { DocumentService } from '../../../service/document.service';
 import { CoachBillingService } from '../../../service/coach-billing.service';
 import { CoachInvoice, InvoicePaymentGateway } from '../../../models/coach-invoice.model';
 import { User } from '../../../template/core';
+import { CLIENT_OBJECTIVES, clientObjectiveLabel } from '../../../models/client-objective';
 
 type ProfileUser = Partial<User> & {
   targetWeight?: number | null;
-  idealShapeDescription?: string | null;
+  mainObjective?: string | null;
 };
 
 @Component({
@@ -63,7 +64,7 @@ export class EditProfileComponent implements OnInit {
     avatarUrl: '',
     bio: '',
     targetWeight: null,
-    idealShapeDescription: ''
+    mainObjective: ''
   };
 
   editData: ProfileUser = {
@@ -76,8 +77,10 @@ export class EditProfileComponent implements OnInit {
     avatarUrl: '',
     bio: '',
     targetWeight: null,
-    idealShapeDescription: ''
+    mainObjective: ''
   };
+
+  readonly objectives = CLIENT_OBJECTIVES;
 
   passwordFormModel = {
     oldPassword: '',
@@ -296,7 +299,7 @@ export class EditProfileComponent implements OnInit {
       phoneNumber: this.editData.phoneNumber || '',
       bio: this.editData.bio || '',
       targetWeight: this.normalizeTargetWeight(this.editData.targetWeight),
-      idealShapeDescription: this.editData.idealShapeDescription || ''
+      mainObjective: this.editData.mainObjective || ''
     };
 
     this.usersService.updateUser(this.userData.id, payload).subscribe({
@@ -409,6 +412,9 @@ export class EditProfileComponent implements OnInit {
     });
   }
 
+  get frLabels(): boolean { return this.translate.currentLang !== 'en'; }
+  objectiveLabel(value: unknown): string { return clientObjectiveLabel(value, this.frLabels); }
+
   get fullName(): string {
     return `${this.userData.firstName || ''} ${this.userData.lastName || ''}`.trim();
   }
@@ -422,7 +428,7 @@ export class EditProfileComponent implements OnInit {
       this.userData.phoneNumber,
       this.userData.avatarUrl,
       this.userData.targetWeight,
-      this.userData.idealShapeDescription,
+      this.userData.mainObjective,
     ];
 
     const filled = fields.filter(value => !!value).length;

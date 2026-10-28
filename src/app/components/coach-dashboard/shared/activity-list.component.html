@@ -2,7 +2,7 @@
   <h3 class="day-label">{{ day.label }}</h3>
   <ul class="activity-list">
     <li class="activity" *ngFor="let row of day.rows; trackBy: trackById">
-      <a class="activity-main" [routerLink]="row.link.commands" [queryParams]="row.link.queryParams">
+      <a class="activity-main" [routerLink]="row.link.commands" [queryParams]="row.link.queryParams" (click)="openRow($event, row)">
         <span class="avatar tone-{{ row.tone }}">
           <img *ngIf="row.activity.avatarUrl && !brokenAvatars.has(row.activity.clientId); else fallback"
                [src]="row.activity.avatarUrl" alt="" (error)="brokenAvatars.add(row.activity.clientId)" />
@@ -22,3 +22,16 @@
     </li>
   </ul>
 </section>
+
+<app-client-activity-detail
+  *ngIf="detail"
+  [workout]="detail.workout"
+  [nutrition]="detail.nutrition"
+  [clientName]="detail.activity.clientName"
+  [loading]="detail.loading"
+  [notice]="detail.notice"
+  [showProfileLink]="true"
+  (closed)="closeDetail()"
+  (message)="messageClient()"
+  (openProfile)="openProfile()"
+></app-client-activity-detail>

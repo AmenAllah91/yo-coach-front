@@ -14,6 +14,12 @@
         <h1 class="yc-display greeting__title">{{ greeting }}</h1>
       </header>
 
+      <!-- A pause of the follow-up (backlog-programmes.md DS-03) -->
+      <section class="pause-banner" *ngIf="pauseLabel" role="status">
+        <i-feather name="pause-circle"></i-feather>
+        <span>{{ pauseLabel }}</span>
+      </section>
+
       <!-- Coach card -->
       <section class="yc-card coach-card">
         <span class="yc-avatar" style="--avatar-size: 50px">
@@ -69,18 +75,17 @@
 
       <button *ngIf="hasNutrition; else noNutrition" type="button" class="yc-card nutrition-card" (click)="openNutrition()">
         <div class="nutrition-card__head">
-          <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 46px"><i-feather name="utensils"></i-feather></span>
+          <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 40px"><i-feather name="utensils"></i-feather></span>
           <div class="nutrition-card__copy">
-            <span class="nutrition-card__label">{{ nutritionLabel }}</span>
-            <span class="nutrition-card__kcal"><strong>{{ formatNumber(consumed.calories) }}</strong> / {{ formatNumber(target.calories) }} kcal</span>
+            <strong class="nutrition-card__title">Nutrition</strong>
+            <span *ngIf="nutritionPlanLabel" class="nutrition-card__label">{{ nutritionPlanLabel }}</span>
           </div>
+          <span class="nutrition-card__meals">{{ reportedMeals }}/{{ meals.length }} {{ fr ? 'repas' : 'meals' }}</span>
           <i-feather class="chevron" name="chevron-right"></i-feather>
         </div>
-        <div class="yc-progress nutrition-card__bar"><span [style.width.%]="nutritionProgress * 100"></span></div>
-        <div class="nutrition-card__macros">
-          <span>P {{ target.protein }}g · C {{ target.carbs }}g · F {{ target.fat }}g</span>
-          <strong>{{ reportedMeals }}/{{ meals.length }} {{ fr ? 'repas' : 'meals' }}</strong>
-        </div>
+        <!-- The same ring and bars as the nutrition day. -->
+        <app-nutrition-macros-summary class="nutrition-card__summary" [consumed]="consumed" [target]="target" [fr]="fr">
+        </app-nutrition-macros-summary>
         <div *ngIf="nextMealName" class="nutrition-card__next">
           {{ fr ? 'Prochain : ' : 'Next: ' }}<strong>{{ nextMealName }}</strong>
         </div>

@@ -1,10 +1,11 @@
+import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { Router } from '@angular/router';
-import { forkJoin, Observable, of, Subject, switchMap, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import {
   NutritionService,
   NutritionPlan,
@@ -17,10 +18,22 @@ import * as XLSX from 'xlsx';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ToastService } from 'app/service/toast.service';
 
+import { NutritionPlanKind as AppPlanKind, nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
+
+type NutritionPlanKind = AppPlanKind | 'PDF' | 'EXCEL';
+
+const PLAN_KIND_ICONS: Record<NutritionPlanKind, string> = {
+  FOODS: 'coffee',
+  DAY_MACROS: 'pie-chart',
+  MEAL_MACROS: 'layers',
+  PDF: 'file-text',
+  EXCEL: 'file-text',
+};
+
 @Component({
   selector: 'app-nutrition-plans',
   standalone: true,
-  imports: [WriteActionDirective, 
+  imports: [WriteActionDirective, ProgramDaysBadgeComponent, 
     CommonModule,
     FormsModule,
     FeatherModule,
@@ -368,13 +381,14 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     return this.getFileKind(plan);
   }
 
-  getProgramIconName(plan: NutritionPlan): string {
-    const type = this.getProgramTypeKey(plan);
-if (type === 'APP') {
-      return 'grid';
-    }
+  /** The 3 kinds of plan built in the app (they open different editors), or the file kind. */
+  getPlanKind(plan: NutritionPlan): NutritionPlanKind {
+    if (this.isFilePlan(plan)) return this.getFileKind(plan);
+    return nutritionPlanKind(plan);
+  }
 
-    return 'file-text';
+  getProgramIconName(plan: NutritionPlan): string {
+    return PLAN_KIND_ICONS[this.getPlanKind(plan)];
   }
 
   getProgramDescription(plan: NutritionPlan): string {
@@ -464,11 +478,10 @@ if (type === 'APP') {
   }
 
   getPlanTypeLabel(plan: NutritionPlan): string {
-    if (this.isFilePlan(plan)) {
-      return this.getFileKind(plan) === 'PDF' ? 'PDF' : 'Excel';
-    }
-
-    return this.translate.instant('APP_PROGRAM');
+    const kind = this.getPlanKind(plan);
+    if (kind === 'PDF') return 'PDF';
+    if (kind === 'EXCEL') return 'Excel';
+    return this.translate.instant(`PLAN_KIND_${kind}`);
   }
 
   formatFileSize(bytes?: number): string {
@@ -1118,10 +1131,11 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
       return;
     }
 
-    if (plan.trackingMode === 'EACH_MEAL') {
+    const kind = nutritionPlanKind(plan);
+    if (kind === 'MEAL_MACROS') {
       const url = 'nutrition/create-macro-plan/' + plan.id;
       this.router.navigateByUrl(url);
-    } else if (plan.trackingMode === 'TOTAL_FOR_DAY') {
+    } else if (kind === 'DAY_MACROS') {
       const url = 'nutrition/create-macro-plan-total-day/' + plan.id;
       this.router.navigateByUrl(url);
     } else {
@@ -1221,116 +1235,10 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     return this.getMealDaySpan(program);
   }
 
-  onProgramAssigned(event: any) {
-    if (!this.programToAssign || !event?.clients?.length || !event?.date) {
-      this.showAssignModal = false;
-      return;
-    }
-
-    for (const client of event.clients) {
-      const resolution = this.getConflictResolution(event, client);
-      const startDate = this.getResolvedStartDate(event.date, resolution);
-      const endDate = this.addDays(startDate, this.getProgramDurationDays(this.programToAssign) - 1);
-
-      const replace$ = resolution?.resolution === 'REPLACE'
-        ? this.stopExistingNutritionBefore(resolution.conflict, startDate)
-        : of(null);
-
-      if (this.isFilePlan(this.programToAssign)) {
-        if (!endDate) {
-          this.error = 'End date is required for PDF / Excel nutrition plans.';
-          return;
-        }
-
-        const item = {
-          ...this.programToAssign,
-          client,
-          startDate,
-          endDate,
-          mealDays: [],
-          isMealPlanTemplate: false,
-        };
-
-        replace$
-          .pipe(
-            switchMap(() => this.nutritionService.assignNutritionPlan(item)),
-            takeUntil(this.destroy$)
-          )
-          .subscribe({
-            next: () => this.loadPlans(),
-            error: (err) => console.error('Error assigning nutrition file:', err),
-          });
-
-        continue;
-      }
-
-      const mealDays = (this.programToAssign.mealDays || []).map(
-        (day: any, index: number) => {
-          const date = this.addDays(startDate, index);
-          const current = new Date(`${date}T00:00:00`);
-
-          return {
-            ...day,
-            date,
-            dayOfWeek: current.toLocaleDateString('en-US', {
-              weekday: 'long',
-            }),
-          };
-        }
-      );
-
-      const item = {
-        ...this.programToAssign,
-        client,
-        startDate,
-        mealDays,
-        endDate: mealDays.length
-          ? mealDays[mealDays.length - 1].date
-          : startDate,
-        isMealPlanTemplate: false,
-      };
-
-      replace$
-        .pipe(
-          switchMap(() => this.nutritionService.assignNutritionPlan(item)),
-          takeUntil(this.destroy$)
-        )
-        .subscribe({
-          next: () => {
-            this.loadPlans();
-          },
-          error: (err) => {
-            console.error('Error assigning nutrition plan:', err);
-          },
-        });
-    }
-
-    this.showAssignModal = false;
-    this.programToAssign = null;
-  }
-
-  private getConflictResolution(event: any, client: any): any | null {
-    if (!client?.id) return null;
-    return event?.conflictResolutions?.[client.id] || null;
-  }
-
-  private getResolvedStartDate(defaultStartDate: string, resolution: any | null): string {
-    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
-      return this.addDays(resolution.conflict.endDate, 1);
-    }
-
-    return defaultStartDate;
-  }
-
-  private stopExistingNutritionBefore(conflict: any, nextStartDate: string): Observable<unknown> {
-    if (!conflict?.id || !conflict.startDate) return of(null);
-
-    const replacementEndDate = this.addDays(nextStartDate, -1);
-    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
-      return this.nutritionService.deleteNutritionPlan(conflict.id);
-    }
-
-    return this.nutritionService.updateNutritionPlanDates(conflict.id, conflict.startDate, replacementEndDate);
+  /** The assignment window did the work and shows the message with « Annuler » (backlog-programmes.md A7). */
+  onAssignmentDone() {
+    this.closeAssignModal();
+    this.loadPlans();
   }
 
   private daysBetweenInclusive(startDate: string, endDate: string): number {
@@ -1338,19 +1246,6 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
     const end = new Date(`${endDate}T00:00:00`).getTime();
     if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 1;
     return Math.floor((end - start) / 86400000) + 1;
-  }
-
-  private addDays(value: string, days: number): string {
-    const date = new Date(`${value}T00:00:00`);
-    date.setDate(date.getDate() + days);
-    return this.toDateInputValue(date);
-  }
-
-  private toDateInputValue(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 
   /** Plan being duplicated (one at a time). */

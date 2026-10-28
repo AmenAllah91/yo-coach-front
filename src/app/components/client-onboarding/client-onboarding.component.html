@@ -1,11 +1,27 @@
 <div class="onboarding-shell">
-  <header class="page-header"><img src="assets/logo/yocoach-logo.svg" alt="YoCoach" /><div><strong>{{ 'CLIENT_ONBOARDING.STEP' | translate }} {{ index + 1 }} of {{ steps.length }}</strong><span>— {{ ('CLIENT_ONBOARDING.STEPS.' + step.toUpperCase()) | translate }}</span></div></header>
-  <div class="progress-track"><span [style.width.%]="progress"></span></div>
+  <header class="page-header"><img src="assets/logo/yocoach-logo.svg" alt="YoCoach" /><div *ngIf="!welcome && !appOffer && state"><strong>{{ 'CLIENT_ONBOARDING.STEP' | translate }} {{ index + 1 }} {{ 'CLIENT_ONBOARDING.OF' | translate }} {{ steps.length }}</strong><span>— {{ ('CLIENT_ONBOARDING.STEPS.' + step.toUpperCase()) | translate }}</span></div></header>
+  <div class="progress-track"><span *ngIf="!welcome && !appOffer" [style.width.%]="progress"></span></div>
   <section *ngIf="loading" class="state-panel"><div class="spinner"></div><p>{{ 'CLIENT_ONBOARDING.LOADING' | translate }}</p></section>
   <section *ngIf="!loading && loadError" class="state-panel"><h2>{{ 'CLIENT_ONBOARDING.LOAD_ERROR' | translate }}</h2><button class="primary-btn compact" (click)="load(true)">{{ 'CLIENT_ONBOARDING.RETRY' | translate }}</button></section>
 
+  <!-- First screen after the first sign-in (and for a client whose profile is incomplete) -->
+  <article *ngIf="!loading && !loadError && welcome" class="onboarding-card welcome-card">
+    <main class="step-content">
+      <div class="welcome-icon" aria-hidden="true">✓</div>
+      <div class="title-block centered">
+        <h1>{{ (state?.profileUpdate ? 'CLIENT_ONBOARDING.WELCOME_UPDATE_TITLE' : 'CLIENT_ONBOARDING.WELCOME_TITLE') | translate }}</h1>
+        <p *ngIf="state?.coachName && !state?.profileUpdate">{{ 'CLIENT_ONBOARDING.WELCOME_INVITED_BY' | translate: { coach: state?.coachName } }}</p>
+        <p>{{ (state?.profileUpdate ? 'CLIENT_ONBOARDING.WELCOME_UPDATE_SUBTITLE' : 'CLIENT_ONBOARDING.WELCOME_SUBTITLE') | translate }}</p>
+      </div>
+    </main>
+    <footer class="onboarding-footer">
+      <span></span>
+      <button type="button" class="primary-btn" (click)="startOnboarding()">{{ 'COACH_ONBOARDING.CONTINUE' | translate }} <span>→</span></button>
+    </footer>
+  </article>
+
   <!-- The mobile app is offered first; the onboarding resumes at the same step there -->
-  <article *ngIf="!loading && !loadError && appOffer" class="onboarding-card app-offer">
+  <article *ngIf="!loading && !loadError && !welcome && appOffer" class="onboarding-card app-offer">
     <main class="step-content">
       <div class="title-block centered">
         <h1>{{ (appOffer === 'done' ? 'CLIENT_ONBOARDING.APP_DONE_TITLE' : 'CLIENT_ONBOARDING.APP_TITLE') | translate }}</h1>
@@ -25,16 +41,29 @@
     </footer>
   </article>
 
-  <article *ngIf="!loading && !loadError && !appOffer" class="onboarding-card" [class.wide-card]="step === 'form'">
+  <article *ngIf="!loading && !loadError && !welcome && !appOffer" class="onboarding-card" [class.wide-card]="step === 'form'">
     <main class="step-content">
       <form *ngIf="step === 'language'" [formGroup]="languageForm">
         <div class="title-block centered"><h1>{{ 'CLIENT_ONBOARDING.LANGUAGE_TITLE' | translate }}</h1><p>{{ 'CLIENT_ONBOARDING.LANGUAGE_SUBTITLE' | translate }}</p></div>
         <div class="language-options"><button type="button" [class.selected]="languageForm.value.language === 'English'" (click)="languageForm.patchValue({language:'English'})">English</button><button type="button" [class.selected]="languageForm.value.language === 'French'" (click)="languageForm.patchValue({language:'French'})">Français</button></div>
       </form>
-      <form *ngIf="step === 'goals'" [formGroup]="goalsForm">
-        <div class="title-block"><h1>{{ 'CLIENT_ONBOARDING.GOALS_TITLE' | translate }}</h1><p>{{ 'CLIENT_ONBOARDING.GOALS_SUBTITLE' | translate }}</p></div>
-        <div class="field-grid"><label>{{ 'CLIENT_ONBOARDING.CURRENT_WEIGHT' | translate }}<input class="field-control" type="number" min="1" formControlName="currentWeight" /></label><label>{{ 'CLIENT_ONBOARDING.GOAL_WEIGHT' | translate }}<input class="field-control" type="number" min="1" formControlName="goalWeight" /></label></div>
-        <label>{{ 'CLIENT_ONBOARDING.MAIN_OBJECTIVE' | translate }}<textarea class="field-control" rows="4" formControlName="mainObjective"></textarea></label>
+      <form *ngIf="step === 'profile'" [formGroup]="profileForm">
+        <div class="title-block"><h1>{{ 'CLIENT_ONBOARDING.PROFILE_TITLE' | translate }}</h1><p>{{ 'CLIENT_ONBOARDING.PROFILE_SUBTITLE' | translate }}</p></div>
+        <div class="field-grid">
+          <label>{{ 'CLIENT_ONBOARDING.BIRTH_DATE' | translate }}<input class="field-control" type="date" min="1900-01-01" [max]="maxBirthDate" formControlName="birthDate" />
+            <span class="field-error" *ngIf="invalid('birthDate')">{{ 'CLIENT_ONBOARDING.BIRTH_DATE_INVALID' | translate }}</span></label>
+          <label>{{ 'CLIENT_ONBOARDING.PHONE' | translate }}<input class="field-control" type="tel" autocomplete="tel" placeholder="+216 20 123 456" formControlName="phoneNumber" />
+            <span class="field-error" *ngIf="invalid('phoneNumber')">{{ 'CLIENT_ONBOARDING.PHONE_INVALID' | translate }}</span></label>
+        </div>
+        <div class="profile-group">
+          <span class="group-label">{{ 'CLIENT_ONBOARDING.GENDER' | translate }}</span>
+          <div class="language-options"><button type="button" [class.selected]="profileForm.value.gender === 'MALE'" (click)="selectProfile('gender','MALE')">{{ 'CLIENT_ONBOARDING.MALE' | translate }}</button><button type="button" [class.selected]="profileForm.value.gender === 'FEMALE'" (click)="selectProfile('gender','FEMALE')">{{ 'CLIENT_ONBOARDING.FEMALE' | translate }}</button></div>
+        </div>
+        <div class="field-grid"><label>{{ 'CLIENT_ONBOARDING.CURRENT_WEIGHT' | translate }} (kg)<input class="field-control" type="number" min="1" max="500" step="0.1" formControlName="currentWeight" /></label><label>{{ 'CLIENT_ONBOARDING.GOAL_WEIGHT' | translate }} (kg)<input class="field-control" type="number" min="1" max="500" step="0.1" formControlName="goalWeight" /></label></div>
+        <div class="profile-group">
+          <span class="group-label">{{ 'CLIENT_ONBOARDING.MAIN_OBJECTIVE' | translate }}</span>
+          <div class="choice-stack"><button *ngFor="let objective of objectives" type="button" [class.selected]="profileForm.value.mainObjective === objective.code" (click)="selectProfile('mainObjective', objective.code)">{{ ('CLIENT_ONBOARDING.OBJECTIVES.' + objective.code) | translate }}<i class="radio"></i></button></div>
+        </div>
       </form>
       <form *ngIf="step === 'units'" [formGroup]="unitsForm">
         <div class="title-block centered"><h1>{{ 'COACH_ONBOARDING.UNITS_TITLE' | translate }}</h1><p>{{ 'COACH_ONBOARDING.UNITS_SUBTITLE' | translate }}</p></div>

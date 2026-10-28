@@ -5,6 +5,7 @@ import { WorkoutService } from 'app/service/workout.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Component, HostListener, Input, ViewChild, forwardRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Client, ClientService } from 'app/service/client.service';
@@ -23,7 +24,7 @@ import { Subject, takeUntil, from, of, Observable, forkJoin } from 'rxjs';
 import { FormDetails, FormsApiService, Form } from '../../forms/services/forms-api.service';
 import { Answer, QuestionType } from '../../../models/forms.model';
 import { SubmissionsApiService } from '../../forms/services/submissions-api.service';
-import { switchMap, finalize, map, catchError } from 'rxjs/operators';
+import { switchMap, finalize, map, mergeMap } from 'rxjs/operators';
 import { ClientScheduleItemDto } from '../../../models/client-schedule.model';
 import { CalendarClientsComponent } from '../../calendar/calendar-clients/calendar-clients.component';
 import { ProgressPicturesComponent } from 'app/components/progress-pictures-module/progress-pictures/progress-pictures.component';
@@ -40,9 +41,25 @@ import { ClientTasksTabComponent } from './client-tasks-tab/client-tasks-tab.com
 
 const CLIENT_NAV_OPEN_KEY = 'clientNavPanelOpen';
 import { ClientNutritionComponent } from '../client-nutrition/client-nutrition.component';
-import { MealplanDayService } from 'app/service/mealplan-day.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { totalMacros } from '@shared/models/nutrition-math';
+import { AssignScheduleComponent } from '@shared/components/assign-schedule/assign-schedule.component';
+import { AssignConfirmComponent, AssignConfirmRow } from '@shared/components/assign-confirm/assign-confirm.component';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ClientSchedulePreview, ProgramOverview, changeSentence } from '@shared/models/program-schedule';
+import { ClientHeaderStatus, ClientProfilePanelComponent } from '../shared/client-profile-panel.component';
+import { ClientActivityDetailComponent } from './client-activity/client-activity-detail.component';
+import {
+  NutritionActivity,
+  NutritionActivityStatus,
+  WorkoutActivity,
+  buildNutritionActivities,
+  buildWorkoutActivities,
+  nutritionDayStatusLabel,
+  workoutActivityDuration,
+  workoutActivityMode,
+  workoutActivityStatusLabel,
+} from './client-activity/client-activity';
+import { clientObjectiveLabel } from '../../../models/client-objective';
 
 type TabId =
   | 'dashboard'
@@ -58,12 +75,6 @@ type TabId =
 /** Sections grouped under the "Overview" main tab. */
 const OVERVIEW_TABS: readonly TabId[] = ['dashboard', 'measurements', 'pictures', 'checkins'];
 
-type WorkoutConflictResolution = 'START_AFTER' | 'REPLACE';
-
-interface ClientWorkoutConflict {
-  program: any;
-  resolution?: WorkoutConflictResolution;
-}
 
 
 
@@ -81,38 +92,9 @@ interface TodaysWorkout {
   exercises: Exercise[];
 }
 
-type WorkoutActivityStatus =
-  | 'COMPLETED'
-  | 'COMPLETED_AFTER_WORKOUT'
-  | 'IN_PROGRESS'
-  | 'OVERDUE'
-  | 'MISSED'
-  | 'NOT_STARTED'
-  | 'UPCOMING';
-
-interface WorkoutActivity {
-  id: string;
-  planId: string;
-  programName: string;
-  programDescription: string;
-  week: number;
-  dayInWeek: number;
-  workoutName: string;
-  scheduledDate: Date;
-  status: WorkoutActivityStatus;
-  durationSeconds: number | null;
-  completedCount: number;
-  skippedCount: number;
-  totalExercises: number;
-  partialCount: number;
-  completedSets: number;
-  missedSets: number;
-  pendingSets: number;
-  totalSets: number;
-  overallNote: string;
-  missedReason: string;
-  exercises: any[];
-  exerciseLogs: any[];
+interface NutritionMacroShares {
+  items: { label: string; grams: number; color: string; percent: number }[];
+  gradient: string;
 }
 
 interface ActiveNutritionPlan {
@@ -124,32 +106,9 @@ interface ActiveNutritionPlan {
   mealCount?: number;
 }
 
-type NutritionActivityStatus = 'COMPLETED' | 'IN_PROGRESS' | 'NOT_LOGGED' | 'OFF_PLAN';
+/** The « Toute l'activité » filters: OVERDUE is a past workout the client did not log (« Non renseignée »). */
+type WorkoutActivityFilter = 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'OVERDUE' | 'MISSED' | 'UPCOMING';
 
-interface NutritionActivity {
-  id: string;
-  planId: string;
-  programName: string;
-  week: number;
-  dayInWeek: number;
-  dayName: string;
-  scheduledDate: Date;
-  status: NutritionActivityStatus;
-  meals: any[];
-  mealLogs: any[];
-  plannedMeals: number;
-  loggedMeals: number;
-  asPlannedMeals: number;
-  modifiedMeals: number;
-  skippedMeals: number;
-  hunger: string;
-  energy: string;
-  digestion: string;
-  overallNote: string;
-  loggedAt: any;
-  totals: { calories: number; protein: number; carbs: number; fat: number };
-  photos: Array<{ url: string; label: string; time: string; mealId?: string }>;
-}
 export interface ScheduledCheckIn {
   id: string;
   formName: string;
@@ -191,10 +150,14 @@ type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'check
     MyAssignmentsComponent,
     CheckinCardComponent,
     FeatherModule,
-    TranslateModule
+    TranslateModule,
+    AssignScheduleComponent,
+    AssignConfirmComponent,
+    ClientProfilePanelComponent,
+    ClientActivityDetailComponent,
   ],
   templateUrl: './profil-client.component.html',
-  styleUrl: './profil-client.component.scss',
+  styleUrls: ['./profil-client.component.scss', './client-activity/client-activity.scss'],
 })
 export class ProfilClientComponent {
   profileLoading = true;
@@ -263,6 +226,44 @@ export class ProfilClientComponent {
   ];
   clientPreviewSidebarOpen = false;
   private checkinsLoaded = false;
+
+  /** « Voir le suivi » of a tab: the calendar opens on that tab's calendar (workout or nutrition) and day. */
+  calendarFocus: { type: 'workout' | 'nutrition'; date: string | null } | null = null;
+
+  openCalendarAt(type: 'workout' | 'nutrition', date?: string | null): void {
+    this.calendarFocus = { type, date: date || null };
+    this.setTab('calendar');
+  }
+
+  /**
+   * A PDF / Excel program clicked in the calendar: the same preview as « Ouvrir » in its tab (no copy of it), opened
+   * in the click itself with the plan the calendar has (the file is read by the program's id), so the browser does
+   * not block the window.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  openCalendarFile(file: { type: 'workout' | 'nutrition'; programId: string; plan?: any }): void {
+    const tab = file.type === 'workout' ? this.workoutsTab : this.nutritionTab;
+    if (tab && file.plan?.id) {
+      tab.previewFile(file.plan);
+      return;
+    }
+    if (tab) {
+      tab.onProgramAction({ type: 'open', programId: file.programId });
+      return;
+    }
+    // The tab is not created yet (a few hundred ms after the profile opens): the coach opens it from there.
+    this.setTab(file.type === 'workout' ? 'workouts' : 'nutrition');
+  }
+
+  /** From the calendar's day panel (lot C): « Envoyer un message » opens the Discussion tab, a check-in its answers. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onCalendarAction(action: { type: 'chat' } | { type: 'checkin'; assignment: any }): void {
+    if (action.type === 'chat') {
+      this.setTab('chat');
+      return;
+    }
+    this.openAssignmentModal(action.assignment as FormAssignment);
+  }
 
   setTab(tab: TabId) {
     this.activeTab = tab;
@@ -407,6 +408,71 @@ export class ProfilClientComponent {
     return this.translate.currentLang === 'en' ? 'en-US' : 'fr-FR';
   }
 
+  /* ---------- Header: status, current program, this week; the « Profil du client » panel ---------- */
+
+  profilePanelOpen = false;
+  heroPhotoFailed = false;
+  headerWorkout: ProgramOverview | null = null;
+  headerNutrition: ProgramOverview | null = null;
+
+  get heroFr(): boolean {
+    return this.translate.currentLang !== 'en';
+  }
+
+  /**
+   * Same as the client list (Active / Archived), plus a pause going on today (either type). « Invited » is only a
+   * pending invitation, which has no profile yet: `activated` is the account's block flag, not an invitation state.
+   */
+  get headerStatus(): ClientHeaderStatus {
+    if (this.clientArchived) return 'ARCHIVED';
+    const paused = [this.headerWorkout, this.headerNutrition].some(overview =>
+      !!overview?.pause && overview.pause.from <= overview.today && overview.today <= overview.pause.to);
+    return paused ? 'PAUSED' : 'ACTIVE';
+  }
+
+  get headerStatusLabel(): string {
+    const fr = this.heroFr;
+    switch (this.headerStatus) {
+      case 'ARCHIVED': return fr ? 'Archivé' : 'Archived';
+      case 'PAUSED': return fr ? 'En pause' : 'Paused';
+      default: return fr ? 'Actif' : 'Active';
+    }
+  }
+
+  /** The training program going on (else the nutrition one) and its week. */
+  get heroProgram(): { name: string; week: number; weeks: number } | null {
+    const current = this.headerWorkout?.current || this.headerNutrition?.current;
+    if (!current) return null;
+    return { name: current.program.name, week: current.week, weeks: current.weeks };
+  }
+
+  /** The first weigh-in, else the weight given at onboarding. */
+  get panelStartWeight(): string {
+    const onboarding = Number((this.client as any)?.currentWeight);
+    const start = this.startWeight ?? (Number.isFinite(onboarding) && onboarding > 0 ? onboarding : null);
+    return start !== null ? this.formatWeight(start) : '--';
+  }
+
+  openProfilePanel(): void {
+    this.profilePanelOpen = true;
+  }
+
+  /** Both « Programmes » tabs (shared with the prefetch): what the header and the profile panel show. */
+  private loadHeaderOverviews(): void {
+    const clientId = this.clientId;
+    if (!clientId) return;
+    this.headerWorkout = this.programSchedule.overviewSnapshot('WORKOUT', clientId);
+    this.headerNutrition = this.programSchedule.overviewSnapshot('NUTRITION', clientId);
+    this.programSchedule.overview('WORKOUT', clientId).subscribe({
+      next: overview => { if (this.clientId === clientId) this.headerWorkout = overview; },
+      error: () => {},
+    });
+    this.programSchedule.overview('NUTRITION', clientId).subscribe({
+      next: overview => { if (this.clientId === clientId) this.headerNutrition = overview; },
+      error: () => {},
+    });
+  }
+
   onHeaderPhotoError(event: Event): void {
     const image = event.target as HTMLImageElement;
     if (!image.src.endsWith(this.defaultAvatarUrl)) image.src = this.defaultAvatarUrl;
@@ -468,48 +534,47 @@ export class ProfilClientComponent {
 
   private loadCoachClients(): void {
     if (this.coachClientsLoaded || this.loadingCoachClients || !this.userid) return;
+    // A list kept from a previous profile shows at once (even a few minutes old); a stale one is refreshed behind it.
     const known = this.profileCache.coachClientsSnapshot(this.userid);
     if (known) {
-      // Same coach, read less than 2 min ago (previous profile): the panel shows at once, no request.
-      this.coachClients = known;
+      this.coachClients = known.clients;
       this.coachClientsLoaded = true;
-      return;
+      if (known.fresh) return;
     }
 
-    this.loadingCoachClients = true;
+    this.loadingCoachClients = !known;
     // The client panel fills in behind the profile: it never shows the page loader.
     this.clientService.getListClientsByCoachWithoutPagination(this.userid, true).subscribe({
       next: (response) => {
         const clients = Array.isArray(response) ? response : response?.content || [];
-        const validClients = clients.filter((client: Client) => !!client.id);
+        const previous = new Map<string, Client>((known?.clients || []).map((c: Client) => [String(c.id), c]));
+        // Keep the photos already fetched so the rows do not flash back to initials.
+        const validClients: Client[] = clients
+          .filter((client: Client) => !!client.id)
+          .map((client: Client) => ({ ...client, avatarUrl: client.avatarUrl || previous.get(String(client.id))?.avatarUrl || '' }));
 
-        if (!validClients.length) {
-          this.coachClients = [];
-          this.coachClientsLoaded = true;
-          this.loadingCoachClients = false;
-          return;
-        }
-
-        // Show the list immediately (client panel); avatars arrive with the enrichment.
         this.coachClients = validClients;
+        this.coachClientsLoaded = true;
+        this.loadingCoachClients = false;
+        this.profileCache.rememberCoachClients(this.userid!, validClients);
 
-        // The clients endpoint does not include the account avatar. Enrich each
-        // row from the user profile (photos shared with the client list page).
-        const clientProfiles$: Observable<Client>[] = validClients.map((client: Client) =>
-          this.usersService.getAvatarUrl(client.id!).pipe(
-            map((avatarUrl) => ({ ...client, avatarUrl })),
+        // The clients endpoint does not include the account avatar. Fetch the missing ones a few at a time and
+        // fill each row as its photo arrives (photos shared with the client list page): the list never waits for them.
+        const missing = validClients.filter((client) => !client.avatarUrl && !client.image);
+        from(missing)
+          .pipe(
+            mergeMap(
+              (client) => this.usersService.getAvatarUrl(client.id!).pipe(map((avatarUrl) => ({ client, avatarUrl }))),
+              4,
+            ),
+            takeUntil(this.destroy$),
           )
-        );
-
-        forkJoin(clientProfiles$).subscribe((enrichedClients) => {
-          this.coachClients = enrichedClients;
-          this.profileCache.rememberCoachClients(this.userid!, enrichedClients);
-          this.coachClientsLoaded = true;
-          this.loadingCoachClients = false;
-        });
+          .subscribe(({ client, avatarUrl }) => {
+            client.avatarUrl = avatarUrl;
+          });
       },
       error: () => {
-        this.coachClients = [];
+        if (!known) this.coachClients = [];
         this.loadingCoachClients = false;
       },
     });
@@ -580,9 +645,7 @@ export class ProfilClientComponent {
 
   get clientObjective(): string {
     return (
-      (this.client as any)?.idealShapeDescription ||
-      (this.client as any)?.objective ||
-      (this.client as any)?.goal ||
+      clientObjectiveLabel((this.client as any)?.mainObjective, this.heroFr) ||
       (this.clientTargetWeight ? `Goal weight ${this.formatWeight(this.clientTargetWeight)}` : '')
     );
   }
@@ -649,15 +712,74 @@ export class ProfilClientComponent {
   showClientWorkoutCreateModal = false;
   clientWorkoutProgramName = '';
   clientWorkoutDurationWeeks = 4;
-  clientWorkoutStartDate = new Date().toISOString().slice(0, 10);
-  clientWorkoutConflict: ClientWorkoutConflict | null = null;
+  clientWorkoutStartDate = '';
+  /** A start proposed by the « Programmes » tab (the first day of a gap); none: today or the continuity. */
+  assignPresetStart: string | null = null;
   readonly workoutDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   showClientNutritionCreateModal = false;
   clientNutritionProgramName = '';
   clientNutritionDurationWeeks = 4;
-  clientNutritionStartDate = new Date().toISOString().slice(0, 10);
-  clientNutritionConflict: ClientWorkoutConflict | null = null;
+  clientNutritionStartDate = '';
   selectedClientNutritionPlanType: NutritionPlanChoice | null = null;
+
+  /* Affectation (backlog-programmes.md A5/A6): what changes on the client's calendar before a creation or an import. */
+  schedulePreviews: Record<string, ClientSchedulePreview> = {};
+  scheduleChecking = false;
+  scheduleConfirm: 'WORKOUT_CREATE' | 'NUTRITION_CREATE' | 'WORKOUT_FILE' | 'NUTRITION_FILE' | null = null;
+  scheduleConfirmRows: AssignConfirmRow[] = [];
+  scheduleConfirmName = '';
+  scheduleConfirmStart = '';
+  private scheduleConfirmed = false;
+  private cachedClientIds: string[] = [];
+
+  /** This client, as a stable list for the schedule (a new array at each check would ask the server again). */
+  get profileClientIds(): string[] {
+    const id = this.clientId ? String(this.clientId) : '';
+    if ((this.cachedClientIds[0] || '') !== id) this.cachedClientIds = id ? [id] : [];
+    return this.cachedClientIds;
+  }
+
+  /**
+   * Before a creation or an import that changes the client's calendar: shows the confirmation and returns true (the
+   * caller stops); once confirmed, the caller runs again and goes on.
+   */
+  private askScheduleConfirm(kind: 'WORKOUT_CREATE' | 'NUTRITION_CREATE' | 'WORKOUT_FILE' | 'NUTRITION_FILE',
+                             programName: string, startDate: string): boolean {
+    if (this.scheduleConfirmed) {
+      this.scheduleConfirmed = false;
+      this.scheduleConfirm = null;
+      return false;
+    }
+    const lines = (this.schedulePreviews[String(this.clientId)]?.changes || [])
+      .map(change => this.programSchedule.text(changeSentence(change, this.programSchedule.formatDate)));
+    if (!lines.length) return false;
+    this.scheduleConfirmRows = [{ id: String(this.clientId), name: this.fullName, lines }];
+    this.scheduleConfirmName = programName;
+    this.scheduleConfirmStart = startDate;
+    this.scheduleConfirm = kind;
+    return true;
+  }
+
+  onScheduleConfirmed(): void {
+    const kind = this.scheduleConfirm;
+    this.scheduleConfirmed = true;
+    if (kind === 'WORKOUT_CREATE') this.createClientWorkoutProgram();
+    else if (kind === 'NUTRITION_CREATE') this.createClientNutritionProgram();
+    else if (kind === 'WORKOUT_FILE') this.saveAndAssignProfileFileWorkout();
+    else if (kind === 'NUTRITION_FILE') this.saveAndAssignProfileFileNutrition();
+  }
+
+  onScheduleBack(): void {
+    this.scheduleConfirm = null;
+    this.scheduleConfirmed = false;
+  }
+
+  private resetScheduleState(): void {
+    this.schedulePreviews = {};
+    this.scheduleChecking = false;
+    this.scheduleConfirm = null;
+    this.scheduleConfirmed = false;
+  }
 
   profileImportWorkoutFile: File | null = null;
   profileImportWorkoutName = '';
@@ -729,13 +851,18 @@ export class ProfilClientComponent {
   activeNutritionPlan: ActiveNutritionPlan | null = null;
   assignedWorkoutPrograms: any[] = [];
   workoutActivities: WorkoutActivity[] = [];
-  workoutActivityFilter: 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'MISSED' | 'UPCOMING' = 'ALL';
+  workoutActivityFilter: WorkoutActivityFilter = 'ALL';
+  readonly workoutActivityFilters: WorkoutActivityFilter[] = ['ALL', 'COMPLETED', 'IN_PROGRESS', 'OVERDUE', 'MISSED', 'UPCOMING'];
+  readonly nutritionActivityFilters: ('ALL' | NutritionActivityStatus)[] = ['ALL', 'COMPLETED', 'IN_PROGRESS', 'NOT_LOGGED', 'OFF_PLAN'];
   workoutActivityVisibleCount = 10;
   showAllWorkoutActivity = false;
   selectedWorkoutActivity: WorkoutActivity | null = null;
   nutritionActivities: NutritionActivity[] = [];
   selectedNutritionActivity: NutritionActivity | null = null;
   showAllNutritionActivity = false;
+  /** Day opened from a coach dashboard activity (?workoutDayId / ?nutritionDayId), once its plans are loaded. */
+  private linkedWorkoutDayId: string | null = null;
+  private linkedNutritionDayId: string | null = null;
   nutritionActivityFilter: 'ALL' | NutritionActivityStatus = 'ALL';
   nutritionActivityVisibleCount = 10;
   assignedNutritionPrograms: any[] = [];
@@ -752,6 +879,48 @@ export class ProfilClientComponent {
     return !!this.activeNutritionPlan;
   }
 
+  private macroSharesCache: { key: string; value: NutritionMacroShares } | null = null;
+
+  /** Calorie share of each macro (protein/carbs 4 kcal/g, fat 9 kcal/g) for the dashboard donut; colors match the nutrition builder. */
+  get nutritionMacroShares(): NutritionMacroShares | null {
+    const plan = this.activeNutritionPlan;
+    if (!plan) return null;
+    const protein = Number(plan.protein) || 0;
+    const carbs = Number(plan.carbs) || 0;
+    const fat = Number(plan.fat) || 0;
+    const key = `${protein}|${carbs}|${fat}`;
+    if (this.macroSharesCache?.key === key) return this.macroSharesCache.value;
+
+    const kcal = [protein * 4, carbs * 4, fat * 9];
+    const total = kcal[0] + kcal[1] + kcal[2];
+    const raw = total ? kcal.map((value) => (value / total) * 100) : [0, 0, 0];
+    const percents = raw.map((value) => Math.round(value));
+    if (total) {
+      // Rounded shares must add up to 100: the rounding gap goes to the largest macro.
+      const gap = 100 - percents.reduce((sum, value) => sum + value, 0);
+      percents[percents.indexOf(Math.max(...percents))] += gap;
+    }
+
+    const defs = [
+      { label: 'PROTEIN', grams: protein, color: '#44b4df' },
+      { label: 'CARBS', grams: carbs, color: '#f59e0b' },
+      { label: 'FAT', grams: fat, color: '#8b5cf6' },
+    ];
+    let start = 0;
+    const stops = defs.map((def, index) => {
+      const end = start + raw[index];
+      const stop = `${def.color} ${start}% ${end}%`;
+      start = end;
+      return stop;
+    });
+    const value: NutritionMacroShares = {
+      items: defs.map((def, index) => ({ ...def, percent: percents[index] })),
+      gradient: total ? `conic-gradient(${stops.join(', ')})` : '#e5e7eb',
+    };
+    this.macroSharesCache = { key, value };
+    return value;
+  }
+
   get latestWorkoutActivities(): WorkoutActivity[] {
     const today = this.startOfDay(new Date()).getTime();
     return this.workoutActivities
@@ -764,18 +933,67 @@ export class ProfilClientComponent {
   }
 
   get filteredWorkoutActivities(): WorkoutActivity[] {
-    return this.workoutActivities.filter(activity => {
-      if (this.workoutActivityFilter === 'ALL') {
-        return activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED';
-      }
-      if (this.workoutActivityFilter === 'COMPLETED') {
-        return activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT';
-      }
-      if (this.workoutActivityFilter === 'UPCOMING') {
-        return activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED';
-      }
-      return activity.status === this.workoutActivityFilter;
+    const filtered = this.workoutActivities.filter(activity => this.matchesWorkoutFilter(activity, this.workoutActivityFilter));
+    // Upcoming: the next workout first (the others: the latest first).
+    return this.workoutActivityFilter === 'UPCOMING' ? [...filtered].reverse() : filtered;
+  }
+
+  private matchesWorkoutFilter(activity: WorkoutActivity, filter: WorkoutActivityFilter): boolean {
+    if (filter === 'ALL') return activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED';
+    if (filter === 'COMPLETED') return activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT';
+    if (filter === 'UPCOMING') return activity.status === 'UPCOMING' || activity.status === 'NOT_STARTED';
+    return activity.status === filter;
+  }
+
+  /** The count shown on each filter of « Toute l'activité ». */
+  workoutFilterCount(filter: WorkoutActivityFilter): number {
+    return this.workoutActivities.filter(activity => this.matchesWorkoutFilter(activity, filter)).length;
+  }
+
+  nutritionFilterCount(filter: 'ALL' | NutritionActivityStatus): number {
+    return filter === 'ALL'
+      ? this.nutritionActivities.length
+      : this.nutritionActivities.filter(activity => activity.status === filter).length;
+  }
+
+  workoutFilterLabel(filter: WorkoutActivityFilter): string {
+    return this.translate.instant(`WORKOUT_ACTIVITY_STATUS_${filter === 'OVERDUE' ? 'NOT_LOGGED' : filter}`);
+  }
+
+  private lastSevenDays<T extends { scheduledDate: Date }>(items: T[]): T[] {
+    const today = this.startOfDay(new Date()).getTime();
+    // By the calendar, not 6 × 24 h: a day can last 23 or 25 hours when the clocks change.
+    const fromDate = this.startOfDay(new Date());
+    fromDate.setDate(fromDate.getDate() - 6);
+    const from = fromDate.getTime();
+    return items.filter(item => {
+      const time = this.startOfDay(item.scheduledDate).getTime();
+      return time >= from && time <= today;
     });
+  }
+
+  /** The last 7 days at a glance: workouts due (today's only once started), done, missed, not logged. */
+  get workoutWeekSummary(): { done: number; total: number; missed: number; notLogged: number } {
+    const due = this.lastSevenDays(this.workoutActivities)
+      .filter(activity => activity.status !== 'UPCOMING' && activity.status !== 'NOT_STARTED');
+    return {
+      done: due.filter(activity => activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT').length,
+      total: due.length,
+      missed: due.filter(activity => activity.status === 'MISSED').length,
+      notLogged: due.filter(activity => activity.status === 'OVERDUE').length,
+    };
+  }
+
+  /**
+   * Nutrition days of the last 7 days: reported (at least one meal, or the whole day) out of those due. Today counts
+   * only once something is reported (it is not over); « notLogged » is the days the « Non renseigné » filter shows.
+   */
+  get nutritionWeekSummary(): { logged: number; total: number; notLogged: number } {
+    const today = this.startOfDay(new Date()).getTime();
+    const days = this.lastSevenDays(this.nutritionActivities)
+      .filter(activity => activity.scheduledDate.getTime() < today || activity.loggedMeals > 0 || activity.status !== 'IN_PROGRESS');
+    const notLogged = days.filter(activity => activity.status === 'NOT_LOGGED').length;
+    return { logged: days.length - notLogged, total: days.length, notLogged };
   }
 
   get visibleWorkoutActivities(): WorkoutActivity[] {
@@ -790,7 +1008,7 @@ export class ProfilClientComponent {
     const today = this.startOfDay(new Date()).getTime();
     return this.nutritionActivities
       .filter(activity => activity.scheduledDate.getTime() <= today)
-      .slice(0, 6);
+      .slice(0, 5);
   }
 
   get filteredNutritionActivities(): NutritionActivity[] {
@@ -842,6 +1060,7 @@ export class ProfilClientComponent {
   }
 
   constructor(
+    public programSchedule: ProgramScheduleService,
     private toastService: ToastService,
     private route: ActivatedRoute,
     private clientService: ClientService,
@@ -853,11 +1072,17 @@ export class ProfilClientComponent {
     private formsApi: FormsApiService,
     private submissionsApi: SubmissionsApiService,
     private bodyMeasurementsService: BodyMeasurementsService,
-    private mealplanDayService: MealplanDayService,
     public coachSettingsService: CoachSettingsService,
     private translate: TranslateService,
     private profileCache: ClientProfileCacheService,
   ) {
+    // After an assignment or an « Annuler » (backlog-programmes.md A7): the programs shown are read again.
+    this.programSchedule.changed$.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.loadDashboardPrograms();
+      this.loadHeaderOverviews();
+      this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
+      this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
+    });
     const seededClient = history.state?.profileClient as Client | undefined;
     if (seededClient?.id) {
       this.client = seededClient;
@@ -879,6 +1104,9 @@ export class ProfilClientComponent {
         this.loadTabData(tab);
       }
       this.notificationAssignmentId = params['assignmentId'] || null;
+      if (params['workoutDayId']) this.linkedWorkoutDayId = params['workoutDayId'];
+      if (params['nutritionDayId']) this.linkedNutritionDayId = params['nutritionDayId'];
+      this.openLinkedActivity();
 
       const openAssign = params['openAssign'] === '1';
       const preselectFormId = params['preselectFormId'];
@@ -953,6 +1181,11 @@ export class ProfilClientComponent {
 
   private loadClientData(): void {
     if (!this.clientId) return;
+    // The « Entraînement » and « Nutrition » tabs: read now, shown at once when the coach opens them.
+    this.programSchedule.prefetchOverviews(this.clientId);
+    this.heroPhotoFailed = false;
+    this.profilePanelOpen = false;
+    this.loadHeaderOverviews();
     const cachedClient = this.profileCache.snapshot<Client>('client', this.clientId);
     if (cachedClient && this.seededClientId !== String(this.clientId)) {
       this.client = cachedClient;
@@ -1135,17 +1368,44 @@ export class ProfilClientComponent {
   private applyWorkoutPlans(plans: any[]): void {
     this.assignedWorkoutPrograms = this.sortPlansByStartDate(plans);
     this.todaysWorkout = this.extractTodaysWorkout(plans);
-    this.workoutActivities = this.buildWorkoutActivities(plans);
+    this.workoutActivities = buildWorkoutActivities(plans);
     this.workoutDashboardLoaded = true;
     this.finishProfileLoading();
+    this.openLinkedActivity();
   }
 
   private applyNutritionPlans(plans: any[]): void {
     this.assignedNutritionPrograms = this.sortPlansByStartDate(plans);
     this.activeNutritionPlan = this.extractTodaysNutrition(plans);
-    this.nutritionActivities = this.buildNutritionActivities(plans);
+    this.nutritionActivities = buildNutritionActivities(plans);
     this.nutritionDashboardLoaded = true;
     this.finishProfileLoading();
+    this.openLinkedActivity();
+  }
+
+  /** Opens the day a coach dashboard link points to; a day no longer in the plans leaves the dashboard as is. */
+  private openLinkedActivity(): void {
+    let handled = false;
+    if (this.linkedWorkoutDayId && this.workoutDashboardLoaded) {
+      const activity = this.workoutActivities.find(item => item.id === this.linkedWorkoutDayId);
+      this.linkedWorkoutDayId = null;
+      handled = true;
+      if (activity) this.openWorkoutActivity(activity);
+    }
+    if (this.linkedNutritionDayId && this.nutritionDashboardLoaded) {
+      const activity = this.nutritionActivities.find(item => item.id === this.linkedNutritionDayId);
+      this.linkedNutritionDayId = null;
+      handled = true;
+      if (activity) this.openNutritionActivity(activity);
+    }
+    if (handled) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { workoutDayId: null, nutritionDayId: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   private extractTodaysWorkout(plans: any[]): TodaysWorkout | null {
@@ -1392,336 +1652,26 @@ export class ProfilClientComponent {
       });
   }
 
-  private buildWorkoutActivities(plans: any[]): WorkoutActivity[] {
-    const today = this.startOfDay(new Date()).getTime();
-    const activities: WorkoutActivity[] = [];
-
-    for (const plan of plans || []) {
-      const days = plan?.workoutDays || [];
-      const planStart = this.safeDate(plan?.startDate);
-      days.forEach((day: any, index: number) => {
-        if (day?.restDay === true) return;
-        const scheduledDate = this.resolveProgramDayDate(day, planStart, index);
-        if (!scheduledDate) return;
-        const sessions = day?.workoutSessions || [];
-        const exercises = sessions.flatMap((session: any) => session?.exercises || []);
-        if (!exercises.length) return;
-
-        const logs = day?.clientExerciseLogs || [];
-        let completedCount = logs.filter(
-          (log: any) => log?.completed === true && log?.skipped !== true
-        ).length;
-        const skippedCount = logs.filter((log: any) => log?.skipped === true).length;
-        let partialCount = 0;
-        let completedSets = 0;
-        let missedSets = 0;
-        let pendingSets = 0;
-        let totalSets = 0;
-        exercises.forEach((exercise: any, exerciseIndex: number) => {
-          const log = logs.find((item: any) =>
-            (!!exercise?.id && item?.exerciseId === exercise.id) ||
-            String(item?.displayNumber || '') === String(exerciseIndex + 1)
-          ) || logs[exerciseIndex];
-          const plannedSets = exercise?.sets || [];
-          totalSets += plannedSets.length;
-          let exerciseDone = 0;
-          let exerciseMissed = 0;
-          plannedSets.forEach((set: any, setIndex: number) => {
-            const actual = (log?.sets || []).find((item: any) =>
-              Number(item?.setNumber) === Number(set?.setNumber || setIndex + 1)
-            );
-            const setStatus = String(actual?.status || '').toUpperCase();
-            if (setStatus === 'MISSED' || actual?.missed === true) {
-              missedSets++;
-              exerciseMissed++;
-            } else if (setStatus === 'COMPLETED' || setStatus === 'DONE' || actual?.completed === true || (actual && setStatus !== 'PENDING')) {
-              completedSets++;
-              exerciseDone++;
-            } else {
-              pendingSets++;
-            }
-          });
-          if (!log?.skipped && exerciseDone > 0 && exerciseMissed > 0) partialCount++;
-        });
-        const rawStatus = String(day?.status || '').toUpperCase();
-        const completionMode = String(day?.clientCompletionMode || '').toUpperCase();
-        let status: WorkoutActivityStatus;
-
-        if (rawStatus === 'COMPLETED' && completionMode === 'ALREADY_COMPLETED') {
-          status = 'COMPLETED_AFTER_WORKOUT';
-        } else if (rawStatus === 'COMPLETED') {
-          status = 'COMPLETED';
-        } else if (rawStatus === 'MISSED') {
-          status = 'MISSED';
-        } else if (scheduledDate.getTime() < today) {
-          // A workout cannot remain active once its scheduled day has passed.
-          // This also turns old pending workouts into items that need resolution.
-          status = 'OVERDUE';
-        } else if (rawStatus === 'IN_PROGRESS' || rawStatus === 'PAUSED') {
-          status = 'IN_PROGRESS';
-        } else if (scheduledDate.getTime() > today) {
-          status = 'UPCOMING';
-        } else {
-          status = 'NOT_STARTED';
-        }
-        if (status === 'COMPLETED_AFTER_WORKOUT') {
-          completedCount = Math.max(0, exercises.length - skippedCount);
-          completedSets = Math.max(0, totalSets - missedSets);
-          pendingSets = 0;
-        } else if (status === 'COMPLETED' && !logs.length) {
-          completedCount = exercises.length;
-          completedSets = totalSets;
-          pendingSets = 0;
-        } else if (status === 'MISSED') {
-          missedSets = totalSets;
-          completedSets = 0;
-          pendingSets = 0;
-        }
-
-        const dayNumber = Number(day?.dayNumber || index + 1);
-        activities.push({
-          id: day?.id || `${plan?.id || 'plan'}-${dayNumber}`,
-          planId: plan?.id || '',
-          programName: plan?.name || 'Workout program',
-          programDescription: plan?.details || plan?.description || '',
-          week: Math.max(1, Math.ceil(dayNumber / 7)),
-          dayInWeek: ((dayNumber - 1) % 7) + 1,
-          workoutName:
-            sessions.find((session: any) => String(session?.name || '').trim())?.name ||
-            day?.name ||
-            day?.title ||
-            day?.dayOfWeek ||
-            `Day ${dayNumber}`,
-          scheduledDate,
-          status,
-          durationSeconds: status === 'COMPLETED_AFTER_WORKOUT'
-            ? null
-            : Number(day?.workoutElapsedSeconds || 0) || null,
-          completedCount: Math.min(exercises.length, completedCount + partialCount),
-          skippedCount,
-          totalExercises: exercises.length,
-          partialCount,
-          completedSets,
-          missedSets,
-          pendingSets,
-          totalSets,
-          overallNote: day?.overallWorkoutNote || '',
-          missedReason: day?.missedReason || day?.statusReason || day?.overallWorkoutNote || '',
-          exercises,
-          exerciseLogs: logs,
-        });
-      });
-    }
-
-    return activities.sort(
-      (a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime()
-    );
-  }
-
-  private buildNutritionActivities(plans: any[]): NutritionActivity[] {
-    const today = this.startOfDay(new Date()).getTime();
-    const activities: NutritionActivity[] = [];
-
-    for (const plan of plans || []) {
-      const planStart = this.safeDate(plan?.startDate);
-      (plan?.mealDays || []).forEach((day: any, index: number) => {
-        const scheduledDate = this.resolveProgramDayDate(day, planStart, index);
-        if (!scheduledDate || scheduledDate.getTime() > today) return;
-
-        const meals = (day?.meals || []).map((meal: any) => {
-          const macros = this.resolveNutritionMealMacros(meal);
-          return { ...meal, ...macros };
-        });
-        const rawMealLogs = day?.clientMealLogs || day?.mealLogs || day?.loggedMeals || [];
-        const mealLogs = rawMealLogs.map((log: any, logIndex: number) => {
-          const mealId = log?.mealId || meals[logIndex]?.id;
-          const photoUrl = log?.photoUrl || log?.imageUrl || '';
-
-          return {
-            ...log,
-            mealId,
-            photoUrl,
-          };
-        });
-        const rawStatus = String(
-          day?.nutritionStatus || day?.clientStatus || day?.status || ''
-        ).toUpperCase().replace('-', '_');
-        const offPlan = rawStatus === 'OFF_PLAN' || rawStatus === 'OFFPLAN' ||
-          day?.offPlan === true || day?.followedPlan === false;
-        const loggedMeals = mealLogs.filter((log: any) => {
-          const logStatus = String(log?.status || log?.completionMode || '').toUpperCase();
-          return log?.logged === true ||
-            ['AS_PLANNED', 'COMPLETED', 'MODIFIED', 'SKIPPED'].includes(logStatus);
-        }).length;
-        let status: NutritionActivityStatus;
-
-        if (offPlan) status = 'OFF_PLAN';
-        else if (rawStatus === 'COMPLETED') status = 'COMPLETED';
-        else if (rawStatus === 'IN_PROGRESS' || loggedMeals > 0) status = 'IN_PROGRESS';
-        else status = 'NOT_LOGGED';
-
-        const asPlannedMeals = mealLogs.filter((log: any) => {
-          const value = String(log?.status || log?.completionMode || '').toUpperCase();
-          return value === 'AS_PLANNED' || value === 'COMPLETED' || log?.asPlanned === true;
-        }).length;
-        const modifiedMeals = mealLogs.filter((log: any) => {
-          const value = String(log?.status || log?.completionMode || '').toUpperCase();
-          return value === 'MODIFIED' || log?.modified === true;
-        }).length;
-        const skippedMeals = mealLogs.filter((log: any) => {
-          const value = String(log?.status || log?.completionMode || '').toUpperCase();
-          return value === 'SKIPPED' || log?.skipped === true;
-        }).length;
-        const mealTotals = meals.reduce((sum: any, meal: any) => ({
-          calories: sum.calories + meal.calories,
-          protein: sum.protein + meal.protein,
-          carbs: sum.carbs + meal.carbs,
-          fat: sum.fat + meal.fat,
-        }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
-        const dayTargets = day?.dayTargets || {};
-        const totals = {
-          calories: this.firstNutritionNumber(
-            dayTargets?.calories,
-            day?.totalCalories,
-            mealTotals.calories
-          ),
-          protein: this.firstNutritionNumber(
-            dayTargets?.proteinG,
-            day?.totalProtein,
-            mealTotals.protein
-          ),
-          carbs: this.firstNutritionNumber(
-            dayTargets?.carbsG,
-            day?.totalCarbs,
-            mealTotals.carbs
-          ),
-          fat: this.firstNutritionNumber(
-            dayTargets?.fatG,
-            day?.totalFat,
-            mealTotals.fat
-          ),
-        };
-        const photos = mealLogs.flatMap((log: any, logIndex: number) => {
-          const urls = [log?.photoUrl, log?.imageUrl, ...(log?.photos || [])]
-            .map((photo: any) => typeof photo === 'string' ? photo : photo?.url)
-            .filter(Boolean);
-          const mealIndex = meals.findIndex((meal: any) => meal?.id === log?.mealId);
-          return urls.map((url: string) => ({
-            url,
-            label: log?.mealName || meals[mealIndex >= 0 ? mealIndex : logIndex]?.name || `Meal ${logIndex + 1}`,
-            time: log?.loggedAt || log?.createdAt || '',
-            mealId: log?.mealId,
-          }));
-        });
-        const dayNumber = Number(day?.dayNumber || index + 1);
-
-        activities.push({
-          id: day?.id || `${plan?.id || 'nutrition'}-${dayNumber}`,
-          planId: plan?.id || '',
-          programName: plan?.name || 'Nutrition plan',
-          week: Math.max(1, Math.ceil(dayNumber / 7)),
-          dayInWeek: ((dayNumber - 1) % 7) + 1,
-          dayName: day?.name || `Day ${dayNumber}`,
-          scheduledDate,
-          status,
-          meals,
-          mealLogs,
-          plannedMeals: meals.length,
-          loggedMeals,
-          asPlannedMeals,
-          modifiedMeals,
-          skippedMeals,
-          hunger: day?.hunger ?? day?.dailyFeedback?.hunger ?? '',
-          energy: day?.energy ?? day?.dailyFeedback?.energy ?? '',
-          digestion: day?.digestion ?? day?.dailyFeedback?.digestion ?? '',
-          overallNote: day?.overallNote ?? day?.clientNote ?? day?.dailyFeedback?.note ?? '',
-          loggedAt: day?.loggedAt || day?.updatedAt || '',
-          totals,
-          photos,
-        });
-      });
-    }
-
-    return activities.sort((a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime());
-  }
-
-  private resolveNutritionMealMacros(meal: any): {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  } {
-    const targets = meal?.mealTargets || {};
-    const foodTotals = totalMacros(meal?.foods);
-
-    return {
-      calories: this.firstNutritionNumber(meal?.calories, targets?.calories, foodTotals.calories),
-      protein: this.firstNutritionNumber(meal?.protein, targets?.proteinG, foodTotals.protein),
-      carbs: this.firstNutritionNumber(meal?.carbs, targets?.carbsG, foodTotals.carbs),
-      fat: this.firstNutritionNumber(meal?.fat, targets?.fatG, foodTotals.fat),
-    };
-  }
-
-  private firstNutritionNumber(...values: any[]): number {
-    for (const value of values) {
-      if (value === null || value === undefined || value === '') continue;
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) return parsed;
-    }
-    return 0;
-  }
-
   openNutritionActivity(activity: NutritionActivity): void {
     this.selectedNutritionActivity = activity;
-    this.loadNutritionActivityPhotoUrls(activity);
-  }
-
-  private loadNutritionActivityPhotoUrls(activity: NutritionActivity): void {
-    activity.mealLogs.forEach((log: any, logIndex: number) => {
-      const hasStoredPhoto = log?.photoPath && String(log.photoPath) !== 'null';
-      const mealIndex = activity.meals.findIndex((meal: any) => meal?.id === log?.mealId);
-      const resolvedMealIndex = mealIndex >= 0 ? mealIndex : logIndex;
-      const meal = activity.meals[resolvedMealIndex];
-      const mealId = log?.mealId || meal?.id;
-
-      if (!hasStoredPhoto || !activity.planId || !activity.id || !mealId) return;
-
-      this.mealplanDayService
-        .getMealPhotoUrl(activity.planId, activity.id, mealId)
-        .pipe(catchError(() => of(null)))
-        .subscribe((result) => {
-          if (!result?.photoUrl) return;
-
-          log.photoUrl = result.photoUrl;
-          const existingPhoto = activity.photos.find((photo) =>
-            photo.mealId === mealId
-          );
-          if (existingPhoto) {
-            existingPhoto.url = result.photoUrl;
-          } else {
-            activity.photos.push({
-              url: result.photoUrl,
-              label: log?.mealName || meal?.name || `Meal ${resolvedMealIndex + 1}`,
-              time: log?.loggedAt || log?.createdAt || '',
-              mealId,
-            });
-          }
-        });
-    });
+    this.syncActivityScrollLock();
   }
 
   closeNutritionActivity(): void {
     this.selectedNutritionActivity = null;
+    this.syncActivityScrollLock();
   }
 
-  openAllNutritionActivity(): void {
-    this.nutritionActivityFilter = 'ALL';
+  openAllNutritionActivity(filter: 'ALL' | NutritionActivityStatus = 'ALL'): void {
+    this.nutritionActivityFilter = filter;
     this.nutritionActivityVisibleCount = 10;
     this.showAllNutritionActivity = true;
+    this.syncActivityScrollLock();
   }
 
   closeAllNutritionActivity(): void {
     this.showAllNutritionActivity = false;
+    this.syncActivityScrollLock();
   }
 
   setNutritionActivityFilter(filter: 'ALL' | NutritionActivityStatus): void {
@@ -1733,20 +1683,18 @@ export class ProfilClientComponent {
     this.nutritionActivityVisibleCount += 10;
   }
 
-  nutritionActivityStatusLabel(status: NutritionActivityStatus): string {
-    return this.translate.instant(`NUTRITION_ACTIVITY_STATUS_${status}`);
+  nutritionDayStatusLabel(activity: NutritionActivity): string {
+    return nutritionDayStatusLabel(this.translate, activity);
+  }
+
+  nutritionFilterLabel(filter: 'ALL' | NutritionActivityStatus): string {
+    return this.translate.instant(filter === 'IN_PROGRESS' ? 'NUTRITION_FILTER_IN_PROGRESS' : `NUTRITION_ACTIVITY_STATUS_${filter}`);
   }
 
   nutritionActivityAction(status: NutritionActivityStatus): string {
     if (status === 'COMPLETED') return this.translate.instant('VIEW_REPORT');
     if (status === 'NOT_LOGGED') return this.translate.instant('VIEW_NUTRITION_DAY');
     return this.translate.instant('REVIEW_LOG');
-  }
-
-  nutritionReportTitle(activity: NutritionActivity): string {
-    return activity.status === 'IN_PROGRESS' || activity.status === 'OFF_PLAN'
-      ? this.translate.instant('REVIEW_LOG_FOR_DAY', { day: activity.dayName })
-      : this.translate.instant('NUTRITION_REPORT_FOR_DAY', { day: activity.dayName });
   }
 
   nutritionActivityDescription(activity: NutritionActivity): string {
@@ -1756,45 +1704,20 @@ export class ProfilClientComponent {
     return this.translate.instant('NO_MEALS_REPORTED');
   }
 
-  nutritionMealLog(activity: NutritionActivity, index: number): any {
-    const meal = activity.meals[index];
-    return activity.mealLogs.find((log: any) =>
-      meal?.id && log?.mealId === meal.id
-    ) || activity.mealLogs[index] || null;
-  }
-
-  nutritionMealState(log: any): string {
-    if (!log) return 'Not logged';
-    const value = String(log?.status || log?.completionMode || '').toUpperCase();
-    if (value === 'SKIPPED' || log?.skipped) return 'Skipped';
-    if (value === 'MODIFIED' || log?.modified) return 'Modified';
-    if (value === 'OFF_PLAN' || log?.offPlan) return 'Off-plan';
-    return 'As planned';
-  }
-
-  nutritionMealStateLabel(log: any): string {
-    if (!log) return this.translate.instant('NUTRITION_MEAL_NOT_LOGGED');
-    const value = String(log?.status || log?.completionMode || '').toUpperCase();
-    if (value === 'SKIPPED' || log?.skipped) return this.translate.instant('NUTRITION_MEAL_SKIPPED');
-    if (value === 'MODIFIED' || log?.modified) return this.translate.instant('MODIFIED');
-    if (value === 'OFF_PLAN' || log?.offPlan) return this.translate.instant('NUTRITION_ACTIVITY_STATUS_OFF_PLAN');
-    return this.translate.instant('AS_PLANNED');
-  }
-
-  openAllWorkoutActivity(): void {
-    this.workoutActivityFilter = 'ALL';
+  openAllWorkoutActivity(filter: WorkoutActivityFilter = 'ALL'): void {
+    this.workoutActivityFilter = filter;
     this.workoutActivityVisibleCount = 10;
     this.showAllWorkoutActivity = true;
+    this.syncActivityScrollLock();
   }
 
   closeAllWorkoutActivity(): void {
     this.showAllWorkoutActivity = false;
     this.selectedWorkoutActivity = null;
+    this.syncActivityScrollLock();
   }
 
-  setWorkoutActivityFilter(
-    filter: 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'MISSED' | 'UPCOMING'
-  ): void {
+  setWorkoutActivityFilter(filter: WorkoutActivityFilter): void {
     this.workoutActivityFilter = filter;
     this.workoutActivityVisibleCount = 10;
   }
@@ -1805,10 +1728,32 @@ export class ProfilClientComponent {
 
   openWorkoutActivity(activity: WorkoutActivity): void {
     this.selectedWorkoutActivity = activity;
+    this.syncActivityScrollLock();
   }
 
   closeWorkoutActivity(): void {
     this.selectedWorkoutActivity = null;
+    this.syncActivityScrollLock();
+  }
+
+  /** Escape closes the activity window on top (detail, then report, then the lists). */
+  @HostListener('document:keydown.escape')
+  onActivityEscape(): void {
+    if (this.selectedWorkoutActivity) this.closeWorkoutActivity();
+    else if (this.selectedNutritionActivity) this.closeNutritionActivity();
+    else if (this.showAllWorkoutActivity) this.closeAllWorkoutActivity();
+    else if (this.showAllNutritionActivity) this.closeAllNutritionActivity();
+  }
+
+  /** While an activity window is open, the profile behind does not scroll (wheel or finger on the backdrop). */
+  private syncActivityScrollLock(): void {
+    const open = !!(this.selectedWorkoutActivity || this.selectedNutritionActivity
+      || this.showAllWorkoutActivity || this.showAllNutritionActivity);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
   }
 
   workoutActivityAction(activity: WorkoutActivity): string {
@@ -1816,122 +1761,21 @@ export class ProfilClientComponent {
       return this.translate.instant('VIEW_RESULTS');
     }
     if (activity.status === 'IN_PROGRESS') return this.translate.instant('VIEW_PROGRESS');
-    if (activity.status === 'OVERDUE') return this.translate.instant('RESOLVE_WORKOUT');
     if (activity.status === 'MISSED') return this.translate.instant('VIEW_DETAILS');
+    // OVERDUE: the client did not log it; the coach cannot « resolve » it, only look and write to them.
     return this.translate.instant('VIEW_WORKOUT');
   }
 
-  workoutActivityDetailTitle(activity: WorkoutActivity): string {
-    const dayLabel = `Day ${activity.dayInWeek}`;
-    return activity.workoutName.trim().toLowerCase() === dayLabel.toLowerCase()
-      ? dayLabel
-      : `${dayLabel} – ${activity.workoutName}`;
-  }
-
   workoutActivityStatusLabel(activity: WorkoutActivity): string {
-    const status = activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'COMPLETED' : activity.status === 'NOT_STARTED' ? 'UPCOMING' : activity.status;
-    return this.translate.instant(`WORKOUT_ACTIVITY_STATUS_${status}`);
+    return workoutActivityStatusLabel(this.translate, activity);
   }
 
   workoutActivityMode(activity: WorkoutActivity): string {
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return this.translate.instant('AFTER_WORKOUT');
-    if (activity.status === 'COMPLETED') return this.translate.instant('LIVE_WORKOUT');
-    if (activity.status === 'IN_PROGRESS') return this.translate.instant('ONGOING');
-    if (activity.status === 'OVERDUE') return this.translate.instant('NEEDS_RESOLUTION');
-    if (activity.status === 'MISSED') return this.translate.instant('WORKOUT_MISSED');
-    return this.translate.instant('NOT_STARTED_LABEL');
+    return workoutActivityMode(this.translate, activity);
   }
 
   workoutActivityDuration(activity: WorkoutActivity): string {
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT' || activity.status === 'MISSED') return this.translate.instant('NOT_RECORDED');
-    if (activity.durationSeconds === null) return '—';
-    const minutes = Math.floor(activity.durationSeconds / 60);
-    const seconds = activity.durationSeconds % 60;
-    return minutes ? `${minutes} min${seconds ? ` ${seconds}s` : ''}` : `${seconds}s`;
-  }
-
-  workoutActivityLog(activity: WorkoutActivity, exercise: any, index: number): any {
-    return activity.exerciseLogs.find((log: any) =>
-      (!!exercise?.id && log?.exerciseId === exercise.id) ||
-      log?.displayNumber === this.getLetter(index) ||
-      String(log?.displayNumber || '') === String(index + 1)
-    ) || activity.exerciseLogs[index] || null;
-  }
-
-  performedSet(log: any, plannedSet: any, index: number): any {
-    return (log?.sets || []).find(
-      (set: any) => Number(set?.setNumber) === Number(plannedSet?.setNumber || index + 1)
-    ) || null;
-  }
-
-  exerciseActivityState(activity: WorkoutActivity, exercise: any, index: number): string {
-    const log = this.workoutActivityLog(activity, exercise, index);
-    if (log?.skipped) return 'Skipped';
-    const statuses = (exercise?.sets || []).map((set: any, setIndex: number) =>
-      this.workoutSetStatus(activity, exercise, index, set, setIndex)
-    );
-    if (statuses.includes('Done') && statuses.includes('Missed')) return 'Partially completed';
-    if (log?.completed) return 'Completed';
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT') return 'Completed';
-    if (activity.status === 'COMPLETED' && !activity.exerciseLogs.length) return 'Completed';
-    if (activity.status === 'IN_PROGRESS' && log) return 'In progress';
-    return 'Pending';
-  }
-
-  exerciseActivityStateLabel(activity: WorkoutActivity, exercise: any, index: number): string {
-    const state = this.exerciseActivityState(activity, exercise, index);
-    const key = `EXERCISE_ACTIVITY_${state.toUpperCase().replace(/ /g, '_')}`;
-    return this.translate.instant(key);
-  }
-
-  workoutSetStatus(activity: WorkoutActivity, exercise: any, exerciseIndex: number, set: any, setIndex: number): string {
-    const log = this.workoutActivityLog(activity, exercise, exerciseIndex);
-    const actual = this.performedSet(log, set, setIndex);
-    const status = String(actual?.status || '').toUpperCase();
-    if (status === 'MISSED' || actual?.missed === true) return 'Missed';
-    if (status === 'COMPLETED' || status === 'DONE' || actual?.completed === true || (actual && status !== 'PENDING')) return 'Done';
-    if (activity.status === 'COMPLETED_AFTER_WORKOUT' || (activity.status === 'COMPLETED' && !activity.exerciseLogs.length)) return 'Done';
-    if (activity.status === 'MISSED' || log?.skipped) return 'Missed';
-    return 'Pending';
-  }
-
-  workoutSetStatusLabel(activity: WorkoutActivity, exercise: any, exerciseIndex: number, set: any, setIndex: number): string {
-    return this.translate.instant(`WORKOUT_SET_STATUS_${this.workoutSetStatus(activity, exercise, exerciseIndex, set, setIndex).toUpperCase()}`);
-  }
-
-  exerciseSetSummary(activity: WorkoutActivity, exercise: any, index: number): string {
-    const sets = exercise?.sets || [];
-    const done = sets.filter((set: any, setIndex: number) => this.workoutSetStatus(activity, exercise, index, set, setIndex) === 'Done').length;
-    const missed = sets.filter((set: any, setIndex: number) => this.workoutSetStatus(activity, exercise, index, set, setIndex) === 'Missed').length;
-    return this.translate.instant('EXERCISE_SET_SUMMARY', { sets: sets.length, done, missed });
-  }
-
-  formatActivityDate(date: Date): string {
-    return date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  }
-
-  formatActivityRest(set: any): string {
-    const min = Number(set?.restMin || 0);
-    const sec = Number(set?.restSec || 0);
-    return `${min}:${String(sec).padStart(2, '0')}`;
-  }
-
-  formatActivityWeight(value: any): string {
-    const converted = this.coachSettingsService.convertWeightFromKg(value);
-    return converted === null ? '—' : this.coachSettingsService.formatNumber(converted);
-  }
-
-  workoutSetTypeLabel(type: any): string {
-    const value = String(type || 'REGULAR').toUpperCase();
-    if (value === 'WARM_UP') return this.translate.instant('SET_TYPE_WARM_UP');
-    if (value === 'DROP_SET') return this.translate.instant('SET_TYPE_DROP_SET');
-    if (value === 'FAILURE') return this.translate.instant('SET_TYPE_FAILURE');
-    return '—';
+    return workoutActivityDuration(this.translate, activity);
   }
 
   private openNotificationAssignmentById(assignmentId: string): void {
@@ -2278,8 +2122,10 @@ export class ProfilClientComponent {
     if (this.clientPreviewDevice === 'mobile') this.clientPreviewSidebarOpen = false;
   }
 
-  openAssignProgramModal(type: 'WORKOUT' | 'NUTRITION'): void {
+  /** {@code start}: a start to propose (the first day of a gap, from the « Programmes » tab). */
+  openAssignProgramModal(type: 'WORKOUT' | 'NUTRITION', start?: string | null): void {
     if (!this.canCoach()) return;
+    this.assignPresetStart = start || null;
     this.assignType = type;
     this.showAssignSelectModal = true;
   }
@@ -2402,10 +2248,9 @@ export class ProfilClientComponent {
     if (!this.canCoach()) return;
     this.clientNutritionProgramName = '';
     this.clientNutritionDurationWeeks = 4;
-    this.clientNutritionStartDate = new Date().toISOString().slice(0, 10);
-    this.clientNutritionConflict = null;
+    this.clientNutritionStartDate = this.assignPresetStart || ''; // else the schedule picks today or the continuity (A2)
+    this.resetScheduleState();
     this.showClientNutritionCreateModal = true;
-    this.refreshClientNutritionConflict();
   }
 
   onClientNutritionPlanTypeSelected(type: NutritionPlanChoice): void {
@@ -2416,7 +2261,7 @@ export class ProfilClientComponent {
 
   closeClientNutritionCreateModal(): void {
     this.showClientNutritionCreateModal = false;
-    this.clientNutritionConflict = null;
+    this.resetScheduleState();
     this.selectedClientNutritionPlanType = null;
   }
 
@@ -2431,61 +2276,23 @@ export class ProfilClientComponent {
   get canCreateClientNutritionProgram(): boolean {
     return !!this.clientNutritionProgramName.trim()
       && !!this.clientNutritionStartDate
-      && (!this.clientNutritionConflict || !!this.clientNutritionConflict.resolution);
+      && !this.scheduleChecking;
   }
 
   get profileNutritionReturnUrl(): string {
     return `${this.router.url.split('?')[0]}?tab=nutrition`;
   }
 
-  onClientNutritionScheduleChange(): void {
-    this.refreshClientNutritionConflict();
-  }
-
-  setClientNutritionConflictResolution(resolution: WorkoutConflictResolution): void {
-    if (this.clientNutritionConflict) {
-      this.clientNutritionConflict.resolution = resolution;
-    }
-  }
-
-  private refreshClientNutritionConflict(): void {
-    if (!this.clientNutritionStartDate || !this.clientNutritionEndDate) {
-      this.clientNutritionConflict = null;
-      return;
-    }
-
-    const previous = this.clientNutritionConflict;
-    const conflictProgram = (this.assignedNutritionPrograms || []).find((program: any) => {
-      if (this.nutritionFileEnabled === false && this.isFileNutritionPlan(program)) {
-        return false;
-      }
-
-      return this.programOverlapsRange(program, this.clientNutritionStartDate, this.clientNutritionEndDate);
-    });
-
-    if (!conflictProgram) {
-      this.clientNutritionConflict = null;
-      return;
-    }
-
-    this.clientNutritionConflict = {
-      program: conflictProgram,
-      resolution: previous?.program?.id === conflictProgram.id ? previous.resolution : undefined,
-    };
-  }
-
   createClientNutritionProgram(): void {
     const name = this.clientNutritionProgramName.trim();
     if (!name || !this.canCreateClientNutritionProgram || !this.selectedClientNutritionPlanType) return;
 
-    const conflict = this.clientNutritionConflict;
-    const resolution = conflict?.resolution;
-    const resolvedStartDate = resolution === 'START_AFTER' && conflict?.program?.endDate
-      ? this.addDays(conflict.program.endDate, 1)
-      : this.clientNutritionStartDate;
+    // The server applies the rule when the program is saved (backlog-programmes.md A8); the coach sees it first.
+    if (this.askScheduleConfirm('NUTRITION_CREATE', name, this.clientNutritionStartDate)) return;
+    const resolvedStartDate = this.clientNutritionStartDate;
 
     this.showClientNutritionCreateModal = false;
-    this.clientNutritionStartDate = resolvedStartDate;
+    this.resetScheduleState();
 
     const queryParams = {
       name,
@@ -2533,15 +2340,14 @@ export class ProfilClientComponent {
     if (!this.canCoach()) return;
     this.clientWorkoutProgramName = '';
     this.clientWorkoutDurationWeeks = 4;
-    this.clientWorkoutStartDate = new Date().toISOString().slice(0, 10);
-    this.clientWorkoutConflict = null;
+    this.clientWorkoutStartDate = this.assignPresetStart || ''; // else the schedule picks today or the continuity (A2)
+    this.resetScheduleState();
     this.showClientWorkoutCreateModal = true;
-    this.refreshClientWorkoutConflict();
   }
 
   closeClientWorkoutCreateModal(): void {
     this.showClientWorkoutCreateModal = false;
-    this.clientWorkoutConflict = null;
+    this.resetScheduleState();
   }
 
   get clientWorkoutDurationDays(): number {
@@ -2554,63 +2360,14 @@ export class ProfilClientComponent {
 
   get canCreateClientWorkoutProgram(): boolean {
     return !!this.clientWorkoutProgramName.trim()
-      && !!this.clientWorkoutStartDate && !this.clientWorkoutSaving;
-  }
-
-  onClientWorkoutScheduleChange(): void {
-    this.refreshClientWorkoutConflict();
-  }
-
-  setClientWorkoutConflictResolution(resolution: WorkoutConflictResolution): void {
-    if (this.clientWorkoutConflict) {
-      this.clientWorkoutConflict.resolution = resolution;
-    }
-  }
-
-  private refreshClientWorkoutConflict(): void {
-    // Authoring a draft must never replace an existing client prescription.
-    this.clientWorkoutConflict = null;
-    return;
-    if (!this.clientWorkoutStartDate || !this.clientWorkoutEndDate) {
-      this.clientWorkoutConflict = null;
-      return;
-    }
-
-    const previous = this.clientWorkoutConflict;
-    const conflictProgram = (this.assignedWorkoutPrograms || []).find((program: any) => {
-      if (!this.workoutFileEnabled && this.isFileWorkoutPlan(program)) {
-        return false;
-      }
-
-      return this.programOverlapsRange(program, this.clientWorkoutStartDate, this.clientWorkoutEndDate);
-    });
-
-    if (!conflictProgram) {
-      this.clientWorkoutConflict = null;
-      return;
-    }
-
-    this.clientWorkoutConflict = {
-      program: conflictProgram,
-      resolution: previous?.program?.id === conflictProgram.id ? previous.resolution : undefined,
-    };
-  }
-
-  private programOverlapsRange(program: any, startDate: string, endDate: string): boolean {
-    if (!program?.startDate || !program?.endDate) return false;
-
-    const existingStart = new Date(`${program.startDate}T00:00:00`).getTime();
-    const existingEnd = new Date(`${program.endDate}T00:00:00`).getTime();
-    const nextStart = new Date(`${startDate}T00:00:00`).getTime();
-    const nextEnd = new Date(`${endDate}T00:00:00`).getTime();
-
-    return existingStart <= nextEnd && nextStart <= existingEnd;
+      && !!this.clientWorkoutStartDate && !this.clientWorkoutSaving && !this.scheduleChecking;
   }
 
   clientWorkoutSaving = false;
   createClientWorkoutProgram(): void {
     const name = this.clientWorkoutProgramName.trim();
     if (!name || !this.canCreateClientWorkoutProgram || this.clientWorkoutSaving) return;
+    if (this.askScheduleConfirm('WORKOUT_CREATE', name, this.clientWorkoutStartDate)) return;
     this.clientWorkoutSaving = true;
     const startDate = this.clientWorkoutStartDate;
     const workoutDays = Array.from({length: this.clientWorkoutDurationDays}, (_, index) => ({
@@ -2619,9 +2376,11 @@ export class ProfilClientComponent {
     }));
     this.workoutService.createWorkout({name, details: '', startDate,
       endDate: this.addDays(startDate, this.clientWorkoutDurationDays - 1),
-      client: {id: this.clientId}, workoutDays, publishedWeeks: []}).subscribe({
+      client: {id: this.clientId}, workoutDays}).subscribe({
       next: created => {
         this.clientWorkoutSaving = false;
+        // The server stopped or removed what was on those dates (backlog-programmes.md A8): say so.
+        this.programSchedule.announceChanges((created as any)?.scheduleChanges, this.fullName);
         this.closeClientWorkoutCreateModal();
         void this.router.navigate(['/clients/create-workout', this.clientId, 'edit', created.id], {
           queryParams: {returnUrl: this.router.url.split('?')[0] + '?tab=workouts'}
@@ -2705,12 +2464,15 @@ export class ProfilClientComponent {
       && !!this.profileImportWorkoutName?.trim()
       && !!this.profileImportStartDate
       && !!this.profileImportEndDate
+      && this.profileImportEndDate >= this.profileImportStartDate
+      && !this.scheduleChecking
       && !this.profileImportSaving;
   }
 
   saveAndAssignProfileFileWorkout(): void {
     if (!this.canCoach()) return;
     if (!this.canSaveProfileFileWorkout() || !this.profileImportWorkoutFile || !this.clientId) return;
+    if (this.askScheduleConfirm('WORKOUT_FILE', this.profileImportWorkoutName.trim(), this.profileImportStartDate)) return;
 
     this.profileImportSaving = true;
     this.profileImportError = '';
@@ -2723,8 +2485,10 @@ export class ProfilClientComponent {
       this.profileImportStartDate,
       this.profileImportEndDate
     ).subscribe({
-      next: () => {
+      next: (created: any) => {
         this.profileImportSaving = false;
+        this.programSchedule.announceChanges(created?.scheduleChanges, this.fullName);
+        this.resetScheduleState();
         this.showFileWorkoutImportModal = false;
     this.showNutritionFileImportModal = false;
         this.closeAssignFlow();
@@ -2795,12 +2559,15 @@ export class ProfilClientComponent {
       && !!this.profileImportNutritionName?.trim()
       && !!this.profileImportNutritionStartDate
       && !!this.profileImportNutritionEndDate
+      && this.profileImportNutritionEndDate >= this.profileImportNutritionStartDate
+      && !this.scheduleChecking
       && !this.profileImportNutritionSaving;
   }
 
   saveAndAssignProfileFileNutrition(): void {
     if (!this.canCoach()) return;
     if (!this.canSaveProfileFileNutrition() || !this.profileImportNutritionFile || !this.client) return;
+    if (this.askScheduleConfirm('NUTRITION_FILE', this.profileImportNutritionName.trim(), this.profileImportNutritionStartDate)) return;
 
     this.profileImportNutritionSaving = true;
     this.profileImportNutritionError = '';
@@ -2823,8 +2590,10 @@ export class ProfilClientComponent {
         };
 
         this.nutritionService.assignNutritionPlan(item).subscribe({
-          next: () => {
+          next: (assigned: any) => {
             this.profileImportNutritionSaving = false;
+            this.programSchedule.announceChanges(assigned?.scheduleChanges, this.fullName);
+            this.resetScheduleState();
             this.showNutritionFileImportModal = false;
             this.closeAssignFlow();
             this.getAllNutrition();
@@ -2862,101 +2631,11 @@ export class ProfilClientComponent {
     this.showChooseModal = false;
   }
 
-  onAssignNutritionFromModal(payload: {
-    program: any;
-    startDate: string;
-    endDate: string | null;
-    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE'; conflict: any }>;
-  }) {
-    const { program, startDate: requestedStartDate, endDate } = payload;
-    const resolution = this.getProfileConflictResolution(payload);
-    const startDate = this.getResolvedStartDate(requestedStartDate, resolution);
-    const item = { ...program };
-
-    item.startDate = startDate;
-    const replace$ = resolution?.resolution === 'REPLACE'
-      ? this.stopExistingNutritionBefore(resolution.conflict, startDate)
-      : of(null);
-
-    if (this.isFileNutritionPlan(program)) {
-      if (!endDate) {
-        return;
-      }
-
-      const durationDays = this.daysBetweenInclusive(requestedStartDate, endDate);
-      item.endDate = this.addDays(startDate, durationDays - 1);
-      item.mealDays = [];
-      item.client = this.client;
-      item.isMealPlanTemplate = false;
-
-      replace$.pipe(
-        switchMap(() => this.nutritionService.assignNutritionPlan(item))
-      ).subscribe(() => {
-        this.showNutritionSelectionModal = false;
-        this.loadDashboardPrograms();
-        this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
-      });
-
-      return;
-    }
-
-    const mealDays = (program.mealDays || []).map((day: any, index: number) => {
-      const current = new Date(startDate);
-      current.setDate(current.getDate() + index);
-
-      return {
-        ...day,
-        date: current.toISOString().split('T')[0],
-        dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
-      };
-    });
-
-    item.mealDays = mealDays;
-
-    const totalDays = mealDays.length || 0;
-    if (totalDays > 0) {
-      const end = new Date(startDate);
-      end.setDate(end.getDate() + totalDays - 1);
-      item.endDate = end.toISOString().split('T')[0];
-    } else {
-      item.endDate = startDate;
-    }
-
-    item.client = this.client;
-
-    replace$.pipe(
-      switchMap(() => this.nutritionService.assignNutritionPlan(item))
-    ).subscribe(() => {
-      this.showNutritionSelectionModal = false;
-      this.loadDashboardPrograms();
-      this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
-    });
-  }
-
-  private getProfileConflictResolution(payload: {
-    conflictResolutions?: Record<string, { resolution: 'START_AFTER' | 'REPLACE'; conflict: any }>;
-  }): { resolution: 'START_AFTER' | 'REPLACE'; conflict: any } | null {
-    if (!this.client?.id) return null;
-    return payload.conflictResolutions?.[this.client.id] || null;
-  }
-
-  private getResolvedStartDate(defaultStartDate: string, resolution: { resolution: string; conflict: any } | null): string {
-    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
-      return this.addDays(resolution.conflict.endDate, 1);
-    }
-
-    return defaultStartDate;
-  }
-
-  private stopExistingNutritionBefore(conflict: any, nextStartDate: string): Observable<unknown> {
-    if (!conflict?.id || !conflict.startDate) return of(null);
-
-    const replacementEndDate = this.addDays(nextStartDate, -1);
-    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
-      return this.nutritionService.deleteNutritionPlan(conflict.id);
-    }
-
-    return this.nutritionService.updateNutritionPlanDates(conflict.id, conflict.startDate, replacementEndDate);
+  /** The selection window assigned the program itself (backlog-programmes.md A7): close and read the lists again. */
+  onAssignNutritionFromModal(_payload: { program: any; startDate: string; result: any }) {
+    this.showNutritionSelectionModal = false;
+    this.loadDashboardPrograms();
+    this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
   }
 
   private daysBetweenInclusive(startDate: string, endDate: string): number {
@@ -3088,11 +2767,6 @@ export class ProfilClientComponent {
       endDate = this.addDays(startDate, mealDays.length - 1);
     }
 
-    const resolution = this.clientNutritionConflict?.resolution;
-    const replace$ = resolution === 'REPLACE'
-      ? this.stopExistingNutritionBefore(this.clientNutritionConflict?.program, startDate)
-      : of(null);
-
     const item = {
       ...program,
       startDate,
@@ -3102,18 +2776,15 @@ export class ProfilClientComponent {
       isMealPlanTemplate: false,
     };
 
-    replace$.pipe(
-      switchMap(() => this.nutritionService.assignNutritionPlan(item))
-    ).subscribe({
-      next: () => {
+    this.nutritionService.assignNutritionPlan(item).subscribe({
+      next: (assigned: any) => {
+        this.programSchedule.announceChanges(assigned?.scheduleChanges, this.fullName);
         this.nutritionService.deleteNutritionPlan(program.id).subscribe({
           next: () => {
-            this.clientNutritionConflict = null;
             this.loadDashboardPrograms();
             this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
           },
           error: () => {
-            this.clientNutritionConflict = null;
             this.loadDashboardPrograms();
             this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
           },
@@ -3175,13 +2846,14 @@ export class ProfilClientComponent {
   }
 
   closeAssignFlow(): void {
+    this.assignPresetStart = null;
     this.showAssignSelectModal = false;
     this.showFormSelectionModal = false;
     this.showProgramSelectionModal = false;
     this.showNutritionSelectionModal = false;
     this.showChooseModal = false;
     this.showClientNutritionCreateModal = false;
-    this.clientNutritionConflict = null;
+    this.resetScheduleState();
     this.selectedClientNutritionPlanType = null;
     this.showWorkoutTypeModal = false;
     this.showFileWorkoutImportModal = false;

@@ -5,50 +5,8 @@ import { Observable } from 'rxjs';
 import { LoaderService } from "./service/loader.service";
 import { ToastService } from "./service/toast.service";
 import { Router } from "@angular/router";
+import { isPublicCoachHostname } from './config/public-coach-host';
 
-function isPublicCoachHostname(host: string): boolean {
-  if (!host) return false;
-
-  const normalized = host.toLowerCase();
-
-  if (normalized === 'localhost' || normalized.startsWith('localhost:')) {
-    return false;
-  }
-
-  if (normalized === 'integration.yo-coach.app' || normalized === 'www.integration.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'account.yo-coach.app' || normalized === 'www.account.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'login.yo-coach.app' || normalized === 'www.login.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'login-int.yo-coach.app' || normalized === 'www.login-int.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'minio.yo-coach.app' || normalized === 'www.minio.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'minio-console.yo-coach.app' || normalized === 'www.minio-console.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'minio-console-int.yo-coach.app' || normalized === 'www.minio-console-int.yo-coach.app') {
-    return false;
-  }
-
-  if (normalized === 'yo-coach.app' || normalized === 'www.yo-coach.app') {
-    return false;
-  }
-
-  return normalized.endsWith('.yo-coach.app');
-}
 
 @Component({
   selector: 'app-root',
@@ -60,6 +18,11 @@ export class AppComponent implements OnInit {
 
   get isInvitationRoute(): boolean {
     return this.router.url.split('?')[0].startsWith('/invitation/');
+  }
+
+  /** Calls (ringing on every page, call window) only for a signed-in user: nothing on the public pages. */
+  get signedIn(): boolean {
+    return !!sessionStorage.getItem('userId');
   }
 
   constructor(

@@ -60,7 +60,7 @@
               <div class="program-copy">
                 <div class="program-name">{{ program.name || ('UNNAMED_PROGRAM' | translate) }}</div>
                 <div class="program-meta">{{ getProgramDescription(program) }}</div>
-                <app-workout-publication-badge *ngIf="!isFileProgram(program)" [plan]="program"></app-workout-publication-badge>
+                <app-program-days-badge *ngIf="!isFileProgram(program)" [plan]="program" kind="workout"></app-program-days-badge>
               </div>
             </div>
           </div>
@@ -124,11 +124,6 @@
                     {{ 'DUPLICATE' | translate }}
                   </button>
 
-                  <button class="dropdown-item" (click)="copyToCalendar(program)">
-                    <i-feather name="calendar"></i-feather>
-                    {{ 'COPY_TO_CALENDAR' | translate }}
-                  </button>
-
                   <button class="dropdown-item delete" (click)="deleteProgram(program)">
                     <i-feather name="trash-2"></i-feather>
                     {{ 'DELETE_PROGRAM' | translate }}
@@ -164,96 +159,16 @@
   <app-modal-assign-toclient
     *ngIf="showAssignModal"
     [programName]="programToAssign?.name"
+    [program]="programToAssign"
     [showEndDate]="programToAssign ? isFileProgram(programToAssign) : false"
     [assignmentType]="'workout'"
     [durationDays]="getProgramDurationDays(programToAssign)"
     [includeFilePrograms]="workoutFileEnabled"
     (closeModal)="closeAssignModal()"
     (cancel)="closeAssignModal()"
-    (assignProgram)="onProgramAssigned($event)"
+    (assigned)="onAssignmentDone()"
   ></app-modal-assign-toclient>
 
-  <div class="import-workout-overlay" *ngIf="showFileAssignModal" (click)="closeFileAssignModal()">
-    <div class="import-workout-modal file-assign-modal" (click)="$event.stopPropagation()">
-      <div class="import-workout-head">
-        <div>
-          <h3>{{ 'ASSIGN_PROGRAM' | translate }}</h3>
-          <p>{{ 'ASSIGN_FILE_PROGRAM_HINT' | translate }}</p>
-        </div>
-        <button type="button" class="modal-x" (click)="closeFileAssignModal()">×</button>
-      </div>
-
-      <div class="import-workout-content">
-        <div class="file-assign-summary" *ngIf="fileAssignProgram">
-          <div class="file-assign-icon">
-            <i-feather name="file-text"></i-feather>
-          </div>
-          <div>
-            <strong>{{ fileAssignProgram.name }}</strong>
-            <span>{{ getProgramResourceLabel(fileAssignProgram) }} <ng-container *ngIf="fileAssignProgram.fileSizeBytes">· {{ formatFileSize(fileAssignProgram.fileSizeBytes) }}</ng-container></span>
-          </div>
-        </div>
-
-        <div class="import-assign-section import-assign-section--standalone">
-          <div class="assign-section-head">
-            <div>
-              <h4>{{ 'ASSIGN_TO_CLIENTS' | translate }}</h4>
-              <p>{{ 'ASSIGN_PROGRAM_CLIENTS_HINT' | translate }}</p>
-            </div>
-          </div>
-
-          <div class="assign-section-body">
-            <label class="import-field">
-              <span>{{ 'CLIENTS' | translate }}</span>
-              <select multiple [ngModel]="selectedFileAssignClientIds" (change)="onFileAssignClientSelection($event)">
-                <option *ngIf="importClientsLoading" disabled>{{ 'LOADING_CLIENTS' | translate }}</option>
-                <option *ngFor="let client of importClients" [value]="client.id">
-                  {{ client.firstName }} {{ client.lastName }}
-                </option>
-              </select>
-            </label>
-
-            <div class="assign-date-grid">
-              <label class="import-field">
-                <span>{{ 'START_DATE' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></span>
-                <input type="date" [(ngModel)]="fileAssignStartDate" />
-              </label>
-
-              <label class="import-field">
-                <span>{{ 'END_DATE' | translate }} <em>({{ 'OPTIONAL' | translate }})</em></span>
-                <input type="date" [(ngModel)]="fileAssignEndDate" />
-              </label>
-            </div>
-
-            <div class="notify-row">
-              <div>
-                <strong>{{ 'NOTIFY_CLIENT' | translate }}</strong>
-                <p>{{ 'SEND_PUSH_EMAIL_NOTIFICATION' | translate }}</p>
-              </div>
-
-              <label class="switch-control">
-                <input type="checkbox" [(ngModel)]="fileAssignNotifyClient" />
-                <span></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="import-error" *ngIf="fileAssignError">{{ fileAssignError }}</div>
-      </div>
-
-      <div class="import-workout-footer">
-        <button class="btn-cancel" (click)="closeFileAssignModal()" [disabled]="fileAssignSaving">{{ 'CANCEL' | translate }}</button>
-        <button
-          class="save-template-btn"
-          [disabled]="fileAssignSaving || selectedFileAssignClientIds.length === 0"
-          (click)="confirmFileAssign()">
-          <i-feather name="send"></i-feather>
-          {{ (fileAssignSaving ? 'ASSIGNING' : 'ASSIGN_PROGRAM') | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
 
 
   <div class="workout-type-overlay" *ngIf="showCreateTypeModal" (click)="closeCreateTypeModal()">

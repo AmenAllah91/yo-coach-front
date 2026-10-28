@@ -3,6 +3,9 @@ export interface AppThemeColors {
   name: string;
   active: boolean;
 
+  /** Storage path of the coach's logo: the field saved with the theme. */
+  mobileLogoPath?: string;
+  /** URL the logo loads from (signed by the API when the theme is read); never what is saved. */
   mobileLogoUrl?: string;
 
   primary: string;

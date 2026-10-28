@@ -1,8 +1,7 @@
 <main class="plans-page">
   <header class="plans-nav">
-    <a class="brand" routerLink="/plans-landing">
-      <span class="brand-mark">Y</span>
-      <span>YoCoach</span>
+    <a class="brand" routerLink="/plans-landing" aria-label="YoCoach">
+      <img class="brand-logo" src="assets/yocoachlogo.png" alt="YoCoach" />
     </a>
 
     <nav aria-label="Plans landing navigation">
@@ -14,11 +13,11 @@
 
   <section class="hero-section">
     <div class="hero-copy">
-      <span class="eyebrow">Coaching plans landing page</span>
-      <h1>Simple plans for coaches ready to grow.</h1>
+      <span class="eyebrow">YoCoach for coaches</span>
+      <h1>Choose your plan, then create your account.</h1>
       <p>
-        Present your offers with clear pricing, plan limits, setup details, and
-        benefits. The data below is sample content, ready to be replaced by your API.
+        Every plan comes with clear pricing and limits. Plans with a free trial start
+        without any payment: pick one and your account is created with it.
       </p>
       <div class="hero-actions">
         <button type="button" class="primary-action" (click)="scrollToPlans()">

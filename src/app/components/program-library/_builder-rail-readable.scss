@@ -1,0 +1,101 @@
+/* =====================================================================
+   Structure rail of the program builders (workout and nutrition, library and client programs): the day's date and the
+   week's dates are read whole (they were cut to « jeu… » in the nutrition builders, the state of a day ran out of the
+   rail in the workout builder). Imported after the page layout by every builder; the selectors are a little more
+   specific than the nutrition rail's (_nutrition-rail-parity.scss).
+
+     [ ✓ ]  Jour 1  dim. 18 oct.
+            Rempli
+   ===================================================================== */
+
+/* A day: its state on the left, its number and date on the first line, what it is under them. */
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day {
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  grid-template-areas: "state top" "state meta" !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  column-gap: 10px !important;
+  row-gap: 1px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 50px !important;
+  padding: 7px 10px !important;
+  text-align: left !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day .np-day-state {
+  grid-area: state !important;
+  margin: 0 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day .np-day__topline {
+  grid-area: top !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 7px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day .np-day__title {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day .np-day__dateLine {
+  display: inline !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 18px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day .np-day__meta {
+  grid-area: meta !important;
+  display: block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  font-size: 11.5px !important;
+  line-height: 16px !important;
+  text-align: left !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* A week: its number, its dates and how many days are filled; the dates go under the number when they do not fit. */
+.np-root.np-layout .np-shell > .np-aside .np-week-card .np-week-card__head-top {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  column-gap: 8px !important;
+  row-gap: 2px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card .np-week-card__head-top .np-week-range,
+.np-root.np-layout .np-shell > .np-aside .np-week-card .np-week-card__head-top .np-week-card__range {
+  display: inline !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  white-space: nowrap !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card .np-week-card__head-top .np-week-card__count {
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+  white-space: nowrap !important;
+}

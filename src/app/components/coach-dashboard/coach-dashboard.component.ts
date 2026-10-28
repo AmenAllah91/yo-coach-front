@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -26,6 +26,7 @@ import { CheckinsWidgetComponent } from './checkins-widget/checkins-widget.compo
 import { MessagesWidgetComponent } from './messages-widget/messages-widget.component';
 import { RecentActivitiesComponent } from './recent-activities/recent-activities.component';
 import { PostCreateAssignComponent } from './post-create-assign/post-create-assign.component';
+import { FirstStepsComponent } from './first-steps/first-steps.component';
 import { ALERT_ICONS, localeOf } from './shared/dashboard-format';
 
 /** Data older than this is read again when the coach comes back to the tab. */
@@ -48,6 +49,7 @@ const STALE_AFTER_MS = 60_000;
     MessagesWidgetComponent,
     RecentActivitiesComponent,
     PostCreateAssignComponent,
+    FirstStepsComponent,
   ],
   templateUrl: './coach-dashboard.component.html',
   styleUrl: './coach-dashboard.component.scss',
@@ -62,6 +64,7 @@ export class CoachDashboardComponent implements OnInit {
   summaryStatus: WidgetStatus = 'loading';
   /** Re-read the self-loading widgets when it changes. */
   refreshKey = 0;
+  @ViewChild(FirstStepsComponent) firstSteps?: FirstStepsComponent;
   lang: string | undefined;
 
   hidden = new Set<string>();

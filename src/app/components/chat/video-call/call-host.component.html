@@ -1,0 +1,31 @@
+<div *ngIf="incoming as call" class="call-toast" role="alertdialog" aria-live="assertive"
+     [attr.aria-label]="(call.kind === 'audio' ? 'CALL_INCOMING_AUDIO' : 'CALL_INCOMING_VIDEO') | translate">
+  <div class="call-toast__avatar">{{ initials(call.callerName) }}</div>
+  <div class="call-toast__copy">
+    <strong>{{ call.callerName }}</strong>
+    <small>
+      <i-feather [name]="call.kind === 'audio' ? 'phone' : 'video'"></i-feather>
+      {{ (call.kind === 'audio' ? 'CALL_INCOMING_AUDIO' : 'CALL_INCOMING_VIDEO') | translate }}
+    </small>
+  </div>
+  <div class="call-toast__actions">
+    <button type="button" class="call-toast__btn call-toast__btn--decline" (click)="decline()"
+            [attr.aria-label]="'CALL_DECLINE' | translate" [title]="'CALL_DECLINE' | translate">
+      <i-feather name="phone-off"></i-feather>
+    </button>
+    <button type="button" class="call-toast__btn call-toast__btn--accept" (click)="accept()"
+            [attr.aria-label]="'CALL_ACCEPT' | translate" [title]="'CALL_ACCEPT' | translate">
+      <i-feather [name]="call.kind === 'audio' ? 'phone' : 'video'"></i-feather>
+    </button>
+  </div>
+</div>
+
+<app-video-call-overlay
+  *ngIf="active as call"
+  [conversationId]="call.conversationId"
+  [mode]="call.mode"
+  [kind]="call.kind"
+  [peerName]="call.peerName"
+  [outgoing]="call.outgoing"
+  (closed)="calls.end()"
+></app-video-call-overlay>

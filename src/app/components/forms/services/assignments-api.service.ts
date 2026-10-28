@@ -21,6 +21,12 @@ export interface FormAssignment {
   submittedAt?: string;
   dueAt?: string;
   endDate?: string | null;
+  reviewedAt?: string | null;
+  coachFeedback?: string | null;
+  /** Coach who left the comment. */
+  coachName?: string | null;
+  /** When the client read the current comment (null: new comment). */
+  feedbackSeenAt?: string | null;
 }
 export interface BulkAssignResult {
   created: FormAssignment[];
@@ -162,6 +168,13 @@ export class AssignmentsApiService {
       { feedback }
     );
   }
+  /** The client opened the coach's comment: the "New" badge goes away. */
+  markFeedbackSeen(assignmentId: string): Observable<FormAssignment> {
+    return this.http.post<FormAssignment>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/feedback-seen`, null, {
+      headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' },
+    });
+  }
+
   hardDelete(assignmentId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/hard`);
   }

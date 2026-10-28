@@ -1,0 +1,176 @@
+<div class="yc-page cp">
+  <div class="yc-container">
+    <header class="yc-page-header">
+      <div class="yc-page-header__copy">
+        <h1 class="yc-page-header__title">{{ t('Progress Pictures', 'Photos de progression') }}</h1>
+        <p class="yc-page-header__subtitle">{{ subtitle }}</p>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button type="button" class="yc-btn yc-btn--secondary compare-btn" [class.on]="selecting" [disabled]="pictures.length < 2" (click)="toggleSelecting()">
+        <i-feather name="columns"></i-feather>{{ t('Compare', 'Comparer') }}
+      </button>
+      <button type="button" class="yc-btn yc-btn--primary" (click)="openAdd()"><i-feather name="plus"></i-feather>{{ t('Add photos', 'Ajouter des photos') }}</button>
+    </div>
+
+    <div *ngIf="selecting" class="select-banner">
+      <span>{{ t('Select 2 photos', 'Choisissez 2 photos') }} · {{ selected.length }}/2</span>
+      <button type="button" [disabled]="selected.length !== 2" (click)="openCompare()">{{ t('View side by side', 'Comparer côte à côte') }}</button>
+    </div>
+
+    <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
+
+    <div *ngIf="!loading && error && !pictures.length" class="state">
+      <i-feather name="alert-triangle" class="state__error"></i-feather>
+      <p class="yc-subtitle">{{ error }}</p>
+      <button type="button" class="yc-link" (click)="load()">{{ t('Retry', 'Réessayer') }}</button>
+    </div>
+
+    <div *ngIf="!loading && !error && !pictures.length" class="state">
+      <span class="yc-icon-tile" style="--tile-color: #D97706; --tile-size: 60px"><i-feather name="camera"></i-feather></span>
+      <h3 class="yc-card-title">{{ t('No progress pictures yet', 'Aucune photo de progression pour le moment') }}</h3>
+      <p class="yc-subtitle">{{ t('Track your transformation journey by adding your first picture.', 'Suivez votre transformation en ajoutant votre première photo.') }}</p>
+    </div>
+
+    <ng-container *ngIf="!loading && pictures.length">
+      <section *ngFor="let group of groups">
+        <button type="button" class="month" (click)="toggleMonth(group.key)">
+          <strong>{{ group.label }}</strong>
+          <span>{{ countLabel(group.pictures.length) }}</span>
+          <i class="month__line"></i>
+          <i-feather name="chevron-down" [class.collapsed]="collapsed.has(group.key)"></i-feather>
+        </button>
+        <div *ngIf="!collapsed.has(group.key)" class="grid">
+          <button *ngFor="let picture of group.pictures; trackBy: trackById" type="button" class="photo" [class.selected]="isSelected(picture)" (click)="tap(picture)">
+            <span class="photo__image">
+              <img *ngIf="!brokenImages.has(picture.imageUrl); else brokenImage" [src]="picture.imageUrl" alt="" loading="lazy" (error)="brokenImages.add(picture.imageUrl)" />
+              <span *ngIf="picture.pose" class="photo__pose">{{ poseLabel(picture.pose) }}</span>
+              <span *ngIf="selecting" class="photo__check" [class.on]="isSelected(picture)"><i-feather *ngIf="isSelected(picture)" name="check"></i-feather></span>
+            </span>
+            <span class="photo__body">
+              <span class="photo__row"><strong>{{ dayMonth(picture) }}</strong><span>{{ weightLabel(picture) }}</span></span>
+              <span *ngIf="picture.note" class="photo__note">{{ picture.note }}</span>
+              <span class="photo__change" [class.down]="(change(picture) ?? 0) < 0" [class.up]="(change(picture) ?? 0) > 0">{{ changeLabel(picture) }}</span>
+            </span>
+          </button>
+        </div>
+      </section>
+    </ng-container>
+  </div>
+
+  <!-- Compare -->
+  <div *ngIf="compare as pair" class="yc-sheet-backdrop" (click)="compare = null">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy"><h2 class="yc-sheet-header__title">{{ t('Compare', 'Comparer') }}</h2><p class="yc-sheet-header__subtitle">{{ compareSubtitle }}</p></div>
+        <button type="button" class="yc-sheet-header__close" (click)="compare = null"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body">
+        <div class="compare">
+          <div *ngFor="let picture of pair; let i = index" class="compare__panel">
+            <span class="compare__image"><img *ngIf="!brokenImages.has(picture.imageUrl); else brokenImage" [src]="picture.imageUrl" alt="" (error)="brokenImages.add(picture.imageUrl)" /><b>{{ i === 0 ? t('BEFORE', 'AVANT') : t('AFTER', 'APRÈS') }}</b></span>
+            <strong>{{ fullDate(picture) }}</strong>
+            <small>{{ weightLabel(picture) }}</small>
+          </div>
+        </div>
+        <p class="compare__summary" [class.up]="compareDiff > 0">{{ compareSummary }}</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Detail -->
+  <div *ngIf="detail as picture" class="yc-sheet-backdrop" (click)="detail = null">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy"><h2 class="yc-sheet-header__title">{{ fullDate(picture) }}</h2><p class="yc-sheet-header__subtitle">{{ detailSubtitle }}</p></div>
+        <button type="button" class="yc-sheet-header__close" (click)="detail = null"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body detail">
+        <img [src]="picture.imageUrl" alt="" class="detail__image" />
+        <p *ngIf="picture.note" class="detail__note">{{ picture.note }}</p>
+        <div *ngIf="canEdit(picture)" class="detail__actions">
+          <button type="button" class="yc-btn yc-btn--danger" (click)="askDelete(picture)"><i-feather name="trash-2"></i-feather>{{ t('Delete', 'Supprimer') }}</button>
+          <button type="button" class="yc-btn yc-btn--primary" (click)="openEdit(picture)"><i-feather name="edit-2"></i-feather>{{ t('Edit', 'Modifier') }}</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Delete confirmation -->
+  <div *ngIf="confirmDelete" class="yc-sheet-backdrop" (click)="confirmDelete = null">
+    <section class="yc-sheet confirm" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy"><h2 class="yc-sheet-header__title">{{ t('Delete Picture', 'Supprimer la photo') }}</h2></div>
+        <button type="button" class="yc-sheet-header__close" (click)="confirmDelete = null"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body">
+        <p>{{ t('Are you sure you want to delete this picture?', 'Voulez-vous vraiment supprimer cette photo ?') }}</p>
+        <div class="detail__actions">
+          <button type="button" class="yc-btn yc-btn--secondary" (click)="confirmDelete = null">{{ t('Cancel', 'Annuler') }}</button>
+          <button type="button" class="yc-btn danger-fill" (click)="deletePicture()">{{ t('Delete', 'Supprimer') }}</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Add / edit -->
+  <div *ngIf="sheetOpen" class="yc-sheet-backdrop" (click)="closeSheet()">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy">
+          <h2 class="yc-sheet-header__title">{{ editing ? t('Edit progress photo', 'Modifier la photo') : t('Add progress photo', 'Ajouter une photo') }}</h2>
+          <p class="yc-sheet-header__subtitle">{{ fromCoachRequest ? t('Requested by your coach', 'Demandé par votre coach') : t('Same spot, same lighting each time works best.', "Même endroit, même lumière : c'est idéal.") }}</p>
+        </div>
+        <button type="button" class="yc-sheet-header__close" [disabled]="saving" (click)="closeSheet()"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body add">
+        <div *ngIf="sheetPoses.length > 1" class="yc-segmented">
+          <button *ngFor="let pose of sheetPoses" type="button" [class.active]="activePose === pose" (click)="selectPose(pose)">{{ poseTab(pose) }}</button>
+        </div>
+        <label class="dropzone" [class.filled]="activePreview">
+          <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden [disabled]="saving" (change)="onFile($event)" />
+          <ng-container *ngIf="activePreview; else emptyDrop">
+            <img [src]="activePreview" alt="" />
+            <span class="dropzone__change">{{ t('Change', 'Changer') }}</span>
+          </ng-container>
+          <ng-template #emptyDrop>
+            <i-feather name="image"></i-feather>
+            <strong>{{ t('Choose a photo', 'Choisir une photo') }}</strong>
+            <small>{{ t('JPG or PNG', 'JPG ou PNG') }}</small>
+          </ng-template>
+        </label>
+        <p *ngIf="fileErrors[activePose]" class="add__error">{{ t('Choose a JPG or PNG image up to 10 MB.', 'Choisissez une image JPG ou PNG de 10 Mo maximum.') }}</p>
+        <div class="add__fields">
+          <div class="add__weight">
+            <label class="yc-field-label" for="cp-weight">{{ t('Weight', 'Poids') }}</label>
+            <div class="suffix-field"><input id="cp-weight" type="text" inputmode="decimal" [(ngModel)]="weight" placeholder="0.0" [disabled]="saving" /><span>kg</span></div>
+          </div>
+          <div class="add__note">
+            <label class="yc-field-label" for="cp-note">{{ t('Note', 'Note') }} <small>{{ t('(optional)', '(facultatif)') }}</small></label>
+            <input id="cp-note" type="text" class="yc-input" maxlength="200" [(ngModel)]="note" [disabled]="saving" [placeholder]="t('How do you feel?', 'Comment vous sentez-vous ?')" />
+          </div>
+        </div>
+        <label class="add__date">
+          <i-feather name="calendar"></i-feather>
+          <span>{{ dateLabel }}</span>
+          <ng-container *ngIf="!lockDate">
+            <b>{{ t('Change', 'Modifier') }}</b>
+            <input type="date" [(ngModel)]="date" [max]="today" min="2020-01-01" [disabled]="saving" />
+          </ng-container>
+        </label>
+      </div>
+      <div class="yc-sheet__footer">
+        <button type="button" class="yc-btn yc-btn--brand add__save" [disabled]="!canSave" (click)="save()">
+          <span *ngIf="saving" class="yc-spinner"></span>
+          <ng-container *ngIf="!saving">{{ editing ? t('Save changes', 'Enregistrer') : t('Save photo', 'Enregistrer la photo') }}</ng-container>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="toast" class="cp-toast" role="status">{{ toast }}</div>
+
+  <!-- Same fallback as the mobile errorBuilder -->
+  <ng-template #brokenImage><span class="broken-image"><i-feather name="image"></i-feather></span></ng-template>
+</div>

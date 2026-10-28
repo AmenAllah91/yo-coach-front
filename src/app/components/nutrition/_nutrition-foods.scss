@@ -1,5 +1,5 @@
 /*
- * Foods of a meal (create-full-plan, assign-full-plan).
+ * Foods of a meal (create-full-plan, for library and client plans).
  * Wide: one compact row per food, columns aligned with the header, quantity editable in place.
  * Narrow (container query): two lines per food: name + calories, then quantity + macros.
  * Brand colors: blue #44b4df, navy #0f172a, borders #e6e9ee, muted #64748b.
@@ -296,6 +296,10 @@
     grid-area: remove;
   }
 
+  .np-foods__lock {
+    grid-area: remove;
+  }
+
   .np-foods__meta {
     display: flex;
     grid-area: meta;
@@ -391,4 +395,18 @@
   .np-foods__macro .np-foods__abbr {
     display: inline;
   }
+}
+
+/* Recipe line: ingredients are set by the recipe (only its servings change). */
+.np-foods__lock {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: #cbd5e1;
+}
+
+.np-foods__lock i-feather {
+  width: 14px;
+  height: 14px;
 }

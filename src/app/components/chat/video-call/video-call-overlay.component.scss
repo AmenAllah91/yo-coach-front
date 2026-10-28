@@ -1,0 +1,264 @@
+:host {
+  display: contents;
+}
+
+.video-call {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  background: #0b1020;
+  color: #fff;
+
+  &__stage {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  &__peer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    background: radial-gradient(circle at 50% 35%, #1d2a52 0%, #0b1020 70%);
+
+    &--hidden {
+      visibility: hidden;
+    }
+  }
+
+  &__avatar {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.18);
+
+    &--ringing {
+      animation: call-pulse 1.6s ease-out infinite;
+    }
+  }
+
+  &__name {
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  &__status {
+    font-size: 0.95rem;
+    opacity: 0.8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__remote {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+
+    &--hidden {
+      display: none;
+    }
+
+    ::ng-deep .video-call__remote-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__local {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    width: 120px;
+    height: 160px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: #1b2440;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transform: scaleX(-1);
+
+    &--off {
+      visibility: hidden;
+    }
+  }
+
+  &__top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__icon {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    i-feather {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.45);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+
+    i-feather {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__retry {
+    margin-top: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #fff;
+    color: #0b1020;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__controls {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  &__btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &--off {
+      background: rgba(255, 255, 255, 0.45);
+      color: #0b1020;
+    }
+
+    &--end {
+      background: #e5484d;
+    }
+  }
+
+  /* Reduced to a corner: the user keeps browsing; a click on the picture brings it back full screen. */
+  &--mini {
+    inset: auto 20px 20px auto;
+    width: 300px;
+    height: 250px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(11, 16, 32, 0.45);
+
+    .video-call__stage {
+      cursor: pointer;
+    }
+
+    .video-call__peer {
+      gap: 4px;
+      padding: 12px;
+    }
+
+    .video-call__avatar {
+      width: 56px;
+      height: 56px;
+      font-size: 1.2rem;
+    }
+
+    .video-call__name {
+      font-size: 1rem;
+    }
+
+    .video-call__local {
+      width: 64px;
+      height: 86px;
+      right: 8px;
+      bottom: 8px;
+      border-radius: 10px;
+    }
+
+    .video-call__top {
+      top: 8px;
+      left: 8px;
+      right: 8px;
+    }
+
+    .video-call__controls {
+      gap: 12px;
+      padding: 10px;
+    }
+
+    .video-call__btn {
+      width: 42px;
+      height: 42px;
+
+      i-feather {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  &--mini.video-call--audio {
+    height: 190px;
+  }
+}
+
+@media (max-width: 600px) {
+  .video-call--mini {
+    inset: auto 12px 12px 12px;
+    width: auto;
+  }
+}
+
+@keyframes call-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(31, 181, 122, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 26px rgba(31, 181, 122, 0);
+  }
+}

@@ -1,711 +1,294 @@
-<div
-  class="yc-preview"
-  [class.yc-preview--public]="publicMode"
-  [style.--theme-primary]="colors?.primary"
-  [style.--theme-secondary]="colors?.secondary"
-  [style.--theme-accent]="colors?.accent"
-  [style.--theme-bg]="colors?.background"
-  [style.--theme-text]="colors?.text"
->
-  <div class="yc-preview__topbar" *ngIf="!publicMode">
-    <div class="yc-preview__topbar-left">
-      <span class="yc-preview__mode">{{ 'PREVIEW_MODE' | translate }}</span>
-      <span class="yc-preview__theme">{{ themeName }}</span>
+<div class="cs-preview" [class.cs-preview--public]="publicMode">
+  <div class="cs-preview__topbar" *ngIf="!publicMode">
+    <div class="cs-preview__topbar-left">
+      <span class="cs-preview__mode">{{ 'PREVIEW_MODE' | translate }}</span>
+      <span class="cs-preview__theme">{{ themeName }}</span>
     </div>
-
-    <button type="button" class="yc-preview__close" (click)="closePreview()">
-      {{ 'CLOSE_PREVIEW' | translate }}
-    </button>
+    <div class="cs-preview__devices" role="group">
+      <button type="button" [class.is-active]="!mobileView" (click)="mobileView = false" [attr.aria-pressed]="!mobileView">{{ 'WB_PREVIEW_DESKTOP' | translate }}</button>
+      <button type="button" [class.is-active]="mobileView" (click)="mobileView = true" [attr.aria-pressed]="mobileView">{{ 'WB_PREVIEW_MOBILE' | translate }}</button>
+    </div>
+    <button type="button" class="cs-preview__close" (click)="closePreview()">{{ 'CLOSE_PREVIEW' | translate }}</button>
   </div>
 
-  <div class="yc-preview__body">
-    <div class="yc-site" [ngClass]="'yc-site--' + themeKey">
-
+  <div class="cs-preview__body">
+    <div class="cs-preview__frame" [class.cs-preview__frame--mobile]="mobileView && !publicMode">
       <div
-        *ngIf="announcement?.enabled"
-        class="yc-site__announcement"
-        [style.background]="announcement.bgColor"
-        [style.color]="announcement.textColor"
+        class="cs"
+        [ngClass]="rootClasses"
+        [style.--c-primary]="colors?.primary"
+        [style.--c-secondary]="colors?.secondary"
+        [style.--c-accent]="colors?.accent"
+        [style.--c-bg]="colors?.background"
+        [style.--c-text]="colors?.text"
+        [style.--c-on-primary]="onPrimary"
+        [style.--c-on-accent]="onAccent"
+        [style.--font-heading]="fontHeading"
+        [style.--font-body]="fontBody"
       >
-        <div class="yc-site__announcement-marquee">
-          {{ announcement.message }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-          {{ announcement.message }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <!-- Announcement -->
+        <div *ngIf="announcement?.enabled && announcement?.message?.trim()" class="cs-announcement" [style.background]="announcement.bgColor" [style.color]="announcement.textColor">
           {{ announcement.message }}
         </div>
+
+        <!-- Top navigation -->
+        <header class="cs-nav">
+          <div class="cs-container cs-nav__inner">
+            <a class="cs-nav__brand" href="#" (click)="$event.preventDefault()">
+              <span class="cs-nav__mark" aria-hidden="true">{{ initials }}</span>
+              <span class="cs-nav__name">{{ profile?.fullName || ('WB_YOUR_NAME' | translate) }}</span>
+            </a>
+            <nav class="cs-nav__links" *ngIf="socials.length">
+              <a *ngFor="let social of socials" [href]="social.url" target="_blank" rel="noopener noreferrer" [attr.aria-label]="social.label" [title]="social.label" class="cs-social">
+                <ng-container *ngTemplateOutlet="socialIcon; context: { key: social.key }"></ng-container>
+              </a>
+            </nav>
+            <button *ngIf="cta?.enabled" type="button" class="cs-btn cs-btn--accent cs-btn--small cs-nav__cta" (click)="scrollToContact()">{{ ctaLabel }}</button>
+          </div>
+        </header>
+
+        <!-- Hero -->
+        <section class="cs-hero" [style.backgroundImage]="heroImage">
+          <div class="cs-hero__overlay" aria-hidden="true"></div>
+          <div class="cs-container cs-hero__inner">
+            <div class="cs-hero__media">
+              <div class="cs-hero__photo">
+                <img *ngIf="avatarSrc" [src]="avatarSrc" [alt]="profile?.fullName || ''" (error)="imageFailed = true" />
+                <div *ngIf="!avatarSrc" class="cs-avatar" aria-hidden="true">
+                  <svg viewBox="0 0 120 120" class="cs-avatar__figure"><circle cx="60" cy="44" r="22"/><path d="M18 114c3-26 20-40 42-40s39 14 42 40"/></svg>
+                  <span class="cs-avatar__initials">{{ initials }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="cs-hero__copy">
+              <div class="cs-hero__eyebrow" *ngIf="profile?.title">{{ profile.title }}</div>
+              <h1 class="cs-hero__name">{{ profile?.fullName || ('WB_YOUR_NAME' | translate) }}</h1>
+              <p class="cs-hero__slogan" *ngIf="profile?.slogan">{{ profile.slogan }}</p>
+              <div class="cs-hero__actions">
+                <button *ngIf="cta?.enabled" type="button" class="cs-btn cs-btn--accent cs-btn--large" (click)="scrollToContact()">{{ ctaLabel }}</button>
+                <div *ngIf="socials.length" class="cs-hero__socials">
+                  <a *ngFor="let social of socials" [href]="social.url" target="_blank" rel="noopener noreferrer" [attr.aria-label]="social.label" [title]="social.label" class="cs-social cs-social--hero">
+                    <ng-container *ngTemplateOutlet="socialIcon; context: { key: social.key }"></ng-container>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sections, in the coach's order -->
+        <ng-container *ngFor="let key of visibleSections; let i = index">
+          <ng-container [ngSwitch]="key">
+
+            <section *ngSwitchCase="'video'" class="cs-section cs-section--video" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container cs-container--narrow">
+                <header class="cs-section__head">
+                  <span class="cs-section__eyebrow">{{ 'VIDEO' | translate }}</span>
+                  <h2>{{ 'DISCOVER_MY_APPROACH' | translate }}</h2>
+                </header>
+                <div class="cs-video">
+                  <iframe [src]="videoEmbedUrl" [title]="'PRESENTATION_VIDEO' | translate"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'about'" class="cs-section cs-section--about" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container cs-container--narrow">
+                <header class="cs-section__head">
+                  <span class="cs-section__eyebrow">{{ 'ABOUT' | translate }}</span>
+                  <h2>{{ 'MY_APPROACH' | translate }}</h2>
+                </header>
+                <div class="cs-prose">
+                  <ng-container *ngIf="hasDescriptionBlocks; else bioOnly">
+                    <ng-container *ngFor="let block of descriptionBlocks; trackBy: trackByIndex">
+                      <h3 *ngIf="block.type === 'heading'">{{ block.content }}</h3>
+                      <p *ngIf="block.type === 'text'">{{ block.content }}</p>
+                      <img *ngIf="block.type === 'image'" [src]="block.content" alt="" class="cs-prose__image" />
+                    </ng-container>
+                  </ng-container>
+                  <ng-template #bioOnly><p>{{ profile?.bio }}</p></ng-template>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'stats'" class="cs-section cs-section--stats" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container">
+                <div class="cs-stats">
+                  <div class="cs-stat" *ngFor="let stat of filledStats; trackBy: trackByIndex">
+                    <strong>{{ stat.value }}</strong>
+                    <span>{{ stat.label }}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'services'" class="cs-section" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container">
+                <header class="cs-section__head">
+                  <span class="cs-section__eyebrow">{{ 'SERVICES' | translate }}</span>
+                  <h2>{{ 'HOW_I_SUPPORT_YOU' | translate }}</h2>
+                </header>
+                <div class="cs-grid cs-grid--services">
+                  <article class="cs-card cs-service" *ngFor="let service of services; trackBy: trackByIndex">
+                    <div class="cs-service__image" *ngIf="service.image" [style.backgroundImage]="cssImage(service.image)"></div>
+                    <div class="cs-service__body">
+                      <h3>{{ service.title }}</h3>
+                      <p *ngIf="service.description">{{ service.description }}</p>
+                      <div class="cs-service__foot">
+                        <span class="cs-price" *ngIf="service.price">{{ service.price }}</span>
+                        <button *ngIf="cta?.enabled" type="button" class="cs-btn cs-btn--ghost cs-btn--small" (click)="scrollToContact()">{{ 'WB_SERVICE_CHOOSE' | translate }}</button>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'results'" class="cs-section" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container">
+                <header class="cs-section__head">
+                  <span class="cs-section__eyebrow">{{ 'WEBSITE_RESULTS' | translate }}</span>
+                  <h2>{{ 'TRANSFORMATIONS' | translate }}</h2>
+                </header>
+                <div class="cs-grid cs-grid--results">
+                  <article class="cs-card cs-result" *ngFor="let result of results; trackBy: trackByIndex">
+                    <div class="cs-result__images">
+                      <figure><img [src]="result.beforeImage" alt="" /><figcaption>{{ 'BEFORE' | translate }}</figcaption></figure>
+                      <figure><img [src]="result.afterImage" alt="" /><figcaption class="is-after">{{ 'AFTER' | translate }}</figcaption></figure>
+                    </div>
+                    <p *ngIf="result.text" class="cs-result__text">“{{ result.text }}”</p>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'certificates'" class="cs-section" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container">
+                <header class="cs-section__head">
+                  <span class="cs-section__eyebrow">{{ 'CERTIFICATES' | translate }}</span>
+                  <h2>{{ 'QUALIFICATIONS_DIPLOMAS' | translate }}</h2>
+                </header>
+                <div class="cs-grid cs-grid--certificates">
+                  <article class="cs-card cs-certificate" *ngFor="let certificate of certificates; trackBy: trackByIndex">
+                    <div class="cs-certificate__media" *ngIf="certificate.image" [style.backgroundImage]="cssImage(certificate.image)"></div>
+                    <div class="cs-certificate__icon" *ngIf="!certificate.image" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg>
+                    </div>
+                    <h3>{{ certificate.title }}</h3>
+                    <p>{{ certificate.organization }}<span *ngIf="certificate.year"> · {{ certificate.year }}</span></p>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'testimonials'" class="cs-section" [class.cs-section--tint]="i % 2 === 1">
+              <div class="cs-container">
+                <header class="cs-section__head">
+                  <span class="cs-section__eyebrow">{{ 'TESTIMONIALS' | translate }}</span>
+                  <h2>{{ 'WHAT_THEY_SAY' | translate }}</h2>
+                </header>
+                <div class="cs-grid cs-grid--testimonials">
+                  <article class="cs-card cs-testimonial" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
+                    <div class="cs-stars" aria-hidden="true"><span *ngFor="let star of getStars(testimonial.rating)">★</span></div>
+                    <p>“{{ testimonial.text }}”</p>
+                    <footer>
+                      <span class="cs-testimonial__avatar" aria-hidden="true">{{ (testimonial.author || '?').charAt(0) | uppercase }}</span>
+                      <span><strong>{{ testimonial.author }}</strong><small>{{ 'VERIFIED_CLIENT' | translate }}</small></span>
+                    </footer>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section *ngSwitchCase="'contact'" class="cs-section cs-section--contact" id="cs-contact">
+              <div class="cs-container cs-container--narrow">
+                <div class="cs-contact">
+                  <header class="cs-section__head cs-section__head--left">
+                    <span class="cs-section__eyebrow">{{ 'CONTACT' | translate }}</span>
+                    <h2>{{ 'LETS_START_TOGETHER' | translate }}</h2>
+                    <p>{{ 'LEAVE_CONTACT_FOR_FREE_CHAT' | translate }}</p>
+                  </header>
+
+                  <form *ngIf="!leadSuccess" (ngSubmit)="submitLead()" novalidate class="cs-form">
+                    <div class="cs-form__row">
+                      <label class="cs-field" *ngIf="leadFields?.firstName">
+                        <span>{{ 'FIRST_NAME' | translate }}</span>
+                        <input type="text" autocomplete="given-name" [(ngModel)]="leadForm.firstName" name="firstName" />
+                      </label>
+                      <label class="cs-field" *ngIf="leadFields?.lastName">
+                        <span>{{ 'LAST_NAME' | translate }}</span>
+                        <input type="text" autocomplete="family-name" [(ngModel)]="leadForm.lastName" name="lastName" />
+                      </label>
+                    </div>
+                    <div class="cs-form__row">
+                      <label class="cs-field" *ngIf="leadFields?.email">
+                        <span>{{ 'EMAIL' | translate }}</span>
+                        <input type="email" autocomplete="email" inputmode="email" [(ngModel)]="leadForm.email" name="email" />
+                      </label>
+                      <label class="cs-field" *ngIf="leadFields?.phone">
+                        <span>{{ 'PHONE' | translate }}</span>
+                        <input type="tel" autocomplete="tel" inputmode="tel" [(ngModel)]="leadForm.phone" name="phone" />
+                      </label>
+                    </div>
+                    <label class="cs-field">
+                      <span>{{ 'LEAD_MESSAGE_LABEL' | translate }}</span>
+                      <textarea rows="3" maxlength="2000" [(ngModel)]="leadForm.message" name="message" [placeholder]="'LEAD_MESSAGE_PLACEHOLDER' | translate"></textarea>
+                    </label>
+                    <div class="cs-honeypot" aria-hidden="true">
+                      <input type="text" tabindex="-1" autocomplete="off" [(ngModel)]="leadForm.website" name="website" />
+                    </div>
+                    <div class="cs-form__error" *ngIf="leadError" role="alert">{{ leadError }}</div>
+                    <button type="submit" class="cs-btn cs-btn--accent cs-btn--large cs-form__submit" [disabled]="submittingLead">
+                      {{ submittingLead ? ('SENDING' | translate) : leadButtonLabel }}
+                    </button>
+                    <p class="cs-form__consent">{{ 'WB_CONSENT_PREFIX' | translate }} <a href="/terms" target="_blank" rel="noopener">{{ 'TERMS_OF_USE' | translate }}</a>.</p>
+                  </form>
+
+                  <div class="cs-form__success" *ngIf="leadSuccess" role="status">
+                    <span class="cs-form__check" aria-hidden="true">✓</span>
+                    <strong>{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</strong>
+                    <span>{{ 'CONTACT_WITHIN_24_HOURS' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </ng-container>
+        </ng-container>
+
+        <footer class="cs-footer">
+          <div class="cs-container cs-footer__inner">
+            <div class="cs-footer__brand">
+              <strong>{{ profile?.fullName }}</strong>
+              <span *ngIf="profile?.title">{{ profile.title }}</span>
+            </div>
+            <div class="cs-footer__socials" *ngIf="socials.length">
+              <a *ngFor="let social of socials" [href]="social.url" target="_blank" rel="noopener noreferrer" [attr.aria-label]="social.label" [title]="social.label" class="cs-social">
+                <ng-container *ngTemplateOutlet="socialIcon; context: { key: social.key }"></ng-container>
+              </a>
+            </div>
+            <div class="cs-footer__meta">
+              <span>© {{ year }} {{ profile?.fullName }}</span>
+              <a href="/terms" target="_blank" rel="noopener">{{ 'TERMS_OF_USE' | translate }}</a>
+              <span>{{ 'CREATED_WITH' | translate }} <a href="https://yo-coach.app" target="_blank" rel="noopener">YoCoach</a></span>
+            </div>
+          </div>
+        </footer>
+
+        <div class="cs-sticky" *ngIf="cta?.enabled && cta?.sticky">
+          <button type="button" class="cs-btn cs-btn--accent cs-btn--large" (click)="scrollToContact()">{{ ctaLabel }}</button>
+        </div>
       </div>
-
-      <!-- ELEGANCE -->
-      <ng-container *ngIf="themeKey === 'elegance'">
-        <section class="yc-elegance-hero">
-          <img [src]="profile.image" [alt]="profile.fullName" class="yc-elegance-hero__avatar" />
-          <h1>{{ profile.fullName }}</h1>
-          <div class="yc-elegance-hero__title">{{ profile.title }}</div>
-          <div class="yc-elegance-hero__slogan">{{ profile.slogan }}</div>
-
-          <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main">
-            {{ cta.label }}
-          </button>
-        </section>
-
-        <section class="yc-elegance-section" *ngIf="videoEmbedUrl">
-          <h2>{{ 'DISCOVER_MY_APPROACH' | translate }}</h2>
-          <div class="yc-video yc-video--xl">
-            <iframe
-              [src]="videoEmbedUrl"
-              [title]="'VIDEO_PREVIEW' | translate"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-            ></iframe>
-          </div>
-        </section>
-
-        <section class="yc-elegance-section yc-elegance-section--soft">
-          <h2>{{ 'ABOUT' | translate }}</h2>
-
-          <ng-container *ngIf="hasDescriptionBlocks; else eleganceBioFallback">
-            <div class="yc-description-blocks yc-description-blocks--elegance">
-              <ng-container *ngFor="let block of descriptionBlocks; trackBy: trackByIndex">
-                <h3 *ngIf="block.type === 'heading'" class="yc-description-heading">
-                  {{ block.content }}
-                </h3>
-
-                <p *ngIf="block.type === 'text'" class="yc-description-text">
-                  {{ block.content }}
-                </p>
-
-                <img
-                  *ngIf="block.type === 'image'"
-                  class="yc-description-image yc-elegance-image"
-                  [src]="block.content"
-                  alt="Illustration"
-                />
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <ng-template #eleganceBioFallback>
-            <p>{{ profile.bio }}</p>
-          </ng-template>
-        </section>
-
-        <section class="yc-elegance-section" *ngIf="services?.length">
-          <h2>{{ 'MY_SERVICES' | translate }}</h2>
-          <div class="yc-services yc-services--elegance">
-            <article class="yc-service-card" *ngFor="let service of services; trackBy: trackByIndex">
-              <img
-                *ngIf="service.image"
-                [src]="service.image"
-                [alt]="service.title"
-                class="yc-service-card__image"
-              />
-              <h3>{{ service.title }}</h3>
-              <p>{{ service.description }}</p>
-              <div class="yc-service-card__price">{{ service.price }}</div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-elegance-section yc-elegance-section--soft" *ngIf="results?.length">
-          <h2>{{ 'TRANSFORMATIONS' | translate }}</h2>
-
-          <div class="yc-results--elegance">
-            <article class="yc-result-card yc-result-card--elegance" *ngFor="let result of results; trackBy: trackByIndex">
-              <div class="yc-result-card__images">
-                <div class="yc-result-card__image-wrap">
-                  <span class="yc-badge yc-badge--before">{{ 'BEFORE' | translate }}</span>
-                  <img [src]="result.beforeImage" alt="Avant" />
-                </div>
-
-                <div class="yc-result-card__image-wrap">
-                  <span class="yc-badge yc-badge--after">{{ 'AFTER' | translate }}</span>
-                  <img [src]="result.afterImage" alt="Après" />
-                </div>
-              </div>
-
-              <div class="yc-result-card__content">
-                <p class="yc-result-card__quote">"{{ result.text }}"</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-elegance-certificates" *ngIf="certificates?.length">
-          <h2>{{ 'CERTIFICATIONS' | translate }}</h2>
-
-          <div class="yc-certificates">
-            <article class="yc-certificate-card" *ngFor="let certificate of certificates; trackBy: trackByIndex">
-              <ng-container *ngIf="certificate.image; else eleganceCertificateIcon">
-                <img
-                  [src]="certificate.image"
-                  [alt]="certificate.title"
-                  class="yc-certificate-card__image"
-                />
-              </ng-container>
-
-              <ng-template #eleganceCertificateIcon>
-                <div class="yc-certificate-card__icon">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"></circle>
-                    <path d="M9 12v8l3-2 3 2v-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
-                </div>
-              </ng-template>
-
-              <h3>{{ certificate.title }}</h3>
-              <p>{{ certificate.organization }}</p>
-              <span>{{ certificate.year }}</span>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-elegance-section" *ngIf="testimonials?.length">
-          <h2>{{ 'TESTIMONIALS' | translate }}</h2>
-          <div class="yc-testimonials--elegance">
-            <article class="yc-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
-              <p>"{{ testimonial.text }}"</p>
-              <div class="yc-stars">
-                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
-              </div>
-              <strong>— {{ testimonial.author }}</strong>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-elegance-contact yc-elegance-section--soft">
-          <div class="yc-contact-card">
-            <h2>{{ 'LETS_START_TOGETHER' | translate }}</h2>
-
-            <form (ngSubmit)="submitLead()">
-              <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <label>{{ 'FIRST_NAME' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.firstName" name="firstNameElegance" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <label>{{ 'LAST_NAME' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameElegance" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <label>{{ 'EMAIL' | translate }}</label>
-                <input type="email" [(ngModel)]="leadForm.email" name="emailElegance" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <label>{{ 'PHONE' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.phone" name="phoneElegance" required/>
-              </div>
-
-              <button type="submit" class="yc-site__cta-secondary" [disabled]="submittingLead">
-                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
-              </button>
-            </form>
-
-            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
-            <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
-          </div>
-        </section>
-      </ng-container>
-
-      <!-- DYNAMIC -->
-      <ng-container *ngIf="themeKey === 'dynamic'">
-        <section class="yc-dynamic-hero">
-          <div class="yc-dynamic-hero__content">
-            <h1>{{ profile.fullName }}</h1>
-            <div class="yc-dynamic-hero__title">{{ profile.title }}</div>
-            <div class="yc-dynamic-hero__slogan">{{ profile.slogan }}</div>
-
-            <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main yc-site__cta-main--pill">
-              {{ cta.label }}
-            </button>
-          </div>
-
-          <div class="yc-dynamic-hero__media">
-            <img [src]="profile.image" [alt]="profile.fullName" />
-          </div>
-        </section>
-
-        <section class="yc-dynamic-video" *ngIf="videoEmbedUrl">
-          <h2>{{ 'WATCH_MY_VIDEO' | translate }}</h2>
-          <p>{{ 'VIDEO_SUPPORT_DESCRIPTION' | translate }}</p>
-          <div class="yc-video yc-video--xl">
-            <iframe
-              [src]="videoEmbedUrl"
-              [title]="'PRESENTATION_VIDEO' | translate"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen>
-            </iframe>
-          </div>
-        </section>
-
-        <section class="yc-dynamic-cert-strip" *ngIf="certificates?.length">
-          <span>{{ 'CERTIFIED_BY' | translate }}</span>
-          <span *ngFor="let certificate of certificates; trackBy: trackByIndex">
-            {{ certificate.organization }}
-          </span>
-        </section>
-
-        <section class="yc-dynamic-section yc-dynamic-section--center">
-          <h2>{{ 'MY_PHILOSOPHY' | translate }}</h2>
-
-          <ng-container *ngIf="hasDescriptionBlocks; else dynamicBioFallback">
-            <div class="yc-description-blocks yc-description-blocks--dynamic">
-              <ng-container *ngFor="let block of descriptionBlocks; trackBy: trackByIndex">
-                <h3 *ngIf="block.type === 'heading'" class="yc-description-heading">
-                  {{ block.content }}
-                </h3>
-
-                <p *ngIf="block.type === 'text'" class="yc-description-text">
-                  {{ block.content }}
-                </p>
-
-                <img
-                  *ngIf="block.type === 'image'"
-                  class="yc-description-image yc-dynamic-image"
-                  [src]="block.content"
-                  alt="Illustration"
-                />
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <ng-template #dynamicBioFallback>
-            <p>{{ profile.bio }}</p>
-          </ng-template>
-        </section>
-
-        <section class="yc-dynamic-section yc-dynamic-section--alt" *ngIf="services?.length">
-          <h2>{{ 'HOW_I_SUPPORT_YOU' | translate }}</h2>
-          <div class="yc-services yc-services--dynamic">
-            <article class="yc-service-card yc-service-card--dynamic" *ngFor="let service of services; trackBy: trackByIndex">
-              <img
-                *ngIf="service.image"
-                [src]="service.image"
-                [alt]="service.title"
-                class="yc-service-card__image"
-              />
-              <h3>{{ service.title }}</h3>
-              <p>{{ service.description }}</p>
-              <div class="yc-service-card__badge">{{ service.price }}</div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-dynamic-section" *ngIf="results?.length">
-          <h2>{{ 'CONCRETE_RESULTS' | translate }}</h2>
-          <div class="yc-results--dynamic">
-            <article class="yc-result-card--dynamic" *ngFor="let result of results; trackBy: trackByIndex">
-              <div class="yc-result-card__images">
-                <div class="yc-result-card__image-wrap">
-                  <span>{{ 'BEFORE' | translate }}</span>
-                  <img [src]="result.beforeImage" alt="Avant" />
-                </div>
-                <div class="yc-result-card__image-wrap">
-                  <span>{{ 'AFTER' | translate }}</span>
-                  <img [src]="result.afterImage" alt="Après" />
-                </div>
-              </div>
-              <p class="yc-result-card__quote">"{{ result.text }}"</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-dynamic-section yc-dynamic-section--alt" *ngIf="certificates?.length">
-          <h2>{{ 'CERTIFICATIONS' | translate }}</h2>
-          <div class="yc-certificates">
-            <article class="yc-certificate-card yc-certificate-card--light" *ngFor="let certificate of certificates; trackBy: trackByIndex">
-              <img
-                *ngIf="certificate.image"
-                [src]="certificate.image"
-                [alt]="certificate.title"
-                class="yc-certificate-card__image"
-              />
-              <h3>{{ certificate.title }}</h3>
-              <p>{{ certificate.organization }}</p>
-              <span>{{ certificate.year }}</span>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-dynamic-testimonials" *ngIf="testimonials?.length">
-          <h2>{{ 'THEY_TRANSFORMED_THEIR_LIVES' | translate }}</h2>
-          <div class="yc-testimonials--dynamic">
-            <article class="yc-testimonial-card--dynamic" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
-              <div class="yc-stars">
-                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
-              </div>
-              <p>"{{ testimonial.text }}"</p>
-              <strong>{{ testimonial.author }}</strong>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-dynamic-contact">
-          <div class="yc-contact-card yc-contact-card--dynamic">
-            <h2>{{ 'TAKE_ACTION' | translate }}</h2>
-            <p>{{ 'LEAVE_CONTACT_FOR_FREE_CHAT' | translate }}</p>
-
-            <form (ngSubmit)="submitLead()">
-              <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <label>{{ 'FIRST_NAME' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.firstName" name="firstNameDynamic" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <label>{{ 'LAST_NAME' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameDynamic" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <label>{{ 'EMAIL' | translate }}</label>
-                <input type="email" [(ngModel)]="leadForm.email" name="emailDynamic" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <label>{{ 'PHONE' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.phone" name="phoneDynamic" required/>
-              </div>
-
-              <button type="submit" class="yc-site__cta-secondary" [disabled]="submittingLead">
-                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
-              </button>
-            </form>
-
-            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
-            <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
-          </div>
-        </section>
-      </ng-container>
-
-      <!-- TRUST -->
-      <ng-container *ngIf="themeKey === 'trust'">
-        <section class="yc-trust-hero">
-          <div class="yc-trust-hero__media">
-            <div class="yc-trust-hero__image-backdrop"></div>
-            <img [src]="profile.image" [alt]="profile.fullName" />
-          </div>
-
-          <div class="yc-trust-hero__content">
-            <div class="yc-trust-hero__badge">{{ profile.title || ('CERTIFIED_PROFESSIONAL_COACH' | translate) }}</div>
-            <h1>{{ profile.fullName }}</h1>
-            <h2>{{ profile.title }}</h2>
-            <p class="yc-trust-hero__slogan">{{ profile.slogan }}</p>
-
-            <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main yc-site__cta-main--trust">
-              {{ cta.label }}
-            </button>
-          </div>
-        </section>
-
-        <section class="yc-trust-section" *ngIf="videoEmbedUrl">
-          <div class="yc-trust-section__intro">
-            <div class="yc-trust-section__icon">▶</div>
-            <div>
-              <h3>{{ 'VIDEO_PRESENTATION' | translate }}</h3>
-              <p>{{ 'DISCOVER_APPROACH_IN_MINUTES' | translate }}</p>
-            </div>
-          </div>
-
-          <div class="yc-video yc-video--xl">
-            <iframe
-              [src]="videoEmbedUrl"
-              [title]="'PRESENTATION_VIDEO' | translate"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen>
-            </iframe>
-          </div>
-        </section>
-
-        <section class="yc-trust-certs" *ngIf="certificates?.length">
-          <h2>{{ 'QUALIFICATIONS_DIPLOMAS' | translate }}</h2>
-          <div class="yc-trust-cert-grid">
-            <article class="yc-trust-cert-card" *ngFor="let certificate of certificates; trackBy: trackByIndex">
-              <div class="yc-trust-cert-card__icon">🎓</div>
-              <h3>{{ certificate.title }}</h3>
-              <p>{{ certificate.organization }}</p>
-              <span>{{ certificate.year }}</span>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-trust-about">
-          <h2>{{ 'MY_APPROACH' | translate }}</h2>
-
-          <ng-container *ngIf="hasDescriptionBlocks; else trustBioFallbackNew">
-            <div class="yc-trust-description">
-              <ng-container *ngFor="let block of descriptionBlocks; trackBy: trackByIndex">
-                <h3 *ngIf="block.type === 'heading'" class="yc-trust-description__heading">
-                  {{ block.content }}
-                </h3>
-
-                <p *ngIf="block.type === 'text'" class="yc-trust-description__text">
-                  {{ block.content }}
-                </p>
-
-                <img
-                  *ngIf="block.type === 'image'"
-                  [src]="block.content"
-                  alt="Illustration"
-                  class="yc-trust-description__image"
-                />
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <ng-template #trustBioFallbackNew>
-            <p class="yc-trust-description__text">{{ profile.bio }}</p>
-          </ng-template>
-        </section>
-
-        <section class="yc-trust-services" *ngIf="services?.length">
-          <h2>{{ 'COACHING_PROGRAMS' | translate }}</h2>
-
-          <div class="yc-trust-service-list">
-            <article class="yc-trust-service-row" *ngFor="let service of services; trackBy: trackByIndex">
-              <div class="yc-trust-service-row__content">
-                <h3>{{ service.title }}</h3>
-                <p>{{ service.description }}</p>
-              </div>
-              <div class="yc-trust-service-row__price">
-                <span>{{ 'PRICE' | translate }}</span>
-                <strong>{{ service.price }}</strong>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-trust-results" *ngIf="results?.length">
-          <h2>{{ 'RESULTS_ACHIEVED' | translate }}</h2>
-
-          <div class="yc-trust-results-grid">
-            <article class="yc-trust-result-card" *ngFor="let result of results; trackBy: trackByIndex">
-              <div class="yc-trust-result-card__images">
-                <div>
-                  <span>{{ 'BEFORE' | translate }}</span>
-                  <img [src]="result.beforeImage" alt="Avant" />
-                </div>
-                <div>
-                  <span>{{ 'AFTER' | translate }}</span>
-                  <img [src]="result.afterImage" alt="Après" />
-                </div>
-              </div>
-              <p>"{{ result.text }}"</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-trust-testimonials" *ngIf="testimonials?.length">
-          <h2>{{ 'CLIENT_REVIEWS' | translate }}</h2>
-
-          <div class="yc-trust-testimonials__grid">
-            <article class="yc-trust-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
-              <div class="yc-stars">
-                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
-              </div>
-              <p>"{{ testimonial.text }}"</p>
-              <strong>{{ testimonial.author }}</strong>
-              <small>{{ 'VERIFIED_CLIENT' | translate }}</small>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-trust-contact">
-          <div class="yc-trust-contact__card">
-            <h2>{{ 'REQUEST_CONSULTATION' | translate }}</h2>
-            <p>{{ 'CONTACT_WITHIN_24_HOURS' | translate }}</p>
-
-            <form (ngSubmit)="submitLead()">
-              <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <label>{{ 'FIRST_NAME' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.firstName" name="firstNameTrust" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <label>{{ 'LAST_NAME' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.lastName" name="lastNameTrust" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <label>{{ 'PROFESSIONAL_EMAIL' | translate }}</label>
-                <input type="email" [(ngModel)]="leadForm.email" name="emailTrust" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <label>{{ 'PHONE' | translate }}</label>
-                <input type="text" [(ngModel)]="leadForm.phone" name="phoneTrust" required/>
-              </div>
-
-              <button type="submit" class="yc-site__cta-secondary yc-site__cta-secondary--trust" [disabled]="submittingLead">
-                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
-              </button>
-            </form>
-
-            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
-            <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
-          </div>
-        </section>
-      </ng-container>
-
-      <!-- SERENITY -->
-      <ng-container *ngIf="themeKey === 'serenity'">
-        <section class="yc-serenity-hero">
-          <img [src]="profile.image" [alt]="profile.fullName" class="yc-serenity-hero__avatar" />
-          <h1>{{ profile.fullName }}</h1>
-          <div class="yc-serenity-hero__title">{{ profile.title }}</div>
-          <div class="yc-serenity-hero__slogan">{{ profile.slogan }}</div>
-
-          <button *ngIf="cta?.enabled" type="button" class="yc-site__cta-main yc-site__cta-main--serenity">
-            {{ cta.label }}
-          </button>
-        </section>
-
-        <section class="yc-serenity-video" *ngIf="videoEmbedUrl">
-          <div class="yc-serenity-video__trigger">▶ {{ 'MY_PRESENTATION_VIDEO' | translate }}</div>
-          <div class="yc-video yc-video--xl">
-            <iframe
-              [src]="videoEmbedUrl"
-              [title]="'PRESENTATION_VIDEO' | translate"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen>
-            </iframe>
-          </div>
-        </section>
-
-        <section class="yc-serenity-intro">
-          <ng-container *ngIf="hasDescriptionBlocks; else serenityBioFallbackNew">
-            <div class="yc-serenity-description">
-              <ng-container *ngFor="let block of descriptionBlocks; trackBy: trackByIndex">
-                <h3 *ngIf="block.type === 'heading'" class="yc-serenity-description__heading">
-                  {{ block.content }}
-                </h3>
-
-                <p *ngIf="block.type === 'text'" class="yc-serenity-description__text">
-                  {{ block.content }}
-                </p>
-
-                <img
-                  *ngIf="block.type === 'image'"
-                  [src]="block.content"
-                  alt="Illustration"
-                  class="yc-serenity-description__image"
-                />
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <ng-template #serenityBioFallbackNew>
-            <div class="yc-serenity-description">
-              <p class="yc-serenity-description__text">{{ profile.bio }}</p>
-            </div>
-          </ng-template>
-        </section>
-
-        <section class="yc-serenity-services" *ngIf="services?.length">
-          <h2>{{ 'PROPOSED_PATHS' | translate }}</h2>
-          <div class="yc-serenity-service-grid">
-            <article class="yc-serenity-service-card" *ngFor="let service of services; trackBy: trackByIndex">
-              <div class="yc-serenity-service-card__icon">♡</div>
-              <h3>{{ service.title }}</h3>
-              <p>{{ service.description }}</p>
-              <div class="yc-serenity-service-card__price">{{ service.price }}</div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-serenity-results" *ngIf="results?.length">
-          <h2>{{ 'PROGRESS_EVOLUTIONS' | translate }}</h2>
-
-          <article class="yc-serenity-result" *ngFor="let result of results; trackBy: trackByIndex">
-            <div class="yc-serenity-result__images">
-              <div class="yc-serenity-result__item">
-                <img [src]="result.beforeImage" alt="Avant" />
-                <span>{{ 'BEFORE' | translate }}</span>
-              </div>
-
-              <div class="yc-serenity-result__separator">•••</div>
-
-              <div class="yc-serenity-result__item yc-serenity-result__item--after">
-                <img [src]="result.afterImage" alt="Après" />
-                <span>{{ 'AFTER' | translate }}</span>
-              </div>
-            </div>
-
-            <p class="yc-serenity-result__text">"{{ result.text }}"</p>
-          </article>
-        </section>
-
-        <section class="yc-serenity-certificates" *ngIf="certificates?.length">
-          <h2>{{ 'MY_JOURNEY' | translate }}</h2>
-
-          <div class="yc-serenity-timeline">
-            <article class="yc-serenity-timeline__item" *ngFor="let certificate of certificates; let i = index; trackBy: trackByIndex">
-              <div class="yc-serenity-timeline__year">{{ certificate.year }}</div>
-              <div class="yc-serenity-timeline__card">
-                <h3>{{ certificate.title }}</h3>
-                <p>{{ certificate.organization }}</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-serenity-testimonials" *ngIf="testimonials?.length">
-          <h2>{{ 'WHAT_THEY_SAY' | translate }}</h2>
-          <p>{{ 'AUTHENTIC_TESTIMONIALS' | translate }}</p>
-
-          <div class="yc-serenity-testimonials__grid">
-            <article class="yc-serenity-testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackByIndex">
-              <div class="yc-stars">
-                <span *ngFor="let star of getStars(testimonial.rating)">★</span>
-              </div>
-              <p>"{{ testimonial.text }}"</p>
-              <div class="yc-serenity-testimonial-card__author">
-                <strong>{{ testimonial.author }}</strong>
-                <small>{{ 'VERIFIED_CLIENT' | translate }}</small>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="yc-serenity-contact">
-          <div class="yc-serenity-contact__card">
-            <h2>{{ 'LETS_GET_ACQUAINTED' | translate }}</h2>
-            <p>{{ 'NO_COMMITMENT_FIRST_CHAT' | translate }}</p>
-
-            <form (ngSubmit)="submitLead()">
-              <div class="yc-contact-field" *ngIf="leadFields?.firstName">
-                <input type="text" [placeholder]="'FIRST_NAME' | translate" [(ngModel)]="leadForm.firstName" name="firstNameSerenity" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.lastName">
-                <input type="text" [placeholder]="'LAST_NAME' | translate" [(ngModel)]="leadForm.lastName" name="lastNameSerenity" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.email">
-                <input type="email" [placeholder]="'EMAIL' | translate" [(ngModel)]="leadForm.email" name="emailSerenity" />
-              </div>
-
-              <div class="yc-contact-field" *ngIf="leadFields?.phone">
-                <input type="text" [placeholder]="'PHONE' | translate" [(ngModel)]="leadForm.phone" name="phoneSerenity" required/>
-              </div>
-
-              <button type="submit" class="yc-site__cta-secondary yc-site__cta-secondary--serenity" [disabled]="submittingLead">
-                {{ submittingLead ? ('SENDING' | translate) : leadFields?.buttonLabel }}
-              </button>
-            </form>
-
-            <div class="yc-form-success" *ngIf="leadSuccess">{{ 'REQUEST_SENT_SUCCESSFULLY' | translate }}</div>
-            <div class="yc-form-error" *ngIf="leadError">{{ leadError }}</div>
-          </div>
-        </section>
-      </ng-container>
-
-    </div>
-
-    <div class="yc-builder__floating-cta" *ngIf="cta?.enabled && cta?.sticky">
-      <button type="button" class="yc-cta-btn" [style.background]="colors?.accent">
-        {{ cta?.label }}
-      </button>
     </div>
   </div>
 </div>
+
+<ng-template #socialIcon let-key="key">
+  <svg *ngIf="key === 'instagram'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+  <svg *ngIf="key === 'facebook'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.6V14h2.7v8h3.2z"/></svg>
+  <svg *ngIf="key === 'tiktok'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 3c.3 2.2 1.6 3.6 3.8 3.8v3.1c-1.4 0-2.7-.4-3.8-1.2v6.1c0 3.4-2.7 6.2-6.1 6.2S4.3 18.2 4.3 14.8s2.7-6.2 6.1-6.2c.3 0 .6 0 .9.1v3.3c-.3-.1-.6-.2-.9-.2-1.6 0-2.9 1.3-2.9 2.9s1.3 2.9 2.9 2.9 2.9-1.3 2.9-2.9V3h3.2z"/></svg>
+  <svg *ngIf="key === 'youtube'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.5 7.2c-.2-1-1-1.7-2-1.9C18.9 5 12 5 12 5s-6.9 0-8.5.3c-1 .2-1.8.9-2 1.9C1.2 8.8 1.2 12 1.2 12s0 3.2.3 4.8c.2 1 1 1.7 2 1.9 1.6.3 8.5.3 8.5.3s6.9 0 8.5-.3c1-.2 1.8-.9 2-1.9.3-1.6.3-4.8.3-4.8s0-3.2-.3-4.8zM9.8 15V9l5.6 3-5.6 3z"/></svg>
+  <svg *ngIf="key === 'linkedin'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.4 21H2.6V8.9h3.8V21zM4.5 7.3a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4zM21.4 21h-3.8v-5.9c0-1.4 0-3.2-2-3.2s-2.3 1.5-2.3 3.1V21H9.6V8.9h3.6v1.7h.1c.5-1 1.7-2 3.6-2 3.8 0 4.5 2.5 4.5 5.8V21z"/></svg>
+  <svg *ngIf="key === 'whatsapp'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2a9.8 9.8 0 0 0-8.4 14.8L2.2 22l5.2-1.4A9.8 9.8 0 1 0 12 2.2zm0 17.9c-1.5 0-3-.4-4.2-1.2l-.3-.2-3.1.8.8-3-.2-.3A8.1 8.1 0 1 1 12 20.1zm4.5-6c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.3-.5-.5-.9-1-1.3-1.7-.1-.2 0-.4.1-.5l.4-.5.3-.4v-.5l-.7-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.6.6-.9 1.3-.9 2.1.1.9.4 1.7.9 2.4 1 1.5 2.3 2.7 3.9 3.5.5.2 1 .4 1.5.5.5.2 1.1.2 1.6.1.6-.1 1.2-.5 1.5-1 .2-.4.2-.8.1-1.2l-.4-.3z"/></svg>
+</ng-template>

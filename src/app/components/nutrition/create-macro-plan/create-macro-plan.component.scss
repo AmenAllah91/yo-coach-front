@@ -1858,3 +1858,12 @@
 .np-dayrow .np-day {
   width: 100% !important;
 }
+
+/* « Jour libre » (same look as the full meals builder) */
+.np-dayhead { justify-content: space-between; width: 100%; }
+.wk-day-editor__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.wk-restbox { margin-top: 12px; padding: 40px 16px; text-align: center; border: 2px dashed #d1d5db; border-radius: 10px; background: linear-gradient(135deg, #fafafa 0%, #f3f4f6 100%); }
+.wk-restbox__icon { display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; margin: 0 auto 12px; border-radius: 999px; color: #6b7280; background: #e5e7eb; }
+.wk-restbox__icon i-feather { width: 40px; height: 40px; }
+.wk-restbox__title { margin: 6px 0 4px; font-size: 20px; font-weight: 800; color: #374151; }
+.wk-restbox__text { max-width: 640px; margin: 0 auto 8px; color: #4b5563; }

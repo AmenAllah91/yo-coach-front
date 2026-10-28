@@ -94,11 +94,30 @@ export class ClientsComponent implements OnInit {
   copiedInvitationId: string | null = null;
   private readonly inviteBaseUrl = environment.apiUrl + '/invitation/';
 
+  /** Expired invitations stay out of the way: they are listed only under their own filter. */
+  invitationFilter: 'PENDING' | 'EXPIRED' = 'PENDING';
+  pendingInvitations: CoachInvitation[] = [];
+  expiredInvitations: CoachInvitation[] = [];
+
+  /** Invitations of the selected filter matching the search box. */
+  get shownInvitations(): CoachInvitation[] {
+    const list = this.invitationFilter === 'EXPIRED' ? this.expiredInvitations : this.pendingInvitations;
+    const term = (this.searchTerm || '').trim().toLowerCase();
+    return term ? list.filter((invitation) => invitation.email.toLowerCase().includes(term)) : list;
+  }
+
+  setInvitationFilter(filter: 'PENDING' | 'EXPIRED'): void {
+    this.invitationFilter = filter;
+  }
+
   loadInvitations(): void {
     this.invitationsLoading = true;
     this.invitationService.getMyInvitations().subscribe({
       next: (invitations) => {
-        this.invitations = invitations || [];
+        // Old links created without an email (before invitations were tied to an email) cannot be resent: not listed.
+        this.invitations = (invitations || []).filter((invitation) => !!invitation.email?.trim());
+        this.pendingInvitations = this.invitations.filter((invitation) => invitation.status !== 'EXPIRED');
+        this.expiredInvitations = this.invitations.filter((invitation) => invitation.status === 'EXPIRED');
         this.invitationsLoading = false;
       },
       error: (error) => {
@@ -118,6 +137,12 @@ export class ClientsComponent implements OnInit {
   invitationDaysLeft(invitation: CoachInvitation): number {
     if (!invitation.expiresAt) return 0;
     return Math.max(0, Math.floor((new Date(invitation.expiresAt).getTime() - Date.now()) / 86400000));
+  }
+
+  /** "Expiry" column of a pending invitation: today, in 1 day, in N days. */
+  invitationExpiryKey(invitation: CoachInvitation): string {
+    const days = this.invitationDaysLeft(invitation);
+    return days === 0 ? 'INVITATION_EXPIRES_TODAY' : days === 1 ? 'INVITATION_EXPIRES_IN_ONE_DAY' : 'INVITATION_EXPIRES_IN_DAYS';
   }
 
   copyInvitationLink(invitation: CoachInvitation): void {
@@ -152,6 +177,8 @@ export class ClientsComponent implements OnInit {
       next: () => {
         this.busyInvitationId = null;
         this.invitations = this.invitations.filter((item) => item.id !== invitation.id);
+        this.pendingInvitations = this.pendingInvitations.filter((item) => item.id !== invitation.id);
+        this.expiredInvitations = this.expiredInvitations.filter((item) => item.id !== invitation.id);
       },
       error: () => {
         this.busyInvitationId = null;

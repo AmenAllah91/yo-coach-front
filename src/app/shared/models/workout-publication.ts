@@ -1,6 +1,8 @@
 import { WorkoutDay } from './workout.models';
 import { ExerciseSet } from './exercice.models';
+import { workoutDayStatus, workoutSetValid } from './program-days';
 
+/** Older names over the shared day rule (program-days.ts); an INVALID day reads as EMPTY here. */
 export type WorkoutDayPublicationState = 'EMPTY' | 'READY' | 'REST_DAY';
 
 export function workoutSetValidationMessages(
@@ -25,8 +27,9 @@ export function workoutSetValidationMessages(
     if (!Number.isFinite(Number(set.duration)) || Number(set.duration) <= 0) {
       messages.push('Cardio duration must be greater than 0.');
     }
-  } else if (set.reps == null || set.reps === '' || !Number.isFinite(Number(set.reps)) || Number(set.reps) < 0) {
-    messages.push('Reps must be 0 or greater.');
+  } else if (set.reps == null || set.reps === '' || !Number.isFinite(Number(set.reps)) || Number(set.reps) < 1) {
+    // D2 (backlog-programmes.md): at least one rep, as the server requires.
+    messages.push('Reps must be at least 1.');
   }
 
   return [...new Set(messages)];
@@ -40,36 +43,8 @@ export function firstWorkoutSetValidationMessage(
 }
 
 export function workoutDayState(day: WorkoutDay | null | undefined): WorkoutDayPublicationState {
-  if (!day) return 'EMPTY';
-  if (day.isRestDay || day.restDay) return 'REST_DAY';
-
-  const sessions = day.workoutSessions?.length
-    ? day.workoutSessions
-    : day.session
-      ? [day.session]
-      : [];
-
-  if (!sessions.length) return 'EMPTY';
-
-  const valid = sessions.every(session => {
-    if (!session?.name?.trim() || !session.exercises?.length) return false;
-    return session.exercises.every(exercise => {
-      if (!exercise?.name?.trim() || !exercise.sets?.length) return false;
-      return exercise.sets.some((set: ExerciseSet) => {
-        const weight = set.weight;
-        const restMin = Number(set.restMin ?? 0);
-        const restSec = Number(set.restSec ?? 0);
-        if (weight != null && (!Number.isFinite(Number(weight)) || Number(weight) < 0)) return false;
-        if (!Number.isFinite(restMin) || restMin < 0 || !Number.isFinite(restSec) || restSec < 0 || restSec >= 60) return false;
-        if (exercise.type === 'CARDIO') {
-          return Number.isFinite(Number(set.duration)) && Number(set.duration) > 0;
-        }
-        return set.reps != null && set.reps !== '' && Number.isFinite(Number(set.reps)) && Number(set.reps) >= 0;
-      });
-    });
-  });
-
-  return valid ? 'READY' : 'EMPTY';
+  const state = workoutDayStatus(day);
+  return state === 'FILLED' ? 'READY' : state === 'REST' ? 'REST_DAY' : 'EMPTY';
 }
 
 export function workoutWeekReady(days: WorkoutDay[], week: number): number {
@@ -84,7 +59,8 @@ export function workoutDayValidationMessages(
 ): string[] {
   if (!day || day.isRestDay || day.restDay) return [];
 
-  const sessions = day.workoutSessions?.length
+  // As the server: the list when there is one (even empty), else the older single session.
+  const sessions = Array.isArray(day.workoutSessions)
     ? day.workoutSessions
     : day.session
       ? [day.session]
@@ -113,16 +89,14 @@ export function workoutDayValidationMessages(
         return;
       }
 
-      const validSets = exercise.sets.filter((set: ExerciseSet) => workoutSetValidationMessages(set, exercise.type).length === 0);
-      if (!validSets.length) {
-        messages.push(`Day ${dayNumber}: exercise ${exerciseNumber} needs at least one valid set.`);
-        exercise.sets.forEach((set: ExerciseSet, setIndex: number) => {
-          const setNumber = setIndex + 1;
-          workoutSetValidationMessages(set, exercise.type).forEach(message => {
-            messages.push(`Day ${dayNumber}, exercise ${exerciseNumber}, set ${setNumber}: ${message.charAt(0).toLowerCase()}${message.slice(1)}`);
-          });
+      // Every set must be valid, as on the server (one valid set used to be enough here).
+      exercise.sets.forEach((set: ExerciseSet, setIndex: number) => {
+        if (workoutSetValid(set, exercise.type)) return;
+        const setNumber = setIndex + 1;
+        workoutSetValidationMessages(set, exercise.type).forEach(message => {
+          messages.push(`Day ${dayNumber}, exercise ${exerciseNumber}, set ${setNumber}: ${message.charAt(0).toLowerCase()}${message.slice(1)}`);
         });
-      }
+      });
     });
   });
 

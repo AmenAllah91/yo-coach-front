@@ -1,302 +1,239 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
+import { FeatherModule } from 'angular-feather';
 import { Client, ClientService } from 'app/service/client.service';
-import { WorkoutService } from 'app/service/workout.service';
-import { NutritionService } from 'app/service/nutrition.service';
-import { catchError, forkJoin, map, of } from 'rxjs';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { AssignVisibilityNoteComponent } from '@shared/components/assign-visibility-note/assign-visibility-note.component';
+import { AssignScheduleComponent } from '@shared/components/assign-schedule/assign-schedule.component';
+import { AssignConfirmComponent, AssignConfirmRow } from '@shared/components/assign-confirm/assign-confirm.component';
+import {
+  AssignResult,
+  ClientSchedulePreview,
+  ProgramKind,
+  affectedClientIds,
+  changeSentence,
+  programLengthDays,
+} from '@shared/models/program-schedule';
 
 type AssignmentType = 'workout' | 'nutrition';
-type ConflictResolution = 'START_AFTER' | 'REPLACE';
 
-interface ScheduleConflict {
-  client: Client;
-  program: any;
-  resolution?: ConflictResolution;
-}
-
-
+/**
+ * The one assignment window (backlog-programmes.md A1-A7), for the workout and nutrition libraries, the client profile
+ * and the dashboard: one start date for all, the active clients only, a grey line under each client whose calendar
+ * changes, a confirmation only when one does, then « Annuler » in the message.
+ */
 @Component({
   selector: 'app-modal-assign-toclient',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, FeatherModule, AssignVisibilityNoteComponent,
+    AssignScheduleComponent, AssignConfirmComponent],
   templateUrl: './modal-assign-toclient.component.html',
   styleUrls: ['./modal-assign-toclient.component.scss'],
 })
 export class ModalAssignToclientComponent implements OnInit {
-  ngOnInit(): void {
-    this.recalculateEndDate();
-    this.loadClient();
-  }
-
-  constructor(
-    private clientService: ClientService,
-    private workoutService: WorkoutService,
-    private nutritionService: NutritionService,
-    private translate: TranslateService
-  ) {}
-  // Nom du programme affiché sous le titre
   @Input() programName = '';
-  @Input() showEndDate = false;
+  /** The program being assigned (its id, its days: the window says what the client will see). */
+  @Input() program: any = null;
   @Input() assignmentType: AssignmentType = 'workout';
+  /** A file program: the coach chooses its end. */
+  @Input() showEndDate = false;
+  /** Kept for the callers; the dates now come from the server. */
   @Input() durationDays = 1;
   @Input() includeFilePrograms = true;
+  /** Assign to these clients only (client profile): no list to choose from. */
+  @Input() presetClients: Client[] | null = null;
 
-  // Events vers le parent
   @Output() closeModal = new EventEmitter<void>();
-  @Output() assignProgram = new EventEmitter<{
-    date: string;
-    endDate?: string;
-    clients: Client[];
-    conflictResolutions: Record<string, { resolution: ConflictResolution; conflict: any }>;
-  }>();
   @Output() cancel = new EventEmitter<void>();
+  /** The assignment is done (the message with « Annuler » is shown by the window). */
+  @Output() assigned = new EventEmitter<AssignResult>();
 
+  step: 'select' | 'confirm' = 'select';
   startDate = '';
   endDate = '';
-  selectedClients: Client[] = [];
-  searchTerm = '';
-  conflicts: ScheduleConflict[] = [];
-  checkingConflicts = false;
+  previews: Record<string, ClientSchedulePreview> = {};
+  checking = false;
+  busy = false;
+  clients: Client[] = [];
   clientsLoading = true;
-  /** Programs of each client already fetched in this modal: ticking or changing the date does not ask again. */
-  private readonly programsByClient = new Map<string, any[]>();
-  private pendingChecks = 0;
+  searchTerm = '';
+  selectedIds: string[] = [];
+  confirmRows: AssignConfirmRow[] = [];
 
-  userid = sessionStorage.getItem('userId');
+  private readonly userId = sessionStorage.getItem('userId');
 
-  clients: Client[] = [
+  constructor(private clientService: ClientService, public schedule: ProgramScheduleService) {}
 
-  ];
-
-  johnDoeChip = {
-    id: 0,
-    name: 'John Doe',
-    avatarText: 'JD',
-  };
-
-  // ---------- FILTRE CLIENTS ----------
-  get filteredClients(): Client[] {
-    const term = this.searchTerm.toLowerCase().trim();
-    if (!term) {
-      return this.clients;
+  ngOnInit(): void {
+    if (this.presetClients?.length) {
+      this.clients = this.presetClients.filter(client => !!client.id);
+      this.selectedIds = this.clients.map(client => String(client.id));
+      this.clientsLoading = false;
+      return;
     }
-    return this.clients.filter(
-      (c) =>
-        (c.firstName || '').toLowerCase().includes(term) ||
-        (c.lastName || '').toLowerCase().includes(term) ||
-        (c.email || '').toLowerCase().includes(term)
-    );
-  }
-
-  loadClient() {
-    if (!this.userid) return;
-
-    // Shown in the modal (its own loading line): no full-screen loader over the page.
-    this.clientService.getActiveClientsForAssignment(this.userid, true).subscribe({
-      next: (res) => {
-        this.clients = res;
+    if (!this.userId) {
+      this.clientsLoading = false;
+      return;
+    }
+    // Active clients only (A1), read in the window without the full-screen loader.
+    this.clientService.getActiveClientsForAssignment(this.userId, true).subscribe({
+      next: clients => {
+        this.clients = clients;
         this.clientsLoading = false;
       },
       error: () => (this.clientsLoading = false),
     });
   }
 
-  // ---------- SÉLECTION CLIENTS ----------
-  onToggleClient(client: Client): void {
-    client.selected = !client.selected;
-
-    if (client.selected) {
-      if (!this.selectedClients.some((c) => c.id === client.id)) {
-        this.selectedClients = [...this.selectedClients, client];
-      }
-    } else {
-      this.selectedClients = this.selectedClients.filter(
-        (c) => c.id !== client.id
-      );
-      this.conflicts = this.conflicts.filter((conflict) => conflict.client.id !== client.id);
-    }
-
-    this.refreshConflicts();
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.busy) return;
+    if (this.step === 'confirm') this.step = 'select';
+    else this.close();
   }
 
-  onRemoveClientFromChips(clientId: any): void {
-    const client = this.clients.find((c) => c.id === clientId);
-    if (client) {
-      client.selected = false;
-    }
-    this.selectedClients = this.selectedClients.filter(
-      (c) => c.id !== clientId
-    );
-    this.conflicts = this.conflicts.filter((conflict) => conflict.client.id !== clientId);
+  get kind(): ProgramKind {
+    return this.assignmentType === 'nutrition' ? 'NUTRITION' : 'WORKOUT';
   }
 
-  get selectedCount(): number {
-    return this.selectedClients.length;
+  get locked(): boolean {
+    return !!this.presetClients?.length;
+  }
+
+  get filteredClients(): Client[] {
+    const term = this.searchTerm.toLowerCase().trim();
+    if (!term) return this.clients;
+    return this.clients.filter(client =>
+      `${client.firstName || ''} ${client.lastName || ''} ${client.email || ''}`.toLowerCase().includes(term));
+  }
+
+  get allFilteredSelected(): boolean {
+    const visible = this.filteredClients.filter(client => client.id);
+    return visible.length > 0 && visible.every(client => this.isSelected(client));
+  }
+
+  /** The program's length, to show its end before any client is chosen (not for a file: the coach picks its end). */
+  get lengthDays(): number | null {
+    return this.showEndDate ? null : programLengthDays(this.program, this.kind);
+  }
+
+  get endMissing(): boolean {
+    return this.showEndDate && (!this.endDate || this.endDate < this.startDate);
   }
 
   get assignDisabled(): boolean {
-    return (
-      !this.startDate ||
-      !this.endDate ||
-      this.selectedCount === 0 ||
-      this.checkingConflicts ||
-      this.conflicts.some((conflict) => !conflict.resolution)
-    );
+    return this.busy || this.checking || !this.startDate || this.endMissing || this.selectedIds.length === 0
+      || !this.program?.id;
   }
 
-  get hasConflicts(): boolean {
-    return this.conflicts.length > 0;
+  isSelected(client: Client): boolean {
+    return !!client.id && this.selectedIds.includes(String(client.id));
   }
 
-  get assignmentButtonLabel(): string {
-    return this.translate.instant(this.hasConflicts ? 'CONFIRM_ASSIGNMENT' : 'ASSIGN_PROGRAM');
+  toggle(client: Client): void {
+    if (!client.id || this.locked || this.busy) return;
+    const id = String(client.id);
+    this.selectedIds = this.selectedIds.includes(id)
+      ? this.selectedIds.filter(item => item !== id)
+      : [...this.selectedIds, id];
   }
 
-  onStartDateChange(): void {
-    this.recalculateEndDate();
-    this.refreshConflicts();
+  toggleAllFiltered(): void {
+    if (this.locked || this.busy) return;
+    const visible = this.filteredClients.filter(client => client.id).map(client => String(client.id));
+    if (this.allFilteredSelected) {
+      this.selectedIds = this.selectedIds.filter(id => !visible.includes(id));
+    } else {
+      this.selectedIds = [...new Set([...this.selectedIds, ...visible])];
+    }
   }
 
-  setConflictResolution(conflict: ScheduleConflict, resolution: ConflictResolution): void {
-    conflict.resolution = resolution;
+  name(client: Client | undefined): string {
+    if (!client) return '';
+    return `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || '';
   }
 
-  hasClientConflict(client: Client): boolean {
-    return this.conflicts.some((conflict) => conflict.client.id === client.id);
+  initials(client: Client): string {
+    const value = `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`.toUpperCase();
+    return value || (client.email?.[0] || '?').toUpperCase();
   }
 
-  getClientDisplayName(client: Client): string {
-    return `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || 'Client';
+  avatar(client: Client): string | null {
+    return client.avatarUrl || client.image || null;
   }
 
-  getProgramName(program: any): string {
-    return program?.name || program?.programName || 'Existing program';
+  linesFor(client: Client): string[] {
+    const preview = client.id ? this.previews[String(client.id)] : undefined;
+    return (preview?.changes || []).map(change => this.schedule.text(changeSentence(change, this.schedule.formatDate)));
   }
 
-  formatDate(value?: string): string {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-
-    return date.toLocaleDateString('en-GB');
+  errorFor(client: Client): string | null {
+    const preview = client.id ? this.previews[String(client.id)] : undefined;
+    return preview?.errorCode || null;
   }
 
-  private recalculateEndDate(): void {
-    if (!this.startDate) {
-      this.endDate = '';
+  get selectedClients(): Client[] {
+    return this.selectedIds.map(id => this.clients.find(client => String(client.id) === id)).filter((c): c is Client => !!c);
+  }
+
+  /* ---------------- assigning ---------------- */
+
+  onAssign(): void {
+    if (this.assignDisabled) return;
+    const ids = this.selectedClients.filter(client => !this.errorFor(client)).map(client => String(client.id));
+    const refused = this.selectedIds.filter(id => !ids.includes(id));
+    if (ids.length === 0 && refused.length) {
+      this.doAssign(this.selectedIds); // the server says why, client by client
       return;
     }
-
-    const duration = Math.max(Number(this.durationDays) || 1, 1);
-    this.endDate = this.addDays(this.startDate, duration - 1);
+    const affected = affectedClientIds(this.previews, this.selectedIds);
+    if (affected.length === 0) {
+      this.doAssign(this.selectedIds);
+      return;
+    }
+    // Changed clients first, the others after (A6).
+    this.confirmRows = this.selectedClients.map(client => ({
+      id: String(client.id),
+      name: this.name(client),
+      avatarUrl: this.avatar(client),
+      lines: this.linesFor(client),
+    })).sort((a, b) => Number(b.lines.length > 0) - Number(a.lines.length > 0));
+    this.step = 'confirm';
   }
 
-  private refreshConflicts(): void {
-    if (!this.startDate || !this.endDate || this.selectedClients.length === 0 || !this.userid) {
-      this.conflicts = [];
-      return;
-    }
-
-    // Only the clients not checked yet are asked, without the full-screen loader (it flashed over the page at each
-    // tick). The overlaps are then computed here, also when the start date changes.
-    const missing = this.selectedClients.filter((client) => client.id && !this.programsByClient.has(String(client.id)));
-    if (!missing.length) {
-      this.computeConflicts();
-      return;
-    }
-
-    const visibleProgramType = this.includeFilePrograms ? 'ALL' : 'APP';
-    this.pendingChecks++;
-    this.checkingConflicts = true;
-    forkJoin(missing.map((client) => {
-      const request$ = this.assignmentType === 'nutrition'
-        ? this.nutritionService.getNutritionPlanByCoachIdAndClient(this.userid!, client.id!, 0, 200, visibleProgramType, 'ALL', 'ALL', 'RECOMMENDED', true)
-        : this.workoutService.getWorkoutByCoachIdAndClient(this.userid!, client.id!, 0, 200, visibleProgramType, 'ALL', 'ALL', 'RECOMMENDED', true);
-      return request$.pipe(
-        map((response: any) => [String(client.id), Array.isArray(response) ? response : (response?.content || [])] as [string, any[]]),
-        catchError(() => of([String(client.id), []] as [string, any[]])),
-      );
-    })).subscribe((rows) => {
-      rows.forEach(([clientId, programs]) => this.programsByClient.set(clientId, programs));
-      this.pendingChecks--;
-      this.checkingConflicts = this.pendingChecks > 0;
-      this.computeConflicts();
+  doAssign(clientIds: string[]): void {
+    if (!this.program?.id || clientIds.length === 0) return;
+    this.busy = true;
+    const names = Object.fromEntries(this.clients.map(client => [String(client.id), this.name(client)]));
+    this.schedule.run({
+      kind: this.kind,
+      programId: String(this.program.id),
+      startDate: this.startDate,
+      endDate: this.showEndDate ? this.endDate : null,
+      clientIds,
+    }, names).subscribe({
+      next: result => {
+        this.busy = false;
+        this.assigned.emit(result);
+        if (result.results.some(item => item.ok)) this.closeModal.emit();
+        else this.step = 'select';
+      },
+      error: error => {
+        this.busy = false;
+        this.schedule.announceError(error);
+      },
     });
   }
 
-  private computeConflicts(): void {
-    const previousResolutions = new Map(
-      this.conflicts
-        .filter((conflict) => conflict.client.id && conflict.resolution)
-        .map((conflict) => [conflict.client.id, conflict.resolution])
-    );
-
-    this.conflicts = this.selectedClients
-      .map((client) => {
-        const programs = client.id ? this.programsByClient.get(String(client.id)) : undefined;
-        const conflictProgram = programs?.find((program: any) => this.overlaps(program));
-        if (!conflictProgram) return null;
-        return { client, program: conflictProgram, resolution: previousResolutions.get(client.id) } as ScheduleConflict;
-      })
-      .filter((result): result is ScheduleConflict => !!result);
-  }
-
-  private overlaps(program: any): boolean {
-    if (!program?.startDate || !program?.endDate) return false;
-
-    const existingStart = this.toDayTime(program.startDate);
-    const existingEnd = this.toDayTime(program.endDate);
-    const nextStart = this.toDayTime(this.startDate);
-    const nextEnd = this.toDayTime(this.endDate);
-
-    return existingStart <= nextEnd && nextStart <= existingEnd;
-  }
-
-  private toDayTime(value: string): number {
-    return new Date(`${value}T00:00:00`).getTime();
-  }
-
-  private addDays(value: string, days: number): string {
-    const date = new Date(`${value}T00:00:00`);
-    date.setDate(date.getDate() + days);
-    return this.toDateInputValue(date);
-  }
-
-  private toDateInputValue(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  // ---------- ACTIONS ----------
   close(): void {
+    if (this.busy) return;
     this.closeModal.emit();
   }
 
   onCancel(): void {
+    if (this.busy) return;
     this.cancel.emit();
-  }
-
-  onAssign(): void {
-    if (this.assignDisabled) return;
-
-    this.assignProgram.emit({
-      date: this.startDate,
-      endDate: this.endDate,
-      clients: this.selectedClients,
-      conflictResolutions: this.conflicts.reduce((acc, conflict) => {
-        if (conflict.client.id && conflict.resolution) {
-          acc[conflict.client.id] = {
-            resolution: conflict.resolution,
-            conflict: conflict.program,
-          };
-        }
-        return acc;
-      }, {} as Record<string, { resolution: ConflictResolution; conflict: any }>),
-    });
   }
 }

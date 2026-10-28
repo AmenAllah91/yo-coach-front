@@ -1,0 +1,42 @@
+<div class="welcome-shell">
+  <header class="page-header"><img src="assets/logo/yocoach-logo.svg" alt="YoCoach" /></header>
+
+  <main class="welcome-card">
+    <div class="welcome-icon" aria-hidden="true">🎉</div>
+    <h1>
+      <ng-container *ngIf="firstName; else noName">{{ 'COACH_GUIDE.WELCOME_TITLE' | translate: { name: firstName } }}</ng-container>
+      <ng-template #noName>{{ 'COACH_GUIDE.WELCOME_TITLE_NO_NAME' | translate }}</ng-template>
+    </h1>
+    <p class="lead">{{ 'COACH_GUIDE.WELCOME_SUBTITLE' | translate }}</p>
+
+    <div class="choices" role="radiogroup" [attr.aria-label]="'COACH_GUIDE.WELCOME_QUESTION' | translate">
+      <button type="button" class="choice" role="radio" [attr.aria-checked]="choice === 'EXAMPLE'"
+              [class.selected]="choice === 'EXAMPLE'" (click)="choice = 'EXAMPLE'">
+        <span class="choice-head">
+          <span class="choice-icon" aria-hidden="true">👀</span>
+          <span class="badge">{{ 'COACH_GUIDE.RECOMMENDED' | translate }}</span>
+          <i class="radio" aria-hidden="true"></i>
+        </span>
+        <strong>{{ 'COACH_GUIDE.CHOICE_EXAMPLE' | translate }}</strong>
+        <span class="choice-text">{{ 'COACH_GUIDE.CHOICE_EXAMPLE_TEXT' | translate }}</span>
+      </button>
+
+      <button type="button" class="choice" role="radio" [attr.aria-checked]="choice === 'SCRATCH'"
+              [class.selected]="choice === 'SCRATCH'" (click)="choice = 'SCRATCH'">
+        <span class="choice-head">
+          <span class="choice-icon" aria-hidden="true">🚀</span>
+          <i class="radio" aria-hidden="true"></i>
+        </span>
+        <strong>{{ 'COACH_GUIDE.CHOICE_SCRATCH' | translate }}</strong>
+        <span class="choice-text">{{ 'COACH_GUIDE.CHOICE_SCRATCH_TEXT' | translate }}</span>
+      </button>
+    </div>
+
+    <p class="hint">{{ 'COACH_GUIDE.CHOICE_HINT' | translate }}</p>
+    <p class="error" *ngIf="failed" role="alert">{{ 'COACH_GUIDE.START_ERROR' | translate }}</p>
+
+    <button type="button" class="primary-btn" [disabled]="saving" (click)="confirm()">
+      {{ (saving ? 'COACH_GUIDE.PREPARING' : 'COACH_GUIDE.START') | translate }} <span aria-hidden="true">→</span>
+    </button>
+  </main>
+</div>

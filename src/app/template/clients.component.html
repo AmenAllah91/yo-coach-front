@@ -42,7 +42,7 @@
         class="status-tab invited-tab"
         [class.selected]="showInvited"
         (click)="openInvited()">
-        {{ 'CLIENT_STATUS_INVITED' | translate }} <span>{{ invitations.length }}</span>
+        {{ 'CLIENT_STATUS_INVITED' | translate }} <span>{{ pendingInvitations.length }}</span>
       </button>
       <button
         class="status-tab archived-tab"
@@ -58,15 +58,27 @@
     </div>
 
     <!-- Invited: sent but not accepted yet -->
+    <div class="invitation-filters" *ngIf="showInvited">
+      <button type="button" class="invitation-filter" [class.selected]="invitationFilter === 'PENDING'"
+              (click)="setInvitationFilter('PENDING')">
+        {{ 'INVITATION_FILTER_PENDING' | translate }} <span>{{ pendingInvitations.length }}</span>
+      </button>
+      <button type="button" class="invitation-filter" [class.selected]="invitationFilter === 'EXPIRED'"
+              (click)="setInvitationFilter('EXPIRED')">
+        {{ 'INVITATION_FILTER_EXPIRED' | translate }} <span>{{ expiredInvitations.length }}</span>
+      </button>
+    </div>
+
     <div class="clients-table invited-table" *ngIf="showInvited">
       <div class="table-header">
         <div class="col-client">{{ 'EMAIL' | translate }}</div>
         <div class="col-workouts">{{ 'INVITATION_SENT_ON' | translate }}</div>
         <div class="col-status">{{ 'STATUS' | translate }}</div>
+        <div class="col-expiry">{{ 'INVITATION_EXPIRY' | translate }}</div>
         <div class="col-actions"></div>
       </div>
       <div class="table-body">
-        <div class="client-row" *ngFor="let invitation of invitations">
+        <div class="client-row" *ngFor="let invitation of shownInvitations">
           <div class="col-client">
             <div class="client-details"><h4>{{ invitation.email }}</h4></div>
           </div>
@@ -76,9 +88,17 @@
               <ng-container [ngSwitch]="invitation.status">
                 <ng-container *ngSwitchCase="'EXPIRED'">{{ 'INVITATION_STATUS_EXPIRED' | translate }}</ng-container>
                 <ng-container *ngSwitchCase="'BLOCKED'">{{ 'INVITATION_STATUS_BLOCKED' | translate }}</ng-container>
-                <ng-container *ngSwitchDefault>{{ 'INVITATION_STATUS_PENDING' | translate: { days: invitationDaysLeft(invitation) } }}</ng-container>
+                <ng-container *ngSwitchDefault>{{ 'INVITATION_STATUS_PENDING' | translate }}</ng-container>
               </ng-container>
             </span>
+          </div>
+          <div class="col-expiry" [class.expired]="invitation.status === 'EXPIRED'">
+            <ng-container *ngIf="invitation.status === 'EXPIRED'; else expiresLater">
+              {{ 'INVITATION_EXPIRED_ON' | translate: { date: (invitation.expiresAt | date:'dd/MM/yyyy') } }}
+            </ng-container>
+            <ng-template #expiresLater>
+              {{ invitationExpiryKey(invitation) | translate: { days: invitationDaysLeft(invitation) } }}
+            </ng-template>
           </div>
           <div class="col-actions invitation-actions">
             <button type="button" class="action-btn" (click)="resendInvitation(invitation)"
@@ -98,8 +118,8 @@
         </div>
       </div>
       <app-scroll-loader [isLoading]="invitationsLoading" loadingText="LOADING_CLIENTS"></app-scroll-loader>
-      <div class="no-clients" *ngIf="invitations.length === 0 && !invitationsLoading">
-        <p>{{ 'NO_PENDING_INVITATIONS' | translate }}</p>
+      <div class="no-clients" *ngIf="shownInvitations.length === 0 && !invitationsLoading">
+        <p>{{ (invitationFilter === 'EXPIRED' ? 'NO_EXPIRED_INVITATIONS' : 'NO_PENDING_INVITATIONS') | translate }}</p>
       </div>
     </div>
 
@@ -128,7 +148,7 @@
                 >
               </div>
               <div class="client-details">
-                <h4>{{ client.firstName }} {{ client.lastName }}</h4>
+                <h4>{{ client.firstName }} {{ client.lastName }} <span class="example-badge" *ngIf="client.demo">{{ 'COACH_GUIDE.EXAMPLE_BADGE' | translate }}</span></h4>
                 <p>{{ getClientProgram(client) }}</p>
               </div>
             </div>

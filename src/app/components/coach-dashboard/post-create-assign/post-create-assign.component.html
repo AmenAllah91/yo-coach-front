@@ -27,6 +27,13 @@
     <label class="assign-label" for="post-create-date">{{ dateLabel | translate }}</label>
     <input id="post-create-date" class="assign-input" type="date" [(ngModel)]="date" />
 
+    <!-- What the client will see (backlog-programmes.md R5) -->
+    <app-assign-visibility-note
+      *ngIf="pendingAssign?.type === 'workout' || pendingAssign?.type === 'nutrition'"
+      [kind]="$any(pendingAssign?.type)"
+      [program]="pendingAssign?.item"
+    ></app-assign-visibility-note>
+
     <div class="assign-error" *ngIf="error">{{ error }}</div>
 
     <div class="assign-actions">
@@ -37,3 +44,14 @@
     </div>
   </div>
 </div>
+
+<app-modal-assign-toclient
+  *ngIf="showProgramModal && pendingAssign"
+  [programName]="title"
+  [program]="pendingAssign.item"
+  [assignmentType]="$any(pendingAssign.type)"
+  [showEndDate]="isFileProgram"
+  (closeModal)="closeProgramModal()"
+  (cancel)="closeProgramModal()"
+  (assigned)="onProgramAssigned()"
+></app-modal-assign-toclient>

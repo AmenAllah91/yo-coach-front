@@ -102,9 +102,11 @@ export class WorkoutService {
   }
 
 
-  updateWorkout(id: string, workout: WorkoutPlan, skipLoader = false): Observable<WorkoutPlan> {
+  /** {@code overlap}: the coach's choice when the program grew over the next one (backlog-programmes.md P9). */
+  updateWorkout(id: string, workout: WorkoutPlan, skipLoader = false, overlap?: 'SHIFT' | 'REMOVE' | null): Observable<WorkoutPlan> {
     return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}`, workout, {
       headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
+      ...(overlap ? { params: { overlap } } : {}),
     });
   }
 
@@ -193,11 +195,12 @@ export class WorkoutService {
     return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}/file/replace`, formData);
   }
 
-  updateWorkoutPlanDates(id: string, startDate: string, endDate: string): Observable<WorkoutPlan> {
+  /** « Modifier les dates » (backlog-programmes.md CD-01): the next programs are shifted unless `overlap` is REMOVE. */
+  updateWorkoutPlanDates(id: string, startDate: string, endDate: string, overlap: 'SHIFT' | 'REMOVE' = 'SHIFT'): Observable<WorkoutPlan> {
     return this.http.patch<WorkoutPlan>(`${this.apiUrl}${id}/dates`, {
       startDate,
       endDate,
-    });
+    }, { params: { overlap } });
   }
 
   getWorkoutFileUrl(plan?: Partial<WorkoutPlan> | null): string {

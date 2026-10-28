@@ -1,16 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, Meta, SafeResourceUrl, Title } from '@angular/platform-browser';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageService } from '../../../service/language.service';
+import { toWebsiteVideoEmbedUrl } from '../models/website-video';
 import { CoachLandingPreviewComponent } from '../coach-landing-preview/coach-landing-preview.component';
 import { WebsiteService } from '../../../service/website.service';
 
+/** A coach's public site: the API tells which site answers on this host (slug.yo-coach.app or the coach's domain). */
 @Component({
   selector: 'app-public-website',
   standalone: true,
-  imports: [CommonModule, CoachLandingPreviewComponent],
+  imports: [CommonModule, TranslateModule, CoachLandingPreviewComponent],
   template: `
-    <div *ngIf="loading" class="public-site-state">Chargement...</div>
-    <div *ngIf="error" class="public-site-state">Site introuvable</div>
+    <div *ngIf="loading" class="public-site-state"><span class="public-site-spinner"></span></div>
+    <div *ngIf="error" class="public-site-state">
+      <strong>{{ 'PUBLIC_SITE_NOT_FOUND' | translate }}</strong>
+      <span>{{ 'PUBLIC_SITE_NOT_FOUND_HINT' | translate }}</span>
+    </div>
 
     <app-coach-landing-preview
       *ngIf="!loading && !error && website"
@@ -24,6 +31,9 @@ import { WebsiteService } from '../../../service/website.service';
       [cta]="website.cta"
       [leadFields]="website.leadFields"
       [colors]="website.colors"
+      [design]="website.design"
+      [socialLinks]="website.socialLinks"
+      [stats]="website.stats || []"
       [descriptionBlocks]="website.descriptionBlocks || []"
       [services]="website.services || []"
       [results]="website.results || []"
@@ -34,13 +44,27 @@ import { WebsiteService } from '../../../service/website.service';
   styles: [`
     .public-site-state {
       min-height: 100vh;
+      padding: 24px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      gap: 8px;
       background: #f8fafc;
       color: #1f2937;
+      text-align: center;
     }
+    .public-site-state strong { font-size: 20px; }
+    .public-site-state span { color: #64748b; font-size: 15px; }
+    .public-site-spinner {
+      width: 26px;
+      height: 26px;
+      border: 2px solid #d6e2ec;
+      border-top-color: #44b4df;
+      border-radius: 50%;
+      animation: public-site-spin .8s linear infinite;
+    }
+    @keyframes public-site-spin { to { transform: rotate(360deg); } }
   `]
 })
 export class PublicWebsiteComponent implements OnInit {
@@ -51,23 +75,27 @@ export class PublicWebsiteComponent implements OnInit {
 
   constructor(
     private websiteService: WebsiteService,
-    private sanitizer: DomSanitizer
-  ) {}
+    private sanitizer: DomSanitizer,
+    private title: Title,
+    private meta: Meta,
+    translate: TranslateService,
+    languageService: LanguageService,
+  ) {
+    translate.use(languageService.getCurrentLanguage());
+  }
 
   ngOnInit(): void {
-    const slug = this.extractSlugFromHost();
+    const host = window.location.hostname;
+    // Local check of a site: http://localhost:4200/site?slug=xxx
+    const slug = new URLSearchParams(window.location.search).get('slug');
+    const request = slug ? this.websiteService.getPublicWebsite(slug) : this.websiteService.resolvePublicWebsite(host);
 
-    if (!slug) {
-      this.error = true;
-      this.loading = false;
-      return;
-    }
-
-    this.websiteService.getPublicWebsite(slug).subscribe({
+    request.subscribe({
       next: (res) => {
         this.website = res;
         this.videoEmbedUrl = this.buildSafeVideoUrl(res?.video?.url);
         this.loading = false;
+        this.describePage(res);
       },
       error: () => {
         this.error = true;
@@ -76,38 +104,24 @@ export class PublicWebsiteComponent implements OnInit {
     });
   }
 
-  private extractSlugFromHost(): string | null {
-    const host = window.location.hostname;
-
-    const parts = host.split('.');
-
-    if (parts.length >= 3) {
-      return parts[0];
+  /** Tab title and the text shown when the link is shared (for crawlers that run scripts). */
+  private describePage(site: any): void {
+    const name = site?.profile?.fullName?.trim();
+    const headline = [name, site?.profile?.title?.trim()].filter(Boolean).join(' · ');
+    if (headline) this.title.setTitle(headline);
+    const description = (site?.profile?.slogan || site?.profile?.bio || '').trim().slice(0, 160);
+    if (description) {
+      this.meta.updateTag({ name: 'description', content: description });
+      this.meta.updateTag({ property: 'og:description', content: description });
     }
-
-    return null;
+    if (headline) this.meta.updateTag({ property: 'og:title', content: headline });
+    if (site?.profile?.image) this.meta.updateTag({ property: 'og:image', content: site.profile.image });
   }
 
   private buildSafeVideoUrl(url: string): SafeResourceUrl | null {
-    const embedUrl = this.toEmbedUrl(url);
+    const embedUrl = toWebsiteVideoEmbedUrl(url);
     return embedUrl
       ? this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl)
       : null;
-  }
-
-  private toEmbedUrl(url: string): string {
-    if (!url) return '';
-
-    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/i);
-    if (youtubeMatch?.[1]) {
-      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-    }
-
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/i);
-    if (vimeoMatch?.[1]) {
-      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-    }
-
-    return '';
   }
 }

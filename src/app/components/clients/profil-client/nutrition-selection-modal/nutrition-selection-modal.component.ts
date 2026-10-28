@@ -1,31 +1,33 @@
+import { AssignVisibilityNoteComponent } from '@shared/components/assign-visibility-note/assign-visibility-note.component';
+import { nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
+import { AssignScheduleComponent } from '@shared/components/assign-schedule/assign-schedule.component';
+import { AssignConfirmComponent, AssignConfirmRow } from '@shared/components/assign-confirm/assign-confirm.component';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Client } from 'app/service/client.service';
-import { NutritionService } from 'app/service/nutrition.service';
-import { catchError, map, of } from 'rxjs';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { AssignResult, ClientSchedulePreview, changeSentence, programLengthDays } from '@shared/models/program-schedule';
 
-type ConflictResolution = 'START_AFTER' | 'REPLACE' | 'KEEP_BOTH';
-
-interface ScheduleConflict {
-  client: Client;
-  program: any;
-  resolution?: ConflictResolution;
-}
-
+/**
+ * Client profile: choose a library nutrition program for this client (backlog-programmes.md A2-A7). One start date,
+ * what changes on the client's calendar under it, a confirmation only when something changes, « Annuler » after.
+ */
 @Component({
   selector: 'app-nutrition-selection-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, AssignVisibilityNoteComponent, AssignScheduleComponent, AssignConfirmComponent],
   templateUrl: './nutrition-selection-modal.component.html',
   styleUrls: ['./nutrition-selection-modal.component.scss'],
 })
-export class NutritionSelectionModalComponent {
+export class NutritionSelectionModalComponent implements OnChanges {
   // affichage
   @Input() isOpen = false;
   @Input() fullName = '';
   @Input() client: Client | null = null;
+  /** A start to propose (the first day of a gap on the client's calendar). */
+  @Input() initialStart: string | null = null;
 
   // liste complète (non filtrée) fournie par le parent
   @Input() programs: any[] = [];
@@ -39,29 +41,27 @@ export class NutritionSelectionModalComponent {
   @Output() backClick = new EventEmitter<void>();
   @Output() searchPrograms = new EventEmitter<string>();
   @Output() pageChange = new EventEmitter<number>();
+  /** The assignment is done (the window did it and shows the message with « Annuler »). */
+  @Output() assignProgram = new EventEmitter<{ program: any; startDate: string; result: AssignResult }>();
 
-  // action finale : on renvoie au parent l’item choisi + dates
-  @Output() assignProgram = new EventEmitter<{
-    program: any;
-    startDate: string;
-    endDate: string | null;
-    clients: Client[];
-    conflictResolutions: Record<string, { resolution: ConflictResolution; conflict: any }>;
-  }>();
-
-  // --- STATE DU MODAL (ex-fonctions/variables du parent) ---
   searchTerm = '';
   selectedProgramId: string | null = null;
   selectedProgramItem: any | null = null;
   startDate = '';
   endDate = '';
-  selectedClientChecked = true;
-  conflict: ScheduleConflict | null = null;
-  checkingConflicts = false;
+  assigning = false;
+  checking = false;
+  step: 'pick' | 'confirm' = 'pick';
+  previews: Record<string, ClientSchedulePreview> = {};
+  confirmRows: AssignConfirmRow[] = [];
+  /** A stable list for the schedule (a new array at each check would ask the server again and again). */
+  clientIds: string[] = [];
 
-  constructor(private nutritionService: NutritionService, private translate: TranslateService) {}
+  constructor(private translate: TranslateService, public schedule: ProgramScheduleService) {}
 
-  // --- FONCTIONS EXTRAITES ---
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['client']) this.clientIds = this.client?.id ? [String(this.client.id)] : [];
+  }
 
   get filteredPrograms(): any[] {
     const visiblePrograms = this.nutritionFileEnabled === false
@@ -89,8 +89,7 @@ export class NutritionSelectionModalComponent {
     this.selectedProgramItem = program;
     this.selectedProgramId = program.id;
     if (!this.isFileProgram(program)) this.endDate = '';
-    this.conflict = null;
-    this.refreshConflicts();
+    if (this.initialStart && !this.startDate) this.startDate = this.initialStart;
   }
 
   onSearchChange(): void {
@@ -105,6 +104,11 @@ export class NutritionSelectionModalComponent {
   get selectedProgram(): any | null {
     if (!this.selectedProgramId) return null;
     return this.programs.find((p) => p.id === this.selectedProgramId) || null;
+  }
+
+  /** The program's length, to show its end at once (the server confirms it). */
+  lengthOf(program: any): number | null {
+    return programLengthDays(program, 'NUTRITION');
   }
 
   isFileProgram(program: any): boolean {
@@ -139,9 +143,10 @@ export class NutritionSelectionModalComponent {
       return this.getFileKind(program);
     }
 
-    return this.translate.instant(program?.trackingMode === 'TOTAL_FOR_DAY'
+    const kind = nutritionPlanKind(program);
+    return this.translate.instant(kind === 'DAY_MACROS'
       ? 'TOTAL_FOR_DAY'
-      : program?.trackingMode === 'EACH_MEAL'
+      : kind === 'MEAL_MACROS'
         ? 'EACH_MEAL'
         : 'FULL_MEAL_PLAN');
   }
@@ -156,34 +161,10 @@ export class NutritionSelectionModalComponent {
     return fileName;
   }
 
-  get calculatedEndDate(): string | null {
-    if (!this.selectedProgram || !this.startDate) return null;
-
-    if (this.isFileProgram(this.selectedProgram)) {
-      return this.endDate || null;
-    }
-
-    const start = new Date(this.startDate);
-    const end = new Date(start);
-
-    end.setDate(end.getDate() + Math.max((this.selectedProgram.totalDays || 1) - 1, 0));
-    return end.toISOString().slice(0, 10);
-  }
-
   get canAssign(): boolean {
-    if (!this.selectedClientChecked || !this.selectedProgramItem || !this.startDate || this.checkingConflicts) {
-      return false;
-    }
-
-    if (this.isFileProgram(this.selectedProgramItem) && !this.endDate) {
-      return false;
-    }
-
-    return !this.conflict || !!this.conflict.resolution;
-  }
-
-  get assignmentButtonLabel(): string {
-    return this.translate.instant(this.conflict ? 'CONFIRM_ASSIGNMENT' : 'ASSIGN_NUTRITION_PROGRAM');
+    if (!this.client?.id || !this.selectedProgramItem || !this.startDate || this.assigning || this.checking) return false;
+    if (this.isFileProgram(this.selectedProgramItem) && (!this.endDate || this.endDate < this.startDate)) return false;
+    return true;
   }
 
   get clientDisplayName(): string {
@@ -191,128 +172,69 @@ export class NutritionSelectionModalComponent {
     return `${this.client.firstName || ''} ${this.client.lastName || ''}`.trim() || this.client.email || this.fullName || 'Client';
   }
 
-  getProgramName(program: any): string {
-    return program?.name || program?.programName || 'Existing program';
-  }
-
-  formatDate(value?: string): string {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-
-    return date.toLocaleDateString('en-GB');
-  }
-
-  onToggleClient(): void {
-    this.selectedClientChecked = !this.selectedClientChecked;
-    this.refreshConflicts();
-  }
-
-  onStartDateChange(): void {
-    this.refreshConflicts();
-  }
-
-  onEndDateChange(): void {
-    this.refreshConflicts();
-  }
-
-  setConflictResolution(resolution: ConflictResolution): void {
-    if (this.conflict) {
-      this.conflict.resolution = resolution;
-    }
-  }
-
-  // fermer
   close(): void {
+    if (this.assigning) return;
+    this.reset();
     this.closeModal.emit();
   }
 
-  // retour
   back(): void {
+    if (this.assigning) return;
+    this.reset();
     this.backClick.emit();
   }
 
-  // assign (le parent fera l'appel service)
   assign(): void {
-    if (!this.canAssign) return;
+    if (!this.canAssign || !this.client?.id) return;
+    const lines = (this.previews[String(this.client.id)]?.changes || [])
+      .map(change => this.schedule.text(changeSentence(change, this.schedule.formatDate)));
+    if (lines.length) {
+      this.confirmRows = [{ id: String(this.client.id), name: this.clientDisplayName, lines }];
+      this.step = 'confirm';
+      return;
+    }
+    this.doAssign();
+  }
 
-    this.assignProgram.emit({
-      program: this.selectedProgramItem,
+  doAssign(): void {
+    if (!this.client?.id || !this.selectedProgramItem) return;
+    this.assigning = true;
+    const clientId = String(this.client.id);
+    const program = this.selectedProgramItem;
+    this.schedule.run({
+      kind: 'NUTRITION',
+      programId: String(program.id),
       startDate: this.startDate,
-      endDate: this.calculatedEndDate,
-      clients: this.client ? [this.client] : [],
-      conflictResolutions: this.conflict?.resolution && this.client?.id
-        ? {
-          [this.client.id]: {
-            resolution: this.conflict.resolution,
-            conflict: this.conflict.program,
-          },
+      endDate: this.isFileProgram(program) ? this.endDate : null,
+      clientIds: [clientId],
+    }, { [clientId]: this.clientDisplayName }).subscribe({
+      next: result => {
+        this.assigning = false;
+        if (!result.results.some(item => item.ok)) {
+          this.step = 'pick';
+          return;
         }
-        : {},
+        const startDate = this.startDate;
+        this.reset();
+        this.assignProgram.emit({ program, startDate, result });
+      },
+      error: error => {
+        this.assigning = false;
+        this.schedule.announceError(error);
+      },
     });
   }
 
-  // optionnel: reset state quand on ferme/ouvre
   reset(): void {
     this.searchTerm = '';
     this.selectedProgramId = null;
     this.selectedProgramItem = null;
     this.startDate = '';
     this.endDate = '';
-    this.selectedClientChecked = true;
-    this.conflict = null;
-    this.checkingConflicts = false;
-  }
-
-  private refreshConflicts(): void {
-    if (!this.selectedClientChecked || !this.client?.id || !this.startDate || !this.calculatedEndDate) {
-      this.conflict = null;
-      return;
-    }
-
-    const coachId = sessionStorage.getItem('userId');
-    if (!coachId) {
-      this.conflict = null;
-      return;
-    }
-
-    this.checkingConflicts = true;
-    const previousResolution = this.conflict?.resolution;
-    const visibleProgramType = this.nutritionFileEnabled === false ? 'APP' : 'ALL';
-
-    this.nutritionService.getNutritionPlanByCoachIdAndClient(coachId, this.client.id, 0, 200, visibleProgramType).pipe(
-      map((response: any) => {
-        const programs = Array.isArray(response) ? response : (response?.content || []);
-        const conflictProgram = programs.find((program: any) => this.overlaps(program));
-
-        if (!conflictProgram || !this.client) return null;
-
-        return {
-          client: this.client,
-          program: conflictProgram,
-          resolution: previousResolution,
-        } as ScheduleConflict;
-      }),
-      catchError(() => of(null))
-    ).subscribe((result) => {
-      this.conflict = result;
-      this.checkingConflicts = false;
-    });
-  }
-
-  private overlaps(program: any): boolean {
-    if (!program?.startDate || !program?.endDate || !this.calculatedEndDate) return false;
-
-    const existingStart = this.toDayTime(program.startDate);
-    const existingEnd = this.toDayTime(program.endDate);
-    const nextStart = this.toDayTime(this.startDate);
-    const nextEnd = this.toDayTime(this.calculatedEndDate);
-
-    return existingStart <= nextEnd && nextStart <= existingEnd;
-  }
-
-  private toDayTime(value: string): number {
-    return new Date(`${value}T00:00:00`).getTime();
+    this.assigning = false;
+    this.checking = false;
+    this.step = 'pick';
+    this.previews = {};
+    this.confirmRows = [];
   }
 }

@@ -49,6 +49,13 @@ export interface InvoicePaymentStatus {
   paid: boolean;
   /** The latest attempt was refused at the gateway: the coach can try again. */
   paymentFailed: boolean;
+  /**
+   * The latest attempt was received but not applied (YoSales PAYMENT_REJECTED: invoice cancelled or repriced meanwhile,
+   * amount or currency mismatch...): the money is kept "to refund", nothing is waited for.
+   */
+  paymentRejected?: boolean;
+  /** The invoice was cancelled (VOID): it can no longer be paid, nothing is waited for. */
+  invoiceVoid?: boolean;
 }
 
 /** SUB-35: answer of cancel / resume. */

@@ -1,27 +1,14 @@
-import { Food, Meal, MealDay } from './MealPlan';
+import { Food, MacroTrackingMode, Meal, MealDay } from './MealPlan';
+import { nutritionDayStatus, nutritionFoodLineValid, nutritionMealStatus } from './program-days';
 
+/** Older names over the shared day rule (program-days.ts). */
 export type NutritionMealPublicationState = 'EMPTY_PLACEHOLDER' | 'VALID' | 'INCOMPLETE';
 export type NutritionDayPublicationState = 'EMPTY' | 'READY' | 'INCOMPLETE' | 'CHEAT';
 
 export function nutritionFoodValid(food: Partial<Food> | null | undefined): boolean {
-  const name = food?.name?.trim() || food?.foodRef?.name?.trim();
-  const unit = food?.unit?.trim() || food?.foodRef?.servingUnit?.trim();
-  return !!name && Number(food?.quantity) > 0 && !!unit;
+  return nutritionFoodLineValid(food);
 }
 
-
-function nutritionFoodStarted(food: Partial<Food> | null | undefined): boolean {
-  if (!food) return false;
-  const name = food?.name?.trim() || food?.foodRef?.name?.trim();
-  const unit = food?.unit?.trim() || food?.foodRef?.servingUnit?.trim();
-  const q: any = food?.quantity;
-  const hasQuantity = q != null && q !== '' && Number(q) !== 0;
-  const numericStarted = ['calories', 'protein', 'carbs', 'fat'].some((key) => {
-    const value = (food as any)[key];
-    return value != null && value !== '' && Number(value) !== 0;
-  });
-  return !!name || !!unit || hasQuantity || numericStarted;
-}
 export function nutritionFoodValidationMessages(
   food: Partial<Food> | null | undefined,
   options: { includeNutritionValues?: boolean } = {},
@@ -57,6 +44,15 @@ export function nutritionFoodValidationMessages(
   return [...new Set(messages)];
 }
 
+/** i18n key of the first thing missing on a food line (food, quantity, unit), or null (PRG-18: no English text). */
+export function nutritionFoodValidationKey(food: Partial<Food> | null | undefined): string | null {
+  if (!(food?.name?.trim() || food?.foodRef?.name?.trim())) return 'FOOD_LINE_SELECT_FOOD';
+  const quantity = Number(food?.quantity);
+  if (!Number.isFinite(quantity) || quantity <= 0) return 'FOOD_LINE_QUANTITY';
+  if (!(food?.unit?.trim() || food?.foodRef?.servingUnit?.trim())) return 'FOOD_LINE_UNIT';
+  return null;
+}
+
 export function firstNutritionFoodValidationMessage(
   food: Partial<Food> | null | undefined,
 ): string | null {
@@ -67,57 +63,36 @@ export function nutritionMealValid(meal: Meal | null | undefined): boolean {
   return nutritionMealState(meal) === 'VALID';
 }
 
-export function nutritionMealState(meal: Meal | null | undefined): NutritionMealPublicationState {
-  if (!meal) return 'EMPTY_PLACEHOLDER';
-
-  const foods = meal.foods || [];
-  const startedFoods = foods.filter(nutritionFoodStarted);
-  if (startedFoods.length > 0) {
-    if (meal.template && meal.draft) return 'INCOMPLETE';
-    const hasValidFood = startedFoods.some(nutritionFoodValid);
-    const hasIncompleteFood = startedFoods.some(food => !nutritionFoodValid(food));
-    return hasValidFood && !hasIncompleteFood ? 'VALID' : 'INCOMPLETE';
-  }
-
-  const recipeStarted = Boolean(
-    meal.template
-    || meal.draft
-    || meal.coverImage
-    || meal.totalTimeMinutes
-    || meal.directions?.some((step) => step?.trim())
-    || (meal.name?.trim() && !/^meal\s+\d+$/i.test(meal.name.trim()))
-  );
-
-  return recipeStarted ? 'INCOMPLETE' : 'EMPTY_PLACEHOLDER';
+/**
+ * A meal without food is empty whatever its name ("New Meal", or renamed "Lunch"): it never blocks the save and is
+ * not shown to the client (backlog-programmes.md R3, PRG-13).
+ */
+export function nutritionMealState(meal: Meal | null | undefined, mode?: MacroTrackingMode | null): NutritionMealPublicationState {
+  const state = nutritionMealStatus(meal, mode);
+  return state === 'FILLED' ? 'VALID' : state === 'INVALID' ? 'INCOMPLETE' : 'EMPTY_PLACEHOLDER';
 }
 
-export function nutritionDayState(day: MealDay | null | undefined): NutritionDayPublicationState {
-  if (!day) return 'EMPTY';
-  if (day.cheatMeal) return 'CHEAT';
-
-  const mealStates = (day.meals || []).map(nutritionMealState);
-  if (mealStates.includes('INCOMPLETE')) return 'INCOMPLETE';
-  return mealStates.includes('VALID') ? 'READY' : 'EMPTY';
+export function nutritionDayState(day: MealDay | null | undefined, mode?: MacroTrackingMode | null): NutritionDayPublicationState {
+  const state = nutritionDayStatus(day, mode);
+  return state === 'FILLED' ? 'READY' : state === 'REST' ? 'CHEAT' : state === 'INVALID' ? 'INCOMPLETE' : 'EMPTY';
 }
 
 export function nutritionMealValidationMessages(meal: Meal | null | undefined, mealIndex = 0): string[] {
-  if (!meal || nutritionMealState(meal) === 'EMPTY_PLACEHOLDER') return [];
+  if (!meal || nutritionMealState(meal) !== 'INCOMPLETE') return [];
 
   const mealNumber = mealIndex + 1;
   const messages: string[] = [];
   const foods = meal.foods || [];
 
-  if (meal.template && meal.draft) {
+  if (meal.draft) {
     messages.push(`Meal ${mealNumber}: finish the recipe before saving.`);
   }
-
-  if (foods.length === 0) {
-    messages.push(`Meal ${mealNumber}: add at least one valid food before saving.`);
-    return [...new Set(messages)];
+  if (meal.servings != null && Number(meal.servings) <= 0) {
+    messages.push(`Meal ${mealNumber}: servings must be greater than 0.`);
   }
 
   foods.forEach((food, foodIndex) => {
-    if (!nutritionFoodStarted(food)) return;
+    if (nutritionFoodLineValid(food)) return;
     const foodNumber = foodIndex + 1;
     const name = food?.name?.trim() || food?.foodRef?.name?.trim();
     const unit = food?.unit?.trim() || food?.foodRef?.servingUnit?.trim();

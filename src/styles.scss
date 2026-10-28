@@ -1284,3 +1284,80 @@ body .table-wrap thead th:last-child {
 
 // Client pages: same look as the mobile app.
 @import './app/shared/styles/client-ui';
+
+/* A client program that is finished or was stopped (backlog-programmes.md A9) opens read-only: what only serves to
+   change it is not shown, so nothing looks clickable that is not. */
+.np-card[inert] {
+  .wk-restmark,
+  .wk-kebab,
+  .np-settings-toggle,
+  .np-link,
+  .np-close,
+  .np-mini,
+  .np-iconbtn,
+  .np-meal__drag,
+  .np-foods__remove,
+  .np-btn--brandsoft,
+  .np-btn--branddash,
+  .np-emptystate,
+  .mtf__pill:not(.is-set),
+  .wkex-addexercise,
+  .wkex-supersetbtn,
+  .wkex-quickchoose,
+  .np-mobile-day__delete {
+    display: none !important;
+  }
+}
+
+/* Client programs in the program editors (backlog-programmes.md ED-xx): the read-only banner, the « reaches the next
+   program » banner and the dates, at the width of the editor's cards. */
+.np-locked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+}
+.np-main > .np-locked,
+.np-main > app-program-overflow .po-banner {
+  align-self: stretch;
+  box-sizing: border-box;
+  margin: 0 !important;
+}
+.np-locked__icon { flex-shrink: 0; width: 18px; height: 18px; color: #64748b; }
+.np-locked__text { flex: 1; display: grid; gap: 2px; font-size: 13.5px; line-height: 1.45; }
+.np-locked__text strong { color: #0f172a; font-weight: 700; }
+.np-locked__btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1.5px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  .np-ico { width: 15px; height: 15px; }
+  &:disabled { opacity: 0.6; cursor: wait; }
+}
+.np-card--readonly { opacity: 0.92; }
+.np-client-dates__value { margin: 0 0 4px; color: #0f172a; font-size: 14px; font-weight: 500; }
+.np-weeks-issue { margin: 6px 0 0; color: #b45309; font-size: 12.5px; line-height: 1.45; }
+/* The workout's name on the client's week cards is bold (the app caps names at 500 with a very specific rule). */
+html body app-root app-client-programs .cp .cp-day .cp-day-name[class][class][class][class][class][class] {
+  font-weight: 700 !important;
+}
+@media (max-width: 640px) {
+  .np-locked { flex-wrap: wrap; }
+  .np-locked__btn { width: 100%; justify-content: center; }
+}
+
+/* The example client of the demo workspace (COACH_GUIDE.EXAMPLE_BADGE), wherever his name is shown. */
+.example-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border: 1px solid #44b4df; border-radius: 999px; color: #1f8fbd; background: #fff; font-size: 11px; font-weight: 600; line-height: 1.5; vertical-align: middle; white-space: nowrap; }

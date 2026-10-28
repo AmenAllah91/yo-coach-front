@@ -1,6 +1,17 @@
+import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
+import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
+import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner.component';
+import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
+import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
-import { Component, OnInit } from '@angular/core';
-import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { NutritionClientMode } from '../nutrition-client-mode';
+import { OverlapChoice, ProgramOverflowComponent } from '@shared/components/program-overflow/program-overflow.component';
+import { LockedProgramBannerComponent } from '@shared/components/locked-program-banner/locked-program-banner.component';
+import { ClientService } from 'app/service/client.service';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ToastService } from 'app/service/toast.service';
+import { EmptyDaysModalComponent } from '@shared/components/empty-days-modal/empty-days-modal.component';
 import { CommonModule, NgForOf, NgIf } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -23,17 +34,17 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
     FormsModule,
     DragDropModule,
     TranslateModule,
-    WorkoutWeekPanelComponent, ReadyWeeksModalComponent],
+    WorkoutWeekPanelComponent, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
   templateUrl: './create-macro-plan-total-day.component.html',
-  styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss'],
+  styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss'],
 })
 export class CreateMacroPlanTotalDayComponent implements OnInit {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
-  /** Used by the toolbar "Save draft" (through the ready-weeks check of the draft state). */
-  readonly savePlanFn = (publishWeeks?: number[]) => this.savePlan(publishWeeks);
+  /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
+  readonly savePlanFn = () => this.savePlan();
 
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang, this.router);
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'TOTAL_FOR_DAY', () => this.translate.currentLang, this.router, (key, params) => this.translate.instant(key, params));
 
   planName = '';
   planDescription = '';
@@ -62,8 +73,29 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private clientService: ClientService,
+    private toastService: ToastService,
+    private dayClipboard: ProgramDayClipboardService,
+    public programSchedule: ProgramScheduleService,
   ) {}
+
+  /** A client's plan (route `clients/create-macro-plan-total-day/:idClient`): dates, client, read-only, P9 (backlog-programmes.md ED). */
+  readonly clientMode = new NutritionClientMode(this.route, this.router, this.clientService, this.programSchedule,
+    this.nutritionService, this.toastService, this.translate);
+  /** « Copier vers… », « Dupliquer la semaine », « Copier le jour » / « Coller sur… » of the day rail. */
+  readonly copy = nutritionCopyController(this, 'nutrition:DAY_MACROS', (day) => this.updateCaloriesForDay(day), this.dayClipboard, this.toastService, this.translate);
+  @ViewChild(ProgramOverflowComponent) overflow?: ProgramOverflowComponent;
+
+  /** « Décaler » or « Retirer » chosen (P9): the save goes on with it. */
+  onOverflowChosen(choice: OverlapChoice): void {
+    this.draft.overlap = choice;
+    this.savePlanFn();
+  }
+
+  duplicateLocked(): void {
+    this.clientMode.duplicateLocked(this.draft.currentPlanId, 'nutrition/create-macro-plan-total-day/');
+  }
 
   dayLabel(index: number): string { return this.translate.instant('DAY_NUMBER', { number: index + 1 }); }
 
@@ -189,6 +221,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     this.scheduleStartDate = this.route.snapshot.queryParamMap.get('startDate') || '';
     this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
     this.isEditMode = !!planId;
+    this.clientMode.init(this.draft, () => this.overflow ? this.overflow.askWhenChecked() : false);
 
     if (planId) {
       this.nutritionService.getNutritionPlanById(planId).subscribe((plan) => {
@@ -198,15 +231,16 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       this.isMealPlanTemplate = this.canCreateTemplate
         ? Boolean((plan as any).isMealPlanTemplate)
         : false;
-      this.days = plan.mealDays;
-      this.durationWeeks = this.normalizeDurationWeeks(
-        Math.ceil((this.days.length || 28) / 7)
-      );
+      this.days = plan.mealDays || [];
+      this.clientMode.load(plan, this.days, () => this.emptyClientDay());
+      // Not full weeks (an older program): no length preselected, so that choosing one resizes it.
+      this.durationWeeks = this.days.length % 7 ? 0 : this.normalizeDurationWeeks(Math.ceil((this.days.length || 28) / 7));
 
         // Recalcul calories si nécessaire
         this.days.forEach((d) => this.updateCaloriesForDay(d));
 
-        this.selectedDay = this.days[0] ?? null;
+        this.selectedDay = this.clientMode.requestedDay(this.days) || this.days[0] || null;
+        this.draft.collapsedWeeks.delete(this.draft.selectedWeek(this.days, this.selectedDay));
       });
     }
 
@@ -226,6 +260,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
       this.resizeDraftDays(this.durationWeeks, false);
       this.selectedDay = this.days[0] || null;
+      this.clientMode.refreshDates(this.days);
       if (this.planName.trim()) this.savePlan();
     }
 }
@@ -272,6 +307,17 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
   /* ----------------------------------------------
       CALCUL AUTOMATIQUE DES CALORIES
   ------------------------------------------------*/
+  /** « Jour libre »: no targets that day (the client sees a free day). */
+  toggleCheatMeal(): void {
+    if (!this.selectedDay || this.draft.readOnly) return;
+    const cheatMeal = !this.selectedDay.cheatMeal;
+    this.selectedDay.cheatMeal = cheatMeal;
+    if (cheatMeal) {
+      this.selectedDay.refeedDay = false;
+      this.selectedDay.dayTargets = { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
+    }
+  }
+
   updateCaloriesForDay(day: MealDay) {
     if (!day || !day.dayTargets) return;
 
@@ -313,7 +359,16 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
 
   this.days.push(newDay);
   this.selectedDay = newDay;
+  this.clientMode.refreshDates(this.days);
 }
+
+  /** An empty day added to an older client plan, up to its saved end. */
+  private emptyClientDay(): MealDay {
+    const day: MealDay = { id: crypto.randomUUID(), date: '', dayOfWeek: `Day ${this.days.length + 1}`, cheatMeal: false, refeedDay: false,
+      meals: [], dayTargets: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 } };
+    (day as any).name = day.dayOfWeek;
+    return day;
+  }
 
 onDurationWeeksChange(value: number) {
   const nextWeeks = this.normalizeDurationWeeks(value);
@@ -324,7 +379,7 @@ onDurationWeeksChange(value: number) {
   if (targetDays < this.days.length) {
     this.pendingDurationWeeks = nextWeeks;
     this.pendingDurationRemovedDays = this.days.length - targetDays;
-    this.durationWeeks = currentWeeks;
+    this.durationWeeks = this.days.length % 7 ? 0 : currentWeeks;
     return;
   } else {
     while (this.days.length < targetDays) {
@@ -348,6 +403,7 @@ confirmDurationReduction() {
   const selectedId = this.selectedDay?.id;
 
   this.days = this.days.slice(0, targetDays);
+  this.clientMode.refreshDates(this.days);
   this.durationWeeks = nextWeeks;
   this.pendingDurationWeeks = null;
   this.pendingDurationRemovedDays = 0;
@@ -394,6 +450,7 @@ selectDay(day: MealDay) {
 
     this.days.push(duplicated);
     this.selectedDay = duplicated;
+    this.clientMode.refreshDates(this.days);
   }
 
   duplicateSelectedDay() {
@@ -421,15 +478,18 @@ selectDay(day: MealDay) {
       if (this.selectedDay?.id === day.id) {
         this.selectedDay = this.days[Math.max(0, index - 1)];
       }
+      this.clientMode.refreshDates(this.days);
     }
   }
 
   onDropDay(event: CdkDragDrop<MealDay[]>) {
+    if (this.draft.readOnly) return;
     moveItemInArray(this.days, event.previousIndex, event.currentIndex);
     this.days.forEach((d, i) => {
       (d as any).name = `Day ${i + 1}`;
       d.dayOfWeek = `Day ${i + 1}`;
     });
+    this.clientMode.refreshDates(this.days);
   }
 
   togglePlanDescription() {
@@ -448,16 +508,18 @@ selectDay(day: MealDay) {
   /* ----------------------------------------------
       SAVE PLAN
   ------------------------------------------------*/
-  savePlan(publishWeek?: number | number[]) {
+  savePlan() {
     this.days.forEach(day => this.updateCaloriesForDay(day));
+    this.clientMode.refreshDates(this.days);
 
     const plan = {
       name: this.planName, details: this.planDescription, mealDays: this.days,
       trackingMode: 'TOTAL_FOR_DAY', coach: { id: this.userid }, client: null,
       startDate: '', endDate: '',
       isMealPlanTemplate: this.canCreateTemplate && this.isMealPlanTemplate,
+      ...(this.clientMode.active ? this.clientMode.planFields() : {}),
     } as MealPlan;
-    this.draft.save(plan, publishWeek);
+    this.draft.save(plan, this.savePlanFn);
   }
 
   updatePlan() { this.savePlan(); }
@@ -501,12 +563,13 @@ selectDay(day: MealDay) {
     if (count < this.days.length && confirmRemoval && !confirm('Shortening the program will remove the final days. Continue?')) return;
     while (this.days.length < count) this.addDay();
     this.days = this.days.slice(0, count);
+    this.clientMode.refreshDates(this.days);
     this.durationWeeks = weeks;
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
   }
 
   /** Standard application back action used by the shared Workout/Nutrition header. */
   goBack(): void {
-    window.history.back();
+    if (!this.clientMode.goBack()) window.history.back();
   }
 }

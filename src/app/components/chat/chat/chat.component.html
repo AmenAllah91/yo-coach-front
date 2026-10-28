@@ -1,3 +1,4 @@
+<!-- Calls: the call window and the incoming call are shown by app-call-host (app root), on every page. -->
 <!-- A client sees the mobile layout (#clientChat below); coaches and the embedded views keep this one. -->
 <ng-container *ngIf="!clientLayout; else clientChat">
 <div class="chat-page-header" *ngIf="!embeddedMode && (!isMobile || showList)">
@@ -12,7 +13,7 @@
   </div>
 </div>
 
-<div class="chat-root" [class.chat-root--embedded]="embeddedMode" [class.chat-root--profile-open]="showClientProfile && !selectedConv?.isGroup">
+<div #chatRoot class="chat-root" [class.chat-root--embedded]="embeddedMode" [class.chat-root--profile-open]="showClientProfile && !selectedConv?.isGroup">
   <!-- ═══════════════════════════════════════════
        SIDEBAR — liste des conversations
   ═══════════════════════════════════════════ -->
@@ -135,25 +136,37 @@
             <div class="chat-header__name">{{ selectedConv.name }}</div>
           </ng-template>
         </div>
+        <ng-container *ngIf="videoCallEnabled && selectedConv">
+          <button type="button" class="call-icon-btn" (click)="startCall('audio')"
+                  [attr.aria-label]="'AUDIO_CALL' | translate" [title]="'AUDIO_CALL' | translate">
+            <i-feather name="phone"></i-feather>
+          </button>
+          <button type="button" class="call-icon-btn" (click)="startCall('video')"
+                  [attr.aria-label]="'VIDEO_CALL' | translate" [title]="'VIDEO_CALL' | translate">
+            <i-feather name="video"></i-feather>
+          </button>
+        </ng-container>
         <button
           *ngIf="canCreateChats"
           class="chat-auto-btn"
           type="button"
           (click)="openAutoMessageModal()"
           [attr.aria-label]="'AUTO_MESSAGE' | translate"
+          [title]="'AUTO_MESSAGE' | translate"
         >
           <i-feather name="clock"></i-feather>
           <span>{{ 'AUTO_MESSAGE' | translate }}</span>
         </button>
         <button
-          *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode && canCreateChats"
+          *ngIf="selectedConv && !selectedConv.isGroup && !embeddedMode && canCreateChats && profileFits"
           class="chat-client-toggle"
           type="button"
           (click)="toggleClientProfile()"
           [attr.aria-pressed]="showClientProfile"
           [attr.aria-label]="(showClientProfile ? 'HIDE_CLIENT' : 'SHOW_CLIENT') | translate"
+          [title]="(showClientProfile ? 'HIDE_CLIENT' : 'SHOW_CLIENT') | translate"
         >
-          <i-feather name="arrow-left"></i-feather>
+          <i-feather [name]="showClientProfile ? 'x' : 'arrow-left'"></i-feather>
           <span>{{ (showClientProfile ? 'HIDE_CLIENT' : 'SHOW_CLIENT') | translate }}</span>
         </button>
       </div>
@@ -166,7 +179,8 @@
         <button type="button" class="chat-auto-strip__manage" (click)="openManageAutoMessages()">{{ 'MANAGE' | translate }}</button>
       </div>
 
-      <div class="chat-messages" #messagesContainer>
+      <div class="chat-messages" #messagesContainer (scroll)="onMessagesScroll()">
+        <div class="chat-older-loading" *ngIf="loadingOlderMessages"><span></span></div>
         <ng-container *ngFor="let entry of conversationTimeline; trackBy: trackTimelineEntry">
         <div
           *ngIf="entry.kind === 'message'"
@@ -176,6 +190,14 @@
           <span class="message-sender" *ngIf="selectedConv?.isGroup && !isOwnMessage(entry.message)">{{ entry.message.sender?.name }}</span>
 
           <ng-container [ngSwitch]="entry.message.type">
+            <div class="message-content call-invite" *ngSwitchCase="'CALL'">
+              <span class="call-invite__text">
+                <i-feather [name]="entry.message.callKind === 'audio' ? 'phone' : 'video'"></i-feather>{{ entry.message.text }}
+              </span>
+              <button *ngIf="canJoinCall(entry.message)" type="button" class="call-invite__join" (click)="joinCall(entry.message)">
+                {{ 'VIDEO_CALL_JOIN' | translate }}
+              </button>
+            </div>
             <div class="message-content" *ngSwitchCase="'TEXT'">
               {{ entry.message.text }}
             </div>
@@ -195,7 +217,7 @@
                 class="message-content message-content--image"
                 (click)="openImagePreview(entry.message, $event)"
               >
-                <img *ngIf="entry.message.imageUrl; else imageLoading" [src]="entry.message.imageUrl" [alt]="entry.message.attachmentName" (error)="refreshImagePlayback(entry.message)" />
+                <img *ngIf="entry.message.imageUrl; else imageLoading" [src]="entry.message.imageUrl" [alt]="entry.message.attachmentName" (error)="refreshImagePlayback(entry.message)" (load)="onMessageImageLoaded()" />
                 <ng-template #imageLoading><span class="message-image-loading">{{ entry?.message?.imageLoadError ? 'Image unavailable' : 'Loading image…' }}</span></ng-template>
               </button>
               <ng-template #documentBubble>
@@ -418,9 +440,20 @@
           <small *ngIf="!selectedConv.isGroup">Coach</small>
           <small *ngIf="selectedConv.isGroup" class="cc-header__members">{{ clientMembersLabel(selectedConv) }}</small>
         </span>
+        <ng-container *ngIf="videoCallEnabled">
+          <button type="button" class="call-icon-btn" (click)="startCall('audio')"
+                  [attr.aria-label]="ct('Voice call', 'Appel vocal')" [title]="ct('Voice call', 'Appel vocal')">
+            <i-feather name="phone"></i-feather>
+          </button>
+          <button type="button" class="call-icon-btn" (click)="startCall('video')"
+                  [attr.aria-label]="ct('Video call', 'Appel vidéo')" [title]="ct('Video call', 'Appel vidéo')">
+            <i-feather name="video"></i-feather>
+          </button>
+        </ng-container>
       </header>
 
-      <div class="cc-messages" #messagesContainer>
+      <div class="cc-messages" #messagesContainer (scroll)="onMessagesScroll()">
+        <div class="chat-older-loading" *ngIf="loadingOlderMessages"><span></span></div>
         <ng-container *ngFor="let entry of conversationTimeline; let i = index; trackBy: trackTimelineEntry">
           <ng-container *ngIf="entry.kind === 'message'">
             <p *ngIf="clientDaySeparator(i) as day" class="cc-day">{{ day }}</p>
@@ -428,6 +461,14 @@
               <span class="cc-msg__sender" *ngIf="selectedConv.isGroup && !isOwnMessage(entry.message)">{{ entry.message.sender?.name }}</span>
               <div class="cc-bubble" [ngSwitch]="entry.message.type">
                 <span *ngSwitchCase="'TEXT'" class="cc-bubble__text">{{ entry.message.text }}</span>
+                <div *ngSwitchCase="'CALL'" class="call-invite">
+                  <span class="call-invite__text">
+                    <i-feather [name]="entry.message.callKind === 'audio' ? 'phone' : 'video'"></i-feather>{{ entry.message.text }}
+                  </span>
+                  <button *ngIf="canJoinCall(entry.message)" type="button" class="call-invite__join" (click)="joinCall(entry.message)">
+                    {{ ct('Join the call', 'Rejoindre l’appel') }}
+                  </button>
+                </div>
                 <div *ngSwitchCase="'VOICE'" class="cc-voice">
                   <i-feather name="mic"></i-feather>
                   <audio [src]="entry.message.playbackUrl" (error)="refreshVoicePlayback(entry.message)" controls preload="metadata"></audio>
@@ -435,7 +476,7 @@
                 </div>
                 <ng-container *ngSwitchCase="'DOCUMENT'">
                   <button *ngIf="isImageAttachment(entry.message); else docTpl" type="button" class="cc-image" (click)="openImagePreview(entry.message, $event)">
-                    <img *ngIf="entry.message.imageUrl; else imgLoading" [src]="entry.message.imageUrl" [alt]="entry.message.attachmentName" (error)="refreshImagePlayback(entry.message)" />
+                    <img *ngIf="entry.message.imageUrl; else imgLoading" [src]="entry.message.imageUrl" [alt]="entry.message.attachmentName" (error)="refreshImagePlayback(entry.message)" (load)="onMessageImageLoaded()" />
                     <ng-template #imgLoading><span class="cc-image__loading">{{ entry.message.imageLoadError ? ct('Image unavailable', 'Image indisponible') : ct('Loading image…', 'Chargement de l’image…') }}</span></ng-template>
                   </button>
                   <ng-template #docTpl>

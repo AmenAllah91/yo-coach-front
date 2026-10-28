@@ -212,3 +212,10 @@
     margin: 6px 0 0 !important;
   }
 }
+
+/* Day states without weekly publication (backlog-programmes.md): a day with an error, or empty in the middle of the
+   plan, is shown in amber. */
+.np-root.np-layout .np-shell > .np-aside .np-day-state.invalid i-feather,
+.np-root.np-layout .np-shell > .np-aside .np-day-state.gap i-feather { color: #d97706 !important; }
+.np-root.np-layout .np-shell > .np-aside .np-day .np-day__meta.is-warning,
+.np-root.np-layout .np-shell > .np-aside .np-day.is-active .np-day__meta.is-warning { color: #b45309 !important; font-weight: 600 !important; }

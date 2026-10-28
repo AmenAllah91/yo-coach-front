@@ -7,7 +7,7 @@
     <p *ngIf="!d.issues.length" class="notice">{{'HEALTH_ALL_OK'|translate}}</p>
     <div class="health-summary"><div *ngFor="let badge of summaries"><small>{{badge.label|translate}}</small><span class="health-badge" [attr.data-health]="badge.tone">{{badge.value|translate}}</span></div><div><small>{{'HEALTH_LAST_LOGIN'|translate}}</small>{{d.lastLogin?(d.lastLogin|date:'medium'):('HEALTH_UNAVAILABLE'|translate)}}</div><div><small>{{'HEALTH_LAST_ACTIVITY'|translate}}</small>{{d.lastActivity?(d.lastActivity|date:'medium'):('HEALTH_UNAVAILABLE'|translate)}}</div></div>
     <div class="account-actions" *ngIf="managed()">
-      <button type="button" class="secondary-btn" *ngFor="let a of d.allowedActions" (click)="open($any(a))" [disabled]="busy||a==='RESYNC'&&!d.customerId">{{('HEALTH_ACTION_'+a)|translate}}</button>
+      <button type="button" class="secondary-btn" *ngFor="let a of availableActions" (click)="open($any(a))" [disabled]="busy||a==='RESYNC'&&!d.customerId">{{('HEALTH_ACTION_'+a)|translate}}</button>
     </div>
     <div class="detail-grid">
       <section class="detail-card"><h2>{{'COACH_ACCOUNT'|translate}}</h2><dl>

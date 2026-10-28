@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { toWebsiteVideoEmbedUrl } from '../models/website-video';
 import { CoachLandingPreviewComponent } from "../coach-landing-preview/coach-landing-preview.component";
 
+/** Full-screen preview of the draft the builder handed over (nothing is sent to the server). */
 @Component({
   selector: 'app-coach-landing-preview-page',
   standalone: true,
@@ -18,6 +20,9 @@ import { CoachLandingPreviewComponent } from "../coach-landing-preview/coach-lan
       [cta]="data.cta"
       [leadFields]="data.leadFields"
       [colors]="data.colors"
+      [design]="data.design"
+      [socialLinks]="data.socialLinks"
+      [stats]="data.stats || []"
       [services]="data.services"
       [results]="data.results"
       [certificates]="data.certificates"
@@ -27,36 +32,25 @@ import { CoachLandingPreviewComponent } from "../coach-landing-preview/coach-lan
   `
 })
 export class CoachLandingPreviewPageComponent {
-  data = history.state;
+  data = history.state || {};
   videoEmbedUrl: SafeResourceUrl | null = null;
 
   constructor(
     private router: Router,
     private sanitizer: DomSanitizer
   ) {
+    // Opened directly (no draft in the history state): back to the builder instead of an empty page.
+    if (!this.data?.profile) {
+      this.router.navigateByUrl('/websites/create');
+      return;
+    }
     this.videoEmbedUrl = this.buildSafeVideoUrl(this.data.videoUrl);
   }
 
   private buildSafeVideoUrl(url: string): SafeResourceUrl | null {
-    const embedUrl = this.toEmbedUrl(url);
+    const embedUrl = toWebsiteVideoEmbedUrl(url);
     return embedUrl
       ? this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl)
       : null;
-  }
-
-  private toEmbedUrl(url: string): string {
-    if (!url) return '';
-
-    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/i);
-    if (youtubeMatch?.[1]) {
-      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-    }
-
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/i);
-    if (vimeoMatch?.[1]) {
-      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-    }
-
-    return '';
   }
 }

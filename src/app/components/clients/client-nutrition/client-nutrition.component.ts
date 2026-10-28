@@ -13,10 +13,15 @@ import { FoodReplacementGroupItem, FoodReplacementGroupsService } from 'app/serv
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { DocumentService } from 'app/service/document.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
+import { CompletionCelebrationComponent } from '../shared/completion-celebration.component';
+import { CelebrationView, nutritionCelebration } from '../shared/celebration';
 import {
   NutritionTotals, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, foodMacros, isMealReported,
   mealMacros, mealReportStatus, planDate, programWeek, targetTotals,
 } from '../shared/client-plan-utils';
+
+/** Days during which the client can correct a finished day (ClientDayRules.CLIENT_EDIT_DAYS on the server). */
+const CLIENT_EDIT_DAYS = 7;
 
 type MealStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
 interface DayItem { plan: any; day: any; date: Date; }
@@ -31,7 +36,7 @@ interface ReplacementOption { item: FoodReplacementGroupItem; name: string; calo
 @Component({
   selector: 'app-client-nutrition',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent],
   templateUrl: './client-nutrition.component.html',
   styleUrl: './client-nutrition.component.scss',
 })
@@ -56,6 +61,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   digestion = '';
   overallNote = '';
   savingDay = false;
+  showCompleteSheet = false;
+  showOffPlanSheet = false;
   uploadingMealId: string | null = null;
   mealPhotoUrls = new Map<string, string>();
   coverUrls = new Map<string, string>();
@@ -191,17 +198,17 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         this.openedInitial = true;
         if (this.isFileProgram(plan)) { this.view = 'files'; return; }
         const first = plan.mealDays?.[0];
-        const focus = planDate(plan.startDate) || (first ? this.dayDate(first) : null);
+        const focus = planDate(plan.startDate) || (first ? this.dayDate(plan, first) : null);
         if (focus) this.month = new Date(focus.getFullYear(), focus.getMonth(), 1);
         const day = this.initialDayId ? (plan.mealDays || []).find((d: any) => d.id === this.initialDayId) : first;
-        if (day) this.openDay({ plan, day, date: this.dayDate(day) });
+        if (day) this.openDay({ plan, day, date: this.dayDate(plan, day) || this.today });
         return;
       }
     }
     if (this.initialDayId) {
       for (const plan of this.plans) {
         const day = (plan.mealDays || []).find((d: any) => d.id === this.initialDayId);
-        if (day) { this.openedInitial = true; this.openDay({ plan, day, date: this.dayDate(day) }); return; }
+        if (day) { this.openedInitial = true; this.openDay({ plan, day, date: this.dayDate(plan, day) || this.today }); return; }
       }
     }
   }
@@ -210,7 +217,20 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   // List
   // -------------------------------------------------------------------------
   private get today(): Date { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
-  private dayDate(day: any): Date { return planDate(day?.date) || this.today; }
+  /** Stored date, else plan start + dayNumber - 1 (mobile fallbackDate); null when neither is known. */
+  private dayDate(plan: any, day: any): Date | null {
+    const own = planDate(day?.date);
+    if (own) return own;
+    const start = planDate(plan?.startDate);
+    if (!start) return null;
+    const number = Number(day?.dayNumber) > 0 ? Number(day.dayNumber) : (plan?.mealDays || []).indexOf(day) + 1;
+    return new Date(start.getFullYear(), start.getMonth(), start.getDate() + Math.max(number, 1) - 1);
+  }
+
+  /** A day with nothing to follow (no visible meal, no target, not a cheat day): not listed. */
+  private isEmptyDay(day: any): boolean {
+    return !day?.cheatMeal && !clientVisibleMeals(day).length && targetTotals(day).calories <= 0;
+  }
 
   /** NutritionDay.status on mobile: the stored one, else IN_PROGRESS from the day itself, PENDING before. */
   dayStatus(item: DayItem): string {
@@ -223,20 +243,45 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const items: DayItem[] = [];
     for (const plan of this.plans) {
       if (this.isFileProgram(plan)) continue;
-      for (const day of plan.mealDays || []) items.push({ plan, day, date: this.dayDate(day) });
+      for (const day of plan.mealDays || []) {
+        // Undated days used to all land on today: one "today's plan" card per day of the plan.
+        const date = this.dayDate(plan, day);
+        if (date && !this.isEmptyDay(day)) items.push({ plan, day, date });
+      }
     }
     return items;
   }
 
-  /** Upcoming: days still PENDING. Past: COMPLETED, OFF_PLAN and IN_PROGRESS days (mobile use cases). */
+  /**
+   * By date, as the workouts (and the mobile app): « Upcoming » is today and after, today first; « Past » the days
+   * before, whatever their status. A day the client has started today stays in « Upcoming ».
+   */
   get visibleItems(): DayItem[] {
+    const today = this.today.getTime();
     return this.dayItems
-      .filter(item => {
-        const status = this.dayStatus(item);
-        return this.upcoming ? status === 'PENDING' : ['COMPLETED', 'OFF_PLAN', 'IN_PROGRESS'].includes(status);
-      })
+      .filter(item => (this.upcoming ? item.date.getTime() >= today : item.date.getTime() < today))
       .filter(item => item.date.getFullYear() === this.month.getFullYear() && item.date.getMonth() === this.month.getMonth())
       .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+
+  /**
+   * The coach fills a plan as it goes (backlog-programmes.md R6): the client gets the filled days, the plan runs
+   * until its end date. Shown in "Upcoming" for the months between the last day received and that end date.
+   */
+  get preparingNext(): boolean {
+    if (!this.upcoming) return false;
+    const today = this.today.getTime();
+    const monthStart = this.month.getTime();
+    const monthEnd = new Date(this.month.getFullYear(), this.month.getMonth() + 1, 0).getTime();
+    return this.plans.some(plan => {
+      if (this.isFileProgram(plan)) return false;
+      const end = planDate(plan?.endDate);
+      if (!end || end.getTime() < today) return false;
+      const days = (plan.mealDays || []).map((day: any) => this.dayDate(plan, day)?.getTime()).filter((time: any) => Number.isFinite(time));
+      const after = days.length ? Math.max(...days) + 86_400_000 : (planDate(plan?.startDate)?.getTime() ?? today);
+      const from = Math.max(after, today);
+      return from <= end.getTime() && from <= monthEnd && end.getTime() >= monthStart;
+    });
   }
 
   private get isCurrentMonth(): boolean {
@@ -288,6 +333,12 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   listStatus(item: DayItem): { label: string; color: string; icon?: string } {
     const status = this.dayStatus(item);
     const today = this.isToday(item);
+    // A past day is never « planned » nor « in progress »: never logged, or partly logged.
+    if (item.date.getTime() < this.today.getTime() && !['COMPLETED', 'OFF_PLAN'].includes(status)) {
+      return this.dayLogged(item.day)
+        ? { label: this.t('Partial', 'Partielle'), color: '#D97706' }
+        : { label: this.t('Not logged', 'Non renseignée'), color: '#C2410C' };
+    }
     switch (status) {
       case 'COMPLETED': return { label: this.t('Completed', 'Terminé'), color: '#1E8E4E' };
       case 'OFF_PLAN': return { label: this.t('Off-plan', 'Hors plan'), color: '#7455D9' };
@@ -295,6 +346,11 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       default: return today ? { label: this.t('Today', 'Aujourd’hui'), color: 'var(--yc-primary)' }
         : { label: this.t('Planned', 'Prévu'), color: 'var(--yc-text-secondary)', icon: 'calendar' };
     }
+  }
+
+  /** At least one meal of the day was reported by the client. */
+  private dayLogged(day: any): boolean {
+    return clientVisibleMeals(day).some((meal: any) => !!mealReportStatus(day, meal));
   }
 
   /** Lead badge of a meal row: [icon, color, filled] or null for the plain number. */
@@ -308,6 +364,14 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   mealCalories(meal: any): number { return mealMacros(meal).calories; }
+
+  /** Optional time set by the coach ("HH:mm"), in the client's language (08:00 / 8:00 AM); '' when none. */
+  mealTimeLabel(meal: any): string {
+    const match = /^(\d{1,2}):(\d{2})/.exec(String(meal?.mealTime || '').trim());
+    if (!match) return '';
+    const time = new Date(2000, 0, 1, Number(match[1]), Number(match[2]));
+    return new Intl.DateTimeFormat(this.locale, { hour: this.fr ? '2-digit' : 'numeric', minute: '2-digit' }).format(time);
+  }
   capitalize(value: string): string { return capitalizeFirst(value); }
   weekdayShort(date: Date): string { return new Intl.DateTimeFormat(this.locale, { weekday: 'short' }).format(date).toUpperCase().replace('.', ''); }
   dayNumber(date: Date): string { return String(date.getDate()).padStart(2, '0'); }
@@ -473,6 +537,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     this.digestion = day.digestion || '';
     this.overallNote = day.overallNote || '';
     this.expandedMeal = clientVisibleMeals(day).length ? 0 : null;
+    this.editing = false;
     this.view = 'day';
     if (!this.previewMode) document.body.classList.add('client-workout-detail-open');
     window.scrollTo({ top: 0 });
@@ -484,6 +549,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   backToList(): void {
     if (this.feedbackTimer) { clearTimeout(this.feedbackTimer); this.feedbackTimer = null; this.sendFeedback(); }
     this.item = null;
+    this.editing = false;
     this.view = 'list';
     document.body.classList.remove('client-workout-detail-open');
     this.load();
@@ -684,11 +750,13 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const next = { ...(index >= 0 ? logs[index] : {}), mealId: meal.id, status: this.reportStatus, note };
     if (index >= 0) logs[index] = next; else logs.push(next);
     day.clientMealLogs = logs;
+    // A correction of a finished day keeps its status (completed, off-plan): only an open day becomes in progress.
+    const status = this.finished ? day.status : 'IN_PROGRESS';
     if (this.status === 'PENDING') day.status = 'IN_PROGRESS';
     this.subscriptions.add(this.mealplanDayService.updatePlanDay({
-      id: day.id, status: 'IN_PROGRESS', clientMealLogs: logs, ...this.feedbackPayload(),
+      id: day.id, status, clientMealLogs: logs, ...this.feedbackPayload(),
     }, item.plan.id).subscribe({
-      next: () => { day.status = 'IN_PROGRESS'; this.showToast(this.t('Meal report saved.', 'Rapport du repas enregistré.'), 'success'); },
+      next: () => { day.status = status; this.showToast(this.t('Meal report saved.', 'Rapport du repas enregistré.'), 'success'); },
       error: () => {
         day.status = previous.status; day.clientMealLogs = previous.logs;
         this.showToast(this.t('The report could not be saved. Please try again.', 'Le rapport n\'a pas pu être enregistré. Réessayez.'), 'error');
@@ -785,7 +853,9 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   }
 
   setFeedback(key: 'hunger' | 'energy' | 'digestion', value: string): void {
-    this[key] = this.storedFeedback(value);
+    const stored = this.storedFeedback(value);
+    if (this[key] === stored) return;
+    this[key] = stored;
     this.scheduleFeedbackSave();
   }
 
@@ -795,17 +865,60 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     this.feedbackTimer = setTimeout(() => { this.feedbackTimer = null; this.sendFeedback(); }, 400);
   }
 
-  private feedbackPayload(): any {
+  private feedbackPayload(): { hunger: string; energy: string; digestion: string; overallNote: string } {
     return { hunger: this.hunger, energy: this.energy, digestion: this.digestion, overallNote: this.overallNote.trim() };
   }
 
+  /** Only the feedback fields: the server keeps the day's status and meal reports as stored. */
   private sendFeedback(): void {
     const item = this.item;
     if (!item) return;
-    Object.assign(item.day, this.feedbackPayload());
-    this.mealplanDayService.updatePlanDay({
-      id: item.day.id, status: this.dayStatus(item), clientMealLogs: item.day.clientMealLogs || [], ...this.feedbackPayload(),
-    }, item.plan.id).subscribe({ error: () => undefined });
+    const payload = this.feedbackPayload();
+    const unchanged = (Object.keys(payload) as (keyof typeof payload)[])
+      .every(key => (item.day[key] || '') === payload[key]);
+    if (unchanged) return;
+    Object.assign(item.day, payload);
+    this.mealplanDayService.updatePlanDay({ id: item.day.id, ...payload }, item.plan.id).subscribe({ error: () => undefined });
+  }
+
+  // Edit a finished day (client corrections, CLIENT_EDIT_DAYS on the server): reports and feedback are saved
+  // as they change, the day keeps its status.
+  editing = false;
+
+  get editDeadline(): Date | null {
+    return this.item ? new Date(this.item.date.getFullYear(), this.item.date.getMonth(), this.item.date.getDate() + CLIENT_EDIT_DAYS) : null;
+  }
+  get canModify(): boolean {
+    const deadline = this.editDeadline;
+    return !this.previewMode && this.finished && !!deadline && this.today.getTime() <= deadline.getTime();
+  }
+  get editDeadlineLabel(): string {
+    const deadline = this.editDeadline;
+    return deadline ? new Intl.DateTimeFormat(this.locale, { day: 'numeric', month: 'long' }).format(deadline) : '';
+  }
+  /** Meal report and photo: an open day, or a finished day being edited. */
+  get canReport(): boolean { return !this.previewMode && !this.isFutureDay && (!this.finished || (this.editing && this.canModify)); }
+
+  finishEditing(): void {
+    if (this.feedbackTimer) { clearTimeout(this.feedbackTimer); this.feedbackTimer = null; this.sendFeedback(); }
+    this.editing = false;
+  }
+
+  /** Day not reached yet: no report, feedback or completion in advance (the server refuses them). */
+  get isFutureDay(): boolean { return !!this.item && this.item.date.getTime() > this.today.getTime(); }
+
+  get unreportedMeals(): any[] { return this.visibleMeals.filter(meal => !isMealReported(this.day, meal)); }
+  get unreportedText(): string {
+    const n = this.unreportedMeals.length;
+    return this.fr
+      ? `${n} repas non signalé${n > 1 ? 's seront enregistrés' : ' sera enregistré'} « comme prévu ».`
+      : `${n} meal${n > 1 ? 's' : ''} not reported will be saved “as planned”.`;
+  }
+
+  /** Complete day = the plan was followed: unreported meals are confirmed first, then logged AS_PLANNED. */
+  askCompleteDay(): void {
+    if (this.unreportedMeals.length) { this.showCompleteSheet = true; return; }
+    this.saveDayStatus('COMPLETED');
   }
 
   // Complete day / off-plan (mobile _saveDayStatus)
@@ -817,25 +930,52 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const day = item.day;
     const logs = status === 'OFF_PLAN'
       ? this.visibleMeals.map(meal => ({ ...(this.mealLog(meal) || {}), mealId: meal.id, status: 'SKIPPED', note: '' }))
-      : (day.clientMealLogs || []);
+      : [...(day.clientMealLogs || []).filter((log: any) => !this.unreportedMeals.some(meal => String(meal.id) === String(log?.mealId))),
+        ...this.unreportedMeals.map(meal => ({ ...(this.mealLog(meal) || {}), mealId: meal.id, status: 'AS_PLANNED', note: this.mealLog(meal)?.note || '' }))];
     this.subscriptions.add(this.mealplanDayService.updatePlanDay({
       id: day.id, status, clientMealLogs: logs, ...this.feedbackPayload(),
     }, item.plan.id).subscribe({
       next: () => {
         this.savingDay = false;
         Object.assign(day, { status, clientMealLogs: logs, ...this.feedbackPayload() });
-        this.showToast(status === 'COMPLETED' ? this.t('Nutrition day completed.', 'Journée nutrition terminée.')
-          : this.t('Nutrition day marked off-plan.', 'Journée nutrition marquée hors plan.'), 'success');
+        // Celebrated once the server has the completed day; never an off-plan day nor a refused one.
+        const celebration = status === 'COMPLETED' ? this.celebrationView(item) : null;
+        if (!celebration) this.showToast(this.t('Nutrition day marked off-plan.', 'Journée nutrition marquée hors plan.'), 'success');
         this.backToList();
+        this.celebration = celebration;
       },
       error: () => { this.savingDay = false; this.showToast(this.t('Failed to update nutrition day.', 'Échec de la mise à jour de la journée nutrition.'), 'error'); },
     }));
   }
 
+  // « Day complete! » (mobile NutritionCelebrationScreen): the day as just saved, the meals not reported « as planned »
+  celebration: CelebrationView | null = null;
+
+  private celebrationView(item: DayItem): CelebrationView {
+    const day = item.day;
+    const meals = clientVisibleMeals(day);
+    // A day with only a total (no meal): completed means the total was eaten, as its summary shows.
+    const eaten = meals.length ? consumedTotals(day) : targetTotals(day);
+    const target = targetTotals(day);
+    return nutritionCelebration({
+      title: capitalizeFirst(String(day?.name || '').trim() || item.plan?.name),
+      date: item.date,
+      meals: meals.map(meal => mealReportStatus(day, meal) || 'AS_PLANNED'),
+      calories: eaten.calories,
+      protein: eaten.protein,
+      targetCalories: target.calories,
+      targetProtein: target.protein,
+      seed: String(day?.id || `${item.plan?.id}-${day?.dayNumber}`),
+    }, this.fr);
+  }
+
+  closeCelebration(): void { this.celebration = null; }
+
   // PDF of the plan (web print preview, mobile "Export PDF")
   get pdfDays(): { date: Date; day: any }[] {
     if (!this.item) return [];
-    return (this.item.plan.mealDays || []).map((day: any) => ({ date: this.dayDate(day), day }))
+    const plan = this.item.plan;
+    return (plan.mealDays || []).map((day: any) => ({ date: this.dayDate(plan, day) || this.today, day }))
       .sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
   }
   pdfMeals(day: any): any[] { return clientVisibleMeals(day); }

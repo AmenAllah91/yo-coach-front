@@ -58,15 +58,19 @@ export class CoachBillingService {
     );
   }
 
+  /**
+   * Pays the invoice with the method of the subscription: YoSales decides it (Flouci in Tunisia, Stripe abroad...),
+   * so no method is sent unless one is really chosen (payment audit CE-M3).
+   */
   initiateInvoicePayment(
     invoiceId: number,
-    gateway: string
+    gateway?: string
   ): Observable<InvoicePaymentResponse> {
     const headers = new HttpHeaders({
       'X-Skip-Toast': 'true',
       'X-Skip-Loader': 'true'
     });
-    const params = new HttpParams().set('gateway', gateway);
+    const params = gateway ? new HttpParams().set('gateway', gateway) : new HttpParams();
 
     return this.http.post<InvoicePaymentResponse>(
       `${environment.baseApiUrl}/api/billing/invoices/${invoiceId}/pay`,

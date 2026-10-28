@@ -864,9 +864,20 @@
   flex-shrink: 0 !important;
 }
 
-.program-icon--app {
+/* One color per kind of plan, same as the macro colors of the builder. */
+.program-icon--foods {
   background: #eaf8ff !important;
   color: #0ea5e9 !important;
+}
+
+.program-icon--day_macros {
+  background: #fff7e6 !important;
+  color: #d97706 !important;
+}
+
+.program-icon--meal_macros {
+  background: #f3efff !important;
+  color: #7c3aed !important;
 }
 
 .program-icon--pdf {
@@ -933,10 +944,32 @@
   border: 1px solid #dbe7f2 !important;
 }
 
-.type-badge--app {
+.type-badge--foods {
   background: #eaf8ff !important;
   border-color: #bfdbfe !important;
-  color: #0ea5e9 !important;
+  color: #0284c7 !important;
+}
+
+.type-badge--day_macros {
+  background: #fff7e6 !important;
+  border-color: #fde3b0 !important;
+  color: #b45309 !important;
+}
+
+.type-badge--meal_macros {
+  background: #f3efff !important;
+  border-color: #ddd6fe !important;
+  color: #6d28d9 !important;
+}
+
+.type-badge {
+  white-space: nowrap !important;
+
+  i-feather {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
 }
 
 .type-badge--pdf {
@@ -1365,7 +1398,9 @@
   letter-spacing: 0 !important;
 }
 
-.type-badge--app,
+.type-badge--foods,
+.type-badge--day_macros,
+.type-badge--meal_macros,
 .type-badge--pdf,
 .type-badge--excel {
   font-weight: 500 !important;
@@ -1899,7 +1934,7 @@
   .programs-table--cap .program-week-meta { gap: 6px; margin-top: 5px; font-size: 8px; }
   .programs-table--cap .col-created, .programs-table--cap .col-modified { display: none !important; }
   .programs-table--cap .col-type { display: flex !important; position: absolute; left: 64px; bottom: 8px; }
-  .programs-table--cap .type-badge { min-height: 22px !important; height: 22px !important; padding: 0 7px !important; border-radius: 5px !important; font-size: 8px !important; }
+  .programs-table--cap .type-badge { min-height: 22px !important; height: 22px !important; padding: 0 7px !important; border-radius: 5px !important; font-size: 10px !important; }
   .programs-table--cap .type-badge i-feather { width: 10px !important; height: 10px !important; }
   .programs-table--cap .col-actions { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
   .programs-table--cap .action-btn { min-width: 75px !important; height: 34px !important; padding: 0 10px !important; border-radius: 7px !important; font-size: 10px !important; }

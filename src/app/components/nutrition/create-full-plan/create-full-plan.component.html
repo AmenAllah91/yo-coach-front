@@ -1,4 +1,4 @@
-<div class="np-root np-layout" [class.settings-collapsed]="!draft.settingsVisible" [class.mobile-structure-open]="mobileStructureOpen">
+<div class="np-root np-layout" [class.settings-collapsed]="!draft.settingsVisible" [class.mobile-structure-open]="mobileStructureOpen" [class.is-client]="clientMode.active" [class.is-readonly]="draft.readOnly">
   <!-- Same toolbar as the workout builder: back, title, structure (phones), save. -->
   <header class="np-toolbar">
     <button type="button" class="np-toolbar__back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
@@ -7,27 +7,30 @@
       </svg>
     </button>
     <div class="np-toolbar__title">
-      <h1>{{ (draft.hasPlan ? 'EDIT_NUTRITION_PLAN' : 'CREATE_NUTRITION_PLAN') | translate }}</h1>
+      <h1>{{ (draft.readOnly ? 'ASSIGN_FLOW.READONLY_TITLE_NUTRITION' : draft.hasPlan ? 'EDIT_NUTRITION_PLAN' : 'CREATE_NUTRITION_PLAN') | translate }}</h1>
       <p class="np-toolbar__meta">
         <span class="np-toolbar__name" *ngIf="planName?.trim()">{{ planName }}</span>
-        <span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks.length, days: days.length } }}</span>
+        <span class="np-toolbar__name" *ngIf="clientMode.clientName">{{ clientMode.clientName }}</span>
+        <span *ngIf="clientMode.active; else libraryCount">{{ programSchedule.formatDate(clientMode.startDate) }} – {{ programSchedule.formatDate(clientMode.endDate) }}</span>
+        <ng-template #libraryCount><span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks.length, days: days.length } }}</span></ng-template>
       </p>
     </div>
     <button type="button" class="np-toolbar__weeks" (click)="mobileStructureOpen = !mobileStructureOpen" [attr.aria-expanded]="mobileStructureOpen" [attr.aria-label]="'PROGRAM_STRUCTURE' | translate">
       <i-feather name="list" class="np-ico"></i-feather>
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
     </button>
-    <div class="np-toolbar__save">
-      <span class="np-toolbar__status" [class.is-error]="!draft.saving && draft.error" [attr.title]="draft.error || null" role="status" aria-live="polite">
+    <div class="np-toolbar__save" *ngIf="!draft.readOnly">
+      <span class="np-toolbar__status" [class.is-error]="!draft.saving && draft.error" [class.has-saved]="!draft.saving && !draft.error && draft.savedAt" [attr.title]="draft.error || null" role="status" aria-live="polite">
         <ng-container *ngIf="draft.saving">{{ 'SAVING' | translate }}</ng-container>
         <ng-container *ngIf="!draft.saving && draft.error">{{ draft.error }}</ng-container>
-        <ng-container *ngIf="!draft.saving && !draft.error && draft.savedAt">{{ 'WORKOUT_SAVED' | translate }} {{ draft.savedAt | date:'HH:mm' }}</ng-container>
+        <ng-container *ngIf="!draft.saving && !draft.error && draft.savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ draft.savedAt | date:'HH:mm' }}</ng-container>
       </span>
-      <button type="button" class="np-toolbar__savebtn" (click)="draft.saveDraft(days, savePlanFn)" [disabled]="draft.saving" [attr.aria-label]="'SAVE_DRAFT' | translate">
-        <svg viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
+      <button type="button" class="np-toolbar__savebtn" [class.is-busy]="draft.saving" [attr.aria-busy]="draft.saving" (click)="draft.saveDraft(days, savePlanFn)" [disabled]="draft.saving" [attr.aria-label]="'SAVE' | translate">
+        <span class="np-toolbar__spinner" *ngIf="draft.saving" aria-hidden="true"></span>
+        <svg *ngIf="!draft.saving" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
           <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span class="np-toolbar__savelabel">{{ (draft.saving ? 'SAVING' : 'SAVE_DRAFT') | translate }}</span>
+        <span class="np-toolbar__savelabel">{{ (draft.saving ? 'SAVING' : 'SAVE') | translate }}</span>
         <span class="np-toolbar__savelabel np-toolbar__savelabel--short">{{ draft.saving ? '…' : ('SAVE' | translate) }}</span>
       </button>
     </div>
@@ -43,39 +46,38 @@
           {{ (draft.allWeeksExpanded(nutritionWeeks.length) ? 'COLLAPSE_ALL' : 'EXPAND_ALL') | translate }}
         </button>
       </div>
-      <div class="np-aside__body" cdkDropList [cdkDropListData]="days" (cdkDropListDropped)="onDropDay($event)">
-        <div class="np-week-card" *ngFor="let week of nutritionWeeks">
+      <div class="np-aside__body" cdkDropList [cdkDropListData]="days" [cdkDropListDisabled]="draft.readOnly" (cdkDropListDropped)="onDropDay($event)">
+        <div class="np-week-card" *ngFor="let week of nutritionWeeks; trackBy: trackByWeek">
           <button type="button" class="np-week-card__head" (click)="draft.toggleWeek(week.weekNumber)" [attr.aria-expanded]="!draft.collapsedWeeks.has(week.weekNumber)">
             <div class="np-week-card__head-top">
               <i-feather [name]="draft.collapsedWeeks.has(week.weekNumber) ? 'chevron-right' : 'chevron-down'" class="np-week-card__chevron"></i-feather>
               <strong>{{ 'WEEK_NUMBER' | translate:{ number: week.weekNumber } }}</strong>
-              <span class="np-week-card__status" [class.is-published]="draft.isPublished(week.weekNumber)">{{ (draft.isPublished(week.weekNumber) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</span>
               <span class="np-week-card__range" *ngIf="draft.weekDates(days, week.weekNumber)">{{ draft.weekDates(days, week.weekNumber) }}</span>
-              <span class="np-week-card__count">{{ draft.readyCount(days, week.weekNumber) }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</span>
+              <span class="np-week-card__count" [title]="'PROGRAM_DAYS_FILLED' | translate:{ count: draft.readyCount(days, week.weekNumber), total: 7 }">{{ 'PROGRAM_DAYS_FILLED_SHORT' | translate:{ count: draft.readyCount(days, week.weekNumber), total: 7 } }}</span>
             </div>
           </button>
           <ng-container *ngIf="!draft.collapsedWeeks.has(week.weekNumber)">
-            <ng-container *ngFor="let item of week.days">
+            <ng-container *ngFor="let item of week.days; trackBy: trackByWeekDay">
               <div class="np-dayrow" cdkDrag [class.is-active]="selectedDay?.id === item.day.id">
                 <button type="button" class="np-day" [class.is-active]="selectedDay?.id === item.day.id" (click)="selectDay(item.day); mobileStructureOpen = false">
-                  <span class="np-day-state" [class.ready]="draft.dayState(item.day) === 'READY'" [class.rest]="draft.dayState(item.day) === 'CHEAT'"><i-feather [name]="draft.dayState(item.day) === 'READY' ? 'check-circle' : draft.dayState(item.day) === 'CHEAT' ? 'moon' : 'circle'"></i-feather></span>
+                  <ng-container *ngIf="draft.dayRailState(days, item.day) as state"><span class="np-day-state" [class.ready]="state === 'FILLED'" [class.rest]="state === 'REST'" [class.invalid]="state === 'INVALID'" [class.gap]="state === 'GAP'"><i-feather [name]="state === 'FILLED' ? 'check-circle' : state === 'REST' ? 'moon' : state === 'INVALID' || state === 'GAP' ? 'alert-circle' : 'circle'"></i-feather></span></ng-container>
                   <span class="np-day__topline">
                     <span class="np-day__title">{{ 'DAY_NUMBER' | translate:{ number: item.index % 7 + 1 } }}</span>
                     <span class="np-day__dateLine">{{ draft.dayDate(item.day) }}</span>
                   </span>
-                  <small class="np-day__meta">
-                    {{ (draft.dayState(item.day) === 'READY' ? 'WORKOUT_READY' : draft.dayState(item.day) === 'CHEAT' ? 'CHEAT_MEAL' : 'WORKOUT_EMPTY') | translate }}
+                  <small class="np-day__meta" *ngIf="draft.dayRailState(days, item.day) as state" [class.is-warning]="state === 'INVALID' || state === 'GAP'">
+                    {{ (state === 'REST' ? 'NUTRITION_FREE_DAY' : state === 'FILLED' ? 'PROGRAM_DAY_FILLED' : state === 'INVALID' ? 'PROGRAM_DAY_TO_FIX' : state === 'GAP' ? 'PROGRAM_DAY_GAP' : 'PROGRAM_DAY_EMPTY') | translate }}
                   </small>
                 </button>
               </div>
             </ng-container>
           </ng-container>
         </div>
-        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
+        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!draft.readOnly" (click)="addDay()">
           <i-feather name="plus" class="np-ico"></i-feather>
           {{ 'ADD_DAY' | translate }}
         </button>
-        <div class="np-stack">
+        <div class="np-stack" *ngIf="!draft.readOnly">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
             <span>{{ 'DUPLICATE_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
@@ -86,10 +88,24 @@
     <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="mobileStructureOpen = false" aria-label="Close weeks"></button>
 
 <main class="np-main">
-      <section class="np-card np-card--settings">
+      <!-- A finished or stopped client plan (A9): read-only, « Dupliquer » to reuse it. -->
+      <app-locked-program-banner *ngIf="draft.readOnly" class="np-locked-banner" [stoppedAt]="draft.stoppedAt" [busy]="clientMode.duplicating" (duplicate)="duplicateLocked()"></app-locked-program-banner>
+      <!-- A longer client plan that reaches the next one (P9): banner now, « Décaler » / « Retirer » at the save. -->
+      <app-program-overflow
+        *ngIf="clientMode.active && !draft.readOnly && draft.currentPlanId"
+        kind="NUTRITION"
+        [planId]="draft.currentPlanId"
+        [clientId]="clientMode.clientId"
+        [programName]="planName"
+        [startDate]="clientMode.startDate"
+        [dayCount]="days.length"
+        [savedEnd]="draft.savedEnd"
+        (chosen)="onOverflowChosen($event)"
+      ></app-program-overflow>
+      <section class="np-card np-card--settings" [attr.inert]="draft.readOnly ? '' : null">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="!draft.settingsVisible">{{ planName }} · {{ nutritionWeeks.length }} {{ 'WEEKS' | translate }}</span>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="!draft.settingsVisible">{{ planName }} · {{ nutritionWeeks.length }} {{ 'WEEKS' | translate }}<ng-container *ngIf="clientMode.active"> · {{ programSchedule.formatDate(clientMode.startDate) }} – {{ programSchedule.formatDate(clientMode.endDate) }}</ng-container></span>
           <button type="button" class="np-link np-settings-toggle" (click)="draft.settingsVisible = !draft.settingsVisible">
             {{ (draft.settingsVisible ? 'WORKOUT_HIDE' : 'WORKOUT_SHOW') | translate }}
             <i-feather [name]="draft.settingsVisible ? 'chevron-up' : 'chevron-down'" class="np-ico"></i-feather>
@@ -113,7 +129,26 @@
               {{ 'WEEK_DAY_OPTION' | translate:{weeks: option, days: option * 7} }}
             </option>
           </select>
+          <p class="np-help np-weeks-issue" *ngIf="draft.weeksIssue(days) as weeksIssue" role="alert">{{ weeksIssue }}</p>
         </div></div>
+
+        <!-- Dates of a client plan: where the client is, the days they see, « Modifier les dates » right here. -->
+        <app-client-program-dates
+          *ngIf="clientMode.active"
+          kind="NUTRITION"
+          [planId]="draft.currentPlanId"
+          [planName]="planName"
+          [clientId]="clientMode.clientId"
+          [clientName]="clientMode.clientName"
+          [startDate]="clientMode.startDate"
+          [endDate]="clientMode.endDate"
+          [dayCount]="days.length"
+          [visibleDays]="draft.visibleDaysCount(days)"
+          [started]="clientMode.started(days)"
+          [readOnly]="draft.readOnly"
+          [stoppedAt]="draft.stoppedAt"
+          (moved)="clientMode.moved($event.start, days, draft)"
+        ></app-client-program-dates>
 
         <ng-container
           *ngIf="!showPlanDescription && !planDescription; else planDescBlock"
@@ -149,7 +184,9 @@
 
 
 
-        <div class="np-field np-template-visibility" *ngIf="canCreateTemplate">
+        
+
+        <div class="np-field np-template-visibility" *ngIf="canCreateTemplate && !clientMode.active">
           <label class="np-checkline">
             <input
               type="checkbox"
@@ -170,20 +207,9 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="selectedDay" [week]="draft.selectedWeek(days, selectedDay)" [ready]="draft.readyCount(days, draft.selectedWeek(days, selectedDay))" [published]="draft.isPublished(draft.selectedWeek(days, selectedDay))" [range]="draft.weekDates(days, draft.selectedWeek(days, selectedDay))" [saving]="draft.saving" [showSave]="false" (publish)="savePlan(draft.selectedWeek(days, selectedDay))"></app-workout-week-panel>
+      <app-workout-week-panel *ngIf="selectedDay && !draft.readOnly" [week]="draft.selectedWeek(days, selectedDay)" [ready]="draft.readyCount(days, draft.selectedWeek(days, selectedDay))" [range]="draft.weekDates(days, draft.selectedWeek(days, selectedDay))" [saving]="draft.saving" [showSave]="false" [canDuplicate]="copy.canDuplicateWeek" (duplicate)="copy.openWeek()"></app-workout-week-panel>
 
-      <section class="np-card np-card--day">
-        <div class="np-week-actions" *ngIf="selectedDay">
-          <strong>Week {{ draft.selectedWeek(days, selectedDay) }} · {{ draft.isPublished(draft.selectedWeek(days, selectedDay)) ? 'Published' : 'Draft' }} · {{ draft.readyCount(days, draft.selectedWeek(days, selectedDay)) }}/7 days ready</strong>
-          <div class="np-week-actions__buttons">
-            <button type="button" class="np-btn" [disabled]="draft.saving" (click)="savePlan()">{{ draft.saving ? 'Saving…' : 'Save draft' }}</button>
-            <button type="button" class="np-btn np-btn--primary" [disabled]="draft.saving || draft.readyCount(days, draft.selectedWeek(days, selectedDay)) !== 7 || draft.isPublished(draft.selectedWeek(days, selectedDay))" (click)="savePlan(draft.selectedWeek(days, selectedDay))">Publish week {{ draft.selectedWeek(days, selectedDay) }}</button>
-            <small *ngIf="draft.savedAt" role="status">Saved {{ draft.savedAt | date:'HH:mm' }}</small>
-          </div>
-          <p>Draft weeks are hidden from clients. Publish a completed week when it is ready.</p>
-
-          <p class="np-danger" *ngIf="draft.error" role="alert">{{ draft.error }}</p>
-        </div>
+      <section class="np-card np-card--day" [attr.inert]="draft.readOnly ? '' : null" [class.np-card--readonly]="draft.readOnly">
         <div class="np-mobile-days">
           <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
             <button
@@ -200,17 +226,20 @@
 
 
         <div class="builder-rail">
+        <app-copied-day-banner [copy]="copy"></app-copied-day-banner>
         <div class="np-dayhead wk-day-editor__head">
           <div class="wk-day-editor__identity">
             <div class="wk-day-editor__titleline">
               <h3 class="wk-day-editor__title">{{ getSelectedDayLabel() }}</h3>
+              <span class="wk-day-editor__date" *ngIf="clientMode.active && selectedDay?.date">{{ draft.dayDate(selectedDay!) }}</span>
               <span
-                *ngIf="selectedDay"
+                *ngIf="selectedDay && draft.dayRailState(days, selectedDay) as state"
                 class="wk-day-editor__status"
-                [class.is-ready]="draft.dayState(selectedDay) === 'READY'"
-                [class.is-rest]="draft.dayState(selectedDay) === 'CHEAT'"
+                [class.is-ready]="state === 'FILLED'"
+                [class.is-rest]="state === 'REST'"
+                [class.is-warning]="state === 'INVALID' || state === 'GAP'"
               >
-                {{ (draft.dayState(selectedDay) === 'CHEAT' ? 'CHEAT_MEAL' : draft.dayState(selectedDay) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_EMPTY') | translate }}
+                {{ (state === 'REST' ? 'NUTRITION_FREE_DAY' : state === 'FILLED' ? 'PROGRAM_DAY_FILLED' : state === 'INVALID' ? 'PROGRAM_DAY_TO_FIX' : state === 'GAP' ? 'PROGRAM_DAY_GAP' : 'PROGRAM_DAY_EMPTY') | translate }}
               </span>
               <button class="np-mini" (click)="toggleDayDescription()">
               <i-feather name="edit-2" class="np-ico"></i-feather>
@@ -218,7 +247,21 @@
             </div>
             <small class="wk-day-editor__week" *ngIf="selectedDay">{{ 'WEEK_NUMBER' | translate:{ number: draft.selectedWeek(days, selectedDay) } }}</small>
           </div>
-          <div class="wk-day-editor__actions">
+          <div class="wk-day-editor__actions" *ngIf="!draft.readOnly">
+            <!-- « Copier ce jour »: onto other days of this program, or kept for another one (copy-days-modal). -->
+            <button
+              type="button"
+              *ngIf="!copy.readOnly"
+              class="wk-restmark wk-copymark"
+              style="margin-inline-end: 10px"
+              [style.opacity]="copy.canCopyDay ? null : 0.5"
+              [disabled]="!copy.canCopyDay"
+              [title]="(copy.canCopyDay ? 'COPY_DAYS.BUTTON_COPY_DAY_HINT' : 'COPY_DAYS.BUTTON_COPY_DAY_EMPTY') | translate"
+              (click)="copy.openDay()"
+            >
+              <i-feather name="copy" class="wk-restmark__icon"></i-feather>
+              {{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}
+            </button>
             <button
             type="button"
             class="wk-restmark"
@@ -347,7 +390,7 @@
                 </button>
               <div class="np-meal__left">
                 <div class="np-meal-title-row">
-                  <h4 class="np-h6 np-brand">{{ displayMealName(meal, mealIndex) }}</h4><small>{{ draft.mealStatus(meal) }}</small>
+                  <h4 class="np-h6 np-brand">{{ displayMealName(meal, mealIndex) }}</h4><small class="np-meal-status" [class.is-hidden]="draft.mealHidden(meal)" [class.is-warning]="draft.mealToFix(meal)">{{ draft.mealStatus(meal) }}</small>
                   <button
                     class="np-mini"
                     type="button"
@@ -358,10 +401,7 @@
                   </button>
                 </div>
 
-                <label class="np-meal-time">
-                  <span><i-feather name="clock"></i-feather> {{ 'MEAL_TIME' | translate }}</span>
-                  <input type="time" [(ngModel)]="meal.mealTime" />
-                </label>
+                <app-meal-time-field [(value)]="meal.mealTime"></app-meal-time-field>
               </div>
 
               <div class="np-meal__right">
@@ -417,42 +457,59 @@
             </header>
 
             <div class="np-meal__body">
-              <section class="np-recipe-overview" *ngIf="isRecipeMeal(meal) && meal.foods?.length">
-                <div class="np-recipe-overview__top">
-                  <span class="np-recipe-chip">{{ 'MEAL_RECIPE' | translate }}</span>
-                  <button type="button" class="np-recipe-change" (click)="openTemplateModal(meal)">
+              <section class="np-recipe-card" *ngIf="isRecipeMeal(meal)">
+                <div class="np-recipe-card__media" [class.has-image]="meal.coverImage">
+                  <img *ngIf="meal.coverImage" [src]="meal.coverImage" [alt]="meal.name" />
+                  <img *ngIf="!meal.coverImage" src="assets/images/meal-placeholder.svg" alt="" />
+                </div>
+
+                <div class="np-recipe-card__copy">
+                  <div class="np-recipe-card__tags">
+                    <span class="np-recipe-chip"><i-feather name="book-open"></i-feather>{{ 'MEAL_RECIPE' | translate }}</span>
+                    <span class="np-recipe-meta" *ngIf="meal.totalTimeMinutes > 0"><i-feather name="clock"></i-feather>{{ meal.totalTimeMinutes }} min</span>
+                    <span class="np-recipe-meta"><i-feather name="list"></i-feather>{{ meal.foods?.length || 0 }} {{ 'INGREDIENTS' | translate | lowercase }}</span>
+                  </div>
+                  <h5>{{ meal.name }}</h5>
+                  <p *ngIf="recipeDescription(meal)">{{ recipeDescription(meal) }}</p>
+                  <div class="np-recipe-macros" [attr.aria-label]="'PER_SERVING' | translate">
+                    <span class="np-recipe-macros__kcal"><b>{{ perServing(getMealCalories(meal), meal) }}</b> kcal</span>
+                    <span><i>{{ 'PROTEIN_ABBR' | translate }}</i><b>{{ perServing(getMealProtein(meal), meal, 1) }}</b> g</span>
+                    <span><i>{{ 'CARBS_ABBR' | translate }}</i><b>{{ perServing(getMealCarbs(meal), meal, 1) }}</b> g</span>
+                    <span><i>{{ 'FAT_ABBR' | translate }}</i><b>{{ perServing(getMealFat(meal), meal, 1) }}</b> g</span>
+                    <small>/ {{ 'PER_SERVING' | translate }}</small>
+                  </div>
+                </div>
+
+                <div class="np-recipe-card__servings">
+                  <span class="np-recipe-card__label">{{ 'SERVINGS' | translate }}</span>
+                  <div class="np-recipe-stepper">
+                    <button type="button" [disabled]="(meal.servings || 1) <= 1" (click)="changeRecipeServings(meal, -0.5)" [attr.aria-label]="'DECREASE_SERVINGS' | translate">
+                      <i-feather name="minus"></i-feather>
+                    </button>
+                    <strong>{{ meal.servings || 1 }}</strong>
+                    <button type="button" (click)="changeRecipeServings(meal, 0.5)" [attr.aria-label]="'INCREASE_SERVINGS' | translate">
+                      <i-feather name="plus"></i-feather>
+                    </button>
+                  </div>
+                  <span class="np-recipe-card__total">{{ getMealCalories(meal) }} kcal {{ 'IN_TOTAL' | translate }}</span>
+                  <small>{{ 'RECIPE_SERVINGS_HINT' | translate }}</small>
+                </div>
+
+                <div class="np-recipe-card__actions">
+                  <button type="button" class="np-recipe-link" (click)="toggleRecipeDetails(meal)">
+                    <i-feather [name]="recipeDetailsVisible(meal) ? 'chevron-up' : 'chevron-down'"></i-feather>
+                    {{ (recipeDetailsVisible(meal) ? 'HIDE_RECIPE_DETAILS' : 'VIEW_FULL_RECIPE_DETAILS') | translate }}
+                  </button>
+                  <button type="button" class="np-recipe-link" (click)="openTemplateModal(meal)">
                     <i-feather name="repeat"></i-feather>
                     {{ 'CHOOSE_ANOTHER_MEAL_TEMPLATE' | translate }}
                   </button>
                 </div>
-
-                <div class="np-recipe-overview__content">
-                  <div class="np-recipe-image" [class.has-image]="meal.coverImage">
-                    <img *ngIf="meal.coverImage" [src]="meal.coverImage" [alt]="meal.name" />
-                    <i-feather *ngIf="!meal.coverImage" name="image"></i-feather>
-                  </div>
-                  <div class="np-recipe-copy">
-                    <h5>{{ meal.name }}</h5>
-                    <p>{{ recipeDescription(meal) }}</p>
-                    <div class="np-recipe-stats">
-                      <div><span>{{ 'SERVINGS' | translate }}</span><strong>{{ meal.servings || 1 }}</strong></div>
-                      <div><span>{{ 'TOTAL_TIME' | translate }}</span><strong>{{ meal.totalTimeMinutes || 0 }} min</strong></div>
-                      <div><span>{{ 'TOTAL_CALORIES' | translate }}</span><strong>{{ getMealCalories(meal) }} Kcal</strong></div>
-                      <div><span>{{ 'PROTEIN' | translate }}</span><strong>{{ getMealProtein(meal) }} g</strong></div>
-                      <div><span>{{ 'CARBS' | translate }}</span><strong>{{ getMealCarbs(meal) }} g</strong></div>
-                      <div><span>{{ 'FAT' | translate }}</span><strong>{{ getMealFat(meal) }} g</strong></div>
-                    </div>
-                  </div>
-                </div>
-
-                <button type="button" class="np-recipe-toggle" (click)="toggleRecipeDetails(meal)">
-                  <i-feather name="eye"></i-feather>
-                  {{ (recipeDetailsVisible(meal) ? 'HIDE_RECIPE_DETAILS' : 'VIEW_FULL_RECIPE_DETAILS') | translate }}
-                </button>
               </section>
 
               <div class="np-ingredients-title" *ngIf="meal.foods?.length">
                 {{ (isRecipeMeal(meal) ? 'INGREDIENTS' : 'FOODS') | translate }}
+                <small class="np-ingredients-lock" *ngIf="isRecipeMeal(meal)"><i-feather name="lock"></i-feather>{{ 'RECIPE_INGREDIENTS_LOCKED' | translate }}</small>
               </div>
 
               <div class="np-foods" *ngIf="meal.foods?.length">
@@ -475,7 +532,7 @@
                   <span class="np-foods__name" [title]="food.name">{{ food.name }}</span>
 
                   <div class="np-foods__meta">
-                    <div class="np-foods__qty" *ngIf="servingOptions(food).length; else staticFoodQuantity">
+                    <div class="np-foods__qty" *ngIf="!isRecipeMeal(meal) && servingOptions(food).length; else staticFoodQuantity">
                       <input
                         type="number"
                         min="0"
@@ -520,12 +577,16 @@
                   <button
                     type="button"
                     class="np-foods__remove"
+                    *ngIf="!isRecipeMeal(meal); else lockedLine"
                     (click)="removeFood(food, meal)"
                     [title]="'REMOVE_FOOD' | translate"
                     [attr.aria-label]="('REMOVE_FOOD' | translate) + ' · ' + food.name"
                   >
                     <i-feather name="trash-2"></i-feather>
                   </button>
+                  <ng-template #lockedLine>
+                    <span class="np-foods__lock" [title]="'RECIPE_INGREDIENTS_LOCKED' | translate"><i-feather name="lock"></i-feather></span>
+                  </ng-template>
                 </div>
               </div>
 
@@ -536,7 +597,7 @@
                 </div>
               </div>
 
-              <div class="np-center">
+              <div class="np-center" *ngIf="!isRecipeMeal(meal)">
                 <button
                   class="np-btn np-btn--brandsoft"
                   (click)="openFoodModal(meal)"
@@ -562,7 +623,7 @@
                   </ol>
                   <ng-template #noDirections><p>{{ 'NO_DIRECTIONS_ADDED' | translate }}</p></ng-template>
                 </div>
-                <div class="np-recipe-prep-time">
+                <div class="np-recipe-prep-time" *ngIf="meal.totalTimeMinutes > 0">
                   <i-feather name="clock"></i-feather>
                   <span>{{ 'TOTAL_PREPARATION_TIME' | translate }}</span>
                   <strong>{{ meal.totalTimeMinutes || 0 }} min</strong>
@@ -667,11 +728,26 @@
   (closed)="closeFoodModal()"
 ></app-add-food-modal>
 
-<app-ready-weeks-modal
-  *ngIf="draft.readyWeeksPrompt"
-  [weeks]="draft.readyWeeksPrompt"
+<!-- Copies between days: « Copier vers… », « Dupliquer la semaine », « Coller sur… ». -->
+<app-copy-days-modal
+  *ngIf="copy.modal as copyModal"
+  [mode]="copyModal.mode"
+  [dayCount]="copyModal.dayCount"
+  [sourceIndex]="copyModal.sourceIndex"
+  [sourceWeek]="copyModal.sourceWeek"
+  [filled]="copyModal.filled"
+  [sourceLabel]="copyModal.sourceLabel"
+  [locked]="copyModal.locked"
+  (keep)="copy.keepForAnotherProgram()"
+  (close)="copy.close()"
+  (confirm)="copy.confirm($event)"
+></app-copy-days-modal>
+<app-empty-days-modal
+  *ngIf="draft.emptyDaysPrompt"
+  [days]="draft.emptyDaysPrompt"
+  kind="nutrition"
   [saving]="draft.saving"
-  (publish)="draft.publishReadyWeeks($event)"
-  (keepDraft)="draft.keepReadyWeeksAsDraft()"
-  (close)="draft.closeReadyWeeks()"
-></app-ready-weeks-modal>
+  (markRest)="draft.markEmptyDaysFree()"
+  (fill)="selectDay(draft.emptyDayToFill($event) || selectedDay!)"
+  (close)="draft.closeEmptyDays()"
+></app-empty-days-modal>

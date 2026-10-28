@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Meal">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef8fc"/>
+      <stop offset="1" stop-color="#d9eff8"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f1f6f9"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+  <!-- plate -->
+  <circle cx="60" cy="62" r="34" fill="url(#plate)" stroke="#c6e3f0" stroke-width="2"/>
+  <circle cx="60" cy="62" r="24" fill="none" stroke="#e1eef5" stroke-width="2"/>
+  <!-- food -->
+  <ellipse cx="54" cy="60" rx="11" ry="8" fill="#ffd8a8"/>
+  <circle cx="67" cy="56" r="6" fill="#9fd9a8"/>
+  <circle cx="66" cy="68" r="5" fill="#ffb4a2"/>
+  <path d="M58 70c4 3 9 3 12 0" fill="none" stroke="#9fd9a8" stroke-width="3" stroke-linecap="round"/>
+  <!-- fork -->
+  <path d="M19 40v14a4 4 0 0 0 4 4v26" fill="none" stroke="#44b4df" stroke-width="3" stroke-linecap="round"/>
+  <path d="M23 40v12M27 40v14a4 4 0 0 1-4 4" fill="none" stroke="#44b4df" stroke-width="3" stroke-linecap="round"/>
+  <!-- knife -->
+  <path d="M101 84V42c-5 3-7 10-7 18 0 6 3 8 7 8" fill="none" stroke="#44b4df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
