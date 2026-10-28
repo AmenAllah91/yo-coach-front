@@ -32,7 +32,7 @@ const REGISTER_ERROR_KEYS: Record<string, string> = {
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
-export class RegisterComponent implements OnInit{
+export class RegisterComponent implements OnInit {
   signupForm!: FormGroup;
   usernameError: string | null = null;
   passwordError: string | null = null;
@@ -295,5 +295,19 @@ export class RegisterComponent implements OnInit{
       confirmPassword: 'CONFIRM_PASSWORD'
     };
     return this.translate.instant(keys[controlName] || controlName);
+  }
+
+  private loadSelectedPlan(planId: number): void {
+    this.onboardingService.getPlans().subscribe({
+      next: (plans) => {
+        this.selectedPlan = plans.find(plan => plan.id === planId) ?? null;
+        if (!this.selectedPlan) {
+          this.planLoadError = 'The selected plan is no longer available. Please choose another plan.';
+        }
+      },
+      error: () => {
+        this.planLoadError = 'We could not confirm the selected plan. Please return to the plans page and try again.';
+      }
+    });
   }
 }
