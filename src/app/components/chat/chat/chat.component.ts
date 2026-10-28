@@ -66,6 +66,8 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   @Input() panelMode = false;
   /** Panel opened on a conversation (a message notification): opened once the list is loaded. */
   @Input() panelConversationId: string | null = null;
+  /** Panel opened on a client (« Send message » of the profile): their private conversation, started if needed. */
+  @Input() panelClientId: string | null = null;
   @Output() panelClosed = new EventEmitter<void>();
   @Output() panelExpanded = new EventEmitter<Conversation | null>();
 
@@ -346,7 +348,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     }).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.enrichConversationsInBackground(); // also adds the people missing from the contacts
       this.tryOpenEmbeddedConversation();
-      if (known && !this.panelConversationId) return; // already opened from the last list
+      if (known && !this.panelConversationId && !this.panelClientId) return; // already opened from the last list
       if (this.openPanelConversation()) return;
       if (known) return;
       if (this.openRequestedConversation()) return;
@@ -747,11 +749,28 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
    */
   /** The conversation the header panel was opened on, once it is in the list (then forgotten). */
   private openPanelConversation(): boolean {
+    if (this.panelMode && this.panelClientId) return this.openPanelClient();
     if (!this.panelMode || !this.panelConversationId) return false;
     const target = this.conversations.find((conv) => conv.id === this.panelConversationId);
     if (!target) return false;
     this.panelConversationId = null;
     this.selectConversation(target);
+    return true;
+  }
+
+  /** Before the full list is loaded, only an existing conversation is opened; it is started afterwards. */
+  private openPanelClient(): boolean {
+    const clientId = this.panelClientId!;
+    const existing = this.findExistingPrivateConversation(clientId);
+    if (existing) {
+      this.panelClientId = null;
+      this.selectConversation(existing);
+      return true;
+    }
+    if (!this.conversationsLoaded) return false;
+    this.panelClientId = null;
+    const client = this.allClients.find((item) => String(item.id) === String(clientId));
+    this.startPrivateChat(client ?? ({ id: clientId } as Client));
     return true;
   }
 

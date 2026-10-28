@@ -119,7 +119,7 @@
         <button class="hero-btn" type="button" [title]="'VIEW_CLIENT' | translate" (click)="openClientPreview()">
           <i-feather name="eye"></i-feather><span>{{ 'VIEW_CLIENT' | translate }}</span>
         </button>
-        <button class="hero-btn hero-btn--primary" type="button" (click)="setTab('chat')">
+        <button class="hero-btn hero-btn--primary" type="button" (click)="openChatPanel()">
           <i-feather name="send"></i-feather><span>{{ 'SEND_MESSAGE' | translate }}</span>
         </button>
       </div>
@@ -138,7 +138,7 @@
     [goalWeight]="clientTargetWeight !== null ? formatWeight(clientTargetWeight) : '--'"
     [fr]="heroFr"
     (closed)="profilePanelOpen = false"
-    (message)="profilePanelOpen = false; setTab('chat')"
+    (message)="profilePanelOpen = false; openChatPanel()"
   ></app-client-profile-panel>
 
   <div class="progress-summary" *ngIf="showClientStats">
@@ -669,7 +669,7 @@
       [nutrition]="selectedNutritionActivity"
       [clientName]="fullName"
       (closed)="selectedWorkoutActivity ? closeWorkoutActivity() : closeNutritionActivity()"
-      (message)="selectedWorkoutActivity ? closeWorkoutActivity() : closeNutritionActivity(); setTab('chat')"
+      (message)="selectedWorkoutActivity ? closeWorkoutActivity() : closeNutritionActivity(); openChatPanel()"
     ></app-client-activity-detail>
 
     <!-- Tabs with their own data: created on the first visit, then kept while on this client (see openedTabs). -->
