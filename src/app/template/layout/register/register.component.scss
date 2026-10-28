@@ -5,7 +5,7 @@
 .form-group label {
   display: block;
   margin-bottom: 5px;
-  color: #333;
+  color: light-dark(#333, #e0e3e7);
 }
 
 .form-group label input[type="checkbox"] {
@@ -16,7 +16,7 @@
 .form-group input,
 .form-group select {
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid light-dark(#ddd, #373b41);
   border-radius: 4px;
   font-size: 1.1rem;
 }
@@ -65,16 +65,16 @@ button:disabled {
   width: 100%;
   max-width: 650px;
   padding: 2rem;
-  border: 1px solid #e1e4e8;
+  border: 1px solid light-dark(#e1e4e8, #353a3f);
   border-radius: 12px;
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease-in-out;
   font-size: 1.2rem;
 }
 
 .selected-plan {
-  background: #fff3e9;
+  background: light-dark(#fff3e9, #3c2a1a);
   border: 1px solid #fdb982;
   border-radius: 8px;
   display: grid;
@@ -83,19 +83,19 @@ button:disabled {
   padding: 1rem;
 
   span {
-    color: #b54708;
+    color: light-dark(#b54708, #ff8a58);
     font-size: 0.8rem;
     font-weight: 800;
     text-transform: uppercase;
   }
 
   strong {
-    color: #101828;
+    color: light-dark(#101828, #e7ecf6);
     font-size: 1.2rem;
   }
 
   small {
-    color: #667085;
+    color: light-dark(#667085, #a9adb6);
   }
 }
 
@@ -122,11 +122,11 @@ button:disabled {
 
   li {
     padding: 0.2rem 0;
-    color: #344054;
+    color: light-dark(#344054, #d2d7e0);
     font-size: 0.9rem;
 
     &.locked {
-      color: #667085;
+      color: light-dark(#667085, #a9adb6);
     }
 
     em {

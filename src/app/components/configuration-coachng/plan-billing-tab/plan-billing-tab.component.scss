@@ -1,13 +1,13 @@
 // "Plan & Billing" settings tab: same look as the other tabs of configuration-coachng.
 
 $accent:   #01bcf5;
-$gray-50:  #f9fafb;
-$gray-100: #f3f4f6;
-$gray-300: #d1d5db;
+$gray-50:  light-dark(#f9fafb, #171b1f);
+$gray-100: light-dark(#f3f4f6, #15181c);
+$gray-300: light-dark(#d1d5db, #36393e);
 $gray-400: #9ca3af;
-$gray-500: #6b7280;
-$gray-700: #374151;
-$gray-900: #111827;
+$gray-500: light-dark(#6b7280, #a7abb4);
+$gray-700: light-dark(#374151, #d1d6df);
+$gray-900: light-dark(#111827, #e8ecf6);
 $md: 640px;
 
 :host { display: flex; flex-direction: column; gap: 1rem; }
@@ -31,7 +31,7 @@ p { margin: 0; }
   min-height: 44px;
 
   &--outline {
-    background: #fff;
+    background: light-dark(#fff, #1d2125);
     color: $gray-700;
     border: 1px solid $gray-300;
     &:hover  { background: $gray-50; border-color: $gray-400; }
@@ -51,14 +51,14 @@ p { margin: 0; }
 }
 
 .settings-card {
-  background: #fff;
-  border: 1px solid #d8e3ef;
+  background: light-dark(#fff, #1d2125);
+  border: 1px solid light-dark(#d8e3ef, #323b44);
   border-radius: 10px;
   overflow: hidden;
 }
 
-.state-box { display: flex; flex-direction: column; align-items: center; gap: .75rem; padding: 2.5rem 1rem; color: #58708e; font-size: .875rem; }
-.spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #dff0fb; border-top-color: #0aa9ef; border-radius: 50%; animation: spin 1s linear infinite; }
+.state-box { display: flex; flex-direction: column; align-items: center; gap: .75rem; padding: 2.5rem 1rem; color: light-dark(#58708e, #a9afb7); font-size: .875rem; }
+.spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid light-dark(#dff0fb, #2d3940); border-top-color: #0aa9ef; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 // ─── Plan ─────────────────────────────────────────────
@@ -69,17 +69,17 @@ p { margin: 0; }
   gap: 2rem;
   padding: 1.5rem;
 }
-.plan-name { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0 0 .5rem; font-weight: 600; color: #18304f; font-size: .875rem; }
-.plan-price { display: block; font-size: 2rem; color: #001739; }
-.muted-text { color: #58708e; font-size: .8125rem; margin: .35rem 0 0; }
-.plan-usage p { margin: 0 0 .55rem; font-size: .8125rem; color: #18304f; }
-.usage-track { height: 7px; border-radius: 99px; background: #dff0fb; overflow: hidden; }
+.plan-name { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0 0 .5rem; font-weight: 600; color: light-dark(#18304f, #a3c0e7); font-size: .875rem; }
+.plan-price { display: block; font-size: 2rem; color: light-dark(#001739, #9fc0ed); }
+.muted-text { color: light-dark(#58708e, #a9afb7); font-size: .8125rem; margin: .35rem 0 0; }
+.plan-usage p { margin: 0 0 .55rem; font-size: .8125rem; color: light-dark(#18304f, #a3c0e7); }
+.usage-track { height: 7px; border-radius: 99px; background: light-dark(#dff0fb, #173445); overflow: hidden; }
 .usage-track span { display: block; min-width: 2%; height: 100%; border-radius: inherit; background: #0aa9ef; }
 
 .plan-notes { display: flex; flex-direction: column; gap: .5rem; padding: 0 1.5rem 1.25rem; }
-.read-only-note { padding: .6rem .75rem; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: .8125rem; }
-.action-error { color: #b91c1c; font-size: .8125rem; }
-.link { padding: 0; border: 0; background: none; color: #0a7fb0; font: inherit; text-decoration: underline; cursor: pointer; }
+.read-only-note { padding: .6rem .75rem; border-radius: 8px; background: light-dark(#fef2f2, #3c2829); color: light-dark(#991b1b, #ffa096); font-size: .8125rem; }
+.action-error { color: light-dark(#b91c1c, #ff8a7d); font-size: .8125rem; }
+.link { padding: 0; border: 0; background: none; color: light-dark(#0a7fb0, #59b9ec); font: inherit; text-decoration: underline; cursor: pointer; }
 
 .card-footer-actions {
   display: flex;
@@ -88,26 +88,26 @@ p { margin: 0; }
   flex-wrap: wrap;
   gap: .75rem;
   padding: .8rem 1rem;
-  background: #fbfcfe;
+  background: light-dark(#fbfcfe, #1c2024);
   &--right { justify-content: flex-end; }
 }
 .footer-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-left: auto; }
-.danger-link { border: 0; background: transparent; color: #e11d48; padding: 0; cursor: pointer; font: inherit; font-size: .8125rem; }
+.danger-link { border: 0; background: transparent; color: light-dark(#e11d48, #ff7e86); padding: 0; cursor: pointer; font: inherit; font-size: .8125rem; }
 .danger-link:disabled { opacity: .55; cursor: not-allowed; }
 
-.status-badge { padding: 2px 9px; border-radius: 999px; font-size: .6875rem; font-weight: 600; white-space: nowrap; background: #e5e7eb; color: $gray-700; }
-.status-active { background: #dcfce7; color: #166534; }
-.status-trial { background: #e8f7fd; color: #1d6f8f; }
-.status-past_due { background: #fff4db; color: #92400e; }
-.status-expired, .status-cancelled, .status-pending, .status-none { background: #fee2e2; color: #991b1b; }
+.status-badge { padding: 2px 9px; border-radius: 999px; font-size: .6875rem; font-weight: 600; white-space: nowrap; background: light-dark(#e5e7eb, #2c3035); color: $gray-700; }
+.status-active { background: light-dark(#dcfce7, #0f3822); color: light-dark(#166534, #88d29a); }
+.status-trial { background: light-dark(#e8f7fd, #19333c); color: light-dark(#1d6f8f, #70bcdf); }
+.status-past_due { background: light-dark(#fff4db, #3b2c02); color: light-dark(#92400e, #f4996c); }
+.status-expired, .status-cancelled, .status-pending, .status-none { background: light-dark(#fee2e2, #4c2426); color: light-dark(#991b1b, #ffa096); }
 
 // ─── Saved card (SUB-62) ──────────────────────────────
 .card-body { display: flex; flex-direction: column; gap: .75rem; padding: 1.25rem 1.5rem; }
-.card-notice { color: #166534; font-size: .8125rem; }
-.card-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: .6rem; font-size: .875rem; color: #18304f; }
+.card-notice { color: light-dark(#166534, #88d29a); font-size: .8125rem; }
+.card-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: .6rem; font-size: .875rem; color: light-dark(#18304f, #a3c0e7); }
 .card-line small { color: $gray-500; font-size: .75rem; }
 .auto-charge { display: flex; flex-direction: column; gap: .5rem; }
-.auto-charge label { display: flex; align-items: flex-start; gap: .5rem; font-size: .8125rem; color: #18304f; cursor: pointer; }
+.auto-charge label { display: flex; align-items: flex-start; gap: .5rem; font-size: .8125rem; color: light-dark(#18304f, #a3c0e7); cursor: pointer; }
 .auto-charge input { margin-top: 3px; }
 
 // ─── Invoices ─────────────────────────────────────────
@@ -120,25 +120,25 @@ p { margin: 0; }
   gap: 1rem;
   min-height: 56px;
   padding: .65rem 1rem;
-  border-bottom: 1px solid #edf1f5;
+  border-bottom: 1px solid light-dark(#edf1f5, #32373c);
   font-size: .8125rem;
   &:last-child { border-bottom: 0; }
 }
-.invoice-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; color: #18304f; }
-.invoice-main small { color: #58708e; font-size: .75rem; }
+.invoice-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; color: light-dark(#18304f, #a3c0e7); }
+.invoice-main small { color: light-dark(#58708e, #a9afb7); font-size: .75rem; }
 .invoice-side { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
-.amount { white-space: nowrap; color: #001739; }
-.usd-approx { color: #667085; }
-.invoice-status { padding: 2px 8px; border-radius: 999px; font-size: .6875rem; font-weight: 600; background: #e5e7eb; color: $gray-700; }
-.invoice-paid { background: #dcfce7; color: #166534; }
-.invoice-unpaid, .invoice-pending { background: #e8f7fd; color: #1d6f8f; }
-.invoice-overdue { background: #fff4db; color: #92400e; }
-.invoice-void { background: #fee2e2; color: #b91c1c; }
+.amount { white-space: nowrap; color: light-dark(#001739, #9fc0ed); }
+.usd-approx { color: light-dark(#667085, #a9adb6); }
+.invoice-status { padding: 2px 8px; border-radius: 999px; font-size: .6875rem; font-weight: 600; background: light-dark(#e5e7eb, #2c3035); color: $gray-700; }
+.invoice-paid { background: light-dark(#dcfce7, #0f3822); color: light-dark(#166534, #88d29a); }
+.invoice-unpaid, .invoice-pending { background: light-dark(#e8f7fd, #19333c); color: light-dark(#1d6f8f, #70bcdf); }
+.invoice-overdue { background: light-dark(#fff4db, #3b2c02); color: light-dark(#92400e, #f4996c); }
+.invoice-void { background: light-dark(#fee2e2, #4c2426); color: light-dark(#b91c1c, #ff8a7d); }
 
 // Invoice pagination: same look as the other lists of the app (.app-pagination), at the bottom of the card.
-.app-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: .9rem 1rem; border-top: 1px solid #edf1f5; }
-.app-pagination .page-btn { min-width: 34px; height: 34px; border: 1px solid #d8e2ef; background: #fff; color: #344054; border-radius: 6px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; }
-.app-pagination .page-btn:hover:not(:disabled) { background: #f1f7ff; border-color: #8ec5ff; }
+.app-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: .9rem 1rem; border-top: 1px solid light-dark(#edf1f5, #32373c); }
+.app-pagination .page-btn { min-width: 34px; height: 34px; border: 1px solid light-dark(#d8e2ef, #333a44); background: light-dark(#fff, #1d2125); color: light-dark(#344054, #d2d7e0); border-radius: 6px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; }
+.app-pagination .page-btn:hover:not(:disabled) { background: light-dark(#f1f7ff, #242f3d); border-color: #8ec5ff; }
 .app-pagination .page-btn.active { background: #44b4df; border-color: #44b4df; color: #fff; }
 .app-pagination .page-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 

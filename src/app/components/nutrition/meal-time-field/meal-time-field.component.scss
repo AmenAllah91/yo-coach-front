@@ -10,9 +10,9 @@
   gap: 6px;
   height: 32px;
   padding: 0 12px;
-  border: 1px dashed #c4d6e4;
+  border: 1px dashed light-dark(#c4d6e4, #343f47);
   border-radius: 999px;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   background: transparent;
   font: inherit;
   font-size: 12.5px;
@@ -21,13 +21,13 @@
   transition: border-color .15s ease, background-color .15s ease, color .15s ease;
 
   i-feather { width: 14px; height: 14px; }
-  &:hover { border-color: #44b4df; color: #1f8fbb; background: rgba(68, 180, 223, .06); }
+  &:hover { border-color: #44b4df; color: light-dark(#1f8fbb, #52b7e5); background: rgba(68, 180, 223, .06); }
 
   &.is-set {
     border-style: solid;
-    border-color: #b9e2f2;
-    color: #0f172a;
-    background: #eef8fc;
+    border-color: light-dark(#b9e2f2, #284d5b);
+    color: light-dark(#0f172a, #e8ecf6);
+    background: light-dark(#eef8fc, #131a1d);
 
     > i-feather:first-child { color: #44b4df; }
   }
@@ -41,16 +41,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-.mtf__chevron { color: #94a3b8; }
+.mtf__chevron { color: light-dark(#94a3b8, #8c919a); }
 
 .mtf__panel {
   position: fixed;
   z-index: 2100; // above the builder rail and modals backdrop
   width: 280px;
   padding: 14px;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 14px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   box-shadow: 0 16px 40px rgba(15, 23, 42, .16);
 }
 
@@ -59,19 +59,19 @@
   gap: 2px;
   margin-bottom: 10px;
 
-  strong { color: #0f172a; font-size: 14px; font-weight: 700; }
-  small { color: #64748b; font-size: 12px; }
+  strong { color: light-dark(#0f172a, #e8ecf6); font-size: 14px; font-weight: 700; }
+  small { color: light-dark(#64748b, #a5abb4); font-size: 12px; }
 }
 
 .mtf__input {
   width: 100%;
   height: 46px;
   padding: 0 12px;
-  border: 1px solid #d8dde6;
+  border: 1px solid light-dark(#d8dde6, #373b42);
   border-radius: 10px;
   outline: none;
-  color: #0f172a;
-  background: #fff;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#fff, #1d2125);
   font: inherit;
   font-size: 20px;
   font-weight: 700;
@@ -92,19 +92,19 @@
   display: grid;
   gap: 1px;
   padding: 7px 4px;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 9px;
-  color: #0f172a;
-  background: #fff;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#fff, #1d2125);
   font: inherit;
   text-align: center;
   cursor: pointer;
 
   b { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  span { overflow: hidden; color: #64748b; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+  span { overflow: hidden; color: light-dark(#64748b, #a5abb4); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
 
-  &:hover { border-color: #b9e2f2; background: #f0f9fd; }
-  &.is-active { border-color: #44b4df; background: #eef8fc; }
+  &:hover { border-color: light-dark(#b9e2f2, #284d5b); background: light-dark(#f0f9fd, #141a1d); }
+  &.is-active { border-color: #44b4df; background: light-dark(#eef8fc, #131a1d); }
 }
 
 .mtf__actions {
@@ -122,7 +122,7 @@
   margin-right: auto;
   padding: 0;
   border: 0;
-  color: #d93a3a;
+  color: light-dark(#d93a3a, #ff8077);
   background: transparent;
   font: inherit;
   font-size: 12.5px;

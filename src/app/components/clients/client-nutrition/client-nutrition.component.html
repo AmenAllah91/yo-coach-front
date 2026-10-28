@@ -187,11 +187,11 @@
         <button type="button" class="pdf-btn" (click)="showPdfPreview = true"><i-feather name="file-text"></i-feather>PDF</button>
       </header>
 
-      <div *ngIf="status === 'COMPLETED'" class="banner" style="--banner-color: #1E8E4E; --banner-tint: #E9F6EE">
+      <div *ngIf="status === 'COMPLETED'" class="banner" style="--banner-color: light-dark(#1E8E4E, #5fc582); --banner-tint: #E9F6EE">
         <i-feather name="check-circle"></i-feather>
         {{ t('Day completed. ' + reported + ' of ' + visibleMeals.length + ' meals reported.', 'Journée terminée. ' + reported + ' repas sur ' + visibleMeals.length + ' rapportés.') }}
       </div>
-      <div *ngIf="status === 'OFF_PLAN'" class="banner" style="--banner-color: #7455D9; --banner-tint: #EFEBFB">
+      <div *ngIf="status === 'OFF_PLAN'" class="banner" style="--banner-color: light-dark(#7455D9, #ac9eff); --banner-tint: #EFEBFB">
         <i-feather name="slash"></i-feather>{{ t('Day marked as off-plan.', 'Journée marquée hors plan.') }}
       </div>
 

@@ -5,7 +5,7 @@
 
 .measurements-page {
   font-family: inherit;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
 }
 
 .measurements-page--standalone {
@@ -13,7 +13,7 @@
   min-height: 100%;
   padding: clamp(1rem, 2vw, 1.5rem);
   box-sizing: border-box;
-  background: #f9fafb;
+  background: light-dark(#f9fafb, #171b1f);
 }
 
 .measurements-page-header {
@@ -25,14 +25,14 @@
 
 .measurements-page-header h1 {
   margin: 0 0 4px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 28px;
   line-height: 1.2;
 }
 
 .measurements-page-header p {
   margin: 0;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 14px;
 }
 
@@ -44,8 +44,8 @@
 }
 
 .measurements-sidebar {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 14px;
   overflow: hidden;
   height: fit-content;
@@ -54,7 +54,7 @@
 .measurement-search {
   position: relative;
   padding: 16px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid light-dark(#eef2f7, #32363c);
 }
 
 .measurement-search i {
@@ -62,7 +62,7 @@
   left: 32px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
 }
 
 .measurement-search input {
@@ -72,8 +72,8 @@
   outline: 0;
   border-radius: 8px;
   padding: 0 12px 0 42px;
-  background: #f3f4f6;
-  color: #111827;
+  background: light-dark(#f3f4f6, #15181c);
+  color: light-dark(#111827, #e8ecf6);
   font-size: 15px;
 }
 
@@ -87,7 +87,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-size: 15px;
   font-weight: 650;
   text-align: left;
@@ -97,13 +97,13 @@
 
 .measurement-type i {
   width: 20px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 17px;
 }
 
 .measurement-type.active {
-  background: #f0f2f6;
-  color: #111827;
+  background: light-dark(#f0f2f6, #14171b);
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .measurements-content {
@@ -120,14 +120,14 @@
 
 .measurements-topbar h2 {
   margin: 0;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 24px;
   font-weight: 800;
 }
 
 .measurements-topbar p {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 13px;
 }
 
@@ -147,8 +147,8 @@
 }
 
 .chart-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 14px;
   padding: 24px;
   min-height: 425px;
@@ -160,7 +160,7 @@
 
 .chart-header span {
   display: block;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   font-size: 14px;
   font-weight: 650;
 }
@@ -168,7 +168,7 @@
 .chart-header strong {
   display: block;
   margin-top: 2px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 34px;
   line-height: 1.1;
   font-weight: 850;
@@ -193,14 +193,14 @@
 
 .chart-line {
   fill: none;
-  stroke: #238be5;
+  stroke: light-dark(#238be5, #5daeff);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .chart-dot {
-  fill: #238be5;
+  fill: light-dark(#238be5, #5daeff);
   stroke: #ffffff;
   stroke-width: 2;
 }
@@ -213,7 +213,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   font-size: 12px;
   pointer-events: none;
 }
@@ -222,7 +222,7 @@
   height: 300px;
   display: grid;
   place-items: center;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   gap: 10px;
 }
 
@@ -236,7 +236,7 @@
 
 .history-section h3 {
   margin: 0 0 12px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 20px;
   font-weight: 850;
 }
@@ -252,8 +252,8 @@
   align-items: center;
   min-height: 68px;
   padding: 0 18px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 14px;
 }
 
@@ -263,18 +263,18 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #f0f2f6;
-  color: #9ca3af;
+  background: light-dark(#f0f2f6, #14171b);
+  color: light-dark(#9ca3af, #8c9199);
 }
 
 .history-value {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 16px;
   font-weight: 850;
 }
 
 .history-date {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 14px;
 }
 
@@ -291,18 +291,18 @@
   padding: 0;
   display: inline-grid;
   place-items: center;
-  color: #8b95a5;
-  background: #ffffff;
-  border: 1px solid #e1e7ef;
+  color: light-dark(#8b95a5, #91979f);
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#e1e7ef, #34393f);
   border-radius: 10px;
   cursor: pointer;
   transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
 }
 
 .delete-measurement-btn:hover:not(:disabled) {
-  color: #d33f4f;
-  background: #fff5f6;
-  border-color: #f0b7be;
+  color: light-dark(#d33f4f, #ff7e84);
+  background: light-dark(#fff5f6, #1e1718);
+  border-color: light-dark(#f0b7be, #66383f);
   transform: translateY(-1px);
 }
 
@@ -316,19 +316,19 @@
   min-width: 132px;
   margin-top: 8px;
   padding: 10px 20px;
-  color: #111111;
+  color: light-dark(#111111, #ebeef2);
   font: inherit;
   font-weight: 700;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .load-more-history-btn:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: light-dark(#f9fafb, #171b1f);
+  border-color: light-dark(#9ca3af, #444a54);
 }
 
 .load-more-history-btn:focus-visible {
@@ -340,9 +340,9 @@
   min-height: 90px;
   display: grid;
   place-items: center;
-  color: #94a3b8;
-  background: #ffffff;
-  border: 1px dashed #cbd5e1;
+  color: light-dark(#94a3b8, #8c919a);
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px dashed light-dark(#cbd5e1, #363e47);
   border-radius: 14px;
 }
 
@@ -358,7 +358,7 @@
 
 .measurement-modal {
   width: min(480px, 100%);
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
@@ -369,26 +369,26 @@
   justify-content: space-between;
   gap: 12px;
   padding: 18px 20px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid light-dark(#eef2f7, #32363c);
 }
 
 .measurement-modal-header h3 {
   margin: 0;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 18px;
   font-weight: 850;
 }
 
 .measurement-modal-header p {
   margin: 4px 0 0;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 13px;
 }
 
 .modal-close {
   border: 0;
   background: transparent;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 26px;
   cursor: pointer;
 }
@@ -402,7 +402,7 @@
 .measurement-modal-body label {
   display: grid;
   gap: 7px;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-size: 13px;
   font-weight: 800;
 }
@@ -410,7 +410,7 @@
 .measurement-modal-body input,
 .measurement-modal-body textarea {
   width: 100%;
-  border: 1px solid #dbe3ee;
+  border: 1px solid light-dark(#dbe3ee, #343a43);
   border-radius: 10px;
   padding: 11px 12px;
   outline: 0;
@@ -423,7 +423,7 @@
 }
 
 .measurement-modal-body .field-error {
-  color: #dc2626;
+  color: light-dark(#dc2626, #ff8275);
   font-size: 12px;
   font-weight: 600;
 }
@@ -447,8 +447,8 @@
 }
 
 .btn-cancel {
-  color: #374151;
-  background: #f3f4f6;
+  color: light-dark(#374151, #d1d6df);
+  background: light-dark(#f3f4f6, #15181c);
 }
 
 .btn-save {
@@ -509,29 +509,29 @@
   min-height: 28px;
   margin-top: 10px;
   padding: 0 10px;
-  color: #0f766e;
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
+  color: light-dark(#0f766e, #6bc2b9);
+  background: light-dark(#ecfdf5, #173429);
+  border: 1px solid light-dark(#bbf7d0, #235337);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 850;
 }
 
 .goal-line {
-  stroke: #10b981;
+  stroke: light-dark(#10b981, #24c189);
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
 
 .goal-line-label {
-  fill: #0f766e;
+  fill: light-dark(#0f766e, #6bc2b9);
   font-size: 12px;
   font-weight: 800;
 }
 
 .empty-chart small {
   display: block;
-  color: #0f766e;
+  color: light-dark(#0f766e, #6bc2b9);
   font-size: 12px;
   font-weight: 800;
 }
@@ -539,7 +539,7 @@
 @media (max-width: 768px) {
   .measurements-page {
     padding: 10px;
-    background: #f8fafc;
+    background: light-dark(#f8fafc, #171a1f);
   }
 
   .measurements-shell {
@@ -554,8 +554,8 @@
     overflow: visible;
     padding: 10px;
     border-radius: 16px;
-    background: #ffffff;
-    border: 1px solid #e5eaf0;
+    background: light-dark(#ffffff, #1d2125);
+    border: 1px solid light-dark(#e5eaf0, #34383d);
   }
 
   .measurement-search {
@@ -573,7 +573,7 @@
     height: 42px;
     border-radius: 12px;
     padding-left: 38px;
-    background: #f4f7fb;
+    background: light-dark(#f4f7fb, #16191e);
     font-size: 12px;
   }
 
@@ -613,9 +613,9 @@
     border-radius: 12px;
     font-size: 12px;
     font-weight: 800;
-    background: #f8fafc;
-    border: 1px solid #eef2f7;
-    color: #111827;
+    background: light-dark(#f8fafc, #171a1f);
+    border: 1px solid light-dark(#eef2f7, #32363c);
+    color: light-dark(#111827, #e8ecf6);
     white-space: nowrap;
   }
 
@@ -626,9 +626,9 @@
   }
 
   .measurement-type.active {
-    background: #eaf7fe;
-    border-color: #bde7fb;
-    color: #111827;
+    background: light-dark(#eaf7fe, #1c323c);
+    border-color: light-dark(#bde7fb, #274d5e);
+    color: light-dark(#111827, #e8ecf6);
     box-shadow: 0 8px 18px rgba(57, 174, 239, 0.12);
   }
 
@@ -703,62 +703,62 @@
 
 .measurements-page {
   font-family: inherit;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
 }
 
 /* Sidebar search */
 .measurement-search input {
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   font-size: 13px;
   font-weight: 400;
 }
 
 .measurement-search input::placeholder {
-  color: #8b95a1;
+  color: light-dark(#8b95a1, #90979f);
   font-weight: 400;
 }
 
 /* Sidebar items */
 .measurement-type {
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-size: 14px;
   font-weight: 400;
 }
 
 .measurement-type i {
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-size: 14px;
 }
 
 .measurement-type.active {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-weight: 500;
-  background: #f1f3f6;
+  background: light-dark(#f1f3f6, #14181c);
 }
 
 /* Page title */
 .measurements-topbar h2 {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .measurements-topbar p {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 12px;
   font-weight: 400;
 }
 
 /* Chart header */
 .chart-header span {
-  color: #8b95a1;
+  color: light-dark(#8b95a1, #90979f);
   font-size: 13px;
   font-weight: 400;
 }
 
 .chart-header strong {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 30px;
   line-height: 1.15;
   font-weight: 600;
@@ -767,14 +767,14 @@
 
 /* Goal badge */
 .goal-summary {
-  color: #0f766e;
+  color: light-dark(#0f766e, #6bc2b9);
   font-size: 11px;
   font-weight: 500;
 }
 
 /* Goal label inside chart */
 .goal-line-label {
-  fill: #0f766e;
+  fill: light-dark(#0f766e, #6bc2b9);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
@@ -782,14 +782,14 @@
 
 /* Y axis */
 .y-axis {
-  color: #8b95a1;
+  color: light-dark(#8b95a1, #90979f);
   font-size: 11px;
   font-weight: 400;
 }
 
 /* History title */
 .history-section h3 {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -797,13 +797,13 @@
 
 /* History rows */
 .history-value {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 15px;
   font-weight: 500;
 }
 
 .history-date {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 13px;
   font-weight: 400;
 }

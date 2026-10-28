@@ -39,10 +39,10 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   min-width: 0 !important;
   margin: 0 !important;
   padding: 0 0 18px !important;
-  border: 1px solid #dce3ea !important;
-  border-left: 1px solid #dce3ea !important;
+  border: 1px solid light-dark(#dce3ea, #353a40) !important;
+  border-left: 1px solid light-dark(#dce3ea, #353a40) !important;
   border-radius: 14px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: 0 2px 4px rgba(15, 23, 42, .06) !important;
   box-sizing: border-box !important;
 }
@@ -58,9 +58,9 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   padding: 20px 24px 18px 27px !important;
   overflow: hidden !important; // the blue bar follows the card's rounded corner
   border: 0 !important;
-  border-bottom: 1px solid #e5eaf0 !important;
+  border-bottom: 1px solid light-dark(#e5eaf0, #34383d) !important;
   border-radius: 13px 13px 0 0 !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   font-weight: 400 !important;
   line-height: 20px !important;
   box-sizing: border-box !important;
@@ -92,7 +92,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 #{$rail} .wk-day-editor__title {
   flex: 0 0 auto !important;
   margin: 0 !important;
-  color: #102038 !important;
+  color: light-dark(#102038, #e5ebf4) !important;
   font-size: 21px !important;
   font-weight: 650 !important;
   line-height: 28px !important;
@@ -103,21 +103,21 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   flex: 0 0 auto !important;
   padding: 3px 9px !important;
   border-radius: 6px !important;
-  background: #eef2f6 !important;
-  color: #64748b !important;
+  background: light-dark(#eef2f6, #14171b) !important;
+  color: light-dark(#64748b, #a5abb4) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   line-height: 18px !important;
 }
 
 #{$rail} .wk-day-editor__status.is-ready {
-  background: #e9fbf3 !important;
-  color: #119568 !important;
+  background: light-dark(#e9fbf3, #15352a) !important;
+  color: light-dark(#119568, #53c494) !important;
 }
 
 #{$rail} .wk-day-editor__status.is-rest {
-  background: #f1f5f9 !important;
-  color: #64748b !important;
+  background: light-dark(#f1f5f9, #15181d) !important;
+  color: light-dark(#64748b, #a5abb4) !important;
 }
 
 #{$rail} .wk-day-editor__titleline .np-mini {
@@ -129,13 +129,13 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   border: 0 !important;
   border-radius: 6px !important;
   background: transparent !important;
-  color: #91a4b8 !important;
+  color: light-dark(#91a4b8, #8b9299) !important;
 }
 
 #{$rail} .wk-day-editor__week {
   display: block !important;
   margin-top: 4px !important;
-  color: #61748a !important;
+  color: light-dark(#61748a, #a5acb4) !important;
   font-size: 13px !important;
   font-weight: 400 !important;
   line-height: 18px !important;
@@ -157,10 +157,10 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   min-height: 48px !important;
   height: 48px !important;
   padding: 0 20px !important;
-  border: 1px solid #cbd6e2 !important;
+  border: 1px solid light-dark(#cbd6e2, #353e47) !important;
   border-radius: 9px !important;
-  background: #fff !important;
-  color: #102038 !important;
+  background: light-dark(#fff, #1d2125) !important;
+  color: light-dark(#102038, #e5ebf4) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
   line-height: 20px !important;
@@ -168,15 +168,15 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 }
 
 #{$rail} .wk-day-editor__head .wk-restmark.is-active {
-  border-color: #a8dff4 !important;
-  background: #eef9fe !important;
-  color: #0ea5e9 !important;
+  border-color: light-dark(#a8dff4, #184f61) !important;
+  background: light-dark(#eef9fe, #1d3139) !important;
+  color: light-dark(#0ea5e9, #29b1f6) !important;
 }
 
 #{$rail} .wk-day-editor__head .wk-restmark__icon {
   width: 17px !important;
   height: 17px !important;
-  color: #596f88 !important;
+  color: light-dark(#596f88, #a9b0b8) !important;
 }
 
 /* ---------- Day body: same 24px inner edge as the workout day ---------- */
@@ -188,7 +188,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   gap: 8px !important;
   margin: 0 !important;
   padding: 8px 24px !important;
-  color: #078dcb !important;
+  color: light-dark(#078dcb, #48b5f5) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
   line-height: 20px !important;
@@ -209,7 +209,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 
 /* "Meals" heading: like the workout "EXERCISES" heading. */
 #{$rail} > .np-subtle {
-  color: #607087 !important;
+  color: light-dark(#607087, #a8aeb7) !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   line-height: 16px !important;
@@ -221,9 +221,9 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 #{$rail} .np-meal {
   margin: 0 0 14px !important;
   overflow: visible !important;
-  border: 1px solid #d8e4ef !important;
+  border: 1px solid light-dark(#d8e4ef, #313b43) !important;
   border-radius: 10px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: none !important;
 }
 
@@ -233,9 +233,9 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   gap: 12px !important;
   min-height: 76px !important;
   padding: 12px 14px !important;
-  border-bottom: 1px solid #e8eef4 !important;
+  border-bottom: 1px solid light-dark(#e8eef4, #33383c) !important;
   border-radius: 10px 10px 0 0 !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
 }
 
 #{$rail} .np-meal__drag {
@@ -249,7 +249,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
-  color: #a5b4c5 !important;
+  color: light-dark(#a5b4c5, #848b93) !important;
   cursor: grab !important;
 }
 
@@ -261,7 +261,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 #{$rail} .np-meal__left h4,
 #{$rail} .np-meal-title-row h4 {
   margin: 0 !important;
-  color: #102038 !important;
+  color: light-dark(#102038, #e5ebf4) !important;
   font-size: 16px !important;
   font-weight: 500 !important;
   line-height: 21px !important;
@@ -270,7 +270,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 
 /* Meal status next to the name: like the exercise "TYPE · SETS" line. */
 #{$rail} .np-meal-title-row small {
-  color: #637795 !important;
+  color: light-dark(#637795, #a3a9b1) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   line-height: 16px !important;
@@ -282,13 +282,13 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 #{$rail} .np-meal-title-row small.np-meal-status.is-hidden {
   padding: 1px 8px !important;
   border-radius: 999px !important;
-  background: #f1f5f9 !important;
-  color: #64748b !important;
+  background: light-dark(#f1f5f9, #15181d) !important;
+  color: light-dark(#64748b, #a5abb4) !important;
   text-transform: none !important;
 }
 
 #{$rail} .np-meal-title-row small.np-meal-status.is-warning {
-  color: #b45309 !important;
+  color: light-dark(#b45309, #f68f54) !important;
 }
 
 #{$rail} .np-meal__right {
@@ -309,13 +309,13 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   border: 0 !important;
   border-radius: 4px !important;
   background: transparent !important;
-  color: #91a4b8 !important;
+  color: light-dark(#91a4b8, #8b9299) !important;
 }
 
 #{$rail} .np-meal__body {
   padding: 12px 14px !important;
   border-radius: 0 0 10px 10px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
 }
 
 /* ---------- Phones: the header wraps, the cheat-meal button takes the full width ---------- */
@@ -357,9 +357,9 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   gap: 14px 18px;
   margin-bottom: 16px;
   padding: 14px;
-  border: 1px solid #d7ecf6;
+  border: 1px solid light-dark(#d7ecf6, #2e3a40);
   border-radius: 14px;
-  background: linear-gradient(180deg, #f7fcfe 0%, #fff 100%);
+  background: linear-gradient(180deg, light-dark(#f7fcfe, #181b1f) 0%, light-dark(#fff, #1d2125) 100%);
 }
 
 .np-recipe-card__media {
@@ -369,10 +369,10 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   height: 104px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #dce8f2;
+  border: 1px solid light-dark(#dce8f2, #303a42);
   border-radius: 12px;
   color: #44b4df;
-  background: #eef8fc;
+  background: light-dark(#eef8fc, #131a1d);
 
   img { width: 100%; height: 100%; object-fit: cover; }
   i-feather { width: 26px; height: 26px; }
@@ -387,7 +387,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   h5 {
     margin: 2px 0 0;
     overflow: hidden;
-    color: #0f172a;
+    color: light-dark(#0f172a, #e8ecf6);
     font-size: 16px;
     font-weight: 700;
     text-overflow: ellipsis;
@@ -398,7 +398,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
     display: -webkit-box;
     margin: 0;
     overflow: hidden;
-    color: #64748b;
+    color: light-dark(#64748b, #a5abb4);
     font-size: 12.5px;
     line-height: 1.45;
     -webkit-line-clamp: 2;
@@ -426,8 +426,8 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   i-feather { width: 12px; height: 12px; }
 }
 
-.np-recipe-card .np-recipe-chip { color: #6d4fd0; background: #f0ebff; }
-.np-recipe-meta { color: #475569; background: #f1f5f9; }
+.np-recipe-card .np-recipe-chip { color: light-dark(#6d4fd0, #ada0ff); background: light-dark(#f0ebff, #332a48); }
+.np-recipe-meta { color: light-dark(#475569, #bfc5ce); background: light-dark(#f1f5f9, #15181d); }
 
 .np-recipe-card__servings {
   grid-area: servings;
@@ -435,13 +435,13 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   justify-items: center;
   gap: 6px;
   padding-left: 18px;
-  border-left: 1px solid #e6e9ee;
+  border-left: 1px solid light-dark(#e6e9ee, #34383e);
 
-  small { max-width: 150px; color: #94a3b8; font-size: 11px; text-align: center; }
+  small { max-width: 150px; color: light-dark(#94a3b8, #8c919a); font-size: 11px; text-align: center; }
 }
 
 .np-recipe-card__label {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .04em;
@@ -453,9 +453,9 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   align-items: center;
   height: 40px;
   overflow: hidden;
-  border: 1px solid #d8dde6;
+  border: 1px solid light-dark(#d8dde6, #373b42);
   border-radius: 12px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 
   button {
     display: grid;
@@ -464,18 +464,18 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
     padding: 0;
     place-items: center;
     border: 0;
-    color: #0f172a;
+    color: light-dark(#0f172a, #e8ecf6);
     background: transparent;
     cursor: pointer;
 
-    &:hover:not(:disabled) { background: #f1f5f9; }
+    &:hover:not(:disabled) { background: light-dark(#f1f5f9, #15181d); }
     &:disabled { color: #cbd5e1; cursor: not-allowed; }
     i-feather { width: 15px; height: 15px; }
   }
 
   strong {
     min-width: 40px;
-    color: #0f172a;
+    color: light-dark(#0f172a, #e8ecf6);
     font-size: 17px;
     font-weight: 800;
     text-align: center;
@@ -489,7 +489,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   flex-wrap: wrap;
   gap: 6px 18px;
   padding-top: 10px;
-  border-top: 1px dashed #dce8f2;
+  border-top: 1px dashed light-dark(#dce8f2, #303a42);
 }
 
 .np-recipe-link {
@@ -498,14 +498,14 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   gap: 6px;
   padding: 0;
   border: 0;
-  color: #1f8fbb;
+  color: light-dark(#1f8fbb, #52b7e5);
   background: transparent;
   font: inherit;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
 
-  &:hover { color: #0f172a; }
+  &:hover { color: light-dark(#0f172a, #e8ecf6); }
   i-feather { width: 14px; height: 14px; }
 }
 
@@ -514,7 +514,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   align-items: center;
   gap: 4px;
   margin-left: 8px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0;
@@ -538,7 +538,7 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
     grid-template-columns: auto auto;
     justify-content: space-between;
     padding: 10px 0 0;
-    border-top: 1px solid #e6e9ee;
+    border-top: 1px solid light-dark(#e6e9ee, #34383e);
     border-left: 0;
 
     small { grid-column: 1 / -1; max-width: none; text-align: left; }
@@ -559,21 +559,21 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
     gap: 3px;
     padding: 3px 8px;
     border-radius: 7px;
-    color: #334155;
-    background: #f1f5f9;
+    color: light-dark(#334155, #d1d7e0);
+    background: light-dark(#f1f5f9, #15181d);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
 
-  i { color: #64748b; font-style: normal; font-weight: 700; }
-  b { color: #0f172a; font-weight: 700; }
-  small { color: #94a3b8; font-size: 11.5px; }
+  i { color: light-dark(#64748b, #a5abb4); font-style: normal; font-weight: 700; }
+  b { color: light-dark(#0f172a, #e8ecf6); font-weight: 700; }
+  small { color: light-dark(#94a3b8, #8c919a); font-size: 11.5px; }
 }
 
-.np-recipe-macros__kcal { background: #fff4e5 !important; }
+.np-recipe-macros__kcal { background: light-dark(#fff4e5, #3b2b11) !important; }
 
 .np-recipe-card__total {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 12.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -584,6 +584,6 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
 /* A day with an error, or empty in the middle of the plan (backlog-programmes.md). */
 #{$rail} .wk-day-editor__status.is-warning {
   border-color: #fcd34d !important;
-  background: #fffbeb !important;
-  color: #92400e !important;
+  background: light-dark(#fffbeb, #332c12) !important;
+  color: light-dark(#92400e, #f4996c) !important;
 }

@@ -147,8 +147,8 @@
     padding: 10px 20px;
     border: none;
     border-radius: 10px;
-    background: #fff;
-    color: #0b1020;
+    background: light-dark(#fff, #1d2125);
+    color: light-dark(#0b1020, #eaeef8);
     font-weight: 600;
     cursor: pointer;
   }
@@ -176,7 +176,7 @@
 
     &--off {
       background: rgba(255, 255, 255, 0.45);
-      color: #0b1020;
+      color: light-dark(#0b1020, #eaeef8);
     }
 
     &--end {

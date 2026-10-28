@@ -6,9 +6,9 @@
 
 .mt {
   padding: 16px;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 14px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 }
 
 .mt__head {
@@ -26,13 +26,13 @@
 }
 
 .mt__title strong {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 15px;
   font-weight: 800;
 }
 
 .mt__title small {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
 }
 
@@ -40,7 +40,7 @@
   display: inline-flex;
   padding: 3px;
   border-radius: 10px;
-  background: #f1f5f9;
+  background: light-dark(#f1f5f9, #15181d);
 }
 
 .mt__switch button {
@@ -48,7 +48,7 @@
   padding: 0 12px;
   border: 0;
   border-radius: 8px;
-  color: #475569;
+  color: light-dark(#475569, #bfc5ce);
   background: transparent;
   font: inherit;
   font-size: 12px;
@@ -57,8 +57,8 @@
 }
 
 .mt__switch button.active {
-  color: #0f172a;
-  background: #fff;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#fff, #1d2125);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 
@@ -84,8 +84,8 @@
 }
 
 .mt__macro {
-  border: 1px solid #e6e9ee;
-  background: #f8fafc;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
+  background: light-dark(#f8fafc, #171a1f);
 }
 
 .mt__kcal span,
@@ -104,7 +104,7 @@
 }
 
 .mt__macro span {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
 }
 
 .mt__macro span i {
@@ -122,7 +122,7 @@
 }
 
 .mt__macro strong {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .mt__kcal em,
@@ -135,7 +135,7 @@
 }
 
 .mt__macro small {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 11px;
 }
 
@@ -160,7 +160,7 @@
   margin-top: 12px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef2f6;
+  background: light-dark(#eef2f6, #14171b);
 }
 
 .mt__bar i {

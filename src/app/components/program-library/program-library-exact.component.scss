@@ -23,15 +23,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
   display: flex;
   height: 100vh;
 }
 
 .sidebar {
   width: 240px;
-  background: #f1f5f9;
-  border-right: 1px solid #e2e8f0;
+  background: light-dark(#f1f5f9, #15181d);
+  border-right: 1px solid light-dark(#e2e8f0, #34393f);
   padding: 1.5rem;
   overflow-y: auto;
 
@@ -42,7 +42,7 @@
       margin: 0;
       font-size: 1.125rem;
       font-weight: 600;
-      color: #1e293b;
+      color: light-dark(#1e293b, #e3e9f3);
     }
   }
 
@@ -57,10 +57,10 @@
       cursor: pointer;
       transition: all 0.2s ease;
       border: 1px solid transparent;
-      background: white;
+      background: light-dark(white, #1d2125);
 
       &:hover {
-        background: #e2e8f0;
+        background: light-dark(#e2e8f0, #283342);
       }
 
       &.active {
@@ -76,7 +76,7 @@
       .remove-day-btn {
         background: none;
         border: none;
-        color: #64748b;
+        color: light-dark(#64748b, #a5abb4);
         cursor: pointer;
         padding: 0.25rem;
         border-radius: 4px;
@@ -84,8 +84,8 @@
         transition: opacity 0.2s ease;
 
         &:hover {
-          background: #f1f5f9;
-          color: #dc2626;
+          background: light-dark(#f1f5f9, #15181d);
+          color: light-dark(#dc2626, #ff8275);
         }
       }
 
@@ -101,18 +101,18 @@
       gap: 0.5rem;
       width: 100%;
       padding: 0.75rem;
-      background: white;
-      border: 2px dashed #cbd5e1;
+      background: light-dark(white, #1d2125);
+      border: 2px dashed light-dark(#cbd5e1, #363e47);
       border-radius: 8px;
-      color: #64748b;
+      color: light-dark(#64748b, #a5abb4);
       cursor: pointer;
       font-weight: 500;
       transition: all 0.2s ease;
 
       &:hover {
         border-color: #0ea5e9;
-        color: #0ea5e9;
-        background: #f0f9ff;
+        color: light-dark(#0ea5e9, #29b1f6);
+        background: light-dark(#f0f9ff, #1f303b);
       }
     }
   }
@@ -123,19 +123,19 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background: white;
+  background: light-dark(white, #1d2125);
 
   .header-section {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid light-dark(#e2e8f0, #34393f);
 
     .back-btn {
       background: none;
       border: none;
-      color: #64748b;
+      color: light-dark(#64748b, #a5abb4);
       cursor: pointer;
       padding: 0.5rem;
       border-radius: 6px;
@@ -143,8 +143,8 @@
       width: 40px;
 
       &:hover {
-        background: #f1f5f9;
-        color: #1e293b;
+        background: light-dark(#f1f5f9, #15181d);
+        color: light-dark(#1e293b, #e3e9f3);
       }
     }
 
@@ -156,7 +156,7 @@
         margin: 0;
         font-size: 1.5rem;
         font-weight: 600;
-        color: #1e293b;
+        color: light-dark(#1e293b, #e3e9f3);
       }
     }
 
@@ -184,23 +184,23 @@
           justify-content: space-between;
           margin-bottom: 0.5rem;
           font-weight: 500;
-          color: #374151;
+          color: light-dark(#374151, #d1d6df);
 
           .required {
-            color: #dc2626;
+            color: light-dark(#dc2626, #ff8275);
           }
 
           .remove-description-btn {
             background: none;
             border: none;
-            color: #64748b;
+            color: light-dark(#64748b, #a5abb4);
             cursor: pointer;
             padding: 0.25rem;
             border-radius: 4px;
 
             &:hover {
-              background: #f1f5f9;
-              color: #dc2626;
+              background: light-dark(#f1f5f9, #15181d);
+              color: light-dark(#dc2626, #ff8275);
             }
           }
         }
@@ -208,7 +208,7 @@
         .program-title-input {
           width: 100%;
           padding: 0.75rem 1rem;
-          border: 1px solid #d1d5db;
+          border: 1px solid light-dark(#d1d5db, #3a3d42);
           border-radius: 8px;
           font-size: 1rem;
           font-weight: 500;
@@ -241,13 +241,13 @@
           gap: 0.5rem;
           background: none;
           border: none;
-          color: #0ea5e9;
+          color: light-dark(#0ea5e9, #29b1f6);
           cursor: pointer;
           font-weight: 500;
           padding: 0.5rem 0;
 
           &:hover {
-            color: #0284c7;
+            color: light-dark(#0284c7, #4eb5fb);
           }
         }
       }
@@ -263,14 +263,14 @@
             margin: 0 0 1rem 0;
             font-size: 1.25rem;
             font-weight: 600;
-            color: #1e293b;
+            color: light-dark(#1e293b, #e3e9f3);
 
             .edit-icon {
-              color: #64748b;
+              color: light-dark(#64748b, #a5abb4);
               cursor: pointer;
 
               &:hover {
-                color: #0ea5e9;
+                color: light-dark(#0ea5e9, #29b1f6);
               }
             }
           }
@@ -300,13 +300,13 @@
             margin: 0 0 1rem 0;
             font-size: 1.125rem;
             font-weight: 600;
-            color: #1e293b;
+            color: light-dark(#1e293b, #e3e9f3);
           }
 
           .exercises-content {
             .no-exercises {
-              background: #f8fafc;
-              border: 2px dashed #cbd5e1;
+              background: light-dark(#f8fafc, #171a1f);
+              border: 2px dashed light-dark(#cbd5e1, #363e47);
               border-radius: 12px;
               padding: 2rem;
               text-align: center;
@@ -319,7 +319,7 @@
 
               p {
                 margin: 0;
-                color: #64748b;
+                color: light-dark(#64748b, #a5abb4);
                 font-size: 1rem;
               }
             }
@@ -329,10 +329,10 @@
               align-items: center;
               gap: 0.5rem;
               padding: 0.75rem 1.5rem;
-              background: #e0f2fe;
+              background: light-dark(#e0f2fe, #143446);
               border: none;
               border-radius: 8px;
-              color: #0ea5e9;
+              color: light-dark(#0ea5e9, #29b1f6);
               cursor: pointer;
               font-weight: 500;
               transition: all 0.2s ease;
@@ -341,21 +341,21 @@
               margin-top: 1rem;
 
               &:hover {
-                background: #bae6fd;
+                background: light-dark(#bae6fd, #0a3a4e);
               }
             }
 
             .exercises-list {
               .exercise-item {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
+                background: light-dark(#f8fafc, #171a1f);
+                border: 1px solid light-dark(#e2e8f0, #34393f);
                 border-radius: 12px;
                 padding: 1.5rem;
                 margin-bottom: 1rem;
 
                 &.superset {
                   border: 2px solid #0ea5e9;
-                  background: #f0f9ff;
+                  background: light-dark(#f0f9ff, #1f303b);
                 }
 
                 .exercise-header {
@@ -378,7 +378,7 @@
 
                     .exercise-name {
                       font-weight: 600;
-                      color: #1e293b;
+                      color: light-dark(#1e293b, #e3e9f3);
                       font-size: 1rem;
                     }
 
@@ -405,13 +405,13 @@
                       transition: all 0.2s ease;
 
                       &.info {
-                        color: #0ea5e9;
-                        &:hover { background: #e0f2fe; }
+                        color: light-dark(#0ea5e9, #29b1f6);
+                        &:hover { background: light-dark(#e0f2fe, #143446); }
                       }
 
                       &.delete {
-                        color: #dc2626;
-                        &:hover { background: #fef2f2; }
+                        color: light-dark(#dc2626, #ff8275);
+                        &:hover { background: light-dark(#fef2f2, #3c2829); }
                       }
                     }
                   }
@@ -423,14 +423,14 @@
                   gap: 0.5rem;
                   background: none;
                   border: none;
-                  color: #0ea5e9;
+                  color: light-dark(#0ea5e9, #29b1f6);
                   cursor: pointer;
                   font-weight: 500;
                   padding: 0.5rem 0;
                   margin-bottom: 1rem;
 
                   &:hover {
-                    color: #0284c7;
+                    color: light-dark(#0284c7, #4eb5fb);
                   }
                 }
 
@@ -440,11 +440,11 @@
                     grid-template-columns: 60px 1fr 200px 40px;
                     gap: 1rem;
                     padding: 0.75rem 0;
-                    border-bottom: 1px solid #e2e8f0;
+                    border-bottom: 1px solid light-dark(#e2e8f0, #34393f);
                     margin-bottom: 0.5rem;
                     font-weight: 600;
                     font-size: 0.875rem;
-                    color: #64748b;
+                    color: light-dark(#64748b, #a5abb4);
                   }
 
                   .set-row {
@@ -453,17 +453,17 @@
                     gap: 1rem;
                     align-items: center;
                     padding: 0.75rem 0;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid light-dark(#f1f5f9, #31363b);
 
                     .set-number {
                       font-weight: 600;
-                      color: #1e293b;
+                      color: light-dark(#1e293b, #e3e9f3);
                     }
 
                     .reps-input input {
                       width: 100%;
                       padding: 0.5rem;
-                      border: 1px solid #d1d5db;
+                      border: 1px solid light-dark(#d1d5db, #3a3d42);
                       border-radius: 6px;
                       text-align: center;
 
@@ -485,13 +485,13 @@
 
                         label {
                           font-size: 0.75rem;
-                          color: #64748b;
+                          color: light-dark(#64748b, #a5abb4);
                         }
 
                         input {
                           width: 60px;
                           padding: 0.5rem;
-                          border: 1px solid #d1d5db;
+                          border: 1px solid light-dark(#d1d5db, #3a3d42);
                           border-radius: 6px;
                           text-align: center;
 
@@ -507,13 +507,13 @@
                     .delete-set-btn {
                       background: none;
                       border: none;
-                      color: #dc2626;
+                      color: light-dark(#dc2626, #ff8275);
                       cursor: pointer;
                       padding: 0.25rem;
                       border-radius: 4px;
 
                       &:hover {
-                        background: #fef2f2;
+                        background: light-dark(#fef2f2, #3c2829);
                       }
                     }
                   }
@@ -524,14 +524,14 @@
                     background: none;
                     border: 2px dashed #0ea5e9;
                     border-radius: 8px;
-                    color: #0ea5e9;
+                    color: light-dark(#0ea5e9, #29b1f6);
                     cursor: pointer;
                     font-weight: 500;
                     margin-top: 1rem;
 
                     &:hover {
                       border-color: #0284c7;
-                      background: #f0f9ff;
+                      background: light-dark(#f0f9ff, #1f303b);
                     }
                   }
                 }
@@ -573,8 +573,8 @@
 
   .save-section {
     padding: 1.5rem 2rem;
-    border-top: 1px solid #e2e8f0;
-    background: #f8fafc;
+    border-top: 1px solid light-dark(#e2e8f0, #34393f);
+    background: light-dark(#f8fafc, #171a1f);
 
     .save-program-btn {
       display: flex;
@@ -624,7 +624,7 @@
   right: 0;
   width: 400px;
   height: 100vh;
-  background: white;
+  background: light-dark(white, #1d2125);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
@@ -634,7 +634,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid light-dark(#e2e8f0, #34393f);
 
     .header-spacer {
       width: 40px;
@@ -644,7 +644,7 @@
       margin: 0;
       font-size: 1.25rem;
       font-weight: 600;
-      color: #1e293b;
+      color: light-dark(#1e293b, #e3e9f3);
       flex: 1;
       text-align: center;
     }
@@ -652,7 +652,7 @@
     .close-btn {
       background: none;
       border: none;
-      color: #64748b;
+      color: light-dark(#64748b, #a5abb4);
       cursor: pointer;
       padding: 0.5rem;
       border-radius: 6px;
@@ -663,7 +663,7 @@
       justify-content: center;
 
       &:hover {
-        background: #f1f5f9;
+        background: light-dark(#f1f5f9, #15181d);
       }
     }
   }
@@ -684,7 +684,7 @@
           left: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #9ca3af;
+          color: light-dark(#9ca3af, #8c9199);
           width: 16px;
           height: 16px;
         }
@@ -692,7 +692,7 @@
         input {
           width: 100%;
           padding: 0.75rem 1rem 0.75rem 2.5rem;
-          border: 1px solid #d1d5db;
+          border: 1px solid light-dark(#d1d5db, #3a3d42);
           border-radius: 8px;
           font-size: 0.875rem;
 
@@ -713,10 +713,10 @@
 
       .filter-select {
         padding: 0.75rem;
-        border: 1px solid #d1d5db;
+        border: 1px solid light-dark(#d1d5db, #3a3d42);
         border-radius: 8px;
         font-size: 0.875rem;
-        background: white;
+        background: light-dark(white, #1d2125);
 
         &:focus {
           outline: none;
@@ -731,15 +731,15 @@
       .add-new-btn {
         width: 100%;
         padding: 0.75rem;
-        background: #e0f2fe;
-        color: #0ea5e9;
+        background: light-dark(#e0f2fe, #143446);
+        color: light-dark(#0ea5e9, #29b1f6);
         border: none;
         border-radius: 8px;
         font-weight: 500;
         cursor: pointer;
 
         &:hover {
-          background: #bae6fd;
+          background: light-dark(#bae6fd, #0a3a4e);
         }
       }
     }
@@ -748,7 +748,7 @@
       .loading-state {
         text-align: center;
         padding: 2rem;
-        color: #64748b;
+        color: light-dark(#64748b, #a5abb4);
       }
 
       .exercise-item {
@@ -756,15 +756,15 @@
         justify-content: space-between;
         align-items: flex-start;
         padding: 1rem;
-        border: 1px solid #e2e8f0;
+        border: 1px solid light-dark(#e2e8f0, #34393f);
         border-radius: 8px;
         margin-bottom: 0.75rem;
         transition: all 0.2s ease;
         cursor: pointer;
 
         &:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
+          background: light-dark(#f8fafc, #171a1f);
+          border-color: light-dark(#cbd5e1, #363e47);
 
           .add-exercise-btn {
             opacity: 1;
@@ -777,7 +777,7 @@
             margin: 0 0 0.5rem 0;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #1e293b;
+            color: light-dark(#1e293b, #e3e9f3);
           }
 
           .exercise-details {
@@ -795,18 +795,18 @@
             }
 
             .exercise-type {
-              background: #e0f2fe;
-              color: #0ea5e9;
+              background: light-dark(#e0f2fe, #143446);
+              color: light-dark(#0ea5e9, #29b1f6);
             }
 
             .exercise-muscle {
-              background: #dcfce7;
-              color: #166534;
+              background: light-dark(#dcfce7, #0f3822);
+              color: light-dark(#166534, #88d29a);
             }
 
             .exercise-equipment {
-              background: #fef3c7;
-              color: #92400e;
+              background: light-dark(#fef3c7, #382f03);
+              color: light-dark(#92400e, #f4996c);
             }
           }
         }

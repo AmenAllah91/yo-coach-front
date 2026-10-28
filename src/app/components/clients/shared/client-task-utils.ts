@@ -89,12 +89,15 @@ export function taskIcon(task: TaskCalendarItem): string {
 
 /** [icon color, tile background] of a task type. */
 export function taskColors(task: TaskCalendarItem): [string, string] {
-  if (isHabit(task)) return ['#0C86C8', '#E8F3FA'];
+  // [icon color, tile background]; in dark mode the tile is a deep tint of the same color.
+  const tone = (fg: string, light: string): [string, string] =>
+    [fg, `light-dark(${light}, color-mix(in srgb, ${fg} 22%, var(--yc-surface)))`];
+  if (isHabit(task)) return tone('#0C86C8', '#E8F3FA');
   switch (task.taskType) {
-    case 'CLIENT_PROGRESS': return ['#D9761A', '#FDF1E3'];
-    case 'BODY_METRICS': return ['#1E9E63', '#E6F6EE'];
-    case 'FORM': return ['#7455D9', '#EFEBFB'];
-    default: return ['#0C86C8', '#E8F3FA'];
+    case 'CLIENT_PROGRESS': return tone('#D9761A', '#FDF1E3');
+    case 'BODY_METRICS': return tone('#1E9E63', '#E6F6EE');
+    case 'FORM': return tone('#7455D9', '#EFEBFB');
+    default: return tone('#0C86C8', '#E8F3FA');
   }
 }
 

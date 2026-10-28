@@ -17,8 +17,8 @@
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   padding: 30px 24px 24px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 22px;
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
   text-align: center;
@@ -36,16 +36,16 @@
   height: 34px;
   border: 0;
   border-radius: 999px;
-  background: #f8fafc;
-  color: #64748b;
+  background: light-dark(#f8fafc, #171a1f);
+  color: light-dark(#64748b, #a5abb4);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
 }
 
 .assign-close:hover {
-  background: #eef2f7;
-  color: #0f172a;
+  background: light-dark(#eef2f7, #14171b);
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .assign-icon {
@@ -55,14 +55,14 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #eaf8ff;
-  color: #0ea5e9;
+  background: light-dark(#eaf8ff, #1a323c);
+  color: light-dark(#0ea5e9, #29b1f6);
   font-size: 27px;
 }
 
 .assign-card h2 {
   margin: 0 0 8px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 21px;
   line-height: 1.2;
   font-weight: 800;
@@ -71,13 +71,13 @@
 
 .assign-card p {
   margin: 0 0 18px;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 14px;
   line-height: 1.45;
 }
 
 .assign-card p strong {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-weight: 800;
 }
 
@@ -90,7 +90,7 @@
 .assign-label {
   display: block;
   margin: 13px 0 7px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 13px;
   font-weight: 800;
 }
@@ -99,10 +99,10 @@
   width: 100%;
   height: 44px;
   padding: 0 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 10px;
-  background: #ffffff;
-  color: #111827;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#111827, #e8ecf6);
   font-size: 14px;
   outline: none;
 }
@@ -116,8 +116,8 @@
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #fee2e2;
-  color: #dc2626;
+  background: light-dark(#fee2e2, #4c2426);
+  color: light-dark(#dc2626, #ff8275);
   font-size: 13px;
   font-weight: 700;
 }
@@ -150,14 +150,14 @@
 }
 
 .assign-secondary {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #64748b;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#64748b, #a5abb4);
 }
 
 .assign-secondary:hover {
-  background: #f8fafc;
-  color: #111827;
+  background: light-dark(#f8fafc, #171a1f);
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .assign-primary:disabled,

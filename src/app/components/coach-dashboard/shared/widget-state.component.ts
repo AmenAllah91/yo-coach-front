@@ -33,16 +33,16 @@ import { WidgetStatus } from '../../../models/coach-dashboard.model';
     :host { display: block; }
     .ws-skeleton { display: grid; gap: 14px; padding: 4px 0; }
     .ws-row { display: flex; align-items: center; gap: 12px; }
-    .ws-dot { width: 32px; height: 32px; border-radius: 50%; background: #eef2f6; flex: none; animation: ws-pulse 1.4s ease-in-out infinite; }
+    .ws-dot { width: 32px; height: 32px; border-radius: 50%; background: light-dark(#eef2f6, #14171b); flex: none; animation: ws-pulse 1.4s ease-in-out infinite; }
     .ws-lines { display: grid; gap: 6px; flex: 1; }
-    .ws-line { height: 9px; border-radius: 5px; background: #eef2f6; animation: ws-pulse 1.4s ease-in-out infinite; }
+    .ws-line { height: 9px; border-radius: 5px; background: light-dark(#eef2f6, #14171b); animation: ws-pulse 1.4s ease-in-out infinite; }
     .ws-line--short { width: 45%; }
-    .ws-message { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 12px; text-align: center; color: #64748b; font-size: 13px; }
-    .ws-message i-feather { width: 20px; height: 20px; color: #94a3b8; }
+    .ws-message { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 12px; text-align: center; color: light-dark(#64748b, #a5abb4); font-size: 13px; }
+    .ws-message i-feather { width: 20px; height: 20px; color: light-dark(#94a3b8, #8c919a); }
     .ws-message p { margin: 0; line-height: 1.45; }
-    .ws-message--error i-feather { color: #d06449; }
-    .ws-retry { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #d9e2ec; border-radius: 6px; background: #fff; color: #0f172a; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .ws-retry:hover { background: #f1f5f9; }
+    .ws-message--error i-feather { color: light-dark(#d06449, #f58569); }
+    .ws-retry { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid light-dark(#d9e2ec, #343b42); border-radius: 6px; background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .ws-retry:hover { background: light-dark(#f1f5f9, #15181d); }
     .ws-retry i-feather { width: 13px; height: 13px; color: inherit; }
     @keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
   `],

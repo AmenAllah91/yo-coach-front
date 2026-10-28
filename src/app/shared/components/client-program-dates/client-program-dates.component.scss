@@ -8,14 +8,14 @@
   display: grid;
   gap: 14px;
   padding: 16px 18px;
-  border: 1px solid #dbe7f2;
+  border: 1px solid light-dark(#dbe7f2, #313a43);
   border-radius: 12px;
-  background: #f8fbfe;
+  background: light-dark(#f8fbfe, #171b1f);
 }
 
 .cpd.is-current {
-  border-color: #bfdbfe;
-  background: #f3f8ff;
+  border-color: light-dark(#bfdbfe, #324966);
+  background: light-dark(#f3f8ff, #16191e);
 }
 
 .cpd__head {
@@ -32,8 +32,8 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: #e0efff;
-  color: #0c86c8;
+  background: light-dark(#e0efff, #1a324b);
+  color: light-dark(#0c86c8, #4fb5fa);
 
   i-feather { width: 19px; height: 19px; }
 }
@@ -47,7 +47,7 @@
 }
 
 .cpd__kicker {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .02em;
@@ -59,7 +59,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
@@ -68,7 +68,7 @@
 .cpd__arrow {
   width: 15px;
   height: 15px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
 }
 
 .cpd__badge {
@@ -80,10 +80,10 @@
   white-space: nowrap;
 }
 
-.cpd__badge--current { background: #dcfce7; color: #15803d; }
-.cpd__badge--upcoming { background: #e0efff; color: #0369a1; }
-.cpd__badge--finished { background: #eef2f6; color: #475569; }
-.cpd__badge--stopped { background: #fee2e2; color: #b91c1c; }
+.cpd__badge--current { background: light-dark(#dcfce7, #0f3822); color: light-dark(#15803d, #68c780); }
+.cpd__badge--upcoming { background: light-dark(#e0efff, #1a324b); color: light-dark(#0369a1, #68baf7); }
+.cpd__badge--finished { background: light-dark(#eef2f6, #14171b); color: light-dark(#475569, #bfc5ce); }
+.cpd__badge--stopped { background: light-dark(#fee2e2, #4c2426); color: light-dark(#b91c1c, #ff8a7d); }
 
 .cpd__progress {
   display: grid;
@@ -94,7 +94,7 @@
   height: 6px;
   overflow: hidden;
   border-radius: 999px;
-  background: #dbe7f2;
+  background: light-dark(#dbe7f2, #223546);
 
   i {
     display: block;
@@ -105,7 +105,7 @@
 }
 
 .cpd__progressText {
-  color: #334155;
+  color: light-dark(#334155, #d1d7e0);
   font-size: 13px;
   font-weight: 600;
 }
@@ -122,11 +122,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #475569;
+    color: light-dark(#475569, #bfc5ce);
     font-size: 13px;
   }
 
-  i-feather { width: 14px; height: 14px; color: #64748b; }
+  i-feather { width: 14px; height: 14px; color: light-dark(#64748b, #a5abb4); }
 }
 
 .cpd__foot {
@@ -135,7 +135,7 @@
   align-items: center;
   gap: 10px 14px;
   padding-top: 12px;
-  border-top: 1px solid #e2eaf2;
+  border-top: 1px solid light-dark(#e2eaf2, #32393f);
 
   &:empty { display: none; }
 }
@@ -148,15 +148,15 @@
   padding: 0 16px;
   border: 1px solid #0c86c8;
   border-radius: 9px;
-  background: #fff;
-  color: #0c86c8;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#0c86c8, #4fb5fa);
   font: inherit;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color .15s ease;
 
-  &:hover { background: #eef7fd; }
+  &:hover { background: light-dark(#eef7fd, #1f313b); }
 
   i-feather { width: 16px; height: 16px; }
 }
@@ -166,11 +166,11 @@
   align-items: flex-start;
   gap: 8px;
   margin: 0;
-  color: #475569;
+  color: light-dark(#475569, #bfc5ce);
   font-size: 13px;
   line-height: 1.45;
 
-  i-feather { flex: 0 0 auto; width: 15px; height: 15px; margin-top: 2px; color: #64748b; }
+  i-feather { flex: 0 0 auto; width: 15px; height: 15px; margin-top: 2px; color: light-dark(#64748b, #a5abb4); }
 }
 
 @media (max-width: 560px) {

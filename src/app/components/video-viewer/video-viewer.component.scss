@@ -1,8 +1,8 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: #f5f6fa;
-  color: #111827;
+  background: light-dark(#f5f6fa, #16191d);
+  color: light-dark(#111827, #e8ecf6);
   font-family:
     Inter,
     system-ui,
@@ -20,14 +20,14 @@
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, rgba(57, 174, 239, 0.1), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f5f6fa 38%, #f5f6fa 100%);
+    linear-gradient(180deg, light-dark(#ffffff, #1d2125) 0%, light-dark(#f5f6fa, #16191d) 38%, light-dark(#f5f6fa, #16191d) 100%);
 }
 
 .video-header {
   min-height: 76px;
   padding: 18px 28px 14px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #e5e7eb;
+  background: light-dark(rgba(255, 255, 255, 0.94), rgba(29, 33, 37, 0.94));
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   align-items: center;
   position: sticky;
@@ -53,7 +53,7 @@
 
 .title-block h1 {
   margin: 0;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 21px;
   line-height: 1.15;
   font-weight: 900;
@@ -78,7 +78,7 @@
   background: #000000;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid light-dark(rgba(15, 23, 42, 0.08), rgba(255, 255, 255, 0.088));
   box-shadow:
     0 20px 50px rgba(15, 23, 42, 0.16),
     0 2px 8px rgba(15, 23, 42, 0.08);
@@ -97,8 +97,8 @@
   max-width: 520px;
   margin: 80px auto 0;
   padding: 34px 28px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 22px;
   text-align: center;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
@@ -109,7 +109,7 @@
   height: 42px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  border: 4px solid #e5e7eb;
+  border: 4px solid light-dark(#e5e7eb, #34393f);
   border-top-color: #39aeef;
   animation: spin 0.8s linear infinite;
 }
@@ -117,7 +117,7 @@
 .loading-card h2,
 .error-card h2 {
   margin: 0 0 8px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 22px;
   font-weight: 900;
 }
@@ -125,7 +125,7 @@
 .loading-card p,
 .error-card p {
   margin: 0;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -137,8 +137,8 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #fee2e2;
-  color: #ef4444;
+  background: light-dark(#fee2e2, #4c2426);
+  color: light-dark(#ef4444, #ff7a72);
   font-size: 28px;
   font-weight: 900;
 }

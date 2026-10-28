@@ -17,6 +17,7 @@ import { AppThemeColorsService } from '../../../core/service/app-theme-colors.se
 import { BrandingLockBannerComponent } from 'app/components/branding-lock-banner/branding-lock-banner.component';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ThemeModeService } from 'app/core/service/theme-mode.service';
 
 type ColorField = keyof Pick<
   AppThemeColors,
@@ -284,9 +285,20 @@ export class ThemeColorsComponent implements OnInit, AfterViewInit, OnDestroy {
     private translate: TranslateService,
     private subscriptionState: CoachSubscriptionStateService,
     private host: ElementRef<HTMLElement>,
-    private zone: NgZone
+    private zone: NgZone,
+    themeMode: ThemeModeService
   ) {
     this.flutterPreviewUrl = this.previewSource();
+    this.previewDark = themeMode.isDark;
+  }
+
+  /** The phone shows the dark version of the theme (computed from the coach's colors, as the client app does). */
+  previewDark = false;
+
+  setPreviewDark(dark: boolean): void {
+    if (this.previewDark === dark) return;
+    this.previewDark = dark;
+    this.sendThemeToFlutter();
   }
 
   ngOnInit(): void {
@@ -391,6 +403,7 @@ export class ThemeColorsComponent implements OnInit, AfterViewInit, OnDestroy {
       ...this.selectedTheme,
       mobileLogoUrl: this.getLogoPreviewUrl(this.selectedTheme.mobileLogoUrl),
       lang: this.translate.currentLang === 'en' ? 'en' : 'fr',
+      dark: this.previewDark,
     };
 
     target.postMessage(JSON.stringify({ type: PREVIEW_THEME_MESSAGE, theme: previewTheme }), window.location.origin);

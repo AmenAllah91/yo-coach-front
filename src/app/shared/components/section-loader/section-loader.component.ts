@@ -23,13 +23,13 @@ import { TranslateModule } from '@ngx-translate/core';
       justify-content: center;
       gap: 10px;
       min-height: 160px;
-      color: #64748b;
+      color: light-dark(#64748b, #a5abb4);
       font-size: 13px;
     }
     .section-loader__spinner {
       width: 20px;
       height: 20px;
-      border: 2px solid #dbeafe;
+      border: 2px solid light-dark(#dbeafe, #313943);
       border-top-color: #44b4df;
       border-radius: 50%;
       animation: section-loader-spin 0.7s linear infinite;

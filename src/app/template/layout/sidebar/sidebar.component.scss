@@ -6,7 +6,7 @@ $sidebar-bg: #0f1115;
 $sidebar-bg-soft: #161a20;
 $sidebar-border: rgba(255, 255, 255, 0.08);
 $text-light: #e6e9ef;
-$text-muted: #9aa3af;
+$text-muted: light-dark(#9aa3af, #8b9199);
 $hover-bg: rgba(255, 255, 255, 0.07);
 $active-bg: rgba(68, 180, 223, 0.14);
 $accent: #44b4df;
@@ -128,7 +128,7 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   width: 100%;
   min-height: 52px;
   padding: 8px 10px;
-  color: #0f1115;
+  color: light-dark(#0f1115, #ebeef4);
   text-decoration: none;
   background: $accent;
   border-radius: 8px;
@@ -136,7 +136,7 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 
   &:hover,
   &:focus-visible {
-    color: #0f1115;
+    color: light-dark(#0f1115, #ebeef4);
     filter: brightness(1.08);
   }
 
@@ -192,7 +192,7 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   .account-avatar-fallback {
     width: 42px;
     height: 42px;
-    border: 2px solid rgba(255, 255, 255, 0.85);
+    border: 2px solid light-dark(rgba(255, 255, 255, 0.85), rgba(47, 51, 57, 0.85));
     border-radius: 50%;
   }
 
@@ -241,8 +241,8 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   left: 10px;
   z-index: 10;
   padding: 6px;
-  background: #fff;
-  border: 1px solid #e6e9ef;
+  background: light-dark(#fff, #1d2125);
+  border: 1px solid light-dark(#e6e9ef, #36383d);
   border-radius: 10px;
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
 }
@@ -254,15 +254,15 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   width: 100%;
   min-height: 42px;
   padding: 9px 10px;
-  color: #1c2635;
+  color: light-dark(#1c2635, #e4eaf3);
   background: transparent;
   border: 0;
   border-radius: 7px;
   font-size: 13px;
   text-align: left;
 
-  &:hover { background: #f3f6f8; }
-  &.logout { color: #dc3545; }
+  &:hover { background: light-dark(#f3f6f8, #15191d); }
+  &.logout { color: light-dark(#dc3545, #ff7e7f); }
 
   i-feather {
     width: 17px;

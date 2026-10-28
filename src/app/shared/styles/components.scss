@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   padding: 1rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   gap: 1rem;
 
   @media (max-width: 768px) {
@@ -26,7 +26,7 @@
     border-radius: 6px;
     
     &:hover {
-      background-color: #f3f4f6;
+      background-color: light-dark(#f3f4f6, #15181c);
     }
 
     @media (max-width: 768px) {
@@ -53,7 +53,7 @@
     
     p {
       margin: 0;
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
       font-size: 0.875rem;
 
       @media (max-width: 768px) {
@@ -117,14 +117,14 @@
 
 .left-panel {
   width: 400px;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid light-dark(#e5e7eb, #34393f);
   padding: 1.5rem;
   overflow-y: auto;
 
   @media (max-width: 768px) {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
     padding: 1rem;
     max-height: 50vh;
   }
@@ -160,12 +160,12 @@
       margin: 0 0 0.5rem 0;
       font-size: 1.25rem;
       font-weight: 600;
-      color: #111827;
+      color: light-dark(#111827, #e8ecf6);
     }
 
     p {
       margin: 0;
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
     }
   }
 }
@@ -184,9 +184,9 @@
   .filter-select {
     flex: 1;
     padding: 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid light-dark(#d1d5db, #3a3d42);
     border-radius: 6px;
-    background: white;
+    background: light-dark(white, #1d2125);
     font-size: 0.875rem;
 
     @media (max-width: 768px) {
@@ -210,7 +210,7 @@
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
+    color: light-dark(#9ca3af, #8c9199);
     width: 16px;
     height: 16px;
   }
@@ -218,7 +218,7 @@
   input {
     width: 100%;
     padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid light-dark(#d1d5db, #3a3d42);
     border-radius: 6px;
     font-size: 0.875rem;
 
@@ -227,7 +227,7 @@
     }
 
     &::placeholder {
-      color: #9ca3af;
+      color: light-dark(#9ca3af, #8c9199);
     }
   }
 }
@@ -261,22 +261,22 @@
       }
 
       &:hover {
-        background-color: #f9fafb;
+        background-color: light-dark(#f9fafb, #171b1f);
       }
 
       &.selected {
-        background-color: #e5e7eb;
+        background-color: light-dark(#e5e7eb, #2c3035);
       }
 
       .item-icon {
         width: 40px;
         height: 40px;
-        background: #f3f4f6;
+        background: light-dark(#f3f4f6, #15181c);
         border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #6b7280;
+        color: light-dark(#6b7280, #a7abb4);
 
         @media (max-width: 768px) {
           width: 36px;
@@ -291,7 +291,7 @@
           margin: 0;
           font-size: 0.875rem;
           font-weight: 500;
-          color: #111827;
+          color: light-dark(#111827, #e8ecf6);
 
           @media (max-width: 768px) {
             font-size: 0.8125rem;
@@ -301,7 +301,7 @@
         p {
           margin: 0;
           font-size: 0.75rem;
-          color: #6b7280;
+          color: light-dark(#6b7280, #a7abb4);
 
           @media (max-width: 768px) {
             font-size: 0.6875rem;
@@ -327,13 +327,13 @@
           height: 28px;
 
           &:hover {
-            background-color: #f3f4f6;
+            background-color: light-dark(#f3f4f6, #15181c);
           }
         }
 
         .delete-btn:hover {
-          background-color: #fee2e2;
-          color: #dc2626;
+          background-color: light-dark(#fee2e2, #4c2426);
+          color: light-dark(#dc2626, #ff8275);
         }
       }
     }
@@ -344,7 +344,7 @@
 .no-items {
   text-align: center;
   padding: 2rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   
   p {
     margin: 0;
@@ -360,17 +360,17 @@
   gap: 1rem;
   margin-top: 1rem;
   padding: 1rem 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
 
   button {
     padding: 0.5rem 1rem;
-    border: 1px solid #d1d5db;
-    background: white;
+    border: 1px solid light-dark(#d1d5db, #3a3d42);
+    background: light-dark(white, #1d2125);
     border-radius: 6px;
     cursor: pointer;
 
     &:hover:not(:disabled) {
-      background: #f9fafb;
+      background: light-dark(#f9fafb, #171b1f);
     }
 
     &:disabled {
@@ -381,6 +381,6 @@
 
   span {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
   }
 }

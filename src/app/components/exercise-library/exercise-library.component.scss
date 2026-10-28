@@ -8,7 +8,7 @@
 
 /* Soft exercise rail typography, consistent with the shared list template. */
 .left-panel .exercises-section > h3 {
-  color: #50647a !important;
+  color: light-dark(#50647a, #b2b9c1) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
@@ -16,47 +16,47 @@
 }
 
 .left-panel .exercise-list .exercise-item {
-  border-color: #dfe5ec !important;
-  background: #fff !important;
+  border-color: light-dark(#dfe5ec, #353a3f) !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: none !important;
 }
 
 .left-panel .exercise-list .exercise-item:hover {
-  border-color: #cfd9e3 !important;
-  background: #fbfdfe !important;
+  border-color: light-dark(#cfd9e3, #353d45) !important;
+  background: light-dark(#fbfdfe, #1c2024) !important;
   box-shadow: 0 3px 9px rgba(15, 23, 42, .045) !important;
 }
 
 .left-panel .exercise-list .exercise-item.selected {
-  border-color: #9fdced !important;
-  background: #edf9fd !important;
+  border-color: light-dark(#9fdced, #0e505f) !important;
+  background: light-dark(#edf9fd, #1c3238) !important;
   box-shadow: none !important;
 }
 
 .left-panel .exercise-list .exercise-item .exercise-info h4 {
-  color: #26384e !important;
+  color: light-dark(#26384e, #d9e0e8) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
 }
 
 .left-panel .exercise-list .exercise-item .exercise-info .exercise-meta {
-  color: #6c7d90 !important;
+  color: light-dark(#6c7d90, #9ea5ad) !important;
   font-size: 11px !important;
   font-weight: 400 !important;
   letter-spacing: .01em !important;
 }
 
 .left-panel .exercise-list .exercise-item .exercise-info .exercise-meta .custom-badge {
-  background: #eef2f6 !important;
-  color: #526477 !important;
+  background: light-dark(#eef2f6, #14171b) !important;
+  color: light-dark(#526477, #b2b9c1) !important;
   font-weight: 500 !important;
 }
 
 /* Detail panel: no heavy typography above or below the video. */
 .right-panel .exercise-detail .exercise-header .exercise-title-block h2,
 .right-panel .exercise-detail .exercise-title-block h2 {
-  color: #26384e !important;
+  color: light-dark(#26384e, #d9e0e8) !important;
   font-weight: 500 !important;
   letter-spacing: -.01em !important;
 }
@@ -69,12 +69,12 @@
 .right-panel .exercise-detail .exercise-notes h3,
 .right-panel .exercise-detail .exercise-notes h4,
 .right-panel .exercise-detail .exercise-notes strong {
-  color: #33465b !important;
+  color: light-dark(#33465b, #ccd3dc) !important;
   font-weight: 500 !important;
 }
 
 .right-panel .no-selection h3 {
-  color: #33465b !important;
+  color: light-dark(#33465b, #ccd3dc) !important;
   font-weight: 500 !important;
 }
 
@@ -96,8 +96,8 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #eef0f3;
-  color: #536173;
+  background: light-dark(#eef0f3, #272b2f);
+  color: light-dark(#536173, #b4bbc3);
   display: inline-grid;
   place-items: center;
   cursor: pointer;
@@ -106,7 +106,7 @@
 }
 
 .page-back-btn:hover,
-.exercise-header .back-btn:hover { background: #dfe4ea; color: #071426; }
+.exercise-header .back-btn:hover { background: light-dark(#dfe4ea, #2e3237); color: light-dark(#071426, #e7eef7); }
 .page-back-btn:active,
 .exercise-header .back-btn:active { transform: scale(0.96); }
 .page-back-btn:focus-visible,
@@ -122,7 +122,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -144,15 +144,15 @@
 
 .left-panel {
   width: 452px;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid light-dark(#e5e7eb, #34393f);
   padding: 1.5rem;
   overflow-y: auto;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 
   @media (max-width: 768px) {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
     padding: 1rem;
     max-height: 50vh;
   }
@@ -170,9 +170,9 @@
     .filter-select {
       flex: 1;
       padding: 0.75rem;
-      border: 1px solid #cfd7e3;
+      border: 1px solid light-dark(#cfd7e3, #363d46);
       border-radius: 6px;
-      background: white;
+      background: light-dark(white, #1d2125);
       font-size: 0.875rem;
 
       @media (max-width: 768px) {
@@ -185,7 +185,7 @@
   .no-exercises {
     text-align: center;
     padding: 2rem;
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
 
     p {
       margin: 0;
@@ -206,7 +206,7 @@
       left: 0.75rem;
       top: 50%;
       transform: translateY(-50%);
-      color: #9ca3af;
+      color: light-dark(#9ca3af, #8c9199);
       width: 16px;
       height: 16px;
     }
@@ -214,7 +214,7 @@
     input {
       width: 100%;
       padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-      border: 1px solid #d1d5db;
+      border: 1px solid light-dark(#d1d5db, #3a3d42);
       border-radius: 6px;
       font-size: 0.875rem;
 
@@ -223,7 +223,7 @@
       }
 
       &::placeholder {
-        color: #9ca3af;
+        color: light-dark(#9ca3af, #8c9199);
       }
     }
   }
@@ -233,7 +233,7 @@
       margin: 0 0 1rem 0;
       font-size: 0.875rem;
       font-weight: 800;
-      color: #020617;
+      color: light-dark(#020617, #ebf0fa);
     }
 
     .exercise-list {
@@ -246,9 +246,9 @@
         align-items: center;
         min-height: 76px;
         padding: 0.75rem 1rem 0.75rem 0.75rem;
-        border: 1px solid #d5dce7;
+        border: 1px solid light-dark(#d5dce7, #363b44);
         border-radius: 7px;
-        background: #ffffff;
+        background: light-dark(#ffffff, #1d2125);
         cursor: pointer;
         transition:
           border-color 0.2s ease,
@@ -264,29 +264,29 @@
         }
 
         &:hover {
-          background-color: #fbfdff;
-          border-color: #cbd5e1;
+          background-color: light-dark(#fbfdff, #1c2024);
+          border-color: light-dark(#cbd5e1, #363e47);
         }
 
         &:active {
-          background-color: #e5e7eb;
+          background-color: light-dark(#e5e7eb, #2c3035);
         }
 
         &.selected {
-          background-color: #f3f5f8;
-          border-color: #cbd5e1;
+          background-color: light-dark(#f3f5f8, #15181d);
+          border-color: light-dark(#cbd5e1, #363e47);
           box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
         }
 
         .exercise-icon {
           width: 40px;
           height: 40px;
-          background: #f3f4f6;
+          background: light-dark(#f3f4f6, #15181c);
           border-radius: 6px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #6b7280;
+          color: light-dark(#6b7280, #a7abb4);
 
           @media (max-width: 768px) {
             width: 36px;
@@ -303,7 +303,7 @@
             font-size: 1rem;
             font-weight: 800;
             line-height: 1.15;
-            color: #071426;
+            color: light-dark(#071426, #e7eef7);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -316,7 +316,7 @@
           .exercise-meta {
             margin: 0;
             font-size: 0.75rem;
-            color: #536173;
+            color: light-dark(#536173, #b4bbc3);
             font-weight: 500;
             text-transform: uppercase;
             display: flex;
@@ -353,7 +353,7 @@
   flex-direction: column;
   padding: 0.5rem 1.35rem 1.5rem;
   height: 100%;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 
   @media (max-width: 768px) {
     padding: 0.5rem;
@@ -386,7 +386,7 @@
       margin: 0 0 0.5rem 0;
       font-size: 1.25rem;
       font-weight: 600;
-      color: #111827;
+      color: light-dark(#111827, #e8ecf6);
 
       @media (max-width: 768px) {
         font-size: 1.125rem;
@@ -395,7 +395,7 @@
 
     p {
       margin: 0;
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
 
       @media (max-width: 768px) {
         font-size: 0.875rem;
@@ -410,8 +410,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #ffffff;
-    border: 1px solid #dfe4eb;
+    background: light-dark(#ffffff, #1d2125);
+    border: 1px solid light-dark(#dfe4eb, #36393f);
     border-radius: 10px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 
@@ -427,7 +427,7 @@
       margin-bottom: 0;
       flex-shrink: 0;
       padding: 1.45rem 1.5rem 1.35rem;
-      border-bottom: 1px solid #edf0f4;
+      border-bottom: 1px solid light-dark(#edf0f4, #32373d);
 
       @media (max-width: 768px) {
         gap: 0.75rem;
@@ -448,7 +448,7 @@
         margin: 0 0 0.55rem;
         font-size: 1.45rem;
         font-weight: 800;
-        color: #061225;
+        color: light-dark(#061225, #e8eef7);
 
         @media (max-width: 768px) {
           font-size: 1.25rem;
@@ -503,8 +503,8 @@
 
       .meta-tag {
         padding: 0.25rem 0.5rem;
-        background-color: #f2f4f7;
-        color: #111827;
+        background-color: light-dark(#f2f4f7, #15181c);
+        color: light-dark(#111827, #e8ecf6);
         border-radius: 999px;
         font-size: 0.68rem;
         font-weight: 800;
@@ -512,8 +512,8 @@
         text-transform: uppercase;
 
         &.type {
-          background-color: #edf7ff;
-          color: #0ea5e9;
+          background-color: light-dark(#edf7ff, #20303c);
+          color: light-dark(#0ea5e9, #29b1f6);
         }
       }
     }
@@ -523,7 +523,7 @@
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 3rem;
       padding: 1.35rem 1.5rem 1.5rem;
-      border-top: 1px solid #edf0f4;
+      border-top: 1px solid light-dark(#edf0f4, #32373d);
       overflow-y: auto;
 
       @media (max-width: 900px) {
@@ -533,7 +533,7 @@
 
       h3 {
         margin: 0 0 0.8rem;
-        color: #071426;
+        color: light-dark(#071426, #e7eef7);
         font-size: 0.92rem;
         font-weight: 900;
       }
@@ -542,7 +542,7 @@
       ul {
         margin: 0;
         padding-left: 1rem;
-        color: #334155;
+        color: light-dark(#334155, #d1d7e0);
         font-size: 0.84rem;
         line-height: 1.55;
       }
@@ -584,7 +584,7 @@
   display: flex;
   gap: 0.65rem;
   margin-left: auto;
-  color: #98a4b3;
+  color: light-dark(#98a4b3, #8b9199);
 
   .edit-btn, .delete-btn {
     background: none;
@@ -600,13 +600,13 @@
     color: inherit;
 
     &:hover {
-      background-color: #f3f4f6;
+      background-color: light-dark(#f3f4f6, #15181c);
     }
   }
 
   .delete-btn:hover {
-    background-color: #fee2e2;
-    color: #dc2626;
+    background-color: light-dark(#fee2e2, #4c2426);
+    color: light-dark(#dc2626, #ff8275);
   }
 }
 
@@ -616,7 +616,7 @@
   align-items: center;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
 
   input[type="checkbox"] {
     margin-right: 0.5rem;
@@ -637,17 +637,17 @@
   gap: 1rem;
   margin-top: 1rem;
   padding: 1rem 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
 
   button {
     padding: 0.5rem 1rem;
-    border: 1px solid #d1d5db;
-    background: white;
+    border: 1px solid light-dark(#d1d5db, #3a3d42);
+    background: light-dark(white, #1d2125);
     border-radius: 6px;
     cursor: pointer;
 
     &:hover:not(:disabled) {
-      background: #f9fafb;
+      background: light-dark(#f9fafb, #171b1f);
     }
 
     &:disabled {
@@ -658,7 +658,7 @@
 
   span {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
   }
 }
 
@@ -669,7 +669,7 @@
   border-radius: 5px;
   overflow: hidden;
   position: relative;
-  background: #eaf8ff;
+  background: light-dark(#eaf8ff, #1a323c);
   display: grid;
   place-items: center;
 }
@@ -684,8 +684,8 @@
 .exercise-thumb-fallback {
   width: 100%;
   height: 100%;
-  background: #eaf8ff;
-  color: #0ea5e9;
+  background: light-dark(#eaf8ff, #1a323c);
+  color: light-dark(#0ea5e9, #29b1f6);
   display: grid;
   place-items: center;
 }
@@ -838,7 +838,7 @@
       height: 100vh;
       min-height: 100vh;
       overflow-y: auto;
-      background: #ffffff;
+      background: light-dark(#ffffff, #1d2125);
     }
 
     .no-selection {
@@ -857,7 +857,7 @@
       gap: 0.75rem;
       margin-bottom: 0;
       padding: 0.85rem 0.75rem;
-      border-bottom: 1px solid #edf0f4;
+      border-bottom: 1px solid light-dark(#edf0f4, #32373d);
 
       .back-btn {
         min-width: 36px;
@@ -890,6 +890,6 @@
 @import './exercise-mobile-exact';
 
 .exercise-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
-.field-error { color: #d32f2f; font-size: 12px; margin: 5px 0; }
+.field-error { color: light-dark(#d32f2f, #ff8278); font-size: 12px; margin: 5px 0; }
 .create-btn:disabled { opacity: .5; cursor: not-allowed; }
 .upload-area { cursor: pointer; }

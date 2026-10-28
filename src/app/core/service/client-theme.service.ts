@@ -1,15 +1,21 @@
 import { Injectable } from '@angular/core';
 import { AppThemeColorsService } from './app-theme-colors.service';
 import { AppThemeColors } from '../models/app-theme-colors.model';
+import { ThemeModeService } from './theme-mode.service';
+import { darkThemeColors, parseHexColor, toHex } from '../theme/dark-palette';
 
 /**
  * Applies the coach's app theme to the client pages, like the mobile client shell
  * (AppThemeLoader(useBackendTheme: true)). Only the --yc-* variables of client-ui.scss change,
  * so the coach pages and the sidebar keep their own look.
+ *
+ * In dark mode the client gets the dark version of the same theme (darkThemeColors): the coach's
+ * brand colors stay, the neutrals become dark surfaces tinted with the primary color.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientThemeService {
   private requested = false;
+  private theme: Partial<AppThemeColors> | null = null;
 
   private static readonly VARIABLES: Partial<Record<keyof AppThemeColors, string>> = {
     primary: '--yc-primary',
@@ -33,7 +39,9 @@ export class ClientThemeService {
     activeBg: '--yc-active-bg',
   };
 
-  constructor(private themes: AppThemeColorsService) {}
+  constructor(private themes: AppThemeColorsService, private mode: ThemeModeService) {
+    this.mode.dark$.subscribe(() => this.render());
+  }
 
   /** Loads the theme once per session; the defaults of client-ui.scss stay when there is none. */
   ensureLoaded(): void {
@@ -48,19 +56,24 @@ export class ClientThemeService {
 
   apply(theme: Partial<AppThemeColors> | null | undefined): void {
     if (!theme) return;
-    const root = document.documentElement.style;
-    for (const [key, variable] of Object.entries(ClientThemeService.VARIABLES)) {
-      const value = this.normalize((theme as Record<string, unknown>)[key]);
-      if (value && variable) root.setProperty(variable, value);
-    }
+    this.theme = theme;
+    this.render();
   }
 
-  /** Same formats as AppColors._parseHex on mobile: #RRGGBB or #AARRGGBB. */
-  private normalize(value: unknown): string | null {
-    if (typeof value !== 'string') return null;
-    const hex = value.trim().replace(/#/g, '');
-    if (/^[0-9a-f]{6}$/i.test(hex)) return `#${hex}`;
-    if (/^[0-9a-f]{8}$/i.test(hex)) return `#${hex.slice(2)}${hex.slice(0, 2)}`;
-    return null;
+  private render(): void {
+    if (!this.theme) return;
+    const light: Record<string, string> = {};
+    for (const key of Object.keys(ClientThemeService.VARIABLES)) {
+      const rgb = parseHexColor((this.theme as Record<string, unknown>)[key] as string);
+      if (rgb) light[key] = toHex(rgb);
+    }
+    const colors = this.mode.isDark ? darkThemeColors(light) : light;
+    const root = document.documentElement.style;
+    for (const [key, variable] of Object.entries(ClientThemeService.VARIABLES)) {
+      const value = colors[key];
+      if (value && variable) root.setProperty(variable, value);
+    }
+    if (this.mode.isDark && colors['divider']) root.setProperty('--yc-hairline', colors['divider']);
+    else root.removeProperty('--yc-hairline');
   }
 }

@@ -32,14 +32,14 @@
 app-widget-state { padding: 0 16px; }
 
 .tabs {
-  display: flex; gap: 2px; padding: 3px; margin: 0 16px 10px; border-radius: 8px; background: #f1f5f9;
+  display: flex; gap: 2px; padding: 3px; margin: 0 16px 10px; border-radius: 8px; background: light-dark(#f1f5f9, #15181d);
 }
 
 .tab {
   flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 28px; border-radius: 6px; font-size: 12px; font-weight: 600; color: $muted; cursor: pointer;
   &:hover { color: $ink; }
-  &--active { background: #fff; color: $ink; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+  &--active { background: light-dark(#fff, #1d2125); color: $ink; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
 }
 
 .tab-count { font-size: 11.5px; font-weight: 500; color: $faint; font-variant-numeric: tabular-nums; }
@@ -47,10 +47,10 @@ app-widget-state { padding: 0 16px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; }
 
 .chip {
-  height: 27px; padding: 0 11px; border: 1px solid $line-strong; border-radius: 999px; background: #fff;
+  height: 27px; padding: 0 11px; border: 1px solid $line-strong; border-radius: 999px; background: light-dark(#fff, #1d2125);
   font-size: 12px; font-weight: 550; color: $ink-soft; cursor: pointer; white-space: nowrap;
-  &:hover { border-color: #94a3b8; }
-  &--active { background: $ink; border-color: $ink; color: #fff; &:hover { border-color: $ink; } }
+  &:hover { border-color: light-dark(#94a3b8, #495669); }
+  &--active { background: $ink; border-color: $ink; color: light-dark(#fff, #0f1216); &:hover { border-color: $ink; } }
 }
 
 .rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid $line-soft; }
@@ -61,14 +61,14 @@ app-widget-state { padding: 0 16px; }
   color: inherit; text-decoration: none;
 }
 
-a.wrow:hover { background: #f8fafc; }
+a.wrow:hover { background: light-dark(#f8fafc, #171a1f); }
 .wrow:focus-visible { outline: 2px solid $brand; outline-offset: -2px; }
 
 .avatar { @include avatar; position: relative; overflow: visible; img { border-radius: 50%; } }
 
 .unread-dot {
   position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 50%;
-  background: $brand; border: 2px solid #fff;
+  background: $brand; border: 2px solid light-dark(#fff, #2f3339);
 }
 
 .row-text { flex: 1; min-width: 0; display: grid; gap: 1px; color: inherit; text-decoration: none; }

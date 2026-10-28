@@ -59,7 +59,7 @@
 
 .btn-secondary {
   color: $gray-700;
-  background: white;
+  background: light-dark(white, #1d2125);
   border-color: $gray-300;
 
   &:hover {

@@ -1,9 +1,9 @@
-$border: #dce5ef;
-$text: #07152f;
-$muted: #6b7f99;
+$border: light-dark(#dce5ef, #333a42);
+$text: light-dark(#07152f, #e8edf7);
+$muted: light-dark(#6b7f99, #9da3ab);
 $accent: #00a8e8;
-$active-bg: #eaf6fd;
-$hover-bg: #f5f9fc;
+$active-bg: light-dark(#eaf6fd, #1e323c);
+$hover-bg: light-dark(#f5f9fc, #171a1e);
 $speed: 0.24s;
 
 // Sticky column right under the app bar; it scrolls independently of the profile.
@@ -23,7 +23,7 @@ $speed: 0.24s;
   position: relative;
   width: 0;
   height: 100%;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   overflow: hidden;
   border-right: 1px solid transparent;
   transition: width $speed ease, border-color $speed ease;
@@ -86,7 +86,7 @@ $speed: 0.24s;
   place-items: center;
   padding: 0;
   color: $muted;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   border: 1px solid $border;
   cursor: pointer;
   transition: color $speed ease, background $speed ease, border-color $speed ease;
@@ -117,7 +117,7 @@ $speed: 0.24s;
   margin: 0 8px 8px;
   padding: 0 8px;
   color: $muted;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   border: 1px solid $border;
   border-radius: 8px;
   transition: border-color $speed ease, box-shadow $speed ease;
@@ -144,7 +144,7 @@ $speed: 0.24s;
     outline: none;
 
     &::placeholder {
-      color: #9aa9bb;
+      color: light-dark(#9aa9bb, #898f97);
     }
   }
 }
@@ -173,7 +173,7 @@ $speed: 0.24s;
   text-align: left;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid light-dark(#edf2f7, #33363a);
   box-shadow: inset 3px 0 0 transparent;
   cursor: pointer;
   transition: background $speed ease, box-shadow $speed ease;
@@ -188,7 +188,7 @@ $speed: 0.24s;
     cursor: default;
 
     strong {
-      color: #007cc7;
+      color: light-dark(#007cc7, #59b4ff);
     }
   }
 }

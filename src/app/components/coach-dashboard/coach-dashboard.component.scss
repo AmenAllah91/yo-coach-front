@@ -29,8 +29,8 @@
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   height: 34px; padding: 0 12px; border: 1px solid $line-strong; border-radius: 7px;
-  background: #fff; color: $ink; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
-  &:hover { background: #f8fafc; border-color: #94a3b8; }
+  background: light-dark(#fff, #1d2125); color: $ink; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  &:hover { background: light-dark(#f8fafc, #171a1f); border-color: light-dark(#94a3b8, #495669); }
   i-feather { width: 14px; height: 14px; }
 }
 
@@ -39,7 +39,7 @@
 .popover {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 50;
   min-width: 230px; padding: 6px;
-  background: #fff; border: 1px solid $line; border-radius: 10px;
+  background: light-dark(#fff, #1d2125); border: 1px solid $line; border-radius: 10px;
   box-shadow: 0 12px 32px rgba(15, 23, 42, .14);
   animation: pop .12s ease-out;
 }
@@ -48,7 +48,7 @@
   > button, > a {
     display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 10px; border-radius: 7px;
     font-size: 13px; color: $ink-soft; text-align: left; text-decoration: none; cursor: pointer;
-    &:hover { background: #f1f5f9; color: $ink; }
+    &:hover { background: light-dark(#f1f5f9, #15181d); color: $ink; }
     i-feather { width: 15px; height: 15px; color: $muted; }
   }
 }
@@ -68,10 +68,10 @@
   input { position: absolute; opacity: 0; pointer-events: none; }
 
   .switch {
-    flex: none; position: relative; width: 30px; height: 17px; border-radius: 999px; background: #cbd5e1; transition: background .15s;
+    flex: none; position: relative; width: 30px; height: 17px; border-radius: 999px; background: light-dark(#cbd5e1, #323a44); transition: background .15s;
     &::after {
       content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%;
-      background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .2); transition: transform .15s;
+      background: light-dark(#fff, #1d2125); box-shadow: 0 1px 2px rgba(15, 23, 42, .2); transition: transform .15s;
     }
   }
 
@@ -92,7 +92,7 @@
   padding: 14px 16px; min-height: 82px; text-align: left; color: inherit; text-decoration: none; cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
 
-  &:hover { border-color: #cbd5e1; box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
+  &:hover { border-color: light-dark(#cbd5e1, #363e47); box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
   &:focus-visible { outline: 2px solid $brand; outline-offset: 2px; }
 }
 
@@ -107,10 +107,10 @@
   margin-top: 4px; font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em;
   font-variant-numeric: tabular-nums; color: $ink;
 
-  &--danger { color: #dc2f2f; }
+  &--danger { color: light-dark(#dc2f2f, #ff8175); }
 
   &--pending span {
-    display: block; width: 42px; height: 22px; border-radius: 6px; background: #eef2f6;
+    display: block; width: 42px; height: 22px; border-radius: 6px; background: light-dark(#eef2f6, #14171b);
     animation: pulse 1.4s ease-in-out infinite;
   }
 }
@@ -157,11 +157,11 @@ app-widget-state { padding: 0 16px 12px; }
 
 .todo-item {
   display: flex; align-items: center; gap: 12px; min-width: 0;
-  padding: 11px 16px; border-bottom: 1px solid $line-soft; background: #fff;
+  padding: 11px 16px; border-bottom: 1px solid $line-soft; background: light-dark(#fff, #1d2125);
   text-align: left; cursor: pointer; transition: background .15s;
 
   &:nth-child(odd) { border-right: 1px solid $line-soft; }
-  &:hover { background: #fafcfd; }
+  &:hover { background: light-dark(#fafcfd, #181b20); }
   &:focus-visible { outline: 2px solid $brand; outline-offset: -2px; }
 
   &--zero .todo-count { color: $faint; }
@@ -178,17 +178,17 @@ app-widget-state { padding: 0 16px 12px; }
 .todo-count { flex: none; min-width: 20px; font-size: 16px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 
 [data-type='EXPIRED_PROGRAMS'], [data-type='NO_PROGRAM'] {
-  .todo-icon { background: #fdecec; color: #d94848; }
-  .todo-count { color: #dc2f2f; }
+  .todo-icon { background: light-dark(#fdecec, #402829); color: light-dark(#d94848, #ff7d77); }
+  .todo-count { color: light-dark(#dc2f2f, #ff8175); }
 }
 
 [data-type='CHECK_INS_TO_REVIEW'], [data-type='ENDING_SOON'], [data-type='INACTIVE'] {
-  .todo-icon { background: #fdf2e2; color: #c47a12; }
-  .todo-count { color: #c47a12; }
+  .todo-icon { background: light-dark(#fdf2e2, #3c2b10); color: light-dark(#c47a12, #e1953a); }
+  .todo-count { color: light-dark(#c47a12, #e1953a); }
 }
 
 [data-type='NO_NUTRITION'] {
-  .todo-icon { background: #e6f3fb; color: $brand-strong; }
+  .todo-icon { background: light-dark(#e6f3fb, #1d333f); color: $brand-strong; }
   .todo-count { color: $brand-strong; }
 }
 
@@ -196,7 +196,7 @@ app-widget-state { padding: 0 16px 12px; }
 .todo-title { font-size: 13px; font-weight: 600; color: $ink; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .todo-hint { font-size: 11.5px; color: $muted; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.todo-chevron { flex: none; width: 15px; height: 15px; color: #94a3b8; }
+.todo-chevron { flex: none; width: 15px; height: 15px; color: light-dark(#94a3b8, #8c919a); }
 
 .todo-none { grid-column: 1 / -1; margin: 12px 16px; font-size: 12.5px; color: $muted; text-align: center; }
 

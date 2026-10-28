@@ -96,7 +96,7 @@ import { capitalizeFirst, capitalizeSentences, initials } from './client-plan-ut
     .message-btn { margin-top: 16px; height: 50px; }
     .stats { margin-top: 16px; display: flex; padding: 14px 0; }
     .stat { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 6px; }
-    .stat + .stat { border-left: 1px solid #eff1f4; }
+    .stat + .stat { border-left: 1px solid light-dark(#eff1f4, #32363c); }
     .stat strong { font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .stat span { font-size: 12px; font-weight: 500; color: var(--yc-text-secondary); }
     .section-title { margin: 22px 0 10px 2px !important; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }

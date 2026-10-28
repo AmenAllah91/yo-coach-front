@@ -3,10 +3,10 @@
 .calendar-wrapper {
   margin: 0 auto;
   padding: 24px;
-  background-color: #f5f7fb;
+  background-color: light-dark(#f5f7fb, #16191e);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
   sans-serif;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 /* ========= HEADER ========= */
@@ -31,7 +31,7 @@
   font-weight: 700;
   min-width: 200px;
   text-align: center;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .nav-button {
@@ -45,12 +45,12 @@
   justify-content: center;
   font-size: 18px;
   cursor: pointer;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   transition: background-color 0.15s ease;
 }
 
 .nav-button:hover {
-  background-color: #e5e7eb;
+  background-color: light-dark(#e5e7eb, #2c3035);
 }
 
 .header-right {
@@ -63,8 +63,8 @@
 
 .toggle-group {
   display: flex;
-  background-color: #ffffff;
-  border: 2px solid #e5e7eb;
+  background-color: light-dark(#ffffff, #1d2125);
+  border: 2px solid light-dark(#e5e7eb, #34393f);
   border-radius: 999px;
   padding: 4px;
   gap: 4px;
@@ -77,7 +77,7 @@
   border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -85,7 +85,7 @@
 }
 
 .toggle-button:hover {
-  background-color: #f3f4f6;
+  background-color: light-dark(#f3f4f6, #15181c);
 }
 
 .toggle-button-active {
@@ -105,12 +105,12 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   border-radius: 999px;
-  border: 2px solid #e5e7eb;
-  background-color: #ffffff;
+  border: 2px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#ffffff, #1d2125);
   padding: 6px 32px 6px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   cursor: pointer;
   outline: none;
 }
@@ -126,16 +126,16 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 11px;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   pointer-events: none;
 }
 
 /* ========= VUE MOIS ========= */
 
 .calendar-month {
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.04),
     0 1px 3px rgba(0, 0, 0, 0.08);
@@ -145,8 +145,8 @@
 .month-header-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  background-color: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: light-dark(#f3f4f6, #15181c);
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
 }
 
 .month-header-cell {
@@ -156,14 +156,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .month-cell {
   min-height: 120px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   padding: 8px;
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
   position: relative;
   z-index: 0;
   transition:
@@ -173,18 +173,18 @@
 }
 
 .month-cell:hover {
-  background-color: #f9fafb;
+  background-color: light-dark(#f9fafb, #171b1f);
 }
 
 .month-cell-empty {
   min-height: 120px;
-  border: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#f9fafb, #171b1f);
 }
 
 .month-cell.is-today {
-  background-color: #eff6ff;
-  border-color: #93c5fd;
+  background-color: light-dark(#eff6ff, #242f3d);
+  border-color: light-dark(#93c5fd, #2a4a6c);
 }
 
 /* cellule – header */
@@ -199,7 +199,7 @@
 .cell-day-number {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .cell-day-today {
@@ -235,7 +235,7 @@
   justify-content: center;
   padding: 0;
   font-size: 14px;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -243,7 +243,7 @@
 }
 
 .icon-button:hover {
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
@@ -272,7 +272,7 @@
     background-color 0.15s ease,
     border-color 0.15s ease;
   border-left: 4px solid transparent;
-  background-color: #f9fafb;
+  background-color: light-dark(#f9fafb, #171b1f);
 }
 
 .card:hover {
@@ -287,7 +287,7 @@
 .card-workout {
   border-color: rgba(68, 180, 223, 0.4);
   background-color: rgba(68, 180, 223, 0.06);
-  color: #1f2933;
+  color: light-dark(#1f2933, #e2eaf2);
 }
 
 .card-workout.card-program {
@@ -327,7 +327,7 @@
 .card-title {
   font-size: 11px;
   font-weight: 600;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -342,11 +342,11 @@
 }
 
 .nutrition-program {
-  color: #059669;
+  color: light-dark(#059669, #4fc494);
 }
 
 .workout-program {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-weight: 700;
 }
 
@@ -379,12 +379,12 @@
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   margin-bottom: 3px;
 }
 
 .nutrition-line span {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .nutrition-line strong {
@@ -416,20 +416,20 @@
 }
 
 .copy-secondary {
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: light-dark(#e5e7eb, #2c3035);
+  color: light-dark(#374151, #d1d6df);
 }
 
 .copy-secondary:hover {
-  background-color: #d1d5db;
+  background-color: light-dark(#d1d5db, #36393e);
 }
 
 /* ========= VUE SEMAINE ========= */
 
 .calendar-week {
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   overflow: hidden;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.04),
@@ -442,9 +442,9 @@
 }
 
 .week-column {
-  border-right: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #ffffff;
+  border-right: 1px solid light-dark(#e5e7eb, #34393f);
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#ffffff, #1d2125);
   display: flex;
   flex-direction: column;
   min-height: 260px;
@@ -456,14 +456,14 @@
 }
 
 .week-column.is-today {
-  background-color: #eff6ff;
-  border-color: #bfdbfe;
+  background-color: light-dark(#eff6ff, #242f3d);
+  border-color: light-dark(#bfdbfe, #324966);
 }
 
 .week-column-header {
   padding: 10px 10px 8px 10px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#f9fafb, #171b1f);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -473,7 +473,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-weight: 600;
 }
 
@@ -481,7 +481,7 @@
   margin-top: 4px;
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .week-day-today {
@@ -506,7 +506,7 @@
 .week-empty {
   margin-top: 16px;
   font-size: 12px;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   text-align: center;
 }
 
@@ -515,9 +515,9 @@
 /* ========= VUE JOUR ========= */
 
 .calendar-day {
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.04),
     0 1px 3px rgba(0, 0, 0, 0.08);
@@ -525,7 +525,7 @@
 
 .day-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -540,7 +540,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-weight: 600;
 }
 
@@ -548,7 +548,7 @@
   margin-top: 4px;
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .day-header-right {
@@ -585,7 +585,7 @@
   text-align: center;
   padding: 40px 0;
   font-size: 14px;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
 }
 
 .day-card-wrapper {
@@ -666,7 +666,7 @@
 }
 
 .modal-container {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
   width: 100%;
@@ -678,7 +678,7 @@
 
 .modal-header {
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -687,13 +687,13 @@
 .modal-title {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .modal-date {
   margin-top: 4px;
   font-size: 13px;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .modal-body {
@@ -703,11 +703,11 @@
 
 .modal-footer {
   padding: 16px 24px 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  background: #f9fafb;
+  background: light-dark(#f9fafb, #171b1f);
 }
 
 /* ========= ICON BUTTONS ========= */
@@ -733,7 +733,7 @@
 }
 
 .icon-button-circle:hover {
-  background: #f3f4f6;
+  background: light-dark(#f3f4f6, #15181c);
 }
 
 .icon-button-small {
@@ -741,7 +741,7 @@
 }
 
 .icon-button-small:hover {
-  background: #fee2e2;
+  background: light-dark(#fee2e2, #4c2426);
 }
 
 /* ========= REST CARD ========= */
@@ -761,13 +761,13 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
 }
 
 .text-input {
   width: 100%;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   padding: 8px 10px;
   font-size: 14px;
   outline: none;
@@ -783,7 +783,7 @@
 .set-number {
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
 }
 
 .set-type-regular {
@@ -791,15 +791,15 @@
 }
 
 .set-type-warmup {
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
 }
 
 .set-type-dropset {
-  color: #3b82f6;
+  color: light-dark(#3b82f6, #75a9ff);
 }
 
 .set-type-failure {
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 .exercise-cardio {
@@ -824,13 +824,13 @@
 }
 
 .button-secondary {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
+  color: light-dark(#374151, #d1d6df);
 }
 
 .button-secondary:hover {
-  background: #f9fafb;
+  background: light-dark(#f9fafb, #171b1f);
 }
 
 .button-save {
@@ -846,7 +846,7 @@
 }
 
 .button-save:disabled {
-  background: #d1d5db;
+  background: light-dark(#d1d5db, #36393e);
   cursor: not-allowed;
 }
 
@@ -857,7 +857,7 @@
 /* ========= DELETE MODAL ========= */
 
 .delete-modal {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   border-radius: 16px;
   padding: 20px 20px 18px;
   width: 100%;
@@ -891,13 +891,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #92400e;
+  color: light-dark(#92400e, #f4996c);
   font-weight: 700;
 }
 
 .delete-texts p {
   font-size: 14px;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
 }
 
 .delete-texts p + p {
@@ -1010,7 +1010,7 @@
   gap: 5px;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   font-size: 12px;
   cursor: pointer;
   padding: 4px 8px;
@@ -1028,8 +1028,8 @@
   align-items: center;
   gap: 5px;
   margin-left: auto;
-  background: #f9fafb;
-  color: #111827;
+  background: light-dark(#f9fafb, #171b1f);
+  color: light-dark(#111827, #e8ecf6);
   font-size: 11px;
   font-weight: 500;
   padding: 5px 10px;
@@ -1039,11 +1039,11 @@
 }
 
 .video-youtube-btn:hover {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .video-youtube-btn svg {
-  color: #dc2626;
+  color: light-dark(#dc2626, #ff8275);
 }
 /* ========= EXERCISE CARD ACTIONS ========= */
 
@@ -1063,7 +1063,7 @@
   gap: 5px;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   font-size: 12px;
   cursor: pointer;
   padding: 4px 8px;
@@ -1081,8 +1081,8 @@
   align-items: center;
   gap: 5px;
   margin-left: auto;
-  background: #f9fafb;
-  color: #111827;
+  background: light-dark(#f9fafb, #171b1f);
+  color: light-dark(#111827, #e8ecf6);
   font-size: 11px;
   font-weight: 500;
   padding: 5px 10px;
@@ -1092,11 +1092,11 @@
 }
 
 .video-youtube-btn:hover {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .video-youtube-btn svg {
-  color: #dc2626;
+  color: light-dark(#dc2626, #ff8275);
 }
 
 .week-column-header {
@@ -1160,7 +1160,7 @@
 
 .calendar-wrapper {
   padding: 28px 22px 24px;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 }
 
 .calendar-header {
@@ -1171,11 +1171,11 @@
   min-width: 210px;
   font-size: 20px;
   font-weight: 800;
-  color: #020617;
+  color: light-dark(#020617, #ebf0fa);
 }
 
 .toggle-group {
-  border: 1px solid #dbe2ea;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
   border-radius: 6px;
   padding: 4px;
   gap: 2px;
@@ -1185,7 +1185,7 @@
   min-width: 70px;
   border-radius: 5px;
   padding: 7px 12px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .toggle-button-active {
@@ -1196,7 +1196,7 @@
 
 .client-select {
   min-width: 136px;
-  border: 1px solid #dbe2ea;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
   border-radius: 6px;
   padding: 9px 36px 9px 14px;
   background-image:
@@ -1216,10 +1216,10 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border: 1px solid #dbe2ea;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
   border-radius: 6px;
-  background: #ffffff;
-  color: #64748b;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#64748b, #a5abb4);
   text-align: center;
 }
 
@@ -1230,8 +1230,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e7f6fc;
-  color: #27a7d4;
+  background: light-dark(#e7f6fc, #19333c);
+  color: light-dark(#27a7d4, #3ab4e2);
   font-size: 24px;
 }
 
@@ -1251,12 +1251,12 @@
 }
 
 .month-header-row {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .month-header-cell {
   padding: 11px 6px;
-  color: #0f2a44;
+  color: light-dark(#0f2a44, #e2eaf2);
   letter-spacing: 0;
   font-weight: 500;
 }
@@ -1266,16 +1266,16 @@
   min-width: 0;
   min-height: 206px;
   padding: 12px 10px 10px;
-  border-color: #dfe4ea;
+  border-color: light-dark(#dfe4ea, #363a3e);
 }
 
 .month-cell:hover {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .month-cell.is-today {
-  background: #e8f3ff;
-  border-color: #dfe4ea;
+  background: light-dark(#e8f3ff, #203143);
+  border-color: light-dark(#dfe4ea, #363a3e);
 }
 
 .cell-header {
@@ -1286,7 +1286,7 @@
 .cell-day-number {
   font-size: 14px;
   font-weight: 500;
-  color: #061733;
+  color: light-dark(#061733, #a7bfe5);
 }
 
 .cell-day-today {
@@ -1303,7 +1303,7 @@
 .icon-button {
   width: 24px;
   height: 24px;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
 }
 
 .icon-button .material-icons {
@@ -1325,17 +1325,17 @@
 
 .card-workout {
   border-left: 3px solid #44b4df;
-  border-top: 1px solid #d9eef7;
-  border-right: 1px solid #d9eef7;
-  border-bottom: 1px solid #d9eef7;
-  background: #e9f6fb;
-  color: #0f2a44;
+  border-top: 1px solid light-dark(#d9eef7, #2d3a40);
+  border-right: 1px solid light-dark(#d9eef7, #2d3a40);
+  border-bottom: 1px solid light-dark(#d9eef7, #2d3a40);
+  background: light-dark(#e9f6fb, #1d323a);
+  color: light-dark(#0f2a44, #e2eaf2);
 }
 
 .card-workout.card-program,
 .card-workout.card-rest-day {
   border-left-color: #44b4df;
-  background: #e7f6fc;
+  background: light-dark(#e7f6fc, #19333c);
 }
 
 .card:hover {
@@ -1354,7 +1354,7 @@
 .card-title {
   font-size: 11.5px;
   font-weight: 800;
-  color: #061733;
+  color: light-dark(#061733, #a7bfe5);
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
@@ -1404,7 +1404,7 @@
 .exercise-summary {
   margin-top: 1px;
   font-size: 8.5px;
-  color: #52657a;
+  color: light-dark(#52657a, #b1b8c0);
   white-space: normal;
 }
 
@@ -1443,9 +1443,9 @@
 .calendar-month .card-workout:not(.file-range-card),
 .calendar-week .card-workout:not(.file-range-card),
 .calendar-day .card-workout:not(.file-range-card) {
-  border: 1px solid #b9e4f4;
+  border: 1px solid light-dark(#b9e4f4, #264e5b);
   border-left: 3px solid #44b4df;
-  background: #e8f7fc;
+  background: light-dark(#e8f7fc, #19333b);
   box-shadow: none;
 }
 
@@ -1497,9 +1497,9 @@
 
 .card.card-empty-day {
   border-style: dashed !important;
-  border-color: #c7d5ea !important;
-  background: #f8fbff !important;
-  color: #475569;
+  border-color: light-dark(#c7d5ea, #373d48) !important;
+  background: light-dark(#f8fbff, #181b1f) !important;
+  color: light-dark(#475569, #bfc5ce);
   cursor: pointer;
 }
 
@@ -1510,22 +1510,22 @@
   justify-content: center;
   min-height: 38px;
   margin-top: 10px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed light-dark(#cbd5e1, #363e47);
   border-radius: 6px;
-  color: #71809b;
+  color: light-dark(#71809b, #9ca1aa);
   font-size: 12px;
   font-weight: 700;
 }
 
 .card.card-empty-day:hover {
   border-color: #44b4df !important;
-  background: #f8fdff !important;
+  background: light-dark(#f8fdff, #1c2024) !important;
   box-shadow: none !important;
 }
 
 .card.card-empty-day:hover .card-empty-cta {
   border-color: transparent;
-  color: #0f94bd;
+  color: light-dark(#0f94bd, #47b8e2);
   font-weight: 900;
 }
 
@@ -1539,8 +1539,8 @@
 }
 
 .card.card-rest-day {
-  border-color: #a7f3d0 !important;
-  background: #ecfdf5 !important;
+  border-color: light-dark(#a7f3d0, #1b533e) !important;
+  background: light-dark(#ecfdf5, #173429) !important;
 }
 
 .calendar-month .card-workout:not(.file-range-card) .card-header,
@@ -1558,7 +1558,7 @@
 .calendar-month .card-nutrition .card-title,
 .calendar-week .card-nutrition .card-title,
 .calendar-day .card-nutrition .card-title {
-  color: #0284c7 !important;
+  color: light-dark(#0284c7, #4eb5fb) !important;
   font-size: 10px !important;
   font-weight: 900 !important;
   text-transform: uppercase;
@@ -1572,7 +1572,7 @@
 .calendar-week .card-nutrition .card-subtitle,
 .calendar-day .card-nutrition .card-subtitle {
   margin-top: 2px;
-  color: #0f172a !important;
+  color: light-dark(#0f172a, #e8ecf6) !important;
   font-size: 11px !important;
   font-weight: 800 !important;
 }
@@ -1582,15 +1582,15 @@
 .calendar-day .card-workout:not(.file-range-card) .card-body {
   margin-top: 8px;
   padding: 10px 12px !important;
-  border: 1px solid #dbe7f1 !important;
+  border: 1px solid light-dark(#dbe7f1, #313a42) !important;
   border-radius: 6px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .workout-day-name {
   margin-bottom: 8px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
@@ -1603,10 +1603,10 @@
   justify-content: center;
   min-height: 38px;
   margin-top: 10px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid light-dark(#bbf7d0, #235337);
   border-radius: 6px;
-  background: #f0fdf4;
-  color: #047857;
+  background: light-dark(#f0fdf4, #1e3325);
+  color: light-dark(#047857, #69c6a1);
   font-size: 13px;
   font-weight: 900;
 }
@@ -1632,10 +1632,10 @@
   justify-content: center;
   gap: 10px;
   margin: 6px 0 12px;
-  border: 1px solid #dbe4ef;
+  border: 1px solid light-dark(#dbe4ef, #333a43);
   border-radius: 8px;
-  background: #f8fafc;
-  color: #475569;
+  background: light-dark(#f8fafc, #171a1f);
+  color: light-dark(#475569, #bfc5ce);
   font-size: 14px;
   font-weight: 700;
 }
@@ -1646,7 +1646,7 @@
 
 .calendar-create-help {
   margin: 0 0 16px;
-  color: #7a8799;
+  color: light-dark(#7a8799, #979da5);
   font-size: 13px;
 }
 
@@ -1656,10 +1656,10 @@
   gap: 12px;
   min-height: 54px;
   padding: 0 18px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid light-dark(#bfdbfe, #324966);
   border-radius: 8px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: light-dark(#eff6ff, #242f3d);
+  color: light-dark(#1d4ed8, #8bb0ff);
   font-size: 14px;
 }
 
@@ -1691,7 +1691,7 @@
 }
 .cal-summary__meta {
   min-width: 0;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 11px;
   line-height: 1.35;
   white-space: nowrap;
@@ -1703,15 +1703,15 @@
   font-size: 11px;
   font-weight: 700;
   line-height: 1.35;
-  color: #64748b;
-  &.is-done { color: #16a34a; }
-  &.is-missed { color: #dc2626; }
-  &.is-partial { color: #d97706; }
-  &.is-today { color: #0c86c8; }
-  &.is-empty { color: #b45309; }
+  color: light-dark(#64748b, #a5abb4);
+  &.is-done { color: light-dark(#16a34a, #49c66b); }
+  &.is-missed { color: light-dark(#dc2626, #ff8275); }
+  &.is-partial { color: light-dark(#d97706, #ee8a2c); }
+  &.is-today { color: light-dark(#0c86c8, #4fb5fa); }
+  &.is-empty { color: light-dark(#b45309, #f68f54); }
   &.is-rest { font-weight: 500; }
 }
-.card.card-free-day { background: #f8fafc; }
+.card.card-free-day { background: light-dark(#f8fafc, #171a1f); }
 
 /* A rest day says it in the coach's language (title « Récupération », status « Jour de repos »), not with an English
    label added by CSS. */
@@ -1780,11 +1780,11 @@
 /* The files in the brand's color, all alike: the name, « Début » and « Fin » tell them apart. */
 .cal-band,
 .day-file {
-  --band-bg: #eef7fc;
-  --band-border: #cde9f6;
+  --band-bg: light-dark(#eef7fc, #13191d);
+  --band-border: light-dark(#cde9f6, #2e3b41);
   --band-strong: #44b4df;
-  --band-text: #0f172a;
-  --band-hover: #e1f1fa;
+  --band-text: light-dark(#0f172a, #e8ecf6);
+  --band-hover: light-dark(#e1f1fa, #193442);
 }
 
 .cal-band {
@@ -1979,7 +1979,7 @@
   height: 3px;
   margin: 0 0 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent 0%, #44b4df 50%, transparent 100%) 0 0 / 40% 100% no-repeat, #e3f3fa;
+  background: linear-gradient(90deg, transparent 0%, #44b4df 50%, transparent 100%) 0 0 / 40% 100% no-repeat, light-dark(#e3f3fa, #18343f);
   animation: calendar-reading 1.1s ease-in-out infinite;
 }
 
@@ -2004,7 +2004,7 @@
 }
 
 .wr-section {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
 }
 
 .wr-label {
@@ -2013,9 +2013,9 @@
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  border-right: 1px solid #e5e7eb;
-  background: #f8fafc;
-  color: #334155;
+  border-right: 1px solid light-dark(#e5e7eb, #34393f);
+  background: light-dark(#f8fafc, #171a1f);
+  color: light-dark(#334155, #d1d7e0);
   font-size: 12px;
   font-weight: 700;
 }
@@ -2032,16 +2032,16 @@
   gap: 6px;
   padding: 10px 4px;
   border: 0;
-  border-left: 1px solid #eef1f4;
-  background: #ffffff;
-  color: #475569;
+  border-left: 1px solid light-dark(#eef1f4, #32373c);
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#475569, #bfc5ce);
   font: inherit;
   cursor: pointer;
 }
 
 .wr-day-head:hover,
 .wr-day-head.is-selected {
-  background: #e8f4fb;
+  background: light-dark(#e8f4fb, #1f323d);
 }
 
 .wr-weekday {
@@ -2053,7 +2053,7 @@
 .wr-daynum {
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .wr-daynum.is-today {
@@ -2074,7 +2074,7 @@
   min-width: 0;
   min-height: 64px;
   padding: 6px;
-  border-left: 1px solid #eef1f4;
+  border-left: 1px solid light-dark(#eef1f4, #32373c);
 }
 
 .wr-cell--small {
@@ -2082,11 +2082,11 @@
 }
 
 .wr-cell.is-today {
-  background: #f3f9ff;
+  background: light-dark(#f3f9ff, #161a1e);
 }
 
 .wr-cell.is-selected {
-  background: #e8f4fb;
+  background: light-dark(#e8f4fb, #1f323d);
 }
 
 .wr-card,
@@ -2103,10 +2103,10 @@
   flex-direction: column;
   gap: 2px;
   padding: 6px 7px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 6px;
-  background: #ffffff;
-  color: #334155;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#334155, #d1d7e0);
   font-size: 11px;
   line-height: 1.3;
   text-align: left;
@@ -2118,7 +2118,7 @@
 
 .wr-card__title {
   overflow: hidden;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 11.5px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -2127,7 +2127,7 @@
 
 .wr-card__meta {
   overflow: hidden;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2137,7 +2137,7 @@
   align-items: center;
   gap: 4px;
   margin-top: 2px;
-  color: #334155;
+  color: light-dark(#334155, #d1d7e0);
   font-weight: 600;
 }
 
@@ -2148,10 +2148,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 8px 3px 5px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#334155, #d1d7e0);
   font-size: 11px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -2168,7 +2168,7 @@
   border: 1px dashed transparent;
   border-radius: 6px;
   background: transparent;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -2176,7 +2176,7 @@
 .wr-cell:hover .wr-add,
 .wr-add:focus-visible {
   opacity: 1;
-  border-color: #cbd5e1;
+  border-color: light-dark(#cbd5e1, #363e47);
 }
 
 .wr-add .material-icons {
@@ -2197,7 +2197,7 @@
 
 .st-icon {
   flex: 0 0 auto;
-  color: var(--st, #94a3b8);
+  color: var(--st, light-dark(#94a3b8, #8c919a));
   font-size: 15px;
   line-height: 1;
 }
@@ -2205,20 +2205,20 @@
 /* A rest day and a day to fill read lighter than a workout. */
 .wr-card.st-rest {
   border-style: dashed;
-  background: #fafbfc;
+  background: light-dark(#fafbfc, #181b1f);
 }
 
 .wr-card.st-rest .wr-card__title {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
 }
 
 .wr-card.st-empty {
   border-style: dashed;
-  border-color: #b9e1f2;
+  border-color: light-dark(#b9e1f2, #294d5b);
 }
 
 .wr-card.st-empty .wr-card__title {
-  color: #1f87b3;
+  color: light-dark(#1f87b3, #59b8e6);
 }
 
 .wr-section .cal-band {
@@ -2230,10 +2230,10 @@
 .day-panel {
   margin-top: 12px;
   padding: 16px 18px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 12px;
-  background: #ffffff;
-  color: #0f172a;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .day-panel__head {
@@ -2245,7 +2245,7 @@
 }
 
 .day-panel__kicker {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -2276,7 +2276,7 @@
 
 .day-panel__empty {
   margin: 10px 0 0;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 13px;
 }
 
@@ -2285,10 +2285,10 @@
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border: 1px solid #dbe2ea;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
   border-radius: 8px;
-  background: #ffffff;
-  color: #0f172a;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#0f172a, #e8ecf6);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -2300,7 +2300,7 @@
 }
 
 .dp-button:hover {
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 }
 
 .dp-button--main {
@@ -2316,18 +2316,18 @@
 /* « Retirer ce programme »: apart from the others, the missed red on white (the window asks before anything). */
 .dp-button--danger {
   margin-left: auto;
-  border-color: #f1c9c9;
-  color: #d93a3a;
+  border-color: light-dark(#f1c9c9, #5e3e3e);
+  color: light-dark(#d93a3a, #ff8077);
 }
 
 .dp-button--danger:hover {
   border-color: #d93a3a;
-  background: #fdf3f3;
+  background: light-dark(#fdf3f3, #1d1717);
 }
 
 .dp-block {
   padding: 14px 0 4px;
-  border-top: 1px solid #eef1f4;
+  border-top: 1px solid light-dark(#eef1f4, #32373c);
 }
 
 .day-panel .day-file + .dp-block,
@@ -2357,7 +2357,7 @@
 }
 
 .dp-block__name span {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
 }
 
@@ -2368,10 +2368,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 9px 3px 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#334155, #d1d7e0);
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -2391,12 +2391,12 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   padding: 7px 4px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid light-dark(#f1f5f9, #31363b);
 }
 
 .dp-grid__head {
-  border-bottom-color: #e5e7eb;
-  color: #64748b;
+  border-bottom-color: light-dark(#e5e7eb, #34393f);
+  color: light-dark(#64748b, #a5abb4);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2414,8 +2414,8 @@
   min-width: 26px;
   padding: 1px 5px;
   border-radius: 5px;
-  background: #eef7fc;
-  color: #1f87b3;
+  background: light-dark(#eef7fc, #13191d);
+  color: light-dark(#1f87b3, #59b8e6);
   font-size: 11px;
   font-weight: 800;
   text-align: center;
@@ -2429,20 +2429,20 @@
 }
 
 .dp-missed {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-weight: 500;
 }
 
 .dp-note {
   display: block;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   font-style: italic;
 }
 
 .dp-line {
   margin: 8px 0 0;
-  color: #334155;
+  color: light-dark(#334155, #d1d7e0);
   font-size: 13px;
 }
 
@@ -2458,7 +2458,7 @@
   align-items: center;
   gap: 4px 8px;
   padding: 7px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid light-dark(#f1f5f9, #31363b);
   font-size: 13px;
 }
 
@@ -2475,12 +2475,12 @@
 }
 
 .dp-meal__name {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-weight: 600;
 }
 
 .dp-meal__foods {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
 }
 
@@ -2490,7 +2490,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 14px 0 4px;
-  border-top: 1px solid #eef1f4;
+  border-top: 1px solid light-dark(#eef1f4, #32373c);
 }
 
 .day-panel__head + .dp-adds,
@@ -2503,10 +2503,10 @@
   align-items: center;
   gap: 6px;
   padding: 9px 14px;
-  border: 1px dashed #b9e1f2;
+  border: 1px dashed light-dark(#b9e1f2, #294d5b);
   border-radius: 8px;
-  background: #ffffff;
-  color: #1f87b3;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#1f87b3, #59b8e6);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -2515,7 +2515,7 @@
 
 .dp-add:hover {
   border-color: #44b4df;
-  background: #f4fafd;
+  background: light-dark(#f4fafd, #171a1e);
 }
 
 .dp-add .material-icons {
@@ -2527,7 +2527,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #0f94bd;
+  color: light-dark(#0f94bd, #47b8e2);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -2551,14 +2551,14 @@
 .week-tools__hint {
   flex: 1 1 auto;
   min-width: 160px;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
 }
 
 .dp-button.is-on {
   border-color: #44b4df;
-  background: #e8f6fb;
-  color: #0f6f93;
+  background: light-dark(#e8f6fb, #1b333a);
+  color: light-dark(#0f6f93, #6abce3);
 }
 
 /* The detail: wider days (the week scrolls sideways on a small screen), one line per exercise or meal. */
@@ -2572,14 +2572,14 @@
   gap: 5px;
   margin-top: 4px;
   padding-top: 4px;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  border-top: 1px solid light-dark(rgba(15, 23, 42, 0.06), rgba(255, 255, 255, 0.066));
   text-align: left;
 }
 
 .wr-line__label {
   flex: 0 0 auto;
   min-width: 20px;
-  color: #0f94bd;
+  color: light-dark(#0f94bd, #47b8e2);
   font-size: 11px;
   font-weight: 800;
 }
@@ -2591,7 +2591,7 @@
 }
 
 .wr-line__name {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 11.5px;
   font-weight: 700;
   line-height: 1.3;
@@ -2599,7 +2599,7 @@
 }
 
 .wr-line__detail {
-  color: #475569;
+  color: light-dark(#475569, #bfc5ce);
   font-size: 11px;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -2617,7 +2617,7 @@
 .wr-cell.is-drop-target {
   outline: 2px dashed #44b4df;
   outline-offset: -3px;
-  background: #e8f6fb;
+  background: light-dark(#e8f6fb, #1b333a);
 }
 
 /* ========= The month as a follow-up map (backlog-programmes.md, calendar lot C, C3) =========
@@ -2649,7 +2649,7 @@
 }
 
 .month-follow .month-cell:hover {
-  background: #f7fbfd;
+  background: light-dark(#f7fbfd, #171b1f);
 }
 
 .month-follow .month-cell:focus-visible {
@@ -2658,7 +2658,7 @@
 }
 
 .month-follow .month-cell.is-today {
-  background: #f2f9fd;
+  background: light-dark(#f2f9fd, #151a1d);
 }
 
 .month-follow .cell-header {
@@ -2672,7 +2672,7 @@
 /* The month's cards are the week's ones (`.wr-card`, `.wr-chip`); the type's icon tells workout from nutrition. */
 .wr-card__kind {
   margin-right: 3px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   font-size: 13px;
   vertical-align: -2px;
 }
@@ -2682,8 +2682,8 @@
 }
 
 .month-header-rate {
-  background: #fafcfd;
-  border-left: 1px solid #dfe4ea;
+  background: light-dark(#fafcfd, #181b20);
+  border-left: 1px solid light-dark(#dfe4ea, #363a3e);
 }
 
 .month-rate {
@@ -2694,12 +2694,12 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #dfe4ea;
-  background: #fafcfd;
+  border: 1px solid light-dark(#dfe4ea, #363a3e);
+  background: light-dark(#fafcfd, #181b20);
 }
 
 .month-rate__value {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 15px;
   font-weight: 700;
 }
@@ -2709,7 +2709,7 @@
   height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: #e5e7eb;
+  background: light-dark(#e5e7eb, #2c3035);
 }
 
 .month-rate__bar span {
@@ -2732,7 +2732,7 @@
   margin: 10px 2px 0;
   padding: 0;
   list-style: none;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
 }
 
@@ -2757,7 +2757,7 @@
 }
 
 .month-show__label {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   font-weight: 600;
 }
@@ -2767,10 +2767,10 @@
   align-items: center;
   gap: 4px;
   padding: 5px 10px 5px 7px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 999px;
-  background: #ffffff;
-  color: #475569;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#475569, #bfc5ce);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -2783,8 +2783,8 @@
 
 .month-show__chip.is-on {
   border-color: #44b4df;
-  background: #eef7fc;
-  color: #1f87b3;
+  background: light-dark(#eef7fc, #13191d);
+  color: light-dark(#1f87b3, #59b8e6);
 }
 
 /* The card or chip whose subject the panel shows alone. */
@@ -2800,7 +2800,7 @@
   align-items: center;
   gap: 4px 10px;
   margin: 4px 0 0;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12.5px;
 }
 
@@ -2846,7 +2846,7 @@
 }
 
 .month-follow.is-narrow .month-cell.is-selected {
-  background: #e8f3fa;
+  background: light-dark(#e8f3fa, #20323d);
   box-shadow: inset 0 0 0 2px #44b4df;
 }
 
@@ -2896,9 +2896,9 @@
   flex-direction: column;
   gap: 6px;
   padding: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 10px;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .month-day {
@@ -2914,7 +2914,7 @@
 }
 
 .month-day__title {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
 }
 
@@ -2951,7 +2951,7 @@
 }
 
 .wl-day.is-today {
-  border-color: #b9e1f2;
+  border-color: light-dark(#b9e1f2, #294d5b);
 }
 
 .wl-day.is-selected {
@@ -2967,7 +2967,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -2990,7 +2990,7 @@
 
 .wl-day__more {
   margin-left: auto;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   font-size: 20px;
 }
 
@@ -2999,10 +2999,10 @@
   align-items: center;
   gap: 6px;
   padding: 6px 9px;
-  border: 1px solid #cde9f6;
+  border: 1px solid light-dark(#cde9f6, #2e3b41);
   border-radius: 8px;
-  background: #eef7fc;
-  color: #0f172a;
+  background: light-dark(#eef7fc, #13191d);
+  color: light-dark(#0f172a, #e8ecf6);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -3017,7 +3017,7 @@
 
 .wl-empty {
   margin: 0;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   font-size: 12px;
 }
 

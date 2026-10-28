@@ -34,9 +34,9 @@
 }
 
 .program-card {
-  background-color: #fbfdff;
+  background-color: light-dark(#fbfdff, #1c2024);
   border-radius: 12px;
-  border: 1px solid #e4edf5;
+  border: 1px solid light-dark(#e4edf5, #31383e);
   padding: 14px 16px;
   margin-bottom: 10px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -66,8 +66,8 @@
 
 /* icône workout */
 .program-icon-blue {
-  background: #e6f5ff;
-  color: #0ba5ff;
+  background: light-dark(#e6f5ff, #193241);
+  color: light-dark(#0ba5ff, #39adff);
 }
 
 .program-text {
@@ -86,7 +86,7 @@
   font-size: 0.98rem;
   font-weight: 700;
   margin: 0;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .status-pill {
@@ -101,33 +101,33 @@
 
 /* réutilisé aussi ailleurs : reviewed, pending... */
 .status-pill--active {
-  background: #e3f9ea;
-  color: #15803d;
-  border-color: #bbf7d0;
+  background: light-dark(#e3f9ea, #103822);
+  color: light-dark(#15803d, #68c780);
+  border-color: light-dark(#bbf7d0, #235337);
 }
 
 .status-pill--upcoming {
-  background: #e0f2ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
+  background: light-dark(#e0f2ff, #143347);
+  color: light-dark(#1d4ed8, #8bb0ff);
+  border-color: light-dark(#bfdbfe, #324966);
 }
 
 .status-pill--completed {
-  background: #e5e7eb;
-  color: #374151;
-  border-color: #d1d5db;
+  background: light-dark(#e5e7eb, #2c3035);
+  color: light-dark(#374151, #d1d6df);
+  border-color: light-dark(#d1d5db, #3a3d42);
 }
 
 /* Ended earlier by a new program (backlog-programmes.md A3/A9) */
 .status-pill--stopped {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  background: light-dark(#f1f5f9, #15181d);
+  color: light-dark(#475569, #bfc5ce);
+  border: 1px solid light-dark(#e2e8f0, #34393f);
 }
 
 .status-pill--overlap {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: light-dark(#f3e8ff, #392848);
+  color: light-dark(#7e22ce, #c399ff);
   border-color: #d8b4fe;
 }
 
@@ -136,7 +136,7 @@
   flex-wrap: wrap;
   gap: 10px;
   font-size: 0.78rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .program-actions {
@@ -150,14 +150,14 @@
   background: transparent;
   padding: 6px;
   border-radius: 6px;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .icon-btn:hover {
   background: rgba(68, 180, 223, 0.08);
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
 }
 
 .program-progress {
@@ -176,10 +176,10 @@
   height: 32px;
   padding: 0 8px;
   border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
+  background: light-dark(#fff, #1d2125);
   font-size: 0.85rem;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   cursor: pointer;
 }
 
@@ -197,17 +197,17 @@
 .workout-filter-tabs {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #e4e7ec;
+  border: 1px solid light-dark(#e4e7ec, #34393f);
   border-radius: 8px;
   padding: 4px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   margin-bottom: 18px;
 }
 
 .workout-filter-tab {
   border: none;
   background: transparent;
-  color: #667085;
+  color: light-dark(#667085, #a9adb6);
   padding: 8px 22px;
   border-radius: 7px;
   font-weight: 600;
@@ -215,8 +215,8 @@
 }
 
 .workout-filter-tab--active {
-  background: #f5f7fb;
-  color: #111827;
+  background: light-dark(#f5f7fb, #16191e);
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .program-section {
@@ -225,7 +225,7 @@
 
 .program-section-title {
   margin: 0 0 12px;
-  color: #1f2937;
+  color: light-dark(#1f2937, #e3e9f3);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -255,17 +255,17 @@
 .program-status-filters {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #e4e7ec;
+  border: 1px solid light-dark(#e4e7ec, #34393f);
   border-radius: 8px;
   padding: 4px;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .program-status-filter {
   border: 0;
   background: transparent;
-  color: #475467;
+  color: light-dark(#475467, #c0c6ce);
   min-height: 34px;
   padding: 0 14px;
   border-radius: 7px;
@@ -275,8 +275,8 @@
 }
 
 .program-status-filter--active {
-  background: #ffffff;
-  color: #111827;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#111827, #e8ecf6);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
@@ -286,22 +286,22 @@
   gap: 8px;
   min-height: 42px;
   padding: 0 12px;
-  border: 1px solid #e4e7ec;
+  border: 1px solid light-dark(#e4e7ec, #34393f);
   border-radius: 8px;
-  background: #ffffff;
-  color: #1f2937;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#1f2937, #e3e9f3);
   font-size: 0.86rem;
   font-weight: 700;
 }
 
 .program-sort-control i {
-  color: #475467;
+  color: light-dark(#475467, #c0c6ce);
 }
 
 .program-sort-control select {
   border: 0;
   background: transparent;
-  color: #1f2937;
+  color: light-dark(#1f2937, #e3e9f3);
   font: inherit;
   outline: none;
   cursor: pointer;
@@ -310,7 +310,7 @@
 .program-card--file {
   position: relative;
   padding: 18px 24px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   overflow: visible;
 }
 
@@ -337,13 +337,13 @@
 }
 
 .program-icon-red {
-  background: #fee2e2;
-  color: #ef4444;
+  background: light-dark(#fee2e2, #4c2426);
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 .program-icon-green {
-  background: #dcfce7;
-  color: #16a34a;
+  background: light-dark(#dcfce7, #0f3822);
+  color: light-dark(#16a34a, #49c66b);
 }
 
 .file-type-pill {
@@ -353,21 +353,21 @@
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  color: #475467;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
+  background: light-dark(#f9fafb, #171b1f);
+  color: light-dark(#475467, #c0c6ce);
 }
 
 .file-type-pill--pdf {
-  background: #fff5f5;
-  border-color: #fecaca;
-  color: #dc2626;
+  background: light-dark(#fff5f5, #1e1717);
+  border-color: light-dark(#fecaca, #643a3b);
+  color: light-dark(#dc2626, #ff8275);
 }
 
 .file-type-pill--excel {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #16a34a;
+  background: light-dark(#f0fdf4, #1e3325);
+  border-color: light-dark(#bbf7d0, #235337);
+  color: light-dark(#16a34a, #49c66b);
 }
 
 .static-document-row {
@@ -375,14 +375,14 @@
   align-items: center;
   gap: 10px;
   margin-top: 22px;
-  color: #98a2b3;
+  color: light-dark(#98a2b3, #8c919a);
   font-size: 0.7rem;
   font-weight: 700;
 }
 
 .static-document-row span {
   height: 1px;
-  background: #edf0f3;
+  background: light-dark(#edf0f3, #272b2f);
   flex: 1;
 }
 
@@ -398,22 +398,22 @@
   gap: 8px;
   min-height: 38px;
   padding: 0 14px;
-  border: 1px solid #e4e7ec;
+  border: 1px solid light-dark(#e4e7ec, #34393f);
   border-radius: 8px;
-  background: #fff;
-  color: #1f2937;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#1f2937, #e3e9f3);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .file-action-btn i {
-  color: #98a2b3;
+  color: light-dark(#98a2b3, #8c919a);
 }
 
 .file-action-btn:hover {
-  background: #f9fafb;
-  border-color: #d0d5dd;
+  background: light-dark(#f9fafb, #171b1f);
+  border-color: light-dark(#d0d5dd, #393d43);
 }
 
 .file-actions-menu-wrap {
@@ -426,9 +426,9 @@
   right: 0;
   width: 260px;
   padding: 10px 0;
-  border: 1px solid #e4e7ec;
+  border: 1px solid light-dark(#e4e7ec, #34393f);
   border-radius: 14px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
   z-index: 20;
 }
@@ -441,27 +441,27 @@
   border: none;
   background: transparent;
   padding: 11px 18px;
-  color: #344054;
+  color: light-dark(#344054, #d2d7e0);
   font-size: 0.92rem;
   text-align: left;
   cursor: pointer;
 }
 
 .file-actions-menu button:hover {
-  background: #f9fafb;
+  background: light-dark(#f9fafb, #171b1f);
 }
 
 .file-actions-menu i {
   width: 18px;
-  color: #98a2b3;
+  color: light-dark(#98a2b3, #8c919a);
 }
 
 .file-actions-menu .danger {
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 .file-actions-menu .danger i {
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 @media (max-width: 900px) {
@@ -498,15 +498,15 @@
   width: 320px;
   padding: 18px 12px;
   border-radius: 14px;
-  background: #fff;
-  border: 1px solid #edf0f3;
+  background: light-dark(#fff, #1d2125);
+  border: 1px solid light-dark(#edf0f3, #32373d);
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
   z-index: 50;
 }
 
 .assign-menu-section-title {
   padding: 4px 10px 12px;
-  color: #667085;
+  color: light-dark(#667085, #a9adb6);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -521,24 +521,24 @@
   background: transparent;
   padding: 12px 10px;
   border-radius: 10px;
-  color: #344054;
+  color: light-dark(#344054, #d2d7e0);
   text-align: left;
   cursor: pointer;
 }
 
 .assign-menu-item:hover {
-  background: #f9fafb;
+  background: light-dark(#f9fafb, #171b1f);
 }
 
 .assign-menu-item strong {
   display: block;
-  color: #344054;
+  color: light-dark(#344054, #d2d7e0);
   font-size: 0.96rem;
 }
 
 .assign-menu-item small {
   display: block;
-  color: #667085;
+  color: light-dark(#667085, #a9adb6);
   margin-top: 2px;
 }
 
@@ -554,23 +554,23 @@
 }
 
 .assign-menu-icon--blue {
-  background: #e6f5ff;
-  color: #0ba5ff;
+  background: light-dark(#e6f5ff, #193241);
+  color: light-dark(#0ba5ff, #39adff);
 }
 
 .assign-menu-icon--red {
-  background: #fff1f2;
-  color: #ef4444;
+  background: light-dark(#fff1f2, #3c282a);
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 .assign-menu-icon--green {
-  background: #ecfdf3;
-  color: #16a34a;
+  background: light-dark(#ecfdf3, #173426);
+  color: light-dark(#16a34a, #49c66b);
 }
 
 .assign-menu-divider {
   height: 1px;
-  background: #edf0f3;
+  background: light-dark(#edf0f3, #272b2f);
   margin: 10px 0 14px;
 }
 
@@ -589,7 +589,7 @@
   width: 100%;
   max-width: 520px;
   border-radius: 16px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   padding: 22px;
   box-shadow: 0 24px 54px rgba(15, 23, 42, 0.22);
 }
@@ -605,7 +605,7 @@
   margin: 0;
   font-size: 1.15rem;
   font-weight: 800;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .upload-file-close {
@@ -613,7 +613,7 @@
   background: transparent;
   font-size: 28px;
   line-height: 1;
-  color: #98a2b3;
+  color: light-dark(#98a2b3, #8c919a);
   cursor: pointer;
 }
 
@@ -623,8 +623,8 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #f9fafb;
-  color: #344054;
+  background: light-dark(#f9fafb, #171b1f);
+  color: light-dark(#344054, #d2d7e0);
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -632,17 +632,17 @@
 .upload-field-label {
   display: block;
   margin: 12px 0 6px;
-  color: #344054;
+  color: light-dark(#344054, #d2d7e0);
   font-size: 0.86rem;
   font-weight: 700;
 }
 
 .upload-field {
   width: 100%;
-  border: 1px solid #d0d5dd;
+  border: 1px solid light-dark(#d0d5dd, #393d43);
   border-radius: 8px;
   padding: 10px 12px;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   outline: none;
 }
 
@@ -658,7 +658,7 @@
 
 .upload-error {
   margin-top: 12px;
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
   font-weight: 600;
 }
 
@@ -679,9 +679,9 @@
 }
 
 .upload-cancel-btn {
-  border: 1px solid #d0d5dd;
-  background: #fff;
-  color: #344054;
+  border: 1px solid light-dark(#d0d5dd, #393d43);
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#344054, #d2d7e0);
 }
 
 .upload-save-btn {
@@ -718,7 +718,7 @@
 
 .import-style-head p {
   margin: 6px 0 0;
-  color: #667085;
+  color: light-dark(#667085, #a9adb6);
   line-height: 1.45;
   font-size: 0.9rem;
 }
@@ -730,10 +730,10 @@
   justify-content: center;
   gap: 8px;
   min-height: 150px;
-  border: 1.5px dashed #d0d5dd;
+  border: 1.5px dashed light-dark(#d0d5dd, #393d43);
   border-radius: 14px;
-  background: #fcfcfd;
-  color: #344054;
+  background: light-dark(#fcfcfd, #1c2024);
+  color: light-dark(#344054, #d2d7e0);
   cursor: pointer;
   text-align: center;
   padding: 22px;
@@ -742,7 +742,7 @@
 
 .upload-zone:hover {
   border-color: #44b4df;
-  background: #f8fbff;
+  background: light-dark(#f8fbff, #181b1f);
 }
 
 .upload-zone-icon {
@@ -752,17 +752,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e6f5ff;
-  color: #0ba5ff;
+  background: light-dark(#e6f5ff, #193241);
+  color: light-dark(#0ba5ff, #39adff);
   font-size: 18px;
 }
 
 .upload-zone strong {
-  color: #344054;
+  color: light-dark(#344054, #d2d7e0);
 }
 
 .upload-zone span {
-  color: #667085;
+  color: light-dark(#667085, #a9adb6);
   font-size: 0.85rem;
 }
 
@@ -773,8 +773,8 @@
   margin-top: 14px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #f0f9ff;
-  color: #0369a1;
+  background: light-dark(#f0f9ff, #1f303b);
+  color: light-dark(#0369a1, #68baf7);
   font-size: 0.88rem;
 }
 
@@ -799,9 +799,9 @@
 /* Replace file + Change Dates modal */
 .replace-error-banner {
   margin: 12px 0;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #dc2626;
+  border: 1px solid light-dark(#fecaca, #643a3b);
+  background: light-dark(#fef2f2, #3c2829);
+  color: light-dark(#dc2626, #ff8275);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
@@ -822,7 +822,7 @@
 
 .change-dates-modal {
   width: min(560px, calc(100vw - 48px));
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   border-radius: 18px;
   box-shadow: 0 26px 80px rgba(15, 23, 42, 0.22);
   overflow: hidden;
@@ -830,7 +830,7 @@
 
 .change-dates-header {
   padding: 24px 30px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -839,7 +839,7 @@
 
 .change-dates-header h3 {
   margin: 0;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-size: 22px;
   font-weight: 800;
   line-height: 1.2;
@@ -851,7 +851,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   font-size: 32px;
   line-height: 1;
   cursor: pointer;
@@ -862,8 +862,8 @@
 }
 
 .change-dates-close:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: light-dark(#f3f4f6, #15181c);
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .change-dates-body {
@@ -872,13 +872,13 @@
 
 .change-dates-description {
   margin: 0 0 20px;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 15px;
   line-height: 1.6;
 }
 
 .change-dates-description strong {
-  color: #1f2937;
+  color: light-dark(#1f2937, #e3e9f3);
   font-weight: 800;
 }
 
@@ -890,7 +890,7 @@
 .change-date-field label {
   display: block;
   margin-bottom: 10px;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-weight: 800;
   font-size: 14px;
 }
@@ -898,11 +898,11 @@
 .change-date-field input {
   width: 100%;
   height: 52px;
-  border: 1px solid #d1d5db;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 12px;
   padding: 0 16px;
-  color: #111827;
-  background: #ffffff;
+  color: light-dark(#111827, #e8ecf6);
+  background: light-dark(#ffffff, #1d2125);
   font-size: 16px;
   outline: none;
   box-shadow: none;
@@ -919,8 +919,8 @@
 
 .change-dates-footer {
   padding: 22px 30px;
-  background: #f8fafc;
-  border-top: 1px solid #e5e7eb;
+  background: light-dark(#f8fafc, #171a1f);
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -940,9 +940,9 @@
 }
 
 .change-dates-cancel {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #1f2937;
+  border: 1px solid light-dark(#cbd5e1, #363e47);
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#1f2937, #e3e9f3);
 }
 
 .change-dates-save {
@@ -1015,20 +1015,20 @@
 
 .program-card.program-card-app .program-icon,
 .program-card.program-card-app .program-card-icon {
-  background: #e0f2fe;
-  color: #0284c7;
+  background: light-dark(#e0f2fe, #143446);
+  color: light-dark(#0284c7, #4eb5fb);
 }
 
 .program-card.program-card-pdf .file-icon,
 .program-card.program-card-pdf .program-card-icon {
-  background: #fee2e2;
-  color: #ef4444;
+  background: light-dark(#fee2e2, #4c2426);
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 .program-card.program-card-excel .file-icon,
 .program-card.program-card-excel .program-card-icon {
-  background: #dcfce7;
-  color: #16a34a;
+  background: light-dark(#dcfce7, #0f3822);
+  color: light-dark(#16a34a, #49c66b);
 }
 
 /* Keep action menus above cards without changing layout. */
@@ -1055,7 +1055,7 @@
   margin: 0;
   font-size: 1.55rem;
   font-weight: 800;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .btn-assign-black {
@@ -1072,7 +1072,7 @@
   overflow: visible;
   padding: 22px 18px;
   border-radius: 16px;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .program-card::before {
@@ -1149,9 +1149,9 @@
 }
 
 .program-type-pill--app {
-  background: #e0f2fe;
+  background: light-dark(#e0f2fe, #143446);
   border-color: #7dd3fc;
-  color: #0284c7;
+  color: light-dark(#0284c7, #4eb5fb);
 }
 
 .program-meta {
@@ -1161,11 +1161,11 @@
   gap: 14px;
   margin-top: 2px;
   font-size: 0.88rem;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
 }
 
 .program-meta-highlight {
-  color: #1d9bf0;
+  color: light-dark(#1d9bf0, #45aeff);
   font-weight: 700;
 }
 
@@ -1210,7 +1210,7 @@
   width: 100%;
   height: 6px;
   border-radius: 999px;
-  background: #e5e7eb;
+  background: light-dark(#e5e7eb, #2c3035);
   overflow: hidden;
 }
 
@@ -1324,9 +1324,9 @@
 .app-pagination .page-btn {
   min-width: 34px;
   height: 34px;
-  border: 1px solid #d8e2ef;
-  background: #fff;
-  color: #344054;
+  border: 1px solid light-dark(#d8e2ef, #333a44);
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#344054, #d2d7e0);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
@@ -1334,7 +1334,7 @@
 }
 
 .app-pagination .page-btn:hover:not(:disabled) {
-  background: #f1f7ff;
+  background: light-dark(#f1f7ff, #242f3d);
   border-color: #8ec5ff;
 }
 
@@ -1376,13 +1376,13 @@
 }
 
 .program-card-app .program-icon-blue {
-  background: #e7f8fe;
-  color: #079bd2;
+  background: light-dark(#e7f8fe, #15333c);
+  color: light-dark(#079bd2, #3ab5ed);
 }
 
 .program-type-pill--app {
-  background: #e7f8fe;
-  color: #079bd2;
+  background: light-dark(#e7f8fe, #15333c);
+  color: light-dark(#079bd2, #3ab5ed);
 }
 
 .progress-bar-fill,
@@ -1434,7 +1434,7 @@
   font-size: 22px !important;
   line-height: 1.25 !important;
   font-weight: 750 !important;
-  color: #0f172a !important;
+  color: light-dark(#0f172a, #e8ecf6) !important;
 }
 
 .tab-section-header .btn-assign-black {
@@ -1452,19 +1452,19 @@
 }
 
 @media (max-width: 900px) {
-  :host { display: block; color: #07152f; }
+  :host { display: block; color: light-dark(#07152f, #e8edf7); }
   .tab-section-header { flex-direction: row; align-items: center !important; gap: 8px; margin: 6px 0 14px !important; }
   .tab-section-header .section-title { font-size: 17px !important; }
-  .tab-section-header .btn-assign-black { width: auto; margin-left: auto; height: 34px !important; min-height: 34px !important; padding: 0 12px !important; font-size: 10px !important; background: #fff !important; color: #07152f !important; border: 1px solid #dce5ef !important; }
+  .tab-section-header .btn-assign-black { width: auto; margin-left: auto; height: 34px !important; min-height: 34px !important; padding: 0 12px !important; font-size: 10px !important; background: light-dark(#fff, #1d2125) !important; color: light-dark(#07152f, #e8edf7) !important; border: 1px solid light-dark(#dce5ef, #333a42) !important; }
   .workout-filter-tabs { display: none; }
   .program-section { margin-bottom: 16px; }
-  .program-section-title { margin: 0 0 9px; font-size: 9px; color: #667892; }
+  .program-section-title { margin: 0 0 9px; font-size: 9px; color: light-dark(#667892, #a2a8b0); }
   .all-programs-header { display: block; }
   .all-programs-controls { gap: 8px; }
   .program-status-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .program-status-filter { min-height: 30px; padding: 0 7px; font-size: 9px; }
   .program-sort-control { min-height: 32px; font-size: 9px; }
-  .program-card { padding: 12px 9px; margin-bottom: 8px; border-radius: 9px; background: #f5f7fa; border-color: #e7ebf0; }
+  .program-card { padding: 12px 9px; margin-bottom: 8px; border-radius: 9px; background: light-dark(#f5f7fa, #16191e); border-color: light-dark(#e7ebf0, #35383c); }
   .program-card::before { border-radius: 9px 0 0 9px; width: 2px; }
   .program-card-top { grid-template-columns: minmax(0, 1fr) auto; gap: 7px; align-items: center; }
   .program-main { align-items: center; gap: 9px; }
@@ -1483,10 +1483,10 @@
 .program-filter-empty {
   margin: 4px 0 12px;
   padding: 18px;
-  border: 1px dashed #d8dde6;
+  border: 1px dashed light-dark(#d8dde6, #373b42);
   border-radius: 12px;
-  color: #64748b;
-  background: #fff;
+  color: light-dark(#64748b, #a5abb4);
+  background: light-dark(#fff, #1d2125);
   font-size: 13px;
   text-align: center;
 }

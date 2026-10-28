@@ -32,6 +32,26 @@
       </div>
     </li>
 
+      <div class="theme-switch me-3" ngbDropdown placement="bottom-end">
+        <button type="button" class="theme-switch__trigger" ngbDropdownToggle
+                [attr.aria-label]="'THEME_APPEARANCE' | translate" [title]="'THEME_APPEARANCE' | translate">
+          <i-feather [name]="(themeMode.dark$ | async) ? 'moon' : 'sun'"></i-feather>
+        </button>
+        <div class="theme-switch__menu" ngbDropdownMenu role="menu">
+          <div class="theme-switch__title">{{ 'THEME_APPEARANCE' | translate }}</div>
+          @for (option of themeOptions; track option.mode) {
+            <button type="button" class="theme-switch__option" ngbDropdownItem role="menuitemradio"
+                    [attr.aria-checked]="(themeMode.mode$ | async) === option.mode"
+                    [class.is-active]="(themeMode.mode$ | async) === option.mode"
+                    (click)="themeMode.setMode(option.mode)">
+              <i-feather [name]="option.icon"></i-feather>
+              <span>{{ option.label | translate }}</span>
+              <i-feather name="check" class="theme-switch__check"></i-feather>
+            </button>
+          }
+        </div>
+      </div>
+
       <div class="dropdown me-3">
         <a class="nav-link position-relative" id="conversationsDropdown" (click)="openConversationList()">
           <i-feather name="message-circle" class="bell"></i-feather>

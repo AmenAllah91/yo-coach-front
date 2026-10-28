@@ -33,23 +33,23 @@ import { OverviewItem, ProgramKind } from '@shared/models/program-schedule';
   `,
   styles: [`
     .rp-backdrop { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, 0.45); }
-    .rp { width: min(440px, 100%); display: grid; gap: 10px; padding: 24px; border-radius: 18px; background: #fff; box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25); color: #0f172a; }
-    .rp-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: #fee2e2; color: #b91c1c; }
+    .rp { width: min(440px, 100%); display: grid; gap: 10px; padding: 24px; border-radius: 18px; background: light-dark(#fff, #1d2125); box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25); color: light-dark(#0f172a, #e8ecf6); }
+    .rp-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: light-dark(#fee2e2, #4c2426); color: light-dark(#b91c1c, #ff8a7d); }
     .rp-icon ::ng-deep svg { width: 20px; height: 20px; }
     .rp-title { margin: 4px 0 0; font-size: 18px; font-weight: 600; }
-    .rp-text, .rp-note { margin: 0; font-size: 14px; color: #475569; line-height: 1.5; }
-    .rp-note { font-size: 13px; color: #64748b; }
-    .rp-loss { display: flex; gap: 8px; margin: 2px 0; padding: 10px 12px; border-radius: 10px; background: #fef2f2; color: #991b1b; font-size: 14px; line-height: 1.45; }
-    .rp-loss--none { background: #f0fdf4; color: #166534; }
+    .rp-text, .rp-note { margin: 0; font-size: 14px; color: light-dark(#475569, #bfc5ce); line-height: 1.5; }
+    .rp-note { font-size: 13px; color: light-dark(#64748b, #a5abb4); }
+    .rp-loss { display: flex; gap: 8px; margin: 2px 0; padding: 10px 12px; border-radius: 10px; background: light-dark(#fef2f2, #3c2829); color: light-dark(#991b1b, #ffa096); font-size: 14px; line-height: 1.45; }
+    .rp-loss--none { background: light-dark(#f0fdf4, #1e3325); color: light-dark(#166534, #88d29a); }
     .rp-ico { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
     .rp-ico ::ng-deep svg { width: 16px; height: 16px; }
     .rp-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
     .rp-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
     .rp-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .rp-btn--ghost { border: 1px solid #e2e8f0; background: #fff; color: #0f172a; }
+    .rp-btn--ghost { border: 1px solid light-dark(#e2e8f0, #34393f); background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); }
     .rp-btn--danger { border: 1px solid #b91c1c; background: #b91c1c; color: #fff; }
     .rp-btn--danger:hover:not(:disabled) { background: #991b1b; }
-    .rp-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.5); border-top-color: #fff; animation: rp-spin 0.8s linear infinite; }
+    .rp-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid light-dark(rgba(255, 255, 255, 0.5), rgba(47, 51, 57, 0.5)); border-top-color: light-dark(#fff, #2f3339); animation: rp-spin 0.8s linear infinite; }
     @keyframes rp-spin { to { transform: rotate(360deg); } }
   `],
 })

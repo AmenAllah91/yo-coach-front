@@ -101,32 +101,32 @@ interface ProfileRow {
     </div>
   `,
   styles: [`
-    :host { --ink: #07152f; --muted: #66768d; --line: #e6edf4; --brand: #0c86c8; }
+    :host { --ink: light-dark(#07152f, #e8edf7); --muted: light-dark(#66768d, #a4a9b2); --line: light-dark(#e6edf4, #32383d); --brand: #0c86c8; }
     .cpp-backdrop { position: fixed; inset: 0; z-index: 2300; display: flex; justify-content: flex-end; background: rgba(7, 21, 47, .38); backdrop-filter: blur(2px); animation: cpp-fade .18s ease; }
-    .cpp { width: min(440px, 100vw); height: 100%; display: flex; flex-direction: column; background: #f7f9fc; box-shadow: -24px 0 60px rgba(7, 21, 47, .18); animation: cpp-in .24s cubic-bezier(.2, .8, .2, 1); font-family: inherit; color: var(--ink); }
-    .cpp__bar { height: 56px; flex: 0 0 56px; padding: 0 12px 0 22px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: #fff; font-size: 14px; font-weight: 700; }
+    .cpp { width: min(440px, 100vw); height: 100%; display: flex; flex-direction: column; background: light-dark(#f7f9fc, #171a1e); box-shadow: -24px 0 60px rgba(7, 21, 47, .18); animation: cpp-in .24s cubic-bezier(.2, .8, .2, 1); font-family: inherit; color: var(--ink); }
+    .cpp__bar { height: 56px; flex: 0 0 56px; padding: 0 12px 0 22px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: light-dark(#fff, #1d2125); font-size: 14px; font-weight: 700; }
     .cpp__close { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; }
-    .cpp__close:hover { background: #f1f5f9; color: var(--ink); }
+    .cpp__close:hover { background: light-dark(#f1f5f9, #15181d); color: var(--ink); }
     .cpp__close i-feather, .cpp-btn i-feather { width: 17px; height: 17px; }
     .cpp__body { flex: 1; overflow-y: auto; padding: 0 0 28px; }
 
-    .cpp__hero { padding: 26px 22px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; background: linear-gradient(180deg, #fff 0%, #f7f9fc 100%); border-bottom: 1px solid var(--line); }
-    .cpp__avatar { position: relative; width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #075985; font-size: 24px; font-weight: 700; letter-spacing: .5px; box-shadow: 0 0 0 4px #fff, 0 6px 18px rgba(12, 134, 200, .18); }
+    .cpp__hero { padding: 26px 22px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; background: linear-gradient(180deg, light-dark(#fff, #1d2125) 0%, light-dark(#f7f9fc, #171a1e) 100%); border-bottom: 1px solid var(--line); }
+    .cpp__avatar { position: relative; width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, light-dark(#e0f2fe, #143446), light-dark(#bae6fd, #0a3a4e)); color: light-dark(#075985, #81c6f8); font-size: 24px; font-weight: 700; letter-spacing: .5px; box-shadow: 0 0 0 4px #fff, 0 6px 18px rgba(12, 134, 200, .18); }
     .cpp__avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
     .cpp__hero h2 { margin: 14px 0 6px; font-size: 20px; line-height: 26px; font-weight: 700; letter-spacing: -.2px; }
     .cpp__meta { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
     .cpp__actions { margin-top: 18px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-    .cpp-btn { height: 38px; padding: 0 14px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; transition: border-color .15s, background .15s; }
-    .cpp-btn:hover { border-color: #b9dcf0; background: #f5fbff; }
+    .cpp-btn { height: 38px; padding: 0 14px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 10px; background: light-dark(#fff, #1d2125); color: var(--ink); font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; transition: border-color .15s, background .15s; }
+    .cpp-btn:hover { border-color: light-dark(#b9dcf0, #2d4c5d); background: light-dark(#f5fbff, #171b1e); }
     .cpp-btn--dark { border-color: #07142b; background: #07142b; color: #fff; }
     .cpp-btn--dark:hover { border-color: #0c86c8; background: #0c86c8; }
 
-    .cpp-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #e8f8f1; color: #0b8a5f; }
+    .cpp-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 99px; font-size: 12px; font-weight: 700; background: light-dark(#e8f8f1, #1a352b); color: light-dark(#0b8a5f, #5cc596); }
     .cpp-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    .cpp-status[data-status='PAUSED'] { background: #fff4e0; color: #b45d09; }
-    .cpp-status[data-status='ARCHIVED'] { background: #eef2f6; color: #5b6b80; }
+    .cpp-status[data-status='PAUSED'] { background: light-dark(#fff4e0, #3c2b05); color: light-dark(#b45d09, #ef934f); }
+    .cpp-status[data-status='ARCHIVED'] { background: light-dark(#eef2f6, #14171b); color: light-dark(#5b6b80, #acb3bb); }
 
-    .cpp__weights { margin: 16px 18px 0; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .cpp__weights { margin: 16px 18px 0; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; background: light-dark(#fff, #1d2125); }
     .cpp__weights div { padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .cpp__weights div + div { border-left: 1px solid var(--line); }
     .cpp__weights small { color: var(--muted); font-size: 11.5px; }
@@ -134,25 +134,25 @@ interface ProfileRow {
     .cpp__weights .is-now strong { color: var(--brand); }
 
     .cpp-group { margin: 20px 18px 0; }
-    .cpp-group h3 { margin: 0 0 8px 4px; color: #8a99ad; font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
-    .cpp-card { margin: 0; border: 1px solid var(--line); border-radius: 14px; background: #fff; overflow: hidden; }
+    .cpp-group h3 { margin: 0 0 8px 4px; color: light-dark(#8a99ad, #8f959e); font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+    .cpp-card { margin: 0; border: 1px solid var(--line); border-radius: 14px; background: light-dark(#fff, #1d2125); overflow: hidden; }
     .cpp-row { min-height: 52px; padding: 9px 10px 9px 12px; display: grid; grid-template-columns: 30px 128px minmax(0, 1fr) 30px; align-items: center; gap: 10px; }
-    .cpp-row + .cpp-row { border-top: 1px solid #eef2f6; }
-    .cpp-row__icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: #eef7fd; color: var(--brand); }
+    .cpp-row + .cpp-row { border-top: 1px solid light-dark(#eef2f6, #32363c); }
+    .cpp-row__icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: light-dark(#eef7fd, #1f313b); color: var(--brand); }
     .cpp-row__icon i-feather { width: 15px; height: 15px; }
     .cpp-row__label { color: var(--muted); font-size: 12.5px; }
     .cpp-row__value { min-width: 0; display: flex; flex-direction: column; font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere; }
     .cpp-row__value a { color: var(--ink); text-decoration: none; }
     .cpp-row__value a:hover { color: var(--brand); text-decoration: underline; }
     .cpp-row__value small { color: var(--muted); font-size: 12px; font-weight: 400; }
-    .cpp-row.is-empty .cpp-row__value { color: #a3b0c0; font-weight: 400; font-style: italic; }
-    .cpp-row.is-empty .cpp-row__icon { background: #f3f6f9; color: #a3b0c0; }
-    .cpp-row__copy { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #9aa8ba; cursor: pointer; opacity: 0; transition: opacity .15s, background .15s; }
+    .cpp-row.is-empty .cpp-row__value { color: light-dark(#a3b0c0, #868d94); font-weight: 400; font-style: italic; }
+    .cpp-row.is-empty .cpp-row__icon { background: light-dark(#f3f6f9, #15191d); color: light-dark(#a3b0c0, #868d94); }
+    .cpp-row__copy { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: light-dark(#9aa8ba, #899098); cursor: pointer; opacity: 0; transition: opacity .15s, background .15s; }
     .cpp-row:hover .cpp-row__copy, .cpp-row__copy:focus-visible, .cpp-row__copy.is-done { opacity: 1; }
-    .cpp-row__copy:hover { background: #f1f5f9; color: var(--ink); }
-    .cpp-row__copy.is-done { color: #0b8a5f; }
+    .cpp-row__copy:hover { background: light-dark(#f1f5f9, #15181d); color: var(--ink); }
+    .cpp-row__copy.is-done { color: light-dark(#0b8a5f, #5cc596); }
     .cpp-row__copy i-feather { width: 15px; height: 15px; }
-    .cpp-bio { padding: 14px 16px; color: #33445c; font-size: 13.5px; line-height: 1.55; white-space: pre-line; }
+    .cpp-bio { padding: 14px 16px; color: light-dark(#33445c, #ced4dd); font-size: 13.5px; line-height: 1.55; white-space: pre-line; }
 
     @keyframes cpp-in { from { transform: translateX(32px); opacity: 0; } to { transform: none; opacity: 1; } }
     @keyframes cpp-fade { from { opacity: 0; } to { opacity: 1; } }

@@ -1336,9 +1336,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const label = (value: any) => String(value ?? '').trim().split(/[_\s]+/).filter(Boolean)
       .map(part => part[0].toUpperCase() + part.slice(1).toLowerCase()).join(' ');
     return [
-      { label: label(run.exercise?.type ?? run.exercise?.exerciseRef?.type), background: '#F1F5F9', color: '#475569' },
-      { label: label(this.clean(run.exercise?.muscle) ?? this.clean(run.exercise?.exerciseRef?.muscle)), background: '#E8F4FB', color: '#1F78AD' },
-      { label: label(this.clean(run.exercise?.equipment) ?? this.clean(run.exercise?.exerciseRef?.equipment)), background: '#FDF2E2', color: '#B4661C' },
+      { label: label(run.exercise?.type ?? run.exercise?.exerciseRef?.type), background: 'light-dark(#F1F5F9, #2a3036)', color: 'light-dark(#475569, #b9c0c8)' },
+      { label: label(this.clean(run.exercise?.muscle) ?? this.clean(run.exercise?.exerciseRef?.muscle)), background: 'light-dark(#E8F4FB, #1d3446)', color: 'light-dark(#1F78AD, #7cc3f5)' },
+      { label: label(this.clean(run.exercise?.equipment) ?? this.clean(run.exercise?.exerciseRef?.equipment)), background: 'light-dark(#FDF2E2, #3a2a17)', color: 'light-dark(#B4661C, #f0a866)' },
     ].filter(tag => tag.label);
   }
 

@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   padding: 1rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   gap: 1rem;
 
   @media (max-width: 768px) {
@@ -25,11 +25,11 @@
     border-radius: 6px;
     
     &:hover {
-      background-color: #f3f4f6;
+      background-color: light-dark(#f3f4f6, #15181c);
     }
 
     &:active {
-      background-color: #e5e7eb;
+      background-color: light-dark(#e5e7eb, #2c3035);
     }
 
     @media (max-width: 768px) {
@@ -56,7 +56,7 @@
     
     p {
       margin: 0;
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
       font-size: 0.875rem;
 
       @media (max-width: 768px) {

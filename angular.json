@@ -67,6 +67,7 @@
               "./node_modules/ngx-toastr/toastr.css",
               "./node_modules/bootstrap-icons/font/bootstrap-icons.css",
               "src/styles.scss",
+              "src/theme-dark.scss",
               "node_modules/leaflet/dist/leaflet.css"
             ],
             "scripts": [

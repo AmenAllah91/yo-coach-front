@@ -291,7 +291,7 @@
   height: 44px;
   padding: 0 16px;
   border-radius: 12px;
-  border: 1px solid #dde2e9;
+  border: 1px solid light-dark(#dde2e9, #363a3f);
   background: var(--yc-surface);
   font-size: 14px;
   font-weight: 500;
@@ -350,7 +350,7 @@
     min-width: 0;
     height: 40px;
     border-radius: 10px;
-    border: 1px solid #dde2e9;
+    border: 1px solid light-dark(#dde2e9, #363a3f);
     background: var(--yc-surface);
     font-size: 13.5px;
     font-weight: 600;
@@ -381,7 +381,7 @@
 
 .date-input,
 .text-answer {
-  background: #f6f8fa;
+  background: light-dark(#f6f8fa, #161a1e);
   font-size: 14.5px;
 }
 
@@ -393,7 +393,7 @@
 .answer-view {
   padding: 12px;
   border-radius: 12px;
-  background: #f6f8fa;
+  background: light-dark(#f6f8fa, #161a1e);
   font-size: 14px;
   white-space: pre-line;
 

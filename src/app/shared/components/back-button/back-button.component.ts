@@ -23,12 +23,12 @@ import { TranslateModule } from '@ngx-translate/core';
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem 0.5rem 0.625rem;
-      border: 1px solid #e5e7eb;
+      border: 1px solid light-dark(#e5e7eb, #34393f);
       border-radius: 9999px;
-      background: rgba(255,255,255,0.85);
+      background: light-dark(rgba(255,255,255,0.85), rgba(29, 33, 37, 0.85));
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      color: #374151;
+      color: light-dark(#374151, #d1d6df);
       font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
@@ -36,10 +36,10 @@ import { TranslateModule } from '@ngx-translate/core';
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
     .back-btn:hover {
-      background: #fff;
-      border-color: #d1d5db;
+      background: light-dark(#fff, #1d2125);
+      border-color: light-dark(#d1d5db, #3a3d42);
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      color: #111827;
+      color: light-dark(#111827, #e8ecf6);
       transform: translateX(-2px);
     }
     .back-btn:active {

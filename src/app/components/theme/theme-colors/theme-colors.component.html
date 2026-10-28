@@ -88,6 +88,15 @@
     <main class="preview-area">
       <h1>{{ 'CUSTOMIZE_YOUR_APP' | translate }}</h1>
 
+      <div class="preview-mode" role="radiogroup" [attr.aria-label]="'THEME_PREVIEW_MODE' | translate">
+        <button type="button" role="radio" [attr.aria-checked]="!previewDark" [class.is-active]="!previewDark" (click)="setPreviewDark(false)">
+          <i class="bi bi-sun" aria-hidden="true"></i>{{ 'THEME_LIGHT' | translate }}
+        </button>
+        <button type="button" role="radio" [attr.aria-checked]="previewDark" [class.is-active]="previewDark" (click)="setPreviewDark(true)">
+          <i class="bi bi-moon-stars" aria-hidden="true"></i>{{ 'THEME_DARK' | translate }}
+        </button>
+      </div>
+
       <div class="preview-stage" #previewStage>
         <div class="preview-phone-slot">
           <div class="flutter-preview-wrapper">
@@ -110,6 +119,7 @@
       <p class="preview-label">
         <strong>{{ 'LIVE_MOBILE_PREVIEW' | translate }}</strong>
         <span>{{ 'PREVIEW_TABS_HINT' | translate }}</span>
+        <span *ngIf="previewDark" class="preview-dark-hint">{{ 'THEME_PREVIEW_DARK_HINT' | translate }}</span>
       </p>
     </main>
 

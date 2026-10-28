@@ -12,15 +12,15 @@
   min-height: 86px !important;
   margin: 0 !important;
   padding: 14px 14px 10px !important;
-  border-bottom: 1px solid #eef2f6 !important;
-  color: #102038 !important;
+  border-bottom: 1px solid light-dark(#eef2f6, #32363c) !important;
+  color: light-dark(#102038, #e5ebf4) !important;
   letter-spacing: .25px !important;
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-aside__head .np-h6 {
   margin: 0 !important;
   padding: 0 !important;
-  color: #142033 !important;
+  color: light-dark(#142033, #e5ebf4) !important;
   font-size: 15px !important;
   font-weight: 500 !important;
   line-height: 20px !important;
@@ -28,7 +28,7 @@
 
 .np-root.np-layout .np-shell > .np-aside .np-aside__sub {
   margin: 3px 0 0 !important;
-  color: #607087 !important;
+  color: light-dark(#607087, #a8aeb7) !important;
   font-size: 13px !important;
   line-height: 20px !important;
 }
@@ -42,7 +42,7 @@
   gap: 6px !important;
   margin: 6px 0 0 !important;
   padding: 0 !important;
-  color: #079dd3 !important;
+  color: light-dark(#079dd3, #37b5ec) !important;
   font-size: 12.5px !important;
   font-weight: 500 !important;
   line-height: 17.5px !important;
@@ -66,8 +66,8 @@
   margin: 0 !important;
   padding: 12px 0 !important;
   border: 0 !important;
-  background: #fff !important;
-  color: #0f172a !important;
+  background: light-dark(#fff, #1d2125) !important;
+  color: light-dark(#0f172a, #e8ecf6) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
 }
@@ -85,7 +85,7 @@
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-week-card__head-top strong {
-  color: #182235 !important;
+  color: light-dark(#182235, #e5eaf4) !important;
   font-size: 15px !important;
   font-weight: 500 !important;
   line-height: 22px !important;
@@ -96,8 +96,8 @@
 .np-root.np-layout .np-shell > .np-aside .np-week-card__status {
   padding: 3px 8px !important;
   border-radius: 6px !important;
-  background: #f1f5f9 !important;
-  color: #64748b !important;
+  background: light-dark(#f1f5f9, #15181d) !important;
+  color: light-dark(#64748b, #a5abb4) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   line-height: 18px !important;
@@ -105,13 +105,13 @@
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-week-card__status.is-published {
-  background: #ecfdf5 !important;
-  color: #047857 !important;
+  background: light-dark(#ecfdf5, #173429) !important;
+  color: light-dark(#047857, #69c6a1) !important;
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-week-card__count {
   margin-left: auto !important;
-  color: #6d7f99 !important;
+  color: light-dark(#6d7f99, #9da2ab) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   line-height: 20px !important;
@@ -138,18 +138,18 @@
   border: 0 !important;
   border-radius: 0 9px 9px 0 !important;
   background: transparent !important;
-  color: #35445b !important;
+  color: light-dark(#35445b, #ced4dd) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.is-active {
-  background: #e5f5fb !important;
-  color: #1ea2d2 !important;
+  background: light-dark(#e5f5fb, #18343d) !important;
+  color: light-dark(#1ea2d2, #3bb5e6) !important;
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-day__title {
-  color: #35445b !important;
+  color: light-dark(#35445b, #ced4dd) !important;
   font-size: 16px !important;
   font-weight: 500 !important;
   line-height: 22px !important;
@@ -158,7 +158,7 @@
 
 .np-root.np-layout .np-shell > .np-aside .np-day__meta {
   margin-left: auto !important;
-  color: #079bd4 !important;
+  color: light-dark(#079bd4, #39b5ef) !important;
   font-size: 14px !important;
   font-weight: 400 !important;
   line-height: 15px !important;
@@ -171,7 +171,7 @@
   flex: 0 0 19px !important;
   width: 19px !important;
   height: 19px !important;
-  color: #c0c7d0 !important;
+  color: light-dark(#c0c7d0, #7d848b) !important;
 }
 
 .np-root.np-layout .np-shell > .np-aside .np-day-state.ready {
@@ -216,6 +216,6 @@
 /* Day states without weekly publication (backlog-programmes.md): a day with an error, or empty in the middle of the
    plan, is shown in amber. */
 .np-root.np-layout .np-shell > .np-aside .np-day-state.invalid i-feather,
-.np-root.np-layout .np-shell > .np-aside .np-day-state.gap i-feather { color: #d97706 !important; }
+.np-root.np-layout .np-shell > .np-aside .np-day-state.gap i-feather { color: light-dark(#d97706, #ee8a2c) !important; }
 .np-root.np-layout .np-shell > .np-aside .np-day .np-day__meta.is-warning,
-.np-root.np-layout .np-shell > .np-aside .np-day.is-active .np-day__meta.is-warning { color: #b45309 !important; font-weight: 600 !important; }
+.np-root.np-layout .np-shell > .np-aside .np-day.is-active .np-day__meta.is-warning { color: light-dark(#b45309, #f68f54) !important; font-weight: 600 !important; }

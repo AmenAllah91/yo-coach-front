@@ -4,7 +4,7 @@
 
 .day-label {
   margin: 0; padding: 6px 16px; border-top: 1px solid $line-soft; border-bottom: 1px solid $line-soft;
-  background: #f8fafc; font-size: 11.5px; font-weight: 600; color: $muted;
+  background: light-dark(#f8fafc, #171a1f); font-size: 11.5px; font-weight: 600; color: $muted;
 }
 
 .activity-list { list-style: none; margin: 0; padding: 0; }
@@ -12,7 +12,7 @@
 
 .activity {
   display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px;
-  &:hover { background: #fbfcfd; }
+  &:hover { background: light-dark(#fbfcfd, #1c2024); }
 }
 
 .activity-main {
@@ -24,7 +24,7 @@
 
 .category {
   position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
-  border: 2px solid #fff; background: #64748b; color: #fff;
+  border: 2px solid light-dark(#fff, #2f3339); background: #64748b; color: #fff;
   i-feather { width: 8px; height: 8px; }
   &[data-category='WORKOUT'] { background: #2b9fcf; }
   &[data-category='NUTRITION'] { background: #16a34a; }

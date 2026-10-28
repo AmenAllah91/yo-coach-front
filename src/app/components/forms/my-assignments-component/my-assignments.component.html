@@ -68,7 +68,7 @@
 
     <ng-template #card let-item let-submitted="submitted">
       <button type="button" class="yc-card assignment-card" [class.locked]="previewMode && !submitted" (click)="open(item)">
-        <span class="yc-icon-tile" style="--tile-color: #7455D9; --tile-size: 46px"><i-feather name="clipboard-list"></i-feather></span>
+        <span class="yc-icon-tile" style="--tile-color: light-dark(#7455D9, #ac9eff); --tile-size: 46px"><i-feather name="clipboard-list"></i-feather></span>
         <span class="assignment-card__copy">
           <strong>{{ title(item) }}<span *ngIf="hasNewFeedback(item)" class="new-badge">{{ t('New', 'Nouveau') }}</span></strong>
           <span class="assignment-card__meta">

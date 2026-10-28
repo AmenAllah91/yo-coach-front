@@ -104,16 +104,16 @@ function seeded(seed: number): () => number {
   `,
   styles: [`
     .cc {
-      --cc-accent: #44B4DF; --cc-light: #5CC3EA; --cc-deep: #1E95C7; --cc-text: #167FAE;
-      --cc-glow: #E3F4FB; --cc-glow-2: #F6FBFE; --cc-tint: #E8F6FC;
+      --cc-accent: #44B4DF; --cc-light: #5CC3EA; --cc-deep: #1E95C7; --cc-text: light-dark(#167FAE, #5cb8ea);
+      --cc-glow: #E3F4FB; --cc-glow-2: #F6FBFE; --cc-tint: light-dark(#E8F6FC, #1b333c);
       position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column;
-      background: radial-gradient(ellipse 95% 70% at 50% 22%, var(--cc-glow) 0%, var(--cc-glow-2) 45%, #fff 100%);
-      color: var(--yc-text-primary, #0f1b2d); font-family: inherit;
+      background: radial-gradient(ellipse 95% 70% at 50% 22%, var(--cc-glow) 0%, var(--cc-glow-2) 45%, light-dark(#fff, #1d2125) 100%);
+      color: var(--yc-text-primary, light-dark(#0f1b2d, #e6ecf5)); font-family: inherit;
       animation: cc-fade 260ms ease-out both;
     }
     .cc--nutrition {
-      --cc-accent: #22B573; --cc-light: #5ED69E; --cc-deep: #14955A; --cc-text: #12804B;
-      --cc-glow: #E2F6EB; --cc-glow-2: #F4FBF7; --cc-tint: #E5F6EC;
+      --cc-accent: #22B573; --cc-light: #5ED69E; --cc-deep: #14955A; --cc-text: light-dark(#12804B, #67c68d);
+      --cc-glow: #E2F6EB; --cc-glow-2: #F4FBF7; --cc-tint: light-dark(#E5F6EC, #193628);
     }
     /* Behind the check and the texts, as on mobile. */
     .cc__confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
@@ -147,13 +147,13 @@ function seeded(seed: number): () => number {
     .cc__track { stroke: color-mix(in srgb, var(--cc-accent) 12%, transparent); }
     .cc__arc { stroke-linecap: round; stroke-dashoffset: 0; animation-name: cc-arc; animation-timing-function: ease-in-out; animation-fill-mode: both; }
 
-    .cc__title { margin: 30px 0 0; font-size: 30px; line-height: 1.15; letter-spacing: -0.6px; font-weight: 800; color: var(--yc-text-primary, #0f1b2d); }
+    .cc__title { margin: 30px 0 0; font-size: 30px; line-height: 1.15; letter-spacing: -0.6px; font-weight: 800; color: var(--yc-text-primary, light-dark(#0f1b2d, #e6ecf5)); }
     .cc__headline { margin: 12px 0 0; font-size: 17px; line-height: 1.35; font-weight: 700; color: var(--cc-text); }
-    .cc__body { margin: 8px auto 0; max-width: 340px; font-size: 15px; line-height: 1.5; color: var(--yc-text-secondary, #546175); }
+    .cc__body { margin: 8px auto 0; max-width: 340px; font-size: 15px; line-height: 1.5; color: var(--yc-text-secondary, light-dark(#546175, #b5bac3)); }
 
     .cc__card {
       margin-top: 28px; width: 100%; max-width: 420px; box-sizing: border-box; padding: 14px 16px 16px; text-align: left;
-      background: #fff; border: 1px solid #e6eef4; border-radius: 20px; box-shadow: 0 10px 24px rgba(15, 27, 45, 0.06);
+      background: light-dark(#fff, #1d2125); border: 1px solid light-dark(#e6eef4, #32383d); border-radius: 20px; box-shadow: 0 10px 24px rgba(15, 27, 45, 0.06);
     }
     .cc__card-head { display: flex; align-items: center; gap: 10px; }
     .cc__tile { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--cc-tint); display: grid; place-items: center; }
@@ -162,24 +162,24 @@ function seeded(seed: number): () => number {
     }
     .cc__card-copy { min-width: 0; display: flex; flex-direction: column; }
     .cc__card-copy strong {
-      font-size: 15px; font-weight: 700; color: var(--yc-text-primary, #0f1b2d);
+      font-size: 15px; font-weight: 700; color: var(--yc-text-primary, light-dark(#0f1b2d, #e6ecf5));
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .cc__card-copy small { font-size: 12.5px; color: var(--yc-text-secondary, #546175); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cc__card-copy small { font-size: 12.5px; color: var(--yc-text-secondary, light-dark(#546175, #b5bac3)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cc__stats { margin-top: 14px; display: flex; gap: 8px; }
     .cc__stat {
-      flex: 1 1 0; min-width: 0; padding: 10px 4px; border-radius: 14px; background: #f5f8fb;
+      flex: 1 1 0; min-width: 0; padding: 10px 4px; border-radius: 14px; background: light-dark(#f5f8fb, #161a1e);
       display: flex; flex-direction: column; align-items: center; text-align: center; container-type: inline-size;
     }
     .cc__stat svg { width: 16px; height: 16px; }
-    .cc__stat strong { margin-top: 6px; font-size: 17px; font-weight: 800; white-space: nowrap; color: var(--yc-text-primary, #0f1b2d); }
+    .cc__stat strong { margin-top: 6px; font-size: 17px; font-weight: 800; white-space: nowrap; color: var(--yc-text-primary, light-dark(#0f1b2d, #e6ecf5)); }
     /* « Comme prévu » on a 320 px phone: a little smaller rather than cut. */
     .cc__stat small {
-      margin-top: 1px; max-width: 100%; font-size: clamp(10px, 15.5cqi, 12px); color: var(--yc-text-secondary, #546175);
+      margin-top: 1px; max-width: 100%; font-size: clamp(10px, 15.5cqi, 12px); color: var(--yc-text-secondary, light-dark(#546175, #b5bac3));
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .cc__legend { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; }
-    .cc__legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--yc-text-secondary, #546175); }
+    .cc__legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--yc-text-secondary, light-dark(#546175, #b5bac3)); }
     .cc__legend i { width: 8px; height: 8px; border-radius: 50%; }
 
     .cc__footer { position: relative; z-index: 2; flex: none; padding: 8px 24px calc(16px + env(safe-area-inset-bottom)); display: flex; justify-content: center; }

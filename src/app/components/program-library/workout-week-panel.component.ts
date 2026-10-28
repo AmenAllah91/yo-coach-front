@@ -68,9 +68,9 @@ import { TranslateModule } from '@ngx-translate/core';
       margin: 0;
       padding: 24px 26px;
       overflow: hidden;
-      border: 1px solid #dce3ea;
+      border: 1px solid light-dark(#dce3ea, #353a40);
       border-radius: 14px;
-      background: #fff;
+      background: light-dark(#fff, #1d2125);
       box-shadow: 0 2px 4px rgba(15, 23, 42, .07);
       box-sizing: border-box;
     }
@@ -90,7 +90,7 @@ import { TranslateModule } from '@ngx-translate/core';
     .week-panel h2 {
       flex: 0 0 auto;
       margin: 0;
-      color: #102038;
+      color: light-dark(#102038, #e5ebf4);
       font-size: 22px;
       font-weight: 650;
       line-height: 28px;
@@ -98,7 +98,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
     .week-panel__range {
       overflow: hidden;
-      color: #61748a;
+      color: light-dark(#61748a, #a5acb4);
       font-size: 14px;
       font-weight: 400;
       line-height: 20px;
@@ -110,8 +110,8 @@ import { TranslateModule } from '@ngx-translate/core';
       flex: 0 0 auto;
       padding: 4px 10px;
       border-radius: 6px;
-      background: #f1f5f9;
-      color: #64748b;
+      background: light-dark(#f1f5f9, #15181d);
+      color: light-dark(#64748b, #a5abb4);
       font-size: 13px;
       font-weight: 500;
       line-height: 18px;
@@ -119,13 +119,13 @@ import { TranslateModule } from '@ngx-translate/core';
 
     .week-panel__status.published {
       border: 1px solid #82e3bd;
-      background: #ecfdf5;
-      color: #07875f;
+      background: light-dark(#ecfdf5, #173429);
+      color: light-dark(#07875f, #5dc599);
     }
 
     .week-panel__title strong {
       flex: 0 0 auto;
-      color: #26384e;
+      color: light-dark(#26384e, #d9e0e8);
       font-size: 14px;
       font-weight: 600;
       line-height: 20px;
@@ -146,7 +146,7 @@ import { TranslateModule } from '@ngx-translate/core';
       margin-top: 5px;
       overflow: hidden;
       border-radius: 999px;
-      background: #e5eaf0;
+      background: light-dark(#e5eaf0, #2b2f33);
     }
 
     .week-panel__progress i {
@@ -163,7 +163,7 @@ import { TranslateModule } from '@ngx-translate/core';
       align-items: flex-start;
       gap: 7px;
       margin: 0;
-      color: #71829a;
+      color: light-dark(#71829a, #999fa7);
       font-size: 14px;
       line-height: 1.45;
     }
@@ -175,7 +175,7 @@ import { TranslateModule } from '@ngx-translate/core';
       flex: 0 0 17px;
       place-items: center;
       margin-top: 1px;
-      border: 1.5px solid #7d8da2;
+      border: 1.5px solid light-dark(#7d8da2, #48566a);
       border-radius: 50%;
       font-size: 11px;
       font-weight: 700;
@@ -185,7 +185,7 @@ import { TranslateModule } from '@ngx-translate/core';
     .saved {
       display: block;
       margin-top: 8px;
-      color: #8a99b5;
+      color: light-dark(#8a99b5, #90959d);
       white-space: nowrap;
     }
 
@@ -203,10 +203,10 @@ import { TranslateModule } from '@ngx-translate/core';
       justify-content: center;
       gap: 9px;
       padding: 10px 20px;
-      border: 1px solid #cbd6e2;
+      border: 1px solid light-dark(#cbd6e2, #353e47);
       border-radius: 9px;
-      background: #fff;
-      color: #102038;
+      background: light-dark(#fff, #1d2125);
+      color: light-dark(#102038, #e5ebf4);
       font-size: 14px;
       font-weight: 600;
       white-space: nowrap;
@@ -225,16 +225,16 @@ import { TranslateModule } from '@ngx-translate/core';
     .week-panel button.week-panel__duplicate {
       min-height: 38px;
       padding: 0 14px;
-      border-color: #bfdbfe;
-      background: #eff6ff;
-      color: #0369a1;
+      border-color: light-dark(#bfdbfe, #324966);
+      background: light-dark(#eff6ff, #242f3d);
+      color: light-dark(#0369a1, #68baf7);
       font-size: 13.5px;
       cursor: pointer;
     }
 
     .week-panel button.week-panel__duplicate:hover {
-      border-color: #93c5fd;
-      background: #dbeafe;
+      border-color: light-dark(#93c5fd, #2a4a6c);
+      background: light-dark(#dbeafe, #1c3350);
     }
 
     .week-panel button.week-panel__duplicate svg {
@@ -249,15 +249,15 @@ import { TranslateModule } from '@ngx-translate/core';
 
     .week-panel button:disabled {
       cursor: not-allowed;
-      border-color: #e2e8f0;
-      background: #e1e7ef;
-      color: #94a3b8;
+      border-color: light-dark(#e2e8f0, #34393f);
+      background: light-dark(#e1e7ef, #293442);
+      color: light-dark(#94a3b8, #8c919a);
     }
 
     .error {
       grid-column: 1 / -1;
       margin: 0;
-      color: #c62828 !important;
+      color: light-dark(#c62828, #ff867b) !important;
     }
 
     .week-panel.narrow {
@@ -324,7 +324,7 @@ import { TranslateModule } from '@ngx-translate/core';
     }
 
     .week-panel.compact .week-panel__title strong {
-      color: #079669;
+      color: light-dark(#079669, #50c494);
       font-size: 12px;
     }
 

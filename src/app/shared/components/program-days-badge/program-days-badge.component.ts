@@ -15,9 +15,9 @@ import { ProgramSummary, nutritionSummary, workoutSummary } from '@shared/models
     {{ 'PROGRAM_DAYS_FILLED' | translate:{ count: s.readyDays, total: s.totalDays } }}
   </span>`,
   styles: [`
-    .program-days-badge{display:inline-flex;margin-top:6px;padding:3px 8px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:600;white-space:nowrap}
-    .program-days-badge.is-complete{background:#e8f8f3;color:#087f5b}
-    .program-days-badge.is-empty{background:#f1f5f9;color:#64748b}
+    .program-days-badge{display:inline-flex;margin-top:6px;padding:3px 8px;border-radius:999px;background:light-dark(#e0f2fe, #143446);color:light-dark(#0369a1, #68baf7);font-size:11px;font-weight:600;white-space:nowrap}
+    .program-days-badge.is-complete{background:light-dark(#e8f8f3, #19352e);color:light-dark(#087f5b, #64c59d)}
+    .program-days-badge.is-empty{background:light-dark(#f1f5f9, #15181d);color:light-dark(#64748b, #a5abb4)}
   `],
 })
 export class ProgramDaysBadgeComponent {

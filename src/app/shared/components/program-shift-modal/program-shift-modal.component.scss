@@ -1,17 +1,17 @@
 /* « Décaler la suite » and the pause (backlog-programmes.md DS-10/DS-11): the look of « Modifier les dates ». */
 .ps-field { display: grid; gap: 6px; }
-.ps-label { font-size: 13px; font-weight: 700; color: #0f172a; }
-.ps-hint { margin: 0; font-size: 12.5px; color: #64748b; }
+.ps-label { font-size: 13px; font-weight: 700; color: light-dark(#0f172a, #e8ecf6); }
+.ps-hint { margin: 0; font-size: 12.5px; color: light-dark(#64748b, #a5abb4); }
 
 .ps-date {
   height: 40px;
   max-width: 220px;
   padding: 0 10px;
   border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid light-dark(#e2e8f0, #34393f);
   font: inherit;
   font-size: 14px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   &:focus { outline: none; border-color: #0c86c8; }
 }
 
@@ -23,17 +23,17 @@
   gap: 2px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
-  background: #fff;
+  border: 1.5px solid light-dark(#e2e8f0, #34393f);
+  background: light-dark(#fff, #1d2125);
   text-align: left;
   font: inherit;
   cursor: pointer;
-  &.is-active { border-color: #0c86c8; background: #f0f9ff; }
+  &.is-active { border-color: #0c86c8; background: light-dark(#f0f9ff, #1f303b); }
 }
 
-.ps-chip-title { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: #0f172a; }
-.ps-chip-date { font-size: 12.5px; color: #64748b; }
-.ps-chip-input { border: none; background: transparent; font: inherit; font-size: 12.5px; color: #64748b; padding: 0; }
+.ps-chip-title { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: light-dark(#0f172a, #e8ecf6); }
+.ps-chip-date { font-size: 12.5px; color: light-dark(#64748b, #a5abb4); }
+.ps-chip-input { border: none; background: transparent; font: inherit; font-size: 12.5px; color: light-dark(#64748b, #a5abb4); padding: 0; }
 
 .ps-summary {
   display: flex;
@@ -41,9 +41,9 @@
   gap: 8px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
   font-size: 13.5px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
 }
 
 .ps-lines { display: grid; gap: 6px; }
@@ -54,9 +54,9 @@
   gap: 8px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  color: #0c4a6e;
+  background: light-dark(#f0f9ff, #1f303b);
+  border: 1px solid light-dark(#bae6fd, #254d60);
+  color: light-dark(#0c4a6e, #8cc5ef);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -69,14 +69,14 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid light-dark(#e2e8f0, #34393f);
   font-size: 13.5px;
   cursor: pointer;
-  &.is-on { border-color: #0c86c8; background: #f0f9ff; }
+  &.is-on { border-color: #0c86c8; background: light-dark(#f0f9ff, #1f303b); }
 }
 
-.ps-group-title { margin: 0; font-size: 12.5px; font-weight: 700; color: #475569; text-transform: none; }
-.ps-empty { margin: 0; font-size: 12.5px; color: #64748b; }
+.ps-group-title { margin: 0; font-size: 12.5px; font-weight: 700; color: light-dark(#475569, #bfc5ce); text-transform: none; }
+.ps-empty { margin: 0; font-size: 12.5px; color: light-dark(#64748b, #a5abb4); }
 
 .ps-ico {
   width: 15px;
@@ -91,7 +91,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
+  border: 2px solid light-dark(#cbd5e1, #363e47);
   border-top-color: #0c86c8;
   animation: ps-spin 0.8s linear infinite;
 }

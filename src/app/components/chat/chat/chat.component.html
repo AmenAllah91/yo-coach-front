@@ -1,7 +1,17 @@
 <!-- Calls: the call window and the incoming call are shown by app-call-host (app root), on every page. -->
 <!-- A client sees the mobile layout (#clientChat below); coaches and the embedded views keep this one. -->
 <ng-container *ngIf="!clientLayout; else clientChat">
-<div class="chat-page-header" *ngIf="!embeddedMode && (!isMobile || showList)">
+<!-- Header chat panel: its own bar instead of the page title. -->
+<div class="chat-panel-bar" *ngIf="panelMode">
+  <span class="chat-panel-bar__title">{{ 'CHAT_TITLE' | translate }}</span>
+  <button class="chat-panel-bar__btn" type="button" [attr.aria-label]="'OPEN_FULL_PAGE_CHAT' | translate" [title]="'OPEN_FULL_PAGE_CHAT' | translate" (click)="panelExpanded.emit(selectedConv)">
+    <i-feather name="maximize-2"></i-feather>
+  </button>
+  <button class="chat-panel-bar__btn" type="button" [attr.aria-label]="'CLOSE' | translate" [title]="'CLOSE' | translate" (click)="panelClosed.emit()">
+    <i-feather name="x"></i-feather>
+  </button>
+</div>
+<div class="chat-page-header" *ngIf="!embeddedMode && !panelMode && (!isMobile || showList)">
   <div class="chat-page-header__left">
     <button class="app-page-back chat-page-header__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
       <i-feather name="arrow-left"></i-feather>

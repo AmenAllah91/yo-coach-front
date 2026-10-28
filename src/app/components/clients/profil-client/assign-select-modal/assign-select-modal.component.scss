@@ -12,7 +12,7 @@
 }
 
 .assign-modal {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   width: 100%;
   max-width: 420px;
   border-radius: 12px;
@@ -24,7 +24,7 @@
 /* Header */
 .assign-modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -33,14 +33,14 @@
 .assign-modal-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   margin: 0;
 }
 
 .assign-modal-close {
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   cursor: pointer;
   padding: 0;
   display: inline-flex;
@@ -54,7 +54,7 @@
 }
 
 .assign-modal-close:hover {
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
 }
 
 /* Body */
@@ -69,8 +69,8 @@
 .assign-option {
   width: 100%;
   border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  background-color: #ffffff;
+  border: 2px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#ffffff, #1d2125);
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -110,8 +110,8 @@
 }
 
 .assign-option-icon--green {
-  background-color: #dcfce7;
-  color: #16a34a;
+  background-color: light-dark(#dcfce7, #0f3822);
+  color: light-dark(#16a34a, #49c66b);
 }
 
 .assign-option-text {
@@ -121,19 +121,19 @@
 .assign-option-title {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .assign-option-subtitle {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   margin-top: 2px;
 }
 
 .assign-option-chevron {
   width: 20px;
   height: 20px;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   flex-shrink: 0;
   transition: color 0.15s ease;
 }

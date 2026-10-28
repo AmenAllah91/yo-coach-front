@@ -15,8 +15,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: #132a46;
-  background: #fff;
+  color: light-dark(#132a46, #e3e9f2);
+  background: light-dark(#fff, #1d2125);
   border-radius: 20px;
   box-shadow: 0 24px 70px rgba(7, 24, 42, .28);
 }
@@ -25,13 +25,13 @@
   padding: 27px 26px 23px;
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #e7edf4;
+  border-bottom: 1px solid light-dark(#e7edf4, #33383d);
 }
 
 .swap-header h2 { margin: 0; font-size: 24px; font-weight: 800; }
-.swap-header p { margin: 7px 0 0; color: #6e839d; font-size: 16px; }
-.swap-close { border: 0; background: none; color: #8ba0b8; font-size: 31px; line-height: 1; cursor: pointer; }
-.swap-close:hover { color: #18324f; }
+.swap-header p { margin: 7px 0 0; color: light-dark(#6e839d, #989fa7); font-size: 16px; }
+.swap-close { border: 0; background: none; color: light-dark(#8ba0b8, #8c939b); font-size: 31px; line-height: 1; cursor: pointer; }
+.swap-close:hover { color: light-dark(#18324f, #a2c1e5); }
 
 .swap-body { min-height: 0; overflow: hidden; padding: 24px 26px 18px; display: flex; flex-direction: column; }
 .replacing-card {
@@ -41,16 +41,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #bde8f8;
+  border: 1px solid light-dark(#bde8f8, #274e5b);
   border-radius: 14px;
-  background: #eaf8fd;
+  background: light-dark(#eaf8fd, #1b323a);
 }
 .replacing-card > div:first-child { display: flex; flex-direction: column; }
-.replacing-card small { color: #1489b4; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.replacing-card small { color: light-dark(#1489b4, #53b8e5); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 .replacing-card strong { margin-top: 7px; font-size: 18px; }
-.replacing-card span { margin-top: 3px; color: #71859c; font-size: 14px; }
+.replacing-card span { margin-top: 3px; color: light-dark(#71859c, #979ea6); font-size: 14px; }
 .replacing-calories { display: flex; flex-direction: row; align-items: baseline; gap: 5px; }
-.replacing-calories strong { color: #159fd5; font-size: 24px; }
+.replacing-calories strong { color: light-dark(#159fd5, #39b4eb); font-size: 24px; }
 .replacing-calories span { font-weight: 700; }
 
 .swap-options { min-height: 0; margin-top: 21px; display: flex; flex-direction: column; }
@@ -65,37 +65,37 @@
   grid-template-columns: 24px minmax(0, 1fr) minmax(170px, 45%);
   align-items: center;
   gap: 12px;
-  border: 2px solid #dde6ef;
+  border: 2px solid light-dark(#dde6ef, #333a41);
   border-radius: 14px;
-  background: #fff;
-  color: #132a46;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#132a46, #e3e9f2);
   text-align: left;
   cursor: pointer;
   transition: .17s ease;
 }
-.swap-option:hover { border-color: #77ccea; background: #f7fcfe; transform: translateY(-1px); }
-.swap-option.selected { border-color: #25afe1; background: #eaf8fd; box-shadow: 0 0 0 1px #25afe1; }
-.swap-radio { width: 20px; height: 20px; display: grid; place-items: center; border: 2px solid #c7d5e3; border-radius: 50%; }
+.swap-option:hover { border-color: light-dark(#77ccea, #0b5063); background: light-dark(#f7fcfe, #181b1f); transform: translateY(-1px); }
+.swap-option.selected { border-color: #25afe1; background: light-dark(#eaf8fd, #1b323a); box-shadow: 0 0 0 1px #25afe1; }
+.swap-radio { width: 20px; height: 20px; display: grid; place-items: center; border: 2px solid light-dark(#c7d5e3, #353e47); border-radius: 50%; }
 .swap-option.selected .swap-radio { border-color: #25afe1; }
 .swap-option.selected .swap-radio i { width: 10px; height: 10px; border-radius: 50%; background: #25afe1; }
 .swap-food { min-width: 0; display: flex; flex-direction: column; }
 .swap-food strong { overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.swap-food small { margin-top: 4px; color: #71869e; font-size: 13px; }
+.swap-food small { margin-top: 4px; color: light-dark(#71869e, #979ea6); font-size: 13px; }
 .swap-macros { min-width: 0; display: grid; grid-template-columns: 1.25fr repeat(3, 1fr); gap: 2px; text-align: center; }
 .swap-macros div { min-width: 0; display: flex; flex-direction: column; }
 .swap-macros strong { overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
-.swap-macros small { margin-top: 4px; color: #879bb3; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.swap-macros .swap-kcal strong { color: #159fd5; font-size: 18px; }
+.swap-macros small { margin-top: 4px; color: light-dark(#879bb3, #8e959d); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.swap-macros .swap-kcal strong { color: light-dark(#159fd5, #39b4eb); font-size: 18px; }
 
-.swap-loading, .swap-error { padding: 55px 20px; text-align: center; color: #71869e; }
-.swap-loading span { width: 32px; height: 32px; margin: 0 auto 10px; display: block; border: 3px solid #dce6ef; border-top-color: #25afe1; border-radius: 50%; animation: spin .75s linear infinite; }
-.swap-error { color: #d84d4d; }
+.swap-loading, .swap-error { padding: 55px 20px; text-align: center; color: light-dark(#71869e, #979ea6); }
+.swap-loading span { width: 32px; height: 32px; margin: 0 auto 10px; display: block; border: 3px solid light-dark(#dce6ef, #323a41); border-top-color: #25afe1; border-radius: 50%; animation: spin .75s linear infinite; }
+.swap-error { color: light-dark(#d84d4d, #ff7d78); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.swap-footer { flex: 0 0 auto; padding: 20px 26px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e7edf4; }
+.swap-footer { flex: 0 0 auto; padding: 20px 26px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid light-dark(#e7edf4, #33383d); }
 .swap-footer button { min-height: 50px; padding: 0 22px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; transition: .17s ease; }
-.swap-cancel { border: 1px solid #d6e0eb; background: #fff; color: #435b75; }
-.swap-cancel:hover { background: #f6f8fb; }
+.swap-cancel { border: 1px solid light-dark(#d6e0eb, #333b44); background: light-dark(#fff, #1d2125); color: light-dark(#435b75, #bac1c9); }
+.swap-cancel:hover { background: light-dark(#f6f8fb, #161a1e); }
 .swap-confirm { border: 1px solid #35b3e2; background: #35b3e2; color: #fff; }
 .swap-confirm:hover:not(:disabled) { background: #159fd5; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(21, 159, 213, .22); }
 .swap-confirm:disabled { opacity: .45; cursor: not-allowed; }

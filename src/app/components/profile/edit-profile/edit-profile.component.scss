@@ -9,8 +9,8 @@ $blue-dark: #3a9cc2;
 
 /* ── Profile Card ── */
 .profile-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#fff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
@@ -61,7 +61,7 @@ $blue-dark: #3a9cc2;
   height: 8rem;
   border-radius: 50%;
   overflow: hidden;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   box-shadow: 0 0 0 4px #fff, 0 4px 12px rgba(0,0,0,0.15);
   position: relative;
 }
@@ -78,12 +78,12 @@ $blue-dark: #3a9cc2;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: light-dark(#f3f4f6, #15181c);
 
   svg {
     width: 4rem;
     height: 4rem;
-    color: #9ca3af;
+    color: light-dark(#9ca3af, #8c9199);
   }
 }
 
@@ -127,7 +127,7 @@ $blue-dark: #3a9cc2;
   h1 {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     margin: 0;
   }
 }
@@ -153,7 +153,7 @@ $blue-dark: #3a9cc2;
   align-items: center;
   gap: 0.375rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 /* ── Stats ── */
@@ -165,8 +165,8 @@ $blue-dark: #3a9cc2;
 }
 
 .stat-card {
-  background: #f9fafb;
-  border: 1px solid #f3f4f6;
+  background: light-dark(#f9fafb, #171b1f);
+  border: 1px solid light-dark(#f3f4f6, #31363c);
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
 }
@@ -174,7 +174,7 @@ $blue-dark: #3a9cc2;
 .stat-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .stat-value-blue { color: $blue; }
@@ -188,14 +188,14 @@ $blue-dark: #3a9cc2;
 .stat-label {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   margin-top: 0.125rem;
 }
 
 /* ── Progress Bar ── */
 .progress-bar-track {
   width: 100%;
-  background: #f3f4f6;
+  background: light-dark(#f3f4f6, #15181c);
   border-radius: 9999px;
   height: 0.375rem;
   overflow: hidden;
@@ -210,7 +210,7 @@ $blue-dark: #3a9cc2;
 
 /* ── Tabs ── */
 .tabs-nav {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   margin-bottom: 1.5rem;
   display: flex;
   gap: 2rem;
@@ -223,14 +223,14 @@ $blue-dark: #3a9cc2;
   background: transparent;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
 
   &:hover {
-    color: #374151;
-    border-bottom-color: #d1d5db;
+    color: light-dark(#374151, #d1d6df);
+    border-bottom-color: light-dark(#d1d5db, #3a3d42);
   }
 
   &.active {
@@ -241,8 +241,8 @@ $blue-dark: #3a9cc2;
 
 /* ── Cards ── */
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: light-dark(#fff, #1d2125);
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
@@ -250,7 +250,7 @@ $blue-dark: #3a9cc2;
 
 .card-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid light-dark(#f3f4f6, #31363c);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -258,7 +258,7 @@ $blue-dark: #3a9cc2;
   h2 {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     margin: 0;
   }
 }
@@ -310,16 +310,16 @@ $blue-dark: #3a9cc2;
   align-items: center;
   gap: 0.375rem;
   padding: 0.5rem 1rem;
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#374151, #d1d6df);
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
 
-  &:hover { background: #f9fafb; }
+  &:hover { background: light-dark(#f9fafb, #171b1f); }
 }
 
 .action-btns {
@@ -337,20 +337,20 @@ $blue-dark: #3a9cc2;
   border-radius: 0.5rem;
   background: transparent;
   border: none;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
 
-  &:hover { background: #f9fafb; }
+  &:hover { background: light-dark(#f9fafb, #171b1f); }
 }
 
 .action-btn-danger {
-  color: #dc2626;
+  color: light-dark(#dc2626, #ff8275);
 
-  &:hover { background: #fef2f2; }
+  &:hover { background: light-dark(#fef2f2, #3c2829); }
 }
 
 /* ── Form Fields ── */
@@ -379,7 +379,7 @@ $blue-dark: #3a9cc2;
   display: block;
   font-size: 0.6875rem;
   font-weight: 500;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.375rem;
@@ -389,14 +389,14 @@ $blue-dark: #3a9cc2;
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   margin-bottom: 0.375rem;
 }
 
 .field-value {
   font-size: 0.875rem;
   font-weight: 400;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .field-icon-row {
@@ -406,16 +406,16 @@ $blue-dark: #3a9cc2;
 }
 
 .text-muted {
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
 }
 
 .form-input {
   width: 100%;
   padding: 0.625rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   outline: none;
   transition: box-shadow 0.15s, border-color 0.15s;
   box-sizing: border-box;
@@ -427,8 +427,8 @@ $blue-dark: #3a9cc2;
 }
 
 .form-input-disabled {
-  background: #f9fafb;
-  color: #6b7280;
+  background: light-dark(#f9fafb, #171b1f);
+  color: light-dark(#6b7280, #a7abb4);
   cursor: not-allowed;
 }
 
@@ -439,7 +439,7 @@ $blue-dark: #3a9cc2;
 
 .hint-text {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   margin: 0.25rem 0 0;
 }
 
@@ -450,7 +450,7 @@ $blue-dark: #3a9cc2;
 
   p {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     margin: 0;
   }
 }
@@ -458,7 +458,7 @@ $blue-dark: #3a9cc2;
 .empty-icon {
   width: 3rem;
   height: 3rem;
-  background: #f3f4f6;
+  background: light-dark(#f3f4f6, #15181c);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -467,13 +467,13 @@ $blue-dark: #3a9cc2;
 }
 
 .message-error {
-  color: #dc2626;
+  color: light-dark(#dc2626, #ff8275);
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .message-success {
-  color: #16a34a;
+  color: light-dark(#16a34a, #49c66b);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -494,20 +494,20 @@ $blue-dark: #3a9cc2;
 .invoice-summary-card {
   min-height: 6.5rem;
   padding: 1.1rem 1.25rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 0.5rem;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 
   strong {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 1.5rem;
     line-height: 1.2;
 
     small {
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
       font-size: 0.75rem;
       font-weight: 600;
     }
@@ -527,7 +527,7 @@ $blue-dark: #3a9cc2;
 }
 
 .invoice-summary-label {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.025em;
@@ -543,7 +543,7 @@ $blue-dark: #3a9cc2;
 }
 
 .card-subtitle {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 0.8125rem;
   margin: 0.25rem 0 0;
 }
@@ -556,7 +556,7 @@ $blue-dark: #3a9cc2;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   text-align: center;
 
   p {
@@ -565,13 +565,13 @@ $blue-dark: #3a9cc2;
 }
 
 .invoice-error-state {
-  color: #b91c1c;
+  color: light-dark(#b91c1c, #ff8a7d);
 }
 
 .invoice-spinner {
   width: 1.75rem;
   height: 1.75rem;
-  border: 3px solid #e5e7eb;
+  border: 3px solid light-dark(#e5e7eb, #34393f);
   border-top-color: $blue;
   border-radius: 50%;
   animation: invoice-spin 0.8s linear infinite;
@@ -590,7 +590,7 @@ $blue-dark: #3a9cc2;
 }
 
 .invoice-empty-icon {
-  color: #16a34a;
+  color: light-dark(#16a34a, #49c66b);
   font-size: 1.25rem;
   font-weight: 700;
 }
@@ -607,14 +607,14 @@ $blue-dark: #3a9cc2;
   th,
   td {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid light-dark(#f3f4f6, #31363c);
     text-align: left;
     vertical-align: middle;
   }
 
   th {
-    background: #f9fafb;
-    color: #6b7280;
+    background: light-dark(#f9fafb, #171b1f);
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -626,7 +626,7 @@ $blue-dark: #3a9cc2;
   }
 
   tbody tr:hover {
-    background: #fcfcfd;
+    background: light-dark(#fcfcfd, #1c2024);
   }
 }
 
@@ -653,12 +653,12 @@ $blue-dark: #3a9cc2;
 
 .invoice-number,
 .invoice-amount {
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   font-weight: 700;
 }
 
 .invoice-currency {
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -672,23 +672,23 @@ $blue-dark: #3a9cc2;
   font-weight: 700;
 
   &.paid {
-    color: #166534;
-    background: #dcfce7;
+    color: light-dark(#166534, #88d29a);
+    background: light-dark(#dcfce7, #0f3822);
   }
 
   &.to-pay {
-    color: #92400e;
-    background: #fef3c7;
+    color: light-dark(#92400e, #f4996c);
+    background: light-dark(#fef3c7, #382f03);
   }
 
   &.overdue {
-    color: #991b1b;
-    background: #fee2e2;
+    color: light-dark(#991b1b, #ffa096);
+    background: light-dark(#fee2e2, #4c2426);
   }
 }
 
 .overdue-date {
-  color: #dc2626;
+  color: light-dark(#dc2626, #ff8275);
   font-weight: 600;
 }
 
@@ -707,7 +707,7 @@ $blue-dark: #3a9cc2;
 .invoice-modal {
   width: min(46rem, 100%);
   max-height: calc(100vh - 2rem);
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   border-radius: 0.75rem;
   box-shadow: 0 1.5rem 4rem rgba(17, 24, 39, 0.25);
   overflow: hidden;
@@ -717,20 +717,20 @@ $blue-dark: #3a9cc2;
 
 .invoice-modal-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 
   h2 {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 1.35rem;
     margin: 0.15rem 0;
   }
 
   p {
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.875rem;
     margin: 0;
   }
@@ -748,17 +748,17 @@ $blue-dark: #3a9cc2;
   width: 2.25rem;
   height: 2.25rem;
   padding: 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 50%;
-  background: #fff;
-  color: #4b5563;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#4b5563, #bfc5cd);
   cursor: pointer;
   font-size: 1.5rem;
   line-height: 1;
 
   &:hover:not(:disabled) {
-    background: #f9fafb;
-    color: #111827;
+    background: light-dark(#f9fafb, #171b1f);
+    color: light-dark(#111827, #e8ecf6);
   }
 
   &:disabled {
@@ -774,9 +774,9 @@ $blue-dark: #3a9cc2;
 
 .invoice-detail-hero {
   padding: 1rem 1.15rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   border-radius: 0.625rem;
-  background: #f9fafb;
+  background: light-dark(#f9fafb, #171b1f);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -784,11 +784,11 @@ $blue-dark: #3a9cc2;
 
   strong {
     display: block;
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 1.65rem;
 
     small {
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
       font-size: 0.8rem;
     }
   }
@@ -797,7 +797,7 @@ $blue-dark: #3a9cc2;
 .invoice-detail-label {
   display: block;
   margin-bottom: 0.2rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -816,13 +816,13 @@ $blue-dark: #3a9cc2;
   span {
     display: block;
     margin-bottom: 0.2rem;
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.72rem;
     font-weight: 600;
   }
 
   strong {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 0.875rem;
     overflow-wrap: anywhere;
   }
@@ -835,10 +835,10 @@ $blue-dark: #3a9cc2;
 .invoice-detail-section {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
 
   h3 {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 0.95rem;
     margin: 0 0 0.85rem;
   }
@@ -849,19 +849,19 @@ $blue-dark: #3a9cc2;
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   font-size: 0.875rem;
 
   strong {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
   }
 }
 
 .invoice-breakdown-total {
   margin-top: 0.45rem;
   padding-top: 0.75rem;
-  border-top: 1px dashed #d1d5db;
-  color: #111827;
+  border-top: 1px dashed light-dark(#d1d5db, #3a3d42);
+  color: light-dark(#111827, #e8ecf6);
   font-weight: 700;
 }
 
@@ -869,7 +869,7 @@ $blue-dark: #3a9cc2;
   margin-top: 0.75rem;
 
   span {
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -877,7 +877,7 @@ $blue-dark: #3a9cc2;
 
   p {
     margin: 0.3rem 0 0;
-    color: #374151;
+    color: light-dark(#374151, #d1d6df);
     font-size: 0.85rem;
     line-height: 1.55;
     white-space: pre-wrap;
@@ -893,7 +893,7 @@ $blue-dark: #3a9cc2;
   li {
     position: relative;
     padding: 0 0 1rem 1.25rem;
-    border-left: 1px solid #dbeafe;
+    border-left: 1px solid light-dark(#dbeafe, #313943);
 
     &:last-child {
       padding-bottom: 0;
@@ -907,19 +907,19 @@ $blue-dark: #3a9cc2;
   }
 
   strong {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 0.85rem;
   }
 
   time,
   small {
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.72rem;
   }
 
   p {
     margin: 0.25rem 0;
-    color: #4b5563;
+    color: light-dark(#4b5563, #bfc5cd);
     font-size: 0.8rem;
   }
 }
@@ -930,7 +930,7 @@ $blue-dark: #3a9cc2;
   left: -0.3rem;
   width: 0.55rem;
   height: 0.55rem;
-  border: 2px solid #fff;
+  border: 2px solid light-dark(#fff, #2f3339);
   border-radius: 50%;
   background: $blue;
   box-shadow: 0 0 0 1px $blue;
@@ -944,13 +944,13 @@ $blue-dark: #3a9cc2;
   background: rgba($blue, 0.06);
 
   h3 {
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 1rem;
     margin: 0;
   }
 
   p {
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.8rem;
     margin: 0.25rem 0 0;
   }
@@ -961,7 +961,7 @@ $blue-dark: #3a9cc2;
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
   font-size: 0.825rem;
 
   .invoice-spinner {
@@ -980,14 +980,14 @@ $blue-dark: #3a9cc2;
 .payment-gateway-option {
   min-height: 3rem;
   padding: 0.65rem 0.8rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 0.5rem;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   display: flex;
   align-items: center;
   gap: 0.6rem;
   cursor: pointer;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   font-size: 0.85rem;
   font-weight: 700;
 
@@ -1004,7 +1004,7 @@ $blue-dark: #3a9cc2;
 }
 
 .invoice-payment-error {
-  color: #b91c1c !important;
+  color: light-dark(#b91c1c, #ff8a7d) !important;
   font-weight: 600;
 }
 
@@ -1022,19 +1022,19 @@ $blue-dark: #3a9cc2;
 .invoice-paid-message {
   margin-top: 1.5rem;
   padding: 1rem;
-  border: 1px solid #bbf7d0;
+  border: 1px solid light-dark(#bbf7d0, #235337);
   border-radius: 0.625rem;
-  background: #f0fdf4;
+  background: light-dark(#f0fdf4, #1e3325);
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #166534;
+  color: light-dark(#166534, #88d29a);
 
   > span {
     width: 2rem;
     height: 2rem;
     border-radius: 50%;
-    background: #dcfce7;
+    background: light-dark(#dcfce7, #0f3822);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1057,8 +1057,8 @@ $blue-dark: #3a9cc2;
   margin: 1.25rem 0 0;
   padding: 0.85rem 1rem;
   border-radius: 0.5rem;
-  background: #f9fafb;
-  color: #6b7280;
+  background: light-dark(#f9fafb, #171b1f);
+  color: light-dark(#6b7280, #a7abb4);
   font-size: 0.85rem;
 }
 
@@ -1092,7 +1092,7 @@ $blue-dark: #3a9cc2;
 
     tr {
       padding: 0.75rem 1rem;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
     }
 
     tbody tr:last-child {
@@ -1110,7 +1110,7 @@ $blue-dark: #3a9cc2;
 
       &::before {
         content: attr(data-label);
-        color: #6b7280;
+        color: light-dark(#6b7280, #a7abb4);
         font-size: 0.6875rem;
         font-weight: 700;
         letter-spacing: 0.04em;

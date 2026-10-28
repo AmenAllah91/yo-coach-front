@@ -12,13 +12,13 @@
 
 app-create-workout,
 app-create-and-assign {
-  --workout-ui-bg: #f7f9fb;
-  --workout-ui-card: #ffffff;
-  --workout-ui-border: #dce4ec;
-  --workout-ui-text: #102038;
-  --workout-ui-muted: #667b93;
+  --workout-ui-bg: light-dark(#f7f9fb, #171a1e);
+  --workout-ui-card: light-dark(#ffffff, #1d2125);
+  --workout-ui-border: light-dark(#dce4ec, #343a40);
+  --workout-ui-text: light-dark(#102038, #e5ebf4);
+  --workout-ui-muted: light-dark(#667b93, #a0a6ae);
   --workout-ui-blue: #079bd4;
-  --workout-ui-blue-soft: #e7f6fc;
+  --workout-ui-blue-soft: light-dark(#e7f6fc, #19333c);
   --workout-ui-green: #0bb989;
   --workout-builder-header: 84px;
   --workout-builder-sidebar: 376px;
@@ -218,7 +218,7 @@ app-create-and-assign {
     border: 1px solid var(--workout-ui-border) !important;
     border-left: 3px solid #16aee4 !important;
     border-radius: 10px !important;
-    background: #fff !important;
+    background: light-dark(#fff, #1d2125) !important;
   }
 
   app-create-workout .builder-rail > .wk-day-editor,
@@ -645,8 +645,8 @@ app-create-and-assign {
     height: 64px !important;
     margin: 0 !important;
     padding: 0 14px !important;
-    border-bottom: 1px solid #e3e8ee !important;
-    background: #fff !important;
+    border-bottom: 1px solid light-dark(#e3e8ee, #35393d) !important;
+    background: light-dark(#fff, #1d2125) !important;
     box-sizing: border-box !important;
   }
 
@@ -754,7 +754,7 @@ app-create-and-assign {
     min-height: 48px !important;
     margin: 0 -14px !important;
     padding: 0 14px !important;
-    border-bottom: 1px solid #e7ecf1 !important;
+    border-bottom: 1px solid light-dark(#e7ecf1, #34383c) !important;
   }
 
   app-create-workout .np-label,
@@ -812,8 +812,8 @@ app-create-and-assign {
     gap: 7px !important;
     padding: 10px !important;
     overflow-x: auto !important;
-    border-bottom: 1px solid #e8edf2 !important;
-    background: #fff !important;
+    border-bottom: 1px solid light-dark(#e8edf2, #34383b) !important;
+    background: light-dark(#fff, #1d2125) !important;
   }
 
   app-create-workout .np-mobile-day,
@@ -1054,8 +1054,8 @@ app-create-and-assign {
     left: 0 !important;
     z-index: 25 !important;
     padding: 10px !important;
-    border-top: 1px solid #e2e8f0 !important;
-    background: rgba(255,255,255,.96) !important;
+    border-top: 1px solid light-dark(#e2e8f0, #34393f) !important;
+    background: light-dark(rgba(255,255,255,.96), rgba(29, 33, 37, 0.96)) !important;
   }
 
   app-create-workout .np-sticky .np-btn--save,

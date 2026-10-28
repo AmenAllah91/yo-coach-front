@@ -915,7 +915,7 @@ export class ProfilClientComponent {
     });
     const value: NutritionMacroShares = {
       items: defs.map((def, index) => ({ ...def, percent: percents[index] })),
-      gradient: total ? `conic-gradient(${stops.join(', ')})` : '#e5e7eb',
+      gradient: total ? `conic-gradient(${stops.join(', ')})` : 'light-dark(#e5e7eb, #33393d)',
     };
     this.macroSharesCache = { key, value };
     return value;

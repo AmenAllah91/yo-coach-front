@@ -48,21 +48,21 @@ import { TranslateModule } from '@ngx-translate/core';
     .ed__backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, .48); backdrop-filter: blur(2px); }
     .ed__card {
       position: relative; width: min(480px, 100%); max-height: calc(100vh - 48px); overflow-y: auto;
-      border-radius: 12px; border: 1px solid #dbeafe; background: #fff; box-shadow: 0 24px 70px rgba(15, 23, 42, .22);
+      border-radius: 12px; border: 1px solid light-dark(#dbeafe, #313943); background: light-dark(#fff, #1d2125); box-shadow: 0 24px 70px rgba(15, 23, 42, .22);
       padding: 28px; display: grid; gap: 16px;
     }
-    .ed__close { position: absolute; top: 16px; right: 16px; border: 0; background: transparent; color: #64748b; cursor: pointer; }
+    .ed__close { position: absolute; top: 16px; right: 16px; border: 0; background: transparent; color: light-dark(#64748b, #a5abb4); cursor: pointer; }
     .ed__closeIcon { width: 20px; height: 20px; }
-    .ed__icon { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; color: #d97706; background: #fef3c7; }
+    .ed__icon { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; color: light-dark(#d97706, #ee8a2c); background: light-dark(#fef3c7, #382f03); }
     .ed__iconSvg { width: 24px; height: 24px; }
-    .ed__title { margin: 0 0 6px; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.3; }
-    .ed__text { margin: 0; color: #475569; font-size: 14px; line-height: 1.5; }
+    .ed__title { margin: 0 0 6px; color: light-dark(#0f172a, #e8ecf6); font-size: 20px; font-weight: 700; line-height: 1.3; }
+    .ed__text { margin: 0; color: light-dark(#475569, #bfc5ce); font-size: 14px; line-height: 1.5; }
     .ed__days { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .ed__day { padding: 6px 12px; border-radius: 999px; border: 1px solid #fcd34d; background: #fffbeb; color: #92400e; font-size: 13px; font-weight: 600; }
+    .ed__day { padding: 6px 12px; border-radius: 999px; border: 1px solid #fcd34d; background: light-dark(#fffbeb, #332c12); color: light-dark(#92400e, #f4996c); font-size: 13px; font-weight: 600; }
     .ed__actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
     .ed__btn { min-height: 42px; padding: 0 18px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; }
     .ed__btn:disabled { opacity: .6; cursor: not-allowed; }
-    .ed__btn--ghost { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; }
+    .ed__btn--ghost { border: 1px solid light-dark(#cbd5e1, #363e47); background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); }
     .ed__btn--primary { border: 1px solid #0d1b33; background: #0d1b33; color: #fff; }
     @media (max-width: 480px) {
       .ed { padding: 16px; }

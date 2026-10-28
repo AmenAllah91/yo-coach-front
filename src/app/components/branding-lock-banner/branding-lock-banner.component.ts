@@ -21,8 +21,8 @@ import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
     </div>
   `,
   styles: [`
-    .branding-lock { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 16px; padding: 12px 14px; border: 1px solid #f3d9a4; border-radius: 12px; background: #fff8eb; color: #7a4b00; }
-    .lock-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 50%; background: #fdecc8; }
+    .branding-lock { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 16px; padding: 12px 14px; border: 1px solid light-dark(#f3d9a4, #594414); border-radius: 12px; background: light-dark(#fff8eb, #362c17); color: light-dark(#7a4b00, #dda86c); }
+    .lock-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 50%; background: light-dark(#fdecc8, #3e2e04); }
     .lock-icon i-feather { width: 18px; height: 18px; }
     .lock-copy { display: flex; flex-direction: column; gap: 2px; flex: 1 1 220px; min-width: 0; font-size: 13px; line-height: 1.4; }
     .lock-copy strong { font-size: 14px; }
