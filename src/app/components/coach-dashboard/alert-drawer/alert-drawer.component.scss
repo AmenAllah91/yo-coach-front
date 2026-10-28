@@ -4,7 +4,7 @@
 
 .drawer-backdrop {
   position: fixed; inset: 0; z-index: 1040;
-  background: rgba(15, 23, 42, .32);
+  background: light-dark(rgba(15, 23, 42, .32), rgba(255, 255, 255, 0.288));
   animation: fade-in .15s ease-out;
 }
 
@@ -12,7 +12,7 @@
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 1041;
   width: min(460px, 100vw);
   display: flex; flex-direction: column;
-  background: #fff; box-shadow: -12px 0 32px rgba(15, 23, 42, .14);
+  background: light-dark(#fff, #1d2125); box-shadow: -12px 0 32px rgba(15, 23, 42, .14);
   transform: translateX(105%); visibility: hidden;
   transition: transform .22s ease, visibility .22s;
   outline: none;
@@ -31,7 +31,7 @@
   i-feather { width: 17px; height: 17px; }
   &[data-type='EXPIRED_PROGRAMS'], &[data-type='CHECK_INS_OVERDUE'] { background: $danger-soft; color: $danger; }
   &[data-type='ENDING_SOON'] { background: $warn-soft; color: $warn; }
-  &[data-type='INACTIVE'] { background: #f1f5f9; color: $muted; }
+  &[data-type='INACTIVE'] { background: light-dark(#f1f5f9, #15181d); color: $muted; }
   &[data-type='NO_NUTRITION'] { background: $success-soft; color: $success; }
   &[data-type='CHECK_INS_TO_REVIEW'] { background: $violet-soft; color: $violet; }
 }
@@ -43,14 +43,14 @@
 }
 
 .drawer-count {
-  flex: none; min-width: 26px; padding: 3px 8px; border-radius: 999px; background: #f1f5f9;
+  flex: none; min-width: 26px; padding: 3px 8px; border-radius: 999px; background: light-dark(#f1f5f9, #15181d);
   font-size: 12px; font-weight: 650; color: $ink-soft; text-align: center; font-variant-numeric: tabular-nums;
 }
 
 .icon-btn {
   flex: none; width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center;
   color: $muted; cursor: pointer;
-  &:hover { background: #f1f5f9; color: $ink; }
+  &:hover { background: light-dark(#f1f5f9, #15181d); color: $ink; }
   i-feather { width: 17px; height: 17px; }
 }
 
@@ -96,14 +96,14 @@
 .btn {
   display: inline-flex; align-items: center; gap: 5px;
   height: 28px; padding: 0 10px; border: 1px solid $line-strong; border-radius: 6px;
-  background: #fff; color: $ink; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
-  &:hover:not(:disabled) { background: #f8fafc; border-color: #94a3b8; }
+  background: light-dark(#fff, #1d2125); color: $ink; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  &:hover:not(:disabled) { background: light-dark(#f8fafc, #171a1f); border-color: light-dark(#94a3b8, #495669); }
   &:disabled { opacity: .6; cursor: wait; }
   i-feather { width: 13px; height: 13px; }
 
   &--primary { @include soft-action; height: 28px; }
 
-  &--ghost { border-color: transparent; color: $muted; padding: 0 7px; &:hover:not(:disabled) { background: #f1f5f9; border-color: transparent; } }
+  &--ghost { border-color: transparent; color: $muted; padding: 0 7px; &:hover:not(:disabled) { background: light-dark(#f1f5f9, #15181d); border-color: transparent; } }
 }
 
 .load-more {

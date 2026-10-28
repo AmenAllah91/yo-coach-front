@@ -1,7 +1,7 @@
 @import './admin-coaches.component.scss';
 .health-heading {display:flex;align-items:center;gap:12px;margin-bottom:20px;h2{margin:0;font-size:20px;}button{margin-left:auto;}}
-.health-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;>div{padding:16px;background:white;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;}small{margin:0 0 10px;}}
-.health-badge{display:inline-block;border-radius:5px;padding:5px 8px;font-size:11px;background:#f1f5f9;color:#64748b;&[data-health='HEALTHY']{background:#ecfdf5;color:#047857;}&[data-health='WARNING']{background:#fff8e6;color:#876219;}&[data-health='ERROR']{background:#fff0ee;color:#a6352c;}}
+.health-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;>div{padding:16px;background:light-dark(white, #1d2125);border:1px solid light-dark(#e2e8f0, #34393f);border-radius:10px;font-size:13px;}small{margin:0 0 10px;}}
+.health-badge{display:inline-block;border-radius:5px;padding:5px 8px;font-size:11px;background:light-dark(#f1f5f9, #15181d);color:light-dark(#64748b, #a5abb4);&[data-health='HEALTHY']{background:light-dark(#ecfdf5, #173429);color:light-dark(#047857, #69c6a1);}&[data-health='WARNING']{background:light-dark(#fff8e6, #372c0c);color:light-dark(#876219, #d1a965);}&[data-health='ERROR']{background:light-dark(#fff0ee, #3e2826);color:light-dark(#a6352c, #ff8b7d);}}
 .attention{h3{font-size:15px;}ul{margin:0;padding-left:20px;}li{margin:8px 0;}}
 .client-count{font-size:28px;font-weight:600;}
 .health-heading { flex-wrap: wrap; }

@@ -1,6 +1,7 @@
 import {
   Component, OnInit, AfterViewChecked,
-  ViewChild, ElementRef, HostListener, OnDestroy, Input, OnChanges, SimpleChanges, forwardRef, NgZone
+  ViewChild, ElementRef, HostListener, OnDestroy, Input, OnChanges, SimpleChanges, forwardRef, NgZone,
+  Output, EventEmitter, HostBinding
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -57,6 +58,16 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   @Input() embeddedCoachId = '';
   /** Coach "client view" preview: the conversation as the client sees it, read only, without the coach tools. */
   @Input() clientPreview = false;
+  /**
+   * Header chat panel: the same chat in a narrow floating card, one column at a time (list, then conversation),
+   * with its own bar (open the full page, close).
+   */
+  @HostBinding('class.chat-host--panel')
+  @Input() panelMode = false;
+  /** Panel opened on a conversation (a message notification): opened once the list is loaded. */
+  @Input() panelConversationId: string | null = null;
+  @Output() panelClosed = new EventEmitter<void>();
+  @Output() panelExpanded = new EventEmitter<Conversation | null>();
 
   /** Message written by the person whose view is shown (the client in the preview). */
   isOwnMessage(message: { senderId?: string } | null | undefined): boolean {
@@ -323,7 +334,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
       this.filteredConversationsCache = known.conversations;
       this.allClients = known.contacts;
       this.subscribeToAllConversations(known.conversations);
-      if (!this.openRequestedConversation()) {
+      if (!this.openPanelConversation() && !this.openRequestedConversation()) {
         this.openExpandedConversation();
         this.openDefaultClientConversation();
       }
@@ -335,7 +346,9 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
     }).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.enrichConversationsInBackground(); // also adds the people missing from the contacts
       this.tryOpenEmbeddedConversation();
-      if (known) return; // already opened from the last list
+      if (known && !this.panelConversationId) return; // already opened from the last list
+      if (this.openPanelConversation()) return;
+      if (known) return;
       if (this.openRequestedConversation()) return;
       this.openExpandedConversation();
       this.openDefaultClientConversation();
@@ -499,7 +512,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   @HostListener('window:resize')
   onResize(): void { this.checkMobile(); }
 
-  private checkMobile(): void { this.isMobile = window.innerWidth < 768; }
+  private checkMobile(): void { this.isMobile = this.panelMode || window.innerWidth < 768; }
 
   private scrollToBottom(): void {
     try {
@@ -732,8 +745,18 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
    * Links of the coach dashboard: ?conversationId= opens that conversation, ?clientId= the existing private
    * conversation with that client (or starts it). The parameters are then removed from the address.
    */
+  /** The conversation the header panel was opened on, once it is in the list (then forgotten). */
+  private openPanelConversation(): boolean {
+    if (!this.panelMode || !this.panelConversationId) return false;
+    const target = this.conversations.find((conv) => conv.id === this.panelConversationId);
+    if (!target) return false;
+    this.panelConversationId = null;
+    this.selectConversation(target);
+    return true;
+  }
+
   private openRequestedConversation(): boolean {
-    if (this.embeddedMode) return false;
+    if (this.embeddedMode || this.panelMode) return false;
     const tree = this.router.parseUrl(this.router.url);
     const conversationId = tree.queryParams['conversationId'];
     const clientId = tree.queryParams['clientId'];
@@ -757,7 +780,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   }
 
   private openExpandedConversation(): void {
-    if (this.embeddedMode) return;
+    if (this.embeddedMode || this.panelMode) return;
 
     this.chatService.selectedConversation$
       .pipe(take(1), takeUntil(this.destroy$))
@@ -1427,7 +1450,7 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   /** Text prepared by the link that opened the chat (a check-in's "Reply"): put in the field of the first conversation opened. */
   private pendingDraft: string | null = null;
 
-  get clientLayout(): boolean { return this.isClientUser && !this.embeddedMode; }
+  get clientLayout(): boolean { return this.isClientUser && !this.embeddedMode && !this.panelMode; }
   private get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
   ct(en: string, fr: string): string { return this.fr ? fr : en; }
 

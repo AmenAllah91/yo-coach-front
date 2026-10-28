@@ -6,10 +6,10 @@
  */
 .np-foods {
   container-type: inline-size;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 }
 
 .np-foods + .np-center {
@@ -28,9 +28,9 @@
 .np-foods__head {
   padding-top: 9px;
   padding-bottom: 9px;
-  border-bottom: 1px solid #e6e9ee;
-  color: #64748b;
-  background: #f8fafc;
+  border-bottom: 1px solid light-dark(#e6e9ee, #34383e);
+  color: light-dark(#64748b, #a5abb4);
+  background: light-dark(#f8fafc, #171a1f);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -46,14 +46,14 @@
 }
 
 .np-foods__row {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid light-dark(#f1f5f9, #31363b);
   transition: background-color 0.15s ease;
 }
 
 /* Row messages (meal editor) and an extra block under a row (new unit form). */
 .np-foods__error {
   grid-column: 2 / -1;
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
   font-size: 12px;
   font-weight: 600;
 }
@@ -64,8 +64,8 @@
 
 .np-foods__extra {
   padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-bottom: 1px solid light-dark(#f1f5f9, #31363b);
+  background: light-dark(#f8fafc, #171a1f);
 }
 
 .np-foods__row:last-child {
@@ -73,7 +73,7 @@
 }
 
 .np-foods__row:hover {
-  background: #f8fbfd;
+  background: light-dark(#f8fbfd, #171b1f);
 }
 
 .np-foods__thumb {
@@ -83,10 +83,10 @@
   height: 40px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #dce8f2;
+  border: 1px solid light-dark(#dce8f2, #303a42);
   border-radius: 8px;
   color: #44b4df;
-  background: #eef8fc;
+  background: light-dark(#eef8fc, #131a1d);
   font-size: 15px;
   font-weight: 800;
 }
@@ -97,13 +97,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 }
 
 .np-foods__name {
   min-width: 0;
   overflow: hidden;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -120,14 +120,14 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .np-foods__qty b {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 700;
 }
@@ -137,10 +137,10 @@
   width: 58px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid #d8dde6;
+  border: 1px solid light-dark(#d8dde6, #373b42);
   border-radius: 8px;
-  color: #0f172a;
-  background: #fff;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#fff, #1d2125);
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -160,13 +160,13 @@
   font-weight: 600;
   appearance: none;
   -moz-appearance: none;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 9l6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 9px center;
+  background: light-dark(#fff, #1d2125) url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 9l6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 9px center;
   text-overflow: ellipsis;
   cursor: pointer;
 }
 
 .np-foods__times {
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   font-size: 12px;
   font-weight: 700;
 }
@@ -179,7 +179,7 @@
 
 .np-foods__qty input:hover,
 .np-foods__qty select:hover {
-  border-color: #b9c6d3;
+  border-color: light-dark(#b9c6d3, #39424b);
 }
 
 .np-foods__qty input:focus,
@@ -190,14 +190,14 @@
 }
 
 .np-foods__macro {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   white-space: nowrap;
 }
 
 .np-foods__macro b {
   margin-right: 2px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 600;
 }
@@ -208,7 +208,7 @@
 }
 
 .np-foods__kcal {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   text-align: right;
   white-space: nowrap;
@@ -216,7 +216,7 @@
 
 .np-foods__kcal b {
   margin-right: 2px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 800;
 }
@@ -229,7 +229,7 @@
   place-items: center;
   border: 0;
   border-radius: 8px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   background: transparent;
   cursor: pointer;
   transition: color 0.15s ease, background-color 0.15s ease;
@@ -237,8 +237,8 @@
 
 .np-foods__remove:hover,
 .np-foods__remove:focus-visible {
-  color: #ef4444;
-  background: #fef2f2;
+  color: light-dark(#ef4444, #ff7a72);
+  background: light-dark(#fef2f2, #3c2829);
   outline: none;
 }
 
@@ -324,7 +324,7 @@
     gap: 4px;
     padding: 4px 8px;
     border-radius: 999px;
-    background: #f1f5f9;
+    background: light-dark(#f1f5f9, #15181d);
     font-size: 11px;
   }
 
@@ -335,7 +335,7 @@
 
   .np-foods__macro i {
     display: inline;
-    color: #64748b;
+    color: light-dark(#64748b, #a5abb4);
     font-weight: 600;
   }
 

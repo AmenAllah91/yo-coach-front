@@ -27,7 +27,7 @@
   max-height: calc(100vh - 48px);
   overflow: hidden;
   border-radius: 16px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
 }
 
@@ -44,13 +44,13 @@ svg {
   align-items: center;
   gap: 10px;
   padding: 20px 24px;
-  border-bottom: 1px solid #e6e9ee;
+  border-bottom: 1px solid light-dark(#e6e9ee, #34383e);
 }
 
 .afm__head h3 {
   flex: 1 1 auto;
   margin: 0;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 22px;
   font-weight: 700;
 }
@@ -63,17 +63,17 @@ svg {
   height: 38px;
   padding: 0;
   place-items: center;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 10px;
-  color: #64748b;
-  background: #fff;
+  color: light-dark(#64748b, #a5abb4);
+  background: light-dark(#fff, #1d2125);
   cursor: pointer;
 }
 
 .afm__back:hover,
 .afm__close:hover {
-  color: #0f172a;
-  background: #f1f5f9;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#f1f5f9, #15181d);
 }
 
 .afm__back svg,
@@ -94,9 +94,9 @@ svg {
   gap: 10px;
   height: 44px;
   padding: 0 14px;
-  border: 1px solid #d8dde6;
+  border: 1px solid light-dark(#d8dde6, #373b42);
   border-radius: 10px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -116,14 +116,14 @@ svg {
   min-width: 0;
   border: 0;
   outline: none;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   background: transparent;
   font-size: 15px;
 }
 
 .afm__section {
   margin: 18px 0 10px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 15px;
   font-weight: 700;
 }
@@ -142,10 +142,10 @@ svg {
   gap: 12px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 12px;
   color: inherit;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -154,7 +154,7 @@ svg {
 
 .afm__food:hover:not(:disabled) {
   border-color: #44b4df;
-  background: #f0f9fd;
+  background: light-dark(#f0f9fd, #141a1d);
 }
 
 .afm__food:focus-visible {
@@ -175,10 +175,10 @@ svg {
   height: 42px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #dce8f2;
+  border: 1px solid light-dark(#dce8f2, #303a42);
   border-radius: 10px;
   color: #44b4df;
-  background: #eef8fc;
+  background: light-dark(#eef8fc, #131a1d);
   font-size: 16px;
   font-weight: 800;
 }
@@ -189,7 +189,7 @@ svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 }
 
 .afm__food-copy {
@@ -201,7 +201,7 @@ svg {
 
 .afm__food-copy strong {
   overflow: hidden;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 15px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -210,7 +210,7 @@ svg {
 
 .afm__food-copy small {
   overflow: hidden;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -221,8 +221,8 @@ svg {
   margin-left: 6px;
   padding: 2px 7px;
   border-radius: 999px;
-  color: #1f8fbb;
-  background: #e3f4fb;
+  color: light-dark(#1f8fbb, #52b7e5);
+  background: light-dark(#e3f4fb, #16343f);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -231,15 +231,15 @@ svg {
 }
 
 .afm__badge--muted {
-  color: #64748b;
-  background: #f1f5f9;
+  color: light-dark(#64748b, #a5abb4);
+  background: light-dark(#f1f5f9, #15181d);
 }
 
 .afm__chevron {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
 }
 
 .afm__state {
@@ -248,16 +248,16 @@ svg {
   justify-content: center;
   gap: 10px;
   padding: 24px 12px;
-  border: 1px dashed #d8dde6;
+  border: 1px dashed light-dark(#d8dde6, #373b42);
   border-radius: 12px;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 13px;
 }
 
 .afm__spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #cfe9f4;
+  border: 2px solid light-dark(#cfe9f4, #2e3b41);
   border-top-color: #44b4df;
   border-radius: 50%;
   animation: afm-spin 0.8s linear infinite;
@@ -284,7 +284,7 @@ svg {
   padding: 0 8px;
   border: 0;
   border-radius: 8px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   background: transparent;
   font: inherit;
   font-weight: 600;
@@ -292,7 +292,7 @@ svg {
 }
 
 .afm__pager button:hover:not(:disabled):not(.active) {
-  background: #f1f5f9;
+  background: light-dark(#f1f5f9, #15181d);
 }
 
 .afm__pager button.active {
@@ -307,7 +307,7 @@ svg {
 
 .afm__pager-gap {
   padding: 0 4px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
 }
 
 .afm__selected {
@@ -318,7 +318,7 @@ svg {
 }
 
 .afm__selected strong {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 16px;
   font-weight: 700;
 }
@@ -337,7 +337,7 @@ svg {
 }
 
 .afm__field span {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 700;
 }
@@ -347,10 +347,10 @@ svg {
   width: 100%;
   height: 46px;
   padding: 0 14px;
-  border: 1px solid #d8dde6;
+  border: 1px solid light-dark(#d8dde6, #373b42);
   border-radius: 10px;
-  color: #0f172a;
-  background: #fff;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#fff, #1d2125);
   font: inherit;
   font-size: 15px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -360,7 +360,7 @@ svg {
   padding-right: 34px;
   appearance: none;
   -moz-appearance: none;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%230f172a%27 stroke-width=%272.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 9l6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 14px center;
+  background: light-dark(#fff, #1d2125) url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%230f172a%27 stroke-width=%272.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 9l6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 14px center;
   cursor: pointer;
 }
 
@@ -373,13 +373,13 @@ svg {
 
 .afm__amount {
   margin: 10px 0 0;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 14px;
 }
 
 .afm__error {
   margin: 10px 0 0;
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
   font-size: 13px;
   font-weight: 600;
 }
@@ -387,14 +387,14 @@ svg {
 .afm__serving-form {
   margin-top: 14px;
   padding: 14px;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 12px;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 }
 
 .afm__serving-form > p:first-child {
   margin: 0 0 10px;
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 700;
 }
@@ -409,13 +409,13 @@ svg {
   display: grid;
   gap: 6px;
   padding: 12px 8px;
-  border: 1px solid #e6e9ee;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
   border-radius: 12px;
   text-align: center;
 }
 
 .afm__macros span {
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -423,14 +423,14 @@ svg {
 }
 
 .afm__macros strong {
-  color: #0f172a;
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 16px;
   font-weight: 700;
 }
 
 .afm__foot {
   padding: 16px 24px;
-  border-top: 1px solid #e6e9ee;
+  border-top: 1px solid light-dark(#e6e9ee, #34383e);
 }
 
 .afm__foot--two {
@@ -455,13 +455,13 @@ svg {
 }
 
 .afm__btn--ghost {
-  border-color: #e6e9ee;
-  color: #0f172a;
-  background: #f1f5f9;
+  border-color: light-dark(#e6e9ee, #34383e);
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#f1f5f9, #15181d);
 }
 
 .afm__btn--ghost:hover {
-  background: #e8edf3;
+  background: light-dark(#e8edf3, #292d31);
 }
 
 .afm__btn--primary {

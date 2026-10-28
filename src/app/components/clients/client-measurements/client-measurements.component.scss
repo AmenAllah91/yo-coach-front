@@ -72,7 +72,7 @@
   border: 0;
   border-radius: 16px;
   background: var(--yc-text-primary);
-  color: #fff !important;
+  color: var(--yc-surface) !important;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -156,13 +156,13 @@
     padding: 4px 8px;
     border-radius: 7px;
     background: rgba(22, 163, 74, 0.1);
-    color: #16a34a;
+    color: light-dark(#16a34a, #49c66b);
     font-size: 12px;
     font-weight: 600;
 
     &.up {
       background: rgba(217, 119, 6, 0.1);
-      color: #d97706;
+      color: light-dark(#d97706, #ee8a2c);
     }
   }
 }
@@ -171,13 +171,13 @@
   height: 170px;
   margin-top: 10px;
   border-radius: 12px;
-  background: #f7f9fb;
+  background: light-dark(#f7f9fb, #171a1e);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   font-size: 14px;
 
   i-feather {
@@ -203,7 +203,7 @@
     justify-content: space-between;
     font-size: 10.5px;
     font-weight: 500;
-    color: #94a3b8;
+    color: light-dark(#94a3b8, #8c919a);
   }
 
   &__plot {
@@ -231,13 +231,13 @@
 
     i {
       height: 1px;
-      background: #edf0f4;
+      background: light-dark(#edf0f4, #272b2f);
     }
   }
 
   &__line {
     fill: none;
-    stroke: #0c86c8;
+    stroke: light-dark(#0c86c8, #4fb5fa);
     stroke-width: 2.2;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -256,7 +256,7 @@
     width: 6.4px;
     height: 6.4px;
     border-radius: 50%;
-    background: #fff;
+    background: light-dark(#fff, #1d2125);
     border: 1.6px solid #0c86c8;
     transform: translate(-50%, -50%);
 
@@ -264,7 +264,7 @@
       width: 10px;
       height: 10px;
       background: #0c86c8;
-      border: 2px solid #fff;
+      border: 2px solid light-dark(#fff, #2f3339);
       box-shadow: 0 0 0 1px #0c86c8;
     }
   }
@@ -275,7 +275,7 @@
     transform: translateY(-115%);
     padding: 3px 8px;
     border-radius: 8px;
-    background: #fff;
+    background: light-dark(#fff, #1d2125);
     font-size: 11px;
     font-weight: 700;
     color: #22c55e;
@@ -289,7 +289,7 @@
     display: flex;
     justify-content: space-between;
     font-size: 10.5px;
-    color: #94a3b8;
+    color: light-dark(#94a3b8, #8c919a);
   }
 }
 
@@ -323,11 +323,11 @@
     color: var(--yc-text-secondary);
 
     &.down {
-      color: #16a34a;
+      color: light-dark(#16a34a, #49c66b);
     }
 
     &.up {
-      color: #d97706;
+      color: light-dark(#d97706, #ee8a2c);
     }
   }
 
@@ -424,7 +424,7 @@
   &__select,
   &__date,
   &__note {
-    background: #f6f8fa;
+    background: light-dark(#f6f8fa, #161a1e);
     border-color: var(--yc-hairline);
     border-radius: 14px;
   }

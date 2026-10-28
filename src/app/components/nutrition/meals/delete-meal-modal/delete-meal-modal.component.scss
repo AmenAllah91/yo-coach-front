@@ -18,7 +18,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: light-dark(white, #1d2125);
   border-radius: 8px;
   max-width: 500px;
   width: 90vw;
@@ -38,13 +38,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid light-dark(#e9ecef, #33383e);
 
   h2 {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: #212529;
+    color: light-dark(#212529, #e5eaf0);
   }
 
   .close-btn {
@@ -53,11 +53,11 @@
     padding: 8px;
     cursor: pointer;
     border-radius: 4px;
-    color: #6c757d;
+    color: light-dark(#6c757d, #a3abb2);
 
     &:hover {
-      background: #f8f9fa;
-      color: #495057;
+      background: light-dark(#f8f9fa, #171a1e);
+      color: light-dark(#495057, #c2cad2);
     }
 
     i-feather {
@@ -74,13 +74,13 @@
   .delete-icon {
     width: 64px;
     height: 64px;
-    background: #fee;
+    background: light-dark(#fee, #402728);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 16px;
-    color: #dc3545;
+    color: light-dark(#dc3545, #ff7e7f);
 
     i-feather {
       width: 24px;
@@ -92,11 +92,11 @@
     margin: 0 0 12px 0;
     font-size: 18px;
     font-weight: 600;
-    color: #212529;
+    color: light-dark(#212529, #e5eaf0);
   }
 
   p {
-    color: #6c757d;
+    color: light-dark(#6c757d, #a3abb2);
     font-size: 14px;
     line-height: 1.5;
     margin: 0;
@@ -105,7 +105,7 @@
 
 .modal-footer {
   padding: 16px 24px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid light-dark(#e9ecef, #33383e);
   display: flex;
   justify-content: flex-end;
   gap: 12px;

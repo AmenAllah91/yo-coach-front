@@ -14,7 +14,7 @@
 }
 
 .assign-modal {
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   width: 100%;
   max-width: 580px;
   border-radius: 12px;
@@ -31,7 +31,7 @@
 
 .assign-modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -40,20 +40,20 @@
 .assign-modal-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   margin: 0;
 }
 
 .assign-modal-subtitle {
   margin-top: 0.2rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .assign-modal-close {
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   cursor: pointer;
   padding: 0;
   display: inline-flex;
@@ -67,13 +67,13 @@
 }
 
 .assign-modal-close:hover {
-  color: #4b5563;
+  color: light-dark(#4b5563, #bfc5cd);
 }
 
 .select-program-search {
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#f9fafb, #171b1f);
 }
 
 .select-search-input {
@@ -81,13 +81,13 @@
   align-items: center;
   gap: 0.5rem;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
+  background-color: light-dark(#ffffff, #1d2125);
   padding: 0.5rem 0.75rem;
 }
 
 .select-search-input i {
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   font-size: 0.875rem;
 }
 
@@ -96,7 +96,7 @@
   outline: none;
   width: 100%;
   font-size: 0.875rem;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   background: transparent;
 }
 
@@ -108,7 +108,7 @@
 
 .select-program-card {
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid light-dark(#e5e7eb, #34393f);
   padding: 1rem;
   margin-bottom: 0.75rem;
   cursor: pointer;
@@ -131,7 +131,7 @@
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  border: 2px solid #d1d5db;
+  border: 2px solid light-dark(#d1d5db, #3a3d42);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,7 +148,7 @@
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background-color: #ffffff;
+  background-color: light-dark(#ffffff, #1d2125);
 }
 
 .select-program-text {
@@ -166,7 +166,7 @@
 .select-program-name {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
 }
 
 .select-program-meta {
@@ -174,7 +174,7 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: light-dark(#6b7280, #a7abb4);
 }
 
 .select-program-meta span i {
@@ -185,19 +185,19 @@
   padding: 1.5rem 0.25rem;
   text-align: center;
   font-size: 0.9rem;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
 }
 
 .select-program-schedule {
   margin-top: 1.25rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
   padding-top: 1.25rem;
 }
 
 .select-program-schedule h4 {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   margin-bottom: 0.75rem;
 }
 
@@ -211,24 +211,24 @@
   display: block;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   margin-bottom: 0.35rem;
 }
 
 .schedule-input input {
   width: 100%;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
   padding: 0.45rem 0.65rem;
   font-size: 0.85rem;
-  color: #111827;
+  color: light-dark(#111827, #e8ecf6);
   box-sizing: border-box;
 }
 
 .select-program-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-top: 1px solid light-dark(#e5e7eb, #34393f);
+  background-color: light-dark(#f9fafb, #171b1f);
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -236,17 +236,17 @@
 
 .btn-secondary {
   border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
+  border: 1px solid light-dark(#d1d5db, #3a3d42);
+  background-color: light-dark(#ffffff, #1d2125);
   padding: 0.45rem 1.25rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
   cursor: pointer;
 }
 
 .btn-secondary:hover {
-  background-color: #f3f4f6;
+  background-color: light-dark(#f3f4f6, #15181c);
 }
 
 .btn-primary {
@@ -265,13 +265,13 @@
 }
 
 .btn-primary:disabled {
-  background-color: #d1d5db;
+  background-color: light-dark(#d1d5db, #36393e);
   cursor: not-allowed;
 }
 .select-program-schedule {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.088));
 }
 
 .schedule-toggle {
@@ -302,9 +302,9 @@
 .date-panel {
   margin: 12px 16px 0;
   padding: 12px;
-  border: 1px solid rgba(0,0,0,.08);
+  border: 1px solid light-dark(rgba(0,0,0,.08), rgba(255, 255, 255, 0.088));
   border-radius: 10px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 }
 
 .date-panel-title {
@@ -323,7 +323,7 @@
   width: 100%;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid rgba(0,0,0,.12);
+  border: 1px solid light-dark(rgba(0,0,0,.12), rgba(255, 255, 255, 0.132));
   padding: 0 12px;
   outline: none;
 }
@@ -363,18 +363,18 @@
 
 .am-schedule__label {
   font-size: 0.85rem;
-  color: #374151;
+  color: light-dark(#374151, #d1d6df);
 }
 
 .am-checkbox {
   width: 16px;
   height: 16px;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid light-dark(#d1d5db, #3a3d42);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   transition: all 0.15s ease;
 }
 
@@ -400,7 +400,7 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   width: 15px;
   height: 15px;
   pointer-events: none;
@@ -410,14 +410,14 @@
   width: 100%;
   padding: 8px 12px 8px 32px;
   font-size: 0.85rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid light-dark(#e2e8f0, #34393f);
   border-radius: 8px;
-  background: #fafafa;
+  background: light-dark(#fafafa, #171b1f);
   transition: border-color 0.15s, box-shadow 0.15s;
 
   &:focus {
     border-color: #44b4df;
-    background: #fff;
+    background: light-dark(#fff, #1d2125);
     box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.12);
     outline: none;
   }

@@ -8,9 +8,9 @@
   min-height: 100%;
   flex-direction: column;
   gap: 1.5rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid light-dark(#d9e1ea, #343b42);
   border-radius: 8px;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   padding: 1.5rem;
   box-shadow: 0 18px 55px rgba(15, 23, 42, 0.08);
 }
@@ -41,23 +41,23 @@
   padding-right: 5.5rem;
 
   h3 {
-    color: #101828;
+    color: light-dark(#101828, #e7ecf6);
     font-size: 1.35rem;
     font-weight: 800;
     margin: 0 0 0.2rem;
   }
 
   p {
-    color: #667085;
+    color: light-dark(#667085, #a9adb6);
     margin: 0;
   }
 }
 
 .plan-icon {
   align-items: center;
-  background: #fff3e9;
+  background: light-dark(#fff3e9, #3c2a1a);
   border-radius: 8px;
-  color: #e56606;
+  color: light-dark(#e56606, #fe7d30);
   display: flex;
   flex: 0 0 52px;
   height: 52px;
@@ -72,14 +72,14 @@
 }
 
 .plan-description {
-  color: #475467;
+  color: light-dark(#475467, #c0c6ce);
   line-height: 1.65;
   margin: 0;
 }
 
 .plan-price {
   align-items: baseline;
-  color: #101828;
+  color: light-dark(#101828, #e7ecf6);
   display: flex;
   gap: 0.45rem;
 
@@ -90,7 +90,7 @@
   }
 
   small {
-    color: #667085;
+    color: light-dark(#667085, #a9adb6);
     font-weight: 600;
   }
 }
@@ -102,20 +102,20 @@
 }
 
 .plan-info {
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
+  background: light-dark(#f8fafc, #171a1f);
+  border: 1px solid light-dark(#edf2f7, #33363a);
   border-radius: 8px;
   padding: 0.8rem;
 
   span {
-    color: #667085;
+    color: light-dark(#667085, #a9adb6);
     display: block;
     font-size: 0.78rem;
     margin-bottom: 0.25rem;
   }
 
   strong {
-    color: #101828;
+    color: light-dark(#101828, #e7ecf6);
     display: block;
     font-size: 0.95rem;
   }
@@ -132,14 +132,14 @@
 
   li {
     align-items: flex-start;
-    color: #344054;
+    color: light-dark(#344054, #d2d7e0);
     display: flex;
     gap: 0.6rem;
     line-height: 1.45;
   }
 
   mat-icon {
-    color: #16a34a;
+    color: light-dark(#16a34a, #49c66b);
     flex: 0 0 20px;
     font-size: 20px;
     height: 20px;

@@ -4,7 +4,7 @@
     <img src="assets/yocoachlogo.png" alt="Logo" style="height: 105px; margin-bottom: 6px;">
     <h1 style="font-weight: bold;margin: 2rem 0;font-size: 2.1rem;">{{ 'CREATE_ACCOUNT' | translate }}</h1>
     <a href="" (click)="$event.preventDefault(); signIn()" class="d-block mb-4 text-decoration-none">{{ 'ALREADY_HAVE_ACCOUNT' | translate }}
-      <u style="color: #0face4;">{{ 'SIGN_IN' | translate }}</u></a>
+      <u style="color: light-dark(#0face4, #21b3eb);">{{ 'SIGN_IN' | translate }}</u></a>
 
     <div *ngIf="accountExists" class="alert alert-info text-center mt-2">
       {{ 'ACCOUNT_ALREADY_EXISTS_SIGN_IN' | translate }}
@@ -99,7 +99,7 @@
       </button>
     </form>
 
-    <p class="mt-3 text-center" style="font-size: 1.2rem; color: #6c757d;">
+    <p class="mt-3 text-center" style="font-size: 1.2rem; color: light-dark(#6c757d, #a3abb2);">
       {{ 'SIGNUP_AGREEMENT' | translate }}
       <a href="https://yo-coach.app/terms" target="_blank" rel="noopener noreferrer" class="text-decoration-none">{{ 'TERMS_OF_USE' | translate }}</a>
       {{ 'AND' | translate }}

@@ -14,7 +14,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background: white;
+  background: light-dark(white, #1d2125);
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   border-left: 4px solid;
@@ -25,7 +25,7 @@
     border-left-color: #10b981;
     
     .toast-icon {
-      color: #10b981;
+      color: light-dark(#10b981, #24c189);
     }
   }
 
@@ -33,7 +33,7 @@
     border-left-color: #ef4444;
     
     .toast-icon {
-      color: #ef4444;
+      color: light-dark(#ef4444, #ff7a72);
     }
   }
 
@@ -49,7 +49,7 @@
     border-left-color: #3b82f6;
     
     .toast-icon {
-      color: #3b82f6;
+      color: light-dark(#3b82f6, #75a9ff);
     }
   }
 }
@@ -64,13 +64,13 @@
   
   .toast-title {
     font-weight: 600;
-    color: #111827;
+    color: light-dark(#111827, #e8ecf6);
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
   }
   
   .toast-message {
-    color: #6b7280;
+    color: light-dark(#6b7280, #a7abb4);
     font-size: 0.8125rem;
     line-height: 1.4;
   }
@@ -79,15 +79,15 @@
 .toast-close {
   background: none;
   border: none;
-  color: #9ca3af;
+  color: light-dark(#9ca3af, #8c9199);
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
   flex-shrink: 0;
   
   &:hover {
-    color: #6b7280;
-    background: #f3f4f6;
+    color: light-dark(#6b7280, #a7abb4);
+    background: light-dark(#f3f4f6, #15181c);
   }
 }
 

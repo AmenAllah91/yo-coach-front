@@ -1,0 +1,414 @@
+// Light / dark appearance (ThemeModeService). The app styles use light-dark(light, dark), which follows
+// `color-scheme`; this file gives the same dark palette to the libraries, whose CSS only knows light.
+// Palette: page #15181c, surface #1d2125, raised #22272c, border #33393f, text #e8ecef / #acb2b6.
+
+$dk-page: #15181c;
+$dk-surface: #1d2125;
+$dk-raised: #22272c;
+$dk-hover: #2a3036;
+$dk-border: #33393f;
+$dk-text: #e8ecef;
+$dk-muted: #acb2b6;
+$dk-hint: #858a8e;
+$dk-selected: #193545;
+$dk-link: #4fb5fa;
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  // Bootstrap 5.3 (data-bs-theme="dark" is set too): same palette as the app.
+  --bs-body-bg: #{$dk-page};
+  --bs-body-bg-rgb: 21, 24, 28;
+  --bs-body-color: #{$dk-text};
+  --bs-body-color-rgb: 232, 236, 239;
+  --bs-emphasis-color: #f5f7f9;
+  --bs-secondary-color: #{$dk-muted};
+  --bs-tertiary-color: #{$dk-hint};
+  --bs-secondary-bg: #{$dk-raised};
+  --bs-tertiary-bg: #{$dk-surface};
+  --bs-border-color: #{$dk-border};
+  --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
+  --bs-heading-color: inherit;
+  --bs-link-color: #{$dk-link};
+  --bs-link-color-rgb: 79, 181, 250;
+  --bs-link-hover-color: #82cbfc;
+  --bs-modal-bg: #{$dk-surface};
+  --bs-dropdown-bg: #{$dk-raised};
+  --bs-card-bg: #{$dk-surface};
+
+  // Angular Material (MDC tokens of the prebuilt theme).
+  --mdc-dialog-container-color: #{$dk-surface};
+  --mdc-dialog-subhead-color: #{$dk-text};
+  --mdc-dialog-supporting-text-color: #{$dk-muted};
+  --mat-menu-container-color: #{$dk-raised};
+  --mat-menu-item-label-text-color: #{$dk-text};
+  --mat-menu-item-icon-color: #{$dk-muted};
+  --mat-menu-item-hover-state-layer-color: rgba(255, 255, 255, 0.06);
+  --mat-menu-item-focus-state-layer-color: rgba(255, 255, 255, 0.08);
+  --mat-select-panel-background-color: #{$dk-raised};
+  --mat-select-enabled-trigger-text-color: #{$dk-text};
+  --mat-select-placeholder-text-color: #{$dk-hint};
+  --mat-select-enabled-arrow-color: #{$dk-muted};
+  --mat-option-label-text-color: #{$dk-text};
+  --mat-option-hover-state-layer-color: rgba(255, 255, 255, 0.06);
+  --mat-option-focus-state-layer-color: rgba(255, 255, 255, 0.08);
+  --mat-option-selected-state-layer-color: rgba(79, 181, 250, 0.16);
+  --mat-autocomplete-background-color: #{$dk-raised};
+  --mdc-filled-text-field-container-color: #{$dk-raised};
+  --mdc-filled-text-field-input-text-color: #{$dk-text};
+  --mdc-filled-text-field-label-text-color: #{$dk-muted};
+  --mdc-outlined-text-field-input-text-color: #{$dk-text};
+  --mdc-outlined-text-field-label-text-color: #{$dk-muted};
+  --mdc-outlined-text-field-outline-color: #{$dk-border};
+  --mdc-outlined-text-field-hover-outline-color: #{$dk-hint};
+  --mat-datepicker-calendar-container-background-color: #{$dk-raised};
+  --mat-datepicker-calendar-container-text-color: #{$dk-text};
+  --mat-datepicker-calendar-date-text-color: #{$dk-text};
+  --mat-datepicker-calendar-body-label-text-color: #{$dk-muted};
+  --mat-datepicker-calendar-header-text-color: #{$dk-muted};
+  --mat-datepicker-calendar-header-divider-color: #{$dk-border};
+  --mat-datepicker-calendar-period-button-text-color: #{$dk-text};
+  --mat-datepicker-calendar-navigation-button-icon-color: #{$dk-muted};
+  --mat-datepicker-calendar-date-hover-state-background-color: rgba(255, 255, 255, 0.06);
+  --mat-datepicker-calendar-date-today-outline-color: #{$dk-hint};
+  --mat-expansion-container-background-color: #{$dk-surface};
+  --mat-expansion-container-text-color: #{$dk-text};
+  --mat-expansion-header-text-color: #{$dk-text};
+  --mat-expansion-header-indicator-color: #{$dk-muted};
+  --mat-expansion-actions-divider-color: #{$dk-border};
+  --mat-table-background-color: #{$dk-surface};
+  --mat-table-header-headline-color: #{$dk-text};
+  --mat-table-row-item-label-text-color: #{$dk-text};
+  --mat-table-row-item-outline-color: #{$dk-border};
+  --mat-paginator-container-background-color: #{$dk-surface};
+  --mat-paginator-container-text-color: #{$dk-muted};
+  --mat-tab-header-inactive-label-text-color: #{$dk-muted};
+  --mat-tab-header-inactive-hover-label-text-color: #{$dk-text};
+  --mat-stepper-container-color: #{$dk-surface};
+  --mat-stepper-header-label-text-color: #{$dk-muted};
+  --mat-stepper-header-selected-state-label-text-color: #{$dk-text};
+  --mat-stepper-line-color: #{$dk-border};
+  --mat-sidenav-container-background-color: #{$dk-surface};
+  --mat-sidenav-content-background-color: #{$dk-page};
+  --mdc-elevated-card-container-color: #{$dk-surface};
+  --mdc-outlined-card-container-color: #{$dk-surface};
+  --mdc-outlined-card-outline-color: #{$dk-border};
+  --mat-checkbox-label-text-color: #{$dk-text};
+  --mat-radio-label-text-color: #{$dk-text};
+  --mat-slide-toggle-label-text-color: #{$dk-text};
+  --mat-bottom-sheet-container-background-color: #{$dk-surface};
+  --mat-bottom-sheet-container-text-color: #{$dk-text};
+  --mat-standard-button-toggle-background-color: #{$dk-surface};
+  --mat-standard-button-toggle-text-color: #{$dk-text};
+  --mat-standard-button-toggle-divider-color: #{$dk-border};
+  --mat-divider-color: #{$dk-border};
+  --mdc-text-button-label-text-color: #{$dk-text};
+  --mdc-outlined-button-label-text-color: #{$dk-text};
+  --mdc-outlined-button-outline-color: #{$dk-border};
+
+  // FullCalendar.
+  --fc-page-bg-color: #{$dk-surface};
+  --fc-neutral-bg-color: #{$dk-raised};
+  --fc-neutral-text-color: #{$dk-muted};
+  --fc-border-color: #{$dk-border};
+  --fc-list-event-hover-bg-color: #{$dk-hover};
+  --fc-today-bg-color: rgba(79, 181, 250, 0.1);
+  --fc-non-business-color: rgba(255, 255, 255, 0.02);
+
+  // CKEditor 5.
+  --ck-color-base-background: #{$dk-surface};
+  --ck-color-base-foreground: #{$dk-raised};
+  --ck-color-base-border: #{$dk-border};
+  --ck-color-text: #{$dk-text};
+  --ck-color-toolbar-background: #{$dk-raised};
+  --ck-color-toolbar-border: #{$dk-border};
+  --ck-color-button-default-hover-background: #{$dk-hover};
+  --ck-color-button-on-background: #{$dk-hover};
+  --ck-color-button-on-hover-background: #{$dk-border};
+  --ck-color-input-background: #{$dk-surface};
+  --ck-color-input-border: #{$dk-border};
+  --ck-color-dropdown-panel-background: #{$dk-raised};
+  --ck-color-dropdown-panel-border: #{$dk-border};
+  --ck-color-panel-background: #{$dk-raised};
+  --ck-color-panel-border: #{$dk-border};
+  --ck-color-list-background: #{$dk-raised};
+  --ck-color-list-button-hover-background: #{$dk-hover};
+  --ck-color-labeled-field-label-background: #{$dk-raised};
+}
+
+// Short color transition when the user switches (class set for 320 ms by ThemeModeService).
+.yc-theme-switching,
+.yc-theme-switching *,
+.yc-theme-switching *::before,
+.yc-theme-switching *::after {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease, fill 0.2s ease,
+    stroke 0.2s ease, box-shadow 0.25s ease !important;
+}
+
+// The coach's public website (and its preview) keeps its own design whatever the app appearance.
+app-public-website,
+app-public-terms,
+app-public-contact-form,
+app-coach-landing-preview,
+app-coach-landing-preview-page,
+app-landing-page,
+app-plans-landing-page {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  body,
+  .mat-app-background {
+    background-color: $dk-page;
+    color: $dk-text;
+  }
+
+  .mat-typography {
+    color: $dk-text;
+  }
+
+  // Shadows are almost invisible on dark surfaces: a hairline outline keeps the cards apart.
+  .card,
+  .mat-mdc-card {
+    background-color: $dk-surface;
+    border-color: $dk-border;
+  }
+
+  .form-control,
+  .form-select {
+    background-color: $dk-surface;
+    border-color: $dk-border;
+    color: $dk-text;
+
+    &::placeholder {
+      color: $dk-hint;
+    }
+
+    &:disabled,
+    &[readonly] {
+      background-color: $dk-raised;
+    }
+  }
+
+  .dropdown-menu {
+    background-color: $dk-raised;
+    border-color: $dk-border;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+
+  .dropdown-item {
+    color: $dk-text;
+
+    &:hover,
+    &:focus {
+      background-color: $dk-hover;
+      color: $dk-text;
+    }
+  }
+
+  .modal-content {
+    background-color: $dk-surface;
+    border-color: $dk-border;
+    color: $dk-text;
+  }
+
+  .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #{$dk-text};
+    --bs-table-border-color: #{$dk-border};
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.025);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+  }
+
+  .text-dark {
+    color: $dk-text !important;
+  }
+
+  .text-muted {
+    color: $dk-muted !important;
+  }
+
+  .bg-white,
+  .bg-light {
+    background-color: $dk-surface !important;
+  }
+
+  .btn-light {
+    --bs-btn-bg: #{$dk-raised};
+    --bs-btn-border-color: #{$dk-border};
+    --bs-btn-color: #{$dk-text};
+    --bs-btn-hover-bg: #{$dk-hover};
+    --bs-btn-hover-color: #{$dk-text};
+  }
+
+  .btn-outline-secondary {
+    --bs-btn-color: #{$dk-muted};
+    --bs-btn-border-color: #{$dk-border};
+    --bs-btn-hover-bg: #{$dk-hover};
+    --bs-btn-hover-border-color: #{$dk-border};
+    --bs-btn-hover-color: #{$dk-text};
+  }
+
+  // ng-select (default theme).
+  .ng-select .ng-select-container {
+    background-color: $dk-surface;
+    border-color: $dk-border;
+    color: $dk-text;
+  }
+
+  .ng-select.ng-select-opened > .ng-select-container {
+    background: $dk-surface;
+    border-color: $dk-hint;
+  }
+
+  .ng-select .ng-select-container .ng-value-container .ng-placeholder {
+    color: $dk-hint;
+  }
+
+  .ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-value {
+    background-color: $dk-selected;
+    border-color: #24506a;
+    color: $dk-text;
+  }
+
+  .ng-dropdown-panel {
+    background-color: $dk-raised;
+    border-color: $dk-border;
+
+    .ng-dropdown-panel-items .ng-option {
+      background-color: $dk-raised;
+      color: $dk-text;
+
+      &.ng-option-marked {
+        background-color: $dk-hover;
+        color: $dk-text;
+      }
+
+      &.ng-option-selected,
+      &.ng-option-selected.ng-option-marked {
+        background-color: $dk-selected;
+        color: $dk-text;
+      }
+
+      &.ng-option-disabled {
+        color: $dk-hint;
+      }
+    }
+
+    .ng-dropdown-header,
+    .ng-dropdown-footer {
+      border-color: $dk-border;
+    }
+  }
+
+  // ngx-datatable (material theme).
+  .ngx-datatable.material {
+    background: $dk-surface;
+    color: $dk-text;
+
+    .datatable-header,
+    .datatable-footer {
+      border-color: $dk-border;
+      color: $dk-muted;
+    }
+
+    .datatable-header .datatable-header-cell {
+      background-color: $dk-surface;
+      color: $dk-muted;
+    }
+
+    .datatable-body .datatable-body-row {
+      border-color: $dk-border;
+
+      .datatable-body-cell {
+        color: $dk-text;
+      }
+    }
+
+    &:not(.cell-selection) .datatable-body-row:hover,
+    &:not(.cell-selection) .datatable-body-row:hover .datatable-row-group {
+      background-color: $dk-hover;
+    }
+
+    &.striped .datatable-row-odd {
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .datatable-footer .datatable-pager li.disabled a {
+      color: $dk-hint !important;
+    }
+
+    .datatable-footer .datatable-pager a {
+      color: $dk-muted;
+    }
+  }
+
+  // Material overlays without tokens in this version.
+  .mat-mdc-dialog-surface,
+  .mat-mdc-menu-panel,
+  .mat-mdc-select-panel {
+    color: $dk-text;
+  }
+
+  .cdk-overlay-dark-backdrop,
+  .modal-backdrop.show {
+    background-color: #000;
+  }
+
+  // owl date-time picker.
+  .owl-dt-container {
+    background: $dk-raised;
+    color: $dk-text;
+  }
+
+  .owl-dt-calendar-table .owl-dt-calendar-cell-content {
+    color: $dk-text;
+  }
+
+  .owl-dt-control-button,
+  .owl-dt-calendar-control {
+    color: $dk-text;
+  }
+
+  .owl-dt-calendar-table .owl-dt-calendar-header {
+    color: $dk-muted;
+  }
+
+  // Leaflet controls.
+  .leaflet-bar a,
+  .leaflet-control-attribution {
+    background-color: $dk-raised;
+    color: $dk-text;
+    border-color: $dk-border;
+  }
+
+  // Chart.js / ApexCharts tooltips and labels that use the default light box.
+  .apexcharts-tooltip.apexcharts-theme-light {
+    background: $dk-raised;
+    border-color: $dk-border;
+    color: $dk-text;
+
+    .apexcharts-tooltip-title {
+      background: $dk-surface;
+      border-color: $dk-border;
+    }
+  }
+
+  .apexcharts-text,
+  .apexcharts-legend-text {
+    fill: $dk-muted;
+    color: $dk-muted !important;
+  }
+
+  .apexcharts-gridline {
+    stroke: $dk-border;
+  }
+
+  ::selection {
+    background: rgba(79, 181, 250, 0.35);
+  }
+}

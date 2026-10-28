@@ -30,7 +30,7 @@
 }
 .fs-mark {
   flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid $line-strong; display: grid; place-items: center;
-  font-size: 12px; font-weight: 700; color: #1e8e4e;
+  font-size: 12px; font-weight: 700; color: light-dark(#1e8e4e, #5fc582);
   .done & { border-color: #1e8e4e; }
 }
 .fs-text {
@@ -47,7 +47,7 @@
   &:hover { color: $ink-soft; }
 }
 .fs-danger {
-  height: 30px; padding: 0 12px; border: 1px solid #f0c4bb; border-radius: 6px; background: $surface; color: $danger;
+  height: 30px; padding: 0 12px; border: 1px solid light-dark(#f0c4bb, #613d36); border-radius: 6px; background: $surface; color: $danger;
   font-size: 12px; font-weight: 600; cursor: pointer;
   &:disabled { opacity: .6; cursor: default; }
 }

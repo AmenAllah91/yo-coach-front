@@ -52,19 +52,19 @@ import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
     </section>
   `,
   styles: [`
-    :host { display: block; min-height: 100vh; background: #f7f8fb; }
-    .pay-invoice { display: flex; justify-content: center; padding: 48px 16px; box-sizing: border-box; color: #111827; }
-    .card { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 440px; padding: 32px 24px; border: 1px solid #e5e7eb; border-radius: 16px; background: #ffffff; text-align: center; }
+    :host { display: block; min-height: 100vh; background: light-dark(#f7f8fb, #161a1e); }
+    .pay-invoice { display: flex; justify-content: center; padding: 48px 16px; box-sizing: border-box; color: light-dark(#111827, #e8ecf6); }
+    .card { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 440px; padding: 32px 24px; border: 1px solid light-dark(#e5e7eb, #34393f); border-radius: 16px; background: light-dark(#ffffff, #1d2125); text-align: center; }
     h1 { margin: 4px 0 0; font-size: 19px; font-weight: 700; }
-    .label { margin: 8px 0 0; color: #6b7280; font-size: 14px; }
+    .label { margin: 8px 0 0; color: light-dark(#6b7280, #a7abb4); font-size: 14px; }
     .amount { margin: 0; font-size: 28px; font-weight: 800; }
-    .secure { display: flex; align-items: center; gap: 6px; margin: 0; color: #6b7280; font-size: 13px; }
+    .secure { display: flex; align-items: center; gap: 6px; margin: 0; color: light-dark(#6b7280, #a7abb4); font-size: 13px; }
     .secure i-feather { width: 14px; height: 14px; }
-    .icon { width: 44px; height: 44px; color: #d97706; }
+    .icon { width: 44px; height: 44px; color: light-dark(#d97706, #ee8a2c); }
     button { font: inherit; cursor: pointer; }
     .btn-primary { width: 100%; min-height: 44px; margin-top: 8px; border: 0; border-radius: 10px; background: #38ace0; color: #ffffff; font-weight: 700; }
-    .btn-link { border: 0; background: none; color: #4b5563; text-decoration: underline; }
-    .spinner { display: inline-block; width: 36px; height: 36px; border: 4px solid #d9eef9; border-top-color: #39aeef; border-radius: 50%; animation: spin 1s linear infinite; }
+    .btn-link { border: 0; background: none; color: light-dark(#4b5563, #bfc5cd); text-decoration: underline; }
+    .spinner { display: inline-block; width: 36px; height: 36px; border: 4px solid light-dark(#d9eef9, #2d3a40); border-top-color: #39aeef; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   `],
 })

@@ -25,9 +25,9 @@ app-create-and-assign {
     gap: 24px 20px !important;
     padding: 0 24px 28px !important;
     overflow: hidden !important;
-    border: 1px solid #dce3ea !important;
+    border: 1px solid light-dark(#dce3ea, #353a40) !important;
     border-radius: 14px !important;
-    background: #fff !important;
+    background: light-dark(#fff, #1d2125) !important;
     box-shadow: 0 2px 4px rgba(15, 23, 42, .07) !important;
   }
 
@@ -36,7 +36,7 @@ app-create-and-assign {
     min-height: 56px !important;
     margin: 0 -24px !important;
     padding: 0 24px !important;
-    border-bottom: 1px solid #e5eaf0 !important;
+    border-bottom: 1px solid light-dark(#e5eaf0, #34383d) !important;
   }
 
   .np-root:not(.settings-collapsed) .np-card--settings > .np-plan-title {
@@ -86,7 +86,7 @@ app-create-and-assign {
 
   .np-root:not(.settings-collapsed) .np-label,
   .np-root:not(.settings-collapsed) .program-schedule-label {
-    color: #15243a !important;
+    color: light-dark(#15243a, #e4eaf3) !important;
     font-size: 16px !important;
     font-weight: 600 !important;
     line-height: 22px !important;
@@ -96,10 +96,10 @@ app-create-and-assign {
   .np-root:not(.settings-collapsed) .program-schedule-input {
     width: 100% !important;
     min-height: 52px !important;
-    border: 1px solid #cbd6e2 !important;
+    border: 1px solid light-dark(#cbd6e2, #353e47) !important;
     border-radius: 9px !important;
-    color: #102038 !important;
-    background-color: #fff !important;
+    color: light-dark(#102038, #e5ebf4) !important;
+    background-color: light-dark(#fff, #1d2125) !important;
     box-shadow: none !important;
     font-size: 16px !important;
     box-sizing: border-box !important;
@@ -119,9 +119,9 @@ app-create-and-assign {
   width: var(--exercise-panel-width) !important;
   max-width: calc(100vw - 32px) !important;
   overflow: hidden !important;
-  border: 1px solid #dce3ea !important;
+  border: 1px solid light-dark(#dce3ea, #353a40) !important;
   border-radius: 14px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: 0 8px 30px rgba(15, 23, 42, .08) !important;
 }
 
@@ -134,8 +134,8 @@ app-create-and-assign {
   align-items: flex-start !important;
   justify-content: space-between !important;
   padding: 22px 20px 18px !important;
-  border-bottom: 1px solid #e5eaf0 !important;
-  background: #fff !important;
+  border-bottom: 1px solid light-dark(#e5eaf0, #34383d) !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-sizing: border-box !important;
 }
 
@@ -148,7 +148,7 @@ app-create-and-assign {
 
 .wkdrawer__title {
   margin: 0 !important;
-  color: #142033 !important;
+  color: light-dark(#142033, #e5ebf4) !important;
   font-size: 20px !important;
   font-weight: 650 !important;
   line-height: 26px !important;
@@ -156,7 +156,7 @@ app-create-and-assign {
 
 .wkdrawer__count {
   margin: 0 !important;
-  color: #6b7d95 !important;
+  color: light-dark(#6b7d95, #9ea4ad) !important;
   font-size: 14px !important;
   font-weight: 400 !important;
   line-height: 20px !important;
@@ -172,12 +172,12 @@ app-create-and-assign {
   border: 0 !important;
   border-radius: 8px !important;
   background: transparent !important;
-  color: #94a3b8 !important;
+  color: light-dark(#94a3b8, #8c919a) !important;
   font-size: 19px !important;
 }
 
 .wkdrawer__close:hover {
-  background: #f1f5f9 !important;
+  background: light-dark(#f1f5f9, #15181d) !important;
 }
 
 .wkdrawer__body {
@@ -199,7 +199,7 @@ app-create-and-assign {
   left: 14px !important;
   width: 19px !important;
   height: 19px !important;
-  color: #91a3b8 !important;
+  color: light-dark(#91a3b8, #8b929a) !important;
 }
 
 .wkinput.wkinput--search {
@@ -207,10 +207,10 @@ app-create-and-assign {
   height: 52px !important;
   min-height: 52px !important;
   padding: 0 14px 0 44px !important;
-  border: 1px solid #cbd6e2 !important;
+  border: 1px solid light-dark(#cbd6e2, #353e47) !important;
   border-radius: 9px !important;
-  color: #24364d !important;
-  background: #fff !important;
+  color: light-dark(#24364d, #dbe1ea) !important;
+  background: light-dark(#fff, #1d2125) !important;
   font-size: 15px !important;
   box-sizing: border-box !important;
 }
@@ -228,10 +228,10 @@ app-create-and-assign {
   height: 44px !important;
   min-height: 44px !important;
   padding: 0 32px 0 14px !important;
-  border: 1px solid #cbd6e2 !important;
+  border: 1px solid light-dark(#cbd6e2, #353e47) !important;
   border-radius: 9px !important;
-  color: #42546b !important;
-  background: #fff !important;
+  color: light-dark(#42546b, #c0c6cf) !important;
+  background: light-dark(#fff, #1d2125) !important;
   font-size: 14px !important;
   box-sizing: border-box !important;
 }
@@ -256,19 +256,19 @@ app-create-and-assign {
   gap: 14px !important;
   margin: 0 !important;
   padding: 14px 20px !important;
-  border-bottom: 1px solid #edf1f5 !important;
+  border-bottom: 1px solid light-dark(#edf1f5, #32373c) !important;
   border-radius: 0 !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-sizing: border-box !important;
 }
 
 .wkdrawer__item:hover {
-  background: #f8fafc !important;
+  background: light-dark(#f8fafc, #171a1f) !important;
 }
 
 .wkdrawer__item.is-added,
 .wkdrawer__item.is-added:hover {
-  background: #f0fbf6 !important;
+  background: light-dark(#f0fbf6, #1e322a) !important;
 }
 
 .wkdrawer__thumb {
@@ -281,7 +281,7 @@ app-create-and-assign {
   place-items: center;
   overflow: hidden !important;
   border-radius: 9px !important;
-  background: #eaf1f5 !important;
+  background: light-dark(#eaf1f5, #262b2e) !important;
 }
 
 .wkdrawer__thumb img {
@@ -306,7 +306,7 @@ app-create-and-assign {
 
 .wkdrawer__name {
   overflow: hidden !important;
-  color: #172235 !important;
+  color: light-dark(#172235, #e5ebf4) !important;
   font-size: 16px !important;
   font-weight: 600 !important;
   line-height: 22px !important;
@@ -317,7 +317,7 @@ app-create-and-assign {
 .wkdrawer__sub {
   overflow: hidden !important;
   margin-top: 2px !important;
-  color: #657892 !important;
+  color: light-dark(#657892, #a2a8b1) !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   line-height: 18px !important;
@@ -333,10 +333,10 @@ app-create-and-assign {
   flex: 0 0 38px !important;
   place-items: center;
   padding: 0 !important;
-  border: 1px solid #d9e2eb !important;
+  border: 1px solid light-dark(#d9e2eb, #343b42) !important;
   border-radius: 8px !important;
-  background: #fff !important;
-  color: #079dd3 !important;
+  background: light-dark(#fff, #1d2125) !important;
+  color: light-dark(#079dd3, #37b5ec) !important;
   box-shadow: none !important;
   font-size: 22px !important;
   font-weight: 400 !important;
@@ -349,10 +349,10 @@ app-create-and-assign {
   align-items: center !important;
   gap: 6px !important;
   padding: 0 11px !important;
-  border: 1px solid #9ce7c2 !important;
+  border: 1px solid light-dark(#9ce7c2, #1d533c) !important;
   border-radius: 8px !important;
-  background: #fff !important;
-  color: #159666 !important;
+  background: light-dark(#fff, #1d2125) !important;
+  color: light-dark(#159666, #53c491) !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   white-space: nowrap !important;
@@ -435,18 +435,18 @@ app-create-and-assign .np-root {
   margin: 0 !important;
   padding: 0 14px 12px !important;
   overflow: visible !important;
-  border: 1px solid #d8e4ef !important;
+  border: 1px solid light-dark(#d8e4ef, #313b43) !important;
   border-left: 2px solid #19aee4 !important;
   border-radius: 8px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, .05) !important;
 }
 
 .builder-rail > .wk-day-editor {
   margin: 0 -14px !important;
   border: 0 !important;
-  border-bottom: 1px solid #e7edf3 !important;
-  background: #fff !important;
+  border-bottom: 1px solid light-dark(#e7edf3, #33383c) !important;
+  background: light-dark(#fff, #1d2125) !important;
 }
 
 .builder-rail .wk-day-editor__head {
@@ -474,7 +474,7 @@ app-create-and-assign .np-root {
 .wk-day-editor__title {
   flex: 0 0 auto !important;
   margin: 0 !important;
-  color: #102038 !important;
+  color: light-dark(#102038, #e5ebf4) !important;
   font-size: 14px !important;
   font-weight: 650 !important;
   line-height: 19px !important;
@@ -486,13 +486,13 @@ app-create-and-assign .np-root {
   flex: 0 0 3px !important;
   margin: 0 !important;
   border-radius: 50% !important;
-  background: #8fa0b4 !important;
+  background: light-dark(#8fa0b4, #394859) !important;
 }
 
 .wk-day-editor__date {
   min-width: 0 !important;
   overflow: hidden !important;
-  color: #455a73 !important;
+  color: light-dark(#455a73, #bbc1ca) !important;
   font-size: 10px !important;
   font-weight: 400 !important;
   line-height: 15px !important;
@@ -504,22 +504,22 @@ app-create-and-assign .np-root {
   flex: 0 0 auto;
   padding: 2px 5px;
   border-radius: 4px;
-  background: #f1f5f9;
-  color: #6b7d94;
+  background: light-dark(#f1f5f9, #15181d);
+  color: light-dark(#6b7d94, #9ea4ad);
   font-size: 8px;
   font-weight: 600;
   line-height: 12px;
 }
 
 .wk-day-editor__status.is-ready {
-  background: #e9fbf3;
-  color: #119568;
+  background: light-dark(#e9fbf3, #15352a);
+  color: light-dark(#119568, #53c494);
 }
 
 .wk-day-editor__week {
   display: block;
   margin-top: 2px;
-  color: #6d7f96;
+  color: light-dark(#6d7f96, #9ca3ab);
   font-size: 9px;
   font-weight: 400;
   line-height: 13px;
@@ -539,10 +539,10 @@ app-create-and-assign .np-root {
 .wk-restmark.is-active {
   min-height: 29px !important;
   padding: 0 12px !important;
-  border: 1px solid #bdcde0 !important;
+  border: 1px solid light-dark(#bdcde0, #38404a) !important;
   border-radius: 6px !important;
-  background: #fff !important;
-  color: #263a54 !important;
+  background: light-dark(#fff, #1d2125) !important;
+  color: light-dark(#263a54, #d7dee6) !important;
   box-shadow: none !important;
   font-size: 10px !important;
   font-weight: 500 !important;
@@ -552,7 +552,7 @@ app-create-and-assign .np-root {
 .wk-restmark__icon {
   width: 13px !important;
   height: 13px !important;
-  color: #596f88 !important;
+  color: light-dark(#596f88, #a9b0b8) !important;
   stroke-width: 1.7 !important;
 }
 
@@ -563,7 +563,7 @@ app-create-and-assign .np-root {
 
 .builder-rail .wk-workout-name .np-label {
   margin-bottom: 5px !important;
-  color: #17263b !important;
+  color: light-dark(#17263b, #e4eaf3) !important;
   font-size: 10px !important;
   font-weight: 600 !important;
   line-height: 14px !important;
@@ -574,10 +574,10 @@ app-create-and-assign .np-root {
   min-height: 28px !important;
   height: 28px !important;
   padding: 5px 9px !important;
-  border: 1px solid #b9cde3 !important;
+  border: 1px solid light-dark(#b9cde3, #38495c) !important;
   border-radius: 5px !important;
-  color: #18304f !important;
-  background: #fff !important;
+  color: light-dark(#18304f, #a3c0e7) !important;
+  background: light-dark(#fff, #1d2125) !important;
   font-size: 10px !important;
   box-sizing: border-box !important;
 }
@@ -587,7 +587,7 @@ app-create-and-assign .np-root {
   min-height: 31px !important;
   margin: 0 !important;
   padding: 7px 0 !important;
-  color: #078dcb !important;
+  color: light-dark(#078dcb, #48b5f5) !important;
   font-size: 10px !important;
   font-weight: 500 !important;
 }
@@ -607,7 +607,7 @@ app-create-and-assign .np-root {
 
 .wkex__heading {
   margin: 0 0 8px !important;
-  color: #4b617a !important;
+  color: light-dark(#4b617a, #b5bcc4) !important;
   font-size: 8px !important;
   font-weight: 600 !important;
   line-height: 13px !important;
@@ -623,9 +623,9 @@ app-create-and-assign .np-root {
 
 .wkex-card {
   overflow: visible !important;
-  border: 1px solid #d8e4ef !important;
+  border: 1px solid light-dark(#d8e4ef, #313b43) !important;
   border-radius: 7px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: none !important;
 }
 
@@ -642,7 +642,7 @@ app-create-and-assign .np-root {
   align-items: center !important;
   gap: 8px !important;
   padding: 6px 10px !important;
-  border-bottom: 1px solid #e8eef4 !important;
+  border-bottom: 1px solid light-dark(#e8eef4, #33383c) !important;
   box-sizing: border-box !important;
 }
 
@@ -652,7 +652,7 @@ app-create-and-assign .np-root {
   width: 12px !important;
   align-items: center !important;
   padding: 0 !important;
-  color: #a5b4c5 !important;
+  color: light-dark(#a5b4c5, #848b93) !important;
 }
 
 .wkex-card__drag .np-ico {
@@ -668,7 +668,7 @@ app-create-and-assign .np-root {
   flex: 0 0 24px !important;
   overflow: hidden !important;
   border-radius: 4px !important;
-  background: #e8eef2 !important;
+  background: light-dark(#e8eef2, #282d30) !important;
 }
 
 .wkex-card__media img,
@@ -686,7 +686,7 @@ app-create-and-assign .np-root {
 .wkex-card__title {
   margin: 0 !important;
   overflow: hidden !important;
-  color: #102038 !important;
+  color: light-dark(#102038, #e5ebf4) !important;
   font-size: 11px !important;
   font-weight: 650 !important;
   line-height: 14px !important;
@@ -697,7 +697,7 @@ app-create-and-assign .np-root {
 .wkex-summary {
   display: block !important;
   overflow: hidden !important;
-  color: #55708e !important;
+  color: light-dark(#55708e, #a9b0b8) !important;
   font-size: 8px !important;
   font-weight: 500 !important;
   line-height: 11px !important;
@@ -725,19 +725,19 @@ app-create-and-assign .np-root {
   border: 0 !important;
   border-radius: 4px !important;
   background: transparent !important;
-  color: #91a4b8 !important;
+  color: light-dark(#91a4b8, #8b9299) !important;
   opacity: 1 !important;
 }
 
 .wkex-card__actions .wkex-action:hover:not(:disabled) {
-  background: #f1f6fa !important;
-  color: #54708d !important;
+  background: light-dark(#f1f6fa, #15191d) !important;
+  color: light-dark(#54708d, #a9b0b8) !important;
 }
 
 .wkex-card__actions .wkex-action--danger,
 .wkex-card__actions .wkex-action--danger:hover {
   background: transparent !important;
-  color: #9eb0c1 !important;
+  color: light-dark(#9eb0c1, #868d95) !important;
 }
 
 .wkex-card__actions .wkex-action__icon {
@@ -772,7 +772,7 @@ app-create-and-assign .np-root {
 
 .wkex-sets__th {
   overflow: hidden !important;
-  color: #647a93 !important;
+  color: light-dark(#647a93, #a0a7af) !important;
   font-size: 7px !important;
   font-weight: 600 !important;
   line-height: 10px !important;
@@ -824,7 +824,7 @@ app-create-and-assign .np-root {
   padding: 0 !important;
   border: 1px solid #f4c654 !important;
   border-radius: 5px !important;
-  background: #fffaf0 !important;
+  background: light-dark(#fffaf0, #342c1b) !important;
   box-shadow: 0 0 0 1px #fff !important;
 }
 
@@ -844,16 +844,16 @@ app-create-and-assign .np-root {
   width: 100% !important;
   height: 25px !important;
   min-height: 25px !important;
-  border: 1px solid #b9cde3 !important;
+  border: 1px solid light-dark(#b9cde3, #38495c) !important;
   border-radius: 5px !important;
-  background: #fff !important;
+  background: light-dark(#fff, #1d2125) !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
 }
 
 .wkex-input {
   padding: 4px 8px !important;
-  color: #18304f !important;
+  color: light-dark(#18304f, #a3c0e7) !important;
   font-size: 10px !important;
 }
 
@@ -874,7 +874,7 @@ app-create-and-assign .np-root {
 .wkex-restbox__label {
   flex: 0 0 auto !important;
   padding-left: 8px !important;
-  color: #6d8097 !important;
+  color: light-dark(#6d8097, #9ca2aa) !important;
   font-size: 8px !important;
   line-height: 11px !important;
 }
@@ -884,7 +884,7 @@ app-create-and-assign .np-root {
   height: 23px !important;
   padding: 3px 5px !important;
   border: 0 !important;
-  color: #18304f !important;
+  color: light-dark(#18304f, #a3c0e7) !important;
   background: transparent !important;
   font-size: 10px !important;
 }
@@ -895,7 +895,7 @@ app-create-and-assign .np-root {
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
-  color: #9aadc0 !important;
+  color: light-dark(#9aadc0, #878e96) !important;
 }
 
 .wkex-sets__cell--action .wkex-action__icon {
@@ -913,8 +913,8 @@ app-create-and-assign .np-root {
   padding: 4px 9px !important;
   border: 1px solid #59bce7 !important;
   border-radius: 5px !important;
-  background: #f0fbff !important;
-  color: #087cae !important;
+  background: light-dark(#f0fbff, #1c3138) !important;
+  color: light-dark(#087cae, #5bb9ee) !important;
   font-size: 10px !important;
   font-weight: 500 !important;
   line-height: 14px !important;
@@ -933,8 +933,8 @@ app-create-and-assign .np-root {
   padding: 7px 10px !important;
   border: 1px dashed #54bceb !important;
   border-radius: 7px !important;
-  background: #fff !important;
-  color: #087faf !important;
+  background: light-dark(#fff, #1d2125) !important;
+  color: light-dark(#087faf, #58b9ec) !important;
   font-size: 10px !important;
   font-weight: 500 !important;
   line-height: 14px !important;

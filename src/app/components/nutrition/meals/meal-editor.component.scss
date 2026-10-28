@@ -2,23 +2,23 @@
   min-height: 60vh;
   display: grid;
   place-items: center;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   font-weight: 600;
 }
 
 .meal-editor-route-state--error {
   align-content: center;
   gap: 14px;
-  color: #b42318;
+  color: light-dark(#b42318, #ff8b7a);
 }
 
 .meal-editor-route-state button {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid #d8e0e8;
+  border: 1px solid light-dark(#d8e0e8, #353b41);
   border-radius: 9px;
-  background: #fff;
-  color: #101828;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#101828, #e7ecf6);
   font-weight: 700;
   cursor: pointer;
 }

@@ -57,25 +57,25 @@ export type OverlapChoice = 'SHIFT' | 'REMOVE';
   `,
   styles: [`
     :host { display: contents; }
-    .po-banner { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 14px; line-height: 1.45; }
+    .po-banner { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: light-dark(#fffbeb, #332c12); border: 1px solid #fde68a; color: light-dark(#92400e, #f4996c); font-size: 14px; line-height: 1.45; }
     .po-ico { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
     .po-ico ::ng-deep svg { width: 16px; height: 16px; }
     .po-backdrop { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, 0.45); }
-    .po { width: min(480px, 100%); display: grid; gap: 12px; padding: 24px; border-radius: 18px; background: #fff; box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25); color: #0f172a; }
+    .po { width: min(480px, 100%); display: grid; gap: 12px; padding: 24px; border-radius: 18px; background: light-dark(#fff, #1d2125); box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25); color: light-dark(#0f172a, #e8ecf6); }
     .po-title { margin: 0; font-size: 18px; font-weight: 600; }
-    .po-sub { margin: 0; font-size: 14px; color: #475569; line-height: 1.5; }
+    .po-sub { margin: 0; font-size: 14px; color: light-dark(#475569, #bfc5ce); line-height: 1.5; }
     .po-options { display: grid; gap: 8px; }
-    .po-option { display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #fff; text-align: left; font: inherit; cursor: pointer; }
-    .po-option.is-on { border-color: #0c86c8; background: #f0f9ff; }
-    .po-radio { width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0; }
+    .po-option { display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid light-dark(#e2e8f0, #34393f); background: light-dark(#fff, #1d2125); text-align: left; font: inherit; cursor: pointer; }
+    .po-option.is-on { border-color: #0c86c8; background: light-dark(#f0f9ff, #1f303b); }
+    .po-radio { width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; border: 2px solid light-dark(#cbd5e1, #363e47); flex-shrink: 0; }
     .po-option.is-on .po-radio { border-color: #0c86c8; box-shadow: inset 0 0 0 3px #fff; background: #0c86c8; }
     .po-option-text { display: grid; gap: 3px; }
     .po-option-text strong { font-size: 14px; font-weight: 600; }
-    .po-option-text small { font-size: 13px; color: #64748b; line-height: 1.4; }
-    .po-option-text .po-line { color: #92400e; }
+    .po-option-text small { font-size: 13px; color: light-dark(#64748b, #a5abb4); line-height: 1.4; }
+    .po-option-text .po-line { color: light-dark(#92400e, #f4996c); }
     .po-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
     .po-btn { min-height: 40px; padding: 0 18px; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .po-btn--ghost { border: 1px solid #e2e8f0; background: #fff; color: #0f172a; }
+    .po-btn--ghost { border: 1px solid light-dark(#e2e8f0, #34393f); background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); }
     .po-btn--primary { border: 1px solid #0f172a; background: #0f172a; color: #fff; }
   `],
 })

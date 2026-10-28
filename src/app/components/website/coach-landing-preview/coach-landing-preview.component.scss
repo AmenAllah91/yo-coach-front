@@ -47,7 +47,7 @@
     font-weight: 600;
     cursor: pointer;
 
-    &.is-active { background: #fff; color: #0f172a; }
+    &.is-active { background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); }
   }
 }
 
@@ -87,17 +87,17 @@
 
 /* ---------- Site tokens ---------- */
 .cs {
-  --c-primary: #0f172a;
-  --c-secondary: #eef2f7;
+  --c-primary: light-dark(#0f172a, #e8ecf6);
+  --c-secondary: light-dark(#eef2f7, #14171b);
   --c-accent: #2563eb;
-  --c-bg: #ffffff;
-  --c-text: #0f172a;
+  --c-bg: light-dark(#ffffff, #1d2125);
+  --c-text: light-dark(#0f172a, #e8ecf6);
   --c-on-primary: #ffffff;
   --c-on-accent: #ffffff;
   --font-heading: 'Inter', 'Segoe UI', sans-serif;
   --font-body: 'Inter', 'Segoe UI', sans-serif;
 
-  --c-surface: #ffffff;
+  --c-surface: light-dark(#ffffff, #1d2125);
   --c-line: color-mix(in srgb, var(--c-text) 10%, transparent);
   --c-muted: color-mix(in srgb, var(--c-text) 62%, var(--c-bg));
   --c-tint: var(--c-secondary);
@@ -559,7 +559,7 @@
 
 .cs-honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
 
-.cs-form__error { padding: 10px 14px; border-radius: var(--radius-sm); background: #fff1f1; color: #b42335; font-size: 14px; font-weight: 600; }
+.cs-form__error { padding: 10px 14px; border-radius: var(--radius-sm); background: light-dark(#fff1f1, #3c2829); color: light-dark(#b42335, #ff8989); font-size: 14px; font-weight: 600; }
 .cs-form__submit { width: 100%; margin-top: 4px; }
 .cs-form__consent { color: var(--c-muted); font-size: 12.5px; text-align: center; a { color: var(--c-accent); font-weight: 600; } }
 

@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import {Router, RouterLink} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
-import {NgbDropdown, NgbDropdownMenu, NgbDropdownToggle} from '@ng-bootstrap/ng-bootstrap';
+import {NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle} from '@ng-bootstrap/ng-bootstrap';
 import {FormsModule} from '@angular/forms';
 import {FeatherModule} from 'angular-feather';
 import {InConfiguration, LanguageService} from '../../core';
@@ -25,6 +25,7 @@ import {ChatService} from "../../../service/chat.service";
 import {getTimeAgo} from "../../../models/notification";
 import {Subject, timer} from "rxjs";
 import {takeUntil} from "rxjs/operators";
+import {ThemeMode, ThemeModeService} from "../../../core/service/theme-mode.service";
 
 @Component({
   selector: 'app-header',
@@ -37,6 +38,7 @@ import {takeUntil} from "rxjs/operators";
     NgbDropdown,
     NgbDropdownToggle,
     NgbDropdownMenu,
+    NgbDropdownItem,
     NgClass,
     RouterLink,
     TranslateModule,
@@ -72,6 +74,7 @@ export class HeaderComponent implements OnInit, OnDestroy, AfterViewInit {
     private router: Router,
     private chatService: ChatService,
     private coachSettingsService: CoachSettingsService,
+    public themeMode: ThemeModeService,
   ) {
 const lang = localStorage.getItem('lang') || 'fr';
 this.translate.use(lang);}
@@ -99,6 +102,12 @@ this.translate.use(lang);}
     this.showErrorModal = false;
     this.errorMessage = '';
   }
+
+  readonly themeOptions: { mode: ThemeMode; icon: string; label: string }[] = [
+    { mode: 'light', icon: 'sun', label: 'THEME_LIGHT' },
+    { mode: 'dark', icon: 'moon', label: 'THEME_DARK' },
+    { mode: 'system', icon: 'monitor', label: 'THEME_SYSTEM' },
+  ];
 
   listLang = [
     { text: 'English', flag: 'assets/images/flags/us.jpg', lang: 'en' },
@@ -250,13 +259,13 @@ this.translate.use(lang);}
     const componentRef = factory.create(this.injector);
     this.appRef.attachView(componentRef.hostView);
     const domElem = (componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-    document.body.appendChild(domElem);
+    this.attachChatPanel(domElem);
 
     componentRef.instance.closed.subscribe(() => {
       this.chatPanelOpen = false;
 
       this.appRef.detachView(componentRef.hostView);
-      document.body.removeChild(domElem);
+      domElem.remove();
       componentRef.destroy();
     });
 
@@ -479,6 +488,14 @@ this.translate.use(lang);}
     return query ? new URLSearchParams(query).get(name) : null;
   }
 
+  /**
+   * Inside app-root, like the chat page: the app-wide typography of styles.scss (`html body app-root …`) applies
+   * to the panel too, so both chats look the same.
+   */
+  private attachChatPanel(domElem: HTMLElement): void {
+    (document.querySelector('app-root') ?? document.body).appendChild(domElem);
+  }
+
   private openConversation(conversation: Conversation): void {
     if (this.chatPanelOpen) return;
     this.chatPanelOpen = true;
@@ -487,7 +504,7 @@ this.translate.use(lang);}
     componentRef.instance.openConversation(conversation);
     this.appRef.attachView(componentRef.hostView);
     const domElem = (componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-    document.body.appendChild(domElem);
+    this.attachChatPanel(domElem);
     componentRef.instance.closed.subscribe(() => {
       this.chatPanelOpen = false;
       this.appRef.detachView(componentRef.hostView);

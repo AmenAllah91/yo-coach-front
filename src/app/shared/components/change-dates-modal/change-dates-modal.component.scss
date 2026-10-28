@@ -16,13 +16,13 @@
   max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   border-radius: 18px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
   overflow: hidden;
 }
 
-.cd-head { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 16px; border-bottom: 1px solid #eef2f7; }
+.cd-head { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 16px; border-bottom: 1px solid light-dark(#eef2f7, #32363c); }
 
 .cd-head-icon {
   flex-shrink: 0;
@@ -31,14 +31,14 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: light-dark(#e0f2fe, #143446);
+  color: light-dark(#0369a1, #68baf7);
   ::ng-deep svg { width: 20px; height: 20px; }
 }
 
 .cd-head-text { flex: 1; min-width: 0; }
-.cd-title { margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; }
-.cd-subtitle { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: #475569; }
+.cd-title { margin: 0; font-size: 18px; font-weight: 800; color: light-dark(#0f172a, #e8ecf6); }
+.cd-subtitle { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: light-dark(#475569, #bfc5ce); }
 
 .cd-close {
   flex-shrink: 0;
@@ -47,20 +47,20 @@
   border-radius: 10px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: light-dark(#64748b, #a5abb4);
   display: grid;
   place-items: center;
   cursor: pointer;
   ::ng-deep svg { width: 18px; height: 18px; }
-  &:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; }
+  &:hover:not(:disabled) { background: light-dark(#f1f5f9, #15181d); color: light-dark(#0f172a, #e8ecf6); }
 }
 
 .cd-body { flex: 1; overflow-y: auto; padding: 18px 22px 20px; display: grid; gap: 14px; }
-.cd-error { margin: 0; font-size: 13px; color: #b91c1c; }
+.cd-error { margin: 0; font-size: 13px; color: light-dark(#b91c1c, #ff8a7d); }
 
 /* « Décaler » or « Retirer » (CD-10), same look as the editor's question (program-overflow). */
 .cd-options { display: grid; gap: 8px; }
-.cd-options-title { margin: 0; font-size: 13px; font-weight: 700; color: #0f172a; }
+.cd-options-title { margin: 0; font-size: 13px; font-weight: 700; color: light-dark(#0f172a, #e8ecf6); }
 
 .cd-option {
   display: flex;
@@ -69,12 +69,12 @@
   width: 100%;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
-  background: #fff;
+  border: 1.5px solid light-dark(#e2e8f0, #34393f);
+  background: light-dark(#fff, #1d2125);
   text-align: left;
   font: inherit;
   cursor: pointer;
-  &.is-on { border-color: #0c86c8; background: #f0f9ff; }
+  &.is-on { border-color: #0c86c8; background: light-dark(#f0f9ff, #1f303b); }
 }
 
 .cd-radio {
@@ -82,7 +82,7 @@
   height: 18px;
   margin-top: 2px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
+  border: 2px solid light-dark(#cbd5e1, #363e47);
   flex-shrink: 0;
   .cd-option.is-on & { border-color: #0c86c8; box-shadow: inset 0 0 0 3px #fff; background: #0c86c8; }
 }
@@ -91,14 +91,14 @@
   display: grid;
   gap: 3px;
   min-width: 0;
-  strong { font-size: 14px; font-weight: 600; color: #0f172a; }
-  small { font-size: 13px; color: #64748b; line-height: 1.4; }
+  strong { font-size: 14px; font-weight: 600; color: light-dark(#0f172a, #e8ecf6); }
+  small { font-size: 13px; color: light-dark(#64748b, #a5abb4); line-height: 1.4; }
 }
 
-.cd-line { color: #0369a1 !important; }
-.cd-line--loss { color: #92400e !important; }
+.cd-line { color: light-dark(#0369a1, #68baf7) !important; }
+.cd-line--loss { color: light-dark(#92400e, #f4996c) !important; }
 
-.cd-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid #eef2f7; background: #fbfcfe; }
+.cd-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid light-dark(#eef2f7, #32363c); background: light-dark(#fbfcfe, #1c2024); }
 
 .cd-btn {
   display: inline-flex;
@@ -112,7 +112,7 @@
   font-weight: 700;
   cursor: pointer;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &--ghost { background: #fff; border: 1.5px solid #e2e8f0; color: #0f172a; }
+  &--ghost { background: light-dark(#fff, #1d2125); border: 1.5px solid light-dark(#e2e8f0, #34393f); color: light-dark(#0f172a, #e8ecf6); }
   &--primary { background: #0f172a; border: 1.5px solid #0f172a; color: #fff; }
 }
 
@@ -121,7 +121,7 @@
   height: 14px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border-top-color: light-dark(#fff, #2f3339);
   animation: cd-spin 0.8s linear infinite;
 }
 

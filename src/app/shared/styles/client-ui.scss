@@ -3,27 +3,29 @@
 // the coach's theme, like AppThemeLoader(useBackendTheme: true) on mobile.
 
 :root {
+  // light-dark(light, dark): the dark values are darkThemeColors() of these defaults (core/theme/dark-palette.ts).
+  // ClientThemeService replaces them with the coach's theme, light or dark.
   --yc-primary: #0c86c8;
-  --yc-secondary: #070d12;
-  --yc-background: #f4f6f9;
-  --yc-surface: #ffffff;
-  --yc-card-surface: #f8f8f8;
-  --yc-text-primary: #0f1b2d;
-  --yc-text-secondary: #546175;
-  --yc-text-hint: #7d889b;
+  --yc-secondary: light-dark(#070d12, #e8ecef);
+  --yc-background: light-dark(#f4f6f9, #13171a);
+  --yc-surface: light-dark(#ffffff, #1d2124);
+  --yc-card-surface: light-dark(#f8f8f8, #181c20);
+  --yc-text-primary: light-dark(#0f1b2d, #e8ecef);
+  --yc-text-secondary: light-dark(#546175, #acb2b6);
+  --yc-text-hint: light-dark(#7d889b, #858a8e);
   --yc-success: #22c55e;
-  --yc-success-light: #eaf8f0;
+  --yc-success-light: light-dark(#eaf8f0, #1e3b2e);
   --yc-error: #ef4444;
-  --yc-error-light: #fee2e2;
+  --yc-error-light: light-dark(#fee2e2, #3e2729);
   --yc-warning: #f59e0b;
-  --yc-warning-light: #fff3e0;
-  --yc-border: #e5e7eb;
-  --yc-divider: #eeeeee;
+  --yc-warning-light: light-dark(#fff3e0, #3f3520);
+  --yc-border: light-dark(#e5e7eb, #33393d);
+  --yc-divider: light-dark(#eeeeee, #2c3135);
   --yc-button-text: #ffffff;
-  --yc-selected-tab-bg: #e8f3fa;
-  --yc-active-bg: #0f1b2d;
-  --yc-hairline: #e8ebf0;
-  --yc-shadow-card: 0 2px 10px rgba(15, 27, 45, 0.035);
+  --yc-selected-tab-bg: light-dark(#e8f3fa, #193545);
+  --yc-active-bg: light-dark(#0f1b2d, #3a4a57);
+  --yc-hairline: light-dark(#e8ebf0, #2c3135);
+  --yc-shadow-card: 0 2px 10px light-dark(rgba(15, 27, 45, 0.035), rgba(0, 0, 0, 0.35));
   // Fixed status colors of the mobile chips.
   --yc-done: #1e8e4e;
   --yc-missed: #d93a3a;
@@ -235,7 +237,7 @@ a.yc-card,
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: #fafbfc;
+    background: light-dark(#fafbfc, #181b1f);
   }
 }
 
@@ -343,7 +345,7 @@ a.yc-card,
   height: 44px;
   padding: 4px;
   border-radius: 12px;
-  background: #edf0f4;
+  background: light-dark(#edf0f4, #272b2f);
 
   button {
     flex: 1;
@@ -379,7 +381,7 @@ a.yc-card,
     min-width: 20px;
     padding: 1.5px 6px;
     border-radius: 99px;
-    background: #d5dae2;
+    background: light-dark(#d5dae2, #33373e);
     color: var(--yc-text-secondary);
     font-size: 11.5px;
     font-weight: 700;
@@ -466,10 +468,10 @@ a.yc-card,
   // AppPrimaryButton: dark.
   &--primary {
     background: var(--yc-text-primary);
-    color: #fff;
+    color: var(--yc-surface);
 
     &:disabled {
-      background: #e6eaf0;
+      background: light-dark(#e6eaf0, #2b2e33);
       color: var(--yc-text-hint);
     }
   }
@@ -666,7 +668,7 @@ textarea.yc-input {
     height: 4px;
     margin: 0 auto 14px;
     border-radius: 3px;
-    background: #dce0e6;
+    background: light-dark(#dce0e6, #313439);
   }
 
   &__row {
@@ -717,7 +719,7 @@ textarea.yc-input {
 // Divider row used in grouped lists.
 .yc-divider {
   height: 1px;
-  background: #eff1f4;
+  background: light-dark(#eff1f4, #13171b);
   border: 0;
   margin: 0;
 }
@@ -725,7 +727,7 @@ textarea.yc-input {
 .yc-progress {
   height: 6px;
   border-radius: 99px;
-  background: #edf0f4;
+  background: light-dark(#edf0f4, #272b2f);
   overflow: hidden;
 
   > span {

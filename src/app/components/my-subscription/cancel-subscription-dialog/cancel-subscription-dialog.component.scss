@@ -16,9 +16,9 @@
   box-sizing: border-box;
   padding: 28px 24px 24px;
   border-radius: 18px;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-  color: #0b1324;
+  color: light-dark(#0b1324, #e9edf7);
   text-align: center;
   animation: csd-pop 0.18s ease-out;
 
@@ -33,7 +33,7 @@
     margin: 0 auto;
     max-width: 360px;
     white-space: pre-line; // one sentence per line (line breaks of the translation)
-    color: #475569;
+    color: light-dark(#475569, #bfc5ce);
     font-size: 14px;
     line-height: 1.6;
   }
@@ -50,12 +50,12 @@
   border-radius: 8px;
   display: grid;
   place-items: center;
-  background: #eef2f6;
-  color: #334155;
+  background: light-dark(#eef2f6, #14171b);
+  color: light-dark(#334155, #d1d7e0);
   cursor: pointer;
 
   i-feather { width: 14px; height: 14px; }
-  &:hover { background: #e2e8f0; }
+  &:hover { background: light-dark(#e2e8f0, #283342); }
 }
 
 .csd__icon {
@@ -65,7 +65,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #fff3e8;
+  background: light-dark(#fff3e8, #3c2a19);
   color: #f97316;
 
   i-feather { width: 40px; height: 40px; }
@@ -78,7 +78,7 @@
   margin-top: 22px;
   padding: 14px 16px;
   border-radius: 12px;
-  background: #eef6fd;
+  background: light-dark(#eef6fd, #21303d);
   text-align: left;
 }
 
@@ -89,8 +89,8 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #dcecfb;
-  color: #1d8fe1;
+  background: light-dark(#dcecfb, #19344b);
+  color: light-dark(#1d8fe1, #50b0ff);
 
   i-feather { width: 20px; height: 20px; }
 }
@@ -100,8 +100,8 @@
   flex-direction: column;
   gap: 2px;
 
-  small { color: #475569; font-size: 12px; }
-  strong { font-size: 17px; font-weight: 700; color: #0b1324; }
+  small { color: light-dark(#475569, #bfc5ce); font-size: 12px; }
+  strong { font-size: 17px; font-weight: 700; color: light-dark(#0b1324, #e9edf7); }
 }
 
 .csd__actions {
@@ -125,11 +125,11 @@
 }
 
 .csd__btn--outline {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #0b1324;
+  border: 1px solid light-dark(#cbd5e1, #363e47);
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#0b1324, #e9edf7);
 
-  &:hover { border-color: #94a3b8; background: #f8fafc; }
+  &:hover { border-color: light-dark(#94a3b8, #495669); background: light-dark(#f8fafc, #171a1f); }
 }
 
 .csd__btn--dark {

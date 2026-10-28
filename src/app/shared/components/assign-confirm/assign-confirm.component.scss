@@ -11,13 +11,13 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #fef3c7;
-  color: #b45309;
+  background: light-dark(#fef3c7, #382f03);
+  color: light-dark(#b45309, #f68f54);
   ::ng-deep svg { width: 20px; height: 20px; }
 }
 
-.ac-title { margin: 0; font-size: 17px; font-weight: 800; color: #0f172a; }
-.ac-subtitle { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: #475569; }
+.ac-title { margin: 0; font-size: 17px; font-weight: 800; color: light-dark(#0f172a, #e8ecf6); }
+.ac-subtitle { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: light-dark(#475569, #bfc5ce); }
 
 .ac-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 
@@ -26,15 +26,15 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid light-dark(#e2e8f0, #34393f);
   border-radius: 12px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   cursor: pointer;
   transition: border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
 
-  &:hover { border-color: #94a3b8; }
-  &.is-single { cursor: default; &:hover { border-color: #e2e8f0; } }
-  &.is-off { background: #f8fafc; .ac-avatar, .ac-name, .ac-line { opacity: 0.55; } }
+  &:hover { border-color: light-dark(#94a3b8, #495669); }
+  &.is-single { cursor: default; &:hover { border-color: light-dark(#e2e8f0, #34393f); } }
+  &.is-off { background: light-dark(#f8fafc, #171a1f); .ac-avatar, .ac-name, .ac-line { opacity: 0.55; } }
 
   &--compact { align-items: center; padding: 8px 12px; }
 }
@@ -45,11 +45,11 @@
   height: 20px;
   margin-top: 2px;
   border-radius: 6px;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid light-dark(#cbd5e1, #363e47);
   display: grid;
   place-items: center;
   color: #fff;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   ::ng-deep svg { width: 14px; height: 14px; stroke-width: 3; }
 
   &.is-on { background: #0c86c8; border-color: #0c86c8; }
@@ -63,8 +63,8 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: light-dark(#e0f2fe, #143446);
+  color: light-dark(#0369a1, #68baf7);
   font-size: 13px;
   font-weight: 800;
 
@@ -72,7 +72,7 @@
 }
 
 .ac-body { display: grid; gap: 4px; min-width: 0; }
-.ac-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+.ac-name { font-size: 14px; font-weight: 700; color: light-dark(#0f172a, #e8ecf6); }
 
 .ac-line {
   display: flex;
@@ -80,12 +80,12 @@
   gap: 6px;
   font-size: 13px;
   line-height: 1.45;
-  color: #92400e;
+  color: light-dark(#92400e, #f4996c);
   ::ng-deep svg { flex-shrink: 0; width: 14px; height: 14px; margin-top: 2px; }
 }
 
-.ac-skip { font-size: 12px; color: #64748b; font-style: italic; }
-.ac-ok { margin-left: auto; font-size: 12px; color: #15803d; }
+.ac-skip { font-size: 12px; color: light-dark(#64748b, #a5abb4); font-style: italic; }
+.ac-ok { margin-left: auto; font-size: 12px; color: light-dark(#15803d, #68c780); }
 
 .ac-unchanged { display: grid; gap: 8px; }
 
@@ -99,7 +99,7 @@
   padding: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: light-dark(#475569, #bfc5ce);
   cursor: pointer;
   ::ng-deep svg { width: 16px; height: 16px; }
 }
@@ -126,7 +126,7 @@
 
   &:disabled { opacity: 0.55; cursor: not-allowed; }
 
-  &--ghost { background: #fff; border: 1.5px solid #e2e8f0; color: #0f172a; &:hover:not(:disabled) { border-color: #94a3b8; } }
+  &--ghost { background: light-dark(#fff, #1d2125); border: 1.5px solid light-dark(#e2e8f0, #34393f); color: light-dark(#0f172a, #e8ecf6); &:hover:not(:disabled) { border-color: light-dark(#94a3b8, #495669); } }
   &--primary { background: #0f172a; border: 1.5px solid #0f172a; color: #fff; &:hover:not(:disabled) { background: #1e293b; } }
 }
 
@@ -135,7 +135,7 @@
   height: 14px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border-top-color: light-dark(#fff, #2f3339);
   animation: ac-spin 0.8s linear infinite;
 }
 

@@ -1,7 +1,7 @@
 // Centralized Video Player Styles
 .video-container {
   flex: 1;
-  background: #f3f4f6;
+  background: light-dark(#f3f4f6, #15181c);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -18,7 +18,7 @@
 
   .video-placeholder {
     text-align: center;
-    color: #9ca3af;
+    color: light-dark(#9ca3af, #8c9199);
   }
 
   youtube-player {

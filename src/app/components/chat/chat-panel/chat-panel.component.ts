@@ -1,61 +1,45 @@
 import {Conversation} from "../models/conversation";
 import {Component, EventEmitter, Output} from "@angular/core";
-import {ConversationListComponent} from "../conversation-list/conversation-list.component";
-import {NgClass, NgIf} from "@angular/common";
-import {ConversationMessagesComponent} from "../conversation-messages/conversation-messages.component";
 import {Router} from "@angular/router";
 import {ChatService} from "../../../service/chat.service";
+import {ChatComponent} from "../chat/chat.component";
 
+/** Header chat panel: the chat page itself (same list, messages, calls, scheduled messages) in a floating card. */
 @Component({
   selector: 'app-chat-panel',
   standalone: true,
   templateUrl: './chat-panel.component.html',
   styleUrls: ['./chat-panel.component.scss'],
-  imports: [
-    ConversationListComponent,
-    NgClass,
-    ConversationMessagesComponent,
-    NgIf
-  ]
+  imports: [ChatComponent]
 })
 export class ChatPanelComponent{
 
-  isOpen = true;
   @Output() closed = new EventEmitter<void>();
-  view: 'LIST' | 'MESSAGES' = 'LIST';
 
-  selectedConversation: Conversation | null = null;
+  /** Conversation to open first (a message notification), set before the panel is shown. */
+  initialConversationId: string | null = null;
 
   constructor(
     private router: Router,
     private chatService: ChatService
   ) {}
 
-  open() {
-    this.isOpen = true;
-    this.view = 'LIST';
+  openConversation(conv: Conversation) {
+    this.initialConversationId = conv.id;
   }
 
   close() {
-    this.isOpen = false;
     this.closed.emit();
   }
 
-  openConversation(conv: Conversation) {
-    this.selectedConversation = conv;
-    this.view = 'MESSAGES';
-  }
-
-  backToList() {
-    this.view = 'LIST';
-    this.selectedConversation = null;
-  }
-
-  expandConversation(): void {
-    if (!this.selectedConversation) return;
-
-    this.chatService.openConversation(this.selectedConversation);
-    this.router.navigate(['/chat']);
+  expandConversation(conversation: Conversation | null): void {
+    if (conversation) this.chatService.openConversation(conversation);
+    // Already on the chat page: it is rebuilt so that it opens this conversation.
+    if (this.router.url.split('?')[0] === '/chat') {
+      void this.router.navigateByUrl('/', {skipLocationChange: true}).then(() => this.router.navigate(['/chat']));
+    } else {
+      void this.router.navigate(['/chat']);
+    }
     this.close();
   }
 }

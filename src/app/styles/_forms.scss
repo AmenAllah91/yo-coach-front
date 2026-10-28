@@ -9,7 +9,7 @@
   font-weight: $font-weight-normal;
   line-height: $line-height-normal;
   color: $gray-900;
-  background-color: white;
+  background-color: light-dark(white, #1d2125);
   background-clip: padding-box;
   border: 1px solid $input-border-color;
   border-radius: $input-border-radius;
@@ -21,7 +21,7 @@
 
   &:focus {
     color: $gray-900;
-    background-color: white;
+    background-color: light-dark(white, #1d2125);
     border-color: $input-focus-border-color;
     outline: 0;
     box-shadow: $input-focus-box-shadow;
@@ -236,7 +236,7 @@ select.form-control {
 
   &:focus::-ms-value {
     color: $gray-700;
-    background-color: white;
+    background-color: light-dark(white, #1d2125);
   }
 }
 

@@ -14,7 +14,7 @@
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #212529;
+    color: light-dark(#212529, #e5eaf0);
   }
 
   .btn-primary {
@@ -56,13 +56,13 @@
       transform: translateY(-50%);
       width: 16px;
       height: 16px;
-      color: #6c757d;
+      color: light-dark(#6c757d, #a3abb2);
     }
 
     .search-input {
       width: 100%;
       padding: 12px 12px 12px 40px;
-      border: 1px solid #dee2e6;
+      border: 1px solid light-dark(#dee2e6, #363a40);
       border-radius: 6px;
       font-size: 14px;
 
@@ -73,7 +73,7 @@
       }
 
       &::placeholder {
-        color: #6c757d;
+        color: light-dark(#6c757d, #a3abb2);
       }
     }
   }
@@ -82,15 +82,15 @@
 .plans-state {
   text-align: center;
   padding: 48px 24px;
-  color: #6c757d;
+  color: light-dark(#6c757d, #a3abb2);
   font-size: 16px;
-  background: white;
+  background: light-dark(white, #1d2125);
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid light-dark(#dee2e6, #363a40);
 }
 
 .meals-table {
-  background: white;
+  background: light-dark(white, #1d2125);
   border-radius: 8px;
   overflow: visible;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -100,11 +100,11 @@
     grid-template-columns: 2fr 1.5fr 0.5fr 2fr 1fr;
     gap: 16px;
     padding: 16px 24px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background: light-dark(#f8f9fa, #171a1e);
+    border-bottom: 1px solid light-dark(#dee2e6, #363a40);
     font-weight: 600;
     font-size: 12px;
-    color: #6c757d;
+    color: light-dark(#6c757d, #a3abb2);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -114,11 +114,11 @@
     grid-template-columns: 2fr 1.5fr 0.5fr 2fr 1fr;
     gap: 16px;
     padding: 20px 24px;
-    border-bottom: 1px solid #f1f3f4;
+    border-bottom: 1px solid light-dark(#f1f3f4, #32363c);
     align-items: center;
 
     &:hover {
-      background: #f8f9fa;
+      background: light-dark(#f8f9fa, #171a1e);
     }
 
     &:last-child {
@@ -129,19 +129,19 @@
   .col-title {
     .meal-name {
       font-weight: 600;
-      color: #212529;
+      color: light-dark(#212529, #e5eaf0);
       font-size: 16px;
     }
   }
 
   .col-updated {
-    color: #6c757d;
+    color: light-dark(#6c757d, #a3abb2);
     font-size: 14px;
   }
 
   .col-foods {
     font-size: 14px;
-    color: #495057;
+    color: light-dark(#495057, #c2cad2);
   }
 
   .col-macros {
@@ -160,8 +160,8 @@
       padding: 4px 8px;
       border-radius: 4px;
       white-space: nowrap;
-      background: #f1f5f9;
-      color: #64748b;
+      background: light-dark(#f1f5f9, #15181d);
+      color: light-dark(#64748b, #a5abb4);
     }
 
     .macro-unit {
@@ -175,8 +175,8 @@
       position: relative;
 
       .actions-btn {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background: light-dark(#f8f9fa, #171a1e);
+        border: 1px solid light-dark(#dee2e6, #363a40);
         padding: 8px 12px;
         border-radius: 4px;
         cursor: pointer;
@@ -184,10 +184,10 @@
         align-items: center;
         gap: 8px;
         font-size: 14px;
-        color: #495057;
+        color: light-dark(#495057, #c2cad2);
 
         &:hover {
-          background: #e9ecef;
+          background: light-dark(#e9ecef, #292d32);
         }
 
         i-feather {
@@ -200,8 +200,8 @@
         position: absolute;
         top: 100%;
         right: 0;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: light-dark(white, #1d2125);
+        border: 1px solid light-dark(#dee2e6, #363a40);
         border-radius: 4px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         min-width: 160px;
@@ -219,17 +219,17 @@
           text-align: left;
           cursor: pointer;
           font-size: 14px;
-          color: #495057;
+          color: light-dark(#495057, #c2cad2);
 
           &:hover {
-            background: #f8f9fa;
+            background: light-dark(#f8f9fa, #171a1e);
           }
 
           &.delete {
-            color: #dc3545;
+            color: light-dark(#dc3545, #ff7e7f);
 
             &:hover {
-              background: #f8d7da;
+              background: light-dark(#f8d7da, #4f272d);
             }
           }
 
@@ -260,9 +260,9 @@
 .app-pagination .page-btn {
   min-width: 34px;
   height: 34px;
-  border: 1px solid #d8e2ef;
-  background: #fff;
-  color: #344054;
+  border: 1px solid light-dark(#d8e2ef, #333a44);
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#344054, #d2d7e0);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
@@ -270,7 +270,7 @@
 }
 
 .app-pagination .page-btn:hover:not(:disabled) {
-  background: #f1f7ff;
+  background: light-dark(#f1f7ff, #242f3d);
   border-color: #8ec5ff;
 }
 
@@ -288,7 +288,7 @@
 /* Align header coordinates with the Clients page reference. */
 .meals-page {
   padding: 0 !important;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
 }
 
 .search-container,
@@ -305,9 +305,9 @@
 
 .mobile-page-back { display: none; }
 @media (max-width: 900px) {
-  .meals-page { padding: 0 !important; background: #f7f9fc; }
+  .meals-page { padding: 0 !important; background: light-dark(#f7f9fc, #171a1e); }
   .page-header { display: grid !important; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 16px 10px !important; }
-  .mobile-page-back { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; }
+  .mobile-page-back { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid light-dark(#dce5ef, #333a42); border-radius: 7px; background: light-dark(#fff, #1d2125); }
   .page-header h1 { font-size: 17px !important; }
   .page-header p { display: block !important; font-size: 9px !important; }
   .page-header .header-actions { width: auto !important; min-height: 34px; padding: 0 12px; font-size: 9px; }
@@ -316,14 +316,14 @@
   .meals-table { margin: 0 10px; border: 0 !important; background: transparent !important; }
   .meals-table .table-header { display: none !important; }
   .meals-table { display: grid; gap: 8px; }
-  .meals-table .table-row { position: relative; display: grid !important; grid-template-columns: minmax(0,1fr) auto !important; min-height: 84px; padding: 12px 10px 10px 54px !important; border: 1px solid #e1e8f0 !important; border-radius: 9px; background: #fff; }
-  .meals-table .table-row::before { content: '\f2e7'; position: absolute; left: 11px; top: 14px; width: 34px; height: 42px; display: grid; place-items: center; border-radius: 8px; background: #eef7ff; color: #159ee4; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+  .meals-table .table-row { position: relative; display: grid !important; grid-template-columns: minmax(0,1fr) auto !important; min-height: 84px; padding: 12px 10px 10px 54px !important; border: 1px solid light-dark(#e1e8f0, #33393f) !important; border-radius: 9px; background: light-dark(#fff, #1d2125); }
+  .meals-table .table-row::before { content: '\f2e7'; position: absolute; left: 11px; top: 14px; width: 34px; height: 42px; display: grid; place-items: center; border-radius: 8px; background: light-dark(#eef7ff, #21303c); color: light-dark(#159ee4, #36b1f9); font-family: 'Font Awesome 6 Free'; font-weight: 900; }
   .meal-name { font-size: 11px !important; font-weight: 700; }
   .col-updated { display: none !important; }
-  .col-foods { position: absolute; left: 54px; top: 32px; font-size: 8px; color: #64748b; }
+  .col-foods { position: absolute; left: 54px; top: 32px; font-size: 8px; color: light-dark(#64748b, #a5abb4); }
   .col-macros { grid-column: 1; align-self: end; gap: 5px !important; }
   .macro { padding: 3px 6px !important; font-size: 7px !important; }
-  .macro--kcal { position: absolute; right: 45px; top: 37px; background: transparent !important; color: #00a66a !important; font-size: 9px !important; }
+  .macro--kcal { position: absolute; right: 45px; top: 37px; background: transparent !important; color: light-dark(#00a66a, #3ec486) !important; font-size: 9px !important; }
   .col-actions { position: absolute; right: 8px; top: 9px; }
   .actions-btn { width: 28px !important; min-width: 28px !important; padding: 0 !important; border: 0 !important; font-size: 0 !important; }
 }
@@ -334,14 +334,14 @@
   z-index: 1550;
   display: grid;
   place-items: center;
-  background: rgba(15, 23, 42, .24);
+  background: light-dark(rgba(15, 23, 42, .24), rgba(255, 255, 255, 0.216));
 }
 
 .meal-loading-card {
   padding: 14px 20px;
   border-radius: 10px;
-  background: #fff;
-  color: #334155;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#334155, #d1d7e0);
   font-weight: 600;
   box-shadow: 0 14px 36px rgba(15, 23, 42, .18);
 }

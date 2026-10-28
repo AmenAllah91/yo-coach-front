@@ -83,7 +83,7 @@
     <div class="select-program-body">
 
       <div *ngIf="loading" style="padding:12px;">{{ 'LOADING' | translate }}</div>
-      <div *ngIf="error && !loading" style="padding:12px; color:#b91c1c;">{{ error }}</div>
+      <div *ngIf="error && !loading" style="padding:12px; color:light-dark(#b91c1c, #ff8a7d);">{{ error }}</div>
 
       <ng-container *ngIf="!loading && !error">
         <ng-container *ngIf="filteredForms.length; else noForms">

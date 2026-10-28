@@ -2,12 +2,12 @@
    and the brand blue for accents, like the Clients page. */
 $brand: #44b4df;
 $brand-strong: #1592c4;
-$brand-soft: #e8f6fc;
-$dark: #05070a;
+$brand-soft: light-dark(#e8f6fc, #1b333c);
+$dark: light-dark(#05070a, #ecf1f6);
 $dark-hover: #1b2740;
-$ink: #111827;
-$muted: #718096;
-$line: #dbe1e8;
+$ink: light-dark(#111827, #e8ecf6);
+$muted: light-dark(#718096, #9ca1aa);
+$line: light-dark(#dbe1e8, #363a40);
 $error: #dc2626;
 
 :host { display: block; min-height: 100vh; }
@@ -20,7 +20,7 @@ $error: #dc2626;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
   color: $ink;
   font-size: 15px;
   line-height: 1.5;
@@ -33,14 +33,14 @@ $error: #dc2626;
 .spinner {
   width: 22px;
   height: 22px;
-  border: 2px solid #d6e2ec;
+  border: 2px solid light-dark(#d6e2ec, #323b43);
   border-top-color: $brand;
   border-radius: 50%;
   display: inline-block;
   animation: spin .8s linear infinite;
 }
 
-.spinner--light { width: 16px; height: 16px; margin-right: 8px; border-color: rgba(255, 255, 255, .45); border-top-color: #fff; }
+.spinner--light { width: 16px; height: 16px; margin-right: 8px; border-color: rgba(255, 255, 255, .45); border-top-color: light-dark(#fff, #2f3339); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -50,7 +50,7 @@ $error: #dc2626;
   padding: 36px 28px;
   border: 1px solid $line;
   border-radius: 12px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   text-align: center;
 
   h1 { margin: 0 0 6px; font-size: 19px; font-weight: 700; }
@@ -64,8 +64,8 @@ $error: #dc2626;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #f1f4f8;
-  color: #8b98aa;
+  background: light-dark(#f1f4f8, #15181c);
+  color: light-dark(#8b98aa, #90969e);
 
   i-feather { width: 24px; height: 24px; }
 }
@@ -75,7 +75,7 @@ $error: #dc2626;
   width: min(100%, 640px);
   border: 1px solid $line;
   border-radius: 12px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(18, 33, 61, .06);
 }
@@ -83,14 +83,14 @@ $error: #dc2626;
 .cover {
   position: relative;
   height: 180px;
-  background: linear-gradient(135deg, #dff2fa 0%, #c9e8f5 100%) center / cover no-repeat;
+  background: linear-gradient(135deg, light-dark(#dff2fa, #123542) 0%, light-dark(#c9e8f5, #033a4b) 100%) center / cover no-repeat;
 
   /* A light veil at the bottom so the avatar's ring always reads over a photo. */
   &--photo::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 55%, rgba(255, 255, 255, .55) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 55%, light-dark(rgba(255, 255, 255, .55), rgba(29, 33, 37, 0.55)) 100%);
   }
 }
 
@@ -101,7 +101,7 @@ $error: #dc2626;
   transform: translateX(-50%);
   width: 78px;
   height: 78px;
-  border: 3px solid #fff;
+  border: 3px solid light-dark(#fff, #2f3339);
   border-radius: 50%;
   background: $brand-soft;
   color: $brand-strong;
@@ -132,7 +132,7 @@ form { max-width: 590px; margin: 0 auto; }
 
 .field { margin-bottom: 15px; }
 
-label:not(.terms-row) { display: block; margin: 0 0 7px; font-size: 13.5px; font-weight: 600; color: #1f2937; }
+label:not(.terms-row) { display: block; margin: 0 0 7px; font-size: 13.5px; font-weight: 600; color: light-dark(#1f2937, #e3e9f3); }
 
 /* Icon inside the field, on the left. */
 .input-wrap {
@@ -145,7 +145,7 @@ label:not(.terms-row) { display: block; margin: 0 0 7px; font-size: 13.5px; font
     width: 16px;
     height: 16px;
     transform: translateY(-50%);
-    color: #9aa6b5;
+    color: light-dark(#9aa6b5, #8a9098);
     pointer-events: none;
     transition: color .15s ease;
   }
@@ -157,16 +157,16 @@ input[type='text'], input[type='email'], textarea {
   display: block;
   width: 100%;
   padding: 10px 12px 10px 40px;
-  border: 1px solid #d6dce5;
+  border: 1px solid light-dark(#d6dce5, #373b43);
   border-radius: 8px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   color: $ink;
   font: inherit;
   font-size: 15px;
   outline: none;
   transition: border-color .15s ease, box-shadow .15s ease;
 
-  &::placeholder { color: #9aa6b5; }
+  &::placeholder { color: light-dark(#9aa6b5, #8a9098); }
   &:focus { border-color: $brand; box-shadow: 0 0 0 3px rgba(68, 180, 223, .14); }
 }
 
@@ -179,7 +179,7 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
 .field-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 5px; }
 .field-hint { margin-top: 5px; color: $muted; font-size: 12.5px; line-height: 1.45; }
 .field-foot .field-hint { margin-top: 0; }
-.field-count { flex: none; color: #98a2b3; font-size: 12px; font-variant-numeric: tabular-nums; &.is-near { color: #b45309; } }
+.field-count { flex: none; color: light-dark(#98a2b3, #8c919a); font-size: 12px; font-variant-numeric: tabular-nums; &.is-near { color: light-dark(#b45309, #f68f54); } }
 
 .field-error {
   margin-top: 5px;
@@ -216,8 +216,8 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
   margin: -6px 0 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #fff1f1;
-  color: #b42335;
+  background: light-dark(#fff1f1, #3c2829);
+  color: light-dark(#b42335, #ff8989);
   font-size: 13px;
   font-weight: 600;
 
@@ -309,7 +309,7 @@ footer a { color: $muted; }
 }
 
 @media (max-width: 680px) {
-  .public-page:not(.public-page--preview) { padding: 0 0 24px; background: #fff; }
+  .public-page:not(.public-page--preview) { padding: 0 0 24px; background: light-dark(#fff, #1d2125); }
   .public-page:not(.public-page--preview) .contact-card { border: 0; border-radius: 0; }
 }
 

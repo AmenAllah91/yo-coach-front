@@ -17,14 +17,14 @@
   display: block;
   font-weight: 600;
   margin-bottom: 5px;
-  color: #333;
+  color: light-dark(#333, #e0e3e7);
 }
 
 .form-group input,
 .form-group select {
   margin-right: 30px;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid light-dark(#ddd, #373b41);
   border-radius: 4px;
   font-size: 14px;
 }
@@ -53,7 +53,7 @@
   margin-bottom: 10px;
   gap: 10px;
   font-size: 14px;
-  color: #333;
+  color: light-dark(#333, #e0e3e7);
 }
 
 .radio-group input {
@@ -63,7 +63,7 @@
 .form-description {
 
   font-size: 12px;
-  color: #888;
+  color: light-dark(#888, #999b9f);
 }
 
 .styled-form select {
@@ -104,9 +104,9 @@
 .btn-cancel {
   width: 85px; /* Définit une largeur fixe */
   text-align: center; /* Centre le texte horizontalement */
-  background-color: #f8f9fa;
-  color: #333;
-  border: 1px solid #ddd;
+  background-color: light-dark(#f8f9fa, #171a1e);
+  color: light-dark(#333, #e0e3e7);
+  border: 1px solid light-dark(#ddd, #373b41);
   padding: 8px 16px;
   border-radius: 9px;
   cursor: pointer;
@@ -145,7 +145,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
+  background-color: light-dark(#ccc, #393d42);
   border-radius: 20px;
   transition: background-color 0.3s ease;
 }
@@ -157,7 +157,7 @@
   left: 2px;
   bottom: 2px;
   width: 16px;
-  background-color: white;
+  background-color: light-dark(white, #1d2125);
   border-radius: 50%;
   transition: transform 0.3s ease;
 }

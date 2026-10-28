@@ -3,12 +3,12 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: light-dark(#ffffff, #1d2125);
 }
 
 .conversation-top {
   flex-shrink: 0;
-  border-bottom: 1px solid #e8edf3;
+  border-bottom: 1px solid light-dark(#e8edf3, #34373c);
 }
 
 .chat-title {
@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #0f2340;
+  color: light-dark(#0f2340, #a6c0e5);
   font-size: 14px;
   font-weight: 700;
 }
@@ -40,7 +40,7 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   background: transparent;
   border: 0;
   border-radius: 8px;
@@ -48,8 +48,8 @@
 }
 
 .header-action:hover {
-  color: #111827;
-  background: #f3f6f9;
+  color: light-dark(#111827, #e8ecf6);
+  background: light-dark(#f3f6f9, #15191d);
 }
 
 .header-action i-feather {
@@ -77,7 +77,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-  color: #526985;
+  color: light-dark(#526985, #aeb5bd);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -89,10 +89,10 @@
   flex-shrink: 0;
   padding: 0 12px;
   margin-bottom: 14px;
-  color: #1f2937;
+  color: light-dark(#1f2937, #e3e9f3);
   font-size: 12px;
-  background: #ffffff;
-  border: 1px solid #d8e1ec;
+  background: light-dark(#ffffff, #1d2125);
+  border: 1px solid light-dark(#d8e1ec, #343b43);
   border-radius: 6px;
   outline: none;
 }
@@ -115,7 +115,7 @@
 }
 
 .conversation-list::-webkit-scrollbar-thumb {
-  background: #9aa7b7;
+  background: light-dark(#9aa7b7, #414953);
   border-radius: 999px;
 }
 
@@ -129,12 +129,12 @@
   text-align: left;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #eef2f6;
+  border-bottom: 1px solid light-dark(#eef2f6, #32363c);
   cursor: pointer;
 }
 
 .conversation-card:hover {
-  background: #f8fbfd;
+  background: light-dark(#f8fbfd, #171b1f);
 }
 
 .conversation-card img,
@@ -152,9 +152,9 @@
 .avatar {
   display: grid;
   place-items: center;
-  color: #087cb8;
+  color: light-dark(#087cb8, #58b7f6);
   font-size: 15px;
-  background: #e1f4fd;
+  background: light-dark(#e1f4fd, #113442);
 }
 
 .conversation-info {
@@ -164,7 +164,7 @@
 
 .conversation-name {
   overflow: hidden;
-  color: #0f2340;
+  color: light-dark(#0f2340, #a6c0e5);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -174,7 +174,7 @@
 .conversation-last {
   margin-top: 3px;
   overflow: hidden;
-  color: #8495ae;
+  color: light-dark(#8495ae, #91979f);
   font-size: 11px;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -182,11 +182,11 @@
 
 /* when conversation has unread messages, make name/preview bold */
 .conversation-card.conversation-unread .conversation-last {
-  color: #0f2340;
+  color: light-dark(#0f2340, #a6c0e5);
   font-weight: 700;
 }
 .conversation-card.conversation-unread .conversation-name {
-  color: #0f2340;
+  color: light-dark(#0f2340, #a6c0e5);
   font-weight: 800;
 }
 
@@ -203,17 +203,17 @@
 .badge-group {
   margin-left: 5px;
   padding: 2px 6px;
-  color: #526985;
+  color: light-dark(#526985, #aeb5bd);
   font-size: 9px;
   font-weight: 700;
   vertical-align: middle;
-  background: #edf3f8;
+  background: light-dark(#edf3f8, #13171b);
   border-radius: 4px;
 }
 
 .section-subtitle {
   margin: 8px 0;
-  color: #8495ae;
+  color: light-dark(#8495ae, #91979f);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;

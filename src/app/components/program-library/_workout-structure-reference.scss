@@ -15,8 +15,8 @@
     max-width: 100vw !important;
     min-height: 100vh !important;
     overflow: hidden !important;
-    background: #f7f9fb !important;
-    color: #102038 !important;
+    background: light-dark(#f7f9fb, #171a1e) !important;
+    color: light-dark(#102038, #e5ebf4) !important;
   }
 
   .np-root.exercise-drawer-open {
@@ -45,8 +45,8 @@
     gap: 14px !important;
     margin: 0 !important;
     padding: 0 24px !important;
-    border-bottom: 1px solid #dce3ea !important;
-    background: #fff !important;
+    border-bottom: 1px solid light-dark(#dce3ea, #353a40) !important;
+    background: light-dark(#fff, #1d2125) !important;
     box-sizing: border-box !important;
   }
 
@@ -59,13 +59,13 @@
     padding: 0 !important;
     border: 0 !important;
     border-radius: 50% !important;
-    background: #f0f4f7 !important;
-    color: #52677f !important;
+    background: light-dark(#f0f4f7, #14181c) !important;
+    color: light-dark(#52677f, #b0b7bf) !important;
   }
   .np-root .np-pagehead .np-back .np-ico { width: 20px !important; height: 20px !important; }
-  .np-root .np-pagehead .np-h5 { margin: 0 !important; color: #102038 !important; font-size: 22px !important; font-weight: 650 !important; line-height: 28px !important; }
+  .np-root .np-pagehead .np-h5 { margin: 0 !important; color: light-dark(#102038, #e5ebf4) !important; font-size: 22px !important; font-weight: 650 !important; line-height: 28px !important; }
   .np-root .np-pagehead__copy { display: flex !important; min-width: 0 !important; flex-direction: column !important; gap: 2px !important; }
-  .np-root .np-pagehead__meta { margin: 0 !important; overflow: hidden !important; color: #61748a !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+  .np-root .np-pagehead__meta { margin: 0 !important; overflow: hidden !important; color: light-dark(#61748a, #a5acb4) !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
 
   .np-root .np-aside {
     position: relative !important;
@@ -80,15 +80,15 @@
     flex: none !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    border: 1px solid #dbe3ec !important;
+    border: 1px solid light-dark(#dbe3ec, #343a41) !important;
     border-radius: 15px !important;
-    background: #fff !important;
+    background: light-dark(#fff, #1d2125) !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, .05) !important;
     box-sizing: border-box !important;
   }
-  .np-root .np-aside__head { position: relative !important; min-height: 86px !important; padding: 22px 20px 18px !important; border-bottom: 1px solid #e5eaf0 !important; }
-  .np-root .np-aside__head .np-h6 { margin: 0 0 2px !important; color: #142033 !important; font-size: 18px !important; font-weight: 650 !important; line-height: 24px !important; }
-  .np-root .np-aside__sub { margin: 0 !important; color: #607087 !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; }
+  .np-root .np-aside__head { position: relative !important; min-height: 86px !important; padding: 22px 20px 18px !important; border-bottom: 1px solid light-dark(#e5eaf0, #34383d) !important; }
+  .np-root .np-aside__head .np-h6 { margin: 0 0 2px !important; color: light-dark(#142033, #e5ebf4) !important; font-size: 18px !important; font-weight: 650 !important; line-height: 24px !important; }
+  .np-root .np-aside__sub { margin: 0 !important; color: light-dark(#607087, #a8aeb7) !important; font-size: 14px !important; font-weight: 400 !important; line-height: 20px !important; }
   .np-root .np-aside__head > .np-link { position: absolute !important; top: 25px !important; right: 20px !important; width: auto !important; margin: 0 !important; padding: 0 !important; font-size: 14px !important; font-weight: 500 !important; white-space: nowrap !important; }
   .np-root .np-aside__head > .np-link .np-ico { display: none !important; }
   .np-root .np-aside__body { flex: 1 !important; min-height: 0 !important; padding: 15px 20px 28px !important; overflow-y: auto !important; }
@@ -99,31 +99,31 @@
   .np-week-card:first-child { margin: 0 0 8px !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
   .np-week-card__head { width: 100% !important; min-height: 42px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
   .np-week-card__head-top { display: flex !important; width: 100% !important; align-items: center !important; gap: 8px !important; }
-  .np-week-card__chevron { flex: 0 0 14px !important; width: 14px !important; height: 14px !important; color: #8aa0b8 !important; }
-  .np-week-card__head strong { color: #182235 !important; font-size: 16px !important; font-weight: 650 !important; line-height: 22px !important; white-space: nowrap !important; }
-  .np-week-status { margin: 0 !important; padding: 3px 7px !important; border-radius: 5px !important; background: #eef2f6 !important; color: #4d6077 !important; font-size: 12px !important; font-weight: 400 !important; line-height: 18px !important; }
-  .np-week-range { color: #71829a !important; font-size: 14px !important; font-weight: 400 !important; white-space: nowrap !important; }
-  .np-week-card__count { min-height: 0 !important; margin-left: auto !important; padding: 0 !important; border: 0 !important; background: transparent !important; color: #6d7f99 !important; font-size: 14px !important; font-weight: 400 !important; white-space: nowrap !important; }
+  .np-week-card__chevron { flex: 0 0 14px !important; width: 14px !important; height: 14px !important; color: light-dark(#8aa0b8, #8c939b) !important; }
+  .np-week-card__head strong { color: light-dark(#182235, #e5eaf4) !important; font-size: 16px !important; font-weight: 650 !important; line-height: 22px !important; white-space: nowrap !important; }
+  .np-week-status { margin: 0 !important; padding: 3px 7px !important; border-radius: 5px !important; background: light-dark(#eef2f6, #14171b) !important; color: light-dark(#4d6077, #b5bcc5) !important; font-size: 12px !important; font-weight: 400 !important; line-height: 18px !important; }
+  .np-week-range { color: light-dark(#71829a, #999fa7) !important; font-size: 14px !important; font-weight: 400 !important; white-space: nowrap !important; }
+  .np-week-card__count { min-height: 0 !important; margin-left: auto !important; padding: 0 !important; border: 0 !important; background: transparent !important; color: light-dark(#6d7f99, #9da2ab) !important; font-size: 14px !important; font-weight: 400 !important; white-space: nowrap !important; }
 
   .np-dayrow,
-  .np-dayrow.is-active { position: relative !important; min-height: 45px !important; margin: 0 0 0 20px !important; padding: 0 !important; border: 0 !important; border-left: 1px solid #dbe5ef !important; border-radius: 0 !important; background: transparent !important; }
+  .np-dayrow.is-active { position: relative !important; min-height: 45px !important; margin: 0 0 0 20px !important; padding: 0 !important; border: 0 !important; border-left: 1px solid light-dark(#dbe5ef, #323a42) !important; border-radius: 0 !important; background: transparent !important; }
   .np-dayrow::before,
   .np-dayrow::after { display: none !important; }
   .np-dayrow .np-day,
   .np-dayrow .np-day.is-active { display: flex !important; width: 100% !important; min-height: 45px !important; margin: 0 !important; padding: 8px 12px 8px 14px !important; align-items: center !important; justify-content: flex-start !important; gap: 10px !important; border: 0 !important; border-radius: 0 9px 9px 0 !important; background: transparent !important; box-shadow: none !important; }
-  .np-dayrow .np-day.is-active { background: #e5f5fb !important; }
+  .np-dayrow .np-day.is-active { background: light-dark(#e5f5fb, #18343d) !important; }
   .np-day-state,
   .np-day-state.ready,
   .np-day-state.rest { display: grid !important; flex: 0 0 19px !important; width: 19px !important; height: 19px !important; place-items: center !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; }
   .np-day-state i-feather { width: 19px !important; height: 19px !important; color: #c6d4e2 !important; stroke-width: 1.7 !important; }
   .np-day-state.ready i-feather { color: #0ec291 !important; stroke-width: 2 !important; }
-  .np-day-state.rest i-feather { color: #8fa7c1 !important; }
+  .np-day-state.rest i-feather { color: light-dark(#8fa7c1, #8a9198) !important; }
   .np-root .np-day__topline { display: flex !important; width: auto !important; min-width: 0 !important; align-items: baseline !important; gap: 8px !important; white-space: nowrap !important; }
   .np-day__title,
-  .np-day.is-active .np-day__title { flex: 0 0 auto !important; color: #35445b !important; font-size: 16px !important; font-weight: 600 !important; line-height: 22px !important; }
-  .np-root .np-day__dateLine { display: inline !important; min-width: 0 !important; overflow: hidden !important; color: #71829a !important; font-size: 14px !important; font-weight: 400 !important; text-overflow: ellipsis !important; }
-  .np-root .np-day__meta { display: block !important; width: auto !important; margin: 0 0 0 auto !important; color: #72839d !important; font-size: 14px !important; font-weight: 400 !important; text-align: right !important; white-space: nowrap !important; }
-  .np-day.is-active .np-day__meta { color: #079bd4 !important; font-weight: 600 !important; }
+  .np-day.is-active .np-day__title { flex: 0 0 auto !important; color: light-dark(#35445b, #ced4dd) !important; font-size: 16px !important; font-weight: 600 !important; line-height: 22px !important; }
+  .np-root .np-day__dateLine { display: inline !important; min-width: 0 !important; overflow: hidden !important; color: light-dark(#71829a, #999fa7) !important; font-size: 14px !important; font-weight: 400 !important; text-overflow: ellipsis !important; }
+  .np-root .np-day__meta { display: block !important; width: auto !important; margin: 0 0 0 auto !important; color: light-dark(#72839d, #999ea7) !important; font-size: 14px !important; font-weight: 400 !important; text-align: right !important; white-space: nowrap !important; }
+  .np-day.is-active .np-day__meta { color: light-dark(#079bd4, #39b5ef) !important; font-weight: 600 !important; }
   .np-iconbtn--add { display: none !important; }
 
   .np-root .np-main {
@@ -140,7 +140,7 @@
     padding: calc(var(--builder-header-height) + 20px) 24px 100px 20px !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    background: #f7f9fb !important;
+    background: light-dark(#f7f9fb, #171a1e) !important;
     box-sizing: border-box !important;
   }
   .np-root .np-main > .np-pagehead { grid-column: 1 / -1 !important; }
@@ -153,15 +153,15 @@
 
   .np-card--settings,
   .np-root.settings-collapsed .np-card--settings,
-  .np-card--settings:not(:has(> .np-field)) { min-height: 68px !important; height: auto !important; margin: 0 !important; padding: 21px 24px !important; overflow: visible !important; border: 1px solid #dce3ea !important; border-radius: 14px !important; background: #fff !important; box-shadow: 0 2px 4px rgba(15, 23, 42, .07) !important; }
+  .np-card--settings:not(:has(> .np-field)) { min-height: 68px !important; height: auto !important; margin: 0 !important; padding: 21px 24px !important; overflow: visible !important; border: 1px solid light-dark(#dce3ea, #353a40) !important; border-radius: 14px !important; background: light-dark(#fff, #1d2125) !important; box-shadow: 0 2px 4px rgba(15, 23, 42, .07) !important; }
   .np-card--settings > .np-field { position: static !important; display: block !important; width: 100% !important; margin-right: 0 !important; margin-left: 0 !important; float: none !important; }
   .np-card--settings > .np-link { clear: both !important; margin-top: 16px !important; }
   .np-root.settings-collapsed .np-card--settings > .np-link { margin-top: 0 !important; }
   .np-card--settings .np-global-duration { position: static !important; width: 100% !important; margin-left: 0 !important; }
-  .np-settings-kicker { display: flex !important; min-height: 24px !important; align-items: center !important; gap: 10px !important; margin: 0 !important; color: #405b7d !important; font-size: 14px !important; font-weight: 500 !important; letter-spacing: .075em !important; text-transform: uppercase !important; }
+  .np-settings-kicker { display: flex !important; min-height: 24px !important; align-items: center !important; gap: 10px !important; margin: 0 !important; color: light-dark(#405b7d, #98b6dc) !important; font-size: 14px !important; font-weight: 500 !important; letter-spacing: .075em !important; text-transform: uppercase !important; }
   .np-settings-kicker__dot { width: 10px !important; height: 10px !important; flex: 0 0 10px !important; border-radius: 50% !important; background: #2aa9d8 !important; box-shadow: none !important; }
-  .np-settings-summary { min-width: 0 !important; overflow: hidden !important; color: #637795 !important; font-size: 14px !important; font-weight: 400 !important; letter-spacing: 0 !important; text-overflow: ellipsis !important; text-transform: none !important; white-space: nowrap !important; }
-  .np-settings-kicker .np-link { margin: 0 0 0 auto !important; color: #078dcb !important; letter-spacing: 0 !important; text-transform: none !important; }
+  .np-settings-summary { min-width: 0 !important; overflow: hidden !important; color: light-dark(#637795, #a3a9b1) !important; font-size: 14px !important; font-weight: 400 !important; letter-spacing: 0 !important; text-overflow: ellipsis !important; text-transform: none !important; white-space: nowrap !important; }
+  .np-settings-kicker .np-link { margin: 0 0 0 auto !important; color: light-dark(#078dcb, #48b5f5) !important; letter-spacing: 0 !important; text-transform: none !important; }
   .np-root .np-settings-toggle { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
   .np-root .np-settings-toggle .np-ico { width: 16px !important; height: 16px !important; }
 
@@ -176,7 +176,7 @@
     min-height: 56px !important;
     margin: 0 -24px !important;
     padding: 0 24px !important;
-    border-bottom: 1px solid #e5eaf0 !important;
+    border-bottom: 1px solid light-dark(#e5eaf0, #34383d) !important;
   }
   .np-root:not(.settings-collapsed) .np-main > .np-card--settings > .np-plan-title { position: static !important; grid-column: 1 !important; grid-row: 2 !important; width: 100% !important; margin: 0 !important; float: none !important; }
   .np-root:not(.settings-collapsed) .np-main > .np-card--settings > .np-global-duration { position: static !important; inset: auto !important; grid-column: 2 !important; grid-row: 2 !important; width: 100% !important; margin: 0 !important; float: none !important; }
@@ -186,18 +186,18 @@
   .np-root:not(.settings-collapsed) .program-schedule-grid { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 20px !important; }
   .np-root:not(.settings-collapsed) .program-schedule-grid > .program-schedule-field { display: block !important; }
   .np-root:not(.settings-collapsed) .np-label,
-  .np-root:not(.settings-collapsed) .program-schedule-label { color: #15243a !important; font-size: 16px !important; font-weight: 600 !important; line-height: 22px !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-label { color: light-dark(#15243a, #e4eaf3) !important; font-size: 16px !important; font-weight: 600 !important; line-height: 22px !important; }
   .np-root:not(.settings-collapsed) .np-input,
-  .np-root:not(.settings-collapsed) .program-schedule-input { min-height: 52px !important; border: 1px solid #cbd6e2 !important; border-radius: 9px !important; color: #102038 !important; background-color: #fff !important; font-size: 16px !important; }
-  .np-root:not(.settings-collapsed) .program-schedule-card { border-color: #dce4ec !important; border-radius: 10px !important; background: #f8fafc !important; }
-  .np-root:not(.settings-collapsed) .program-schedule-title { margin: 0 0 20px !important; color: #405b7d !important; font-size: 15px !important; font-weight: 600 !important; letter-spacing: .055em !important; text-transform: uppercase !important; }
-  .np-root:not(.settings-collapsed) .program-schedule-icon { color: #70859e !important; }
-  .np-root:not(.settings-collapsed) .program-schedule-helper { margin: 8px 0 0 !important; color: #71829a !important; font-size: 13px !important; line-height: 19px !important; }
-  .np-root:not(.settings-collapsed) .program-schedule-input--disabled { color: #435b78 !important; background: #f1f5f9 !important; }
-  .np-root:not(.settings-collapsed) .np-card--settings > .np-link { color: #078dcb !important; font-size: 16px !important; font-weight: 500 !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-input { min-height: 52px !important; border: 1px solid light-dark(#cbd6e2, #353e47) !important; border-radius: 9px !important; color: light-dark(#102038, #e5ebf4) !important; background-color: light-dark(#fff, #1d2125) !important; font-size: 16px !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-card { border-color: light-dark(#dce4ec, #343a40) !important; border-radius: 10px !important; background: light-dark(#f8fafc, #171a1f) !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-title { margin: 0 0 20px !important; color: light-dark(#405b7d, #98b6dc) !important; font-size: 15px !important; font-weight: 600 !important; letter-spacing: .055em !important; text-transform: uppercase !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-icon { color: light-dark(#70859e, #979ea6) !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-helper { margin: 8px 0 0 !important; color: light-dark(#71829a, #999fa7) !important; font-size: 13px !important; line-height: 19px !important; }
+  .np-root:not(.settings-collapsed) .program-schedule-input--disabled { color: light-dark(#435b78, #bac1c9) !important; background: light-dark(#f1f5f9, #15181d) !important; }
+  .np-root:not(.settings-collapsed) .np-card--settings > .np-link { color: light-dark(#078dcb, #48b5f5) !important; font-size: 16px !important; font-weight: 500 !important; }
 
   .np-root .wkex-quickchoose,
-  .np-root .wkex-addexercise--empty { display: flex !important; width: 100% !important; height: 68px !important; min-height: 68px !important; max-height: 68px !important; align-self: start !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 0 !important; border: 1px dashed #b8d0e4 !important; border-radius: 14px !important; background: #fff !important; color: #078dcb !important; font-size: 16px !important; font-weight: 500 !important; box-sizing: border-box !important; }
+  .np-root .wkex-addexercise--empty { display: flex !important; width: 100% !important; height: 68px !important; min-height: 68px !important; max-height: 68px !important; align-self: start !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 0 !important; border: 1px dashed light-dark(#b8d0e4, #364a5b) !important; border-radius: 14px !important; background: light-dark(#fff, #1d2125) !important; color: light-dark(#078dcb, #48b5f5) !important; font-size: 16px !important; font-weight: 500 !important; box-sizing: border-box !important; }
   .np-sticky { left: var(--builder-rail-width) !important; }
 
   /* Once the exercise drawer is open it replaces the quick-choose column.
@@ -230,7 +230,7 @@
 /* Day states without weekly publication (backlog-programmes.md): a day with an error, or empty in the middle of the
    program, is shown in amber in the rail and in the day header. */
 .np-root .np-dayrow .np-day-state.invalid i-feather,
-.np-root .np-dayrow .np-day-state.gap i-feather { color: #d97706 !important; }
+.np-root .np-dayrow .np-day-state.gap i-feather { color: light-dark(#d97706, #ee8a2c) !important; }
 .np-root .np-dayrow .np-day .np-day__meta.is-warning,
-.np-root .np-dayrow .np-day.is-active .np-day__meta.is-warning { color: #b45309 !important; font-weight: 600 !important; }
-.np-root .np-card--day .wk-day-editor__status.is-warning { border-color: #fcd34d !important; background: #fffbeb !important; color: #92400e !important; }
+.np-root .np-dayrow .np-day.is-active .np-day__meta.is-warning { color: light-dark(#b45309, #f68f54) !important; font-weight: 600 !important; }
+.np-root .np-card--day .wk-day-editor__status.is-warning { border-color: #fcd34d !important; background: light-dark(#fffbeb, #332c12) !important; color: light-dark(#92400e, #f4996c) !important; }

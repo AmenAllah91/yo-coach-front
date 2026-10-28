@@ -31,9 +31,9 @@ import { WriteActionDirective } from 'app/shared/subscription/write-action.direc
       gap: 10px;
       margin: 8px 0 20px;
       padding: 36px 20px;
-      border: 1.5px dashed #cbd5e1;
+      border: 1.5px dashed light-dark(#cbd5e1, #363e47);
       border-radius: 16px;
-      background: #fff;
+      background: light-dark(#fff, #1d2125);
       text-align: center;
     }
     .cpe__icon {
@@ -43,11 +43,11 @@ import { WriteActionDirective } from 'app/shared/subscription/write-action.direc
       place-items: center;
       border-radius: 50%;
       color: #44b4df;
-      background: #eef8fc;
+      background: light-dark(#eef8fc, #131a1d);
     }
     .cpe__icon i-feather { width: 26px; height: 26px; }
-    h3 { margin: 4px 0 0; color: #0f172a; font-size: 18px; font-weight: 800; }
-    p { max-width: 520px; margin: 0; color: #64748b; font-size: 14px; line-height: 1.55; }
+    h3 { margin: 4px 0 0; color: light-dark(#0f172a, #e8ecf6); font-size: 18px; font-weight: 800; }
+    p { max-width: 520px; margin: 0; color: light-dark(#64748b, #a5abb4); font-size: 14px; line-height: 1.55; }
     .cpe__hints {
       display: flex;
       flex-wrap: wrap;
@@ -56,7 +56,7 @@ import { WriteActionDirective } from 'app/shared/subscription/write-action.direc
       margin: 4px 0 6px;
       padding: 0;
       list-style: none;
-      color: #64748b;
+      color: light-dark(#64748b, #a5abb4);
       font-size: 12.5px;
     }
     .cpe__hints li { display: inline-flex; align-items: center; gap: 6px; }

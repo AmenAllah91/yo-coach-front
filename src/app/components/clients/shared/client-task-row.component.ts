@@ -42,7 +42,7 @@ import { isHabit, isTaskDone, taskActionLabel, taskColors, taskIcon, taskSubtitl
       width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px;
       border: 0; background: transparent; text-align: left; cursor: pointer; color: inherit;
     }
-    .task-row:hover { background: #fafbfc; }
+    .task-row:hover { background: light-dark(#fafbfc, #181b1f); }
     .task-row__tile {
       flex: none; width: 40px; height: 40px; border-radius: 11px;
       display: inline-flex; align-items: center; justify-content: center;
@@ -58,7 +58,7 @@ import { isHabit, isTaskDone, taskActionLabel, taskColors, taskIcon, taskSubtitl
     .task-row__copy strong.done { color: var(--yc-text-hint); text-decoration: line-through; }
     .task-row__copy span { font-size: 12px; line-height: 1.3; font-weight: 500; color: var(--yc-text-secondary); }
     .task-row__circle {
-      flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1.6px solid #cbd2dc;
+      flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1.6px solid light-dark(#cbd2dc, #383e46);
       display: inline-flex; align-items: center; justify-content: center; color: #fff;
       transition: background-color 0.16s ease, border-color 0.16s ease;
     }

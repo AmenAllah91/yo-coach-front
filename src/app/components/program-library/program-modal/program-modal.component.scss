@@ -22,15 +22,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #f0f9ff;
+  background: light-dark(#f0f9ff, #1f303b);
   display: flex;
   height: 100vh;
 }
 
 .sidebar {
   width: 240px;
-  background: #f9fafb;
-  border-right: 1px solid #e5e7eb;
+  background: light-dark(#f9fafb, #171b1f);
+  border-right: 1px solid light-dark(#e5e7eb, #34393f);
   padding: 1.5rem;
   overflow-y: auto;
 
@@ -41,7 +41,7 @@
       margin: 0;
       font-size: 1.125rem;
       font-weight: 600;
-      color: #1e293b;
+      color: light-dark(#1e293b, #e3e9f3);
     }
   }
 
@@ -55,17 +55,17 @@
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s ease;
-      background: white;
-      border: 1px solid #e2e8f0;
+      background: light-dark(white, #1d2125);
+      border: 1px solid light-dark(#e2e8f0, #34393f);
 
       &:hover {
-        background: #f8fafc;
+        background: light-dark(#f8fafc, #171a1f);
       }
 
       &.active {
-        background: #dbeafe;
+        background: light-dark(#dbeafe, #1c3350);
         border-color: #3b82f6;
-        color: #1e40af;
+        color: light-dark(#1e40af, #9fbdff);
       }
 
       .day-name {
@@ -76,7 +76,7 @@
       .remove-day-btn {
         background: none;
         border: none;
-        color: #9ca3af;
+        color: light-dark(#9ca3af, #8c9199);
         cursor: pointer;
         padding: 0.25rem;
         border-radius: 4px;
@@ -84,7 +84,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          color: #dc2626;
+          color: light-dark(#dc2626, #ff8275);
         }
       }
     }
@@ -96,10 +96,10 @@
       gap: 0.5rem;
       width: 100%;
       padding: 0.75rem;
-      background: white;
-      border: 1px dashed #d1d5db;
+      background: light-dark(white, #1d2125);
+      border: 1px dashed light-dark(#d1d5db, #3a3d42);
       border-radius: 6px;
-      color: #6b7280;
+      color: light-dark(#6b7280, #a7abb4);
       cursor: pointer;
       font-weight: 500;
       font-size: 0.875rem;
@@ -107,7 +107,7 @@
 
       &:hover {
         border-color: #3b82f6;
-        color: #3b82f6;
+        color: light-dark(#3b82f6, #75a9ff);
       }
     }
   }
@@ -124,12 +124,12 @@
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid light-dark(#e2e8f0, #34393f);
 
     .back-btn {
       background: none;
       border: none;
-      color: #64748b;
+      color: light-dark(#64748b, #a5abb4);
       cursor: pointer;
       padding: 0.5rem;
       border-radius: 6px;
@@ -137,8 +137,8 @@
       width: 40px;
 
       &:hover {
-        background: #f1f5f9;
-        color: #1e293b;
+        background: light-dark(#f1f5f9, #15181d);
+        color: light-dark(#1e293b, #e3e9f3);
       }
     }
 
@@ -150,7 +150,7 @@
         margin: 0;
         font-size: 1.5rem;
         font-weight: 600;
-        color: #1e293b;
+        color: light-dark(#1e293b, #e3e9f3);
       }
     }
 
@@ -185,23 +185,23 @@
           justify-content: space-between;
           margin-bottom: 0.5rem;
           font-weight: 500;
-          color: #374151;
+          color: light-dark(#374151, #d1d6df);
 
           .required {
-            color: #dc2626;
+            color: light-dark(#dc2626, #ff8275);
           }
 
           .remove-description-btn {
             background: none;
             border: none;
-            color: #64748b;
+            color: light-dark(#64748b, #a5abb4);
             cursor: pointer;
             padding: 0.25rem;
             border-radius: 4px;
 
             &:hover {
-              background: #f1f5f9;
-              color: #dc2626;
+              background: light-dark(#f1f5f9, #15181d);
+              color: light-dark(#dc2626, #ff8275);
             }
           }
         }
@@ -209,7 +209,7 @@
         .program-title-input, .date-input, .select-input {
           width: 100%;
           padding: 0.75rem 1rem;
-          border: 1px solid #d1d5db;
+          border: 1px solid light-dark(#d1d5db, #3a3d42);
           border-radius: 8px;
           font-size: 1rem;
 
@@ -241,13 +241,13 @@
           gap: 0.5rem;
           background: none;
           border: none;
-          color: #3b82f6;
+          color: light-dark(#3b82f6, #75a9ff);
           cursor: pointer;
           font-weight: 500;
           padding: 0.5rem 0;
 
           &:hover {
-            color: #1d4ed8;
+            color: light-dark(#1d4ed8, #8bb0ff);
           }
         }
 
@@ -269,7 +269,7 @@
 
           .checkbox-text {
             font-weight: 500;
-            color: #374151;
+            color: light-dark(#374151, #d1d6df);
             font-size: 1rem;
             order: 2;
           }
@@ -287,14 +287,14 @@
             margin: 0 0 1rem 0;
             font-size: 1.25rem;
             font-weight: 600;
-            color: #1e293b;
+            color: light-dark(#1e293b, #e3e9f3);
 
             .edit-icon {
-              color: #64748b;
+              color: light-dark(#64748b, #a5abb4);
               cursor: pointer;
 
               &:hover {
-                color: #3b82f6;
+                color: light-dark(#3b82f6, #75a9ff);
               }
             }
           }
@@ -309,12 +309,12 @@
             margin: 0 0 1rem 0;
             font-size: 1.125rem;
             font-weight: 600;
-            color: #1e293b;
+            color: light-dark(#1e293b, #e3e9f3);
           }
 
           .exercises-content {
             .no-exercises {
-              background: #f8fafc;
+              background: light-dark(#f8fafc, #171a1f);
               border-radius: 12px;
               padding: 2rem;
               text-align: center;
@@ -327,7 +327,7 @@
 
               p {
                 margin: 0;
-                color: #64748b;
+                color: light-dark(#64748b, #a5abb4);
                 font-size: 1rem;
               }
             }
@@ -337,10 +337,10 @@
               align-items: center;
               gap: 0.5rem;
               padding: 0.75rem 1.5rem;
-              background: #e0f2fe;
+              background: light-dark(#e0f2fe, #143446);
               border: none;
               border-radius: 8px;
-              color: #0ea5e9;
+              color: light-dark(#0ea5e9, #29b1f6);
               cursor: pointer;
               font-weight: 500;
               transition: all 0.2s ease;
@@ -349,7 +349,7 @@
               margin-top: 1rem;
 
               &:hover {
-                background: #bae6fd;
+                background: light-dark(#bae6fd, #0a3a4e);
               }
             }
           }
@@ -360,8 +360,8 @@
 
   .save-section {
     padding: 1.5rem 2rem;
-    border-top: 1px solid #e2e8f0;
-    background: #f8fafc;
+    border-top: 1px solid light-dark(#e2e8f0, #34393f);
+    background: light-dark(#f8fafc, #171a1f);
 
     .save-program-btn {
       display: flex;

@@ -1,25 +1,8 @@
-<div class="chat-panel" [ngClass]="{ open: isOpen, closed: !isOpen }">
-
-  <div class="chat-container">
-    <div class="chat-main">
-
-      <app-conversation-list
-        *ngIf="view === 'LIST'"
-        (conversationSelected)="openConversation($event)"
-        (closed)="close()">
-      </app-conversation-list>
-
-      <app-conversation-messages
-        *ngIf="view === 'MESSAGES'"
-        [selectedConversation]="selectedConversation"
-        (closed)="close()"
-        (back)="backToList()"
-        (expanded)="expandConversation()">
-      </app-conversation-messages>
-
-
-    </div>
-  </div>
-
+<div class="chat-panel">
+  <app-chat
+    [panelMode]="true"
+    [panelConversationId]="initialConversationId"
+    (panelClosed)="close()"
+    (panelExpanded)="expandConversation($event)">
+  </app-chat>
 </div>
-

@@ -1,27 +1,27 @@
 // Same design as the other coach list pages: brand blue #44b4df, sky borders, underlined tabs with count pills.
 $brand: #44b4df;
 $brand-hover: #3a9bc1;
-$sky-50: #f0f9ff;
-$sky-100: #e0f2fe;
-$sky-200: #bae6fd;
-$sky-700: #0369a1;
-$gray-50: #f9fafb;
-$gray-100: #f3f4f6;
-$gray-200: #e5e7eb;
-$gray-300: #d1d5db;
+$sky-50: light-dark(#f0f9ff, #1f303b);
+$sky-100: light-dark(#e0f2fe, #143446);
+$sky-200: light-dark(#bae6fd, #0a3a4e);
+$sky-700: light-dark(#0369a1, #7dd3fc);
+$gray-50: light-dark(#f9fafb, #171b1f);
+$gray-100: light-dark(#f3f4f6, #15181c);
+$gray-200: light-dark(#e5e7eb, #2c3035);
+$gray-300: light-dark(#d1d5db, #36393e);
 $gray-400: #9ca3af;
-$gray-500: #6b7280;
-$gray-600: #4b5563;
-$gray-700: #374151;
-$gray-900: #111827;
-$red-50: #fef2f2;
-$red-100: #fee2e2;
-$red-200: #fecaca;
-$red-600: #dc2626;
-$red-700: #b91c1c;
-$green-100: #dcfce7;
-$green-200: #bbf7d0;
-$green-700: #15803d;
+$gray-500: light-dark(#6b7280, #a7abb4);
+$gray-600: light-dark(#4b5563, #bfc5cd);
+$gray-700: light-dark(#374151, #d1d6df);
+$gray-900: light-dark(#111827, #e8ecf6);
+$red-50: light-dark(#fef2f2, #3c2829);
+$red-100: light-dark(#fee2e2, #4c2426);
+$red-200: light-dark(#fecaca, #522a2b);
+$red-600: light-dark(#dc2626, #f87171);
+$red-700: light-dark(#b91c1c, #fca5a5);
+$green-100: light-dark(#dcfce7, #0f3822);
+$green-200: light-dark(#bbf7d0, #1d4a31);
+$green-700: light-dark(#15803d, #6ee7a0);
 
 :host {
   display: block;
@@ -42,7 +42,7 @@ svg {
 /* ===== Page (aligned with the Clients page) ===== */
 .page {
   min-height: 100vh;
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #171a1f);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: $gray-900;
 }
@@ -85,7 +85,7 @@ svg {
   height: 36px;
   border: 1px solid $sky-200;
   border-radius: 8px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   font-size: 14px;
   color: $gray-900;
   outline: none;
@@ -145,7 +145,7 @@ svg {
 /* ===== Card ===== */
 .ck-card {
   margin: clamp(1rem, 1.8vw, 1.35rem) clamp(1.5rem, 2vw, 2rem) clamp(2rem, 3vw, 3rem);
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   border: 1px solid $sky-200;
   border-radius: 12px;
   overflow: hidden;
@@ -155,7 +155,7 @@ svg {
 /* ===== Tabs ===== */
 .tabs-wrap {
   padding: 0 20px;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
 }
 
 .tabs {
@@ -217,7 +217,7 @@ svg {
   transition: background-color 150ms ease;
 
   &:last-child { border-bottom: 0; }
-  &:hover { background: rgba(240, 249, 255, .5); }
+  &:hover { background: light-dark(rgba(240, 249, 255, .5), rgba(20, 26, 30, 0.5)); }
   &:focus-visible { outline: 2px solid $brand; outline-offset: -2px; }
 }
 
@@ -276,7 +276,7 @@ svg {
 .formType {
   margin: 0;
   font-size: 13px;
-  color: #94a3b8;
+  color: light-dark(#94a3b8, #8c919a);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -429,7 +429,7 @@ svg {
   justify-content: space-between;
   padding: 10px 20px;
   border-top: 1px solid $sky-100;
-  background: rgba(240, 249, 255, .3);
+  background: light-dark(rgba(240, 249, 255, .3), transparent);
 }
 
 .results {
@@ -500,7 +500,7 @@ svg {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25);
 }
@@ -613,7 +613,7 @@ svg {
   padding: 1.5rem;
 
   &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+  &::-webkit-scrollbar-track { background: light-dark(#f1f1f1, #13171b); border-radius: 10px; }
   &::-webkit-scrollbar-thumb { background: $gray-300; border-radius: 10px; }
 }
 
@@ -671,7 +671,7 @@ svg {
 
 .required-mark {
   margin-left: .25rem;
-  color: #ef4444;
+  color: light-dark(#ef4444, #ff7a72);
 }
 
 .help-text {
@@ -716,8 +716,8 @@ svg {
   font-size: .875rem;
   font-weight: 600;
 
-  &.yes { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
-  &.no { background: $red-100; color: #991b1b; border: 1px solid #fca5a5; }
+  &.yes { background: light-dark(#d1fae5, #0a3a27); color: light-dark(#065f46, #85d0b2); border: 1px solid light-dark(#a7f3d0, #1b533e); }
+  &.no { background: $red-100; color: light-dark(#991b1b, #ffa096); border: 1px solid #fca5a5; }
 }
 
 .star-rating-display {
@@ -851,8 +851,8 @@ svg {
   display: flex;
   gap: .75rem;
   padding: 1rem;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  background: light-dark(#ecfdf5, #173429);
+  border: 1px solid light-dark(#a7f3d0, #1b533e);
   border-radius: .75rem;
 }
 
@@ -860,7 +860,7 @@ svg {
   flex-shrink: 0;
   width: 1.25rem;
   height: 1.25rem;
-  color: #059669;
+  color: light-dark(#059669, #4fc494);
 
   svg { width: 100%; height: 100%; stroke-width: 2.5; }
 }
@@ -869,7 +869,7 @@ svg {
   margin: 0;
   font-size: .875rem;
   line-height: 1.5;
-  color: #047857;
+  color: light-dark(#047857, #69c6a1);
   white-space: pre-wrap;
 }
 
@@ -880,7 +880,7 @@ svg {
   gap: .75rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid $gray-200;
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   border-radius: 0 0 1rem 1rem;
 
   .spacer { flex: 1; }
@@ -909,7 +909,7 @@ svg {
 }
 
 .btn-cancel {
-  background: #fff;
+  background: light-dark(#fff, #1d2125);
   color: $gray-700;
   border: 1.5px solid $gray-300;
 
@@ -988,7 +988,7 @@ svg {
     padding: 9px 12px;
     border: 1px solid $sky-200;
     border-radius: 8px;
-    background: #fff;
+    background: light-dark(#fff, #1d2125);
     font-size: 13px;
 
     &:hover { border-color: $brand; }

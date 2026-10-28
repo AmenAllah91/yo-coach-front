@@ -32,10 +32,10 @@ import { CommonModule } from '@angular/common';
 
     .toggle-switch {
       display: flex;
-      background: #f8f9fa;
+      background: light-dark(#f8f9fa, #171a1e);
       border-radius: 8px;
       padding: 4px;
-      border: 1px solid #dee2e6;
+      border: 1px solid light-dark(#dee2e6, #363a40);
     }
 
     .toggle-option {
@@ -46,11 +46,11 @@ import { CommonModule } from '@angular/common';
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
-      color: #6c757d;
+      color: light-dark(#6c757d, #a3abb2);
       transition: all 0.2s;
 
       &:hover {
-        color: #495057;
+        color: light-dark(#495057, #c2cad2);
       }
 
       &.active {

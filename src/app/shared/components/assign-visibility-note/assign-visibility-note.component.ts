@@ -22,11 +22,11 @@ import { ProgramSummary, nutritionSummary, workoutSummary } from '@shared/models
   `,
   styles: [`
     .avn { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; padding: 10px 12px; border-radius: 10px;
-      border: 1px solid #bae6fd; background: #f0f9ff; color: #075985; font-size: 13px; line-height: 1.45; }
+      border: 1px solid light-dark(#bae6fd, #254d60); background: light-dark(#f0f9ff, #1f303b); color: light-dark(#075985, #81c6f8); font-size: 13px; line-height: 1.45; }
     .avn__icon { flex: 0 0 18px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%;
       border: 1.5px solid currentColor; font-size: 11px; font-weight: 700; line-height: 1; margin-top: 1px; }
-    .avn--complete { border-color: #a7f3d0; background: #ecfdf5; color: #065f46; }
-    .avn--warning { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
+    .avn--complete { border-color: light-dark(#a7f3d0, #1b533e); background: light-dark(#ecfdf5, #173429); color: light-dark(#065f46, #85d0b2); }
+    .avn--warning { border-color: #fcd34d; background: light-dark(#fffbeb, #332c12); color: light-dark(#92400e, #f4996c); }
   `],
 })
 export class AssignVisibilityNoteComponent {

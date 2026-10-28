@@ -56,7 +56,7 @@ const RING = 2 * Math.PI * 47;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .nms__row strong { font-size: 12px; font-weight: 600; color: var(--yc-text-primary); white-space: nowrap; }
-    .nms__track-bar { height: 6px; border-radius: 99px; background: #e8ebf0; overflow: hidden; }
+    .nms__track-bar { height: 6px; border-radius: 99px; background: light-dark(#e8ebf0, #2a2e32); overflow: hidden; }
     .nms__track-bar span { display: block; height: 100%; border-radius: inherit; transition: width 0.3s ease; }
     /* A narrow card (small phone): a smaller ring leaves room for the bars. */
     @container (max-width: 290px) {

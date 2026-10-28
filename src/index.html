@@ -6,6 +6,21 @@
   <title>Yo Coach </title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff">
+  <script>
+    // Light / dark choice applied before the first paint (ThemeModeService, same key).
+    (function () {
+      var mode = 'system';
+      try { mode = localStorage.getItem('yc-theme-mode') || 'system'; } catch (e) {}
+      var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var root = document.documentElement;
+      root.setAttribute('data-theme', dark ? 'dark' : 'light');
+      root.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+      root.style.colorScheme = dark ? 'dark' : 'light';
+      if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#15181c');
+    })();
+  </script>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <!-- Plugins Core Css -->
   <link

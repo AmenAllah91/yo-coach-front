@@ -1,7 +1,7 @@
 .subscription-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 16px 0; padding: 10px 14px; border: 1px solid transparent; border-radius: 12px; font-size: 14px; line-height: 1.4; }
-.tone-info { background: #eaf7fb; border-color: #cfeaf3; color: #1d6f8f; }
-.tone-warning { background: #fff8eb; border-color: #f3d9a4; color: #7a4b00; }
-.tone-danger { background: #fef2f2; border-color: #fbcaca; color: #991b1b; }
+.tone-info { background: light-dark(#eaf7fb, #1c3239); border-color: light-dark(#cfeaf3, #2e3c40); color: light-dark(#1d6f8f, #70bcdf); }
+.tone-warning { background: light-dark(#fff8eb, #362c17); border-color: light-dark(#f3d9a4, #594414); color: light-dark(#7a4b00, #dda86c); }
+.tone-danger { background: light-dark(#fef2f2, #3c2829); border-color: light-dark(#fbcaca, #623b3c); color: light-dark(#991b1b, #ffa096); }
 .banner-icon { flex: 0 0 18px; width: 18px; height: 18px; }
 .banner-text { flex: 1 1 220px; min-width: 0; }
 .banner-action { padding: 7px 14px; border: 0; border-radius: 8px; background: #38ace0; color: #ffffff; font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }

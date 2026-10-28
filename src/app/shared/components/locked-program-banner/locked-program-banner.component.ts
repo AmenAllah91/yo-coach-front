@@ -29,12 +29,12 @@ import { ProgramScheduleService } from 'app/service/program-schedule.service';
   styles: [`
     :host { display: block; margin-bottom: 14px; }
     .lpb { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
-      border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; }
+      border: 1px solid light-dark(#e2e8f0, #34393f); background: light-dark(#f8fafc, #171a1f); color: light-dark(#334155, #d1d7e0); }
     .lpb-icon { flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
-      background: #e2e8f0; color: #475569; }
+      background: light-dark(#e2e8f0, #283342); color: light-dark(#475569, #bfc5ce); }
     .lpb-icon ::ng-deep svg { width: 17px; height: 17px; }
     .lpb-text { flex: 1; display: grid; gap: 2px; font-size: 13.5px; line-height: 1.45; }
-    .lpb-text strong { color: #0f172a; font-weight: 700; }
+    .lpb-text strong { color: light-dark(#0f172a, #e8ecf6); font-weight: 700; }
     .lpb-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px;
       border-radius: 10px; border: 1.5px solid #0f172a; background: #0f172a; color: #fff; font-size: 13px;
       font-weight: 700; cursor: pointer; }

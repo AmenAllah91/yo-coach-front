@@ -261,8 +261,8 @@
   width: 52px;
   height: 52px;
   border-radius: 15px;
-  background: #efebfb;
-  color: #7455d9;
+  background: light-dark(#efebfb, #332c44);
+  color: light-dark(#7455d9, #ac9eff);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -314,7 +314,7 @@
     flex: none;
     padding: 4px 9px;
     border-radius: 99px;
-    background: #f4f6f9;
+    background: light-dark(#f4f6f9, #15191d);
     font-size: 12px;
     font-weight: 700;
     color: var(--yc-text-primary);
@@ -336,7 +336,7 @@
     margin-top: 14px;
     padding: 10px 12px;
     border-radius: 10px;
-    background: #f4f6f9;
+    background: light-dark(#f4f6f9, #15191d);
     font-size: 13px;
     font-weight: 500;
     color: var(--yc-text-secondary);
@@ -391,7 +391,7 @@
   cursor: pointer;
 
   &:hover {
-    background: #fafbfc;
+    background: light-dark(#fafbfc, #181b1f);
   }
 
   &__tile {
@@ -399,8 +399,8 @@
     width: 40px;
     height: 40px;
     border-radius: 11px;
-    background: #efebfb;
-    color: #7455d9;
+    background: light-dark(#efebfb, #332c44);
+    color: light-dark(#7455d9, #ac9eff);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -479,9 +479,9 @@
   margin: 0 0 16px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  color: #0c4a6e;
+  background: light-dark(#f0f9ff, #1f303b);
+  border: 1px solid light-dark(#bae6fd, #254d60);
+  color: light-dark(#0c4a6e, #8cc5ef);
   font-size: 14px;
   font-weight: 600;
   line-height: 1.45;
