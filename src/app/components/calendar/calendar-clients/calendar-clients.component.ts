@@ -1,25 +1,41 @@
 import { ClientProfileCacheService } from 'app/service/client-profile-cache.service';
+import { NutritionPlanKind, nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
 import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import {
   Component,
   OnInit,
-  OnDestroy,
   Input,
+  Output,
+  EventEmitter,
   OnChanges,
   SimpleChanges,
-  HostListener,
 } from '@angular/core';
-import { finalize } from 'rxjs';
+import { Observable, finalize } from 'rxjs';
+import { DestroyRef, inject as injectService } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AssignScheduleComponent } from '@shared/components/assign-schedule/assign-schedule.component';
+import { AssignConfirmComponent, AssignConfirmRow } from '@shared/components/assign-confirm/assign-confirm.component';
+import { CalendarCheckIn, ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ClientTasksService, TaskCalendarItem } from 'app/service/client-tasks.service';
+import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
+import {
+  ExerciseLine, MealLine, NutritionReport, WorkoutReport, checkInTone, exerciseLines, mealLines, nutritionReport, tasksTone,
+  workoutReport,
+} from '@shared/models/calendar-day';
+import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
+import { DayCopy } from '@shared/program-copy/program-day-copy';
+import { ClientPauseModalComponent } from '@shared/components/client-pause-modal/client-pause-modal.component';
+import { RemoveProgramConfirmComponent } from '@shared/components/remove-program-confirm/remove-program-confirm.component';
+import { ToastService } from 'app/service/toast.service';
+import { ClientSchedulePreview, OverviewItem, changeSentence, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { mealDayActive, workoutDayActive } from '@shared/models/client-day-activity';
+import { CalendarFile, FileBand, arrangeFiles, weekBands } from '@shared/models/calendar-files';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { ClientService } from 'app/service/client.service';
 import { Router } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
-import { ExerciseService, PageResponse } from 'app/service/exercise.service';
-import { Exercise as LibraryExercise } from '@shared/models/exercice.models';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
 import { lineMacros } from '@shared/models/nutrition-math';
@@ -47,9 +63,6 @@ interface Exercise {
   imageUrl?: string;
   youtubeUrl?: string;
   videoLink?: string;
-  showVideo?: boolean;
-  videoUrl?: SafeResourceUrl;
-  rawVideoUrl?: string;
   supersetGroupId?: string | null;
 }
 
@@ -72,19 +85,65 @@ interface WorkoutProgram {
   status?: 'COMPLETED' | 'MISSED' | 'PENDING';
   restDay?: boolean;
   emptyDay?: boolean;
-
-  // Optional metadata for imported PDF / Excel workout programs.
-  // Existing workout-day behavior stays untouched.
-  fileProgram?: boolean;
-  resourceType?: 'PDF' | 'EXCEL';
-  startDate?: string;
-  endDate?: string;
+  /** The client already did something on that day (backlog-programmes.md K1): it opens read-only. */
+  done?: boolean;
+  /** The day as the server sent it: what the client logged (lot C, L2). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw?: any;
 }
 
-interface WorkoutPlanRef {
+/** A client program with days, to add a day in the program of that date (K2). */
+interface PlanRange {
   programId: string;
-  programName: string;
+  start: string;
+  end: string;
+  /** Stopped or finished (A9): it is read, not changed. */
+  locked: boolean;
+  /** Nutrition: the editor that opens it. */
+  planKind?: NutritionPlanKind;
 }
+
+interface CalendarDay {
+  date: Date;
+  dateString: string;
+  dayNumber: number;
+  isToday: boolean;
+  weekdayLabel: string;
+  items: (WorkoutProgram | NutritionProgram)[];
+  /** A file band covers the day: « nothing planned » is not shown under it. */
+  covered: boolean;
+  /** The month (C3): one mark per subject of the day, its state said by a symbol (the week's follow-up rate). */
+  marks?: MonthMark[];
+  /** The month: the day's cards, the same as in the week (workout, nutrition, tasks, check-ins). */
+  plan?: WeekRowDay;
+}
+
+/** A subject of a day: its row in the week, a choice of the month, what the day panel can show alone. */
+type DaySubject = 'workout' | 'nutrition' | 'tasks' | 'checkins';
+
+/** A subject of a day in the month (C3): its icon, its state (✓ done, ✗ missed...), a short text. */
+interface MonthMark {
+  subject: DaySubject;
+  icon: string;
+  tone: string;
+  text: string;
+  /** The mouse's hint: the text and the state in words (the symbol alone says it by its color). */
+  hint: string;
+}
+
+/** One row of the month (or the week view): its days (null outside the month), the file bands drawn over it. */
+interface CalendarWeek {
+  key: string;
+  days: (CalendarDay | null)[];
+  bands: FileBand[];
+  /** Grid rows: the day numbers, one row per file band, then the day cards. */
+  rows: string;
+  /** The month (C3): how much of what was due that week the client did, in %; null when nothing was due. */
+  rate?: number | null;
+}
+
+/** Where the calendar was before opening an editor, to come back to the same month (sessionStorage). */
+const CALENDAR_PLACE_KEY = 'yo-coach.calendar-place';
 
 interface Client {
   id: string;
@@ -114,6 +173,8 @@ interface NutritionProgram {
   programId?: string;
   dayId?: string;
   trackingMode?: string;
+  /** Kind of the whole plan (editor to open): a plan with foods made on mobile is EACH_MEAL too. */
+  planKind?: NutritionPlanKind;
   programName?: string;
   dayNumber?: number;
   totalCalories: number;
@@ -122,6 +183,81 @@ interface NutritionProgram {
   totalFat: number;
   meals: NutritionMeal[];
   emptyDay?: boolean;
+  /** Free day (no targets). */
+  cheatMeal?: boolean;
+  status?: string;
+  /** The client already did something on that day (K1). */
+  done?: boolean;
+  /** The day as the server sent it: the client's meal reports and feelings (lot C, L2). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw?: any;
+}
+
+/** A cell of the week in rows (lot C, L1): its title, one line under it, its status. */
+interface WeekCell<T> {
+  item: T;
+  title: string;
+  meta: string;
+  status: { tone: string; text: string };
+  /** The detail of the day (as a coach's program sheet): its exercises, or its meals. */
+  exercises?: ExerciseLine[];
+  meals?: MealLine[];
+  /** A workout that can be dragged onto another day (not done, not past, program not stopped: K1, C4). */
+  movable?: boolean;
+}
+
+/** A day of the week in rows: one cell per program day of each type, its tasks and check-ins. */
+interface WeekRowDay {
+  date: Date;
+  dateString: string;
+  dayNumber: number;
+  isToday: boolean;
+  weekdayLabel: string;
+  workout: WeekCell<WorkoutProgram>[];
+  nutrition: WeekCell<NutritionProgram>[];
+  tasks: TaskCalendarItem[];
+  tasksDone: number;
+  tasksTone: string | null;
+  checkIns: CalendarCheckIn[];
+  /** A file band covers the day (nothing else to add under it). */
+  workoutCovered: boolean;
+  nutritionCovered: boolean;
+  /** The files of the day (a narrow window lists them, it has no bands). */
+  files: CalendarFile[];
+}
+
+/** The week in rows: Entraînement, Nutrition, Tâches, Check-ins; the files over the row of their type. */
+interface WeekPlan {
+  days: WeekRowDay[];
+  workoutBands: FileBand[];
+  nutritionBands: FileBand[];
+  /** Grid rows of a type: one per file band, then the cells. */
+  workoutRows: string;
+  nutritionRows: string;
+}
+
+/** « Ce jour-là » (lot C, L2-L3): what was planned that day face to what the client did. */
+interface DayDetail {
+  date: string;
+  label: string;
+  workouts: {
+    item: WorkoutProgram; report: WorkoutReport; status: { tone: string; text: string }; locked: boolean;
+    /** The planned exercises with their block (A1, B...) and rest, in the order of the report. */
+    lines: ExerciseLine[];
+  }[];
+  nutrition: {
+    item: NutritionProgram; report: NutritionReport; status: { tone: string; text: string };
+    /** The meals with their foods, in the order of the report. */
+    meals: MealLine[];
+  }[];
+  files: { file: CalendarFile; kind: CalendarType; day: number; total: number }[];
+  tasks: TaskCalendarItem[];
+  checkIns: CalendarCheckIn[];
+  /** Nothing of that type that day, no file of it, not past: the panel offers to add one. */
+  addWorkout: boolean;
+  addNutrition: boolean;
+  /** The week's row clicked (only that subject is shown), or null: the whole day. */
+  focus: DaySubject | null;
 }
 
 type CalendarViewMode = 'month' | 'week' | 'day';
@@ -130,11 +266,12 @@ type CalendarType = 'workout' | 'nutrition';
 @Component({
   selector: 'app-calendar-clients',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, TranslateModule, SectionLoaderComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, AssignScheduleComponent, AssignConfirmComponent,
+    ProgramShiftModalComponent, CopyDaysModalComponent, ClientPauseModalComponent, RemoveProgramConfirmComponent],
   templateUrl: './calendar-clients.component.html',
   styleUrl: './calendar-clients.component.scss',
 })
-export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
+export class CalendarClientsComponent implements OnInit, OnChanges {
 
   /** The client's programs arrived once: the section loader shows before (the client profile tab). */
   private workoutsLoaded = false;
@@ -148,118 +285,131 @@ export class CalendarClientsComponent implements OnInit, OnChanges, OnDestroy {
     return !!this.embeddedClientId;
   }
 
+  /** The coach's settings (K4): PDF / Excel programs are shown for a type only when files are used for it. */
   workoutFileEnabled = true;
   nutritionFileEnabled = true;
-currentDate = new Date();
-  currentView: CalendarViewMode = 'month';
+  private settingsKnown = false;
+  currentDate = new Date();
+  /** The week by default (lot C): what the client did shows best day by day. */
+  currentView: CalendarViewMode = 'week';
   calendarType: CalendarType = 'workout';
   selectedClient: string = '';
-  copiedDate: string | null = null;
+  /* Affectation (backlog-programmes.md A5/A6): what changes on the client's calendar before a program is created. */
+  programSchedule = injectService(ProgramScheduleService);
+  createProgramPreviews: Record<string, ClientSchedulePreview> = {};
+  createProgramChecking = false;
+  createProgramConfirmRows: AssignConfirmRow[] | null = null;
+  private createProgramConfirmed = false;
+  private cachedCalendarClientIds: string[] = [];
+
+  /** The selected client as a stable list for the schedule (a new array at each check would ask the server again). */
+  get calendarClientIds(): string[] {
+    const id = this.selectedClient ? String(this.selectedClient) : '';
+    if ((this.cachedCalendarClientIds[0] || '') !== id) this.cachedCalendarClientIds = id ? [id] : [];
+    return this.cachedCalendarClientIds;
+  }
 
   coachId: string | null = sessionStorage.getItem('userId');
+  private toast = injectService(ToastService);
+  private destroyRef = injectService(DestroyRef);
+  private tasksApi = injectService(ClientTasksService);
 
-  selectedWorkout: WorkoutProgram | null = null;
-  selectedNutritionDay: NutritionProgram | null = null;
-  showWorkoutDetails = false;
-  showNutritionDetails = false;
-
-  showAddWorkoutModal = false;
   showCreateProgramModal = false;
   createProgramName = '';
   createProgramDurationWeeks = 4;
   createProgramStartDate = '';
   readonly createProgramDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   createProgramSaving = false;
-  isRestDay = false;
-  selectedDateString: string | null = null;
-
-  newWorkoutTitle = '';
-  newWorkoutExercises: Exercise[] = [];
-
-  showExerciseSelector = false;
-  exerciseSearchTerm = '';
-  exerciseMuscleFilter = '';
-  exerciseEquipmentFilter = '';
-  exerciseTypeFilter = '';
-  exerciseSelectorLoading = false;
-  openSetTypeKey: string | null = null;
-
-  muscleOptions = [
-    { value: 'CHEST', label: 'Chest' },
-    { value: 'BACK', label: 'Back' },
-    { value: 'SHOULDERS', label: 'Shoulders' },
-    { value: 'ARMS', label: 'Arms' },
-    { value: 'LEGS', label: 'Legs' },
-    { value: 'CORE', label: 'Core' },
-  ];
-
-  equipmentOptions = [
-    { value: 'BARBELL', label: 'Barbell' },
-    { value: 'DUMBBELL', label: 'Dumbbell' },
-    { value: 'CABLE', label: 'Cable' },
-    { value: 'MACHINE', label: 'Machine' },
-    { value: 'BODYWEIGHT', label: 'Bodyweight' },
-  ];
-
-  typeOptions = [
-    { value: 'CARDIO', label: 'Cardio' },
-    { value: 'MUSCULATION', label: 'Musculation' },
-    { value: 'STRENGTH', label: 'Strength' },
-  ];
-
-  showDeleteModal = false;
-  workoutToDelete: WorkoutProgram | null = null;
-  editingWorkout: WorkoutProgram | null = null;
-
-  // Fix: Add connected lists for drag and drop
-  connectedLists: string[] = [];
-
-  private beforeToggleHandler: ((e: Event) => void) | null = null;
-
-  availableExercises: Exercise[] = [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workoutPrograms: any[] = [];
   nutritionPrograms: NutritionProgram[] = [];
   clients: Client[] = [];
+  /** PDF / Excel programs of the client, by type (K4). */
+  workoutFiles: CalendarFile[] = [];
+  nutritionFiles: CalendarFile[] = [];
+  private workoutRanges: PlanRange[] = [];
+  private nutritionRanges: PlanRange[] = [];
 
-  monthEmptyCells: number[] = [];
-  monthDates: Date[] = [];
-  client: any;
+  /** What the screen shows, computed when the data, the period or the type change (not at each check). */
+  monthWeeks: CalendarWeek[] = [];
+  weekPlan: WeekPlan | null = null;
+  /** The day open under the week (« Ce jour-là »), and what it shows; in the day view, that day. */
+  selectedDate: string | null = null;
+  dayDetail: DayDetail | null = null;
+  /** The panel shows only the subject of the row clicked in the week (its card, its chip); null: the whole day. */
+  dayFocus: DaySubject | null = null;
+  /** The month shows the subjects the coach chose (everything at once is too much to read); kept on this browser. */
+  monthShow: DaySubject[] = this.readMonthShow();
+  readonly monthSubjects: { key: DaySubject; icon: string; label: string }[] = [
+    { key: 'workout', icon: 'fitness_center', label: 'CALENDAR_ROW_WORKOUT' },
+    { key: 'nutrition', icon: 'restaurant', label: 'CALENDAR_ROW_NUTRITION' },
+    { key: 'tasks', icon: 'checklist', label: 'CALENDAR_ROW_TASKS' },
+    { key: 'checkins', icon: 'assignment', label: 'CALENDAR_ROW_CHECKINS' },
+  ];
+  /** A phone-sized window (under 768 px): the month is compact, the day touched shows under it; the week is a list. */
+  narrow = false;
+  /** The month on a narrow window: the day touched, its cards under the month. */
+  monthDay: CalendarDay | null = null;
+  /** « Décaler la suite » of a program, from the day panel (the window of the client's tabs). */
+  shiftTarget: { kind: 'WORKOUT' | 'NUTRITION'; item: OverviewItem } | null = null;
+  /** « Retirer ce programme » from the day panel: the client tab's window, then the same removal (CC-25). */
+  removeTarget: { kind: CalendarType; item: OverviewItem } | null = null;
+  removing = false;
+  /** The file under the mouse: all its pieces light up, it reads as one program. */
+  hoveredFileId: string | null = null;
+  private itemsByDate = new Map<string, (WorkoutProgram | NutritionProgram)[]>();
+  private workoutByDate = new Map<string, WorkoutProgram[]>();
+  private nutritionByDate = new Map<string, NutritionProgram[]>();
+  private tasksByDate = new Map<string, TaskCalendarItem[]>();
+  private checkInsByDate = new Map<string, CalendarCheckIn[]>();
+  private placeRestored = false;
 
   @Input() embeddedClientId: string | null = null;
   @Input() embeddedCoachId: string | null = null;
+  /** The client's name inside their profile (the calendar has no list of clients there). */
+  @Input() embeddedClientName = '';
   @Input() hideClientFilter = false;
+  /** A file band clicked: the client profile opens it as its tab does. Alone, the calendar opens it itself. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  @Output() openFile = new EventEmitter<{ type: CalendarType; programId: string; plan: any }>();
+  /** From the day panel, inside the client profile: its Discussion tab, or the window of a check-in's answers. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  @Output() profileAction = new EventEmitter<{ type: 'chat' } | { type: 'checkin'; assignment: any }>();
+
+  /** Opened from a client's tab (« Voir le suivi »): that calendar (workout or nutrition), on the month of that day. */
+  @Input() set focus(value: { type: CalendarType; date?: string | null } | null) {
+    if (!value) return;
+    this.placeRestored = true;
+    if (value.type !== this.calendarType) this.setCalendarType(value.type);
+    if (value.date) {
+      const [year, month, day] = value.date.slice(0, 10).split('-').map(Number);
+      if (year && month && day) {
+        this.currentDate = new Date(year, month - 1, day);
+        this.showPeriod();
+      }
+    }
+  }
 
   constructor(
     private workoutService: WorkoutService,
     private nutritionService: NutritionService,
     private clientService: ClientService,
     private router: Router,
-    private sanitizer: DomSanitizer,
     private coachSettingsService: CoachSettingsService,
-    private exerciseService: ExerciseService,
     private translate: TranslateService,
     private profileCache: ClientProfileCacheService,
   ) {}
 
-  @HostListener('document:click')
-  closeSetTypeMenuOnDocumentClick(): void {
-    this.openSetTypeKey = null;
-  }
-
   ngOnInit(): void {
-    this.coachSettingsService.loadConfig(this.embedded).subscribe({
-      next: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
-        this.updateMonthGrid();
-      },
-      error: () => {
-        this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-        this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
-      },
-    });
+    // Files are drawn once the settings are known: a coach without files never sees them flash (K4).
+    const applySettings = () => {
+      this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
+      this.nutritionFileEnabled = this.coachSettingsService.shouldUseNutritionFiles();
+      this.settingsKnown = true;
+      this.updateMonthGrid();
+    };
+    this.coachSettingsService.loadConfig(this.embedded).subscribe({ next: applySettings, error: applySettings });
     if (this.embeddedCoachId) {
       this.coachId = this.embeddedCoachId;
     }
@@ -268,22 +418,60 @@ currentDate = new Date();
       this.selectedClient = this.embeddedClientId;
     }
 
-    this.updateMonthGrid();
-    this.getAllLibrary();
-
+    this.restorePlace();
+    this.loadCalendar();
     if (!this.hideClientFilter) {
       this.getClients();
-    } else {
-      this.getWorkout();
     }
-
+    // A program assigned, moved, shifted or paused from a tab: the calendar reads its months again.
+    this.programSchedule.changed$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadCalendar());
+    // A phone-sized window: the compact month and the week as a list (CC-24).
+    const media = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 767px)') : null;
+    if (media) {
+      this.narrow = media.matches;
+      const onChange = (event: MediaQueryListEvent) => {
+        this.narrow = event.matches;
+        this.updateMonthGrid();
+      };
+      media.addEventListener('change', onChange);
+      this.destroyRef.onDestroy(() => media.removeEventListener('change', onChange));
+    }
   }
 
   goBack(): void { window.history.back(); }
 
-  ngOnDestroy(): void {
-    this.cleanupWorkoutPointerDrag();
-    this.teardownPopoverIntercept();
+  /** Before an editor opens: its « Retour » comes back to this month, type and view. */
+  private rememberPlace(): void {
+    try {
+      sessionStorage.setItem(CALENDAR_PLACE_KEY, JSON.stringify({
+        client: this.selectedClient,
+        type: this.calendarType,
+        view: this.currentView,
+        date: this.formatDateToYYYYMMDD(this.currentDate),
+        at: Date.now(),
+      }));
+    } catch {
+      // No storage: the calendar opens on today.
+    }
+  }
+
+  /** Back from an editor (within 30 minutes): the same place. A tab's « Voir le suivi » wins (focus). */
+  private restorePlace(): void {
+    let place: { client?: string; type?: CalendarType; view?: CalendarViewMode; date?: string; at?: number } | null = null;
+    try {
+      place = JSON.parse(sessionStorage.getItem(CALENDAR_PLACE_KEY) || 'null');
+      sessionStorage.removeItem(CALENDAR_PLACE_KEY);
+    } catch {
+      return;
+    }
+    if (this.placeRestored || !place?.client || !place.at || Date.now() - place.at > 30 * 60000) return;
+    if (this.embeddedClientId ? place.client !== this.embeddedClientId : !!this.selectedClient) return;
+    this.placeRestored = true;
+    this.selectedClient = place.client;
+    if (place.type === 'workout' || place.type === 'nutrition') this.calendarType = place.type;
+    if (place.view === 'month' || place.view === 'week' || place.view === 'day') this.currentView = place.view;
+    const [year, month, day] = String(place.date || '').split('-').map(Number);
+    if (year && month && day) this.currentDate = new Date(year, month - 1, day);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -291,18 +479,16 @@ currentDate = new Date();
       this.coachId = this.embeddedCoachId;
     }
 
-    // The first value is loaded by ngOnInit: loading it here too fetched every program twice.
+    // The first value is loaded by ngOnInit: loading it here too read every month twice.
     if (changes['embeddedClientId'] && !changes['embeddedClientId'].firstChange) {
       this.selectedClient = this.embeddedClientId || '';
-      this.getWorkout();
-      this.getNutrition();
+      this.loadCalendar();
     }
   }
 
   onClientChange(clientId: string): void {
     this.selectedClient = clientId;
-    this.getWorkout();
-    this.getNutrition();
+    this.loadCalendar();
   }
 
   getClients(): void {
@@ -310,9 +496,8 @@ currentDate = new Date();
       .getListClientsByCoachWithoutPagination(this.coachId)
       .subscribe({
         next: (res) => {
-          this.clients = res;
-          console.log('CLIENTS', this.clients);
-          this.getWorkout();
+          // Active clients only (backlog-programmes.md A1): the calendar creates programs for the one selected.
+          this.clients = (res || []).filter((client: any) => (client?.clientStatus ?? 'ACTIVE') === 'ACTIVE');
         },
         error: (err) => {
           console.error('Error loading clients', err);
@@ -320,112 +505,216 @@ currentDate = new Date();
       });
   }
 
-  getAllLibrary(): void {
-    this.getNutrition();
+  /* ---- Reading by month (backlog-programmes.md, calendar lot B): the months on the screen, then the month before and
+          the month after in the background (the next click shows at once). Both types come in one read. ---- */
+
+  /** The months read, the ones being read, the plans read by id; `readGeneration` drops the answers of an old client. */
+  private monthsRead = new Set<string>();
+  private monthsReading = new Set<string>();
+  /** Months whose read failed: not read again in the background (no loop), only when shown again or « Réessayer ». */
+  private monthsFailed = new Set<string>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private workoutPlansById = new Map<string, any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private mealPlansById = new Map<string, any>();
+  /** The tasks and habits, and the check-ins, of each month read (lot C). */
+  private tasksByMonth = new Map<string, TaskCalendarItem[]>();
+  private checkInsByMonth = new Map<string, CalendarCheckIn[]>();
+  private readGeneration = 0;
+  /** A month on the screen is being read (after the first one): a thin bar says it, the grid stays. */
+  periodLoading = false;
+
+  /** Everything again from the server: another client, or after a change made here or elsewhere. */
+  loadCalendar(): void {
+    this.readGeneration++;
+    this.monthsRead.clear();
+    this.monthsReading.clear();
+    this.monthsFailed.clear();
+    this.workoutPlansById.clear();
+    this.mealPlansById.clear();
+    this.tasksByMonth.clear();
+    this.checkInsByMonth.clear();
+    const hasClient = !!this.selectedClient && this.selectedClient !== 'all';
+    this.workoutsLoaded = this.nutritionLoaded = !hasClient;
+    this.applyPlans();
+    this.readPeriod();
   }
 
-  /**
-   * Client profile: the plans the profile dashboard already read are shown at once (and shared while they load).
-   * A list of 100 may be cut (dashboard page size): the calendar then reads up to 500 as before.
-   */
-  private fromProfile(part: 'workouts' | 'nutrition', apply: (plans: any[]) => void, done: () => void): boolean {
-    if (!this.embedded || !this.coachId || !this.selectedClient) return false;
-    const clientId = this.selectedClient;
-    const known = this.profileCache.snapshot<any[]>(part, clientId);
-    if (known && known.length >= 100) return false;
-    if (known) {
-      apply(known);
-      done();
-      if (this.profileCache.isFresh(part, clientId)) return true;
-    }
-    this.profileCache.load<any[]>(part, this.coachId, clientId).subscribe({
-      next: (plans) => {
-        if (clientId !== this.selectedClient) return;
-        apply(plans || []);
-        done();
-      },
-      error: () => done(),
-    });
-    return true;
+  /** The screen changed (period or view): the months it shows are read if they are not yet. */
+  private showPeriod(): void {
+    this.updateMonthGrid();
+    this.readPeriod();
   }
 
-  getNutrition(): void {
-    if (!this.coachId || !this.selectedClient || this.selectedClient === 'all') {
-      this.nutritionPrograms = [];
-      this.nutritionLoaded = true;
-      this.updateMonthGrid();
+  private readPeriod(): void {
+    if (!this.selectedClient || this.selectedClient === 'all') {
+      this.periodLoading = false;
       return;
     }
-    if (this.fromProfile('nutrition', (plans) => {
-      this.nutritionPrograms = this.mapBackendToNutritionPrograms(plans);
-      this.updateMonthGrid();
-    }, () => (this.nutritionLoaded = true))) return;
-
-    this.nutritionService
-      .getNutritionPlanByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', this.embedded)
-      .pipe(finalize(() => (this.nutritionLoaded = true)))
-      .subscribe({
-        next: (res) => {
-          this.nutritionPrograms = this.mapBackendToNutritionPrograms(res.content || []);
-          console.log('CLIENT ASSIGNED NUTRITION PROGRAMS', this.nutritionPrograms);
-          this.updateMonthGrid();
-        },
-        error: (err) => {
-          console.error('Error loading client assigned nutrition plans', err);
-          this.nutritionPrograms = [];
-          this.updateMonthGrid();
-        },
-      });
+    const missing = this.monthsOnScreen().filter((month) => !this.monthsRead.has(month));
+    this.periodLoading = missing.length > 0;
+    if (missing.length) missing.forEach((month) => this.readMonth(month));
+    else this.readNeighbours();
   }
 
-  getWorkout(): void {
-    if (!this.coachId) {
-      console.error('No coach id found in sessionStorage');
-      this.workoutPrograms = [];
-      this.workoutsLoaded = true;
-      return;
-    }
+  /** The month of the view (month and day views), or the one or two months of the week. */
+  private monthsOnScreen(): string[] {
+    const dates = this.currentView === 'week' ? [this.getWeekDates()[0], this.getWeekDates()[6]] : [this.currentDate];
+    return [...new Set(dates.map((date) => this.monthKey(date)))];
+  }
 
-    if (this.selectedClient && this.selectedClient !== 'all') {
-      if (this.fromProfile('workouts', (plans) => {
-        this.workoutPrograms = this.mapBackendToWorkoutPrograms(plans);
+  private monthKey(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private readNeighbours(): void {
+    const year = this.currentDate.getFullYear();
+    const month = this.currentDate.getMonth();
+    [new Date(year, month - 1, 1), new Date(year, month + 1, 1)].forEach((date) => this.readMonth(this.monthKey(date), true));
+  }
+
+  private readMonth(month: string, neighbour = false): void {
+    if (this.monthsRead.has(month) || this.monthsReading.has(month)) return;
+    if (neighbour && this.monthsFailed.has(month)) return;
+    this.monthsReading.add(month);
+    const generation = this.readGeneration;
+    const [year, monthNumber] = month.split('-').map(Number);
+    const from = `${month}-01`;
+    const to = this.formatDateToYYYYMMDD(new Date(year, monthNumber, 0));
+    // The tasks and habits come by the tasks' own read, side by side: their row fills in when they arrive.
+    this.tasksApi.calendar(this.selectedClient, from, to, true).subscribe({
+      next: (tasks) => {
+        if (generation !== this.readGeneration) return;
+        this.tasksByMonth.set(month, tasks?.items || []);
         this.updateMonthGrid();
-      }, () => (this.workoutsLoaded = true))) return;
-      this.workoutService
-        .getWorkoutByCoachIdAndClient(this.coachId, this.selectedClient, 0, 500, 'ALL', 'ALL', 'ALL', 'RECOMMENDED', this.embedded)
-        .pipe(finalize(() => (this.workoutsLoaded = true)))
-        .subscribe({
-          next: (res) => {
-            this.workoutPrograms = this.mapBackendToWorkoutPrograms(
-              res.content || []
-            );
-            console.log(
-              'CLIENT ASSIGNED WORKOUT PROGRAMS',
-              this.workoutPrograms
-            );
-            this.updateMonthGrid();
-          },
-          error: (err) => {
-            console.error('Error loading client assigned workout plans', err);
-            this.workoutPrograms = [];
-          },
-        });
+      },
+      error: (err) => console.error('Error loading the client tasks', err),
+    });
+    this.programSchedule.calendar(this.selectedClient, from, to).subscribe({
+      next: (period) => {
+        if (generation !== this.readGeneration) return;
+        this.monthsReading.delete(month);
+        this.monthsFailed.delete(month);
+        this.monthsRead.add(month);
+        (period?.workoutPlans || []).forEach((plan) => plan?.id && this.workoutPlansById.set(plan.id, plan));
+        (period?.mealPlans || []).forEach((plan) => plan?.id && this.mealPlansById.set(plan.id, plan));
+        this.checkInsByMonth.set(month, period?.checkIns || []);
+        this.applyPlans();
+        this.afterRead();
+      },
+      error: (err) => {
+        if (generation !== this.readGeneration) return;
+        this.monthsReading.delete(month);
+        this.monthsFailed.add(month);
+        console.error('Error loading the client calendar', err);
+        if (!neighbour) {
+          this.toast.show({
+            type: 'error',
+            title: this.translate.instant('CALENDAR_LOAD_ERROR'),
+            actions: [{ label: this.translate.instant('RETRY'), run: () => this.loadCalendar() }],
+            duration: 10000,
+          });
+        }
+        this.afterRead();
+      },
+    });
+  }
 
-      return;
-    }
+  /** Once no month of the screen is being read: the screen is ready, the months around are read in the background. */
+  private afterRead(): void {
+    if (this.monthsOnScreen().some((month) => this.monthsReading.has(month))) return;
+    this.workoutsLoaded = this.nutritionLoaded = true;
+    this.periodLoading = false;
+    this.readNeighbours();
+  }
 
-    this.workoutPrograms = [];
-    this.workoutsLoaded = true;
+  /** The plans read so far, as the screen uses them. */
+  private applyPlans(): void {
+    this.applyWorkoutPlans([...this.workoutPlansById.values()]);
+    this.applyNutritionPlans([...this.mealPlansById.values()]);
     this.updateMonthGrid();
   }
 
+  /**
+   * The client's workout plans as they are (K5, no merging): the days of the programs made in the app, the PDF / Excel
+   * programs apart (one band each, K4), and the dates of each program (a new day goes into its own, K2).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private applyWorkoutPlans(plans: any[]): void {
+    const withDays = (plans || []).filter((plan) => !this.isBackendFileWorkoutPlan(plan));
+    this.workoutPrograms = this.mapBackendToWorkoutPrograms(withDays);
+    this.workoutRanges = this.planRanges(withDays, (plan, start) => this.getNormalizedWorkoutEndDate(plan, start, false));
+    this.workoutFiles = this.filePrograms(
+      (plans || []).filter((plan) => this.isBackendFileWorkoutPlan(plan)),
+      (plan) => this.getBackendFileWorkoutResourceType(plan),
+      'workout',
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private applyNutritionPlans(plans: any[]): void {
+    const withDays = (plans || []).filter((plan) => !this.isFileNutritionPlan(plan));
+    this.nutritionPrograms = this.mapBackendToNutritionPrograms(withDays);
+    this.nutritionRanges = this.planRanges(withDays, (plan, start) => this.toCalendarDateOnly(plan?.endDate) || start);
+    this.nutritionFiles = this.filePrograms(
+      (plans || []).filter((plan) => this.isFileNutritionPlan(plan)),
+      (plan) => this.getBackendFileWorkoutResourceType(plan),
+      'nutrition',
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private planRanges(plans: any[], endOf: (plan: any, start: string) => string | null): PlanRange[] {
+    const today = todayIso();
+    return plans.flatMap((plan) => {
+      const start = this.toCalendarDateOnly(plan?.startDate);
+      if (!plan?.id || !start) return [];
+      const end = endOf(plan, start) || start;
+      return [{
+        programId: plan.id,
+        start,
+        end: end >= start ? end : start,
+        locked: isPlanLocked(plan, today),
+        planKind: nutritionPlanKind(plan),
+      }];
+    });
+  }
+
+  /** The program whose dates hold that day (the latest one if two do). */
+  private planCovering(ranges: PlanRange[], date: string): PlanRange | null {
+    return ranges
+      .filter((range) => range.start <= date && date <= range.end)
+      .sort((a, b) => b.start.localeCompare(a.start))[0] || null;
+  }
+
+  /** The PDF / Excel programs (K4), with their color and their row (`arrangeFiles`). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private filePrograms(plans: any[], typeOf: (plan: any) => 'PDF' | 'EXCEL', kind: CalendarType): CalendarFile[] {
+    return arrangeFiles(plans.flatMap((plan): CalendarFile[] => {
+        const start = this.toCalendarDateOnly(plan?.startDate);
+        if (!plan?.id || !start) return [];
+        const end = this.toCalendarDateOnly(plan?.endDate);
+        return [{
+          programId: plan.id,
+          name: String(plan.name || plan.originalFileName || plan.fileName || '').trim(),
+          resourceType: typeOf(plan),
+          start,
+          end: end && end >= start ? end : start,
+          tone: 0,
+          lane: 0,
+          kind,
+          plan,
+        }];
+    }));
+  }
+
+  /** The files of the type shown, when the coach's settings use them for that type (K4). */
+  private get visibleFiles(): CalendarFile[] {
+    return this.visibleFilesOf(this.calendarType);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private isBackendFileWorkoutPlan(plan: any): boolean {
-    if (!this.workoutFileEnabled) {
-      return false;
-    }
-
     const mode = String(plan?.workoutPlanMode || '').toUpperCase();
     const type = String(plan?.resourceType || '').toUpperCase();
     const hasInteractiveDays =
@@ -512,67 +801,6 @@ currentDate = new Date();
       .map(([, day]) => day);
   }
 
-  private enumerateDateRange(startDate: string, endDate: string): string[] {
-    if (!startDate) {
-      return [];
-    }
-
-    const dates: string[] = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate || startDate);
-
-    if (isNaN(start.getTime())) {
-      return [];
-    }
-
-    if (isNaN(end.getTime()) || end < start) {
-      dates.push(this.formatDateToYYYYMMDD(start));
-      return dates;
-    }
-
-    const cursor = new Date(start);
-
-    while (cursor <= end) {
-      dates.push(this.formatDateToYYYYMMDD(cursor));
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    return dates;
-  }
-
-  isFileWorkoutItem(item: WorkoutProgram | NutritionProgram): boolean {
-    return this.calendarType === 'workout' && !!(item as WorkoutProgram).fileProgram;
-  }
-
-  hasFileWorkoutItems(items: (WorkoutProgram | NutritionProgram)[]): boolean {
-    return this.calendarType === 'workout' && items.some((item) => this.isFileWorkoutItem(item));
-  }
-
-  hasInteractiveWorkoutItems(items: (WorkoutProgram | NutritionProgram)[]): boolean {
-    return (
-      this.calendarType === 'workout' &&
-      items.some((item) => !this.isFileWorkoutItem(item))
-    );
-  }
-
-  hasFileRangeStarting(
-    items: (WorkoutProgram | NutritionProgram)[],
-    dateStr: string
-  ): boolean {
-    return items.some(
-      (item) =>
-        this.isFileWorkoutItem(item) && this.isFileRangeStart(item, dateStr)
-    );
-  }
-
-  getFileResourceType(item: WorkoutProgram | NutritionProgram): 'PDF' | 'EXCEL' {
-    return ((item as WorkoutProgram).resourceType || 'PDF') as 'PDF' | 'EXCEL';
-  }
-
-  getFileProgramSubtitle(item: WorkoutProgram | NutritionProgram): string {
-    return this.translate.instant(this.getFileResourceType(item) === 'EXCEL' ? 'EXCEL_PROGRAM' : 'PDF_PROGRAM');
-  }
-
   getCalendarCardProgramName(item: WorkoutProgram | NutritionProgram): string {
     return item.programName || item.title || this.translate.instant('PROGRAM');
   }
@@ -583,6 +811,67 @@ currentDate = new Date();
     return this.translate.instant('WEEK_DAY_LABEL', { week: weekNumber, day: dayNumber });
   }
 
+  /* ---- Month and week cards: the workout's name, its number of exercises and its status, as in the client's
+          « Programmes » tab (the exercises are listed in the day view). ---- */
+
+  calendarExerciseCount(item: WorkoutProgram): number {
+    return (item.sessions || []).reduce((count, session) => count + (session.exercises?.length || 0), 0);
+  }
+
+  /** The workout's name (its session), else its week and day. */
+  calendarWorkoutName(item: WorkoutProgram): string {
+    const name = (item.sessions || []).find(session => session.exercises?.length)?.notes?.trim();
+    // "Main Session": the name the builders give a new workout, shown in the coach's language.
+    if (name === 'Main Session') return this.translate.instant('CLIENT_PROGRAMS.DAY_SESSION');
+    return name || this.getCalendarCardDayLabel(item);
+  }
+
+  /** "6 exercices" (nothing for a rest or empty day). */
+  calendarWorkoutMeta(item: WorkoutProgram): string {
+    const count = this.calendarExerciseCount(item);
+    if (item.restDay || !count) return '';
+    return this.translate.instant(count === 1 ? 'CLIENT_PROGRAMS.EXERCISES_ONE' : 'CLIENT_PROGRAMS.EXERCISES', { count });
+  }
+
+  /** The day's status and its color: done, missed, today, planned, rest, empty. */
+  calendarDayStatus(item: WorkoutProgram | NutritionProgram, date: string, workout: boolean): { tone: string; text: string } {
+    const kind = workout ? 'WORKOUT' : 'NUTRITION';
+    const t = (key: string) => this.translate.instant(`CLIENT_PROGRAMS.${key}`);
+    const rest = workout ? (item as WorkoutProgram).restDay : (item as NutritionProgram).cheatMeal;
+    if (rest) return { tone: 'rest', text: t(`STATUS_REST_${kind}`) };
+    const empty = workout ? !this.calendarExerciseCount(item as WorkoutProgram) : !!item.emptyDay;
+    if (empty) return { tone: 'empty', text: t('STATUS_EMPTY') };
+    const status = String((item as { status?: string }).status || 'PENDING').toUpperCase();
+    if (status === 'COMPLETED' || status === 'OFF_PLAN') return { tone: 'done', text: t(`STATUS_DONE_${kind}`) };
+    if (status === 'MISSED') return { tone: 'missed', text: t(`STATUS_MISSED_${kind}`) };
+    // Started but not finished: never « Manquée ».
+    if ((item as { done?: boolean }).done) return { tone: 'partial', text: t(`STATUS_PARTIAL_${kind}`) };
+    const today = this.toCalendarDateOnly(new Date()) || '';
+    if (date === today) return { tone: 'today', text: t('STATUS_TODAY') };
+    if (date && today && date < today) return { tone: 'missed', text: t(`STATUS_MISSED_${kind}`) };
+    return { tone: 'planned', text: t(`STATUS_PLANNED_${kind}`) };
+  }
+
+  /** "2 100 kcal", "Jour libre" or "Vide". */
+  calendarNutritionTitle(item: NutritionProgram): string {
+    if (item.cheatMeal) return this.translate.instant('CLIENT_PROGRAMS.REST_TITLE_NUTRITION');
+    if (item.emptyDay) return this.translate.instant('CLIENT_PROGRAMS.DAY_EMPTY_TITLE');
+    if (item.totalCalories > 0) {
+      return this.translate.instant('CLIENT_PROGRAMS.KCAL', { count: Math.round(item.totalCalories).toLocaleString(this.calendarLocale) });
+    }
+    return this.getCalendarCardDayLabel(item);
+  }
+
+  /** "P 150 g · G 200 g · L 60 g". */
+  calendarMacros(item: NutritionProgram): string {
+    if (item.cheatMeal || item.emptyDay || !(item.totalProtein || item.totalCarbs || item.totalFat)) return '';
+    return this.translate.instant('CALENDAR_MACROS_SHORT', {
+      protein: Math.round(item.totalProtein || 0),
+      carbs: Math.round(item.totalCarbs || 0),
+      fat: Math.round(item.totalFat || 0),
+    });
+  }
+
   private extractDayNumber(value: string | undefined): number | null {
     const match = String(value || '').match(/day\s*(\d+)/i);
     return match ? Number(match[1]) : null;
@@ -590,48 +879,12 @@ currentDate = new Date();
 
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private deduplicateBackendWorkoutPlans(plans: any[]): any[] {
-    const map = new Map<string, any>();
-
-    (plans || []).forEach((plan) => {
-      const isFile = this.isBackendFileWorkoutPlan(plan);
-      const startDate = this.toCalendarDateOnly(plan?.startDate) || this.toCalendarDateOnly(plan?.workoutDays?.[0]?.date) || '';
-      const endDate = this.getNormalizedWorkoutEndDate(plan, startDate, isFile) || startDate;
-      const clientId = plan?.client?.id || plan?.client?._id || '';
-      const source = plan?.sourceWorkoutPlanId || String(plan?.name || '').trim().toLowerCase();
-      const fileKey = isFile
-        ? String(plan?.fileName || plan?.originalFileName || plan?.fileUrl || '').trim().toLowerCase()
-        : 'APP';
-
-      const key = `${clientId}|${source}|${fileKey}|${startDate}|${endDate}`;
-
-      if (!map.has(key)) {
-        map.set(key, plan);
-      }
-    });
-
-    return Array.from(map.values());
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mapBackendToWorkoutPrograms(plans: any[]): WorkoutProgram[] {
     const result: WorkoutProgram[] = [];
 
-    plans = this.deduplicateBackendWorkoutPlans(plans);
-
+    // Each program as it is (K5): two programs of the same name and dates are both shown.
     plans.forEach((plan) => {
-      const isFilePlan = this.isBackendFileWorkoutPlan(plan);
       const startDate = this.toCalendarDateOnly(plan.startDate) || this.toCalendarDateOnly(plan.workoutDays?.[0]?.date);
-      const endDate = this.getNormalizedWorkoutEndDate(plan, startDate, isFilePlan) || startDate;
-
-      // Imported PDF / Excel workout programs do not have workoutDays.
-      // We display them in the calendar during their assigned period.
-      // Existing in-app workout day logic below is untouched.
-      if (isFilePlan) {
-        // PDF and Excel assignments stay available elsewhere, but are intentionally
-        // hidden from the calendar until their dedicated calendar UX is restored.
-        return;
-      }
 
       const uniqueWorkoutDays = this.getUniqueWorkoutDaysByDayNumber(plan.workoutDays || []);
 
@@ -650,9 +903,6 @@ currentDate = new Date();
                 name: ex.name,
                 type: ex.type === 'CARDIO' ? 'cardio' : 'strength',
                 youtubeUrl: ex.youtubeUrl || ex.videoUrl || ex.videoLink || undefined,
-                showVideo: false,
-                videoUrl: undefined,
-                rawVideoUrl: undefined,
                 supersetGroupId: ex.supersetGroupId || null,
                 duration:
                   ex.duration ??
@@ -689,8 +939,11 @@ currentDate = new Date();
           dayNumber: day.dayNumber ?? 1,
           sessions,
           status: day.status || 'PENDING',
+          done: workoutDayActive(day),
+          raw: day,
           restDay: day.restDay,
-          emptyDay: !day.restDay && sessions.length === 0,
+          // As the server reads a day (ProgramDays.workoutDay): a session without exercises is an empty day.
+          emptyDay: !day.restDay && !sessions.some((session) => session.exercises.length > 0),
         });
       });
     });
@@ -725,10 +978,7 @@ currentDate = new Date();
     const result: NutritionProgram[] = [];
 
     plans.forEach((plan) => {
-      if (this.nutritionFileEnabled === false && this.isFileNutritionPlan(plan)) {
-        return;
-      }
-      this.expandNutritionDaysForRange(plan).forEach((day: any) => {
+      this.nutritionDays(plan).forEach((day: any) => {
         const hasMeals = !!day.meals && day.meals.length > 0;
 
         const hasTargets =
@@ -750,6 +1000,7 @@ currentDate = new Date();
             programId: plan.id,
             dayId: day.id,
             trackingMode: plan.trackingMode,
+            planKind: nutritionPlanKind(plan),
             programName: plan.name,
             dayNumber: day.dayNumber ?? 1,
             totalCalories: 0,
@@ -758,6 +1009,8 @@ currentDate = new Date();
             totalFat: 0,
             meals: [],
             emptyDay: true,
+            done: mealDayActive(day),
+            raw: day,
           });
           return;
         }
@@ -782,6 +1035,7 @@ currentDate = new Date();
           programId: plan.id,
           dayId: day.id,
           trackingMode: plan.trackingMode,
+          planKind: nutritionPlanKind(plan),
           programName: plan.name,
           dayNumber: day.dayNumber ?? 1,
           totalCalories: day.dayTargets?.calories ?? 0,
@@ -789,6 +1043,10 @@ currentDate = new Date();
           totalCarbs: day.dayTargets?.carbsG ?? 0,
           totalFat: day.dayTargets?.fatG ?? 0,
           meals,
+          cheatMeal: !!day.cheatMeal,
+          status: day.status || 'PENDING',
+          done: mealDayActive(day),
+          raw: day,
         });
       });
     });
@@ -796,38 +1054,18 @@ currentDate = new Date();
     return result;
   }
 
-  private expandNutritionDaysForRange(plan: any): any[] {
-    const days = [...(plan?.mealDays || [])];
+  /**
+   * The plan's days on their dates, as they are (K5): a plan shorter than its dates shows nothing after its last day
+   * (no copies of it). The number is the day's place in the plan, the one the editor opens (`?day=N`).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private nutritionDays(plan: any): any[] {
     const startDate = this.toCalendarDateOnly(plan?.startDate);
-    const endDate = this.toCalendarDateOnly(plan?.endDate);
-
-    if (!startDate) {
-      return days;
-    }
-
-    const expectedDays = endDate
-      ? this.daysBetween(startDate, endDate) + 1
-      : days.length;
-
-    const normalizedDays = days.map((day, index) => ({
-      ...day,
-      date: this.toCalendarDateOnly(day?.date) || this.addDays(startDate, index),
-      dayNumber: day?.dayNumber || index + 1,
-    }));
-
-    while (normalizedDays.length < expectedDays) {
-      const index = normalizedDays.length;
-      const template = normalizedDays[normalizedDays.length - 1] || {};
-
-      normalizedDays.push({
-        ...template,
-        id: undefined,
-        date: this.addDays(startDate, index),
-        dayNumber: index + 1,
-      });
-    }
-
-    return normalizedDays;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (plan?.mealDays || []).flatMap((day: any, index: number) => {
+      const date = this.toCalendarDateOnly(day?.date) || (startDate ? this.addDays(startDate, index) : null);
+      return date ? [{ ...day, date, dayNumber: index + 1 }] : [];
+    });
   }
 
   private daysBetween(startDate: string, endDate: string): number {
@@ -859,17 +1097,6 @@ currentDate = new Date();
   isToday(date: Date): boolean {
     const today = new Date();
     return this.formatDateToYYYYMMDD(today) === this.formatDateToYYYYMMDD(date);
-  }
-
-  getBadgeText(status: string): string {
-    switch (status) {
-      case 'COMPLETED':
-        return '✓';
-      case 'MISSED':
-        return '✕';
-      default:
-        return 'P';
-    }
   }
 
   getMonthLabel(): string {
@@ -941,7 +1168,7 @@ currentDate = new Date();
       d.setDate(d.getDate() - 1);
       this.currentDate = d;
     }
-    this.updateMonthGrid();
+    this.showPeriod();
   }
 
   goNext(): void {
@@ -960,179 +1187,843 @@ currentDate = new Date();
       d.setDate(d.getDate() + 1);
       this.currentDate = d;
     }
-    this.updateMonthGrid();
+    this.showPeriod();
   }
 
   /**
-   * Two monkey-patches to keep CDK drag previews completely out of the
-   * Popover API, because CDK v17 insists on making them popovers:
-   *
-   * 1. Block `setAttribute('popover', …)` — prevents the UA stylesheet
-   *    `[popover]:not(:popover-open) { display: none; }` from matching.
-   * 2. Block `showPopover()` — prevents the `NotSupportedError` that
-   *    occurs when calling `showPopover()` without the `popover` attribute.
-   *
-   * The order in `_createPreview` (drag-drop.mjs) ensures the class
-   * `cdk-drag-preview` is added BEFORE the popover attribute is set
-   * (line 408 vs 409), so the class check in the patches works.
+   * The screen of the current view, computed here once when the data, the period, the type or the settings change
+   * (the template reads fields, not getters run at each check).
    */
-  private static _popoverPatchApplied = false;
-
-  private setupPopoverIntercept(): void {
-    if (CalendarClientsComponent._popoverPatchApplied) return;
-    CalendarClientsComponent._popoverPatchApplied = true;
-
-    const origSetAttr = Element.prototype.setAttribute;
-    Element.prototype.setAttribute = function (name: string, value: string) {
-      if (name === 'popover' && this.classList?.contains('cdk-drag-preview')) {
-        return;
-      }
-      origSetAttr.call(this, name, value);
-    };
-
-    const origShowPopover = HTMLElement.prototype.showPopover;
-    HTMLElement.prototype.showPopover = function () {
-      if (this.classList?.contains('cdk-drag-preview')) {
-        return;
-      }
-      return origShowPopover.call(this);
-    };
-  }
-
-  private teardownPopoverIntercept(): void {
-    // No-op: the patch is global and harmless, applied once.
-  }
-
-  onDragStarted(event: any): void {
-    console.log('CDK Drag Started!', event);
-    const preview = document.querySelector('.cdk-drag-preview') as HTMLElement;
-    if (preview) {
-      const cs = getComputedStyle(preview);
-      const rect = preview.getBoundingClientRect();
-      console.log('[onDragStarted] preview', {
-        display: cs.display,
-        visibility: cs.visibility,
-        opacity: cs.opacity,
-        position: cs.position,
-        zIndex: cs.zIndex,
-        hasPopoverAttr: preview.hasAttribute('popover'),
-        width: rect.width,
-        height: rect.height,
-        top: rect.top,
-        left: rect.left,
-        transform: preview.style.transform,
-      });
-
-      preview.style.setProperty('display', 'block', 'important');
-      preview.style.setProperty('visibility', 'visible', 'important');
-      preview.style.setProperty('opacity', '0.95', 'important');
-
-      const card = preview.querySelector('.card') as HTMLElement;
-      if (card) {
-        card.style.setProperty('visibility', 'visible', 'important');
-        card.style.setProperty('opacity', '1', 'important');
-      }
-    } else {
-      console.log('[onDragStarted] NO PREVIEW FOUND IN DOM');
-    }
-  }
-
   updateMonthGrid(): void {
-    // Update connected lists for drag and drop — only current view
+    this.indexItems();
+    this.monthWeeks = [];
+    this.weekPlan = null;
+    this.monthDay = null;
     if (this.currentView === 'month') {
-      this.connectedLists = this.monthDays.map(day => 'drop-list-' + day.dateString);
+      this.monthWeeks = this.buildMonthWeeks();
+      this.monthDay = this.selectedDate ? this.monthDayOf(this.selectedDate) : null;
     } else if (this.currentView === 'week') {
-      this.connectedLists = this.weekDaysData.map(day => 'drop-list-week-' + day.dateString);
-    } else {
-      this.connectedLists = ['drop-list-day-' + this.currentDayString];
+      this.weekPlan = this.buildWeekPlan();
+      // The day open under the week stays open while it is in the week shown.
+      if (this.selectedDate && !this.weekPlan.days.some((day) => day.dateString === this.selectedDate)) {
+        this.selectedDate = null;
+        this.dayFocus = null;
+      }
     }
+    const detailDate = this.currentView === 'day' ? this.currentDayString : this.currentView === 'week' ? this.selectedDate : null;
+    this.dayDetail = detailDate ? this.buildDayDetail(detailDate) : null;
+  }
+
+  /** The days of each type by date (one pass over the programs), the tasks and the check-ins by date. */
+  private indexItems(): void {
+    const byDate = <T extends { date: string; clientId?: string }>(items: T[]): Map<string, T[]> => {
+      const index = new Map<string, T[]>();
+      if (!this.selectedClient) return index;
+      items
+        .filter((item) => item.clientId === this.selectedClient)
+        .forEach((item) => {
+          const list = index.get(item.date);
+          if (list) list.push(item);
+          else index.set(item.date, [item]);
+        });
+      return index;
+    };
+    this.workoutByDate = byDate<WorkoutProgram>(this.workoutPrograms);
+    this.nutritionByDate = byDate<NutritionProgram>(this.nutritionPrograms);
+    this.itemsByDate = (this.calendarType === 'workout' ? this.workoutByDate : this.nutritionByDate) as Map<string, (WorkoutProgram | NutritionProgram)[]>;
+    const tasks = new Map<string, TaskCalendarItem[]>();
+    [...this.tasksByMonth.values()].flat().forEach((item) => {
+      const date = String(item.date || '').slice(0, 10);
+      tasks.set(date, [...(tasks.get(date) || []), item]);
+    });
+    this.tasksByDate = tasks;
+    const checkIns = new Map<string, CalendarCheckIn[]>();
+    [...this.checkInsByMonth.values()].flat().forEach((item) => {
+      const date = String(item.date || '').slice(0, 10);
+      checkIns.set(date, [...(checkIns.get(date) || []), item]);
+    });
+    this.checkInsByDate = checkIns;
   }
 
   getItemsForDay(dateStr: string): (WorkoutProgram | NutritionProgram)[] {
-    if (!this.selectedClient) {
-      return [];
+    return this.itemsByDate.get(dateStr) || [];
+  }
+
+  /**
+   * The week in rows (lot C, L1): Entraînement, Nutrition, Tâches, Check-ins. A check-in task is shown once, in the
+   * check-ins row (its assignment), never also as a task.
+   */
+  private buildWeekPlan(): WeekPlan {
+    const days: WeekRowDay[] = this.getWeekDates().map((date) => this.rowDay(date));
+    const dates = days.map((day) => day.dateString);
+    const workout = weekBands(dates, this.visibleFilesOf('workout'), new Set<string>());
+    const nutrition = weekBands(dates, this.visibleFilesOf('nutrition'), new Set<string>());
+    days.forEach((day, col) => {
+      day.workoutCovered = workout.covered[col];
+      day.nutritionCovered = nutrition.covered[col];
+    });
+    const rows = (lanes: number) => [...Array.from({ length: lanes }, () => '30px'), 'minmax(64px, auto)'].join(' ');
+    return {
+      days,
+      workoutBands: workout.bands,
+      nutritionBands: nutrition.bands,
+      workoutRows: rows(workout.lanes),
+      nutritionRows: rows(nutrition.lanes),
+    };
+  }
+
+  /** A day's cards (the week and the month show the same): its program days, its tasks and check-ins. */
+  private rowDay(date: Date): WeekRowDay {
+    const dateString = this.formatDateToYYYYMMDD(date);
+    const checkIns = this.checkInsByDate.get(dateString) || [];
+    const tasks = (this.tasksByDate.get(dateString) || [])
+      .filter((task) => !(task.taskType === 'FORM' && checkIns.some((checkIn) => checkIn.id === task.formAssignmentId)));
+    return {
+      date,
+      dateString,
+      dayNumber: date.getDate(),
+      isToday: this.isToday(date),
+      weekdayLabel: date.toLocaleDateString(this.calendarLocale, { weekday: 'short' }),
+      workout: (this.workoutByDate.get(dateString) || []).map((item) => this.workoutCell(item, dateString)),
+      nutrition: (this.nutritionByDate.get(dateString) || []).map((item) => this.nutritionCell(item, dateString)),
+      tasks,
+      tasksDone: tasks.filter((task) => task.status === 'DONE').length,
+      tasksTone: tasksTone(tasks),
+      checkIns,
+      workoutCovered: false,
+      nutritionCovered: false,
+      files: [...this.visibleFilesOf('workout'), ...this.visibleFilesOf('nutrition')]
+        .filter((file) => file.start <= dateString && dateString <= file.end),
+    };
+  }
+
+  /** A workout cell: the workout's name, how far the client went (or its exercises), its status. */
+  private workoutCell(item: WorkoutProgram, date: string): WeekCell<WorkoutProgram> {
+    const status = this.calendarDayStatus(item, date, true);
+    let meta = this.calendarWorkoutMeta(item);
+    if (item.done && !item.restDay) {
+      const report = workoutReport(item.raw);
+      // Nothing ticked (finished without checking the exercises): « 0/2 faits » next to « Terminée » would mislead.
+      if (report.exercises.length && report.loggedExercises > 0) {
+        meta = this.translate.instant('CALENDAR_EXERCISES_DONE', { done: report.doneExercises, total: report.exercises.length });
+      }
     }
+    return {
+      item,
+      title: item.restDay ? this.translate.instant('CLIENT_PROGRAMS.REST_TITLE_WORKOUT') : this.calendarWorkoutName(item),
+      meta,
+      status,
+      exercises: item.restDay ? [] : exerciseLines(item.raw),
+      // A workout or a rest day moves; an empty day has nothing to move (a workout is dropped onto it).
+      movable: !!item.programId && !item.emptyDay && !this.isDayLocked(item),
+    };
+  }
 
-    if (this.calendarType === 'workout') {
-      return this.workoutPrograms
-        .filter((program: WorkoutProgram) => !program.fileProgram)
-        .filter((p: WorkoutProgram) => {
-          const matchesClient =
-            p.clientId === this.selectedClient;
+  /** A nutrition cell: the day's target, the meals the client reported (or the macros), its status. */
+  private nutritionCell(item: NutritionProgram, date: string): WeekCell<NutritionProgram> {
+    const report = nutritionReport(item.raw);
+    const meta = report.reported
+      ? this.translate.instant('CALENDAR_MEALS_REPORTED', { done: report.reported, total: report.meals.length })
+      : this.calendarMacros(item);
+    return {
+      item,
+      title: this.calendarNutritionTitle(item),
+      meta,
+      status: this.calendarDayStatus(item, date, false),
+      meals: item.cheatMeal ? [] : mealLines(item.raw),
+    };
+  }
 
-          if (!matchesClient) {
-            return false;
-          }
+  /** The files of one type, when the coach's settings use them for it (K4). */
+  private visibleFilesOf(type: CalendarType): CalendarFile[] {
+    if (!this.settingsKnown || !this.selectedClient) return [];
+    if (type === 'workout') return this.workoutFileEnabled ? this.workoutFiles : [];
+    return this.nutritionFileEnabled ? this.nutritionFiles : [];
+  }
 
-          if (p.fileProgram) {
-            return this.shouldRenderFileRangeOnDate(p, dateStr);
-          }
+  /** « Ce jour-là » (lot C, L2-L3): every program day, file, task and check-in of that date, with what the client did. */
+  private buildDayDetail(date: string): DayDetail {
+    const checkIns = this.checkInsByDate.get(date) || [];
+    const parsed = this.parseCalendarDate(date) || new Date();
+    const files = (['workout', 'nutrition'] as CalendarType[]).flatMap((kind) => this.visibleFilesOf(kind)
+      .filter((file) => file.start <= date && date <= file.end)
+      .map((file) => ({ file, kind, day: this.daysBetween(file.start, date) + 1, total: this.daysBetween(file.start, file.end) + 1 })));
+    const past = date < todayIso();
+    // The row clicked in the week: only its subject (the day view and a click on the day itself: everything).
+    const focus = this.currentView === 'week' ? this.dayFocus : null;
+    const shows = (subject: DaySubject) => !focus || focus === subject;
+    return {
+      date,
+      focus,
+      label: parsed.toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      workouts: (shows('workout') ? this.workoutByDate.get(date) || [] : []).map((item) => ({
+        item,
+        report: workoutReport(item.raw),
+        status: this.calendarDayStatus(item, date, true),
+        locked: this.isDayLocked(item),
+        lines: exerciseLines(item.raw),
+      })),
+      nutrition: (shows('nutrition') ? this.nutritionByDate.get(date) || [] : []).map((item) => ({
+        item,
+        report: nutritionReport(item.raw),
+        status: this.calendarDayStatus(item, date, false),
+        meals: mealLines(item.raw),
+      })),
+      files: files.filter((entry) => shows(entry.kind)),
+      tasks: (shows('tasks') ? this.tasksByDate.get(date) || [] : [])
+        .filter((task) => !(task.taskType === 'FORM' && checkIns.some((checkIn) => checkIn.id === task.formAssignmentId))),
+      checkIns: shows('checkins') ? checkIns : [],
+      addWorkout: shows('workout') && !past && !this.workoutByDate.get(date)?.length && !files.some((entry) => entry.kind === 'workout'),
+      addNutrition: shows('nutrition') && !past && !this.nutritionByDate.get(date)?.length
+        && !files.some((entry) => entry.kind === 'nutrition'),
+    };
+  }
 
-          return p.date === dateStr;
-        })
-        .sort((a, b) => {
-          // File ranges must always reserve the first rows of every day cell.
-          // Interactive workout cards are then rendered underneath them.
-          const fileOrder = Number(!!b.fileProgram) - Number(!!a.fileProgram);
+  /* ---- The week in rows and the day panel: what the coach clicks (lot C). ---- */
 
-          if (fileOrder !== 0) {
-            return fileOrder;
-          }
+  /* ---- The detail of the days (as a coach's program sheet) and the quick changes (lot C, C4). ---- */
 
-          if (a.fileProgram && b.fileProgram) {
-            const startOrder = String(a.startDate || a.date).localeCompare(
-              String(b.startDate || b.date)
-            );
+  /** The week shows each day's exercises and meals; off, one line per day (the coach's choice, kept on this browser). */
+  weekDetailed = this.readDetailChoice();
 
-            if (startOrder !== 0) {
-              return startOrder;
-            }
-
-            return a.title.localeCompare(b.title);
-          }
-
-          return 0;
-        });
-    } else {
-      return this.nutritionPrograms.filter(
-        (p) =>
-          p.date === dateStr &&
-          p.clientId === this.selectedClient
-      );
+  private readDetailChoice(): boolean {
+    try {
+      return localStorage.getItem('yo-coach.calendar-detail') !== 'off';
+    } catch {
+      return true;
     }
+  }
+
+  toggleWeekDetail(): void {
+    this.weekDetailed = !this.weekDetailed;
+    try {
+      localStorage.setItem('yo-coach.calendar-detail', this.weekDetailed ? 'on' : 'off');
+    } catch {
+      // No storage: the choice lasts until the page closes.
+    }
+  }
+
+  /** « 3 × 10 · 60 kg · repos 2 min », « 20 min ». */
+  exerciseText(line: ExerciseLine): string {
+    const sets = this.setsText(line.sets, line.cardio);
+    if (!line.restSeconds) return sets;
+    const minutes = Math.floor(line.restSeconds / 60);
+    const seconds = line.restSeconds % 60;
+    const rest = minutes ? (seconds ? `${minutes} min ${seconds}` : `${minutes} min`) : `${seconds} s`;
+    return [sets, this.translate.instant('CALENDAR_REST', { time: rest })].filter(Boolean).join(' · ');
+  }
+
+  /** « Avoine 80 g, Œufs 3, Banane 1 +2 ». */
+  mealFoods(meal: MealLine): string {
+    const shown = meal.foods.slice(0, 4).join(', ');
+    return meal.foods.length > 4 ? `${shown} +${meal.foods.length - 4}` : shown;
+  }
+
+  /* Drag a workout onto another day of its program (C4): the two days change places; on an empty day it moves there. */
+  dragging: WorkoutProgram | null = null;
+  dropDate: string | null = null;
+  movingDay = false;
+
+  onDayDragStart(event: DragEvent, cell: WeekCell<WorkoutProgram>): void {
+    if (!cell.movable || this.movingDay) {
+      event.preventDefault();
+      return;
+    }
+    this.dragging = cell.item;
+    event.dataTransfer?.setData('text/plain', cell.item.id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  onDayDragEnd(): void {
+    this.dragging = null;
+    this.dropDate = null;
+  }
+
+  /** The day of the dragged workout's program on that date, when the workout can go there (K1-K3, C4). */
+  private dropTargetOf(day: WeekRowDay): WorkoutProgram | null {
+    const moving = this.dragging;
+    if (!moving || day.dateString === moving.date || day.dateString < todayIso()) return null;
+    const target = day.workout.find((cell) => cell.item.programId === moving.programId)?.item || null;
+    return target && !this.isDayLocked(target) ? target : null;
+  }
+
+  onDayDragOver(event: DragEvent, day: WeekRowDay): void {
+    if (!this.dropTargetOf(day)) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dropDate = day.dateString;
+  }
+
+  onDayDragLeave(day: WeekRowDay): void {
+    if (this.dropDate === day.dateString) this.dropDate = null;
+  }
+
+  onDayDrop(event: DragEvent, day: WeekRowDay): void {
+    event.preventDefault();
+    const moving = this.dragging;
+    const target = this.dropTargetOf(day);
+    this.onDayDragEnd();
+    if (!moving?.programId || !target) return;
+    this.movingDay = true;
+    this.programSchedule.swapDays(moving.programId, moving.id, target.id)
+      .pipe(finalize(() => (this.movingDay = false)))
+      .subscribe({
+        next: (result) => {
+          const date = (value: string) => (this.parseCalendarDate(value) || new Date())
+            .toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+          const title = target.emptyDay
+            ? this.translate.instant('CALENDAR_DAY_MOVED', { date: date(target.date) })
+            : this.translate.instant('CALENDAR_DAYS_SWAPPED', { first: date(moving.date), second: date(target.date) });
+          const details = result.restedDayId ? [this.translate.instant('CALENDAR_LEFT_REST', { date: date(moving.date) })] : [];
+          // The toast reads the calendar again (and offers « Annuler »).
+          this.programSchedule.announceCalendarChange(result.undoId, title, details);
+        },
+        error: (err) => this.toast.error(this.calendarChangeError(err)),
+      });
+  }
+
+  /** Why the server refused a change of a day (K1-K3, A9). */
+  private calendarChangeError(err: any): string {
+    const code = err?.error?.code;
+    if (code === 'PROGRAM_LOCKED') return this.translate.instant('ASSIGN_FLOW.LOCKED_ERROR');
+    if (code === 'DAY_DONE') return this.translate.instant('CALENDAR_DAY_DONE');
+    if (code === 'DAY_PAST') return this.translate.instant('CALENDAR_DAY_PAST_MOVE');
+    if (code === 'PROGRAM_GAP') return this.translate.instant('CALENDAR_CHANGE_GAP');
+    return this.translate.instant('CALENDAR_CHANGE_ERROR');
+  }
+
+  /* « Copier une semaine » (C4): the editor's « Dupliquer la semaine » window, onto empty days only (the user's choice). */
+  copyWeek: { programId: string; dayCount: number; sourceWeek: number; filled: boolean[]; locked: boolean[] } | null = null;
+
+  /** The workout program of the week shown (the one with the most days in it), with its days as the window reads them. */
+  openCopyWeek(): void {
+    const days = this.getWeekDates().map((date) => this.formatDateToYYYYMMDD(date));
+    const today = todayIso();
+    const program = this.workoutRanges
+      .filter((range) => !range.locked && range.start <= days[6] && days[0] <= range.end)
+      .sort((a, b) => days.filter((date) => b.start <= date && date <= b.end).length
+        - days.filter((date) => a.start <= date && date <= a.end).length)[0];
+    const plan = program ? this.workoutPlansById.get(program.programId) : null;
+    if (!program || !plan) {
+      this.toast.info(this.translate.instant('CALENDAR_COPY_NO_PROGRAM'));
+      return;
+    }
+    const dayCount = Math.max((plan.workoutDays || []).length, this.daysBetween(program.start, program.end) + 1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dayAt = (index: number) => (plan.workoutDays || []).find((day: any) => Number(day?.dayNumber) === index + 1);
+    const filled = Array.from({ length: dayCount }, (_, index) => {
+      const day = dayAt(index);
+      return !!day && (day.restDay === true || workoutReport(day).exercises.length > 0);
+    });
+    const locked = Array.from({ length: dayCount }, (_, index) =>
+      this.addDays(program.start, index) < today || workoutDayActive(dayAt(index)));
+    const first = days[0] < program.start ? program.start : days[0];
+    this.copyWeek = {
+      programId: program.programId,
+      dayCount,
+      sourceWeek: Math.floor(this.daysBetween(program.start, first) / 7) + 1,
+      filled,
+      locked,
+    };
+  }
+
+  confirmCopyWeek(copies: DayCopy[]): void {
+    const target = this.copyWeek;
+    this.copyWeek = null;
+    if (!target || !copies.length) return;
+    this.programSchedule.copyDays(target.programId,
+      copies.map((copy) => ({ from: (copy.from ?? 0) + 1, to: copy.to + 1 })))
+      .subscribe({
+        next: (result) => {
+          const start = this.workoutRanges.find((range) => range.programId === target.programId)?.start || '';
+          const date = (day: number) => (this.parseCalendarDate(this.addDays(start, day - 1)) || new Date())
+            .toLocaleDateString(this.calendarLocale, { weekday: 'short', day: 'numeric', month: 'short' });
+          const details = result.skipped
+            .filter((skip) => skip.reason !== 'EMPTY_SOURCE')
+            .map((skip) => this.translate.instant(`CALENDAR_COPY_SKIPPED_${skip.reason}`, { date: date(skip.day) }));
+          this.programSchedule.announceCalendarChange(result.undoId,
+            this.translate.instant(result.copied.length === 1 ? 'CALENDAR_DAYS_COPIED_ONE' : 'CALENDAR_DAYS_COPIED',
+              { count: result.copied.length }), details);
+        },
+        error: (err) => this.toast.error(this.calendarChangeError(err)),
+      });
+  }
+
+  /** « Mettre en pause » the client from the calendar (the window of the client's tabs, DS-11). */
+  showPause = false;
+
+  /** A day of the week clicked: its panel opens under the week (again: it closes). */
+  /**
+   * A day of the week clicked: its card or chip shows only that subject under the week (`focus`), the day itself
+   * shows everything. The same click again closes it.
+   */
+  selectDay(date: string, focus: DaySubject | null = null): void {
+    const same = this.selectedDate === date && this.dayFocus === focus;
+    this.selectedDate = same ? null : date;
+    this.dayFocus = same ? null : focus;
+    this.dayDetail = this.selectedDate ? this.buildDayDetail(this.selectedDate) : null;
+    if (this.selectedDate) {
+      // Once drawn: the panel comes into view (it is under the week).
+      setTimeout(() => document.querySelector('.day-panel')?.scrollIntoView({ behavior: 'smooth', block: this.narrow ? 'start' : 'nearest' }));
+    }
+  }
+
+  /** « Voir toute la journée » in a panel showing one subject. */
+  showWholeDay(): void {
+    if (!this.selectedDate) return;
+    this.dayFocus = null;
+    this.dayDetail = this.buildDayDetail(this.selectedDate);
+  }
+
+  /** The subject shown alone in the panel, in words (« Nutrition »). */
+  focusLabel(focus: DaySubject): string {
+    const subject = this.monthSubjects.find((item) => item.key === focus);
+    return subject ? this.translate.instant(subject.label) : '';
+  }
+
+  closeDay(): void {
+    this.selectedDate = null;
+    this.dayFocus = null;
+    this.dayDetail = null;
+  }
+
+  /** The workout day in the program's editor (L4): changed there, or read there when done or past (K1). */
+  openWorkoutEditor(item: WorkoutProgram): void {
+    if (item.programId && this.selectedClient) {
+      this.openEditor(['/clients/create-workout', this.selectedClient, 'edit', item.programId], item.dayNumber);
+    }
+  }
+
+  /** « Décaler la suite » of the program of that day: the window of the client's tabs. */
+  shiftFrom(kind: CalendarType, item: WorkoutProgram | NutritionProgram): void {
+    if (!item.programId) return;
+    this.shiftTarget = {
+      kind: kind === 'workout' ? 'WORKOUT' : 'NUTRITION',
+      item: { id: item.programId, name: item.programName || item.title } as OverviewItem,
+    };
+  }
+
+  onShiftSaved(): void {
+    this.shiftTarget = null;
+    this.loadCalendar();
+  }
+
+  /** A program not stopped nor finished: its days can still move (A9). */
+  /**
+   * « Retirer ce programme »: the window opens at once with the days the client did as the calendar knows them, then
+   * with the tab's own figures (the same request as the « Programmes » tab), so it says exactly what the tab says.
+   */
+  removeFrom(kind: CalendarType, item: WorkoutProgram | NutritionProgram): void {
+    const id = item.programId;
+    if (!id || !this.selectedClient) return;
+    const plan = (kind === 'workout' ? this.workoutPlansById : this.mealPlansById).get(id);
+    const days: unknown[] = (kind === 'workout' ? plan?.workoutDays : plan?.mealDays) || [];
+    const doneDays = days.filter((day) => (kind === 'workout' ? workoutDayActive(day) : mealDayActive(day))).length;
+    this.removeTarget = { kind, item: { id, name: item.programName || item.title, file: false, doneDays } as OverviewItem };
+    this.programSchedule.overview(kind === 'workout' ? 'WORKOUT' : 'NUTRITION', this.selectedClient).subscribe({
+      next: (overview) => {
+        const found = [overview.current?.program, overview.next?.program, ...overview.upcoming, ...overview.finished]
+          .find((program) => program?.id === id);
+        if (found && this.removeTarget?.item.id === id && !this.removing) this.removeTarget = { kind, item: found };
+      },
+      error: () => {
+        // The calendar's figures stay.
+      },
+    });
+  }
+
+  confirmRemove(): void {
+    const target = this.removeTarget;
+    if (!target || this.removing) return;
+    this.removing = true;
+    const removal = target.kind === 'workout'
+      ? this.workoutService.deleteWorkout(target.item.id, true)
+      : this.nutritionService.deleteNutritionPlan(target.item.id, true);
+    removal.subscribe({
+      next: () => {
+        this.removing = false;
+        this.removeTarget = null;
+        this.toast.show({ type: 'success', title: this.translate.instant('CLIENT_PROGRAMS.REMOVED') });
+        // The calendar reads its months again, the client's tabs too.
+        this.programSchedule.changed$.next();
+      },
+      error: () => {
+        this.removing = false;
+        this.toast.show({ type: 'error', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_FAILED') });
+      },
+    });
+  }
+
+  canShift(item: WorkoutProgram | NutritionProgram): boolean {
+    const ranges = this.workoutRanges.some((range) => range.programId === item.programId) ? this.workoutRanges : this.nutritionRanges;
+    const range = ranges.find((candidate) => candidate.programId === item.programId);
+    return !!range && !range.locked;
+  }
+
+  /** A check-in's answers: the window of the client profile (inside it), else the profile opens on it. */
+  openCheckIn(checkIn: CalendarCheckIn): void {
+    if (this.profileAction.observed) {
+      // The window's title is the form's name (as in the check-ins tab, which adds it to its assignments).
+      this.profileAction.emit({ type: 'checkin', assignment: { ...checkIn, formName: checkIn.title } });
+      return;
+    }
+    this.rememberPlace();
+    void this.router.navigate(['/clients/profil-client', this.selectedClient], { queryParams: { tab: 'checkins', assignmentId: checkIn.id } });
+  }
+
+  /** « Envoyer un message »: the client's Discussion tab. */
+  sendMessage(): void {
+    if (this.profileAction.observed) {
+      this.profileAction.emit({ type: 'chat' });
+      return;
+    }
+    this.rememberPlace();
+    void this.router.navigate(['/clients/profil-client', this.selectedClient], { queryParams: { tab: 'chat' } });
+  }
+
+  /** « 4 × 8 · 60 kg », « 8, 8, 7 · 62 kg », « 20 min ». */
+  setsText(lines: { reps: number | null; weight: number | null; duration: number | null }[], cardio: boolean): string {
+    if (!lines.length) return '';
+    if (cardio) {
+      const minutes = lines.reduce((sum, line) => sum + (line.duration || 0), 0);
+      return minutes ? `${lines.length > 1 ? `${lines.length} × ` : ''}${Math.round(minutes / lines.length)} min` : `${lines.length}`;
+    }
+    const reps = lines.map((line) => (line.reps == null ? '–' : String(line.reps)));
+    const sameReps = reps.every((value) => value === reps[0]);
+    const weights = lines.map((line) => line.weight).filter((weight): weight is number => weight != null && weight > 0);
+    const weight = weights.length ? ` · ${Math.max(...weights)} ${this.weightUnitLabel}` : '';
+    return (sameReps ? `${lines.length} × ${reps[0]}` : reps.join(', ')) + weight;
+  }
+
+  exerciseStateText(state: string): string {
+    return this.translate.instant(`CALENDAR_EXERCISE_${state}`);
+  }
+
+  mealStateText(state: string): string {
+    return this.translate.instant(state ? `CALENDAR_MEAL_${state}` : 'CALENDAR_MEAL_NONE');
+  }
+
+  taskStateText(status: string): string {
+    return this.translate.instant(`CALENDAR_TASK_${status || 'UPCOMING'}`);
+  }
+
+  checkInTone(checkIn: CalendarCheckIn): string {
+    return checkInTone(checkIn.state);
+  }
+
+  checkInStateText(checkIn: CalendarCheckIn): string {
+    if (checkIn.state === 'RECEIVED') return this.translate.instant(checkIn.reviewed ? 'CALENDAR_CHECKIN_REVIEWED' : 'CALENDAR_CHECKIN_RECEIVED');
+    return this.translate.instant(checkIn.state === 'LATE' ? 'CALENDAR_CHECKIN_LATE' : 'CALENDAR_CHECKIN_UPCOMING');
+  }
+
+  trackDay(_: number, day: { dateString: string }): string {
+    return day.dateString;
+  }
+
+  /**
+   * A feeling of the nutrition day in the coach's language. The web app saves LOW / GOOD / HIGH..., the mobile app
+   * the label of the client's language (« Low », « Faible »...): both read the same; an unknown value shows as it is.
+   */
+  feelingText(kind: 'HUNGER' | 'ENERGY' | 'DIGESTION', value: string): string {
+    const levels: Record<string, string> = {
+      low: 'LOW', faible: 'LOW', basse: 'LOW',
+      good: 'GOOD', balanced: 'GOOD', 'équilibrée': 'GOOD', steady: 'GOOD', stable: 'GOOD', bonne: 'GOOD',
+      high: 'HIGH', 'élevée': 'HIGH', haute: 'HIGH',
+      poor: 'POOR', mauvaise: 'POOR',
+      great: 'GREAT', super: 'GREAT',
+    };
+    const level = levels[String(value || '').trim().toLowerCase()];
+    const key = `CALENDAR_FEELING_${kind}_${level}`;
+    const text = level ? this.translate.instant(key) : '';
+    return text && text !== key ? text : value;
+  }
+
+  /** The day's tasks, one per line, with their state (hint of the tasks cell). */
+  tasksHint(tasks: TaskCalendarItem[]): string {
+    return tasks.map((task) => `${task.title} · ${this.taskStateText(task.status)}`).join('\n');
+  }
+
+  /** The weeks of the month, Monday first; the days of the months around are empty cells. */
+  /**
+   * The month as a follow-up map (lot C, C3): both types at once, each day with one mark per subject (workout,
+   * nutrition, tasks, check-ins) whose symbol says its state, each week with its follow-up rate; the files of both
+   * types as bands. A click on a day opens it (« Ce jour-là »).
+   */
+  private buildMonthWeeks(): CalendarWeek[] {
+    const year = this.currentDate.getFullYear();
+    const month = this.currentDate.getMonth();
+    const count = this.getDaysInMonth(year, month);
+    const lead = (this.getFirstDayOfMonth(year, month) + 6) % 7;
+    const seen = new Set<string>();
+    // The files of the types chosen, arranged again together (two files never share a row).
+    const files = arrangeFiles([
+      ...(this.monthShows('workout') ? this.visibleFilesOf('workout') : []),
+      ...(this.monthShows('nutrition') ? this.visibleFilesOf('nutrition') : []),
+    ].map((file) => ({ ...file })));
+    const weeks: CalendarWeek[] = [];
+    for (let cell = 0; cell < lead + count; cell += 7) {
+      const days = Array.from({ length: 7 }, (_, col) => {
+        const day = cell + col - lead + 1;
+        if (day < 1 || day > count) return null;
+        const calendarDay = this.calendarDay(new Date(year, month, day));
+        calendarDay.marks = this.monthMarks(calendarDay.dateString).filter((mark) => this.monthShows(mark.subject));
+        calendarDay.plan = this.monthPlan(calendarDay.date);
+        return calendarDay;
+      });
+      const week = this.buildWeek(days, seen, files);
+      week.rate = this.followUpRate(days);
+      weeks.push(week);
+    }
+    return weeks;
+  }
+
+  /** The marks of a day in the month: what was planned for each subject and how it went (C3). */
+  private monthMarks(date: string): MonthMark[] {
+    const marks: MonthMark[] = [];
+    (this.workoutByDate.get(date) || []).forEach((item) => {
+      const status = this.calendarDayStatus(item, date, true);
+      const text = item.restDay ? this.translate.instant('CLIENT_PROGRAMS.REST_TITLE_WORKOUT')
+        : item.emptyDay ? status.text : this.calendarWorkoutName(item);
+      marks.push({ subject: 'workout', icon: 'fitness_center', tone: status.tone, text, hint: item.emptyDay ? text : `${text} · ${status.text}` });
+    });
+    (this.nutritionByDate.get(date) || []).forEach((item) => {
+      const status = this.calendarDayStatus(item, date, false);
+      const text = item.emptyDay ? status.text : this.calendarNutritionTitle(item);
+      marks.push({ subject: 'nutrition', icon: 'restaurant', tone: status.tone, text, hint: item.emptyDay ? text : `${text} · ${status.text}` });
+    });
+    const checkIns = this.checkInsByDate.get(date) || [];
+    const tasks = (this.tasksByDate.get(date) || [])
+      .filter((task) => !(task.taskType === 'FORM' && checkIns.some((checkIn) => checkIn.id === task.formAssignmentId)));
+    if (tasks.length) {
+      marks.push({
+        subject: 'tasks',
+        icon: 'checklist',
+        tone: tasksTone(tasks) || 'planned',
+        text: this.translate.instant('CALENDAR_TASKS_DONE', { done: tasks.filter((task) => task.status === 'DONE').length, total: tasks.length }),
+        hint: this.tasksHint(tasks),
+      });
+    }
+    if (checkIns.length) {
+      const late = checkIns.some((checkIn) => checkIn.state === 'LATE');
+      const received = checkIns.every((checkIn) => checkIn.state === 'RECEIVED');
+      marks.push({
+        subject: 'checkins',
+        icon: 'assignment',
+        tone: late ? 'missed' : received ? 'done' : 'planned',
+        text: checkIns.length > 1 ? this.translate.instant('CALENDAR_CHECKINS_COUNT', { count: checkIns.length })
+          : this.checkInStateText(checkIns[0]),
+        hint: checkIns.map((checkIn) => `${checkIn.title || this.translate.instant('CALENDAR_ROW_CHECKINS')} · ${this.checkInStateText(checkIn)}`).join('\n'),
+      });
+    }
+    return marks;
+  }
+
+  /** A day's cards in the month: the week's ones, of the subjects chosen only. */
+  private monthPlan(date: Date): WeekRowDay {
+    const plan = this.rowDay(date);
+    if (!this.monthShows('workout')) plan.workout = [];
+    if (!this.monthShows('nutrition')) plan.nutrition = [];
+    if (!this.monthShows('tasks')) plan.tasks = [];
+    if (!this.monthShows('checkins')) plan.checkIns = [];
+    plan.files = plan.files.filter((file) => this.monthShows(file.kind || 'workout'));
+    return plan;
+  }
+
+  monthShows(subject: DaySubject): boolean {
+    return this.monthShow.includes(subject);
+  }
+
+  /** A subject of the month on or off (one at least stays), kept on this browser. */
+  toggleMonthShow(subject: DaySubject): void {
+    const on = this.monthShows(subject);
+    if (on && this.monthShow.length === 1) return;
+    this.monthShow = on ? this.monthShow.filter((item) => item !== subject)
+      : this.monthSubjects.map((item) => item.key).filter((key) => key === subject || this.monthShows(key));
+    try {
+      localStorage.setItem('yo-coach.calendar-month-show', this.monthShow.join(','));
+    } catch {
+      // No storage: the choice lasts until the page closes.
+    }
+    this.updateMonthGrid();
+  }
+
+  /** The month shows the workouts at first: one subject reads well (CC-24). */
+  private readMonthShow(): DaySubject[] {
+    const all: DaySubject[] = ['workout', 'nutrition', 'tasks', 'checkins'];
+    try {
+      const kept = (localStorage.getItem('yo-coach.calendar-month-show') || '').split(',')
+        .filter((key): key is DaySubject => all.includes(key as DaySubject));
+      return kept.length ? kept : ['workout'];
+    } catch {
+      return ['workout'];
+    }
+  }
+
+  private monthDayOf(date: string): CalendarDay | null {
+    for (const week of this.monthWeeks) {
+      const day = week.days.find((item) => item?.dateString === date);
+      if (day) return day;
+    }
+    return null;
+  }
+
+  /** « mardi 20 octobre ». */
+  longDate(date: Date): string {
+    return date.toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  /** What was due in the week and how much of it was done: done counts 1, started half, missed 0 (C3). */
+  private followUpRate(days: (CalendarDay | null)[]): number | null {
+    let due = 0;
+    let done = 0;
+    days.forEach((day) => (day?.marks || []).forEach((mark) => {
+      if (mark.tone === 'done') { due++; done++; }
+      else if (mark.tone === 'partial') { due++; done += 0.5; }
+      else if (mark.tone === 'missed') due++;
+    }));
+    return due ? Math.round((done / due) * 100) : null;
+  }
+
+  /** A day of the month clicked: the day view opens on it (« Ce jour-là »). */
+  openDay(date: string): void {
+    if (this.narrow && this.currentView === 'month') {
+      this.selectedDate = date;
+      this.monthDay = this.monthDayOf(date);
+      setTimeout(() => document.querySelector('.month-day')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+      return;
+    }
+    this.openDayView(date);
+  }
+
+  openDayView(date: string): void {
+    const parsed = this.parseCalendarDate(date);
+    if (!parsed) return;
+    this.currentDate = parsed;
+    this.setView('day');
+  }
+
+  /** The symbol of a state, in the brand's sober UI: ✓ done, ✗ missed, ◐ started, today, to come, rest, to fill. */
+  statusIcon(tone: string | null | undefined): string {
+    switch (tone) {
+      case 'done': return 'check_circle';
+      case 'missed': return 'cancel';
+      case 'partial': return 'timelapse';
+      case 'today': return 'today';
+      case 'rest': return 'bedtime';
+      case 'empty': return 'add_circle_outline';
+      default: return 'schedule';
+    }
+  }
+
+  /** A meal's or a task's state as a tone (the same symbols as the days). */
+  mealTone(state: string): string {
+    return state === 'AS_PLANNED' ? 'done' : state === 'SKIPPED' ? 'missed' : state === 'MODIFIED' ? 'partial' : 'planned';
+  }
+
+  taskTone(status: string): string {
+    return status === 'DONE' ? 'done' : status === 'MISSED' ? 'missed' : 'planned';
+  }
+
+  exerciseTone(state: string): string {
+    return state === 'DONE' ? 'done' : state === 'MISSED' ? 'missed' : state === 'PARTIAL' ? 'partial' : 'planned';
+  }
+
+  /** « Voir le lundi 3 novembre » for a day of the month (its button). */
+  dayLabel(date: Date): string {
+    return this.translate.instant('CALENDAR_OPEN_DAY', {
+      date: date.toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long' }),
+    });
+  }
+
+  private calendarDay(date: Date): CalendarDay {
+    const dateString = this.formatDateToYYYYMMDD(date);
+    return {
+      date,
+      dateString,
+      dayNumber: date.getDate(),
+      isToday: this.isToday(date),
+      weekdayLabel: date.toLocaleDateString(this.calendarLocale, { weekday: 'short' }).toUpperCase(),
+      items: this.getItemsForDay(dateString),
+      covered: false,
+    };
+  }
+
+  /**
+   * One row of days and the files over it (K4, `weekBands`). `seen` holds the files already drawn on the screen:
+   * only their first piece carries the dates.
+   */
+  private buildWeek(days: (CalendarDay | null)[], seen: Set<string>, files: CalendarFile[] = this.visibleFiles): CalendarWeek {
+    const { bands, lanes, covered } = weekBands(days.map((day) => day?.dateString || null), files, seen);
+    days.forEach((day, col) => {
+      if (day) day.covered = covered[col];
+    });
+    return {
+      key: days.find(Boolean)?.dateString || '',
+      days,
+      bands,
+      rows: ['auto', ...Array.from({ length: lanes }, () => (this.narrow ? '8px' : '32px')), 'minmax(0, 1fr)'].join(' '),
+    };
+  }
+
+  trackWeek(_: number, week: CalendarWeek): string {
+    return week.key;
+  }
+
+  trackBand(_: number, band: FileBand): string {
+    return band.file.programId;
+  }
+
+  /** « 3 nov. – 30 nov. 2026 ». */
+  fileDates(file: CalendarFile): string {
+    const date = (value: string, withYear: boolean) => {
+      const [year, month, day] = value.split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString(this.calendarLocale, {
+        day: 'numeric',
+        month: 'short',
+        year: withYear ? 'numeric' : undefined,
+      });
+    };
+    const sameYear = file.start.slice(0, 4) === file.end.slice(0, 4);
+    return `${date(file.start, !sameYear)} – ${date(file.end, true)}`;
+  }
+
+  fileKind(file: CalendarFile): string {
+    return this.translate.instant(file.resourceType === 'EXCEL' ? 'EXCEL_PROGRAM' : 'PDF_PROGRAM');
+  }
+
+  /** The band's hint: what it is, its dates, what a click does. */
+  fileHint(file: CalendarFile): string {
+    return this.translate.instant('CALENDAR_FILE_HINT', { name: file.name, kind: this.fileKind(file), dates: this.fileDates(file) });
+  }
+
+  /**
+   * A file band clicked: inside the client profile, its tab opens the file (same preview); the calendar alone opens
+   * it in a new tab (a PDF shows, an Excel file downloads).
+   */
+  openFileProgram(file: CalendarFile, kind: CalendarType = this.calendarType): void {
+    if (this.openFile.observed) {
+      this.openFile.emit({ type: kind, programId: file.programId, plan: file.plan });
+      return;
+    }
+    const popup = window.open('', '_blank');
+    const blob$: Observable<Blob> = kind === 'workout'
+      ? this.workoutService.getWorkoutFileBlob(file.plan)
+      : this.nutritionService.downloadNutritionFile(file.plan);
+    blob$.subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        if (popup) popup.location.href = url;
+        else window.open(url, '_blank');
+      },
+      error: () => {
+        popup?.close();
+        this.toast.error(this.translate.instant('COULD_NOT_PREVIEW_FILE'));
+      },
+    });
   }
 
   hasSelectedClient(): boolean {
     return this.hideClientFilter || !!this.selectedClient;
-  }
-
-  getExerciseSummary(exercise: Exercise): string {
-    const sets = exercise.sets || [];
-    const setCount = sets.length;
-    const firstSet = sets[0];
-    const reps = firstSet?.reps ? this.translate.instant('REPS_COUNT', { count: firstSet.reps }) : '';
-    const rest = firstSet?.rest ? this.translate.instant('REST_DURATION', { duration: this.formatRestTime(firstSet.rest) }) : '';
-
-    if (exercise.type === 'cardio') {
-      const setDuration = Number(firstSet?.duration) || 0;
-      const durationValue =
-        setDuration ||
-        (setCount && exercise.duration
-          ? Math.round(Number(exercise.duration) / setCount)
-          : Number(exercise.duration) || 0);
-      const duration = durationValue ? this.translate.instant('MINUTES_COUNT', { count: durationValue }) : '';
-      return [setCount ? this.translate.instant(setCount > 1 ? 'SETS_COUNT' : 'SET_COUNT', { count: setCount }) : '', duration]
-        .filter(Boolean)
-        .join(' x ');
-    }
-
-    return [
-      setCount ? `${setCount} x` : '',
-      reps,
-      rest,
-    ]
-      .filter(Boolean)
-      .join(' ');
   }
 
 
@@ -1150,241 +2041,31 @@ currentDate = new Date();
     return new Date(parts[0], parts[1] - 1, parts[2]);
   }
 
-  private isDateWithinFileRange(item: WorkoutProgram, dateStr: string): boolean {
-    const date = this.parseCalendarDate(dateStr);
-    const start = this.parseCalendarDate(item.startDate || item.date);
-    const end = this.parseCalendarDate(item.endDate || item.startDate || item.date);
-
-    if (!date || !start || !end) {
-      return false;
-    }
-
-    return date >= start && date <= end;
-  }
-
-  private isMonday(date: Date): boolean {
-    return date.getDay() === 1;
-  }
-
-  private isFirstVisibleMonthDay(date: Date): boolean {
-    return (
-      this.currentView === 'month' &&
-      date.getDate() === 1 &&
-      date.getMonth() === this.currentDate.getMonth() &&
-      date.getFullYear() === this.currentDate.getFullYear()
-    );
-  }
-
-  shouldRenderFileRangeOnDate(item: WorkoutProgram, dateStr: string): boolean {
-    // Keep the item in each covered month cell so its row is reserved and
-    // interactive workouts are placed below the spanning file bar.
-    return !!item.fileProgram && this.isDateWithinFileRange(item, dateStr);
-  }
-
-  shouldShowFileRangeText(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
-    const workoutItem = item as WorkoutProgram;
-
-    if (!workoutItem.fileProgram) {
-      return true;
-    }
-
-    const date = this.parseCalendarDate(dateStr);
-    const start = this.parseCalendarDate(workoutItem.startDate || workoutItem.date);
-
-    if (!date || !start) {
-      return true;
-    }
-
-    if (this.currentView === 'day') {
-      return true;
-    }
-
-    return (
-      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(start) ||
-      this.isMonday(date) ||
-      this.isFirstVisibleMonthDay(date)
-    );
-  }
-
-  shouldShowFileRangeEndDate(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
-    const workoutItem = item as WorkoutProgram;
-
-    if (!workoutItem.fileProgram) {
-      return false;
-    }
-
-    const date = this.parseCalendarDate(dateStr);
-    const end = this.parseCalendarDate(workoutItem.endDate || workoutItem.startDate || workoutItem.date);
-
-    if (!date || !end) {
-      return false;
-    }
-
-    if (this.currentView === 'day') {
-      return true;
-    }
-
-    if (this.currentView === 'month') {
-      return this.isFileRangeStart(workoutItem, dateStr);
-    }
-
-    return (
-      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(end) ||
-      date.getDay() === 0
-    );
-  }
-
-  isFileRangeStart(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
-    const workoutItem = item as WorkoutProgram;
-    const date = this.parseCalendarDate(dateStr);
-    const start = this.parseCalendarDate(workoutItem.startDate || workoutItem.date);
-
-    if (!date || !start) {
-      return false;
-    }
-
-    return (
-      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(start) ||
-      this.isMonday(date) ||
-      this.isFirstVisibleMonthDay(date) ||
-      this.currentView === 'day'
-    );
-  }
-
-  isFileRangeEnd(item: WorkoutProgram | NutritionProgram, dateStr: string): boolean {
-    const workoutItem = item as WorkoutProgram;
-    const date = this.parseCalendarDate(dateStr);
-    const end = this.parseCalendarDate(workoutItem.endDate || workoutItem.startDate || workoutItem.date);
-
-    if (!date || !end) {
-      return false;
-    }
-
-    return (
-      this.formatDateToYYYYMMDD(date) === this.formatDateToYYYYMMDD(end) ||
-      date.getDay() === 0 ||
-      this.currentView === 'day'
-    );
-  }
-
-  getFileRangePositionClass(item: WorkoutProgram | NutritionProgram, dateStr: string): string {
-    if (!this.isFileWorkoutItem(item)) {
-      return '';
-    }
-
-    const isStart = this.isFileRangeStart(item, dateStr);
-    const isEnd = this.isFileRangeEnd(item, dateStr);
-
-    if (isStart && isEnd) {
-      return 'file-range-single';
-    }
-
-    if (isStart) {
-      return 'file-range-start';
-    }
-
-    if (isEnd) {
-      return 'file-range-end';
-    }
-
-    return 'file-range-middle';
-  }
-
-  getFileRangeEndLabel(item: WorkoutProgram | NutritionProgram): string {
-    const workoutItem = item as WorkoutProgram;
-    return workoutItem.endDate || workoutItem.startDate || workoutItem.date || '';
-  }
-
-  getFileRangeSpan(item: WorkoutProgram | NutritionProgram, dateStr: string): number {
-    const workoutItem = item as WorkoutProgram;
-
-    if (!workoutItem.fileProgram) {
-      return 1;
-    }
-
-    const start = this.parseCalendarDate(dateStr);
-    const end = this.parseCalendarDate(
-      workoutItem.endDate || workoutItem.startDate || workoutItem.date
-    );
-
-    if (!start || !end) {
-      return 1;
-    }
-
-    if (this.currentView === 'day') {
-      return 1;
-    }
-
-    const limit = new Date(start);
-    const day = limit.getDay();
-    const diffToSunday = day === 0 ? 0 : 7 - day;
-    limit.setDate(limit.getDate() + diffToSunday);
-
-    if (this.currentView === 'month') {
-      const endOfMonth = new Date(
-        this.currentDate.getFullYear(),
-        this.currentDate.getMonth() + 1,
-        0
-      );
-
-      if (limit > endOfMonth) {
-        limit.setTime(endOfMonth.getTime());
-      }
-    }
-
-    const finalEnd = end < limit ? end : limit;
-    const diffMs = finalEnd.getTime() - start.getTime();
-    const days = Math.floor(diffMs / 86400000) + 1;
-
-    return Math.max(1, Math.min(7, days));
-  }
-
-  viewWorkout(w: WorkoutProgram): void {
-    if (w.fileProgram) {
-      return;
-    }
-
-    this.selectedWorkout = w;
-    this.showWorkoutDetails = true;
-  }
-
-  closeWorkoutDetails(): void {
-    this.showWorkoutDetails = false;
-    this.selectedWorkout = null;
-  }
-
+  /**
+   * A nutrition day opens in the client's editor on that day (CA-11), as « Remplir » of the client's tab does: the
+   * editor keeps the client's rules (a day done or past is read-only) and its « Retour » comes back here.
+   */
   viewNutrition(n: NutritionProgram): void {
-    if (!n.programId) {
-      this.selectedNutritionDay = n;
-      this.showNutritionDetails = true;
-      return;
-    }
-
-    const baseRoute =
-      n.trackingMode === 'EACH_MEAL'
-        ? `/nutrition/create-macro-plan/${n.programId}`
-        : n.trackingMode === 'TOTAL_FOR_DAY'
-          ? `/nutrition/create-macro-plan-total-day/${n.programId}`
-          : `/nutrition/create-full-plan/${n.programId}`;
-
-    this.router.navigateByUrl(
-      `${baseRoute}?dayId=${n.dayId || ''}&from=calendar`
-    );
+    if (!n.programId || !this.selectedClient) return;
+    const editor = n.planKind === 'MEAL_MACROS'
+      ? 'create-macro-plan'
+      : n.planKind === 'DAY_MACROS'
+        ? 'create-macro-plan-total-day'
+        : 'create-full-plan';
+    this.openEditor(['/clients', editor, this.selectedClient, 'edit', n.programId], n.dayNumber);
   }
 
-  closeNutritionDetails(): void {
-    this.showNutritionDetails = false;
-    this.selectedNutritionDay = null;
+  /** The program's editor on that day; « Retour » comes back to this calendar, on the same month. */
+  private openEditor(commands: string[], dayNumber?: number | null): void {
+    this.rememberPlace();
+    void this.router.navigate(commands, { queryParams: { day: dayNumber || null, returnUrl: this.router.url } });
   }
 
-  formatRestTime(seconds: string): string {
-    const total = parseInt(seconds, 10);
-    if (isNaN(total)) return seconds;
-    const minutes = Math.floor(total / 60);
-    const secs = total % 60;
-    if (minutes > 0 && secs > 0) return `${minutes}min ${secs}sec`;
-    if (minutes > 0) return `${minutes}min`;
-    return `${secs}sec`;
+  /** A day the client already did something on, or a past day, is read in the editor (K1, as the editor does). */
+  isDayLocked(item: WorkoutProgram): boolean {
+    return !!item.done
+      || (!!item.date && item.date < todayIso())
+      || this.workoutRanges.some((range) => range.programId === item.programId && range.locked);
   }
 
   onPrev(): void {
@@ -1402,116 +2083,29 @@ currentDate = new Date();
 
   setView(view: CalendarViewMode): void {
     this.currentView = view;
-    this.updateMonthGrid();
+    this.showPeriod();
   }
 
   get weekDays(): string[] {
     return ['WEEKDAY_MON', 'WEEKDAY_TUE', 'WEEKDAY_WED', 'WEEKDAY_THU', 'WEEKDAY_FRI', 'WEEKDAY_SAT', 'WEEKDAY_SUN'];
   }
 
-  get monthLeadingEmptyCells(): any[] {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    const firstDay = this.getFirstDayOfMonth(year, month);
-    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
-    return Array(adjustedFirstDay).fill(0);
-  }
-
-  get monthDays(): {
-    date: Date;
-    dateString: string;
-    dayNumber: number;
-    isToday: boolean;
-    items: (WorkoutProgram | NutritionProgram)[];
-  }[] {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    const daysInMonth = this.getDaysInMonth(year, month);
-    const result: any[] = [];
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      const dateString = this.formatDateToYYYYMMDD(date);
-      result.push({
-        date,
-        dateString,
-        dayNumber: d,
-        isToday: this.isToday(date),
-        items: this.getItemsForDay(dateString),
-      });
-    }
-
-    return result;
-  }
-
-  get weekDaysData(): {
-    date: Date;
-    dateString: string;
-    dayNumber: number;
-    isToday: boolean;
-    weekdayLabel: string;
-    items: (WorkoutProgram | NutritionProgram)[];
-  }[] {
-    const dates = this.getWeekDates();
-    return dates.map((date) => {
-      const dateString = this.formatDateToYYYYMMDD(date);
-      return {
-        date,
-        dateString,
-        dayNumber: date.getDate(),
-        isToday: this.isToday(date),
-        weekdayLabel: date
-          .toLocaleDateString(this.calendarLocale, { weekday: 'short' })
-          .toUpperCase(),
-        items: this.getItemsForDay(dateString),
-      };
-    });
-  }
-
   get currentDayString(): string {
     return this.formatDateToYYYYMMDD(this.currentDate);
   }
 
-  get dayItems(): (WorkoutProgram | NutritionProgram)[] {
-    return this.getItemsForDay(this.currentDayString);
-  }
-
   get dayLabelWeekday(): string {
-    return this.currentDate.toLocaleDateString('fr-FR', {
+    return this.currentDate.toLocaleDateString(this.calendarLocale, {
       weekday: 'long',
     });
   }
 
   get dayLabelFull(): string {
-    return this.currentDate.toLocaleDateString('fr-FR', {
+    return this.currentDate.toLocaleDateString(this.calendarLocale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
-  }
-
-  private cloneExercises(exercises: Exercise[]): Exercise[] {
-    return (exercises || []).map((ex, exIndex) => ({
-      ...ex,
-      id: ex.id || `cloned-ex-${Date.now()}-${exIndex}`,
-      showVideo: false,
-      videoUrl: undefined,
-      rawVideoUrl: undefined,
-      sets: (ex.sets || []).map((set, setIndex) => ({
-        ...set,
-        type: set.type || 'REGULAR',
-        id: set.id || `cloned-set-${Date.now()}-${exIndex}-${setIndex}`,
-      })),
-    }));
-  }
-
-  private resetWorkoutForm(): void {
-    this.isRestDay = false;
-    this.newWorkoutTitle = '';
-    this.newWorkoutExercises = [];
-    this.exerciseSearchTerm = '';
-    this.showExerciseSelector = false;
-    this.editingWorkout = null;
   }
 
   private canManageWorkoutDays(): boolean {
@@ -1522,419 +2116,82 @@ currentDate = new Date();
     );
   }
 
-  copyDay(dateStr: string): void {
-    if (this.calendarType !== 'workout') {
-      return;
-    }
-
-    const sourcePrograms = this.workoutPrograms.filter(
-      (p: WorkoutProgram) =>
-        p.date === dateStr &&
-        p.clientId === this.selectedClient
-    );
-
-    if (!sourcePrograms.length) {
-      return;
-    }
-
-    this.copiedDate = dateStr;
-  }
-
-  cancelCopy(): void {
-    this.copiedDate = null;
-  }
-
-  private pointerDragState: {
-    workout: WorkoutProgram;
-    sourceDate: string;
-    startX: number;
-    startY: number;
-    currentX: number;
-    currentY: number;
-    moved: boolean;
-    sourceElement: HTMLElement | null;
-    ghost: HTMLElement | null;
-    moveHandler: (event: MouseEvent | TouchEvent) => void;
-    upHandler: (event: MouseEvent | TouchEvent) => void;
-  } | null = null;
-
-  private suppressWorkoutClickUntil = 0;
-
+  /** A workout day: opened in the program's editor on that day (L4, C5): changed there, or read there when done (K1). */
   openWorkoutCard(workout: WorkoutProgram, event?: Event): void {
-    if (Date.now() < this.suppressWorkoutClickUntil) {
-      event?.preventDefault();
-      event?.stopPropagation();
-      return;
-    }
-
-    if (workout.fileProgram) {
-      return;
-    }
-
-    this.openEditWorkoutModal(workout, event);
+    event?.stopPropagation();
+    this.openWorkoutEditor(workout);
   }
 
-  startWorkoutPointerDrag(
-    event: MouseEvent | TouchEvent,
-    workout: WorkoutProgram,
-    sourceDate: string
-  ): void {
-    if (this.calendarType !== 'workout') return;
-
+  /**
+   * « + » on a day (K2, K3, L4): the day already planned opens (one day per date: in the week, its panel); a date of a
+   * program without its day opens that program's editor on it; a date outside every program creates a program from
+   * that day. `type`: the row clicked in the week (else the type shown).
+   */
+  addItem(dateStr: string, type: CalendarType = this.calendarType): void {
     if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_ONE_CLIENT_DRAG_WORKOUT'));
+      this.toast.warning(this.translate.instant('SELECT_CLIENT_FIRST'));
+      return;
+    }
+    if (type !== this.calendarType) this.setCalendarType(type);
+
+    const [day] = this.getItemsForDay(dateStr);
+    if (day) {
+      if (this.currentView === 'week') this.selectDay(dateStr);
+      else if (this.calendarType === 'nutrition') this.viewNutrition(day as NutritionProgram);
+      else this.openWorkoutCard(day as WorkoutProgram);
       return;
     }
 
-    if (!workout?.programId) {
-      alert(this.translate.instant('WORKOUT_DAY_NO_PROGRAM'));
-      return;
-    }
-
-    const point = this.getPointerPoint(event);
-    if (!point) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const handle = event.currentTarget as HTMLElement | null;
-    const sourceElement = handle?.closest('.card-wrapper, .day-card-wrapper') as HTMLElement | null;
-
-    const moveHandler = (moveEvent: MouseEvent | TouchEvent) =>
-      this.onWorkoutPointerMove(moveEvent);
-    const upHandler = (upEvent: MouseEvent | TouchEvent) =>
-      this.onWorkoutPointerUp(upEvent);
-
-    this.pointerDragState = {
-      workout,
-      sourceDate,
-      startX: point.clientX,
-      startY: point.clientY,
-      currentX: point.clientX,
-      currentY: point.clientY,
-      moved: false,
-      sourceElement,
-      ghost: null,
-      moveHandler,
-      upHandler,
-    };
-
-    document.body.classList.add('calendar-pointer-drag-active');
-    sourceElement?.classList.add('is-pointer-drag-source');
-
-    window.addEventListener('mousemove', moveHandler, { passive: false });
-    window.addEventListener('mouseup', upHandler, { passive: false });
-    window.addEventListener('touchmove', moveHandler, { passive: false });
-    window.addEventListener('touchend', upHandler, { passive: false });
-    window.addEventListener('touchcancel', upHandler, { passive: false });
-  }
-
-  private onWorkoutPointerMove(event: MouseEvent | TouchEvent): void {
-    const state = this.pointerDragState;
-    if (!state) return;
-
-    const point = this.getPointerPoint(event);
-    if (!point) return;
-
-    event.preventDefault();
-
-    state.currentX = point.clientX;
-    state.currentY = point.clientY;
-
-    const distance = Math.hypot(
-      state.currentX - state.startX,
-      state.currentY - state.startY
-    );
-
-    if (!state.moved && distance > 4) {
-      state.moved = true;
-      this.suppressWorkoutClickUntil = Date.now() + 700;
-      this.createWorkoutDragGhost(state);
-    }
-
-    if (state.ghost) {
-      state.ghost.style.transform = `translate3d(${state.currentX + 12}px, ${state.currentY + 12}px, 0)`;
-    }
-
-    this.highlightWorkoutDropTarget(state.currentX, state.currentY);
-  }
-
-  private onWorkoutPointerUp(event: MouseEvent | TouchEvent): void {
-    const state = this.pointerDragState;
-    if (!state) return;
-
-    const point = this.getPointerPoint(event) || {
-      clientX: state.currentX,
-      clientY: state.currentY,
-    };
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const targetDate = this.getDropDateFromPoint(point.clientX, point.clientY);
-    const shouldMove = !!targetDate && targetDate !== state.sourceDate && state.moved;
-
-    const workout = state.workout;
-    const sourceDate = state.sourceDate;
-
-    this.cleanupWorkoutPointerDrag();
-
-    if (shouldMove && targetDate) {
-      this.moveDay(workout, sourceDate, targetDate);
-    }
-  }
-
-  private getPointerPoint(
-    event: MouseEvent | TouchEvent
-  ): { clientX: number; clientY: number } | null {
-    if (event instanceof MouseEvent) {
-      return { clientX: event.clientX, clientY: event.clientY };
-    }
-
-    const touch = event.touches?.[0] || event.changedTouches?.[0];
-    if (!touch) return null;
-
-    return { clientX: touch.clientX, clientY: touch.clientY };
-  }
-
-  private createWorkoutDragGhost(state: NonNullable<typeof this.pointerDragState>): void {
-    if (state.ghost || !state.sourceElement) return;
-
-    const card = state.sourceElement.querySelector('.card') || state.sourceElement;
-    const ghost = card.cloneNode(true) as HTMLElement;
-    const rect = card.getBoundingClientRect();
-    const ghostWidth = Math.max(rect.width, 190);
-
-    ghost.classList.add('calendar-pointer-drag-ghost');
-    ghost.style.width = `${ghostWidth}px`;
-    ghost.style.minWidth = `${ghostWidth}px`;
-    ghost.style.maxWidth = `${ghostWidth}px`;
-    ghost.style.transform = `translate3d(${state.currentX + 12}px, ${state.currentY + 12}px, 0)`;
-
-    document.body.appendChild(ghost);
-    state.ghost = ghost;
-  }
-
-  private highlightWorkoutDropTarget(clientX: number, clientY: number): void {
-    document
-      .querySelectorAll('.calendar-drop-target-active')
-      .forEach((el) => el.classList.remove('calendar-drop-target-active'));
-
-    const targetDate = this.getDropDateFromPoint(clientX, clientY);
-    if (!targetDate) return;
-
-    const target = document.querySelector(
-      `[data-workout-drop-date="${targetDate}"]`
-    );
-    target?.classList.add('calendar-drop-target-active');
-  }
-
-  private getDropDateFromPoint(clientX: number, clientY: number): string | null {
-    const ghost = this.pointerDragState?.ghost;
-    const previousDisplay = ghost?.style.display;
-
-    if (ghost) {
-      ghost.style.display = 'none';
-    }
-
-    const el = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-
-    if (ghost) {
-      ghost.style.display = previousDisplay || '';
-    }
-
-    const dropTarget = el?.closest('[data-workout-drop-date]') as HTMLElement | null;
-    return dropTarget?.dataset?.['workoutDropDate'] || null;
-  }
-
-  private cleanupWorkoutPointerDrag(): void {
-    const state = this.pointerDragState;
-    if (!state) return;
-
-    window.removeEventListener('mousemove', state.moveHandler as EventListener);
-    window.removeEventListener('mouseup', state.upHandler as EventListener);
-    window.removeEventListener('touchmove', state.moveHandler as EventListener);
-    window.removeEventListener('touchend', state.upHandler as EventListener);
-    window.removeEventListener('touchcancel', state.upHandler as EventListener);
-
-    state.sourceElement?.classList.remove('is-pointer-drag-source');
-    state.ghost?.remove();
-
-    document.body.classList.remove('calendar-pointer-drag-active');
-    document
-      .querySelectorAll('.calendar-drop-target-active')
-      .forEach((el) => el.classList.remove('calendar-drop-target-active'));
-
-    this.pointerDragState = null;
-  }
-
-  onWorkoutDrop(event: CdkDragDrop<any>, targetDate: string): void {
-    // Kept only so old templates do not break during hot reload.
-    if (this.calendarType !== 'workout') return;
-
-    const dragData = event.item.data;
-    if (!dragData) return;
-    if (dragData.sourceDate === targetDate) return;
-
-    this.moveDay(dragData.item, dragData.sourceDate, targetDate);
-  }
-
-  private moveDay(
-    workout: WorkoutProgram,
-    sourceDate: string,
-    targetDate: string
-  ): void {
-    if (this.calendarType !== 'workout') return;
-
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_ONE_CLIENT_DRAG_WORKOUT'));
-      this.getWorkout();
-      return;
-    }
-
-    const programId = workout.programId;
-    if (!programId) {
-      alert(this.translate.instant('WORKOUT_DAY_NO_PROGRAM'));
-      return;
-    }
-
-    const clientId = workout.clientId || this.selectedClient;
-
-    const exists = this.workoutPrograms.some(
-      (p: WorkoutProgram) =>
-        p.id !== workout.id &&
-        p.date === targetDate &&
-        p.clientId === clientId
-    );
-
-    if (exists) {
-      alert(this.translate.instant('TARGET_DATE_HAS_WORKOUT'));
-      return;
-    }
-
-    const previousPrograms = [...this.workoutPrograms];
-
-    this.workoutPrograms = this.workoutPrograms.map((p: WorkoutProgram) =>
-      p.id === workout.id ? { ...p, date: targetDate } : p
-    );
-    this.updateMonthGrid();
-
-    this.workoutService.updateWorkoutDay(
-      programId,
-      workout.id,
-      this.buildWorkoutDayRequestFromCalendarProgram(workout, targetDate)
-    ).subscribe({
-      next: () => this.getWorkout(),
-      error: (err) => {
-        console.error('Error moving workout day', err);
-        alert(this.translate.instant('MOVE_WORKOUT_DAY_ERROR'));
-        this.workoutPrograms = previousPrograms;
-        this.updateMonthGrid();
-      },
-    });
-  }
-
-  pasteDay(targetDate: string): void {
-    if (!this.copiedDate) return;
-
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    const sourcePrograms = this.workoutPrograms.filter(
-      (p: WorkoutProgram) =>
-        p.date === this.copiedDate && p.clientId === this.selectedClient
-    );
-
-    if (!sourcePrograms.length) return;
-
-    const sourceProgram = sourcePrograms[0] as WorkoutProgram;
-
-    if (!sourceProgram?.programId) {
-      alert(this.translate.instant('NO_ASSIGNED_WORKOUT_DAY'));
-      return;
-    }
-
-    const exists = this.workoutPrograms.some(
-      (p: WorkoutProgram) =>
-        p.date === targetDate && p.clientId === this.selectedClient
-    );
-
-    if (exists) {
-      alert(this.translate.instant('WORKOUT_DAY_ALREADY_EXISTS'));
-      return;
-    }
-
-    this.workoutService.addWorkoutDay(
-      sourceProgram.programId,
-      this.buildWorkoutDayRequestFromCalendarProgram(sourceProgram, targetDate)
-    ).subscribe({
-      next: () => {
-        this.cancelCopy();
-        this.getWorkout();
-      },
-      error: (err) => {
-        console.error('Error pasting workout day', err);
-        alert(this.translate.instant('PASTE_WORKOUT_DAY_ERROR'));
-      },
-    });
-  }
-
-  addItem(dateStr: string): void {
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    const existingItems = this.getItemsForDay(dateStr);
-
-    if (existingItems.length === 0) {
+    const program = this.planCovering(this.calendarType === 'workout' ? this.workoutRanges : this.nutritionRanges, dateStr);
+    if (!program) {
       this.openCreateProgramModal(dateStr);
       return;
     }
-
-    const emptyItem = existingItems.find((item: any) => item.emptyDay);
-    if (emptyItem) {
-      if (this.calendarType === 'nutrition') {
-        this.viewNutrition(emptyItem as NutritionProgram);
-        return;
-      }
-
-      this.openEditWorkoutModal(emptyItem as WorkoutProgram);
+    if (program.locked) {
+      this.toast.info(this.translate.instant('ASSIGN_FLOW.LOCKED_ERROR'));
+      return;
+    }
+    if (dateStr < todayIso()) {
+      this.toast.info(this.translate.instant('CALENDAR_DAY_PAST'));
       return;
     }
 
-    if (this.calendarType !== 'workout') {
+    // The day is filled in the program's editor (L4), as every change of a day.
+    const dayNumber = this.daysBetween(program.start, dateStr) + 1;
+    if (this.calendarType === 'nutrition') {
+      this.viewNutrition({ programId: program.programId, planKind: program.planKind, dayNumber } as NutritionProgram);
       return;
     }
-
-    const lastPlan = this.getLastWorkoutPlanForClient(this.selectedClient);
-    if (!lastPlan) {
-      this.openCreateProgramModal(dateStr);
-      return;
-    }
-
-    this.selectedDateString = dateStr;
-    this.resetWorkoutForm();
-    this.showAddWorkoutModal = true;
+    this.openEditor(['/clients/create-workout', this.selectedClient, 'edit', program.programId], dayNumber);
   }
 
   openCreateProgramModal(dateStr: string): void {
     if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
+      this.toast.warning(this.translate.instant('SELECT_CLIENT_FIRST'));
       return;
     }
 
     this.createProgramName = '';
     this.createProgramDurationWeeks = 4;
-    this.createProgramStartDate = dateStr;
+    // A day in the past cannot start a program (A2): it starts today.
+    this.createProgramStartDate = dateStr && dateStr >= todayIso() ? dateStr : todayIso();
     this.createProgramSaving = false;
+    this.createProgramPreviews = {};
+    this.createProgramConfirmRows = null;
+    this.createProgramConfirmed = false;
     this.showCreateProgramModal = true;
+  }
+
+  /** The coach confirmed what changes on the client's calendar. */
+  confirmCreateProgram(): void {
+    this.createProgramConfirmed = true;
+    this.submitCreateProgramModal();
   }
 
   closeCreateProgramModal(): void {
     if (this.createProgramSaving) return;
+    this.createProgramConfirmRows = null;
+    this.createProgramConfirmed = false;
 
     this.showCreateProgramModal = false;
     this.createProgramName = '';
@@ -1959,11 +2216,22 @@ currentDate = new Date();
   get canCreateCalendarProgram(): boolean {
     return !!this.createProgramName.trim()
       && !!this.createProgramStartDate
+      && !this.createProgramChecking
       && !this.createProgramSaving;
   }
 
   submitCreateProgramModal(): void {
     if (!this.canCreateCalendarProgram) return;
+    if (!this.createProgramConfirmed) {
+      const lines = (this.createProgramPreviews[String(this.selectedClient)]?.changes || [])
+        .map(change => this.programSchedule.text(changeSentence(change, this.programSchedule.formatDate)));
+      if (lines.length) {
+        this.createProgramConfirmRows = [{ id: String(this.selectedClient), name: this.getSelectedClientName(), lines }];
+        return;
+      }
+    }
+    this.createProgramConfirmed = false;
+    this.createProgramConfirmRows = null;
 
     if (this.calendarType === 'nutrition') {
       this.createEmptyNutritionProgram();
@@ -1980,11 +2248,10 @@ currentDate = new Date();
 
   getSelectedClientName(): string {
     const client = this.clients.find((item) => item.id === this.selectedClient);
-    if (!client) return 'selected client';
-
-    return `${client.firstName || ''} ${client.lastName || ''}`.trim()
-      || client.name
-      || 'selected client';
+    const name = client
+      ? `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.name
+      : this.embeddedClientName.trim();
+    return name || this.translate.instant('CLIENT');
   }
 
   private createEmptyWorkoutProgram(): void {
@@ -2006,15 +2273,16 @@ currentDate = new Date();
 
     this.createProgramSaving = true;
     this.workoutService.createWorkout(payload).subscribe({
-      next: () => {
+      next: (created: any) => {
         this.createProgramSaving = false;
+        this.programSchedule.announceChanges(created?.scheduleChanges, this.getSelectedClientName());
         this.closeCreateProgramModal();
-        this.getWorkout();
+        this.reloadWorkouts();
       },
       error: (err) => {
         console.error('Error creating calendar workout program', err);
         this.createProgramSaving = false;
-        alert(this.translate.instant('CREATE_WORKOUT_PROGRAM_ERROR'));
+        this.toast.error(this.translate.instant('CREATE_WORKOUT_PROGRAM_ERROR'));
       },
     });
   }
@@ -2056,15 +2324,16 @@ currentDate = new Date();
 
     this.createProgramSaving = true;
     this.nutritionService.createNutritionPlan(payload).subscribe({
-      next: () => {
+      next: (created: any) => {
         this.createProgramSaving = false;
+        this.programSchedule.announceChanges(created?.scheduleChanges, this.getSelectedClientName());
         this.closeCreateProgramModal();
-        this.getNutrition();
+        this.reloadNutrition();
       },
       error: (err) => {
         console.error('Error creating calendar nutrition program', err);
         this.createProgramSaving = false;
-        alert(this.translate.instant('CREATE_NUTRITION_PROGRAM_ERROR'));
+        this.toast.error(this.translate.instant('CREATE_NUTRITION_PROGRAM_ERROR'));
       },
     });
   }
@@ -2092,925 +2361,19 @@ currentDate = new Date();
     } as MealDay;
   }
 
-  openEditWorkoutModal(workout: WorkoutProgram, event?: Event): void {
-    event?.stopPropagation();
-
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    this.editingWorkout = workout;
-    this.selectedDateString = workout.date;
-    this.isRestDay = workout.restDay ?? workout.sessions.length === 0;
-    this.newWorkoutTitle = workout.title;
-    this.newWorkoutExercises = this.cloneExercises(
-      workout.sessions?.[0]?.exercises || []
-    );
-    this.exerciseSearchTerm = '';
-    this.showExerciseSelector = false;
-    this.showAddWorkoutModal = true;
-  }
-
-  closeAddWorkoutModal(): void {
-    this.showAddWorkoutModal = false;
-    this.resetWorkoutForm();
-    this.selectedDateString = null;
-  }
-
-  toggleRestDay(): void {
-    this.isRestDay = !this.isRestDay;
-  }
-
-  getSelectedDateLabel(): string {
-    if (!this.selectedDateString) {
-      return '';
-    }
-    const date = new Date(this.selectedDateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-
-  openExerciseSelector(): void {
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    this.showExerciseSelector = true;
-    this.loadAvailableExercises();
-  }
-
-  closeExerciseSelector(): void {
-    this.showExerciseSelector = false;
-    this.exerciseSearchTerm = '';
-    this.exerciseMuscleFilter = '';
-    this.exerciseEquipmentFilter = '';
-    this.exerciseTypeFilter = '';
-  }
-
-  getFilteredExercises(): Exercise[] {
-    return this.availableExercises;
-  }
-
-  onExerciseSearchChange(): void {
-    this.loadAvailableExercises();
-  }
-
-  shouldShowCalendarWeightField(): boolean {
-    return this.coachSettingsService.shouldShowExerciseWeight();
-  }
-
   get weightUnitLabel(): string {
     return this.coachSettingsService.getWeightUnit();
   }
 
-  private getDefaultWeightForExercise(type: Exercise['type']): number | null {
-    return type === 'cardio' || !this.shouldShowCalendarWeightField() ? null : 0;
+  /** After a change made here: the months are read again (and the profile's copy of the plans is out of date). */
+  private reloadWorkouts(): void {
+    if (this.selectedClient) this.profileCache.forget('workouts', this.selectedClient);
+    this.loadCalendar();
   }
 
-  private loadAvailableExercises(): void {
-    this.exerciseSelectorLoading = true;
-
-    this.exerciseService
-      .getExercises(0, 50, {
-        name: this.exerciseSearchTerm.trim(),
-        muscle: this.exerciseMuscleFilter,
-        equipment: this.exerciseEquipmentFilter,
-        type: this.exerciseTypeFilter,
-      })
-      .subscribe({
-        next: (res: PageResponse<LibraryExercise>) => {
-          this.availableExercises = (res.content || []).map((exercise) =>
-            this.normalizeLibraryExercise(exercise)
-          );
-          this.exerciseSelectorLoading = false;
-        },
-        error: (err) => {
-          console.error('Error loading exercises for calendar modal', err);
-          this.availableExercises = [];
-          this.exerciseSelectorLoading = false;
-        },
-      });
+  private reloadNutrition(): void {
+    if (this.selectedClient) this.profileCache.forget('nutrition', this.selectedClient);
+    this.loadCalendar();
   }
 
-  private normalizeLibraryExercise(exercise: LibraryExercise): Exercise {
-    const type = String(exercise.type || '').toUpperCase() === 'CARDIO'
-      ? 'cardio'
-      : 'strength';
-    const videoLink = this.getExerciseVideoLink(exercise);
-    const thumbnail = this.getExerciseThumbnail(exercise);
-
-    return {
-      id: exercise.id || `library-ex-${Date.now()}-${Math.random()}`,
-      name: exercise.name || 'Untitled Exercise',
-      type,
-      youtubeUrl: videoLink || undefined,
-      videoLink: videoLink || undefined,
-      thumbnail: thumbnail || undefined,
-      imageUrl: thumbnail || undefined,
-      duration: type === 'cardio' ? Number(exercise.duration || 30) : undefined,
-      sets: this.buildInitialExerciseSets(type),
-    };
-  }
-
-  private buildInitialExerciseSets(type: Exercise['type']): ExerciseSet[] {
-    const autoFill = this.coachSettingsService.shouldAutoFillWorkoutDefaults();
-
-    if (type === 'cardio') {
-      const count = autoFill ? this.coachSettingsService.getCardioSets() : 1;
-      const minutes = autoFill ? this.coachSettingsService.getCardioMinutes() : 30;
-
-      return Array.from({ length: count }, (_, index) => ({
-          id: `library-cardio-set-${Date.now()}-${index}`,
-          number: index + 1,
-          reps: '',
-          rest: '60',
-          weight: null,
-          duration: minutes,
-          type: 'REGULAR',
-        }));
-    }
-
-    const count = autoFill ? this.coachSettingsService.getWorkoutSets() : 1;
-    const reps = autoFill ? this.coachSettingsService.getWorkoutReps() : '8';
-
-    return Array.from({ length: count }, (_, index) => ({
-        id: `library-set-${Date.now()}-${index}`,
-        number: index + 1,
-        reps,
-        rest: '60',
-        weight: this.getDefaultWeightForExercise('strength'),
-        type: 'REGULAR',
-      }));
-  }
-
-  private cleanExerciseValue(value: unknown): string {
-    if (value === null || value === undefined) return '';
-    const text = String(value).trim();
-    if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') {
-      return '';
-    }
-    return text;
-  }
-
-  private getExerciseRef(exercise: any): any {
-    return exercise?.exerciseRef || exercise?.ref || exercise?.exercise || null;
-  }
-
-  private getExerciseRefId(exercise: any): string {
-    const ref = this.getExerciseRef(exercise);
-    const rawId =
-      exercise?.exerciseRefId ||
-      exercise?.refId ||
-      ref?.id ||
-      ref?._id ||
-      ref?.['$oid'];
-
-    if (rawId && typeof rawId === 'object') {
-      return this.cleanExerciseValue(rawId.id || rawId._id || rawId['$oid']);
-    }
-
-    return this.cleanExerciseValue(rawId);
-  }
-
-  private getExerciseVideoLink(exercise: any): string {
-    const ref = this.getExerciseRef(exercise);
-
-    return (
-      this.cleanExerciseValue(exercise?.videoLink) ||
-      this.cleanExerciseValue(exercise?.videoUrl) ||
-      this.cleanExerciseValue(exercise?.youtubeUrl) ||
-      this.cleanExerciseValue(exercise?.video) ||
-      this.cleanExerciseValue(exercise?.url) ||
-      this.cleanExerciseValue(ref?.videoLink) ||
-      this.cleanExerciseValue(ref?.videoUrl) ||
-      this.cleanExerciseValue(ref?.youtubeUrl) ||
-      this.cleanExerciseValue(ref?.video) ||
-      this.cleanExerciseValue(ref?.url)
-    );
-  }
-
-  private getExerciseImageUrl(exercise: any): string {
-    const ref = this.getExerciseRef(exercise);
-
-    return (
-      this.cleanExerciseValue(exercise?.imageUrl) ||
-      this.cleanExerciseValue(exercise?.image) ||
-      this.cleanExerciseValue(exercise?.thumbnailUrl) ||
-      this.cleanExerciseValue(exercise?.thumbnail) ||
-      this.cleanExerciseValue(exercise?.photoUrl) ||
-      this.cleanExerciseValue(exercise?.pictureUrl) ||
-      this.cleanExerciseValue(ref?.imageUrl) ||
-      this.cleanExerciseValue(ref?.image) ||
-      this.cleanExerciseValue(ref?.thumbnailUrl) ||
-      this.cleanExerciseValue(ref?.thumbnail) ||
-      this.cleanExerciseValue(ref?.photoUrl) ||
-      this.cleanExerciseValue(ref?.pictureUrl)
-    );
-  }
-
-  getExerciseThumbnail(exercise: any): string {
-    const imageUrl = this.getExerciseImageUrl(exercise);
-    if (imageUrl) return imageUrl;
-
-    const videoUrl =
-      this.getExerciseVideoLink(exercise) ||
-      this.cleanExerciseValue(exercise?.youtubeUrl);
-    const videoId = this.extractYoutubeId(videoUrl);
-
-    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
-  }
-
-  handleAddExerciseToWorkout(exercise: Exercise): void {
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    const copy: Exercise = {
-      ...exercise,
-      id: `new-ex-${Date.now()}-${Math.random()}`,
-      thumbnail: exercise.thumbnail || this.getExerciseThumbnail(exercise),
-      imageUrl: exercise.imageUrl || exercise.thumbnail || this.getExerciseThumbnail(exercise),
-      showVideo: false,
-      videoUrl: undefined,
-      rawVideoUrl: undefined,
-      sets: exercise.sets && exercise.sets.length
-        ? exercise.sets.map((s, index) => ({
-          ...s,
-          id: `new-set-${Date.now()}-${index}`,
-          duration: s.duration ?? exercise.duration,
-          weight: s.weight ?? this.getDefaultWeightForExercise(exercise.type),
-          type: s.type || 'REGULAR',
-        }))
-        : exercise.type === 'cardio'
-          ? [
-            {
-              id: `new-set-${Date.now()}-0`,
-              number: 1,
-              reps: '',
-              rest: '60',
-              weight: null,
-              duration: exercise.duration || 30,
-              type: 'REGULAR',
-            },
-          ]
-          : [],
-    };
-    this.newWorkoutExercises.push(copy);
-    this.showExerciseSelector = false;
-    this.exerciseSearchTerm = '';
-  }
-
-  handleRemoveExerciseFromWorkout(exerciseId: string): void {
-    const exercise = this.newWorkoutExercises.find((e) => e.id === exerciseId);
-    const groupId = exercise?.supersetGroupId || null;
-
-    this.newWorkoutExercises = this.newWorkoutExercises.filter(
-      (e) => e.id !== exerciseId
-    );
-
-    this.clearInvalidCalendarSupersetGroup(groupId);
-  }
-
-  addSetToExercise(exercise: Exercise): void {
-    if (!exercise.sets) {
-      exercise.sets = [];
-    }
-    const lastSet = exercise.sets[exercise.sets.length - 1];
-    const nextNumber = exercise.sets.length + 1;
-    exercise.sets.push({
-      id: `set-${Date.now()}`,
-      number: nextNumber,
-      reps: lastSet ? lastSet.reps : this.coachSettingsService.getWorkoutReps(),
-      rest: lastSet ? lastSet.rest : '60',
-      weight: lastSet?.weight ?? this.getDefaultWeightForExercise(exercise.type),
-      duration: exercise.type === 'cardio'
-        ? Number(lastSet?.duration || exercise.duration || this.coachSettingsService.getCardioMinutes())
-        : undefined,
-      type: lastSet?.type || 'REGULAR',
-    });
-  }
-
-  removeSetFromExercise(exercise: Exercise, setIndex: number): void {
-    if (!exercise.sets) {
-      return;
-    }
-    exercise.sets.splice(setIndex, 1);
-    exercise.sets.forEach((s, i) => (s.number = i + 1));
-  }
-
-  getRestMinutes(set: ExerciseSet): number {
-    const total = parseInt(set.rest, 10);
-    if (isNaN(total)) return 0;
-    return Math.floor(total / 60);
-  }
-
-  getRestSeconds(set: ExerciseSet): number {
-    const total = parseInt(set.rest, 10);
-    if (isNaN(total)) return 0;
-    return total % 60;
-  }
-
-  updateRestMinutes(set: ExerciseSet, minutes: number): void {
-    const m = isNaN(minutes) ? 0 : minutes;
-    const s = this.getRestSeconds(set);
-    set.rest = String(m * 60 + s);
-  }
-
-  updateRestSeconds(set: ExerciseSet, seconds: number): void {
-    const s = isNaN(seconds) ? 0 : seconds;
-    const m = this.getRestMinutes(set);
-    const sec = Math.min(Math.max(s, 0), 59);
-    set.rest = String(m * 60 + sec);
-  }
-
-  updateSetMainValue(exercise: Exercise, set: ExerciseSet, value: string | number): void {
-    if (exercise.type === 'cardio') {
-      set.duration = Number(value) || 0;
-      exercise.duration = (exercise.sets || []).reduce(
-        (sum, currentSet) => sum + (Number(currentSet.duration) || 0),
-        0
-      );
-      return;
-    }
-
-    set.reps = String(value ?? '');
-  }
-
-  getSetDisplayLabel(set: ExerciseSet, index: number): string {
-    switch (set.type || 'REGULAR') {
-      case 'WARM_UP':
-        return 'W';
-      case 'DROP_SET':
-        return 'D';
-      case 'FAILURE':
-        return 'F';
-      default:
-        return String(set.number || index + 1);
-    }
-  }
-
-  getSetTypeClass(type?: ExerciseSet['type']): string {
-    switch (type || 'REGULAR') {
-      case 'WARM_UP':
-        return 'set-type-warmup';
-      case 'DROP_SET':
-        return 'set-type-dropset';
-      case 'FAILURE':
-        return 'set-type-failure';
-      default:
-        return 'set-type-regular';
-    }
-  }
-
-  toggleSetTypeMenu(exerciseId: string, setIndex: number, event?: MouseEvent): void {
-    event?.stopPropagation();
-    const key = `${exerciseId}-${setIndex}`;
-    this.openSetTypeKey = this.openSetTypeKey === key ? null : key;
-  }
-
-  isSetTypeMenuOpen(exerciseId: string, setIndex: number): boolean {
-    return this.openSetTypeKey === `${exerciseId}-${setIndex}`;
-  }
-
-  selectSetType(
-    exercise: Exercise,
-    setIndex: number,
-    type: ExerciseSet['type'],
-    event?: MouseEvent
-  ): void {
-    event?.stopPropagation();
-    const set = exercise.sets?.[setIndex];
-    if (!set) return;
-
-    set.type = type;
-    set.number = setIndex + 1;
-    this.openSetTypeKey = null;
-  }
-
-  canToggleCalendarSuperset(index: number): boolean {
-    return index >= 0 && index < this.newWorkoutExercises.length - 1;
-  }
-
-  isCalendarSupersetPair(index: number): boolean {
-    const current = this.newWorkoutExercises[index];
-    const next = this.newWorkoutExercises[index + 1];
-    return !!current?.supersetGroupId && current.supersetGroupId === next?.supersetGroupId;
-  }
-
-  private getCalendarSupersetRun(groupId: string | null | undefined): Exercise[] {
-    if (!groupId) return [];
-
-    return this.newWorkoutExercises.filter(
-      (exercise) => exercise.supersetGroupId === groupId
-    );
-  }
-
-  private getContiguousCalendarSupersetRun(index: number): {
-    start: number;
-    end: number;
-    groupId: string | null;
-  } {
-    const list = this.newWorkoutExercises;
-    const groupId = list[index]?.supersetGroupId || null;
-
-    if (!groupId) {
-      return { start: index, end: index, groupId: null };
-    }
-
-    let start = index;
-    let end = index;
-
-    while (start > 0 && list[start - 1]?.supersetGroupId === groupId) {
-      start -= 1;
-    }
-
-    while (end < list.length - 1 && list[end + 1]?.supersetGroupId === groupId) {
-      end += 1;
-    }
-
-    return { start, end, groupId };
-  }
-
-  private clearInvalidCalendarSupersetGroup(groupId: string | null | undefined): void {
-    if (!groupId) return;
-
-    const group = this.getCalendarSupersetRun(groupId);
-
-    if (group.length < 2) {
-      group.forEach((exercise) => (exercise.supersetGroupId = null));
-    }
-  }
-
-  private getNewCalendarSupersetGroupId(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
-    }
-
-    return `calendar-superset-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-
-  toggleCalendarSuperset(index: number): void {
-    if (!this.canToggleCalendarSuperset(index)) return;
-
-    const list = this.newWorkoutExercises;
-    const current = list[index];
-    const next = list[index + 1];
-
-    if (this.isCalendarSupersetPair(index)) {
-      const groupId = current.supersetGroupId;
-
-      const rightRun = this.getContiguousCalendarSupersetRun(index + 1);
-
-      for (let idx = index + 1; idx <= rightRun.end; idx += 1) {
-        if (list[idx]?.supersetGroupId === groupId) {
-          list[idx].supersetGroupId = null;
-        }
-      }
-
-      this.clearInvalidCalendarSupersetGroup(groupId);
-      return;
-    }
-
-    const groupId =
-      current.supersetGroupId ||
-      next.supersetGroupId ||
-      this.getNewCalendarSupersetGroupId();
-    const currentGroupId = current.supersetGroupId;
-    const nextGroupId = next.supersetGroupId;
-
-    list.forEach((exercise) => {
-      if (
-        exercise === current ||
-        exercise === next ||
-        (currentGroupId && exercise.supersetGroupId === currentGroupId) ||
-        (nextGroupId && exercise.supersetGroupId === nextGroupId)
-      ) {
-        exercise.supersetGroupId = groupId;
-      }
-    });
-  }
-
-  toggleExerciseVideo(exercise: Exercise): void {
-    exercise.showVideo = !exercise.showVideo;
-    if (exercise.showVideo && !exercise.videoUrl) {
-      const videoId = this.extractYoutubeId(exercise.youtubeUrl || '');
-      if (videoId) {
-        exercise.videoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
-          `https://www.youtube.com/embed/${videoId}`
-        );
-        exercise.rawVideoUrl = exercise.youtubeUrl;
-      }
-    }
-  }
-
-  extractYoutubeId(url: string): string | null {
-    if (!url) return null;
-      const match = url.match(
-      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
-    );
-    return match ? match[1] : null;
-  }
-
-  handleSaveWorkout(): void {
-    if (!this.selectedDateString) {
-      return;
-    }
-
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    const targetDate = this.selectedDateString!;
-
-    if (this.editingWorkout) {
-      if (!this.editingWorkout.programId) {
-        alert(this.translate.instant('WORKOUT_DAY_NOT_LINKED'));
-        return;
-      }
-
-      if (!this.editingWorkout.id) {
-        alert(this.translate.instant('WORKOUT_DAY_ID_MISSING'));
-        return;
-      }
-
-      const duplicate = this.workoutPrograms.some(
-        (p: WorkoutProgram) =>
-          p.id !== this.editingWorkout?.id &&
-          p.clientId === this.selectedClient &&
-          p.date === targetDate
-      );
-
-      if (duplicate) {
-        alert(this.translate.instant('ANOTHER_WORKOUT_DAY_EXISTS'));
-        return;
-      }
-
-      this.workoutService
-        .updateWorkoutDay(
-          this.editingWorkout.programId,
-          this.editingWorkout.id,
-          this.buildWorkoutDayRequestFromForm(targetDate)
-        )
-        .subscribe({
-          next: () => {
-            this.closeAddWorkoutModal();
-            this.getWorkout();
-          },
-          error: (err) => {
-            console.error('Error updating workout day', err);
-            alert(this.translate.instant('UPDATE_WORKOUT_DAY_ERROR'));
-          },
-        });
-      return;
-    }
-
-    const lastPlan = this.getLastWorkoutPlanForClient(this.selectedClient);
-
-    if (!lastPlan) {
-      alert(this.translate.instant('NO_ASSIGNED_WORKOUT_PLAN'));
-      return;
-    }
-
-    const exists = this.workoutPrograms.some(
-      (p: WorkoutProgram) =>
-        p.clientId === this.selectedClient && p.date === targetDate
-    );
-
-    if (exists) {
-      alert(this.translate.instant('WORKOUT_DAY_ALREADY_EXISTS'));
-      return;
-    }
-
-    this.workoutService
-      .addWorkoutDay(lastPlan.programId, this.buildWorkoutDayRequestFromForm(targetDate))
-      .subscribe({
-        next: () => {
-          this.closeAddWorkoutModal();
-          this.getWorkout();
-        },
-        error: (err) => {
-          console.error('Error saving workout day', err);
-          alert(this.translate.instant('SAVE_WORKOUT_DAY_ERROR'));
-        },
-      });
-  }
-
-  openDeleteModal(workout: WorkoutProgram, event?: Event): void {
-    event?.stopPropagation();
-
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    this.workoutToDelete = workout;
-    this.showDeleteModal = true;
-  }
-
-  closeDeleteModal(): void {
-    this.showDeleteModal = false;
-    this.workoutToDelete = null;
-  }
-
-  handleDeleteWorkout(): void {
-    if (!this.workoutToDelete) return;
-
-    if (!this.canManageWorkoutDays()) {
-      alert(this.translate.instant('SELECT_CLIENT_FIRST'));
-      return;
-    }
-
-    if (!this.workoutToDelete.programId) {
-      alert(this.translate.instant('WORKOUT_DAY_NOT_LINKED'));
-      return;
-    }
-
-    this.workoutService
-      .deleteWorkoutDay(this.workoutToDelete.programId, this.workoutToDelete.id)
-      .subscribe({
-        next: () => {
-          this.closeDeleteModal();
-          this.getWorkout();
-        },
-        error: (err) => {
-          console.error('Error deleting workout day', err);
-          alert(this.translate.instant('DELETE_WORKOUT_DAY_ERROR'));
-        },
-      });
-  }
-
-  private getLastWorkoutPlanForClient(
-    clientId?: string
-  ): WorkoutPlanRef | null {
-    const clientWorkouts = this.workoutPrograms
-      .filter((w: WorkoutProgram) => w.clientId === clientId && !!w.programId)
-      .sort(
-        (a: WorkoutProgram, b: WorkoutProgram) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
-
-    if (!clientWorkouts.length) {
-      return null;
-    }
-
-    const lastWorkout = clientWorkouts[clientWorkouts.length - 1];
-
-    if (!lastWorkout.programId || !lastWorkout.programName) {
-      return null;
-    }
-
-    return {
-      programId: lastWorkout.programId,
-      programName: lastWorkout.programName,
-    };
-  }
-
-  private normalizePlanDays(workoutDays: any[]): any[] {
-    return [...workoutDays]
-      .map((day) => {
-        const date = day.date;
-        const dateObj = new Date(date);
-
-        return {
-          ...day,
-          date,
-          dayOfWeek: dateObj.toLocaleDateString('en-US', {
-            weekday: 'long',
-          }),
-        };
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((day, index) => ({
-        ...day,
-        dayNumber: index + 1,
-        title: day.restDay ? 'Rest Day' : `Day ${index + 1}`,
-      }));
-  }
-
-  private buildWorkoutDayPayload(
-    date: string,
-    dayNumber: number,
-    existingId?: string
-  ): any {
-    const dayDate = new Date(date);
-    const dayOfWeek = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
-
-    if (this.isRestDay) {
-      return {
-        id: existingId || crypto.randomUUID(),
-        date,
-        dayOfWeek,
-        restDay: true,
-        dayNumber,
-        title: 'Rest Day',
-        description: '',
-        workoutSessions: [],
-        status: 'PENDING',
-      };
-    }
-
-    return {
-      id: existingId || crypto.randomUUID(),
-      date,
-      dayOfWeek,
-      restDay: false,
-      dayNumber,
-      title: this.newWorkoutTitle.trim(),
-      description: '',
-      workoutSessions: [
-        {
-          name: this.newWorkoutTitle.trim() || 'Main Session',
-          exercises: this.newWorkoutExercises.map((ex) => ({
-            id: ex.id || crypto.randomUUID(),
-            name: ex.name,
-            type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
-            supersetGroupId: ex.supersetGroupId || null,
-            youtubeUrl: ex.youtubeUrl || null,
-            sets:
-              ex.type === 'strength'
-                ? (ex.sets || []).map((set, index) => {
-                  const total = parseInt(set.rest, 10) || 0;
-                  return {
-                    setNumber: set.number ?? index + 1,
-                    reps: this.toNullableNumber(set.reps),
-                    weight: this.shouldShowCalendarWeightField()
-                      ? set.weight ?? 0
-                      : null,
-                    restMin: Math.floor(total / 60),
-                    restSec: total % 60,
-                    type: set.type || 'REGULAR',
-                  };
-                })
-                : this.buildCardioSets(ex),
-          })),
-        },
-      ],
-      status: 'PENDING',
-    };
-  }
-
-  private buildWorkoutDayRequestFromForm(date: string): any {
-    return {
-      title: this.isRestDay ? 'Rest Day' : this.newWorkoutTitle.trim(),
-      date,
-      restDay: this.isRestDay,
-      workoutSessions: this.isRestDay
-        ? []
-        : [
-          {
-            name: this.newWorkoutTitle.trim() || 'Main Session',
-            exercises: this.newWorkoutExercises.map((ex) =>
-              this.buildSaveWorkoutExerciseRequest(ex)
-            ),
-          },
-        ],
-    };
-  }
-
-  private buildWorkoutDayRequestFromCalendarProgram(
-    program: WorkoutProgram,
-    date: string
-  ): any {
-    return {
-      title: program.title,
-      date,
-      restDay: false,
-      workoutSessions: (program.sessions || []).map((session) => ({
-        name: session.notes || program.title || 'Main Session',
-        exercises: (session.exercises || []).map((ex) =>
-          this.buildSaveWorkoutExerciseRequest(ex)
-        ),
-      })),
-    };
-  }
-
-  private buildSaveWorkoutExerciseRequest(ex: Exercise): any {
-    const type = String(ex.type || '').toUpperCase() === 'CARDIO'
-      ? 'CARDIO'
-      : ex.type === 'cardio'
-        ? 'CARDIO'
-        : 'STRENGTH';
-
-    return {
-      name: ex.name,
-      type,
-      duration: type === 'CARDIO' ? Number(ex.duration || 0) : undefined,
-      description: ex.notes || undefined,
-      videoLink: ex.videoLink || ex.youtubeUrl || undefined,
-      exerciseRef: this.getExerciseRefId(ex) || undefined,
-      supersetGroupId: ex.supersetGroupId || null,
-      sets:
-        type === 'CARDIO'
-          ? this.buildCardioSets(ex)
-          : (ex.sets || []).map((set, index) => {
-            const total = parseInt(set.rest, 10) || 0;
-            return {
-              setNumber: set.number ?? index + 1,
-              reps: this.toNullableNumber(set.reps),
-              weight: this.shouldShowCalendarWeightField()
-                ? set.weight ?? 0
-                : null,
-              restMin: Math.floor(total / 60),
-              restSec: total % 60,
-              type: set.type || 'REGULAR',
-            };
-          }),
-    };
-  }
-
-  private buildCardioSets(ex: Exercise): any[] {
-    const sets = ex.sets || [];
-
-    if (sets.length) {
-      return sets.map((set, index) => {
-        const total = parseInt(set.rest, 10) || 0;
-
-        return {
-          setNumber: set.number ?? index + 1,
-          reps: null,
-          weight: null,
-          duration:
-            Number(set.duration) ||
-            (ex.duration ? Math.round(Number(ex.duration) / sets.length) : 0),
-          restMin: Math.floor(total / 60),
-          restSec: total % 60,
-          type: set.type || 'REGULAR',
-        };
-      });
-    }
-
-    return [
-      {
-        setNumber: 1,
-        reps: null,
-        weight: null,
-        duration: Number(ex.duration || 0),
-        restMin: 0,
-        restSec: 0,
-        type: 'REGULAR',
-      },
-    ];
-  }
-
-  private toNullableNumber(value: string): number | null {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  private buildWorkoutDayFromCalendarProgram(
-    program: WorkoutProgram,
-    date: string,
-    dayNumber: number
-  ): any {
-    const dayDate = new Date(date);
-    const dayOfWeek = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
-
-    return {
-      id: crypto.randomUUID(),
-      date,
-      dayOfWeek,
-      restDay: program.sessions.length === 0,
-      dayNumber,
-      title: program.title,
-      description: '',
-      workoutSessions:
-        program.sessions.length === 0
-          ? []
-          : program.sessions.map((session) => ({
-            name: session.notes || program.title || 'Main Session',
-            exercises: (session.exercises || []).map((ex) => ({
-              id: crypto.randomUUID(),
-              name: ex.name,
-              type: ex.type === 'cardio' ? 'CARDIO' : 'STRENGTH',
-              supersetGroupId: ex.supersetGroupId || null,
-              youtubeUrl: ex.youtubeUrl || null,
-              sets:
-                ex.type === 'strength'
-                  ? (ex.sets || []).map((set, index) => {
-                    const total = parseInt(set.rest, 10) || 0;
-                    return {
-                      setNumber: set.number ?? index + 1,
-                      reps: this.toNullableNumber(set.reps),
-                      weight: this.shouldShowCalendarWeightField()
-                        ? set.weight ?? 0
-                        : null,
-                      restMin: Math.floor(total / 60),
-                      restSec: total % 60,
-                      type: set.type || 'REGULAR',
-                    };
-                  })
-                  : this.buildCardioSets(ex),
-            })),
-          })),
-      status: 'PENDING',
-    };
-  }
 }

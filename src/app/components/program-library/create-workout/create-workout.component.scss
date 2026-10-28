@@ -4432,5 +4432,6 @@ color: #757272;
   }
 }
 
-/* Page layout (toolbar, columns, exercise panel) — must stay the last import. */
+/* Page layout (toolbar, columns, exercise panel) — must stay the last import (with the readable rail after it). */
 @import "../_workout-builder-layout.scss";
+@import "../_builder-rail-readable.scss";

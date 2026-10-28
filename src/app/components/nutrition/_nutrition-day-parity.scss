@@ -278,6 +278,19 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   letter-spacing: .25px !important;
 }
 
+/* A meal without food: kept in the plan, not shown to the client (backlog-programmes.md R3). */
+#{$rail} .np-meal-title-row small.np-meal-status.is-hidden {
+  padding: 1px 8px !important;
+  border-radius: 999px !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  text-transform: none !important;
+}
+
+#{$rail} .np-meal-title-row small.np-meal-status.is-warning {
+  color: #b45309 !important;
+}
+
 #{$rail} .np-meal__right {
   flex: 0 1 auto !important;
   display: flex !important;
@@ -331,4 +344,246 @@ $rail: '.np-root.np-layout .np-main > .np-card.np-card--day > .builder-rail';
   #{$rail} .np-meal__head {
     flex-wrap: wrap !important;
   }
+}
+
+/* ===== Recipe meal in the builders: a card with its servings, ingredients fixed by the recipe ===== */
+.np-recipe-card {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "media copy servings"
+    "actions actions actions";
+  align-items: center;
+  gap: 14px 18px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #d7ecf6;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f7fcfe 0%, #fff 100%);
+}
+
+.np-recipe-card__media {
+  grid-area: media;
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #dce8f2;
+  border-radius: 12px;
+  color: #44b4df;
+  background: #eef8fc;
+
+  img { width: 100%; height: 100%; object-fit: cover; }
+  i-feather { width: 26px; height: 26px; }
+}
+
+.np-recipe-card__copy {
+  grid-area: copy;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+
+  h5 {
+    margin: 2px 0 0;
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  p {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 12.5px;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+.np-recipe-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.np-recipe-card .np-recipe-chip,
+.np-recipe-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+
+  i-feather { width: 12px; height: 12px; }
+}
+
+.np-recipe-card .np-recipe-chip { color: #6d4fd0; background: #f0ebff; }
+.np-recipe-meta { color: #475569; background: #f1f5f9; }
+
+.np-recipe-card__servings {
+  grid-area: servings;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding-left: 18px;
+  border-left: 1px solid #e6e9ee;
+
+  small { max-width: 150px; color: #94a3b8; font-size: 11px; text-align: center; }
+}
+
+.np-recipe-card__label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.np-recipe-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid #d8dde6;
+  border-radius: 12px;
+  background: #fff;
+
+  button {
+    display: grid;
+    width: 38px;
+    height: 100%;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    color: #0f172a;
+    background: transparent;
+    cursor: pointer;
+
+    &:hover:not(:disabled) { background: #f1f5f9; }
+    &:disabled { color: #cbd5e1; cursor: not-allowed; }
+    i-feather { width: 15px; height: 15px; }
+  }
+
+  strong {
+    min-width: 40px;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.np-recipe-card__actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding-top: 10px;
+  border-top: 1px dashed #dce8f2;
+}
+
+.np-recipe-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  color: #1f8fbb;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { color: #0f172a; }
+  i-feather { width: 14px; height: 14px; }
+}
+
+.np-ingredients-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+
+  i-feather { width: 12px; height: 12px; }
+}
+
+@media (max-width: 640px) {
+  .np-recipe-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas:
+      "media copy"
+      "servings servings"
+      "actions actions";
+  }
+
+  .np-recipe-card__media { width: 64px; height: 64px; }
+
+  .np-recipe-card__servings {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    border-top: 1px solid #e6e9ee;
+    border-left: 0;
+
+    small { grid-column: 1 / -1; max-width: none; text-align: left; }
+  }
+}
+
+/* Recipe summary: macros of one serving, total for the servings chosen. */
+.np-recipe-macros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+
+  span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    color: #334155;
+    background: #f1f5f9;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  i { color: #64748b; font-style: normal; font-weight: 700; }
+  b { color: #0f172a; font-weight: 700; }
+  small { color: #94a3b8; font-size: 11.5px; }
+}
+
+.np-recipe-macros__kcal { background: #fff4e5 !important; }
+
+.np-recipe-card__total {
+  color: #0f172a;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.np-recipe-card__media img { width: 100%; height: 100%; object-fit: cover; }
+
+/* A day with an error, or empty in the middle of the plan (backlog-programmes.md). */
+#{$rail} .wk-day-editor__status.is-warning {
+  border-color: #fcd34d !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
 }

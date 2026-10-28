@@ -13,6 +13,8 @@ export interface ClientStatusCounts {
 
 export interface Client {
   id?: string;
+  /** The example client of the demo workspace (shown with an "Example" badge). */
+  demo?: boolean;
   firstName: string;
   lastName: string;
   email: string;

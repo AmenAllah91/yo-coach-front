@@ -11,12 +11,17 @@ import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutDayService } from 'app/service/workout-day.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
+import { CompletionCelebrationComponent } from '../shared/completion-celebration.component';
+import { CelebrationView, workoutCelebration } from '../shared/celebration';
 import {
-  allExercises, capitalizeFirst, dateKey, estimatedWorkoutMinutes, exerciseCardImage, isRestDay, planDate,
+  allExercises, capitalizeFirst, dateKey, estimatedWorkoutMinutes, exerciseCardImage, isRestDay, nothingToLog, planDate,
   programWeek, workoutDayTitle, youtubeVideoId,
 } from '../shared/client-plan-utils';
 
-type RunStatus = 'NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED';
+/** Days during which the client can correct a finished workout (ClientDayRules.CLIENT_EDIT_DAYS on the server). */
+const CLIENT_EDIT_DAYS = 7;
+
+type RunStatus ='NOT_STARTED' | 'OVERDUE' | 'MISSED' | 'IN_PROGRESS' | 'PAUSED' | 'LOG_WORKOUT' | 'COMPLETED' | 'ALREADY_COMPLETED' | 'EDIT';
 type SetStatus = 'PENDING' | 'COMPLETED' | 'MISSED';
 
 /** One scheduled day of a program (mobile WorkoutDayItem). */
@@ -26,6 +31,10 @@ interface RunSet {
   setNumber: number; reps: number | null; duration: number | null; weight: number | null;
   restMin: number | null; restSec: number | null; type: string | null; status: SetStatus;
 }
+
+/** What the coach planned for a set (never sent back: the server keeps the program as it is). A weight of 0 or
+ *  nothing means « not set »; a cardio duration falls back on the exercise's. */
+interface PlannedSet { reps: number | null; duration: number | null; weight: number | null; }
 
 /** Run state of one exercise of the opened day (mobile _ExerciseRunData). */
 interface RunExercise {
@@ -51,7 +60,7 @@ interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
 @Component({
   selector: 'app-client-workouts',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent],
   templateUrl: './client-workouts.component.html',
   styleUrl: './client-workouts.component.scss',
 })
@@ -82,6 +91,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   showSetTypes = false;
   showFinishSheet = false;
   skipTarget: RunExercise | null = null;
+  /** Pending confirmation of an action that cannot be undone from here (cancel, missed). */
+  confirmation: { title: string; text: string; label: string; run: () => void } | null = null;
   statusTarget: DayItem | null = null;
   showPdfPreview = false;
 
@@ -271,6 +282,26 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       && item.date.getFullYear() === this.month.getFullYear() && item.date.getMonth() === this.month.getMonth());
   }
 
+  /**
+   * The coach fills a program as it goes (backlog-programmes.md R6): the client gets the filled days, the program runs
+   * until its end date. Shown in "Upcoming" for the months between the last day received and that end date.
+   */
+  get preparingNext(): boolean {
+    if (!this.upcoming) return false;
+    const today = this.today.getTime();
+    const monthStart = this.month.getTime();
+    const monthEnd = new Date(this.month.getFullYear(), this.month.getMonth() + 1, 0).getTime();
+    return this.plans.some(plan => {
+      if (this.isFileProgram(plan)) return false;
+      const end = planDate(plan?.endDate);
+      const days = (plan.workoutDays || []).map((day: any) => this.scheduledDate(plan, day).getTime());
+      if (!end || end.getTime() < today) return false;
+      const after = days.length ? Math.max(...days) + 86_400_000 : (planDate(plan?.startDate)?.getTime() ?? today);
+      const from = Math.max(after, today);
+      return from <= end.getTime() && from <= monthEnd && end.getTime() >= monthStart;
+    });
+  }
+
   private get today(): Date { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
   private get isCurrentMonth(): boolean {
     const now = new Date();
@@ -301,13 +332,15 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   /** Persisted status, or OVERDUE for a past day that was never resolved. */
   dayStatus(item: DayItem): string {
     const persisted = String(item.day?.status || 'PENDING').toUpperCase();
+    // Rest day or no exercise: nothing to do, so never "overdue" nor "to do" (the server refuses any log).
+    if (nothingToLog(item.day) && !['COMPLETED', 'MISSED'].includes(persisted)) return 'NOTHING';
     return item.date.getTime() < this.today.getTime() && ['PENDING', 'NOT_STARTED', 'IN_PROGRESS', 'PAUSED'].includes(persisted)
       ? 'OVERDUE' : persisted;
   }
 
   highlighted(item: DayItem): boolean {
     const status = this.dayStatus(item);
-    return this.isToday(item) && status !== 'COMPLETED' && status !== 'MISSED';
+    return this.isToday(item) && status !== 'COMPLETED' && status !== 'MISSED' && status !== 'NOTHING';
   }
 
   inProgress(item: DayItem): boolean { return ['IN_PROGRESS', 'PAUSED'].includes(this.dayStatus(item)); }
@@ -324,6 +357,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       }
       case 'MISSED': return { label: this.t('Missed', 'Manqué'), color: '#D93A3A' };
       case 'OVERDUE': return { label: this.t('Overdue', 'En retard'), color: '#D99100' };
+      case 'NOTHING': return isRestDay(item.day) ? { label: this.t('Rest day', 'Repos'), color: '#7455D9' }
+        : { label: this.t('No exercise', 'Aucun exercice'), color: 'var(--yc-text-secondary)' };
       case 'IN_PROGRESS':
       case 'PAUSED': return { label: this.t('In progress', 'En cours'), color: 'var(--yc-primary)' };
       default:
@@ -372,13 +407,30 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   private supersetId(exercise: any): string { return String(exercise?.supersetGroupId ?? exercise?.supersetWith ?? '').trim(); }
 
+  /** « 3 séries · 12–8 rép. · 20 kg », « 3 × 30 min »: every set counts (not only the first one). */
   exerciseVolume(exercise: any): string {
     const sets: any[] = exercise?.sets || [];
     if (!sets.length) return '';
-    const first = sets[0];
-    if (exercise?.type === 'CARDIO') return `${sets.length} × ${first?.duration ?? 0} min`;
-    if (first?.reps != null && first.reps !== '') return `${sets.length} × ${first.reps}`;
-    return this.t(`${sets.length} sets`, `${sets.length} séries`);
+    const range = (values: (number | null)[], format: (n: number) => string): string | null => {
+      const known = values.filter((value): value is number => value != null);
+      if (!known.length) return null;
+      const min = Math.min(...known); const max = Math.max(...known);
+      if (min === max) return format(min);
+      // In the coach's order (12–8 for a pyramid down).
+      return known[0] >= known[known.length - 1] ? `${format(max)}–${format(min)}` : `${format(min)}–${format(max)}`;
+    };
+    const planned = sets.map(set => this.plannedOf(exercise, set));
+    if (exercise?.type === 'CARDIO') {
+      const minutes = range(planned.map(set => set.duration), n => String(n));
+      if (!minutes) return this.t(`${sets.length} sets`, `${sets.length} séries`);
+      return sets.length > 1 ? `${sets.length} × ${minutes} min` : `${minutes} min`;
+    }
+    const parts = [this.t(`${sets.length} set${sets.length > 1 ? 's' : ''}`, `${sets.length} série${sets.length > 1 ? 's' : ''}`)];
+    const reps = range(planned.map(set => set.reps), n => String(n));
+    if (reps) parts.push(`${reps} ${this.t('reps', 'rép.')}`);
+    const weight = this.showExerciseWeight ? range(planned.map(set => set.weight), n => this.displayWeight(n)) : null;
+    if (weight) parts.push(`${weight} ${this.weightUnit}`);
+    return parts.join(' · ');
   }
 
   exerciseImage(exercise: any): string | null { return exerciseCardImage(exercise); }
@@ -392,6 +444,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   openStatusSheet(event: MouseEvent, item: DayItem): void {
     if (this.previewMode) return;
     event.preventDefault();
+    // A later day can only stay planned (the server refuses any other status).
+    if (item.date.getTime() > this.today.getTime() || nothingToLog(item.day)) return;
+    // A finished workout older than the correction window is read-only (the server refuses it too).
+    const finished = ['COMPLETED', 'MISSED'].includes(String(item.day?.status || '').toUpperCase());
+    const deadline = new Date(item.date.getFullYear(), item.date.getMonth(), item.date.getDate() + CLIENT_EDIT_DAYS);
+    if (finished && this.today.getTime() > deadline.getTime()) return;
     this.statusTarget = item;
   }
 
@@ -399,28 +457,36 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const item = this.statusTarget;
     this.statusTarget = null;
     if (!item) return;
+    // « Completed » needs the sets: the workout opens to log them (as « Log completed », or « Edit » if it was missed),
+    // instead of a completion without any result for the coach.
+    if (status === 'COMPLETED') {
+      this.openDay(item);
+      if (this.runStatus === 'MISSED') this.startEdit();
+      else if (this.runStatus === 'NOT_STARTED' || this.runStatus === 'OVERDUE') this.enterLogCompletedMode();
+      return;
+    }
     const previous = item.day.status;
     item.day.status = status;
     this.subscriptions.add(this.workoutDayService.updateWorkoutDay({
       id: item.day.id, status, ...(item.day.dayNumber != null ? { dayNumber: item.day.dayNumber } : {}),
     }, item.plan.id).subscribe({
-      next: () => this.showToast(status === 'COMPLETED' ? this.t('Workout marked as completed', 'Entraînement marqué comme terminé')
-        : status === 'MISSED' ? this.t('Workout marked as missed', 'Entraînement marqué comme manqué')
+      next: () => this.showToast(status === 'MISSED' ? this.t('Workout marked as missed', 'Entraînement marqué comme manqué')
         : this.t('Workout reset to pending', 'Entraînement remis en attente'), status === 'MISSED' ? 'error' : 'success'),
-      error: () => { item.day.status = previous; this.showToast(this.t('Failed to update', 'Échec de la mise à jour'), 'error'); },
+      error: (error) => {
+        item.day.status = previous;
+        this.showToast(this.serverMessage(error) ?? this.t('Failed to update', 'Échec de la mise à jour'), 'error');
+      },
     }));
   }
 
   get statusOptions(): { value: 'COMPLETED' | 'MISSED' | 'PENDING'; icon: string; color: string; label: string; hint: string }[] {
     const status = String(this.statusTarget?.day?.status || 'PENDING').toUpperCase();
     const options: { value: 'COMPLETED' | 'MISSED' | 'PENDING'; icon: string; color: string; label: string; hint: string }[] = [
-      { value: 'COMPLETED', icon: 'check-circle', color: '#1E8E4E', label: this.t('Completed', 'Terminé'), hint: this.t('All sets are done', 'Toutes les séries sont faites') },
+      { value: 'COMPLETED', icon: 'check-circle', color: '#1E8E4E', label: this.t('Completed', 'Terminé'), hint: this.t('Opens the workout to enter your sets', 'Ouvre la séance pour saisir vos séries') },
       { value: 'MISSED', icon: 'x-circle', color: '#D93A3A', label: this.t('Missed', 'Manqué'), hint: this.t('The workout was not done', 'La séance n’a pas été faite') },
     ];
-    if (status !== 'PENDING') {
-      options.push({ value: 'PENDING', icon: 'rotate-ccw', color: 'var(--yc-text-secondary)', label: this.t('Planned', 'Prévu'), hint: this.t('Back to “to do”', 'Revenir à « à faire »') });
-    }
-    return options;
+    // No "back to planned" for the client: a finished workout is corrected with "Edit workout" (7 days).
+    return options.filter(option => option.value !== status);
   }
 
   get statusTargetIsCurrent(): string { return String(this.statusTarget?.day?.status || 'PENDING').toUpperCase(); }
@@ -612,7 +678,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.elapsedSeconds = Number(day.workoutElapsedSeconds || 0);
     const persisted = String(day.status || 'PENDING').toUpperCase();
     const isPast = item.date.getTime() < this.today.getTime();
-    this.runStatus = persisted === 'COMPLETED'
+    this.runStatus = nothingToLog(day) && !['COMPLETED', 'MISSED'].includes(persisted) ? 'NOT_STARTED'
+      : persisted === 'COMPLETED'
       ? (day.clientCompletionMode === 'ALREADY_COMPLETED' ? 'ALREADY_COMPLETED' : 'COMPLETED')
       : persisted === 'MISSED' ? 'MISSED'
       : (persisted === 'OVERDUE' || (isPast && ['IN_PROGRESS', 'PAUSED', 'PENDING'].includes(persisted))) ? 'OVERDUE'
@@ -657,7 +724,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       const group: ExerciseGroup = { label, isSuperset, letters, exercises: [] };
       members.forEach((exercise, index) => {
         const key = isSuperset ? `${label}.${index + 1}` : label;
-        const log = logs.find(item => String(item?.exerciseId ?? '') === String(exercise?.id ?? '') || String(item?.displayNumber ?? '') === key);
+        // By exercise first, by its number only for a log without id (a reordered program must not swap logs).
+        const log = logs.find(item => !!exercise?.id && String(item?.exerciseId ?? '') === String(exercise.id))
+          ?? logs.find(item => !item?.exerciseId && String(item?.displayNumber ?? '') === key);
         const legacy: SetStatus = log?.completed === true ? 'COMPLETED' : log?.skipped === true ? 'MISSED' : 'PENDING';
         const savedSets: any[] = Array.isArray(log?.sets) ? log.sets : [];
         const run: RunExercise = {
@@ -667,11 +736,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           sets: (exercise?.sets || []).map((source: any, setIndex: number) => {
             const setNumber = Number(source?.setNumber) || setIndex + 1;
             const saved = savedSets.find(item => Number(item?.setNumber) === setNumber);
+            const planned = this.plannedOf(exercise, source);
+            // The fields start on the plan (a ✓ is enough); a weight only when the coach set one.
             return {
               setNumber,
-              reps: this.toInt(saved?.reps) ?? this.toInt(source?.reps),
-              duration: this.toInt(saved?.duration) ?? this.toInt(source?.duration),
-              weight: this.toNumber(saved?.weight) ?? this.toNumber(source?.weight),
+              reps: this.toInt(saved?.reps) ?? planned.reps,
+              duration: this.toInt(saved?.duration) ?? planned.duration,
+              weight: this.positive(saved?.weight) ?? planned.weight,
               restMin: this.toInt(saved?.restMin) ?? this.toInt(source?.restMin),
               restSec: this.toInt(saved?.restSec) ?? this.toInt(source?.restSec),
               type: saved?.type != null ? String(saved.type) : this.setType(source),
@@ -697,6 +768,48 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     if (value === null || value === undefined || value === '') return null;
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
+  }
+  /** A weight: 0 or less is « not set » (the coach's editor saves 0 when the field is left empty). */
+  private positive(value: any): number | null {
+    const n = this.toNumber(value);
+    return n != null && n > 0 ? n : null;
+  }
+
+  private plannedOf(exercise: any, source: any): PlannedSet {
+    return {
+      reps: this.toInt(source?.reps),
+      duration: this.toInt(source?.duration) ?? this.toInt(exercise?.duration),
+      weight: this.positive(source?.weight),
+    };
+  }
+
+  planned(run: RunExercise, index: number): PlannedSet {
+    return this.plannedOf(run.exercise, (run.exercise?.sets || [])[index]);
+  }
+
+  /** « 10 rép. · 20 kg », « 10 rép. », « 30 min », « — »: what the coach planned for this set. */
+  plannedText(run: RunExercise, index: number): string {
+    const planned = this.planned(run, index);
+    if (this.isCardio(run)) return planned.duration != null ? `${planned.duration} min` : '—';
+    const parts = [planned.reps != null ? `${planned.reps} ${this.t('reps', 'rép.')}` : '—'];
+    if (this.showExerciseWeight && planned.weight != null) parts.push(`${this.displayWeight(planned.weight)} ${this.weightUnit}`);
+    return parts.join(' · ');
+  }
+
+  /** What the client did, in the same words: « 8 rép. · 22,5 kg ». */
+  doneText(run: RunExercise, set: RunSet): string {
+    if (this.isCardio(run)) return set.duration != null ? `${set.duration} min` : '—';
+    const parts = [set.reps != null ? `${set.reps} ${this.t('reps', 'rép.')}` : '—'];
+    if (this.showExerciseWeight && set.weight != null) parts.push(`${this.displayWeight(set.weight)} ${this.weightUnit}`);
+    return parts.join(' · ');
+  }
+
+  /** The client entered something else than the plan (shown in colour, for them and for the coach). */
+  changed(run: RunExercise, index: number, field: 'amount' | 'weight'): boolean {
+    const set = run.sets[index];
+    const planned = this.planned(run, index);
+    if (field === 'weight') return set.weight != null && set.weight !== planned.weight;
+    return this.isCardio(run) ? set.duration != null && set.duration !== planned.duration : set.reps != null && set.reps !== planned.reps;
   }
   private normalizeStatus(value: any): SetStatus {
     const status = String(value || '').trim().toUpperCase();
@@ -732,7 +845,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   count(run: RunExercise, status: SetStatus): number { return run.sets.filter(set => set.status === status).length; }
 
-  get canEditWorkout(): boolean { return ['IN_PROGRESS', 'PAUSED', 'LOG_WORKOUT'].includes(this.runStatus); }
+  get canEditWorkout(): boolean { return ['IN_PROGRESS', 'PAUSED', 'LOG_WORKOUT', 'EDIT'].includes(this.runStatus); }
   get isFinished(): boolean { return this.runStatus === 'COMPLETED' || this.runStatus === 'ALREADY_COMPLETED'; }
   get totalSets(): number { return this.runExercises.reduce((sum, run) => sum + run.sets.length, 0); }
   get doneSets(): number { return this.runExercises.reduce((sum, run) => sum + this.count(run, 'COMPLETED'), 0); }
@@ -764,9 +877,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   get runBadge(): { label: string; color: string } {
     const labels: Record<RunStatus, string> = {
       NOT_STARTED: this.t('Not started', 'Non commencé'), IN_PROGRESS: this.t('In progress', 'En cours'),
-      PAUSED: this.t('Paused', 'En pause'), LOG_WORKOUT: this.t('Log workout', 'Enregistrer l’entraînement'),
+      PAUSED: this.t('Paused', 'En pause'), LOG_WORKOUT: this.t('Logging afterwards', 'Saisie après coup'),
       OVERDUE: this.t('Overdue', 'En retard'), MISSED: this.t('Missed', 'Manqué'),
-      COMPLETED: this.t('Finished', 'Terminée'), ALREADY_COMPLETED: this.t('Log completed', 'Enregistrer comme terminé'),
+      COMPLETED: this.t('Finished', 'Terminée'), ALREADY_COMPLETED: this.t('Finished (logged afterwards)', 'Terminée (saisie après coup)'),
+      EDIT: this.t('Editing', 'Modification'),
     };
     const color = this.runStatus === 'OVERDUE' ? '#D99100' : this.runStatus === 'MISSED' ? '#D93A3A'
       : this.runStatus === 'IN_PROGRESS' || this.runStatus === 'LOG_WORKOUT' ? 'var(--yc-primary)'
@@ -780,7 +894,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       : this.currentKey === run.key ? 'var(--yc-primary)' : 'var(--yc-active-bg)';
   }
 
-  isWarmup(run: RunExercise): boolean { return String(run.exercise?.name || '').toLowerCase().includes('warm'); }
+  /** An exercise made only of warm-up sets (its sets are shown and logged like the others). */
+  isWarmup(run: RunExercise): boolean {
+    return run.sets.length > 0 && run.sets.every(set => this.normalizedType(set.type) === 'WARM_UP');
+  }
   isCardio(run: RunExercise): boolean { return run.exercise?.type === 'CARDIO'; }
   hasVideo(run: RunExercise): boolean { return !!this.videoLink(run); }
   coachNote(run: RunExercise): string | null { return this.clean(run.exercise?.coachNote ?? run.exercise?.notes) ?? this.clean(run.exercise?.exerciseRef?.coachNote); }
@@ -794,7 +911,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const m = Number(min || 0); const s = Number(sec || 0);
     if (!m && !s) return null;
     if (m > 0 && !s) return `${m} min`;
-    if (!m) return `${s}s`;
+    if (!m) return `${s} s`;
     return `${m} min ${s} s`;
   }
 
@@ -826,12 +943,14 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     if (kg == null) return '';
     const value = this.coachSettings.convertWeightFromKg(kg);
     if (value == null) return '';
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+    const rounded = Math.round(value * 10) / 10;
+    const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    return this.fr ? text.replace('.', ',') : text;
   }
 
   onWeightInput(set: RunSet, value: string): void {
     const entered = parseFloat(String(value).replace(',', '.'));
-    set.weight = Number.isFinite(entered) ? this.coachSettings.convertWeightToKg(entered) : null;
+    set.weight = Number.isFinite(entered) && entered > 0 ? this.coachSettings.convertWeightToKg(entered) : null;
     this.scheduleDraftSave();
   }
 
@@ -868,29 +987,136 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.showLogCompletedInfo();
   }
 
+  /** Leave « Log completed » without saving: the workout opens again as it was saved. */
+  cancelLog(): void {
+    if (this.item) this.openDay(this.item);
+  }
+
   private showLogCompletedInfo(): void {
     this.showLogCompletedNotice = true;
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
     this.noticeTimer = setTimeout(() => (this.showLogCompletedNotice = false), 5000);
   }
 
+  confirm(): void {
+    const run = this.confirmation?.run;
+    this.confirmation = null;
+    run?.();
+  }
+
   cancelWorkout(): void {
     this.showMenu = false;
+    this.confirmation = {
+      title: this.t('Cancel this workout?', 'Annuler cet entraînement ?'),
+      text: this.t('Every set goes back to pending and the timer restarts from zero. What you entered is lost.',
+        'Toutes les séries repassent en attente et le chrono repart de zéro. Ce que vous avez saisi sera perdu.'),
+      label: this.t('Cancel workout', 'Annuler l’entraînement'),
+      run: () => this.resetWorkout(),
+    };
+  }
+
+  private resetWorkout(): void {
     this.stopTimer();
     this.elapsedSeconds = 0;
     this.runStatus = 'NOT_STARTED';
-    this.runExercises.forEach(run => { run.sets.forEach(set => (set.status = 'PENDING')); if (!run.sets.length) { run.completed = false; run.skipped = false; } else this.recalculate(run); });
+    // Back to the coach's plan: statuses pending and the values entered replaced by the planned ones.
+    this.runExercises.forEach(run => {
+      run.sets.forEach((set, index) => {
+        const planned = this.planned(run, index);
+        Object.assign(set, { status: 'PENDING', reps: planned.reps, duration: planned.duration, weight: planned.weight });
+      });
+      if (!run.sets.length) { run.completed = false; run.skipped = false; } else this.recalculate(run);
+    });
     this.updateStatus('PENDING');
   }
 
-  markAsMissed(): void { this.updateStatus('MISSED'); }
+  markAsMissed(): void {
+    this.confirmation = {
+      title: this.t('Mark as missed?', 'Marquer comme manqué ?'),
+      text: this.t('The workout will be saved as not done and your coach will be notified.',
+        'L’entraînement sera enregistré comme non fait et votre coach sera prévenu.'),
+      label: this.t('Mark as missed', 'Marquer comme manqué'),
+      run: () => this.updateStatus('MISSED'),
+    };
+  }
+
+  private confirmMissedEmpty(): void {
+    this.confirmation = {
+      title: this.t('No set done', 'Aucune série faite'),
+      text: this.t('No set was done: the workout will be saved as missed and your coach will be notified.',
+        'Aucune série faite : la séance sera enregistrée comme manquée et votre coach sera prévenu.'),
+      label: this.t('Save as missed', 'Enregistrer comme manquée'),
+      run: () => { this.stopTimer(); this.updateStatus('MISSED'); },
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // Edit a finished workout (client corrections, CLIENT_EDIT_DAYS on the server)
+  // -------------------------------------------------------------------------
+  private editStartedFrom: RunStatus | null = null;
+
+  /** Last day a finished workout can still be corrected: the workout's date + 7 days. */
+  get editDeadline(): Date | null {
+    return this.item ? new Date(this.item.date.getFullYear(), this.item.date.getMonth(), this.item.date.getDate() + CLIENT_EDIT_DAYS) : null;
+  }
+
+  get canModify(): boolean {
+    const deadline = this.editDeadline;
+    return !this.previewMode && !this.nothingToDo && (this.isFinished || this.runStatus === 'MISSED') && !!deadline
+      && this.today.getTime() <= deadline.getTime();
+  }
+
+  get editDeadlineLabel(): string {
+    const deadline = this.editDeadline;
+    return deadline ? new Intl.DateTimeFormat(this.locale, { day: 'numeric', month: 'long' }).format(deadline) : '';
+  }
+
+  startEdit(): void {
+    if (!this.canModify) return;
+    this.editStartedFrom = this.runStatus;
+    this.runStatus = 'EDIT';
+  }
+
+  /** Back to the saved workout: the sets and notes are read again from the day. */
+  cancelEdit(): void {
+    if (!this.item) return;
+    this.overallNote = this.item.day.overallWorkoutNote || '';
+    this.buildRunData();
+    this.runStatus = this.editStartedFrom || 'COMPLETED';
+    this.editStartedFrom = null;
+  }
+
+  /** Same rules as "Log completed": every set done or missed; nothing done → missed (confirmed). */
+  saveEdit(): void {
+    if (this.pendingSets > 0) { this.showLogCompletedInfo(); return; }
+    if (this.nothingDone) { this.confirmMissedEmpty(); return; }
+    const day = this.item?.day;
+    // A missed workout corrected later is « logged afterwards », unless it had been timed (its duration is kept).
+    const alreadyCompleted = day?.clientCompletionMode === 'ALREADY_COMPLETED'
+      || (this.editStartedFrom === 'MISSED' && !this.elapsedSeconds);
+    this.updateStatus('COMPLETED', alreadyCompleted);
+  }
+
+  /** Rest day or workout without exercise: nothing to start, log, complete or miss. */
+  get nothingToDo(): boolean { return !!this.item && nothingToLog(this.item.day); }
+
+  /** Day not reached yet: no start, log, completion or miss in advance. */
+  get isFutureDay(): boolean { return !!this.item && this.item.date.getTime() > this.today.getTime(); }
+
+  /** Nothing done (no completed set, no completed exercise without sets): the workout is saved as missed. */
+  private get nothingDone(): boolean {
+    return this.runExercises.length > 0 && this.runExercises.every(run => run.sets.length
+      ? run.sets.every(set => set.status !== 'COMPLETED') : !run.completed);
+  }
 
   finishWorkout(): void {
     const alreadyCompleted = this.runStatus === 'LOG_WORKOUT';
     if (alreadyCompleted && this.pendingSets > 0) { this.showLogCompletedInfo(); return; }
     if (!alreadyCompleted && this.pendingSets > 0) { this.showFinishSheet = true; return; }
+    // Every set already marked missed by hand: no finish sheet, so the "missed" result is confirmed here.
+    if (this.nothingDone) { this.confirmMissedEmpty(); return; }
     this.stopTimer();
-    this.updateStatus('COMPLETED', alreadyCompleted);
+    this.updateStatus('COMPLETED', alreadyCompleted, true);
   }
 
   confirmFinish(): void {
@@ -900,15 +1126,17 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       if (run.sets.length) this.recalculate(run);
     });
     this.stopTimer();
-    this.updateStatus('COMPLETED', false);
+    this.updateStatus(this.nothingDone ? 'MISSED' : 'COMPLETED', false, true);
   }
 
   get finishPending(): number { return this.pendingSets; }
   get finishPendingText(): string {
     const n = this.pendingSets;
-    return this.fr
+    const pending = this.fr
       ? `${n} série${n > 1 ? 's sont encore en attente et seront marquées' : ' est encore en attente et sera marquée'} comme manquée${n > 1 ? 's' : ''}.`
       : `${n} set${n > 1 ? 's are' : ' is'} still pending and will be marked as missed.`;
+    if (this.doneSets > 0 || this.runExercises.some(run => !run.sets.length && run.completed)) return pending;
+    return `${pending} ${this.t('No set was done: the workout will be saved as missed.', 'Aucune série faite : la séance sera enregistrée comme manquée.')}`;
   }
 
   completeRemaining(run: RunExercise): void {
@@ -943,7 +1171,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         skipped: run.skipped,
         exerciseStatus: this.exerciseStatus(run),
         note: run.note.trim(),
-        sets: run.sets.map(set => ({ ...set })),
+        // The plan of each set is kept with the result (as the mobile app does): the coach compares planned and done
+        // even after changing the program.
+        sets: run.sets.map((set, index) => {
+          const planned = this.planned(run, index);
+          return { ...set, plannedReps: planned.reps, plannedDuration: planned.duration, plannedWeight: planned.weight };
+        }),
       })),
       ...(day.dayNumber != null ? { dayNumber: day.dayNumber } : {}),
     };
@@ -965,18 +1198,27 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     if (this.draftTimer) clearTimeout(this.draftTimer);
     const payload = this.payload('IN_PROGRESS', false);
     this.applyToDay(payload);
-    // Not tied to the page: a save sent while leaving it must still reach the server.
-    this.workoutDayService.updateWorkoutDay(payload, this.item.plan.id).subscribe({ error: () => undefined });
+    // Not tied to the page: a save sent while leaving it must still reach the server. A refusal is said (a network
+    // hiccup is not: the next change sends everything again).
+    this.workoutDayService.updateWorkoutDay(payload, this.item.plan.id).subscribe({
+      error: (error) => {
+        const reason = error?.status >= 400 && error?.status < 500 ? this.serverMessage(error) : null;
+        if (reason) this.showToast(reason, 'error');
+      },
+    });
   }
 
   scheduleDraftSave(): void {
-    if (!this.canEditWorkout) return;
+    // While editing a finished workout or logging one afterwards nothing is saved until « Save »: a draft is sent as
+    // in progress and would reopen the day as a live workout with its timer running.
+    if (!this.canEditWorkout || this.runStatus === 'EDIT' || this.runStatus === 'LOG_WORKOUT') return;
     this.hasPendingDraft = true;
     if (this.draftTimer) clearTimeout(this.draftTimer);
     this.draftTimer = setTimeout(() => this.saveProgress(), 400);
   }
 
-  private updateStatus(status: 'PENDING' | 'MISSED' | 'COMPLETED', alreadyCompleted = false): void {
+  /** [celebrate]: « Finish workout » and « Log completed », the only two celebrated (never a correction). */
+  private updateStatus(status: 'PENDING' | 'MISSED' | 'COMPLETED', alreadyCompleted = false, celebrate = false): void {
     if (this.saving || !this.item) return;
     if (this.draftTimer) clearTimeout(this.draftTimer);
     this.hasPendingDraft = false;
@@ -988,14 +1230,44 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         this.applyToDay(payload);
         this.runStatus = status === 'COMPLETED' ? (alreadyCompleted ? 'ALREADY_COMPLETED' : 'COMPLETED')
           : status === 'PENDING' ? 'NOT_STARTED' : status;
+        // Celebrated once the server has it; a refusal or an error never is (no « Workout saved » under it).
+        if (celebrate && status === 'COMPLETED') { this.celebration = this.celebrationView(alreadyCompleted); return; }
         this.showToast(status === 'PENDING' ? this.t('Workout cancelled', 'Entraînement annulé')
+          : status === 'MISSED' ? this.t('Workout saved as missed', 'Entraînement enregistré comme manqué')
           : this.t('Workout saved', 'Entraînement enregistré'), 'success');
       },
-      error: () => {
+      error: (error) => {
         this.saving = false;
-        this.showToast(this.t('Unable to save workout. Please try again.', 'Impossible d’enregistrer l’entraînement. Veuillez réessayer.'), 'error');
+        // A refusal of the server says why (e.g. the 7 days to correct a workout are over).
+        const reason = error?.status >= 400 && error?.status < 500 ? this.serverMessage(error) : null;
+        this.showToast(reason ?? this.t('Unable to save workout. Please try again.', 'Impossible d’enregistrer l’entraînement. Veuillez réessayer.'), 'error');
       },
     }));
+  }
+
+  // -------------------------------------------------------------------------
+  // « Workout complete! » (mobile WorkoutCelebrationScreen)
+  // -------------------------------------------------------------------------
+  celebration: CelebrationView | null = null;
+
+  private celebrationView(alreadyCompleted: boolean): CelebrationView {
+    const day = this.item!.day;
+    return workoutCelebration({
+      title: this.dayHeaderTitle,
+      // Logged afterwards: nothing was timed, so no duration.
+      durationSeconds: alreadyCompleted ? null : this.elapsedSeconds,
+      doneSets: this.doneSets,
+      totalSets: this.totalSets,
+      doneExercises: this.runExercises.filter(run => run.sets.length ? this.count(run, 'COMPLETED') > 0 : run.completed).length,
+      totalExercises: this.runExercises.length,
+      seed: String(day.id || `${this.item!.plan.id}-${day.dayNumber}`),
+    }, this.fr);
+  }
+
+  /** « Done »: back to the program, as on mobile. */
+  closeCelebration(): void {
+    this.celebration = null;
+    this.backToList();
   }
 
   private startTimer(): void {
@@ -1071,9 +1343,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   plannedFact(run: RunExercise): string {
-    const sets: any[] = run.exercise?.sets || [];
-    const first = sets[0];
-    return this.isCardio(run) ? `${first?.duration ?? run.exercise?.duration ?? 0} min` : `${sets.length} × ${first?.reps ?? '—'}`;
+    if (run.exercise?.sets?.length) return this.exerciseVolume(run.exercise);
+    const duration = this.toInt(run.exercise?.duration);
+    return this.isCardio(run) && duration != null ? `${duration} min` : '—';
   }
 
   restFact(run: RunExercise): string {
@@ -1082,22 +1354,37 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get exerciseCanEdit(): boolean { return this.canEditWorkout || this.startedFromExercise; }
-  get showStartFromExercise(): boolean { return this.runStatus === 'NOT_STARTED' && !this.startedFromExercise; }
+  /** Only a workout that can really start: today, with exercises, not the coach's preview. */
+  get showStartFromExercise(): boolean {
+    return this.runStatus === 'NOT_STARTED' && !this.startedFromExercise && !this.isFutureDay && !this.nothingToDo && !this.previewMode;
+  }
+
+  /** Why the sets cannot be marked on the exercise page, if they cannot. */
+  get exerciseLockedHint(): string | null {
+    if (this.exerciseCanEdit || this.previewMode) return null;
+    if (this.isFinished || this.runStatus === 'MISSED') {
+      return this.canModify ? this.t('Use « Edit workout » on the workout page to correct your sets.', 'Utilisez « Modifier la séance » sur la page de la séance pour corriger vos séries.')
+        : this.t('This workout can no longer be corrected (7 days after its date).', 'Cette séance ne peut plus être corrigée (7 jours après sa date).');
+    }
+    if (this.isFutureDay) return this.t('You can log this workout on its day.', 'Vous pourrez enregistrer cette séance le jour prévu.');
+    if (this.runStatus === 'OVERDUE') return this.t('Log this workout as completed on the workout page to enter your sets.', 'Enregistrez cette séance comme terminée sur la page de la séance pour saisir vos séries.');
+    return this.t('Start the workout to mark your sets.', 'Démarrez la séance pour cocher vos séries.');
+  }
 
   startFromExercise(): void {
     this.startWorkout();
     this.startedFromExercise = true;
   }
 
-  setDetails(run: RunExercise, set: RunSet, index: number): string {
+  /** Rest planned after this set, if any. */
+  setRest(run: RunExercise, index: number): string | null {
     const source = (run.exercise?.sets || [])[index] || {};
-    const rest = this.formatRest(this.toInt(source.restMin), this.toInt(source.restSec));
-    const weight = this.toNumber(source.weight);
-    return [
-      this.isCardio(run) ? `${source.duration ?? run.exercise?.duration ?? 0} min` : `${source.reps ?? '—'} ${this.t('reps', 'répétitions')}`,
-      ...(this.showExerciseWeight && !this.isCardio(run) && (weight ?? 0) > 0 ? [`${this.displayWeight(weight)} ${this.weightUnit}`] : []),
-      ...(rest ? [`${this.t('rest time', 'temps de repos')} ${rest}`] : []),
-    ].join(' · ');
+    return this.formatRest(this.toInt(source.restMin), this.toInt(source.restSec));
+  }
+
+  /** The client has something to show for this set (a status, or values changed from the plan). */
+  hasResult(run: RunExercise, index: number): boolean {
+    return run.sets[index].status !== 'PENDING' || this.changed(run, index, 'amount') || this.changed(run, index, 'weight');
   }
 
   exerciseSetTypeLabel(set: RunSet): string | null {
@@ -1148,6 +1435,19 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   // -------------------------------------------------------------------------
   private get somethingWentWrong(): string { return this.t('Something went wrong', 'Une erreur est survenue'); }
+
+  /** The reason the server gave (Spring error body or a plain message), if any. */
+  private serverMessage(error: any): string | null {
+    const body = error?.error;
+    const text = typeof body === 'string' ? body : body?.message || body?.detail || body?.error;
+    const value = String(text ?? '').trim();
+    if (!value) return null;
+    if (/7 days|7 jours|no longer|plus être/i.test(value)) {
+      return this.t('This workout can no longer be corrected (7 days after its date).', 'Cette séance ne peut plus être corrigée (7 jours après sa date).');
+    }
+    if (/not started yet/i.test(value)) return this.t('This workout is planned for a later day.', 'Cette séance est prévue pour un autre jour.');
+    return value;
+  }
 
   showToast(message: string, tone: 'success' | 'error' | 'info' = 'info'): void {
     this.toast = { message, tone };

@@ -15,7 +15,10 @@
           {{ t('To complete', 'À compléter') }}
           <span *ngIf="tab === 0 && pending.length" class="yc-count">{{ pending.length }}</span>
         </button>
-        <button type="button" role="tab" [class.active]="tab === 1" [attr.aria-selected]="tab === 1" (click)="setTab(1)">{{ t('Submitted', 'Soumis') }}</button>
+        <button type="button" role="tab" [class.active]="tab === 1" [attr.aria-selected]="tab === 1" (click)="setTab(1)">
+          {{ t('Submitted', 'Soumis') }}
+          <span *ngIf="newFeedbackCount" class="yc-count new-count" [title]="t('New comments from your coach', 'Nouveaux commentaires de votre coach')">{{ newFeedbackCount }}</span>
+        </button>
       </div>
 
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
@@ -67,7 +70,7 @@
       <button type="button" class="yc-card assignment-card" [class.locked]="previewMode && !submitted" (click)="open(item)">
         <span class="yc-icon-tile" style="--tile-color: #7455D9; --tile-size: 46px"><i-feather name="clipboard-list"></i-feather></span>
         <span class="assignment-card__copy">
-          <strong>{{ title(item) }}</strong>
+          <strong>{{ title(item) }}<span *ngIf="hasNewFeedback(item)" class="new-badge">{{ t('New', 'Nouveau') }}</span></strong>
           <span class="assignment-card__meta">
             <span *ngIf="chip(item, submitted) as c" class="yc-chip" [style.--chip-color]="c.color">
               <i-feather *ngIf="c.icon" [name]="c.icon"></i-feather>{{ c.label }}
@@ -126,6 +129,21 @@
     </div>
 
     <ng-container *ngIf="!opening && form">
+      <!-- Coach comment: first thing read on an answered check-in -->
+      <section *ngIf="viewMode && coachFeedback" class="yc-card coach-comment">
+        <header class="coach-comment__head">
+          <span class="yc-avatar" style="--avatar-size: 36px">{{ coachNameInitials }}</span>
+          <div class="coach-comment__who">
+            <strong>{{ coachName }}</strong>
+            <span class="yc-caption">{{ t('Commented', 'A commenté') }}<ng-container *ngIf="feedbackDate"> · {{ feedbackDate }}</ng-container></span>
+          </div>
+        </header>
+        <p class="coach-comment__text">{{ coachFeedback }}</p>
+        <button *ngIf="!previewMode" type="button" class="yc-btn yc-btn--brand coach-comment__reply" (click)="replyToCoach()">
+          <i-feather name="message-circle"></i-feather>{{ t('Reply', 'Répondre') }}
+        </button>
+      </section>
+
       <section *ngIf="description || (!viewMode && dueChip(selected))" class="yc-card intro">
         <span class="yc-avatar" style="--avatar-size: 40px">{{ ownerInitials }}</span>
         <div>
@@ -137,10 +155,6 @@
         </div>
       </section>
 
-      <section *ngIf="!previewMode && viewMode && coachFeedback" class="review">
-        <i-feather name="check-circle"></i-feather>
-        <div><strong>{{ t('Reviewed by coach', 'Revu par le coach') }}</strong><p>{{ coachFeedback }}</p></div>
-      </section>
 
       <section class="yc-card yc-card--flush questions">
         <ng-container *ngFor="let question of questions; let i = index">

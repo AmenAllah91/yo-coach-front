@@ -34,7 +34,7 @@
       <p *ngIf="!loading && error" class="yc-subtitle center-text">{{ error }}</p>
 
       <ng-container *ngIf="!loading && !error">
-        <div *ngIf="!visibleItems.length" class="list-empty">
+        <div *ngIf="!visibleItems.length && !preparingNext" class="list-empty">
           <span class="yc-icon-tile" style="--tile-size: 64px"><i-feather name="dumbbell"></i-feather></span>
           <h3>{{ t('No workouts found', 'Aucun entraînement trouvé') }}</h3>
           <p class="yc-subtitle">
@@ -86,6 +86,15 @@
             </button>
           </ng-container>
         </article>
+
+        <!-- The next days are not filled yet (backlog-programmes.md R6) -->
+        <div *ngIf="preparingNext" class="yc-card preparing-next" role="status">
+          <span class="yc-icon-tile" style="--tile-size: 44px"><i-feather name="edit-3"></i-feather></span>
+          <div>
+            <strong>{{ t('Your coach is preparing what comes next', 'Votre coach prépare la suite') }}</strong>
+            <p class="yc-subtitle">{{ t('The next days will appear here as soon as they are ready.', 'Les prochains jours apparaîtront ici dès qu\'ils seront prêts.') }}</p>
+          </div>
+        </div>
       </ng-container>
     </ng-container>
 
@@ -194,6 +203,20 @@
         <i-feather name="info"></i-feather>
         <p>{{ t('Enter the result of every set for all exercises. Each set must be marked as completed or missed before you save the workout.', 'Renseignez le résultat de chaque série pour tous les exercices. Chaque série doit être marquée comme terminée ou manquée avant d’enregistrer l’entraînement.') }}</p>
       </div>
+      <div *ngIf="nothingToDo && !isFinished && runStatus !== 'MISSED'" class="banner banner--info">
+        <i-feather [name]="isRest(item) ? 'moon' : 'info'"></i-feather>
+        <p>{{ isRest(item)
+          ? t('Rest day: nothing to log today.', 'Jour de repos : rien à enregistrer aujourd’hui.')
+          : t('Your coach has not added any exercise to this workout yet: there is nothing to log.', 'Votre coach n’a encore ajouté aucun exercice à cette séance : il n’y a rien à enregistrer.') }}</p>
+      </div>
+      <div *ngIf="isFutureDay && !isFinished && !nothingToDo" class="banner banner--info">
+        <i-feather name="calendar"></i-feather>
+        <p>{{ t('This workout is planned for a later day. You can start it or log it on the day itself.', 'Cet entraînement est prévu pour un autre jour. Vous pourrez le commencer ou l’enregistrer le jour même.') }}</p>
+      </div>
+      <div *ngIf="runStatus === 'EDIT'" class="banner banner--info">
+        <i-feather name="edit-2"></i-feather>
+        <p>{{ t('Correct your sets and notes, then save. Every set must be done or missed. Corrections are possible until ' + editDeadlineLabel + '.', 'Corrigez vos séries et vos notes, puis enregistrez. Chaque série doit être faite ou manquée. Corrections possibles jusqu’au ' + editDeadlineLabel + '.') }}</p>
+      </div>
       <div *ngIf="runStatus === 'OVERDUE'" class="banner banner--warning">
         <i-feather name="alert-circle"></i-feather>
         <p>{{ t('This workout is overdue. Log it as completed if it was done, or mark it as missed if it was skipped.', 'Cet entraînement est en retard. Enregistrez-le comme terminé s’il a été effectué, ou marquez-le comme manqué s’il a été sauté.') }}</p>
@@ -201,7 +224,8 @@
       <div *ngIf="isFinished" class="banner banner--done">
         <i-feather name="check-circle"></i-feather>
         <p><strong>{{ t('Workout logged', 'Séance enregistrée') }}</strong><br />
-          {{ runStatus === 'ALREADY_COMPLETED' ? t('Log completed', 'Enregistrer comme terminé')
+          {{ runStatus === 'ALREADY_COMPLETED'
+            ? t(doneSets + ' sets done · ' + missedSets + ' missed · logged afterwards', doneSets + ' séries faites · ' + missedSets + ' manquées · saisie après coup')
             : t(doneSets + ' sets done · ' + missedSets + ' missed · ' + formattedTime, doneSets + ' séries faites · ' + missedSets + ' manquées · ' + formattedTime) }}
         </p>
       </div>
@@ -230,7 +254,7 @@
             </button>
           </div>
 
-          <div *ngIf="run.sets.length && !isWarmup(run)" class="segments">
+          <div *ngIf="run.sets.length" class="segments">
             <div class="segments__bars">
               <span *ngFor="let set of run.sets" [class.done]="set.status === 'COMPLETED'" [class.missed]="set.status === 'MISSED'"></span>
             </div>
@@ -239,16 +263,16 @@
 
           <div *ngIf="coachNote(run) as note" class="coach-note">
             <i-feather name="message-square"></i-feather>
-            <p><strong>Coach: </strong>{{ note }}</p>
+            <p><strong>{{ t('Coach: ', 'Coach : ') }}</strong>{{ note }}</p>
           </div>
 
-          <div *ngIf="run.sets.length && !isWarmup(run)" class="sets">
+          <div *ngIf="run.sets.length" class="sets">
             <div class="sets__head">
               <span class="sets__type">{{ t('SET', 'SÉRIE') }}
                 <button type="button" class="info-btn" [attr.aria-label]="t('Set types', 'Types de séries')" (click)="showSetTypes = true"><i-feather name="info"></i-feather></button>
               </span>
               <span *ngIf="showExerciseWeight && !isCardio(run)" class="sets__col">{{ weightUnit.toUpperCase() }}</span>
-              <span class="sets__col">{{ isCardio(run) ? t('DURATION', 'DURÉE') : t('REPS', 'RÉPÉTITIONS') }}</span>
+              <span class="sets__col">{{ isCardio(run) ? t('MIN', 'MIN') : t('REPS', 'RÉP.') }}</span>
               <span class="sets__actions-space"></span>
             </div>
             <div *ngFor="let set of run.sets; let i = index" class="set-row" [class.done]="set.status === 'COMPLETED'" [class.missed]="set.status === 'MISSED'">
@@ -257,11 +281,13 @@
                 <ng-template #regular><span class="set-number">{{ regularNumber(run, i) }}</span></ng-template>
               </span>
               <span *ngIf="showExerciseWeight && !isCardio(run)" class="sets__col">
-                <input class="set-field" type="text" inputmode="decimal" [disabled]="!canEditWorkout || saving"
+                <input class="set-field" type="text" inputmode="decimal" placeholder="—" [class.changed]="changed(run, i, 'weight')"
+                       [attr.aria-label]="t('Weight done', 'Poids réalisé') + ' (' + weightUnit + ')'" [disabled]="!canEditWorkout || saving"
                        [value]="displayWeight(set.weight)" (input)="onWeightInput(set, $any($event.target).value)" />
               </span>
               <span class="sets__col set-field-wrap">
-                <input class="set-field" type="text" inputmode="numeric" [disabled]="!canEditWorkout || saving"
+                <input class="set-field" type="text" inputmode="numeric" placeholder="—" [class.changed]="changed(run, i, 'amount')"
+                       [attr.aria-label]="isCardio(run) ? t('Minutes done', 'Minutes réalisées') : t('Reps done', 'Répétitions réalisées')" [disabled]="!canEditWorkout || saving"
                        [value]="(isCardio(run) ? set.duration : set.reps) ?? ''" (input)="onAmountInput(run, set, $any($event.target).value)" />
                 <small *ngIf="isCardio(run)">min</small>
               </span>
@@ -273,10 +299,13 @@
                       [disabled]="!canEditWorkout || saving" [attr.aria-label]="t('Done', 'Terminé')" (click)="setSetStatus(run, set, 'COMPLETED')">
                 <i-feather name="check"></i-feather>
               </button>
+              <!-- The coach's plan stays in sight: the fields hold what the client did. -->
+              <span class="set-planned">{{ t('Planned', 'Prévu') }} : {{ plannedText(run, i) }}</span>
             </div>
           </div>
 
-          <ng-container *ngIf="isFinished; else editableNote">
+          <!-- Notes are written while the workout can be saved (live, log completed, edit): elsewhere they would be lost. -->
+          <ng-container *ngIf="!canEditWorkout; else editableNote">
             <p *ngIf="run.note.trim()" class="finished-note">{{ run.note.trim() }}</p>
           </ng-container>
           <ng-template #editableNote>
@@ -292,11 +321,11 @@
 
       <section class="yc-card overall-note">
         <label class="yc-label" for="overall-note">{{ t('How did the workout feel? (optional)', 'Comment s\'est passée la séance ? (facultatif)') }}</label>
-        <textarea id="overall-note" class="yc-input" rows="3" [readonly]="isFinished || saving" [(ngModel)]="overallNote" (ngModelChange)="scheduleDraftSave()"
+        <textarea id="overall-note" class="yc-input" rows="3" [readonly]="!canEditWorkout || saving" [(ngModel)]="overallNote" (ngModelChange)="scheduleDraftSave()"
                   [placeholder]="t('Energy, difficulty, anything your coach should know...', 'Énergie, difficulté, tout ce que votre coach doit savoir...')"></textarea>
       </section>
 
-      <footer *ngIf="!isFinished && runStatus !== 'MISSED'" class="session-bar">
+      <footer *ngIf="!isFinished && runStatus !== 'MISSED' && !isFutureDay && !nothingToDo" class="session-bar">
         <ng-container [ngSwitch]="runStatus">
           <div *ngSwitchCase="'NOT_STARTED'" class="session-bar__row">
             <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="enterLogCompletedMode()"><i-feather name="clipboard"></i-feather>{{ t('Log completed', 'Enregistrer comme terminé') }}</button>
@@ -306,8 +335,13 @@
             <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="markAsMissed()"><i-feather name="x"></i-feather>{{ t('Mark as missed', 'Marquer comme manqué') }}</button>
             <button type="button" class="yc-btn yc-btn--brand" [disabled]="saving" (click)="enterLogCompletedMode()"><i-feather name="check"></i-feather>{{ t('Log as completed', 'Enregistrer comme terminé') }}</button>
           </div>
+          <div *ngSwitchCase="'EDIT'" class="session-bar__row">
+            <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="cancelEdit()"><i-feather name="x"></i-feather>{{ t('Cancel', 'Annuler') }}</button>
+            <button type="button" class="yc-btn yc-btn--brand grow-2" [disabled]="saving" (click)="saveEdit()"><i-feather name="check"></i-feather>{{ t('Save changes', 'Enregistrer les modifications') }}</button>
+          </div>
           <div *ngSwitchCase="'LOG_WORKOUT'" class="session-bar__row">
-            <button type="button" class="yc-btn yc-btn--brand" [disabled]="saving" (click)="finishWorkout()"><i-feather name="check"></i-feather>{{ t('Save completed workout', 'Enregistrer l’entraînement terminé') }}</button>
+            <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="cancelLog()"><i-feather name="x"></i-feather>{{ t('Cancel', 'Annuler') }}</button>
+            <button type="button" class="yc-btn yc-btn--brand grow-2" [disabled]="saving" (click)="finishWorkout()"><i-feather name="check"></i-feather>{{ t('Save completed workout', 'Enregistrer l’entraînement terminé') }}</button>
           </div>
           <div *ngSwitchDefault class="session-bar__row">
             <div class="menu-wrap">
@@ -320,6 +354,14 @@
             <button type="button" class="yc-btn yc-btn--brand grow-3" [disabled]="saving" (click)="finishWorkout()"><i-feather name="flag"></i-feather>{{ t('Finish workout', 'Terminer l’entraînement') }}</button>
           </div>
         </ng-container>
+      </footer>
+      <footer *ngIf="canModify" class="session-bar">
+        <div class="session-bar__row">
+          <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="startEdit()"
+                  [title]="t('Corrections possible until ' + editDeadlineLabel, 'Corrections possibles jusqu’au ' + editDeadlineLabel)">
+            <i-feather name="edit-2"></i-feather>{{ t('Edit workout', 'Modifier la séance') }}
+          </button>
+        </div>
       </footer>
     </ng-container>
 
@@ -359,7 +401,7 @@
       <div class="facts">
         <div class="fact">
           <span class="yc-icon-tile" style="--tile-size: 36px"><i-feather name="layers"></i-feather></span>
-          <span><small>{{ isCardio(run) ? t('Planned', 'Prévu') : t('Planned', 'Prévu') + ' · ' + t('reps', 'répétitions') }}</small><strong>{{ plannedFact(run) }}</strong></span>
+          <span><small>{{ t('Planned', 'Prévu') }}</small><strong>{{ plannedFact(run) }}</strong></span>
         </div>
         <div class="fact">
           <span class="yc-icon-tile" style="--tile-size: 36px"><i-feather name="clock"></i-feather></span>
@@ -373,18 +415,38 @@
           <span>{{ t(count(run, 'COMPLETED') + '/' + run.sets.length + ' done', count(run, 'COMPLETED') + '/' + run.sets.length + ' faites') }}</span>
         </div>
         <div class="yc-progress planned-bar"><span [style.width.%]="run.sets.length ? count(run, 'COMPLETED') / run.sets.length * 100 : 0"></span></div>
-        <p *ngIf="!exerciseCanEdit" class="planned-hint">{{ t('Start the workout to mark your sets.', 'Démarrez la séance pour cocher vos séries.') }}</p>
+        <p *ngIf="exerciseLockedHint as hint" class="planned-hint">{{ hint }}</p>
         <div class="yc-card yc-card--flush planned-list">
           <ng-container *ngFor="let set of run.sets; let i = index">
             <hr *ngIf="i > 0" class="yc-divider" />
             <div class="planned-row">
-              <span class="planned-row__num" [class.done]="set.status === 'COMPLETED'" [class.missed]="set.status === 'MISSED'">{{ set.setNumber }}</span>
+              <!-- Numbered like the workout page: warm-up, drop and failure sets are named, not counted. -->
+              <span class="planned-row__num" [class.done]="set.status === 'COMPLETED'" [class.missed]="set.status === 'MISSED'">{{ setTypeChip(set)?.text?.charAt(0) || regularNumber(run, i) }}</span>
               <span class="planned-row__copy">
                 <span class="planned-row__title" [class.struck]="set.status === 'MISSED'">
-                  {{ t('Set ' + set.setNumber, 'Série ' + set.setNumber) }}
-                  <em *ngIf="exerciseSetTypeLabel(set) as label">{{ label }}</em>
+                  {{ setTypeChip(set) ? exerciseSetTypeLabel(set) : t('Set ' + regularNumber(run, i), 'Série ' + regularNumber(run, i)) }}
                 </span>
-                <span class="planned-row__details">{{ setDetails(run, set, i) }}</span>
+                <span class="planned-row__details">
+                  {{ t('Planned', 'Prévu') }} : {{ plannedText(run, i) }}<ng-container *ngIf="setRest(run, i) as rest"> · {{ t('rest', 'repos') }} {{ rest }}</ng-container>
+                </span>
+                <!-- What the client did: fields while the workout can be logged, else the saved result. -->
+                <span *ngIf="exerciseCanEdit; else doneLine" class="planned-row__inputs">
+                  <label *ngIf="showExerciseWeight && !isCardio(run)">
+                    <input class="set-field" type="text" inputmode="decimal" placeholder="—" [class.changed]="changed(run, i, 'weight')"
+                           [value]="displayWeight(set.weight)" (input)="onWeightInput(set, $any($event.target).value)" />
+                    <small>{{ weightUnit }}</small>
+                  </label>
+                  <label>
+                    <input class="set-field" type="text" inputmode="numeric" placeholder="—" [class.changed]="changed(run, i, 'amount')"
+                           [value]="(isCardio(run) ? set.duration : set.reps) ?? ''" (input)="onAmountInput(run, set, $any($event.target).value)" />
+                    <small>{{ isCardio(run) ? 'min' : t('reps', 'rép.') }}</small>
+                  </label>
+                </span>
+                <ng-template #doneLine>
+                  <span *ngIf="hasResult(run, i)" class="planned-row__done" [class.missed]="set.status === 'MISSED'">
+                    {{ set.status === 'MISSED' ? t('Missed', 'Manquée') : t('Done', 'Fait') }} : {{ doneText(run, set) }}
+                  </span>
+                </ng-template>
               </span>
               <button type="button" class="round-status" [class.on]="set.status === 'MISSED'" style="--status-color: var(--yc-error)"
                       [disabled]="!exerciseCanEdit" [attr.aria-label]="t('Missed', 'Manqué')" (click)="setSetStatus(run, set, 'MISSED')"><i-feather name="x"></i-feather></button>
@@ -447,6 +509,20 @@
         <p>{{ t('All sets in this exercise will be marked as missed. Any completed sets will also be replaced.', 'Toutes les séries de cet exercice seront marquées comme manquées. Les séries déjà terminées seront également remplacées.') }}</p>
         <button type="button" class="yc-btn danger-fill" (click)="confirmSkip()">{{ t('Skip exercise', 'Passer l’exercice') }}</button>
         <button type="button" class="yc-btn yc-btn--secondary" (click)="skipTarget = null">{{ t('Cancel', 'Annuler') }}</button>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="confirmation as c" class="yc-sheet-backdrop" (click)="confirmation = null">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy"><h2 class="yc-sheet-header__title">{{ c.title }}</h2></div>
+        <button type="button" class="yc-sheet-header__close" (click)="confirmation = null"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body sheet-stack">
+        <p>{{ c.text }}</p>
+        <button type="button" class="yc-btn danger-fill" (click)="confirm()">{{ c.label }}</button>
+        <button type="button" class="yc-btn yc-btn--secondary" (click)="confirmation = null">{{ t('Back', 'Retour') }}</button>
       </div>
     </section>
   </div>
@@ -522,10 +598,10 @@
             <ng-container *ngFor="let exercise of pdfExercises(entry.day); let i = index">
               <div class="cw-pdf-ex"><b>{{ pdfLabels(entry.day)[i] }}</b>{{ capitalize(exercise.name) }}</div>
               <table *ngIf="exercise.sets?.length">
-                <thead><tr><th>{{ t('Set', 'Série') }}</th><th>{{ exercise.type === 'CARDIO' ? t('Duration', 'Durée') : t('Reps', 'Répétitions') }}</th><th *ngIf="showExerciseWeight">{{ weightUnit }}</th><th>{{ t('Rest', 'Repos') }}</th></tr></thead>
+                <thead><tr><th>{{ t('Set', 'Série') }}</th><th>{{ exercise.type === 'CARDIO' ? t('Duration', 'Durée') : t('Reps', 'Répétitions') }}</th><th *ngIf="showExerciseWeight && exercise.type !== 'CARDIO'">{{ weightUnit }}</th><th>{{ t('Rest', 'Repos') }}</th></tr></thead>
                 <tbody><tr *ngFor="let set of exercise.sets; let s = index">
-                  <td>{{ s + 1 }}</td><td>{{ exercise.type === 'CARDIO' ? (set.duration ?? 0) + ' min' : (set.reps ?? '—') }}</td>
-                  <td *ngIf="showExerciseWeight">{{ displayWeight(set.weight) || '—' }}</td><td>{{ formatRest(set.restMin, set.restSec) || '—' }}</td>
+                  <td>{{ s + 1 }}</td><td>{{ exercise.type === 'CARDIO' ? ((set.duration ?? exercise.duration) != null ? (set.duration ?? exercise.duration) + ' min' : '—') : (set.reps ?? '—') }}</td>
+                  <td *ngIf="showExerciseWeight && exercise.type !== 'CARDIO'">{{ set.weight > 0 ? displayWeight(set.weight) : '—' }}</td><td>{{ formatRest(set.restMin, set.restSec) || '—' }}</td>
                 </tr></tbody>
               </table>
             </ng-container>
@@ -537,4 +613,6 @@
   </div>
 
   <div *ngIf="toast" class="plan-toast" [class.success]="toast.tone === 'success'" [class.error]="toast.tone === 'error'" role="status">{{ toast.message }}</div>
+
+  <app-completion-celebration *ngIf="celebration" [view]="celebration" (done)="closeCelebration()"></app-completion-celebration>
 </div>

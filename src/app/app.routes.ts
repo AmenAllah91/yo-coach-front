@@ -4,11 +4,12 @@ import { coachingAccessGuard } from './config/guard/coaching-access.guard';
 
 import { CanActivateFn, Route } from '@angular/router';
 import { adminGuard, coachDiagnosticsGuard } from './config/guard/admin.guard';
+import { homeRedirectGuard } from './config/guard/default-redirect.guard';
 import { MainLayoutComponent } from './template/layout/app-layout/main-layout/main-layout.component';
 
 import { inject } from '@angular/core';
 import { AuthGuard } from '@config/guard/auth.guard';
-import { coachOnboardingEntryGuard, coachOnboardingGuard } from './config/guard/coach-onboarding.guard';
+import { coachOnboardingChildGuard, coachOnboardingEntryGuard, coachOnboardingGuard } from './config/guard/coach-onboarding.guard';
 import { clientOnboardingEntryGuard, clientOnboardingGuard } from './config/guard/client-onboarding.guard';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
@@ -27,6 +28,12 @@ export const APP_ROUTE: Route[] = [
     canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingEntryGuard],
   },
   {
+    // Seen once after the onboarding questionnaire: how the coach wants to start (example client or from scratch).
+    path: 'coach-welcome',
+    loadComponent: () => import('./components/coach-welcome/coach-welcome.component').then((m) => m.CoachWelcomeComponent),
+    canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingGuard],
+  },
+  {
     path: 'client-onboarding',
     loadComponent: () => import('./components/client-onboarding/client-onboarding.component').then((m) => m.ClientOnboardingComponent),
     canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, clientOnboardingEntryGuard],
@@ -35,8 +42,10 @@ export const APP_ROUTE: Route[] = [
     path: '',
     component: MainLayoutComponent,
     canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingGuard, clientOnboardingGuard],
-    canActivateChild: [accountAccessGuard, coachingAccessGuard],
+    canActivateChild: [accountAccessGuard, coachingAccessGuard, coachOnboardingChildGuard],
     children: [
+      // "/" has no page: each role goes to its home (the sign-in and the registration send the user back here).
+      { path: '', pathMatch: 'full', canActivate: [homeRedirectGuard], children: [] },
       {path:'admin/subscriptions',canActivate:[adminGuard],data:{mode:'subscriptions'},loadComponent:()=>import('./components/admin/billing/admin-billing.component').then(m=>m.AdminBillingComponent)},
       {path:'admin/plans',canActivate:[adminGuard],data:{mode:'plans'},loadComponent:()=>import('./components/admin/billing/admin-billing.component').then(m=>m.AdminBillingComponent)},
       {path:'admin/payments',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/payments/admin-payments.component').then(m=>m.AdminPaymentsComponent)},
@@ -96,11 +105,11 @@ export const APP_ROUTE: Route[] = [
       },
       {
         path: 'clients/create-workout/:idClient',
-        loadComponent: () => import('./components/program-library/create-and-assign/create-and-assign.component').then((m) => m.CreateAndAssignComponent),
+        loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
       },
       {
         path: 'clients/create-workout/:idClient/edit/:id',
-        loadComponent: () => import('./components/program-library/create-and-assign/create-and-assign.component').then((m) => m.CreateAndAssignComponent),
+        loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
       },
       {
         path: 'workout/edit-workout/:id',
@@ -152,27 +161,27 @@ export const APP_ROUTE: Route[] = [
       },
       {
         path: 'clients/create-macro-plan/:idClient',
-        loadComponent: () => import('./components/nutrition/assign-macro-plan/assign-macro-plan.component').then((m) => m.AssignMacroPlanComponent),
+        loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
       },
       {
         path: 'clients/create-macro-plan/:idClient/edit/:id',
-        loadComponent: () => import('./components/nutrition/assign-macro-plan/assign-macro-plan.component').then((m) => m.AssignMacroPlanComponent),
+        loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
       },
       {
         path: 'clients/create-macro-plan-total-day/:idClient',
-        loadComponent: () => import('./components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component').then((m) => m.AssignMacroPlanTotalDayComponent),
+        loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
       },
       {
         path: 'clients/create-macro-plan-total-day/:idClient/edit/:id',
-        loadComponent: () => import('./components/nutrition/assign-macro-plan-total-day/assign-macro-plan-total-day.component').then((m) => m.AssignMacroPlanTotalDayComponent),
+        loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
       },
       {
         path: 'clients/create-full-plan/:idClient',
-        loadComponent: () => import('./components/nutrition/assign-full-plan/assign-full-plan.component').then((m) => m.AssignFullPlanComponent),
+        loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
       },
       {
         path: 'clients/create-full-plan/:idClient/edit/:id',
-        loadComponent: () => import('./components/nutrition/assign-full-plan/assign-full-plan.component').then((m) => m.AssignFullPlanComponent),
+        loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
       },
       {
         path: 'nutrition/create-macro-plan-total-day/:id',
@@ -310,6 +319,11 @@ export const APP_ROUTE: Route[] = [
   {
     path: 'contact/:slug',
     loadComponent: () => import('./components/website/public-contact-form/public-contact-form.component').then((m) => m.PublicContactFormComponent),
+  },
+  {
+    // Terms accepted by a visitor of a coach's contact form or website (public, no sign-in).
+    path: 'terms',
+    loadComponent: () => import('./components/website/public-terms/public-terms.component').then((m) => m.PublicTermsComponent),
   },
   {
     path: 'video-viewer',

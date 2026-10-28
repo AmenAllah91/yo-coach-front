@@ -1,0 +1,254 @@
+:host { display: block; }
+
+.as { display: grid; gap: 12px; }
+
+.as-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.as-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.as-checking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.as-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0c86c8;
+  animation: as-spin 0.8s linear infinite;
+}
+
+@keyframes as-spin { to { transform: rotate(360deg); } }
+
+.as-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.as-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  &:hover { border-color: #94a3b8; }
+
+  &:focus-visible, &:focus-within {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(12, 134, 200, 0.22);
+  }
+
+  &.is-active {
+    border-color: #0c86c8;
+    background: #f0f9ff;
+    box-shadow: 0 0 0 1px #0c86c8 inset;
+  }
+
+  &.is-continuity:not(.is-active) { border-style: dashed; }
+}
+
+.as-chip-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.as-chip-icon {
+  width: 14px;
+  height: 14px;
+  color: #0c86c8;
+  ::ng-deep svg { width: 14px; height: 14px; }
+}
+
+.as-chip-date {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+
+  // "Ven. 23 oct." : only the first letter, the months stay lower case.
+  &::first-letter { text-transform: uppercase; }
+}
+
+.as-fixed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #334155;
+}
+
+.as-failed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.as-retry {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font: inherit;
+  font-weight: 600;
+  color: #0c86c8;
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+}
+
+.as-chip--date { cursor: pointer; }
+
+.as-date-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  color: #64748b;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus { outline: none; }
+}
+
+.as-continuity-hint {
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: #0369a1;
+}
+
+/* Another weekday than the program's (CD-13): its own weekday, just before or after. */
+.as-weekday {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.as-weekday-text { flex: 1 1 220px; }
+.as-weekday-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.as-weekday-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #f59e0b;
+  background: #fff;
+  color: #92400e;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { background: #fef3c7; }
+}
+
+.as-range {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #334155;
+
+  span:first-of-type::first-letter { text-transform: uppercase; }
+}
+
+.as-range-icon {
+  width: 15px;
+  height: 15px;
+  color: #64748b;
+  ::ng-deep svg { width: 15px; height: 15px; }
+}
+
+.as-range-days { color: #64748b; }
+
+.as-file-end {
+  display: grid;
+  gap: 6px;
+  max-width: 260px;
+}
+
+.as-file-label { font-size: 13px; font-weight: 700; color: #0f172a; }
+
+.as-date-field {
+  height: 40px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #0f172a;
+
+  &:focus { outline: none; border-color: #0c86c8; box-shadow: 0 0 0 3px rgba(12, 134, 200, 0.18); }
+}
+
+.as-error { font-size: 12px; color: #b91c1c; }
+
+.as-lines { display: grid; gap: 6px; }
+
+.as-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.45;
+
+  &--error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+  }
+}
+
+.as-line-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  ::ng-deep svg { width: 16px; height: 16px; }
+}
+
+@media (max-width: 520px) {
+  .as-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

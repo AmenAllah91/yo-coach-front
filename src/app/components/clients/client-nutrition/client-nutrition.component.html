@@ -34,7 +34,7 @@
       <p *ngIf="!loading && error" class="yc-subtitle center-text">{{ error }}</p>
 
       <ng-container *ngIf="!loading && !error">
-        <div *ngIf="!visibleItems.length" class="list-empty">
+        <div *ngIf="!visibleItems.length && !preparingNext" class="list-empty">
           <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 64px"><i-feather name="utensils"></i-feather></span>
           <h3>{{ t('No nutrition plans found', 'Aucun plan nutrition trouvé') }}</h3>
           <p class="yc-subtitle">
@@ -73,6 +73,7 @@
               </span>
               <ng-template #mealNumber><span class="meal-row__number">{{ i + 1 }}</span></ng-template>
               <span class="meal-row__name">{{ capitalize(meal.name) }}</span>
+              <span *ngIf="mealTimeLabel(meal) as time" class="meal-time"><i-feather name="clock"></i-feather>{{ time }}</span>
               <span class="meal-row__kcal">{{ mealCalories(meal) }} kcal</span>
             </div>
             <p *ngIf="meals(item).length > 4" class="more-link">
@@ -83,6 +84,15 @@
             {{ t("Open today's plan", 'Ouvrir le plan du jour') }}<i-feather name="chevron-right"></i-feather>
           </button>
         </article>
+
+        <!-- The next days are not filled yet (backlog-programmes.md R6) -->
+        <div *ngIf="preparingNext" class="yc-card preparing-next" role="status">
+          <span class="yc-icon-tile" style="--tile-size: 44px"><i-feather name="edit-3"></i-feather></span>
+          <div>
+            <strong>{{ t('Your coach is preparing what comes next', 'Votre coach prépare la suite') }}</strong>
+            <p class="yc-subtitle">{{ t('The next days will appear here as soon as they are ready.', 'Les prochains jours apparaîtront ici dès qu\'ils seront prêts.') }}</p>
+          </div>
+        </div>
       </ng-container>
     </ng-container>
 
@@ -233,7 +243,10 @@
                 <span *ngIf="mealStatus(meal); else recipeChip" class="yc-chip" [style.--chip-color]="mealChip(meal).color">{{ mealChip(meal).label }}</span>
                 <ng-template #recipeChip><span *ngIf="isRecipe(meal)" class="yc-chip yc-chip--purple"><i-feather name="book-open"></i-feather>{{ t('Recipe', 'Recette') }}</span></ng-template>
               </span>
-              <span class="yc-caption">{{ macros(meal).calories }} kcal{{ foodsLabel(meal) }}</span>
+              <span class="meal-card__meta">
+                <span *ngIf="mealTimeLabel(meal) as time" class="meal-time"><i-feather name="clock"></i-feather>{{ time }}</span>
+                <span class="yc-caption">{{ macros(meal).calories }} kcal{{ foodsLabel(meal) }}</span>
+              </span>
             </span>
             <i-feather class="chevron" [name]="expandedMeal === i ? 'chevron-up' : 'chevron-down'"></i-feather>
           </button>
@@ -285,7 +298,7 @@
                 <span class="yc-label">{{ t('Meal photo', 'Photo du repas') }}</span>
                 <div class="meal-photo__actions">
                   <button type="button" [disabled]="!mealPhotoUrls.get(meal.id)" (click)="viewedPhoto = mealPhotoUrls.get(meal.id) || null"><i-feather name="eye"></i-feather>{{ t('View', 'Voir') }}</button>
-                  <label *ngIf="!previewMode" [class.disabled]="uploadingMealId === meal.id">
+                  <label *ngIf="canReport" [class.disabled]="uploadingMealId === meal.id">
                     <i-feather name="image"></i-feather>{{ uploadingMealId === meal.id ? t('Saving…', 'Enregistrement…') : t('Replace photo', 'Remplacer la photo') }}
                     <input type="file" accept="image/*" hidden [disabled]="uploadingMealId === meal.id" (change)="uploadMealPhoto($event, meal)" />
                   </label>
@@ -297,7 +310,7 @@
               <i-feather name="file-text"></i-feather><span>{{ mealNote(meal) }}</span>
             </button>
 
-            <div *ngIf="!previewMode" class="meal-actions">
+            <div *ngIf="canReport" class="meal-actions">
               <label *ngIf="!hasPhoto(meal)" class="yc-btn yc-btn--secondary" [class.disabled]="uploadingMealId === meal.id">
                 <span *ngIf="uploadingMealId === meal.id" class="yc-spinner"></span>
                 <i-feather *ngIf="uploadingMealId !== meal.id" name="camera"></i-feather>{{ t('Add photo', 'Ajouter une photo') }}
@@ -309,34 +322,85 @@
         </section>
       </ng-container>
 
-      <section *ngIf="!finished" class="yc-card feedback">
+      <section *ngIf="!finished || editing" class="yc-card feedback">
         <h3 class="yc-card-title">{{ t('How did today feel?', "Comment s'est passée la journée ?") }}</h3>
         <p class="yc-subtitle">{{ t('Your coach uses this to fine-tune your plan.', "Votre coach s'en sert pour affiner votre plan.") }}</p>
         <ng-container *ngFor="let row of feedbackRows; let last = last">
           <div class="feedback-row">
             <span class="yc-label">{{ row.title }}</span>
             <div class="feedback-row__options">
-              <button *ngFor="let option of row.options" type="button" [class.active]="isFeedback(row.key, option[0])" [disabled]="previewMode"
+              <button *ngFor="let option of row.options" type="button" [class.active]="isFeedback(row.key, option[0])" [disabled]="previewMode || isFutureDay"
                       (click)="setFeedback(row.key, option[0])">{{ option[1] }}</button>
             </div>
           </div>
           <hr *ngIf="!last" class="yc-divider feedback__divider" />
         </ng-container>
         <label class="yc-label feedback__note-label" for="nutrition-note">{{ t('Note for your coach', 'Note pour votre coach') }} <small>({{ t('optional', 'facultatif') }})</small></label>
-        <textarea id="nutrition-note" class="yc-input feedback__note" rows="3" [readonly]="previewMode" [(ngModel)]="overallNote" (ngModelChange)="scheduleFeedbackSave()"
+        <textarea id="nutrition-note" class="yc-input feedback__note" rows="3" [readonly]="previewMode || isFutureDay" [(ngModel)]="overallNote" (ngModelChange)="scheduleFeedbackSave()"
                   [placeholder]="t('Cravings, social events, anything useful...', 'Envies, événements sociaux, tout ce qui peut être utile...')"></textarea>
       </section>
 
-      <footer *ngIf="!finished && !previewMode" class="day-bar">
-        <button type="button" class="yc-btn yc-btn--secondary" [disabled]="savingDay" (click)="saveDayStatus('OFF_PLAN')"><i-feather name="slash"></i-feather>{{ t('Off-plan', 'Hors plan') }}</button>
-        <button type="button" class="yc-btn yc-btn--brand grow-2" [disabled]="savingDay" (click)="saveDayStatus('COMPLETED')">
+      <p *ngIf="isFutureDay && !previewMode" class="yc-subtitle center-text">
+        {{ t('This day has not started yet: you can report meals and complete it on the day itself.', 'Cette journée n’a pas encore commencé : vous pourrez signaler les repas et la terminer le jour même.') }}
+      </p>
+      <footer *ngIf="!finished && !previewMode && !isFutureDay" class="day-bar">
+        <button type="button" class="yc-btn yc-btn--secondary" [disabled]="savingDay" (click)="showOffPlanSheet = true"><i-feather name="slash"></i-feather>{{ t('Off-plan', 'Hors plan') }}</button>
+        <button type="button" class="yc-btn yc-btn--brand grow-2" [disabled]="savingDay" (click)="askCompleteDay()">
           <span *ngIf="savingDay" class="yc-spinner"></span><i-feather *ngIf="!savingDay" name="check"></i-feather>{{ t('Complete day', 'Terminer la journée') }}
+        </button>
+      </footer>
+      <p *ngIf="editing" class="yc-subtitle center-text">
+        {{ t('Correct your meal reports and your feedback: each change is saved at once and the day keeps its status. Corrections are possible until ' + editDeadlineLabel + '.', 'Corrigez vos rapports de repas et votre ressenti : chaque modification est enregistrée aussitôt et la journée garde son statut. Corrections possibles jusqu’au ' + editDeadlineLabel + '.') }}
+      </p>
+      <footer *ngIf="canModify" class="day-bar">
+        <button *ngIf="!editing" type="button" class="yc-btn yc-btn--secondary grow-2" (click)="editing = true">
+          <i-feather name="edit-2"></i-feather>{{ t('Edit day', 'Modifier la journée') }}
+        </button>
+        <button *ngIf="editing" type="button" class="yc-btn yc-btn--brand grow-2" (click)="finishEditing()">
+          <i-feather name="check"></i-feather>{{ t('Done', 'Terminé') }}
         </button>
       </footer>
     </ng-container>
   </div>
 
   <!-- ===================== SHEETS ===================== -->
+  <div *ngIf="showOffPlanSheet" class="yc-sheet-backdrop" (click)="showOffPlanSheet = false">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy">
+          <h2 class="yc-sheet-header__title">{{ t('Mark the day off-plan?', 'Marquer la journée hors plan ?') }}</h2>
+          <p class="yc-sheet-header__subtitle">{{ t('Every meal will be saved as skipped, including the ones already reported. You will not be able to change this day afterwards.', 'Tous les repas seront enregistrés comme sautés, y compris ceux déjà signalés. Vous ne pourrez plus modifier cette journée ensuite.') }}</p>
+        </div>
+        <button type="button" class="yc-sheet-header__close" (click)="showOffPlanSheet = false"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body">
+        <div class="sheet-actions">
+          <button type="button" class="yc-btn yc-btn--secondary" (click)="showOffPlanSheet = false">{{ t('Back', 'Retour') }}</button>
+          <button type="button" class="yc-btn yc-btn--brand" (click)="showOffPlanSheet = false; saveDayStatus('OFF_PLAN')"><i-feather name="slash"></i-feather>{{ t('Off-plan', 'Hors plan') }}</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="showCompleteSheet" class="yc-sheet-backdrop" (click)="showCompleteSheet = false">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy">
+          <h2 class="yc-sheet-header__title">{{ t('Complete the day?', 'Terminer la journée ?') }}</h2>
+          <p class="yc-sheet-header__subtitle">{{ unreportedText }}</p>
+        </div>
+        <button type="button" class="yc-sheet-header__close" (click)="showCompleteSheet = false"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body">
+        <p class="yc-subtitle">{{ t('If you did not follow the plan, report those meals first or mark the day off-plan.', 'Si vous n’avez pas suivi le plan, signalez d’abord ces repas ou marquez la journée hors plan.') }}</p>
+        <div class="sheet-actions">
+          <button type="button" class="yc-btn yc-btn--secondary" (click)="showCompleteSheet = false">{{ t('Back', 'Retour') }}</button>
+          <button type="button" class="yc-btn yc-btn--brand" (click)="showCompleteSheet = false; saveDayStatus('COMPLETED')"><i-feather name="check"></i-feather>{{ t('Complete day', 'Terminer la journée') }}</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <div *ngIf="reportMeal" class="yc-sheet-backdrop" (click)="reportMeal = null">
     <section class="yc-sheet" (click)="$event.stopPropagation()">
       <header class="yc-sheet-header"><div class="yc-sheet-header__row">
@@ -435,7 +499,7 @@
             <h2>{{ formatLongDate(entry.date) }}{{ entry.day?.name ? ' · ' + capitalize(entry.day.name) : '' }}</h2>
             <div class="cn-pdf-totals">{{ formatNumber(pdfTarget(entry.day).calories) }} kcal · P {{ pdfTarget(entry.day).protein }}g · C {{ pdfTarget(entry.day).carbs }}g · F {{ pdfTarget(entry.day).fat }}g</div>
             <ng-container *ngFor="let meal of pdfMeals(entry.day)">
-              <div class="cn-pdf-meal">{{ capitalize(meal.name) }} — {{ macros(meal).calories }} kcal</div>
+              <div class="cn-pdf-meal">{{ capitalize(meal.name) }}{{ mealTimeLabel(meal) ? ' · ' + mealTimeLabel(meal) : '' }} — {{ macros(meal).calories }} kcal</div>
               <table *ngIf="meal.foods?.length">
                 <thead><tr><th>{{ t('Food', 'Aliment') }}</th><th>{{ t('Quantity', 'Quantité') }}</th><th>kcal</th><th>P</th><th>C</th><th>F</th></tr></thead>
                 <tbody><tr *ngFor="let food of meal.foods">
@@ -452,4 +516,6 @@
   </div>
 
   <div *ngIf="toast" class="plan-toast" [class.success]="toast.tone === 'success'" [class.error]="toast.tone === 'error'" role="status">{{ toast.message }}</div>
+
+  <app-completion-celebration *ngIf="celebration" [view]="celebration" (done)="closeCelebration()"></app-completion-celebration>
 </div>

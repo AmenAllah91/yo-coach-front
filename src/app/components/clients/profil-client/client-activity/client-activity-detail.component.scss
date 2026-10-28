@@ -1,0 +1,12 @@
+// Detail window only: the exercise number (the profile has its own rule) and the coach dashboard additions.
+.exercise-letter { width:30px; height:30px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border-radius:999px; background-color:#44b4df; color:#fff; font-size:.85rem; font-weight:700; }
+
+// « Voir le profil »: next to the message button, outlined.
+.activity-modal__header .activity-detail-profile,
+.nutrition-report__actions .activity-detail-profile { border:1px solid #cfd9e3; background:#fff; color:#091426; }
+
+.activity-modal--notice { width:min(440px,calc(100vw - 28px)); }
+.activity-notice { padding:22px 20px; display:flex; flex-direction:column; align-items:flex-start; gap:14px; }
+.activity-notice p { margin:0; color:#43566b; font-size:14px; }
+.activity-notice p i { margin-right:6px; color:#0798d3; }
+.activity-notice .activity-send-message { width:auto; height:34px; padding:0 14px; display:flex; align-items:center; gap:6px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }

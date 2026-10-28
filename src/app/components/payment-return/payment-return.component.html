@@ -20,6 +20,17 @@
     <button type="button" class="btn-link" (click)="goToDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
   </div>
 
+  <div *ngSwitchCase="'notApplied'" class="card" role="alert">
+    <i-feather name="alert-circle" class="icon failure"></i-feather>
+    <h1>{{ 'PAYMENT_FAILED_TITLE' | translate }}</h1>
+    <p *ngIf="notAppliedTextKey as textKey">{{ textKey | translate }}</p>
+    <button *ngIf="notAppliedReason === 'rejected'; else choosePlan" type="button" class="btn-primary" (click)="retry()">{{ 'PAYMENT_TRY_AGAIN' | translate }}</button>
+    <ng-template #choosePlan>
+      <button type="button" class="btn-primary" (click)="toCheckout()">{{ 'NOTICE_CHOOSE_PLAN' | translate }}</button>
+    </ng-template>
+    <button type="button" class="btn-link" (click)="goToDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
+  </div>
+
   <div *ngSwitchCase="'timeout'" class="card">
     <i-feather name="clock" class="icon pending"></i-feather>
     <h1>{{ 'PAYMENT_TIMEOUT_TITLE' | translate }}</h1>

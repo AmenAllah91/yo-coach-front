@@ -1,202 +1,128 @@
-<div class="assign-backdrop">
-  <div class="assign-modal">
-    <!-- HEADER -->
-    <div class="assign-header">
-      <div>
-        <h2 class="assign-title">{{ 'ASSIGN_PROGRAM' | translate }}</h2>
-        <p class="assign-subtitle">{{ programName }}</p>
+<div class="am-backdrop" (click)="close()">
+  <div class="am" role="dialog" aria-modal="true" aria-labelledby="am-title" (click)="$event.stopPropagation()">
+    <header class="am-head">
+      <span class="am-head-icon" aria-hidden="true">
+        <i-feather [name]="assignmentType === 'nutrition' ? 'coffee' : 'activity'"></i-feather>
+      </span>
+      <div class="am-head-text">
+        <h2 class="am-title" id="am-title">
+          {{ (assignmentType === 'nutrition' ? 'ASSIGN_FLOW.TITLE_NUTRITION' : 'ASSIGN_FLOW.TITLE_WORKOUT') | translate }}
+        </h2>
+        <p class="am-subtitle">{{ programName }}</p>
       </div>
+      <button class="am-close" type="button" (click)="close()" [attr.aria-label]="'CLOSE' | translate" [disabled]="busy">
+        <i-feather name="x"></i-feather>
+      </button>
+    </header>
 
-      <button class="assign-close" type="button" (click)="close()">✕</button>
-    </div>
+    <ng-container *ngIf="step === 'select'; else confirmStep">
+      <div class="am-body">
+        <!-- What the client will see (backlog-programmes.md R5) -->
+        <app-assign-visibility-note *ngIf="program" [kind]="assignmentType" [program]="program"></app-assign-visibility-note>
 
-    <!-- DATES -->
-    <div class="assign-section assign-section--grey">
-      <div class="assign-date-grid" [class.assign-date-grid--single]="!showEndDate">
-        <div>
-          <label class="assign-label">{{ 'START_DATE' | translate }} *</label>
-          <div class="date-wrapper">
-            <span class="input-icon-left calendar-icon"></span>
+        <app-assign-schedule
+          [kind]="kind"
+          [programId]="program?.id || null"
+          [isFile]="showEndDate"
+          [lengthDays]="lengthDays"
+          [clientIds]="selectedIds"
+          [showLines]="locked"
+          [(startDate)]="startDate"
+          [(endDate)]="endDate"
+          (previewsChange)="previews = $event"
+          (checkingChange)="checking = $event"
+        ></app-assign-schedule>
 
-            <input
-              type="date"
-              class="assign-input assign-input--date"
-              [(ngModel)]="startDate"
-              (ngModelChange)="onStartDateChange()"
-            />
-
-            <span class="input-icon-right calendar-icon"></span>
+        <!-- One client chosen beforehand (client profile) -->
+        <div class="am-preset" *ngIf="locked">
+          <div class="am-client am-client--static" *ngFor="let client of clients">
+            <span class="am-avatar">
+              <img *ngIf="avatar(client); else presetInitials" [src]="avatar(client)" [alt]="name(client)" />
+              <ng-template #presetInitials>{{ initials(client) }}</ng-template>
+            </span>
+            <span class="am-client-text">
+              <span class="am-client-name">{{ name(client) }}</span>
+              <span class="am-client-email">{{ client.email }}</span>
+            </span>
           </div>
         </div>
 
-        <div>
-          <label class="assign-label">{{ 'END_DATE' | translate }} <span class="auto-note">({{ 'AUTO_CALCULATED' | translate }})</span></label>
-          <div class="date-wrapper">
-            <span class="input-icon-left calendar-icon"></span>
-
-            <input
-              type="date"
-              class="assign-input assign-input--date"
-              [(ngModel)]="endDate"
-              disabled
-            />
-
-            <span class="input-icon-right calendar-icon"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SEARCH -->
-    <div class="assign-section">
-      <div class="input-wrapper input-wrapper--blue">
-        <span class="input-icon-left search-icon"></span>
-        <input
-          type="text"
-          class="assign-input assign-input--blue"
-          [placeholder]="'SEARCH_CLIENTS' | translate"
-          [(ngModel)]="searchTerm"
-        />
-      </div>
-    </div>
-
-    <!-- LISTE DES CLIENTS -->
-    <div class="assign-clients">
-      <div
-        class="client-card"
-        *ngFor="let c of filteredClients"
-        [class.selected]="c.selected"
-        (click)="onToggleClient(c)"
-      >
-        <div class="client-check" [class.client-check--checked]="c.selected">
-          <span *ngIf="c.selected" class="check-icon">✔</span>
-        </div>
-
-        <img
-          class="client-avatar"
-          src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
-          [alt]="c.name"
-        />
-
-        <div class="client-info">
-          <div class="client-name">
-            {{ c.firstName }} {{ c.lastName }}
-            <span class="conflict-badge" *ngIf="hasClientConflict(c)">{{ 'CONFLICT' | translate }}</span>
-          </div>
-          <div class="client-email">{{ c.email }}</div>
-        </div>
-      </div>
-
-      <div *ngIf="clientsLoading" class="no-results">
-        {{ 'LOADING' | translate }}
-      </div>
-      <div *ngIf="!clientsLoading && filteredClients.length === 0" class="no-results">
-        {{ 'NO_CLIENTS_FOUND' | translate }}
-      </div>
-    </div>
-
-    <!-- SELECTED RECIPIENTS -->
-    <div class="assign-summary" *ngIf="selectedClients.length > 0">
-      <div class="summary-left">
-        <div class="summary-check">✔</div>
-      </div>
-
-      <div class="summary-right">
-        <div class="summary-title">{{ 'SELECTED_RECIPIENTS' | translate }}</div>
-
-        <div class="summary-chips">
-          <!-- Chips dynamiques -->
-          <div class="chip" *ngFor="let c of selectedClients">
-            <img
-              src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=256&q=80"
-              [alt]="c.login"
-              class="chip-avatar"
-            />
-            <span class="chip-label">{{ c.firstName }} {{ c.lastName }}</span>
-            <button
-              class="chip-remove"
-              type="button"
-              (click)="onRemoveClientFromChips(c.id); $event.stopPropagation()"
-            >
-              ✕
+        <!-- The active clients (A1) -->
+        <section class="am-clients" *ngIf="!locked">
+          <div class="am-clients-head">
+            <span class="am-section-label">{{ 'ASSIGN_FLOW.CLIENTS' | translate }}</span>
+            <button type="button" class="am-link" (click)="toggleAllFiltered()" *ngIf="filteredClients.length > 1">
+              {{ (allFilteredSelected ? 'ASSIGN_FLOW.UNSELECT_ALL' : 'ASSIGN_FLOW.SELECT_ALL') | translate }}
             </button>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- CONFLICTS -->
-    <div class="assign-conflicts" *ngIf="hasConflicts">
-      <div class="conflict-heading">
-        <span class="conflict-heading-icon">!</span>
-        <span>{{ 'SCHEDULE_CONFLICTS_DETECTED' | translate }}</span>
-      </div>
+          <label class="am-search">
+            <i-feather name="search"></i-feather>
+            <input type="search" [placeholder]="'SEARCH_CLIENTS' | translate" [(ngModel)]="searchTerm" />
+          </label>
 
-      <div class="conflict-card" *ngFor="let conflict of conflicts">
-        <div class="conflict-person">
-          <div>
-            <div class="conflict-client">{{ getClientDisplayName(conflict.client) }}</div>
-            <div class="conflict-program">
-              {{ getProgramName(conflict.program) }}
-              ({{ formatDate(conflict.program.startDate) }} - {{ formatDate(conflict.program.endDate) }})
-            </div>
-          </div>
-        </div>
+          <ul class="am-list" role="listbox" aria-multiselectable="true">
+            <li
+              *ngFor="let client of filteredClients"
+              class="am-client"
+              role="option"
+              [attr.aria-selected]="isSelected(client)"
+              [class.is-selected]="isSelected(client)"
+              (click)="toggle(client)"
+            >
+              <span class="am-check" [class.is-on]="isSelected(client)">
+                <i-feather *ngIf="isSelected(client)" name="check"></i-feather>
+              </span>
+              <span class="am-avatar">
+                <img *ngIf="avatar(client); else listInitials" [src]="avatar(client)" [alt]="name(client)" />
+                <ng-template #listInitials>{{ initials(client) }}</ng-template>
+              </span>
+              <span class="am-client-text">
+                <span class="am-client-name">{{ name(client) }}</span>
+                <span class="am-client-email">{{ client.email }}</span>
+                <ng-container *ngIf="isSelected(client)">
+                  <span class="am-client-change" *ngFor="let line of linesFor(client)">
+                    <i-feather name="alert-circle"></i-feather>{{ line }}
+                  </span>
+                  <span class="am-client-change am-client-change--error" *ngIf="errorFor(client) as code">
+                    <i-feather name="x-circle"></i-feather>{{ 'ASSIGN_FLOW.REASON_' + code | translate }}
+                  </span>
+                </ng-container>
+              </span>
+            </li>
 
-        <label class="resolution-option" [class.selected]="conflict.resolution === 'START_AFTER'">
-          <input
-            type="radio"
-            [name]="'resolution-' + conflict.client.id"
-            [checked]="conflict.resolution === 'START_AFTER'"
-            (change)="setConflictResolution(conflict, 'START_AFTER')"
-          />
-          <span>
-            <strong>{{ 'START_AFTER_CURRENT_PROGRAM' | translate }}</strong>
-            <small>{{ 'START_AFTER_CURRENT_PROGRAM_DESCRIPTION' | translate }}</small>
-          </span>
-        </label>
-
-        <label class="resolution-option" [class.selected]="conflict.resolution === 'REPLACE'">
-          <input
-            type="radio"
-            [name]="'resolution-' + conflict.client.id"
-            [checked]="conflict.resolution === 'REPLACE'"
-            (change)="setConflictResolution(conflict, 'REPLACE')"
-          />
-          <span>
-            <strong>{{ 'REPLACE_CURRENT_PROGRAM' | translate }}</strong>
-            <small>{{ 'REPLACE_CURRENT_PROGRAM_DESCRIPTION' | translate }}</small>
-          </span>
-        </label>
-
-      </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="assign-footer">
-      <div class="footer-count">
-        {{ selectedCount }}
-        {{ selectedCount === 1 ? ('CLIENT_SELECTED' | translate) : ('CLIENTS_SELECTED' | translate) }}
+            <li class="am-empty" *ngIf="clientsLoading">{{ 'LOADING' | translate }}</li>
+            <li class="am-empty" *ngIf="!clientsLoading && filteredClients.length === 0">
+              {{ (searchTerm ? 'NO_CLIENTS_FOUND' : 'ASSIGN_FLOW.NO_ACTIVE_CLIENT') | translate }}
+            </li>
+          </ul>
+        </section>
       </div>
 
-      <div class="footer-actions">
-        <button
-          type="button"
-          class="btn-footer btn-footer--cancel"
-          (click)="onCancel()"
-        >
-          {{ 'CANCEL' | translate }}
+      <footer class="am-foot">
+        <span class="am-count" *ngIf="!locked">
+          {{ (selectedIds.length === 1 ? 'ASSIGN_FLOW.SELECTED_ONE' : 'ASSIGN_FLOW.SELECTED_MANY') | translate: { count: selectedIds.length } }}
+        </span>
+        <span class="am-foot-spacer"></span>
+        <button type="button" class="am-btn am-btn--ghost" (click)="onCancel()" [disabled]="busy">{{ 'CANCEL' | translate }}</button>
+        <button type="button" class="am-btn am-btn--primary" [disabled]="assignDisabled" (click)="onAssign()">
+          <span class="am-spinner" *ngIf="busy" aria-hidden="true"></span>
+          {{ (locked || selectedIds.length <= 1 ? 'ASSIGN_FLOW.ASSIGN' : 'ASSIGN_FLOW.ASSIGN_TO_MANY') | translate: { count: selectedIds.length } }}
         </button>
+      </footer>
+    </ng-container>
 
-        <button
-          type="button"
-          class="btn-footer btn-footer--assign"
-          [disabled]="assignDisabled"
-          (click)="onAssign()"
-        >
-          {{ assignmentButtonLabel }}
-        </button>
+    <ng-template #confirmStep>
+      <div class="am-body">
+        <app-assign-confirm
+          [rows]="confirmRows"
+          [programName]="programName"
+          [startLabel]="schedule.formatDate(startDate)"
+          [busy]="busy"
+          (back)="step = 'select'"
+          (confirm)="doAssign($event)"
+        ></app-assign-confirm>
       </div>
-    </div>
+    </ng-template>
   </div>
 </div>

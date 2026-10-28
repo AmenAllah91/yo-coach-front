@@ -324,12 +324,17 @@ export class NutritionService {
     });
   }
 
-  createNutritionPlan(plan: MealPlan): Observable<MealPlan> {
-    return this.http.post<MealPlan>(`${this.mealPlanUrl}`, plan);
+  /** quiet: the editor shows its own "Saving…" state (same as the workout builder), no full-screen loader. */
+  createNutritionPlan(plan: MealPlan, quiet = false): Observable<MealPlan> {
+    return this.http.post<MealPlan>(`${this.mealPlanUrl}`, plan, quiet ? { headers: { 'X-Skip-Loader': 'true' } } : {});
   }
 
-  updateNutritionPlan(plan: MealPlan): Observable<MealPlan> {
-    return this.http.put<MealPlan>(`${this.mealPlanUrl}`, plan);
+  /** {@code overlap}: the coach's choice when the plan grew over the next one (backlog-programmes.md P9). */
+  updateNutritionPlan(plan: MealPlan, quiet = false, overlap?: 'SHIFT' | 'REMOVE' | null): Observable<MealPlan> {
+    return this.http.put<MealPlan>(`${this.mealPlanUrl}`, plan, {
+      ...(quiet ? { headers: { 'X-Skip-Loader': 'true' } } : {}),
+      ...(overlap ? { params: { overlap } } : {}),
+    });
   }
   assignNutritionPlan(plan: any): Observable<NutritionPlan> {
     return this.http.put<NutritionPlan>(`${this.mealPlanUrl}assign`, plan);
@@ -419,11 +424,12 @@ export class NutritionService {
     });
   }
 
-  updateNutritionPlanDates(id: string, startDate: string, endDate: string): Observable<NutritionPlan> {
+  /** « Modifier les dates » (backlog-programmes.md CD-01): the next plans are shifted unless `overlap` is REMOVE. */
+  updateNutritionPlanDates(id: string, startDate: string, endDate: string, overlap: 'SHIFT' | 'REMOVE' = 'SHIFT'): Observable<NutritionPlan> {
     return this.http.patch<NutritionPlan>(`${this.mealPlanUrl}${id}/dates`, {
       startDate,
       endDate,
-    });
+    }, { params: { overlap } });
   }
 
   getNutritionPlanByCoachIdAndClient(

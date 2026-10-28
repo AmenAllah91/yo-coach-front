@@ -1,6 +1,17 @@
+import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
+import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
+import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner.component';
+import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
+import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
-import { Component, OnInit } from '@angular/core';
-import { ReadyWeeksModalComponent } from '@shared/components/ready-weeks-modal/ready-weeks-modal.component';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { NutritionClientMode } from '../nutrition-client-mode';
+import { OverlapChoice, ProgramOverflowComponent } from '@shared/components/program-overflow/program-overflow.component';
+import { LockedProgramBannerComponent } from '@shared/components/locked-program-banner/locked-program-banner.component';
+import { ClientService } from 'app/service/client.service';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ToastService } from 'app/service/toast.service';
+import { EmptyDaysModalComponent } from '@shared/components/empty-days-modal/empty-days-modal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -15,17 +26,17 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent, ReadyWeeksModalComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
   templateUrl: './create-macro-plan.component.html',
-  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss'],
+  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss'],
 })
 export class CreateMacroPlanComponent implements OnInit {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
-  /** Used by the toolbar "Save draft" (through the ready-weeks check of the draft state). */
-  readonly savePlanFn = (publishWeeks?: number[]) => this.savePlan(publishWeeks);
+  /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
+  readonly savePlanFn = () => this.savePlan();
 
-  draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL', () => this.translate.currentLang, this.router);
+  draft = new NutritionDraftState(this.nutritionService, this.route, 'EACH_MEAL', () => this.translate.currentLang, this.router, (key, params) => this.translate.instant(key, params));
 
   planName = '';
   planDescription = '';
@@ -59,8 +70,29 @@ export class CreateMacroPlanComponent implements OnInit {
     private route: ActivatedRoute,
     private nutritionService: NutritionService,
     private coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private clientService: ClientService,
+    private toastService: ToastService,
+    private dayClipboard: ProgramDayClipboardService,
+    public programSchedule: ProgramScheduleService,
   ) {}
+
+  /** A client's plan (route `clients/create-macro-plan/:idClient`): dates, client, read-only, P9 (backlog-programmes.md ED). */
+  readonly clientMode = new NutritionClientMode(this.route, this.router, this.clientService, this.programSchedule,
+    this.nutritionService, this.toastService, this.translate);
+  /** « Copier vers… », « Dupliquer la semaine », « Copier le jour » / « Coller sur… » of the day rail. */
+  readonly copy = nutritionCopyController(this, 'nutrition:MEAL_MACROS', (day) => this.updateDayTotals(day), this.dayClipboard, this.toastService, this.translate);
+  @ViewChild(ProgramOverflowComponent) overflow?: ProgramOverflowComponent;
+
+  /** « Décaler » or « Retirer » chosen (P9): the save goes on with it. */
+  onOverflowChosen(choice: OverlapChoice): void {
+    this.draft.overlap = choice;
+    this.savePlanFn();
+  }
+
+  duplicateLocked(): void {
+    this.clientMode.duplicateLocked(this.draft.currentPlanId, 'nutrition/create-macro-plan/');
+  }
 
   dayLabel(index: number): string { return this.translate.instant('DAY_NUMBER', { number: index + 1 }); }
   mealCountLabel(count: number): string { return this.translate.instant(count === 1 ? 'MEAL_COUNT_ONE' : 'MEAL_COUNT_MANY', { count }); }
@@ -195,6 +227,7 @@ export class CreateMacroPlanComponent implements OnInit {
     this.planName = this.route.snapshot.queryParamMap.get('name') || '';
     this.scheduleStartDate = this.route.snapshot.queryParamMap.get('startDate') || '';
     this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
+    this.clientMode.init(this.draft, () => this.overflow ? this.overflow.askWhenChecked() : false);
 
     if (this.planId) {
       this.isEditMode = true;
@@ -207,6 +240,7 @@ export class CreateMacroPlanComponent implements OnInit {
       this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
       this.resizeDraftDays(this.durationWeeks, false);
       this.selectedDay = this.days[0] || null;
+      this.clientMode.refreshDates(this.days);
       if (this.planName.trim()) this.savePlan();
     }
 }
@@ -262,9 +296,9 @@ export class CreateMacroPlanComponent implements OnInit {
         ? Boolean((plan as any).isMealPlanTemplate)
         : false;
       this.days = plan.mealDays || [];
-      this.durationWeeks = this.normalizeDurationWeeks(
-        Math.ceil((this.days.length || 28) / 7)
-      );
+      this.clientMode.load(plan, this.days, () => this.emptyClientDay());
+      // Not full weeks (an older program): no length preselected, so that choosing one resizes it.
+      this.durationWeeks = this.days.length % 7 ? 0 : this.normalizeDurationWeeks(Math.ceil((this.days.length || 28) / 7));
 
       // Fix IDs if backend returns null
       this.days.forEach((d) => {
@@ -273,8 +307,15 @@ export class CreateMacroPlanComponent implements OnInit {
       });
 
       this.days.forEach((d) => this.updateDayTotals(d));
-      this.selectedDay = this.days[0];
+      this.selectedDay = this.clientMode.requestedDay(this.days) || this.days[0];
+      this.draft.collapsedWeeks.delete(this.draft.selectedWeek(this.days, this.selectedDay));
     });
+  }
+
+  /** An empty day added to an older client plan, up to its saved end. */
+  private emptyClientDay(): MealDay {
+    return { id: crypto.randomUUID(), date: '', dayOfWeek: `Day ${this.days.length + 1}`, cheatMeal: false, refeedDay: false,
+      description: '', showDescription: false, meals: [], dayTargets: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 } };
   }
 
   /* ===================================================
@@ -312,6 +353,7 @@ export class CreateMacroPlanComponent implements OnInit {
     } else {
       this.addMeal();
     }
+    this.clientMode.refreshDates(this.days);
   }
 
   onDurationWeeksChange(value: number) {
@@ -323,7 +365,7 @@ export class CreateMacroPlanComponent implements OnInit {
     if (targetDays < this.days.length) {
       this.pendingDurationWeeks = nextWeeks;
       this.pendingDurationRemovedDays = this.days.length - targetDays;
-      this.durationWeeks = currentWeeks;
+      this.durationWeeks = this.days.length % 7 ? 0 : currentWeeks;
       return;
     } else {
       while (this.days.length < targetDays) {
@@ -346,6 +388,7 @@ export class CreateMacroPlanComponent implements OnInit {
     const selectedId = this.selectedDay?.id;
 
     this.days = this.days.slice(0, targetDays);
+    this.clientMode.refreshDates(this.days);
     this.durationWeeks = nextWeeks;
     this.pendingDurationWeeks = null;
     this.pendingDurationRemovedDays = 0;
@@ -370,11 +413,14 @@ export class CreateMacroPlanComponent implements OnInit {
 
     this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
     this.selectedDay = this.days[Math.max(0, i - 1)];
+    this.clientMode.refreshDates(this.days);
   }
 
   onDropDay(event: CdkDragDrop<MealDay[]>) {
+    if (this.draft.readOnly) return;
     moveItemInArray(this.days, event.previousIndex, event.currentIndex);
     this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
+    this.clientMode.refreshDates(this.days);
   }
 
   onDropMeal(event: CdkDragDrop<Meal[]>) {
@@ -412,11 +458,25 @@ export class CreateMacroPlanComponent implements OnInit {
     this.days.forEach((d, idx) => (d.dayOfWeek = `Day ${idx + 1}`));
     this.selectedDay = dup;
     this.updateDayTotals(dup);
+    this.clientMode.refreshDates(this.days);
   }
 
   /* ===================================================
       MEALS
   ======================================================*/
+  /** « Jour libre »: no meals nor targets that day (the client sees a free day). */
+  toggleCheatMeal(): void {
+    if (!this.selectedDay || this.draft.readOnly) return;
+    const cheatMeal = !this.selectedDay.cheatMeal;
+    this.selectedDay.cheatMeal = cheatMeal;
+    if (cheatMeal) {
+      this.selectedDay.refeedDay = false;
+      this.selectedDay.meals = [];
+    } else if (!this.selectedDay.meals?.length) {
+      this.addMeal();
+    }
+  }
+
   addMeal() {
     if (!this.selectedDay) return;
 
@@ -467,16 +527,18 @@ export class CreateMacroPlanComponent implements OnInit {
   /* ===================================================
       SAVE (CREATE OR UPDATE)
   ======================================================*/
-  savePlan(publishWeek?: number | number[]) {
+  savePlan() {
     this.days.forEach(day => this.updateDayTotals(day));
+    this.clientMode.refreshDates(this.days);
 
     const plan = {
       name: this.planName, details: this.planDescription, mealDays: this.days,
       trackingMode: 'EACH_MEAL', coach: { id: this.userId }, client: null,
       startDate: '', endDate: '',
       isMealPlanTemplate: this.canCreateTemplate && this.isMealPlanTemplate,
+      ...(this.clientMode.active ? this.clientMode.planFields() : {}),
     } as MealPlan;
-    this.draft.save(plan, publishWeek);
+    this.draft.save(plan, this.savePlanFn);
   }
 
   resetForm() {
@@ -493,12 +555,13 @@ export class CreateMacroPlanComponent implements OnInit {
     if (count < this.days.length && confirmRemoval && !confirm('Shortening the program will remove the final days. Continue?')) return;
     while (this.days.length < count) this.addDay();
     this.days = this.days.slice(0, count);
+    this.clientMode.refreshDates(this.days);
     this.durationWeeks = weeks;
     if (!this.days.includes(this.selectedDay!)) this.selectedDay = this.days[0];
   }
 
   /** Standard application back action used by the shared Workout/Nutrition header. */
   goBack(): void {
-    window.history.back();
+    if (!this.clientMode.goBack()) window.history.back();
   }
 }

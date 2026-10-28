@@ -1,0 +1,173 @@
+<main class="terms">
+  <header class="terms__header">
+    <div class="terms__container terms__header-inner">
+      <a class="terms__brand" href="https://yo-coach.app" target="_blank" rel="noopener">YoCoach</a>
+      <div class="terms__lang" role="group" aria-label="Langue / Language">
+        <button type="button" [class.is-active]="lang === 'fr'" (click)="setLang('fr')">FR</button>
+        <button type="button" [class.is-active]="lang === 'en'" (click)="setLang('en')">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="terms__container terms__layout">
+    <nav class="terms__toc" aria-label="Sommaire">
+      <ng-container *ngIf="lang === 'fr'">
+        <a href="#objet">1. Objet</a>
+        <a href="#donnees">2. Données collectées</a>
+        <a href="#usage">3. Utilisation de vos données</a>
+        <a href="#roles">4. Coach et YoCoach</a>
+        <a href="#conservation">5. Conservation et sécurité</a>
+        <a href="#droits">6. Vos droits</a>
+        <a href="#regles">7. Règles d’utilisation</a>
+        <a href="#contact">Contact</a>
+      </ng-container>
+      <ng-container *ngIf="lang === 'en'">
+        <a href="#objet">1. Purpose</a>
+        <a href="#donnees">2. Data collected</a>
+        <a href="#usage">3. How your data is used</a>
+        <a href="#roles">4. Coach and YoCoach</a>
+        <a href="#conservation">5. Retention and security</a>
+        <a href="#droits">6. Your rights</a>
+        <a href="#regles">7. Rules of use</a>
+        <a href="#contact">Contact</a>
+      </ng-container>
+    </nav>
+
+    <article class="terms__content">
+      <!-- ================= FR ================= -->
+      <ng-container *ngIf="lang === 'fr'">
+        <p class="terms__eyebrow">Formulaires de contact et sites des coachs</p>
+        <h1>Conditions d’utilisation</h1>
+        <p class="terms__updated">Dernière mise à jour : 27 octobre 2026</p>
+        <p class="terms__intro">
+          Ces conditions s’appliquent lorsque vous envoyez un message à un coach par un formulaire de contact ou un site
+          hébergé par YoCoach. YoCoach est une plateforme de coaching exploitée par Kamdigis.
+          En envoyant le formulaire, vous acceptez les conditions ci-dessous.
+        </p>
+
+        <section id="objet">
+          <h2>1. Objet</h2>
+          <p>Le formulaire permet de contacter un coach indépendant qui utilise YoCoach pour gérer son activité. Il ne crée aucun compte et n’engage aucun paiement. Le coach vous répond directement, par email, téléphone ou WhatsApp selon ce que vous avez indiqué.</p>
+        </section>
+
+        <section id="donnees">
+          <h2>2. Données collectées</h2>
+          <p>Seules les informations que vous saisissez sont enregistrées :</p>
+          <ul>
+            <li>votre nom ou prénom ;</li>
+            <li>votre adresse email et/ou votre numéro de téléphone ;</li>
+            <li>votre message ou votre objectif, si vous en indiquez un ;</li>
+            <li>la date de l’envoi et le coach destinataire.</li>
+          </ul>
+          <p>Pour protéger le coach contre les envois automatisés, le nombre de messages envoyés depuis une même connexion est limité. Aucun cookie publicitaire n’est déposé par cette page.</p>
+        </section>
+
+        <section id="usage">
+          <h2>3. Utilisation de vos données</h2>
+          <p>Vos données servent uniquement à transmettre votre demande au coach et à lui permettre de vous répondre. Le coach peut ensuite vous proposer de devenir son client : vous recevez alors une invitation par email que vous êtes libre d’accepter ou d’ignorer.</p>
+          <p>Vos données ne sont ni vendues, ni transmises à des tiers à des fins publicitaires.</p>
+        </section>
+
+        <section id="roles">
+          <h2>4. Coach et YoCoach</h2>
+          <p>Le coach que vous contactez est responsable du traitement de votre demande. YoCoach héberge le formulaire et stocke les messages pour le compte du coach, en tant que prestataire technique. Les prestataires d’hébergement de YoCoach interviennent uniquement pour faire fonctionner le service.</p>
+        </section>
+
+        <section id="conservation">
+          <h2>5. Conservation et sécurité</h2>
+          <p>Votre demande reste visible par le coach tant qu’il en a besoin pour vous répondre et assurer son suivi. Il peut la refuser ou la supprimer à tout moment. Les données sont transmises de façon chiffrée (HTTPS) et stockées sur des serveurs sécurisés.</p>
+        </section>
+
+        <section id="droits">
+          <h2>6. Vos droits</h2>
+          <p>Vous pouvez demander l’accès, la correction ou la suppression de vos données, ou vous opposer à leur utilisation. Adressez-vous d’abord au coach que vous avez contacté ; vous pouvez aussi écrire à YoCoach (voir Contact). Nous répondons dans un délai raisonnable, après vérification de votre identité si nécessaire.</p>
+        </section>
+
+        <section id="regles">
+          <h2>7. Règles d’utilisation</h2>
+          <ul>
+            <li>N’utilisez le formulaire que pour une demande réelle de coaching ou d’information.</li>
+            <li>N’indiquez pas de données sensibles (état de santé détaillé, informations bancaires) dans le message : le coach vous les demandera plus tard, de façon sécurisée, s’il en a besoin.</li>
+            <li>Les envois abusifs, automatisés ou publicitaires sont bloqués et peuvent être signalés.</li>
+          </ul>
+          <p>YoCoach peut mettre à jour ces conditions ; la date en haut de page indique la version en vigueur.</p>
+        </section>
+
+        <section id="contact" class="terms__contact">
+          <h2>Contact</h2>
+          <p><strong>YoCoach</strong> — exploité par Kamdigis, Tunisie.</p>
+          <p><a href="mailto:yocoach.support@gmail.com">yocoach.support&#64;gmail.com</a></p>
+        </section>
+      </ng-container>
+
+      <!-- ================= EN ================= -->
+      <ng-container *ngIf="lang === 'en'">
+        <p class="terms__eyebrow">Coach contact forms and websites</p>
+        <h1>Terms of use</h1>
+        <p class="terms__updated">Last updated: 27 October 2026</p>
+        <p class="terms__intro">
+          These terms apply when you send a message to a coach through a contact form or a website hosted by YoCoach.
+          YoCoach is a coaching platform operated by Kamdigis. By sending the form, you accept the terms below.
+        </p>
+
+        <section id="objet">
+          <h2>1. Purpose</h2>
+          <p>The form lets you reach an independent coach who uses YoCoach to run their business. It creates no account and involves no payment. The coach answers you directly, by email, phone or WhatsApp depending on what you provided.</p>
+        </section>
+
+        <section id="donnees">
+          <h2>2. Data collected</h2>
+          <p>Only what you type is stored:</p>
+          <ul>
+            <li>your name or first name;</li>
+            <li>your email address and/or phone number;</li>
+            <li>your message or goal, if you give one;</li>
+            <li>the date of sending and the coach who receives it.</li>
+          </ul>
+          <p>To protect the coach from automated submissions, the number of messages sent from one connection is limited. This page sets no advertising cookies.</p>
+        </section>
+
+        <section id="usage">
+          <h2>3. How your data is used</h2>
+          <p>Your data is used only to pass your request to the coach and let them answer you. The coach may then invite you to become their client: you receive an email invitation that you are free to accept or ignore.</p>
+          <p>Your data is never sold or shared with third parties for advertising.</p>
+        </section>
+
+        <section id="roles">
+          <h2>4. Coach and YoCoach</h2>
+          <p>The coach you contact is responsible for handling your request. YoCoach hosts the form and stores the messages on the coach's behalf, as a technical provider. YoCoach's hosting providers only act to run the service.</p>
+        </section>
+
+        <section id="conservation">
+          <h2>5. Retention and security</h2>
+          <p>Your request stays visible to the coach as long as they need it to answer and follow up. They can decline or delete it at any time. Data is sent encrypted (HTTPS) and stored on secured servers.</p>
+        </section>
+
+        <section id="droits">
+          <h2>6. Your rights</h2>
+          <p>You may ask to access, correct or delete your data, or object to its use. Contact the coach first; you may also write to YoCoach (see Contact). We answer within a reasonable time, after checking your identity if needed.</p>
+        </section>
+
+        <section id="regles">
+          <h2>7. Rules of use</h2>
+          <ul>
+            <li>Use the form only for a genuine coaching or information request.</li>
+            <li>Do not put sensitive data (detailed health information, bank details) in the message: the coach will ask for it later, securely, if needed.</li>
+            <li>Abusive, automated or promotional submissions are blocked and may be reported.</li>
+          </ul>
+          <p>YoCoach may update these terms; the date at the top of the page shows the version in force.</p>
+        </section>
+
+        <section id="contact" class="terms__contact">
+          <h2>Contact</h2>
+          <p><strong>YoCoach</strong> — operated by Kamdigis, Tunisia.</p>
+          <p><a href="mailto:yocoach.support@gmail.com">yocoach.support&#64;gmail.com</a></p>
+        </section>
+      </ng-container>
+    </article>
+  </div>
+
+  <footer class="terms__footer">
+    <div class="terms__container">© {{ updated.slice(0, 4) }} YoCoach · Kamdigis</div>
+  </footer>
+</main>

@@ -30,100 +30,168 @@
   }
 }
 
-// Toast Styles
+// Toast Styles: the same look as the app's cards (client « Programmes » tab): white, rounded, a soft icon.
 .toast-container {
   position: fixed;
   top: 1rem;
   right: 1rem;
-  z-index: 10000;
+  z-index: 13000; // above the modals (the assignment one is at 12000)
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-width: 400px;
+  width: min(380px, calc(100vw - 2rem));
 }
 
 .toast {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  border-left: 4px solid;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
   animation: slideIn 0.3s ease-out;
-  min-width: 300px;
 
-  &.toast-success {
-    border-left-color: #10b981;
-    
-    .toast-icon {
-      color: #10b981;
-    }
-  }
-
-  &.toast-error {
-    border-left-color: #ef4444;
-    
-    .toast-icon {
-      color: #ef4444;
-    }
-  }
-
-  &.toast-warning {
-    border-left-color: #f59e0b;
-    
-    .toast-icon {
-      color: #f59e0b;
-    }
-  }
-
-  &.toast-info {
-    border-left-color: #3b82f6;
-    
-    .toast-icon {
-      color: #3b82f6;
-    }
-  }
+  --toast-tone: #0c86c8;
+  --toast-soft: #e7f5fc;
+  &.toast-success { --toast-tone: #16a34a; --toast-soft: #dcfce7; }
+  &.toast-error { --toast-tone: #dc2626; --toast-soft: #fee2e2; }
+  &.toast-warning { --toast-tone: #b45309; --toast-soft: #fef3c7; }
+  &.toast-info { --toast-tone: #0c86c8; --toast-soft: #e7f5fc; }
 }
 
 .toast-icon {
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  margin-top: 0.125rem;
-  font-size: 1.25rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--toast-soft);
+  color: var(--toast-tone);
+  font-size: 15px;
 }
 
 .toast-content {
   flex: 1;
-  
+  min-width: 0;
+  padding-top: 1px;
+
   .toast-title {
+    margin-bottom: 2px;
+    color: #0f172a;
+    font-size: 14px;
     font-weight: 600;
-    color: #111827;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
+    line-height: 1.35;
   }
-  
+
   .toast-message {
-    color: #6b7280;
-    font-size: 0.8125rem;
-    line-height: 1.4;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .toast-details {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 3px;
+
+    li {
+      position: relative;
+      padding-left: 12px;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.45;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.55em;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--toast-tone);
+      }
+    }
+  }
+
+  .toast-hint {
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .toast-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .toast-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+
+    i { font-size: 12px; color: #64748b; }
+    &:hover { border-color: #cbd5e1; background: #f8fafc; }
+    &:focus-visible { outline: 2px solid #3fb1e3; outline-offset: 2px; }
   }
 }
 
 .toast-close {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  font-size: 0.875rem;
-  
-  &:hover {
-    color: #6b7280;
-    background: #f3f4f6;
-  }
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover { color: #475569; background: #f1f5f9; }
+}
+
+// The time left to use the buttons (« Annuler ce changement »: 15 s).
+.toast-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--toast-tone);
+  opacity: 0.35;
+  transform-origin: left center;
+  animation: toastTimer linear forwards;
+}
+
+@keyframes toastTimer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 @keyframes slideIn {

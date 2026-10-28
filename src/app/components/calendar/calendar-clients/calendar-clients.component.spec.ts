@@ -1,40 +1,51 @@
 import { SimpleChange } from '@angular/core';
-import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { Subject, of } from 'rxjs';
 
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ToastService } from 'app/service/toast.service';
+import { ClientTasksService } from 'app/service/client-tasks.service';
 import { CalendarClientsComponent } from './calendar-clients.component';
 
 describe('CalendarClientsComponent (tab of the client profile)', () => {
   let workoutService: jasmine.SpyObj<any>;
   let nutritionService: jasmine.SpyObj<any>;
-  let profileCache: jasmine.SpyObj<any>;
+  let schedule: { calendar: jasmine.Spy; changed$: Subject<void> };
   let settings: any;
 
   beforeEach(() => {
     workoutService = jasmine.createSpyObj('WorkoutService', ['getWorkoutByCoachIdAndClient']);
-    workoutService.getWorkoutByCoachIdAndClient.and.returnValue(of({ content: [] }));
     nutritionService = jasmine.createSpyObj('NutritionService', ['getNutritionPlanByCoachIdAndClient']);
-    nutritionService.getNutritionPlanByCoachIdAndClient.and.returnValue(of({ content: [] }));
-    // Nothing read yet by the profile dashboard: the calendar loads the plans through the shared cache.
-    profileCache = jasmine.createSpyObj('ClientProfileCacheService', ['snapshot', 'isFresh', 'load']);
-    profileCache.snapshot.and.returnValue(null);
-    profileCache.isFresh.and.returnValue(false);
-    profileCache.load.and.returnValue(of([]));
+    schedule = {
+      calendar: jasmine.createSpy('calendar').and.callFake((_: string, from: string, to: string) =>
+        of({ from, to, workoutPlans: [], mealPlans: [] })),
+      changed$: new Subject<void>(),
+    };
     settings = {
       loadConfig: jasmine.createSpy('loadConfig').and.returnValue(of({})),
       shouldUseWorkoutFiles: () => true,
       shouldUseNutritionFiles: () => true,
     };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ProgramScheduleService, useValue: schedule },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error', 'warning', 'info']) },
+        { provide: ClientTasksService, useValue: { calendar: () => of({ items: [], summary: {} }) } },
+      ],
+    });
   });
 
-  it('loads the client programs once, in place, then again when the client changes', () => {
-    const calendar = new CalendarClientsComponent(
-      workoutService, nutritionService, {} as any, {} as any, {} as any, settings, {} as any,
+  it('reads the month on the screen, then the months around, and again for another client (calendar lot B)', () => {
+    const calendar = TestBed.runInInjectionContext(() => new CalendarClientsComponent(
+      workoutService, nutritionService, {} as any, {} as any, settings,
       { instant: (k: string) => k, currentLang: 'fr' } as any,
-      profileCache,
-    );
+      jasmine.createSpyObj('ClientProfileCacheService', ['forget']),
+    ));
     calendar.embeddedClientId = 'client-1';
     calendar.embeddedCoachId = 'coach-1';
     calendar.hideClientFilter = true;
+    calendar.currentDate = new Date(2026, 10, 15);
+    calendar.currentView = 'month';
 
     // Angular order: first ngOnChanges, then ngOnInit.
     calendar.ngOnChanges({
@@ -43,17 +54,25 @@ describe('CalendarClientsComponent (tab of the client profile)', () => {
     });
     calendar.ngOnInit();
 
-    expect(profileCache.load).toHaveBeenCalledTimes(2);
-    expect(profileCache.load).toHaveBeenCalledWith('workouts', 'coach-1', 'client-1');
-    expect(profileCache.load).toHaveBeenCalledWith('nutrition', 'coach-1', 'client-1');
+    const asked = () => schedule.calendar.calls.allArgs().map((args) => args.join(' '));
+    expect(asked()).toEqual([
+      'client-1 2026-11-01 2026-11-30',
+      'client-1 2026-10-01 2026-10-31',
+      'client-1 2026-12-01 2026-12-31',
+    ]);
+    // Never all the client's programs any more.
     expect(workoutService.getWorkoutByCoachIdAndClient).not.toHaveBeenCalled();
     expect(nutritionService.getNutritionPlanByCoachIdAndClient).not.toHaveBeenCalled();
     expect(settings.loadConfig).toHaveBeenCalledWith(true);
     expect(calendar.programsLoaded).toBeTrue();
 
+    // A month already read shows at once: going to December reads only January.
+    schedule.calendar.calls.reset();
+    calendar.goNext();
+    expect(asked()).toEqual(['client-1 2027-01-01 2027-01-31']);
+
     calendar.embeddedClientId = 'client-2';
     calendar.ngOnChanges({ embeddedClientId: new SimpleChange('client-1', 'client-2', false) });
-    expect(profileCache.load).toHaveBeenCalledTimes(4);
-    expect(profileCache.load.calls.mostRecent().args[2]).toBe('client-2');
+    expect(schedule.calendar.calls.mostRecent().args[0]).toBe('client-2');
   });
 });

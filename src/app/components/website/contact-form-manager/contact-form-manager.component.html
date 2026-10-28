@@ -1,113 +1,186 @@
-<section class="grow-page">
-  <header class="grow-header">
+<section class="cf-page">
+  <header class="page-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
-    <div class="grow-header__copy">
-      <h1>{{ 'GROW' | translate }}</h1>
-      <p>{{ 'EXPAND_COACHING_BUSINESS' | translate }}</p>
+    <div class="header-content">
+      <h1>{{ 'CONTACT_FORM' | translate }}</h1>
+      <p>{{ 'CONTACT_FORM_PAGE_SUBTITLE' | translate }}</p>
+    </div>
+    <div class="page-header-actions" *ngIf="form">
+      <button class="cf-button cf-button--primary" type="button" (click)="openPublicForm()" [disabled]="form.published === false">
+        <i-feather name="external-link"></i-feather>{{ 'CONTACT_OPEN_FORM' | translate }}
+      </button>
     </div>
   </header>
 
-  <div class="section-heading">
-    <h2>{{ 'CONTACT_FORM' | translate }}</h2>
-    <div class="heading-actions">
-      <button class="button button--light" type="button" (click)="openCustomize()" [disabled]="!form">
-        <i-feather name="edit-3"></i-feather> {{ 'CUSTOMIZE' | translate }}
-      </button>
-      <button class="button button--light" type="button" (click)="previewSaved()" [disabled]="!form">
-        <i-feather name="external-link"></i-feather> {{ 'PREVIEW_FORM' | translate }}
-      </button>
-    </div>
+  <div class="cf-state" *ngIf="loading">
+    <span class="cf-spinner"></span>{{ 'LOADING_CONTACT_FORM' | translate }}
+  </div>
+  <div class="cf-alert" *ngIf="!loading && !form && error" role="alert">
+    <i-feather name="alert-circle"></i-feather><span>{{ error }}</span>
+    <button class="cf-button" type="button" (click)="load()">{{ 'RETRY' | translate }}</button>
   </div>
 
-  <div class="loading" *ngIf="loading">{{ 'LOADING_CONTACT_FORM' | translate }}</div>
-  <div class="alert" *ngIf="error">{{ error }}</div>
+  <div class="cf-layout" *ngIf="form && !loading">
+    <div class="cf-column">
+      <!-- 1. Share -->
+      <section class="cf-card">
+        <div class="cf-card__head">
+          <span class="cf-step">1</span>
+          <div class="cf-card__title">
+            <h2>{{ 'CONTACT_YOUR_LINK' | translate }}</h2>
+            <p>{{ 'CONTACT_YOUR_LINK_HINT' | translate }}</p>
+          </div>
+          <button
+            type="button"
+            class="status-switch"
+            role="switch"
+            [attr.aria-checked]="form.published !== false"
+            [class.is-on]="form.published !== false"
+            [disabled]="publishing"
+            (click)="togglePublished()"
+          >
+            <span class="status-switch__track"><span class="status-switch__thumb"></span></span>
+            <span>{{ (form.published !== false ? 'CONTACT_ONLINE' : 'CONTACT_OFFLINE') | translate }}</span>
+          </button>
+        </div>
 
-  <div class="contact-overview" *ngIf="form && !loading">
-    <div class="overview-copy">
-      <p class="description">
-        {{ 'CONTACT_FORM_DESCRIPTION' | translate }}
-      </p>
+        <div class="cf-offline-note" *ngIf="form.published === false">
+          <i-feather name="eye-off"></i-feather>{{ 'CONTACT_OFFLINE_HINT' | translate }}
+        </div>
 
-      <div class="link-label">{{ 'LINK' | translate }}</div>
-      <div class="link-row">
-        <div class="link-field"><i-feather name="link-2"></i-feather><span>{{ publicUrl }}</span></div>
-        <button class="button button--primary" type="button" (click)="copyLink()">
-          <i-feather [name]="copied ? 'check' : 'link-2'"></i-feather>
-          {{ (copied ? 'COPIED' : 'COPY_LINK') | translate }}
+        <div class="link-row">
+          <div class="link-field" [class.is-muted]="form.published === false">
+            <i-feather name="link-2"></i-feather>
+            <span>{{ publicUrl }}</span>
+          </div>
+          <button class="cf-button cf-button--primary" type="button" (click)="copyLink()">
+            <i-feather [name]="copied ? 'check' : 'copy'"></i-feather>
+            {{ (copied ? 'COPIED' : 'COPY_LINK') | translate }}
+          </button>
+        </div>
+
+        <div class="share-row">
+          <span>{{ 'CONTACT_SHARE_ON' | translate }}</span>
+          <a class="share-chip" [href]="whatsappShareUrl" target="_blank" rel="noopener noreferrer"><i-feather name="message-circle"></i-feather>WhatsApp</a>
+          <a class="share-chip" [href]="emailShareUrl"><i-feather name="mail"></i-feather>{{ 'EMAIL' | translate }}</a>
+        </div>
+        <p class="cf-tip"><i-feather name="info"></i-feather>{{ 'CONTACT_SHARE_TIP' | translate }}</p>
+      </section>
+
+      <!-- 2. Look -->
+      <section class="cf-card">
+        <div class="cf-card__head">
+          <span class="cf-step">2</span>
+          <div class="cf-card__title">
+            <h2>{{ 'CUSTOMIZE_CONTACT_FORM' | translate }}</h2>
+            <p>{{ 'CONTACT_CUSTOMIZE_HINT' | translate }}</p>
+          </div>
+        </div>
+
+        <!-- Cover: the banner on top of the public form, so the picker is a banner too. -->
+        <div class="cf-field">
+          <span class="cf-label">{{ 'COVER_IMAGE' | translate }}</span>
+          <input #coverInput hidden type="file" [disabled]="saving || processingCover" accept="image/jpeg,image/png,image/webp" (change)="onCoverSelected($event)" />
+          <div class="cover-picker" [class.has-image]="draft.coverImage" [style.backgroundImage]="cssImage(draft.coverImage)">
+            <div class="cover-picker__empty" *ngIf="!draft.coverImage && !processingCover">
+              <i-feather name="image"></i-feather>
+              <span>{{ 'COVER_IMAGE_PLACEHOLDER' | translate }}</span>
+            </div>
+            <div class="cover-picker__busy" *ngIf="processingCover"><span class="cf-spinner"></span>{{ 'UPLOADING' | translate }}</div>
+          </div>
+          <div class="cover-foot">
+            <span class="field-hint">{{ 'COVER_IMAGE_REQUIREMENTS' | translate }}</span>
+            <div class="cover-foot__actions">
+              <button class="cf-button cf-button--small" type="button" [disabled]="saving || processingCover" (click)="triggerUpload()">
+                <i-feather name="upload"></i-feather>{{ (draft.coverImage ? 'CHANGE_IMAGE' : 'UPLOAD_IMAGE') | translate }}
+              </button>
+              <button *ngIf="draft.coverImage" class="cf-button cf-button--small" type="button" [disabled]="saving || processingCover" (click)="removeCover()">
+                <i-feather name="trash-2"></i-feather>{{ 'CONTACT_REMOVE_IMAGE' | translate }}
+              </button>
+            </div>
+          </div>
+          <div class="field-error" *ngIf="uploadError">{{ uploadError }}</div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label" for="contactMessage">{{ 'CONTACT_WELCOME_MESSAGE' | translate }}</label>
+          <textarea
+            id="contactMessage"
+            rows="3"
+            [maxlength]="messageMax"
+            [(ngModel)]="draft.message"
+            [disabled]="saving"
+            [placeholder]="'CONTACT_DEFAULT_MESSAGE' | translate"
+          ></textarea>
+          <div class="cf-field__foot">
+            <span class="field-hint">{{ 'CONTACT_MESSAGE_HINT' | translate }}</span>
+            <span class="field-count" [class.is-limit]="draft.message.length >= messageMax">{{ draft.message.length }}/{{ messageMax }}</span>
+          </div>
+          <div class="field-error" *ngIf="messageError">{{ messageError }}</div>
+        </div>
+
+        <div class="cf-alert cf-alert--inline" *ngIf="error" role="alert"><i-feather name="alert-circle"></i-feather><span>{{ error }}</span></div>
+
+        <footer class="cf-savebar" [class.is-visible]="dirty || saved">
+          <span class="cf-savebar__status">
+            <ng-container *ngIf="dirty"><span class="dot"></span>{{ 'UNSAVED_CHANGES' | translate }}</ng-container>
+            <ng-container *ngIf="!dirty && saved"><i-feather name="check-circle"></i-feather>{{ 'CHANGES_SAVED' | translate }}</ng-container>
+          </span>
+          <div class="cf-savebar__actions" *ngIf="dirty">
+            <button class="cf-button" type="button" [disabled]="saving || processingCover" (click)="resetDraft()">{{ 'CANCEL' | translate }}</button>
+            <button class="cf-button cf-button--primary" type="button" (click)="save()" [disabled]="!canSave">
+              {{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}
+            </button>
+          </div>
+        </footer>
+      </section>
+
+      <!-- 3. Results -->
+      <a class="cf-card cf-card--link" routerLink="/websites/leads" [queryParams]="{ source: 'CONTACT_FORM' }">
+        <div class="leads-stat">
+          <span class="cf-step">3</span>
+          <div>
+            <h2>{{ 'LEADS' | translate }}</h2>
+            <p *ngIf="summary">{{ 'CONTACT_LEADS_SUMMARY' | translate:{ count: summary.contactForm, fresh: summary.newCount } }}</p>
+            <p *ngIf="!summary">{{ 'CONTACT_LEADS_SUMMARY_EMPTY' | translate }}</p>
+          </div>
+        </div>
+        <span class="cf-card__arrow">{{ 'VIEW_LEADS' | translate }}<i-feather name="arrow-right"></i-feather></span>
+      </a>
+    </div>
+
+    <!-- The real public page, rendered with the draft. -->
+    <aside class="cf-preview">
+      <div class="cf-preview__bar">
+        <span class="cf-preview__label"><i-feather name="eye"></i-feather>{{ 'LIVE_PREVIEW' | translate }}</span>
+        <button class="cf-button cf-button--small" type="button" (click)="openPreview()">
+          <i-feather name="maximize-2"></i-feather>{{ 'CONTACT_PREVIEW_EXPAND' | translate }}
         </button>
       </div>
-    </div>
+      <div class="cf-preview__frame">
+        <app-public-contact-form class="is-preview" [preview]="true" [previewForm]="previewForm"></app-public-contact-form>
+      </div>
+    </aside>
+  </div>
 
-    <div class="overview-preview">
-      <div class="browser-frame">
-        <div class="browser-dots"><span></span><span></span><span></span></div>
-        <div class="mini-form">
-          <div class="mini-cover" [style.backgroundImage]="form.coverImage ? 'url(' + form.coverImage + ')' : ''">
-            <span *ngIf="!form.coverImage">{{ 'COVER_IMAGE_PLACEHOLDER' | translate }}</span>
-          </div>
-          <div class="mini-avatar"><i-feather name="user"></i-feather></div>
-          <p>{{ form.message }}</p>
-          <small>{{ form.coachName }}</small>
-          <div class="mini-line"></div><div class="mini-line"></div><div class="mini-box"></div>
-          <div class="mini-button">{{ 'SEND' | translate }}</div>
-        </div>
+  <!-- Full-size preview: desktop or phone, like the visitor's screen. -->
+  <div class="cf-overlay" *ngIf="previewOpen" role="dialog" aria-modal="true" [attr.aria-label]="'LIVE_PREVIEW' | translate">
+    <div class="cf-overlay__bar">
+      <span class="cf-overlay__title"><i-feather name="eye"></i-feather>{{ 'LIVE_PREVIEW' | translate }}</span>
+      <div class="cf-overlay__devices" role="group">
+        <button type="button" [class.is-active]="previewDevice === 'desktop'" [attr.aria-pressed]="previewDevice === 'desktop'" (click)="previewDevice = 'desktop'">
+          <i-feather name="monitor"></i-feather>{{ 'WB_PREVIEW_DESKTOP' | translate }}
+        </button>
+        <button type="button" [class.is-active]="previewDevice === 'mobile'" [attr.aria-pressed]="previewDevice === 'mobile'" (click)="previewDevice = 'mobile'">
+          <i-feather name="smartphone"></i-feather>{{ 'WB_PREVIEW_MOBILE' | translate }}
+        </button>
+      </div>
+      <button class="cf-overlay__close" type="button" (click)="closePreview()"><i-feather name="x"></i-feather>{{ 'CLOSE_PREVIEW' | translate }}</button>
+    </div>
+    <div class="cf-overlay__body">
+      <div class="cf-overlay__frame" [class.cf-overlay__frame--mobile]="previewDevice === 'mobile'">
+        <app-public-contact-form class="is-preview" [preview]="true" [previewForm]="previewForm"></app-public-contact-form>
       </div>
     </div>
   </div>
-
-  <!-- Loaded at the same time as the form (it used to wait for it). -->
-  <app-website-leads [embedded]="true"></app-website-leads>
 </section>
-
-<div class="modal-backdrop" *ngIf="modalOpen" (mousedown)="closeCustomize()">
-  <section class="customize-modal" (mousedown)="$event.stopPropagation()" role="dialog" aria-modal="true">
-    <header class="modal-header">
-      <h2>{{ 'CUSTOMIZE_CONTACT_FORM' | translate }}</h2>
-      <button type="button" class="icon-button" (click)="closeCustomize()" [attr.aria-label]="'CLOSE' | translate"><i-feather name="x"></i-feather></button>
-    </header>
-
-    <div class="modal-preview">
-      <div class="browser-frame browser-frame--large">
-        <div class="browser-dots"><span></span><span></span><span></span></div>
-        <div class="mini-form">
-          <div class="mini-cover" [style.backgroundImage]="draft.coverImage ? 'url(' + draft.coverImage + ')' : ''">
-            <span *ngIf="!draft.coverImage">{{ 'COVER_IMAGE_PLACEHOLDER' | translate }}</span>
-          </div>
-          <div class="mini-avatar"><i-feather name="user"></i-feather></div>
-          <p>{{ draft.message }}</p>
-          <small>{{ form?.coachName }}</small>
-          <div class="mini-line"></div><div class="mini-line"></div><div class="mini-box"></div>
-          <div class="mini-button">{{ 'SEND' | translate }}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-fields">
-      <label class="field-title">{{ 'COVER_IMAGE' | translate }}</label>
-      <p class="field-help">{{ 'COVER_IMAGE_REQUIREMENTS' | translate }}</p>
-      <input #coverInput hidden type="file" [disabled]="saving || processingCover" accept="image/jpeg,image/png,image/webp" (change)="onCoverSelected($event)" />
-      <button class="upload-zone" type="button" [disabled]="saving || processingCover" (click)="triggerUpload()">
-        <i-feather name="image"></i-feather>
-        {{ (draft.coverImage ? 'CHANGE_IMAGE' : 'UPLOAD_IMAGE') | translate }}
-      </button>
-      <button class="button button--light" type="button" *ngIf="draft.coverImage || uploadError" (click)="removeCover()" [disabled]="saving || processingCover">{{ 'CONTACT_REMOVE_IMAGE' | translate }}</button>
-      <div class="field-error" *ngIf="uploadError">{{ uploadError }}</div>
-
-      <label class="field-title field-title--message" for="contactMessage">{{ 'MESSAGE' | translate }}</label>
-      <p class="field-help">{{ 'CONTACT_MESSAGE_HINT' | translate }}</p>
-      <textarea id="contactMessage" rows="3" maxlength="500" [(ngModel)]="draft.message" [disabled]="saving"></textarea>
-      <div class="field-error" *ngIf="messageError">{{ messageError }}</div>
-      <div class="field-error" *ngIf="error">{{ error }}</div>
-    </div>
-
-    <footer class="modal-footer">
-      <button class="button button--light" type="button" (click)="previewDraft()"><i-feather name="external-link"></i-feather> {{ 'PREVIEW_FORM' | translate }}</button>
-      <div class="footer-actions">
-        <button class="button button--light" type="button" (click)="closeCustomize()">{{ 'CANCEL' | translate }}</button>
-        <button class="button button--primary" type="button" (click)="save()" [disabled]="!canSave">
-          {{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}
-        </button>
-      </div>
-    </footer>
-  </section>
-</div>

@@ -73,6 +73,28 @@
   }
 }
 
+/* Meal time set by the coach (optional): a small clock pill, in the brand tint. */
+.meal-time {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--yc-primary) 9%, transparent);
+  color: var(--yc-primary);
+  font-size: 11.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  i-feather {
+    width: 12px;
+    height: 12px;
+  }
+}
+
 .open-btn {
   margin-top: 14px;
   height: 48px;
@@ -320,6 +342,13 @@
     .yc-caption {
       font-size: 12.5px;
     }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
   }
 
   &__title-row {

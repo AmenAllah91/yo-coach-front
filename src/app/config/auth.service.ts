@@ -3,56 +3,11 @@ import {KeycloakService} from 'keycloak-angular';
 import {from, Observable} from 'rxjs';
 import {jwtDecode} from "jwt-decode";
 import {environment} from "@env/environment";
+import { isPublicCoachHostname } from './public-coach-host';
 
 export interface AuthConfig {
   redirectUrlLogin: string;
   redirectUrlLogout: string;
-}
-function isPublicCoachHostname(host: string): boolean {
-  if (!host) return false;
-
-  const normalized = host.toLowerCase();
-
-  const privateHosts = [
-    'localhost',
-
-    'integration.yo-coach.app',
-    'www.integration.yo-coach.app',
-
-    'account.yo-coach.app',
-    'www.account.yo-coach.app',
-
-    'login-int.yo-coach.app',
-    'www.login-int.yo-coach.app',
-
-    'login-int.yo-coach.app',
-    'www.login-int.yo-coach.app',
-
-    'minio.yo-coach.app',
-    'www.minio.yo-coach.app',
-
-    'minio-int.yo-coach.app',
-    'www.minio-int.yo-coach.app',
-
-    'minio-console.yo-coach.app',
-    'www.minio-console.yo-coach.app',
-
-    'minio-console-int.yo-coach.app',
-    'www.minio-console-int.yo-coach.app',
-
-    'yo-coach.app',
-    'www.yo-coach.app'
-  ];
-
-  if (normalized.startsWith('localhost')) {
-    return false;
-  }
-
-  if (privateHosts.includes(normalized)) {
-    return false;
-  }
-
-  return normalized.endsWith('.yo-coach.app');
 }
 @Injectable({
   providedIn: 'root'

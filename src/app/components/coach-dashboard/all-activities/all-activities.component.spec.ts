@@ -9,6 +9,7 @@ import { ActivityFeedStateService } from './activity-feed-state.service';
 import { CoachDashboardService } from '../../../service/coach-dashboard.service';
 import { ClientService } from '../../../service/client.service';
 import { ClientActivity } from '../../../models/coach-dashboard.model';
+import { ClientProfileCacheService } from '../../../service/client-profile-cache.service';
 
 const row = (id: string): ClientActivity => ({
   id,
@@ -39,6 +40,8 @@ describe('AllActivitiesComponent', () => {
         { provide: CoachDashboardService, useValue: dashboard },
         { provide: ClientService, useValue: { getActiveClientsForAssignment: () => of([{ id: 'c1', firstName: 'Alice', lastName: 'M' }]) } },
         { provide: ActivatedRoute, useValue: { queryParamMap: params } },
+        // The feed opens workout / nutrition details from the cached plans; not used here.
+        { provide: ClientProfileCacheService, useValue: {} },
       ],
     });
     router = TestBed.inject(Router);

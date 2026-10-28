@@ -19,6 +19,8 @@ const PINNED_STORAGE_KEY = 'sidebarPinned';
 const HOVER_OPEN_DELAY_MS = 80;
 /** Payment screen (SUB-22). */
 export const CHECKOUT_PATH = '/subscription/checkout';
+/** Screen showing one invoice and its amount, paid after a confirmation (SUB-36): /billing/pay?invoiceId=... */
+export const PAY_INVOICE_PATH = '/billing/pay';
 /** Paid branding pages (SUB-27): a lock is shown on them during the trial (decision SUB-03). */
 const BRANDING_PATHS = ['/theme', '/websites/create'];
 
@@ -117,9 +119,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.brandingLocked && BRANDING_PATHS.includes(item.path);
   }
 
+  /** YoSales counts today: 1 = today is the last day, 0 = the trial is over. */
   get trialDaysLeftKey(): string {
-    if (this.trialDaysLeft === 0) return 'TRIAL_LAST_DAY';
-    return this.trialDaysLeft === 1 ? 'TRIAL_ONE_DAY_LEFT' : 'TRIAL_DAYS_LEFT';
+    if (this.trialDaysLeft === 0) return 'COACH_TRIAL_ENDED';
+    return this.trialDaysLeft === 1 ? 'TRIAL_LAST_DAY' : 'TRIAL_DAYS_LEFT';
   }
 
   onUpgradeClick(): void {
@@ -144,11 +147,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     for (const item of this.sidebarItems) {
       if (item.submenu?.length) {
-        const sub = item.submenu.find((s) => {
-          if (!s.path) return false;
-          const normalized = normalizePath(s.path);
-          return currentUrl === normalized || currentUrl.startsWith(normalized + '/');
-        });
+        // The most precise link wins: /forms/manage-checkins is not the /forms templates page.
+        const sub = item.submenu
+          .filter((s) => {
+            if (!s.path) return false;
+            const normalized = normalizePath(s.path);
+            return currentUrl === normalized || currentUrl.startsWith(normalized + '/');
+          })
+          .sort((a, b) => normalizePath(b.path).length - normalizePath(a.path).length)[0];
         if (sub) {
           matchedItem = item;
           matchedSub = sub;

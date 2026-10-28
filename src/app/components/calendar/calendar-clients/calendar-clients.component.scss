@@ -159,11 +159,6 @@
   color: #6b7280;
 }
 
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-}
-
 .month-cell {
   min-height: 120px;
   border: 1px solid #e5e7eb;
@@ -175,10 +170,6 @@
     background-color 0.15s ease,
     box-shadow 0.15s ease,
     border-color 0.15s ease;
-}
-
-.month-cell.has-file-range {
-  z-index: 3;
 }
 
 .month-cell:hover {
@@ -194,10 +185,6 @@
 .month-cell.is-today {
   background-color: #eff6ff;
   border-color: #93c5fd;
-}
-
-.month-cell.is-copied {
-  box-shadow: 0 0 0 2px #44b4df inset;
 }
 
 /* cellule – header */
@@ -354,10 +341,6 @@
   text-overflow: ellipsis;
 }
 
-.program-name {
-  color: #44b4df;
-}
-
 .nutrition-program {
   color: #059669;
 }
@@ -368,49 +351,6 @@
 }
 
 /* badge P / N */
-
-.badge-circle {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background-color: #44b4df;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.badge-circle-coche{
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background-color: #10b981;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.badge-failed{
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background-color: #dc2626;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.badge-nutrition {
-  background-color: #10b981;
-}
 
 /* corps de card */
 
@@ -433,22 +373,6 @@
   flex-shrink: 0;
 }
 
-.exercise-name {
-  font-size: 10px;
-  color: #4b5563;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.more-exercises {
-  font-size: 9px;
-  color: #6b7280;
-  margin-top: 2px;
-  margin-left: 8px;
-  font-style: italic;
-}
-
 /* nutrition infos */
 
 .nutrition-line {
@@ -468,15 +392,6 @@
 }
 
 /* ========= barre "Paste / X" dans grille mois ========= */
-
-.cell-copy-bar {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  display: flex;
-  gap: 4px;
-}
 
 .copy-primary,
 .copy-secondary {
@@ -545,10 +460,6 @@
   border-color: #bfdbfe;
 }
 
-.week-column.is-copied {
-  box-shadow: 0 0 0 2px #44b4df inset;
-}
-
 .week-column-header {
   padding: 10px 10px 8px 10px;
   border-bottom: 1px solid #e5e7eb;
@@ -600,12 +511,6 @@
 }
 
 /* barre copy en bas de la colonne semaine */
-
-.week-copy-bar {
-  padding: 6px 10px 10px 10px;
-  display: flex;
-  gap: 6px;
-}
 
 /* ========= VUE JOUR ========= */
 
@@ -809,7 +714,6 @@
 
 .icon-button,
 .icon-button-circle,
-.icon-button-danger,
 .icon-button-small {
   border: none;
   background: transparent;
@@ -832,14 +736,6 @@
   background: #f3f4f6;
 }
 
-.icon-button-danger {
-  color: #dc2626;
-}
-
-.icon-button-danger:hover {
-  background: #fee2e2;
-}
-
 .icon-button-small {
   font-size: 12px;
 }
@@ -850,119 +746,9 @@
 
 /* ========= REST CARD ========= */
 
-.rest-card {
-  border-radius: 12px;
-  border: 2px dashed #d1d5db;
-  background: #f9fafb;
-  padding: 16px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.rest-card-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.rest-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(68, 180, 223, 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.rest-icon-active {
-  background: #e5e7eb;
-}
-
-.rest-flag-icon {
-  font-size: 20px;
-}
-
-.rest-title {
-  font-weight: 600;
-  color: #111827;
-}
-
-.rest-subtitle {
-  font-size: 13px;
-  color: #6b7280;
-}
-
 /* ========= TOGGLE SWITCH ========= */
 
-.toggle-switch {
-  position: relative;
-  width: 48px;
-  height: 28px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  background: #d1d5db;
-  transition: background 0.2s ease;
-}
-
-.toggle-switch-on {
-  background: #44b4df;
-}
-
-.toggle-knob {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #ffffff;
-  top: 4px;
-  left: 4px;
-  transition: transform 0.2s ease;
-}
-
-.toggle-switch-on .toggle-knob {
-  transform: translateX(20px);
-}
-
 /* ========= REST DAY PANEL ========= */
-
-.rest-day-panel {
-  border-radius: 12px;
-  border: 2px dashed #d1d5db;
-  background: linear-gradient(135deg, #f9fafb, #e5e7eb);
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.rest-day-icon-circle {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 16px;
-  border-radius: 999px;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  color: #4b5563;
-}
-
-.rest-day-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #374151;
-  margin-bottom: 8px;
-}
-
-.rest-day-text {
-  max-width: 420px;
-  margin: 0 auto;
-  font-size: 14px;
-  color: #4b5563;
-}
 
 /* ========= FORM ELEMENTS ========= */
 
@@ -992,107 +778,7 @@
   box-shadow: 0 0 0 2px rgba(68, 180, 223, 0.3);
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
 /* ========= EXERCISE CARDS ========= */
-
-.exercise-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.exercise-card {
-  border-radius: 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-}
-
-.exercise-card-header {
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.exercise-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.exercise-thumbnail {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: #e5e7eb;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  flex: 0 0 auto;
-}
-
-.exercise-thumbnail img,
-.exercise-selector-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.exercise-name {
-  font-weight: 600;
-  color: #111827;
-}
-
-.exercise-type {
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: capitalize;
-}
-
-.exercise-sets {
-  padding: 16px;
-}
-
-.sets-header-row,
-.sets-row {
-  display: grid;
-  grid-template-columns: 60px 1.5fr 2fr 40px;
-  gap: 8px;
-  align-items: center;
-}
-
-.exercise-sets--with-weight .sets-header-row,
-.exercise-sets--with-weight .sets-row {
-  grid-template-columns: 70px 1fr 1fr 2fr 40px;
-}
-
-.sets-header-row {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.sets-row {
-  margin-bottom: 8px;
-}
-
-.sets-col-set {
-  text-align: left;
-}
 
 .set-number {
   font-size: 13px;
@@ -1116,366 +802,19 @@
   color: #ef4444;
 }
 
-.calendar-settype {
-  position: relative;
-  width: 100%;
-}
-
-.calendar-settype__trigger {
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.calendar-settype__trigger:hover,
-.calendar-settype__trigger:focus {
-  border-color: #44b4df;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(68, 180, 223, 0.18);
-}
-
-.calendar-settype__value {
-  min-width: 18px;
-  text-align: center;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.calendar-settype__arrow {
-  font-size: 10px;
-  color: #475569;
-  line-height: 1;
-}
-
-.calendar-settype__menu {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  width: 214px;
-  max-width: min(214px, 70vw);
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
-  padding: 8px 0;
-  z-index: 20;
-}
-
-.calendar-settype__item {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  color: #111827;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.calendar-settype__item:hover {
-  background: #f8fafc;
-}
-
-.calendar-settype__code {
-  width: 18px;
-  text-align: center;
-  font-weight: 800;
-}
-
-.calendar-settype__code--regular {
-  color: #f59e0b;
-}
-
-.calendar-settype__code--warmup {
-  color: #9ca3af;
-}
-
-.calendar-settype__code--dropset {
-  color: #3b82f6;
-}
-
-.calendar-settype__code--failure {
-  color: #ef4444;
-}
-
-.exercise-card.is-superset {
-  border-color: rgba(68, 180, 223, 0.55);
-  background: rgba(68, 180, 223, 0.05);
-}
-
-.calendar-supersetbar {
-  display: flex;
-  justify-content: center;
-  margin: -5px 0 11px;
-}
-
-.calendar-supersetbtn {
-  border: none;
-  border-radius: 6px;
-  background: #111827;
-  color: #ffffff;
-  padding: 7px 13px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.calendar-supersetbtn.is-active {
-  background: #44b4df;
-}
-
-.rest-input-group {
-  display: flex;
-  gap: 8px;
-}
-
-.rest-input-wrapper {
-  flex: 1;
-  position: relative;
-}
-
-.rest-input-label {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.rest-input-wrapper .text-input {
-  padding-left: 36px;
-}
-
-.button-outline-dashed {
-  width: 100%;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 1px solid #21a8e8;
-  background: #eefaff;
-  color: #44b4df;
-  padding: 15px 12px;
-  font-size: 16px;
-  font-weight: 400;
-  cursor: pointer;
-}
-
-.button-outline-dashed:hover {
-  background: #e4f7ff;
-}
-
 .exercise-cardio {
   padding: 16px;
 }
 
 /* ========= NO EXERCISES BLOCK ========= */
 
-.no-exercises-block {
-  text-align: center;
-  padding: 32px 16px;
-  border-radius: 12px;
-  border: 2px dashed #d1d5db;
-  background: #f9fafb;
-  margin-bottom: 16px;
-}
-
-.no-exercises-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 999px;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 8px;
-  font-size: 28px;
-  color: #6b7280;
-}
-
-.no-exercises-title {
-  font-weight: 500;
-  color: #4b5563;
-}
-
-.no-exercises-text {
-  font-size: 13px;
-  color: #9ca3af;
-  margin-top: 4px;
-}
-
 /* ========= EXERCISE SELECTOR ========= */
-
-.exercise-selector {
-  border-radius: 12px;
-  border: 2px solid #44b4df;
-  background: rgba(68, 180, 223, 0.05);
-  padding: 12px;
-}
-
-.exercise-selector-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.exercise-selector-title {
-  font-weight: 600;
-  color: #111827;
-}
-
-.search-wrapper {
-  position: relative;
-  margin-bottom: 14px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 20px;
-  color: #9ca3af;
-  pointer-events: none;
-}
-
-.search-input {
-  min-height: 52px;
-  padding-left: 44px;
-  border-radius: 10px;
-  font-size: 16px;
-}
-
-.exercise-selector-filters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.exercise-filter-select-wrap {
-  position: relative;
-  min-width: 0;
-}
-
-.exercise-filter-select {
-  width: 100%;
-  appearance: none;
-  border: 1px solid #d9e1ea;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #1f2937;
-  min-height: 52px;
-  padding: 0 36px 0 14px;
-  font-size: 16px;
-  outline: none;
-  cursor: pointer;
-}
-
-.exercise-filter-select:focus {
-  border-color: #44b4df;
-  box-shadow: 0 0 0 3px rgba(68, 180, 223, 0.16);
-}
-
-.exercise-filter-chevron {
-  position: absolute;
-  right: 11px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 20px;
-  pointer-events: none;
-}
-
-.exercise-selector-list {
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.exercise-selector-item {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  padding: 8px;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.exercise-selector-item:hover {
-  background: #ffffff;
-  border-color: #44b4df;
-}
-
-.exercise-selector-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: #e5e7eb;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  flex: 0 0 auto;
-}
-
-.exercise-selector-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.exercise-selector-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.exercise-selector-type {
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: capitalize;
-}
-
-.exercise-selector-plus {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #44b4df;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.exercise-selector-empty {
-  text-align: center;
-  padding: 16px;
-  font-size: 13px;
-  color: #6b7280;
-}
 
 /* ========= BUTTONS FOOTER ========= */
 
 .button-secondary,
 .button-save,
-.button-danger,
-.button-primary-full {
+.button-danger {
   border-radius: 10px;
   border: none;
   font-size: 14px;
@@ -1513,24 +852,6 @@
 
 .button-save-text {
   font-size: 14px;
-}
-
-.button-primary-full {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #44b4df;
-  color: #ffffff;
-  box-shadow: 0 4px 8px rgba(17, 24, 39, 0.15);
-}
-
-.button-primary-full:hover {
-  background: #3a9bc1;
-}
-
-.button-primary-icon {
-  margin-right: 6px;
 }
 
 /* ========= DELETE MODAL ========= */
@@ -1598,59 +919,8 @@
   background: #b91c1c;
 }
 
-
-.badge-circle-coche{
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background-color: #10b981;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.badge-failed{
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background-color: #dc2626;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 /* Bouton suppression set dans la grille des sets */
-.sets-row button {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  font-size: 16px;
-  color: #dc2626;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
-}
 
-.sets-row button:hover {
-  background-color: #fee2e2;
-}
-.icon-button-danger {
-  color: #dc2626;
-  background: transparent;
-}
-
-.icon-button-danger:hover {
-  background: #fee2e2;
-}
 /* ========= MODAL OPTIMISÉ - DENSITÉ ========= */
 
 .modal-container {
@@ -1680,30 +950,6 @@
 }
 
 /* Rest card compacte */
-.rest-card {
-  padding: 10px 14px;   /* était 16px */
-  margin-bottom: 14px;  /* était 24px */
-  border-radius: 10px;
-}
-
-.rest-icon-wrapper {
-  width: 32px;   /* était 40px */
-  height: 32px;
-  border-radius: 8px;
-}
-
-.rest-flag-icon {
-  font-size: 16px;  /* était 20px */
-}
-
-.rest-title {
-  font-size: 13px;
-  margin: 0;
-}
-
-.rest-subtitle {
-  font-size: 11px;
-}
 
 /* Form group compact */
 .form-group {
@@ -1720,181 +966,27 @@
   font-size: 13px;
 }
 
-.section-title {
-  font-size: 14px;
-  margin-bottom: 8px;  /* était 12px */
-}
-
 /* Exercise cards compactes */
-.exercise-list {
-  gap: 10px;           /* était 16px */
-  margin-bottom: 10px; /* était 16px */
-}
-
-.exercise-card {
-  border-radius: 10px;
-}
-
-.exercise-card-header {
-  padding: 8px 12px;   /* était 12px 16px */
-}
-
-.exercise-thumbnail {
-  width: 36px;   /* était 48px */
-  height: 36px;
-  border-radius: 8px;
-}
-
-.exercise-name {
-  font-size: 13px;
-}
-
-.exercise-type {
-  font-size: 10px;
-}
 
 /* Sets compacts */
-.exercise-sets {
-  padding: 10px 12px;  /* était 16px */
-}
-
-.sets-header-row,
-.sets-row {
-  grid-template-columns: 44px 1.4fr 2fr 36px;
-  gap: 6px;
-}
-
-.sets-header-row {
-  font-size: 10px;
-  margin-bottom: 6px;
-}
-
-.sets-row {
-  margin-bottom: 6px;
-}
 
 .set-number {
   font-size: 12px;
 }
 
-.rest-input-label {
-  font-size: 10px;
-}
-
-.rest-input-wrapper .text-input {
-  padding-left: 32px;
-  font-size: 12px;
-}
-
-.button-outline-dashed {
-  padding: 6px 12px;  /* était 8px 12px */
-  font-size: 12px;
-  margin-top: 2px;
-}
-
 /* No exercises block compact */
-.no-exercises-block {
-  padding: 20px 16px;  /* était 32px 16px */
-  margin-bottom: 10px;
-}
-
-.no-exercises-icon {
-  width: 48px;   /* était 64px */
-  height: 48px;
-  font-size: 22px;
-  margin-bottom: 6px;
-}
-
-.no-exercises-title {
-  font-size: 13px;
-}
-
-.no-exercises-text {
-  font-size: 11px;
-  margin-top: 2px;
-}
 
 /* Exercise selector compact */
-.exercise-selector {
-  padding: 10px;  /* était 12px */
-}
-
-.exercise-selector-header {
-  margin-bottom: 8px;  /* était 12px */
-}
-
-.exercise-selector-title {
-  font-size: 13px;
-}
-
-.search-wrapper {
-  margin-bottom: 8px;  /* était 12px */
-}
-
-.exercise-selector-list {
-  max-height: 200px;  /* était 260px */
-}
-
-.exercise-selector-item {
-  padding: 6px;       /* était 8px */
-  margin-bottom: 4px; /* était 6px */
-  gap: 8px;
-}
-
-.exercise-selector-thumb {
-  width: 36px;  /* était 44px */
-  height: 36px;
-  border-radius: 8px;
-}
-
-.exercise-selector-name {
-  font-size: 13px;
-}
-
-.exercise-selector-type {
-  font-size: 10px;
-}
-
-.exercise-selector-plus {
-  width: 26px;  /* était 32px */
-  height: 26px;
-  font-size: 14px;
-  border-radius: 6px;
-}
 
 /* Buttons footer compact */
 .button-secondary,
 .button-save,
-.button-danger,
-.button-primary-full {
+.button-danger {
   padding: 7px 14px;  /* était 9px 16px */
   font-size: 13px;
 }
 
-.button-primary-full {
-  padding: 8px 14px;  /* était 9px 16px */
-  font-size: 13px;
-}
-
 /* Rest day panel compact */
-.rest-day-panel {
-  padding: 24px 20px;  /* était 40px 24px */
-}
-
-.rest-day-icon-circle {
-  width: 60px;   /* était 80px */
-  height: 60px;
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-.rest-day-title {
-  font-size: 16px;
-}
-
-.rest-day-text {
-  font-size: 13px;
-}
 
 /* Cardio compact */
 .exercise-cardio {
@@ -1902,53 +994,7 @@
 }
 /* ========= EXERCISE CARD ACTIONS ========= */
 
-.exercise-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.icon-button-video {
-  border: none;
-  background: rgba(68, 180, 223, 0.1);
-  color: #44b4df;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
-  border: 1px solid rgba(68, 180, 223, 0.3);
-}
-
-.icon-button-video:hover {
-  background: rgba(68, 180, 223, 0.2);
-}
-
 /* ========= VIDEO PANEL ========= */
-
-.exercise-video-panel {
-  background: #000000;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.exercise-video-wrapper {
-  position: relative;
-  width: 100%;
-  padding-top: 56.25%; /* ratio 16:9 */
-}
-
-.exercise-video-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
 
 .exercise-video-actions {
   display: flex;
@@ -2001,52 +1047,7 @@
 }
 /* ========= EXERCISE CARD ACTIONS ========= */
 
-.exercise-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.icon-button-video {
-  border: 1px solid rgba(68, 180, 223, 0.3);
-  background: rgba(68, 180, 223, 0.1);
-  color: #44b4df;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
-}
-
-.icon-button-video:hover {
-  background: rgba(68, 180, 223, 0.2);
-}
-
 /* ========= VIDEO PANEL ========= */
-
-.exercise-video-panel {
-  background: #000000;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.exercise-video-wrapper {
-  position: relative;
-  width: 100%;
-  padding-top: 56.25%; /* ratio 16:9 */
-}
-
-.exercise-video-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
 
 .exercise-video-actions {
   display: flex;
@@ -2097,24 +1098,7 @@
 .video-youtube-btn svg {
   color: #dc2626;
 }
-.icon-button-video {
-  border: none;
-  background: #44b4df;
-  color: #ffffff;
-  cursor: pointer;
-  padding: 0;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
-}
 
-.icon-button-video:hover {
-  background: #3a9bc1;
-}
 .week-column-header {
   display: flex;
   justify-content: space-between;
@@ -2146,65 +1130,8 @@
 }
 
 /* Drag handle visual indicator inside cards */
-.drag-handle {
-  cursor: grab;
-  color: #999;
-  font-size: 16px;
-  line-height: 1;
-  user-select: none;
-  padding: 4px 6px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s, background-color 0.15s;
-
-  &:hover {
-    color: #333;
-    background: rgba(0, 0, 0, 0.08);
-  }
-
-  &:active {
-    cursor: grabbing !important;
-    color: #111;
-    background: rgba(0, 0, 0, 0.12);
-  }
-}
-
 
 /* ========= CUSTOM POINTER DRAG FOR CALENDAR WORKOUT DAYS ========= */
-.drag-handle {
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
-
-.card-wrapper.is-pointer-drag-source,
-.day-card-wrapper.is-pointer-drag-source {
-  opacity: 0.35;
-}
-
-.calendar-pointer-drag-active,
-.calendar-pointer-drag-active * {
-  cursor: grabbing !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-}
-
-.calendar-pointer-drag-ghost {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 999999;
-  pointer-events: none;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
-  opacity: 0.96;
-}
 
 .cell-content,
 .week-column-body,
@@ -2212,86 +1139,8 @@
   min-height: 90px;
 }
 
-.cell-content.calendar-drop-target-active,
-.week-column-body.calendar-drop-target-active,
-.day-body.calendar-drop-target-active {
-  outline: 3px dashed #44b4df;
-  outline-offset: -4px;
-  background-color: rgba(68, 180, 223, 0.08);
-}
-
-
 /* ========= PDF / EXCEL workout programs in calendar ========= */
 /* Non-invasive styles: existing workout/nutrition cards stay unchanged. */
-
-.card-file-workout {
-  border-left-width: 4px;
-}
-
-.card-file-pdf {
-  border-color: #ef4444 !important;
-  background-color: rgba(239, 68, 68, 0.08) !important;
-}
-
-.card-file-excel {
-  border-color: #22c55e !important;
-  background-color: rgba(34, 197, 94, 0.08) !important;
-}
-
-.card-file-pdf .card-title {
-  color: #991b1b;
-}
-
-.card-file-excel .card-title {
-  color: #065f46;
-}
-
-.card-file-pdf .program-name {
-  color: #ef4444;
-}
-
-.card-file-excel .program-name {
-  color: #16a34a;
-}
-
-.file-card-inline-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-right: 5px;
-  border-radius: 5px;
-  font-size: 10px;
-  line-height: 1;
-  background: #ffffff;
-  vertical-align: middle;
-}
-
-.card-file-pdf .file-card-inline-icon {
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-
-.card-file-excel .file-card-inline-icon {
-  color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
-.file-calendar-meta {
-  margin-top: 6px;
-  font-size: 9px;
-  color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card.large .file-calendar-meta {
-  font-size: 11px;
-  margin-top: 8px;
-}
-
 
 /* ========= Connected PDF / Excel bars ========= */
 /* This only affects file workout programs. Normal workout days stay unchanged. */
@@ -2300,258 +1149,12 @@
   overflow: hidden;
 }
 
-.month-grid,
 .month-cell,
 .cell-content {
   overflow: visible;
 }
 
-.calendar-month .file-range-wrapper {
-  position: relative;
-  z-index: 5;
-  overflow: visible;
-}
-
-.calendar-month .file-range-placeholder {
-  height: 50px;
-  min-height: 50px;
-  pointer-events: none;
-}
-
-.calendar-month .file-range-wrapper .file-range-card {
-  position: relative;
-  width: calc((100% + 16px) * var(--file-span, 1) - 16px);
-  height: 50px;
-  min-height: 50px;
-  max-height: 50px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-left-width: 0;
-  border-radius: 10px;
-  padding: 10px 12px;
-  box-shadow: none;
-  overflow: hidden;
-}
-
-.calendar-month .file-range-card .card-header {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.calendar-month .file-range-wrapper .file-range-card:hover {
-  transform: none;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-}
-
-.file-range-card .card-header {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin-bottom: 0;
-  align-items: center;
-}
-
-.file-range-card .card-title-block {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.file-range-card .card-title {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.file-range-card .program-name {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.file-range-card .file-calendar-meta {
-  margin: 0 0 0 auto;
-  padding-left: 14px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
-  flex: 0 0 auto;
-}
-
-.file-range-card .file-calendar-meta::after {
-  content: '';
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-left: 10px;
-  border-radius: 999px;
-  vertical-align: middle;
-}
-
-.card-file-pdf.file-range-card .file-calendar-meta::after {
-  background: #ef4444;
-}
-
-.card-file-excel.file-range-card .file-calendar-meta::after {
-  background: #22c55e;
-}
-
-.card-file-pdf.file-range-card {
-  border: 1px solid rgba(239, 68, 68, 0.28) !important;
-  background: rgba(239, 68, 68, 0.075) !important;
-}
-
-.card-file-excel.file-range-card {
-  border: 1px solid rgba(34, 197, 94, 0.28) !important;
-  background: rgba(34, 197, 94, 0.075) !important;
-}
-
-.card-file-pdf.file-range-card .card-title {
-  color: #991b1b;
-}
-
-.card-file-excel.file-range-card .card-title {
-  color: #065f46;
-}
-
-@media (max-width: 900px) {
-  .file-range-wrapper .file-range-card {
-    min-height: 44px;
-    padding: 8px 10px;
-  }
-
-  .file-range-card .card-title {
-    font-size: 11px;
-  }
-
-  .file-range-card .program-name,
-  .file-range-card .file-calendar-meta {
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 640px) {
-  .file-range-card .program-name,
-  .file-range-card .file-calendar-meta {
-    display: none;
-  }
-
-  .file-range-wrapper .file-range-card {
-    min-height: 38px;
-  }
-}
-
-
 /* Week/day views keep one file card inside each day column. */
-
-.calendar-week .file-range-wrapper,
-.calendar-day .file-range-wrapper {
-  z-index: 2;
-  overflow: visible;
-  margin: 0 -1px 4px -1px;
-}
-
-.calendar-week .file-range-wrapper .file-range-card,
-.calendar-day .file-range-wrapper .file-range-card {
-  width: 100% !important;
-  min-height: 42px;
-  height: 42px;
-  padding: 8px 10px;
-  border-radius: 0;
-  box-shadow: none;
-  overflow: hidden;
-}
-
-.calendar-week .file-range-start .file-range-card,
-.calendar-week .file-range-single .file-range-card,
-.calendar-day .file-range-start .file-range-card,
-.calendar-day .file-range-single .file-range-card {
-  border-top-left-radius: 9px;
-  border-bottom-left-radius: 9px;
-}
-
-.calendar-week .file-range-end .file-range-card,
-.calendar-week .file-range-single .file-range-card,
-.calendar-day .file-range-end .file-range-card,
-.calendar-day .file-range-single .file-range-card {
-  border-top-right-radius: 9px;
-  border-bottom-right-radius: 9px;
-}
-
-.calendar-week .file-range-middle .file-range-card,
-.calendar-day .file-range-middle .file-range-card {
-  border-left-color: transparent !important;
-  border-right-color: transparent !important;
-}
-
-.file-range-card .card-header {
-  min-width: 0;
-  width: 100%;
-}
-
-.file-range-card .card-title-block {
-  min-width: 0;
-  width: 100%;
-}
-
-.file-range-card .card-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.calendar-week .file-range-middle .file-range-card .card-title,
-.calendar-day .file-range-middle .file-range-card .card-title {
-  opacity: 0.35;
-}
-
-.file-range-card .program-name {
-  white-space: nowrap;
-}
-
-.file-range-card .file-calendar-meta {
-  margin-left: auto;
-  padding-left: 6px;
-  font-size: 10px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.file-range-card .file-calendar-meta::after {
-  width: 8px;
-  height: 8px;
-  margin-left: 6px;
-}
-
-.calendar-week .file-range-wrapper .file-range-card:hover,
-.calendar-day .file-range-wrapper .file-range-card:hover {
-  transform: none;
-}
-
-@media (max-width: 900px) {
-  .calendar-week .file-range-wrapper .file-range-card,
-  .calendar-day .file-range-wrapper .file-range-card {
-    height: 38px;
-    min-height: 38px;
-    padding: 7px 8px;
-  }
-}
-
-@media (max-width: 700px) {
-  .exercise-selector-filters {
-    grid-template-columns: 1fr;
-  }
-
-  .sets-header-row,
-  .sets-row,
-  .exercise-sets--with-weight .sets-header-row,
-  .exercise-sets--with-weight .sets-row {
-    grid-template-columns: 1fr;
-  }
-
-  .sets-col-actions {
-    justify-self: end;
-  }
-}
 
 /* ========= Calendar visual refresh ========= */
 
@@ -2643,8 +1246,7 @@
   box-shadow: none;
 }
 
-.month-header-row,
-.month-grid {
+.month-header-row {
   min-width: 820px;
 }
 
@@ -2657,11 +1259,6 @@
   color: #0f2a44;
   letter-spacing: 0;
   font-weight: 500;
-}
-
-.month-grid {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: minmax(206px, auto);
 }
 
 .month-cell,
@@ -2709,9 +1306,7 @@
   color: #64748b;
 }
 
-.icon-button .material-icons,
-.drag-handle .material-icons,
-.file-card-inline-icon .material-icons {
+.icon-button .material-icons {
   font-size: 16px;
   line-height: 1;
 }
@@ -2729,7 +1324,7 @@
 }
 
 .card-workout {
-  border-left: 3px solid #35afd8;
+  border-left: 3px solid #44b4df;
   border-top: 1px solid #d9eef7;
   border-right: 1px solid #d9eef7;
   border-bottom: 1px solid #d9eef7;
@@ -2739,7 +1334,7 @@
 
 .card-workout.card-program,
 .card-workout.card-rest-day {
-  border-left-color: #35afd8;
+  border-left-color: #44b4df;
   background: #e7f6fc;
 }
 
@@ -2767,10 +1362,9 @@
   word-break: break-word;
 }
 
-.program-name,
 .card-subtitle {
   font-size: 9px;
-  color: #35afd8;
+  color: #44b4df;
 }
 
 .card-header-right {
@@ -2781,22 +1375,6 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   min-height: 22px;
-}
-
-.drag-handle {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  color: #334155;
-  border-radius: 4px;
-}
-
-.badge-circle,
-.badge-circle-coche,
-.badge-failed {
-  width: 16px;
-  height: 16px;
-  font-size: 9px;
 }
 
 .card-body {
@@ -2813,7 +1391,7 @@
   width: 4px;
   height: 4px;
   margin-top: 4px;
-  background: #35afd8;
+  background: #44b4df;
 }
 
 .exercise-info {
@@ -2823,60 +1401,11 @@
   line-height: 1.25;
 }
 
-.exercise-name {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #0f2a44;
-}
-
 .exercise-summary {
   margin-top: 1px;
   font-size: 8.5px;
   color: #52657a;
   white-space: normal;
-}
-
-.more-exercises {
-  margin-left: 9px;
-  color: #52657a;
-}
-
-.calendar-pointer-drag-ghost {
-  box-sizing: border-box;
-  border-radius: 5px;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.22);
-  transform-origin: top left;
-  overflow: visible;
-  white-space: normal;
-}
-
-.calendar-pointer-drag-ghost .card-header {
-  display: flex;
-  flex-direction: column;
-}
-
-.calendar-pointer-drag-ghost .card-title,
-.calendar-pointer-drag-ghost .exercise-summary {
-  white-space: normal;
-}
-
-.file-range-card .card-header,
-.calendar-pointer-drag-ghost.file-range-card .card-header {
-  display: flex;
-}
-
-.file-range-card .card-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cell-content.calendar-drop-target-active,
-.week-column-body.calendar-drop-target-active,
-.day-body.calendar-drop-target-active {
-  outline: 2px solid #35afd8;
-  outline-offset: -3px;
-  background-color: rgba(53, 175, 216, 0.1);
 }
 
 @media (max-width: 900px) {
@@ -2890,49 +1419,9 @@
   }
 }
 
-.sets-row .calendar-settype__trigger,
-.sets-row .calendar-settype__item {
-  color: inherit;
-  border-radius: inherit;
-}
-
-.sets-row .calendar-settype__trigger {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  padding: 0 12px;
-  color: #111827;
-}
-
-.sets-row .calendar-settype__trigger:hover {
-  background: #ffffff;
-}
-
-.sets-row .calendar-settype__item {
-  justify-content: flex-start;
-  border: 0;
-  background: transparent;
-  padding: 12px 16px;
-  color: #111827;
-}
-
-.sets-row .calendar-settype__item:hover {
-  background: #f8fafc;
-}
-
 /* Final modal polish: keep the selector search icon/input aligned and let set menus escape rows. */
-.exercise-card {
-  overflow: visible !important;
-}
-
-.exercise-card-header {
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-}
 
 /* Final calendar stacking: file programs reserve their own rows, workout days sit below. */
-.calendar-month .month-cell.has-mixed-workout-items {
-  min-height: 260px;
-}
 
 .calendar-month .cell-content,
 .calendar-week .week-column-body,
@@ -2951,42 +1440,11 @@
   min-width: 0;
 }
 
-.calendar-month .file-range-wrapper,
-.calendar-month .file-range-placeholder {
-  flex: 0 0 44px;
-  height: 44px;
-  min-height: 44px;
-  margin: 0 0 2px;
-}
-
-.calendar-month .file-range-wrapper {
-  z-index: 2;
-}
-
-.calendar-month .file-range-placeholder {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.calendar-month .file-range-wrapper .file-range-card {
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  padding: 8px 12px;
-  border-radius: 9px;
-}
-
-.calendar-month .workout-day-wrapper {
-  z-index: 1;
-  flex: 0 0 auto;
-  margin-top: 4px;
-}
-
 .calendar-month .card-workout:not(.file-range-card),
 .calendar-week .card-workout:not(.file-range-card),
 .calendar-day .card-workout:not(.file-range-card) {
   border: 1px solid #b9e4f4;
-  border-left: 3px solid #35afd8;
+  border-left: 3px solid #44b4df;
   background: #e8f7fc;
   box-shadow: none;
 }
@@ -3037,113 +1495,6 @@
   border-top: 1px solid rgba(53, 175, 216, 0.16);
 }
 
-.file-range-card .card-title-block,
-.file-range-card .card-title {
-  min-width: 0;
-}
-
-.file-card-inline-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 18px;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-.card-file-pdf .file-card-inline-icon {
-  background: rgba(239, 68, 68, 0.12);
-  color: #dc2626;
-}
-
-.card-file-excel .file-card-inline-icon {
-  background: rgba(34, 197, 94, 0.13);
-  color: #16a34a;
-}
-
-.calendar-week .file-range-wrapper,
-.calendar-day .file-range-wrapper {
-  margin: 0 0 6px;
-}
-
-.exercise-sets,
-.sets-row,
-.sets-col-set,
-.calendar-settype {
-  overflow: visible !important;
-}
-
-.calendar-settype__menu {
-  z-index: 5000 !important;
-  width: 230px !important;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.sets-row .calendar-settype__trigger {
-  min-height: 42px !important;
-  border-radius: 0 !important;
-  color: #111827 !important;
-}
-
-.sets-row .calendar-settype__item {
-  min-height: 44px !important;
-  border-radius: 0 !important;
-  font-size: 15px !important;
-}
-
-.exercise-selector .search-wrapper {
-  margin-bottom: 12px !important;
-}
-
-.exercise-selector .search-icon {
-  left: 14px !important;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8 !important;
-  font-size: 20px !important;
-  z-index: 2;
-}
-
-.exercise-selector .search-input {
-  min-height: 52px !important;
-  padding: 0 14px 0 44px !important;
-  font-size: 16px !important;
-  line-height: 52px !important;
-  border-radius: 10px !important;
-}
-
-.exercise-selector .exercise-selector-list {
-  max-height: 270px !important;
-  padding-right: 6px;
-}
-
-.exercise-selector .exercise-selector-item {
-  text-align: left !important;
-  justify-content: flex-start !important;
-  min-height: 62px;
-}
-
-.exercise-selector .exercise-selector-text {
-  text-align: left !important;
-}
-
-.exercise-selector .exercise-selector-name,
-.exercise-selector .exercise-selector-type {
-  text-align: left !important;
-}
-.drag-handle,
-.cell-copy-bar,
-.week-copy-bar {
-  display: none !important;
-}
-
 .card.card-empty-day {
   border-style: dashed !important;
   border-color: #c7d5ea !important;
@@ -3152,8 +1503,8 @@
   cursor: pointer;
 }
 
-.card.card-empty-day::after {
-  content: "Empty day";
+/* « Remplir » of an empty day, in the coach's language (it was an English text added by CSS). */
+.card.card-empty-day .card-empty-cta {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3167,29 +1518,18 @@
 }
 
 .card.card-empty-day:hover {
-  border-color: #35afd8 !important;
+  border-color: #44b4df !important;
   background: #f8fdff !important;
   box-shadow: none !important;
 }
 
-.card.card-empty-day:hover::after {
+.card.card-empty-day:hover .card-empty-cta {
   border-color: transparent;
   color: #0f94bd;
   font-weight: 900;
 }
 
-.card-workout.card-empty-day:hover::after {
-  content: "+ Add workout";
-}
-
-.card-nutrition.card-empty-day:hover::after {
-  content: "+ Add nutrition";
-}
-
-.card.card-empty-day .card-header-right,
-.card.card-empty-day .badge-circle,
-.card.card-empty-day .badge-circle-coche,
-.card.card-empty-day .badge-failed {
+.card.card-empty-day .card-header-right {
   display: none !important;
 }
 
@@ -3254,17 +1594,6 @@
   font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
-}
-
-.calendar-program-icon {
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #178fb1;
-  font-size: 15px !important;
-  line-height: 1;
 }
 
 .card.card-rest-day::after {
@@ -3341,5 +1670,1379 @@
 @media (max-width: 640px) {
   .calendar-create-date-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Month and week cards (backlog-programmes.md): the workout's name, its number of exercises and its status, the
+   nutrition day's calories and macros, colored like the client's « Programmes » tab. */
+.calendar-wrapper .card .card-body.cal-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 8px;
+  margin: 6px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+}
+.cal-summary__meta {
+  min-width: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-summary__status {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #64748b;
+  &.is-done { color: #16a34a; }
+  &.is-missed { color: #dc2626; }
+  &.is-partial { color: #d97706; }
+  &.is-today { color: #0c86c8; }
+  &.is-empty { color: #b45309; }
+  &.is-rest { font-weight: 500; }
+}
+.card.card-free-day { background: #f8fafc; }
+
+/* A rest day says it in the coach's language (title « Récupération », status « Jour de repos »), not with an English
+   label added by CSS. */
+.calendar-wrapper .card.card-rest-day::after {
+  content: none;
+  display: none;
+}
+.calendar-wrapper .card.card-rest-day .card-body.cal-summary {
+  display: flex !important;
+}
+
+/* ========= Weeks and PDF / Excel programs (backlog-programmes.md K4) =========
+   Each week is one grid: row 1 the day numbers, one row per file band, the last row the day cards. The days span
+   every row (subgrid), the bands sit over them from their first to their last day of the week. */
+
+.month-weeks {
+  min-width: 820px;
+}
+
+.month-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 206px;
+}
+
+.month-week > .month-cell {
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.month-week > .month-cell > .cell-header {
+  grid-row: 1;
+}
+
+.month-week > .month-cell > .cell-content {
+  grid-row: -2 / -1;
+  min-height: 0;
+}
+
+.calendar-week .week-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.week-grid > .week-column {
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.week-grid > .week-column:nth-child(7) {
+  border-right: none;
+}
+
+.week-grid > .week-column > .week-column-header {
+  grid-row: 1;
+}
+
+.week-grid > .week-column > .week-column-body {
+  grid-row: -2 / -1;
+}
+
+/* The files in the brand's color, all alike: the name, « Début » and « Fin » tell them apart. */
+.cal-band,
+.day-file {
+  --band-bg: #eef7fc;
+  --band-border: #cde9f6;
+  --band-strong: #44b4df;
+  --band-text: #0f172a;
+  --band-hover: #e1f1fa;
+}
+
+.cal-band {
+  z-index: 2;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 26px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--band-border);
+  border-left-width: 0;
+  border-right-width: 0;
+  border-radius: 0;
+  background: var(--band-bg);
+  color: var(--band-text);
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* The program's first day: rounded, a strong edge and « Début ». */
+.cal-band.is-start {
+  margin-left: 6px;
+  border-left: 4px solid var(--band-strong);
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
+}
+
+/* Its last day: rounded and « Fin ». */
+.cal-band.is-end {
+  margin-right: 6px;
+  border-right-width: 1px;
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.cal-band:hover,
+.cal-band.is-hovered {
+  background: var(--band-hover);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.cal-band:focus-visible {
+  outline: 2px solid var(--band-strong);
+  outline-offset: 1px;
+}
+
+.cal-band__flag {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--band-strong);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cal-band__flag--end,
+.cal-band > .cal-band__arrow:last-child {
+  margin-left: auto;
+}
+
+.cal-band__arrow {
+  flex: 0 0 auto;
+  margin: 0 -4px;
+  color: var(--band-strong);
+  font-size: 16px;
+}
+
+.cal-band__icon {
+  flex: 0 0 auto;
+  color: var(--band-strong);
+  font-size: 15px;
+}
+
+.cal-band__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-band__dates {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  opacity: 0.8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-band__more {
+  flex: 0 0 auto;
+  font-style: italic;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/* One day only on the row: the flags shrink, the dates and the icon go (the hint has them). */
+.cal-band.is-short {
+  gap: 4px;
+  padding: 0 5px;
+}
+
+.cal-band.is-short .cal-band__icon,
+.cal-band.is-short .cal-band__dates,
+.cal-band.is-short .cal-band__more {
+  display: none;
+}
+
+.cal-band.is-short .cal-band__flag {
+  padding: 3px 4px;
+  font-size: 8.5px;
+}
+
+/* Day view: the file of that day, which day of it and its dates. */
+.day-file {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--band-border);
+  border-left: 4px solid var(--band-strong);
+  border-radius: 10px;
+  background: var(--band-bg);
+  color: var(--band-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.day-file:hover {
+  background: var(--band-hover);
+}
+
+.day-file__icon {
+  color: var(--band-strong);
+  font-size: 24px;
+}
+
+.day-file__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.day-file__name {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-file__meta {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.day-file__open {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--band-strong);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .month-week {
+    min-height: 170px;
+  }
+}
+
+/* A month being read (calendar lot B): a thin moving bar over the grid, nothing jumps. */
+.calendar-reading {
+  height: 3px;
+  margin: 0 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent 0%, #44b4df 50%, transparent 100%) 0 0 / 40% 100% no-repeat, #e3f3fa;
+  animation: calendar-reading 1.1s ease-in-out infinite;
+}
+
+@keyframes calendar-reading {
+  from { background-position: -40% 0, 0 0; }
+  to { background-position: 140% 0, 0 0; }
+}
+
+/* ========= The week in rows (backlog-programmes.md, calendar lot C, L1) =========
+   One row per subject (workout, nutrition, tasks, check-ins), one column per day; the file bands over the row of
+   their type. A cell says the day's state by its color. */
+
+.calendar-week.week-rows {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.wr-grid {
+  display: grid;
+  grid-template-columns: 124px repeat(7, minmax(0, 1fr));
+  min-width: 820px;
+}
+
+.wr-section {
+  border-top: 1px solid #e5e7eb;
+}
+
+.wr-label {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-right: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wr-label .material-icons {
+  color: #44b4df;
+  font-size: 17px;
+}
+
+.wr-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border: 0;
+  border-left: 1px solid #eef1f4;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wr-day-head:hover,
+.wr-day-head.is-selected {
+  background: #e8f4fb;
+}
+
+.wr-weekday {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.wr-daynum {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.wr-daynum.is-today {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #44b4df;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wr-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 6px;
+  border-left: 1px solid #eef1f4;
+}
+
+.wr-cell--small {
+  min-height: 40px;
+}
+
+.wr-cell.is-today {
+  background: #f3f9ff;
+}
+
+.wr-cell.is-selected {
+  background: #e8f4fb;
+}
+
+.wr-card,
+.wr-chip,
+.wr-add {
+  font: inherit;
+  cursor: pointer;
+}
+
+.wr-card {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 7px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.wr-card:hover {
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.wr-card__title {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wr-card__meta {
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wr-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.wr-chip {
+  max-width: 100%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 5px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.wr-add {
+  flex: 1 1 auto;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.wr-cell:hover .wr-add,
+.wr-add:focus-visible {
+  opacity: 1;
+  border-color: #cbd5e1;
+}
+
+.wr-add .material-icons {
+  font-size: 18px;
+}
+
+/*
+  A state is said by a symbol of its color on white cards (the brand's sober UI), the same in the week, the month and
+  the day panel: ✓ done, ✗ missed, ◐ started, today, to come, rest, to fill.
+*/
+.st-done { --st: #1e8e4e; }
+.st-partial { --st: #d99100; }
+.st-missed { --st: #d93a3a; }
+.st-today,
+.st-empty { --st: #44b4df; }
+.st-planned,
+.st-rest { --st: #94a3b8; }
+
+.st-icon {
+  flex: 0 0 auto;
+  color: var(--st, #94a3b8);
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* A rest day and a day to fill read lighter than a workout. */
+.wr-card.st-rest {
+  border-style: dashed;
+  background: #fafbfc;
+}
+
+.wr-card.st-rest .wr-card__title {
+  color: #64748b;
+}
+
+.wr-card.st-empty {
+  border-style: dashed;
+  border-color: #b9e1f2;
+}
+
+.wr-card.st-empty .wr-card__title {
+  color: #1f87b3;
+}
+
+.wr-section .cal-band {
+  margin-top: 2px;
+}
+
+/* ========= « Ce jour-là » (lot C, L2-L3) ========= */
+
+.day-panel {
+  margin-top: 12px;
+  padding: 16px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.day-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.day-panel__kicker {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.day-panel__title {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.day-panel__title::first-letter {
+  text-transform: uppercase;
+}
+
+.day-panel__actions,
+.dp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-actions {
+  margin-top: 12px;
+}
+
+.day-panel__empty {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.dp-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dp-button .material-icons {
+  font-size: 16px;
+}
+
+.dp-button:hover {
+  background: #f8fafc;
+}
+
+.dp-button--main {
+  border-color: #44b4df;
+  background: #44b4df;
+  color: #ffffff;
+}
+
+.dp-button--main:hover {
+  background: #2a9cc4;
+}
+
+/* « Retirer ce programme »: apart from the others, the missed red on white (the window asks before anything). */
+.dp-button--danger {
+  margin-left: auto;
+  border-color: #f1c9c9;
+  color: #d93a3a;
+}
+
+.dp-button--danger:hover {
+  border-color: #d93a3a;
+  background: #fdf3f3;
+}
+
+.dp-block {
+  padding: 14px 0 4px;
+  border-top: 1px solid #eef1f4;
+}
+
+.day-panel .day-file + .dp-block,
+.day-panel__head + .dp-block {
+  border-top: 0;
+}
+
+.dp-block__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dp-block__icon {
+  color: #44b4df;
+  font-size: 20px;
+}
+
+.dp-block__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dp-block__name strong {
+  font-size: 14px;
+}
+
+.dp-block__name span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dp-status,
+.dp-tag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.dp-status {
+  margin-left: auto;
+}
+
+.dp-grid {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.dp-grid__head,
+.dp-grid__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dp-grid__head {
+  border-bottom-color: #e5e7eb;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* The exercise with its block (A1, B), as on the coach's sheet; what was done with its symbol. */
+.dp-exercise {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dp-exercise__label {
+  flex: 0 0 auto;
+  min-width: 26px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #eef7fc;
+  color: #1f87b3;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.dp-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 5px;
+}
+
+.dp-missed {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dp-note {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.dp-line {
+  margin: 8px 0 0;
+  color: #334155;
+  font-size: 13px;
+}
+
+.dp-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dp-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+}
+
+.dp-list li .dp-note {
+  flex-basis: 100%;
+}
+
+/* A meal: its name and calories, its foods under it. */
+.dp-meal {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.dp-meal__name {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.dp-meal__foods {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Nothing planned that day: add a workout or a nutrition day. */
+.dp-adds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 0 4px;
+  border-top: 1px solid #eef1f4;
+}
+
+.day-panel__head + .dp-adds,
+.day-panel__empty + .dp-adds {
+  border-top: 0;
+}
+
+.dp-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: 1px dashed #b9e1f2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f87b3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dp-add:hover {
+  border-color: #44b4df;
+  background: #f4fafd;
+}
+
+.dp-add .material-icons {
+  font-size: 18px;
+}
+
+.dp-link {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f94bd;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.day-panel .day-file {
+  margin-top: 10px;
+}
+
+/* ========= The week's tools and the detail of the days (lot C, C4) ========= */
+
+.week-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.week-tools__hint {
+  flex: 1 1 auto;
+  min-width: 160px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dp-button.is-on {
+  border-color: #44b4df;
+  background: #e8f6fb;
+  color: #0f6f93;
+}
+
+/* The detail: wider days (the week scrolls sideways on a small screen), one line per exercise or meal. */
+.week-rows.is-detailed .wr-grid {
+  min-width: 1340px;
+}
+
+.wr-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  text-align: left;
+}
+
+.wr-line__label {
+  flex: 0 0 auto;
+  min-width: 20px;
+  color: #0f94bd;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.wr-line__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wr-line__name {
+  color: #0f172a;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.wr-line__detail {
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Drag a workout onto another day of its program. */
+.wr-card.is-movable {
+  cursor: grab;
+}
+
+.wr-card.is-dragging {
+  opacity: 0.45;
+}
+
+.wr-cell.is-drop-target {
+  outline: 2px dashed #44b4df;
+  outline-offset: -3px;
+  background: #e8f6fb;
+}
+
+/* ========= The month as a follow-up map (backlog-programmes.md, calendar lot C, C3) =========
+   Both types at once: each day one line per subject (its icon, its name, the symbol of its state), each week its
+   follow-up rate in an 8th column. A click on a day opens it. */
+
+.month-follow .month-header-row,
+.month-follow .month-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) 64px;
+}
+
+.month-follow .month-header-row,
+.month-follow .month-weeks {
+  min-width: 760px;
+}
+
+.month-follow .month-week {
+  min-height: 132px;
+}
+
+.month-follow .month-cell,
+.month-follow .month-cell-empty {
+  min-height: 132px;
+  padding: 10px 8px 8px;
+}
+
+.month-follow .month-cell {
+  cursor: pointer;
+}
+
+.month-follow .month-cell:hover {
+  background: #f7fbfd;
+}
+
+.month-follow .month-cell:focus-visible {
+  outline: 2px solid #44b4df;
+  outline-offset: -2px;
+}
+
+.month-follow .month-cell.is-today {
+  background: #f2f9fd;
+}
+
+.month-follow .cell-header {
+  margin-bottom: 8px;
+}
+
+.month-follow .cell-content {
+  gap: 4px;
+}
+
+/* The month's cards are the week's ones (`.wr-card`, `.wr-chip`); the type's icon tells workout from nutrition. */
+.wr-card__kind {
+  margin-right: 3px;
+  color: #94a3b8;
+  font-size: 13px;
+  vertical-align: -2px;
+}
+
+.month-follow .cell-content > .wr-chip {
+  max-width: 100%;
+}
+
+.month-header-rate {
+  background: #fafcfd;
+  border-left: 1px solid #dfe4ea;
+}
+
+.month-rate {
+  grid-column: 8;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dfe4ea;
+  background: #fafcfd;
+}
+
+.month-rate__value {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.month-rate__bar {
+  width: 40px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.month-rate__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #44b4df;
+}
+
+.month-rate__none {
+  color: #cbd5e1;
+  font-size: 15px;
+}
+
+/* What the symbols say, under the month and the week. */
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 2px 0;
+  padding: 0;
+  list-style: none;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.cal-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ========= What the month shows, the row clicked, a narrow window (backlog-programmes.md CC-24) ========= */
+
+.week-tools__hint:empty {
+  min-width: 0;
+}
+
+/* The month: the subjects chosen (one at least), as toggles. */
+.month-show {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.month-show__label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.month-show__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px 5px 7px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.month-show__chip .material-icons {
+  font-size: 15px;
+}
+
+.month-show__chip.is-on {
+  border-color: #44b4df;
+  background: #eef7fc;
+  color: #1f87b3;
+}
+
+/* The card or chip whose subject the panel shows alone. */
+.wr-card.is-focused,
+.wr-chip.is-focused {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 1px #44b4df;
+}
+
+.day-panel__focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.day-panel__focus .dp-link {
+  margin-left: 0;
+}
+
+/* The month on a narrow window: the day numbers and the symbols, the % of each week; files as thin bars. */
+.month-follow.is-narrow .month-header-row,
+.month-follow.is-narrow .month-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) 34px;
+}
+
+.month-follow.is-narrow .month-header-row,
+.month-follow.is-narrow .month-weeks {
+  min-width: 0;
+}
+
+.month-follow.is-narrow .month-header-cell {
+  padding: 8px 0;
+  font-size: 11px;
+}
+
+.month-follow.is-narrow .month-week,
+.month-follow.is-narrow .month-cell,
+.month-follow.is-narrow .month-cell-empty {
+  min-height: 52px;
+}
+
+.month-follow.is-narrow .month-cell,
+.month-follow.is-narrow .month-cell-empty {
+  padding: 5px 2px 4px;
+}
+
+.month-follow.is-narrow .cell-header {
+  justify-content: center;
+  min-height: 0;
+  margin-bottom: 2px;
+}
+
+.month-follow.is-narrow .cell-day-number {
+  font-size: 12.5px;
+}
+
+.month-follow.is-narrow .month-cell.is-selected {
+  background: #e8f3fa;
+  box-shadow: inset 0 0 0 2px #44b4df;
+}
+
+.cell-symbols {
+  grid-row: -2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1px;
+}
+
+.cell-symbols .st-icon {
+  font-size: 13px;
+}
+
+.month-follow.is-narrow .cal-band {
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  border-radius: 0;
+  background: #44b4df;
+  opacity: 0.55;
+}
+
+.month-follow.is-narrow .cal-band > * {
+  display: none;
+}
+
+.month-follow.is-narrow .month-rate {
+  gap: 0;
+}
+
+.month-follow.is-narrow .month-rate__value {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.month-follow.is-narrow .month-rate__bar {
+  display: none;
+}
+
+/* The day touched under the month, and the week as a list (narrow window): the week's cards, one under the other. */
+.month-day,
+.wl-day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.month-day {
+  margin-top: 12px;
+}
+
+.month-day__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.month-day__title {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.month-day__title::first-letter {
+  text-transform: uppercase;
+}
+
+.month-day__head .dp-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0;
+}
+
+.month-day__head .dp-link .material-icons {
+  font-size: 18px;
+}
+
+.month-day .wr-card,
+.wl-day .wr-card {
+  font-size: 12px;
+}
+
+.month-day__chips,
+.wl-day__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.week-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wl-day.is-today {
+  border-color: #b9e1f2;
+}
+
+.wl-day.is-selected {
+  border-color: #44b4df;
+  box-shadow: 0 0 0 1px #44b4df;
+}
+
+.wl-day__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wl-day__name {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.wl-day__today {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #44b4df;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wl-day__more {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 20px;
+}
+
+.wl-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid #cde9f6;
+  border-radius: 8px;
+  background: #eef7fc;
+  color: #0f172a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wl-file .material-icons {
+  color: #44b4df;
+  font-size: 16px;
+}
+
+.wl-empty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* The day panel on a phone: the exercise on its line, planned and done side by side under it. */
+@media (max-width: 520px) {
+  .day-panel__head {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .day-panel__actions {
+    justify-content: space-between;
+  }
+
+  .dp-grid__head {
+    display: none;
+  }
+
+  .dp-grid__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+
+  .dp-grid__row > :first-child {
+    grid-column: 1 / -1;
+    font-weight: 600;
   }
 }

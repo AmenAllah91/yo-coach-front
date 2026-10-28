@@ -65,6 +65,7 @@
     "keycloak-angular": "^15.0.0",
     "keycloak-js": "^23.0.6",
     "leaflet": "^1.9.4",
+    "livekit-client": "2.22.4",
     "material-icons": "^1.13.14",
     "moment": "^2.29.4",
     "ng-apexcharts": "^1.8.0",

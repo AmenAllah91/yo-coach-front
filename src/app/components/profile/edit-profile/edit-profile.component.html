@@ -151,9 +151,9 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label">{{ 'IDEAL_SHAPE_DESCRIPTION' | translate }}</label>
-            <div class="field-value" [class.text-muted]="!userData.idealShapeDescription">
-              {{ userData.idealShapeDescription || ('NO_IDEAL_SHAPE_DESCRIPTION' | translate) }}
+            <label class="field-label">{{ 'CLIENT_ONBOARDING.MAIN_OBJECTIVE' | translate }}</label>
+            <div class="field-value" [class.text-muted]="!userData.mainObjective">
+              {{ objectiveLabel(userData.mainObjective) || ('NOT_PROVIDED' | translate) }}
             </div>
           </div>
 
@@ -200,14 +200,11 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label-dark">{{ 'IDEAL_SHAPE_DESCRIPTION' | translate }}</label>
-            <textarea
-              class="form-input form-textarea"
-              [(ngModel)]="editData.idealShapeDescription"
-              name="idealShapeDescription"
-              rows="3"
-              [placeholder]="'IDEAL_SHAPE_PLACEHOLDER' | translate"
-            ></textarea>
+            <label class="field-label-dark">{{ 'CLIENT_ONBOARDING.MAIN_OBJECTIVE' | translate }}</label>
+            <select class="form-input" [(ngModel)]="editData.mainObjective" name="mainObjective">
+              <option value="" disabled>{{ objectiveLabel(editData.mainObjective) || ('NOT_PROVIDED' | translate) }}</option>
+              <option *ngFor="let objective of objectives" [value]="objective.code">{{ frLabels ? objective.fr : objective.en }}</option>
+            </select>
           </div>
 
           <div class="field-group">

@@ -12,10 +12,13 @@ import { ChatUnreadService } from 'app/service/chat-unread.service';
 import { ClientTasksService, TaskCalendarItem } from 'app/service/client-tasks.service';
 import { CoachPublicProfile, CoachSettingsService } from 'app/service/coach-settings.service';
 import { DocumentService } from 'app/service/document.service';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { PauseView, addDaysIso, parseIso, todayIso } from '@shared/models/program-schedule';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { AssignmentsApiService, FormAssignment } from 'app/components/forms/services/assignments-api.service';
 import { ClientTaskRowComponent } from '../shared/client-task-row.component';
 import { CoachProfileSheetComponent } from '../shared/coach-profile-sheet.component';
+import { NutritionMacrosSummaryComponent } from '../shared/nutrition-macros-summary.component';
 import { isHabit, isTaskDone, openClientTask } from '../shared/client-task-utils';
 import {
   allExercises, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, estimatedWorkoutMinutes, findPlanDay,
@@ -39,7 +42,7 @@ let HOME_SNAPSHOT: {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FeatherModule, ClientTaskRowComponent, CoachProfileSheetComponent],
+  imports: [CommonModule, FeatherModule, ClientTaskRowComponent, CoachProfileSheetComponent, NutritionMacrosSummaryComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss',
 })
@@ -58,6 +61,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   toggling = new Set<string>();
   unreadMessages = 0;
 
+  /** A pause of the follow-up going on or to come (backlog-programmes.md DS-03). */
+  pause: PauseView | null = null;
   coachProfile: CoachPublicProfile | null = null;
   coachPhotoUrl = '';
   coachPhotoFailed = false;
@@ -83,7 +88,22 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     private documents: DocumentService,
     private assignments: AssignmentsApiService,
     private theme: ClientThemeService,
+    private schedule: ProgramScheduleService,
   ) {}
+
+  /** « Pause jusqu'au … » instead of empty days (DS-03); a pause to come is announced. */
+  get pauseLabel(): string {
+    const pause = this.pause;
+    if (!pause) return '';
+    const day = (iso: string) => parseIso(iso).toLocaleDateString(this.locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const resume = day(addDaysIso(pause.toDate, 1));
+    if (pause.fromDate <= todayIso()) {
+      return this.fr ? `Votre suivi est en pause jusqu'au ${day(pause.toDate)} : reprise le ${resume}.`
+        : `Your follow-up is paused until ${day(pause.toDate)}: it resumes on ${resume}.`;
+    }
+    return this.fr ? `Pause prévue du ${day(pause.fromDate)} au ${day(pause.toDate)} : reprise le ${resume}.`
+      : `Pause planned from ${day(pause.fromDate)} to ${day(pause.toDate)}: it resumes on ${resume}.`;
+  }
 
   get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
   private get locale(): string { return this.fr ? 'fr-FR' : 'en-US'; }
@@ -125,6 +145,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
     // Tasks are requested in parallel but applied after the main dashboard: a slow task endpoint must never
     // keep Home on a spinner, and a failure leaves the rest usable.
+    // The pause is read on its own: a failure never keeps Home from showing.
+    this.loadSubscriptions.add(this.schedule.currentPause(this.clientId).pipe(catchError(() => of(null)))
+      .subscribe(pause => (this.pause = pause)));
     const tasks$ = this.tasksApi.calendar(this.clientId, dateKey(today), dateKey(today), true).pipe(
       timeout(10_000), map(response => response.items || []), catchError(() => of([] as TaskCalendarItem[])));
 
@@ -290,23 +313,15 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return !!this.todayNutritionItem && clientVisibleMeals(this.todayNutritionItem.day).length > 0;
   }
 
-  get nutritionLabel(): string {
-    const label = capitalizeFirst(this.todayNutritionItem?.plan?.description);
-    return label ? `Nutrition · ${label}` : 'Nutrition';
-  }
+  get nutritionPlanLabel(): string { return capitalizeFirst(this.todayNutritionItem?.plan?.description); }
   get meals(): any[] { return clientVisibleMeals(this.todayNutritionItem?.day); }
   get consumed() { return consumedTotals(this.todayNutritionItem?.day); }
   get target() { return targetTotals(this.todayNutritionItem?.day); }
   get reportedMeals(): number { return this.meals.filter(meal => isMealReported(this.todayNutritionItem?.day, meal)).length; }
-  get nutritionProgress(): number {
-    const target = this.target.calories;
-    return target <= 0 ? 0 : Math.min(Math.max(this.consumed.calories / target, 0), 1);
-  }
   get nextMealName(): string {
     const next = this.meals.find(meal => !isMealReported(this.todayNutritionItem?.day, meal));
     return next ? capitalizeFirst(next.name) : '';
   }
-  formatNumber(value: number): string { return new Intl.NumberFormat(this.locale).format(Math.round(value)); }
 
   openNutrition(): void {
     const item = this.todayNutritionItem;

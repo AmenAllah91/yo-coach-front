@@ -1,0 +1,63 @@
+<section class="ac" [attr.aria-busy]="busy">
+  <header class="ac-head">
+    <span class="ac-icon" aria-hidden="true"><i-feather name="calendar"></i-feather></span>
+    <div>
+      <h3 class="ac-title">{{ titleKey | translate }}</h3>
+      <p class="ac-subtitle">
+        {{ 'ASSIGN_FLOW.CONFIRM_SUBTITLE' | translate: { name: programName, date: startLabel } }}
+        <ng-container *ngIf="!single"> {{ 'ASSIGN_FLOW.CONFIRM_UNTICK' | translate }}</ng-container>
+      </p>
+    </div>
+  </header>
+
+  <ul class="ac-list">
+    <li
+      *ngFor="let row of changed"
+      class="ac-row"
+      [class.is-off]="!isSelected(row.id)"
+      [class.is-single]="single"
+      (click)="toggle(row.id)"
+    >
+      <span class="ac-check" *ngIf="!single" [class.is-on]="isSelected(row.id)" role="checkbox" [attr.aria-checked]="isSelected(row.id)">
+        <i-feather *ngIf="isSelected(row.id)" name="check"></i-feather>
+      </span>
+      <span class="ac-avatar">
+        <img *ngIf="row.avatarUrl; else initialsTpl" [src]="row.avatarUrl" [alt]="row.name" />
+        <ng-template #initialsTpl>{{ initials(row.name) }}</ng-template>
+      </span>
+      <span class="ac-body">
+        <span class="ac-name">{{ row.name }}</span>
+        <span class="ac-line" *ngFor="let line of row.lines">
+          <i-feather name="alert-circle"></i-feather>{{ line }}
+        </span>
+        <span class="ac-skip" *ngIf="!isSelected(row.id)">{{ 'ASSIGN_FLOW.NOT_ASSIGNED' | translate }}</span>
+      </span>
+    </li>
+  </ul>
+
+  <div class="ac-unchanged" *ngIf="unchanged.length">
+    <button type="button" class="ac-unchanged-toggle" (click)="showUnchanged = !showUnchanged" [attr.aria-expanded]="showUnchanged">
+      <i-feather [name]="showUnchanged ? 'chevron-down' : 'chevron-right'"></i-feather>
+      {{ (unchanged.length === 1 ? 'ASSIGN_FLOW.UNCHANGED_ONE' : 'ASSIGN_FLOW.UNCHANGED_MANY') | translate: { count: unchanged.length } }}
+    </button>
+    <ul class="ac-list ac-list--compact" *ngIf="showUnchanged">
+      <li *ngFor="let row of unchanged" class="ac-row ac-row--compact" [class.is-off]="!isSelected(row.id)" (click)="toggle(row.id)">
+        <span class="ac-check" [class.is-on]="isSelected(row.id)" role="checkbox" [attr.aria-checked]="isSelected(row.id)">
+          <i-feather *ngIf="isSelected(row.id)" name="check"></i-feather>
+        </span>
+        <span class="ac-name">{{ row.name }}</span>
+        <span class="ac-ok">{{ 'ASSIGN_FLOW.NO_CHANGE' | translate }}</span>
+      </li>
+    </ul>
+  </div>
+
+  <footer class="ac-foot">
+    <button type="button" class="ac-btn ac-btn--ghost" (click)="back.emit()" [disabled]="busy">
+      <i-feather name="arrow-left"></i-feather>{{ 'ASSIGN_FLOW.BACK' | translate }}
+    </button>
+    <button type="button" class="ac-btn ac-btn--primary" (click)="submit()" [disabled]="busy || count === 0">
+      <span class="ac-spinner" *ngIf="busy" aria-hidden="true"></span>
+      {{ (single ? 'ASSIGN_FLOW.CONFIRM_BUTTON' : (count === 1 ? 'ASSIGN_FLOW.ASSIGN_TO_ONE' : 'ASSIGN_FLOW.ASSIGN_TO_MANY')) | translate: { count: count } }}
+    </button>
+  </footer>
+</section>

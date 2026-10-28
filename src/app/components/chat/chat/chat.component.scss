@@ -1183,9 +1183,6 @@
 
 .chat-root--profile-open .chat-main,
 .chat-main--profile-open {
-  flex: 0 0 38% !important;
-  max-width: 520px !important;
-  min-width: 410px !important;
   border-right: 1px solid #e5e7eb;
   background: #ffffff;
 }
@@ -1255,15 +1252,6 @@
 .chat-profile app-profil-client {
   display: block;
   min-height: 100%;
-}
-
-@media (max-width: 1200px) {
-  .chat-root--profile-open .chat-main,
-  .chat-main--profile-open {
-    flex-basis: 42% !important;
-    max-width: 500px !important;
-    min-width: 360px !important;
-  }
 }
 
 @media (max-width: 767px) {
@@ -1688,12 +1676,78 @@
   padding: clamp(1rem, 1.6vw, 1.25rem) !important;
 }
 
-/* Profile open layout */
+/* Profile open layout: the conversation keeps a phone width on the left, the client profile takes the rest.
+   "Show client" is only offered from 880px of chat card (ChatComponent.PROFILE_SIDE_BY_SIDE_MIN_WIDTH):
+   at least 20rem for the conversation and about 35rem for the profile. */
 .chat-root--profile-open .chat-main,
 .chat-main--profile-open {
-  flex: 0 0 clamp(24rem, 38%, 32.5rem) !important;
-  max-width: 32.5rem !important;
-  min-width: min(25rem, 100%) !important;
+  flex: 0 0 clamp(20rem, 32%, 25rem) !important;
+  max-width: 25rem !important;
+  min-width: 0 !important;
+}
+
+.chat-root--profile-open .chat-profile {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+/* Compact header: name cut with an ellipsis, round icon buttons (the label stays as a tooltip). */
+.chat-main--profile-open .chat-header {
+  gap: 0.4rem;
+  padding-inline: 0.75rem;
+}
+
+.chat-main--profile-open .chat-header__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chat-main--profile-open .chat-header__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-main--profile-open .chat-header .chat-auto-btn,
+.chat-main--profile-open .chat-client-toggle {
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+}
+
+.chat-main--profile-open .chat-header .chat-auto-btn span,
+.chat-main--profile-open .chat-client-toggle span {
+  display: none;
+}
+
+.chat-main--profile-open .call-icon-btn {
+  flex: 0 0 auto;
+}
+
+.chat-main--profile-open .chat-messages {
+  padding: 0.9rem !important;
+}
+
+.chat-main--profile-open .message {
+  max-width: 85%;
+}
+
+.chat-main--profile-open .auto-sequence-card {
+  width: 92%;
+}
+
+.chat-main--profile-open .message-content--voice,
+.chat-main--profile-open .message-content--doc {
+  min-width: min(15rem, 100%);
+}
+
+.chat-main--profile-open .message-content--image img {
+  width: min(15rem, 100%);
 }
 
 /* Medium screens */
@@ -1702,11 +1756,6 @@
     flex-basis: clamp(17rem, 30vw, 21rem);
   }
 
-  .chat-root--profile-open .chat-main,
-  .chat-main--profile-open {
-    flex-basis: clamp(22rem, 42%, 31rem) !important;
-    min-width: min(22rem, 100%) !important;
-  }
 }
 
 /* Mobile */
@@ -1845,6 +1894,7 @@
   width: 0.9rem;
   height: 0.9rem;
 }
+
 
 .chat-auto-strip {
   min-height: 2.15rem;
@@ -3355,4 +3405,89 @@
     background: var(--yc-primary);
     color: var(--yc-surface);
   }
+}
+
+/* Audit chat 2026-10-27: "video call started" message, with "join the call" (coach and client layouts). */
+.call-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+
+  &__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    i-feather {
+      flex: none;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__join {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 16px;
+    background: #1fb57a;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &:hover {
+      background: #169466;
+    }
+  }
+}
+
+/* Audit chat 2026-10-27: voice and video call buttons, same round icon style in the coach and client headers. */
+.call-icon-btn {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--yc-primary, #12a8e8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: rgba(18, 168, 232, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--yc-primary, #12a8e8);
+    outline-offset: 2px;
+  }
+
+  i-feather {
+    width: 21px;
+    height: 21px;
+  }
+}
+
+/* Older messages being fetched (the reader scrolled to the top) */
+.chat-older-loading {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0;
+}
+
+.chat-older-loading span {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid #cfeefb;
+  border-top-color: var(--yc-primary, #12a8e8);
+  animation: chat-older-spin 0.8s linear infinite;
+}
+
+@keyframes chat-older-spin {
+  to { transform: rotate(360deg); }
 }

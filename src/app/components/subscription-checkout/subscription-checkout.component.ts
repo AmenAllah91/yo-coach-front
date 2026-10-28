@@ -93,12 +93,19 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
   /** The quote of the selected plan, when it is the one shown (it can arrive after a plan change). */
   /** SUB-61: currency of the payment (from the quote of YoSales: USD by Stripe abroad, TND by Flouci). */
   get currency(): string {
-    return (this.selectedQuote?.currency ?? this.state?.currency ?? 'TND').toUpperCase();
+    // Payment audit D11: before any quote, the currency of the next payment (not the one stored at the trial).
+    return (this.selectedQuote?.currency ?? this.state?.checkoutCurrency ?? this.state?.currency ?? 'TND').toUpperCase();
+  }
+
+  /** The method of the next payment, decided by YoSales (Flouci, Stripe...). */
+  get paymentMethod(): string {
+    // The method of the selected plan first (review 2026-10-26: a plan without dollar price is paid by Flouci in TND).
+    return (this.selectedQuote?.gateway ?? this.state?.checkoutPaymentGateway ?? this.state?.paymentGateway ?? 'FLOUCI').toUpperCase();
   }
 
   /** SUB-62: "Visa •••• 4242" when the payment is charged on the saved card (reactivation), empty otherwise. */
   get savedCard(): string {
-    return this.currency === 'USD' && this.state?.autoCharge && this.state?.card ? cardLabel(this.state.card) : '';
+    return this.paymentMethod === 'STRIPE' && this.state?.autoCharge && this.state?.card ? cardLabel(this.state.card) : '';
   }
 
   /** SUB-61: "50 TND" or "15 $". */
@@ -238,7 +245,7 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
         // SUB-49: an invoice already paid by a 100% promo code never goes to Flouci.
         switchMap((invoice) => invoice?.status === 'PAID'
           ? of({ invoiceId: invoice.id, status: 'PAID', redirectUrl: null as string | null })
-          : this.billingService.initiateInvoicePayment(invoice.id, 'FLOUCI').pipe(map((r) => ({ ...r, invoiceId: invoice.id })))),
+          : this.billingService.initiateInvoicePayment(invoice.id).pipe(map((r) => ({ ...r, invoiceId: invoice.id })))),
         takeUntil(this.destroy$),
       )
       .subscribe({

@@ -6,11 +6,10 @@ import { FeatherModule } from 'angular-feather';
 import { Subject } from 'rxjs';
 import { filter, switchMap, takeUntil } from 'rxjs/operators';
 
-import { CoachBillingService } from 'app/service/coach-billing.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { SubscriptionNoticeService } from 'app/service/subscription-notice.service';
 import { CoachSubscriptionState } from 'app/models/coach-subscription-state.model';
-import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
+import { CHECKOUT_PATH, PAY_INVOICE_PATH } from 'app/template/layout/sidebar/sidebar.component';
 
 /** The trial banner appears in the last 7 days. */
 export const TRIAL_BANNER_DAYS = 7;
@@ -21,7 +20,7 @@ export interface BannerView {
   textKey: string;
   textParams?: Record<string, unknown>;
   actionKey: string;
-  /** 'pay' = pay the open invoice now (Flouci); 'checkout' = payment screen. */
+  /** 'pay' = page of the open invoice (amount, then confirmation); 'checkout' = payment screen. */
   action: 'pay' | 'checkout';
 }
 
@@ -39,13 +38,11 @@ export interface BannerView {
 })
 export class SubscriptionBannerComponent implements OnInit, OnDestroy {
   view: BannerView | null = null;
-  paying = false;
   private state: CoachSubscriptionState | null = null;
   private destroy$ = new Subject<void>();
 
   constructor(
     private stateService: CoachSubscriptionStateService,
-    private billing: CoachBillingService,
     private notices: SubscriptionNoticeService,
     private router: Router,
   ) {}
@@ -75,45 +72,31 @@ export class SubscriptionBannerComponent implements OnInit, OnDestroy {
 
   act(): void {
     const view = this.view;
-    if (!view || this.paying) return;
+    if (!view) return;
     const invoiceId = this.state?.openInvoiceId;
     if (view.action === 'pay' && invoiceId) {
-      // Late payment: one click to Flouci for the open invoice (Flouci for everyone for now, SUB-20).
-      this.paying = true;
-      this.billing.initiateInvoicePayment(invoiceId, 'FLOUCI').subscribe({
-        next: (response) => {
-          const url = response?.redirectUrl?.trim();
-          if (url) {
-            this.redirectTo(url);
-            return;
-          }
-          this.paying = false;
-          void this.router.navigate([CHECKOUT_PATH]);
-        },
-        error: () => {
-          this.paying = false;
-          void this.router.navigate([CHECKOUT_PATH]);
-        },
-      });
+      // Late payment: the invoice page shows the amount and the method (or saved card) and pays only after the
+      // coach confirms (payment audit CE-M6); the banner never charges in one click.
+      void this.router.navigate([PAY_INVOICE_PATH], { queryParams: { invoiceId } });
       return;
     }
     void this.router.navigate([CHECKOUT_PATH]);
-  }
-
-  protected redirectTo(url: string): void {
-    window.location.assign(url);
   }
 
   static viewOf(state: CoachSubscriptionState | null): BannerView | null {
     if (!state) return null;
     switch (state.status) {
       case 'TRIAL': {
+        // YoSales counts today: 1 = today is the last day (the "Last day" email goes out at 1), 0 = the trial is over.
         const days = state.trialDaysLeft;
         if (days == null || days > TRIAL_BANNER_DAYS) return null;
+        if (days <= 0) {
+          return { tone: 'danger', icon: 'lock', textKey: 'BANNER_TRIAL_OVER', actionKey: 'NOTICE_CHOOSE_PLAN', action: 'checkout' };
+        }
         return {
           tone: 'info',
           icon: 'clock',
-          textKey: days === 0 ? 'BANNER_TRIAL_LAST_DAY' : days === 1 ? 'BANNER_TRIAL_ONE_DAY' : 'BANNER_TRIAL_DAYS',
+          textKey: days === 1 ? 'BANNER_TRIAL_LAST_DAY' : days === 2 ? 'BANNER_TRIAL_ONE_DAY' : 'BANNER_TRIAL_DAYS',
           textParams: { count: days },
           actionKey: 'UPGRADE_TO_PAID_PLAN',
           action: 'checkout',

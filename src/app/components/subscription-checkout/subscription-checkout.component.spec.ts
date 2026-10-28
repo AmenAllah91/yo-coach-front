@@ -84,7 +84,7 @@ describe('SubscriptionCheckoutComponent (SUB-22)', () => {
     c.pay();
 
     expect(billing.checkout).toHaveBeenCalledWith(2);
-    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90, 'FLOUCI');
+    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90);
     expect(assign).toHaveBeenCalledWith('https://flouci.example/pay/abc');
   });
 
@@ -107,6 +107,20 @@ describe('SubscriptionCheckoutComponent (SUB-22)', () => {
     c.select(PLANS[1]);
     expect(billing.getCheckoutQuote).toHaveBeenCalledWith(2);
     expect(c.selectedQuote?.amount).toBe(60);
+  });
+
+  /** Review 2026-10-26: the currency and the method of the plan chosen, not of the trial plan. */
+  it('the button and the amounts follow the method and currency of the plan chosen', () => {
+    billing.getCheckoutQuote.and.callFake((planId: number) => of(planId === 1
+      ? { ...quote(1, 15, 0), currency: 'USD', gateway: 'STRIPE' }
+      : { ...quote(2, 60, 0), currency: 'TND', gateway: 'FLOUCI' }));
+    const c = create({ status: 'TRIAL', planId: 1, activeClients: 2, checkoutCurrency: 'USD', checkoutPaymentGateway: 'STRIPE' });
+    expect(c.currency).toBe('USD');
+    expect(c.paymentMethod).toBe('STRIPE');
+
+    c.select(PLANS[1]); // no dollar price: Flouci in TND
+    expect(c.currency).toBe('TND');
+    expect(c.paymentMethod).toBe('FLOUCI');
   });
 
   it('SUB-45: a promo code updates the amount, and can be removed', () => {

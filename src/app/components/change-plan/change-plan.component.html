@@ -23,7 +23,7 @@
     <div *ngIf="blockedCode" class="notice warning" role="note">
       <i-feather name="alert-circle"></i-feather>
       <div>
-        <p>{{ ('CHANGE_PLAN_BLOCKED_' + blockedCode) | translate }}</p>
+        <p>{{ blockedKey | translate }}</p>
         <button *ngIf="blockedCode === 'PAY_FIRST' || blockedCode === 'UPGRADE_USE_CHECKOUT'" type="button" class="btn-secondary"
           (click)="goToPayment()">{{ (o.status === 'PAST_DUE' ? 'CHANGE_PLAN_PAY_RENEWAL' : 'CHANGE_PLAN_GO_CHECKOUT') | translate }}</button>
       </div>
@@ -48,7 +48,8 @@
     <div *ngIf="o.scheduledChange as c" class="pending card" role="region" [attr.aria-label]="'CHANGE_PLAN_SCHEDULED_TITLE' | translate">
       <h2>{{ 'CHANGE_PLAN_SCHEDULED_TITLE' | translate }}</h2>
       <p>{{ 'CHANGE_PLAN_SCHEDULED_TEXT' | translate: { plan: c.planName, date: day(c.effectiveAt) } }}</p>
-      <div class="actions">
+      <!-- Already paid (renewal paid ahead with that plan): YoSales refuses to take it back (PLAN_PAID_AHEAD). -->
+      <div *ngIf="!scheduledPaidAhead" class="actions">
         <button type="button" class="btn-danger-link" [disabled]="busy" (click)="cancelScheduled()">{{ 'CHANGE_PLAN_CANCEL_SCHEDULED' | translate }}</button>
       </div>
     </div>
@@ -105,7 +106,7 @@
             : ('CHANGE_PLAN_CONFIRM' | translate) }}
       </button>
       <p *ngIf="paysNow(plan)" class="secure"><i-feather name="lock"></i-feather>{{ (savedCard ? 'CHANGE_PLAN_CHARGED_ON_CARD'
-          : (options?.currency ?? 'TND').toUpperCase() === 'USD' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate: { card: savedCard } }}</p>
+          : paymentMethod === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate: { card: savedCard } }}</p>
     </div>
 
     <p *ngIf="error" class="error" role="alert">{{ error | translate }}</p>

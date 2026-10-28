@@ -27,6 +27,7 @@ import { provideToastr, ToastrModule } from 'ngx-toastr';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AccountUnavailableComponent } from './components/account-unavailable/account-unavailable.component';
+import { CallHostComponent } from './components/chat/video-call/call-host.component';
 import { createTranslateLoader } from './app.config';
 import { APP_ROUTE } from './app.routes';
 import { LanguageService } from './template/core';
@@ -34,55 +35,10 @@ import { PageLoaderComponent } from './template/layout/page-loader/page-loader.c
 import {firstValueFrom} from "rxjs";
 import {AuthService} from "@config/auth.service";
 import {environment} from "@env/environment";
+import { isPublicCoachHostname } from './config/public-coach-host';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return createTranslateLoader(http);
-}
-function isPublicCoachHostname(host: string): boolean {
-  if (!host) return false;
-
-  const normalized = host.toLowerCase();
-
-  const privateHosts = [
-    'localhost',
-
-    'integration.yo-coach.app',
-    'www.integration.yo-coach.app',
-
-    'account.yo-coach.app',
-    'www.account.yo-coach.app',
-
-    'login-int.yo-coach.app',
-    'www.login-int.yo-coach.app',
-
-    'login-int.yo-coach.app',
-    'www.login-int.yo-coach.app',
-
-    'minio.yo-coach.app',
-    'www.minio.yo-coach.app',
-
-    'minio-int.yo-coach.app',
-    'www.minio-int.yo-coach.app',
-
-    'minio-console.yo-coach.app',
-    'www.minio-console.yo-coach.app',
-
-    'minio-console-int.yo-coach.app',
-    'www.minio-console-int.yo-coach.app',
-
-    'yo-coach.app',
-    'www.yo-coach.app'
-  ];
-
-  if (normalized.startsWith('localhost')) {
-    return false;
-  }
-
-  if (privateHosts.includes(normalized)) {
-    return false;
-  }
-
-  return normalized.endsWith('.yo-coach.app');
 }
 
 function initializeKeycloakAndSync(
@@ -96,6 +52,7 @@ function initializeKeycloakAndSync(
 
     const publicPaths = [
       '/video-viewer',
+      '/terms',
     ];
 
     const isPublicPath = publicPaths.some((publicPath) =>
@@ -160,6 +117,7 @@ function initializeKeycloakAndSync(
   ],
   imports: [
     AccountUnavailableComponent,
+    CallHostComponent,
     BrowserAnimationsModule,
     CommonModule,
     RouterModule,

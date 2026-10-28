@@ -26,11 +26,21 @@
 
     <!-- Body -->
     <div class="select-program-body">
+      <app-assign-confirm
+        *ngIf="step === 'confirm'"
+        [rows]="confirmRows"
+        [programName]="selectedProgramItem?.name || ''"
+        [startLabel]="schedule.formatDate(startDate)"
+        [busy]="assigning"
+        (back)="step = 'pick'"
+        (confirm)="doAssign()"
+      ></app-assign-confirm>
+
       <div *ngIf="loadingPrograms" class="select-program-empty">
         {{ 'LOADING_PROGRAMS' | translate }}
       </div>
 
-      <ng-container *ngIf="!loadingPrograms">
+      <ng-container *ngIf="!loadingPrograms && step === 'pick'">
         <div class="select-program-search select-program-search--inline">
           <div class="select-search-input">
             <i class="fas fa-search"></i>
@@ -103,116 +113,29 @@
           <div class="select-program-empty">{{ 'NO_WORKOUT_PROGRAMS_FOUND' | translate }}</div>
         </ng-template>
 
-        <!-- Schedule -->
-        <div class="select-program-schedule">
+        <!-- Schedule: one date, what changes on the client's calendar (backlog-programmes.md A2/A5) -->
+        <div class="select-program-schedule" *ngIf="selectedProgram">
           <h4>{{ 'PROGRAM_SCHEDULE' | translate }}</h4>
-
-          <div class="schedule-grid">
-            <div class="schedule-field">
-              <label>{{ 'START_DATE' | translate }} *</label>
-              <div class="schedule-input">
-                <input type="date" [(ngModel)]="startDate" (ngModelChange)="onStartDateChange()" />
-              </div>
-            </div>
-
-            <div class="schedule-field">
-              <label>{{ 'END_DATE' | translate }} <span *ngIf="selectedProgram?.isFile">*</span></label>
-              <div class="schedule-input" [class.schedule-input--readonly]="!selectedProgram?.isFile">
-                <input
-                  type="date"
-                  *ngIf="selectedProgram?.isFile"
-                  [(ngModel)]="endDate"
-                  (ngModelChange)="onEndDateChange()"
-                />
-                <input
-                  type="date"
-                  *ngIf="!selectedProgram?.isFile"
-                  [value]="calculatedEndDate || ''"
-                  disabled
-                />
-              </div>
-              <div class="schedule-help" *ngIf="calculatedEndDate && !selectedProgram?.isFile">
-                {{ 'AUTO_CALCULATED_FROM_PROGRAM_DURATION' | translate }}
-              </div>
-            </div>
-          </div>
-
-          <div class="selected-client-card" [class.selected-client-card--checked]="selectedClientChecked" (click)="onToggleClient()">
-            <div class="selected-client-check" [class.selected-client-check--checked]="selectedClientChecked">
-              <span *ngIf="selectedClientChecked">&#10003;</span>
-            </div>
-            <div class="selected-client-info">
-              <div class="selected-client-name">
-                {{ clientDisplayName }}
-                <span class="conflict-badge" *ngIf="conflict">{{ 'CONFLICT' | translate }}</span>
-              </div>
-              <div class="selected-client-email">{{ client?.email }}</div>
-            </div>
-          </div>
-
-          <div class="conflict-checking" *ngIf="checkingConflicts">
-            {{ 'CHECKING_SCHEDULE_CONFLICTS' | translate }}
-          </div>
-
-          <div class="assign-conflicts" *ngIf="conflict">
-            <div class="conflict-heading">
-              <span class="conflict-heading-icon">!</span>
-              <span>{{ 'SCHEDULE_CONFLICT_DETECTED' | translate }}</span>
-            </div>
-
-            <div class="conflict-card">
-              <div class="conflict-client">{{ clientDisplayName }}</div>
-              <div class="conflict-program">
-                {{ getProgramName(conflict.program) }}
-                ({{ formatDate(conflict.program.startDate) }} - {{ formatDate(conflict.program.endDate) }})
-              </div>
-
-              <label class="resolution-option" [class.selected]="conflict.resolution === 'START_AFTER'">
-                <input
-                  type="radio"
-                  name="profile-workout-resolution"
-                  [checked]="conflict.resolution === 'START_AFTER'"
-                  (change)="setConflictResolution('START_AFTER')"
-                />
-                <span>
-                  <strong>{{ 'START_AFTER_CURRENT_PROGRAM' | translate }}</strong>
-                  <small>{{ 'START_AFTER_EXISTING_PROGRAM_HINT' | translate }}</small>
-                </span>
-              </label>
-
-              <label class="resolution-option" [class.selected]="conflict.resolution === 'REPLACE'">
-                <input
-                  type="radio"
-                  name="profile-workout-resolution"
-                  [checked]="conflict.resolution === 'REPLACE'"
-                  (change)="setConflictResolution('REPLACE')"
-                />
-                <span>
-                  <strong>{{ 'REPLACE_CURRENT_PROGRAM' | translate }}</strong>
-                  <small>{{ 'STOP_EXISTING_BEFORE_NEW_START_HINT' | translate }}</small>
-                </span>
-              </label>
-
-              <label class="resolution-option" [class.selected]="conflict.resolution === 'KEEP_BOTH'">
-                <input
-                  type="radio"
-                  name="profile-workout-resolution"
-                  [checked]="conflict.resolution === 'KEEP_BOTH'"
-                  (change)="setConflictResolution('KEEP_BOTH')"
-                />
-                <span>
-                  <strong>{{ 'KEEP_BOTH_ANYWAY' | translate }}</strong>
-                  <small>{{ 'ASSIGN_OVERLAPPING_PROGRAMS_HINT' | translate }}</small>
-                </span>
-              </label>
-            </div>
-          </div>
+          <!-- What the client will see (backlog-programmes.md R5) -->
+          <app-assign-visibility-note kind="workout" [program]="selectedProgram"></app-assign-visibility-note>
+          <app-assign-schedule
+            kind="WORKOUT"
+            [programId]="selectedProgram.id"
+            [isFile]="!!selectedProgram.isFile"
+            [lengthDays]="selectedProgram.isFile ? null : lengthOf(selectedProgram)"
+            [clientIds]="clientIds"
+            [showLines]="true"
+            [(startDate)]="startDate"
+            [(endDate)]="endDate"
+            (previewsChange)="previews = $event"
+            (checkingChange)="checking = $event"
+          ></app-assign-schedule>
         </div>
       </ng-container>
     </div>
 
     <!-- Footer -->
-    <div class="select-program-footer">
+    <div class="select-program-footer" *ngIf="step === 'pick'">
       <button type="button" class="btn-secondary" (click)="back()">
         {{ 'BACK' | translate }}
       </button>
@@ -223,7 +146,7 @@
         [disabled]="!canAssign"
         (click)="assign()"
       >
-        {{ assignmentButtonLabel }}
+        {{ (assigning ? 'ASSIGNING' : 'ASSIGN_FLOW.ASSIGN') | translate }}
       </button>
     </div>
   </div>

@@ -75,7 +75,7 @@ describe('ChangePlanComponent (SUB-46)', () => {
 
     c.confirm();
     expect(billing.requestUpgrade).toHaveBeenCalledWith(7);
-    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90, 'FLOUCI');
+    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90);
     expect(redirect).toHaveBeenCalledWith('https://flouci.example/pay/1');
   });
 
@@ -132,7 +132,7 @@ describe('ChangePlanComponent (SUB-46)', () => {
     }));
 
     c.payPending();
-    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(101, 'FLOUCI');
+    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(101);
 
     c.busy = false;
     c.cancelPending();
@@ -161,7 +161,37 @@ describe('ChangePlanComponent (SUB-46)', () => {
     const c = create(options({ status: 'PAST_DUE', blockedCode: 'PAY_FIRST' }));
 
     expect(c.blockedCode).toBe('PAY_FIRST');
+    expect(c.blockedKey).toBe('CHANGE_PLAN_BLOCKED_PAY_FIRST');
     c.goToPayment();
     expect(router.navigate).toHaveBeenCalledWith(['/subscription']);
+  });
+
+  it('a scheduled change already paid ahead (effective at the start of the current period) cannot be cancelled', () => {
+    stateService.refresh.and.returnValue(of({
+      status: 'ACTIVE', timeZone: 'Africa/Tunis', readOnly: false, brandingAllowed: true,
+      currentPeriodStart: OCT_15, pendingPlanChange: { planId: 4, planName: 'Starter', effectiveAt: OCT_15 },
+    }));
+    const c = create(options({ scheduledChange: { planId: 4, planName: 'Starter', effectiveAt: OCT_15, kind: 'DOWNGRADE' } }));
+
+    expect(c.scheduledPaidAhead).toBeTrue();
+    c.cancelScheduled();
+    expect(billing.cancelScheduledChange).not.toHaveBeenCalled();
+  });
+
+  it('a change scheduled for the renewal (end of the period) can still be cancelled', () => {
+    stateService.refresh.and.returnValue(of({
+      status: 'ACTIVE', timeZone: 'Africa/Tunis', readOnly: false, brandingAllowed: true,
+      currentPeriodStart: OCT_15, pendingPlanChange: { planId: 4, planName: 'Starter', effectiveAt: NOV_15 },
+    }));
+    const c = create(options({ scheduledChange: { planId: 4, planName: 'Starter', effectiveAt: NOV_15, kind: 'DOWNGRADE' } }));
+
+    expect(c.scheduledPaidAhead).toBeFalse();
+  });
+
+  it('PLAN_PAID_AHEAD blocks the screen with the generic text until its own text exists', () => {
+    const c = create(options({ blockedCode: 'PLAN_PAID_AHEAD' }));
+
+    expect(c.scheduledPaidAhead).toBeTrue();
+    expect(c.blockedKey).toBe('CHANGE_PLAN_BLOCKED_PLAN_CHANGE_NOT_ALLOWED');
   });
 });

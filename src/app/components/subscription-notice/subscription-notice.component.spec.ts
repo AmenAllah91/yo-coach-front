@@ -16,7 +16,15 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
     const v = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20,
       suggestedPlan: { planId: 7, planName: 'Pro', price: 90, proratedCost: 13.333 } });
     expect(v.textKey).toBe('NOTICE_LIMIT_PLAN_SUGGESTED_NOW_TEXT');
-    expect(v.textParams).toEqual({ plan: 'Pro', price: 90, now: 13.333 });
+    // Payment audit D6: each amount with its currency (TND when none is given).
+    const nbsp = (s: unknown) => String(s).replace(/[  ]/g, ' ');
+    expect(v.textParams?.['plan']).toBe('Pro');
+    expect(nbsp(v.textParams?.['price'])).toBe('90 TND');
+    expect(nbsp(v.textParams?.['now'])).toBe('13,333 TND');
+    const dollars = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20,
+      suggestedPlan: { planId: 7, planName: 'Pro', price: 29, proratedCost: 4.5, currency: 'USD' } });
+    expect(nbsp(dollars.textParams?.['price'])).toBe('29 $');
+    expect(nbsp(dollars.textParams?.['now'])).toBe('4,50 $');
     // SUB-46: the plan-change screen, the suggested plan preselected.
     expect(v.actionPath).toBe('/subscription/change-plan');
     expect(v.actionQuery).toEqual({ planId: 7 });
@@ -29,6 +37,16 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
     const v = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20, suggestedPlan: null });
     expect(v.textKey).toBe('NOTICE_LIMIT_PLAN_TEXT');
     expect(v.actionPath).toBe('/clients');
+  });
+
+  it('limit lowered by a scheduled downgrade: take the scheduled change back, no upgrade offered', () => {
+    const v = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'SCHEDULED_DOWNGRADE', limit: 10, current: 10, suggestedPlan: null,
+      scheduledPlanName: 'Starter' });
+    expect(v.titleParams).toEqual({ count: 10 });
+    expect(v.textParams).toEqual({ plan: 'Starter' });
+    expect(v.actionKey).toBe('CHANGE_PLAN_CANCEL_SCHEDULED');
+    expect(v.actionPath).toBe('/subscription/change-plan');
+    expect(v.actionQuery).toBeUndefined();
   });
 
   it('locked branding: the validated message and "View plans / Unlock branding"', () => {
@@ -63,6 +81,22 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
 
     expect(c.view).toBeNull();
     expect(router.navigate).toHaveBeenCalledWith(['/subscription/checkout'], { queryParams: undefined });
+    c.ngOnDestroy();
+  });
+
+  it('the suggested plan reaches the plan-change screen preselected', () => {
+    const router = jasmine.createSpyObj('Router', ['navigate']);
+    router.navigate.and.returnValue(Promise.resolve(true));
+    const notices = new SubscriptionNoticeService();
+    const c = new SubscriptionNoticeComponent(notices, router);
+    c.ngOnInit();
+
+    notices.publishIfSubscriptionRefusal({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20,
+      suggestedPlan: { planId: 7, planName: 'Pro', price: 90, proratedCost: null } });
+    c.act();
+
+    expect(c.view).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/subscription/change-plan'], { queryParams: { planId: 7 } });
     c.ngOnDestroy();
   });
 

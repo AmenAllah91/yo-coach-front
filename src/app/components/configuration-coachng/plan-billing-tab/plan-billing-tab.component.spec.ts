@@ -58,8 +58,14 @@ describe('PlanBillingTabComponent (settings, same as My subscription)', () => {
 
     c.pay(c.invoices[0]);
 
-    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90, 'FLOUCI');
+    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(90);
     expect(redirect).toHaveBeenCalledWith('https://flouci.example/pay/90');
+  });
+
+  it('shows the scheduled plan change, like My subscription', () => {
+    const c = create({ ...active, pendingPlanChange: { planId: 4, planName: 'Starter', effectiveAt: '2026-11-14T23:00:00Z' } });
+
+    expect(c.pendingChange).toEqual({ plan: 'Starter', date: '15/11/2026' });
   });
 
   it('offers the paid plan during the trial', () => {

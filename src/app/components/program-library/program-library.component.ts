@@ -19,7 +19,7 @@ import { EnumResponse, Exercise } from '@shared/models/exercice.models';
 import * as XLSX from 'xlsx';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { WorkoutPublicationBadgeComponent } from './workout-publication-badge.component';
+import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
 import { DeleteModalComponent } from './delete-modal/delete-modal.component';
 import { ToastService } from 'app/service/toast.service';
 
@@ -33,7 +33,7 @@ import { ToastService } from 'app/service/toast.service';
     ScrollLoaderComponent,
     ModalAssignToclientComponent,
     TranslateModule,
-    WorkoutPublicationBadgeComponent,
+    ProgramDaysBadgeComponent,
     DeleteModalComponent,
   ],
   templateUrl: './program-library.component.html',
@@ -91,16 +91,6 @@ export class ProgramLibraryComponent implements OnInit {
 
   showAssignModal = false;
   programToAssign: WorkoutPlan | null = null;
-
-  showFileAssignModal = false;
-  fileAssignProgram: WorkoutPlan | null = null;
-  fileAssignClients: Client[] = [];
-  selectedFileAssignClientIds: string[] = [];
-  fileAssignStartDate = '';
-  fileAssignEndDate = '';
-  fileAssignNotifyClient = true;
-  fileAssignSaving = false;
-  fileAssignError = '';
 
   showCreateTypeModal = false;
   showWorkoutCreateModal = false;
@@ -356,29 +346,6 @@ export class ProgramLibraryComponent implements OnInit {
     this.programToAssign = null;
   }
 
-  openFileAssignModal(program: WorkoutPlan) {
-    this.fileAssignProgram = program;
-    this.selectedFileAssignClientIds = [];
-    this.fileAssignStartDate = program.startDate || '';
-    this.fileAssignEndDate = program.endDate || '';
-    this.fileAssignNotifyClient = true;
-    this.fileAssignError = '';
-    this.showFileAssignModal = true;
-    this.loadImportClients();
-  }
-
-  closeFileAssignModal() {
-    if (this.fileAssignSaving) return;
-
-    this.showFileAssignModal = false;
-    this.fileAssignProgram = null;
-    this.selectedFileAssignClientIds = [];
-    this.fileAssignStartDate = '';
-    this.fileAssignEndDate = '';
-    this.fileAssignNotifyClient = true;
-    this.fileAssignError = '';
-  }
-
   getProgramDurationDays(program?: WorkoutPlan | null): number {
     if (!program) return 1;
 
@@ -389,184 +356,12 @@ export class ProgramLibraryComponent implements OnInit {
     return Math.max((program.workoutDays || []).length, 1);
   }
 
-  onFileAssignClientSelection(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.selectedFileAssignClientIds = Array.from(select.selectedOptions).map((option) => option.value);
-  }
-
-  getSelectedFileAssignClients(): Client[] {
-    return this.importClients.filter(
-      (client) => !!client.id && this.selectedFileAssignClientIds.includes(client.id)
-    );
-  }
-
-  confirmFileAssign() {
-    if (!this.fileAssignProgram) return;
-
-    const clientsToAssign = this.getSelectedFileAssignClients();
-
-    if (!clientsToAssign.length) {
-      this.fileAssignError = this.translate.instant('SELECT_AT_LEAST_ONE_CLIENT');
-      return;
-    }
-
-    this.fileAssignSaving = true;
-    this.fileAssignError = '';
-
-    let remaining = clientsToAssign.length;
-
-    clientsToAssign.forEach((client) => {
-      const item = {
-        ...this.fileAssignProgram!,
-        client,
-        startDate: this.fileAssignStartDate || this.fileAssignProgram!.startDate,
-        endDate: this.fileAssignEndDate || this.fileAssignProgram!.endDate || this.fileAssignStartDate || this.fileAssignProgram!.startDate,
-        workoutDays: [],
-      };
-
-      this.workoutService.assignWorkout(item.id!, item).subscribe({
-        next: () => {
-          remaining -= 1;
-          if (remaining === 0) {
-            this.fileAssignSaving = false;
-            this.closeFileAssignModal();
-            this.loadPrograms();
-            this.loadAllCounts();
-          }
-        },
-        error: (error) => {
-          console.error('Error assigning file workout program:', error);
-          remaining -= 1;
-          this.fileAssignError = this.translate.instant('ASSIGN_PROGRAM_ERROR');
-          if (remaining === 0) {
-            this.fileAssignSaving = false;
-          }
-        },
-      });
-    });
-  }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onProgramAssigned(event: any) {
-    if (!this.programToAssign || !event?.clients?.length || !event?.date) {
-      this.showAssignModal = false;
-      return;
-    }
-
-    const isFile = this.isFileProgram(this.programToAssign);
-
-    if (isFile && !event.endDate) {
-      console.error('File workout assignment requires an end date.');
-      return;
-    }
-
-    let remaining = event.clients.length;
-    let hasError = false;
-
-    for (const client of event.clients) {
-      const resolution = this.getConflictResolution(event, client);
-      const startDate = this.getResolvedStartDate(event.date, resolution);
-      const endDate = this.addDays(startDate, this.getProgramDurationDays(this.programToAssign) - 1);
-
-      const workoutDays = isFile
-        ? []
-        : (this.programToAssign.workoutDays || []).map((day: any, index: number) => {
-            const date = this.addDays(startDate, index);
-            const current = new Date(`${date}T00:00:00`);
-
-            return {
-              ...day,
-              date,
-              dayOfWeek: current.toLocaleDateString('en-US', { weekday: 'long' }),
-              dayNumber: index + 1,
-              title: day.restDay ? 'Rest Day' : `Day ${(index % 7) + 1}`,
-            };
-          });
-
-      const calculatedEndDate = isFile
-        ? endDate
-        : (workoutDays.length ? workoutDays[workoutDays.length - 1].date : startDate);
-
-      const item: any = {
-        id: this.programToAssign.id,
-        name: this.programToAssign.name,
-        details: this.programToAssign.details,
-        createdBy: this.programToAssign.createdBy,
-        coach: this.programToAssign.coach,
-        client: client,
-        startDate,
-        endDate: calculatedEndDate,
-        workoutDays,
-        typeWorkoutPlan: this.programToAssign.typeWorkoutPlan,
-        isWorkoutPlanTemplate: false,
-
-        // Important for FILE assignments: keep the source as a real file program.
-        workoutPlanMode: isFile ? 'FILE' : (this.programToAssign.workoutPlanMode || 'NORMAL'),
-        resourceType: this.programToAssign.resourceType,
-        fileName: this.programToAssign.fileName,
-        originalFileName: this.programToAssign.originalFileName,
-        fileUrl: this.programToAssign.fileUrl,
-        fileContentType: this.programToAssign.fileContentType,
-        fileSizeBytes: this.programToAssign.fileSizeBytes,
-      };
-
-      const replace$ = resolution?.resolution === 'REPLACE'
-        ? this.stopExistingWorkoutBefore(resolution.conflict, startDate)
-        : of(null);
-
-      replace$.pipe(
-        switchMap(() => this.workoutService.assignWorkout(item.id!, item))
-      ).subscribe({
-        next: () => {
-          remaining -= 1;
-          if (remaining === 0) {
-            this.showAssignModal = false;
-            this.programToAssign = null;
-            this.loadPrograms();
-            this.loadEnums();
-            this.loadAllCounts();
-          }
-        },
-        error: (err) => {
-          console.error('Error assigning workout program:', err);
-          hasError = true;
-          remaining -= 1;
-          if (remaining === 0) {
-            if (!hasError) {
-              this.showAssignModal = false;
-              this.programToAssign = null;
-            }
-            this.loadPrograms();
-            this.loadEnums();
-            this.loadAllCounts();
-          }
-        },
-      });
-    }
-  }
-
-  private getConflictResolution(event: any, client: Client): any | null {
-    if (!client?.id) return null;
-    return event?.conflictResolutions?.[client.id] || null;
-  }
-
-  private getResolvedStartDate(defaultStartDate: string, resolution: any | null): string {
-    if (resolution?.resolution === 'START_AFTER' && resolution.conflict?.endDate) {
-      return this.addDays(resolution.conflict.endDate, 1);
-    }
-
-    return defaultStartDate;
-  }
-
-  private stopExistingWorkoutBefore(conflict: any, nextStartDate: string): Observable<unknown> {
-    if (!conflict?.id || !conflict.startDate) return of(null);
-
-    const replacementEndDate = this.addDays(nextStartDate, -1);
-    if (new Date(`${replacementEndDate}T00:00:00`).getTime() < new Date(`${conflict.startDate}T00:00:00`).getTime()) {
-      return this.workoutService.deleteWorkout(conflict.id);
-    }
-
-    return this.workoutService.updateWorkoutPlanDates(conflict.id, conflict.startDate, replacementEndDate);
+  /** The assignment window did the work and shows the message with « Annuler » (backlog-programmes.md A7). */
+  onAssignmentDone() {
+    this.closeAssignModal();
+    this.loadPrograms();
+    this.loadEnums();
+    this.loadAllCounts();
   }
 
   private daysBetweenInclusive(startDate: string, endDate: string): number {
@@ -617,11 +412,6 @@ export class ProgramLibraryComponent implements OnInit {
         console.error('Error duplicating program:', error);
       },
     });
-  }
-
-  copyToCalendar(program: WorkoutPlan) {
-    console.log('Copy to calendar:', program);
-    this.openDropdownId = null;
   }
 
   deleteProgram(program: WorkoutPlan) {

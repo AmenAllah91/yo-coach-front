@@ -18,19 +18,40 @@ function load(file, dependencies = {}) {
   }).outputText, {
     exports, crypto, console: { log() {} },
     sessionStorage: { getItem: key => key === 'userId' ? 'coach' : null },
-    require: name => dependencies[name] ?? (name === '@angular/core' ? { Component: () => klass => klass } : {}),
+    require: name => dependencies[name] ?? (name === '@angular/core' ? { Component: () => klass => klass, ViewChild: () => () => {} } : {}),
   });
   return exports;
 }
 
-const publication = load('src/app/shared/models/nutrition-publication.ts');
+const programDays = load('src/app/shared/models/program-days.ts');
+const publication = load('src/app/shared/models/nutrition-publication.ts', { './program-days': programDays });
 const math = load('src/app/shared/models/nutrition-math.ts');
+const schedule = load('src/app/shared/models/program-schedule.ts');
 const draftModule = load('src/app/components/nutrition/nutrition-draft-state.ts', {
   '@shared/models/nutrition-publication': publication,
+  '@shared/models/program-days': programDays,
+  '@shared/models/program-schedule': schedule,
 });
 const { NutritionDraftState } = draftModule;
+const activity = load('src/app/shared/models/client-day-activity.ts');
+// A library plan: the client mode (route clients/...) stays off.
+const clientModeModule = load('src/app/components/nutrition/nutrition-client-mode.ts', {
+  '@shared/models/program-schedule': schedule,
+  '@shared/models/client-day-activity': activity,
+});
+// Day copies (« Copier ce jour », « Dupliquer la semaine »): the real modules.
+const dayCopy = load('src/app/shared/program-copy/program-day-copy.ts');
+const copyController = load('src/app/shared/program-copy/program-copy-controller.ts', { './program-day-copy': dayCopy });
+const nutritionDayCopy = load('src/app/components/nutrition/nutrition-day-copy.ts', {
+  '@shared/models/program-schedule': schedule,
+  '@shared/models/client-day-activity': activity,
+  '@shared/program-copy/program-copy-controller': copyController,
+  '@shared/program-copy/program-day-copy': dayCopy,
+});
 const { CreateFullPlanComponent } = load('src/app/components/nutrition/create-full-plan/create-full-plan.component.ts', {
+  '../nutrition-day-copy': nutritionDayCopy,
   '../nutrition-draft-state': draftModule,
+  '../nutrition-client-mode': clientModeModule,
   '@shared/models/nutrition-publication': publication,
   '@shared/models/nutrition-math': math,
   '../food-servings/plan-food-serving': { PlanFoodServing: class {} },
@@ -70,6 +91,7 @@ function setup(url = '/nutrition/create-full-plan?type=each&name=nutrition%20pla
       return of(clone(plan));
     },
     getNutritionPlanById(id) { return of(clone(plans.get(id))); },
+    prefetchPickerFoods() {},
   };
   let meals = 2;
   const settings = { getDefaultMealsCount: () => meals, getConfig: () => ({ nutrition: { autoCreateMeals: true } }) };
@@ -110,10 +132,11 @@ test('configuration detour, reload, save and publish keep one full nutrition pla
   editor.ngOnInit();
   assert.equal(editor.planName, 'plan 1');
   assert.ok(editor.days.every(day => day.meals.length === 1 && day.meals[0].foods.length === 1));
-  editor.savePlan(1);
+  editor.savePlan();
   assert.equal(editor.draft.error, '');
   assert.equal(env.plans.size, 1);
-  assert.deepEqual(env.plans.get('plan-1').publishedWeeks, [1]);
+  // No weekly publication any more (backlog-programmes.md): nothing to publish is sent.
+  assert.equal(env.plans.get('plan-1').publishedWeeks, undefined);
   assert.equal(env.calls.filter(call => call.method === 'POST').length, 1);
   assert.ok(env.calls.filter(call => call.method === 'PUT').every(call => call.plan.id === 'plan-1'));
   assert.equal(env.router.navigations.length, 1);
@@ -196,4 +219,21 @@ test('starting a separate creation still creates a distinct plan', () => {
   env.draft().save({ name: 'same name', mealDays: [] });
   assert.equal(env.plans.size, 2);
   assert.deepEqual(env.calls.map(call => call.method), ['POST', 'POST']);
+});
+
+test('an older program that is not full weeks is not sent: the coach is told to choose its length', () => {
+  const env = setup();
+  const draft = env.draft();
+  const free = () => ({ cheatMeal: true, meals: [] });
+  draft.save({ name: 'older', mealDays: Array.from({ length: 8 }, free) });
+  assert.equal(env.calls.length, 0, 'the server would refuse it with an English message');
+  assert.match(draft.error, /8 days: a nutrition program is made of full weeks of 7 days/);
+  assert.equal(draft.settingsVisible, true, 'the length is chosen in the settings');
+
+  draft.save({ name: 'too long', mealDays: Array.from({ length: 91 }, free) });
+  assert.match(draft.error, /12 weeks \(84 days\) at most/);
+
+  draft.save({ name: 'two weeks', mealDays: Array.from({ length: 14 }, free) });
+  assert.equal(draft.error, '');
+  assert.equal(env.calls.length, 1);
 });

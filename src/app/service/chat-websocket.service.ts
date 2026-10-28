@@ -1,5 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { Client, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { AuthService } from '@config/auth.service';
@@ -19,10 +19,18 @@ export class ChatWebsocketService {
   private stompClient!: Client;
   private conversationSubscriptions = new Map<string, StompSubscription>();
   private trackedConversationIds = new Set<string>();
+  /** Other topics (the user's own ringing topic): subscribed again after each reconnection. */
+  private topicHandlers = new Map<string, (body: string) => void>();
+  private topicSubscriptions = new Map<string, StompSubscription>();
 
   private messageSubject = new BehaviorSubject<ChatMessage | null>(null);
   public readonly messages$: Observable<ChatMessage | null> =
     this.messageSubject.asObservable();
+
+  /** Emits after each reconnection (not the first connection): what was sent meanwhile is not replayed by the broker. */
+  private reconnectedSubject = new Subject<void>();
+  public readonly reconnected$: Observable<void> = this.reconnectedSubject.asObservable();
+  private wasConnected = false;
 
   constructor(
     private authService: AuthService,
@@ -46,7 +54,13 @@ export class ChatWebsocketService {
 
     this.stompClient.onConnect = () => {
       console.log('[CHAT] STOMP connected');
+      // A reconnection drops every subscription: the conversations and the other topics are subscribed again.
+      this.conversationSubscriptions.clear();
+      this.topicSubscriptions.clear();
       this.subscribeTrackedConversations();
+      this.subscribeTrackedTopics();
+      if (this.wasConnected) this.ngZone.run(() => this.reconnectedSubject.next());
+      this.wasConnected = true;
     };
 
     this.stompClient.activate();
@@ -90,6 +104,25 @@ export class ChatWebsocketService {
           frame => this.handleFrame(conversationId, frame)
         )
       );
+    }
+  }
+
+  /**
+   * Any other topic of the chat broker (the user's own ringing topic `/topic/calls/{userId}`). The handler runs in the
+   * Angular zone; the subscription survives reconnections.
+   */
+  subscribeToTopic(destination: string, handler: (body: string) => void): void {
+    if (!destination) return;
+    this.topicHandlers.set(destination, handler);
+    this.subscribeTrackedTopics();
+  }
+
+  private subscribeTrackedTopics(): void {
+    if (!this.stompClient?.connected) return;
+    for (const [destination, handler] of this.topicHandlers) {
+      if (this.topicSubscriptions.has(destination)) continue;
+      this.topicSubscriptions.set(destination, this.stompClient.subscribe(destination, frame =>
+        this.ngZone.run(() => handler(frame.body))));
     }
   }
 

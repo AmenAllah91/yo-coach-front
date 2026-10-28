@@ -1,28 +1,58 @@
-<main class="public-page">
-  <div class="state-message" *ngIf="loading">{{ 'LOADING' | translate }}</div>
-  <div class="state-message state-message--error" *ngIf="!loading && error && !form">{{ error }}</div>
+<main class="public-page" [class.public-page--preview]="preview">
+  <div class="state-message" *ngIf="loading"><span class="spinner"></span></div>
+
+  <section class="state-card" *ngIf="!loading && !form">
+    <div class="state-card__icon"><i-feather name="slash"></i-feather></div>
+    <h1>{{ 'CONTACT_FORM_NOT_AVAILABLE' | translate }}</h1>
+    <p>{{ 'CONTACT_FORM_NOT_AVAILABLE_HINT' | translate }}</p>
+  </section>
 
   <ng-container *ngIf="form && !loading">
-    <section class="contact-card">
-      <div class="cover" [style.backgroundImage]="form.coverImage ? 'url(' + form.coverImage + ')' : ''"></div>
-      <div class="avatar"><i-feather name="user"></i-feather></div>
+    <!-- Cover on top, avatar over it, then the message and the form: the original layout. -->
+    <section class="contact-card" [attr.inert]="preview ? '' : null">
+      <div class="cover" [class.cover--photo]="!!form.coverImage" [style.backgroundImage]="coverStyle"></div>
+      <div class="avatar" aria-hidden="true">{{ coachInitials }}</div>
 
       <div class="card-body">
-        <h1>{{ form.message }}</h1>
+        <h1 *ngIf="form.message">{{ form.message }}</h1>
+        <h1 *ngIf="!form.message">{{ 'CONTACT_DEFAULT_MESSAGE' | translate }}</h1>
         <div class="coach-name">{{ form.coachName }}</div>
 
-        <form *ngIf="!submitted" (ngSubmit)="submit()" #contactForm="ngForm" novalidate>
-          <label for="fullName">{{ 'FULL_NAME' | translate }}</label>
-          <input id="fullName" name="fullName" type="text" maxlength="100" [(ngModel)]="lead.fullName" (blur)="touched.fullName = true" />
-          <div class="field-error" *ngIf="touched.fullName && fullNameError">{{ fullNameError }}</div>
+        <form *ngIf="!submitted" (ngSubmit)="submit()" novalidate>
+          <div class="field" [class.has-error]="touched.fullName && fullNameError">
+            <label for="fullName">{{ 'FULL_NAME' | translate }}</label>
+            <div class="input-wrap"><i-feather name="user"></i-feather>
+            <input id="fullName" name="fullName" type="text" autocomplete="name" [maxlength]="limits.fullName"
+                   [placeholder]="'CONTACT_NAME_PLACEHOLDER' | translate"
+                   [(ngModel)]="lead.fullName" (blur)="touched.fullName = true"
+                   [attr.aria-invalid]="touched.fullName && !!fullNameError" aria-describedby="fullNameError" /></div>
+            <div id="fullNameError" class="field-error" *ngIf="touched.fullName && fullNameError"><i-feather name="alert-circle"></i-feather>{{ fullNameError | translate }}</div>
+          </div>
 
-          <label for="email">{{ 'EMAIL' | translate }}</label>
-          <input id="email" name="email" type="email" maxlength="254" [(ngModel)]="lead.email" (blur)="touched.email = true" />
-          <div class="field-error" *ngIf="touched.email && emailError">{{ emailError }}</div>
+          <div class="field" [class.has-error]="touched.email && emailError">
+            <label for="email">{{ 'EMAIL' | translate }}</label>
+            <div class="input-wrap"><i-feather name="mail"></i-feather>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" [maxlength]="limits.email"
+                   [placeholder]="'CONTACT_EMAIL_PLACEHOLDER' | translate"
+                   [(ngModel)]="lead.email" (blur)="touched.email = true"
+                   [attr.aria-invalid]="touched.email && !!emailError" aria-describedby="emailError emailHint" /></div>
+            <div id="emailError" class="field-error" *ngIf="touched.email && emailError"><i-feather name="alert-circle"></i-feather>{{ emailError | translate }}</div>
+            <div id="emailHint" class="field-hint" *ngIf="!(touched.email && emailError)">{{ 'CONTACT_EMAIL_HINT' | translate }}</div>
+          </div>
 
-          <label for="message">{{ 'MESSAGE' | translate }}</label>
-          <textarea id="message" name="message" maxlength="2000" rows="4" [(ngModel)]="lead.message" (blur)="touched.message = true"></textarea>
-          <div class="field-error" *ngIf="touched.message && messageError">{{ messageError }}</div>
+          <div class="field" [class.has-error]="touched.message && messageError">
+            <label for="message">{{ 'MESSAGE' | translate }}</label>
+            <div class="input-wrap input-wrap--area"><i-feather name="message-square"></i-feather>
+            <textarea id="message" name="message" rows="4" [maxlength]="limits.message"
+                      [placeholder]="'CONTACT_MESSAGE_PLACEHOLDER' | translate"
+                      [(ngModel)]="lead.message" (blur)="touched.message = true"
+                      [attr.aria-invalid]="touched.message && !!messageError" aria-describedby="messageError"></textarea></div>
+            <div class="field-foot">
+              <div id="messageError" class="field-error" *ngIf="touched.message && messageError"><i-feather name="alert-circle"></i-feather>{{ messageError | translate }}</div>
+              <div class="field-hint" *ngIf="!(touched.message && messageError)">{{ 'CONTACT_MESSAGE_HINT_PUBLIC' | translate }}</div>
+              <span class="field-count" [class.is-near]="lead.message.length > limits.message * 0.9">{{ lead.message.length }}/{{ limits.message }}</span>
+            </div>
+          </div>
 
           <!-- Honeypot: intentionally invisible to humans, available to naive bots/autofill. -->
           <div class="contact-honeypot" aria-hidden="true">
@@ -30,23 +60,32 @@
             <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" [(ngModel)]="lead.website" />
           </div>
 
-          <label class="terms-row">
-            <input name="terms" type="checkbox" [(ngModel)]="lead.termsAccepted" (blur)="touched.terms = true" />
-            <span>{{ 'ACCEPT_TERMS_PREFIX' | translate }} <a href="https://yo-coach.app/terms" target="_blank" rel="noopener noreferrer">{{ 'TERMS_AND_CONDITIONS' | translate }}</a></span>
+          <label class="terms-row" [class.has-error]="touched.terms && termsError">
+            <input name="terms" type="checkbox" [(ngModel)]="lead.termsAccepted" (change)="touched.terms = true" />
+            <span>{{ 'ACCEPT_TERMS_PREFIX' | translate }} <a href="/terms" target="_blank" rel="noopener noreferrer">{{ 'TERMS_OF_USE' | translate }}</a>.</span>
           </label>
-          <div class="field-error" *ngIf="touched.terms && termsError">{{ termsError }}</div>
+          <div class="field-error field-error--terms" *ngIf="touched.terms && termsError"><i-feather name="alert-circle"></i-feather>{{ termsError | translate }}</div>
 
-          <div class="form-error" *ngIf="error">{{ error }}</div>
-          <div class="preview-note" *ngIf="isPreview">{{ 'PREVIEW_SUBMISSIONS_DISABLED' | translate }}</div>
-          <button type="submit" [disabled]="!canSubmit || isPreview">{{ (submitting ? 'SENDING' : 'SEND') | translate }}</button>
+          <div class="form-error" *ngIf="error" role="alert"><i-feather name="alert-circle"></i-feather>{{ error | translate }}</div>
+
+          <button type="submit" class="submit" [disabled]="submitting">
+            <span class="spinner spinner--light" *ngIf="submitting"></span>
+            <i-feather name="send" *ngIf="!submitting"></i-feather>
+            {{ (submitting ? 'SENDING' : 'SEND') | translate }}
+          </button>
+          <ul class="trust">
+            <li><i-feather name="clock"></i-feather>{{ 'CONTACT_TRUST_REPLY' | translate }}</li>
+            <li><i-feather name="lock"></i-feather>{{ 'CONTACT_TRUST_PRIVATE' | translate }}</li>
+          </ul>
         </form>
 
-        <div class="confirmation" *ngIf="submitted">
+        <div class="confirmation" *ngIf="submitted" role="status">
           <div class="check-circle"><i-feather name="check"></i-feather></div>
-          <p>Message sent successfully.</p>
+          <h2>{{ 'CONTACT_SENT_TITLE' | translate }}</h2>
+          <p>{{ 'CONTACT_SENT_TEXT' | translate:{ coach: form.coachName } }}</p>
         </div>
       </div>
     </section>
-    <footer>{{ 'CREATED_WITH' | translate }} <strong>Yo Coach</strong></footer>
+    <footer>{{ 'CREATED_WITH' | translate }} <strong>YoCoach</strong> · <a href="/terms" target="_blank" rel="noopener">{{ 'TERMS_OF_USE' | translate }}</a></footer>
   </ng-container>
 </main>

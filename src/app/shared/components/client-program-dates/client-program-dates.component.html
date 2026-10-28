@@ -1,0 +1,74 @@
+<section class="cpd" [class.is-current]="status === 'CURRENT'" [attr.aria-label]="'CLIENT_DATES.TITLE' | translate">
+  <div class="cpd__head">
+    <span class="cpd__icon" aria-hidden="true"><i-feather name="calendar"></i-feather></span>
+    <div class="cpd__titles">
+      <span class="cpd__kicker">{{ 'CLIENT_DATES.TITLE' | translate }}</span>
+      <strong class="cpd__range">
+        {{ schedule.formatDate(startDate) }}
+        <i-feather name="arrow-right" class="cpd__arrow"></i-feather>
+        {{ schedule.formatDate(endDate) }}
+      </strong>
+    </div>
+    <span class="cpd__badge" [ngClass]="'cpd__badge--' + status.toLowerCase()">{{ ('CLIENT_DATES.STATUS_' + status) | translate }}</span>
+  </div>
+
+  <!-- Where the client is: the week today while it runs, else when it starts / ended. -->
+  <div class="cpd__progress" *ngIf="status === 'CURRENT'">
+    <div class="cpd__bar" role="progressbar" [attr.aria-valuenow]="todayNumber" aria-valuemin="1" [attr.aria-valuemax]="dayCount">
+      <i [style.width.%]="progress"></i>
+    </div>
+    <span class="cpd__progressText">
+      {{ 'CLIENT_DATES.WEEK_OF' | translate:{ week: currentWeek, weeks: weeks } }} ·
+      {{ (endsIn === 0 ? 'CLIENT_DATES.ENDS_TODAY' : endsIn === 1 ? 'CLIENT_DATES.ENDS_TOMORROW' : 'CLIENT_DATES.ENDS_IN') | translate:{ count: endsIn } }}
+    </span>
+  </div>
+
+  <ul class="cpd__facts">
+    <li *ngIf="status === 'UPCOMING' && startDate">
+      <i-feather name="clock"></i-feather>
+      {{ (startsIn === 0 ? 'CLIENT_DATES.STARTS_TODAY' : startsIn === 1 ? 'CLIENT_DATES.STARTS_TOMORROW' : 'CLIENT_DATES.STARTS_IN') | translate:{ count: startsIn } }}
+    </li>
+    <li *ngIf="status === 'FINISHED'">
+      <i-feather name="check-circle"></i-feather>
+      {{ 'CLIENT_DATES.ENDED' | translate:{ date: schedule.formatDate(endDate) } }}
+    </li>
+    <li *ngIf="status === 'STOPPED'">
+      <i-feather name="slash"></i-feather>
+      {{ 'CLIENT_DATES.STOPPED' | translate:{ date: schedule.formatDate(stoppedAt) } }}
+    </li>
+    <li>
+      <i-feather name="layers"></i-feather>
+      <!-- Weeks only when the days make whole weeks (older plans can have 8 days). -->
+      {{ (dayCount % 7 ? 'CLIENT_DATES.DURATION_DAYS' : weeks === 1 ? 'CLIENT_DATES.DURATION_ONE' : 'CLIENT_DATES.DURATION') | translate:{ weeks: weeks, days: dayCount } }}
+    </li>
+    <li>
+      <i-feather name="eye"></i-feather>
+      {{ 'CLIENT_DATES.VISIBLE' | translate:{ count: visibleDays, total: dayCount } }}
+    </li>
+  </ul>
+
+  <div class="cpd__foot" *ngIf="!readOnly">
+    <button type="button" class="cpd__btn" *ngIf="canMove" (click)="open()">
+      <i-feather name="calendar"></i-feather>
+      {{ 'CLIENT_DATES.CHANGE' | translate }}
+    </button>
+    <p class="cpd__note cpd__note--lock" *ngIf="started && planId">
+      <i-feather name="lock"></i-feather>
+      <span>{{ (kind === 'WORKOUT' ? 'CLIENT_DATES.LOCKED_WORKOUT' : 'CLIENT_DATES.LOCKED_NUTRITION') | translate }}</span>
+    </p>
+    <p class="cpd__note" *ngIf="!planId">
+      <i-feather name="info"></i-feather>
+      <span>{{ 'CLIENT_DATES.NEW' | translate }}</span>
+    </p>
+  </div>
+</section>
+
+<app-change-dates-modal
+  *ngIf="showModal"
+  [kind]="kind"
+  [plan]="modalPlan"
+  [clientId]="clientId"
+  [clientName]="clientName"
+  (closed)="showModal = false"
+  (saved)="onSaved($event)"
+></app-change-dates-modal>

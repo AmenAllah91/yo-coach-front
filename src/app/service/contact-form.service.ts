@@ -2,12 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
-import { CoachWebsiteLead } from './website.service';
 
 export interface CoachContactForm {
   id?: string;
   slug: string;
-  coachId: string;
+  /** Absent from the public form (a visitor never gets the coach's account id). */
+  coachId?: string;
   coachName: string;
   coverImage?: string;
   message: string;
@@ -48,8 +48,8 @@ export class ContactFormService {
     return this.http.get<CoachContactForm>(`${this.baseUrl}/public/${encodeURIComponent(slug)}`);
   }
 
-  submitLead(slug: string, payload: ContactLeadPayload): Observable<CoachWebsiteLead> {
-    return this.http.post<CoachWebsiteLead>(
+  submitLead(slug: string, payload: ContactLeadPayload): Observable<void> {
+    return this.http.post<void>(
       `${this.baseUrl}/public/${encodeURIComponent(slug)}/leads`,
       payload,
     );

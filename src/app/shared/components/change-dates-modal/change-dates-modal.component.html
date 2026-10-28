@@ -1,0 +1,79 @@
+<div class="cd-backdrop" (click)="close()">
+  <div class="cd" role="dialog" aria-modal="true" aria-labelledby="cd-title" (click)="$event.stopPropagation()">
+    <header class="cd-head">
+      <span class="cd-head-icon" aria-hidden="true"><i-feather name="calendar"></i-feather></span>
+      <div class="cd-head-text">
+        <h3 class="cd-title" id="cd-title">{{ 'ASSIGN_FLOW.DATES_TITLE' | translate }}</h3>
+        <p class="cd-subtitle">{{ (fixedStart ? 'ASSIGN_FLOW.DATES_SUBTITLE_STARTED' : 'ASSIGN_FLOW.DATES_SUBTITLE') | translate: { name: plan?.name || '' } }}</p>
+      </div>
+      <button type="button" class="cd-close" (click)="close()" [attr.aria-label]="'CLOSE' | translate" [disabled]="saving">
+        <i-feather name="x"></i-feather>
+      </button>
+    </header>
+
+    <div class="cd-body" *ngIf="step === 'dates'; else confirmTpl">
+      <!-- Without programs to shift, the lines are the rule's; with some, the choice below says what happens. -->
+      <app-assign-schedule
+        [kind]="kind"
+        [durationDays]="durationDays"
+        [isFile]="isFile"
+        [clientIds]="clientIds"
+        [excludePlanId]="plan?.id || null"
+        [showLines]="!shifts.length"
+        [offerContinuity]="true"
+        [moveFrom]="originalStart || null"
+        [fixedStart]="fixedStart"
+        [(startDate)]="startDate"
+        [(endDate)]="endDate"
+        (previewsChange)="onPreviews($event)"
+        (checkingChange)="onChecking($event)"
+      ></app-assign-schedule>
+
+      <div class="cd-options" *ngIf="shifts.length" role="radiogroup" [attr.aria-label]="'ASSIGN_FLOW.DATES_CHOICE' | translate">
+        <p class="cd-options-title">{{ 'ASSIGN_FLOW.DATES_CHOICE' | translate }}</p>
+        <button type="button" role="radio" class="cd-option" [class.is-on]="overlap === 'SHIFT'"
+                [attr.aria-checked]="overlap === 'SHIFT'" (click)="overlap = 'SHIFT'">
+          <span class="cd-radio" aria-hidden="true"></span>
+          <span class="cd-option-text">
+            <strong>{{ 'ASSIGN_FLOW.DATES_SHIFT' | translate }}</strong>
+            <small>{{ 'ASSIGN_FLOW.DATES_SHIFT_HINT' | translate }}</small>
+            <small class="cd-line" *ngFor="let line of shiftLines">{{ line }}</small>
+          </span>
+        </button>
+        <button type="button" role="radio" class="cd-option" [class.is-on]="overlap === 'REMOVE'"
+                [attr.aria-checked]="overlap === 'REMOVE'" (click)="overlap = 'REMOVE'">
+          <span class="cd-radio" aria-hidden="true"></span>
+          <span class="cd-option-text">
+            <strong>{{ 'ASSIGN_FLOW.DATES_REMOVE' | translate }}</strong>
+            <small>{{ 'ASSIGN_FLOW.DATES_REMOVE_HINT' | translate }}</small>
+            <small class="cd-line cd-line--loss" *ngFor="let line of removeLines">{{ line }}</small>
+          </span>
+        </button>
+      </div>
+
+      <p class="cd-error" *ngIf="error">{{ error | translate }}</p>
+    </div>
+
+    <ng-template #confirmTpl>
+      <div class="cd-body">
+        <app-assign-confirm
+          [rows]="confirmRows"
+          titleKey="ASSIGN_FLOW.DATES_CONFIRM_TITLE"
+          [programName]="plan?.name || ''"
+          [startLabel]="schedule.formatDate(startDate)"
+          [busy]="saving"
+          (back)="step = 'dates'"
+          (confirm)="doSave()"
+        ></app-assign-confirm>
+      </div>
+    </ng-template>
+
+    <footer class="cd-foot" *ngIf="step === 'dates'">
+      <button type="button" class="cd-btn cd-btn--ghost" (click)="close()" [disabled]="saving">{{ 'CANCEL' | translate }}</button>
+      <button type="button" class="cd-btn cd-btn--primary" (click)="save()" [disabled]="!canSave">
+        <span class="cd-spinner" *ngIf="saving || pendingSave" aria-hidden="true"></span>
+        {{ 'ASSIGN_FLOW.DATES_SAVE' | translate }}
+      </button>
+    </footer>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-<div class="np-root np-layout" [class.plan-loading]="planLoading || planLoadError" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen">
+<div class="np-root np-layout" [class.plan-loading]="planLoading || planLoadError" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen" [class.is-client]="isClientMode" [class.is-readonly]="readOnly">
   <!-- One compact toolbar for every screen size: back, title, structure (small screens), save. -->
   <header class="np-toolbar">
     <button type="button" class="np-toolbar__back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
@@ -7,32 +7,32 @@
       </svg>
     </button>
     <div class="np-toolbar__title">
-      <h1>{{ (isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}</h1>
+      <h1>{{ (readOnly ? 'ASSIGN_FLOW.READONLY_TITLE_WORKOUT' : isEditMode ? 'EDIT_WORKOUT_PLAN' : 'CREATE_WORKOUT_PLAN') | translate }}</h1>
       <p class="np-toolbar__meta" *ngIf="!planLoading">
         <span class="np-toolbar__name" *ngIf="workoutPlan.name?.trim()">{{ workoutPlan.name }}</span>
-        <span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</span>
+        <span class="np-toolbar__name" *ngIf="clientName">{{ clientName }}</span>
+        <span *ngIf="isClientMode; else libraryCount">{{ programSchedule.formatDate(startDate) }} – {{ programSchedule.formatDate(endDate) }}</span>
+        <ng-template #libraryCount><span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</span></ng-template>
       </p>
     </div>
     <button type="button" class="np-toolbar__weeks" (click)="toggleMobileStructure()" [attr.aria-expanded]="mobileStructureOpen" [attr.aria-label]="'PROGRAM_STRUCTURE' | translate">
       <i-feather name="list" class="np-ico"></i-feather>
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
     </button>
-    <div class="np-toolbar__save">
-      <span class="np-toolbar__status" [class.is-error]="!savingDraft && saveError" [attr.title]="saveError || null" role="status" aria-live="polite">
+    <div class="np-toolbar__save" *ngIf="!readOnly">
+      <span class="np-toolbar__status" [class.is-error]="!savingDraft && saveError" [class.has-saved]="!savingDraft && !saveError && savedAt" [attr.title]="saveError || null" role="status" aria-live="polite">
         <ng-container *ngIf="savingDraft">{{ 'SAVING' | translate }}</ng-container>
         <ng-container *ngIf="!savingDraft && saveError">{{ saveError }}</ng-container>
-        <ng-container *ngIf="!savingDraft && !saveError && savedAt">{{ 'WORKOUT_SAVED' | translate }} {{ savedAt | date:'HH:mm' }}</ng-container>
+        <ng-container *ngIf="!savingDraft && !saveError && savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ savedAt | date:'HH:mm' }}</ng-container>
         <ng-container *ngIf="!savingDraft && !saveError && !savedAt && !workoutPlan.id && !planLoading">{{ 'UNSAVED' | translate }}</ng-container>
       </span>
-      <button type="button" class="np-toolbar__savebtn" [class.is-saved]="justSaved" (click)="savePlan()" [disabled]="savingDraft || planLoading || planLoadError" [attr.aria-label]="'SAVE_DRAFT' | translate">
-        <svg *ngIf="!justSaved" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
+      <button type="button" class="np-toolbar__savebtn" [class.is-busy]="savingDraft" [attr.aria-busy]="savingDraft" (click)="savePlan()" [disabled]="savingDraft || planLoading || planLoadError" [attr.aria-label]="'SAVE' | translate">
+        <span class="np-toolbar__spinner" *ngIf="savingDraft" aria-hidden="true"></span>
+        <svg *ngIf="!savingDraft" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
           <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <svg *ngIf="justSaved" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
-          <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span class="np-toolbar__savelabel">{{ (savingDraft ? 'SAVING' : 'SAVE_DRAFT') | translate }}</span>
-        <span class="np-toolbar__savelabel np-toolbar__savelabel--short">{{ savingDraft ? '…' : ((justSaved ? 'SAVED_SHORT' : 'SAVE') | translate) }}</span>
+        <span class="np-toolbar__savelabel">{{ (savingDraft ? 'SAVING' : 'SAVE') | translate }}</span>
+        <span class="np-toolbar__savelabel np-toolbar__savelabel--short">{{ savingDraft ? '…' : ('SAVE' | translate) }}</span>
       </button>
     </div>
   </header>
@@ -52,6 +52,7 @@
         class="np-aside__body"
         cdkDropList
         [cdkDropListData]="days"
+        [cdkDropListDisabled]="readOnly"
         (cdkDropListDropped)="onDropDay($event)"
       >
         <div class="np-week-card" *ngFor="let week of workoutWeeks; trackBy: trackByWeek; let wi = index">
@@ -67,8 +68,8 @@
                 class="np-week-card__chevron"
               ></i-feather>
               <strong>{{ getWeekDisplayLabel(week.label) }}</strong>
-              <small class="np-week-status">{{ (isWeekPublished(wi + 1) ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}</small>
-              <span class="np-week-card__count">{{ getWeekReadyCount(week.days) }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</span>
+              <span class="np-week-range" *ngIf="isClientMode">{{ getWeekDateRange(week) }}</span>
+              <span class="np-week-card__count" [title]="'PROGRAM_DAYS_FILLED' | translate:{ count: getWeekReadyCount(week.days), total: 7 }">{{ 'PROGRAM_DAYS_FILLED_SHORT' | translate:{ count: getWeekReadyCount(week.days), total: 7 } }}</span>
             </div>
           </button>
 
@@ -85,31 +86,31 @@
                 [class.is-active]="selectedDay?.id === d.id"
                 (click)="selectDay(d); closeMobileStructure()"
               >
-                <span class="np-day-state" [class.ready]="getDayBuilderStatus(d) === 'READY'" [class.rest]="getDayBuilderStatus(d) === 'REST_DAY'">
-                  <span *ngIf="getDayBuilderStatus(d) === 'READY'" class="np-ready-check" aria-hidden="true">✓</span>
-                  <i-feather *ngIf="getDayBuilderStatus(d) !== 'READY'" [name]="getDayBuilderStatus(d) === 'REST_DAY' ? 'moon' : 'circle'"></i-feather>
+                <ng-container *ngIf="dayRailState(d) as state">
+                <span class="np-day-state" [class.ready]="state === 'FILLED'" [class.rest]="state === 'REST'" [class.invalid]="state === 'INVALID'" [class.gap]="state === 'GAP'">
+                  <span *ngIf="state === 'FILLED'" class="np-ready-check" aria-hidden="true">✓</span>
+                  <i-feather *ngIf="state !== 'FILLED'" [name]="state === 'REST' ? 'moon' : state === 'INVALID' || state === 'GAP' ? 'alert-circle' : 'circle'"></i-feather>
                 </span>
                 <span class="np-day__topline">
                   <span class="np-day__title">{{ getDayDisplayTitle(d) }}</span>
+                  <span class="np-day__dateLine" *ngIf="isClientMode">{{ getRailDateLabel(d) }}</span>
                 </span>
-                <small class="np-day__meta">
-                  <ng-container *ngIf="d.isRestDay || d.restDay; else exerciseCount">{{ 'REST_DAY' | translate }}</ng-container>
-                  <ng-template #exerciseCount>
-                    {{ (getDayBuilderStatus(d) === 'READY' ? 'WORKOUT_READY' : 'WORKOUT_EMPTY') | translate }}
-                  </ng-template>
+                <small class="np-day__meta" [class.is-warning]="state === 'INVALID' || state === 'GAP'">
+                  {{ (state === 'REST' ? 'REST_DAY' : state === 'FILLED' ? 'PROGRAM_DAY_FILLED' : state === 'INVALID' ? 'PROGRAM_DAY_TO_FIX' : state === 'GAP' ? 'PROGRAM_DAY_GAP' : 'PROGRAM_DAY_EMPTY') | translate }}
                 </small>
+                </ng-container>
               </button>
             </div>
           </ng-container>
           </ng-container>
         </div>
 
-        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" (click)="addDay()">
+        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!readOnly" (click)="addDay()">
           <i-feather name="plus" class="np-ico"></i-feather>
           {{ 'ADD_DAY' | translate }}
         </button>
 
-        <div class="np-stack">
+        <div class="np-stack" *ngIf="!readOnly">
           <button class="np-rowbtn" (click)="duplicateSelectedDay()">
             <span>{{ 'DUPLICATE_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
@@ -128,10 +129,33 @@
       </div>
 
       <ng-container *ngIf="!planLoading && !planLoadError">
-      <section class="np-card np-card--settings">
+      <!-- A finished or stopped client program (A9): read-only, « Dupliquer » to reuse it. -->
+      <div class="np-locked" *ngIf="readOnly" role="status">
+        <i-feather name="lock" class="np-locked__icon"></i-feather>
+        <div class="np-locked__text">
+          <strong>{{ stoppedAt ? ('ASSIGN_FLOW.LOCKED_STOPPED' | translate: { date: programSchedule.formatDate(stoppedAt) }) : ('ASSIGN_FLOW.LOCKED_FINISHED' | translate) }}</strong>
+          <span>{{ 'ASSIGN_FLOW.LOCKED_HINT' | translate }}</span>
+        </div>
+        <button type="button" class="np-locked__btn" (click)="duplicateLocked()" [disabled]="duplicating">
+          <i-feather name="copy" class="np-ico"></i-feather>{{ 'ASSIGN_FLOW.DUPLICATE' | translate }}
+        </button>
+      </div>
+      <!-- A longer client program that reaches the next one (P9): banner now, « Décaler » / « Retirer » at the save. -->
+      <app-program-overflow
+        *ngIf="isClientMode && isEditMode && !readOnly"
+        kind="WORKOUT"
+        [planId]="workoutPlan.id || null"
+        [clientId]="clientId"
+        [programName]="workoutPlan.name"
+        [startDate]="startDate"
+        [dayCount]="days.length"
+        [savedEnd]="savedEnd"
+        (chosen)="persistClientPlan($event)"
+      ></app-program-overflow>
+      <section class="np-card np-card--settings" [attr.inert]="readOnly ? '' : null">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
-          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="planSettingsCollapsed">{{ workoutPlan.name }} · {{ durationWeeks }} {{ 'WEEKS' | translate }}</span>
+          <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="planSettingsCollapsed">{{ workoutPlan.name }} · {{ durationWeeks }} {{ 'WEEKS' | translate }}<ng-container *ngIf="isClientMode"> · {{ programSchedule.formatDate(startDate) }} – {{ programSchedule.formatDate(endDate) }}</ng-container></span>
           <button type="button" class="np-link np-settings-toggle" (click)="planSettingsCollapsed = !planSettingsCollapsed">
             {{ (planSettingsCollapsed ? 'WORKOUT_SHOW' : 'WORKOUT_HIDE') | translate }}
             <i-feather [name]="planSettingsCollapsed ? 'chevron-down' : 'chevron-up'" class="np-ico"></i-feather>
@@ -195,7 +219,25 @@
           </select>
         </div>
 
-        <div class="np-field np-template-visibility" *ngIf="canCreateTemplate">
+        <!-- Dates of a client program: where the client is, the days they see, « Modifier les dates » right here. -->
+        <app-client-program-dates
+          *ngIf="isClientMode"
+          kind="WORKOUT"
+          [planId]="workoutPlan.id || null"
+          [planName]="workoutPlan.name"
+          [clientId]="clientId"
+          [clientName]="clientName"
+          [startDate]="startDate"
+          [endDate]="endDate"
+          [dayCount]="days.length"
+          [visibleDays]="visibleDaysCount"
+          [started]="clientStarted"
+          [readOnly]="readOnly"
+          [stoppedAt]="stoppedAt"
+          (moved)="onClientDatesMoved($event)"
+        ></app-client-program-dates>
+
+        <div class="np-field np-template-visibility" *ngIf="canCreateTemplate && !isClientMode">
           <label class="np-checkline">
             <input
               type="checkbox"
@@ -213,9 +255,9 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="days.length" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [published]="isWeekPublished(getSelectedWeekNumber())" [range]="''" [saving]="savingDraft" [showSave]="false" [narrow]="showExerciseSelector" (publish)="publishSelectedWeek()"></app-workout-week-panel>
+      <app-workout-week-panel *ngIf="days.length && !readOnly" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [range]="''" [saving]="savingDraft" [showSave]="false" [narrow]="showExerciseSelector" [canDuplicate]="copy.canDuplicateWeek" (duplicate)="copy.openWeek()"></app-workout-week-panel>
 
-      <section class="np-card np-card--day">
+      <section class="np-card np-card--day" [attr.inert]="readOnly ? '' : null" [class.np-card--readonly]="readOnly">
 
         <div class="np-sep"></div>
         <!-- Mobile days tabs: shown only on mobile, placed just above selected Day -->
@@ -225,6 +267,7 @@
           cdkDropList
           cdkDropListOrientation="horizontal"
           [cdkDropListData]="days"
+          [cdkDropListDisabled]="readOnly"
           (cdkDropListDropped)="onDropDay($event)"
         >
           <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
@@ -270,6 +313,7 @@
           </ng-container>
 
           <button
+            *ngIf="!readOnly"
             type="button"
             class="np-mobile-add"
             (click)="addDayFromMobile()"
@@ -280,27 +324,40 @@
         </div>
         <div class="builder-rail">
         <div class="wk-day-editor" *ngIf="selectedDay">
-          <div class="wk-day-editor__head">
+          <app-copied-day-banner [copy]="copy"></app-copied-day-banner>
+        <div class="wk-day-editor__head">
             <div class="wk-day-editor__identity">
               <div class="wk-day-editor__titleline">
                 <h3 class="wk-day-editor__title">{{ getDayDisplayTitle(selectedDay) }}</h3>
                 <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel() as selectedDayDate">{{ selectedDayDate }}</span>
                 <span
+                  *ngIf="dayRailState(selectedDay) as state"
                   class="wk-day-editor__status"
-                  [class.is-ready]="getDayBuilderStatus(selectedDay) === 'READY'"
-                  [class.is-rest]="getDayBuilderStatus(selectedDay) === 'REST_DAY'"
+                  [class.is-ready]="state === 'FILLED'"
+                  [class.is-rest]="state === 'REST'"
+                  [class.is-warning]="state === 'INVALID' || state === 'GAP'"
                 >
-                  {{ (getDayBuilderStatus(selectedDay) === 'REST_DAY'
-                    ? 'REST_DAY'
-                    : getDayBuilderStatus(selectedDay) === 'READY'
-                      ? 'WORKOUT_READY'
-                      : 'WORKOUT_EMPTY') | translate }}
+                  {{ (state === 'REST' ? 'REST_DAY' : state === 'FILLED' ? 'PROGRAM_DAY_FILLED' : state === 'INVALID' ? 'PROGRAM_DAY_TO_FIX' : state === 'GAP' ? 'PROGRAM_DAY_GAP' : 'PROGRAM_DAY_EMPTY') | translate }}
                 </span>
               </div>
               <small class="wk-day-editor__week">{{ 'WEEK_NUMBER' | translate:{ number: getSelectedWeekNumber() } }}</small>
             </div>
 
             <div class="wk-day-editor__actions">
+            <!-- « Copier ce jour »: onto other days of this program, or kept for another one (copy-days-modal). -->
+            <button
+              type="button"
+              *ngIf="!copy.readOnly"
+              class="wk-restmark wk-copymark"
+              style="margin-inline-end: 10px"
+              [style.opacity]="copy.canCopyDay ? null : 0.5"
+              [disabled]="!copy.canCopyDay"
+              [title]="(copy.canCopyDay ? 'COPY_DAYS.BUTTON_COPY_DAY_HINT' : 'COPY_DAYS.BUTTON_COPY_DAY_EMPTY') | translate"
+              (click)="copy.openDay()"
+            >
+              <i-feather name="copy" class="wk-restmark__icon"></i-feather>
+              {{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}
+            </button>
               <button
                 type="button"
                 class="wk-restmark"
@@ -1076,14 +1133,29 @@
 </div>
 
 
-<app-ready-weeks-modal
-  *ngIf="readyWeeksPrompt"
-  [weeks]="readyWeeksPrompt"
+<!-- Copies between days: « Copier vers… », « Dupliquer la semaine », « Coller sur… ». -->
+<app-copy-days-modal
+  *ngIf="copy.modal as copyModal"
+  [mode]="copyModal.mode"
+  [dayCount]="copyModal.dayCount"
+  [sourceIndex]="copyModal.sourceIndex"
+  [sourceWeek]="copyModal.sourceWeek"
+  [filled]="copyModal.filled"
+  [sourceLabel]="copyModal.sourceLabel"
+  [locked]="copyModal.locked"
+  (keep)="copy.keepForAnotherProgram()"
+  (close)="copy.close()"
+  (confirm)="copy.confirm($event)"
+></app-copy-days-modal>
+<app-empty-days-modal
+  *ngIf="emptyDaysPrompt"
+  [days]="emptyDaysPrompt"
+  kind="workout"
   [saving]="savingDraft"
-  (publish)="publishReadyWeeks($event)"
-  (keepDraft)="keepReadyWeeksAsDraft()"
-  (close)="readyWeeksPrompt = null"
-></app-ready-weeks-modal>
+  (markRest)="markEmptyDaysAsRest()"
+  (fill)="fillEmptyDay($event)"
+  (close)="emptyDaysPrompt = null"
+></app-empty-days-modal>
 
 <div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
   <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>

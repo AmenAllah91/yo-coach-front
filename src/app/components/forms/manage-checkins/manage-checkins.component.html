@@ -1,5 +1,5 @@
 <div class="page">
-  <div class="container">
+  <div class="ck-container">
     <!-- Header -->
     <div class="header page-header checkins-page-header">
       <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
@@ -8,52 +8,61 @@
         <p class="subtitle">{{ 'MANAGE_CHECK_INS_SUBTITLE' | translate }}</p>
       </div>
 
-      <!-- Search -->
-      <div class="search header-actions">
-        <span class="search-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.3-4.3"></path>
-          </svg>
-        </span>
-
-        <input
-          class="search-input"
-          type="text"
-          [value]="searchQuery"
-          (input)="onSearch(($any($event.target)).value)"
-          [placeholder]="'SEARCH_CLIENTS_OR_FORMS' | translate"
-        />
+      <div class="header-actions header-filters">
+        <div class="search">
+          <span class="search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          </span>
+          <input
+            class="search-input"
+            type="text"
+            [value]="searchQuery"
+            (input)="onSearch($any($event.target).value)"
+            [placeholder]="'SEARCH_CLIENTS_OR_FORMS' | translate"
+            [attr.aria-label]="'SEARCH_CLIENTS_OR_FORMS' | translate" />
+        </div>
+        <select
+          *ngIf="formOptions.length > 1"
+          class="form-select"
+          [value]="formFilter"
+          (change)="onFormFilter($any($event.target).value)"
+          [attr.aria-label]="'CHK_FILTER_FORM' | translate">
+          <option value="">{{ 'CHK_ALL_FORMS' | translate }}</option>
+          <option *ngFor="let f of formOptions" [value]="f.id" [selected]="f.id === formFilter">{{ f.name }}</option>
+        </select>
       </div>
     </div>
 
+    <div *ngIf="error" class="notice notice-error" role="alert">
+      <span>{{ error }}</span>
+      <button type="button" class="notice-link" (click)="loadAssignments()">{{ 'CHK_RETRY' | translate }}</button>
+    </div>
+    <div *ngIf="truncated && listReady" class="notice notice-info">{{ 'CHK_TRUNCATED' | translate }}</div>
+
     <!-- Card -->
-    <div class="card">
+    <div class="ck-card">
       <!-- Tabs -->
       <div class="tabs-wrap">
         <div class="tabs" role="tablist" [attr.aria-label]="'CHECK_IN_TABS' | translate">
           <button
             *ngFor="let tab of tabs"
             class="tab-btn"
-            [class.active]="activeTab === tab.id"
-            (click)="setTab(tab.id)"
+            role="tab"
             type="button"
-          >
+            [class.active]="activeTab === tab.id"
+            [attr.aria-selected]="activeTab === tab.id"
+            [title]="tab.hintKey | translate"
+            (click)="setTab(tab.id)">
             {{ tab.labelKey | translate }}
-
-            <ng-container *ngIf="(counts[tab.id] || 0) > 0">
-              <span
-                class="count-pill"
-                [ngClass]="{
-                  overdue: tab.id === 'overdue',
-                  active: activeTab === tab.id && tab.id !== 'overdue',
-                  neutral: activeTab !== tab.id && tab.id !== 'overdue'
-                }"
-              >
-                {{ counts[tab.id] }}
-              </span>
-            </ng-container>
+            <span
+              *ngIf="listReady && counts[tab.id] > 0"
+              class="count-pill"
+              [ngClass]="{
+                overdue: tab.id === 'overdue',
+                review: tab.id === 'to_review' && activeTab !== tab.id,
+                active: activeTab === tab.id && tab.id !== 'overdue',
+                neutral: activeTab !== tab.id && tab.id !== 'overdue' && tab.id !== 'to_review'
+              }">{{ counts[tab.id] }}</span>
           </button>
         </div>
       </div>
@@ -61,139 +70,90 @@
       <!-- List -->
       <app-section-loader *ngIf="!listReady"></app-section-loader>
       <ng-container *ngIf="listReady">
-      <ng-container *ngIf="paginatedClients.length > 0; else emptyTpl">
-        <div
-          *ngFor="let client of paginatedClients"
-          class="row row-compact"
-          (click)="openCheckInModal(client)">
-          <!-- left -->
-          <div class="row-left">
-            <div class="avatar">
-              <ng-container *ngIf="client.avatar; else initialsTpl">
-                <img [src]="client.avatar" [alt]="client.name" (error)="onAvatarError(client)" />
-              </ng-container>
-              <ng-template #initialsTpl>
-                <div class="avatar-fallback">{{ initials(client.name) }}</div>
-              </ng-template>
+        <ng-container *ngIf="paginatedRows.length > 0; else emptyTpl">
+          <div
+            *ngFor="let row of paginatedRows"
+            class="ck-row"
+            [ngClass]="'tab-' + row.tab"
+            role="button"
+            tabindex="0"
+            (click)="openCheckIn(row)"
+            (keydown.enter)="openCheckIn(row)">
+            <div class="row-left">
+              <div class="avatar">
+                <img *ngIf="row.avatar; else initialsTpl" [src]="row.avatar" [alt]="row.name" (error)="onAvatarError(row)" />
+                <ng-template #initialsTpl><div class="avatar-fallback">{{ initials(row.name) }}</div></ng-template>
+              </div>
+              <div class="name-form">
+                <p class="name">{{ row.name }}</p>
+                <p class="formType">{{ row.formName }}</p>
+              </div>
             </div>
 
-            <div class="name-form">
-              <p class="name">{{ client.name }}</p>
-              <p class="formType">{{ client.formType }}</p>
+            <div class="when">
+              <p class="timing" [ngClass]="'timing-' + row.status">{{ timing(row) }}</p>
+              <p class="date" *ngIf="timingDate(row)">{{ timingDate(row) }}</p>
             </div>
-          </div>
 
-          <!-- right -->
-          <div class="row-right">
-            <p class="date">{{ client.date }}</p>
-
-            <div class="badge" [ngClass]="client.status">
-              <span class="badge-icon" aria-hidden="true">
-                <ng-container [ngSwitch]="client.status">
-                  <svg *ngSwitchCase="'due_today'" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                  </svg>
-
-                  <svg *ngSwitchCase="'overdue'" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 8v4"></path>
-                    <path d="M12 16h.01"></path>
-                  </svg>
-
-                  <svg *ngSwitchCase="'to_review'" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-
-                  <svg *ngSwitchCase="'reviewed'" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <path d="M22 4 12 14.01l-3-3"></path>
-                  </svg>
-
-                  <svg *ngSwitchCase="'upcoming'" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <path d="M16 2v4"></path>
-                    <path d="M8 2v4"></path>
-                    <path d="M3 10h18"></path>
-                  </svg>
-                </ng-container>
+            <div class="badge-cell">
+              <div class="ck-badge" [ngClass]="row.status">{{ statusLabel(row.status) }}</div>
+              <span *ngIf="row.status === 'overdue' && (overdueByClient.get(row.clientId) || 0) > 1" class="repeat"
+                    [title]="'CHK_CLIENT_LATE_TOTAL_HINT' | translate">
+                {{ 'CHK_CLIENT_LATE_TOTAL' | translate: { n: overdueByClient.get(row.clientId) } }}
               </span>
-              <span class="badge-text">{{ statusLabel(client.status) }}</span>
             </div>
 
-            <div class="actions actions-fixed" (click)="$event.stopPropagation()">
-              <button class="action-btn" type="button" [title]="'VIEW_DETAILS' | translate" (click)="openCheckInModal(client)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
+            <div class="actions" (click)="$event.stopPropagation()">
+              <button *ngIf="row.tab === 'to_review'" class="row-cta" type="button" (click)="openCheckIn(row)">
+                {{ 'CHK_REVIEW' | translate }}
               </button>
-
-              <button class="action-btn" type="button" [title]="'MESSAGE_CLIENT' | translate">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
-                </svg>
+              <button *ngIf="row.tab === 'overdue'" class="row-cta row-cta-light" type="button" (click)="messageClient(row, $event)">
+                {{ 'CHK_REMIND' | translate }}
+              </button>
+              <button *ngIf="row.tab !== 'overdue'" class="action-btn" type="button" (click)="messageClient(row, $event)"
+                      [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
+                <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+              </button>
+              <button *ngIf="row.tab === 'overdue'" class="action-btn action-danger" type="button" [disabled]="saving"
+                      (click)="cancelCheckIn(row, $event)" [title]="'CHK_CANCEL_CHECKIN' | translate" [attr.aria-label]="'CHK_CANCEL_CHECKIN' | translate">
+                <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
               </button>
             </div>
           </div>
-        </div>
-      </ng-container>
+        </ng-container>
       </ng-container>
 
       <!-- Empty -->
       <ng-template #emptyTpl>
         <div class="empty">
           <div class="empty-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"></path>
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
           </div>
-          <h3 class="empty-title">{{ 'NO_CLIENTS_FOUND' | translate }}</h3>
-          <p class="empty-subtitle">{{ 'NO_CHECK_INS_MATCH_FILTER' | translate }}</p>
+          <ng-container *ngIf="hasFilter; else noFilterTpl">
+            <h3 class="empty-title">{{ 'NO_CLIENTS_FOUND' | translate }}</h3>
+            <p class="empty-subtitle">{{ 'NO_CHECK_INS_MATCH_FILTER' | translate }}</p>
+            <button type="button" class="notice-link empty-link" (click)="clearFilters()">{{ 'CHK_CLEAR_FILTERS' | translate }}</button>
+          </ng-container>
+          <ng-template #noFilterTpl>
+            <h3 class="empty-title">{{ ('CHK_EMPTY_' + activeTab.toUpperCase()) | translate }}</h3>
+            <p class="empty-subtitle">{{ ('CHK_EMPTY_' + activeTab.toUpperCase() + '_HINT') | translate }}</p>
+          </ng-template>
         </div>
       </ng-template>
 
       <!-- Footer / Pagination -->
-      <div class="footer">
+      <div class="footer" *ngIf="listReady">
         <p class="results">
-          <span class="results-strong">{{ filteredClients.length }}</span>
-          <span> {{ filteredClients.length !== 1 ? ('RESULTS' | translate) : ('RESULT' | translate) }}</span>
+          <strong>{{ filteredRows.length }}</strong>
+          {{ filteredRows.length !== 1 ? ('RESULTS' | translate) : ('RESULT' | translate) }}
         </p>
-
-        <div class="pager">
+        <div class="pager" *ngIf="totalPages > 1">
           <button class="icon-btn" type="button" (click)="prevPage()" [disabled]="safePage <= 1" [attr.aria-label]="'PREVIOUS_PAGE' | translate">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="m15 18-6-6 6-6"></path>
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
           </button>
-
-          <div class="page-buttons">
-            <button
-              *ngFor="let p of pages"
-              type="button"
-              class="page-btn"
-              [class.active]="p === safePage"
-              (click)="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-          </div>
-
+          <button *ngFor="let p of pages" type="button" class="page-btn" [class.active]="p === safePage" (click)="goToPage(p)">{{ p }}</button>
           <button class="icon-btn" type="button" (click)="nextPage()" [disabled]="safePage >= totalPages" [attr.aria-label]="'NEXT_PAGE' | translate">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="m9 18 6-6-6-6"></path>
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
           </button>
         </div>
       </div>
@@ -202,202 +162,182 @@
 </div>
 
 <!-- MODAL -->
-<div *ngIf="isModalOpen && selectedClient" class="modal-backdrop" (click)="closeModal()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<div *ngIf="selected" class="ckm-backdrop" (click)="saving || closeModal()">
+  <div class="ckm-container" role="dialog" aria-modal="true" [attr.aria-label]="selected.formName" (click)="$event.stopPropagation()">
 
     <!-- Header -->
-    <div class="modal-header">
-      <div>
-        <h2 class="modal-title">
-          {{ selectedClient.formName || selectedClient.formType }}
-        </h2>
-        <p class="modal-subtitle">
-          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="10" stroke-width="2"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12v6"/>
-          </svg>
-          {{ 'CLIENT' | translate }}: {{ selectedClient.name }}
-        </p>
-        <p class="modal-subtitle" *ngIf="modalMode === 'view'">
-          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
-            <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
-            <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
-            <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
-          </svg>
-          {{ 'SUBMITTED_STATUS' | translate }}: {{ selectedClient.submittedDate }}
-        </p>
-        <p class="modal-subtitle" *ngIf="modalMode === 'preview'">
-          <svg class="subtitle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
-            <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
-            <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
-            <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
-          </svg>
-          {{ 'DUE_DATE' | translate }}: {{ selectedClient.date }}
-        </p>
+    <div class="ckm-header">
+      <div class="ckm-who">
+        <div class="avatar avatar-lg">
+          <img *ngIf="selected.avatar; else modalInitials" [src]="selected.avatar" [alt]="selected.name" (error)="onAvatarError(selected)" />
+          <ng-template #modalInitials><div class="avatar-fallback">{{ initials(selected.name) }}</div></ng-template>
+        </div>
+        <div class="ckm-heading">
+          <h2 class="ckm-title">{{ selected.formName }}</h2>
+          <p class="ckm-subtitle">
+            <button type="button" class="client-link" (click)="openClientProfile(selected)" [title]="'CHK_OPEN_PROFILE' | translate">{{ selected.name }}</button>
+            <span class="dot" aria-hidden="true">·</span>
+            <span class="ck-badge" [ngClass]="selected.status">{{ statusLabel(selected.status) }}</span>
+          </p>
+          <p class="ckm-dates">
+            <span *ngIf="selected.dueAt">{{ 'DUE_DATE' | translate }} : {{ formatDate(selected.dueAt) }}</span>
+            <span *ngIf="selected.submittedAt">{{ 'SUBMITTED_STATUS' | translate }} : {{ formatDate(selected.submittedAt) }}</span>
+            <span *ngIf="selected.reviewedAt && selected.status === 'reviewed'">{{ 'CHK_STATUS_REVIEWED' | translate }} : {{ formatDate(selected.reviewedAt) }}</span>
+          </p>
+        </div>
       </div>
-      <button class="close-button" (click)="closeModal()" type="button">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+
+      <div class="ckm-tools">
+        <div class="queue-nav" *ngIf="queueLength > 1 && queuePosition >= 0">
+          <button type="button" class="icon-btn" [disabled]="queuePosition <= 0 || saving" (click)="openSibling(-1)" [attr.aria-label]="'CHK_PREVIOUS' | translate">
+            <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+          </button>
+          <span class="queue">{{ queuePosition + 1 }} / {{ queueLength }}</span>
+          <button type="button" class="icon-btn" [disabled]="queuePosition >= queueLength - 1 || saving" (click)="openSibling(1)" [attr.aria-label]="'CHK_NEXT' | translate">
+            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+          </button>
+        </div>
+        <button class="close-button" type="button" (click)="closeModal()" [disabled]="saving" [attr.aria-label]="'CLOSE' | translate">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
     </div>
 
     <!-- Content -->
-    <div class="modal-content">
+    <div class="ckm-content">
+      <app-section-loader *ngIf="detailLoading"></app-section-loader>
+      <div *ngIf="detailError" class="notice notice-error" role="alert">{{ detailError }}</div>
 
-      <!-- Info banner pour mode preview -->
-      <div *ngIf="modalMode === 'preview'" class="info-banner">
-        <div class="info-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="10" stroke-width="2"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0-4h.01"/>
-          </svg>
+      <ng-container *ngIf="detail && !detailLoading">
+        <!-- Not answered yet -->
+        <div *ngIf="!isSubmitted" class="info-banner">
+          <div class="info-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg>
+          </div>
+          <div>
+            <h4 class="info-title">{{ 'CHK_NOT_ANSWERED_TITLE' | translate }}</h4>
+            <p class="info-text">{{ 'CHK_NOT_ANSWERED_TEXT' | translate }}</p>
+          </div>
         </div>
-        <div class="info-content">
-          <h4 class="info-title">{{ 'PREVIEW_MODE' | translate }}</h4>
-          <p class="info-text">{{ 'CHECK_IN_PREVIEW_EXPLANATION' | translate }}</p>
-        </div>
-      </div>
 
-      <!-- Coach Feedback (si mode view ET feedback existe) -->
-      <div *ngIf="modalMode === 'view' && selectedClient.coachFeedback" class="coach-feedback">
-        <div class="feedback-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-          </svg>
-        </div>
-        <div class="feedback-content">
-          <h4 class="feedback-title">{{ 'YOUR_FEEDBACK' | translate }}</h4>
-          <p class="feedback-text">{{ selectedClient.coachFeedback }}</p>
-        </div>
-      </div>
+        <div class="questions-container">
+          <div *ngFor="let q of detail.questions; let i = index" class="question-block">
+            <label class="question-label">
+              {{ i + 1 }}. {{ q.label }}
+              <span *ngIf="q.required" class="required-mark">*</span>
+            </label>
+            <p *ngIf="q.helpText && !isSubmitted" class="help-text">{{ q.helpText }}</p>
 
-      <div class="questions-container">
-        <div *ngFor="let question of selectedClient.questions; let i = index" class="question-block">
-
-          <!-- Question Label -->
-          <label class="question-label">
-            {{ i + 1 }}. {{ question.label }}
-            <span *ngIf="question.required" class="required-mark">*</span>
-          </label>
-
-          <!-- Help Text -->
-          <p *ngIf="question.helpText" class="help-text">{{ question.helpText }}</p>
-
-          <!-- MODE PREVIEW (voir les questions) -->
-          <ng-container *ngIf="modalMode === 'preview'">
-            <!-- TEXT -->
-            <div *ngIf="question.type === QuestionType.TEXT" class="preview-input">
-              <svg class="preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
-              </svg>
-              <span class="preview-text">{{ 'TEXT_ANSWER_EXPECTED' | translate }}</span>
-            </div>
-
-            <!-- MULTIPLE_CHOICE -->
-            <div *ngIf="question.type === QuestionType.MULTIPLE_CHOICE" class="preview-options">
-              <div *ngFor="let option of question.options" class="preview-option">
-                <div class="preview-checkbox"></div>
-                <span>{{ option.label }}</span>
-              </div>
-            </div>
-
-            <!-- YES_NO -->
-            <div *ngIf="question.type === QuestionType.YES_NO" class="preview-yes-no">
-              <div class="preview-button">{{ 'YES' | translate }}</div>
-              <div class="preview-button">{{ 'NO' | translate }}</div>
-            </div>
-
-            <!-- STAR_RATING -->
-            <div *ngIf="question.type === QuestionType.STAR_RATING" class="preview-stars">
-              <svg *ngFor="let star of getStarsArray(question.maxStars || 5)" class="preview-star" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-
-            <!-- DATE -->
-            <div *ngIf="question.type === QuestionType.DATE" class="preview-input">
-              <svg class="preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
-                <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
-                <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
-                <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
-              </svg>
-              <span class="preview-text">{{ 'DATE_SELECTION_EXPECTED' | translate }}</span>
-            </div>
-          </ng-container>
-
-          <!-- MODE VIEW (voir les réponses) -->
-          <ng-container *ngIf="modalMode === 'view'">
-            <ng-container *ngIf="getSubmittedAnswer(question.id) as answer">
-              <!-- TEXT -->
-              <div *ngIf="question.type === QuestionType.TEXT" class="answer-display">
-                {{ answer.text }}
-              </div>
-
-              <!-- MULTIPLE_CHOICE -->
-              <div *ngIf="question.type === QuestionType.MULTIPLE_CHOICE" class="answer-display answer-badge">
-                {{ getOptionLabel(question, answer.selectedOptionId || '') }}
-              </div>
-
-              <!-- YES_NO -->
-              <div *ngIf="question.type === QuestionType.YES_NO" class="answer-display">
-                <span class="yes-no-display" [class.yes]="answer.yes" [class.no]="!answer.yes">
-                  {{ answer.yes ? ('YES' | translate) : ('NO' | translate) }}
-                </span>
-              </div>
-
-              <!-- STAR_RATING -->
-              <div *ngIf="question.type === QuestionType.STAR_RATING" class="star-rating-display">
-                <svg
-                  *ngFor="let star of getStarsArray(question.maxStars || 5)"
-                  class="star-icon-display"
-                  [class.filled]="isStarFilled(question.id, star)"
-                  viewBox="0 0 24 24"
-                  fill="currentColor">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-
-              <!-- DATE -->
-              <div *ngIf="question.type === QuestionType.DATE" class="answer-display">
-                {{ answer.date }}
-              </div>
+            <!-- Answers -->
+            <ng-container *ngIf="isSubmitted; else questionPreview">
+              <ng-container *ngIf="getAnswer(q.id) as a; else noAnswer">
+                <ng-container *ngIf="hasValue(a); else noAnswer">
+                  <div *ngIf="q.type === QuestionType.STAR_RATING" class="star-rating-display" [attr.aria-label]="answerText(a, q)">
+                    <svg *ngFor="let s of stars(q)" class="star-icon-display" [class.filled]="s <= rating(q.id)" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path>
+                    </svg>
+                    <span class="star-score">{{ answerText(a, q) }}</span>
+                  </div>
+                  <div *ngIf="q.type === QuestionType.YES_NO">
+                    <span class="yes-no-display" [class.yes]="$any(a).yes" [class.no]="!$any(a).yes">{{ answerText(a, q) }}</span>
+                  </div>
+                  <div *ngIf="q.type === QuestionType.MULTIPLE_CHOICE">
+                    <span class="answer-badge">{{ answerText(a, q) }}</span>
+                  </div>
+                  <div *ngIf="q.type === QuestionType.TEXT || q.type === QuestionType.DATE" class="answer-display">{{ answerText(a, q) }}</div>
+                </ng-container>
+              </ng-container>
+              <ng-template #noAnswer><div class="answer-display answer-empty">{{ 'CHK_NO_ANSWER' | translate }}</div></ng-template>
             </ng-container>
-          </ng-container>
 
+            <!-- Questions only (not answered yet) -->
+            <ng-template #questionPreview>
+              <ng-container [ngSwitch]="q.type">
+                <div *ngSwitchCase="QuestionType.MULTIPLE_CHOICE" class="preview-options">
+                  <div *ngFor="let o of q.options" class="preview-option"><div class="preview-checkbox"></div><span>{{ o.label }}</span></div>
+                </div>
+                <div *ngSwitchCase="QuestionType.YES_NO" class="preview-yes-no">
+                  <div class="preview-button">{{ 'YES' | translate }}</div>
+                  <div class="preview-button">{{ 'NO' | translate }}</div>
+                </div>
+                <div *ngSwitchCase="QuestionType.STAR_RATING" class="preview-stars">
+                  <svg *ngFor="let s of stars(q)" class="preview-star" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path>
+                  </svg>
+                </div>
+                <div *ngSwitchCase="QuestionType.DATE" class="preview-input"><span class="preview-text">{{ 'DATE_SELECTION_EXPECTED' | translate }}</span></div>
+                <div *ngSwitchDefault class="preview-input"><span class="preview-text">{{ 'TEXT_ANSWER_EXPECTED' | translate }}</span></div>
+              </ng-container>
+            </ng-template>
+          </div>
         </div>
-      </div>
+
+        <p *ngIf="!detail.questions.length" class="help-text">{{ 'CHK_NO_QUESTIONS' | translate }}</p>
+
+        <div *ngIf="detail.orphanAnswers.length" class="orphans">
+          <h4 class="feedback-label">{{ 'CHK_REMOVED_QUESTIONS' | translate }}</h4>
+          <div *ngFor="let a of detail.orphanAnswers" class="answer-display">{{ answerText(a) }}</div>
+        </div>
+
+        <!-- Coach comment -->
+        <div *ngIf="isSubmitted" class="feedback-section">
+          <div class="feedback-head">
+            <label class="feedback-label" for="coach-feedback">{{ 'CHK_FEEDBACK_TITLE' | translate }}</label>
+            <button *ngIf="selected.status === 'reviewed' && !editingFeedback" type="button" class="notice-link" (click)="editingFeedback = true">
+              {{ (selected.coachFeedback ? 'CHK_EDIT_FEEDBACK' : 'CHK_ADD_FEEDBACK') | translate }}
+            </button>
+          </div>
+          <ng-container *ngIf="editingFeedback; else feedbackRead">
+            <textarea
+              id="coach-feedback"
+              class="feedback-textarea"
+              rows="3"
+              maxlength="2000"
+              [(ngModel)]="feedback"
+              (keydown)="onFeedbackKeydown($event)"
+              [placeholder]="'CHK_FEEDBACK_PLACEHOLDER' | translate"></textarea>
+            <p class="help-text">{{ 'CHK_FEEDBACK_HINT' | translate }}</p>
+          </ng-container>
+          <ng-template #feedbackRead>
+            <div *ngIf="selected.coachFeedback; else noFeedback" class="coach-feedback">
+              <div class="feedback-icon"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div>
+              <p class="feedback-text">{{ selected.coachFeedback }}</p>
+            </div>
+            <ng-template #noFeedback><p class="help-text">{{ 'CHK_NO_FEEDBACK' | translate }}</p></ng-template>
+          </ng-template>
+        </div>
+      </ng-container>
+
+      <div *ngIf="actionError" class="notice notice-error" role="alert">{{ actionError }}</div>
     </div>
 
     <!-- Footer -->
-    <div *ngIf="modalMode === 'preview'" class="modal-footer modal-footer--preview">
-      <button type="button" (click)="closeModal()" class="close-preview-button">
-        {{ 'CLOSE_PREVIEW' | translate }}
+    <div class="ckm-footer">
+      <button type="button" class="btn-cancel btn-message" (click)="messageClient(selected)" [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+        <span class="btn-label">{{ 'CHK_MESSAGE' | translate }}</span>
+      </button>
+      <span class="spacer"></span>
+
+      <ng-container *ngIf="selected.status === 'to_review'">
+        <button type="button" class="btn-cancel" [disabled]="saving || detailLoading" (click)="saveReview(false)">
+          {{ 'CHK_MARK_REVIEWED' | translate }}
+        </button>
+        <button *ngIf="queuePosition >= 0 && queuePosition < queueLength - 1" type="button" class="btn-reviewed"
+                [disabled]="saving || detailLoading" (click)="saveReview(true)">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>
+          {{ 'CHK_REVIEW_AND_NEXT' | translate }}
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="selected.status === 'reviewed' && editingFeedback">
+        <button type="button" class="btn-cancel" [disabled]="saving" (click)="editingFeedback = false; feedback = selected.coachFeedback || ''">{{ 'CANCEL' | translate }}</button>
+        <button type="button" class="btn-reviewed" [disabled]="saving" (click)="saveReview(false)">{{ 'CHK_SAVE_FEEDBACK' | translate }}</button>
+      </ng-container>
+
+      <button *ngIf="selected.status === 'overdue'" type="button" class="btn-cancel btn-danger" [disabled]="saving" (click)="cancelCheckIn(selected)">
+        {{ 'CHK_CANCEL_CHECKIN' | translate }}
       </button>
     </div>
-
-    <!-- Footer pour to_review (SIMPLIFIÉ - sans feedback) -->
-    <div *ngIf="modalMode === 'view' && selectedClient.status === 'to_review'" class="modal-footer modal-footer--actions">
-      <button type="button" (click)="closeModal()" class="btn-cancel">
-        {{ 'CANCEL' | translate }}
-      </button>
-      <button type="button" (click)="markAsReviewed()" class="btn-reviewed">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        </svg>
-        {{ 'MARK_AS_REVIEWED' | translate }}
-      </button>
-    </div>
-
-    <!-- Footer pour reviewed (déjà reviewé) -->
-    <div *ngIf="modalMode === 'view' && selectedClient.status === 'reviewed'" class="modal-footer modal-footer--view">
-      <button type="button" (click)="closeModal()" class="close-view-button">
-        {{ 'CLOSE' | translate }}
-      </button>
-    </div>
-
   </div>
 </div>

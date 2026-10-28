@@ -1,0 +1,95 @@
+<section class="as">
+  <div class="as-head">
+    <span class="as-label">{{ 'ASSIGN_FLOW.WHEN' | translate }}</span>
+    <span class="as-checking" *ngIf="checking" role="status">
+      <span class="as-spinner" aria-hidden="true"></span>{{ 'ASSIGN_FLOW.CHECKING' | translate }}
+    </span>
+  </div>
+
+  <p class="as-fixed" *ngIf="fixedStart">
+    <i-feather name="lock" class="as-chip-icon"></i-feather>
+    {{ 'ASSIGN_FLOW.FIXED_START' | translate: { date: schedule.formatDate(startDate) } }}
+  </p>
+
+  <div class="as-chips" *ngIf="!fixedStart" role="radiogroup" [attr.aria-label]="'ASSIGN_FLOW.WHEN' | translate">
+    <button
+      *ngFor="let shortcut of shortcuts"
+      type="button"
+      role="radio"
+      class="as-chip"
+      [class.is-active]="startDate === shortcut.date"
+      [class.is-continuity]="shortcut.key === 'CONTINUITY'"
+      [attr.aria-checked]="startDate === shortcut.date"
+      (click)="pick(shortcut.date)"
+    >
+      <span class="as-chip-title">
+        <i-feather *ngIf="shortcut.key === 'CONTINUITY'" name="corner-down-right" class="as-chip-icon"></i-feather>
+        {{ 'ASSIGN_FLOW.SHORTCUT_' + shortcut.key | translate }}
+      </span>
+      <span class="as-chip-date">{{ schedule.formatDate(shortcut.date) }}</span>
+    </button>
+
+    <label class="as-chip as-chip--date" [class.is-active]="isCustom">
+      <span class="as-chip-title">
+        <i-feather name="calendar" class="as-chip-icon"></i-feather>
+        {{ 'ASSIGN_FLOW.SHORTCUT_OTHER' | translate }}
+      </span>
+      <input
+        type="date"
+        class="as-date-input"
+        [min]="today"
+        [value]="isCustom ? startDate : ''"
+        (change)="pickCustom($event)"
+        [attr.aria-label]="'ASSIGN_FLOW.SHORTCUT_OTHER' | translate"
+      />
+    </label>
+  </div>
+
+  <!-- New dates on another weekday: the program's « day 1 = lundi » would move (CD-13). -->
+  <div class="as-weekday" *ngIf="weekdayChoice as choice" role="status">
+    <i-feather name="alert-circle" class="as-line-icon"></i-feather>
+    <span class="as-weekday-text">{{ 'ASSIGN_FLOW.WEEKDAY_HINT' | translate: { day: choice.day } }}</span>
+    <span class="as-weekday-actions">
+      <button type="button" class="as-weekday-btn" *ngIf="choice.before" (click)="pick(choice.before)">{{ schedule.formatDate(choice.before) }}</button>
+      <button type="button" class="as-weekday-btn" (click)="pick(choice.after)">{{ schedule.formatDate(choice.after) }}</button>
+    </span>
+  </div>
+
+  <p class="as-continuity-hint" *ngIf="clientIds.length === 1 && shortcuts[0]?.key === 'CONTINUITY' && startDate === shortcuts[0].date">
+    {{ 'ASSIGN_FLOW.CONTINUITY_HINT' | translate }}
+  </p>
+
+  <div class="as-range" *ngIf="!isFile">
+    <i-feather name="calendar" class="as-range-icon"></i-feather>
+    <span>
+      {{ 'ASSIGN_FLOW.RANGE' | translate: { start: schedule.formatDate(startDate), end: endLabel || '…' } }}
+    </span>
+    <span class="as-range-days" *ngIf="durationLabelDays > 0">
+      · {{ 'ASSIGN_FLOW.RANGE_DAYS' | translate: { count: durationLabelDays } }}
+    </span>
+  </div>
+
+  <div class="as-file-end" *ngIf="isFile">
+    <label class="as-file-label" for="as-file-end">{{ 'ASSIGN_FLOW.FILE_END' | translate }}</label>
+    <input id="as-file-end" type="date" class="as-date-field" [min]="endMin" [value]="endDate" (change)="pickEnd($event)" />
+    <span class="as-error" *ngIf="endBeforeStart">{{ 'ASSIGN_FLOW.END_BEFORE_START' | translate }}</span>
+  </div>
+
+  <div class="as-lines" *ngIf="showLines && (singleLines.length || singleError)" role="status">
+    <div class="as-line" *ngFor="let line of singleLines">
+      <i-feather name="alert-circle" class="as-line-icon"></i-feather>
+      <span>{{ line }}</span>
+    </div>
+    <div class="as-line as-line--error" *ngIf="singleError">
+      <i-feather name="x-circle" class="as-line-icon"></i-feather>
+      <span>{{ 'ASSIGN_FLOW.REASON_' + singleError | translate }}</span>
+    </div>
+  </div>
+
+  <!-- Without the check the coach would assign without seeing what changes: nothing goes until it works. -->
+  <div class="as-line as-line--error as-failed" *ngIf="failed && !checking" role="alert">
+    <i-feather name="wifi-off" class="as-line-icon"></i-feather>
+    <span>{{ 'ASSIGN_FLOW.PREVIEW_FAILED' | translate }}</span>
+    <button type="button" class="as-retry" (click)="retry()">{{ 'ASSIGN_FLOW.RETRY' | translate }}</button>
+  </div>
+</section>

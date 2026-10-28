@@ -56,11 +56,12 @@ export class AppThemeColorsService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  uploadMobileLogo(file: File): Observable<{ url: string }> {
+  /** `objectPath` is what the theme saves (mobileLogoPath); `url` is what the page shows right away. */
+  uploadMobileLogo(file: File): Observable<{ url: string; objectPath?: string }> {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.http.post<{ url: string }>(
+    return this.http.post<{ url: string; objectPath?: string }>(
       `${this.baseUrl}/mobile-logo`,
       formData
     );

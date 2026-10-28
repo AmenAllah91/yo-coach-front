@@ -1,0 +1,54 @@
+<div class="video-call" [class.video-call--mini]="minimized" [class.video-call--audio]="isAudio"
+     role="dialog" [attr.aria-label]="(isAudio ? 'AUDIO_CALL' : 'VIDEO_CALL') | translate">
+  <div class="video-call__stage" (click)="minimized && toggleMinimized()">
+    <!-- Name of the other side: always behind; the remote video covers it when there is one. -->
+    <div class="video-call__peer" [class.video-call__peer--hidden]="remoteVideo && state === 'connected'">
+      <div class="video-call__avatar" [class.video-call__avatar--ringing]="state === 'ringing'">{{ initials }}</div>
+      <strong class="video-call__name">{{ peerName }}</strong>
+      <span class="video-call__status" [ngSwitch]="state">
+        <ng-container *ngSwitchCase="'connecting'">{{ 'VIDEO_CALL_CONNECTING' | translate }}</ng-container>
+        <ng-container *ngSwitchCase="'ringing'">{{ 'CALL_RINGING' | translate }}</ng-container>
+        <ng-container *ngSwitchCase="'waiting'">{{ 'CALL_WAITING' | translate }}</ng-container>
+        <ng-container *ngSwitchCase="'connected'">{{ timer }}</ng-container>
+        <ng-container *ngSwitchCase="'noanswer'">{{ 'CALL_NO_ANSWER' | translate }}</ng-container>
+        <ng-container *ngSwitchCase="'declined'">{{ 'CALL_DECLINED' | translate }}</ng-container>
+        <ng-container *ngSwitchCase="'ended'">{{ 'CALL_ENDED' | translate }}</ng-container>
+        <ng-container *ngSwitchCase="'error'">{{ 'VIDEO_CALL_ERROR' | translate }}</ng-container>
+      </span>
+      <button *ngIf="state === 'error'" type="button" class="video-call__retry" (click)="retry(); $event.stopPropagation()">
+        {{ 'RETRY' | translate }}
+      </button>
+    </div>
+
+    <div #remoteContainer class="video-call__remote" [class.video-call__remote--hidden]="isAudio"></div>
+
+    <video *ngIf="!isAudio" #localVideo class="video-call__local" [class.video-call__local--off]="!cameraEnabled"
+           autoplay playsinline [muted]="true"></video>
+
+    <div class="video-call__top" (click)="$event.stopPropagation()">
+      <button type="button" class="video-call__icon" (click)="toggleMinimized()"
+              [attr.aria-label]="(minimized ? 'CALL_EXPAND' : 'CALL_MINIMIZE') | translate"
+              [title]="(minimized ? 'CALL_EXPAND' : 'CALL_MINIMIZE') | translate">
+        <i-feather [name]="minimized ? 'maximize-2' : 'minimize-2'"></i-feather>
+      </button>
+      <span *ngIf="state === 'connected' && (!isAudio || minimized)" class="video-call__pill">
+        <i-feather [name]="isAudio ? 'phone' : 'video'"></i-feather>{{ timer }}
+      </span>
+    </div>
+  </div>
+
+  <div class="video-call__controls">
+    <button type="button" class="video-call__btn" [class.video-call__btn--off]="!micEnabled"
+            (click)="toggleMic()" [attr.aria-label]="'VIDEO_CALL_MIC' | translate" [title]="'VIDEO_CALL_MIC' | translate">
+      <i-feather [name]="micEnabled ? 'mic' : 'mic-off'"></i-feather>
+    </button>
+    <button *ngIf="!isAudio" type="button" class="video-call__btn" [class.video-call__btn--off]="!cameraEnabled"
+            (click)="toggleCamera()" [attr.aria-label]="'VIDEO_CALL_CAMERA' | translate" [title]="'VIDEO_CALL_CAMERA' | translate">
+      <i-feather [name]="cameraEnabled ? 'video' : 'video-off'"></i-feather>
+    </button>
+    <button type="button" class="video-call__btn video-call__btn--end" (click)="hangUp()"
+            [attr.aria-label]="'VIDEO_CALL_HANGUP' | translate" [title]="'VIDEO_CALL_HANGUP' | translate">
+      <i-feather name="phone-off"></i-feather>
+    </button>
+  </div>
+</div>

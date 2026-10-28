@@ -12,17 +12,14 @@ import { TranslateModule } from '@ngx-translate/core';
         <div class="week-panel__title">
           <h2>{{ 'WEEK_NUMBER' | translate:{ number: week } }}</h2>
           <small class="week-panel__range" *ngIf="range && !compact">{{ range }}</small>
-          <span class="week-panel__status" [class.published]="published">
-            {{ (published ? 'WORKOUT_PUBLISHED' : 'WORKOUT_DRAFT') | translate }}
-          </span>
-          <strong>{{ ready }}/7 {{ 'WORKOUT_READY' | translate | lowercase }}</strong>
+          <strong>{{ 'PROGRAM_DAYS_FILLED' | translate:{ count: ready, total: 7 } }}</strong>
         </div>
 
         <div class="week-panel__support">
           <div class="week-panel__progress" aria-hidden="true">
             <i [style.width.%]="ready / 7 * 100"></i>
           </div>
-          <p class="week-panel__hint" *ngIf="(published ? 'WORKOUT_PUBLISHED_HINT' : 'WORKOUT_DRAFT_HINT') | translate as hint" [attr.title]="hint">
+          <p class="week-panel__hint" *ngIf="'PROGRAM_DAYS_HINT' | translate as hint" [attr.title]="hint">
             <span class="week-panel__info" aria-hidden="true">i</span>
             <span class="week-panel__hint-text">{{ hint }}</span>
           </p>
@@ -33,20 +30,20 @@ import { TranslateModule } from '@ngx-translate/core';
         </small>
       </div>
 
-      <div class="week-panel__buttons">
-        <button type="button" *ngIf="showSave" (click)="save.emit()" [disabled]="saving">
+      <div class="week-panel__buttons" *ngIf="showSave || canDuplicate">
+        <!-- « Dupliquer la semaine » (copy-days-modal, mode week): the whole week onto the next ones. -->
+        <button type="button" class="week-panel__duplicate" *ngIf="canDuplicate" (click)="duplicate.emit()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="9" y="9" width="11" height="11" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          {{ 'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate }}
+        </button>
+        <button type="button" class="primary" *ngIf="showSave" (click)="save.emit()" [disabled]="saving">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" />
           </svg>
-          {{ saving ? ('LOADING' | translate) : ('SAVE_DRAFT' | translate) }}
-        </button>
-        <button
-          type="button"
-          class="primary"
-          (click)="publish.emit()"
-          [disabled]="saving || ready !== 7 || published"
-        >
-          {{ published ? ('WORKOUT_PUBLISHED' | translate) : ('WORKOUT_PUBLISH_WEEK' | translate:{ number: week }) }}
+          {{ saving ? ('SAVING' | translate) : ('SAVE' | translate) }}
         </button>
       </div>
 
@@ -223,6 +220,26 @@ import { TranslateModule } from '@ngx-translate/core';
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-width: 1.8;
+    }
+
+    .week-panel button.week-panel__duplicate {
+      min-height: 38px;
+      padding: 0 14px;
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: #0369a1;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+
+    .week-panel button.week-panel__duplicate:hover {
+      border-color: #93c5fd;
+      background: #dbeafe;
+    }
+
+    .week-panel button.week-panel__duplicate svg {
+      width: 16px;
+      height: 16px;
     }
 
     .week-panel button.primary {
@@ -545,10 +562,14 @@ import { TranslateModule } from '@ngx-translate/core';
     }
   `],
 })
+/**
+ * Week header of the workout and nutrition builders: its progress in filled days. No weekly publication any more
+ * (backlog-programmes.md): the client sees the filled days as soon as the coach saves.
+ */
 export class WorkoutWeekPanelComponent {
   @Input() week = 1;
+  /** Filled and rest / free days of the week. */
   @Input() ready = 0;
-  @Input() published = false;
   @Input() saving = false;
   @Input() savedAt: Date | null = null;
   @Input() error = '';
@@ -557,7 +578,9 @@ export class WorkoutWeekPanelComponent {
   @Input() narrow = false;
   /** False when the page already has its own save button (the workout builder toolbar). */
   @Input() showSave = true;
+  /** Shows « Dupliquer la semaine » (the builder opens the copy modal on `duplicate`). */
+  @Input() canDuplicate = false;
 
   @Output() save = new EventEmitter<void>();
-  @Output() publish = new EventEmitter<void>();
+  @Output() duplicate = new EventEmitter<void>();
 }

@@ -7,17 +7,29 @@
   <div
     *ngFor="let toast of toastService.toasts$ | async"
     class="toast"
-    [class]="'toast-' + toast.type">
-    <div class="toast-icon">
-      <i class="fas" [class]="getToastIcon(toast.type)"></i>
+    [ngClass]="'toast-' + toast.type"
+    [class.toast--timed]="toast.actions?.length"
+    role="status">
+    <div class="toast-icon" aria-hidden="true">
+      <i class="fas" [ngClass]="toast.icon || getToastIcon(toast.type)"></i>
     </div>
     <div class="toast-content">
       <div class="toast-title">{{ toast.title }}</div>
       <div class="toast-message" *ngIf="toast.message">{{ toast.message }}</div>
+      <ul class="toast-details" *ngIf="toast.details?.length">
+        <li *ngFor="let line of toast.details">{{ line }}</li>
+      </ul>
+      <p class="toast-hint" *ngIf="toast.hint">{{ toast.hint }}</p>
+      <div class="toast-actions" *ngIf="toast.actions?.length">
+        <button type="button" class="toast-action" *ngFor="let action of toast.actions" (click)="toastService.runAction(toast, action)">
+          <i *ngIf="action.icon" class="fas" [ngClass]="action.icon" aria-hidden="true"></i>{{ action.label }}
+        </button>
+      </div>
     </div>
-    <button class="toast-close" (click)="toastService.remove(toast.id)">
+    <button class="toast-close" type="button" aria-label="×" (click)="toastService.remove(toast.id)">
       <i class="fas fa-times"></i>
     </button>
+    <span class="toast-timer" *ngIf="toast.actions?.length" [style.animation-duration.ms]="toast.duration" aria-hidden="true"></span>
   </div>
 </div>
 
@@ -31,4 +43,7 @@
 </section>
 <ng-template #available><router-outlet></router-outlet></ng-template>
 </ng-template>
+
+<!-- Calls: incoming call window (bottom-right, with ringtone) and call window, on every page. -->
+<app-call-host *ngIf="signedIn"></app-call-host>
 

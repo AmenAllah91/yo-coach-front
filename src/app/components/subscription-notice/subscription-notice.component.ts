@@ -8,6 +8,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { SubscriptionNotice, SubscriptionNoticeService } from 'app/service/subscription-notice.service';
 import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
+import { formatAmount } from 'app/models/subscription-onboarding.model';
 
 export interface NoticeView {
   icon: string;
@@ -53,10 +54,12 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
   }
 
   act(): void {
+    // Read before closing: the suggested plan must reach the plan-change screen.
     const path = this.view?.actionPath;
+    const query = this.view?.actionQuery;
     this.view = null;
     if (path) {
-      void this.router.navigate([path], { queryParams: this.view?.actionQuery });
+      void this.router.navigate([path], { queryParams: query });
     }
   }
 
@@ -91,13 +94,31 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
         actionPath: CHECKOUT_PATH,
       };
     }
+    if (notice.reason === 'SCHEDULED_DOWNGRADE') {
+      // The limit is the one of the smaller plan scheduled for the renewal: taking that change back gives the places
+      // again (no upgrade to suggest). The plan-change screen shows the scheduled change and its "Cancel" button.
+      return {
+        icon: 'users',
+        ...title,
+        textKey: 'NOTICE_LIMIT_PLAN_TEXT',
+        // For the dedicated text (to add to the i18n files): "the limit of the {{plan}} plan applies until the renewal".
+        textParams: { plan: notice.scheduledPlanName ?? '' },
+        actionKey: 'CHANGE_PLAN_CANCEL_SCHEDULED',
+        actionPath: CHANGE_PLAN_PATH,
+      };
+    }
     if (notice.suggestedPlan?.planName) {
       const plan = notice.suggestedPlan;
       return {
         icon: 'users',
         ...title,
         textKey: plan.proratedCost ? 'NOTICE_LIMIT_PLAN_SUGGESTED_NOW_TEXT' : 'NOTICE_LIMIT_PLAN_SUGGESTED_TEXT',
-        textParams: { plan: plan.planName, price: plan.price ?? '', now: plan.proratedCost ?? '' },
+        // Payment audit D6: amounts with their own currency (the one of the subscription), never "TND" written in.
+        textParams: {
+          plan: plan.planName,
+          price: formatAmount(plan.price, plan.currency),
+          now: formatAmount(plan.proratedCost, plan.currency),
+        },
         // SUB-46: the plan-change screen, the suggested plan preselected.
         actionKey: 'NOTICE_CHANGE_TO_PLAN',
         actionPath: CHANGE_PLAN_PATH,

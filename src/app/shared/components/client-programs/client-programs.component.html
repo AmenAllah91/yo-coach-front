@@ -1,0 +1,241 @@
+<section class="cp">
+  <header class="cp-head">
+    <div class="cp-head-text">
+      <h2 class="cp-title">{{ (isWorkout ? 'CLIENT_PROGRAMS.TITLE_WORKOUT' : 'CLIENT_PROGRAMS.TITLE_NUTRITION') | translate }}</h2>
+      <span class="cp-last" *ngIf="overview">
+        <i-feather name="activity" class="cp-ico"></i-feather>{{ lastActivityLabel }}
+      </span>
+    </div>
+    <div class="cp-head-actions" *ngIf="writable && overview && !isEmpty">
+      <button type="button" class="cp-btn cp-btn--outline" (click)="emit({ type: 'pause' })">
+        <i-feather name="pause-circle" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.PAUSE' | translate }}
+      </button>
+      <button type="button" class="cp-btn cp-btn--brand" (click)="emit({ type: 'assign' })">
+        <i-feather name="plus" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.ASSIGN_PROGRAM' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading (first visit only: the last read is shown at once afterwards) -->
+  <div class="cp-skeleton" *ngIf="loading" aria-busy="true">
+    <div class="cp-skel cp-skel--card"></div>
+    <div class="cp-skel cp-skel--row"></div>
+  </div>
+
+  <div class="cp-error" *ngIf="!loading && failed" role="alert">
+    <i-feather name="wifi-off" class="cp-ico"></i-feather>
+    <span>{{ 'CLIENT_PROGRAMS.LOAD_FAILED' | translate }}</span>
+    <button type="button" class="cp-link" (click)="reload()">{{ 'CLIENT_PROGRAMS.RETRY' | translate }}</button>
+  </div>
+
+  <ng-container *ngIf="!loading && overview as o">
+    <!-- A pause of the client's follow-up (DS-03) -->
+    <div class="cp-pause" *ngIf="o.pause as pause" role="status">
+      <i-feather name="pause-circle" class="cp-ico"></i-feather>
+      <span>{{ 'CLIENT_PROGRAMS.PAUSED_FROM_TO' | translate: { from: schedule.formatDate(pause.from), to: schedule.formatDate(pause.to) } }}</span>
+    </div>
+
+    <!-- What needs the coach (P2): one line each -->
+    <div class="cp-alerts" *ngIf="alerts.length && writable" role="status">
+      <div class="cp-alert" *ngFor="let view of alerts">
+        <i-feather name="alert-triangle" class="cp-ico"></i-feather>
+        <span class="cp-alert-text">{{ view.text }}</span>
+        <button type="button" class="cp-alert-btn" (click)="emit(view.action)">{{ view.button }}</button>
+      </div>
+    </div>
+
+    <!-- Empty (P8) -->
+    <div class="cp-empty" *ngIf="isEmpty">
+      <span class="cp-empty-icon" aria-hidden="true"><i-feather [name]="isWorkout ? 'activity' : 'coffee'"></i-feather></span>
+      <h3>{{ (isWorkout ? 'CLIENT_PROGRAMS.EMPTY_TITLE_WORKOUT' : 'CLIENT_PROGRAMS.EMPTY_TITLE_NUTRITION') | translate: { name: clientName } }}</h3>
+      <p>{{ (isWorkout ? 'CLIENT_PROGRAMS.EMPTY_TEXT_WORKOUT' : 'CLIENT_PROGRAMS.EMPTY_TEXT_NUTRITION') | translate }}</p>
+      <button type="button" class="cp-btn cp-btn--brand" *ngIf="writable" (click)="emit({ type: 'assign' })">
+        <i-feather name="plus" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.ASSIGN_PROGRAM' | translate }}
+      </button>
+    </div>
+
+    <!-- In progress (P3) -->
+    <article class="cp-current" *ngIf="o.current as c">
+      <div class="cp-current-head">
+        <div class="cp-current-id">
+          <div class="cp-current-titleline">
+            <h3 class="cp-current-name">{{ c.program.name }}</h3>
+            <span class="cp-badge cp-badge--current">{{ 'CLIENT_PROGRAMS.CURRENT' | translate }}</span>
+            <span class="cp-badge cp-badge--file" *ngIf="c.program.file">
+              <i-feather name="file-text" class="cp-ico"></i-feather>{{ weeksLabel(c.program) }}
+            </span>
+          </div>
+          <p class="cp-current-line">{{ currentLine }}</p>
+        </div>
+
+        <div class="cp-progress" *ngIf="progress as p">
+          <span class="cp-progress-label">{{ 'CLIENT_PROGRAMS.THIS_WEEK' | translate }}</span>
+          <span class="cp-progress-bar" role="progressbar" [attr.aria-valuenow]="p.done" [attr.aria-valuemin]="0" [attr.aria-valuemax]="p.planned">
+            <span class="cp-progress-fill" [style.width.%]="p.percent"></span>
+          </span>
+          <strong class="cp-progress-count">{{ progressLabel }}</strong>
+        </div>
+
+        <div class="cp-actions">
+          <ng-container *ngIf="!c.program.file; else fileCurrentActions">
+            <button type="button" class="cp-btn cp-btn--dark" *ngIf="writable" (click)="emit({ type: 'edit', item: c.program, programId: c.program.id })">
+              <i-feather name="edit-2" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.EDIT' | translate }}
+            </button>
+            <button type="button" class="cp-btn cp-btn--outline" (click)="emit({ type: 'calendar', item: c.program, programId: c.program.id })">
+              <i-feather name="list" class="cp-ico"></i-feather>{{ (isWorkout ? 'CLIENT_PROGRAMS.WHAT_HE_DID' : 'CLIENT_PROGRAMS.WHAT_HE_ATE') | translate }}
+            </button>
+          </ng-container>
+          <ng-template #fileCurrentActions>
+            <button type="button" class="cp-btn cp-btn--dark" (click)="emit({ type: 'open', item: c.program, programId: c.program.id })">
+              <i-feather name="eye" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.OPEN' | translate }}
+            </button>
+            <button type="button" class="cp-btn cp-btn--outline" *ngIf="writable" (click)="emit({ type: 'replace', item: c.program, programId: c.program.id })">
+              <i-feather name="refresh-cw" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.REPLACE_FILE' | translate }}
+            </button>
+          </ng-template>
+          <ng-container *ngTemplateOutlet="menu; context: { $implicit: c.program, key: 'current' }"></ng-container>
+        </div>
+      </div>
+
+      <!-- The week, day by day: the workout's name and its exercises, the status, what the client wrote -->
+      <div class="cp-week-scroll" *ngIf="!c.program.file && c.days.length">
+        <div class="cp-week" role="list" [attr.aria-label]="'CLIENT_PROGRAMS.THIS_WEEK' | translate">
+          <ng-container *ngFor="let day of c.days; let i = index">
+            <button
+              type="button"
+              role="listitem"
+              class="cp-day"
+              [ngClass]="'cp-day--' + dayTone(day)"
+              [style.grid-column]="i + 1"
+              [disabled]="day.state === 'OUT'"
+              [title]="dayTitle(day)"
+              [attr.aria-label]="dayTitle(day)"
+              (click)="onDay(day, c.program, $event)"
+            >
+              <span class="cp-day-top">
+                <span class="cp-day-date"><span class="cp-day-wd">{{ dayLabel(day) }}</span> <strong>{{ dayOfMonth(day) }}</strong></span>
+                <span class="cp-day-mark" *ngIf="dayIcon(day) as icon" [ngClass]="'cp-day-mark--' + dayTone(day)">
+                  <i-feather *ngIf="icon !== 'dot'" [name]="icon"></i-feather>
+                </span>
+              </span>
+
+              <ng-container *ngIf="day.state === 'REST'; else dayBody">
+                <span class="cp-day-rest">
+                  <i-feather [name]="isWorkout ? 'moon' : 'flag'" class="cp-ico"></i-feather><span class="cp-day-rest-text">{{ (isWorkout ? 'CLIENT_PROGRAMS.REST_TITLE_WORKOUT' : 'CLIENT_PROGRAMS.REST_TITLE_NUTRITION') | translate }}</span>
+                </span>
+              </ng-container>
+              <ng-template #dayBody>
+                <span class="cp-day-name" *ngIf="day.state !== 'OUT'">{{ dayHeadline(day) }}</span>
+                <span class="cp-day-meta" *ngIf="dayMeta(day) as meta">{{ meta }}</span>
+              </ng-template>
+
+              <span class="cp-day-status">{{ dayStatus(day) }}</span>
+            </button>
+
+            <div class="cp-note" *ngIf="day.note" [style.grid-column]="i + 1" [title]="day.note">
+              <span class="cp-avatar" aria-hidden="true">{{ clientInitials }}</span>
+              <span class="cp-note-text">{{ day.note }}</span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </article>
+
+    <!-- Next (P4) -->
+    <article class="cp-next" *ngIf="o.next as n">
+      <span class="cp-next-icon" aria-hidden="true"><i-feather name="arrow-right"></i-feather></span>
+      <div class="cp-next-text">
+        <span class="cp-next-when">{{ nextLine }}</span>
+        <span class="cp-next-name">
+          <strong>{{ n.program.name }}</strong>
+          <small>{{ weeksLabel(n.program) }}</small>
+          <small *ngIf="!n.program.file" class="cp-ready" [class.cp-ready--warn]="nextIncomplete">
+            <i-feather [name]="nextIncomplete ? 'alert-circle' : 'check'" class="cp-ico"></i-feather>
+            {{ (n.firstWeekReady === 1 ? 'CLIENT_PROGRAMS.READY_DAYS_ONE' : 'CLIENT_PROGRAMS.READY_DAYS') | translate: { ready: n.firstWeekReady, total: n.firstWeekDays } }}
+          </small>
+        </span>
+      </div>
+      <div class="cp-next-actions">
+        <button type="button" class="cp-btn cp-btn--outline" *ngIf="writable && !n.program.file"
+                (click)="emit({ type: 'edit', item: n.program, programId: n.program.id })">
+          {{ (nextIncomplete ? 'CLIENT_PROGRAMS.COMPLETE' : 'CLIENT_PROGRAMS.EDIT') | translate }}
+        </button>
+        <button type="button" class="cp-btn cp-btn--outline" *ngIf="n.program.file" (click)="emit({ type: 'open', item: n.program, programId: n.program.id })">
+          {{ 'CLIENT_PROGRAMS.OPEN' | translate }}
+        </button>
+        <ng-container *ngTemplateOutlet="menu; context: { $implicit: n.program, key: 'next' }"></ng-container>
+      </div>
+    </article>
+
+    <!-- Upcoming / Finished (P5) -->
+    <section class="cp-list" *ngIf="hasList">
+      <div class="cp-seg" role="tablist">
+        <button type="button" role="tab" class="cp-seg-btn" [class.is-active]="listTab === 'UPCOMING'" [attr.aria-selected]="listTab === 'UPCOMING'"
+                [disabled]="!o.upcoming.length" (click)="listTab = 'UPCOMING'">
+          {{ 'CLIENT_PROGRAMS.UPCOMING' | translate }} ({{ o.upcomingCount }})
+        </button>
+        <button type="button" role="tab" class="cp-seg-btn" [class.is-active]="listTab === 'FINISHED'" [attr.aria-selected]="listTab === 'FINISHED'"
+                [disabled]="!o.finishedCount" (click)="listTab = 'FINISHED'">
+          {{ 'CLIENT_PROGRAMS.FINISHED' | translate }} ({{ o.finishedCount }})
+        </button>
+      </div>
+
+      <ul class="cp-rows">
+        <li class="cp-row" *ngFor="let item of (listTab === 'UPCOMING' ? o.upcoming : finished); trackBy: trackById"
+            [class.cp-row--finished]="item.status === 'FINISHED'">
+          <span class="cp-row-icon" aria-hidden="true"><i-feather [name]="item.file ? 'file-text' : (isWorkout ? 'activity' : 'coffee')"></i-feather></span>
+          <span class="cp-row-text">
+            <span class="cp-row-name">{{ item.name }}</span>
+            <span class="cp-row-meta">{{ weeksLabel(item) }}<ng-container *ngIf="item.doneDays > 0"> · {{ (isWorkout ? 'CLIENT_PROGRAMS.SESSIONS_DONE' : 'CLIENT_PROGRAMS.DAYS_LOGGED') | translate: { count: item.doneDays } }}</ng-container></span>
+          </span>
+          <span class="cp-row-date">{{ rowDate(item) }}</span>
+          <span class="cp-row-actions">
+            <button type="button" class="cp-btn cp-btn--outline cp-btn--sm" *ngIf="item.file" (click)="emit({ type: 'open', item, programId: item.id })">
+              {{ 'CLIENT_PROGRAMS.OPEN' | translate }}
+            </button>
+            <button type="button" class="cp-btn cp-btn--outline cp-btn--sm" *ngIf="!item.file"
+                    (click)="emit({ type: item.status === 'FINISHED' || !writable ? 'view' : 'edit', item, programId: item.id })">
+              {{ (item.status === 'FINISHED' || !writable ? 'CLIENT_PROGRAMS.VIEW' : 'CLIENT_PROGRAMS.EDIT') | translate }}
+            </button>
+            <ng-container *ngTemplateOutlet="menu; context: { $implicit: item, key: 'row' }"></ng-container>
+          </span>
+        </li>
+      </ul>
+
+      <button type="button" class="cp-more" *ngIf="listTab === 'FINISHED' && finished.length < o.finishedCount" [disabled]="loadingMore" (click)="loadMoreFinished()">
+        {{ (loadingMore ? 'CLIENT_PROGRAMS.LOADING' : 'CLIENT_PROGRAMS.SEE_MORE') | translate }}
+      </button>
+    </section>
+  </ng-container>
+</section>
+
+<!-- The « … » menu of a program -->
+<ng-template #menu let-item let-key="key">
+  <div class="cp-menu-wrap" *ngIf="writable || item.file">
+    <button type="button" class="cp-btn cp-btn--outline cp-btn--icon" [attr.aria-label]="'CLIENT_PROGRAMS.MORE' | translate"
+            [attr.aria-expanded]="openMenuId === key + item.id" (click)="toggleMenu(key + item.id, $event)">
+      <i-feather name="more-horizontal" class="cp-ico"></i-feather>
+    </button>
+    <div class="cp-menu" *ngIf="openMenuId === key + item.id" role="menu" (click)="$event.stopPropagation()">
+      <button type="button" role="menuitem" *ngIf="item.file" (click)="emit({ type: 'download', item, programId: item.id })">
+        <i-feather name="download" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.DOWNLOAD' | translate }}
+      </button>
+      <button type="button" role="menuitem" *ngIf="writable && item.file && item.status !== 'FINISHED' && !item.stoppedAt && key !== 'current'"
+              (click)="emit({ type: 'replace', item, programId: item.id })">
+        <i-feather name="refresh-cw" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.REPLACE_FILE' | translate }}
+      </button>
+      <button type="button" role="menuitem" *ngIf="writable && canMove(item)" (click)="emit({ type: 'dates', item, programId: item.id })">
+        <i-feather name="calendar" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.CHANGE_DATES' | translate }}
+      </button>
+      <button type="button" role="menuitem" *ngIf="writable && canShift(item)" (click)="emit({ type: 'shift', item, programId: item.id })">
+        <i-feather name="skip-forward" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.SHIFT_REST' | translate }}
+      </button>
+      <button type="button" role="menuitem" *ngIf="writable" (click)="emit({ type: 'duplicate', item, programId: item.id })">
+        <i-feather name="copy" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.DUPLICATE' | translate }}
+      </button>
+      <button type="button" role="menuitem" class="is-danger" *ngIf="writable" (click)="emit({ type: 'remove', item, programId: item.id })">
+        <i-feather name="trash-2" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.REMOVE' | translate }}
+      </button>
+    </div>
+  </div>
+</ng-template>

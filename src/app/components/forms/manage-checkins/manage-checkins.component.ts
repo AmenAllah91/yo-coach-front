@@ -1,12 +1,12 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {FormsModule} from "@angular/forms";
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-type ClientStatus = 'due_today' | 'overdue' | 'to_review' | 'reviewed' | 'upcoming';
-import {catchError, finalize, forkJoin, map, of, switchMap} from 'rxjs';
+import {catchError, finalize, forkJoin, map, Observable, of, switchMap} from 'rxjs';
+import Swal from 'sweetalert2';
 import { UsersService } from '../../../service/users.service';
 import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
-import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
+import { AssignmentsApiService, AssignmentStatus, FormAssignment, PageResponse } from '../services/assignments-api.service';
 import { FormsApiService, FormDetails } from '../services/forms-api.service';
 import {SubmissionsApiService} from "../services/submissions-api.service";
 import {Answer, QuestionType, Submission} from "../../../models/forms.model";
@@ -25,43 +25,45 @@ export interface Question {
   required: boolean;
   order: number;
   helpText?: string;
-
-  // MULTIPLE_CHOICE
   options?: OptionItem[];
-
-  // STAR_RATING
   minStars?: number;
   maxStars?: number;
-
-  // TEXT
-  minLength?: number;
-  maxLength?: number;
-  regex?: string;
-
-  // DATE
-  minDate?: string;
-  maxDate?: string;
 }
 
+/** The four lists a coach works through: answers to read, late ones to chase, the ones still open, the history. */
+export type CheckinTab = 'to_review' | 'overdue' | 'pending' | 'reviewed';
+export type RowStatus = 'to_review' | 'overdue' | 'due_today' | 'upcoming' | 'no_due' | 'reviewed';
 
-interface ClientData {
+export interface CheckinRow {
   id: string;
+  clientId: string;
   name: string;
   avatar?: string;
-  formType: string;
-  date: string;
-  status: ClientStatus;
-  formName?: string;
-  questions?: Question[];
-  answers?: Answer[];
+  formId: string;
+  formName: string;
+  status: RowStatus;
+  tab: CheckinTab;
+  dueAt?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
   coachFeedback?: string;
-  submittedDate?: string;
+  /** Days late (overdue), days waiting (to review), days left (upcoming). */
+  days: number;
 }
 
+/** The opened check-in: its questions and the client's answers, loaded on opening. */
+interface CheckinDetail {
+  questions: Question[];
+  answers: Answer[];
+  /** Answers to questions removed from the form since the client answered. */
+  orphanAnswers: Answer[];
+}
 
-
-
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
+/** Open check-ins read at once per status: beyond, the page says the list is cut. */
+const OPEN_LIMIT = 500;
+const REVIEWED_LIMIT = 100;
+const DAY = 24 * 60 * 60 * 1000;
 
 @Component({
   selector: 'app-manage-checkins',
@@ -70,36 +72,42 @@ const ITEMS_PER_PAGE = 5;
   templateUrl: './manage-checkins.component.html',
   styleUrl: './manage-checkins.component.scss'
 })
-export class ManageCheckinsComponent implements OnInit{
-  activeTab: ClientStatus = 'due_today';
+export class ManageCheckinsComponent implements OnInit {
+  readonly QuestionType = QuestionType;
+
+  activeTab: CheckinTab = 'to_review';
   searchQuery = '';
+  formFilter = '';
   currentPage = 1;
 
-  // Modal state
-  selectedClient: ClientData | null = null;
-  isModalOpen = false;
-  modalMode: 'preview' | 'view' = 'preview'; // preview = voir questions, view = voir réponses
-  QuestionType = QuestionType;
-
-  // Feedback state (pour to_review)
-  coachFeedback = '';
-
-  // tabs config
-  tabs: { id: ClientStatus; labelKey: string }[] = [
-    { id: 'due_today', labelKey: 'DUE_TODAY' },
-    { id: 'overdue', labelKey: 'OVERDUE_LABEL' },
-    { id: 'to_review', labelKey: 'TO_BE_REVIEWED' },
-    { id: 'reviewed', labelKey: 'REVIEWED_STATUS' },
-    { id: 'upcoming', labelKey: 'UPCOMING_STATUS' },
+  tabs: { id: CheckinTab; labelKey: string; hintKey: string }[] = [
+    { id: 'to_review', labelKey: 'CHK_TAB_TO_REVIEW', hintKey: 'CHK_TAB_TO_REVIEW_HINT' },
+    { id: 'overdue', labelKey: 'CHK_TAB_OVERDUE', hintKey: 'CHK_TAB_OVERDUE_HINT' },
+    { id: 'pending', labelKey: 'CHK_TAB_PENDING', hintKey: 'CHK_TAB_PENDING_HINT' },
+    { id: 'reviewed', labelKey: 'CHK_TAB_REVIEWED', hintKey: 'CHK_TAB_REVIEWED_HINT' },
   ];
 
-  clients: ClientData[] = [];
-  loading = false;
+  rows: CheckinRow[] = [];
   /** The rows show once their client and form names are known (not the raw ids); a loader before. */
   listReady = false;
   error: string | null = null;
+  /** A status had more check-ins than read at once: the oldest ones are not all listed. */
+  truncated = false;
 
-  assignments: FormAssignment[] = [];
+  // Opened check-in
+  selected: CheckinRow | null = null;
+  detail: CheckinDetail | null = null;
+  detailLoading = false;
+  detailError: string | null = null;
+  feedback = '';
+  editingFeedback = false;
+  saving = false;
+  actionError: string | null = null;
+
+  private assignments = new Map<string, FormAssignment>();
+  private clientNames = new Map<string, { name: string; avatar?: string }>();
+  private formNames = new Map<string, string>();
+  private formCache = new Map<string, FormDetails>();
   private pendingAssignmentId: string | null = null;
 
   constructor(
@@ -115,52 +123,66 @@ export class ManageCheckinsComponent implements OnInit{
 
   ngOnInit(): void {
     this.pendingAssignmentId = this.route.snapshot.queryParamMap.get('assignmentId');
-    this.loadAssignments();
+    this.loadAssignments(true);
   }
 
   goBack(): void { window.history.back(); }
 
-  loadAssignments(): void {
-    this.loading = true;
-    this.error = null;
+  // ───────────────────────── Loading ─────────────────────────
 
-    this.assignmentsApi.pageOwnerAssignments(0, 200, 'dueAt', 'DESC', true)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (res) => {
-          this.assignments = res.content ?? [];
-          // The rows (and the previous ones on a reload) stay until the names are known.
-          this.enrichClients(this.assignments);
-        },
-        error: (err) => {
-          this.error = err?.error?.message ?? this.translate.instant('LOAD_ASSIGNMENTS_ERROR');
-          this.listReady = true;
-        }
-      });
+  /**
+   * Each status is read on its own (one page of everything cut the oldest unreviewed check-ins once a coach had a
+   * few hundred): all the open ones, the latest reviewed ones.
+   */
+  loadAssignments(chooseTab = false): void {
+    this.error = null;
+    const page = (status: AssignmentStatus, size: number, sortBy: string, direction: 'ASC' | 'DESC') =>
+      this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(0, size, sortBy, direction, undefined, [status], undefined, true);
+
+    forkJoin([
+      page('SUBMITTED', OPEN_LIMIT, 'submittedAt', 'ASC'),
+      page('ASSIGNED', OPEN_LIMIT, 'dueAt', 'ASC'),
+      page('OPENED', OPEN_LIMIT, 'dueAt', 'ASC'),
+      page('REVIEWED', REVIEWED_LIMIT, 'reviewedAt', 'DESC'),
+    ]).pipe(
+      switchMap((pages: PageResponse<FormAssignment>[]) => {
+        const [submitted, assigned, opened] = pages;
+        this.truncated = [submitted, assigned, opened].some(p => (p.totalElements ?? 0) > (p.content?.length ?? 0));
+        const all = pages.flatMap(p => p.content ?? []);
+        return this.loadNames(all).pipe(map(() => all));
+      }),
+      finalize(() => (this.listReady = true)),
+    ).subscribe({
+      next: (all) => {
+        this.assignments = new Map(all.map(a => [a.id, a]));
+        this.rows = all.map(a => this.toRow(a));
+        if (chooseTab) this.activeTab = this.firstUsefulTab();
+        this.openPendingAssignment();
+        this.loadClientPhotos();
+      },
+      error: (err) => {
+        this.error = err?.error?.message ?? this.translate.instant('LOAD_ASSIGNMENTS_ERROR');
+      },
+    });
   }
 
-  private enrichClients(assignments: FormAssignment[]) {
-    if (!assignments.length) {
-      this.clients = [];
-      this.listReady = true;
-      return;
-    }
-    const uniqueClientIds = Array.from(new Set(assignments.map(a => a.assigneeId).filter(Boolean)));
-    const uniqueFormIds = Array.from(new Set(assignments.map(a => a.formId).filter(Boolean)));
+  /** The client and form names, read once (the coach's clients in one request, the forms one by one). */
+  private loadNames(assignments: FormAssignment[]): Observable<unknown> {
+    const clientIds = Array.from(new Set(assignments.map(a => a.assigneeId).filter(id => id && !this.clientNames.has(id))));
+    const formIds = Array.from(new Set(assignments.map(a => a.formId).filter(id => id && !this.formNames.has(id))));
     const coachId = sessionStorage.getItem('userId') || '';
 
-    // The names come from one request for all the coach's clients (one per client before); a client missing from
-    // it (moved to another coach) is still asked on its own.
-    const clients$ = (coachId
+    // A client missing from the coach's list (moved to another coach) is still asked on its own.
+    const clients$ = !clientIds.length ? of([]) : (coachId
       ? this.clientService.getListClientsByCoachWithoutPagination(coachId, true).pipe(
         map((res: any) => (Array.isArray(res) ? res : res?.content ?? []) as any[]),
         catchError(() => of([] as any[])),
       )
       : of([] as any[])
     ).pipe(
-      switchMap((known) => {
+      switchMap((known: any[]) => {
         const knownIds = new Set(known.map((c: any) => String(c?.id)));
-        const missing = uniqueClientIds.filter(id => !knownIds.has(String(id)));
+        const missing = clientIds.filter(id => !knownIds.has(String(id)));
         return missing.length
           ? forkJoin(missing.map(id => this.clientService.getClientById(id, true).pipe(catchError(() => of(null)))))
             .pipe(map(extra => [...known, ...extra.filter(Boolean)]))
@@ -168,340 +190,472 @@ export class ManageCheckinsComponent implements OnInit{
       }),
     );
 
-    const forms$ = uniqueFormIds.length
-      ? forkJoin(
-        uniqueFormIds.map(id =>
-          this.formsApi.getFormById(id, true).pipe(
-            catchError(() => of(null))
-          )
-        )
-      )
+    const forms$ = formIds.length
+      ? forkJoin(formIds.map(id => this.formsApi.getFormById(id, true).pipe(catchError(() => of(null)))))
       : of([]);
 
-    forkJoin([clients$, forms$]).pipe(finalize(() => (this.listReady = true))).subscribe({
-      next: ([clients, forms]: any[]) => {
-        const clientMap = new Map<string, any>();
-        (clients ?? []).forEach((c: any) => {
-          if (c?.id) clientMap.set(String(c.id), c);
-        });
-
-        const formMap = new Map<string, any>();
-        (forms ?? []).forEach((f: any) => {
-          if (f?.id) formMap.set(String(f.id), f);
-        });
-
-        this.clients = assignments.map(a => this.assignmentToClient(a)).map(row => {
-          const assignment = assignments.find(a => a.id === row.id);
-          if (!assignment) return row;
-
-          const c = clientMap.get(String(assignment.assigneeId));
-          const f = formMap.get(String(assignment.formId));
-
-          const fullName = c
-            ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()
-            : row.name;
-
-          return {
-            ...row,
-            name: fullName || row.name,
-            avatar: c?.avatarUrl
-              || c?.avatar
-              || c?.image
-              || row.avatar,
-            formType: f?.title ?? f?.name ?? row.formType,
-            formName: f?.title ?? f?.name ?? row.formName,
-          };
-        });
-
-        this.openPendingAssignment();
-        this.loadClientPhotos(uniqueClientIds);
-      },
-    });
+    return forkJoin([clients$, forms$]).pipe(map(([clients, forms]: any[]) => {
+      (clients ?? []).forEach((c: any) => {
+        if (!c?.id) return;
+        const name = `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim();
+        const avatar = String(c.avatarUrl || c.avatar || c.image || '').trim();
+        this.clientNames.set(String(c.id), { name, avatar: avatar && avatar.toLowerCase() !== 'not found' ? avatar : undefined });
+      });
+      (forms ?? []).forEach((f: any) => {
+        if (!f?.id) return;
+        this.formNames.set(String(f.id), f.title ?? f.name ?? '');
+        this.formCache.set(String(f.id), f);
+      });
+    }));
   }
 
   /** Photos fill in once the list shows (shared with the other client pages, fetched once per hour). */
-  private loadClientPhotos(clientIds: string[]): void {
+  private loadClientPhotos(): void {
+    const clientIds = Array.from(new Set(this.rows.map(r => r.clientId).filter(Boolean)));
     if (!clientIds.length) return;
     forkJoin(clientIds.map(id => this.usersService.getAvatarUrl(String(id)))).subscribe((photos) => {
       const photoMap = new Map<string, string>();
-      clientIds.forEach((id, index) => {
-        if (photos[index]) photoMap.set(String(id), photos[index]);
-      });
-      this.clients = this.clients.map(row => {
-        const assignment = this.assignments.find(a => a.id === row.id);
-        const photo = assignment ? photoMap.get(String(assignment.assigneeId)) : undefined;
-        return photo ? { ...row, avatar: photo } : row;
-      });
+      clientIds.forEach((id, index) => { if (photos[index]) photoMap.set(id, photos[index]); });
+      this.rows = this.rows.map(row => photoMap.has(row.clientId) ? { ...row, avatar: photoMap.get(row.clientId) } : row);
+      if (this.selected && photoMap.has(this.selected.clientId)) this.selected.avatar = photoMap.get(this.selected.clientId);
     });
   }
 
-  private assignmentToClient(a: FormAssignment): ClientData {
+  private toRow(a: FormAssignment): CheckinRow {
+    const client = this.clientNames.get(String(a.assigneeId));
+    const status = this.statusOf(a);
+    const today = this.startOfDay(new Date()).getTime();
+    let days = 0;
+    if (status === 'to_review' && a.submittedAt) days = Math.round((today - this.startOfDay(new Date(a.submittedAt)).getTime()) / DAY);
+    else if (a.dueAt) days = Math.round(Math.abs(this.startOfDay(new Date(a.dueAt)).getTime() - today) / DAY);
     return {
       id: a.id,
-      name: a.assigneeId,          // until you have assignee name in DTO
-      avatar: undefined,           // optional
-      formType: a.formId,          // will be replaced when we fetch form
-      formName: a.formId,
-      date: this.formatDueDate(a.dueAt),
-      status: this.mapAssignmentToClientStatus(a),
-      submittedDate: a.submittedAt ? this.formatDate(a.submittedAt) : undefined,
+      clientId: String(a.assigneeId ?? ''),
+      name: client?.name || this.translate.instant('CHK_UNKNOWN_CLIENT'),
+      avatar: client?.avatar,
+      formId: String(a.formId ?? ''),
+      formName: this.formNames.get(String(a.formId)) || a.formName || this.translate.instant('CHK_DELETED_FORM'),
+      status,
+      tab: this.tabOf(status),
+      dueAt: a.dueAt,
+      submittedAt: a.submittedAt,
+      reviewedAt: a.reviewedAt ?? undefined,
+      coachFeedback: a.coachFeedback ?? undefined,
+      days,
     };
   }
 
-  private mapAssignmentToClientStatus(a: FormAssignment): ClientStatus {
-    if (a.status === 'CANCELED') return 'upcoming';
-
-    // ✅ reviewed comes from backend status
+  private statusOf(a: FormAssignment): RowStatus {
     if (a.status === 'REVIEWED') return 'reviewed';
-
-    // submitted but not reviewed yet
     if (a.status === 'SUBMITTED' || a.submittedAt) return 'to_review';
-
-    // not submitted: due_today / overdue / upcoming
-    if (!a.dueAt) return 'upcoming';
-
-    const due = new Date(a.dueAt);
-    const now = new Date();
-
-    const due0 = new Date(due); due0.setHours(0,0,0,0);
-    const now0 = new Date(now); now0.setHours(0,0,0,0);
-
-    if (due0.getTime() === now0.getTime()) return 'due_today';
-    if (due0.getTime() < now0.getTime()) return 'overdue';
-    return 'upcoming';
-  }
-  private formatDueDate(iso?: string): string {
-    if (!iso) return '';
-    return this.formatDate(iso);
+    if (!a.dueAt) return 'no_due';
+    const due = this.startOfDay(new Date(a.dueAt)).getTime();
+    const today = this.startOfDay(new Date()).getTime();
+    if (due === today) return 'due_today';
+    return due < today ? 'overdue' : 'upcoming';
   }
 
-  private formatDate(iso: string): string {
-    const d = new Date(iso);
-    return d.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+  private tabOf(status: RowStatus): CheckinTab {
+    if (status === 'to_review' || status === 'overdue' || status === 'reviewed') return status;
+    return 'pending';
   }
 
-
-
-  // counts
-  get counts(): Record<ClientStatus, number> {
-    return this.clients.reduce((acc, c) => {
-      acc[c.status] = (acc[c.status] || 0) + 1;
-      return acc;
-    }, {} as Record<ClientStatus, number>);
+  private startOfDay(d: Date): Date {
+    const copy = new Date(d);
+    copy.setHours(0, 0, 0, 0);
+    return copy;
   }
 
-  // filtered
-  get filteredClients(): ClientData[] {
-    const q = this.searchQuery.trim().toLowerCase();
-    return this.clients.filter((c) => {
-      const matchesTab = c.status === this.activeTab;
-      const matchesSearch =
-        !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.formType.toLowerCase().includes(q);
-      return matchesTab && matchesSearch;
+  /** The page opens on the work to do: answers to read first, then late check-ins. */
+  private firstUsefulTab(): CheckinTab {
+    const counts = this.counts;
+    if (counts.to_review) return 'to_review';
+    if (counts.overdue) return 'overdue';
+    if (counts.pending) return 'pending';
+    return counts.reviewed ? 'reviewed' : 'to_review';
+  }
+
+  /** A link to a check-in (dashboard, notification) opens it, even when it is not in the loaded lists. */
+  private openPendingAssignment(): void {
+    const id = this.pendingAssignmentId;
+    if (!id) return;
+    this.pendingAssignmentId = null;
+    this.router.navigate([], { relativeTo: this.route, queryParams: { assignmentId: null }, queryParamsHandling: 'merge', replaceUrl: true });
+
+    const row = this.rows.find(r => r.id === id);
+    if (row) {
+      this.showRow(row);
+      return;
+    }
+    this.assignmentsApi.getById(id).pipe(
+      switchMap(a => this.loadNames([a]).pipe(map(() => a))),
+      catchError(() => of(null)),
+    ).subscribe(a => {
+      if (!a || a.status === 'CANCELED') return;
+      this.assignments.set(a.id, a);
+      const added = this.toRow(a);
+      this.rows = [...this.rows, added];
+      this.showRow(added);
     });
   }
 
+  private showRow(row: CheckinRow): void {
+    this.activeTab = row.tab;
+    this.currentPage = 1;
+    this.openCheckIn(row);
+  }
+
+  // ───────────────────────── List ─────────────────────────
+
+  /** The forms of the listed check-ins, for the form filter. */
+  get formOptions(): { id: string; name: string }[] {
+    const seen = new Map<string, string>();
+    this.rows.forEach(r => { if (r.formId && !seen.has(r.formId)) seen.set(r.formId, r.formName); });
+    return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /** Rows matching the search and the form filter, all tabs. */
+  private get matchingRows(): CheckinRow[] {
+    const q = this.normalize(this.searchQuery.trim());
+    return this.rows.filter(r =>
+      (!this.formFilter || r.formId === this.formFilter) &&
+      (!q || this.normalize(r.name).includes(q) || this.normalize(r.formName).includes(q)));
+  }
+
+  private normalize(value: string): string {
+    return (value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+
+  get counts(): Record<CheckinTab, number> {
+    const acc: Record<CheckinTab, number> = { to_review: 0, overdue: 0, pending: 0, reviewed: 0 };
+    this.matchingRows.forEach(r => acc[r.tab]++);
+    return acc;
+  }
+
+  get hasFilter(): boolean {
+    return !!this.searchQuery.trim() || !!this.formFilter;
+  }
+
+  /** The tab's rows in working order: oldest answers first, most late first, nearest due first, latest review first. */
+  get filteredRows(): CheckinRow[] {
+    const time = (iso?: string) => (iso ? new Date(iso).getTime() : Number.MAX_SAFE_INTEGER);
+    const rows = this.matchingRows.filter(r => r.tab === this.activeTab);
+    switch (this.activeTab) {
+      case 'to_review': return rows.sort((a, b) => time(a.submittedAt) - time(b.submittedAt));
+      case 'overdue': return rows.sort((a, b) => time(a.dueAt) - time(b.dueAt));
+      case 'pending': return rows.sort((a, b) => time(a.dueAt) - time(b.dueAt));
+      case 'reviewed': return rows.sort((a, b) => -(time(a.reviewedAt ?? a.submittedAt) - time(b.reviewedAt ?? b.submittedAt)));
+    }
+  }
+
+  /** How many late check-ins each client has: a client who stopped answering shows once per week otherwise. */
+  get overdueByClient(): Map<string, number> {
+    const counts = new Map<string, number>();
+    this.rows.filter(r => r.status === 'overdue').forEach(r => counts.set(r.clientId, (counts.get(r.clientId) ?? 0) + 1));
+    return counts;
+  }
+
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredClients.length / ITEMS_PER_PAGE));
+    return Math.max(1, Math.ceil(this.filteredRows.length / ITEMS_PER_PAGE));
   }
 
   get safePage(): number {
     return Math.min(this.currentPage, this.totalPages);
   }
 
-  get paginatedClients(): ClientData[] {
+  get paginatedRows(): CheckinRow[] {
     const start = (this.safePage - 1) * ITEMS_PER_PAGE;
-    return this.filteredClients.slice(start, start + ITEMS_PER_PAGE);
+    return this.filteredRows.slice(start, start + ITEMS_PER_PAGE);
   }
 
   get pages(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  // actions
-  setTab(tab: ClientStatus) {
+  setTab(tab: CheckinTab): void {
     this.activeTab = tab;
     this.currentPage = 1;
   }
 
-  onSearch(value: string) {
+  onSearch(value: string): void {
     this.searchQuery = value;
     this.currentPage = 1;
   }
 
-  prevPage() {
-    this.currentPage = Math.max(1, this.safePage - 1);
-  }
-
-  nextPage() {
-    this.currentPage = Math.min(this.totalPages, this.safePage + 1);
-  }
-
-  goToPage(p: number) {
-    this.currentPage = p;
-  }
-
-  initials(name: string) {
-    return name?.trim()?.charAt(0)?.toUpperCase() || '?';
-  }
-
-  private openPendingAssignment(): void {
-    if (!this.pendingAssignmentId) return;
-
-    const client = this.clients.find(row => row.id === this.pendingAssignmentId);
-    if (!client) return;
-
-    this.pendingAssignmentId = null;
-    this.activeTab = client.status;
+  onFormFilter(value: string): void {
+    this.formFilter = value;
     this.currentPage = 1;
-    this.openCheckInModal(client);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { assignmentId: null },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
   }
 
-  onAvatarError(client: ClientData): void {
-    client.avatar = undefined;
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.formFilter = '';
+    this.currentPage = 1;
   }
 
-  openCheckInModal(client: ClientData) {
-    const assignment = this.assignments.find(a => a.id === client.id);
-    if (!assignment) return;
+  prevPage(): void { this.currentPage = Math.max(1, this.safePage - 1); }
+  nextPage(): void { this.currentPage = Math.min(this.totalPages, this.safePage + 1); }
+  goToPage(p: number): void { this.currentPage = p; }
 
-    this.selectedClient = client;
-    this.isModalOpen = true;
+  initials(name: string): string {
+    const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+    return ((parts[0]?.charAt(0) ?? '') + (parts[1]?.charAt(0) ?? '')).toUpperCase() || '?';
+  }
 
-    this.modalMode = (client.status === 'to_review' || client.status === 'reviewed') ? 'view' : 'preview';
+  onAvatarError(row: CheckinRow): void {
+    row.avatar = undefined;
+  }
 
-    // 1) load form questions
-    this.formsApi.getFormById(assignment.formId).subscribe({
-      next: (form: FormDetails) => {
-        if (!this.selectedClient) return;
+  formatDate(iso?: string | null): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString(this.locale, { day: '2-digit', month: 'short', year: 'numeric' });
+  }
 
-        this.selectedClient.formType = form.title;
-        this.selectedClient.formName = form.title;
+  private get locale(): string {
+    return (this.translate.currentLang || this.translate.defaultLang) === 'en' ? 'en-US' : 'fr-FR';
+  }
 
-        this.selectedClient.questions = (form.questions ?? []).map(q => ({
-          id: q.id,
-          type: q.type as QuestionType, // ✅ now it matches
-          label: q.label,
-          required: q.required,
-          order: q.order,
-          options: (q.options ?? []).map(o => ({ id: o.id, label: o.label }))
-        }));
-      }
-    });
-
-    // 2) ✅ if submitted, load submission answers
-    if (assignment.submittedAt) {
-      this.submissionsApi.getByAssignmentId(assignment.id).subscribe({
-        next: (sub: Submission) => {
-          if (!this.selectedClient) return;
-
-          // ✅ NOW THIS WORKS (same Answer type)
-          this.selectedClient.answers = sub.answers ?? [];
-          this.selectedClient.submittedDate = sub.submittedAt ? this.formatDate(sub.submittedAt) : undefined;
-        }
-      });
+  /** What the coach reads first on a row: how long it waits, how late it is, when it is due. */
+  timing(row: CheckinRow): string {
+    const t = (key: string, n?: number) => this.translate.instant(key, { n });
+    switch (row.status) {
+      case 'to_review': return row.days <= 0 ? t('CHK_SUBMITTED_TODAY') : row.days === 1 ? t('CHK_SUBMITTED_YESTERDAY') : t('CHK_SUBMITTED_DAYS_AGO', row.days);
+      case 'overdue': return row.days === 1 ? t('CHK_LATE_ONE_DAY') : t('CHK_LATE_DAYS', row.days);
+      case 'due_today': return t('CHK_DUE_TODAY');
+      case 'upcoming': return row.days === 1 ? t('CHK_DUE_TOMORROW') : t('CHK_DUE_IN_DAYS', row.days);
+      case 'no_due': return t('CHK_NO_DUE_DATE');
+      case 'reviewed': return this.translate.instant('CHK_REVIEWED_ON', { date: this.formatDate(row.reviewedAt ?? row.submittedAt) });
     }
   }
 
-
-  closeModal() {
-    this.isModalOpen = false;
-    this.selectedClient = null;
-    this.coachFeedback = '';
+  /** The date under the timing: the real date of the event the timing counts from. */
+  timingDate(row: CheckinRow): string {
+    if (row.status === 'to_review') return this.formatDate(row.submittedAt);
+    if (row.status === 'reviewed') return '';
+    return this.formatDate(row.dueAt);
   }
 
-  // Récupère la réponse soumise pour une question
-  getSubmittedAnswer(questionId: string): Answer | undefined {
-    return this.selectedClient?.answers?.find(a => a.questionId === questionId);
+  statusLabel(status: RowStatus): string {
+    const keys: Record<RowStatus, string> = {
+      to_review: 'CHK_STATUS_TO_REVIEW',
+      overdue: 'CHK_STATUS_OVERDUE',
+      due_today: 'CHK_STATUS_DUE_TODAY',
+      upcoming: 'CHK_STATUS_UPCOMING',
+      no_due: 'CHK_STATUS_WAITING',
+      reviewed: 'CHK_STATUS_REVIEWED',
+    };
+    return this.translate.instant(keys[status]);
   }
 
-  // Récupère le label d'une option pour MULTIPLE_CHOICE
-  getOptionLabel(question: Question, optionId: string): string {
-    return question.options?.find(opt => opt.id === optionId)?.label || '';
+  // ───────────────────────── Row actions ─────────────────────────
+
+  openClientProfile(row: CheckinRow, event?: Event): void {
+    event?.stopPropagation();
+    if (!row.clientId) return;
+    void this.router.navigate(['/clients/profil-client', row.clientId], { queryParams: { tab: 'checkins' } });
   }
 
-  getStarsArray(max: number = 5): number[] {
-    return Array.from({ length: max }, (_, i) => i + 1);
+  messageClient(row: CheckinRow, event?: Event): void {
+    event?.stopPropagation();
+    if (!row.clientId) return;
+    void this.router.navigate(['/chat'], { queryParams: { clientId: row.clientId } });
   }
 
-  isStarFilled(questionId: string, starValue: number): boolean {
-    const answer = this.getSubmittedAnswer(questionId);
-    if (!answer) return false;
+  /** Withdraws a check-in the client will not answer any more: it leaves the late list (the client stops seeing it). */
+  async cancelCheckIn(row: CheckinRow, event?: Event): Promise<void> {
+    event?.stopPropagation();
+    const result = await Swal.fire({
+      title: this.translate.instant('CHK_CANCEL_TITLE'),
+      text: this.translate.instant('CHK_CANCEL_TEXT', { client: row.name, form: row.formName }),
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: this.translate.instant('CHK_CANCEL_CONFIRM'),
+      cancelButtonText: this.translate.instant('CHK_KEEP'),
+      confirmButtonColor: '#b91c1c',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
 
-    if (answer.type !== QuestionType.STAR_RATING) return false;
-
-    return starValue <= (answer.rating ?? 0);
-  }
-
-  markAsReviewed() {
-    if (!this.selectedClient) return;
-
-    const assignmentId = this.selectedClient.id;
-    const feedback = (this.coachFeedback ?? '').trim() || null;
-
-    this.loading = true;
-    this.error = null;
-
-    this.assignmentsApi.reviewAssignment(assignmentId, feedback).subscribe({
-      next: (updated) => {
-        const idx = this.assignments.findIndex(a => a.id === updated.id);
-        if (idx >= 0) this.assignments[idx] = updated;
-
-        // Only the reviewed row changes (rebuilding all rows showed the raw ids instead of the names).
-        this.clients = this.clients.map(row =>
-          row.id === updated.id ? { ...row, status: this.mapAssignmentToClientStatus(updated) } : row);
-
-        if (this.selectedClient) {
-          this.selectedClient.status = 'reviewed';
-          this.selectedClient.coachFeedback = feedback ?? undefined;
-        }
-
-        this.loading = false;
-        this.closeModal();
+    this.saving = true;
+    this.assignmentsApi.cancel(row.id).pipe(finalize(() => (this.saving = false))).subscribe({
+      next: () => {
+        this.rows = this.rows.filter(r => r.id !== row.id);
+        this.assignments.delete(row.id);
+        if (this.selected?.id === row.id) this.closeModal();
       },
       error: (err) => {
-        this.loading = false;
-        this.error = err?.error?.message ?? this.translate.instant('MARK_REVIEWED_ERROR');
-      }
+        const message = err?.error?.message ?? this.translate.instant('CHK_CANCEL_ERROR');
+        if (this.selected) this.actionError = message; else this.error = message;
+      },
     });
   }
 
-  // helpers style/status
-  statusLabel(status: ClientStatus): string {
-    switch (status) {
-      case 'due_today':
-        return this.translate.instant('DUE_TODAY');
-      case 'overdue':
-        return this.translate.instant('OVERDUE_LABEL');
-      case 'to_review':
-        return this.translate.instant('TO_REVIEW');
-      case 'reviewed':
-        return this.translate.instant('REVIEWED_STATUS');
-      case 'upcoming':
-        return this.translate.instant('UPCOMING_STATUS');
+  // ───────────────────────── Opened check-in ─────────────────────────
+
+  openCheckIn(row: CheckinRow): void {
+    const assignment = this.assignments.get(row.id);
+    if (!assignment) return;
+
+    this.selected = row;
+    this.detail = null;
+    this.detailError = null;
+    this.actionError = null;
+    this.feedback = row.coachFeedback ?? '';
+    this.editingFeedback = row.status === 'to_review';
+    this.detailLoading = true;
+
+    const form$ = this.formCache.has(row.formId)
+      ? of(this.formCache.get(row.formId)!)
+      : this.formsApi.getFormById(row.formId, true);
+    const submission$ = row.submittedAt || assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED'
+      ? this.submissionsApi.getByAssignmentId(row.id).pipe(catchError(() => of(null as Submission | null)))
+      : of(null as Submission | null);
+
+    const openedId = row.id;
+    forkJoin([form$, submission$]).subscribe({
+      next: ([form, submission]) => {
+        if (this.selected?.id !== openedId) return; // another check-in was opened meanwhile
+        this.formCache.set(row.formId, form);
+        const questions: Question[] = (form.questions ?? [])
+          .slice()
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((q: any) => ({
+            id: q.id,
+            type: q.type as QuestionType,
+            label: q.label,
+            required: !!q.required,
+            order: q.order,
+            helpText: q.helpText || undefined,
+            minStars: q.minStars ?? undefined,
+            maxStars: q.maxStars ?? undefined,
+            options: (q.options ?? []).map((o: any) => ({ id: o.id, label: o.label })),
+          }));
+        const answers = submission?.answers ?? [];
+        const questionIds = new Set(questions.map(q => q.id));
+        this.detail = {
+          questions,
+          answers,
+          orphanAnswers: answers.filter(a => !questionIds.has(a.questionId) && this.hasValue(a)),
+        };
+        if (submission?.submittedAt && this.selected) this.selected.submittedAt = submission.submittedAt;
+        this.detailLoading = false;
+      },
+      error: (err) => {
+        if (this.selected?.id !== openedId) return;
+        this.detailLoading = false;
+        this.detailError = err?.status === 404
+          ? this.translate.instant('CHK_FORM_DELETED_ERROR')
+          : err?.error?.message ?? this.translate.instant('CHK_DETAIL_ERROR');
+      },
+    });
+  }
+
+  closeModal(): void {
+    this.selected = null;
+    this.detail = null;
+    this.feedback = '';
+    this.editingFeedback = false;
+    this.actionError = null;
+    this.detailError = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.selected && !this.saving) this.closeModal();
+  }
+
+  /** Position of the opened check-in in the current list, for the previous / next arrows. */
+  get queuePosition(): number {
+    return this.selected ? this.filteredRows.findIndex(r => r.id === this.selected!.id) : -1;
+  }
+
+  get queueLength(): number {
+    return this.filteredRows.length;
+  }
+
+  openSibling(step: 1 | -1): void {
+    const rows = this.filteredRows;
+    const next = rows[this.queuePosition + step];
+    if (next) this.openCheckIn(next);
+  }
+
+  get isSubmitted(): boolean {
+    return this.selected?.status === 'to_review' || this.selected?.status === 'reviewed';
+  }
+
+  getAnswer(questionId: string): Answer | undefined {
+    return this.detail?.answers.find(a => a.questionId === questionId);
+  }
+
+  hasValue(answer?: Answer): boolean {
+    if (!answer) return false;
+    const a = answer as any;
+    switch (answer.type) {
+      case QuestionType.TEXT: return !!String(a.text ?? '').trim();
+      case QuestionType.MULTIPLE_CHOICE: return !!a.selectedOptionId;
+      case QuestionType.STAR_RATING: return a.rating !== null && a.rating !== undefined;
+      case QuestionType.YES_NO: return a.yes !== null && a.yes !== undefined;
+      case QuestionType.DATE: return !!a.date;
+      default: return false;
     }
   }
 
-  statusIcon(status: ClientStatus): string {
-    switch (status) {
-      case 'due_today':
-        return 'clock';
-      case 'overdue':
-        return 'alert-circle';
-      case 'to_review':
-        return 'eye';
-      case 'reviewed':
-        return 'check-circle-2';
-      case 'upcoming':
-        return 'calendar';
+  optionLabel(question: Question | undefined, optionId?: string | null): string {
+    if (!optionId) return '';
+    return question?.options?.find(o => o.id === optionId)?.label || this.translate.instant('CHK_REMOVED_OPTION');
+  }
+
+  answerText(answer: Answer, question?: Question): string {
+    const a = answer as any;
+    switch (answer.type) {
+      case QuestionType.TEXT: return a.text ?? '';
+      case QuestionType.MULTIPLE_CHOICE: return this.optionLabel(question, a.selectedOptionId);
+      case QuestionType.YES_NO: return this.translate.instant(a.yes ? 'YES' : 'NO');
+      case QuestionType.STAR_RATING: return `${a.rating ?? 0} / ${question?.maxStars || 5}`;
+      case QuestionType.DATE: return this.formatDate(a.date);
+      default: return '';
+    }
+  }
+
+  stars(question: Question): number[] {
+    return Array.from({ length: Math.max(1, question.maxStars || 5) }, (_, i) => i + 1);
+  }
+
+  rating(questionId: string): number {
+    return Number((this.getAnswer(questionId) as any)?.rating ?? 0);
+  }
+
+  /** Marks the opened check-in reviewed (with the optional comment the client reads), then opens the next one if asked. */
+  saveReview(goNext = false): void {
+    const row = this.selected;
+    if (!row || this.saving) return;
+    const nextRow = goNext ? this.filteredRows[this.queuePosition + 1] : undefined;
+    const feedback = this.feedback.trim() || null;
+
+    this.saving = true;
+    this.actionError = null;
+    this.assignmentsApi.reviewAssignment(row.id, feedback).pipe(finalize(() => (this.saving = false))).subscribe({
+      next: (updated) => {
+        this.assignments.set(updated.id, updated);
+        this.rows = this.rows.map(r => r.id === updated.id ? this.toRow(updated) : r);
+        if (nextRow && nextRow.id !== updated.id) {
+          this.openCheckIn(nextRow);
+        } else {
+          this.closeModal();
+        }
+      },
+      error: (err) => {
+        this.actionError = err?.error?.message ?? this.translate.instant('MARK_REVIEWED_ERROR');
+      },
+    });
+  }
+
+  onFeedbackKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      this.saveReview(this.selected?.status === 'to_review' && this.queuePosition + 1 < this.queueLength);
     }
   }
 }

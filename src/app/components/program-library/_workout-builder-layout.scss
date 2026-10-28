@@ -18,7 +18,7 @@
 :host {
   --wb-app-header: 3.5rem;
   --wb-toolbar: 56px;
-  --wb-rail: clamp(216px, 16vw, 264px);
+  --wb-rail: clamp(264px, 19vw, 300px);
   --wb-drawer: clamp(320px, 25vw, 384px);
   --wb-gap: 14px;
   --wb-sticky-top: calc(var(--wb-app-header) + var(--wb-toolbar) + 12px);
@@ -190,9 +190,37 @@
   &:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
   &:disabled { cursor: not-allowed; opacity: .55; }
 
-  /* Right after a successful save: short green confirmation. */
-  &.is-saved,
-  &.is-saved:hover:not(:disabled) { background: #15803d; }
+  /* While saving the button keeps its color: a spinner and « Enregistrement… » say it; the status says when it is done. */
+  &.is-busy:disabled { cursor: progress; opacity: 1; }
+}
+
+/* A small turning ring in the save button while the server saves. */
+.np-root.np-layout .np-toolbar__spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: np-save-spin .8s linear infinite;
+}
+
+@keyframes np-save-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* « ✓ Enregistré à 14:32 » next to the button: the brand's check, the text muted (no color change of the button). */
+.np-root.np-layout .np-toolbar__status.has-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.np-root.np-layout .np-toolbar__ok {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: #44b4df;
 }
 
 .np-root.np-layout .np-toolbar__savelabel--short {
@@ -607,7 +635,7 @@
    layout), a little narrower so the content keeps room. */
 @media (min-width: 768px) and (max-width: 1099.98px) {
   :host {
-    --wb-rail: 184px;
+    --wb-rail: 216px;
     --wb-drawer: 280px;
     --wb-gap: 10px;
   }
@@ -687,6 +715,15 @@
 
   .np-root.np-layout .np-toolbar__status,
   .np-root.np-layout .np-toolbar__weeks span {
+    display: none;
+  }
+
+  /* On a phone the saved time stays, short: « ✓ 14:32 ». */
+  .np-root.np-layout .np-toolbar__status.has-saved {
+    display: inline-flex;
+  }
+
+  .np-root.np-layout .np-toolbar__savedlabel {
     display: none;
   }
 

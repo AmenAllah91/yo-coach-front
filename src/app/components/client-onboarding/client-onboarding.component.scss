@@ -27,3 +27,11 @@ textarea.field-control { resize:vertical; }
 
   a { text-decoration: none; min-width: 160px; text-align: center; }
 }
+
+.profile-group { margin-bottom:20px; }
+.group-label { display:block; margin-bottom:8px; font-size:14px; font-weight:600; }
+.field-grid label .field-error { display:block; font-weight:400; }
+.welcome-card { width:min(calc(100% - 40px),560px); }
+.welcome-icon { width:56px; height:56px; margin:4px auto 20px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:#effaff; color:#1597c6; font-size:26px; font-weight:700; }
+.onboarding-footer .primary-btn,.onboarding-footer .secondary-btn { white-space:nowrap; flex:0 0 auto; }
+.onboarding-footer .autosave { text-align:center; }

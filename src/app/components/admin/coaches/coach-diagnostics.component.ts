@@ -7,6 +7,9 @@ import { BehaviorSubject, catchError, of, switchMap, tap } from 'rxjs';
 import { AdminCoachesService, CoachDiagnostics, CoachAccountAction } from '../../../service/admin-coaches.service';
 import { AdminBillingService, SalesPlan } from '../../../service/admin-billing.service';
 
+/** Offering or taking back an access: YoSales has no such routes and CE answers 501, so never shown nor sent. */
+const UNAVAILABLE_ACTIONS = ['OFFER_ACCESS', 'REVOKE_ACCESS'];
+
 @Component({selector:'app-coach-diagnostics',standalone:true,imports:[CommonModule,FormsModule,TranslateModule],
   templateUrl:'./coach-diagnostics.component.html',styleUrl:'./coach-diagnostics.component.scss'})
 export class CoachDiagnosticsComponent implements OnInit {
@@ -47,8 +50,10 @@ export class CoachDiagnosticsComponent implements OnInit {
       ...(g.revokedAt?[{label:'HEALTH_ACTION_REVOKE_ACCESS',date:g.revokedAt,actor:g.revokedBy,detail:g.planName}]:[])]),
     ...(d.lastPayment?.date?[{label:`ADMIN_PAYMENT_${d.lastPayment.status}`,date:d.lastPayment.date,actor:null,detail:`${d.lastPayment.amount} ${d.lastPayment.currency}`}]:[])
   ].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);}
+  /** The actions CE allows, without the unavailable ones (offer / revoke an access). */
+  get availableActions(){return (this.data?.allowedActions??[]).filter(a=>!UNAVAILABLE_ACTIONS.includes(a));}
   open(action:'OFFER_ACCESS'|'REVOKE_ACCESS'|'RESYNC'){
-    if(this.busy||!this.data?.allowedActions.includes(action))return;
+    if(this.busy||!this.availableActions.includes(action))return;
     this.action=action;this.actionError='';this.planId='';this.duration='DAYS';this.amount=30;this.endDate='';this.reason='COLLABORATION';this.note='';
     this.dialog.nativeElement.showModal();
     if(action==='OFFER_ACCESS') {this.plans=[];this.plansLoading=true;this.plansError=false;
@@ -64,5 +69,6 @@ export class CoachDiagnosticsComponent implements OnInit {
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:()=>{this.busy=false;this.close();this.refresh();this.changed.emit();},
       error:e=>{this.busy=false;this.actionError=e.status===409?'HEALTH_CONFLICT':'HEALTH_ACTION_ERROR';}});
   }
-  managed(){return !!this.data?.allowedActions.includes('OFFER_ACCESS');}
+  /** CE lists actions only for the roles that manage coaches (RESYNC, plus offer / revoke when available). */
+  managed(){return this.availableActions.length>0;}
 }

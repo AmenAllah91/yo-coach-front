@@ -1,945 +1,805 @@
-<div class="yc-builder">
-  <!-- Top bar -->
-  <div class="yc-builder__topbar">
-    <div class="yc-builder__topbar-inner">
-      <div class="yc-builder__heading">
-        <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
-        <div class="yc-builder__brand">
-          <div class="yc-builder__brand-icon">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
-              <rect x="3" y="14" width="9" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
-              <rect x="16" y="14" width="5" height="7" rx="1" stroke="currentColor" stroke-width="2"></rect>
-            </svg>
-          </div>
-          <div class="yc-builder__brand-title">{{ 'COACH_BUILDER' | translate }}</div>
-        </div>
-      </div>
-
-      <div class="yc-builder__actions">
-        <button type="button" class="yc-builder__preview-btn" (click)="openPreview()">
-  <span class="yc-builder__preview-icon">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M2.1 12.3a1 1 0 0 1 0-.6 10.7 10.7 0 0 1 19.8 0 1 1 0 0 1 0 .6 10.7 10.7 0 0 1-19.8 0Z"
-            stroke="currentColor" stroke-width="2"></path>
-      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"></circle>
-    </svg>
-  </span>
-          <span>{{ 'VIEW_PREVIEW' | translate }}</span>
+<div class="wb">
+  <!-- Top bar: where the site lives, its state, and the two actions that matter. -->
+  <header class="wb-topbar">
+    <div class="wb-topbar__title">
+      <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
+      <div class="wb-topbar__copy">
+        <h1>{{ 'COACH_WEBSITE' | translate }}</h1>
+        <button type="button" class="wb-address" [class.is-invalid]="!!slugError" (click)="setSection(customDomainStatus === 'VERIFIED' ? 'domain' : 'address')">
+          <i-feather name="globe"></i-feather><span>{{ publicSiteUrl }}</span>
         </button>
-
-        <button type="button" class="yc-builder__preview-btn" (click)="saveWebsite()" [disabled]="brandingLocked">
-          <span>{{ 'SAVE_WEBSITE' | translate }}</span>
-        </button>
-
       </div>
     </div>
-  </div>
+
+    <div class="wb-topbar__actions">
+      <span class="wb-state" [ngClass]="{
+        'wb-state--saving': saving,
+        'wb-state--dirty': !saving && (dirty || !hasSavedSite),
+        'wb-state--ok': !saving && !dirty && hasSavedSite
+      }">
+        <ng-container *ngIf="saving">{{ 'SAVING' | translate }}</ng-container>
+        <ng-container *ngIf="!saving && !hasSavedSite">{{ 'WB_STATE_NEVER_SAVED' | translate }}</ng-container>
+        <ng-container *ngIf="!saving && hasSavedSite && dirty">{{ 'UNSAVED_CHANGES' | translate }}</ng-container>
+        <ng-container *ngIf="!saving && hasSavedSite && !dirty">{{ (published ? 'WB_STATE_PUBLISHED' : 'WB_STATE_OFFLINE') | translate }}</ng-container>
+      </span>
+      <button type="button" class="wb-button" (click)="openPreview()">
+        <i-feather name="eye"></i-feather><span>{{ 'VIEW_PREVIEW' | translate }}</span>
+      </button>
+      <button type="button" class="wb-button" (click)="openPublicSite()" [disabled]="!hasSavedSite || !published" [title]="hasSavedSite ? '' : ('WB_SAVE_FIRST' | translate)">
+        <i-feather name="external-link"></i-feather><span>{{ 'WB_OPEN_SITE' | translate }}</span>
+      </button>
+      <button type="button" class="wb-button wb-button--primary" (click)="saveWebsite()" [disabled]="!canSave">
+        <i-feather [name]="savedRecently && !dirty ? 'check' : 'save'"></i-feather>
+        <span>{{ (saving ? 'SAVING' : (savedRecently && !dirty ? 'CHANGES_SAVED' : 'SAVE_WEBSITE')) | translate }}</span>
+      </button>
+    </div>
+  </header>
 
   <app-branding-lock-banner *ngIf="brandingLocked"></app-branding-lock-banner>
 
-  <fieldset class="yc-builder__lock" [disabled]="brandingLocked">
-  <!-- URL bar -->
-  <div class="yc-builder__urlbar">
-    <div class="yc-builder__urlbar-inner">
-      <div class="yc-builder__url-label">{{ 'WEBSITE_ADDRESS' | translate }}</div>
-
-      <div class="yc-builder__url-content">
-        <div class="yc-builder__url-input-wrap">
-          <span class="yc-builder__url-prefix">https://</span>
-          <input
-            class="yc-builder__url-input"
-            type="text"
-            [(ngModel)]="siteSlug"
-            [placeholder]="'WEBSITE_SLUG_PLACEHOLDER' | translate"
-          />
-          <span class="yc-builder__url-suffix">.yo-coach.app</span>
-        </div>
-
-        <a class="yc-builder__public-link" [href]="publicSiteUrl" target="_blank" rel="noopener">
-          {{ publicSiteUrl }}
-        </a>
-      </div>
-    </div>
+  <div class="wb-alert wb-alert--error" *ngIf="saveError" role="alert">
+    <i-feather name="alert-circle"></i-feather><span>{{ saveError }}</span>
+    <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="saveError = ''"><i-feather name="x"></i-feather></button>
+  </div>
+  <div class="wb-alert wb-alert--error" *ngIf="uploadError" role="alert">
+    <i-feather name="image"></i-feather><span>{{ uploadError }}</span>
+    <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="uploadError = ''"><i-feather name="x"></i-feather></button>
+  </div>
+  <div class="wb-alert wb-alert--info" *ngIf="uploadingCount" role="status">
+    <span class="wb-spinner"></span><span>{{ 'UPLOADING' | translate }}</span>
   </div>
 
-  <!-- Page content -->
-  <div class="yc-builder__content">
-    <!-- Themes -->
-    <div class="yc-builder__section">
-      <div class="yc-builder__section-title">{{ 'SELECTED_THEME' | translate }}</div>
+  <div class="wb-loading" *ngIf="loading"><span class="wb-spinner"></span></div>
 
-      <div class="yc-builder__themes">
-        <div
-          class="yc-theme-card"
-          *ngFor="let theme of themes; let i = index"
-          [class.is-selected]="theme.selected"
-          (click)="selectTheme(i)"
-        >
-          <div class="yc-theme-card__name">{{ theme.name }}</div>
-
-          <div
-            class="yc-theme-card__preview"
-            [attr.data-theme]="theme.name"
-            [style.--preview-primary]="theme.colors.primary"
-            [style.--preview-secondary]="theme.colors.secondary"
-            [style.--preview-accent]="theme.colors.accent"
-            [style.--preview-bg]="theme.colors.background"
+  <fieldset class="wb-lock" [disabled]="brandingLocked" *ngIf="!loading">
+    <div class="wb-layout">
+      <!-- Sections -->
+      <nav class="wb-nav" [attr.aria-label]="'PAGE_CONTENT' | translate">
+        <div class="wb-progress">
+          <div class="wb-progress__head"><span>{{ 'WB_COMPLETION' | translate }}</span><strong>{{ completion }}%</strong></div>
+          <div class="wb-progress__bar"><span [style.width.%]="completion"></span></div>
+        </div>
+        <div class="wb-nav__group" *ngFor="let group of navGroups">
+          <div class="wb-nav__title">{{ group.title | translate }}</div>
+          <button
+            *ngFor="let item of group.items"
+            type="button"
+            class="wb-nav__item"
+            [class.is-active]="activeSection === item.key"
+            [attr.aria-current]="activeSection === item.key ? 'page' : null"
+            (click)="setSection(item.key)"
           >
-            <div class="yc-theme-skeleton yc-theme-skeleton--elegance" *ngIf="theme.previewKey === 'elegance'">
-              <div class="elegance-avatar"></div>
-              <div class="elegance-title"></div>
-              <div class="elegance-subtitle"></div>
-              <div class="elegance-cta"></div>
-              <div class="elegance-section">
-                <div></div>
-                <div></div>
-              </div>
-            </div>
+            <i-feather [name]="item.icon"></i-feather>
+            <span class="wb-nav__label">{{ item.label | translate }}</span>
+            <span class="wb-nav__meta" *ngIf="sectionMeta(item.key)">{{ sectionMeta(item.key) }}</span>
+            <span class="wb-nav__dot" [class.is-done]="sectionDone(item.key)"></span>
+          </button>
+        </div>
+      </nav>
 
-            <div class="yc-theme-skeleton yc-theme-skeleton--dynamic" *ngIf="theme.previewKey === 'dynamic'">
-              <div class="dynamic-panel">
-                <div class="dynamic-kicker"></div>
-                <div class="dynamic-title"></div>
-                <div class="dynamic-title dynamic-title--short"></div>
-                <div class="dynamic-copy"></div>
-                <div class="dynamic-cta"></div>
-              </div>
-              <div class="dynamic-media">
-                <div class="dynamic-photo"></div>
-              </div>
+      <main class="wb-panel">
+        <!-- ADDRESS -->
+        <section *ngIf="activeSection === 'address'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_ADDRESS' | translate }}</h2>
+            <p>{{ 'WB_ADDRESS_HINT' | translate }}</p>
+          </header>
+          <div class="wb-field">
+            <label class="wb-label" for="siteSlug">{{ 'WEBSITE_ADDRESS' | translate }}</label>
+            <div class="wb-slug" [class.is-invalid]="!!slugError">
+              <span>https://</span>
+              <input id="siteSlug" type="text" [(ngModel)]="siteSlug" [placeholder]="'WEBSITE_SLUG_PLACEHOLDER' | translate" autocomplete="off" spellcheck="false" />
+              <span>.{{ publicHost }}</span>
             </div>
-
-            <div class="yc-theme-skeleton yc-theme-skeleton--trust" *ngIf="theme.previewKey === 'trust'">
-              <div class="trust-photo-wrap">
-                <div class="trust-photo-shadow"></div>
-                <div class="trust-photo"></div>
-              </div>
-              <div class="trust-content">
-                <div class="trust-badge"></div>
-                <div class="trust-title"></div>
-                <div class="trust-title trust-title--short"></div>
-                <div class="trust-copy"></div>
-                <div class="trust-cta"></div>
-              </div>
-              <div class="trust-proof-row">
-                <div></div>
-                <div></div>
-                <div></div>
-              </div>
-            </div>
-
-            <div class="yc-theme-skeleton yc-theme-skeleton--serenity" *ngIf="theme.previewKey === 'serenity'">
-              <div class="serenity-halo"></div>
-              <div class="serenity-content">
-                <div class="serenity-avatar"></div>
-                <div class="serenity-title"></div>
-                <div class="serenity-subtitle"></div>
-                <div class="serenity-cta"></div>
-                <div class="serenity-flow">
-                  <div></div>
-                  <div></div>
-                  <div></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="yc-theme-card__swatches">
-              <span [style.background]="theme.colors.primary"></span>
-              <span [style.background]="theme.colors.secondary"></span>
-              <span [style.background]="theme.colors.accent"></span>
-            </div>
+            <div class="wb-error" *ngIf="slugError">{{ slugError | translate }}</div>
+            <div class="wb-hint" *ngIf="!slugError">{{ 'WB_ADDRESS_RESULT' | translate }} <strong>{{ slugSiteUrl }}</strong></div>
           </div>
 
-        </div>
-      </div>
-    </div>
-
-    <!-- Main grid -->
-    <div class="yc-builder__grid">
-      <!-- Left -->
-      <div class="yc-builder__left">
-        <div class="yc-builder__section-title">{{ 'PAGE_CONTENT' | translate }}</div>
-
-        <div class="yc-card yc-card--tabs">
-          <div class="yc-tabs">
-            <button
-              type="button"
-              *ngFor="let tab of tabs"
-              class="yc-tab"
-              [class.is-active]="activeTab === tab"
-              (click)="setTab(tab)"
-            >
-              {{ tabLabelKey(tab) | translate }}
+          <div class="wb-toggle-row">
+            <div>
+              <div class="wb-toggle-row__title">{{ 'WB_PUBLISHED' | translate }}</div>
+              <div class="wb-hint">{{ 'WB_PUBLISHED_HINT' | translate }}</div>
+            </div>
+            <button type="button" class="wb-switch" role="switch" [attr.aria-checked]="published" [class.is-on]="published" (click)="togglePublished()">
+              <span class="wb-switch__thumb"></span>
             </button>
           </div>
 
-          <div class="yc-card__body">
-            <!-- PROFIL -->
-            <ng-container *ngIf="activeTab === 'Profil'">
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'PROFILE_PHOTO' | translate }}</label>
-                <div class="yc-profile-upload">
-                  <img [src]="profile.image" alt="profile" class="yc-avatar"/>
-
-                  <div class="yc-upload-actions">
-                    <input
-                      #profileImageInput
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      (change)="onProfileImageSelected($event)"
-                    />
-
-                    <button
-                      type="button"
-                      class="yc-btn yc-btn--outline"
-                      (click)="profileImageInput.click()"
-                    >
-                      {{ 'UPLOAD_IMAGE' | translate }}
-                    </button>
-
-                    <button type="button" class="yc-link-btn">
-                      {{ 'USE_IMAGE_URL' | translate }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'FULL_NAME' | translate }}</label>
-                <input class="yc-input" type="text" [(ngModel)]="profile.fullName"/>
-              </div>
-
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'PROFESSIONAL_TITLE' | translate }}</label>
-                <input class="yc-input" type="text" [(ngModel)]="profile.title"/>
-              </div>
-
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'SLOGAN_TAGLINE' | translate }}</label>
-                <input class="yc-input" type="text" [(ngModel)]="profile.slogan"/>
-              </div>
-
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'SHORT_BIOGRAPHY' | translate }}</label>
-                <textarea class="yc-textarea" rows="5" [(ngModel)]="profile.bio"></textarea>
-              </div>
-            </ng-container>
-
-            <!-- VIDEO -->
-            <ng-container *ngIf="activeTab === 'Vidéo'">
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'INTRODUCTION_VIDEO' | translate }}</label>
-                <div class="yc-helper">
-                  Ajoutez une vidéo publicitaire convaincante pour présenter vos services.
-                </div>
-              </div>
-
-              <div class="yc-form-block">
-                <label class="yc-label">{{ 'VIDEO_LINK' | translate }}</label>
-                <input
-                  class="yc-input"
-                  type="text"
-                  [(ngModel)]="video.url"
-                  [placeholder]="'VIDEO_URL_PLACEHOLDER' | translate"
-                />
-              </div>
-
-              <div class="yc-form-block" *ngIf="videoEmbedUrl">
-                <label class="yc-label">{{ 'PREVIEW_FORM' | translate }}</label>
-                <div
-                  style="position: relative; width: 100%; padding-bottom: 56.25%; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
-                  <iframe
-                    [src]="videoEmbedUrl"
-                    [attr.title]="'VIDEO_PREVIEW' | translate"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen
-                    style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-                  ></iframe>
-                </div>
-              </div>
-            </ng-container>
-
-            <!-- DESCRIPTION -->
-            <ng-container *ngIf="activeTab === 'Description'">
-              <div class="yc-helper">
-                {{ 'DESCRIPTION_BLOCKS_HINT' | translate }}
-              </div>
-
-              <div
-                class="yc-dynamic-block"
-                *ngFor="let block of descriptionBlocks; let i = index; trackBy: trackByBlockId"
-              >
-                <div class="yc-dynamic-block__actions">
-                  <button
-                    type="button"
-                    class="yc-icon-btn"
-                    (click)="moveBlockUp(block.id)"
-                    [disabled]="i === 0"
-                  >
-                    ↑
-                  </button>
-
-                  <button
-                    type="button"
-                    class="yc-icon-btn"
-                    (click)="moveBlockDown(block.id)"
-                    [disabled]="i === descriptionBlocks.length - 1"
-                  >
-                    ↓
-                  </button>
-                </div>
-
-                <div class="yc-dynamic-block__content">
-                  <div class="yc-dynamic-block__head">
-                    <select
-                      class="yc-input"
-                      [ngModel]="block.type"
-                      (ngModelChange)="updateBlock(block.id, { type: $event, content: '' })"
-                    >
-                      <option value="text">{{ 'TEXT' | translate }}</option>
-                      <option value="heading">{{ 'TITLE' | translate }}</option>
-                      <option value="image">{{ 'IMAGE' | translate }}</option>
-                    </select>
-
-                    <button
-                      type="button"
-                      class="yc-icon-btn yc-icon-btn--danger"
-                      (click)="removeBlock(block.id)"
-                    >
-                      {{ 'DELETE' | translate }}
-                    </button>
-                  </div>
-
-                  <div *ngIf="block.type === 'heading'">
-                    <input
-                      class="yc-input"
-                      type="text"
-                      [ngModel]="block.content"
-                      (ngModelChange)="updateBlock(block.id, { content: $event })"
-                      [placeholder]="'TITLE_HERE_PLACEHOLDER' | translate"
-                    />
-                  </div>
-
-                  <div *ngIf="block.type === 'text'">
-        <textarea
-          class="yc-textarea"
-          rows="4"
-          [ngModel]="block.content"
-          (ngModelChange)="updateBlock(block.id, { content: $event })"
-          [placeholder]="'TEXT_HERE_PLACEHOLDER' | translate"
-        ></textarea>
-                  </div>
-
-                  <div *ngIf="block.type === 'image'" class="yc-image-upload-box">
-                    <ng-container *ngIf="block.content; else emptyBlockImage">
-                      <img
-                        [src]="block.content"
-                        [alt]="'CONTENT_IMAGE' | translate"
-                        class="yc-block-image-preview"
-                      />
-
-                      <label class="yc-image-upload-label">
-                        {{ 'REPLACE_IMAGE' | translate }}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          hidden
-                          (change)="onBlockImageSelected(block.id, $event)"
-                        />
-                      </label>
-                    </ng-container>
-
-                    <ng-template #emptyBlockImage>
-                      <label class="yc-image-upload-label">
-                        {{ 'CLICK_ADD_IMAGE' | translate }}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          hidden
-                          (change)="onBlockImageSelected(block.id, $event)"
-                        />
-                      </label>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
-
-              <div class="yc-dynamic-buttons">
-                <button
-                  type="button"
-                  class="yc-btn yc-btn--outline"
-                  (click)="addBlock('text')"
-                >
-                  + {{ 'TEXT' | translate }}
-                </button>
-
-                <button
-                  type="button"
-                  class="yc-btn yc-btn--outline"
-                  (click)="addBlock('heading')"
-                >
-                  + {{ 'TITLE' | translate }}
-                </button>
-
-                <button
-                  type="button"
-                  class="yc-btn yc-btn--outline"
-                  (click)="addBlock('image')"
-                >
-                  + {{ 'IMAGE' | translate }}
-                </button>
-              </div>
-            </ng-container>
-
-            <!-- RESULTATS -->
-            <ng-container *ngIf="activeTab === 'Résultats'">
-              <div class="yc-helper">
-                Montrez les transformations de vos clients avec des images Avant / Après.
-              </div>
-
-              <div class="yc-form-block" *ngFor="let result of results; let i = index">
-                <div class="yc-dynamic-block">
-                  <div class="yc-dynamic-block__content">
-                    <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">{{ 'RESULT_ITEM' | translate:{ number: i + 1 } }}</label>
-
-                      <button
-                        type="button"
-                        class="yc-icon-btn yc-icon-btn--danger"
-                        (click)="removeResult(i)"
-                      >
-                        {{ 'DELETE' | translate }}
-                      </button>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                      <div>
-                        <label class="yc-label">{{ 'BEFORE_IMAGE' | translate }}</label>
-
-                        <div class="yc-image-upload-box">
-                          <ng-container *ngIf="result.beforeImage; else emptyBeforeImage">
-                            <img
-                              [src]="result.beforeImage"
-                              alt="Avant"
-                              class="yc-block-image-preview"
-                            />
-
-                            <label class="yc-image-upload-label">
-                              Remplacer l'image
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                (change)="onResultImageSelected(i, 'before', $event)"
-                              />
-                            </label>
-                          </ng-container>
-
-                          <ng-template #emptyBeforeImage>
-                            <label class="yc-image-upload-label">
-                              {{ 'ADD_BEFORE_IMAGE' | translate }}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                (change)="onResultImageSelected(i, 'before', $event)"
-                              />
-                            </label>
-                          </ng-template>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label class="yc-label">{{ 'AFTER_IMAGE' | translate }}</label>
-
-                        <div class="yc-image-upload-box">
-                          <ng-container *ngIf="result.afterImage; else emptyAfterImage">
-                            <img
-                              [src]="result.afterImage"
-                              alt="Après"
-                              class="yc-block-image-preview"
-                            />
-
-                            <label class="yc-image-upload-label">
-                              Remplacer l'image
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                (change)="onResultImageSelected(i, 'after', $event)"
-                              />
-                            </label>
-                          </ng-container>
-
-                          <ng-template #emptyAfterImage>
-                            <label class="yc-image-upload-label">
-                              {{ 'ADD_AFTER_IMAGE' | translate }}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                (change)="onResultImageSelected(i, 'after', $event)"
-                              />
-                            </label>
-                          </ng-template>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'TEXT_CAPTION' | translate }}</label>
-                      <textarea
-                        class="yc-textarea"
-                        rows="3"
-                        [(ngModel)]="result.text"
-                        [placeholder]="'TRANSFORMATION_EXAMPLE' | translate"
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="yc-form-block">
-                <button type="button" class="yc-btn yc-btn--outline" (click)="addResult()">
-                  + {{ 'ADD_RESULT' | translate }}
-                </button>
-              </div>
-            </ng-container>
-
-            <!-- SERVICES -->
-            <ng-container *ngIf="activeTab === 'Services'">
-              <div class="yc-form-block" *ngFor="let service of services; let i = index">
-                <div class="yc-dynamic-block">
-                  <div class="yc-dynamic-block__content">
-                    <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">{{ 'SERVICE_ITEM' | translate:{ number: i + 1 } }}</label>
-
-                      <button
-                        type="button"
-                        class="yc-icon-btn yc-icon-btn--danger"
-                        (click)="removeService(i)"
-                      >
-                        {{ 'DELETE' | translate }}
-                      </button>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'SERVICE_IMAGE' | translate }}</label>
-
-                      <div class="yc-image-upload-box">
-                        <ng-container *ngIf="service.image; else emptyServiceImage">
-                          <img
-                            [src]="service.image"
-                            alt="Service"
-                            class="yc-block-image-preview"
-                          />
-
-                          <label class="yc-image-upload-label">
-                            Remplacer l'image
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
-                              (change)="onServiceImageSelected(i, $event)"
-                            />
-                          </label>
-                        </ng-container>
-
-                        <ng-template #emptyServiceImage>
-                          <label class="yc-image-upload-label">
-                            {{ 'ADD_IMAGE' | translate }}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
-                              (change)="onServiceImageSelected(i, $event)"
-                            />
-                          </label>
-                        </ng-template>
-                      </div>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'TITLE' | translate }}</label>
-                      <input class="yc-input" type="text" [(ngModel)]="service.title" />
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'PRICE' | translate }}</label>
-                      <input class="yc-input" type="text" [(ngModel)]="service.price" />
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'DESCRIPTION' | translate }}</label>
-                      <textarea
-                        class="yc-textarea"
-                        rows="4"
-                        [(ngModel)]="service.description"
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="yc-form-block">
-                <button type="button" class="yc-btn yc-btn--outline" (click)="addService()">
-                  + {{ 'ADD_SERVICE' | translate }}
-                </button>
-              </div>
-            </ng-container>
-
-            <!-- CERTIFICATS -->
-            <ng-container *ngIf="activeTab === 'Certificats'">
-              <div class="yc-form-block" *ngFor="let certificate of certificates; let i = index">
-                <div class="yc-dynamic-block">
-                  <div class="yc-dynamic-block__content">
-                    <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">{{ 'CERTIFICATE_ITEM' | translate:{ number: i + 1 } }}</label>
-
-                      <button
-                        type="button"
-                        class="yc-icon-btn yc-icon-btn--danger"
-                        (click)="removeCertificate(i)"
-                      >
-                        {{ 'DELETE' | translate }}
-                      </button>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'CERTIFICATE_IMAGE' | translate }}</label>
-
-                      <div class="yc-image-upload-box">
-                        <ng-container *ngIf="certificate.image; else emptyCertificateImage">
-                          <img
-                            [src]="certificate.image"
-                            alt="Certificat"
-                            class="yc-block-image-preview"
-                          />
-
-                          <label class="yc-image-upload-label">
-                            Remplacer l'image
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
-                              (change)="onCertificateImageSelected(i, $event)"
-                            />
-                          </label>
-                        </ng-container>
-
-                        <ng-template #emptyCertificateImage>
-                          <label class="yc-image-upload-label">
-                            {{ 'ADD_IMAGE' | translate }}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
-                              (change)="onCertificateImageSelected(i, $event)"
-                            />
-                          </label>
-                        </ng-template>
-                      </div>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'CERTIFICATE_NAME' | translate }}</label>
-                      <input class="yc-input" type="text" [(ngModel)]="certificate.title" />
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'ORGANIZATION' | translate }}</label>
-                      <input class="yc-input" type="text" [(ngModel)]="certificate.organization" />
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'YEAR' | translate }}</label>
-                      <input class="yc-input" type="text" [(ngModel)]="certificate.year" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="yc-form-block">
-                <button
-                  type="button"
-                  class="yc-btn yc-btn--outline"
-                  (click)="addCertificate()"
-                >
-                  + {{ 'ADD_CERTIFICATE' | translate }}
-                </button>
-              </div>
-            </ng-container>
-
-            <!-- TEMOIGNAGES -->
-            <ng-container *ngIf="activeTab === 'Témoignages'">
-              <div class="yc-form-block" *ngFor="let testimonial of testimonials; let i = index">
-                <div class="yc-dynamic-block">
-                  <div class="yc-dynamic-block__content">
-                    <div class="yc-dynamic-block__head">
-                      <label class="yc-label" style="margin: 0;">{{ 'TESTIMONIAL_ITEM' | translate:{ number: i + 1 } }}</label>
-
-                      <button
-                        type="button"
-                        class="yc-icon-btn yc-icon-btn--danger"
-                        (click)="removeTestimonial(i)"
-                      >
-                        {{ 'DELETE' | translate }}
-                      </button>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'AUTHOR' | translate }}</label>
-                      <input
-                        class="yc-input"
-                        type="text"
-                        [(ngModel)]="testimonial.author"
-                        [placeholder]="'CLIENT_NAME' | translate"
-                      />
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'RATING' | translate }}</label>
-                      <select class="yc-input" [(ngModel)]="testimonial.rating">
-                        <option [ngValue]="5">{{ 'STARS_COUNT' | translate:{ count: 5 } }}</option>
-                        <option [ngValue]="4">{{ 'STARS_COUNT' | translate:{ count: 4 } }}</option>
-                        <option [ngValue]="3">{{ 'STARS_COUNT' | translate:{ count: 3 } }}</option>
-                        <option [ngValue]="2">{{ 'STARS_COUNT' | translate:{ count: 2 } }}</option>
-                        <option [ngValue]="1">{{ 'STAR_COUNT' | translate:{ count: 1 } }}</option>
-                      </select>
-                    </div>
-
-                    <div class="yc-form-block">
-                      <label class="yc-label">{{ 'MESSAGE' | translate }}</label>
-                      <textarea
-                        class="yc-textarea"
-                        rows="4"
-                        [(ngModel)]="testimonial.text"
-                        [placeholder]="'TESTIMONIAL_TEXT' | translate"
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="yc-form-block">
-                <button
-                  type="button"
-                  class="yc-btn yc-btn--outline"
-                  (click)="addTestimonial()"
-                >
-                  + {{ 'ADD_TESTIMONIAL' | translate }}
-                </button>
-              </div>
-            </ng-container>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- Right -->
-      <div class="yc-builder__right">
-        <!-- Announcement -->
-        <div class="yc-card yc-side-card">
-          <div class="yc-side-card__head">
-            <div class="yc-side-card__title">{{ 'ANNOUNCEMENT_BAR' | translate }}</div>
-            <label class="yc-switch">
-              <input type="checkbox" [(ngModel)]="announcement.enabled"/>
-              <span class="yc-switch__slider"></span>
-            </label>
+          <button type="button" class="wb-link-card" (click)="setSection('domain')">
+            <i-feather name="globe"></i-feather>
+            <span>{{ 'WB_DOMAIN_FROM_ADDRESS' | translate }}</span>
+            <i-feather name="arrow-right"></i-feather>
+          </button>
+        </section>
+
+        <!-- CUSTOM DOMAIN -->
+        <section *ngIf="activeSection === 'domain'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_DOMAIN' | translate }}</h2>
+            <p>{{ 'WB_DOMAIN_HINT' | translate }}</p>
+          </header>
+
+          <div class="wb-field">
+            <label class="wb-label" for="customDomain">{{ 'WB_DOMAIN_LABEL' | translate }}</label>
+            <div class="wb-slug" [class.is-invalid]="!!customDomainError">
+              <span>https://</span>
+              <input id="customDomain" type="text" [(ngModel)]="customDomain" placeholder="mon-coaching.com" autocomplete="off" spellcheck="false" />
+              <span class="wb-slug__status" *ngIf="domainSaved" [class.is-ok]="customDomainStatus === 'VERIFIED'">
+                <i-feather [name]="customDomainStatus === 'VERIFIED' ? 'check-circle' : 'clock'"></i-feather>
+                {{ (customDomainStatus === 'VERIFIED' ? 'WB_DOMAIN_VERIFIED' : 'WB_DOMAIN_PENDING') | translate }}
+              </span>
+            </div>
+            <div class="wb-error" *ngIf="customDomainError">{{ customDomainError | translate }}</div>
+            <div class="wb-hint" *ngIf="!customDomainError && !normalizedDomain">{{ 'WB_DOMAIN_EMPTY_HINT' | translate }}</div>
+            <div class="wb-hint" *ngIf="!customDomainError && normalizedDomain && !domainSaved"><i-feather name="info"></i-feather> {{ 'WB_DOMAIN_SAVE_FIRST' | translate }}</div>
           </div>
 
-          <div class="yc-helper">
-            {{ 'ANNOUNCEMENT_BAR_HINT' | translate }}
-          </div>
-
-          <div class="yc-form-block">
-            <label class="yc-label">{{ 'MESSAGE' | translate }}</label>
-            <textarea class="yc-textarea" rows="2" [(ngModel)]="announcement.message"></textarea>
-          </div>
-
-          <div class="yc-color-grid">
-            <div class="yc-form-block">
-              <label class="yc-label">{{ 'BACKGROUND_COLOR' | translate }}</label>
-              <div class="yc-color-row">
-                <input type="color" [(ngModel)]="announcement.bgColor"/>
-                <span>{{ announcement.bgColor }}</span>
+          <ng-container *ngIf="domainSaved">
+            <div class="wb-subhead">
+              <div>
+                <h3>{{ 'WB_DNS_TITLE' | translate }}</h3>
+                <p>{{ 'WB_DNS_HINT' | translate }}</p>
               </div>
             </div>
 
-            <div class="yc-form-block">
-              <label class="yc-label">{{ 'TEXT' | translate }}</label>
-              <div class="yc-color-row">
-                <input type="color" [(ngModel)]="announcement.textColor"/>
-                <span>{{ announcement.textColor }}</span>
-              </div>
-            </div>
-          </div>
+            <ol class="wb-dns">
+              <li class="wb-dns__step" [class.is-ok]="domainCheck?.ownershipVerified || customDomainStatus === 'VERIFIED'">
+                <div class="wb-dns__head">
+                  <span class="wb-dns__num">1</span>
+                  <div>
+                    <strong>{{ 'WB_DNS_TXT_TITLE' | translate }}</strong>
+                    <p>{{ 'WB_DNS_TXT_HINT' | translate }}</p>
+                  </div>
+                  <i-feather name="check-circle" class="wb-dns__ok" *ngIf="domainCheck?.ownershipVerified || customDomainStatus === 'VERIFIED'"></i-feather>
+                </div>
+                <div class="wb-dns__records">
+                  <div class="wb-dns__record"><span>{{ 'WB_DNS_TYPE' | translate }}</span><code>TXT</code></div>
+                  <div class="wb-dns__record"><span>{{ 'WB_DNS_NAME' | translate }}</span><code>_yocoach</code><button type="button" class="wb-icon" (click)="copyValue('_yocoach')" [attr.aria-label]="'COPY' | translate"><i-feather [name]="copiedValue === '_yocoach' ? 'check' : 'copy'"></i-feather></button></div>
+                  <div class="wb-dns__record"><span>{{ 'WB_DNS_VALUE' | translate }}</span><code>yocoach-verify={{ customDomainToken }}</code><button type="button" class="wb-icon" (click)="copyValue('yocoach-verify=' + customDomainToken)" [attr.aria-label]="'COPY' | translate"><i-feather [name]="copiedValue === 'yocoach-verify=' + customDomainToken ? 'check' : 'copy'"></i-feather></button></div>
+                </div>
+              </li>
+              <li class="wb-dns__step" [class.is-ok]="domainCheck?.pointsToPlatform || customDomainStatus === 'VERIFIED'">
+                <div class="wb-dns__head">
+                  <span class="wb-dns__num">2</span>
+                  <div>
+                    <strong>{{ 'WB_DNS_CNAME_TITLE' | translate }}</strong>
+                    <p>{{ 'WB_DNS_CNAME_HINT' | translate }}</p>
+                  </div>
+                  <i-feather name="check-circle" class="wb-dns__ok" *ngIf="domainCheck?.pointsToPlatform || customDomainStatus === 'VERIFIED'"></i-feather>
+                </div>
+                <div class="wb-dns__records">
+                  <div class="wb-dns__record"><span>{{ 'WB_DNS_TYPE' | translate }}</span><code>CNAME</code></div>
+                  <div class="wb-dns__record"><span>{{ 'WB_DNS_NAME' | translate }}</span><code>www</code></div>
+                  <div class="wb-dns__record"><span>{{ 'WB_DNS_VALUE' | translate }}</span><code>{{ customDomainTarget }}</code><button type="button" class="wb-icon" (click)="copyValue(customDomainTarget)" [attr.aria-label]="'COPY' | translate"><i-feather [name]="copiedValue === customDomainTarget ? 'check' : 'copy'"></i-feather></button></div>
+                </div>
+                <p class="wb-hint">{{ 'WB_DNS_APEX_HINT' | translate }}</p>
+              </li>
+            </ol>
 
-          <div class="yc-form-block">
-            <label class="yc-label">{{ 'PREVIEW_FORM' | translate }}</label>
-            <div
-              class="yc-announcement-preview"
-              [style.background]="announcement.bgColor"
-              [style.color]="announcement.textColor"
-            >
-              <div class="yc-marquee">
-                {{ announcement.message }} &nbsp;&nbsp;&nbsp; {{ announcement.message }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CTA -->
-        <div class="yc-card yc-side-card">
-          <div class="yc-side-card__head">
-            <div class="yc-side-card__title">{{ 'ACTION_BUTTON' | translate }}</div>
-            <label class="yc-switch">
-              <input type="checkbox" [(ngModel)]="cta.enabled"/>
-              <span class="yc-switch__slider"></span>
-            </label>
-          </div>
-
-          <div class="yc-helper">
-            {{ 'ACTION_BUTTON_HINT' | translate }}
-          </div>
-
-          <div class="yc-form-block">
-            <label class="yc-label">{{ 'BUTTON_TEXT' | translate }}</label>
-            <input class="yc-input" type="text" [(ngModel)]="cta.label"/>
-          </div>
-
-          <div class="yc-sticky-row">
-            <div>
-              <div class="yc-sticky-title">{{ 'STICKY_BUTTON' | translate }}</div>
-              <div class="yc-sticky-subtitle">{{ 'STICKY_BUTTON_HINT' | translate }}</div>
-            </div>
-
-            <label class="yc-switch">
-              <input type="checkbox" [(ngModel)]="cta.sticky"/>
-              <span class="yc-switch__slider"></span>
-            </label>
-          </div>
-
-          <div class="yc-form-block">
-            <label class="yc-label">{{ 'PREVIEW_FORM' | translate }}</label>
-            <div class="yc-cta-preview">
-              <button type="button" class="yc-cta-btn" [style.background]="colors.accent">
-                {{ cta.label }}
+            <div class="wb-dns__actions">
+              <button type="button" class="wb-button wb-button--primary" (click)="verifyDomain()" [disabled]="verifyingDomain || dirty">
+                <span class="wb-spinner wb-spinner--light" *ngIf="verifyingDomain"></span>
+                <i-feather name="refresh-cw" *ngIf="!verifyingDomain"></i-feather>
+                {{ (verifyingDomain ? 'WB_DOMAIN_CHECKING' : 'WB_DOMAIN_CHECK') | translate }}
               </button>
+              <span class="wb-hint" *ngIf="dirty">{{ 'WB_DOMAIN_SAVE_BEFORE_CHECK' | translate }}</span>
+            </div>
+
+            <div class="wb-alert wb-alert--error" *ngIf="domainError" role="alert"><i-feather name="alert-circle"></i-feather><span>{{ domainError }}</span></div>
+            <div class="wb-alert wb-alert--success" *ngIf="domainCheck?.status === 'VERIFIED'" role="status">
+              <i-feather name="check-circle"></i-feather><span>{{ 'WB_DOMAIN_READY' | translate:{ domain: savedCustomDomain } }}</span>
+            </div>
+            <div class="wb-alert wb-alert--warn" *ngIf="domainCheck && domainCheck.status !== 'VERIFIED'" role="status">
+              <i-feather name="clock"></i-feather>
+              <span>
+                {{ 'WB_DOMAIN_NOT_YET' | translate }}
+                <ng-container *ngIf="!domainCheck.ownershipVerified"> {{ 'WB_DOMAIN_TXT_MISSING' | translate }}</ng-container>
+                <ng-container *ngIf="!domainCheck.pointsToPlatform"> {{ 'WB_DOMAIN_CNAME_MISSING' | translate }}</ng-container>
+              </span>
+            </div>
+          </ng-container>
+        </section>
+
+        <!-- THEME + DESIGN -->
+        <section *ngIf="activeSection === 'theme'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_THEME' | translate }}</h2>
+            <p>{{ 'WB_THEME_HINT' | translate }}</p>
+          </header>
+
+          <div class="wb-presets">
+            <button
+              type="button"
+              class="wb-preset"
+              *ngFor="let preset of presets"
+              [class.is-selected]="preset.key === selectedPresetKey"
+              [attr.aria-pressed]="preset.key === selectedPresetKey"
+              (click)="applyPreset(preset)"
+            >
+              <div class="wb-preset__preview"
+                   [ngClass]="['is-' + preset.design.layout, 'is-' + preset.design.mode, 'is-hero-' + preset.design.heroBackground, 'is-radius-' + preset.design.radius, 'is-btn-' + preset.design.buttonStyle]"
+                   [style.--p-primary]="preset.colors.primary" [style.--p-secondary]="preset.colors.secondary"
+                   [style.--p-accent]="preset.colors.accent" [style.--p-bg]="preset.colors.background" [style.--p-text]="preset.colors.text"
+                   [style.--p-on-primary]="readableOn(preset.colors.primary)">
+                <div class="wb-mini__nav"><i></i><b></b></div>
+                <div class="wb-mini__hero">
+                  <div class="wb-mini__copy"><i class="is-eyebrow"></i><i class="is-title"></i><i class="is-title is-short"></i><i class="is-text"></i><b class="is-cta"></b></div>
+                  <div class="wb-mini__photo"></div>
+                </div>
+                <div class="wb-mini__cards"><i></i><i></i><i></i></div>
+              </div>
+              <div class="wb-preset__foot">
+                <div class="wb-preset__name">{{ preset.name }}<small>{{ preset.description | translate }}</small></div>
+                <span class="wb-preset__swatches">
+                  <span [style.background]="preset.colors.primary"></span>
+                  <span [style.background]="preset.colors.accent"></span>
+                  <span [style.background]="preset.colors.secondary"></span>
+                </span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Hero layout -->
+          <div class="wb-subhead">
+            <div><h3>{{ 'WB_DESIGN_LAYOUT' | translate }}</h3><p>{{ 'WB_DESIGN_LAYOUT_HINT' | translate }}</p></div>
+          </div>
+          <div class="wb-options wb-options--layout">
+            <button type="button" class="wb-option" *ngFor="let option of layoutOptions" [class.is-selected]="design.layout === option.value" [attr.aria-pressed]="design.layout === option.value" (click)="setDesign('layout', option.value)">
+              <span class="wb-option__sketch" [ngClass]="'is-' + option.value"><i class="is-photo"></i><i class="is-line"></i><i class="is-line is-short"></i><i class="is-btn"></i></span>
+              <strong>{{ option.label | translate }}</strong>
+              <small *ngIf="option.hint">{{ option.hint | translate }}</small>
+            </button>
+          </div>
+
+          <!-- Typography -->
+          <div class="wb-subhead">
+            <div><h3>{{ 'WB_DESIGN_FONT' | translate }}</h3><p>{{ 'WB_DESIGN_FONT_HINT' | translate }}</p></div>
+          </div>
+          <div class="wb-options wb-options--font">
+            <button type="button" class="wb-option" *ngFor="let option of fontOptions" [class.is-selected]="design.font === option.value" [attr.aria-pressed]="design.font === option.value" (click)="setDesign('font', option.value)">
+              <span class="wb-option__sample" [ngClass]="'is-font-' + option.value">Aa</span>
+              <strong>{{ option.label | translate }}</strong>
+              <small>{{ option.hint }}</small>
+            </button>
+          </div>
+
+          <!-- Shapes and mode -->
+          <div class="wb-grid-3 wb-grid-3--options">
+            <div>
+              <div class="wb-label">{{ 'WB_DESIGN_RADIUS' | translate }}</div>
+              <div class="wb-segmented">
+                <button type="button" *ngFor="let option of radiusOptions" [class.is-active]="design.radius === option.value" (click)="setDesign('radius', option.value)">
+                  <span class="wb-segmented__shape" [ngClass]="'is-' + option.value"></span>{{ option.label | translate }}
+                </button>
+              </div>
+            </div>
+            <div>
+              <div class="wb-label">{{ 'WB_DESIGN_BUTTONS' | translate }}</div>
+              <div class="wb-segmented">
+                <button type="button" *ngFor="let option of buttonOptions" [class.is-active]="design.buttonStyle === option.value" (click)="setDesign('buttonStyle', option.value)">
+                  <span class="wb-segmented__btn" [ngClass]="'is-' + option.value" [style.background]="colors.accent"></span>{{ option.label | translate }}
+                </button>
+              </div>
+            </div>
+            <div>
+              <div class="wb-label">{{ 'WB_DESIGN_MODE' | translate }}</div>
+              <div class="wb-segmented">
+                <button type="button" *ngFor="let option of modeOptions" [class.is-active]="design.mode === option.value" (click)="setDesign('mode', option.value)">
+                  <i-feather [name]="option.value === 'dark' ? 'moon' : 'sun'"></i-feather>{{ option.label | translate }}
+                </button>
+              </div>
+              <p class="wb-hint" *ngIf="design.mode === 'dark'">{{ 'WB_MODE_DARK_HINT' | translate }}</p>
             </div>
           </div>
-        </div>
 
-        <!-- Leads -->
-        <div class="yc-card yc-side-card">
-          <div class="yc-side-card__title yc-side-card__title--alone">
-            {{ 'CONTACT_FORM_LEADS' | translate }}
+          <!-- Hero background -->
+          <div class="wb-subhead">
+            <div><h3>{{ 'WB_DESIGN_HERO_BG' | translate }}</h3><p>{{ 'WB_DESIGN_HERO_BG_HINT' | translate }}</p></div>
+          </div>
+          <div class="wb-segmented wb-segmented--wide">
+            <button type="button" *ngFor="let option of heroBackgroundOptions" [class.is-active]="design.heroBackground === option.value" (click)="setDesign('heroBackground', option.value)">
+              <span class="wb-segmented__hero" [ngClass]="'is-' + option.value" [style.--s-primary]="colors.primary" [style.--s-secondary]="colors.secondary" [style.--s-accent]="colors.accent"></span>{{ option.label | translate }}
+            </button>
+          </div>
+          <div class="wb-hero-image" *ngIf="design.heroBackground === 'image'">
+            <label class="wb-image-drop wb-image-drop--wide" [class.has-image]="design.heroImage" [style.backgroundImage]="cssImage(design.heroImage)">
+              <span class="wb-image-drop__label"><i-feather name="upload"></i-feather>{{ (design.heroImage ? 'REPLACE_IMAGE' : 'WB_HERO_IMAGE_ADD') | translate }}</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onHeroImageSelected($event)" />
+            </label>
+            <div class="wb-inline-actions">
+              <span class="wb-hint">{{ 'WB_HERO_IMAGE_HINT' | translate }}</span>
+              <button *ngIf="design.heroImage" type="button" class="wb-button wb-button--small" (click)="removeHeroImage()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
+            </div>
           </div>
 
-          <div class="yc-helper">
-            {{ 'CONTACT_FIELDS_HINT' | translate }}
+          <!-- Colors -->
+          <div class="wb-subhead">
+            <div>
+              <h3>{{ 'COLOR_CUSTOMIZATION' | translate }}</h3>
+              <p>{{ 'COLOR_CUSTOMIZATION_HINT' | translate }}</p>
+            </div>
+            <button type="button" class="wb-button wb-button--small" (click)="resetThemeColors()"><i-feather name="rotate-ccw"></i-feather>{{ 'WB_RESET_COLORS' | translate }}</button>
+          </div>
+          <div class="wb-colors">
+            <label class="wb-color">
+              <input type="color" [(ngModel)]="colors.primary" />
+              <span><strong>{{ 'PRIMARY_COLOR' | translate }}</strong><small>{{ 'PRIMARY_COLOR_HINT' | translate }}</small></span>
+              <code>{{ colors.primary }}</code>
+            </label>
+            <label class="wb-color">
+              <input type="color" [(ngModel)]="colors.accent" />
+              <span><strong>{{ 'ACCENT_COLOR' | translate }}</strong><small>{{ 'ACCENT_COLOR_HINT' | translate }}</small></span>
+              <code>{{ colors.accent }}</code>
+            </label>
+            <label class="wb-color">
+              <input type="color" [(ngModel)]="colors.secondary" />
+              <span><strong>{{ 'SECONDARY_COLOR' | translate }}</strong><small>{{ 'SECONDARY_COLOR_HINT' | translate }}</small></span>
+              <code>{{ colors.secondary }}</code>
+            </label>
+            <label class="wb-color">
+              <input type="color" [(ngModel)]="colors.background" />
+              <span><strong>{{ 'GENERAL_BACKGROUND' | translate }}</strong><small>{{ 'GENERAL_BACKGROUND_HINT' | translate }}</small></span>
+              <code>{{ colors.background }}</code>
+            </label>
+            <label class="wb-color">
+              <input type="color" [(ngModel)]="colors.text" />
+              <span><strong>{{ 'PRIMARY_TEXT_COLOR' | translate }}</strong><small>{{ 'PRIMARY_TEXT_HINT' | translate }}</small></span>
+              <code>{{ colors.text }}</code>
+            </label>
           </div>
 
-          <div class="yc-check-list">
-            <label class="yc-check-item">
-              <input type="checkbox" [(ngModel)]="leadFields.firstName"/>
+          <div class="wb-sample wb-sample--design" [style.background]="colors.background" [style.color]="colors.text">
+            <span class="wb-label" [style.color]="colors.text">{{ 'PREVIEW_FORM' | translate }}</span>
+            <div class="wb-sample__row">
+              <span class="wb-sample__title" [ngClass]="'is-font-' + design.font" [style.color]="colors.text">{{ profile.fullName || ('WB_YOUR_NAME' | translate) }}</span>
+              <span class="wb-sample__button" [ngClass]="'is-btn-' + design.buttonStyle" [style.background]="colors.accent" [style.color]="readableOn(colors.accent)">{{ cta.label || ('WB_CTA_PLACEHOLDER' | translate) }}</span>
+            </div>
+            <div class="wb-sample__card" [ngClass]="'is-radius-' + design.radius" [style.background]="colors.secondary" [style.color]="colors.text">{{ 'WB_SAMPLE_CARD' | translate }}</div>
+          </div>
+          <button type="button" class="wb-button wb-button--add" (click)="openPreview()"><i-feather name="eye"></i-feather>{{ 'VIEW_PREVIEW' | translate }}</button>
+        </section>
+
+        <!-- SECTIONS ORDER -->
+        <section *ngIf="activeSection === 'sections'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_LAYOUT' | translate }}</h2>
+            <p>{{ 'WB_LAYOUT_HINT' | translate }}</p>
+          </header>
+          <ol class="wb-order">
+            <li class="wb-order__item" *ngFor="let key of design.sectionOrder; let i = index"
+                [class.is-hidden]="sectionHidden(key)" [class.is-empty]="!sectionHasContent(key)">
+              <span class="wb-order__num">{{ i + 1 }}</span>
+              <div class="wb-order__copy">
+                <strong>{{ ('WB_PAGE_SECTION_' + key.toUpperCase()) | translate }}</strong>
+                <small *ngIf="key === 'contact'">{{ 'WB_PAGE_SECTION_CONTACT_HINT' | translate }}</small>
+                <small *ngIf="key !== 'contact' && !sectionHasContent(key)">{{ 'WB_PAGE_SECTION_EMPTY' | translate }}</small>
+                <small *ngIf="key !== 'contact' && sectionHasContent(key) && sectionHidden(key)">{{ 'WB_PAGE_SECTION_HIDDEN' | translate }}</small>
+              </div>
+              <div class="wb-item__tools">
+                <button type="button" class="wb-icon" (click)="moveSection(key, -1)" [disabled]="i === 0" [attr.aria-label]="'WB_MOVE_UP' | translate"><i-feather name="arrow-up"></i-feather></button>
+                <button type="button" class="wb-icon" (click)="moveSection(key, 1)" [disabled]="i === design.sectionOrder.length - 1" [attr.aria-label]="'WB_MOVE_DOWN' | translate"><i-feather name="arrow-down"></i-feather></button>
+                <button type="button" class="wb-icon" *ngIf="key !== 'contact'" (click)="toggleSectionVisible(key)" [attr.aria-label]="(sectionHidden(key) ? 'WB_SHOW_SECTION' : 'WB_HIDE_SECTION') | translate" [title]="(sectionHidden(key) ? 'WB_SHOW_SECTION' : 'WB_HIDE_SECTION') | translate">
+                  <i-feather [name]="sectionHidden(key) ? 'eye-off' : 'eye'"></i-feather>
+                </button>
+              </div>
+            </li>
+          </ol>
+          <div class="wb-add-row">
+            <button type="button" class="wb-button wb-button--small" (click)="resetSectionOrder()"><i-feather name="rotate-ccw"></i-feather>{{ 'WB_RESET_ORDER' | translate }}</button>
+          </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section *ngIf="activeSection === 'profile'">
+          <header class="wb-panel__head">
+            <h2>{{ 'PROFILE' | translate }}</h2>
+            <p>{{ 'WB_PROFILE_HINT' | translate }}</p>
+          </header>
+          <div class="wb-photo">
+            <div class="wb-photo__image" [style.backgroundImage]="cssImage(profile.image)">
+              <i-feather name="user" *ngIf="!profile.image"></i-feather>
+            </div>
+            <div class="wb-photo__actions">
+              <span class="wb-label">{{ 'PROFILE_PHOTO' | translate }}</span>
+              <div class="wb-inline-actions">
+                <label class="wb-button wb-button--small">
+                  <i-feather name="upload"></i-feather>{{ (profile.image ? 'CHANGE_IMAGE' : 'UPLOAD_IMAGE') | translate }}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onProfileImageSelected($event)" />
+                </label>
+                <button *ngIf="profile.image" type="button" class="wb-button wb-button--small" (click)="removeProfileImage()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
+              </div>
+              <span class="wb-hint">{{ 'WB_IMAGE_RULES' | translate }} {{ 'WB_PHOTO_FALLBACK_HINT' | translate }}</span>
+            </div>
+          </div>
+          <div class="wb-grid-2">
+            <div class="wb-field">
+              <label class="wb-label" for="fullName">{{ 'FULL_NAME' | translate }}</label>
+              <input id="fullName" class="wb-input" type="text" maxlength="80" [(ngModel)]="profile.fullName" />
+            </div>
+            <div class="wb-field">
+              <label class="wb-label" for="title">{{ 'PROFESSIONAL_TITLE' | translate }}</label>
+              <input id="title" class="wb-input" type="text" maxlength="100" [(ngModel)]="profile.title" [placeholder]="'WB_TITLE_PLACEHOLDER' | translate" />
+            </div>
+          </div>
+          <div class="wb-field">
+            <label class="wb-label" for="slogan">{{ 'SLOGAN_TAGLINE' | translate }}</label>
+            <input id="slogan" class="wb-input" type="text" maxlength="140" [(ngModel)]="profile.slogan" [placeholder]="'WB_SLOGAN_PLACEHOLDER' | translate" />
+          </div>
+          <div class="wb-field">
+            <label class="wb-label" for="bio">{{ 'SHORT_BIOGRAPHY' | translate }}</label>
+            <textarea id="bio" class="wb-textarea" rows="5" maxlength="1500" [(ngModel)]="profile.bio" [placeholder]="'WB_BIO_PLACEHOLDER' | translate"></textarea>
+            <div class="wb-count">{{ profile.bio?.length || 0 }}/1500</div>
+          </div>
+        </section>
+
+        <!-- VIDEO -->
+        <section *ngIf="activeSection === 'video'">
+          <header class="wb-panel__head">
+            <h2>{{ 'INTRODUCTION_VIDEO' | translate }}</h2>
+            <p>{{ 'WB_VIDEO_HINT' | translate }}</p>
+          </header>
+          <div class="wb-field">
+            <label class="wb-label" for="videoUrl">{{ 'VIDEO_LINK' | translate }}</label>
+            <input id="videoUrl" class="wb-input" type="url" [(ngModel)]="video.url" [placeholder]="'VIDEO_URL_PLACEHOLDER' | translate" />
+            <div class="wb-error" *ngIf="videoUrlInvalid">{{ 'WB_VIDEO_INVALID' | translate }}</div>
+          </div>
+          <div class="wb-video" *ngIf="videoEmbedUrl">
+            <iframe
+              [src]="videoEmbedUrl"
+              [attr.title]="'VIDEO_PREVIEW' | translate"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <div class="wb-empty" *ngIf="!videoEmbedUrl && !videoUrlInvalid">
+            <i-feather name="video"></i-feather><span>{{ 'WB_VIDEO_EMPTY' | translate }}</span>
+          </div>
+        </section>
+
+        <!-- DESCRIPTION -->
+        <section *ngIf="activeSection === 'description'">
+          <header class="wb-panel__head">
+            <h2>{{ 'DESCRIPTION' | translate }}</h2>
+            <p>{{ 'DESCRIPTION_BLOCKS_HINT' | translate }}</p>
+          </header>
+
+          <div class="wb-empty" *ngIf="!descriptionBlocks.length">
+            <i-feather name="align-left"></i-feather><span>{{ 'WB_DESCRIPTION_EMPTY' | translate }}</span>
+          </div>
+
+          <div class="wb-item" *ngFor="let block of descriptionBlocks; let i = index; trackBy: trackByBlockId">
+            <div class="wb-item__head">
+              <span class="wb-item__kind">
+                <i-feather [name]="block.type === 'image' ? 'image' : block.type === 'heading' ? 'type' : 'align-left'"></i-feather>
+                {{ (block.type === 'image' ? 'IMAGE' : block.type === 'heading' ? 'TITLE' : 'TEXT') | translate }}
+              </span>
+              <div class="wb-item__tools">
+                <button type="button" class="wb-icon" (click)="moveBlockUp(block.id)" [disabled]="i === 0" [attr.aria-label]="'WB_MOVE_UP' | translate"><i-feather name="arrow-up"></i-feather></button>
+                <button type="button" class="wb-icon" (click)="moveBlockDown(block.id)" [disabled]="i === descriptionBlocks.length - 1" [attr.aria-label]="'WB_MOVE_DOWN' | translate"><i-feather name="arrow-down"></i-feather></button>
+                <button type="button" class="wb-icon wb-icon--danger" (click)="removeBlock(block.id)" [attr.aria-label]="'DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+              </div>
+            </div>
+            <input *ngIf="block.type === 'heading'" class="wb-input" type="text" maxlength="120" [ngModel]="block.content" (ngModelChange)="updateBlock(block.id, { content: $event })" [placeholder]="'TITLE_HERE_PLACEHOLDER' | translate" />
+            <textarea *ngIf="block.type === 'text'" class="wb-textarea" rows="4" maxlength="3000" [ngModel]="block.content" (ngModelChange)="updateBlock(block.id, { content: $event })" [placeholder]="'TEXT_HERE_PLACEHOLDER' | translate"></textarea>
+            <label *ngIf="block.type === 'image'" class="wb-image-drop" [class.has-image]="block.content" [style.backgroundImage]="cssImage(block.content)">
+              <span class="wb-image-drop__label"><i-feather name="upload"></i-feather>{{ (block.content ? 'REPLACE_IMAGE' : 'CLICK_ADD_IMAGE') | translate }}</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onBlockImageSelected(block.id, $event)" />
+            </label>
+          </div>
+
+          <div class="wb-add-row">
+            <button type="button" class="wb-button wb-button--small" (click)="addBlock('heading')"><i-feather name="type"></i-feather>{{ 'TITLE' | translate }}</button>
+            <button type="button" class="wb-button wb-button--small" (click)="addBlock('text')"><i-feather name="align-left"></i-feather>{{ 'TEXT' | translate }}</button>
+            <button type="button" class="wb-button wb-button--small" (click)="addBlock('image')"><i-feather name="image"></i-feather>{{ 'IMAGE' | translate }}</button>
+          </div>
+        </section>
+
+        <!-- STATS -->
+        <section *ngIf="activeSection === 'stats'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_STATS' | translate }}</h2>
+            <p>{{ 'WB_STATS_HINT' | translate }}</p>
+          </header>
+          <div class="wb-empty" *ngIf="!stats.length"><i-feather name="bar-chart-2"></i-feather><span>{{ 'WB_STATS_EMPTY' | translate }}</span></div>
+          <div class="wb-item wb-item--stat" *ngFor="let stat of stats; let i = index; trackBy: trackByIndex">
+            <div class="wb-grid-stat">
+              <div class="wb-field">
+                <label class="wb-label">{{ 'WB_STAT_VALUE' | translate }}</label>
+                <input class="wb-input" type="text" maxlength="20" [(ngModel)]="stat.value" [placeholder]="'WB_STAT_VALUE_PLACEHOLDER' | translate" />
+              </div>
+              <div class="wb-field">
+                <label class="wb-label">{{ 'WB_STAT_LABEL' | translate }}</label>
+                <input class="wb-input" type="text" maxlength="60" [(ngModel)]="stat.label" [placeholder]="'WB_STAT_LABEL_PLACEHOLDER' | translate" />
+              </div>
+              <button type="button" class="wb-icon wb-icon--danger" (click)="removeStat(i)" [attr.aria-label]="'DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+            </div>
+          </div>
+          <button type="button" class="wb-button wb-button--add" (click)="addStat()" [disabled]="stats.length >= 4"><i-feather name="plus"></i-feather>{{ 'WB_ADD_STAT' | translate }} <small *ngIf="stats.length >= 4">({{ 'WB_STATS_MAX' | translate }})</small></button>
+        </section>
+
+        <!-- SERVICES -->
+        <section *ngIf="activeSection === 'services'">
+          <header class="wb-panel__head">
+            <h2>{{ 'SERVICES' | translate }}</h2>
+            <p>{{ 'WB_SERVICES_HINT' | translate }}</p>
+          </header>
+          <div class="wb-empty" *ngIf="!services.length"><i-feather name="briefcase"></i-feather><span>{{ 'WB_SERVICES_EMPTY' | translate }}</span></div>
+          <div class="wb-item" *ngFor="let service of services; let i = index; trackBy: trackByIndex">
+            <div class="wb-item__head">
+              <span class="wb-item__kind">{{ 'SERVICE_ITEM' | translate:{ number: i + 1 } }}</span>
+              <button type="button" class="wb-icon wb-icon--danger" (click)="removeService(i)" [attr.aria-label]="'DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+            </div>
+            <div class="wb-media-row">
+              <label class="wb-thumb" [class.has-image]="service.image" [style.backgroundImage]="cssImage(service.image)">
+                <i-feather name="image" *ngIf="!service.image"></i-feather>
+                <span>{{ (service.image ? 'REPLACE_IMAGE' : 'ADD_IMAGE') | translate }}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onServiceImageSelected(i, $event)" />
+              </label>
+              <div class="wb-media-row__fields">
+                <div class="wb-grid-2">
+                  <div class="wb-field">
+                    <label class="wb-label">{{ 'TITLE' | translate }}</label>
+                    <input class="wb-input" type="text" maxlength="80" [(ngModel)]="service.title" [placeholder]="'WB_SERVICE_TITLE_PLACEHOLDER' | translate" />
+                  </div>
+                  <div class="wb-field">
+                    <label class="wb-label">{{ 'PRICE' | translate }}</label>
+                    <input class="wb-input" type="text" maxlength="40" [(ngModel)]="service.price" [placeholder]="'WB_SERVICE_PRICE_PLACEHOLDER' | translate" />
+                  </div>
+                </div>
+                <div class="wb-field">
+                  <label class="wb-label">{{ 'DESCRIPTION' | translate }}</label>
+                  <textarea class="wb-textarea" rows="3" maxlength="600" [(ngModel)]="service.description"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="wb-button wb-button--add" (click)="addService()"><i-feather name="plus"></i-feather>{{ 'ADD_SERVICE' | translate }}</button>
+        </section>
+
+        <!-- RESULTS -->
+        <section *ngIf="activeSection === 'results'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WEBSITE_RESULTS' | translate }}</h2>
+            <p>{{ 'WB_RESULTS_HINT' | translate }}</p>
+          </header>
+          <div class="wb-empty" *ngIf="!results.length"><i-feather name="trending-up"></i-feather><span>{{ 'WB_RESULTS_EMPTY' | translate }}</span></div>
+          <div class="wb-item" *ngFor="let result of results; let i = index; trackBy: trackByIndex">
+            <div class="wb-item__head">
+              <span class="wb-item__kind">{{ 'RESULT_ITEM' | translate:{ number: i + 1 } }}</span>
+              <button type="button" class="wb-icon wb-icon--danger" (click)="removeResult(i)" [attr.aria-label]="'DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+            </div>
+            <div class="wb-before-after">
+              <label class="wb-image-drop" [class.has-image]="result.beforeImage" [style.backgroundImage]="cssImage(result.beforeImage)">
+                <span class="wb-image-drop__tag">{{ 'BEFORE' | translate }}</span>
+                <span class="wb-image-drop__label"><i-feather name="upload"></i-feather>{{ (result.beforeImage ? 'REPLACE_IMAGE' : 'ADD_BEFORE_IMAGE') | translate }}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onResultImageSelected(i, 'before', $event)" />
+              </label>
+              <label class="wb-image-drop" [class.has-image]="result.afterImage" [style.backgroundImage]="cssImage(result.afterImage)">
+                <span class="wb-image-drop__tag">{{ 'AFTER' | translate }}</span>
+                <span class="wb-image-drop__label"><i-feather name="upload"></i-feather>{{ (result.afterImage ? 'REPLACE_IMAGE' : 'ADD_AFTER_IMAGE') | translate }}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onResultImageSelected(i, 'after', $event)" />
+              </label>
+            </div>
+            <div class="wb-field">
+              <label class="wb-label">{{ 'TEXT_CAPTION' | translate }}</label>
+              <textarea class="wb-textarea" rows="2" maxlength="300" [(ngModel)]="result.text" [placeholder]="'TRANSFORMATION_EXAMPLE' | translate"></textarea>
+            </div>
+          </div>
+          <p class="wb-hint wb-hint--consent" *ngIf="results.length"><i-feather name="shield"></i-feather>{{ 'WB_RESULTS_CONSENT' | translate }}</p>
+          <button type="button" class="wb-button wb-button--add" (click)="addResult()"><i-feather name="plus"></i-feather>{{ 'ADD_RESULT' | translate }}</button>
+        </section>
+
+        <!-- CERTIFICATES -->
+        <section *ngIf="activeSection === 'certificates'">
+          <header class="wb-panel__head">
+            <h2>{{ 'CERTIFICATES' | translate }}</h2>
+            <p>{{ 'WB_CERTIFICATES_HINT' | translate }}</p>
+          </header>
+          <div class="wb-empty" *ngIf="!certificates.length"><i-feather name="award"></i-feather><span>{{ 'WB_CERTIFICATES_EMPTY' | translate }}</span></div>
+          <div class="wb-item" *ngFor="let certificate of certificates; let i = index; trackBy: trackByIndex">
+            <div class="wb-item__head">
+              <span class="wb-item__kind">{{ 'CERTIFICATE_ITEM' | translate:{ number: i + 1 } }}</span>
+              <button type="button" class="wb-icon wb-icon--danger" (click)="removeCertificate(i)" [attr.aria-label]="'DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+            </div>
+            <div class="wb-media-row">
+              <label class="wb-thumb" [class.has-image]="certificate.image" [style.backgroundImage]="cssImage(certificate.image)">
+                <i-feather name="image" *ngIf="!certificate.image"></i-feather>
+                <span>{{ (certificate.image ? 'REPLACE_IMAGE' : 'ADD_IMAGE') | translate }}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onCertificateImageSelected(i, $event)" />
+              </label>
+              <div class="wb-media-row__fields">
+                <div class="wb-field">
+                  <label class="wb-label">{{ 'CERTIFICATE_NAME' | translate }}</label>
+                  <input class="wb-input" type="text" maxlength="120" [(ngModel)]="certificate.title" />
+                </div>
+                <div class="wb-grid-2">
+                  <div class="wb-field">
+                    <label class="wb-label">{{ 'ORGANIZATION' | translate }}</label>
+                    <input class="wb-input" type="text" maxlength="120" [(ngModel)]="certificate.organization" />
+                  </div>
+                  <div class="wb-field">
+                    <label class="wb-label">{{ 'YEAR' | translate }}</label>
+                    <input class="wb-input" type="text" inputmode="numeric" maxlength="4" [(ngModel)]="certificate.year" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="wb-button wb-button--add" (click)="addCertificate()"><i-feather name="plus"></i-feather>{{ 'ADD_CERTIFICATE' | translate }}</button>
+        </section>
+
+        <!-- TESTIMONIALS -->
+        <section *ngIf="activeSection === 'testimonials'">
+          <header class="wb-panel__head">
+            <h2>{{ 'TESTIMONIALS' | translate }}</h2>
+            <p>{{ 'WB_TESTIMONIALS_HINT' | translate }}</p>
+          </header>
+          <div class="wb-empty" *ngIf="!testimonials.length"><i-feather name="message-square"></i-feather><span>{{ 'WB_TESTIMONIALS_EMPTY' | translate }}</span></div>
+          <div class="wb-item" *ngFor="let testimonial of testimonials; let i = index; trackBy: trackByIndex">
+            <div class="wb-item__head">
+              <span class="wb-item__kind">{{ 'TESTIMONIAL_ITEM' | translate:{ number: i + 1 } }}</span>
+              <button type="button" class="wb-icon wb-icon--danger" (click)="removeTestimonial(i)" [attr.aria-label]="'DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+            </div>
+            <div class="wb-grid-2">
+              <div class="wb-field">
+                <label class="wb-label">{{ 'AUTHOR' | translate }}</label>
+                <input class="wb-input" type="text" maxlength="80" [(ngModel)]="testimonial.author" [placeholder]="'CLIENT_NAME' | translate" />
+              </div>
+              <div class="wb-field">
+                <span class="wb-label">{{ 'RATING' | translate }}</span>
+                <div class="wb-stars" role="radiogroup" [attr.aria-label]="'RATING' | translate">
+                  <button *ngFor="let star of [1, 2, 3, 4, 5]" type="button" role="radio" [attr.aria-checked]="testimonial.rating === star"
+                          [class.is-on]="star <= testimonial.rating" (click)="testimonial.rating = star"
+                          [attr.aria-label]="(star === 1 ? 'STAR_COUNT' : 'STARS_COUNT') | translate:{ count: star }">★</button>
+                </div>
+              </div>
+            </div>
+            <div class="wb-field">
+              <label class="wb-label">{{ 'MESSAGE' | translate }}</label>
+              <textarea class="wb-textarea" rows="3" maxlength="800" [(ngModel)]="testimonial.text" [placeholder]="'TESTIMONIAL_TEXT' | translate"></textarea>
+            </div>
+          </div>
+          <p class="wb-hint wb-hint--consent" *ngIf="testimonials.length"><i-feather name="shield"></i-feather>{{ 'WB_TESTIMONIALS_CONSENT' | translate }}</p>
+          <button type="button" class="wb-button wb-button--add" (click)="addTestimonial()"><i-feather name="plus"></i-feather>{{ 'ADD_TESTIMONIAL' | translate }}</button>
+        </section>
+
+        <!-- SOCIAL LINKS -->
+        <section *ngIf="activeSection === 'social'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_SOCIAL' | translate }}</h2>
+            <p>{{ 'WB_SOCIAL_HINT' | translate }}</p>
+          </header>
+          <div class="wb-grid-2">
+            <div class="wb-field">
+              <label class="wb-label" for="instagram">Instagram</label>
+              <input id="instagram" class="wb-input" type="url" maxlength="300" [(ngModel)]="socialLinks.instagram" placeholder="https://instagram.com/…" />
+            </div>
+            <div class="wb-field">
+              <label class="wb-label" for="facebook">Facebook</label>
+              <input id="facebook" class="wb-input" type="url" maxlength="300" [(ngModel)]="socialLinks.facebook" placeholder="https://facebook.com/…" />
+            </div>
+            <div class="wb-field">
+              <label class="wb-label" for="tiktok">TikTok</label>
+              <input id="tiktok" class="wb-input" type="url" maxlength="300" [(ngModel)]="socialLinks.tiktok" placeholder="https://tiktok.com/@…" />
+            </div>
+            <div class="wb-field">
+              <label class="wb-label" for="youtube">YouTube</label>
+              <input id="youtube" class="wb-input" type="url" maxlength="300" [(ngModel)]="socialLinks.youtube" placeholder="https://youtube.com/@…" />
+            </div>
+            <div class="wb-field">
+              <label class="wb-label" for="linkedin">LinkedIn</label>
+              <input id="linkedin" class="wb-input" type="url" maxlength="300" [(ngModel)]="socialLinks.linkedin" placeholder="https://linkedin.com/in/…" />
+            </div>
+            <div class="wb-field">
+              <label class="wb-label" for="whatsapp">WhatsApp</label>
+              <input id="whatsapp" class="wb-input" type="tel" maxlength="30" [(ngModel)]="socialLinks.whatsapp" placeholder="+216 22 333 444" />
+              <div class="wb-hint">{{ 'WB_WHATSAPP_HINT' | translate }}</div>
+            </div>
+          </div>
+          <p class="wb-hint"><i-feather name="info"></i-feather> {{ 'WB_SOCIAL_HTTPS_HINT' | translate }}</p>
+        </section>
+
+        <!-- LEAD FORM -->
+        <section *ngIf="activeSection === 'leadForm'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_LEAD_FORM' | translate }}</h2>
+            <p>{{ 'WB_LEAD_FORM_HINT' | translate }}</p>
+          </header>
+          <div class="wb-checks">
+            <label class="wb-check">
+              <input type="checkbox" [(ngModel)]="leadFields.firstName" />
               <span>{{ 'FIRST_NAME' | translate }}</span>
             </label>
-
-            <label class="yc-check-item">
-              <input type="checkbox" [(ngModel)]="leadFields.lastName"/>
+            <label class="wb-check">
+              <input type="checkbox" [(ngModel)]="leadFields.lastName" />
               <span>{{ 'LAST_NAME' | translate }}</span>
             </label>
-
-            <label class="yc-check-item is-disabled">
-              <input type="checkbox" [checked]="leadFields.email"/>
-              <span>{{ 'EMAIL' | translate }}</span>
+            <label class="wb-check">
+              <input type="checkbox" [checked]="leadFields.email" [disabled]="leadFields.email && !leadFields.phone" (change)="toggleContactField('email')" />
+              <span>{{ 'EMAIL' | translate }} <small>{{ 'WB_EMAIL_NEEDED_TO_INVITE' | translate }}</small></span>
             </label>
-
-            <label class="yc-check-item">
-              <input type="checkbox" [(ngModel)]="leadFields.phone" disabled/>
-              <span>{{ 'PHONE_REQUIRED' | translate }}</span>
+            <label class="wb-check">
+              <input type="checkbox" [checked]="leadFields.phone" [disabled]="leadFields.phone && !leadFields.email" (change)="toggleContactField('phone')" />
+              <span>{{ 'PHONE' | translate }}</span>
             </label>
           </div>
-
-          <div class="yc-form-block">
-            <label class="yc-label">{{ 'CALL_TO_ACTION_TEXT' | translate }}</label>
-            <input class="yc-input" type="text" [(ngModel)]="leadFields.buttonLabel"/>
+          <p class="wb-hint">{{ 'WB_ONE_CONTACT_REQUIRED' | translate }}</p>
+          <div class="wb-field">
+            <label class="wb-label" for="leadButton">{{ 'CALL_TO_ACTION_TEXT' | translate }}</label>
+            <input id="leadButton" class="wb-input" type="text" maxlength="40" [(ngModel)]="leadFields.buttonLabel" [placeholder]="'WB_LEAD_BUTTON_PLACEHOLDER' | translate" />
           </div>
-        </div>
+          <a class="wb-link-card" routerLink="/websites/leads" [queryParams]="{ source: 'COACH_WEBSITE' }">
+            <i-feather name="inbox"></i-feather>
+            <span>{{ 'WB_LEADS_GO' | translate }}</span>
+            <i-feather name="arrow-right"></i-feather>
+          </a>
+        </section>
 
-        <!-- Colors -->
-        <div class="yc-card yc-side-card">
-          <div class="yc-side-card__title yc-side-card__title--alone">
-            {{ 'COLOR_CUSTOMIZATION' | translate }}
+        <!-- CTA -->
+        <section *ngIf="activeSection === 'cta'">
+          <header class="wb-panel__head">
+            <h2>{{ 'ACTION_BUTTON' | translate }}</h2>
+            <p>{{ 'ACTION_BUTTON_HINT' | translate }}</p>
+          </header>
+          <div class="wb-toggle-row">
+            <div><div class="wb-toggle-row__title">{{ 'WB_SHOW_BUTTON' | translate }}</div></div>
+            <button type="button" class="wb-switch" role="switch" [attr.aria-checked]="cta.enabled" [class.is-on]="cta.enabled" (click)="cta.enabled = !cta.enabled"><span class="wb-switch__thumb"></span></button>
           </div>
+          <ng-container *ngIf="cta.enabled">
+            <div class="wb-field">
+              <label class="wb-label" for="ctaLabel">{{ 'BUTTON_TEXT' | translate }}</label>
+              <input id="ctaLabel" class="wb-input" type="text" maxlength="40" [(ngModel)]="cta.label" [placeholder]="'WB_CTA_PLACEHOLDER' | translate" />
+            </div>
+            <div class="wb-toggle-row">
+              <div>
+                <div class="wb-toggle-row__title">{{ 'STICKY_BUTTON' | translate }}</div>
+                <div class="wb-hint">{{ 'STICKY_BUTTON_HINT' | translate }}</div>
+              </div>
+              <button type="button" class="wb-switch" role="switch" [attr.aria-checked]="cta.sticky" [class.is-on]="cta.sticky" (click)="cta.sticky = !cta.sticky"><span class="wb-switch__thumb"></span></button>
+            </div>
+            <div class="wb-sample">
+              <span class="wb-label">{{ 'PREVIEW_FORM' | translate }}</span>
+              <span class="wb-sample__button" [ngClass]="'is-btn-' + design.buttonStyle" [style.background]="colors.accent" [style.color]="readableOn(colors.accent)">{{ cta.label || ('WB_CTA_PLACEHOLDER' | translate) }}</span>
+            </div>
+          </ng-container>
+        </section>
 
-          <div class="yc-helper">
-            {{ 'COLOR_CUSTOMIZATION_HINT' | translate }}
+        <!-- ANNOUNCEMENT -->
+        <section *ngIf="activeSection === 'announcement'">
+          <header class="wb-panel__head">
+            <h2>{{ 'ANNOUNCEMENT_BAR' | translate }}</h2>
+            <p>{{ 'ANNOUNCEMENT_BAR_HINT' | translate }}</p>
+          </header>
+          <div class="wb-toggle-row">
+            <div><div class="wb-toggle-row__title">{{ 'WB_SHOW_ANNOUNCEMENT' | translate }}</div></div>
+            <button type="button" class="wb-switch" role="switch" [attr.aria-checked]="announcement.enabled" [class.is-on]="announcement.enabled" (click)="announcement.enabled = !announcement.enabled"><span class="wb-switch__thumb"></span></button>
           </div>
-
-          <div class="yc-color-settings">
-            <div class="yc-color-setting">
-              <div>
-                <div class="yc-color-setting__title">{{ 'PRIMARY_COLOR' | translate }}</div>
-                <div class="yc-color-setting__hint">{{ 'PRIMARY_COLOR_HINT' | translate }}</div>
-              </div>
-              <div class="yc-color-setting__action">
-                <span>{{ colors.primary }}</span>
-                <input type="color" [(ngModel)]="colors.primary"/>
+          <ng-container *ngIf="announcement.enabled">
+            <div class="wb-field">
+              <label class="wb-label" for="announcement">{{ 'MESSAGE' | translate }}</label>
+              <textarea id="announcement" class="wb-textarea" rows="2" maxlength="300" [(ngModel)]="announcement.message" [placeholder]="'WB_ANNOUNCEMENT_PLACEHOLDER' | translate"></textarea>
+            </div>
+            <div class="wb-colors wb-colors--two">
+              <label class="wb-color">
+                <input type="color" [(ngModel)]="announcement.bgColor" />
+                <span><strong>{{ 'BACKGROUND_COLOR' | translate }}</strong></span>
+                <code>{{ announcement.bgColor }}</code>
+              </label>
+              <label class="wb-color">
+                <input type="color" [(ngModel)]="announcement.textColor" />
+                <span><strong>{{ 'TEXT' | translate }}</strong></span>
+                <code>{{ announcement.textColor }}</code>
+              </label>
+            </div>
+            <div class="wb-sample">
+              <span class="wb-label">{{ 'PREVIEW_FORM' | translate }}</span>
+              <div class="wb-sample__bar" [style.background]="announcement.bgColor" [style.color]="announcement.textColor">
+                {{ announcement.message || ('WB_ANNOUNCEMENT_PLACEHOLDER' | translate) }}
               </div>
             </div>
-
-            <div class="yc-color-setting">
-              <div>
-                <div class="yc-color-setting__title">{{ 'SECONDARY_COLOR' | translate }}</div>
-                <div class="yc-color-setting__hint">{{ 'SECONDARY_COLOR_HINT' | translate }}</div>
-              </div>
-              <div class="yc-color-setting__action">
-                <span>{{ colors.secondary }}</span>
-                <input type="color" [(ngModel)]="colors.secondary"/>
-              </div>
-            </div>
-
-            <div class="yc-color-setting">
-              <div>
-                <div class="yc-color-setting__title">{{ 'ACCENT_COLOR' | translate }}</div>
-                <div class="yc-color-setting__hint">{{ 'ACCENT_COLOR_HINT' | translate }}</div>
-              </div>
-              <div class="yc-color-setting__action">
-                <span>{{ colors.accent }}</span>
-                <input type="color" [(ngModel)]="colors.accent"/>
-              </div>
-            </div>
-
-            <div class="yc-color-setting">
-              <div>
-                <div class="yc-color-setting__title">{{ 'GENERAL_BACKGROUND' | translate }}</div>
-                <div class="yc-color-setting__hint">{{ 'GENERAL_BACKGROUND_HINT' | translate }}</div>
-              </div>
-              <div class="yc-color-setting__action">
-                <span>{{ colors.background }}</span>
-                <input type="color" [(ngModel)]="colors.background"/>
-              </div>
-            </div>
-
-            <div class="yc-color-setting">
-              <div>
-                <div class="yc-color-setting__title">{{ 'PRIMARY_TEXT_COLOR' | translate }}</div>
-                <div class="yc-color-setting__hint">{{ 'PRIMARY_TEXT_HINT' | translate }}</div>
-              </div>
-              <div class="yc-color-setting__action">
-                <span>{{ colors.text }}</span>
-                <input type="color" [(ngModel)]="colors.text"/>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          </ng-container>
+        </section>
+      </main>
     </div>
-  </div>
   </fieldset>
 </div>
-

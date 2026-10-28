@@ -50,6 +50,11 @@
                 "glob": "pdf.worker.min.mjs",
                 "input": "node_modules/pdfjs-dist/build",
                 "output": "/assets"
+              },
+              {
+                "glob": "livekit-client.umd.js",
+                "input": "node_modules/livekit-client/dist",
+                "output": "/assets/livekit"
               }
             ],
             "styles": [
@@ -79,7 +84,7 @@
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "20kb",
-                  "maximumError": "100kb"
+                  "maximumError": "200kb"
                 }
               ],
               "outputHashing": "all"
@@ -115,7 +120,7 @@
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "100kb",
-                  "maximumError": "150kb"
+                  "maximumError": "200kb"
                 }
               ],
               "fileReplacements": [

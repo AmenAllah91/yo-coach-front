@@ -1,0 +1,149 @@
+<div class="yc-page cm">
+  <div class="yc-container">
+    <header class="yc-page-header">
+      <div class="yc-page-header__copy">
+        <h1 class="yc-page-header__title">{{ t('Body Measurements', 'Mensurations') }}</h1>
+        <p class="yc-page-header__subtitle">{{ t('Track how your body changes', "Suivez l'évolution de votre corps") }}</p>
+      </div>
+    </header>
+
+    <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
+    <p *ngIf="!loading && error && !measurements.length" class="yc-subtitle center-text">{{ error }}</p>
+
+    <ng-container *ngIf="!loading">
+      <div class="type-row">
+        <button type="button" class="yc-card type-picker" (click)="showPicker = true">
+          <span class="type-picker__copy">
+            <strong>{{ typeName(selectedType) }}</strong>
+            <span>{{ latestRecordLine }}</span>
+          </span>
+          <i-feather name="chevron-down"></i-feather>
+        </button>
+        <button type="button" class="add-btn" (click)="openAdd()"><i-feather name="plus"></i-feather>{{ t('Add', 'Ajouter') }}</button>
+      </div>
+
+      <div *ngIf="requested.length" class="requested">
+        <i-feather name="clipboard-list"></i-feather>
+        <div>
+          <strong>{{ t('Measurements requested by your coach', 'Mesures demandées par votre coach') }}</strong>
+          <span>{{ requestedNames }}</span>
+        </div>
+      </div>
+
+      <section class="yc-card latest">
+        <div class="latest__head">
+          <div>
+            <span class="yc-caption">{{ t('Latest', 'Dernier') }}</span>
+            <p class="latest__value">{{ latestValue == null ? '—' : format(latestValue) }}<small *ngIf="latestValue != null && unit"> {{ unit }}</small></p>
+          </div>
+          <span *ngIf="change != null" class="latest__change" [class.up]="change > 0">{{ changeLabel }}</span>
+        </div>
+
+        <div *ngIf="!values.length" class="chart-empty">
+          <i-feather name="trending-up"></i-feather>
+          <span>{{ t('No data yet', 'Aucune donnée pour le moment') }}</span>
+        </div>
+        <div *ngIf="values.length" class="chart">
+          <div class="chart__y"><span *ngFor="let label of yLabels">{{ label }}</span></div>
+          <div class="chart__plot">
+            <div class="chart__grid"><i></i><i></i><i></i></div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="cm-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0C86C8" stop-opacity="0.18"></stop>
+                  <stop offset="100%" stop-color="#0C86C8" stop-opacity="0"></stop>
+                </linearGradient>
+              </defs>
+              <path *ngIf="points.length > 1" [attr.d]="areaPath" fill="url(#cm-area)"></path>
+              <path *ngIf="points.length > 1" [attr.d]="linePath" class="chart__line"></path>
+              <line *ngIf="goalTop != null" x1="0" x2="100" [attr.y1]="goalTop" [attr.y2]="goalTop" class="chart__goal"></line>
+            </svg>
+            <span *ngFor="let point of points" class="chart__dot" [class.last]="point.last" [style.left.%]="point.left" [style.top.%]="point.top"></span>
+            <span *ngIf="goalTop != null" class="chart__goal-label" [style.top.%]="goalTop">{{ t('Goal', 'Objectif') }} {{ goal!.toFixed(0) }} {{ unit }}</span>
+          </div>
+          <div class="chart__x"><span *ngFor="let label of xLabels">{{ label }}</span></div>
+        </div>
+      </section>
+
+      <h2 class="history-title">{{ t('History', 'Historique') }}</h2>
+      <section *ngIf="!visibleHistory.length" class="yc-card history-empty">
+        <p class="yc-subtitle">{{ t('No record for this measurement yet.', 'Aucun enregistrement pour cette mesure.') }}</p>
+      </section>
+      <section *ngIf="visibleHistory.length" class="yc-card yc-card--flush">
+        <ng-container *ngFor="let item of visibleHistory; let i = index">
+          <hr *ngIf="i > 0" class="yc-divider" />
+          <div class="history-row">
+            <strong>{{ format(displayValue(item)) }} {{ unit }}</strong>
+            <span class="history-row__delta" [class.down]="(delta(i) ?? 0) < 0" [class.up]="(delta(i) ?? 0) > 0">{{ deltaLabel(delta(i)) }}</span>
+            <span class="history-row__date">{{ shortDate(item) }}</span>
+          </div>
+        </ng-container>
+      </section>
+      <button *ngIf="hasMoreHistory" type="button" class="more-btn" (click)="showAllHistory()">
+        {{ t('Show all ' + selected.length + ' records', 'Voir les ' + selected.length + ' enregistrements') }}
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Measurement picker -->
+  <div *ngIf="showPicker" class="yc-sheet-backdrop" (click)="showPicker = false">
+    <section class="yc-sheet picker" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy">
+          <h2 class="yc-sheet-header__title">{{ t('Measurement', 'Mesure') }}</h2>
+          <p class="yc-sheet-header__subtitle">{{ t('Choose what to track', 'Choisissez la mesure à afficher') }}</p>
+        </div>
+        <button type="button" class="yc-sheet-header__close" (click)="showPicker = false"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body picker__list">
+        <button *ngFor="let type of types" type="button" class="picker__item" [class.selected]="selectedType === type.key" (click)="pick(type.key)">
+          <span class="picker__copy">
+            <span class="picker__name">{{ typeName(type.key) }}<span *ngIf="isRequested(type.key)" class="yc-chip">{{ t('Requested', 'Demandé') }}</span></span>
+            <small>{{ latestOf(type.key) ? format(displayValue(latestOf(type.key)!)) + ' ' + unitFor(type.key) : t('No record yet', 'Aucun enregistrement') }}</small>
+          </span>
+          <i-feather *ngIf="selectedType === type.key" name="check"></i-feather>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Add sheet -->
+  <div *ngIf="showAdd" class="yc-sheet-backdrop" (click)="saving || (showAdd = false)">
+    <section class="yc-sheet" (click)="$event.stopPropagation()">
+      <header class="yc-sheet-header"><div class="yc-sheet-header__row">
+        <div class="yc-sheet-header__copy">
+          <h2 class="yc-sheet-header__title">{{ addTitle }}</h2>
+          <p class="yc-sheet-header__subtitle">{{ addSubtitle }}</p>
+        </div>
+        <button type="button" class="yc-sheet-header__close" [disabled]="saving" (click)="showAdd = false"><i-feather name="x"></i-feather></button>
+      </div></header>
+      <div class="yc-sheet__body add">
+        <ng-container *ngIf="showTypeSelector">
+          <label class="yc-field-label" for="cm-type">Type</label>
+          <select id="cm-type" class="yc-input add__select" [(ngModel)]="addType" [disabled]="saving">
+            <option *ngFor="let type of addAllowed" [value]="type.key">{{ typeName(type.key) }}</option>
+          </select>
+        </ng-container>
+        <label class="yc-field-label" for="cm-value">{{ t('Value', 'Valeur') }}</label>
+        <div class="add__value" [class.invalid]="valueError">
+          <input id="cm-value" type="text" inputmode="decimal" [(ngModel)]="addValue" [placeholder]="addPlaceholder" [disabled]="saving" autofocus />
+          <span>{{ unitFor(addType) }}</span>
+        </div>
+        <p *ngIf="valueError" class="add__error">{{ valueError }}</p>
+        <label class="yc-field-label" for="cm-date">Date</label>
+        <input id="cm-date" type="date" class="yc-input add__date" [(ngModel)]="addDate" [max]="today" [disabled]="lockDate || saving" />
+        <label class="yc-field-label" for="cm-note">{{ t('Note', 'Note') }} <small>{{ t('(optional)', '(facultatif)') }}</small></label>
+        <textarea id="cm-note" class="yc-input add__note" rows="2" [(ngModel)]="addNote" [disabled]="saving" [placeholder]="t('Add a note...', 'Ajouter une note...')"></textarea>
+        <p *ngIf="noteError" class="add__error">{{ noteError }}</p>
+      </div>
+      <div class="yc-sheet__footer">
+        <button type="button" class="yc-btn yc-btn--brand add__save" [disabled]="!canSave" (click)="save()">
+          <span *ngIf="saving" class="yc-spinner"></span>
+          <ng-container *ngIf="!saving">{{ t('Save Measurement', 'Enregistrer la mesure') }}</ng-container>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="toast" class="cm-toast" role="status">{{ toast }}</div>
+</div>

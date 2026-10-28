@@ -1,158 +1,178 @@
-<div class="website-leads-container">
-  <div class="page-header">
+<section class="leads-page">
+  <header class="page-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
       <h1>{{ 'WEBSITE_LEADS' | translate }}</h1>
-      <p>{{ 'WEBSITE_LEADS_SUBTITLE' | translate }}</p>
+      <p>{{ 'LEADS_PAGE_SUBTITLE' | translate }}</p>
     </div>
     <div class="page-header-actions">
-      <span class="leads-count">
-        <i-feather name="users"></i-feather>
-        <span class="desktop-count-label">{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</span>
-        <span class="mobile-count-label">{{ totalElements }}</span>
-      </span>
-      <button class="btn-primary" type="button" (click)="openInviteModal()">
+      <button class="leads-button leads-button--primary" type="button" (click)="openInviteModal()">
         <i-feather name="user-plus"></i-feather>
         {{ 'INVITE_NEW_LEAD' | translate }}
       </button>
     </div>
-  </div>
+  </header>
 
-  <div class="search-container">
-    <div class="search-box">
-      <i-feather name="search" class="search-icon"></i-feather>
-      <input
-        type="text"
-        [placeholder]="'SEARCH_LEADS' | translate"
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="onSearchChange()"
-        class="search-input"
-      />
-    </div>
-    <button class="mobile-invite-btn" type="button" (click)="openInviteModal()">
-      <i-feather name="user-plus"></i-feather>
-      {{ 'INVITE_NEW_LEAD' | translate }}
+  <!-- Status counters double as the status filter. -->
+  <div class="status-tabs" role="tablist" [attr.aria-label]="'LEADS_STATUS' | translate">
+    <button
+      *ngFor="let filter of statusFilters"
+      type="button"
+      role="tab"
+      class="status-tab status-tab--{{ filter.tone }}"
+      [class.is-active]="status === filter.value"
+      [attr.aria-selected]="status === filter.value"
+      (click)="setStatus(filter.value)"
+    >
+      <span class="status-tab__label"><span class="status-dot"></span>{{ filter.label | translate }}</span>
+      <strong class="status-tab__count">{{ countFor(filter.value) ?? '–' }}</strong>
     </button>
   </div>
 
-  <div class="mobile-leads-total">{{ 'LEADS_COUNT' | translate:{ count: totalElements } }}</div>
-
-  <div class="lead-action-message lead-action-message--success" *ngIf="actionMessage">{{ actionMessage }}</div>
-  <div class="lead-action-message lead-action-message--error" *ngIf="actionError">{{ actionError }}</div>
-
-  <div class="plans-table">
-    <div class="table-header">
-      <div class="col-title">{{ 'LEAD' | translate }}</div>
-      <div class="col-updated">{{ 'DATE' | translate }}</div>
-      <div class="col-macros">{{ 'CONTACT' | translate }}</div>
-      <div class="col-calories">{{ 'SOURCE' | translate }}</div>
-      <div class="col-actions">{{ 'ACTIONS' | translate }}</div>
+  <div class="leads-toolbar">
+    <label class="search-field">
+      <i-feather name="search"></i-feather>
+      <input
+        type="search"
+        [placeholder]="'SEARCH_LEADS_HINT' | translate"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+      />
+    </label>
+    <div class="segmented" role="group" [attr.aria-label]="'SOURCE' | translate">
+      <button
+        *ngFor="let filter of sourceFilters"
+        type="button"
+        [class.is-active]="source === filter.value"
+        [attr.aria-pressed]="source === filter.value"
+        (click)="setSource(filter.value)"
+      >{{ filter.label | translate }}</button>
     </div>
+  </div>
 
-    <div class="table-row" *ngFor="let lead of leads" [id]="'lead-' + lead.id" [class.notification-target]="highlightedLeadId === lead.id">
-      <div class="col-title">
-        <div class="plan-name">{{ getLeadFullName(lead) }}</div>
-        <div class="plan-type">{{ getElapsedTime(lead.createdAt) }}</div>
+  <div class="leads-feedback leads-feedback--success" *ngIf="actionMessage" role="status">
+    <i-feather name="check-circle"></i-feather><span>{{ actionMessage }}</span>
+  </div>
+  <div class="leads-feedback leads-feedback--error" *ngIf="actionError" role="alert">
+    <i-feather name="alert-circle"></i-feather><span>{{ actionError }}</span>
+    <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="actionError = ''"><i-feather name="x"></i-feather></button>
+  </div>
+
+  <div class="lead-list" [class.is-loading]="loading && leads.length">
+    <!-- First load: placeholders instead of an empty page. -->
+    <ng-container *ngIf="loading && !leads.length">
+      <div class="lead-card lead-card--skeleton" *ngFor="let _ of [1, 2, 3]">
+        <span class="skeleton skeleton--avatar"></span>
+        <div class="skeleton-lines"><span class="skeleton"></span><span class="skeleton skeleton--short"></span></div>
       </div>
+    </ng-container>
 
-      <div class="col-updated">
-        {{ formatDate(lead.createdAt) }}
-      </div>
+    <article
+      class="lead-card"
+      *ngFor="let lead of leads; trackBy: trackById"
+      [id]="'lead-' + lead.id"
+      [class.is-highlighted]="highlightedLeadId === lead.id"
+      [class.is-declined]="statusOf(lead) === 'DECLINED'"
+    >
+      <div class="lead-avatar lead-avatar--{{ statusOf(lead) | lowercase }}" aria-hidden="true">{{ initials(lead) }}</div>
 
-      <div class="col-macros">
-        <div class="macro-item">{{ lead.email }}</div>
-        <div class="macro-item">{{ lead.phone || ('NO_PHONE' | translate) }}</div>
-      </div>
+      <div class="lead-main">
+        <div class="lead-head">
+          <div class="lead-identity">
+            <h2>{{ getLeadFullName(lead) }}</h2>
+            <span class="chip chip--{{ statusOf(lead) | lowercase }}">{{ ('LEAD_STATUS_' + statusOf(lead)) | translate }}</span>
+            <span class="chip chip--source">
+              <i-feather [name]="lead.sourceType === 'CONTACT_FORM' ? 'mail' : 'globe'"></i-feather>
+              {{ sourceLabel(lead) | translate }}
+            </span>
+          </div>
+          <time class="lead-time" [attr.datetime]="lead.createdAt" [title]="formatDate(lead.createdAt)">{{ getElapsedTime(lead.createdAt) }}</time>
+        </div>
 
-      <div class="col-calories">
-        <span>{{ lead.sourceTheme || '—' }}</span>
-      </div>
+        <div class="lead-contacts">
+          <a *ngIf="lead.email" class="contact-link" [href]="mailUrl(lead)"><i-feather name="mail"></i-feather><span>{{ lead.email }}</span></a>
+          <a *ngIf="lead.phone" class="contact-link" [href]="telUrl(lead.phone)"><i-feather name="phone"></i-feather><span>{{ lead.phone }}</span></a>
+          <span *ngIf="!lead.email && !lead.phone" class="contact-missing">{{ 'LEAD_NO_CONTACT' | translate }}</span>
+        </div>
 
-      <div class="col-actions">
-        <button
-          class="invite-email-btn"
-          type="button"
-          [disabled]="!lead.email || lead.status === 'INVITED' || !!processingLeadId"
-          (click)="invite(lead); $event.stopPropagation()"
-        >
-          <i-feather [name]="processingLeadId === lead.id ? 'loader' : 'mail'"></i-feather>
-          {{ (processingLeadId === lead.id
-            ? 'SENDING'
-            : (lead.status === 'INVITED' ? 'INVITATION_SENT' : 'INVITE_BY_EMAIL')) | translate }}
-        </button>
-
-        <div class="dropdown" [class.open]="openDropdownId === lead.id">
-          <button
-            class="actions-btn"
-            (click)="toggleDropdown(lead.id, $event)"
-            type="button"
-          >
-            {{ 'ACTIONS' | translate }}
-            <i-feather name="chevron-down"></i-feather>
+        <div class="lead-message" *ngIf="lead.message">
+          <p [class.is-clamped]="isLongMessage(lead) && !expandedIds.has(lead.id)">{{ lead.message }}</p>
+          <button *ngIf="isLongMessage(lead)" type="button" class="text-button" (click)="toggleMessage(lead.id)">
+            {{ (expandedIds.has(lead.id) ? 'SHOW_LESS' : 'SHOW_MORE') | translate }}
           </button>
+        </div>
+      </div>
 
-          <div class="dropdown-menu" *ngIf="openDropdownId === lead.id">
-            <button
-              class="dropdown-item"
-              [disabled]="!lead.email"
-              type="button"
-              (click)="copyEmail(lead.email); $event.stopPropagation()"
-            >
-              <i-feather name="copy"></i-feather>
-              {{ 'COPY_EMAIL' | translate }}
+      <div class="lead-actions">
+        <button
+          *ngIf="statusOf(lead) !== 'INVITED'"
+          class="leads-button leads-button--primary leads-button--compact"
+          type="button"
+          [disabled]="!lead.email || !!processingLeadId"
+          [title]="lead.email ? '' : ('LEAD_INVITE_NEEDS_EMAIL' | translate)"
+          (click)="invite(lead)"
+        >
+          <i-feather [name]="processingLeadId === lead.id ? 'loader' : 'send'" [class.spin]="processingLeadId === lead.id"></i-feather>
+          {{ (processingLeadId === lead.id ? 'SENDING' : 'LEAD_INVITE_AS_CLIENT') | translate }}
+        </button>
+        <span *ngIf="statusOf(lead) === 'INVITED'" class="invited-note"><i-feather name="check"></i-feather>{{ 'INVITATION_SENT' | translate }}</span>
+
+        <a *ngIf="whatsappUrl(lead.phone) as whatsapp" class="icon-action" [href]="whatsapp" target="_blank" rel="noopener noreferrer" [attr.aria-label]="'WHATSAPP' | translate" [title]="'WHATSAPP' | translate">
+          <i-feather name="message-circle"></i-feather>
+        </a>
+
+        <div class="lead-menu">
+          <button class="icon-action" type="button" [attr.aria-label]="'ACTIONS' | translate" [attr.aria-expanded]="openMenuId === lead.id" (click)="toggleMenu(lead.id, $event)">
+            <i-feather name="more-horizontal"></i-feather>
+          </button>
+          <div class="lead-menu__panel" *ngIf="openMenuId === lead.id" role="menu">
+            <a *ngIf="lead.email" role="menuitem" [href]="mailUrl(lead)"><i-feather name="mail"></i-feather>{{ 'SEND_EMAIL' | translate }}</a>
+            <a *ngIf="lead.phone" role="menuitem" [href]="telUrl(lead.phone)"><i-feather name="phone-call"></i-feather>{{ 'LEAD_CALL' | translate }}</a>
+            <button *ngIf="lead.email" role="menuitem" type="button" (click)="copy(lead.email, 'EMAIL_COPIED')"><i-feather name="copy"></i-feather>{{ 'COPY_EMAIL' | translate }}</button>
+            <button *ngIf="lead.phone" role="menuitem" type="button" (click)="copy(lead.phone, 'PHONE_COPIED')"><i-feather name="copy"></i-feather>{{ 'COPY_PHONE' | translate }}</button>
+            <hr />
+            <button *ngIf="statusOf(lead) !== 'DECLINED'" role="menuitem" type="button" class="is-danger" [disabled]="!!processingLeadId" (click)="setLeadStatus(lead, 'DECLINED')">
+              <i-feather name="x-circle"></i-feather>{{ 'LEAD_DECLINE' | translate }}
             </button>
-
-            <button
-              class="dropdown-item"
-              type="button"
-              [disabled]="!lead.phone"
-              (click)="copyPhone(lead.phone); $event.stopPropagation()"
-            >
-              <i-feather name="phone"></i-feather>
-              {{ 'COPY_PHONE' | translate }}
+            <button *ngIf="statusOf(lead) !== 'NEW'" role="menuitem" type="button" [disabled]="!!processingLeadId" (click)="setLeadStatus(lead, 'NEW')">
+              <i-feather name="rotate-ccw"></i-feather>{{ 'LEAD_MARK_NEW' | translate }}
             </button>
-
-            <a
-              class="dropdown-item"
-              [href]="'mailto:' + lead.email"
-              (click)="$event.stopPropagation()"
-            >
-              <i-feather name="mail"></i-feather>
-              {{ 'SEND_EMAIL' | translate }}
-            </a>
           </div>
         </div>
       </div>
-    </div>
+    </article>
 
-    <div class="empty-state" *ngIf="!loading && leads.length === 0">
-      {{ 'NO_LEADS_FOUND' | translate }}
-    </div>
-
-    <div class="loading-state" *ngIf="loading">
-      {{ 'LOADING_LEADS' | translate }}
+    <div class="leads-empty" *ngIf="!loading && !leads.length">
+      <div class="leads-empty__icon"><i-feather [name]="loadError ? 'wifi-off' : (hasFilters ? 'search' : 'inbox')"></i-feather></div>
+      <ng-container *ngIf="loadError">
+        <h2>{{ 'LOAD_LEADS_ERROR' | translate }}</h2>
+        <button class="leads-button" type="button" (click)="loadLeads(); loadSummary()"><i-feather name="refresh-cw"></i-feather>{{ 'RETRY' | translate }}</button>
+      </ng-container>
+      <ng-container *ngIf="!loadError && hasFilters">
+        <h2>{{ 'NO_LEADS_FOUND' | translate }}</h2>
+        <button class="leads-button" type="button" (click)="resetFilters()">{{ 'LEADS_RESET_FILTERS' | translate }}</button>
+      </ng-container>
+      <ng-container *ngIf="!loadError && !hasFilters">
+        <h2>{{ 'LEADS_EMPTY_TITLE' | translate }}</h2>
+        <p>{{ 'LEADS_EMPTY_TEXT' | translate }}</p>
+        <div class="leads-empty__actions">
+          <a class="leads-button leads-button--primary" routerLink="/grow/contact-form"><i-feather name="mail"></i-feather>{{ 'CONTACT_FORM' | translate }}</a>
+          <a class="leads-button" routerLink="/websites/create"><i-feather name="globe"></i-feather>{{ 'COACH_WEBSITE' | translate }}</a>
+        </div>
+      </ng-container>
     </div>
   </div>
 
-  <div class="pagination" *ngIf="totalPages > 1">
-    <button class="page-btn" [disabled]="page === 0" (click)="goToPage(page - 1)">
-      {{ 'PREVIOUS' | translate }}
+  <nav class="leads-pagination" *ngIf="totalPages > 1" [attr.aria-label]="'PAGINATION' | translate">
+    <button class="leads-button" type="button" [disabled]="page === 0 || loading" (click)="goToPage(page - 1)">
+      <i-feather name="chevron-left"></i-feather>{{ 'PREVIOUS' | translate }}
     </button>
-
-    <button
-      class="page-btn"
-      *ngFor="let p of pages"
-      [class.active]="p === page"
-      (click)="goToPage(p)"
-    >
-      {{ p + 1 }}
+    <span>{{ 'LEADS_PAGE_OF' | translate:{ page: page + 1, total: totalPages } }}</span>
+    <button class="leads-button" type="button" [disabled]="page >= totalPages - 1 || loading" (click)="goToPage(page + 1)">
+      {{ 'NEXT' | translate }}<i-feather name="chevron-right"></i-feather>
     </button>
-
-    <button class="page-btn" [disabled]="page === totalPages - 1" (click)="goToPage(page + 1)">
-      {{ 'NEXT' | translate }}
-    </button>
-  </div>
-</div>
+  </nav>
+</section>
 
 <app-add-client-modal
   *ngIf="showInviteModal"

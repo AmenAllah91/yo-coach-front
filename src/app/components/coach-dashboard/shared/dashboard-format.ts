@@ -105,10 +105,11 @@ export function activitySentence(activity: ClientActivity): { key: string; param
 export function activityLink(activity: ClientActivity): { commands: string[]; queryParams?: Record<string, string> } {
   const profile = ['/clients/profil-client', activity.clientId];
   switch (activity.category) {
+    // The profile dashboard follows what the client did, and opens that day.
     case 'WORKOUT':
-      return { commands: profile, queryParams: activity.refId ? { tab: 'workouts', workoutDayId: activity.refId } : { tab: 'workouts' } };
+      return { commands: profile, queryParams: activity.refId ? { tab: 'dashboard', workoutDayId: activity.refId } : { tab: 'dashboard' } };
     case 'NUTRITION':
-      return { commands: profile, queryParams: { tab: 'nutrition' } };
+      return { commands: profile, queryParams: activity.refId ? { tab: 'dashboard', nutritionDayId: activity.refId } : { tab: 'dashboard' } };
     case 'CHECK_IN':
       return activity.refId
         ? { commands: ['/forms/manage-checkins'], queryParams: { assignmentId: activity.refId } }

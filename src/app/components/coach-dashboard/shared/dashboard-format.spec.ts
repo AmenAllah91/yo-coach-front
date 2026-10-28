@@ -34,8 +34,11 @@ describe('dashboard-format', () => {
   it('opens the existing pages', () => {
     expect(activityLink(activity({ refId: 'day1' }))).toEqual({
       commands: ['/clients/profil-client', 'c1'],
-      queryParams: { tab: 'workouts', workoutDayId: 'day1' },
+      queryParams: { tab: 'dashboard', workoutDayId: 'day1' },
     });
+    expect(activityLink(activity({ type: 'NUTRITION_DAY_COMPLETED', category: 'NUTRITION', refId: 'meal1' })).queryParams)
+      .toEqual({ tab: 'dashboard', nutritionDayId: 'meal1' });
+    expect(activityLink(activity({ type: 'NUTRITION_DAY_COMPLETED', category: 'NUTRITION' })).queryParams).toEqual({ tab: 'dashboard' });
     expect(activityLink(activity({ type: 'CHECK_IN_SUBMITTED', category: 'CHECK_IN', refId: 'as1' }))).toEqual({
       commands: ['/forms/manage-checkins'],
       queryParams: { assignmentId: 'as1' },

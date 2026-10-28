@@ -207,4 +207,42 @@ describe('RegisterComponent', () => {
     component.onSubmit();
     expect(component.signupForm.get('email')?.hasError('serverConflict')).toBeTrue();
   });
+
+  describe('refusal codes, read before the generic 409 / 429', () => {
+    const coach = {
+      username: 'coach', firstName: 'Yo', lastName: 'Coach', email: 'coach@example.com',
+      password: 'Letters 123!', confirmPassword: 'Letters 123!'
+    };
+
+    function submitWith(error: unknown): RegisterComponent {
+      onboardingService.onboard.and.returnValue(throwError(() => error));
+      const c = create({ planId: '42' });
+      c.signupForm.patchValue(coach);
+      c.onSubmit();
+      return c;
+    }
+
+    it('a plan no longer offered (409 PLAN_ARCHIVED) is not shown as an existing account', () => {
+      const c = submitWith({ status: 409, error: { code: 'PLAN_ARCHIVED', error: 'This plan is no longer offered.' } });
+      expect(c.generalError).toBe('CHECKOUT_PLAN_ARCHIVED');
+    });
+
+    it('too many sign-ups from the network (429) asks to try again later', () => {
+      expect(submitWith({ status: 429, error: { code: 'TOO_MANY_SIGN_UPS' } }).generalError).toBe('PLEASE_TRY_AGAIN_LATER');
+      expect(submitWith({ status: 429, error: null }).generalError).toBe('PLEASE_TRY_AGAIN_LATER');
+    });
+
+    it('USERNAME_TAKEN goes under the username field', () => {
+      const c = submitWith({ status: 409, error: { code: 'USERNAME_TAKEN', error: 'Taken' } });
+      expect(c.usernameError).toBe('USERNAME_ALREADY_IN_USE');
+      expect(c.signupForm.get('username')?.hasError('serverConflict')).toBeTrue();
+    });
+
+    it('a 409 without code stays an existing account; an unknown code gets the generic error', () => {
+      expect(submitWith({ status: 409, error: { error: 'A user with this username or email already exists' } }).generalError)
+        .toBe('USER_ALREADY_EXISTS');
+      expect(submitWith({ status: 409, error: { code: 'SUBSCRIPTION_ALREADY_RUNNING' } }).generalError)
+        .toBe('UNEXPECTED_ERROR_RETRY');
+    });
+  });
 });

@@ -1,6 +1,6 @@
 <div class="theme-builder-page">
-  <div *ngIf="error" class="alert error">{{ error }}</div>
-  <div *ngIf="success" class="alert success">{{ success }}</div>
+  <div *ngIf="error" class="alert error" role="alert">{{ error }}</div>
+  <div *ngIf="success" class="alert success" role="status">{{ success }}</div>
   <app-branding-lock-banner *ngIf="brandingLocked"></app-branding-lock-banner>
 
   <div class="builder-layout">
@@ -12,10 +12,6 @@
           <h3>{{ 'THEME_SETTINGS' | translate }}</h3>
           <p>{{ 'CUSTOMIZE_MOBILE_COLORS' | translate }}</p>
         </div>
-
-        <button type="button" class="close-btn" [attr.aria-label]="'CLOSE' | translate">
-          <i class="fas fa-times"></i>
-        </button>
       </div>
 
       <button
@@ -92,18 +88,29 @@
     <main class="preview-area">
       <h1>{{ 'CUSTOMIZE_YOUR_APP' | translate }}</h1>
 
-      <div class="preview-phone-slot">
-        <div class="flutter-preview-wrapper">
-          <iframe
-            #flutterPreview
-            class="flutter-preview-frame"
-            [src]="flutterPreviewUrl"
-            (load)="onFlutterIframeLoaded()"
-          ></iframe>
+      <div class="preview-stage" #previewStage>
+        <div class="preview-phone-slot">
+          <div class="flutter-preview-wrapper">
+            <iframe
+              #flutterPreview
+              class="flutter-preview-frame"
+              [src]="flutterPreviewUrl"
+              [title]="'LIVE_MOBILE_PREVIEW' | translate"
+              (load)="onFlutterIframeLoaded()"
+            ></iframe>
+
+            <div class="preview-stalled" *ngIf="previewStalled" role="status">
+              <p>{{ 'MOBILE_PREVIEW_NOT_ANSWERING' | translate }}</p>
+              <button type="button" (click)="reloadPreview()">{{ 'RELOAD_MOBILE_PREVIEW' | translate }}</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <p class="preview-label">{{ 'LIVE_MOBILE_PREVIEW' | translate }}</p>
+      <p class="preview-label">
+        <strong>{{ 'LIVE_MOBILE_PREVIEW' | translate }}</strong>
+        <span>{{ 'PREVIEW_TABS_HINT' | translate }}</span>
+      </p>
     </main>
 
     <aside class="right-panel">
@@ -116,7 +123,7 @@
 
         <label class="theme-name-field">
           <span>{{ 'THEME_NAME' | translate }}</span>
-          <input type="text" [(ngModel)]="selectedTheme.name" />
+          <input type="text" [(ngModel)]="selectedTheme.name" maxlength="60" />
         </label>
 
         <div class="branding-section" *ngIf="activeColorSection === 'branding'">
@@ -136,11 +143,12 @@
               </div>
             </div>
 
-            <label class="upload-logo-btn">
+            <label class="upload-logo-btn" [class.disabled]="uploadingLogo">
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
                 (change)="onMobileLogoSelected($event)"
+                [disabled]="uploadingLogo"
                 hidden
               />
 
@@ -168,33 +176,37 @@
           <button
             type="button"
             class="template-card"
-            *ngFor="let preset of presets"
+            *ngFor="let preset of presets; trackBy: trackByPreset"
             [class.selected]="selectedPreset === preset.name"
             (click)="applyPreset(preset)"
           >
-            <span class="template-circle" [style.background]="preset.primary"></span>
+            <span class="template-swatches" aria-hidden="true">
+              <span class="template-circle" [style.background]="preset.primary"></span>
+              <span class="template-circle" [style.background]="preset.activeBg"></span>
+              <span class="template-circle bordered" [style.background]="preset.background"></span>
+            </span>
             <span>{{ preset.name }}</span>
           </button>
         </div>
 
-        <div class="colors-section" *ngIf="activeColorSection !== 'templates'">
+        <div class="colors-section" *ngIf="isColorSection">
           <h4>{{ getSectionTitle() | translate }}</h4>
 
           <div class="color-row" *ngFor="let control of visibleControls; trackBy: trackByControl">
-            <div>
-              <strong>{{ control.label | translate }}</strong>
-              <small>{{ control.key }}</small>
-            </div>
+            <strong>{{ control.label | translate }}</strong>
 
             <div class="color-picker">
               <input
                 type="color"
-                [ngModel]="getColor(control.key)"
+                [attr.aria-label]="control.label | translate"
+                [ngModel]="pickerValue(control.key)"
                 (ngModelChange)="setColor(control.key, $event)"
               />
 
               <input
                 type="text"
+                spellcheck="false"
+                [attr.aria-label]="control.label | translate"
                 [ngModel]="getColor(control.key)"
                 (ngModelChange)="setColor(control.key, $event)"
                 (blur)="normalizeHex(control.key)"
@@ -218,7 +230,7 @@
           type="button"
           class="action-btn dark"
           (click)="saveAndUseTheme()"
-          [disabled]="saving"
+          [disabled]="saving || uploadingLogo"
         >
           {{ (saving ? 'SAVING' : 'SAVE_USE_THEME') | translate }}
         </button>

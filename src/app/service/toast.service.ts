@@ -1,12 +1,27 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
+export interface ToastAction {
+  label: string;
+  run: () => void;
+  /** Font Awesome icon of the button (`fa-undo`...). */
+  icon?: string;
+}
+
 export interface Toast {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
   title: string;
   message?: string;
   duration?: number;
+  /** Lines under the message (what changed for each client after an assignment, backlog-programmes.md A7). */
+  details?: string[];
+  /** Buttons such as « Annuler » or « Réessayer »: running one closes the toast. */
+  actions?: ToastAction[];
+  /** Font Awesome icon instead of the type's one (`fa-calendar-check`...). */
+  icon?: string;
+  /** What the buttons do, in one short line under the details. */
+  hint?: string;
 }
 
 @Injectable({
@@ -20,7 +35,7 @@ export class ToastService {
     return Math.random().toString(36).substr(2, 9);
   }
 
-  show(toast: Omit<Toast, 'id'>) {
+  show(toast: Omit<Toast, 'id'>): string {
     const newToast: Toast = {
       ...toast,
       id: this.generateId(),
@@ -34,6 +49,12 @@ export class ToastService {
     setTimeout(() => {
       this.remove(newToast.id);
     }, newToast.duration);
+    return newToast.id;
+  }
+
+  runAction(toast: Toast, action: ToastAction) {
+    this.remove(toast.id);
+    action.run();
   }
 
   success(title: string, message?: string) {

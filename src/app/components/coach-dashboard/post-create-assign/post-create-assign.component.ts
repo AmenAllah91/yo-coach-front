@@ -2,6 +2,8 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AssignVisibilityNoteComponent } from '@shared/components/assign-visibility-note/assign-visibility-note.component';
+import { ModalAssignToclientComponent } from '../../clients/modal-assign-toclient/modal-assign-toclient.component';
 import { catchError, finalize, of, switchMap } from 'rxjs';
 import { ClientService } from '../../../service/client.service';
 import { WorkoutService } from '../../../service/workout.service';
@@ -30,7 +32,7 @@ interface ClientOption {
 @Component({
   selector: 'app-post-create-assign',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, AssignVisibilityNoteComponent, ModalAssignToclientComponent],
   templateUrl: './post-create-assign.component.html',
   styleUrl: './post-create-assign.component.scss',
 })
@@ -40,6 +42,8 @@ export class PostCreateAssignComponent implements OnInit {
   pendingAssign: PendingAssign | null = null;
   showPrompt = false;
   showForm = false;
+  /** Programs go through the one assignment window (backlog-programmes.md A1-A7); check-ins keep their form. */
+  showProgramModal = false;
   clients: ClientOption[] = [];
   clientId = '';
   date = toDateInput(new Date());
@@ -127,6 +131,10 @@ export class PostCreateAssignComponent implements OnInit {
 
   openForm(): void {
     this.showPrompt = false;
+    if (this.pendingAssign?.type === 'workout' || this.pendingAssign?.type === 'nutrition') {
+      this.showProgramModal = true;
+      return;
+    }
     this.showForm = true;
     this.date = toDateInput(new Date());
     this.error = null;
@@ -155,67 +163,7 @@ export class PostCreateAssignComponent implements OnInit {
     }
     this.saving = true;
     this.error = null;
-    if (this.pendingAssign.type === 'workout') this.assignWorkout();
-    else if (this.pendingAssign.type === 'nutrition') this.assignNutrition();
-    else this.assignCheckIn();
-  }
-
-  private assignWorkout(): void {
-    const workout = this.pendingAssign!.item;
-    if (!workout?.id) return this.fail('WORKOUT_ID_NOT_RETURNED');
-    const startDate = this.parseInputDate(this.date);
-    const workoutDays = (workout.workoutDays || []).map((day: any, index: number) => {
-      const date = this.addDays(startDate, index);
-      return {
-        ...day,
-        date: toDateInput(date),
-        dayOfWeek: date.toLocaleDateString(this.translate.currentLang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long' }),
-        dayNumber: day.dayNumber || index + 1,
-      };
-    });
-    const payload: any = {
-      ...workout,
-      details: workout.details ?? '',
-      isWorkoutPlanTemplate: false,
-      isTemplate: false,
-      startDate: toDateInput(startDate),
-      endDate: toDateInput(this.addDays(startDate, Math.max(workoutDays.length - 1, 0))),
-      workoutDays,
-      coach: workout.coach || { id: this.coachId },
-      client: { id: this.clientId, name: this.clientName() },
-    };
-    this.workoutService
-      .assignWorkout(workout.id, payload)
-      .pipe(finalize(() => (this.saving = false)))
-      .subscribe({ next: () => this.done(), error: (err) => this.fail('ASSIGN_WORKOUT_ERROR', err) });
-  }
-
-  private assignNutrition(): void {
-    const plan = this.pendingAssign!.item;
-    if (!plan?.id) return this.fail('NUTRITION_ID_NOT_RETURNED');
-    const startDate = this.parseInputDate(this.date);
-    const mealDays = (plan.mealDays || []).map((day: any, index: number) => ({
-      ...day,
-      date: toDateInput(this.addDays(startDate, index)),
-      dayOfWeek: day.dayOfWeek || `Day ${index + 1}`,
-      dayNumber: day.dayNumber || index + 1,
-    }));
-    const payload: any = {
-      ...plan,
-      details: plan.details ?? plan.description ?? '',
-      description: plan.description ?? plan.details ?? '',
-      trackingMode: plan.trackingMode ?? null,
-      startDate: toDateInput(startDate),
-      endDate: toDateInput(this.addDays(startDate, Math.max(mealDays.length - 1, 0))),
-      mealDays,
-      coach: plan.coach || { id: this.coachId },
-      coachId: plan.coachId || this.coachId,
-      client: { id: this.clientId, name: this.clientName() },
-    };
-    this.nutritionService
-      .assignNutritionPlan(payload)
-      .pipe(finalize(() => (this.saving = false)))
-      .subscribe({ next: () => this.done(), error: (err) => this.fail('ASSIGN_NUTRITION_ERROR', err) });
+    this.assignCheckIn();
   }
 
   private assignCheckIn(): void {
@@ -231,6 +179,23 @@ export class PostCreateAssignComponent implements OnInit {
         finalize(() => (this.saving = false)),
       )
       .subscribe({ next: () => this.done(), error: (err) => this.fail('ASSIGN_CHECK_IN_ERROR', err) });
+  }
+
+  get isFileProgram(): boolean {
+    const item = this.pendingAssign?.item;
+    return String(item?.workoutPlanMode || item?.nutritionPlanMode || '').toUpperCase() === 'FILE';
+  }
+
+  closeProgramModal(): void {
+    this.showProgramModal = false;
+    this.pendingAssign = null;
+  }
+
+  /** The window assigned the program and shows the message with « Annuler ». */
+  onProgramAssigned(): void {
+    this.showProgramModal = false;
+    this.pendingAssign = null;
+    this.assigned.emit();
   }
 
   private done(): void {

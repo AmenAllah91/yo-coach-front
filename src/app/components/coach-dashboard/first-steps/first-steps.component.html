@@ -1,0 +1,80 @@
+<section class="first-steps" *ngIf="visible && status" aria-labelledby="first-steps-title">
+  <header class="fs-header">
+    <div class="fs-title">
+      <h2 id="first-steps-title">{{ (allDone ? 'COACH_GUIDE.ALL_DONE_TITLE' : 'COACH_GUIDE.TITLE') | translate }}</h2>
+      <p>{{ (allDone ? 'COACH_GUIDE.ALL_DONE_TEXT' : 'COACH_GUIDE.SUBTITLE') | translate }}</p>
+    </div>
+    <span class="fs-count" *ngIf="!allDone">{{ 'COACH_GUIDE.PROGRESS' | translate: { done: doneCount, total: steps.length } }}</span>
+    <button type="button" class="fs-link" (click)="setHidden(true)">{{ (allDone ? 'COACH_GUIDE.CLOSE' : 'COACH_GUIDE.HIDE') | translate }}</button>
+  </header>
+  <div class="fs-bar" *ngIf="!allDone" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100">
+    <span [style.width.%]="progress"></span>
+  </div>
+
+  <ng-container *ngIf="!allDone">
+    <!-- Part 1: discover the app on the example client -->
+    <div class="fs-part" *ngIf="status.example.active">
+      <h3>{{ 'COACH_GUIDE.PART_DISCOVER' | translate: { name: exampleName } }}</h3>
+      <ul class="fs-steps">
+        <li *ngFor="let step of status.discover" [class.done]="step.done">
+          <span class="fs-mark" aria-hidden="true">{{ step.done ? '✓' : '' }}</span>
+          <span class="fs-text">
+            <strong>{{ 'COACH_GUIDE.STEP.' + step.key + '.TITLE' | translate: { name: exampleName } }}</strong>
+            <small>{{ 'COACH_GUIDE.STEP.' + step.key + '.HINT' | translate: { name: exampleName } }}</small>
+          </span>
+          <button type="button" class="fs-action" (click)="openDiscover(step.key)">
+            {{ 'COACH_GUIDE.STEP.' + step.key + '.ACTION' | translate }}
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Part 2: start for real -->
+    <div class="fs-part">
+      <h3>{{ (status.example.active ? 'COACH_GUIDE.PART_START' : 'COACH_GUIDE.PART_START_ALONE') | translate }}</h3>
+      <ul class="fs-steps">
+        <li *ngFor="let step of status.start" [class.done]="step.done">
+          <span class="fs-mark" aria-hidden="true">{{ step.done ? '✓' : '' }}</span>
+          <span class="fs-text">
+            <strong>
+              {{ 'COACH_GUIDE.STEP.' + step.key + '.TITLE' | translate }}
+              <em *ngIf="step.optional">{{ 'COACH_GUIDE.OPTIONAL' | translate }}</em>
+            </strong>
+            <small>{{ 'COACH_GUIDE.STEP.' + step.key + '.HINT' | translate }}</small>
+          </span>
+          <button type="button" class="fs-action" *ngIf="!step.done" (click)="openStart(step.key)">
+            {{ 'COACH_GUIDE.STEP.' + step.key + '.ACTION' | translate }}
+          </button>
+        </li>
+      </ul>
+    </div>
+  </ng-container>
+
+  <!-- The example client: remove it, or bring it back -->
+  <footer class="fs-example">
+    <ng-container *ngIf="status.example.active; else noExample">
+      <ng-container *ngIf="!confirmRemove; else confirmBox">
+        <span>{{ 'COACH_GUIDE.EXAMPLE_ACTIVE' | translate: { name: exampleName } }}</span>
+        <button type="button" class="fs-link" (click)="confirmRemove = true">{{ 'COACH_GUIDE.REMOVE_EXAMPLE' | translate }}</button>
+      </ng-container>
+      <ng-template #confirmBox>
+        <span role="alert">{{ 'COACH_GUIDE.REMOVE_CONFIRM' | translate: { name: exampleName } }}</span>
+        <span class="fs-buttons">
+          <button type="button" class="fs-danger" [disabled]="busy" (click)="removeExample()">
+            {{ (busy ? 'COACH_GUIDE.REMOVING' : 'COACH_GUIDE.REMOVE') | translate }}
+          </button>
+          <button type="button" class="fs-link" [disabled]="busy" (click)="confirmRemove = false">{{ 'COACH_GUIDE.CANCEL' | translate }}</button>
+        </span>
+      </ng-template>
+    </ng-container>
+    <ng-template #noExample>
+      <span>{{ 'COACH_GUIDE.EXAMPLE_NONE' | translate }}</span>
+      <button type="button" class="fs-action" [disabled]="busy" (click)="restoreExample()">
+        {{ (busy ? 'COACH_GUIDE.PREPARING' : 'COACH_GUIDE.RESTORE_EXAMPLE') | translate }}
+      </button>
+    </ng-template>
+    <p class="fs-error" *ngIf="failed" role="alert">{{ 'COACH_GUIDE.START_ERROR' | translate }}</p>
+  </footer>
+</section>
+
+<app-add-client-modal [isVisible]="showAddClient" (onClose)="onInviteClosed()"></app-add-client-modal>

@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr);
   gap: 20px;
-  align-items: end;
+  align-items: start;
 }
 
 /* Final sidebar alignment: identical horizontal structure to Workout. */

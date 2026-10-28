@@ -1,45 +1,66 @@
 import { firstValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
 import {
   CoachContactForm,
   CoachContactFormPayload,
   ContactFormService,
 } from 'app/service/contact-form.service';
-import { WebsiteLeadsComponent } from '../website-leads/website-leads.component';
+import { CoachWebsiteLeadSummary, WebsiteService } from 'app/service/website.service';
 import { DocumentService } from 'app/service/document.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { PublicContactFormComponent } from '../public-contact-form/public-contact-form.component';
 
+export const CONTACT_MESSAGE_MAX = 500;
+
+/**
+ * The coach's contact form: its public link, its look and the leads it brought.
+ * The live preview is the public page component itself, fed with the draft.
+ */
 @Component({
   selector: 'app-contact-form-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, WebsiteLeadsComponent, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, RouterModule, TranslateModule, PublicContactFormComponent],
   templateUrl: './contact-form-manager.component.html',
   styleUrls: ['./contact-form-manager.component.scss'],
 })
-export class ContactFormManagerComponent implements OnInit {
+export class ContactFormManagerComponent implements OnInit, OnDestroy {
   @ViewChild('coverInput') coverInput?: ElementRef<HTMLInputElement>;
+
+  readonly messageMax = CONTACT_MESSAGE_MAX;
 
   form: CoachContactForm | null = null;
   draft: CoachContactFormPayload = this.emptyDraft();
+  summary: CoachWebsiteLeadSummary | null = null;
   loading = true;
   saving = false;
   copied = false;
-  modalOpen = false;
+  saved = false;
   error = '';
   uploadError = '';
   processingCover = false;
+  publishing = false;
+  previewOpen = false;
+  previewDevice: 'desktop' | 'mobile' = 'desktop';
+
+  private previewCache: { key: string; value: CoachContactForm } | null = null;
 
   constructor(
     private contactFormService: ContactFormService,
+    private websiteService: WebsiteService,
     private documentService: DocumentService,
     private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     this.load();
+    this.websiteService.getMyLeadsSummary().subscribe({
+      next: (summary) => (this.summary = summary),
+      error: () => (this.summary = null),
+    });
   }
 
   goBack(): void { window.history.back(); }
@@ -48,11 +69,71 @@ export class ContactFormManagerComponent implements OnInit {
     return this.form?.slug ? `${window.location.origin}/contact/${this.form.slug}` : '';
   }
 
+  get whatsappShareUrl(): string {
+    const text = `${this.translate.instant('CONTACT_SHARE_TEXT')} ${this.publicUrl}`;
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  }
+
+  get emailShareUrl(): string {
+    const subject = this.translate.instant('CONTACT_SHARE_SUBJECT');
+    const body = `${this.translate.instant('CONTACT_SHARE_TEXT')}\n${this.publicUrl}`;
+    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  /** The saved form with the draft's look; same object while nothing changed, so the preview is not re-fed each tick. */
+  get previewForm(): CoachContactForm | null {
+    if (!this.form) return null;
+    const key = `${this.form.coachName}\u0000${this.draft.coverImage || ''}\u0000${this.draft.message}`;
+    if (!this.previewCache || this.previewCache.key !== key) {
+      this.previewCache = {
+        key,
+        value: { ...this.form, coverImage: this.draft.coverImage || '', message: this.draft.message.trim() },
+      };
+    }
+    return this.previewCache.value;
+  }
+
+  openPreview(): void {
+    this.previewOpen = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closePreview(): void {
+    this.previewOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.previewOpen) this.closePreview();
+  }
+
+  ngOnDestroy(): void {
+    if (this.previewOpen) document.body.style.overflow = '';
+  }
+
+  get dirty(): boolean {
+    if (!this.form) return false;
+    return this.draft.message.trim() !== (this.form.message || '').trim()
+      || (this.draft.coverImage || '') !== (this.form.coverImage || '');
+  }
+
+  get messageError(): string {
+    return this.draft.message.trim().length > this.messageMax
+      ? this.translate.instant('CONTACT_MESSAGE_LENGTH_ERROR') : '';
+  }
+
+  get canSave(): boolean {
+    return this.dirty && !this.saving && !this.processingCover && !this.messageError;
+  }
+
   load(): void {
     this.loading = true;
+    this.error = '';
     this.contactFormService.getMine().subscribe({
       next: (form) => {
         this.form = form;
+        this.resetDraft();
         this.loading = false;
       },
       error: () => {
@@ -62,35 +143,20 @@ export class ContactFormManagerComponent implements OnInit {
     });
   }
 
-  openCustomize(): void {
-    if (!this.form || this.saving || this.processingCover) return;
+  resetDraft(): void {
+    if (!this.form) return;
     this.draft = {
       slug: this.form.slug,
       coverImage: this.form.coverImage || '',
-      message: this.form.message,
+      message: this.form.message || '',
       published: this.form.published !== false,
     };
     this.uploadError = '';
-    this.error = '';
-    this.modalOpen = true;
-  }
-
-  closeCustomize(): void {
-    if (this.saving || this.processingCover) return;
-    this.modalOpen = false;
+    if (this.coverInput) this.coverInput.nativeElement.value = '';
   }
 
   triggerUpload(): void {
     this.coverInput?.nativeElement.click();
-  }
-
-  get messageError(): string {
-    return this.draft.message.trim().length > 500
-      ? this.translate.instant('CONTACT_MESSAGE_LENGTH_ERROR') : '';
-  }
-
-  get canSave(): boolean {
-    return !this.saving && !this.processingCover && !this.uploadError && !this.messageError;
   }
 
   removeCover(): void {
@@ -147,19 +213,49 @@ export class ContactFormManagerComponent implements OnInit {
   save(): void {
     if (!this.canSave) return;
     this.saving = true;
+    this.saved = false;
     this.error = '';
     this.contactFormService.saveMine({
       ...this.draft,
       message: this.draft.message.trim(),
+      published: this.form?.published !== false,
     }).subscribe({
       next: (saved) => {
         this.form = saved;
+        this.resetDraft();
         this.saving = false;
-        this.modalOpen = false;
+        this.saved = true;
+        setTimeout(() => (this.saved = false), 2500);
       },
       error: (err) => {
-        this.error = err?.error?.message || err?.error || this.translate.instant('SAVE_CONTACT_FORM_ERROR');
+        this.error = err?.error?.error || err?.error?.message
+          || (typeof err?.error === 'string' ? err.error : '')
+          || this.translate.instant('SAVE_CONTACT_FORM_ERROR');
         this.saving = false;
+      },
+    });
+  }
+
+  /** Online/offline applies at once (it is not part of the look being edited). */
+  togglePublished(): void {
+    if (!this.form || this.publishing) return;
+    const published = this.form.published === false;
+    this.publishing = true;
+    this.error = '';
+    this.contactFormService.saveMine({
+      slug: this.form.slug,
+      coverImage: this.form.coverImage || '',
+      message: this.form.message || '',
+      published,
+    }).subscribe({
+      next: (saved) => {
+        this.form = { ...saved };
+        this.draft.published = saved.published !== false;
+        this.publishing = false;
+      },
+      error: () => {
+        this.error = this.translate.instant('SAVE_CONTACT_FORM_ERROR');
+        this.publishing = false;
       },
     });
   }
@@ -172,15 +268,13 @@ export class ContactFormManagerComponent implements OnInit {
     });
   }
 
-  previewSaved(): void {
+  openPublicForm(): void {
     if (this.publicUrl) window.open(this.publicUrl, '_blank', 'noopener');
   }
 
-  previewDraft(): void {
-    if (!this.form) return;
-    const preview: CoachContactForm = { ...this.form, ...this.draft };
-    sessionStorage.setItem('contact-form-preview', JSON.stringify(preview));
-    window.open(`/contact/${this.draft.slug}?preview=1`, '_blank', 'noopener');
+  /** CSS background for an image URL; quotes keep a URL with parentheses from breaking the rule. */
+  cssImage(url?: string): string {
+    return url ? `url("${url.replace(/"/g, '%22')}")` : '';
   }
 
   private emptyDraft(): CoachContactFormPayload {

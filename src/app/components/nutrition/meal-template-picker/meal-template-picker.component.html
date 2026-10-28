@@ -1,142 +1,139 @@
-<div class="template-modal" *ngIf="visible" role="dialog" aria-modal="true" aria-labelledby="mealTemplateTitle">
-  <button class="template-modal__backdrop" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="close()"></button>
+<div class="mtp" *ngIf="visible" role="dialog" aria-modal="true" aria-labelledby="mealTemplateTitle" (keydown.escape)="close()">
+  <div class="mtp__backdrop" (click)="close()"></div>
 
-  <section class="template-modal__panel">
-    <header class="template-modal__header">
-      <div class="template-modal__heading">
-        <span class="template-modal__heading-icon"><i-feather name="book-open"></i-feather></span>
-        <div>
-          <h2 id="mealTemplateTitle">{{ 'ADD_MEAL_FROM_TEMPLATE' | translate }}</h2>
-          <p>{{ 'CHOOSE_TEMPLATE_TO_ADD' | translate }}</p>
-        </div>
+  <section class="mtp__panel">
+    <header class="mtp__head">
+      <span class="mtp__head-icon" aria-hidden="true"><i-feather name="book-open"></i-feather></span>
+      <div class="mtp__head-copy">
+        <h3 id="mealTemplateTitle">{{ 'ADD_MEAL_FROM_TEMPLATE' | translate }}</h3>
+        <p>{{ 'CHOOSE_TEMPLATE_TO_ADD' | translate }}</p>
       </div>
-      <button class="template-modal__close" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="close()">
+      <button type="button" class="mtp__icon-btn" [attr.aria-label]="'CLOSE' | translate" (click)="close()">
         <i-feather name="x"></i-feather>
       </button>
     </header>
 
-    <div class="template-modal__content">
-      <label class="template-search">
+    <div class="mtp__toolbar">
+      <label class="mtp__search">
         <i-feather name="search"></i-feather>
         <input
           type="search"
           [placeholder]="'SEARCH_BY_MEAL_NAME' | translate"
           [(ngModel)]="search"
           (input)="onSearchInput()"
+          autocomplete="off"
         />
+        <span *ngIf="searching" class="mtp__spinner" aria-hidden="true"></span>
+        <button *ngIf="search && !searching" type="button" class="mtp__search-clear" [attr.aria-label]="'CLEAR' | translate" (click)="clearSearch()">
+          <i-feather name="x"></i-feather>
+        </button>
       </label>
 
-      <div class="template-kinds">
-        <button
-          type="button"
-          class="template-kind"
-          [class.is-active]="activeKind === 'recipe'"
-          (click)="setKind('recipe')"
-        >
-          <span class="template-kind__icon"><i-feather name="coffee"></i-feather></span>
-          <span class="template-kind__copy">
-            <strong>{{ 'MEAL_RECIPES' | translate }}</strong>
-            <small>{{ 'READY_RECIPES_DESCRIPTION' | translate }}</small>
-            <em>{{ 'WITH_IMAGES' | translate }}</em>
-          </span>
+      <div class="mtp__tabs" role="tablist">
+        <button type="button" role="tab" class="mtp__tab" [class.is-active]="activeKind === 'recipe'" [attr.aria-selected]="activeKind === 'recipe'" (click)="setKind('recipe')">
+          <i-feather name="book-open"></i-feather>
+          {{ 'MEAL_RECIPES' | translate }}
+          <span class="mtp__count" *ngIf="lists.recipe.loaded">{{ lists.recipe.total }}</span>
         </button>
-
-        <button
-          type="button"
-          class="template-kind"
-          [class.is-active]="activeKind === 'foods'"
-          (click)="setKind('foods')"
-        >
-          <span class="template-kind__icon"><i-feather name="clipboard"></i-feather></span>
-          <span class="template-kind__copy">
-            <strong>{{ 'TYPE_MEALS_WITH_FOODS' | translate }}</strong>
-            <small>{{ 'SIMPLE_MEALS_DESCRIPTION' | translate }}</small>
-            <em>{{ 'NO_IMAGES' | translate }}</em>
-          </span>
+        <button type="button" role="tab" class="mtp__tab" [class.is-active]="activeKind === 'foods'" [attr.aria-selected]="activeKind === 'foods'" (click)="setKind('foods')">
+          <i-feather name="list"></i-feather>
+          {{ 'TYPE_MEALS_WITH_FOODS' | translate }}
+          <span class="mtp__count" *ngIf="lists.foods.loaded">{{ lists.foods.total }}</span>
         </button>
       </div>
-
-      <section class="template-results">
-        <header class="template-results__header">
-          <div>
-            <h3>{{ (activeKind === 'recipe' ? 'MEAL_RECIPES' : 'TYPE_MEALS_WITH_FOODS') | translate }}</h3>
-            <p>{{ (activeKind === 'recipe' ? 'CHOOSE_RECIPE_TO_ADD' : 'CHOOSE_MEAL_TO_ADD') | translate }}</p>
-          </div>
-        </header>
-
-        <div class="template-state" *ngIf="activeLoading">{{ 'LOADING_MEALS' | translate }}</div>
-        <div class="template-state" *ngIf="!activeLoading && !activeMeals.length">{{ 'NO_MEAL_FOUND' | translate }}</div>
-
-        <div class="template-list" *ngIf="!activeLoading && activeMeals.length">
-          <article class="template-row" *ngFor="let meal of activeMeals; trackBy: trackByMeal">
-            <div class="template-row__main">
-              <div class="template-row__image" *ngIf="activeKind === 'recipe'">
-                <img *ngIf="mealImage(meal); else imageFallback" [src]="mealImage(meal)" [alt]="meal.name" />
-                <ng-template #imageFallback><i-feather name="image"></i-feather></ng-template>
-              </div>
-
-              <div class="template-row__identity">
-                <strong>{{ meal.name }}</strong>
-                <span>{{ ingredientNames(meal) }}</span>
-                <small>{{ mealTypeLabel(meal) }}</small>
-              </div>
-
-              <div class="template-row__macros">
-                <div><strong>{{ macros(meal).calories }}</strong><span>Kcal</span></div>
-                <div><strong>{{ macros(meal).protein }} g</strong><span>{{ 'PROTEIN' | translate }}</span></div>
-                <div><strong>{{ macros(meal).carbs }} g</strong><span>{{ 'CARBS' | translate }}</span></div>
-                <div><strong>{{ macros(meal).fat }} g</strong><span>{{ 'FAT' | translate }}</span></div>
-              </div>
-
-              <div class="template-row__actions">
-                <button type="button" class="template-add" (click)="beginAdd(meal)">
-                  <i-feather name="plus"></i-feather>
-                  {{ 'ADD' | translate }}
-                </button>
-                <button type="button" class="template-preview" (click)="togglePreview(meal)">
-                  <i-feather name="eye"></i-feather>
-                  {{ (previewMealId === mealKey(meal) ? 'HIDE_PREVIEW' : 'PREVIEW') | translate }}
-                </button>
-              </div>
-            </div>
-
-            <div class="template-serving" *ngIf="servingMealId === mealKey(meal)">
-              <div>
-                <strong>{{ 'HOW_MANY_SERVINGS' | translate }}</strong>
-                <span>{{ 'ADJUST_SERVINGS' | translate }}</span>
-              </div>
-              <div class="template-serving__controls">
-                <button type="button" [attr.aria-label]="'DECREASE_SERVINGS' | translate" (click)="decrementServings()">−</button>
-                <label>
-                  <input type="number" min="1" max="99" [(ngModel)]="servingCount" (change)="normalizeServings()" />
-                  <small>{{ (servingCount === 1 ? 'SERVING_LOWERCASE' : 'SERVINGS_LOWERCASE') | translate }}</small>
-                </label>
-                <button type="button" [attr.aria-label]="'INCREASE_SERVINGS' | translate" (click)="incrementServings()">+</button>
-                <button type="button" class="template-serving__cancel" (click)="cancelAdd()">{{ 'CANCEL' | translate }}</button>
-                <button type="button" class="template-serving__confirm" (click)="addToPlan(meal)">{{ 'ADD_TO_PLAN' | translate }}</button>
-              </div>
-            </div>
-
-            <div class="template-preview-panel" *ngIf="previewMealId === mealKey(meal)">
-              <div>
-                <strong>{{ 'INGREDIENTS' | translate }}</strong>
-                <span *ngFor="let food of meal.foods || []">
-                  {{ food.name || food.foodRef?.name }} — {{ food.quantity }} {{ food.unit }}
-                </span>
-              </div>
-              <div *ngIf="meal.directions?.length">
-                <strong>{{ 'DIRECTIONS' | translate }}</strong>
-                <span *ngFor="let direction of meal.directions; let i = index">{{ i + 1 }}. {{ direction }}</span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <button type="button" class="template-more" *ngIf="canShowMore" (click)="showMore()">
-          {{ (activeKind === 'recipe' ? 'VIEW_MORE_RECIPES' : 'VIEW_MORE_MEALS') | translate }}
-          <i-feather name="chevron-down"></i-feather>
-        </button>
-      </section>
+      <p class="mtp__hint">{{ (activeKind === 'recipe' ? 'READY_RECIPES_DESCRIPTION' : 'SIMPLE_MEALS_DESCRIPTION') | translate }}</p>
     </div>
+
+    <div class="mtp__body">
+      <!-- First load: skeleton rows instead of an empty "Loading" box. -->
+      <ul class="mtp__list" *ngIf="active.loading" aria-hidden="true">
+        <li *ngFor="let s of skeletons" class="mtp__card mtp__card--skeleton">
+          <span class="mtp__thumb"></span>
+          <span class="mtp__copy"><span class="mtp__bar mtp__bar--title"></span><span class="mtp__bar"></span><span class="mtp__bar mtp__bar--short"></span></span>
+        </li>
+      </ul>
+
+      <div class="mtp__state" *ngIf="!active.loading && !active.meals.length">
+        <i-feather name="inbox"></i-feather>
+        {{ 'NO_MEAL_FOUND' | translate }}
+      </div>
+
+      <ul class="mtp__list" *ngIf="!active.loading && active.meals.length" [class.is-refreshing]="active.refreshing">
+        <li class="mtp__card" *ngFor="let meal of active.meals; trackBy: trackByMeal">
+          <div class="mtp__row">
+            <span class="mtp__thumb">
+              <img [src]="mealImage(meal)" [alt]="meal.name" loading="lazy" (error)="usePlaceholder($event)" />
+            </span>
+
+            <div class="mtp__copy">
+              <div class="mtp__title">
+                <strong>{{ meal.name }}</strong>
+                <span class="mtp__badge" *ngIf="mealTypeLabel(meal) as type">{{ type }}</span>
+              </div>
+              <small class="mtp__ingredients">{{ ingredientNames(meal) }}</small>
+              <div class="mtp__macros">
+                <span class="mtp__kcal">{{ macros(meal).calories }} kcal <small>/ {{ 'PER_SERVING' | translate }}</small></span>
+                <span><b>P</b> {{ macros(meal).protein }} g</span>
+                <span><b>{{ 'CARBS' | translate | slice:0:1 }}</b> {{ macros(meal).carbs }} g</span>
+                <span><b>{{ 'FAT' | translate | slice:0:1 }}</b> {{ macros(meal).fat }} g</span>
+              </div>
+            </div>
+
+            <div class="mtp__actions">
+              <div class="mtp__stepper" [attr.aria-label]="'HOW_MANY_SERVINGS' | translate">
+                <button type="button" [disabled]="servingsOf(meal) <= 1" [attr.aria-label]="'DECREASE_SERVINGS' | translate" (click)="changeServings(meal, -0.5)">
+                  <i-feather name="minus"></i-feather>
+                </button>
+                <input type="number" min="1" max="99" step="0.5" [ngModel]="servingsOf(meal)" (ngModelChange)="setServings(meal, $event)" [attr.aria-label]="'HOW_MANY_SERVINGS' | translate" />
+                <button type="button" [attr.aria-label]="'INCREASE_SERVINGS' | translate" (click)="changeServings(meal, 0.5)">
+                  <i-feather name="plus"></i-feather>
+                </button>
+              </div>
+              <button type="button" class="mtp__add" [class.is-added]="addedCount(meal) > 0" (click)="addToPlan(meal)">
+                <i-feather name="plus"></i-feather>{{ 'ADD' | translate }}
+              </button>
+              <span class="mtp__added" *ngIf="addedCount(meal) as count" role="status">
+                <i-feather name="check"></i-feather>{{ 'ADDED' | translate }}<ng-container *ngIf="count > 1"> ×{{ count }}</ng-container>
+              </span>
+              <button type="button" class="mtp__details" [class.is-open]="previewMealId === mealKey(meal)" (click)="togglePreview(meal)">
+                {{ (previewMealId === mealKey(meal) ? 'HIDE_PREVIEW' : 'PREVIEW') | translate }}
+                <i-feather name="chevron-down"></i-feather>
+              </button>
+            </div>
+          </div>
+
+          <div class="mtp__preview" *ngIf="previewMealId === mealKey(meal)">
+            <div>
+              <h4>{{ 'INGREDIENTS' | translate }}</h4>
+              <ul>
+                <li *ngFor="let food of meal.foods || []">
+                  <span>{{ food.name || food.foodRef?.name }}</span>
+                  <b>{{ food.quantity }} {{ food.unit }}</b>
+                </li>
+              </ul>
+            </div>
+            <div *ngIf="meal.directions?.length">
+              <h4>{{ 'DIRECTIONS' | translate }}</h4>
+              <ol><li *ngFor="let direction of meal.directions">{{ direction }}</li></ol>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <button type="button" class="mtp__more" *ngIf="!active.loading && canShowMore" [disabled]="active.refreshing" (click)="showMore()">
+        <span *ngIf="active.refreshing" class="mtp__spinner"></span>
+        {{ (activeKind === 'recipe' ? 'VIEW_MORE_RECIPES' : 'VIEW_MORE_MEALS') | translate }}
+        <span class="mtp__more-count">{{ active.meals.length }} / {{ active.total }}</span>
+      </button>
+    </div>
+
+    <footer class="mtp__foot">
+      <span class="mtp__foot-count" *ngIf="addedTotal" role="status">
+        <i-feather name="check"></i-feather>{{ addedTotal }} · {{ 'ADDED' | translate }}
+      </span>
+      <button type="button" class="mtp__btn" [class.mtp__btn--primary]="addedTotal" (click)="close()">
+        {{ (addedTotal ? 'DONE' : 'CANCEL') | translate }}
+      </button>
+    </footer>
   </section>
 </div>

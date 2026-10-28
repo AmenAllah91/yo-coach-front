@@ -1,10 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { catchError, finalize, forkJoin, map, of } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { environment } from '@env/environment';
-import { AppThemeColors, AppThemeColorsPage } from '../../../core/models/app-theme-colors.model';
+import { AppThemeColors } from '../../../core/models/app-theme-colors.model';
 import { AppThemeColorsService } from '../../../core/service/app-theme-colors.service';
 import { BrandingLockBannerComponent } from 'app/components/branding-lock-banner/branding-lock-banner.component';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
@@ -43,17 +51,40 @@ type ColorField = keyof Pick<
 interface ColorControl {
   key: ColorField;
   label: string;
-  group: string;
 }
 
-type ThemeSection =
-  | 'branding'
-  | 'templates'
-  | 'brand'
-  | 'background'
-  | 'text'
-  | 'status'
-  | 'navigation';
+type ThemeSection = 'branding' | 'templates' | ColorSection;
+type ColorSection = 'brand' | 'background' | 'text' | 'status' | 'navigation';
+
+/** Messages exchanged with the Flutter preview (yo-coach-mobile/lib/services/web_theme_bridge_web.dart). */
+const PREVIEW_THEME_MESSAGE = 'YOCOACH_THEME_UPDATE';
+const PREVIEW_READY_MESSAGE = 'YOCOACH_PREVIEW_READY';
+
+/** The preview says it listens within a couple of seconds; past this, something is wrong with it. */
+const PREVIEW_READY_TIMEOUT_MS = 20_000;
+
+/** Logical size of the phone frame; it is scaled down to fit the preview area. */
+const PHONE_WIDTH = 360;
+const PHONE_HEIGHT = 672;
+
+/** Colors of each section. The colors the clients' app never reads (secondary, header gradient) are not offered. */
+const SECTION_COLORS: Record<ColorSection, ColorField[]> = {
+  brand: ['primary', 'buttonText'],
+  background: ['background', 'surface', 'card', 'cardSurface', 'border', 'divider', 'emptyStateBg'],
+  text: ['textPrimary', 'textSecondary', 'textHint', 'disabled'],
+  status: ['success', 'successLight', 'error', 'errorLight', 'warning', 'warningLight'],
+  navigation: ['selectedTabBg', 'activeBg', 'dragHandle'],
+};
+
+const SECTION_TITLES: Record<ThemeSection, string> = {
+  branding: 'MOBILE_LOGO',
+  templates: 'THEME_TEMPLATES',
+  brand: 'BRAND_COLORS',
+  background: 'BACKGROUND_AND_CARDS',
+  text: 'TEXT_COLORS',
+  status: 'STATUS_COLORS',
+  navigation: 'NAVIGATION_AND_HEADER',
+};
 
 @Component({
   selector: 'app-theme-colors',
@@ -62,10 +93,11 @@ type ThemeSection =
   templateUrl: './theme-colors.component.html',
   styleUrls: ['./theme-colors.component.scss'],
 })
-export class ThemeColorsComponent implements OnInit {
+export class ThemeColorsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('flutterPreview') flutterPreview?: ElementRef<HTMLIFrameElement>;
+  @ViewChild('previewStage') previewStage?: ElementRef<HTMLElement>;
 
-  themes: AppThemeColors[] = [];
+  /** The coach's theme (or the platform theme while they have none): the one and only theme edited here. */
   selectedTheme: AppThemeColors = this.createDefaultTheme();
 
   loading = false;
@@ -73,93 +105,61 @@ export class ThemeColorsComponent implements OnInit {
   error: string | null = null;
   success: string | null = null;
 
-  iframeReady = false;
   flutterPreviewUrl: SafeResourceUrl;
+  /** The preview answered (YOCOACH_PREVIEW_READY) since it was last loaded. */
+  previewReady = false;
+  /** Loaded, but silent for too long: an empty phone, offered to be reloaded. */
+  previewStalled = false;
 
   activeColorSection: ThemeSection = 'templates';
-  selectedPreset = 'FitBudd';
+  selectedPreset = '';
   uploadingLogo = false;
 
-  groupedControls: { group: string; controls: ColorControl[] }[] = [];
+  /** SUB-27/29: the mobile theme is a paid feature. Visible, but nothing can be changed during the trial. */
+  brandingLocked = false;
 
   readonly controls: ColorControl[] = [
-    { key: 'primary', label: 'PRIMARY_COLOR', group: 'BRAND_GROUP' },
-    { key: 'secondary', label: 'SECONDARY_COLOR', group: 'BRAND_GROUP' },
+    { key: 'primary', label: 'PRIMARY_COLOR' },
+    { key: 'secondary', label: 'SECONDARY_COLOR' },
 
-    { key: 'background', label: 'BACKGROUND_COLOR', group: 'BACKGROUND_GROUP' },
-    { key: 'surface', label: 'SURFACE_COLOR', group: 'BACKGROUND_GROUP' },
-    { key: 'card', label: 'CARD_COLOR', group: 'BACKGROUND_GROUP' },
-    { key: 'cardSurface', label: 'CARD_SURFACE_COLOR', group: 'BACKGROUND_GROUP' },
+    { key: 'background', label: 'BACKGROUND_COLOR' },
+    { key: 'surface', label: 'SURFACE_COLOR' },
+    { key: 'card', label: 'CARD_COLOR' },
+    { key: 'cardSurface', label: 'CARD_SURFACE_COLOR' },
 
-    { key: 'textPrimary', label: 'PRIMARY_TEXT_COLOR', group: 'TEXT_GROUP' },
-    { key: 'textSecondary', label: 'SECONDARY_TEXT_COLOR', group: 'TEXT_GROUP' },
-    { key: 'textHint', label: 'HINT_TEXT_COLOR', group: 'TEXT_GROUP' },
+    { key: 'textPrimary', label: 'PRIMARY_TEXT_COLOR' },
+    { key: 'textSecondary', label: 'SECONDARY_TEXT_COLOR' },
+    { key: 'textHint', label: 'HINT_TEXT_COLOR' },
 
-    { key: 'success', label: 'SUCCESS_COLOR', group: 'STATUS_GROUP' },
-    { key: 'successLight', label: 'SUCCESS_LIGHT_COLOR', group: 'STATUS_GROUP' },
-    { key: 'error', label: 'ERROR_COLOR', group: 'STATUS_GROUP' },
-    { key: 'errorLight', label: 'ERROR_LIGHT_COLOR', group: 'STATUS_GROUP' },
-    { key: 'warning', label: 'WARNING_COLOR', group: 'STATUS_GROUP' },
-    { key: 'warningLight', label: 'WARNING_LIGHT_COLOR', group: 'STATUS_GROUP' },
+    { key: 'success', label: 'SUCCESS_COLOR' },
+    { key: 'successLight', label: 'SUCCESS_LIGHT_COLOR' },
+    { key: 'error', label: 'ERROR_COLOR' },
+    { key: 'errorLight', label: 'ERROR_LIGHT_COLOR' },
+    { key: 'warning', label: 'WARNING_COLOR' },
+    { key: 'warningLight', label: 'WARNING_LIGHT_COLOR' },
 
-    { key: 'border', label: 'BORDER_COLOR', group: 'STRUCTURE_GROUP' },
-    { key: 'divider', label: 'DIVIDER_COLOR', group: 'STRUCTURE_GROUP' },
-    { key: 'disabled', label: 'DISABLED_COLOR', group: 'STRUCTURE_GROUP' },
-    { key: 'dragHandle', label: 'DRAG_HANDLE_COLOR', group: 'STRUCTURE_GROUP' },
-    { key: 'emptyStateBg', label: 'EMPTY_STATE_BACKGROUND_COLOR', group: 'STRUCTURE_GROUP' },
+    { key: 'border', label: 'BORDER_COLOR' },
+    { key: 'divider', label: 'DIVIDER_COLOR' },
+    { key: 'disabled', label: 'DISABLED_COLOR' },
+    { key: 'dragHandle', label: 'DRAG_HANDLE_COLOR' },
+    { key: 'emptyStateBg', label: 'EMPTY_STATE_BACKGROUND_COLOR' },
 
-    { key: 'buttonText', label: 'BUTTON_TEXT_COLOR', group: 'BUTTONS_GROUP' },
+    { key: 'buttonText', label: 'BUTTON_TEXT_COLOR' },
 
-    { key: 'selectedTabBg', label: 'SELECTED_TAB_BACKGROUND_COLOR', group: 'INTERACTIVE_GROUP' },
-    { key: 'activeBg', label: 'ACTIVE_BACKGROUND_COLOR', group: 'INTERACTIVE_GROUP' },
+    { key: 'selectedTabBg', label: 'SELECTED_TAB_BACKGROUND_COLOR' },
+    { key: 'activeBg', label: 'ACTIVE_BACKGROUND_COLOR' },
 
-    { key: 'headerStart', label: 'HEADER_START_COLOR', group: 'HEADER_GRADIENT_GROUP' },
-    { key: 'headerMid', label: 'HEADER_MIDDLE_COLOR', group: 'HEADER_GRADIENT_GROUP' },
-    { key: 'headerEnd', label: 'HEADER_END_COLOR', group: 'HEADER_GRADIENT_GROUP' },
+    { key: 'headerStart', label: 'HEADER_START_COLOR' },
+    { key: 'headerMid', label: 'HEADER_MIDDLE_COLOR' },
+    { key: 'headerEnd', label: 'HEADER_END_COLOR' },
   ];
 
-  presets: AppThemeColors[] = [
+  /** Starting points: only their colors are applied, the theme keeps its name and logo. */
+  readonly presets: AppThemeColors[] = [
+    this.createDefaultTheme(),
     {
-      name: 'FitBudd',
-      active: false,
-
-      primary: '#39AEEF',
-      secondary: '#070D12',
-
-      background: '#F5F6FA',
-      surface: '#FFFFFF',
-      card: '#FFFFFF',
-      cardSurface: '#F8F8F8',
-
-      textPrimary: '#111827',
-      textSecondary: '#6B7280',
-      textHint: '#9CA3AF',
-
-      success: '#22C55E',
-      successLight: '#EAF8F0',
-      error: '#EF4444',
-      errorLight: '#FEE2E2',
-      warning: '#F59E0B',
-      warningLight: '#FFF3E0',
-
-      border: '#E5E7EB',
-      divider: '#EEEEEE',
-      disabled: '#BDBDBD',
-      dragHandle: '#D1D5DB',
-      emptyStateBg: '#F9FAFB',
-
-      buttonText: '#FFFFFF',
-
-      selectedTabBg: '#EAF8FF',
-      activeBg: '#0D1B2A',
-
-      headerStart: '#071018',
-      headerMid: '#0B151E',
-      headerEnd: '#101820',
-    },
-    {
+      ...this.createDefaultTheme(),
       name: 'Oceanic Aura',
-      active: false,
 
       primary: '#2563EB',
       secondary: '#1E40AF',
@@ -196,8 +196,8 @@ export class ThemeColorsComponent implements OnInit {
       headerEnd: '#3B82F6',
     },
     {
+      ...this.createDefaultTheme(),
       name: 'Aqua Oasis',
-      active: false,
 
       primary: '#06B6D4',
       secondary: '#0891B2',
@@ -234,8 +234,8 @@ export class ThemeColorsComponent implements OnInit {
       headerEnd: '#22D3EE',
     },
     {
+      ...this.createDefaultTheme(),
       name: 'Noir Elegant',
-      active: false,
 
       primary: '#111827',
       secondary: '#000000',
@@ -273,232 +273,192 @@ export class ThemeColorsComponent implements OnInit {
     },
   ];
 
+  private readonly subscriptions = new Subscription();
+  private stageObserver?: ResizeObserver;
+  private successTimer?: ReturnType<typeof setTimeout>;
+  private previewWatchdog?: ReturnType<typeof setTimeout>;
+
   constructor(
     private themeService: AppThemeColorsService,
     private sanitizer: DomSanitizer,
     private translate: TranslateService,
-    private subscriptionState: CoachSubscriptionStateService
+    private subscriptionState: CoachSubscriptionStateService,
+    private host: ElementRef<HTMLElement>,
+    private zone: NgZone
   ) {
-    this.flutterPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
-      '/assets/mobile-preview/index.html'
-    );
+    this.flutterPreviewUrl = this.previewSource();
   }
-
-  /** SUB-27/29: the mobile theme is a paid feature. Visible, but nothing can be changed during the trial. */
-  brandingLocked = false;
 
   ngOnInit(): void {
-    this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked));
-    this.groupedControls = this.buildGroupedControls();
-    this.loadThemes(true);
+    this.subscriptions.add(
+      this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked))
+    );
+    // The preview follows the language of the page.
+    this.subscriptions.add(this.translate.onLangChange.subscribe(() => this.sendThemeToFlutter()));
+    window.addEventListener('message', this.onWindowMessage);
+    this.loadTheme(true);
   }
 
-  goBack(): void { window.history.back(); }
+  ngAfterViewInit(): void {
+    const stage = this.previewStage?.nativeElement;
+    if (!stage || typeof ResizeObserver === 'undefined') return;
+    // The phone keeps its 360×672 logical size and is scaled to the room left by the title and the label (the first
+    // version computed this scale in CSS with a division of lengths, which is invalid: the phone was never scaled and
+    // its bottom was cut off on a laptop screen).
+    this.stageObserver = new ResizeObserver(() => this.fitPhone(stage));
+    this.stageObserver.observe(stage);
+    this.fitPhone(stage);
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+    this.stageObserver?.disconnect();
+    window.removeEventListener('message', this.onWindowMessage);
+    if (this.successTimer) clearTimeout(this.successTimer);
+    if (this.previewWatchdog) clearTimeout(this.previewWatchdog);
+  }
+
+  goBack(): void {
+    window.history.back();
+  }
+
+  // --- sections ------------------------------------------------------------------------------------------------------
+
+  get isColorSection(): boolean {
+    return this.activeColorSection !== 'branding' && this.activeColorSection !== 'templates';
+  }
 
   get visibleControls(): ColorControl[] {
-    if (this.activeColorSection === 'templates' || this.activeColorSection === 'branding') {
-      return [];
-    }
-
-    if (this.activeColorSection === 'brand') {
-      return this.controls.filter((c) =>
-        ['primary', 'secondary', 'buttonText'].includes(c.key)
-      );
-    }
-
-    if (this.activeColorSection === 'background') {
-      return this.controls.filter((c) =>
-        [
-          'background',
-          'surface',
-          'card',
-          'cardSurface',
-          'border',
-          'divider',
-          'emptyStateBg',
-        ].includes(c.key)
-      );
-    }
-
-    if (this.activeColorSection === 'text') {
-      return this.controls.filter((c) =>
-        ['textPrimary', 'textSecondary', 'textHint', 'disabled'].includes(c.key)
-      );
-    }
-
-    if (this.activeColorSection === 'status') {
-      return this.controls.filter((c) =>
-        [
-          'success',
-          'successLight',
-          'error',
-          'errorLight',
-          'warning',
-          'warningLight',
-        ].includes(c.key)
-      );
-    }
-
-    return this.controls.filter((c) =>
-      [
-        'selectedTabBg',
-        'activeBg',
-        'dragHandle',
-        'headerStart',
-        'headerMid',
-        'headerEnd',
-      ].includes(c.key)
-    );
+    if (!this.isColorSection) return [];
+    const keys = SECTION_COLORS[this.activeColorSection as ColorSection];
+    return this.controls.filter((control) => keys.includes(control.key));
   }
+
+  getSectionTitle(): string {
+    return SECTION_TITLES[this.activeColorSection];
+  }
+
+  // --- preview -------------------------------------------------------------------------------------------------------
 
   onFlutterIframeLoaded(): void {
-    this.iframeReady = true;
-
-    setTimeout(() => {
-      this.sendThemeToFlutter();
-    }, 800);
+    // The engine is not listening yet when the document loads; the preview says when it is (YOCOACH_PREVIEW_READY).
+    // This send only covers a page that does not post the ready message.
+    setTimeout(() => this.sendThemeToFlutter(), 1500);
+    if (this.previewWatchdog) clearTimeout(this.previewWatchdog);
+    this.previewWatchdog = setTimeout(() => {
+      if (!this.previewReady) this.zone.run(() => (this.previewStalled = true));
+    }, PREVIEW_READY_TIMEOUT_MS);
   }
 
+  /** Loads the preview again (a build that was running, a browser that kept an old copy). */
+  reloadPreview(): void {
+    this.previewReady = false;
+    this.previewStalled = false;
+    this.flutterPreviewUrl = this.previewSource(Date.now());
+  }
+
+  private previewSource(cacheKey?: number): SafeResourceUrl {
+    const url = cacheKey ? `/assets/mobile-preview/index.html?r=${cacheKey}` : '/assets/mobile-preview/index.html';
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  private readonly onWindowMessage = (event: MessageEvent): void => {
+    const frame = this.flutterPreview?.nativeElement;
+    if (!frame || event.source !== frame.contentWindow) return;
+    let data: any = event.data;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch {
+        return;
+      }
+    }
+    if (data?.type === PREVIEW_READY_MESSAGE) {
+      this.zone.run(() => {
+        this.previewReady = true;
+        this.previewStalled = false;
+      });
+      if (this.previewWatchdog) clearTimeout(this.previewWatchdog);
+      this.sendThemeToFlutter();
+    }
+  };
+
   private sendThemeToFlutter(): void {
-    if (!this.iframeReady) return;
-    if (!this.flutterPreview?.nativeElement?.contentWindow) return;
-    if (!this.selectedTheme) return;
+    const target = this.flutterPreview?.nativeElement?.contentWindow;
+    if (!target || !this.selectedTheme) return;
 
     const previewTheme = {
       ...this.selectedTheme,
       mobileLogoUrl: this.getLogoPreviewUrl(this.selectedTheme.mobileLogoUrl),
+      lang: this.translate.currentLang === 'en' ? 'en' : 'fr',
     };
 
-    this.flutterPreview.nativeElement.contentWindow.postMessage(
-      JSON.stringify({
-        type: 'YOCOACH_THEME_UPDATE',
-        theme: previewTheme,
-      }),
-      '*'
-    );
+    target.postMessage(JSON.stringify({ type: PREVIEW_THEME_MESSAGE, theme: previewTheme }), window.location.origin);
   }
 
-  getLogoPreviewUrl(url?: string): string {
-    if (!url) return '';
+  private fitPhone(stage: HTMLElement): void {
+    const width = stage.clientWidth;
+    const height = stage.clientHeight;
+    if (width <= 0) return;
+    const scale = Math.min(1, width / PHONE_WIDTH, height > 0 ? height / PHONE_HEIGHT : 1);
+    this.host.nativeElement.style.setProperty('--phone-scale', (Math.floor(scale * 1000) / 1000).toString());
+  }
 
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
+  /** The API answers with a signed URL; a relative one (older theme, signing failure) is completed with the API base. */
+  getLogoPreviewUrl(url?: string): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    if (value.startsWith('http://') || value.startsWith('https://')) return value;
 
     const apiBase = environment.baseApiUrl.replace(/\/$/, '');
-
-    if (url.startsWith('/')) {
-      return `${apiBase}${url}`;
-    }
-
-    return `${apiBase}/${url}`;
+    return value.startsWith('/') ? `${apiBase}${value}` : `${apiBase}/${value}`;
   }
 
+  // --- loading -------------------------------------------------------------------------------------------------------
+
   /**
-   * The active theme and the coach's themes are asked at the same time, without the full-screen loader.
-   * fromSnapshot: the themes of the last visit are shown at once, then replaced by the fresh answer
-   * (unless the coach already changed something in the meantime).
+   * The theme the clients' app shows for this coach: their own, or the platform theme while they have none (saving it
+   * then creates their own copy). fromSnapshot: the theme of the last visit is shown at once, then replaced by the
+   * fresh answer unless the coach already changed something.
    */
-  loadThemes(fromSnapshot = false): void {
+  loadTheme(fromSnapshot = false): void {
     this.error = null;
     if (fromSnapshot && this.themeService.currentSnapshot) {
-      this.applyThemes(this.themeService.currentSnapshot, this.themeService.listSnapshot, null);
+      this.showTheme(this.themeService.currentSnapshot);
     }
     const shown = JSON.stringify(this.selectedTheme);
     this.loading = true;
 
-    forkJoin({
-      current: this.themeService.getCurrent(true).pipe(
-        map((theme) => ({ theme, failure: null as any })),
-        catchError((failure) => of({ theme: null as AppThemeColors | null, failure }))
-      ),
-      list: this.themeService.getAll(0, 50, true).pipe(catchError(() => of(null))),
-    })
+    this.themeService
+      .getCurrent(true)
       .pipe(finalize(() => (this.loading = false)))
-      .subscribe(({ current, list }) => {
-        const edited = JSON.stringify(this.selectedTheme) !== shown;
-        const kept = this.selectedTheme;
-        this.applyThemes(current.theme, list, current.failure);
-        if (edited) {
-          this.selectedTheme = kept;
+      .subscribe({
+        next: (theme) => {
+          if (JSON.stringify(this.selectedTheme) === shown) this.showTheme(theme);
+        },
+        error: (failure) => {
+          if (failure?.status === 404) {
+            this.selectedTheme = this.createDefaultTheme();
+            this.selectedPreset = this.presets[0].name;
+            this.error = this.translate.instant('NO_THEME_FOUND_HINT');
+          } else {
+            this.error = this.extractError(failure);
+          }
           this.sendThemeToFlutter();
-        }
+        },
       });
   }
 
-  private applyThemes(
-    current: AppThemeColors | null,
-    list: AppThemeColorsPage | AppThemeColors[] | null,
-    failure: any
-  ): void {
-    const content = !list ? [] : Array.isArray(list) ? list : list.content ?? [];
-    const themes = content.map((theme) => this.normalizeTheme(theme));
-
-    if (current) {
-      this.selectedTheme = this.normalizeTheme(current);
-      this.themes = themes.length ? themes : [this.selectedTheme];
-      const active = this.themes.find((theme) => theme.active);
-      if (active) this.selectedTheme = { ...active };
-      setTimeout(() => this.sendThemeToFlutter(), 500);
-    } else if (failure?.status === 404) {
-      this.themes = themes;
-      if (themes.length) {
-        this.selectedTheme = { ...themes[0] };
-        this.error = this.translate.instant('NO_ACTIVE_THEME_HINT');
-      } else {
-        this.selectedTheme = this.createDefaultTheme();
-        this.error = this.translate.instant('NO_THEME_FOUND_HINT');
-      }
-    } else {
-      this.error = this.extractError(failure);
-      this.selectedTheme = this.createDefaultTheme();
-    }
+  private showTheme(theme: AppThemeColors): void {
+    this.selectedTheme = this.normalizeTheme(theme);
+    this.selectedPreset = this.presets.find((preset) => this.sameColors(preset, this.selectedTheme))?.name ?? '';
     this.sendThemeToFlutter();
   }
 
-  selectTheme(theme: AppThemeColors): void {
-    this.selectedTheme = { ...theme };
-    this.success = null;
-    this.error = null;
-    this.sendThemeToFlutter();
-  }
+  // --- saving --------------------------------------------------------------------------------------------------------
 
-  createNewTheme(): void {
-    this.selectedTheme = {
-      ...this.createDefaultTheme(),
-      name: 'New Theme',
-      active: false,
-      id: undefined,
-      createdBy: undefined,
-      updatedBy: undefined,
-    };
-
-    this.success = null;
-    this.error = null;
-    this.selectedPreset = '';
-
-    this.sendThemeToFlutter();
-  }
-
-  duplicateSelectedTheme(): void {
-    this.selectedTheme = {
-      ...this.selectedTheme,
-      id: undefined,
-      name: `${this.selectedTheme.name || 'Theme'} Copy`,
-      active: false,
-      createdBy: undefined,
-      updatedBy: undefined,
-    };
-
-    this.success = null;
-    this.error = null;
-    this.selectedPreset = '';
-
-    this.sendThemeToFlutter();
-  }
-
-  saveTheme(): void {
-    if (this.brandingLocked) return;
+  saveAndUseTheme(): void {
+    if (this.brandingLocked || this.saving) return;
     this.error = null;
     this.success = null;
     this.normalizeAllColors();
@@ -508,10 +468,7 @@ export class ThemeColorsComponent implements OnInit {
       return;
     }
 
-    const invalid = this.controls.find(
-      (control) => !this.isValidHex(this.getColor(control.key))
-    );
-
+    const invalid = this.controls.find((control) => !this.isValidHex(this.getColor(control.key)));
     if (invalid) {
       this.error = this.translate.instant('INVALID_HEX_COLOR', { field: this.translate.instant(invalid.label) });
       return;
@@ -519,100 +476,36 @@ export class ThemeColorsComponent implements OnInit {
 
     this.saving = true;
 
-    const payload: AppThemeColors = {
-      ...this.selectedTheme,
-      name: this.selectedTheme.name.trim(),
-    };
-
-    const request$ = payload.id
-      ? this.themeService.update(payload.id, payload)
-      : this.themeService.create(payload);
+    // active: the API makes it the coach's current theme (and the coach's own copy when it was a platform theme).
+    const payload: AppThemeColors = { ...this.selectedTheme, name: this.selectedTheme.name.trim(), active: true };
+    const request$ = payload.id ? this.themeService.update(payload.id, payload) : this.themeService.create(payload);
 
     request$.pipe(finalize(() => (this.saving = false))).subscribe({
-      next: (theme) => {
-        this.selectedTheme = this.normalizeTheme(theme);
-        this.success = this.translate.instant('THEME_SAVED_SUCCESS');
-        this.sendThemeToFlutter();
-        this.loadThemes();
+      next: (saved) => {
+        this.themeService.currentSnapshot = saved;
+        this.showTheme(saved);
+        this.flash(this.translate.instant('THEME_SAVED_APPLIED'));
       },
-      error: (err) => {
-        this.error = this.extractError(err);
-      },
+      error: (err) => (this.error = this.extractError(err)),
     });
   }
 
-  activateTheme(theme: AppThemeColors = this.selectedTheme): void {
-    if (!theme.id) {
-      this.error = this.translate.instant('SAVE_THEME_BEFORE_ACTIVATING');
-      return;
-    }
-
-    this.saving = true;
-    this.error = null;
-    this.success = null;
-
-    this.themeService
-      .activate(theme.id)
-      .pipe(finalize(() => (this.saving = false)))
-      .subscribe({
-        next: (activated) => {
-          this.selectedTheme = this.normalizeTheme(activated);
-          this.success = this.translate.instant('THEME_ACTIVATED_SUCCESS');
-          this.sendThemeToFlutter();
-          this.loadThemes();
-        },
-        error: (err) => {
-          this.error = this.extractError(err);
-        },
-      });
-  }
-
-  deleteTheme(theme: AppThemeColors): void {
-    if (!theme.id) return;
-
-    if (theme.active) {
-      this.error = this.translate.instant('CANNOT_DELETE_ACTIVE_THEME');
-      return;
-    }
-
-    const confirmed = confirm(this.translate.instant('DELETE_THEME_CONFIRM', { name: theme.name }));
-    if (!confirmed) return;
-
-    this.loading = true;
-    this.error = null;
-    this.success = null;
-
-    this.themeService
-      .delete(theme.id)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: () => {
-          this.success = this.translate.instant('THEME_DELETED_SUCCESS');
-          this.loadThemes();
-        },
-        error: (err) => {
-          this.error = this.extractError(err);
-        },
-      });
-  }
+  // --- logo ----------------------------------------------------------------------------------------------------------
 
   onMobileLogoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-
+    input.value = ''; // the same file can be picked again after an error
     if (!file) return;
 
     const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-
     if (!allowedTypes.includes(file.type)) {
       this.error = this.translate.instant('LOGO_FILE_TYPES_ERROR');
       return;
     }
 
     const maxSizeMb = 2;
-    const maxSizeBytes = maxSizeMb * 1024 * 1024;
-
-    if (file.size > maxSizeBytes) {
+    if (file.size > maxSizeMb * 1024 * 1024) {
       this.error = this.translate.instant('LOGO_SIZE_ERROR', { size: maxSizeMb });
       return;
     }
@@ -621,147 +514,47 @@ export class ThemeColorsComponent implements OnInit {
     this.error = null;
     this.success = null;
 
-    this.themeService.uploadMobileLogo(file).subscribe({
-      next: (res) => {
-        this.selectedTheme = {
-          ...this.selectedTheme,
-          mobileLogoUrl: res.url,
-        };
-
-        this.uploadingLogo = false;
-        this.success = this.translate.instant('LOGO_UPLOADED_SUCCESS');
-        this.sendThemeToFlutter();
-      },
-      error: (err) => {
-        this.uploadingLogo = false;
-        this.error = this.extractError(err);
-      },
-    });
+    this.themeService
+      .uploadMobileLogo(file)
+      .pipe(finalize(() => (this.uploadingLogo = false)))
+      .subscribe({
+        next: (res) => {
+          this.selectedTheme = {
+            ...this.selectedTheme,
+            mobileLogoUrl: res.url,
+            mobileLogoPath: res.objectPath ?? this.selectedTheme.mobileLogoPath,
+          };
+          this.flash(this.translate.instant('LOGO_UPLOADED_SUCCESS'));
+          this.sendThemeToFlutter();
+        },
+        error: (err) => (this.error = this.extractError(err)),
+      });
   }
 
   removeMobileLogo(): void {
-    this.selectedTheme = {
-      ...this.selectedTheme,
-      mobileLogoUrl: undefined,
-    };
-
-    this.success = this.translate.instant('LOGO_REMOVED_SUCCESS');
+    this.selectedTheme = { ...this.selectedTheme, mobileLogoUrl: undefined, mobileLogoPath: undefined };
+    this.flash(this.translate.instant('LOGO_REMOVED_SUCCESS'));
     this.error = null;
-
     this.sendThemeToFlutter();
   }
 
+  // --- colors --------------------------------------------------------------------------------------------------------
+
   applyPreset(preset: AppThemeColors): void {
     this.selectedPreset = preset.name;
-
-    this.selectedTheme = {
-      ...this.selectedTheme,
-      ...preset,
-      id: this.selectedTheme.id,
-      active: this.selectedTheme.active,
-      createdBy: this.selectedTheme.createdBy,
-      updatedBy: this.selectedTheme.updatedBy,
-      mobileLogoUrl: this.selectedTheme.mobileLogoUrl,
-    };
-
+    this.selectedTheme = this.withColorsOf(this.selectedTheme, preset);
+    this.success = null;
+    this.error = null;
     this.sendThemeToFlutter();
   }
 
   resetToDefaultColors(): void {
-    const currentId = this.selectedTheme.id;
-    const currentActive = this.selectedTheme.active;
-    const currentName = this.selectedTheme.name || 'YoCoach Default Blue';
-
-    this.selectedTheme = {
-      ...this.createDefaultTheme(),
-      id: currentId,
-      active: currentActive,
-      name: currentName,
-      createdBy: this.selectedTheme.createdBy,
-      updatedBy: this.selectedTheme.updatedBy,
-    };
-
-    this.selectedPreset = 'FitBudd';
-    this.success = this.translate.instant('DEFAULT_COLORS_RESTORED');
+    const defaults = this.presets[0];
+    this.selectedPreset = defaults.name;
+    this.selectedTheme = this.withColorsOf(this.selectedTheme, defaults);
+    this.flash(this.translate.instant('DEFAULT_COLORS_RESTORED'));
     this.error = null;
-
     this.sendThemeToFlutter();
-  }
-
-  saveAndUseTheme(): void {
-    if (this.brandingLocked) return;
-    this.error = null;
-    this.success = null;
-    this.normalizeAllColors();
-
-    if (!this.selectedTheme.name?.trim()) {
-      this.error = this.translate.instant('THEME_NAME_REQUIRED');
-      return;
-    }
-
-    const invalid = this.controls.find(
-      (control) => !this.isValidHex(this.getColor(control.key))
-    );
-
-    if (invalid) {
-      this.error = this.translate.instant('INVALID_HEX_COLOR', { field: this.translate.instant(invalid.label) });
-      return;
-    }
-
-    this.saving = true;
-
-    const payload: AppThemeColors = {
-      ...this.selectedTheme,
-      name: this.selectedTheme.name.trim(),
-      active: true,
-    };
-
-    const request$ = payload.id
-      ? this.themeService.update(payload.id, payload)
-      : this.themeService.create(payload);
-
-    request$.subscribe({
-      next: (savedTheme) => {
-        if (!savedTheme.id) {
-          this.saving = false;
-          this.selectedTheme = this.normalizeTheme(savedTheme);
-          this.success = this.translate.instant('THEME_SAVED_ID_MISSING');
-          this.sendThemeToFlutter();
-          return;
-        }
-
-        this.themeService
-          .activate(savedTheme.id)
-          .pipe(finalize(() => (this.saving = false)))
-          .subscribe({
-            next: (activated) => {
-              this.selectedTheme = this.normalizeTheme(activated);
-              this.success = this.translate.instant('THEME_SAVED_APPLIED');
-              this.sendThemeToFlutter();
-              this.loadThemes();
-            },
-            error: (err) => {
-              this.error = this.extractError(err);
-              this.selectedTheme = this.normalizeTheme(savedTheme);
-              this.sendThemeToFlutter();
-            },
-          });
-      },
-      error: (err) => {
-        this.saving = false;
-        this.error = this.extractError(err);
-      },
-    });
-  }
-
-  getSectionTitle(): string {
-    if (this.activeColorSection === 'branding') return 'MOBILE_LOGO';
-    if (this.activeColorSection === 'templates') return 'THEME_TEMPLATES';
-    if (this.activeColorSection === 'brand') return 'BRAND_COLORS';
-    if (this.activeColorSection === 'background') return 'BACKGROUND_AND_CARDS';
-    if (this.activeColorSection === 'text') return 'TEXT_COLORS';
-    if (this.activeColorSection === 'status') return 'STATUS_COLORS';
-    return 'NAVIGATION_AND_HEADER';
   }
 
   getColor(key: ColorField): string {
@@ -769,53 +562,51 @@ export class ThemeColorsComponent implements OnInit {
   }
 
   setColor(key: ColorField, value: string): void {
-    this.selectedTheme = {
-      ...this.selectedTheme,
-      [key]: value,
-    };
-
-    this.selectedPreset = '';
+    this.selectedTheme = { ...this.selectedTheme, [key]: (value || '').toUpperCase() };
+    this.selectedPreset = this.presets.find((preset) => this.sameColors(preset, this.selectedTheme))?.name ?? '';
     this.sendThemeToFlutter();
+  }
+
+  /** What the color picker can show: a 6-digit color (an 8-digit one keeps its alpha in the text field only). */
+  pickerValue(key: ColorField): string {
+    const value = this.getColor(key).trim();
+    return /^#[0-9A-Fa-f]{6}$/.test(value) ? value : /^#[0-9A-Fa-f]{8}$/.test(value) ? `#${value.slice(3)}` : '#000000';
   }
 
   normalizeHex(key: ColorField): void {
-    const normalized = this.normalizeHexValue(this.getColor(key));
-
-    this.selectedTheme = {
-      ...this.selectedTheme,
-      [key]: normalized,
-    };
-
+    this.selectedTheme = { ...this.selectedTheme, [key]: this.normalizeHexValue(this.getColor(key)) };
     this.sendThemeToFlutter();
-  }
-
-  trackByThemeId(_: number, theme: AppThemeColors): string {
-    return theme.id ?? theme.name;
   }
 
   trackByControl(_: number, control: ColorControl): string {
     return control.key;
   }
 
-  trackByGroup(_: number, group: { group: string; controls: ColorControl[] }): string {
-    return group.group;
+  trackByPreset(_: number, preset: AppThemeColors): string {
+    return preset.name;
   }
 
-  private buildGroupedControls(): { group: string; controls: ColorControl[] }[] {
-    const groups: { group: string; controls: ColorControl[] }[] = [];
+  // --- helpers -------------------------------------------------------------------------------------------------------
 
+  /** The theme with the colors of another one; name, logo and identity are kept. */
+  private withColorsOf(theme: AppThemeColors, colors: AppThemeColors): AppThemeColors {
+    const next: AppThemeColors = { ...theme };
     for (const control of this.controls) {
-      let group = groups.find((item) => item.group === control.group);
-
-      if (!group) {
-        group = { group: control.group, controls: [] };
-        groups.push(group);
-      }
-
-      group.controls.push(control);
+      next[control.key] = colors[control.key];
     }
+    return next;
+  }
 
-    return groups;
+  private sameColors(a: AppThemeColors, b: AppThemeColors): boolean {
+    return this.controls.every(
+      (control) => (a[control.key] || '').toUpperCase() === (b[control.key] || '').toUpperCase()
+    );
+  }
+
+  private flash(message: string): void {
+    this.success = message;
+    if (this.successTimer) clearTimeout(this.successTimer);
+    this.successTimer = setTimeout(() => this.zone.run(() => (this.success = null)), 5000);
   }
 
   private createDefaultTheme(): AppThemeColors {
@@ -824,6 +615,7 @@ export class ThemeColorsComponent implements OnInit {
       active: false,
 
       mobileLogoUrl: undefined,
+      mobileLogoPath: undefined,
 
       primary: '#39AEEF',
       secondary: '#070D12',
@@ -862,16 +654,10 @@ export class ThemeColorsComponent implements OnInit {
   }
 
   private normalizeAllColors(): void {
-    const normalizedTheme: AppThemeColors = {
-      ...this.selectedTheme,
-    };
-
+    const normalizedTheme: AppThemeColors = { ...this.selectedTheme };
     for (const control of this.controls) {
-      normalizedTheme[control.key] = this.normalizeHexValue(
-        normalizedTheme[control.key]
-      );
+      normalizedTheme[control.key] = this.normalizeHexValue(normalizedTheme[control.key]);
     }
-
     this.selectedTheme = normalizedTheme;
     this.sendThemeToFlutter();
   }
@@ -887,31 +673,23 @@ export class ThemeColorsComponent implements OnInit {
 
   private normalizeHexValue(value: string): string {
     let next = (value || '').trim().toUpperCase();
-
     if (!next) return '#000000';
     if (!next.startsWith('#')) next = `#${next}`;
-
     return next;
   }
 
   private isValidHex(value: string | undefined): boolean {
     if (!value) return false;
-
-    return (
-      /^#?[0-9A-Fa-f]{6}$/.test(value.trim()) ||
-      /^#?[0-9A-Fa-f]{8}$/.test(value.trim())
-    );
+    return /^#?[0-9A-Fa-f]{6}$/.test(value.trim()) || /^#?[0-9A-Fa-f]{8}$/.test(value.trim());
   }
 
   private extractError(error: any): string {
     if (error?.status === 403) {
       return this.translate.instant('THEME_ACCESS_DENIED');
     }
-
     if (error?.status === 404) {
       return this.translate.instant('NO_ACTIVE_THEME_BACKEND');
     }
-
     return (
       error?.error?.message ||
       error?.error?.detail ||

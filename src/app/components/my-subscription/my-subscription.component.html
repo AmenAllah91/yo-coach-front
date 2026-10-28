@@ -31,6 +31,7 @@
       </p>
       <p *ngIf="isReadOnly" class="read-only-note">{{ 'NOTICE_READ_ONLY_TEXT' | translate }}</p>
       <p *ngIf="state.planArchived" class="muted archived-note">{{ 'MY_SUB_PLAN_ARCHIVED' | translate: { plan: state.planName } }}</p>
+      <p *ngIf="pendingChange as change" class="muted pending-change">{{ 'CHANGE_PLAN_SCHEDULED_TEXT' | translate: change }}</p>
       <p *ngIf="canChangePlan && state.suggestedDowngrade as d" class="muted">
         {{ 'MY_SUB_SUGGESTED_DOWNGRADE' | translate: { plan: d.planName } }}
         <button type="button" class="link" (click)="changePlan(d.planId)">{{ 'MY_SUB_SEE_PLAN' | translate }}</button>

@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Food, FoodServing } from '@shared/models/MealPlan';
-import { nutritionFoodValidationMessages } from '@shared/models/nutrition-publication';
+import { nutritionFoodValidationKey } from '@shared/models/nutrition-publication';
 import { NutritionService } from 'app/service/nutrition.service';
 import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
@@ -129,7 +129,8 @@ export class AddFoodModalComponent implements OnInit, OnDestroy {
     if (!this.selectedFood) return;
     const line = this.serving.line(this.translate.instant('FOOD_UNIT_PIECE'));
     const food: AddedFood = { name: this.selectedFood.name, ...line, foodRef: this.selectedFood };
-    const message = nutritionFoodValidationMessages(food as Partial<Food>, { includeNutritionValues: false })[0];
+    const messageKey = nutritionFoodValidationKey(food as Partial<Food>);
+    const message = messageKey ? this.translate.instant(messageKey) : '';
     if (message) {
       this.validationMessage = message;
       return;

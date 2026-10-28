@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -71,6 +71,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     private submissionsApi: SubmissionsApiService,
     private translate: TranslateService,
     private route: ActivatedRoute,
+    private router: Router,
     private theme: ClientThemeService,
   ) {}
 
@@ -170,6 +171,13 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   get pending(): FormAssignment[] { return this.assignments.filter(item => item.status === 'ASSIGNED' || item.status === 'OPENED'); }
   get submitted(): FormAssignment[] { return this.assignments.filter(item => SUBMITTED.includes(item.status)); }
 
+  /** A coach comment the client has not opened yet ("New" badge; never in the coach's preview). */
+  hasNewFeedback(item: FormAssignment | null): boolean {
+    return !this.previewMode && !!item && !!String(item.coachFeedback || '').trim() && !item.feedbackSeenAt;
+  }
+
+  get newFeedbackCount(): number { return this.submitted.filter(item => this.hasNewFeedback(item)).length; }
+
   private daysUntil(value: string | undefined | null): number | null {
     const due = planDate(value);
     if (!due) return null;
@@ -198,6 +206,9 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   /** Due / submitted chip of a card (mobile _assignmentCard). */
   chip(item: FormAssignment, submitted: boolean): { label: string; color: string; icon?: string } | null {
     if (submitted) {
+      if (String(item.coachFeedback || '').trim()) {
+        return { label: this.t('Coach replied', 'Le coach a répondu'), color: 'var(--yc-primary)', icon: 'message-circle' };
+      }
       return { label: item.status === 'REVIEWED' ? this.t('Reviewed', 'Revu') : this.t('Submitted', 'Soumis'), color: '#1E8E4E', icon: 'check' };
     }
     return this.dueChip(item);
@@ -248,6 +259,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     this.submitError = '';
     this.opening = true;
     if (submitted) this.sheetOpen = true; else { this.view = 'form'; window.scrollTo({ top: 0 }); }
+    if (submitted && this.hasNewFeedback(item)) this.markFeedbackSeen(item);
 
     const assignment$ = this.previewMode ? of(item) : this.assignmentsApi.getById(item.id).pipe(catchError(() => of(item)));
     assignment$.pipe(takeUntil(this.destroy$)).subscribe(current => {
@@ -279,6 +291,13 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   retryOpen(): void { if (this.selected) this.open(this.selected); }
+
+  /** The comment is read once the check-in is opened: the badge goes at once, the server keeps the date. */
+  private markFeedbackSeen(item: FormAssignment): void {
+    const seenAt = new Date().toISOString();
+    this.updateListed({ ...item, feedbackSeenAt: seenAt });
+    this.assignmentsApi.markFeedbackSeen(item.id).pipe(takeUntil(this.destroy$)).subscribe({ error: () => {} });
+  }
 
   private updateListed(item: FormAssignment): void {
     this.assignments = this.assignments.map(value => value.id === item.id ? { ...value, ...item } : value);
@@ -322,6 +341,32 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   get minutes(): number { return Math.min(Math.max(Math.ceil(this.questions.length * 0.5), 1), 60); }
   get ownerName(): string { return String((this.selected as any)?.ownerName || (this.selected as any)?.coachName || 'Coach'); }
   get ownerInitials(): string { return initials(this.ownerName); }
+  get coachName(): string {
+    const name = String(this.selected?.coachName || (this.selected as any)?.ownerName || '').trim();
+    return name || this.t('Your coach', 'Votre coach');
+  }
+
+  get coachNameInitials(): string { return initials(this.coachName); }
+
+  get feedbackDate(): string {
+    const date = this.selected?.reviewedAt ? new Date(this.selected.reviewedAt) : null;
+    return date && !Number.isNaN(date.getTime())
+      ? new Intl.DateTimeFormat(this.locale, { day: 'numeric', month: 'short' }).format(date) : '';
+  }
+
+  /** Reply: the coach conversation opens with a message that says which check-in it is about. */
+  replyToCoach(): void {
+    const date = this.selected?.submittedAt ? new Date(this.selected.submittedAt) : null;
+    const when = date && !Number.isNaN(date.getTime())
+      ? new Intl.DateTimeFormat(this.locale, { day: 'numeric', month: 'short' }).format(date) : '';
+    const name = this.title(this.selected);
+    const draft = this.fr
+      ? `À propos de mon check-in « ${name} »${when ? ' du ' + when : ''} : `
+      : `About my check-in "${name}"${when ? ' of ' + when : ''}: `;
+    this.closeSheet();
+    void this.router.navigate(['/chat'], { queryParams: { coach: 1, draft } });
+  }
+
   get coachFeedback(): string {
     const item: any = this.selected || {};
     return String(item.coachFeedback || item.feedback || item.review?.feedback || item.submission?.coachFeedback || '').trim();

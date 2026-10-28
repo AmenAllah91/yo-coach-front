@@ -1370,3 +1370,88 @@
     width: 86px;
   }
 }
+
+// Planned vs done: the coach's plan stays in sight under each set, a value the client changed stands out.
+.set-row {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.set-planned {
+  flex-basis: 100%;
+  padding: 0 0 2px 86px;
+  font-size: 12px;
+  color: var(--yc-text-secondary);
+}
+
+.set-field.changed {
+  color: var(--yc-primary);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1.4px color-mix(in srgb, var(--yc-primary) 45%, transparent);
+}
+
+.set-field::placeholder {
+  color: var(--yc-text-hint);
+  font-weight: 500;
+}
+
+.planned-row {
+  align-items: flex-start;
+
+  &__num {
+    margin-top: 2px;
+  }
+
+  > .round-status {
+    margin-top: 2px;
+  }
+
+  &__inputs {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    label {
+      position: relative;
+      width: 96px;
+      margin: 0;
+    }
+
+    .set-field {
+      height: 38px;
+      padding-right: 34px;
+      font-size: 14px;
+    }
+
+    small {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11.5px;
+      color: var(--yc-text-secondary);
+      pointer-events: none;
+    }
+  }
+
+  &__done {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--yc-success);
+
+    &.missed {
+      color: var(--yc-error);
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .set-planned {
+    padding-left: 72px;
+  }
+
+  .planned-row__inputs label {
+    width: 86px;
+  }
+}

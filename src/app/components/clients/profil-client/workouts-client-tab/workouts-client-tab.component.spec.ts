@@ -10,7 +10,7 @@ describe('WorkoutsClientTabComponent (client profile tab loading)', () => {
 
   function open(): WorkoutsClientTabComponent {
     const tab = TestBed.runInInjectionContext(() =>
-      new WorkoutsClientTabComponent(workoutService, {} as any, settings, { instant: (k: string) => k } as any));
+      new WorkoutsClientTabComponent(workoutService, {} as any, settings, { instant: (k: string) => k } as any, {} as any, {} as any));
     tab.clientId = 'client-1';
     tab.coachId = 'coach-1';
     tab.ngOnInit();
@@ -28,23 +28,25 @@ describe('WorkoutsClientTabComponent (client profile tab loading)', () => {
     };
   });
 
-  it('loads the programs once, right away, without the full-screen loader', () => {
+  // The programs list (ClientProgramsComponent) loads the programs itself: the tab only reacts to the coach settings.
+  it('does not load the programs itself: the list does, with the settings the profile already refreshed', () => {
     const tab = open();
 
-    expect(settings.loadConfig).not.toHaveBeenCalled(); // the profile already refreshed the settings
-    expect(workoutService.getWorkoutByCoachIdAndClient).toHaveBeenCalledTimes(2); // current + other programs
-    workoutService.getWorkoutByCoachIdAndClient.calls.allArgs().forEach((args: any[]) => expect(args[8]).toBeTrue());
-    expect(tab.loaded).toBeTrue();
+    expect(settings.loadConfig).not.toHaveBeenCalled();
+    expect(workoutService.getWorkoutByCoachIdAndClient).not.toHaveBeenCalled();
+    expect(tab.loaded).toBeFalse();
   });
 
-  it('loads again only when the file option changes', () => {
-    open();
+  it('reloads the list only when the file option changes', () => {
+    const tab = open();
+    const reload = spyOn(tab, 'getWorkOutPlanByCoachAndClient').and.callThrough();
+
     settings.configChanges$.next({});
-    expect(workoutService.getWorkoutByCoachIdAndClient).toHaveBeenCalledTimes(2);
+    expect(reload).not.toHaveBeenCalled();
 
     fileOption = false;
     settings.configChanges$.next({});
-    expect(workoutService.getWorkoutByCoachIdAndClient).toHaveBeenCalledTimes(4);
-    expect(workoutService.getWorkoutByCoachIdAndClient.calls.mostRecent().args[4]).toBe('APP');
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(tab.loaded).toBeTrue();
   });
 });

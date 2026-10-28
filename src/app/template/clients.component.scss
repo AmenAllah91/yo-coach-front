@@ -1498,63 +1498,145 @@
   height: 14px !important;
 }
 
-/* "Invited" tab: invitations not accepted yet */
+/* "Invited" tab: invitations not accepted yet.
+   Selectors are prefixed with .page-container to win over the generic client-table rules above
+   (fixed 42px actions column, hidden status on mobile). */
 .status-tabs .invited-tab span {
   background: #fef3c7;
   color: #92400e;
 }
 
-.clients-table.invited-table {
+.invitation-filters {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+
+  .invitation-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid #dce5ef;
+    border-radius: 999px;
+    background: #fff;
+    color: #50647a;
+    font-size: 13px;
+    cursor: pointer;
+
+    span {
+      min-width: 20px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    &.selected {
+      border-color: #43b4df;
+      background: #edf9fd;
+      color: #0b6f96;
+    }
+  }
+}
+
+.page-container .clients-table.invited-table {
   .table-header,
   .table-body .client-row {
-    grid-template-columns: 2fr 1fr 1fr 132px;
+    display: grid !important;
+    grid-template-columns: minmax(0, 2fr) 110px 120px 130px 130px !important;
+    column-gap: 16px !important;
+    align-items: center;
   }
+
+  .table-body .client-row { cursor: default; }
+
+  .col-client { padding: 0 !important; }
 
   .client-details h4 {
     margin: 0;
     overflow-wrap: anywhere;
   }
 
-  .col-status .status-badge {
-    &.pending { background: #fef3c7; color: #92400e; }
-    &.expired { background: #fee2e2; color: #991b1b; }
-    &.blocked { background: #ffedd5; color: #9a3412; }
+  .col-status {
+    display: flex !important;
+    min-width: 0;
   }
 
-  .invitation-actions {
-    display: flex;
+  /* Short label ("Pending"): never clipped. */
+  .col-status .status-badge {
+    flex-shrink: 0;
+    min-width: 0 !important;
+    justify-content: flex-start !important;
+    white-space: nowrap;
+
+    &.pending { border-color: #fde68a !important; background: #fef3c7 !important; color: #92400e !important; }
+    &.expired { border-color: #fecaca !important; background: #fee2e2 !important; color: #991b1b !important; }
+    &.blocked { border-color: #fed7aa !important; background: #ffedd5 !important; color: #9a3412 !important; }
+  }
+
+  /* "Sent on" column: hidden by the generic table rules below 1024px, kept here. */
+  .col-workouts { display: block !important; }
+
+  .table-body .col-expiry {
+    font-size: 13px;
+    color: #334155;
+    white-space: nowrap;
+
+    &.expired { color: #94a3b8; }
+  }
+
+  .col-actions.invitation-actions {
+    position: static !important;
+    transform: none !important;
+    display: flex !important;
     gap: 6px;
     justify-content: flex-end;
 
     .action-btn {
-      width: 36px;
-      height: 36px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      background: white;
+      width: 36px !important;
+      min-width: 36px !important;
+      height: 36px !important;
+      padding: 0 !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 8px !important;
+      background: #fff !important;
       cursor: pointer;
-      display: inline-flex;
+      display: inline-flex !important;
       align-items: center;
       justify-content: center;
-      color: #475569;
+      color: #475569 !important;
 
-      &:hover:not(:disabled) { background: #f8fafc; border-color: #bae6fd; }
+      &:hover:not(:disabled) { background: #f8fafc !important; border-color: #bae6fd !important; }
       &:disabled { opacity: 0.4; cursor: not-allowed; }
-      i-feather { width: 16px; height: 16px; }
+      i-feather { width: 16px !important; height: 16px !important; }
     }
   }
 }
 
-@media (max-width: 768px) {
-  .clients-table.invited-table .table-header { display: none; }
-  .clients-table.invited-table .table-body .client-row {
-    grid-template-columns: 1fr auto;
-    gap: 8px 12px;
-  }
-  .clients-table.invited-table .table-body .client-row .col-actions {
-    position: static;
-    transform: none;
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+/* Mobile: email + actions on the first line, status, expiry and date on the second. */
+@media (max-width: 900px) {
+  .page-container .clients-table.invited-table .table-header { display: none !important; }
+
+  .page-container .clients-table.invited-table .table-body .client-row {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas: "email email actions" "status expiry date";
+    row-gap: 10px !important;
+    column-gap: 12px !important;
+    min-height: 0;
+
+    .col-client { grid-area: email; width: auto; padding: 0 !important; }
+    .col-actions { grid-area: actions; }
+    .col-status { grid-area: status; display: flex !important; padding: 0 !important; }
+    .col-expiry { grid-area: expiry; font-size: 12px; }
+    .col-workouts {
+      grid-area: date;
+      display: block !important;
+      font-size: 12px;
+      color: #64748b;
+      text-align: right;
+      white-space: nowrap;
+    }
   }
 }

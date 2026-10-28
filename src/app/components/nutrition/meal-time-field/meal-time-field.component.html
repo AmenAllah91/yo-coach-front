@@ -1,0 +1,31 @@
+<button type="button" class="mtf__pill" [class.is-set]="hasTime" [class.is-open]="open" (click)="toggle()"
+        [attr.aria-expanded]="open" [attr.aria-label]="hasTime ? ('MEAL_TIME' | translate) + ' : ' + label(value) : null">
+  <i-feather name="clock"></i-feather>
+  <span *ngIf="hasTime; else addLabel" class="mtf__value">{{ label(value) }}</span>
+  <ng-template #addLabel>{{ 'ADD_MEAL_TIME' | translate }}</ng-template>
+  <i-feather *ngIf="hasTime" class="mtf__chevron" name="chevron-down"></i-feather>
+</button>
+
+<div *ngIf="open" class="mtf__panel" role="dialog" [attr.aria-label]="'MEAL_TIME' | translate"
+     [style.top.px]="panelTop" [style.left.px]="panelLeft">
+  <div class="mtf__panel-head">
+    <strong>{{ 'MEAL_TIME' | translate }}</strong>
+    <small>{{ 'MEAL_TIME_OPTIONAL' | translate }}</small>
+  </div>
+
+  <input #timeInput type="time" class="mtf__input" [(ngModel)]="draft" (keydown.enter)="commit()" step="300" />
+
+  <div class="mtf__presets">
+    <button *ngFor="let preset of presets" type="button" class="mtf__preset" [class.is-active]="draft === preset.time" (click)="pick(preset.time)">
+      <b>{{ label(preset.time) }}</b>
+      <span>{{ preset.label | translate }}</span>
+    </button>
+  </div>
+
+  <div class="mtf__actions">
+    <button *ngIf="hasTime" type="button" class="mtf__remove" (click)="remove()">
+      <i-feather name="trash-2"></i-feather>{{ 'REMOVE_MEAL_TIME' | translate }}
+    </button>
+    <button type="button" class="mtf__ok" (click)="commit()">{{ draft ? ('SAVE' | translate) : ('NO_MEAL_TIME' | translate) }}</button>
+  </div>
+</div>

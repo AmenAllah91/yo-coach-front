@@ -1,5 +1,15 @@
+import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
+import { nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
+import { ChangeDatesModalComponent } from '@shared/components/change-dates-modal/change-dates-modal.component';
+import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
+import { ClientPauseModalComponent } from '@shared/components/client-pause-modal/client-pause-modal.component';
+import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { ToastService } from 'app/service/toast.service';
+import { OverviewItem, canChangeDates, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { ClientProgramAction, ClientProgramsComponent } from '@shared/components/client-programs/client-programs.component';
+import { RemoveProgramConfirmComponent } from '@shared/components/remove-program-confirm/remove-program-confirm.component';
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -17,7 +27,7 @@ type NutritionSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' 
 @Component({
   selector: 'app-nutrition-client-tab',
   standalone: true,
-  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, ClientPlanEmptyComponent],
+  imports: [WriteActionDirective, ProgramDaysBadgeComponent, CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, ClientPlanEmptyComponent, ChangeDatesModalComponent, ProgramShiftModalComponent, ClientPauseModalComponent, ClientProgramsComponent, RemoveProgramConfirmComponent],
   templateUrl: './nutrition-client-tab.component.html',
   styleUrl: './nutrition-client-tab.component.scss',
 })
@@ -26,7 +36,15 @@ export class NutritionClientTabComponent implements OnInit {
 
   @Input() clientId!: string;
   @Input() coachId!: string;
-  @Output() assignNew = new EventEmitter<void>();
+  @Input() clientName = '';
+  /** « Assigner un programme », with the start to propose (a gap's first day) when there is one. */
+  @Output() assignNew = new EventEmitter<string | null>();
+  /** « Voir le suivi » / a past day: the client's calendar. */
+  @Output() openCalendar = new EventEmitter<string | null>();
+  @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
+  /** The program the coach asked to remove (P10). */
+  removeTarget: OverviewItem | null = null;
+  removing = false;
   /** The plans arrived once: later reloads (filters, pages, assignments) keep the list on screen. */
   loaded = false;
   private readonly destroyRef = inject(DestroyRef);
@@ -38,7 +56,12 @@ export class NutritionClientTabComponent implements OnInit {
   activeTab: 'ALL' | 'APP' | 'FILES' = 'ALL';
   openActionsPlanId: string | null = null;
   showChangeDatesModal = false;
+  /** « Décaler la suite » of that program (DS-10). */
+  shiftTarget: OverviewItem | null = null;
+  /** « Mettre en pause » the client (DS-11). */
+  showPauseModal = false;
   dateTargetPlan: any | null = null;
+  dateTargetIsFile = false;
   dateStart = '';
   dateEnd = '';
   dateSaving = false;
@@ -55,7 +78,9 @@ export class NutritionClientTabComponent implements OnInit {
     private nutritionService: NutritionService,
     private router: Router,
     private coachSettingsService: CoachSettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    public programSchedule: ProgramScheduleService,
+    private toast: ToastService
   ) {}
 
   private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
@@ -73,10 +98,68 @@ export class NutritionClientTabComponent implements OnInit {
           this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
         }
       });
+  }
 
-    if (this.clientId && this.coachId) {
-      this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+  /* ---------------- the tab (P1-P10) ---------------- */
+
+  onProgramAction(action: ClientProgramAction): void {
+    const id = action.programId || action.item?.id;
+    switch (action.type) {
+      case 'assign':
+        this.assignNew.emit(action.date || null);
+        return;
+      case 'calendar':
+        this.openCalendar.emit(action.date || null);
+        return;
+      case 'remove':
+        this.removeTarget = action.item || null;
+        return;
+      case 'shift':
+        // « Décaler la suite » (DS-10): the window reads what it proposes itself.
+        this.shiftTarget = action.item || null;
+        return;
+      case 'pause':
+        this.showPauseModal = true;
+        return;
+      case 'dates':
+        // The tab already has its dates: the window opens at once, the server checks the rest (CD-11).
+        if (action.item) {
+          this.changeDatesOf(action.item);
+          return;
+        }
+        break;
     }
+    if (!id) return;
+    // The windows and the editor work on the whole plan: it is read when the coach asks.
+    this.nutritionService.getNutritionPlanById(id, true).subscribe({
+      next: plan => {
+        if (action.type === 'edit' || action.type === 'view') this.editPlan(plan, action.dayNumber);
+        else if (action.type === 'dates') this.changeDates(plan);
+        else if (action.type === 'duplicate') this.duplicateToLibrary(plan);
+        else if (action.type === 'open') this.previewFile(plan);
+        else if (action.type === 'download') this.downloadFile(plan);
+        else if (action.type === 'replace') this.replaceFile(plan);
+      },
+      error: () => this.toast.show({ type: 'error', title: this.translate.instant('ASSIGN_FLOW.REASON_UNEXPECTED') }),
+    });
+  }
+
+  confirmRemove(): void {
+    const target = this.removeTarget;
+    if (!target || this.removing) return;
+    this.removing = true;
+    this.nutritionService.deleteNutritionPlan(target.id, true).subscribe({
+      next: () => {
+        this.removing = false;
+        this.removeTarget = null;
+        this.toast.show({ type: 'success', title: this.translate.instant('CLIENT_PROGRAMS.REMOVED') });
+        this.programs?.reload();
+      },
+      error: () => {
+        this.removing = false;
+        this.toast.show({ type: 'error', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_FAILED') });
+      },
+    });
   }
 
   get displayedPlans(): any[] {
@@ -144,51 +227,10 @@ export class NutritionClientTabComponent implements OnInit {
     this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
   }
 
-  getMealPlanByCoachAndClient(idCoach: string, idClient: string) {
-    if (this.nutritionFileEnabled === false) {
-      this.activeTab = 'APP';
-    }
-    forkJoin({
-      active: this.nutritionService.getNutritionPlanByCoachIdAndClient(
-        idCoach,
-        idClient,
-        0,
-        100,
-        this.activeTab,
-        'ACTIVE',
-        'ALL',
-        'RECOMMENDED',
-        true
-      ),
-      allPlans: this.nutritionService.getNutritionPlanByCoachIdAndClient(
-        idCoach,
-        idClient,
-        this.page,
-        this.size,
-        this.activeTab,
-        'NON_ACTIVE',
-        this.allPlansFilter,
-        this.allPlansSort,
-        true
-      ),
-    }).pipe(finalize(() => (this.loaded = true))).subscribe(({ active, allPlans }) => {
-        this.totalPages = allPlans.totalPages || 0;
-        this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
-
-        const activePlans = this.decoratePlans(active.content || []);
-        const plans = this.decoratePlans(allPlans.content || []);
-
-        this.activeMealPlans = activePlans;
-        this.mealPlan = this.nutritionFileEnabled === false
-          ? plans.filter((plan: any) => !this.isFilePlan(plan))
-          : plans;
-        this.appPlans = this.activeTab === 'APP'
-          ? plans
-          : plans.filter((plan) => !this.isFilePlan(plan));
-        this.filePlans = this.activeTab === 'FILES'
-          ? plans
-          : plans.filter((plan) => this.isFilePlan(plan));
-      });
+  /** After a change made here (file, dates): the tab is read again. */
+  getMealPlanByCoachAndClient(_idCoach: string, _idClient: string) {
+    this.loaded = true;
+    this.programs?.reload();
   }
 
   private decoratePlans(plans: any[]): any[] {
@@ -273,6 +315,7 @@ export class NutritionClientTabComponent implements OnInit {
     const time = new Date(value).getTime();
     return Number.isFinite(time) ? time : -8640000000000000;
   }
+
 
   decorateFilePlan(program: any): void {
     const start = program.startDate ? new Date(program.startDate) : null;
@@ -386,9 +429,20 @@ export class NutritionClientTabComponent implements OnInit {
 
   changeDates(plan: any): void {
     this.closeActions();
+    if (!this.canMoveDates(plan)) return;
     this.dateTargetPlan = plan;
+    this.dateTargetIsFile = this.isFilePlan(plan);
     this.dateStart = this.toDateInputValue(plan?.startDate);
     this.dateEnd = this.toDateInputValue(plan?.endDate);
+    this.dateError = null;
+    this.showChangeDatesModal = true;
+  }
+
+  /** « Modifier les dates » from the tab: its menu offers it only when the plan can move (CD-11). */
+  private changeDatesOf(item: OverviewItem): void {
+    this.closeActions();
+    this.dateTargetPlan = { id: item.id, name: item.name, startDate: item.startDate, endDate: item.endDate };
+    this.dateTargetIsFile = item.file;
     this.dateError = null;
     this.showChangeDatesModal = true;
   }
@@ -403,42 +457,6 @@ export class NutritionClientTabComponent implements OnInit {
     this.dateError = null;
   }
 
-  saveChangedDates(): void {
-    if (!this.dateTargetPlan?.id) return;
-
-    if (!this.dateStart || !this.dateEnd) {
-      this.dateError = 'Start date and end date are required.';
-      return;
-    }
-
-    if (this.dateEnd < this.dateStart) {
-      this.dateError = 'End date must be after start date.';
-      return;
-    }
-
-    this.dateSaving = true;
-    this.dateError = null;
-
-    this.nutritionService
-      .updateNutritionPlanDates(this.dateTargetPlan.id, this.dateStart, this.dateEnd)
-      .subscribe({
-        next: (updatedPlan) => {
-          if (this.dateTargetPlan) {
-            this.dateTargetPlan.startDate = updatedPlan?.startDate || this.dateStart;
-            this.dateTargetPlan.endDate = updatedPlan?.endDate || this.dateEnd;
-          }
-          this.dateSaving = false;
-          this.closeChangeDatesModal();
-          this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
-        },
-        error: (error) => {
-          console.error('Error updating nutrition dates:', error);
-          this.dateSaving = false;
-          this.dateError = 'Could not update dates.';
-        },
-      });
-  }
-
   private toDateInputValue(value: any): string {
     if (!value) return '';
     if (typeof value === 'string') return value.slice(0, 10);
@@ -450,7 +468,45 @@ export class NutritionClientTabComponent implements OnInit {
     }
   }
 
+
+  /** A stopped or finished client program: open it or duplicate it, no more changes (backlog-programmes.md A9). */
+  isLocked(plan: any): boolean {
+    return isPlanLocked(plan, todayIso());
+  }
+
+  /** Not once the client logged a day in it: their history keeps its dates (a file only moves its end). */
+  canMoveDates(plan: any): boolean {
+    return canChangeDates(plan, 'NUTRITION', this.isFilePlan(plan), todayIso());
+  }
+
+  stoppedLabel(plan: any): string {
+    return plan?.stoppedAt ? this.translate.instant('ASSIGN_FLOW.STOPPED_ON', { date: this.programSchedule.formatDate(plan.stoppedAt) }) : '';
+  }
+
+  /** A full copy in the library, without the client's progress, ready to edit and assign again. */
+  duplicateToLibrary(plan: any): void {
+    this.closeActions();
+    if (!plan?.id) return;
+    this.nutritionService.duplicate(plan.id).subscribe({
+      next: () => this.toast.success(this.translate.instant('ASSIGN_FLOW.DUPLICATED')),
+      error: () => this.toast.error(this.translate.instant('ASSIGN_FLOW.DUPLICATE_FAILED')),
+    });
+  }
+
+  /** « Décaler la suite » or a pause saved: the tab is read again (the message already said what changed). */
+  onShiftSaved(): void {
+    this.shiftTarget = null;
+    this.showPauseModal = false;
+  }
+
+  onDatesSaved(): void {
+    this.showChangeDatesModal = false;
+    this.dateTargetPlan = null;
+    this.getMealPlanByCoachAndClient(this.coachId, this.clientId);
+  }
+
   replaceFile(plan: any): void {
+    if (this.isLocked(plan)) return;
     this.closeActions();
     // Replace file modal can be wired next, same as workout file.
   }
@@ -460,9 +516,10 @@ export class NutritionClientTabComponent implements OnInit {
       return this.getFileTypeLabel(plan);
     }
 
-    return plan.trackingMode === 'TOTAL_FOR_DAY'
+    const kind = nutritionPlanKind(plan);
+    return kind === 'DAY_MACROS'
       ? 'TOTAL FOR DAY'
-      : plan.trackingMode === 'EACH_MEAL'
+      : kind === 'MEAL_MACROS'
         ? 'EACH MEAL'
         : 'FULL MEAL PLAN';
   }
@@ -531,11 +588,9 @@ export class NutritionClientTabComponent implements OnInit {
 
     const [year, month, day] = dateOnly.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric',
-    });
+    // In the coach's language ("18 oct. 2026" / "18 Oct 2026").
+    const locale = (this.translate.currentLang || this.translate.defaultLang || 'fr').startsWith('en') ? 'en-GB' : 'fr-FR';
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   getDays(start: string, end: string): number {
@@ -1052,29 +1107,31 @@ export class NutritionClientTabComponent implements OnInit {
     });
   }
 
-  editPlan(plan: any) {
+  editPlan(plan: any, dayNumber?: number | null) {
     this.closeActions();
     if (this.isFilePlan(plan)) {
       this.previewFile(plan);
       return;
     }
+    const extras = dayNumber ? { queryParams: { day: dayNumber } } : {};
 
     let url = 'clients';
 
-    if (plan.trackingMode === 'TOTAL_FOR_DAY') {
+    const kind = nutritionPlanKind(plan);
+    if (kind === 'DAY_MACROS') {
       url =
         url +
         '/create-macro-plan-total-day/' +
         plan.client.id +
         '/edit/' +
         plan.id;
-      this.router.navigateByUrl(url);
-    } else if (plan.trackingMode === 'EACH_MEAL') {
+      this.router.navigateByUrl(this.router.createUrlTree([url], extras));
+    } else if (kind === 'MEAL_MACROS') {
       url = url + '/create-macro-plan/' + plan.client.id + '/edit/' + plan.id;
-      this.router.navigateByUrl(url);
+      this.router.navigateByUrl(this.router.createUrlTree([url], extras));
     } else {
       url = url + '/create-full-plan/' + plan.client.id + '/edit/' + plan.id;
-      this.router.navigateByUrl(url);
+      this.router.navigateByUrl(this.router.createUrlTree([url], extras));
     }
   }
 

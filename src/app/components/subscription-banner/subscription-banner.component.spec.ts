@@ -19,8 +19,11 @@ describe('SubscriptionBannerComponent (SUB-30)', () => {
     expect(view(state({ status: 'TRIAL', trialDaysLeft: TRIAL_BANNER_DAYS + 1 }))).toBeNull();
     expect(view(state({ status: 'TRIAL', trialDaysLeft: 5 }))).toEqual(jasmine.objectContaining({
       textKey: 'BANNER_TRIAL_DAYS', textParams: { count: 5 }, action: 'checkout' }));
-    expect(view(state({ status: 'TRIAL', trialDaysLeft: 1 }))!.textKey).toBe('BANNER_TRIAL_ONE_DAY');
-    expect(view(state({ status: 'TRIAL', trialDaysLeft: 0 }))!.textKey).toBe('BANNER_TRIAL_LAST_DAY');
+    // YoSales counts today: 2 = ends tomorrow, 1 = today is the last day, 0 = over.
+    expect(view(state({ status: 'TRIAL', trialDaysLeft: 2 }))!.textKey).toBe('BANNER_TRIAL_ONE_DAY');
+    expect(view(state({ status: 'TRIAL', trialDaysLeft: 1 }))!.textKey).toBe('BANNER_TRIAL_LAST_DAY');
+    expect(view(state({ status: 'TRIAL', trialDaysLeft: 0 }))).toEqual(jasmine.objectContaining({
+      tone: 'danger', textKey: 'BANNER_TRIAL_OVER', action: 'checkout' }));
   });
 
   it('late payment: "pay before <date>" and a button that pays the open invoice', () => {
@@ -48,21 +51,32 @@ describe('SubscriptionBannerComponent (SUB-30)', () => {
     expect(view(null)).toBeNull();
   });
 
-  it('"Pay" on a late payment opens Flouci for the open invoice', () => {
+  it('"Pay" on a late payment opens the page of the open invoice (amount, then confirmation), never pays in one click', () => {
     const states$ = new BehaviorSubject<CoachSubscriptionState | null>(
       state({ status: 'PAST_DUE', openInvoiceId: 61, openInvoiceDueDate: '2026-10-08' }));
     const stateService = { states$, getState: () => of(states$.value), refresh: () => of(states$.value) } as any;
-    const billing = jasmine.createSpyObj('CoachBillingService', ['initiateInvoicePayment']);
-    billing.initiateInvoicePayment.and.returnValue(of({ redirectUrl: 'https://flouci.example/pay/61' }));
     const router = jasmine.createSpyObj('Router', ['navigate']);
-    const c = new SubscriptionBannerComponent(stateService, billing, new SubscriptionNoticeService(), router);
-    const redirect = spyOn<any>(c, 'redirectTo');
+    router.navigate.and.returnValue(Promise.resolve(true));
+    const c = new SubscriptionBannerComponent(stateService, new SubscriptionNoticeService(), router);
     c.ngOnInit();
 
     c.act();
 
-    expect(billing.initiateInvoicePayment).toHaveBeenCalledWith(61, 'FLOUCI');
-    expect(redirect).toHaveBeenCalledWith('https://flouci.example/pay/61');
+    expect(router.navigate).toHaveBeenCalledWith(['/billing/pay'], { queryParams: { invoiceId: 61 } });
+    c.ngOnDestroy();
+  });
+
+  it('"Pay" without an open invoice goes to the payment screen', () => {
+    const states$ = new BehaviorSubject<CoachSubscriptionState | null>(state({ status: 'PENDING', readOnly: true }));
+    const stateService = { states$, getState: () => of(states$.value), refresh: () => of(states$.value) } as any;
+    const router = jasmine.createSpyObj('Router', ['navigate']);
+    router.navigate.and.returnValue(Promise.resolve(true));
+    const c = new SubscriptionBannerComponent(stateService, new SubscriptionNoticeService(), router);
+    c.ngOnInit();
+
+    c.act();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/subscription/checkout']);
     c.ngOnDestroy();
   });
 
@@ -74,7 +88,7 @@ describe('SubscriptionBannerComponent (SUB-30)', () => {
     });
     const stateService = { states$, getState: () => of(states$.value), refresh } as any;
     const notices = new SubscriptionNoticeService();
-    const c = new SubscriptionBannerComponent(stateService, {} as any, notices, {} as any);
+    const c = new SubscriptionBannerComponent(stateService, notices, {} as any);
     c.ngOnInit();
     expect(c.view).toBeNull();
 
