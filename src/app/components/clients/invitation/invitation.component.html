@@ -1,12 +1,12 @@
 <div class="inv-root">
 
   <div class="inv-state" *ngIf="loading">
-    <img src="assets/yocoachlogo.png" alt="YoCoach" class="inv-state__logo" />
+    <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-state__logo" />
     <p>{{ 'INVITATION_LOADING' | translate }}</p>
   </div>
 
   <div class="inv-state" *ngIf="!loading && loadError">
-    <img src="assets/yocoachlogo.png" alt="YoCoach" class="inv-state__logo" />
+    <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-state__logo" />
     <h1>{{ 'INVITATION_UNAVAILABLE' | translate }}</h1>
     <p>{{ 'INVITATION_UNAVAILABLE_HELP' | translate }}</p>
   </div>
@@ -21,7 +21,7 @@
 
         <!-- Badge circulaire -->
         <div class="inv-logo">
-          <img src="assets/yocoachlogo.png"
+          <img src="assets/logo/yocoach-logo.svg"
                alt="YoCoach"
                class="inv-logo__img" />
         </div>

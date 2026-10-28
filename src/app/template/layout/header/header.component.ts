@@ -2,7 +2,7 @@ import {CommonModule, NgClass} from '@angular/common';
 import {
   AfterViewInit, ApplicationRef,
   ChangeDetectorRef,
-  Component, ComponentFactoryResolver,
+  Component, ComponentFactoryResolver, ComponentRef,
   ElementRef, EmbeddedViewRef, EventEmitter, Injector,
   Input, OnDestroy, OnInit, Output,
 } from '@angular/core';
@@ -87,6 +87,7 @@ this.translate.use(lang);}
   errorMessage = '';
   showSucessModal=false;
   chatPanelOpen = false;
+  private chatPanelRef: ComponentRef<ChatPanelComponent> | null = null;
   conversations: Conversation[] = [];
   unreadConversations = 0;
   notificationsMessages: Notification[] =[];
@@ -202,6 +203,10 @@ this.translate.use(lang);}
         if (conversationId) this.markConversationNotificationsRead(conversationId);
       });
 
+    this.chatService.panelClient$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(clientId => this.openClientConversation(clientId));
+
   }
 
   setLanguage(text: string, lang: string, flag: string) {
@@ -252,23 +257,7 @@ this.translate.use(lang);}
     if (this.chatPanelOpen) {
       return;
     }
-
-    this.chatPanelOpen = true;
-
-    const factory = this.componentFactoryResolver.resolveComponentFactory(ChatPanelComponent);
-    const componentRef = factory.create(this.injector);
-    this.appRef.attachView(componentRef.hostView);
-    const domElem = (componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-    this.attachChatPanel(domElem);
-
-    componentRef.instance.closed.subscribe(() => {
-      this.chatPanelOpen = false;
-
-      this.appRef.detachView(componentRef.hostView);
-      domElem.remove();
-      componentRef.destroy();
-    });
-
+    this.openChatPanel();
   }
 
   getMessagesNotifs() {
@@ -498,15 +487,27 @@ this.translate.use(lang);}
 
   private openConversation(conversation: Conversation): void {
     if (this.chatPanelOpen) return;
+    this.openChatPanel(panel => panel.openConversation(conversation));
+  }
+
+  /** An open panel is replaced, so that it shows this client's conversation. */
+  private openClientConversation(clientId: string): void {
+    this.chatPanelRef?.instance.close();
+    this.openChatPanel(panel => panel.openClient(clientId));
+  }
+
+  private openChatPanel(setup?: (panel: ChatPanelComponent) => void): void {
     this.chatPanelOpen = true;
     const factory = this.componentFactoryResolver.resolveComponentFactory(ChatPanelComponent);
     const componentRef = factory.create(this.injector);
-    componentRef.instance.openConversation(conversation);
+    setup?.(componentRef.instance);
+    this.chatPanelRef = componentRef;
     this.appRef.attachView(componentRef.hostView);
     const domElem = (componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
     this.attachChatPanel(domElem);
     componentRef.instance.closed.subscribe(() => {
       this.chatPanelOpen = false;
+      if (this.chatPanelRef === componentRef) this.chatPanelRef = null;
       this.appRef.detachView(componentRef.hostView);
       domElem.remove();
       componentRef.destroy();

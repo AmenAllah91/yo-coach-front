@@ -2,6 +2,7 @@
   <app-chat
     [panelMode]="true"
     [panelConversationId]="initialConversationId"
+    [panelClientId]="initialClientId"
     (panelClosed)="close()"
     (panelExpanded)="expandConversation($event)">
   </app-chat>

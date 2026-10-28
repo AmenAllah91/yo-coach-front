@@ -62,6 +62,10 @@ export class ChatService {
   private conversationOpenedSubject = new BehaviorSubject<string | null>(null);
   conversationOpened$ = this.conversationOpenedSubject.asObservable();
 
+  /** Opens the header chat panel on the private conversation with a client (started if there is none yet). */
+  private panelClientSubject = new Subject<string>();
+  panelClient$ = this.panelClientSubject.asObservable();
+
 
   constructor(private wsService: ChatWebsocketService,
               private http: HttpClient,
@@ -91,6 +95,10 @@ export class ChatService {
 
   openConversation(conversation: Conversation) {
     this.selectedConversationSubject.next(conversation);
+  }
+
+  openPanelWithClient(clientId: string): void {
+    if (clientId) this.panelClientSubject.next(clientId);
   }
 
   requestConversationRefresh(conversationId?: string): void {

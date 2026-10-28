@@ -4,7 +4,7 @@ import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Component, HostListener, Input, ViewChild, forwardRef } from '@angular/core';
+import { Component, HostListener, Input, ViewChild, forwardRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -34,6 +34,7 @@ import { FeatherModule } from 'angular-feather';
 import { MyTasksComponent } from '../my-tasks/my-tasks.component';
 import { MyAssignmentsComponent } from '../../forms/my-assignments-component/my-assignments.component';
 import { ClientProfileCacheService } from 'app/service/client-profile-cache.service';
+import { ChatService } from 'app/service/chat.service';
 import { ChatComponent } from '../../chat/chat/chat.component';
 import { ClientWorkoutsComponent } from '../client-workouts/client-workouts.component';
 import { ClientNavPanelComponent } from '../client-nav-panel/client-nav-panel.component';
@@ -259,10 +260,15 @@ export class ProfilClientComponent {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onCalendarAction(action: { type: 'chat' } | { type: 'checkin'; assignment: any }): void {
     if (action.type === 'chat') {
-      this.setTab('chat');
+      this.openChatPanel();
       return;
     }
     this.openAssignmentModal(action.assignment as FormAssignment);
+  }
+
+  /** « Send message »: the header chat panel opens on this client's conversation, the page stays. */
+  openChatPanel(): void {
+    if (this.clientId) this.chatService.openPanelWithClient(this.clientId);
   }
 
   setTab(tab: TabId) {
@@ -327,6 +333,7 @@ export class ProfilClientComponent {
   userid = sessionStorage.getItem('userId');
   clientId: string = '';
   client!: Client;
+  private chatService = inject(ChatService);
 
   get fullName(): string {
     return `${this.client?.firstName} ${this.client?.lastName}`;

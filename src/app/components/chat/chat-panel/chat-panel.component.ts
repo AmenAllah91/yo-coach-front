@@ -18,6 +18,8 @@ export class ChatPanelComponent{
 
   /** Conversation to open first (a message notification), set before the panel is shown. */
   initialConversationId: string | null = null;
+  /** Client whose private conversation is opened first (« Send message » of the client profile). */
+  initialClientId: string | null = null;
 
   constructor(
     private router: Router,
@@ -26,6 +28,10 @@ export class ChatPanelComponent{
 
   openConversation(conv: Conversation) {
     this.initialConversationId = conv.id;
+  }
+
+  openClient(clientId: string) {
+    this.initialClientId = clientId;
   }
 
   close() {
