@@ -4606,5 +4606,25 @@
     "DONE_ONE": "1 day updated",
     "DONE": "{{count}} days updated",
     "UNDO": "Undo"
+  },
+  "UNSAVED_LEAVE": {
+    "TITLE": "Leave without saving?",
+    "TEXT": "Your changes have not been saved. If you leave now, they will be lost.",
+    "CONFIRM": "Leave without saving",
+    "STAY": "Keep editing"
+  },
+  "CONFIRM_ACTION": {
+    "DELETE_DAY_TITLE": "Delete “{{label}}”?",
+    "DELETE_DAY_TEXT": "Its sessions will be deleted and the following days will move up by one day.",
+    "REST_DAY_TITLE": "Make “{{label}}” a rest day?",
+    "REST_DAY_TEXT": "The exercises planned for this day will be removed.",
+    "REST_DAY_CONFIRM": "Make it a rest day",
+    "FREE_DAY_TITLE": "Make “{{label}}” a free day?",
+    "FREE_DAY_TEXT": "The meals and targets planned for this day will be removed.",
+    "FREE_DAY_CONFIRM": "Make it a free day",
+    "DELETE_TASK_TITLE": "Delete this task?",
+    "DELETE_TASK_TEXT": "“{{name}}” will be removed from the client’s app.",
+    "DELETE_HABIT_TITLE": "Delete this habit?",
+    "DELETE_HABIT_TEXT": "“{{name}}” and all its scheduled days will be removed from the client’s app."
   }
 }

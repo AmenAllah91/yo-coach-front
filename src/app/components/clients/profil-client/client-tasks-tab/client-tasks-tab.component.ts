@@ -13,6 +13,7 @@ import { ProgressPose } from 'app/components/progress-pictures-module/add-progre
 import { MANUAL_MEASUREMENT_TYPES, MeasurementTypeItem } from 'app/models/measurement-type.model';
 import { Form, FormsApiService } from 'app/components/forms/services/forms-api.service';
 import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 
 type TaskKind = 'general' | 'progress' | 'metrics' | 'form' | 'habit';
 type TaskStatus = 'done' | 'missed' | 'upcoming';
@@ -115,7 +116,7 @@ export class ClientTasksTabComponent implements OnChanges {
     ] },
   ];
 
-  constructor(private toast: ToastService, private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router, private route: ActivatedRoute) {
+  constructor(private toast: ToastService, private api: ClientTasksService, private translate: TranslateService, private formsApi: FormsApiService, private router: Router, private route: ActivatedRoute, private confirmDialog: ConfirmDialogService) {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
       const date = params.get('date');
       if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -233,9 +234,18 @@ export class ClientTasksTabComponent implements OnChanges {
     }
     this.advancedOpen = false;
   }
-  deleteTask(): void { if (!this.canCoach()) return;
+  /** The client stops seeing it at once (a habit: all its days): always asked. */
+  async deleteTask(): Promise<void> { if (!this.canCoach()) return;
     if (!this.taskMenu) return; const task = this.taskMenu.task; this.closeTaskMenu();
-    if (task.kind === 'habit' && !window.confirm('Delete habit?\nThis will remove this habit and all of its scheduled occurrences.')) return;
+    const habit = task.kind === 'habit';
+    const confirmed = await this.confirmDialog.ask({
+      title: habit ? 'CONFIRM_ACTION.DELETE_HABIT_TITLE' : 'CONFIRM_ACTION.DELETE_TASK_TITLE',
+      text: habit ? 'CONFIRM_ACTION.DELETE_HABIT_TEXT' : 'CONFIRM_ACTION.DELETE_TASK_TEXT',
+      params: { name: task.title },
+      confirm: 'DELETE',
+      icon: 'trash-2',
+    });
+    if (!confirmed) return;
     // Removed at once; the calendar comes back as it was if the server refuses.
     this.days.forEach(day => day.tasks = day.tasks.filter(item => item.id !== task.id));
     (task.kind === 'habit' ? this.api.deleteHabit(task.id) : this.api.deleteTask(task.id)).subscribe({

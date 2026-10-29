@@ -5,7 +5,9 @@ import { ProgramDayClipboardService } from '@shared/program-copy/program-day-cli
 import { nutritionCopyController } from '../nutrition-day-copy';
 import { foodPageRange } from '../food-page-range';
 import { NutritionDraftState } from '../nutrition-draft-state';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { NutritionClientMode } from '../nutrition-client-mode';
 import { OverlapChoice, ProgramOverflowComponent } from '@shared/components/program-overflow/program-overflow.component';
 import { LockedProgramBannerComponent } from '@shared/components/locked-program-banner/locked-program-banner.component';
@@ -49,7 +51,7 @@ import {
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../_nutrition-foods.scss', '../../program-library/_builder-rail-readable.scss'],
 })
-export class CreateFullPlanComponent implements OnInit {
+export class CreateFullPlanComponent implements OnInit, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
   /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
@@ -106,6 +108,7 @@ export class CreateFullPlanComponent implements OnInit {
     private dayClipboard: ProgramDayClipboardService,
     private clientService: ClientService,
     public programSchedule: ProgramScheduleService,
+    private confirmDialog: ConfirmDialogService,
   ) {}
 
   /** A client's plan (route `clients/create-full-plan/:idClient`): dates, client, read-only, P9 (ED-02). */
@@ -243,6 +246,9 @@ export class CreateFullPlanComponent implements OnInit {
     this.scheduleStartDate = this.route.snapshot.queryParamMap.get('startDate') || '';
     this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
     this.clientMode.init(this.draft, () => this.overflow ? this.overflow.askWhenChecked() : false);
+    // The same fields as the save.
+    this.draft.editedPlan = () => ({ name: this.planName, details: this.planDescription, mealDays: this.days,
+      isMealPlanTemplate: this.canCreateTemplate && this.isMealPlanTemplate });
 
     if (this.planId) {
       this.loadPlanForEdit(this.planId);
@@ -255,9 +261,19 @@ export class CreateFullPlanComponent implements OnInit {
       this.resizeDraftDays(this.durationWeeks, false);
       this.selectedDay = this.days[0] || null;
       this.clientMode.refreshDates(this.days);
+      this.draft.rememberContent();
       if (this.planName.trim()) this.savePlan();
     }
 }
+
+  hasUnsavedChanges(): boolean {
+    return this.draft.hasUnsavedChanges();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    warnBeforeUnload(event, this);
+  }
 
   private normalizeDurationWeeks(value: number): number {
     return Math.max(1, Math.min(Number(value) || 4, 12));
@@ -319,6 +335,7 @@ export class CreateFullPlanComponent implements OnInit {
         this.draft.collapsedWeeks.delete(this.draft.selectedWeek(this.days, this.selectedDay));
 
         this.recalcAllDays();
+        this.draft.rememberContent();
       });
   }
 
@@ -884,15 +901,18 @@ export class CreateFullPlanComponent implements OnInit {
     ));
   }
 
-  toggleCheatMeal(): void {
-    if (!this.selectedDay) return;
-    const cheatMeal = !this.selectedDay.cheatMeal;
-    this.selectedDay.cheatMeal = cheatMeal;
+  async toggleCheatMeal(): Promise<void> {
+    const day = this.selectedDay;
+    if (!day) return;
+    const question = this.draft.freeDayQuestion(this.days, day);
+    if (question && (!(await this.confirmDialog.ask(question)) || this.selectedDay !== day)) return;
+    const cheatMeal = !day.cheatMeal;
+    day.cheatMeal = cheatMeal;
 
     if (cheatMeal) {
-      this.selectedDay.refeedDay = false;
-      this.selectedDay.meals = [];
-      this.selectedDay.dayTargets = {
+      day.refeedDay = false;
+      day.meals = [];
+      day.dayTargets = {
         calories: 0,
         proteinG: 0,
         carbsG: 0,

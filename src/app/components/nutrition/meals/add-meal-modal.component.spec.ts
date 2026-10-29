@@ -291,3 +291,50 @@ describe('Meals validation messages after interaction', () => {
     expect(fixture.nativeElement.textContent).not.toContain('MEAL_UNIT_REQUIRED');
   });
 });
+
+describe('Closing the meal editor', () => {
+  let component: AddMealModalComponent;
+  let dialog: jasmine.SpyObj<any>;
+  let closed: number;
+
+  beforeEach(() => {
+    const nutrition = jasmine.createSpyObj('NutritionService', ['getFoodForClient', 'prefetchPickerFoods']);
+    nutrition.getFoodForClient.and.returnValue(of({}));
+    dialog = jasmine.createSpyObj('ConfirmDialogService', ['ask']);
+    component = new AddMealModalComponent(nutrition, {} as any, { instant: (key: string) => key } as any, auth, undefined, undefined, dialog);
+    component.isVisible = true;
+    component.ngOnChanges({ isVisible: new SimpleChange(false, true, true) });
+    closed = 0;
+    component.closed.subscribe(() => closed++);
+  });
+
+  it('closes at once when nothing was typed', async () => {
+    await component.close();
+    expect(dialog.ask).not.toHaveBeenCalled();
+    expect(closed).toBe(1);
+  });
+
+  it('asks before losing what was typed, and keeps it on « Continuer l’édition »', async () => {
+    component.choose('foods');
+    component.name = 'Lunch';
+    dialog.ask.and.returnValue(Promise.resolve(false));
+    await component.close();
+    expect(dialog.ask).toHaveBeenCalled();
+    expect(closed).toBe(0);
+    expect(component.name).toBe('Lunch');
+
+    dialog.ask.and.returnValue(Promise.resolve(true));
+    await component.close();
+    expect(closed).toBe(1);
+    expect(component.hasUnsavedChanges()).toBeFalse();
+  });
+
+  it('does not count the food details loaded after opening a meal as a change', () => {
+    component.meal = { id: 'm1', name: 'Rice bowl', mealType: 'LUNCH', foods: [{ id: 'l1', quantity: 100, unit: 'g', foodRef: { id: 'rice', name: 'Rice' } }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    component.ingredients[0].foodRef = { ...component.ingredients[0].foodRef, imageUrl: 'rice.png', servings: [] };
+    expect(component.hasUnsavedChanges()).toBeFalse();
+    component.ingredients[0].quantity = 2;
+    expect(component.hasUnsavedChanges()).toBeTrue();
+  });
+});

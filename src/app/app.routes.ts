@@ -10,6 +10,7 @@ import { MainLayoutComponent } from './template/layout/app-layout/main-layout/ma
 import { inject } from '@angular/core';
 import { AuthGuard } from '@config/guard/auth.guard';
 import { coachOnboardingChildGuard, coachOnboardingEntryGuard, coachOnboardingGuard } from './config/guard/coach-onboarding.guard';
+import { unsavedChangesGuard } from './config/guard/unsaved-changes.guard';
 import { clientOnboardingEntryGuard, clientOnboardingGuard } from './config/guard/client-onboarding.guard';
 
 const isAuthenticated: CanActivateFn = (route, state) =>
@@ -102,18 +103,22 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'workout/create-workout',
         loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-workout/:idClient',
         loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-workout/:idClient/edit/:id',
         loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'workout/edit-workout/:id',
         loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'calendar',
@@ -130,14 +135,17 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/meals',
         loadComponent: () => import('./components/nutrition/meals/meals-list.component').then(m => m.MealsListComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/meals/create',
         loadComponent: () => import('./components/nutrition/meals/meal-editor.component').then(m => m.MealEditorComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/meals/:id',
         loadComponent: () => import('./components/nutrition/meals/meal-editor.component').then(m => m.MealEditorComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/food-replacement-groups',
@@ -150,50 +158,62 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/create-macro-plan',
         loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/create-macro-plan/:id',
         loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/create-macro-plan-total-day',
         loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-macro-plan/:idClient',
         loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-macro-plan/:idClient/edit/:id',
         loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-macro-plan-total-day/:idClient',
         loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-macro-plan-total-day/:idClient/edit/:id',
         loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-full-plan/:idClient',
         loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'clients/create-full-plan/:idClient/edit/:id',
         loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/create-macro-plan-total-day/:id',
         loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/create-full-plan',
         loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'nutrition/create-full-plan/:id',
         loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'grow/contact-form',

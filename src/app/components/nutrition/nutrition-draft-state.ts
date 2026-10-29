@@ -4,6 +4,8 @@ import { MacroTrackingMode, Meal, MealDay, MealPlan } from '@shared/models/MealP
 import { nutritionDayState, nutritionMealState } from '@shared/models/nutrition-publication';
 import { ProgramDayState, firstNutritionIssue, nutritionDayStatus, nutritionSummary, programDaysError } from '@shared/models/program-days';
 import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { ConfirmOptions } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { SavedContent } from '@config/guard/unsaved-changes.guard';
 
 /** The builder's translation (TranslateService.instant). */
 export type DraftTranslator = (key: string, params?: Record<string, unknown>) => string;
@@ -14,6 +16,19 @@ export type DraftTranslator = (key: string, params?: Record<string, unknown>) =>
  */
 export function withoutDisplayOnlyFields(plan: MealPlan): MealPlan {
   return JSON.parse(JSON.stringify(plan, (key, value) => (key === 'imageUrl' ? undefined : value)));
+}
+
+/** Filled in by the editor itself (photo links, open descriptions, dates and labels of the days): not a change. */
+const DISPLAY_ONLY_KEYS = new Set(['imageUrl', 'showDescription', 'date', 'dayOfWeek']);
+
+/** What the coach edits (name, settings, days), as text: compared with the saved plan before leaving. */
+export function nutritionContent(plan: Partial<MealPlan>): string {
+  return JSON.stringify({
+    name: plan.name || '',
+    details: plan.details || '',
+    template: Boolean((plan as any).isMealPlanTemplate),
+    days: plan.mealDays || [],
+  }, (key, value) => (DISPLAY_ONLY_KEYS.has(key) ? undefined : value));
 }
 
 /**
@@ -43,6 +58,10 @@ export class NutritionDraftState {
   overlapGuard?: () => boolean | Promise<boolean>;
   /** The guard answered « nothing to ask » for the save being made. */
   private overlapChecked = false;
+  /** What the coach edits, given by the builder (the same fields as its save). */
+  editedPlan?: () => Partial<MealPlan>;
+  /** The plan as last loaded or saved: leaving with something else asks first. */
+  private readonly savedContent = new SavedContent();
 
   constructor(
     private service: NutritionService,
@@ -74,6 +93,29 @@ export class NutritionDraftState {
     this.savedEnd = plan.endDate ? String(plan.endDate).slice(0, 10) : null;
     this.readOnly = isPlanLocked(plan as any, todayIso());
     this.stoppedAt = (plan as any)?.stoppedAt || null;
+  }
+
+  /** Once the plan is loaded (or the days of a new one created): what leaving the builder is compared with. */
+  rememberContent(): void {
+    const edited = this.editedPlan;
+    if (edited) this.savedContent.rememberAfterDisplay(() => nutritionContent(edited()));
+  }
+
+  hasUnsavedChanges(): boolean {
+    return !this.readOnly && !!this.editedPlan && this.savedContent.changed(nutritionContent(this.editedPlan()));
+  }
+
+  /**
+   * « Jour libre » on a day that has meals or targets: they are removed, so it is asked first (null: nothing to lose).
+   */
+  freeDayQuestion(days: MealDay[], day: MealDay): ConfirmOptions | null {
+    if (day.cheatMeal || nutritionDayStatus(day, this.trackingMode) === 'EMPTY') return null;
+    return {
+      title: 'CONFIRM_ACTION.FREE_DAY_TITLE',
+      text: 'CONFIRM_ACTION.FREE_DAY_TEXT',
+      params: { label: this.tr('DAY_NUMBER', `Day ${days.indexOf(day) + 1}`, { number: days.indexOf(day) + 1 }) },
+      confirm: 'CONFIRM_ACTION.FREE_DAY_CONFIRM',
+    };
   }
 
   /** Empty days before the last filled one, shown by the "empty days" modal (null: closed). */
@@ -166,11 +208,14 @@ export class NutritionDraftState {
     const saveUrl = this.router.url;
     this.saving = true; this.error = '';
     const body = withoutDisplayOnlyFields(payload);
+    // What the coach changes while the save is on its way stays unsaved.
+    const sent = nutritionContent(plan);
     const request = payload.id ? this.service.updateNutritionPlan(body, true, overlap) : this.service.createNutritionPlan(body, true);
     request.subscribe({
       next: saved => {
         this.planId = saved.id || payload.id || this.planId;
         this.savedAt = new Date();
+        this.savedContent.remember(sent);
         this.saving = false;
         if (saved?.endDate) this.savedEnd = String(saved.endDate).slice(0, 10);
         this.scheduleAnnouncer?.((saved as any)?.scheduleChanges, (saved as any)?.scheduleUndoId);

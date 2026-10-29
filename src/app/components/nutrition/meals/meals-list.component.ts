@@ -1,6 +1,6 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { AddMealModalComponent } from './add-meal-modal.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { totalMacros } from '@shared/models/nutrition-math';
 import { ToastService } from 'app/service/toast.service';
+import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 
 @Component({
   selector: 'app-meals-list',
@@ -27,7 +28,8 @@ import { ToastService } from 'app/service/toast.service';
   templateUrl: './meals-list.component.html',
   styleUrls: ['./meals-list.component.scss'],
 })
-export class MealsListComponent implements OnInit, OnDestroy {
+export class MealsListComponent implements OnInit, OnDestroy, LeavesUnsavedChanges {
+  @ViewChild(AddMealModalComponent) private mealEditor?: AddMealModalComponent;
   meals: any[] = [];
   search = '';
   activeMealMenuId: string | null = null;
@@ -64,6 +66,16 @@ export class MealsListComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     window.history.back();
+  }
+
+  /** The meal editor open over the list, with something typed. */
+  hasUnsavedChanges(): boolean {
+    return !!this.mealEditor?.hasUnsavedChanges();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    warnBeforeUnload(event, this);
   }
 
   openAddMealModal(): void {

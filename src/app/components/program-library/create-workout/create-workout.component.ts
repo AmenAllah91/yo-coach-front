@@ -31,6 +31,11 @@ import { ToastService } from 'app/service/toast.service';
 import { Client, ClientService } from 'app/service/client.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { LeavesUnsavedChanges, SavedContent, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
+
+/** Filled in by the display (photos, videos of the library exercise): not a change of the coach. */
+const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'photoUrl', 'videoUrl', 'videoLink']);
 
 /**
  * The one workout editor (backlog-programmes.md ED-01): a library program, or a client's program when the route has
@@ -44,7 +49,7 @@ import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-sc
   templateUrl: './create-workout.component.html',
   styleUrls: ['./create-workout.component.scss'],
 })
-export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy {
+export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy, LeavesUnsavedChanges {
   /** Bottom of the app header, measured: the toolbar sticks right under it (no strip where the content shows). */
   isEditMode = false;
   isVisibleToOthers = false;
@@ -84,6 +89,8 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
   savedEnd: string | null = null;
   duplicating = false;
   @ViewChild(ProgramOverflowComponent) overflow?: ProgramOverflowComponent;
+  /** The program as last loaded or saved: leaving with something else asks first. */
+  private readonly savedContent = new SavedContent();
 
   constructor(
     public facade: WorkoutPlanFacade,
@@ -98,6 +105,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
     private workoutService: WorkoutService,
     private toast: ToastService,
     private dayClipboard: ProgramDayClipboardService,
+    private confirmDialog: ConfirmDialogService,
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     this.assignOnly = this.route.snapshot.queryParamMap.get('assignOnly') === '1';
@@ -457,6 +465,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
       } else if (history.state?.autoCreate && requestedName) {
         this.createInBackground();
       }
+      this.savedContent.rememberAfterDisplay(() => this.content());
     }
 
     if (this.clientId) {
@@ -537,6 +546,39 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
       this.savedEnd = this.endDate || null;
     }
     this.openRequestedDay();
+    this.savedContent.rememberAfterDisplay(() => this.content());
+  }
+
+  /** What the coach edits (name, settings, days, sessions, exercises and their sets), to compare with the saved one. */
+  private content(): string {
+    return JSON.stringify({
+      name: this.workoutPlan.name || '',
+      details: this.workoutPlan.details || '',
+      template: Boolean(this.isVisibleToOthers),
+      days: this.days.map((day) => ({
+        rest: Boolean(day.isRestDay || day.restDay),
+        description: day.description || '',
+        // The empty session the display adds to a day without one is not content.
+        sessions: (day.workoutSessions || [])
+          .filter((session) => session.exercises?.length || session.name?.trim())
+          .map((session) => ({ name: session.name || '', exercises: session.exercises || [] })),
+      })),
+    }, (key, value) => (EXERCISE_DISPLAY_FIELDS.has(key) ? undefined : value));
+  }
+
+  hasUnsavedChanges(): boolean {
+    return !this.readOnly && this.savedContent.changed(this.content());
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    warnBeforeUnload(event, this);
+  }
+
+  /** « Semaine 2 · Jour 3 »: the days are numbered 1 to 7 in each week. */
+  private weekDayLabel(day: WorkoutDay): string {
+    const index = this.days.indexOf(day);
+    return this.translate.instant('WEEK_DAY_LABEL', { week: Math.floor(index / 7) + 1, day: (index % 7) + 1 });
   }
 
   /** The client did something in the program: its dates no longer move (« Modifier les dates », rule D1). */
@@ -814,8 +856,18 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
     this.refreshDates();
   }
 
-  deleteDay(d: WorkoutDay, ev?: Event) {
+  /** The following days move up by one: always asked. */
+  async deleteDay(d: WorkoutDay, ev?: Event) {
     ev?.stopPropagation();
+    if (this.days.length <= 1) return;
+    const confirmed = await this.confirmDialog.ask({
+      title: 'CONFIRM_ACTION.DELETE_DAY_TITLE',
+      text: 'CONFIRM_ACTION.DELETE_DAY_TEXT',
+      params: { label: this.weekDayLabel(d) },
+      confirm: 'DELETE',
+      icon: 'trash-2',
+    });
+    if (!confirmed || !this.days.includes(d)) return;
     this.facade.deleteDay(d);
     this.refreshDates();
   }
@@ -835,8 +887,19 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
     this.facade.showRestNotes = !this.facade.showRestNotes;
   }
 
-  toggleRestDay() {
-    if (!this.selectedDay) return;
+  async toggleRestDay() {
+    const day = this.selectedDay;
+    if (!day) return;
+    // A rest day has no session: the exercises of the day are removed, so it is asked first.
+    if (!day.isRestDay && workoutDayStatus(day) !== 'EMPTY') {
+      const confirmed = await this.confirmDialog.ask({
+        title: 'CONFIRM_ACTION.REST_DAY_TITLE',
+        text: 'CONFIRM_ACTION.REST_DAY_TEXT',
+        params: { label: this.weekDayLabel(day) },
+        confirm: 'CONFIRM_ACTION.REST_DAY_CONFIRM',
+      });
+      if (!confirmed || this.selectedDay !== day) return;
+    }
 
     this.selectedDay.isRestDay = !this.selectedDay.isRestDay;
     this.selectedDay.restDay = this.selectedDay.isRestDay;
@@ -1276,9 +1339,11 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
     this.headerObserver?.disconnect();
   }
 
-  private markSaved(): void {
+  /** `sent`: the content when the save was sent (what the coach changed meanwhile is still unsaved). */
+  private markSaved(sent: string): void {
     this.savingDraft = false;
     this.savedAt = new Date();
+    this.savedContent.remember(sent);
   }
 
   private persistDraft(navigateAfterSave: boolean) {
@@ -1309,11 +1374,12 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
       isWorkoutPlanTemplate: finalTemplateValue,
       workoutDays: this.facade.days,
     });
+    const sent = this.content();
 
     if (this.facade.plan.id) {
       this.facade.updatePlan().subscribe({
         next: () => {
-          this.markSaved();
+          this.markSaved(sent);
           if (navigateAfterSave) this.router.navigate(['/workout/program-library']);
         },
         error: (error) => this.onSaveError(error),
@@ -1321,7 +1387,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
     } else {
       this.facade.createPlan().subscribe({
         next: (res) => {
-          this.markSaved();
+          this.markSaved(sent);
           this.facade.setPlan({...this.facade.plan, id: res.id});
           this.isEditMode = true;
 
@@ -1367,11 +1433,12 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy 
       client: this.client ?? this.facade.plan.client ?? ({ id: this.clientId } as any),
     });
     this.facade.syncPlanDays();
+    const sent = this.content();
     const request = this.facade.plan.id ? this.facade.updatePlan(overlap) : this.facade.createPlan();
     request.subscribe({
       next: (res) => {
         if (this.destroyed) return;
-        this.markSaved();
+        this.markSaved(sent);
         if (!this.facade.plan.id && res?.id) {
           this.facade.setPlan({ ...this.facade.plan, id: res.id });
           this.location.replaceState(`/clients/create-workout/${this.clientId}/edit/${res.id}`);

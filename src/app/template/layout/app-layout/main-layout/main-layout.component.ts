@@ -9,6 +9,7 @@ import { LanguageService } from 'app/service/language.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { SubscriptionNoticeComponent } from 'app/components/subscription-notice/subscription-notice.component';
 import { SubscriptionBannerComponent } from 'app/components/subscription-banner/subscription-banner.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -23,6 +24,7 @@ import { SubscriptionBannerComponent } from 'app/components/subscription-banner/
     TranslateModule,
     SubscriptionNoticeComponent,
     SubscriptionBannerComponent,
+    ConfirmDialogComponent,
   ],
 })
 export class MainLayoutComponent implements OnInit {

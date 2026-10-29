@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MealsService } from 'app/service/meals.service';
 import { AddMealModalComponent } from './add-meal-modal.component';
 import { TranslateModule } from '@ngx-translate/core';
+import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 
 @Component({
   selector: 'app-meal-editor',
@@ -13,7 +14,8 @@ import { TranslateModule } from '@ngx-translate/core';
   templateUrl: './meal-editor.component.html',
   styleUrls: ['./meal-editor.component.scss'],
 })
-export class MealEditorComponent implements OnInit {
+export class MealEditorComponent implements OnInit, LeavesUnsavedChanges {
+  @ViewChild(AddMealModalComponent) private editor?: AddMealModalComponent;
   meal: any | null = null;
   modalVisible = false;
   loading = false;
@@ -44,6 +46,15 @@ export class MealEditorComponent implements OnInit {
         this.loadError = 'MEAL_LOAD_ERROR';
       },
     });
+  }
+
+  hasUnsavedChanges(): boolean {
+    return !!this.editor?.hasUnsavedChanges();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    warnBeforeUnload(event, this);
   }
 
   close(): void {

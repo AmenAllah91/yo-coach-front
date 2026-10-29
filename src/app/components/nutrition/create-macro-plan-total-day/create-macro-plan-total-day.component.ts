@@ -4,7 +4,9 @@ import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { NutritionClientMode } from '../nutrition-client-mode';
 import { OverlapChoice, ProgramOverflowComponent } from '@shared/components/program-overflow/program-overflow.component';
 import { LockedProgramBannerComponent } from '@shared/components/locked-program-banner/locked-program-banner.component';
@@ -38,7 +40,7 @@ import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-pa
   templateUrl: './create-macro-plan-total-day.component.html',
   styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss'],
 })
-export class CreateMacroPlanTotalDayComponent implements OnInit {
+export class CreateMacroPlanTotalDayComponent implements OnInit, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
   /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
@@ -78,6 +80,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     private toastService: ToastService,
     private dayClipboard: ProgramDayClipboardService,
     public programSchedule: ProgramScheduleService,
+    private confirmDialog: ConfirmDialogService,
   ) {}
 
   /** A client's plan (route `clients/create-macro-plan-total-day/:idClient`): dates, client, read-only, P9 (backlog-programmes.md ED). */
@@ -222,6 +225,9 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
     this.scheduleEndDate = this.route.snapshot.queryParamMap.get('endDate') || '';
     this.isEditMode = !!planId;
     this.clientMode.init(this.draft, () => this.overflow ? this.overflow.askWhenChecked() : false);
+    // The same fields as the save.
+    this.draft.editedPlan = () => ({ name: this.planName, details: this.planDescription, mealDays: this.days,
+      isMealPlanTemplate: this.canCreateTemplate && this.isMealPlanTemplate });
 
     if (planId) {
       this.nutritionService.getNutritionPlanById(planId).subscribe((plan) => {
@@ -241,6 +247,7 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
 
         this.selectedDay = this.clientMode.requestedDay(this.days) || this.days[0] || null;
         this.draft.collapsedWeeks.delete(this.draft.selectedWeek(this.days, this.selectedDay));
+        this.draft.rememberContent();
       });
     }
 
@@ -261,9 +268,19 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       this.resizeDraftDays(this.durationWeeks, false);
       this.selectedDay = this.days[0] || null;
       this.clientMode.refreshDates(this.days);
+      this.draft.rememberContent();
       if (this.planName.trim()) this.savePlan();
     }
 }
+
+  hasUnsavedChanges(): boolean {
+    return this.draft.hasUnsavedChanges();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    warnBeforeUnload(event, this);
+  }
 
   private normalizeDurationWeeks(value: number): number {
     return Math.max(1, Math.min(Number(value) || 4, 12));
@@ -308,13 +325,16 @@ export class CreateMacroPlanTotalDayComponent implements OnInit {
       CALCUL AUTOMATIQUE DES CALORIES
   ------------------------------------------------*/
   /** « Jour libre »: no targets that day (the client sees a free day). */
-  toggleCheatMeal(): void {
-    if (!this.selectedDay || this.draft.readOnly) return;
-    const cheatMeal = !this.selectedDay.cheatMeal;
-    this.selectedDay.cheatMeal = cheatMeal;
+  async toggleCheatMeal(): Promise<void> {
+    const day = this.selectedDay;
+    if (!day || this.draft.readOnly) return;
+    const question = this.draft.freeDayQuestion(this.days, day);
+    if (question && (!(await this.confirmDialog.ask(question)) || this.selectedDay !== day)) return;
+    const cheatMeal = !day.cheatMeal;
+    day.cheatMeal = cheatMeal;
     if (cheatMeal) {
-      this.selectedDay.refeedDay = false;
-      this.selectedDay.dayTargets = { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
+      day.refeedDay = false;
+      day.dayTargets = { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
     }
   }
 

@@ -24,6 +24,8 @@ import { AuthService } from '@config/auth.service';
 import { AddedFood, AddFoodModalComponent } from '../add-food-modal/add-food-modal.component';
 import { MealTotalsComponent } from '../meal-totals/meal-totals.component';
 import { ToastService } from 'app/service/toast.service';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { LEAVE_UNSAVED, LeavesUnsavedChanges, SavedContent } from '@config/guard/unsaved-changes.guard';
 
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
@@ -53,7 +55,7 @@ interface IngredientRow {
   templateUrl: './add-meal-modal.component.html',
   styleUrls: ['./add-meal-modal.component.scss', '../_nutrition-foods.scss'],
 })
-export class AddMealModalComponent implements OnChanges, OnInit {
+export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedChanges {
   @Input() isVisible = false;
   @Input() meal: any | null = null;
 
@@ -86,6 +88,8 @@ export class AddMealModalComponent implements OnChanges, OnInit {
   imageReading = false;
   fieldErrors: Record<string, string> = {};
   private coverReadVersion = 0;
+  /** The meal as opened (or the empty form): closing with something else asks first. */
+  private readonly savedContent = new SavedContent();
 
   draggedIngredientIndex: number | null = null;
   draggedDirectionIndex: number | null = null;
@@ -113,6 +117,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     private authService: AuthService,
     private toast?: ToastService,
     private host?: ElementRef<HTMLElement>,
+    private confirmDialog?: ConfirmDialogService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -235,19 +240,43 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     this.submitted = false;
   }
 
-  backToChoice(): void {
+  async backToChoice(): Promise<void> {
     if (this.saving) return;
     if (this.isEditing) {
-      this.close();
+      await this.close();
       return;
     }
-    this.reset();
+    if (await this.mayDiscard()) this.reset();
   }
 
-  close(): void {
-    if (this.saving) return;
+  /** ✕, « Annuler », the backdrop: what was typed is lost, so it is asked first. */
+  async close(): Promise<void> {
+    if (this.saving || !(await this.mayDiscard())) return;
     this.reset();
     this.closed.emit();
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.isVisible && this.savedContent.changed(this.content());
+  }
+
+  private async mayDiscard(): Promise<boolean> {
+    return !this.hasUnsavedChanges() || !this.confirmDialog || this.confirmDialog.ask(LEAVE_UNSAVED);
+  }
+
+  /** What the coach types, without the food details loaded afterwards (photo, servings of the food). */
+  private content(): string {
+    return JSON.stringify({
+      name: this.name,
+      mealType: this.mealType,
+      servings: this.servings,
+      totalTimeMinutes: this.totalTimeMinutes,
+      coverImage: this.coverImage,
+      directions: this.directions,
+      ingredients: this.ingredients.map((row) => row.manual
+        ? { name: row.name, quantity: row.quantity, unit: row.unit, calories: row.calories, protein: row.protein, carbs: row.carbs, fat: row.fat }
+        : { food: row.foodRef?.id ?? null, quantity: row.quantity, unit: row.unit, serving: row.servingId ?? null }),
+    });
   }
 
   /** Opens the Add Food modal shared with the meal plans (servings x unit, nutrition values). */
@@ -498,8 +527,9 @@ export class AddMealModalComponent implements OnChanges, OnInit {
       next: (result: any) => {
         this.saving = false;
         this.toast?.success(this.translate.instant(recipe ? 'RECIPE_SAVED' : 'MEAL_SAVED'));
-        this.saved.emit(result);
+        // Saved: nothing left to lose when the page then leaves the editor.
         this.reset();
+        this.saved.emit(result);
         this.closed.emit();
       },
       error: (error: any) => {
@@ -604,6 +634,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
       } as IngredientRow;
     });
     this.loadFoodDetails(new Set(this.ingredients.filter((row) => !row.manual && row.foodRef?.id).map((row) => row.foodRef.id)));
+    this.savedContent.remember(this.content());
   }
 
   get unitSuggestions(): string[] {
@@ -726,6 +757,7 @@ export class AddMealModalComponent implements OnChanges, OnInit {
     ++this.coverReadVersion;
     this.draggedIngredientIndex = null;
     this.draggedDirectionIndex = null;
+    this.savedContent.remember(this.content());
   }
 
   private nutrient(source: any, ...keys: string[]): number {

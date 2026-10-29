@@ -4606,5 +4606,25 @@
     "DONE_ONE": "1 jour mis à jour",
     "DONE": "{{count}} jours mis à jour",
     "UNDO": "Annuler"
+  },
+  "UNSAVED_LEAVE": {
+    "TITLE": "Quitter sans enregistrer ?",
+    "TEXT": "Vos modifications n’ont pas été enregistrées. Si vous quittez maintenant, elles seront perdues.",
+    "CONFIRM": "Quitter sans enregistrer",
+    "STAY": "Continuer l’édition"
+  },
+  "CONFIRM_ACTION": {
+    "DELETE_DAY_TITLE": "Supprimer « {{label}} » ?",
+    "DELETE_DAY_TEXT": "Ses séances seront supprimées et les jours suivants avanceront d’un jour.",
+    "REST_DAY_TITLE": "Passer « {{label}} » en jour de repos ?",
+    "REST_DAY_TEXT": "Les exercices prévus ce jour-là seront retirés.",
+    "REST_DAY_CONFIRM": "Passer en jour de repos",
+    "FREE_DAY_TITLE": "Passer « {{label}} » en jour libre ?",
+    "FREE_DAY_TEXT": "Les repas et objectifs prévus ce jour-là seront retirés.",
+    "FREE_DAY_CONFIRM": "Passer en jour libre",
+    "DELETE_TASK_TITLE": "Supprimer la tâche ?",
+    "DELETE_TASK_TEXT": "« {{name}} » sera retirée de l’application du client.",
+    "DELETE_HABIT_TITLE": "Supprimer l’habitude ?",
+    "DELETE_HABIT_TEXT": "« {{name}} » et tous ses jours prévus seront retirés de l’application du client."
   }
 }
