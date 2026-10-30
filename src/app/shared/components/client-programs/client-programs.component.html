@@ -7,9 +7,6 @@
       </span>
     </div>
     <div class="cp-head-actions" *ngIf="writable && overview && !isEmpty">
-      <button type="button" class="cp-btn cp-btn--outline" (click)="emit({ type: 'pause' })">
-        <i-feather name="pause-circle" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.PAUSE' | translate }}
-      </button>
       <button type="button" class="cp-btn cp-btn--brand" (click)="emit({ type: 'assign' })">
         <i-feather name="plus" class="cp-ico"></i-feather>{{ 'CLIENT_PROGRAMS.ASSIGN_PROGRAM' | translate }}
       </button>
@@ -29,12 +26,6 @@
   </div>
 
   <ng-container *ngIf="!loading && overview as o">
-    <!-- A pause of the client's follow-up (DS-03) -->
-    <div class="cp-pause" *ngIf="o.pause as pause" role="status">
-      <i-feather name="pause-circle" class="cp-ico"></i-feather>
-      <span>{{ 'CLIENT_PROGRAMS.PAUSED_FROM_TO' | translate: { from: schedule.formatDate(pause.from), to: schedule.formatDate(pause.to) } }}</span>
-    </div>
-
     <!-- What needs the coach (P2): one line each -->
     <div class="cp-alerts" *ngIf="alerts.length && writable" role="status">
       <div class="cp-alert" *ngFor="let view of alerts">

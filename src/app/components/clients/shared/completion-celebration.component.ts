@@ -18,11 +18,14 @@ const ICONS: Record<CelebrationIcon, string[]> = {
   drumstick: ['M15.4 15.63a7.875 6 135 1 1 6.23-6.23 4.3 3.43 135 0 0-6.23 6.23', 'm8.29 12.71-2.6 2.6a2.5 2.5 0 1 0-1.65 4.65A2.5 2.5 0 1 0 8.7 18.3l2.59-2.59'],
   'circle-check': ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'm9 12 2 2 4-4'],
   utensils: ['m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8', 'M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7', 'm2.1 21.8 6.4-6.3', 'm19 5-7 7'],
+  'clipboard-check': ['M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z', 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2', 'm9 14 2 2 4-4'],
+  layers: ['m12 2 9 5-9 5-9-5 9-5z', 'm3 12 9 5 9-5', 'm3 17 9 5 9-5'],
 };
 
 const CONFETTI = {
   workout: ['#44B4DF', '#0C86C8', '#8ED6F1', '#22C55E', '#F5B83D', '#0F1B2D'],
   nutrition: ['#22B573', '#84CC16', '#4ADE80', '#F97316', '#EF4444', '#FACC15'],
+  checkin: ['#7455D9', '#A78BFA', '#44B4DF', '#F472B6', '#F5B83D', '#22C55E'],
 };
 
 /** Medallion geometry (viewBox 168): the disc is 116 wide, the ring of meals 16 further out. */
@@ -53,7 +56,7 @@ function seeded(seed: number): () => number {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="cc" [class.cc--nutrition]="view.kind === 'nutrition'" [style.--intro]="introMs + 'ms'"
+    <div class="cc" [class.cc--nutrition]="view.kind === 'nutrition'" [class.cc--checkin]="view.kind === 'checkin'" [style.--intro]="introMs + 'ms'"
          role="dialog" aria-modal="true" aria-labelledby="cc-title" aria-describedby="cc-message">
       <canvas #confetti class="cc__confetti" aria-hidden="true"></canvas>
       <div class="cc__scroll">
@@ -94,6 +97,9 @@ function seeded(seed: number): () => number {
             <div *ngIf="view.legend.length" class="cc__legend">
               <span *ngFor="let item of view.legend"><i [style.background]="item.color"></i>{{ item.label }}</span>
             </div>
+            <ul *ngIf="view.insights?.length" class="cc__insights">
+              <li *ngFor="let line of view.insights">{{ line }}</li>
+            </ul>
           </section>
         </div>
       </div>
@@ -114,6 +120,10 @@ function seeded(seed: number): () => number {
     .cc--nutrition {
       --cc-accent: #22B573; --cc-light: #5ED69E; --cc-deep: #14955A; --cc-text: light-dark(#12804B, #67c68d);
       --cc-glow: #E2F6EB; --cc-glow-2: #F4FBF7; --cc-tint: light-dark(#E5F6EC, #193628);
+    }
+    .cc--checkin {
+      --cc-accent: #7455D9; --cc-light: #9B82EA; --cc-deep: #5B3FC4; --cc-text: light-dark(#5B3FC4, #b3a1ff);
+      --cc-glow: #EEE9FC; --cc-glow-2: #F8F6FE; --cc-tint: light-dark(#F0EBFD, #2a2442);
     }
     /* Behind the check and the texts, as on mobile. */
     .cc__confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
@@ -181,6 +191,9 @@ function seeded(seed: number): () => number {
     .cc__legend { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; }
     .cc__legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--yc-text-secondary, light-dark(#546175, #b5bac3)); }
     .cc__legend i { width: 8px; height: 8px; border-radius: 50%; }
+    .cc__insights { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; text-align: left; }
+    .cc__insights li { position: relative; padding-left: 16px; font-size: 13.5px; line-height: 1.35; font-weight: 600; color: var(--cc-text); }
+    .cc__insights li::before { content: ''; position: absolute; left: 2px; top: 0.5em; width: 6px; height: 6px; border-radius: 50%; background: var(--cc-accent); }
 
     .cc__footer { position: relative; z-index: 2; flex: none; padding: 8px 24px calc(16px + env(safe-area-inset-bottom)); display: flex; justify-content: center; }
     .cc__done {

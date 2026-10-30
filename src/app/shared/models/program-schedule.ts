@@ -18,11 +18,11 @@ export interface ScheduleChange {
   newEndDate?: string | null;
   preparedDaysLost: number;
   file: boolean;
-  /** SHIFTED: its new start (its new end is newEndDate). PAUSED: the day it resumes (DS-01/DS-02). */
+  /** SHIFTED: its new start (its new end is newEndDate). PAUSED: the day it resumes (« Décaler la suite », DS-01). */
   newStartDate?: string | null;
 }
 
-/* ---------------- « Décaler la suite » and pause (backlog-programmes.md DS-01/DS-02) ---------------- */
+/* ---------------- « Décaler la suite » (backlog-programmes.md DS-01) ---------------- */
 
 /** What « Décaler la suite » proposes (P1) and would change (server ProgramShiftService.ShiftPreview). */
 export interface ShiftPreview {
@@ -41,20 +41,6 @@ export interface ShiftResult {
   startDate: string;
   endDate: string;
   changes: ScheduleChange[];
-  undoId: string | null;
-}
-
-export interface PauseView {
-  id: string;
-  fromDate: string;
-  toDate: string;
-  types: ProgramKind[];
-}
-
-/** What a pause changes by type (WORKOUT, NUTRITION); pause and undoId once saved. */
-export interface PauseResult {
-  pause: PauseView | null;
-  changes: Partial<Record<ProgramKind, ScheduleChange[]>>;
   undoId: string | null;
 }
 
@@ -432,8 +418,6 @@ export interface ProgramOverview {
   finished: OverviewItem[];
   upcomingCount: number;
   finishedCount: number;
-  /** A pause of the client's follow-up for this type, going on or to come (DS-03). */
-  pause?: { from: string; to: string } | null;
 }
 
 /** Whole days from today to that date (negative before). */

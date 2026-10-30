@@ -452,3 +452,387 @@
     padding-top: 12px;
   }
 }
+
+// ===================== Filling, page by page =====================
+// An intro, one part per page that slides in, a small celebration between parts, a progress bar per part.
+.ck-flow {
+  --ck-accent: var(--yc-primary);
+  --ck-soft: color-mix(in srgb, var(--yc-primary) 10%, transparent);
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.ck-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 10px;
+
+  &__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    strong { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    small { font-size: 12.5px; font-weight: 600; color: var(--yc-text-secondary); }
+  }
+
+  &__close {
+    flex: none;
+    padding: 6px 12px;
+    border: 1px solid var(--yc-hairline);
+    border-radius: 999px;
+    background: var(--yc-surface);
+    color: var(--yc-text-secondary);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
+// One segment per part: the current one is taller, a full one gets a small shine.
+.ck-progress {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 18px;
+
+  &__seg {
+    flex: 1;
+    height: 6px;
+    border-radius: 99px;
+    background: light-dark(#e7ebf0, #2b3036);
+    overflow: hidden;
+    transition: height 0.25s ease;
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--ck-accent), color-mix(in srgb, var(--ck-accent) 70%, #a78bfa));
+      transition: width 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    &.is-current { height: 8px; box-shadow: 0 0 0 3px var(--ck-soft); }
+    &.is-full i { animation: ck-shine 0.9s ease-out; }
+  }
+}
+
+.ck-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 56px;
+  margin-top: 22px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(90deg, var(--ck-accent), color-mix(in srgb, var(--ck-accent) 78%, #7455d9));
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--ck-accent) 32%, transparent);
+  transition: transform 0.15s ease, filter 0.15s ease;
+
+  i-feather { width: 20px; height: 20px; transition: transform 0.2s ease; }
+  &:hover { filter: brightness(1.05); i-feather { transform: translateX(3px); } }
+  &:active { transform: scale(0.985); }
+}
+
+// Intro
+.ck-intro {
+  padding: 18px 4px 8px;
+  text-align: center;
+  animation: ck-rise 0.45s cubic-bezier(0.33, 1, 0.68, 1) both;
+
+  &__hero { position: relative; display: inline-block; margin-top: 6px; }
+  &__avatar {
+    --avatar-size: 76px;
+    font-size: 26px;
+    box-shadow: 0 0 0 6px var(--ck-soft);
+    animation: ck-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  &__wave {
+    position: absolute;
+    right: -10px;
+    bottom: -4px;
+    font-size: 28px;
+    transform-origin: 70% 70%;
+    animation: ck-wave 1.6s ease-in-out 0.4s 2;
+  }
+  &__title { margin: 16px 0 0 !important; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  &__text { margin: 8px auto 0 !important; max-width: 480px; font-size: 15px; line-height: 1.5; color: var(--yc-text-secondary); white-space: pre-line; }
+  &__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+}
+
+.ck-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--ck-soft);
+  color: var(--ck-accent);
+  font-size: 13px;
+  font-weight: 700;
+
+  i-feather { width: 15px; height: 15px; }
+}
+
+.ck-steps {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0 0 !important;
+  padding: 0 !important;
+  list-style: none;
+  text-align: left;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--yc-hairline);
+    border-radius: 14px;
+    background: var(--yc-surface);
+    animation: ck-rise 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation-delay: calc(0.12s + var(--i) * 0.07s);
+
+    &.is-done .ck-steps__dot { background: var(--yc-success); color: #fff; }
+  }
+
+  &__dot {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--ck-soft);
+    color: var(--ck-accent);
+    font-size: 13px;
+    font-weight: 800;
+
+    i-feather { width: 16px; height: 16px; }
+  }
+  &__title { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; }
+  &__count { font-size: 12px; font-weight: 600; color: var(--yc-text-hint); }
+}
+
+.ck-restart { display: inline-block; margin-top: 12px; font-size: 13.5px; }
+
+// A part: it slides in, its questions follow one after the other.
+.ck-page {
+  animation: ck-slide-in 0.38s cubic-bezier(0.33, 1, 0.68, 1) both;
+
+  &--back { animation-name: ck-slide-back; }
+
+  &__head {
+    margin-bottom: 14px;
+
+    h2 { margin: 4px 0 0 !important; font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+    p { margin: 6px 0 0 !important; font-size: 14.5px; line-height: 1.45; color: var(--yc-text-secondary); white-space: pre-line; }
+  }
+
+  &__kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ck-accent); }
+}
+
+.ck-q {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid var(--yc-hairline);
+  border-radius: 18px;
+  background: var(--yc-surface);
+  scroll-margin: 90px 0 120px;
+  animation: ck-rise 0.35s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation-delay: calc(min(var(--qi), 6) * 0.05s);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+
+  // Answered: a coloured edge and a small tick.
+  &.is-answered {
+    border-color: color-mix(in srgb, var(--ck-accent) 45%, var(--yc-hairline));
+    box-shadow: inset 4px 0 0 var(--ck-accent);
+
+    .question__label::after {
+      content: '✓';
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      margin-left: 8px;
+      border-radius: 50%;
+      background: var(--ck-accent);
+      color: #fff;
+      font-size: 11px;
+      vertical-align: 2px;
+      animation: ck-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+  }
+
+  &.shake { animation: ck-shake 0.45s ease both; border-color: var(--yc-error); }
+
+  .question__label { font-size: 15.5px; font-weight: 700; letter-spacing: -0.2px; }
+  .question__help { margin-top: 3px !important; font-size: 12.5px; font-weight: 500; color: var(--yc-text-secondary); }
+  > :last-child { margin-top: 12px; }
+}
+
+// A tap that feels like one.
+.ck-q .choice.selected { animation: ck-tap 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ck-q .stars .on svg { animation: ck-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.ck-q .scale button.selected { animation: ck-tap 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+// Between two parts
+.ck-cheer {
+  position: relative;
+  padding: 36px 8px 8px;
+  text-align: center;
+  overflow: hidden;
+
+  &__emoji {
+    position: relative;
+    z-index: 1;
+    font-size: 76px;
+    line-height: 1;
+    animation: ck-emoji 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  &__kicker {
+    margin: 18px 0 0 !important;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--yc-success);
+    animation: ck-rise 0.4s ease 0.2s both;
+  }
+  &__message {
+    margin: 8px auto 0 !important;
+    max-width: 440px;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.4px;
+    animation: ck-rise 0.4s ease 0.3s both;
+  }
+  &__left { margin: 10px 0 0 !important; font-size: 15px; color: var(--yc-text-secondary); animation: ck-rise 0.4s ease 0.4s both; }
+  &__next {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 22px;
+    padding: 12px 20px;
+    border: 1px dashed color-mix(in srgb, var(--ck-accent) 45%, transparent);
+    border-radius: 16px;
+    background: var(--ck-soft);
+    animation: ck-rise 0.4s ease 0.5s both;
+
+    span { font-size: 12px; font-weight: 700; color: var(--yc-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+    strong { font-size: 16px; font-weight: 800; color: var(--ck-accent); }
+  }
+  .ck-cta { position: relative; z-index: 1; animation: ck-rise 0.4s ease 0.6s both; }
+
+  // A burst of pieces from behind the emoji, each its own direction and colour.
+  &__burst {
+    position: absolute;
+    top: 74px;
+    left: 50%;
+    width: 0;
+    height: 0;
+
+    i {
+      --angle: calc(var(--p) * 22.5deg);
+      position: absolute;
+      width: 9px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--ck-accent);
+      opacity: 0;
+      animation: ck-burst 1s cubic-bezier(0.2, 0.8, 0.3, 1) 0.1s both;
+
+      &:nth-child(4n + 1) { background: #f5b83d; }
+      &:nth-child(4n + 2) { background: #f472b6; border-radius: 50%; width: 10px; height: 10px; }
+      &:nth-child(4n + 3) { background: #7455d9; }
+      &:nth-child(odd) { animation-duration: 1.15s; }
+    }
+  }
+}
+
+.ck-bar {
+  .ck-bar__row { display: flex; gap: 10px; }
+
+  .ck-bar__back {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border: 1px solid var(--yc-hairline);
+    border-radius: 14px;
+    background: var(--yc-surface);
+    color: var(--yc-text-primary);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+
+    i-feather { width: 20px; height: 20px; }
+  }
+
+  .ck-bar__next {
+    flex: 1;
+    height: 52px;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+
+    i-feather { width: 18px; height: 18px; }
+    &.is-waiting { opacity: 0.55; }
+    &.is-ready { animation: ck-glow 1.6s ease-in-out infinite; }
+    &:active { transform: scale(0.985); }
+  }
+}
+
+.sheet-part {
+  padding: 14px 16px 8px;
+  border-top: 1px solid var(--yc-hairline);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yc-primary);
+
+  &:first-child { border-top: 0; }
+}
+
+@keyframes ck-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes ck-slide-in { from { opacity: 0; transform: translateX(28px); } }
+@keyframes ck-slide-back { from { opacity: 0; transform: translateX(-28px); } }
+@keyframes ck-pop { from { transform: scale(0); } }
+@keyframes ck-tap { 40% { transform: scale(0.94); } 70% { transform: scale(1.04); } }
+@keyframes ck-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@keyframes ck-wave { 0%, 100% { transform: rotate(0); } 15%, 45% { transform: rotate(18deg); } 30%, 60% { transform: rotate(-10deg); } }
+@keyframes ck-emoji { 0% { transform: scale(0) rotate(-25deg); } 70% { transform: scale(1.15) rotate(6deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes ck-shine { from { filter: brightness(1.5); } }
+@keyframes ck-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ck-accent) 40%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--ck-accent) 0%, transparent); }
+}
+@keyframes ck-burst {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateY(0) scale(0.6); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(-150px) rotate(220deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-flow, .ck-flow * { animation: none !important; transition: none !important; }
+  .ck-cheer__burst { display: none; }
+}
+
+// On-time streak (CE /assignments/me/streak), violet like the check-in celebration.
+.streak-pill {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 5px 11px;
+  border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  color: light-dark(#5B3FC4, #B3A1FF); background: light-dark(#F0EBFD, #2A2442);
+  i-feather { width: 14px; height: 14px; }
+}

@@ -1,0 +1,64 @@
+/* Sign-up link page: same card as the invitation page, plus the waiting-list notice and the message field. */
+
+.join-sub { margin-bottom: 24px; }
+
+.join-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border: 1px solid light-dark(#f5c27a, #6b5223);
+  border-radius: 12px;
+  background: light-dark(#fff8ec, #2a2317);
+  color: light-dark(#7a4a06, #f3d29b);
+  text-align: start;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.join-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 24px;
+  text-align: start;
+}
+.join-field__label { font-size: 13px; font-weight: 600; color: light-dark(#334155, #d1d6df); }
+.join-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid light-dark(#e2e8f0, #34393f);
+  border-radius: 10px;
+  background: light-dark(#ffffff, #171b1f);
+  color: light-dark(#0f172a, #e8ecf6);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+.join-field textarea:focus {
+  outline: none;
+  border-color: #0abde3;
+  box-shadow: 0 0 0 3px rgba(10, 189, 227, 0.15);
+}
+.join-field__count { align-self: flex-end; font-size: 12px; color: light-dark(#94a3b8, #8c9199); }
+
+.join-fineprint {
+  margin: 20px 0 0;
+  max-width: 420px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: light-dark(#64748b, #a7abb4);
+}
+
+@media (max-width: 520px) {
+  .inv-card__body { padding: 32px 20px; }
+  .inv-cta { min-width: 0; width: 100%; }
+}
+
+.join-cancel { margin-top: 16px; background: none; border: 0; cursor: pointer; }
+.join-space { margin-top: 20px; }

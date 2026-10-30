@@ -68,7 +68,7 @@
   <!-- A month not read yet (lot B): a thin bar while it comes, the grid stays. -->
   <div class="calendar-reading" *ngIf="programsLoaded && periodLoading" role="progressbar" [attr.aria-label]="'LOADING' | translate"></div>
 
-  <!-- What the coach does (C4): the detail of the days and drag in the week, copy a week, pause the client. -->
+  <!-- What the coach does (C4): the detail of the days and drag in the week, copy a week. -->
   <div class="week-tools" *ngIf="hasSelectedClient() && programsLoaded">
     <button
       type="button"
@@ -97,9 +97,6 @@
     <span class="week-tools__hint">{{ currentView === 'week' && !narrow ? ('CALENDAR_DRAG_HINT' | translate) : '' }}</span>
     <button type="button" class="dp-button" *ngIf="currentView !== 'month'" (click)="openCopyWeek()">
       <span class="material-icons" aria-hidden="true">content_copy</span>{{ 'CALENDAR_COPY_WEEK' | translate }}
-    </button>
-    <button type="button" class="dp-button" (click)="showPause = true">
-      <span class="material-icons" aria-hidden="true">pause_circle_outline</span>{{ 'CALENDAR_PAUSE' | translate }}
     </button>
   </div>
 
@@ -647,14 +644,6 @@
   (confirm)="confirmCopyWeek($event)"
 ></app-copy-days-modal>
 
-<!-- « Mettre en pause » the client (C4): the window of the client's tabs. -->
-<app-client-pause-modal
-  *ngIf="showPause"
-  [clientId]="selectedClient"
-  [clientName]="getSelectedClientName()"
-  (closed)="showPause = false"
-  (saved)="showPause = false"
-></app-client-pause-modal>
 
 <!-- « Décaler la suite » of a program, from the day panel: the window of the client's tabs. -->
 <!-- « Retirer ce programme » from the day panel: the window of the client's tabs (CC-25). -->

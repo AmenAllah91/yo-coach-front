@@ -1,4 +1,4 @@
-import {Component, Input, Output, EventEmitter} from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnChanges} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -9,22 +9,32 @@ import {InvitationService} from "../../../service/invitation.service";
 import {AuthService} from "@config/auth.service";
 import {environment} from "@env/environment";
 import { ToastService } from '../../../service/toast.service';
+import { RouterLink } from '@angular/router';
+import { JoinLink, JoinRequestService } from '../../../service/join-request.service';
 
 /**
- * The coach types the client's email first: the link is created for that email only, then sent by email or copied
- * (WhatsApp, Messenger...). Pending invitations are listed in the "Invited" tab.
+ * Two ways to add clients. "By email": the link is created for that email only, then sent by email or copied
+ * (WhatsApp, Messenger...); pending invitations are listed in the "Invited" tab. "Sign-up link": the coach's own link,
+ * without email, shared anywhere; each person who uses it sends a request the coach accepts or declines ("Requests"
+ * tab). The coach's slots are shown: once full, new clients go to the waiting list.
  */
 @Component({
   selector: 'app-add-client-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, RouterLink],
   templateUrl: './add-client-modal.component.html',
   styleUrls: ['./add-client-modal.component.scss'],
 })
-export class AddClientModalComponent {
+export class AddClientModalComponent implements OnChanges {
   @Input() isVisible = false;
   @Output() onClose  = new EventEmitter<void>();
   @Output() onCreate = new EventEmitter<{ email: string }>();
+  mode: 'email' | 'link' = 'email';
+  joinLink: JoinLink | null = null;
+  joinLinkLoading = false;
+  joinLinkError = false;
+  joinLinkCopied = false;
+  joinLinkBusy = false;
   email = '';
   copied = false;
   inviteLink = '';
@@ -45,7 +55,83 @@ export class AddClientModalComponent {
     private authService: AuthService,
     private translate: TranslateService,
     private toastService: ToastService,
+    private joinRequests: JoinRequestService,
   ) {
+  }
+
+  ngOnChanges(): void {
+    if (this.isVisible && !this.joinLink && !this.joinLinkLoading) this.loadJoinLink();
+  }
+
+  /** The coach's link and slots, read when the modal opens (the slots matter in both modes). */
+  loadJoinLink(): void {
+    this.joinLinkLoading = true;
+    this.joinLinkError = false;
+    this.joinRequests.getMyLink().subscribe({
+      next: (link) => { this.joinLink = link; this.joinLinkLoading = false; },
+      error: () => { this.joinLinkError = true; this.joinLinkLoading = false; },
+    });
+  }
+
+  get joinLinkUrl(): string {
+    return this.joinLink ? this.joinRequests.linkBaseUrl + this.joinLink.token : '';
+  }
+
+  /** 0..100 for the slots bar; null without a limit. */
+  get slotsPercent(): number | null {
+    const limit = this.joinLink?.limit;
+    if (!limit) return null;
+    return Math.min(100, Math.round(((this.joinLink?.current ?? 0) / limit) * 100));
+  }
+
+  get slotsLeft(): number {
+    return Math.max(0, (this.joinLink?.limit ?? 0) - (this.joinLink?.current ?? 0));
+  }
+
+  setMode(mode: 'email' | 'link'): void {
+    this.mode = mode;
+    this.joinLinkCopied = false;
+  }
+
+  copyJoinLink(): void {
+    if (!this.joinLink?.active) return;
+    navigator.clipboard.writeText(this.joinLinkUrl).catch(() => {});
+    this.joinLinkCopied = true;
+    setTimeout(() => (this.joinLinkCopied = false), 2000);
+  }
+
+  /** Native share sheet where available (phones), else copy. */
+  shareJoinLink(): void {
+    if (!this.joinLink?.active) return;
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    if (nav.share) {
+      nav.share({ title: this.translate.instant('JOIN.SHARE_TITLE'), text: this.translate.instant('JOIN.SHARE_TEXT'), url: this.joinLinkUrl })
+        .catch(() => {});
+    } else {
+      this.copyJoinLink();
+    }
+  }
+
+  regenerateJoinLink(): void {
+    if (this.joinLinkBusy || !confirm(this.translate.instant('JOIN.REGENERATE_CONFIRM'))) return;
+    this.joinLinkBusy = true;
+    this.joinRequests.regenerateLink().subscribe({
+      next: (link) => {
+        this.joinLink = link;
+        this.joinLinkBusy = false;
+        this.toastService.success(this.translate.instant('JOIN.REGENERATED'));
+      },
+      error: () => { this.joinLinkBusy = false; },
+    });
+  }
+
+  toggleJoinLink(): void {
+    if (this.joinLinkBusy || !this.joinLink) return;
+    this.joinLinkBusy = true;
+    this.joinRequests.setLinkActive(!this.joinLink.active).subscribe({
+      next: (link) => { this.joinLink = link; this.joinLinkBusy = false; },
+      error: () => { this.joinLinkBusy = false; },
+    });
   }
 
   get emailError(): string {
@@ -116,6 +202,9 @@ export class AddClientModalComponent {
     this.emailTouched = false;
     this.isGenerating = false;
     this.serverErrorKey = '';
+    this.mode = 'email';
+    this.joinLink = null;
+    this.joinLinkCopied = false;
     this.onClose.emit();
   }
 

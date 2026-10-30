@@ -244,20 +244,8 @@ export class FormsListComponent implements OnInit, OnDestroy {
     return (form.status ?? '').toUpperCase() === 'PUBLISHED';
   }
 
+  /** A published check-in is editable too: answers already received keep the questions they were given (frozen by the back). */
   onEditGuarded(form: Form): void {
-    if (this.isPublished(form)) {
-      this.toastr.warning(
-        this.translate.instant('PUBLISHED_FORM_EDIT_FORBIDDEN'),
-        this.translate.instant('ACTION_NOT_ALLOWED'),
-        {
-          timeOut: 2500,
-          closeButton: true,
-          progressBar: true,
-        }
-      );
-      return;
-    }
-
     this.onEdit(form);
   }
 
@@ -315,7 +303,12 @@ export class FormsListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.deleting.set(false);
-          this.error.set(this.extractError(err) ?? this.translate.instant('DELETE_FORM_ERROR'));
+          this.confirmOpen.set(false);
+          this.selectedToDelete.set(null);
+          // 409: already sent to clients, their answers are kept; the coach archives it instead.
+          this.error.set(err?.status === 409
+            ? this.translate.instant('FORM_ALREADY_SENT_ARCHIVE_INSTEAD')
+            : this.extractError(err) ?? this.translate.instant('DELETE_FORM_ERROR'));
         },
       });
   }
@@ -329,6 +322,7 @@ export class FormsListComponent implements OnInit, OnDestroy {
         label: q.label,
         required: !!q.required,
         order: idx,
+        textFormat: q.textFormat ?? null,
         options: (q.options ?? []).map((o: any) => ({
           label: o.label,
         })),

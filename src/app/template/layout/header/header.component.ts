@@ -390,7 +390,8 @@ this.translate.use(lang);}
       BODY_MEASUREMENTS_UPDATED: 'maximize-2', PROGRAM_ENDING_SOON: 'calendar',
       PROGRAM_ASSIGNED: 'clipboard', PROGRAM_UPDATED: 'edit-3', WORKOUT_DUE_TODAY: 'activity',
       CHECK_IN_DUE: 'check-square', WORKOUT_OVERDUE: 'alert-circle',
-      NUTRITION_DAY_OVERDUE: 'calendar', CHECK_IN_OVERDUE: 'alert-circle', CHECK_IN_REVIEWED: 'message-circle'
+      NUTRITION_DAY_OVERDUE: 'calendar', CHECK_IN_OVERDUE: 'alert-circle', CHECK_IN_REVIEWED: 'message-circle',
+      JOIN_REQUEST_RECEIVED: 'user-plus', JOIN_REQUEST_ACCEPTED: 'user-check', JOIN_SLOT_AVAILABLE: 'unlock'
     };
     return icons[type] || 'bell';
   }

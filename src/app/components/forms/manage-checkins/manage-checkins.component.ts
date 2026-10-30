@@ -47,6 +47,8 @@ export interface CheckinRow {
   submittedAt?: string;
   reviewedAt?: string;
   coachFeedback?: string;
+  /** When the client read the comment (CE feedbackSeenAt); none: not read yet. */
+  feedbackSeenAt?: string;
   /** Days late (overdue), days waiting (to review), days left (upcoming). */
   days: number;
 }
@@ -241,6 +243,7 @@ export class ManageCheckinsComponent implements OnInit {
       submittedAt: a.submittedAt,
       reviewedAt: a.reviewedAt ?? undefined,
       coachFeedback: a.coachFeedback ?? undefined,
+      feedbackSeenAt: a.feedbackSeenAt ?? undefined,
       days,
     };
   }
@@ -506,10 +509,14 @@ export class ManageCheckinsComponent implements OnInit {
     this.editingFeedback = row.status === 'to_review';
     this.detailLoading = true;
 
-    const form$ = this.formCache.has(row.formId)
-      ? of(this.formCache.get(row.formId)!)
-      : this.formsApi.getFormById(row.formId, true);
-    const submission$ = row.submittedAt || assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED'
+    const answered = !!row.submittedAt || assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED';
+    // Answered: the questions frozen with these answers (the form may have been edited since), never the cached form.
+    const form$ = answered
+      ? this.formsApi.getFormById(row.formId, true, row.id)
+      : this.formCache.has(row.formId)
+        ? of(this.formCache.get(row.formId)!)
+        : this.formsApi.getFormById(row.formId, true);
+    const submission$ = answered
       ? this.submissionsApi.getByAssignmentId(row.id).pipe(catchError(() => of(null as Submission | null)))
       : of(null as Submission | null);
 
@@ -517,7 +524,7 @@ export class ManageCheckinsComponent implements OnInit {
     forkJoin([form$, submission$]).subscribe({
       next: ([form, submission]) => {
         if (this.selected?.id !== openedId) return; // another check-in was opened meanwhile
-        this.formCache.set(row.formId, form);
+        if (!answered) this.formCache.set(row.formId, form);
         const questions: Question[] = (form.questions ?? [])
           .slice()
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -651,6 +658,34 @@ export class ManageCheckinsComponent implements OnInit {
       },
     });
   }
+
+  /** Ready-made openings (mobile check_in_detail_modal.dart): added to the text, to be edited before sending. */
+  get quickReplies(): string[] {
+    return this.isFrench
+      ? ['Bravo pour la régularité, continuez comme ça !', 'Belle semaine, vos efforts se voient.',
+         'Merci pour vos réponses détaillées.', 'On ajuste un peu le programme cette semaine.',
+         'Pensez à bien vous reposer et à vous hydrater.']
+      : ['Great consistency, keep it up!', 'Nice week, your effort shows.', 'Thanks for the detailed answers.',
+         'We will adjust the plan a little this week.', 'Remember to rest and stay hydrated.'];
+  }
+
+  addQuickReply(reply: string, field?: HTMLTextAreaElement): void {
+    const current = this.feedback.trim();
+    this.feedback = current ? `${current} ${reply}` : reply;
+    setTimeout(() => { field?.focus(); field?.setSelectionRange(this.feedback.length, this.feedback.length); });
+  }
+
+  /** « Lu le 30 oct., 14:05 » under the comment, or « Pas encore lu ». */
+  feedbackReadLabel(row: CheckinRow): string {
+    const date = row.feedbackSeenAt ? new Date(row.feedbackSeenAt) : null;
+    if (!date || isNaN(date.getTime())) return this.isFrench ? 'Pas encore lu par le client' : 'Not read by the client yet';
+    const when = new Intl.DateTimeFormat(this.isFrench ? 'fr-FR' : 'en-US', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    }).format(date);
+    return this.isFrench ? `Lu par le client le ${when}` : `Read by the client on ${when}`;
+  }
+
+  private get isFrench(): boolean { return (this.translate.currentLang || this.translate.defaultLang) !== 'en'; }
 
   onFeedbackKeydown(event: KeyboardEvent): void {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {

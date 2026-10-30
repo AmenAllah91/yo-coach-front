@@ -4,7 +4,7 @@ import { FeatherModule } from 'angular-feather';
 import { ProgramOverview } from '@shared/models/program-schedule';
 import { clientObjectiveLabel } from '../../../models/client-objective';
 
-export type ClientHeaderStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+export type ClientHeaderStatus = 'ACTIVE' | 'ARCHIVED';
 
 interface ProfileRow {
   icon: string;
@@ -123,7 +123,6 @@ interface ProfileRow {
 
     .cpp-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 99px; font-size: 12px; font-weight: 700; background: light-dark(#e8f8f1, #1a352b); color: light-dark(#0b8a5f, #5cc596); }
     .cpp-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    .cpp-status[data-status='PAUSED'] { background: light-dark(#fff4e0, #3c2b05); color: light-dark(#b45d09, #ef934f); }
     .cpp-status[data-status='ARCHIVED'] { background: light-dark(#eef2f6, #14171b); color: light-dark(#5b6b80, #acb3bb); }
 
     .cpp__weights { margin: 16px 18px 0; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; background: light-dark(#fff, #1d2125); }
@@ -208,7 +207,6 @@ export class ClientProfilePanelComponent {
 
   get statusLabel(): string {
     switch (this.status) {
-      case 'PAUSED': return this.t('En pause', 'Paused');
       case 'ARCHIVED': return this.t('Archivé', 'Archived');
       default: return this.t('Actif', 'Active');
     }

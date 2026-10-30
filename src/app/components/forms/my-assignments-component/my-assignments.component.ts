@@ -4,13 +4,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Observable, Subject, catchError, forkJoin, map, of, shareReplay, takeUntil } from 'rxjs';
+import { Observable, Subject, catchError, forkJoin, map, of, shareReplay, takeUntil, timeout } from 'rxjs';
 
 import { FormDetails, FormsApiService, PageResponse } from '../services/forms-api.service';
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
 import { SubmissionsApiService } from '../services/submissions-api.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { capitalizeFirst, capitalizeSentences, initials, planDate } from 'app/components/clients/shared/client-plan-utils';
+import { CompletionCelebrationComponent } from 'app/components/clients/shared/completion-celebration.component';
+import { CelebrationView, celebrationHash, checkinCelebration } from 'app/components/clients/shared/celebration';
+import { PagePart, orderedQuestions, pageOf, pagesOf, visibleQuestionIds } from '../checkin-pages';
 
 /** Answer being filled (mobile SubmissionAnswer): every field is sent, like the mobile app. */
 interface DraftAnswer {
@@ -20,6 +23,14 @@ interface DraftAnswer {
 
 const SUBMITTED = ['SUBMITTED', 'REVIEWED'];
 
+/** Shown between two parts, one after the other. */
+const CHEER_EMOJIS = ['🎉', '💪', '🔥', '⭐', '🚀', '🙌', '✨', '🏆'];
+const CHEER_EN = ['Great job, keep going!', 'You are flying through it!', 'Nice, your coach will love this.', 'Halfway there and going strong!', 'Almost done, one last push!'];
+const CHEER_FR = ['Bravo, continuez comme ça !', 'Vous avancez vite !', 'Super, votre coach va adorer.', 'À mi-chemin, et en pleine forme !', 'Presque fini, un dernier effort !'];
+
+/** Answers you give with one tap: the page then moves on to the next question by itself. */
+const ONE_TAP = ['YES_NO', 'MULTIPLE_CHOICE', 'STAR_RATING', 'SCALE', 'OPINION_RATING'];
+
 /**
  * Client check-ins, same content and logic as the mobile CheckInScreen and CheckInFormPage: "To complete"
  * (due soon / overdue) and "Submitted" lists loaded page by page, the form to fill on its own page, and the
@@ -28,7 +39,7 @@ const SUBMITTED = ['SUBMITTED', 'REVIEWED'];
 @Component({
   selector: 'app-my-assignments',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent],
   templateUrl: './my-assignments.component.html',
   styleUrls: ['./my-assignments.component.scss'],
 })
@@ -39,6 +50,8 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   tab = 0;
   assignments: FormAssignment[] = [];
+  /** "Submitted" tab, loaded on its own and newest answer first; [assignments] stays the mixed list of the first tab. */
+  sentAssignments: FormAssignment[] = [];
   loading = false;
   loadingMore = false;
   error = '';
@@ -58,6 +71,26 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   form: FormDetails | null = null;
   answers: DraftAnswer[] = [];
   submittedAnswers: any[] = [];
+
+  // Filling, page by page: an intro, one part per page, a small celebration between parts.
+  stage: 'intro' | 'part' | 'cheer' = 'intro';
+  /** The parts (a form without parts: one page). */
+  pages: PagePart[] = [];
+  pageIndex2 = 0;
+  /** Direction of the last page change, for the slide animation. */
+  slide: 'forward' | 'back' = 'forward';
+  /** Questions shown for the current answers. */
+  visible = new Set<string>();
+  /** The page the client stopped on last time (null: a new check-in). */
+  resumePageId: string | null = null;
+  /** Ready to go on: the button glows. */
+  pageReady = false;
+  celebration: CelebrationView | null = null;
+  /** On-time check-ins in a row (CE); the pill shows from two. */
+  streak = 0;
+  private indexById = new Map<string, number>();
+  private startedAt = 0;
+  private draftTimer?: ReturnType<typeof setTimeout>;
 
   @ViewChild('sentinel') sentinel?: ElementRef<HTMLElement>;
   private observer?: IntersectionObserver;
@@ -86,6 +119,10 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
         this.requestedAssignmentId = params.get('assignmentId') || '';
         this.loadPage(true);
       });
+      this.assignmentsApi.getMyStreak().pipe(takeUntil(this.destroy$)).subscribe({
+        next: result => this.streak = result?.streak || 0,
+        error: () => {},
+      });
     } else {
       this.loadPage(true);
     }
@@ -106,6 +143,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngOnDestroy(): void {
+    this.flushDraft();
     this.observer?.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
@@ -115,6 +153,12 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   // List (mobile CheckInProvider.loadPage / loadMore)
   // -------------------------------------------------------------------------
   private page$(page: number): Observable<PageResponse<FormAssignment>> {
+    if (this.tab === 1) {
+      // Sorted by the day the client filled it, not the day the coach sent it (2026-10-29).
+      return this.previewMode
+        ? this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(page, this.pageSize, 'submittedAt', 'DESC', this.previewClientId, ['SUBMITTED', 'REVIEWED'])
+        : this.assignmentsApi.pageMyAssignments(page, this.pageSize, 'submittedAt', 'DESC', undefined, true, ['SUBMITTED', 'REVIEWED']);
+    }
     return this.previewMode
       ? this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(page, this.pageSize, 'assignedAt', 'DESC', this.previewClientId)
       : this.assignmentsApi.pageMyAssignments(page, this.pageSize, 'assignedAt', 'DESC', undefined, true);
@@ -122,13 +166,15 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   loadPage(reset: boolean): void {
     if (reset) { this.loading = true; this.error = ''; this.pageIndex = 0; this.hasMore = true; }
+    const sentTab = this.tab === 1;
     this.page$(this.pageIndex).pipe(takeUntil(this.destroy$)).subscribe({
       next: page => {
         const content = page?.content || [];
         this.totalPages = page?.totalPages ?? 0;
         this.hasMore = this.pageIndex + 1 < this.totalPages && content.length > 0;
         this.attachFormNames(content).subscribe(named => {
-          this.assignments = reset ? named : [...this.assignments, ...named];
+          if (sentTab) this.sentAssignments = reset ? named : [...this.sentAssignments, ...named];
+          else this.assignments = reset ? named : [...this.assignments, ...named];
           this.loading = false;
           this.loadingMore = false;
           setTimeout(() => this.observeSentinel());
@@ -151,11 +197,13 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   /** Forms rarely change: cached so names and re-opened forms are instant. */
-  private form$(formId: string): Observable<FormDetails> {
-    let cached = this.formCache.get(formId);
+  private form$(formId: string, answeredAssignmentId?: string): Observable<FormDetails> {
+    // An answered check-in shows the questions frozen with its answers: cached per check-in, not per form.
+    const key = answeredAssignmentId ? `${formId}|${answeredAssignmentId}` : formId;
+    let cached = this.formCache.get(key);
     if (!cached) {
-      cached = this.formsApi.getFormById(formId).pipe(shareReplay({ bufferSize: 1, refCount: false }));
-      this.formCache.set(formId, cached);
+      cached = this.formsApi.getFormById(formId, false, answeredAssignmentId).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+      this.formCache.set(key, cached);
     }
     return cached;
   }
@@ -166,10 +214,26 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
       : this.form$(item.formId).pipe(map(form => ({ ...item, formName: form?.title || item.formName })), catchError(() => of(item)))));
   }
 
-  setTab(index: number): void { this.tab = index; }
+  setTab(index: number): void {
+    if (index === this.tab) return;
+    this.tab = index;
+    this.loadPage(true);
+  }
 
   get pending(): FormAssignment[] { return this.assignments.filter(item => item.status === 'ASSIGNED' || item.status === 'OPENED'); }
-  get submitted(): FormAssignment[] { return this.assignments.filter(item => SUBMITTED.includes(item.status)); }
+  get submitted(): FormAssignment[] {
+    if (this.tab === 1) return this.sentAssignments;
+    return this.assignments.filter(item => SUBMITTED.includes(item.status)).sort(this.bySubmittedDesc);
+  }
+
+  private bySubmittedDesc = (a: FormAssignment, b: FormAssignment) => {
+    const at = a.submittedAt ? new Date(a.submittedAt).getTime() : null;
+    const bt = b.submittedAt ? new Date(b.submittedAt).getTime() : null;
+    if (at == null && bt == null) return 0;
+    if (at == null) return 1;
+    if (bt == null) return -1;
+    return bt - at;
+  };
 
   /** A coach comment the client has not opened yet ("New" badge; never in the coach's preview). */
   hasNewFeedback(item: FormAssignment | null): boolean {
@@ -269,19 +333,37 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
           error: () => {},
         });
       }
-      this.form$(current.formId).pipe(takeUntil(this.destroy$)).subscribe({
+      this.form$(current.formId, SUBMITTED.includes(current.status) ? current.id : undefined).pipe(takeUntil(this.destroy$)).subscribe({
         next: form => {
-          this.form = { ...form, questions: [...(form.questions || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) };
+          // Page by page: the parts in order, then each part's questions.
+          this.pages = pagesOf(form.sections as PagePart[], capitalizeFirst(form.title || ''));
+          this.form = { ...form, questions: orderedQuestions(form.questions || [], this.pages) };
+          this.indexById = new Map(this.form.questions.map((q, i) => [q.id, i] as const));
           this.selected = { ...item, ...current, formName: current.formName || item.formName || form.title };
           if (SUBMITTED.includes(current.status)) {
             this.submissionsApi.getByAssignmentId(current.id).pipe(takeUntil(this.destroy$)).subscribe({
-              next: submission => { this.submittedAnswers = submission?.answers || []; this.opening = false; },
+              next: submission => {
+                this.submittedAnswers = submission?.answers || [];
+                this.visible = visibleQuestionIds(this.form!.questions, this.pages, this.submittedAnswers);
+                this.opening = false;
+              },
               error: () => { this.opening = false; this.formError = this.t('Unable to load the answers.', 'Impossible de charger les réponses.'); },
             });
           } else {
-            this.answers = this.form.questions.map(question => ({
-              questionId: question.id, type: question.type, text: null, selectedOptionId: null, rating: null, yes: null, date: null,
-            }));
+            // Answers saved last time come back: the client resumes where they stopped.
+            const saved = new Map((current.draftAnswers || []).map((a: any) => [a.questionId, a] as const));
+            this.answers = this.form.questions.map(question => {
+              const draft: any = saved.get(question.id) || {};
+              return {
+                questionId: question.id, type: question.type, text: draft.text ?? null,
+                selectedOptionId: draft.selectedOptionId ?? null, rating: draft.rating ?? null,
+                yes: draft.yes ?? null, date: draft.date ?? null,
+              };
+            });
+            this.resumePageId = saved.size && current.draftSectionId ? current.draftSectionId : (saved.size ? this.pages[0].id : null);
+            this.refreshVisible();
+            this.stage = 'intro';
+            this.pageIndex2 = 0;
             this.opening = false;
           }
         },
@@ -301,9 +383,21 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   private updateListed(item: FormAssignment): void {
     this.assignments = this.assignments.map(value => value.id === item.id ? { ...value, ...item } : value);
+    this.sentAssignments = this.sentAssignments.map(value => value.id === item.id ? { ...value, ...item } : value);
   }
 
-  closeForm(): void { this.view = 'list'; this.selected = null; this.form = null; setTimeout(() => this.observeSentinel()); }
+  closeForm(): void {
+    this.flushDraft();
+    this.view = 'list'; this.selected = null; this.form = null; this.stage = 'intro';
+    setTimeout(() => this.observeSentinel());
+  }
+
+  /** « Done » on the celebration: back to the list. */
+  celebrationDone(): void {
+    this.celebration = null;
+    this.answers = [];
+    this.closeForm();
+  }
   closeSheet(): void { this.sheetOpen = false; this.selected = null; this.form = null; }
 
   // -------------------------------------------------------------------------
@@ -324,8 +418,160 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
-  get answeredCount(): number { return this.questions.filter((q, i) => this.answered(q, i)).length; }
-  get requiredLeft(): number { return this.questions.filter((q, i) => !!(q.required ?? q.requiredField) && !this.answered(q, i)).length; }
+  /** Only the questions shown count: a question hidden by a condition is neither asked nor required. */
+  get shownQuestions(): any[] { return this.questions.filter(q => this.visible.has(q.id)); }
+  get answeredCount(): number { return this.shownQuestions.filter(q => this.answered(q, this.idx(q))).length; }
+  get requiredLeft(): number {
+    return this.shownQuestions.filter(q => !!(q.required ?? q.requiredField) && !this.answered(q, this.idx(q))).length;
+  }
+
+  /** Index of a question in [questions] and [answers]. */
+  idx(question: any): number { return this.indexById.get(question?.id) ?? -1; }
+
+  // -------------------------------------------------------------------------
+  // Pages (one part each): intro, parts, a celebration between parts
+  // -------------------------------------------------------------------------
+  private refreshVisible(): void {
+    this.visible = visibleQuestionIds(this.questions, this.pages, this.answers);
+    this.pageReady = this.stage === 'part' && this.pageRequiredLeft === 0 && this.pageUnanswered === 0;
+  }
+
+  /** The pages the client goes through: a part whose questions are all hidden is skipped. */
+  get shownPages(): PagePart[] {
+    return this.pages.filter(page => this.questions.some(q => this.visible.has(q.id) && pageOf(q, this.pages) === page.id));
+  }
+
+  get currentPage(): PagePart | null { return this.shownPages[this.pageIndex2] ?? null; }
+  get isLastPage(): boolean { return this.pageIndex2 >= this.shownPages.length - 1; }
+  get hasParts(): boolean { return this.pages.length > 1 || !!this.form?.sections?.length; }
+
+  pageQuestions(page: PagePart | null): any[] {
+    return page ? this.questions.filter(q => this.visible.has(q.id) && pageOf(q, this.pages) === page.id) : [];
+  }
+
+  get pageRequiredLeft(): number {
+    return this.pageQuestions(this.currentPage).filter(q => this.isRequired(q) && !this.answered(q, this.idx(q))).length;
+  }
+
+  private get pageUnanswered(): number {
+    return this.pageQuestions(this.currentPage).filter(q => !this.answered(q, this.idx(q))).length;
+  }
+
+  /** One segment per part: empty, partly or fully answered. */
+  get progressSegments(): { title: string; done: number; current: boolean }[] {
+    return this.shownPages.map((page, i) => {
+      const shown = this.pageQuestions(page);
+      const answered = shown.filter(q => this.answered(q, this.idx(q))).length;
+      return { title: page.title, done: shown.length ? answered / shown.length : 0, current: i === this.pageIndex2 && this.stage !== 'intro' };
+    });
+  }
+
+  get overallPercent(): number {
+    const shown = this.shownQuestions.length;
+    return shown ? Math.round((this.answeredCount / shown) * 100) : 0;
+  }
+
+  get pageMinutes(): number { return Math.min(Math.max(Math.ceil(this.shownQuestions.length * 0.4), 1), 60); }
+
+  /** Index in [shownPages] of the page the client stopped on. */
+  get resumeIndex(): number {
+    const index = this.shownPages.findIndex(page => page.id === this.resumePageId);
+    return index < 0 ? 0 : index;
+  }
+
+  isPageDone(page: PagePart): boolean {
+    const shown = this.pageQuestions(page);
+    return shown.length > 0 && shown.every(q => !this.isRequired(q) || this.answered(q, this.idx(q)));
+  }
+
+  start(resume = false): void {
+    this.startedAt = Date.now();
+    this.goToPage(resume ? this.resumeIndex : 0, 'forward');
+  }
+
+  private goToPage(index: number, slide: 'forward' | 'back'): void {
+    this.slide = slide;
+    this.pageIndex2 = Math.max(0, Math.min(index, this.shownPages.length - 1));
+    this.stage = 'part';
+    this.refreshVisible();
+    window.scrollTo({ top: 0, behavior: this.reducedMotion ? 'auto' : 'smooth' });
+  }
+
+  /** Next part, after a short celebration; the last one sends the check-in. */
+  nextPage(): void {
+    if (this.pageRequiredLeft > 0) { this.scrollToFirstMissing(); return; }
+    if (this.isLastPage) { this.submit(); return; }
+    this.flushDraft(this.shownPages[this.pageIndex2 + 1]?.id ?? null);
+    this.stage = 'cheer';
+    window.scrollTo({ top: 0 });
+    try { navigator.vibrate?.(25); } catch { /* not supported */ }
+  }
+
+  continueAfterCheer(): void { this.goToPage(this.pageIndex2 + 1, 'forward'); }
+
+  previousPage(): void {
+    if (this.pageIndex2 === 0) { this.stage = 'intro'; window.scrollTo({ top: 0 }); return; }
+    this.goToPage(this.pageIndex2 - 1, 'back');
+  }
+
+  /** The part just finished (shown on the celebration between parts). */
+  get finishedPage(): PagePart | null { return this.shownPages[this.pageIndex2] ?? null; }
+  get nextPagePreview(): PagePart | null { return this.shownPages[this.pageIndex2 + 1] ?? null; }
+  get pagesLeft(): number { return this.shownPages.length - this.pageIndex2 - 1; }
+  get cheerEmoji(): string { return CHEER_EMOJIS[this.pageIndex2 % CHEER_EMOJIS.length]; }
+
+  /** The coach's word for this part, else an encouragement that changes from one part to the next. */
+  get cheerMessage(): string {
+    const own = String(this.finishedPage?.endMessage || '').trim();
+    if (own) return own;
+    const list = this.fr ? CHEER_FR : CHEER_EN;
+    const seed = celebrationHash(`${this.selected?.id}|${this.pageIndex2}`);
+    return list[seed % list.length];
+  }
+
+  private get reducedMotion(): boolean {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /** After a one-tap answer: on to the next unanswered question of the page. */
+  private onAnswered(index: number): void {
+    this.refreshVisible();
+    this.queueDraft();
+    const question = this.questions[index];
+    if (!question || !ONE_TAP.includes(question.type)) return;
+    const page = this.pageQuestions(this.currentPage);
+    const next = page.slice(page.indexOf(question) + 1).find(q => !this.answered(q, this.idx(q)));
+    setTimeout(() => {
+      const target = next ? document.getElementById('ck-q-' + next.id) : document.getElementById('ck-next');
+      target?.scrollIntoView({ behavior: this.reducedMotion ? 'auto' : 'smooth', block: next ? 'center' : 'end' });
+    }, 260);
+  }
+
+  private scrollToFirstMissing(): void {
+    const missing = this.pageQuestions(this.currentPage).find(q => this.isRequired(q) && !this.answered(q, this.idx(q)));
+    const element = missing ? document.getElementById('ck-q-' + missing.id) : null;
+    element?.scrollIntoView({ behavior: this.reducedMotion ? 'auto' : 'smooth', block: 'center' });
+    element?.classList.remove('shake');
+    void element?.offsetWidth;
+    element?.classList.add('shake');
+  }
+
+  /** The answers are kept as the client goes: they can stop and come back later. */
+  private queueDraft(): void {
+    if (this.previewMode || !this.selected) return;
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.draftTimer = setTimeout(() => this.flushDraft(), 1200);
+  }
+
+  private flushDraft(pageId: string | null = this.currentPage?.id ?? null): void {
+    if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = undefined; }
+    if (this.previewMode || !this.selected || this.viewMode || !this.answers.length) return;
+    const answers = this.answers.filter((a, i) => this.answered(this.questions[i], i));
+    if (!answers.length) return;
+    this.resumePageId = pageId;
+    this.assignmentsApi.saveDraft(this.selected.id, answers, pageId === '__single' ? null : pageId)
+      .subscribe({ error: () => { /* kept on the page; saved again with the next answer */ } });
+  }
 
   get formSubtitle(): string {
     if (!this.form) return '';
@@ -334,7 +580,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
       return date && !Number.isNaN(date.getTime())
         ? `${this.t('Submitted', 'Soumis')}: ${new Intl.DateTimeFormat(this.locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(date)}` : '';
     }
-    return this.fr ? `${this.answeredCount} sur ${this.questions.length} répondues` : `${this.answeredCount} of ${this.questions.length} answered`;
+    return this.fr ? `${this.answeredCount} sur ${this.shownQuestions.length} répondues` : `${this.answeredCount} of ${this.shownQuestions.length} answered`;
   }
 
   get description(): string { return capitalizeSentences(this.form?.description); }
@@ -382,24 +628,60 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   submittedAnswer(question: any): any { return this.submittedAnswers.find(answer => answer.questionId === question.id); }
   value(question: any, index: number): any { return this.viewMode ? this.submittedAnswer(question) : this.answers[index]; }
 
-  setOption(index: number, optionId: string): void { if (!this.viewMode) this.answers[index].selectedOptionId = optionId; }
-  setYesNo(index: number, value: boolean): void { if (!this.viewMode) this.answers[index].yes = value; }
-  setRating(index: number, value: number): void { if (!this.viewMode) this.answers[index].rating = value; }
-  setDate(index: number, value: string): void { if (!this.viewMode) this.answers[index].date = value || null; }
-  setText(index: number, value: string): void { if (!this.viewMode) this.answers[index].text = value; }
+  setOption(index: number, optionId: string): void {
+    if (this.viewMode) return;
+    this.answers[index].selectedOptionId = optionId;
+    this.onAnswered(index);
+  }
+  setYesNo(index: number, value: boolean): void {
+    if (this.viewMode) return;
+    this.answers[index].yes = value;
+    this.onAnswered(index);
+  }
+  setRating(index: number, value: number): void {
+    if (this.viewMode) return;
+    this.answers[index].rating = value;
+    this.onAnswered(index);
+  }
+  setDate(index: number, value: string): void {
+    if (this.viewMode) return;
+    this.answers[index].date = value || null;
+    this.onAnswered(index);
+  }
+  setText(index: number, value: string): void {
+    if (this.viewMode) return;
+    this.answers[index].text = value;
+    this.onAnswered(index);
+  }
 
   submit(): void {
     if (!this.selected || this.requiredLeft > 0 || this.submitting) return;
     this.submitting = true;
     this.submitError = '';
     const id = this.selected.id;
-    this.submissionsApi.submit(id, { answers: this.answers as any }).pipe(takeUntil(this.destroy$)).subscribe({
+    // Only what the client was asked: answers to questions hidden since are left out.
+    const answers = this.answers.filter(a => this.visible.has(a.questionId));
+    const answered = this.answeredCount;
+    if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = undefined; }
+    this.submissionsApi.submit(id, { answers: answers as any }).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.submitting = false;
         // Reflected at once; the authoritative list follows without a loader.
         this.updateListed({ ...this.selected!, status: 'SUBMITTED', submittedAt: new Date().toISOString() });
-        this.closeForm();
+        const base = {
+          title: this.title(this.selected),
+          answered,
+          parts: this.shownPages.length,
+          durationSeconds: this.startedAt ? Math.round((Date.now() - this.startedAt) / 1000) : null,
+          seed: id,
+        };
         this.refreshSilently();
+        // Change since last time and streak, from saved answers only; slow or failed: shown without them.
+        this.assignmentsApi.getInsights(id).pipe(timeout(3000), catchError(() => of(null)), takeUntil(this.destroy$))
+          .subscribe(insights => {
+            if (insights) this.streak = insights.streak || 0;
+            this.celebration = checkinCelebration({ ...base, insights }, this.fr);
+          });
       },
       error: err => {
         this.submitting = false;
@@ -421,4 +703,16 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   trackById = (_: number, item: FormAssignment) => item.id;
+  trackQuestion = (_: number, question: any) => question.id;
+  /** A new element for each page, so each one slides in. */
+  trackPage = (_: number, page: PagePart | null) => page?.id ?? '';
+  /** Pieces of the burst between two parts (each one its own direction). */
+  readonly confettiPieces = Array.from({ length: 16 }, (_, i) => i);
+
+  /** The part a question opens in the answers sheet (its first shown question). */
+  partStart(question: any): PagePart | null {
+    const pageId = pageOf(question, this.pages);
+    const first = this.shownQuestions.find(q => pageOf(q, this.pages) === pageId);
+    return first?.id === question.id ? this.pages.find(page => page.id === pageId) ?? null : null;
+  }
 }

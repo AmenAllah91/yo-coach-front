@@ -31,6 +31,29 @@ export interface QuestionBE {
   required: boolean;
   order: number;
   options?: OptionItemBE[] | null;
+  /** TEXT only: LONG (several lines) or NUMBER; none = short answer. */
+  textFormat?: 'LONG' | 'NUMBER' | null;
+  /** The part (page) it belongs to. */
+  sectionId?: string | null;
+  /** Shown only when this is met. */
+  condition?: ShowConditionBE | null;
+}
+
+/** "Show if [question] is [answer]": `yes` for a yes/no question, `optionIds` for a choice. */
+export interface ShowConditionBE {
+  questionId: string;
+  yes?: boolean | null;
+  optionIds?: string[] | null;
+}
+
+/** A part of a check-in: one page for the client. */
+export interface FormSectionBE {
+  id: string;
+  title: string;
+  description?: string | null;
+  /** The coach's word when the client finishes the part. */
+  endMessage?: string | null;
+  condition?: ShowConditionBE | null;
 }
 
 export interface FormSchedule {
@@ -50,6 +73,8 @@ export interface FormDetails {
   createdAt?: string;
   updatedAt?: string;
   questions: QuestionBE[];
+  /** Parts in page order; none: one page. */
+  sections?: FormSectionBE[] | null;
   schedule?: FormSchedule;
   showInSignup?: boolean;
 }
@@ -115,13 +140,13 @@ export class FormsApiService {
   getForOwner(formId: string): Observable<FormDetails> {
     return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}/owner`);
   }
-  getFormById(formId: string, silent = false): Observable<FormDetails> {
-    return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}`, silent ? {
-      headers: {
-        'X-Skip-Toast': 'true',
-        'X-Skip-Loader': 'true'
-      }
-    } : {});
+  /** With `assignmentId`: the questions as that check-in was answered, even if the form was edited since. */
+  getFormById(formId: string, silent = false, assignmentId?: string | null): Observable<FormDetails> {
+    const params = assignmentId ? new HttpParams().set('assignmentId', assignmentId) : undefined;
+    return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}`, {
+      params,
+      ...(silent ? { headers: { 'X-Skip-Toast': 'true', 'X-Skip-Loader': 'true' } } : {}),
+    });
   }
   createForm(payload: FormDetails): Observable<FormDetails> {
     const publishError = this.getPublishValidationError(payload);

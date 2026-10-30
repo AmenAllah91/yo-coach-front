@@ -7,6 +7,8 @@ import { environment } from '../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class CoachingAccessService {
   readonly blocked$ = new BehaviorSubject(false);
+  /** A client account with no coach yet (request waiting for an answer, or none): sent to the waiting page. */
+  readonly noCoach$ = new BehaviorSubject(false);
   private revision = 0;
   /** Time of the last answer (a failed check is not kept). */
   private checkedAt = 0;
@@ -29,22 +31,24 @@ export class CoachingAccessService {
   async markClientArchived(): Promise<void> {
     const revision = ++this.revision;
     const roles = this.auth.isLoggedIn() ? await this.auth.extractRoles() : [];
-    if (revision === this.revision) { this.blocked$.next(this.clientOnly(roles)); this.checkedAt = Date.now(); }
+    if (revision === this.revision) { this.blocked$.next(this.clientOnly(roles)); this.noCoach$.next(false); this.checkedAt = Date.now(); }
   }
 
   async refresh(): Promise<boolean> {
     const revision = ++this.revision;
-    if (!this.auth.isLoggedIn()) { this.blocked$.next(false); this.checkedAt = 0; return true; }
+    if (!this.auth.isLoggedIn()) { this.blocked$.next(false); this.noCoach$.next(false); this.checkedAt = 0; return true; }
     const roles = await this.auth.extractRoles();
     if (revision !== this.revision) return !this.blocked$.value;
-    if (!this.clientOnly(roles)) { this.blocked$.next(false); this.checkedAt = Date.now(); return true; }
+    if (!this.clientOnly(roles)) { this.blocked$.next(false); this.noCoach$.next(false); this.checkedAt = Date.now(); return true; }
     try {
-      const result = await firstValueFrom(this.http.get<{status: string}>(
+      const result = await firstValueFrom(this.http.get<{status: string; coachId?: string}>(
         `${environment.baseApiUrl}/gym_coaching/clients/access`,
         { headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } }));
       const active = result.status === 'ACTIVE';
       if (revision !== this.revision) return !this.blocked$.value;
       this.blocked$.next(!active);
+      // The server always sends coachId: empty = a client account without a coach yet.
+      this.noCoach$.next(active && result.coachId === '');
       this.checkedAt = Date.now();
       return active;
     } catch {

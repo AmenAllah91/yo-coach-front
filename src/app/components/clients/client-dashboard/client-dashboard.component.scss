@@ -471,20 +471,4 @@
   margin-top: 12px;
 }
 
-/* A pause of the follow-up (backlog-programmes.md DS-03) */
-.pause-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 16px;
-  padding: 12px 16px;
-  border-radius: 14px;
-  background: light-dark(#f0f9ff, #1f303b);
-  border: 1px solid light-dark(#bae6fd, #254d60);
-  color: light-dark(#0c4a6e, #8cc5ef);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-
-  i-feather { width: 18px; height: 18px; flex-shrink: 0; }
-}
+.coach-feedback { margin-top: 12px; }

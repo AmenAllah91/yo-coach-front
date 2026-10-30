@@ -5393,7 +5393,6 @@ body.client-preview-open { overflow: hidden; }
   border-radius: 50%;
   background: #10b981;
 }
-.client-hero__avatar[data-status='PAUSED'] .client-hero__dot { background: #f59e0b; }
 .client-hero__avatar[data-status='ARCHIVED'] .client-hero__dot { background: light-dark(#94a3b8, #3a4759); }
 
 .client-hero__text { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -5429,7 +5428,6 @@ body.client-preview-open { overflow: hidden; }
   white-space: nowrap;
 }
 .client-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.client-status[data-status='PAUSED'] { background: light-dark(#fff4e0, #3c2b05); color: light-dark(#b45d09, #ef934f); }
 .client-status[data-status='ARCHIVED'] { background: light-dark(#eef2f6, #14171b); color: light-dark(#5b6b80, #acb3bb); }
 
 .client-hero__facts { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 0; color: var(--hero-muted); font-size: 13px; }

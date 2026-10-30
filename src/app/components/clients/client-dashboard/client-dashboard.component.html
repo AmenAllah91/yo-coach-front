@@ -14,12 +14,6 @@
         <h1 class="yc-display greeting__title">{{ greeting }}</h1>
       </header>
 
-      <!-- A pause of the follow-up (backlog-programmes.md DS-03) -->
-      <section class="pause-banner" *ngIf="pauseLabel" role="status">
-        <i-feather name="pause-circle"></i-feather>
-        <span>{{ pauseLabel }}</span>
-      </section>
-
       <!-- Coach card -->
       <section class="yc-card coach-card">
         <span class="yc-avatar" style="--avatar-size: 50px">
@@ -38,6 +32,9 @@
           <span *ngIf="unreadMessages > 0" class="coach-card__badge">{{ unreadMessages > 9 ? '9+' : unreadMessages }}</span>
         </button>
       </section>
+
+      <app-coach-feedback-card *ngIf="unreadFeedback.length" class="coach-feedback" [unread]="unreadFeedback" [fr]="fr"
+                               (seen)="feedbackSeen($event)"></app-coach-feedback-card>
 
       <!-- Today's plan -->
       <h2 class="section-title">{{ fr ? "Programme d'aujourd'hui" : "Today's plan" }}</h2>

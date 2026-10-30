@@ -16,7 +16,7 @@ import {
 
 export type ClientProgramActionType =
   | 'assign' | 'edit' | 'view' | 'dates' | 'remove' | 'duplicate' | 'open' | 'download' | 'replace' | 'calendar'
-  | 'shift' | 'pause';
+  | 'shift';
 
 /** What the coach asked for; the tab that hosts the page does it (it has the windows and the plans). */
 export interface ClientProgramAction {

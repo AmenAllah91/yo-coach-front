@@ -34,19 +34,20 @@
     <div class="status-tabs">
       <button
         class="status-tab active-tab"
-        [class.selected]="!showInvited && statusFilter === 'ACTIVE'"
+        [class.selected]="!showInvited && !showRequests && statusFilter === 'ACTIVE'"
         (click)="setStatusFilter('ACTIVE')">
         {{ 'CLIENT_STATUS_ACTIVE' | translate }} <span>{{ statusCounts.active }}</span>
       </button>
       <button
-        class="status-tab invited-tab"
-        [class.selected]="showInvited"
-        (click)="openInvited()">
-        {{ 'CLIENT_STATUS_INVITED' | translate }} <span>{{ pendingInvitations.length }}</span>
+        class="status-tab waiting-tab"
+        [class.selected]="showRequests || showInvited"
+        [class.has-pending]="(joinRequests?.requests?.length ?? 0) > 0"
+        (click)="openWaiting()">
+        {{ 'WAITING_TAB' | translate }} <span>{{ waitingTabCount }}</span>
       </button>
       <button
         class="status-tab archived-tab"
-        [class.selected]="!showInvited && statusFilter === 'ARCHIVED'"
+        [class.selected]="!showInvited && !showRequests && statusFilter === 'ARCHIVED'"
         (click)="setStatusFilter('ARCHIVED')">
         {{ 'ARCHIVED' | translate }} <span>{{ statusCounts.archived }}</span>
       </button>
@@ -54,17 +55,21 @@
 
     <div class="helper-line">
       <i-feather name="info"></i-feather>
-      {{ (showInvited ? 'INVITED_TAB_HINT' : 'CLIENT_STATUS_TABS_HINT') | translate }}
+      {{ (showRequests ? 'JOIN.REQUESTS_TAB_HINT' : showInvited ? 'INVITED_TAB_HINT' : 'CLIENT_STATUS_TABS_HINT') | translate }}
     </div>
 
-    <!-- Invited: sent but not accepted yet -->
-    <div class="invitation-filters" *ngIf="showInvited">
-      <button type="button" class="invitation-filter" [class.selected]="invitationFilter === 'PENDING'"
-              (click)="setInvitationFilter('PENDING')">
-        {{ 'INVITATION_FILTER_PENDING' | translate }} <span>{{ pendingInvitations.length }}</span>
+    <!-- "Waiting" tab: requests received (sign-up link, waiting list) and invitations sent, not accepted yet -->
+    <div class="invitation-filters" *ngIf="showRequests || showInvited">
+      <button type="button" class="invitation-filter" [class.selected]="showRequests"
+              [class.has-pending]="(joinRequests?.requests?.length ?? 0) > 0" (click)="openRequests()">
+        {{ 'WAITING_FILTER_RECEIVED' | translate }} <span>{{ joinRequests?.requests?.length ?? 0 }}</span>
       </button>
-      <button type="button" class="invitation-filter" [class.selected]="invitationFilter === 'EXPIRED'"
-              (click)="setInvitationFilter('EXPIRED')">
+      <button type="button" class="invitation-filter" [class.selected]="showInvited && invitationFilter === 'PENDING'"
+              (click)="openInvited('PENDING')">
+        {{ 'WAITING_FILTER_SENT' | translate }} <span>{{ pendingInvitations.length }}</span>
+      </button>
+      <button type="button" class="invitation-filter" [class.selected]="showInvited && invitationFilter === 'EXPIRED'"
+              (click)="openInvited('EXPIRED')">
         {{ 'INVITATION_FILTER_EXPIRED' | translate }} <span>{{ expiredInvitations.length }}</span>
       </button>
     </div>
@@ -123,7 +128,69 @@
       </div>
     </div>
 
-    <div class="clients-table" *ngIf="!showInvited">
+    <!-- Requests: asked through the sign-up link, or waiting list of an invitation that found no free slot -->
+    <ng-container *ngIf="showRequests">
+      <div class="requests-full" *ngIf="joinRequests?.full && (joinRequests?.requests?.length ?? 0) > 0" role="status">
+        <i-feather name="alert-circle"></i-feather>
+        <div>
+          <strong>{{ 'JOIN.FULL_BANNER_TITLE' | translate: { current: joinRequests?.current, limit: joinRequests?.limit } }}</strong>
+          <span>{{ 'JOIN.FULL_BANNER_TEXT' | translate }}</span>
+        </div>
+        <a class="requests-full__cta" routerLink="/subscription">{{ 'JOIN.UPGRADE_PLAN' | translate }}</a>
+      </div>
+
+      <div class="clients-table requests-table">
+        <div class="table-header">
+          <div class="col-client">{{ 'CLIENT' | translate }}</div>
+          <div class="col-workouts">{{ 'JOIN.REQUESTED_ON' | translate }}</div>
+          <div class="col-status">{{ 'STATUS' | translate }}</div>
+          <div class="col-actions"></div>
+        </div>
+        <div class="table-body">
+          <div class="client-row request-row" *ngFor="let request of pendingRequests">
+            <div class="col-client">
+              <div class="client-details">
+                <h4>{{ request.clientName }}</h4>
+                <p>{{ request.email }}</p>
+                <button type="button" class="request-message" *ngIf="request.message"
+                        [class.expanded]="expandedRequestId === request.id" (click)="toggleRequestMessage(request)"
+                        [attr.aria-expanded]="expandedRequestId === request.id">
+                  <i-feather name="message-square"></i-feather><span>{{ request.message }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="col-workouts">{{ request.createdAt | date:'dd/MM/yyyy' }}</div>
+            <div class="col-status">
+              <span class="status-badge" [class.waitlisted]="request.waitlisted" [class.pending]="!request.waitlisted">
+                {{ (request.waitlisted ? 'JOIN.STATUS_WAITLIST' : 'JOIN.STATUS_NEW') | translate }}
+              </span>
+              <span class="request-source">
+                {{ (request.source === 'INVITATION' ? 'JOIN.SOURCE_INVITATION' : 'JOIN.SOURCE_LINK') | translate }}
+              </span>
+            </div>
+            <div class="col-actions request-actions">
+              <button type="button" class="request-btn request-btn--accept" (click)="acceptRequest(request)"
+                      [disabled]="busyRequestId === request.id">
+                <i-feather name="check"></i-feather>{{ 'JOIN.ACCEPT' | translate }}
+              </button>
+              <button type="button" class="request-btn" (click)="declineRequest(request)"
+                      [disabled]="busyRequestId === request.id">
+                {{ 'JOIN.DECLINE' | translate }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <app-scroll-loader [isLoading]="joinRequestsLoading" loadingText="LOADING_CLIENTS"></app-scroll-loader>
+        <div class="no-clients" *ngIf="pendingRequests.length === 0 && !joinRequestsLoading">
+          <p>{{ 'JOIN.NO_REQUESTS' | translate }}</p>
+          <button type="button" class="request-btn" (click)="openAddModal()">
+            <i-feather name="link"></i-feather>{{ 'JOIN.SHARE_MY_LINK' | translate }}
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="clients-table" *ngIf="!showInvited && !showRequests">
       <div class="table-header">
         <div class="col-client">{{ 'CLIENT' | translate }}</div>
         <div class="col-workouts">{{ 'WORKOUTS_LAST_7_DAYS' | translate }}</div>

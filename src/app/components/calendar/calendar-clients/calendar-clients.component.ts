@@ -25,7 +25,6 @@ import {
 } from '@shared/models/calendar-day';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
 import { DayCopy } from '@shared/program-copy/program-day-copy';
-import { ClientPauseModalComponent } from '@shared/components/client-pause-modal/client-pause-modal.component';
 import { RemoveProgramConfirmComponent } from '@shared/components/remove-program-confirm/remove-program-confirm.component';
 import { ToastService } from 'app/service/toast.service';
 import { ClientSchedulePreview, OverviewItem, changeSentence, isPlanLocked, todayIso } from '@shared/models/program-schedule';
@@ -267,7 +266,7 @@ type CalendarType = 'workout' | 'nutrition';
   selector: 'app-calendar-clients',
   standalone: true,
   imports: [CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, AssignScheduleComponent, AssignConfirmComponent,
-    ProgramShiftModalComponent, CopyDaysModalComponent, ClientPauseModalComponent, RemoveProgramConfirmComponent],
+    ProgramShiftModalComponent, CopyDaysModalComponent, RemoveProgramConfirmComponent],
   templateUrl: './calendar-clients.component.html',
   styleUrl: './calendar-clients.component.scss',
 })
@@ -423,7 +422,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     if (!this.hideClientFilter) {
       this.getClients();
     }
-    // A program assigned, moved, shifted or paused from a tab: the calendar reads its months again.
+    // A program assigned, moved or shifted from a tab: the calendar reads its months again.
     this.programSchedule.changed$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadCalendar());
     // A phone-sized window: the compact month and the week as a list (CC-24).
     const media = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 767px)') : null;
@@ -1548,9 +1547,6 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         error: (err) => this.toast.error(this.calendarChangeError(err)),
       });
   }
-
-  /** « Mettre en pause » the client from the calendar (the window of the client's tabs, DS-11). */
-  showPause = false;
 
   /** A day of the week clicked: its panel opens under the week (again: it closes). */
   /**

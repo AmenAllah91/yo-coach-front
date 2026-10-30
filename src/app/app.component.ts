@@ -17,7 +17,9 @@ export class AppComponent implements OnInit {
   isLoading: Observable<boolean>;
 
   get isInvitationRoute(): boolean {
-    return this.router.url.split('?')[0].startsWith('/invitation/');
+    // The sign-up link and the waiting page too: an archived client may ask another coach to join.
+    const path = this.router.url.split('?')[0];
+    return path.startsWith('/invitation/') || path.startsWith('/join/') || path === '/join-pending';
   }
 
   /** Calls (ringing on every page, call window) only for a signed-in user: nothing on the public pages. */

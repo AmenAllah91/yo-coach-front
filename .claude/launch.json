@@ -4,14 +4,32 @@
     {
       "name": "mock-plans-api",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["C:/Users/Khalil Kraiem/AppData/Local/Temp/claude/C--Users-Khalil-Kraiem-kamdigis-yo-coach-front/6546ea64-1e65-4f76-abab-d6caea8950ee/scratchpad/mock-plans/server.js"],
+      "runtimeArgs": [
+        "C:/Users/Khalil Kraiem/AppData/Local/Temp/claude/C--Users-Khalil-Kraiem-kamdigis-yo-coach-front/6546ea64-1e65-4f76-abab-d6caea8950ee/scratchpad/mock-plans/server.js"
+      ],
       "port": 8080
     },
     {
       "name": "yocoach-website",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "../yocoach-website", "run", "start", "--", "--port", "4300"],
+      "runtimeArgs": [
+        "--prefix",
+        "../yocoach-website",
+        "run",
+        "start",
+        "--",
+        "--port",
+        "4300"
+      ],
       "port": 4300
+    },
+    {
+      "name": "yo-coach-front",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "start"
+      ],
+      "port": 4200
     }
   ]
 }

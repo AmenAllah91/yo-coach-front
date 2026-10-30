@@ -358,19 +358,5 @@
   .cp-alert { align-items: flex-start; }
 }
 
-/* The header actions and the pause of the client's follow-up (backlog-programmes.md DS-03/DS-11) */
+/* The header actions */
 .cp-head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.cp-pause {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: light-dark(#f0f9ff, #1f303b);
-  border: 1px solid light-dark(#bae6fd, #254d60);
-  color: light-dark(#0c4a6e, #8cc5ef);
-  font-size: 14px;
-  font-weight: 600;
-}

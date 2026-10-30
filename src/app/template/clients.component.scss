@@ -1501,7 +1501,7 @@
 /* "Invited" tab: invitations not accepted yet.
    Selectors are prefixed with .page-container to win over the generic client-table rules above
    (fixed 42px actions column, hidden status on mobile). */
-.status-tabs .invited-tab span {
+.status-tabs .waiting-tab span {
   background: light-dark(#fef3c7, #382f03);
   color: light-dark(#92400e, #f4996c);
 }
@@ -1638,5 +1638,146 @@
       text-align: right;
       white-space: nowrap;
     }
+  }
+}
+
+/* "Requests" tab: join requests (sign-up link, waiting list). Same .page-container prefix as the "Invited" tab. */
+.status-tabs .waiting-tab.has-pending span,
+.invitation-filters .invitation-filter.has-pending span {
+  background: #43b4df;
+  color: #fff;
+}
+
+.requests-full {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border: 1px solid light-dark(#f5c27a, #6b5223);
+  border-radius: 10px;
+  background: light-dark(#fff8ec, #2a2317);
+  color: light-dark(#7a4a06, #f3d29b);
+  font-size: 13px;
+  line-height: 1.5;
+
+  > i-feather { width: 18px; height: 18px; flex-shrink: 0; }
+  > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  strong { font-weight: 600; }
+}
+.requests-full__cta {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: light-dark(#111827, #e8ecf6);
+  color: light-dark(#fff, #111827);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.page-container .clients-table.requests-table {
+  .table-header,
+  .table-body .client-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 2fr) 110px 150px 210px !important;
+    column-gap: 16px !important;
+    align-items: center;
+  }
+
+  .table-body .client-row { cursor: default; min-height: 0; padding-top: 12px; padding-bottom: 12px; }
+  .col-client { padding: 0 !important; }
+  .client-details { min-width: 0; }
+  .client-details h4 { margin: 0; overflow-wrap: anywhere; }
+  .client-details p { margin: 2px 0 0; }
+  .col-workouts { display: block !important; font-size: 13px; color: light-dark(#334155, #d1d7e0); }
+
+  .col-status {
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+  }
+  .col-status .status-badge {
+    min-width: 0 !important;
+    white-space: nowrap;
+
+    &.waitlisted { border-color: light-dark(#fed7aa, #5f4118) !important; background: light-dark(#ffedd5, #412b05) !important; color: light-dark(#9a3412, #ff906f) !important; }
+  }
+  .request-source { font-size: 12px; color: light-dark(#64748b, #a5abb4); }
+
+  .request-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    max-width: 100%;
+    margin: 6px 0 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: light-dark(#475569, #bfc5ce);
+    font-size: 12.5px;
+    font-style: italic;
+    text-align: start;
+    cursor: pointer;
+
+    i-feather { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; }
+    span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    &.expanded span { white-space: normal; overflow-wrap: anywhere; }
+  }
+
+  .col-actions.request-actions {
+    position: static !important;
+    transform: none !important;
+    display: flex !important;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+}
+
+.request-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid light-dark(#d7dee7, #363b42);
+  border-radius: 8px;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#33465b, #ccd3dc);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+
+  i-feather { width: 15px; height: 15px; }
+  &:hover:not(:disabled) { border-color: light-dark(#bae6fd, #254d60); }
+  &:disabled { opacity: 0.5; cursor: wait; }
+}
+.request-btn--accept {
+  border-color: #43b4df;
+  background: #43b4df;
+  color: #fff;
+
+  &:hover:not(:disabled) { background: #2ea7d9; border-color: #2ea7d9; }
+}
+.requests-table .no-clients .request-btn { margin-top: 12px; }
+
+@media (max-width: 900px) {
+  .requests-full { flex-wrap: wrap; }
+  .page-container .clients-table.requests-table .table-header { display: none !important; }
+
+  .page-container .clients-table.requests-table .table-body .client-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas: "client client" "status date" "actions actions";
+    row-gap: 10px !important;
+
+    .col-client { grid-area: client; width: auto; }
+    .col-status { grid-area: status; flex-direction: row; align-items: center; padding: 0 !important; }
+    .col-workouts { grid-area: date; font-size: 12px; text-align: right; white-space: nowrap; }
+    .col-actions.request-actions { grid-area: actions; justify-content: stretch; }
+    .request-btn { flex: 1; }
   }
 }

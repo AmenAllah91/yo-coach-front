@@ -20,6 +20,9 @@
           <span *ngIf="newFeedbackCount" class="yc-count new-count" [title]="t('New comments from your coach', 'Nouveaux commentaires de votre coach')">{{ newFeedbackCount }}</span>
         </button>
       </div>
+      <p *ngIf="!previewMode && streak >= 2" class="streak-pill">
+        <i-feather name="zap"></i-feather>{{ fr ? streak + ' check-ins d’affilée' : streak + ' check-ins in a row' }}
+      </p>
 
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
       <p *ngIf="!loading && error && !assignments.length" class="yc-subtitle center-text">{{ error }}</p>
@@ -82,28 +85,142 @@
       </button>
     </ng-template>
 
-    <!-- ===================== FORM PAGE (mobile CheckInFormPage) ===================== -->
+
+    <!-- ===================== FILLING, PAGE BY PAGE ===================== -->
     <ng-container *ngIf="view === 'form'">
-      <header class="yc-page-header">
-        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="closeForm()"><i-feather name="arrow-left"></i-feather></button>
-        <div class="yc-page-header__copy">
-          <h1 class="yc-page-header__title">{{ title(selected) || 'Check-in' }}</h1>
-          <p *ngIf="formSubtitle" class="yc-page-header__subtitle">{{ formSubtitle }}</p>
+      <div class="ck-flow">
+        <header class="ck-top">
+          <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')"
+                  (click)="stage === 'part' ? previousPage() : closeForm()"><i-feather name="arrow-left"></i-feather></button>
+          <div class="ck-top__copy">
+            <strong>{{ title(selected) || 'Check-in' }}</strong>
+            <small *ngIf="form && stage !== 'intro' && hasParts">
+              {{ t('Part', 'Partie') }} {{ pageIndex2 + 1 }}/{{ shownPages.length }} · {{ overallPercent }} %
+            </small>
+            <small *ngIf="form && stage !== 'intro' && !hasParts">{{ formSubtitle }}</small>
+          </div>
+          <button *ngIf="stage !== 'intro'" type="button" class="ck-top__close" (click)="closeForm()"
+                  [title]="t('Your answers are kept', 'Vos réponses sont gardées')">
+            {{ t('Later', 'Plus tard') }}
+          </button>
+        </header>
+
+        <div *ngIf="form && stage !== 'intro'" class="ck-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+             [attr.aria-valuenow]="overallPercent">
+          <span *ngFor="let segment of progressSegments" class="ck-progress__seg" [class.is-current]="segment.current"
+                [class.is-full]="segment.done >= 1" [title]="segment.title">
+            <i [style.width.%]="segment.done * 100"></i>
+          </span>
         </div>
-      </header>
-      <ng-container *ngTemplateOutlet="formBody"></ng-container>
-      <footer *ngIf="form && !viewMode" class="submit-bar">
-        <p *ngIf="requiredLeft > 0" class="yc-caption">
-          {{ fr ? requiredLeft + ' question' + (requiredLeft > 1 ? 's' : '') + ' obligatoire' + (requiredLeft > 1 ? 's' : '') + ' restante' + (requiredLeft > 1 ? 's' : '')
-            : requiredLeft + ' required question' + (requiredLeft > 1 ? 's' : '') + ' left' }}
-        </p>
-        <button type="button" class="yc-btn yc-btn--brand" [disabled]="requiredLeft > 0 || submitting" (click)="submit()">
-          <span *ngIf="submitting" class="yc-spinner"></span>
-          <ng-container *ngIf="!submitting">{{ t('Submit check-in', 'Envoyer le check-in') }}</ng-container>
-        </button>
-      </footer>
+
+        <div *ngIf="opening" class="yc-loading"><span class="yc-spinner"></span></div>
+        <div *ngIf="!opening && !form" class="form-error">
+          <span class="yc-icon-tile" style="--tile-color: var(--yc-error); --tile-size: 60px"><i-feather name="alert-circle"></i-feather></span>
+          <h3 class="yc-card-title">{{ t('Unable to load form', 'Impossible de charger le formulaire') }}</h3>
+          <p *ngIf="formError" class="yc-caption">{{ formError }}</p>
+          <button type="button" class="yc-link" (click)="retryOpen()"><i-feather name="refresh-cw"></i-feather>{{ t('Retry', 'Réessayer') }}</button>
+        </div>
+
+        <ng-container *ngIf="!opening && form">
+          <!-- Intro: who it is from, how long it takes, the parts -->
+          <section *ngIf="stage === 'intro'" class="ck-intro">
+            <div class="ck-intro__hero" aria-hidden="true">
+              <span class="yc-avatar ck-intro__avatar">{{ ownerInitials }}</span>
+              <span class="ck-intro__wave">👋</span>
+            </div>
+            <h1 class="ck-intro__title">{{ title(selected) || 'Check-in' }}</h1>
+            <p *ngIf="description" class="ck-intro__text">{{ description }}</p>
+            <div class="ck-intro__chips">
+              <span *ngIf="hasParts" class="ck-chip"><i-feather name="layers"></i-feather>{{ shownPages.length }} {{ t('parts', 'parties') }}</span>
+              <span class="ck-chip"><i-feather name="help-circle"></i-feather>{{ shownQuestions.length }} questions</span>
+              <span class="ck-chip"><i-feather name="clock"></i-feather>~{{ pageMinutes }} min</span>
+              <span *ngIf="dueChip(selected) as due" class="yc-chip" [style.--chip-color]="due.color">{{ due.label }}</span>
+            </div>
+
+            <ol *ngIf="hasParts" class="ck-steps">
+              <li *ngFor="let page of shownPages; index as i" [class.is-done]="isPageDone(page)" [style.--i]="i">
+                <span class="ck-steps__dot">
+                  <i-feather *ngIf="isPageDone(page); else stepNumber" name="check"></i-feather>
+                  <ng-template #stepNumber>{{ i + 1 }}</ng-template>
+                </span>
+                <span class="ck-steps__title">{{ page.title }}</span>
+                <span class="ck-steps__count">{{ pageQuestions(page).length }}</span>
+              </li>
+            </ol>
+
+            <button type="button" class="ck-cta" (click)="start(!!resumePageId)">
+              {{ resumePageId ? t('Pick up where I left off', 'Reprendre là où je me suis arrêté') : t("Let's go", "C'est parti") }}
+              <i-feather name="arrow-right"></i-feather>
+            </button>
+            <button *ngIf="resumePageId" type="button" class="yc-link ck-restart" (click)="start(false)">
+              {{ t('Start from the beginning', 'Revoir depuis le début') }}
+            </button>
+          </section>
+
+          <!-- One part per page (re-created on each page, so it slides in) -->
+          <ng-container *ngIf="stage === 'part'">
+            <section *ngFor="let page of [currentPage]; trackBy: trackPage" class="ck-page" [class.ck-page--back]="slide === 'back'">
+              <ng-container *ngIf="page">
+                <header *ngIf="hasParts" class="ck-page__head">
+                  <span class="ck-page__kicker">{{ t('Part', 'Partie') }} {{ pageIndex2 + 1 }} {{ t('of', 'sur') }} {{ shownPages.length }}</span>
+                  <h2>{{ page.title }}</h2>
+                  <p *ngIf="page.description">{{ page.description }}</p>
+                </header>
+
+                <div *ngFor="let question of pageQuestions(page); index as qi; trackBy: trackQuestion" class="ck-q"
+                     [id]="'ck-q-' + question.id" [class.is-answered]="answered(question, idx(question))" [style.--qi]="qi">
+                  <p class="question__label">{{ label(question) }}<b *ngIf="isRequired(question)"> *</b></p>
+                  <p *ngIf="helpText(question)" class="question__help">{{ helpText(question) }}</p>
+                  <ng-container *ngTemplateOutlet="questionInput; context: { $implicit: question, i: idx(question) }"></ng-container>
+                </div>
+              </ng-container>
+            </section>
+          </ng-container>
+
+          <!-- Between two parts: a small celebration -->
+          <section *ngIf="stage === 'cheer'" class="ck-cheer" role="status" aria-live="polite">
+            <div class="ck-cheer__burst" aria-hidden="true"><i *ngFor="let piece of confettiPieces" [style.--p]="piece"></i></div>
+            <div class="ck-cheer__emoji" aria-hidden="true">{{ cheerEmoji }}</div>
+            <p class="ck-cheer__kicker">{{ t('Part', 'Partie') }} {{ pageIndex2 + 1 }}/{{ shownPages.length }} {{ t('done', 'terminée') }}</p>
+            <h2 class="ck-cheer__message">{{ cheerMessage }}</h2>
+            <p class="ck-cheer__left">
+              {{ pagesLeft === 1 ? t('Only one part left!', "Plus qu'une partie !") : (fr ? 'Plus que ' + pagesLeft + ' parties' : pagesLeft + ' parts to go') }}
+            </p>
+            <div *ngIf="nextPagePreview" class="ck-cheer__next">
+              <span>{{ t('Up next', 'Ensuite') }}</span>
+              <strong>{{ nextPagePreview.title }}</strong>
+            </div>
+            <button type="button" class="ck-cta" (click)="continueAfterCheer()">
+              {{ t('Continue', 'Continuer') }}<i-feather name="arrow-right"></i-feather>
+            </button>
+          </section>
+        </ng-container>
+
+        <footer *ngIf="form && !opening && stage === 'part'" class="submit-bar ck-bar">
+          <p *ngIf="pageRequiredLeft > 0" class="yc-caption">
+            {{ fr ? pageRequiredLeft + ' question' + (pageRequiredLeft > 1 ? 's' : '') + ' obligatoire' + (pageRequiredLeft > 1 ? 's' : '') + ' sur cette page'
+              : pageRequiredLeft + ' required question' + (pageRequiredLeft > 1 ? 's' : '') + ' on this page' }}
+          </p>
+          <p *ngIf="submitError" class="submit-error">{{ submitError }}</p>
+          <div class="ck-bar__row">
+            <button type="button" class="ck-bar__back" (click)="previousPage()" [attr.aria-label]="t('Previous', 'Précédent')">
+              <i-feather name="arrow-left"></i-feather>
+            </button>
+            <button id="ck-next" type="button" class="yc-btn yc-btn--brand ck-bar__next" [class.is-ready]="pageReady"
+                    [class.is-waiting]="pageRequiredLeft > 0" [disabled]="submitting" (click)="nextPage()">
+              <span *ngIf="submitting" class="yc-spinner"></span>
+              <ng-container *ngIf="!submitting">
+                {{ isLastPage ? t('Send my check-in', 'Envoyer mon check-in') : t('Next part', 'Partie suivante') }}
+                <i-feather [name]="isLastPage ? 'send' : 'arrow-right'"></i-feather>
+              </ng-container>
+            </button>
+          </div>
+        </footer>
+      </div>
     </ng-container>
   </div>
+
+  <app-completion-celebration *ngIf="celebration" [view]="celebration" (done)="celebrationDone()"></app-completion-celebration>
 
   <!-- Answers already sent: read only in a sheet -->
   <div *ngIf="sheetOpen" class="yc-sheet-backdrop" (click)="closeSheet()">
@@ -144,69 +261,71 @@
         </button>
       </section>
 
-      <section *ngIf="description || (!viewMode && dueChip(selected))" class="yc-card intro">
+      <section *ngIf="description" class="yc-card intro">
         <span class="yc-avatar" style="--avatar-size: 40px">{{ ownerInitials }}</span>
-        <div>
-          <p *ngIf="description" class="intro__text">{{ description }}</p>
-          <div *ngIf="!viewMode && dueChip(selected) as due" class="intro__due">
-            <span class="yc-chip" [style.--chip-color]="due.color">{{ due.label }}</span>
-            <span class="yc-caption">~{{ minutes }} min</span>
-          </div>
-        </div>
+        <div><p class="intro__text">{{ description }}</p></div>
       </section>
 
-
+      <!-- The questions the client was asked, part by part -->
       <section class="yc-card yc-card--flush questions">
-        <ng-container *ngFor="let question of questions; let i = index">
-          <hr *ngIf="i > 0" class="yc-divider" />
+        <ng-container *ngFor="let question of shownQuestions; let n = index">
+          <div *ngIf="hasParts && partStart(question) as page" class="sheet-part">{{ page.title }}</div>
+          <hr *ngIf="n > 0 && !(hasParts && partStart(question))" class="yc-divider" />
           <div class="question">
-            <p class="question__label"><span>{{ i + 1 }}. </span>{{ label(question) }}<b *ngIf="isRequired(question)"> *</b></p>
-            <p *ngIf="!viewMode && helpText(question)" class="question__help">{{ helpText(question) }}</p>
-
-            <ng-container [ngSwitch]="question.type">
-              <div *ngSwitchCase="'MULTIPLE_CHOICE'" class="choices">
-                <button *ngFor="let option of question.options || []" type="button" class="choice"
-                        [class.selected]="value(question, i)?.selectedOptionId === option.id" [disabled]="viewMode" (click)="setOption(i, option.id)">
-                  {{ optionLabel(option) }}
-                </button>
-              </div>
-
-              <div *ngSwitchCase="'YES_NO'" class="choices choices--split">
-                <button type="button" class="choice" [class.selected]="value(question, i)?.yes === true" [disabled]="viewMode" (click)="setYesNo(i, true)">{{ t('Yes', 'Oui') }}</button>
-                <button type="button" class="choice" [class.selected]="value(question, i)?.yes === false" [disabled]="viewMode" (click)="setYesNo(i, false)">{{ t('No', 'Non') }}</button>
-              </div>
-
-              <div *ngSwitchCase="'STAR_RATING'" class="stars">
-                <button *ngFor="let n of range(maxStars(question))" type="button" [class.on]="(value(question, i)?.rating || 0) >= n"
-                        [disabled]="viewMode" [attr.aria-label]="n" (click)="setRating(i, n)">
-                  <svg viewBox="0 0 24 24"><path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.53L12 17.5l-5.87 3.07 1.12-6.53L2.5 9.41l6.56-.95L12 2.5z"/></svg>
-                </button>
-              </div>
-
-              <div *ngSwitchCase="'SCALE'" class="scale" [class.scale--wrap]="maxStars(question) > 10">
-                <button *ngFor="let n of range(maxStars(question))" type="button" [class.selected]="value(question, i)?.rating === n" [disabled]="viewMode" (click)="setRating(i, n)">{{ n }}</button>
-              </div>
-              <div *ngSwitchCase="'OPINION_RATING'" class="scale" [class.scale--wrap]="maxStars(question) > 10">
-                <button *ngFor="let n of range(maxStars(question))" type="button" [class.selected]="value(question, i)?.rating === n" [disabled]="viewMode" (click)="setRating(i, n)">{{ n }}</button>
-              </div>
-
-              <ng-container *ngSwitchCase="'DATE'">
-                <input *ngIf="!viewMode; else dateView" type="date" class="yc-input date-input" [value]="value(question, i)?.date || ''"
-                       [min]="question.minDate || null" [max]="question.maxDate || null" (change)="setDate(i, $any($event.target).value)" />
-                <ng-template #dateView><div class="answer-view" [class.empty]="!value(question, i)?.date">{{ value(question, i)?.date || '-' }}</div></ng-template>
-              </ng-container>
-
-              <ng-container *ngSwitchDefault>
-                <textarea *ngIf="!viewMode; else textView" class="yc-input text-answer" rows="2" [value]="value(question, i)?.text || ''"
-                          [placeholder]="t('Your answer...', 'Votre réponse...')" (input)="setText(i, $any($event.target).value)"></textarea>
-                <ng-template #textView><div class="answer-view" [class.empty]="!(value(question, i)?.text || '').trim()">{{ (value(question, i)?.text || '').trim() || '-' }}</div></ng-template>
-              </ng-container>
-            </ng-container>
+            <p class="question__label"><span>{{ n + 1 }}. </span>{{ label(question) }}<b *ngIf="isRequired(question)"> *</b></p>
+            <ng-container *ngTemplateOutlet="questionInput; context: { $implicit: question, i: idx(question) }"></ng-container>
           </div>
         </ng-container>
       </section>
+    </ng-container>
+  </ng-template>
 
-      <p *ngIf="!viewMode && submitError" class="submit-error">{{ submitError }}</p>
+  <!-- One answer: choices, yes/no, stars, scale, date, text or number -->
+  <ng-template #questionInput let-question let-i="i">
+    <ng-container [ngSwitch]="question.type">
+      <div *ngSwitchCase="'MULTIPLE_CHOICE'" class="choices">
+        <button *ngFor="let option of question.options || []" type="button" class="choice"
+                [class.selected]="value(question, i)?.selectedOptionId === option.id" [disabled]="viewMode" (click)="setOption(i, option.id)">
+          {{ optionLabel(option) }}
+        </button>
+      </div>
+
+      <div *ngSwitchCase="'YES_NO'" class="choices choices--split">
+        <button type="button" class="choice" [class.selected]="value(question, i)?.yes === true" [disabled]="viewMode" (click)="setYesNo(i, true)">{{ t('Yes', 'Oui') }}</button>
+        <button type="button" class="choice" [class.selected]="value(question, i)?.yes === false" [disabled]="viewMode" (click)="setYesNo(i, false)">{{ t('No', 'Non') }}</button>
+      </div>
+
+      <div *ngSwitchCase="'STAR_RATING'" class="stars">
+        <button *ngFor="let n of range(maxStars(question))" type="button" [class.on]="(value(question, i)?.rating || 0) >= n"
+                [disabled]="viewMode" [attr.aria-label]="n" (click)="setRating(i, n)">
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.53L12 17.5l-5.87 3.07 1.12-6.53L2.5 9.41l6.56-.95L12 2.5z"/></svg>
+        </button>
+      </div>
+
+      <div *ngSwitchCase="'SCALE'" class="scale" [class.scale--wrap]="maxStars(question) > 10">
+        <button *ngFor="let n of range(maxStars(question))" type="button" [class.selected]="value(question, i)?.rating === n" [disabled]="viewMode" (click)="setRating(i, n)">{{ n }}</button>
+      </div>
+      <div *ngSwitchCase="'OPINION_RATING'" class="scale" [class.scale--wrap]="maxStars(question) > 10">
+        <button *ngFor="let n of range(maxStars(question))" type="button" [class.selected]="value(question, i)?.rating === n" [disabled]="viewMode" (click)="setRating(i, n)">{{ n }}</button>
+      </div>
+
+      <ng-container *ngSwitchCase="'DATE'">
+        <input *ngIf="!viewMode; else dateView" type="date" class="yc-input date-input" [value]="value(question, i)?.date || ''"
+               [min]="question.minDate || null" [max]="question.maxDate || null" (change)="setDate(i, $any($event.target).value)" />
+        <ng-template #dateView><div class="answer-view" [class.empty]="!value(question, i)?.date">{{ value(question, i)?.date || '-' }}</div></ng-template>
+      </ng-container>
+
+      <ng-container *ngSwitchDefault>
+        <ng-container *ngIf="!viewMode; else textView" [ngSwitch]="question.textFormat">
+          <input *ngSwitchCase="'NUMBER'" class="yc-input text-answer" type="number" inputmode="decimal" step="any"
+                 [value]="value(question, i)?.text || ''" [placeholder]="t('Number', 'Nombre')"
+                 (input)="setText(i, $any($event.target).value)" />
+          <textarea *ngSwitchDefault class="yc-input text-answer" [rows]="question.textFormat === 'LONG' ? 5 : 2"
+                    [value]="value(question, i)?.text || ''"
+                    [placeholder]="t('Your answer...', 'Votre réponse...')" (input)="setText(i, $any($event.target).value)"></textarea>
+        </ng-container>
+        <ng-template #textView><div class="answer-view" [class.empty]="!(value(question, i)?.text || '').trim()">{{ (value(question, i)?.text || '').trim() || '-' }}</div></ng-template>
+      </ng-container>
     </ng-container>
   </ng-template>
 </div>

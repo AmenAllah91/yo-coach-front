@@ -6,12 +6,13 @@
 export interface CelebrationMessage { headline: string; body: string; }
 
 /** An icon of the summary, drawn inline (Lucide paths, as on mobile). */
-export type CelebrationIcon = 'timer' | 'list-checks' | 'dumbbell' | 'flame' | 'drumstick' | 'circle-check' | 'utensils';
+export type CelebrationIcon = 'timer' | 'list-checks' | 'dumbbell' | 'flame' | 'drumstick' | 'circle-check' | 'utensils'
+  | 'clipboard-check' | 'layers';
 
 export interface CelebrationStat { icon: CelebrationIcon; value: string; label: string; }
 
 export interface CelebrationView {
-  kind: 'workout' | 'nutrition';
+  kind: 'workout' | 'nutrition' | 'checkin';
   title: string;
   message: CelebrationMessage;
   summaryTitle: string;
@@ -22,6 +23,8 @@ export interface CelebrationView {
   ring: string[];
   /** What the colours of the ring mean, only when the day was not all as planned. */
   legend: { color: string; label: string }[];
+  /** Check-in: change since last time and the streak, only from saved answers (CE /assignments/{id}/insights). */
+  insights?: string[];
   doneLabel: string;
   /** The same message and confetti for the same day. */
   seed: string;
@@ -115,6 +118,78 @@ export function workoutCelebration(input: {
     stats,
     ring: [],
     legend: [],
+    doneLabel: fr ? 'Terminé' : 'Done',
+    seed: input.seed,
+  };
+}
+
+const CHECKIN_EN: CelebrationMessage[] = [
+  { headline: 'Your coach has everything they need.', body: 'Your answers help them adjust your plan to you. Thank you for taking the time.' },
+  { headline: 'Done, and well done.', body: 'Honest answers make better coaching. Your coach will get back to you.' },
+  { headline: 'Check-in complete!', body: 'This is how progress gets measured. See you at the next one.' },
+  { headline: 'One more step together.', body: 'Your coach now knows how your week went. Keep it up.' },
+  { headline: 'Thank you for being consistent.', body: 'Every check-in makes your plan a little more yours.' },
+];
+
+const CHECKIN_FR: CelebrationMessage[] = [
+  { headline: 'Votre coach a tout ce qu’il faut.', body: 'Vos réponses l’aident à ajuster votre programme. Merci d’avoir pris ce temps.' },
+  { headline: 'C’est fait, et bien fait.', body: 'Des réponses sincères, c’est un meilleur suivi. Votre coach va vous répondre.' },
+  { headline: 'Check-in terminé !', body: 'C’est comme ça qu’on mesure les progrès. À la prochaine.' },
+  { headline: 'Un pas de plus, ensemble.', body: 'Votre coach sait maintenant comment s’est passée votre semaine. Continuez.' },
+  { headline: 'Merci pour votre régularité.', body: 'Chaque check-in rend votre programme un peu plus le vôtre.' },
+];
+
+/** A numeric answer compared with the previous check-in of the same form (CE). */
+export interface CheckinDelta {
+  questionId: string; label: string; kind: 'NUMBER' | 'RATING' | string;
+  current: number; previous: number; previousAt?: string | null; maxStars?: number | null;
+}
+
+export interface CheckinInsights { streak: number; late: boolean; deltas: CheckinDelta[]; }
+
+/** « Poids : 78,4 (−0,8 depuis le 16 oct.) », as on mobile (check_in_celebration_screen.dart). */
+export function checkinDeltaLine(delta: CheckinDelta, fr: boolean): string {
+  const locale = fr ? 'fr-FR' : 'en-GB';
+  const number = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
+  const change = delta.current - delta.previous;
+  const sign = change > 0 ? '+' : change < 0 ? '−' : '';
+  const value = delta.kind === 'RATING' ? `${number(delta.current)}/${delta.maxStars || 5}` : number(delta.current);
+  const at = delta.previousAt ? new Date(delta.previousAt) : null;
+  const when = at && !isNaN(at.getTime())
+    ? ` ${fr ? 'depuis le' : 'since'} ${new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(at)}`
+    : '';
+  const diff = Math.abs(change) < 1e-9 ? `${fr ? 'stable' : 'unchanged'}${when}` : `${sign}${number(Math.abs(change))}${when}`;
+  return `${String(delta.label || '').trim()} : ${value} (${diff})`;
+}
+
+/** Up to three changes, then the streak (two or more in a row) or, when late, a calm word. */
+export function checkinInsightLines(insights: CheckinInsights | null | undefined, fr: boolean): string[] {
+  if (!insights) return [];
+  const lines = (insights.deltas || []).slice(0, 3).map(delta => checkinDeltaLine(delta, fr));
+  if (insights.late) lines.push(fr ? 'Merci de l’avoir envoyé, même après l’échéance.' : 'Thanks for sending it, even after the due date.');
+  else if (insights.streak >= 2) lines.push(fr ? `${insights.streak} check-ins d’affilée` : `${insights.streak} check-ins in a row`);
+  return lines;
+}
+
+/** « Check-in sent! »: what was answered, page by page, and how long it took. */
+export function checkinCelebration(input: {
+  title: string; answered: number; parts: number; durationSeconds: number | null; seed: string;
+  insights?: CheckinInsights | null;
+}, fr: boolean): CelebrationView {
+  const stats: CelebrationStat[] = [{ icon: 'list-checks', value: String(input.answered), label: fr ? 'Réponses' : 'Answers' }];
+  if (input.parts > 1) stats.push({ icon: 'layers', value: String(input.parts), label: fr ? 'Parties' : 'Parts' });
+  const duration = celebrationDuration(input.durationSeconds);
+  if (duration) stats.push({ icon: 'timer', value: duration, label: fr ? 'Durée' : 'Time' });
+  return {
+    kind: 'checkin',
+    title: fr ? 'Check-in envoyé !' : 'Check-in sent!',
+    message: pick(input.seed, fr ? CHECKIN_FR : CHECKIN_EN),
+    summaryTitle: input.title,
+    summaryIcon: 'clipboard-check',
+    stats,
+    ring: [],
+    legend: [],
+    insights: checkinInsightLines(input.insights, fr),
     doneLabel: fr ? 'Terminé' : 'Done',
     seed: input.seed,
   };

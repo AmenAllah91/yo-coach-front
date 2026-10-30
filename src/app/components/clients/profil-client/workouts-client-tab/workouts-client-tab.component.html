@@ -79,7 +79,7 @@
   {{ replaceError }}
 </div>
 
-<!-- « Décaler la suite » and pause (backlog-programmes.md DS-10/DS-11) -->
+<!-- « Décaler la suite » (backlog-programmes.md DS-10) -->
 <app-program-shift-modal
   *ngIf="shiftTarget"
   kind="WORKOUT"
@@ -88,13 +88,6 @@
   (closed)="shiftTarget = null"
   (saved)="onShiftSaved()"
 ></app-program-shift-modal>
-<app-client-pause-modal
-  *ngIf="showPauseModal"
-  [clientId]="clientId"
-  [clientName]="clientName"
-  (closed)="showPauseModal = false"
-  (saved)="onShiftSaved()"
-></app-client-pause-modal>
 
 <!-- « Modifier les dates »: same rule as an assignment (backlog-programmes.md A8) -->
 <app-change-dates-modal

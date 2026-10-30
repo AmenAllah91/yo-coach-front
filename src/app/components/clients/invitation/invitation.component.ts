@@ -30,7 +30,7 @@ export class InvitationComponent implements OnInit {
   accepting = false;
   loadError = false;
   actionError = false;
-  /** SUB-26/29: the coach has no free active-client slot; the invitation stays pending. */
+  /** SUB-26/29: the coach has no free active-client slot; the invitation stays pending, the client is on the waiting list. */
   coachLimitReached = false;
   /** Refusal with its own message: INVITATION_EXPIRED or INVITATION_EMAIL_MISMATCH. */
   actionErrorKey = '';
@@ -134,7 +134,9 @@ export class InvitationComponent implements OnInit {
             return;
           }
           if (error.error?.code === 'COACH_CLIENT_LIMIT_REACHED') {
+            // The coach has no free slot: the client is on their waiting list (never told about the coach's plan).
             this.coachLimitReached = true;
+            void this.router.navigate(['/join-pending'], { replaceUrl: true });
             return;
           }
           if (['INVITATION_EXPIRED', 'INVITATION_EMAIL_MISMATCH'].includes(error.error?.code)) {

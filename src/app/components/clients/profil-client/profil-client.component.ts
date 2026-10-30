@@ -427,21 +427,17 @@ export class ProfilClientComponent {
   }
 
   /**
-   * Same as the client list (Active / Archived), plus a pause going on today (either type). « Invited » is only a
-   * pending invitation, which has no profile yet: `activated` is the account's block flag, not an invitation state.
+   * Same as the client list: Active or Archived. « Invited » is only a pending invitation, which has no profile yet:
+   * `activated` is the account's block flag, not an invitation state.
    */
   get headerStatus(): ClientHeaderStatus {
-    if (this.clientArchived) return 'ARCHIVED';
-    const paused = [this.headerWorkout, this.headerNutrition].some(overview =>
-      !!overview?.pause && overview.pause.from <= overview.today && overview.today <= overview.pause.to);
-    return paused ? 'PAUSED' : 'ACTIVE';
+    return this.clientArchived ? 'ARCHIVED' : 'ACTIVE';
   }
 
   get headerStatusLabel(): string {
     const fr = this.heroFr;
     switch (this.headerStatus) {
       case 'ARCHIVED': return fr ? 'Archivé' : 'Archived';
-      case 'PAUSED': return fr ? 'En pause' : 'Paused';
       default: return fr ? 'Actif' : 'Active';
     }
   }
@@ -1987,7 +1983,7 @@ export class ProfilClientComponent {
     this.modalError = null;
     this.modalLoading = true;
 
-    this.formsApi.getFormById(a.formId)
+    this.formsApi.getFormById(a.formId, false, isSubmitted ? a.id : null)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (form) => {

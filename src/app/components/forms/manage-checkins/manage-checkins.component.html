@@ -289,6 +289,7 @@
           </div>
           <ng-container *ngIf="editingFeedback; else feedbackRead">
             <textarea
+              #feedbackField
               id="coach-feedback"
               class="feedback-textarea"
               rows="3"
@@ -296,12 +297,18 @@
               [(ngModel)]="feedback"
               (keydown)="onFeedbackKeydown($event)"
               [placeholder]="'CHK_FEEDBACK_PLACEHOLDER' | translate"></textarea>
+            <div class="quick-replies">
+              <button *ngFor="let reply of quickReplies" type="button" class="quick-reply" (click)="addQuickReply(reply, feedbackField)">{{ reply }}</button>
+            </div>
             <p class="help-text">{{ 'CHK_FEEDBACK_HINT' | translate }}</p>
           </ng-container>
           <ng-template #feedbackRead>
             <div *ngIf="selected.coachFeedback; else noFeedback" class="coach-feedback">
               <div class="feedback-icon"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div>
-              <p class="feedback-text">{{ selected.coachFeedback }}</p>
+              <div>
+                <p class="feedback-text">{{ selected.coachFeedback }}</p>
+                <p class="feedback-read">{{ feedbackReadLabel(selected) }}</p>
+              </div>
             </div>
             <ng-template #noFeedback><p class="help-text">{{ 'CHK_NO_FEEDBACK' | translate }}</p></ng-template>
           </ng-template>

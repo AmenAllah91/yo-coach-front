@@ -1,0 +1,54 @@
+<div class="inv-root">
+
+  <div class="inv-state" *ngIf="loading">
+    <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-state__logo" />
+    <p>{{ 'INVITATION_LOADING' | translate }}</p>
+  </div>
+
+  <div class="inv-state" *ngIf="!loading && loadError">
+    <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-state__logo" />
+    <h1>{{ 'JOIN.UNAVAILABLE_TITLE' | translate }}</h1>
+    <p>{{ 'JOIN.UNAVAILABLE_TEXT' | translate }}</p>
+  </div>
+
+  <div class="inv-container" *ngIf="!loading && !loadError && link">
+    <div class="inv-card">
+      <div class="inv-card__body">
+
+        <div class="inv-logo">
+          <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-logo__img" />
+        </div>
+
+        <h1 class="inv-title">
+          {{ 'JOIN.TITLE' | translate: { coach: link.coachName } }}
+        </h1>
+        <p class="inv-sub join-sub">{{ 'JOIN.SUBTITLE' | translate }}</p>
+
+        <!-- Full coach: the request goes to the waiting list (never the coach's plan or numbers) -->
+        <div class="join-notice" *ngIf="link.waitingList" role="status">
+          <strong>{{ 'JOIN.WAITING_LIST_TITLE' | translate }}</strong>
+          <span>{{ 'JOIN.WAITING_LIST_TEXT' | translate: { coach: link.coachName } }}</span>
+        </div>
+
+        <label class="join-field">
+          <span class="join-field__label">{{ 'JOIN.MESSAGE_LABEL' | translate }}</span>
+          <textarea [(ngModel)]="message" [maxlength]="maxMessageLength" rows="3"
+                    [placeholder]="'JOIN.MESSAGE_PLACEHOLDER' | translate" name="message"></textarea>
+          <span class="join-field__count">{{ message.length }} / {{ maxMessageLength }}</span>
+        </label>
+
+        <button class="inv-cta" type="button" [disabled]="sending" (click)="sendRequest()">
+          {{ (sending ? 'JOIN.SENDING' : (link.waitingList ? 'JOIN.JOIN_WAITING_LIST' : 'JOIN.SEND_REQUEST')) | translate }}
+        </button>
+
+        <p class="inv-error" *ngIf="errorKey" role="alert">{{ errorKey | translate }}</p>
+
+        <p class="join-fineprint">{{ 'JOIN.FINEPRINT' | translate: { coach: link.coachName } }}</p>
+      </div>
+    </div>
+
+    <div class="inv-footer">
+      <p class="inv-footer__copy">{{ 'YOCOACH_COPYRIGHT' | translate }}</p>
+    </div>
+  </div>
+</div>

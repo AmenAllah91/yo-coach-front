@@ -9,12 +9,13 @@ import { WorkoutPlanService } from '../service/workout-plan.service';
 import { AddClientModalComponent } from '../components/clients/add-client-modal/add-client-modal.component';
 import { DeleteClientModalComponent } from '../components/clients/delete-client-modal/delete-client-modal.component';
 import { ScrollLoaderComponent } from '../components/scroll-loader/scroll-loader.component';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { UsersService } from '../service/users.service';
 import { ClientProfileCacheService } from '../service/client-profile-cache.service';
 import { CoachInvitation, InvitationService } from '../service/invitation.service';
 import { ToastService } from '../service/toast.service';
+import { CoachJoinRequest, CoachJoinRequests, JoinRequestService } from '../service/join-request.service';
 
 interface StatusCountResponse {
   active: number;
@@ -35,6 +36,7 @@ interface StatusCountResponse {
     DeleteClientModalComponent,
     ScrollLoaderComponent,
     TranslateModule,
+    RouterLink,
   ],
 })
 export class ClientsComponent implements OnInit {
@@ -84,9 +86,90 @@ export class ClientsComponent implements OnInit {
     private profileCache: ClientProfileCacheService,
     private invitationService: InvitationService,
     private toastService: ToastService,
+    private joinRequestService: JoinRequestService,
+    private route: ActivatedRoute,
   ) {}
 
-  /** "Invited" tab: invitations sent but not accepted yet (they take no active-client slot). */
+  /**
+   * "Received" filter of the "Waiting" tab: people who asked to join through the sign-up link, and clients put on the waiting list when an
+   * invitation found no free slot. Accepting takes a slot (upgrade notice from the interceptor when none is free).
+   */
+  showRequests = false;
+  joinRequests: CoachJoinRequests | null = null;
+  joinRequestsLoading = false;
+  busyRequestId: string | null = null;
+  expandedRequestId: string | null = null;
+
+  get pendingRequests(): CoachJoinRequest[] {
+    const list = this.joinRequests?.requests ?? [];
+    const term = this.searchTerm.trim().toLowerCase();
+    return term ? list.filter((r) => `${r.clientName} ${r.email}`.toLowerCase().includes(term)) : list;
+  }
+
+  loadJoinRequests(): void {
+    this.joinRequestsLoading = true;
+    this.joinRequestService.getRequests().subscribe({
+      next: (data) => { this.joinRequests = data; this.joinRequestsLoading = false; },
+      error: () => { this.joinRequestsLoading = false; },
+    });
+  }
+
+  openRequests(): void {
+    this.showRequests = true;
+    this.showInvited = false;
+    this.openDropdownId = null;
+    this.loadJoinRequests();
+  }
+
+  acceptRequest(request: CoachJoinRequest): void {
+    if (this.busyRequestId) return;
+    this.busyRequestId = request.id;
+    this.joinRequestService.accept(request.id).subscribe({
+      next: () => {
+        this.busyRequestId = null;
+        this.toastService.success(this.translate.instant('JOIN.ACCEPTED_TOAST', { name: request.clientName }));
+        this.loadJoinRequests();
+        this.loadClients();
+      },
+      error: (error) => {
+        // CLIENT_LIMIT_REACHED: the upgrade notice is shown by the interceptor.
+        this.busyRequestId = null;
+        this.showRequestError(error?.error?.code);
+        this.loadJoinRequests();
+      },
+    });
+  }
+
+  declineRequest(request: CoachJoinRequest): void {
+    if (this.busyRequestId || !confirm(this.translate.instant('JOIN.DECLINE_CONFIRM', { name: request.clientName }))) return;
+    this.busyRequestId = request.id;
+    this.joinRequestService.decline(request.id).subscribe({
+      next: () => {
+        this.busyRequestId = null;
+        this.toastService.success(this.translate.instant('JOIN.DECLINED_TOAST'));
+        this.loadJoinRequests();
+        this.loadInvitations();
+      },
+      error: (error) => {
+        this.busyRequestId = null;
+        this.showRequestError(error?.error?.code);
+        this.loadJoinRequests();
+      },
+    });
+  }
+
+  private showRequestError(code: string | undefined): void {
+    if (code === 'CLIENT_LIMIT_REACHED') return;
+    const key = code === 'JOIN_REQUEST_CLIENT_HAS_COACH' ? 'JOIN.ERROR_CLIENT_HAS_COACH'
+      : code === 'JOIN_REQUEST_NOT_FOUND' ? 'JOIN.ERROR_REQUEST_GONE' : 'UNEXPECTED_ERROR_RETRY';
+    this.toastService.error(this.translate.instant(key));
+  }
+
+  toggleRequestMessage(request: CoachJoinRequest): void {
+    this.expandedRequestId = this.expandedRequestId === request.id ? null : request.id;
+  }
+
+  /** "Sent" filter of the "Waiting" tab: invitations sent but not accepted yet (they take no active-client slot). */
   showInvited = false;
   invitations: CoachInvitation[] = [];
   invitationsLoading = false;
@@ -127,10 +210,27 @@ export class ClientsComponent implements OnInit {
     });
   }
 
-  openInvited(): void {
+  openInvited(filter: 'PENDING' | 'EXPIRED' = 'PENDING'): void {
+    this.invitationFilter = filter;
     this.showInvited = true;
+    this.showRequests = false;
     this.openDropdownId = null;
     this.loadInvitations();
+  }
+
+  /**
+   * "Waiting" tab: people who are not clients yet, received requests first (the coach has to answer them) then
+   * invitations sent. Its counter shows the requests to answer, or the invitations sent when none is waiting.
+   */
+  get waitingTabCount(): number {
+    const received = this.joinRequests?.requests?.length ?? 0;
+    return received > 0 ? received : this.pendingInvitations.length;
+  }
+
+  openWaiting(): void {
+    const received = this.joinRequests?.requests?.length ?? 0;
+    if (received > 0 || this.pendingInvitations.length === 0) this.openRequests();
+    else this.openInvited('PENDING');
   }
 
   /** Days left before the link stops working (0 on its last day). */
@@ -202,6 +302,9 @@ export class ClientsComponent implements OnInit {
   ngOnInit() {
     this.loadClients();
     this.loadInvitations();
+    // "/clients?tab=requests": link of the new-request notification and email (also while already on this page).
+    if (this.route.snapshot.queryParamMap.get('tab') !== 'requests') this.loadJoinRequests();
+    this.route.queryParamMap.subscribe((params) => { if (params.get('tab') === 'requests') this.openRequests(); });
   }
 
   goBack(): void {
@@ -326,6 +429,7 @@ export class ClientsComponent implements OnInit {
 
   setStatusFilter(status: ClientStatus) {
     this.showInvited = false;
+    this.showRequests = false;
     this.statusFilter = status;
     this.currentPage = 0;
     this.openDropdownId = null;
@@ -377,6 +481,7 @@ export class ClientsComponent implements OnInit {
     this.showAddModal = false;
     this.resetForm();
     this.loadInvitations();
+    this.loadJoinRequests();
   }
 
   viewProfile(client: Client) {

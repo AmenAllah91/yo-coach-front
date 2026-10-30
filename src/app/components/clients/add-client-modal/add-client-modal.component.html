@@ -1,9 +1,9 @@
 <div class="acm-overlay" *ngIf="isVisible" (click)="closeModal()">
-  <div class="acm-modal" (click)="$event.stopPropagation()">
+  <div class="acm-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="acm-title">
 
     <!-- Header -->
     <div class="acm-header">
-      <h2 class="acm-title">{{ 'INVITE_NEW_CLIENTS' | translate }}</h2>
+      <h2 class="acm-title" id="acm-title">{{ 'INVITE_NEW_CLIENTS' | translate }}</h2>
       <button class="acm-close" type="button" (click)="closeModal()" [attr.aria-label]="'CLOSE' | translate">
         <i-feather name="x"></i-feather>
       </button>
@@ -12,53 +12,130 @@
     <!-- Body -->
     <div class="acm-body">
 
-      <!-- Description -->
-      <p class="acm-desc">
-        {{ 'INVITE_CLIENTS_EXPLANATION' | translate }}
-      </p>
-
-      <!-- Email Input: the link is created for this email only -->
-      <div class="acm-email-field">
-        <input
-          class="acm-email-input"
-          [class.acm-email-input--invalid]="!!emailError"
-          type="email"
-          placeholder="client@example.com"
-          [ngModel]="email"
-          (ngModelChange)="onEmailChange($event)"
-          (blur)="onEmailBlur()"
-          [attr.aria-invalid]="!!emailError"
-          [attr.aria-describedby]="emailError ? 'acm-email-error' : 'acm-email-hint'"
-          name="email"
-        />
-        <p *ngIf="emailError" id="acm-email-error" class="acm-email-error" role="alert">
-          {{ emailError }}
+      <!-- Slots of the coach: once full, new clients go to the waiting list -->
+      <div class="acm-slots" *ngIf="joinLink && joinLink.limit" [class.acm-slots--full]="joinLink.full">
+        <div class="acm-slots__row">
+          <span class="acm-slots__label">{{ 'JOIN.SLOTS_LABEL' | translate }}</span>
+          <span class="acm-slots__count">{{ joinLink.current }} / {{ joinLink.limit }}</span>
+        </div>
+        <div class="acm-slots__bar" role="progressbar" [attr.aria-valuenow]="joinLink.current"
+             aria-valuemin="0" [attr.aria-valuemax]="joinLink.limit">
+          <span [style.width.%]="slotsPercent"></span>
+        </div>
+        <p class="acm-slots__hint" *ngIf="!joinLink.full">
+          {{ (slotsLeft === 1 ? 'JOIN.SLOTS_LEFT_ONE' : 'JOIN.SLOTS_LEFT') | translate: { count: slotsLeft } }}
         </p>
-        <p *ngIf="!emailError" id="acm-email-hint" class="acm-desc">
-          {{ 'INVITATION_LINK_FOR_THIS_EMAIL_ONLY' | translate }}
+        <p class="acm-slots__hint" *ngIf="joinLink.full">
+          {{ 'JOIN.SLOTS_FULL_HINT' | translate }}
+          <a routerLink="/subscription" (click)="closeModal()">{{ 'JOIN.UPGRADE_PLAN' | translate }}</a>
         </p>
       </div>
 
-      <!-- Invite Link, once created -->
-      <div class="acm-invite-box" *ngIf="inviteLink">
-        <span class="acm-invite-url">{{ inviteLink }}</span>
+      <!-- Two ways to add clients -->
+      <div class="acm-modes" role="tablist">
+        <button type="button" role="tab" class="acm-mode" [class.acm-mode--active]="mode === 'email'"
+                [attr.aria-selected]="mode === 'email'" (click)="setMode('email')">
+          <i-feather name="mail"></i-feather>{{ 'JOIN.MODE_EMAIL' | translate }}
+        </button>
+        <button type="button" role="tab" class="acm-mode" [class.acm-mode--active]="mode === 'link'"
+                [attr.aria-selected]="mode === 'link'" (click)="setMode('link')">
+          <i-feather name="link"></i-feather>{{ 'JOIN.MODE_LINK' | translate }}
+        </button>
       </div>
 
-      <!-- Submit -->
-      <button
-        class="acm-submit-btn"
-        type="button"
-        (click)="sendInvitation()"
-        [disabled]="!canSubmit"
-      >
-        {{ isSending
-          ? ('SENDING' | translate)
-          : ('SEND_INVITATION' | translate) }}
-      </button>
-      <button type="button" class="acm-resend-btn" (click)="copyLink()" [disabled]="!canSubmit">
-        <i-feather name="copy" class="acm-copy-ico"></i-feather>
-        <span>{{ copied ? ('COPIED' | translate) : ('COPY_LINK' | translate) }}</span>
-      </button>
+      <ng-container *ngIf="mode === 'email'">
+        <!-- Description -->
+        <p class="acm-desc">
+          {{ 'INVITE_CLIENTS_EXPLANATION' | translate }}
+        </p>
+
+        <!-- Email Input: the link is created for this email only -->
+        <div class="acm-email-field">
+          <input
+            class="acm-email-input"
+            [class.acm-email-input--invalid]="!!emailError"
+            type="email"
+            placeholder="client@example.com"
+            [ngModel]="email"
+            (ngModelChange)="onEmailChange($event)"
+            (blur)="onEmailBlur()"
+            [attr.aria-invalid]="!!emailError"
+            [attr.aria-describedby]="emailError ? 'acm-email-error' : 'acm-email-hint'"
+            name="email"
+          />
+          <p *ngIf="emailError" id="acm-email-error" class="acm-email-error" role="alert">
+            {{ emailError }}
+          </p>
+          <p *ngIf="!emailError" id="acm-email-hint" class="acm-desc">
+            {{ 'INVITATION_LINK_FOR_THIS_EMAIL_ONLY' | translate }}
+          </p>
+        </div>
+
+        <!-- Invite Link, once created -->
+        <div class="acm-invite-box" *ngIf="inviteLink">
+          <span class="acm-invite-url">{{ inviteLink }}</span>
+        </div>
+
+        <!-- Submit -->
+        <button
+          class="acm-submit-btn"
+          type="button"
+          (click)="sendInvitation()"
+          [disabled]="!canSubmit"
+        >
+          {{ isSending
+            ? ('SENDING' | translate)
+            : ('SEND_INVITATION' | translate) }}
+        </button>
+        <button type="button" class="acm-resend-btn" (click)="copyLink()" [disabled]="!canSubmit">
+          <i-feather name="copy" class="acm-copy-ico"></i-feather>
+          <span>{{ copied ? ('COPIED' | translate) : ('COPY_LINK' | translate) }}</span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="mode === 'link'">
+        <p class="acm-desc">{{ 'JOIN.LINK_EXPLANATION' | translate }}</p>
+
+        <p class="acm-desc" *ngIf="joinLinkLoading">{{ 'LOADING' | translate }}</p>
+        <p class="acm-email-error" *ngIf="joinLinkError" role="alert">
+          {{ 'UNEXPECTED_ERROR_RETRY' | translate }}
+          <button type="button" class="acm-resend-btn" (click)="loadJoinLink()">{{ 'JOIN.RETRY' | translate }}</button>
+        </p>
+
+        <ng-container *ngIf="joinLink">
+          <div class="acm-invite-box" [class.acm-invite-box--off]="!joinLink.active">
+            <i-feather name="link" class="acm-copy-ico"></i-feather>
+            <span class="acm-invite-url">{{ joinLink.active ? joinLinkUrl : ('JOIN.LINK_OFF' | translate) }}</span>
+            <button type="button" class="acm-copy-btn" *ngIf="joinLink.active" (click)="copyJoinLink()">
+              <i-feather [name]="joinLinkCopied ? 'check' : 'copy'" class="acm-copy-ico"></i-feather>
+              {{ (joinLinkCopied ? 'COPIED' : 'COPY_LINK') | translate }}
+            </button>
+          </div>
+
+          <ul class="acm-steps">
+            <li><i-feather name="share-2"></i-feather>{{ 'JOIN.STEP_SHARE' | translate }}</li>
+            <li><i-feather name="user-plus"></i-feather>{{ 'JOIN.STEP_REQUEST' | translate }}</li>
+            <li><i-feather name="check-circle"></i-feather>{{ 'JOIN.STEP_APPROVE' | translate }}</li>
+          </ul>
+
+          <button class="acm-submit-btn" type="button" *ngIf="joinLink.active" (click)="shareJoinLink()">
+            {{ 'JOIN.SHARE_LINK' | translate }}
+          </button>
+          <button class="acm-submit-btn" type="button" *ngIf="!joinLink.active" (click)="toggleJoinLink()" [disabled]="joinLinkBusy">
+            {{ 'JOIN.TURN_ON' | translate }}
+          </button>
+
+          <div class="acm-link-actions">
+            <button type="button" class="acm-resend-btn" (click)="regenerateJoinLink()" [disabled]="joinLinkBusy">
+              {{ 'JOIN.REGENERATE' | translate }}
+            </button>
+            <button type="button" class="acm-resend-btn acm-resend-btn--muted" *ngIf="joinLink.active"
+                    (click)="toggleJoinLink()" [disabled]="joinLinkBusy">
+              {{ 'JOIN.TURN_OFF' | translate }}
+            </button>
+          </div>
+        </ng-container>
+      </ng-container>
 
     </div>
   </div>

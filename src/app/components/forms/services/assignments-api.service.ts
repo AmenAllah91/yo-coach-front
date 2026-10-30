@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CheckinInsights } from 'app/components/clients/shared/celebration';
 import { environment } from '@env/environment';
 
 export type AssignmentStatus =
@@ -27,6 +28,9 @@ export interface FormAssignment {
   coachName?: string | null;
   /** When the client read the current comment (null: new comment). */
   feedbackSeenAt?: string | null;
+  /** Answers in progress (page by page) and the part the client was on: they resume there. */
+  draftAnswers?: any[] | null;
+  draftSectionId?: string | null;
 }
 export interface BulkAssignResult {
   created: FormAssignment[];
@@ -83,10 +87,13 @@ export class AssignmentsApiService {
     sortBy = 'assignedAt',
     direction: 'ASC' | 'DESC' = 'DESC',
     status?: AssignmentStatus,
-    skipLoader = false
+    skipLoader = false,
+    statuses: AssignmentStatus[] = []
   ) {
-    const params: any = { page, size, sortBy, direction };
-    if (status) params.status = status;
+    let params = new HttpParams().set('page', page).set('size', size).set('sortBy', sortBy).set('direction', direction);
+    if (status) params = params.set('status', status);
+    // Repeated: the backend takes several statuses at once (client "Submitted" tab: SUBMITTED and REVIEWED).
+    statuses.forEach(value => { params = params.append('status', value); });
     return this.http.get<PageResponse<FormAssignment>>(`${this.baseUrl}/me/page`, {
       params,
       headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
@@ -168,9 +175,30 @@ export class AssignmentsApiService {
       { feedback }
     );
   }
+  /** Change since the previous check-in of the form and the on-time streak (« Check-in sent » screen). */
+  getInsights(assignmentId: string): Observable<CheckinInsights> {
+    return this.http.get<CheckinInsights>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/insights`, {
+      headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' },
+    });
+  }
+
+  /** The client's on-time check-in streak (CE is the single source). */
+  getMyStreak(): Observable<{ streak: number }> {
+    return this.http.get<{ streak: number }>(`${this.baseUrl}/me/streak`, {
+      headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' },
+    });
+  }
+
   /** The client opened the coach's comment: the "New" badge goes away. */
   markFeedbackSeen(assignmentId: string): Observable<FormAssignment> {
     return this.http.post<FormAssignment>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/feedback-seen`, null, {
+      headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' },
+    });
+  }
+
+  /** Keeps the client's answers in progress and the part they are on (silent: saved while they answer). */
+  saveDraft(assignmentId: string, answers: any[], sectionId: string | null): Observable<FormAssignment> {
+    return this.http.put<FormAssignment>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/draft`, { answers, sectionId }, {
       headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' },
     });
   }

@@ -33,7 +33,8 @@ export class AddProgressPictureModalComponent implements OnChanges {
  onFileSelected(pose:ProgressPose,event:Event){this.select(pose,(event.target as HTMLInputElement).files?.[0]??null);}
  private select(pose:ProgressPose,file:File|null){if(this.saving||!file)return; const bad=!['image/jpeg','image/png'].includes(file.type)||file.size>10*1024*1024; this.fileErrors[pose]=bad; if(bad){delete this.files[pose];delete this.previews[pose];return;} this.files[pose]=file; const r=new FileReader();r.onload=()=>{if(this.files[pose]===file)this.previews[pose]=r.result};r.readAsDataURL(file);}
  remove(pose:ProgressPose){if(this.saving)return;delete this.files[pose];delete this.previews[pose];delete this.fileErrors[pose];}
- isFormValid(){return this.poses.every(p=>!!this.files[p])&&!!this.weight&&Number.isFinite(this.weight)&&this.weight>0&&!!this.date;}
+ /** A coach request needs every pose it asks for; otherwise one photo is enough. */
+ isFormValid(){const photos=this.request?.poses?.length?this.poses.every(p=>!!this.files[p]):this.poses.some(p=>!!this.files[p]);return photos&&!!this.weight&&Number.isFinite(this.weight)&&this.weight>0&&!!this.date;}
  submit(){if(this.saving||!this.isFormValid()||this.weight==null)return;this.save.emit({files:{...this.files},weight:this.weight,date:this.date,note:this.note.trim()});}
  onClose(){if(!this.saving)this.close.emit();}
 }

@@ -306,7 +306,10 @@ export class ClientProgressComponent implements OnInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    const complete = this.editing ? true : this.sheetPoses.every(pose => !!this.files[pose]);
+    // A coach request needs every pose it asks for; otherwise one photo is enough.
+    const complete = this.editing ? true : this.fromCoachRequest
+      ? this.sheetPoses.every(pose => !!this.files[pose])
+      : this.sheetPoses.some(pose => !!this.files[pose]);
     return complete && this.weightValue != null && !this.saving;
   }
 

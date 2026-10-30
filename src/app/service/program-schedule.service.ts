@@ -7,8 +7,6 @@ import { ToastAction, ToastService } from './toast.service';
 import {
   AssignResult,
   ClientSchedulePreview,
-  PauseResult,
-  PauseView,
   ShiftPreview,
   ShiftResult,
   ProgramKind,
@@ -189,7 +187,7 @@ export class ProgramScheduleService {
     });
   }
 
-  /* ---------------- « Décaler la suite » and pause (backlog-programmes.md DS-10/DS-11) ---------------- */
+  /* ---------------- « Décaler la suite » (backlog-programmes.md DS-10) ---------------- */
 
   /** What « Décaler la suite » proposes (without from/days) and would change. */
   shiftPreview(kind: ProgramKind, programId: string, from?: string | null, days?: number | null): Observable<ShiftPreview> {
@@ -199,19 +197,6 @@ export class ProgramScheduleService {
 
   shift(kind: ProgramKind, programId: string, from: string, days: number): Observable<ShiftResult> {
     return this.http.post<ShiftResult>(`${this.url}/shift`, { type: kind, programId, from, days }, { headers: SKIP_LOADER });
-  }
-
-  pausePreview(clientId: string, from: string, to: string, types: ProgramKind[]): Observable<PauseResult> {
-    return this.http.post<PauseResult>(`${this.url}/pause/preview`, { clientId, from, to, types }, { headers: SKIP_LOADER });
-  }
-
-  pause(clientId: string, from: string, to: string, types: ProgramKind[]): Observable<PauseResult> {
-    return this.http.post<PauseResult>(`${this.url}/pause`, { clientId, from, to, types }, { headers: SKIP_LOADER });
-  }
-
-  /** The pause going on or to come for that client, null when none. */
-  currentPause(clientId: string): Observable<PauseView | null> {
-    return this.http.get<PauseView | null>(`${this.url}/pause`, { params: { clientId }, headers: SKIP_LOADER });
   }
 
   undo(undoId: string): Observable<{ removed: number; restored: number }> {
@@ -334,16 +319,6 @@ export class ProgramScheduleService {
     this.announceWithUndo(result.undoId,
       this.translate.instant('ASSIGN_FLOW.SHIFT_DONE', { name: programName, date: this.formatDate(own?.newStartDate) }),
       result.changes.filter(change => change !== own));
-  }
-
-  /** After a pause (DS-11): its dates, what moved for each type, « Annuler » (the pause goes too). */
-  announcePause(result: PauseResult, clientName: string): void {
-    const pause = result.pause;
-    const changes = [...(result.changes.WORKOUT || []), ...(result.changes.NUTRITION || [])];
-    this.announceWithUndo(result.undoId,
-      this.translate.instant('ASSIGN_FLOW.PAUSE_DONE', {
-        name: clientName, from: this.formatDate(pause?.fromDate), to: this.formatDate(pause?.toDate),
-      }), changes);
   }
 
   /* ---------------- quick changes of the calendar (backlog-programmes.md, calendar lot C, C4) ---------------- */

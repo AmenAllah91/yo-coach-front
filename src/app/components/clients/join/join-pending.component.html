@@ -1,0 +1,40 @@
+<div class="inv-root">
+
+  <div class="inv-state" *ngIf="loading">
+    <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-state__logo" />
+    <p>{{ 'INVITATION_LOADING' | translate }}</p>
+  </div>
+
+  <div class="inv-container" *ngIf="!loading">
+    <div class="inv-card">
+      <div class="inv-card__body">
+        <div class="inv-logo">
+          <img src="assets/logo/yocoach-logo.svg" alt="YoCoach" class="inv-logo__img" />
+        </div>
+
+        <ng-container *ngIf="request; else noRequest">
+          <h1 class="inv-title">{{ 'JOIN.PENDING_TITLE' | translate: { coach: request.coachName } }}</h1>
+          <p class="inv-sub join-sub">
+            {{ (request.waitlisted ? 'JOIN.PENDING_WAITLIST_TEXT' : 'JOIN.PENDING_TEXT') | translate: { coach: request.coachName } }}
+          </p>
+          <p class="join-fineprint" *ngIf="request.createdAt">
+            {{ 'JOIN.PENDING_SENT_ON' | translate: { date: (request.createdAt | date:'dd/MM/yyyy') } }}
+          </p>
+          <button type="button" class="inv-cta join-space" *ngIf="hasCoach" (click)="goToMySpace()">
+            {{ 'JOIN.GO_TO_MY_SPACE' | translate }}
+          </button>
+          <button type="button" class="inv-fallback__link join-cancel" [disabled]="cancelling" (click)="cancel()">
+            {{ 'JOIN.CANCEL_REQUEST' | translate }}
+          </button>
+        </ng-container>
+
+        <ng-template #noRequest>
+          <h1 class="inv-title">{{ 'JOIN.NO_COACH_TITLE' | translate }}</h1>
+          <p class="inv-sub join-sub">{{ 'JOIN.NO_COACH_TEXT' | translate }}</p>
+        </ng-template>
+
+        <button type="button" class="inv-fallback__link join-cancel" *ngIf="!hasCoach" (click)="signOut()">{{ 'JOIN.SIGN_OUT' | translate }}</button>
+      </div>
+    </div>
+  </div>
+</div>

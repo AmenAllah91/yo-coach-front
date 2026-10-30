@@ -1017,3 +1017,13 @@ svg {
   .btn-message .btn-label { display: none; }
   .avatar-lg { display: none; }
 }
+
+// Quick replies under the feedback field, then edited before sending.
+.quick-replies { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.quick-reply {
+  padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 12.5px; cursor: pointer;
+  color: var(--yc-text-secondary, light-dark(#546175, #b5bac3));
+  background: light-dark(#F5F7FA, #23262b); border: 1px solid var(--yc-border, light-dark(#E6EAF0, #33373D));
+  &:hover { color: var(--yc-text-primary, inherit); border-color: var(--yc-primary, #44B4DF); }
+}
+.feedback-read { margin: 6px 0 0; font-size: 12px; color: var(--yc-text-hint, light-dark(#8A94A6, #8c9199)); }

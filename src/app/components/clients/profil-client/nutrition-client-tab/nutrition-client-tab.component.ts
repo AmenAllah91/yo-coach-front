@@ -2,7 +2,6 @@ import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge
 import { nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
 import { ChangeDatesModalComponent } from '@shared/components/change-dates-modal/change-dates-modal.component';
 import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
-import { ClientPauseModalComponent } from '@shared/components/client-pause-modal/client-pause-modal.component';
 import { ProgramScheduleService } from 'app/service/program-schedule.service';
 import { ToastService } from 'app/service/toast.service';
 import { OverviewItem, canChangeDates, isPlanLocked, todayIso } from '@shared/models/program-schedule';
@@ -27,7 +26,7 @@ type NutritionSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' 
 @Component({
   selector: 'app-nutrition-client-tab',
   standalone: true,
-  imports: [WriteActionDirective, ProgramDaysBadgeComponent, CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, ClientPlanEmptyComponent, ChangeDatesModalComponent, ProgramShiftModalComponent, ClientPauseModalComponent, ClientProgramsComponent, RemoveProgramConfirmComponent],
+  imports: [WriteActionDirective, ProgramDaysBadgeComponent, CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, ClientPlanEmptyComponent, ChangeDatesModalComponent, ProgramShiftModalComponent, ClientProgramsComponent, RemoveProgramConfirmComponent],
   templateUrl: './nutrition-client-tab.component.html',
   styleUrl: './nutrition-client-tab.component.scss',
 })
@@ -58,8 +57,6 @@ export class NutritionClientTabComponent implements OnInit {
   showChangeDatesModal = false;
   /** « Décaler la suite » of that program (DS-10). */
   shiftTarget: OverviewItem | null = null;
-  /** « Mettre en pause » the client (DS-11). */
-  showPauseModal = false;
   dateTargetPlan: any | null = null;
   dateTargetIsFile = false;
   dateStart = '';
@@ -117,9 +114,6 @@ export class NutritionClientTabComponent implements OnInit {
       case 'shift':
         // « Décaler la suite » (DS-10): the window reads what it proposes itself.
         this.shiftTarget = action.item || null;
-        return;
-      case 'pause':
-        this.showPauseModal = true;
         return;
       case 'dates':
         // The tab already has its dates: the window opens at once, the server checks the rest (CD-11).
@@ -493,10 +487,9 @@ export class NutritionClientTabComponent implements OnInit {
     });
   }
 
-  /** « Décaler la suite » or a pause saved: the tab is read again (the message already said what changed). */
+  /** « Décaler la suite » saved: the tab is read again (the message already said what changed). */
   onShiftSaved(): void {
     this.shiftTarget = null;
-    this.showPauseModal = false;
   }
 
   onDatesSaved(): void {

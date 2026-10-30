@@ -144,6 +144,66 @@ export function validateQuestion(
   return issues;
 }
 
+/** "Show if [question] is [answer]": yes for a yes/no question, optionIds for a choice. */
+export interface CheckInConditionDraft {
+  questionId: string | null;
+  yes?: boolean | null;
+  optionIds?: string[];
+}
+
+export interface CheckInPartDraft {
+  id: string;
+  title: string;
+  condition?: CheckInConditionDraft | null;
+}
+
+function conditionComplete(condition: CheckInConditionDraft): boolean {
+  if (!condition.questionId) return false;
+  return condition.yes === true || condition.yes === false || (condition.optionIds?.length ?? 0) > 0;
+}
+
+/** Each part holds a question; each condition names its question and the answer that shows it. */
+export function validateCheckInParts(
+  parts: CheckInPartDraft[],
+  questions: Array<CheckInQuestionDraft & { sectionId?: string | null; condition?: CheckInConditionDraft | null }>,
+): CheckInValidationIssue[] {
+  const issues: CheckInValidationIssue[] = [];
+  parts.forEach((part, index) => {
+    const name = part.title?.trim() || String(index + 1);
+    if (!questions.some(q => q.sectionId === part.id)) {
+      issues.push({ id: `part-${part.id}-empty`, tab: 'form', targetId: `part-${part.id}`, messageKey: 'CHECKIN_ERROR_EMPTY_PART', params: { part: name } });
+    }
+    if (part.condition && !conditionComplete(part.condition)) {
+      issues.push({ id: `part-${part.id}-condition`, tab: 'form', targetId: `part-${part.id}`, messageKey: 'CHECKIN_ERROR_PART_CONDITION', params: { part: name } });
+    } else if (part.condition) {
+      // Its question must sit in an earlier part.
+      const source = questions.find(q => q.id === part.condition!.questionId);
+      const sourcePart = parts.findIndex(p => p.id === source?.sectionId);
+      if (sourcePart < 0 || sourcePart >= index) {
+        issues.push({ id: `part-${part.id}-condition-order`, tab: 'form', targetId: `part-${part.id}`, messageKey: 'CHECKIN_ERROR_PART_CONDITION_ORDER', params: { part: name } });
+      }
+    }
+  });
+  questions.forEach((question, index) => {
+    if (question.condition && !conditionComplete(question.condition)) {
+      issues.push({
+        id: `question-${question.id}-condition`, tab: 'form', targetId: `question-condition-${question.id}`,
+        messageKey: 'CHECKIN_ERROR_CONDITION', params: { number: index + 1 }, questionId: question.id,
+      });
+    } else if (question.condition) {
+      // Its question must come before it.
+      const sourceIndex = questions.findIndex(q => q.id === question.condition!.questionId);
+      if (sourceIndex < 0 || sourceIndex >= index) {
+        issues.push({
+          id: `question-${question.id}-condition-order`, tab: 'form', targetId: `question-condition-${question.id}`,
+          messageKey: 'CHECKIN_ERROR_CONDITION_ORDER', params: { number: index + 1 }, questionId: question.id,
+        });
+      }
+    }
+  });
+  return issues;
+}
+
 export function isQuestionValid(question: CheckInQuestionDraft, questionIndex = 0): boolean {
   return validateQuestion(question, questionIndex).length === 0;
 }

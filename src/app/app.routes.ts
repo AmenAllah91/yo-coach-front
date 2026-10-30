@@ -24,6 +24,17 @@ export const APP_ROUTE: Route[] = [
     loadComponent: () => import('./components/clients/invitation/invitation.component').then((m) => m.InvitationComponent),
   },
   {
+    // The coach's sign-up link (no email): the client asks to join, the coach accepts or declines.
+    path: 'join/:token',
+    loadComponent: () => import('./components/clients/join/join.component').then((m) => m.JoinComponent),
+  },
+  {
+    // A client without a coach yet: their request waiting for the coach's answer.
+    path: 'join-pending',
+    loadComponent: () => import('./components/clients/join/join-pending.component').then((m) => m.JoinPendingComponent),
+    canActivate: [isAuthenticated],
+  },
+  {
     path: 'coach-onboarding',
     loadComponent: () => import('./components/coach-onboarding/coach-onboarding.component').then((m) => m.CoachOnboardingComponent),
     canActivate: [isAuthenticated, accountAccessGuard, coachingAccessGuard, coachOnboardingEntryGuard],

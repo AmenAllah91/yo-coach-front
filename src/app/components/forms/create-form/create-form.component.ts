@@ -13,13 +13,15 @@ import {
   FormsApiService,
   FormSchedule,
   QuestionBE,
-  QuestionTypeBE
+  QuestionTypeBE,
+  ShowConditionBE
 } from '../services/forms-api.service';
 import {
   CheckInScheduleFrequency,
   CheckInValidationIssue,
   isQuestionValid,
   validateCheckInForm,
+  validateCheckInParts,
 } from './check-in-form-validation';
 
 export type QuestionType =
@@ -42,12 +44,34 @@ export interface QuestionItem {
   text: string;
   isRequired: boolean;
   options?: string[];
+  /** Stable ids of the options (same index): an answer keeps its choice when options are edited. */
+  optionIds?: string[];
   maxStars?: number;
   minDate?: string;
   maxDate?: string;
+  /** The part (page) it belongs to; none while the check-in has no parts. */
+  sectionId?: string | null;
+  /** Shown only when this is met. */
+  condition?: ConditionItem | null;
 }
 
-type Tab = 'form' | 'schedule';
+/** "Show only if [question] is [answer]": `yes` for a yes/no question, `optionIds` for a choice. */
+export interface ConditionItem {
+  questionId: string | null;
+  yes?: boolean | null;
+  optionIds: string[];
+}
+
+/** A part of the check-in: one page for the client. */
+export interface SectionItem {
+  id: string;
+  title: string;
+  description: string;
+  /** The coach's word shown when the client finishes the part. */
+  endMessage: string;
+  condition?: ConditionItem | null;
+}
+
 type ScheduleFrequency = CheckInScheduleFrequency;
 type BiweeklyWeekOption = '1-3' | '2-4';
 type MonthlyMode = 'start' | 'end' | 'specific';
@@ -80,7 +104,6 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   hasLoadedInitialData = false;
   private isLeaving = false;
 
-  activeTab: Tab = 'form';
   showPreview = false;
   showQuestionSidebar = false;
   questionMenuOpensAbove = false;
@@ -94,7 +117,17 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   detailsTitle = '';
   description = '';
 
+  readonly today = new Date();
+
+  /** Kept in page order: part by part, then the order inside each part. */
   questions: QuestionItem[] = [];
+  /** Parts of the check-in; none: a single page. */
+  sections: SectionItem[] = [];
+  /** Part the next added question goes into (null: the last part, or the only list). */
+  addTarget: string | null = null;
+  /** Shown after a move that put a condition before its question, with the order to go back to. */
+  moveNotice: { names: string; order: Array<{ id: string; sectionId: string | null }>; sectionIds: string[] } | null = null;
+  private moveNoticeTimer?: ReturnType<typeof setTimeout>;
 
   scheduleFrequency: ScheduleFrequency | null = null;
   scheduleFrequencyOptions = [
@@ -113,6 +146,9 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   monthDays: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   monthlyDay: number | null = null;
   scheduleTime: string = '';
+
+  /** Status in the database: a published check-in is saved on demand only, never half-edited by the auto-save. */
+  savedStatus: SaveStatus | 'DRAFT' | null = null;
 
   fromProfile = false;
   clientIdFromProfile: string | null = null;
@@ -167,11 +203,16 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  get isPublished(): boolean {
+    return this.savedStatus === 'PUBLISHED';
+  }
+
   ngOnDestroy(): void {
-    if (this.hasUnsavedChanges && !this.isSaving && !this.isAutoSaving) {
+    if (this.hasUnsavedChanges && !this.isSaving && !this.isAutoSaving && !this.isPublished) {
       this.autoSave();
     }
 
+    clearTimeout(this.moveNoticeTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -214,9 +255,10 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   private autoSave(): void {
-    if (this.isSaving || this.isAutoSaving) return;
+    if (this.isSaving || this.isAutoSaving || this.isPublished) return;
 
-    const payload = this.buildPayload('UNSAVED');
+    // A draft stays a draft; only a form never published nor saved is "unsaved".
+    const payload = this.buildPayload(this.savedStatus === 'DRAFT' ? 'DRAFT' : 'UNSAVED');
 
     this.isAutoSaving = true;
     this.hasUnsavedChanges = false;
@@ -271,6 +313,13 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   back(): void {
+    if (this.isPublished) {
+      if (this.hasUnsavedChanges && !confirm(this.translate.instant('CHECKIN_LEAVE_WITHOUT_SAVING'))) return;
+      this.hasUnsavedChanges = false;
+      this.router.navigate(['/forms'], { queryParams: { tab: 'active' } });
+      return;
+    }
+
     this.isLeaving = true;
 
     if (this.hasUnsavedChanges && !this.isSaving && !this.isAutoSaving) {
@@ -278,12 +327,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     }
 
     this.router.navigate(['/forms'], {
-      queryParams: { tab: 'unsaved' }
+      queryParams: { tab: this.savedStatus === 'DRAFT' ? 'active' : 'unsaved' }
     });
-  }
-
-  setTab(tab: Tab): void {
-    this.activeTab = tab;
   }
 
   openPreview(): void {
@@ -294,7 +339,9 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.showPreview = false;
   }
 
-  openTypeDrawer(event: MouseEvent): void {
+  /** `target`: the part the question goes into (null: the last part, or the only list). */
+  openTypeDrawer(event: MouseEvent, target: string | null = null): void {
+    this.addTarget = target;
     const button = event.currentTarget as HTMLElement;
     const bounds = button.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -325,23 +372,287 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       text: '',
       isRequired: true,
       options: type === 'multiple-choice' ? ['', ''] : undefined,
+      optionIds: type === 'multiple-choice' ? [this.newId('opt'), this.newId('opt')] : undefined,
       ...(type === 'star-rating' ? { maxStars: 5 } : {}),
+      sectionId: this.sections.length
+        ? (this.addTarget ?? this.sections[this.sections.length - 1].id)
+        : null,
+      condition: null,
     };
 
     this.questions = [...this.questions, newQuestion];
+    this.keepPageOrder();
     this.showQuestionSidebar = false;
     this.triggerAutoSave();
+    setTimeout(() => document.getElementById('question-text-' + newQuestion.id)?.focus());
   }
 
-  removeQuestion(index: number): void {
-    this.questions = this.questions.filter((_, i) => i !== index);
+  removeQuestion(questionId: string): void {
+    const removed = this.questions.find(q => q.id === questionId);
+    const dependents = removed ? this.dependentsOf(removed) : [];
+    if (dependents.length
+      && !confirm(this.translate.instant('CHECKIN_REMOVE_SOURCE_CONFIRM', { names: this.dependentNames(dependents) }))) return;
+    this.questions = this.questions.filter(q => q.id !== questionId);
+    // A condition on a removed question no longer means anything.
+    [...this.questions, ...this.sections].forEach(holder => {
+      if (holder.condition?.questionId === questionId) holder.condition = null;
+    });
     this.refreshValidationIssues();
     this.triggerAutoSave();
   }
 
   onDrop(event: CdkDragDrop<QuestionItem[]>): void {
-    moveItemInArray(this.questions, event.previousIndex, event.currentIndex);
+    this.reorder(() => moveItemInArray(this.questions, event.previousIndex, event.currentIndex));
+    this.refreshValidationIssues();
     this.triggerAutoSave();
+  }
+
+  // ───────────── Parts (one page each for the client) ─────────────
+
+  trackBySection = (_: number, s: SectionItem) => s.id;
+
+  /** The questions of a part, in their order. */
+  partQuestions(sectionId: string): QuestionItem[] {
+    return this.questions.filter(q => q.sectionId === sectionId);
+  }
+
+  /** The part this question opens (its first question), for the preview's part titles. */
+  partStartingAt(q: QuestionItem): SectionItem | null {
+    if (!q.sectionId) return null;
+    return this.partQuestions(q.sectionId)[0] === q ? this.sections.find(s => s.id === q.sectionId) ?? null : null;
+  }
+
+  /** Number shown on a question card: its rank in the whole check-in. */
+  displayNumber(q: QuestionItem): number {
+    return this.questions.indexOf(q) + 1;
+  }
+
+  /** Questions sorted part by part; a question of no known part goes to the first one. */
+  private keepPageOrder(): void {
+    if (!this.sections.length) {
+      this.questions.forEach(q => (q.sectionId = null));
+      return;
+    }
+    const known = new Set(this.sections.map(s => s.id));
+    this.questions.forEach(q => {
+      if (!q.sectionId || !known.has(q.sectionId)) q.sectionId = this.sections[0].id;
+    });
+    this.questions = this.sections.flatMap(s => this.questions.filter(q => q.sectionId === s.id));
+  }
+
+  private newPart(index: number): SectionItem {
+    return {
+      id: this.newId('part'),
+      title: this.translate.instant('CHECKIN_PART_DEFAULT_TITLE', { number: index + 1 }),
+      description: '',
+      endMessage: '',
+      condition: null,
+    };
+  }
+
+  /** First split: every current question goes to part 1, part 2 is ready for the next ones. */
+  splitIntoParts(): void {
+    this.sections = [this.newPart(0), this.newPart(1)];
+    this.keepPageOrder();
+    this.triggerAutoSave();
+  }
+
+  addPart(): void {
+    const part = this.newPart(this.sections.length);
+    this.sections = [...this.sections, part];
+    this.triggerAutoSave();
+    setTimeout(() => document.getElementById('part-title-' + part.id)?.focus());
+  }
+
+  /** Its questions are kept: they join the part before (or after, for the first). */
+  removePart(index: number): void {
+    const part = this.sections[index];
+    const count = this.partQuestions(part.id).length;
+    if (count && !confirm(this.translate.instant('CHECKIN_REMOVE_PART_CONFIRM', { count }))) return;
+    const neighbour = this.sections[index - 1] ?? this.sections[index + 1];
+    this.questions.forEach(q => {
+      if (q.sectionId === part.id) q.sectionId = neighbour?.id ?? null;
+    });
+    this.sections = this.sections.filter(s => s.id !== part.id);
+    this.keepPageOrder();
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  movePart(index: number, step: -1 | 1): void {
+    const target = index + step;
+    if (target < 0 || target >= this.sections.length) return;
+    this.reorder(() => {
+      moveItemInArray(this.sections, index, target);
+      this.sections = [...this.sections];
+      this.keepPageOrder();
+    });
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  moveQuestionToPart(q: QuestionItem, sectionId: string): void {
+    if (q.sectionId === sectionId) return;
+    // Goes to the end of its new part.
+    this.reorder(() => {
+      this.questions = [...this.questions.filter(item => item !== q), { ...q, sectionId }];
+      this.keepPageOrder();
+    });
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  onDropInPart(event: CdkDragDrop<string>, sectionId: string): void {
+    this.reorder(() => {
+      const list = this.partQuestions(sectionId);
+      moveItemInArray(list, event.previousIndex, event.currentIndex);
+      this.questions = this.sections.flatMap(s => s.id === sectionId ? list : this.partQuestions(s.id));
+    });
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  // ───────────── Conditions ("show only if…") ─────────────
+
+  private canDecide(q: QuestionItem): boolean {
+    return q.type === 'yes-no' || q.type === 'multiple-choice';
+  }
+
+  /** Earlier yes/no or choice questions a question may depend on. */
+  sourcesBefore(q: QuestionItem): QuestionItem[] {
+    return this.questions.slice(0, this.questions.indexOf(q)).filter(item => this.canDecide(item));
+  }
+
+  /** Questions of the earlier parts a part may depend on. */
+  sourcesBeforePart(part: SectionItem): QuestionItem[] {
+    const earlier = new Set(this.sections.slice(0, this.sections.indexOf(part)).map(s => s.id));
+    return this.questions.filter(q => earlier.has(q.sectionId ?? '') && this.canDecide(q));
+  }
+
+  sourceOf(holder: QuestionItem | SectionItem): QuestionItem | undefined {
+    const id = holder.condition?.questionId;
+    return id ? this.questions.find(q => q.id === id) : undefined;
+  }
+
+  /** Its question is no longer one it may depend on (moved below it, or into a later part). */
+  isConditionMisplaced(holder: QuestionItem | SectionItem, sources: QuestionItem[]): boolean {
+    const source = this.sourceOf(holder);
+    return !!source && !sources.includes(source);
+  }
+
+  /** Questions and parts shown or hidden by this question's answer. */
+  dependentsOf(q: QuestionItem): Array<QuestionItem | SectionItem> {
+    return [...this.questions, ...this.sections].filter(holder => holder.condition?.questionId === q.id);
+  }
+
+  /** "Q4, Partie 3". */
+  dependentNames(holders: Array<QuestionItem | SectionItem>): string {
+    return holders.map(holder => {
+      const index = this.questions.indexOf(holder as QuestionItem);
+      if (index >= 0) return `Q${index + 1}`;
+      const part = holder as SectionItem;
+      return part.title?.trim()
+        || this.translate.instant('CHECKIN_PART_DEFAULT_TITLE', { number: this.sections.indexOf(part) + 1 });
+    }).join(', ');
+  }
+
+  private misplacedConditions(): Array<QuestionItem | SectionItem> {
+    return [
+      ...this.questions.filter(q => this.isConditionMisplaced(q, this.sourcesBefore(q))),
+      ...this.sections.filter(s => this.isConditionMisplaced(s, this.sourcesBeforePart(s))),
+    ];
+  }
+
+  /** Runs a reordering; when it puts a condition before its question, says so and offers to undo it. */
+  private reorder(move: () => void): void {
+    const order = this.questions.map(q => ({ id: q.id, sectionId: q.sectionId ?? null }));
+    const sectionIds = this.sections.map(s => s.id);
+    const alreadyMisplaced = new Set(this.misplacedConditions().map(holder => holder.id));
+    move();
+    const broken = this.misplacedConditions().filter(holder => !alreadyMisplaced.has(holder.id));
+    if (!broken.length) return;
+    clearTimeout(this.moveNoticeTimer);
+    this.moveNotice = { names: this.dependentNames(broken), order, sectionIds };
+    this.moveNoticeTimer = setTimeout(() => (this.moveNotice = null), 10000);
+  }
+
+  undoMove(): void {
+    const notice = this.moveNotice;
+    if (!notice) return;
+    const questionsById = new Map(this.questions.map(q => [q.id, q]));
+    const kept = new Set(notice.order.map(item => item.id));
+    this.questions = [
+      ...notice.order
+        .filter(item => questionsById.has(item.id))
+        .map(item => ({ ...questionsById.get(item.id)!, sectionId: item.sectionId })),
+      ...this.questions.filter(q => !kept.has(q.id)),
+    ];
+    const sectionsById = new Map(this.sections.map(s => [s.id, s]));
+    this.sections = [
+      ...notice.sectionIds.filter(id => sectionsById.has(id)).map(id => sectionsById.get(id)!),
+      ...this.sections.filter(s => !notice.sectionIds.includes(s.id)),
+    ];
+    this.keepPageOrder();
+    this.closeMoveNotice();
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  closeMoveNotice(): void {
+    clearTimeout(this.moveNoticeTimer);
+    this.moveNotice = null;
+  }
+
+  startCondition(holder: QuestionItem | SectionItem, sources: QuestionItem[]): void {
+    // The closest earlier question is the most likely one.
+    holder.condition = { questionId: sources[sources.length - 1]?.id ?? null, yes: null, optionIds: [] };
+    this.triggerAutoSave();
+  }
+
+  setConditionSource(holder: QuestionItem | SectionItem, questionId: string): void {
+    holder.condition = { questionId, yes: null, optionIds: [] };
+    this.triggerAutoSave();
+  }
+
+  setConditionYes(holder: QuestionItem | SectionItem, yes: boolean): void {
+    if (!holder.condition) return;
+    holder.condition.yes = yes;
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  isConditionOption(holder: QuestionItem | SectionItem, source: QuestionItem, index: number): boolean {
+    const id = source.optionIds?.[index];
+    return !!id && !!holder.condition?.optionIds.includes(id);
+  }
+
+  toggleConditionOption(holder: QuestionItem | SectionItem, source: QuestionItem, index: number): void {
+    if (!holder.condition) return;
+    source.optionIds = source.optionIds || [];
+    if (!source.optionIds[index]) source.optionIds[index] = this.newId('opt');
+    const id = source.optionIds[index];
+    const ids = holder.condition.optionIds;
+    holder.condition.optionIds = ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id];
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  clearCondition(holder: QuestionItem | SectionItem): void {
+    holder.condition = null;
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  /** "Partie 2 · Si Q3 = Oui": a short reading of a condition, for the preview. */
+  conditionSummary(holder: QuestionItem | SectionItem): string {
+    const source = this.sourceOf(holder);
+    if (!source || !holder.condition) return '';
+    const answers = source.type === 'yes-no'
+      ? (holder.condition.yes == null ? '' : this.translate.instant(holder.condition.yes ? 'YES' : 'NO'))
+      : (source.options ?? [])
+          .filter((_, i) => holder.condition!.optionIds.includes(source.optionIds?.[i] ?? ''))
+          .join(' / ');
+    return this.translate.instant('CHECKIN_CONDITION_SUMMARY', { number: this.displayNumber(source), answers });
   }
 
   onQuestionChange(): void {
@@ -350,13 +661,28 @@ export class CreateFormComponent implements OnInit, OnDestroy {
 
   addOption(q: QuestionItem): void {
     q.options = q.options || [];
+    q.optionIds = q.optionIds || [];
     q.options.push('');
+    q.optionIds[q.options.length - 1] = this.newId('opt');
     this.triggerAutoSave();
   }
 
   removeOption(q: QuestionItem, index: number): void {
+    const optionId = q.optionIds?.[index];
+    const users = optionId ? this.dependentsOf(q).filter(holder => holder.condition!.optionIds.includes(optionId)) : [];
+    if (users.length
+      && !confirm(this.translate.instant('CHECKIN_REMOVE_OPTION_CONFIRM', { names: this.dependentNames(users) }))) return;
     q.options = q.options || [];
     q.options.splice(index, 1);
+    const [removedId] = q.optionIds?.splice(index, 1) ?? [];
+    // Conditions on this option forget it.
+    if (removedId) {
+      [...this.questions, ...this.sections].forEach(holder => {
+        if (holder.condition?.questionId === q.id) {
+          holder.condition.optionIds = holder.condition.optionIds.filter(id => id !== removedId);
+        }
+      });
+    }
     this.refreshValidationIssues();
     this.triggerAutoSave();
   }
@@ -388,7 +714,14 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  private toQuestionTypeUI(t: string): QuestionType {
+  /** The back stores long answers and numbers as TEXT with a format. */
+  private toTextFormat(t: QuestionType): 'LONG' | 'NUMBER' | null {
+    return t === 'long-text' ? 'LONG' : t === 'number' ? 'NUMBER' : null;
+  }
+
+  private toQuestionTypeUI(t: string, textFormat?: string | null): QuestionType {
+    if (t === 'TEXT' && textFormat === 'LONG') return 'long-text';
+    if (t === 'TEXT' && textFormat === 'NUMBER') return 'number';
     switch (t) {
       case 'MULTIPLE_CHOICE':
         return 'multiple-choice';
@@ -417,17 +750,29 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.detailsTitle = form.title || this.translate.instant('FORM_TITLE');
     this.description = form.description ?? '';
     this.showInSignup = !!form.showInSignup;
+    this.savedStatus = (form.status as SaveStatus | 'DRAFT' | undefined) ?? null;
 
     this.questions = (form.questions ?? [])
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map(q => ({
         id: q.id || this.newId('q'),
-        type: this.toQuestionTypeUI(q.type),
+        type: this.toQuestionTypeUI(q.type, q.textFormat),
         text: q.label ?? '',
         isRequired: !!q.required,
         options: (q.options ?? []).map(o => o.label),
+        optionIds: (q.options ?? []).map(o => o.id || this.newId('opt')),
         ...(q.type === 'STAR_RATING' ? { maxStars: 5 } : {}),
+        sectionId: q.sectionId ?? null,
+        condition: this.fromConditionBE(q.condition),
       }));
+    this.sections = (form.sections ?? []).map(s => ({
+      id: s.id,
+      title: s.title ?? '',
+      description: s.description ?? '',
+      endMessage: s.endMessage ?? '',
+      condition: this.fromConditionBE(s.condition),
+    }));
+    this.keepPageOrder();
 
     this.scheduleFrequency = null;
     this.dailySelectedDays = [];
@@ -437,7 +782,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.monthlyDay = null;
     this.scheduleTime = '';
 
-    if (form.schedule) {
+    if (form.schedule?.frequency) {
       this.scheduleFrequency = form.schedule.frequency.toLowerCase() as ScheduleFrequency;
       this.scheduleTime = form.schedule.time ?? '09:00';
 
@@ -503,6 +848,17 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     return map[d] ?? 'Mon';
   }
 
+  private fromConditionBE(condition?: ShowConditionBE | null): ConditionItem | null {
+    if (!condition?.questionId) return null;
+    return { questionId: condition.questionId, yes: condition.yes ?? null, optionIds: [...(condition.optionIds ?? [])] };
+  }
+
+  /** A condition still being chosen is saved as is in a draft; publishing checks it is complete. */
+  private toConditionBE(condition?: ConditionItem | null): ShowConditionBE | null {
+    if (!condition?.questionId) return null;
+    return { questionId: condition.questionId, yes: condition.yes ?? null, optionIds: condition.optionIds };
+  }
+
   private buildPayload(status: SaveStatus = 'UNSAVED'): any {
     const title = this.detailsTitle?.trim() || this.formTitle?.trim() || this.translate.instant('FORM_TITLE');
 
@@ -512,12 +868,15 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       label: q.text ?? '',
       required: !!q.isRequired,
       order: idx,
+      textFormat: this.toTextFormat(q.type),
       options: q.type === 'multiple-choice'
         ? (q.options ?? []).map((label, optionIndex) => ({
-          id: `${q.id}-opt-${optionIndex}`,
+          id: q.optionIds?.[optionIndex] || `${q.id}-opt-${optionIndex}`,
           label: label ?? ''
         }))
         : [],
+      sectionId: q.sectionId ?? null,
+      condition: this.toConditionBE(q.condition),
     }));
 
     let schedule: FormSchedule | undefined;
@@ -550,8 +909,16 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       title,
       description: this.description ?? '',
       questions: questionsBE,
+      sections: this.sections.map(s => ({
+        id: s.id,
+        title: s.title?.trim() ?? '',
+        description: s.description?.trim() ?? '',
+        endMessage: s.endMessage?.trim() ?? '',
+        condition: this.toConditionBE(s.condition),
+      })),
       status,
-      ...(schedule ? { schedule } : {})
+      // A schedule without frequency tells the server automatic sending is off (nothing sent would keep the old one).
+      ...(schedule ? { schedule } : !this.scheduleFrequency ? { schedule: {} } : {})
     };
 
     if (this.fromProfile && !this.addToLibrary && this.clientIdFromProfile) {
@@ -626,8 +993,13 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       });
   }
 
-  setScheduleFrequency(freq: ScheduleFrequency): void {
-    if (this.scheduleFrequency === freq) {
+  /** Switch on: every Monday at 09:00, so the coach only adjusts. Switch off: no automatic sending. */
+  toggleAutoSend(on: boolean): void {
+    if (on) {
+      this.setScheduleFrequency('weekly');
+      this.weeklySelectedDay = 'Mon';
+      this.scheduleTime = this.scheduleTime || '09:00';
+    } else {
       this.scheduleFrequency = null;
       this.dailySelectedDays = [];
       this.weeklySelectedDay = null;
@@ -635,9 +1007,13 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       this.monthlyMode = null;
       this.monthlyDay = null;
       this.scheduleTime = '';
-      this.triggerAutoSave();
-      return;
     }
+    this.refreshValidationIssues();
+    this.triggerAutoSave();
+  }
+
+  setScheduleFrequency(freq: ScheduleFrequency): void {
+    if (this.scheduleFrequency === freq) return;
 
     this.scheduleFrequency = freq;
     this.dailySelectedDays = [];
@@ -708,7 +1084,6 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   focusValidationIssue(issue: CheckInValidationIssue): void {
-    this.activeTab = issue.tab;
     this.showValidationSummary = false;
 
     setTimeout(() => {
@@ -729,7 +1104,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       weeklyDay: this.weeklySelectedDay,
       biweeklyDay: this.biweeklySelectedDay,
       monthlyDay: this.monthlyDay,
-    });
+    }).concat(validateCheckInParts(this.sections, this.questions));
 
     if (this.validationIssues.length === 0) {
       this.showValidationSummary = false;

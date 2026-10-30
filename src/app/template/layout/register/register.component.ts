@@ -42,6 +42,8 @@ export class RegisterComponent implements OnInit {
   planId: number | null = null;
   planLoadError: string | null = null;
   invitationToken: string | null = null;
+  /** Coach's sign-up link (no email): the client account asks to join once created. */
+  joinToken: string | null = null;
   isSubmitting = false;
   showPassword = false;
   showConfirmPassword = false;
@@ -68,11 +70,12 @@ export class RegisterComponent implements OnInit {
       confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
     this.invitationToken = this.route.snapshot.queryParamMap.get('invitationToken');
+    this.joinToken = this.route.snapshot.queryParamMap.get('joinToken');
     const planId = Number(this.route.snapshot.queryParamMap.get('planId'));
-    if (!this.invitationToken && Number.isInteger(planId) && planId > 0) {
+    if (!this.isClientSignup && Number.isInteger(planId) && planId > 0) {
       this.planId = planId;
       this.loadSelectedPlan(planId);
-    } else if (!this.invitationToken) {
+    } else if (!this.isClientSignup) {
       // Clients sign up from their coach's invitation; anyone else is a coach and starts from a plan (trial included).
       void this.router.navigate(['/plans-landing'], { replaceUrl: true });
     }
@@ -118,7 +121,7 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    const isCoachRegistration = !this.invitationToken;
+    const isCoachRegistration = !this.isClientSignup;
     if (isCoachRegistration && !this.planId) {
       void this.router.navigate(['/plans-landing']);
       return;
@@ -143,7 +146,7 @@ export class RegisterComponent implements OnInit {
       finalize(() => this.isSubmitting = false)
     ).subscribe({
       next: () => {
-        const targetPath = this.invitationToken
+        const targetPath = this.isClientSignup
           ? this.invitationReturnPath()
           : (isCoachRegistration ? '/coach-onboarding' : '/');
         const redirectUri = new URL(targetPath, window.location.origin).toString();
@@ -200,7 +203,7 @@ export class RegisterComponent implements OnInit {
   }
 
   signIn(): void {
-    const targetPath = this.invitationToken
+    const targetPath = this.isClientSignup
       ? this.invitationReturnPath()
       : '/';
     const redirectUri = new URL(targetPath, window.location.origin).toString();
@@ -210,8 +213,16 @@ export class RegisterComponent implements OnInit {
     });
   }
 
+  /** Clients sign up from an invitation (email) or from their coach's sign-up link. */
+  get isClientSignup(): boolean {
+    return !!this.invitationToken || !!this.joinToken;
+  }
+
+  /** Back to the invitation (accepted at once) or to the link (request sent at once). */
   private invitationReturnPath(): string {
-    return `/invitation/${encodeURIComponent(this.invitationToken!)}?accept=1`;
+    return this.invitationToken
+      ? `/invitation/${encodeURIComponent(this.invitationToken)}?accept=1`
+      : `/join/${encodeURIComponent(this.joinToken!)}?request=1`;
   }
 
   getFieldError(controlName: string): string | null {

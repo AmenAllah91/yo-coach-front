@@ -10,8 +10,8 @@
     </button>
 
     <div class="iq-heading">
-      <h1 class="iq-title">{{ 'ADD_CHECKIN_FORM' | translate }}</h1>
-      <p class="iq-subtitle">{{ 'CHECKIN_FORM_BUILDER_SUBTITLE' | translate }}</p>
+      <h1 class="iq-title">{{ (isPublished ? 'EDIT_CHECKIN_FORM' : 'ADD_CHECKIN_FORM') | translate }}</h1>
+      <p class="iq-subtitle">{{ (isPublished ? 'CHECKIN_EDIT_PUBLISHED_HINT' : 'CHECKIN_FORM_BUILDER_SUBTITLE') | translate }}</p>
     </div>
 
     <div class="iq-actions">
@@ -28,62 +28,108 @@
         {{ 'PREVIEW_FORM' | translate }}
       </button>
       <button class="fb-savebtn fb-savebtn--desktop" type="button" (click)="saveForm()" [disabled]="isSaving || isLoading">
-        {{ (isSaving ? 'SAVING' : 'PUBLISH') | translate }}
+        {{ (isSaving ? 'SAVING' : isPublished ? 'SAVE_CHANGES' : 'PUBLISH') | translate }}
       </button>
     </div>
   </header>
 
-  <!-- TABS : Form + Schedule uniquement (Details supprimé) -->
-  <div class="iq-tabs">
-    <button class="iq-tab" [class.is-active]="activeTab === 'form'" type="button" (click)="setTab('form')">{{ 'FORM' | translate }}</button>
-    <button class="iq-tab" [class.is-active]="activeTab === 'schedule'" type="button" (click)="setTab('schedule')">{{ 'SCHEDULE' | translate }}</button>
-  </div>
-
   <!-- CONTENT -->
   <div class="fb-content">
 
-    <!-- ══════════════════════════════════════════
-         TAB : FORM
-    ══════════════════════════════════════════ -->
-    <ng-container *ngIf="activeTab === 'form'">
+      <!-- Title + options in one compact card; automatic sending unfolds in place -->
+      <section class="form-card cf-setup">
+        <label class="cf-setup__label" for="checkin-form-title">
+          {{ 'FORM_TITLE' | translate }}
+          <span>· {{ 'FORM_TITLE_CLIENT_HINT' | translate }}</span>
+        </label>
+        <div class="cf-setup__field">
+          <i class="fa-solid fa-pen cf-setup__icon" aria-hidden="true"></i>
+          <input
+            id="checkin-form-title"
+            class="cf-setup__title"
+            type="text"
+            name="formTitle"
+            [(ngModel)]="detailsTitle"
+            [placeholder]="'FORM_TITLE_PLACEHOLDER' | translate"
+          />
+        </div>
 
-      <section class="form-card form-title-card">
-        <label class="form-card__label" for="checkin-form-title">{{ 'FORM_TITLE' | translate }}</label>
-        <p class="form-card__hint">{{ 'FORM_TITLE_CLIENT_HINT' | translate }}</p>
-        <input
-          id="checkin-form-title"
-          class="form-title-input"
-          type="text"
-          name="formTitle"
-          [(ngModel)]="detailsTitle"
-          [placeholder]="'FORM_TITLE_PLACEHOLDER' | translate"
-        />
+        <div class="cf-opts">
+          <label class="cf-opt" *ngIf="fromProfile" [class.is-on]="addToLibrary">
+            <input type="checkbox" [(ngModel)]="addToLibrary" />
+            <span class="cf-opt__switch" aria-hidden="true"></span>
+            <span class="cf-opt__text">
+              <strong>{{ 'ADD_TO_FORMS_LIBRARY' | translate }}</strong>
+              <small>{{ 'CLIENT_ONLY_FORM_HINT' | translate }}</small>
+            </span>
+          </label>
+
+          <label class="cf-opt" *ngIf="!fromProfile || addToLibrary" [class.is-on]="showInSignup">
+            <input type="checkbox" [(ngModel)]="showInSignup" />
+            <span class="cf-opt__switch" aria-hidden="true"></span>
+            <span class="cf-opt__text">
+              <strong>{{ 'SHOW_IN_SIGNUP' | translate }}</strong>
+              <small>{{ 'SHOW_IN_SIGNUP_HINT' | translate }}</small>
+            </span>
+          </label>
+
+          <label class="cf-opt" [class.is-on]="!!scheduleFrequency">
+            <input type="checkbox" [checked]="!!scheduleFrequency" (change)="toggleAutoSend($any($event.target).checked)" />
+            <span class="cf-opt__switch" aria-hidden="true"></span>
+            <span class="cf-opt__text">
+              <strong>{{ 'CHECKIN_AUTO_SEND' | translate }}</strong>
+              <small>{{ 'CHECKIN_AUTO_SEND_HINT' | translate }}</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="cf-sched" *ngIf="scheduleFrequency">
+          <div class="cf-sched__row">
+            <span class="cf-sched__label">{{ 'FREQUENCY' | translate }}</span>
+            <div class="cf-seg">
+              <button type="button" class="cf-seg__btn" *ngFor="let f of scheduleFrequencyOptions"
+                      [class.is-active]="scheduleFrequency === f.id" (click)="setScheduleFrequency(f.id)">{{ f.label | translate }}</button>
+            </div>
+          </div>
+
+          <div class="cf-sched__row" *ngIf="scheduleFrequency === 'biweekly'">
+            <span class="cf-sched__label">{{ 'WHICH_WEEKS' | translate }}</span>
+            <div class="cf-seg">
+              <button type="button" class="cf-seg__btn" [class.is-active]="biweeklyWeekOption === '1-3'" (click)="setBiweeklyWeek('1-3')">{{ 'WEEK_ONE_THREE' | translate }}</button>
+              <button type="button" class="cf-seg__btn" [class.is-active]="biweeklyWeekOption === '2-4'" (click)="setBiweeklyWeek('2-4')">{{ 'WEEK_TWO_FOUR' | translate }}</button>
+            </div>
+          </div>
+
+          <div id="schedule-days" class="cf-sched__row" tabindex="-1" [class.section-error]="hasValidationError('schedule-days')"
+               *ngIf="scheduleFrequency === 'weekly' || scheduleFrequency === 'biweekly'">
+            <span class="cf-sched__label">{{ daySectionTitle | translate }}</span>
+            <div class="cf-days">
+              <button type="button" class="cf-day" *ngFor="let d of scheduleWeekDays; trackBy: trackByDay"
+                      [class.is-active]="isDayActive(d)" (click)="onDayClick(d)">{{ ('WEEKDAY_' + d.toUpperCase()) | translate }}</button>
+            </div>
+          </div>
+
+          <div class="cf-sched__row" *ngIf="scheduleFrequency === 'monthly'">
+            <label class="cf-sched__label" for="schedule-monthly-day">{{ 'DAY_OF_MONTH' | translate }}</label>
+            <select id="schedule-monthly-day" class="cf-sched__input" [class.input-error]="hasValidationError('schedule-monthly-day')"
+                    name="monthlyDay" [(ngModel)]="monthlyDay">
+              <option [ngValue]="null" disabled>{{ 'SELECT_DAY_OF_MONTH' | translate }}</option>
+              <option *ngFor="let d of monthDays" [ngValue]="d">{{ ordinal(d) }}</option>
+            </select>
+          </div>
+
+          <div class="cf-sched__row">
+            <label class="cf-sched__label" for="schedule-send-time">{{ 'SEND_TIME' | translate }}</label>
+            <input id="schedule-send-time" type="time" class="cf-sched__input" [class.input-error]="hasValidationError('schedule-send-time')"
+                   name="scheduleTime" [(ngModel)]="scheduleTime" />
+          </div>
+
+          <p class="sched-info" *ngIf="scheduleFrequency === 'daily'">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            {{ 'DAILY_ALL_DAYS_HINT' | translate }}
+          </p>
+        </div>
       </section>
-
-      <!-- Show in Signup — toujours visible en haut du tab Form -->
-      <div class="cf-signup-banner" *ngIf="fromProfile">
-        <div class="cf-signup-text">
-          <p class="cf-signup-title">{{ 'ADD_TO_FORMS_LIBRARY' | translate }}</p>
-          <p class="cf-signup-sub">{{ 'CLIENT_ONLY_FORM_HINT' | translate }}</p>
-        </div>
-
-        <label class="details-switch">
-          <input type="checkbox" [(ngModel)]="addToLibrary" />
-          <span class="details-switch-track"><span class="details-switch-knob"></span></span>
-        </label>
-      </div>
-
-      <div class="cf-signup-banner" *ngIf="!fromProfile || addToLibrary">
-        <div class="cf-signup-icon" aria-hidden="true"><i class="fa-solid fa-user-group"></i></div>
-        <div class="cf-signup-text">
-          <p class="cf-signup-title">{{ 'SHOW_IN_SIGNUP' | translate }}</p>
-          <p class="cf-signup-sub">{{ 'SHOW_IN_SIGNUP_HINT' | translate }}</p>
-        </div>
-        <label class="details-switch">
-          <input type="checkbox" [(ngModel)]="showInSignup" />
-          <span class="details-switch-track"><span class="details-switch-knob"></span></span>
-        </label>
-      </div>
 
       <section class="questions-panel">
         <div class="questions-panel__header">
@@ -133,15 +179,108 @@
 
       <!-- Questions list -->
       <ng-template #hasQuestions>
-        <div class="q-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
-          <div class="q-block" *ngFor="let q of questions; index as i; trackBy: trackById" cdkDrag [id]="'question-' + q.id" tabindex="-1">
-            <div class="q-card" [class.is-incomplete]="isQuestionIncomplete(q, i)" [class.has-error]="hasPublishAttempted && isQuestionIncomplete(q, i)">
+        <!-- No parts yet: a single page -->
+        <ng-container *ngIf="sections.length === 0; else partsList">
+          <div class="q-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+            <div class="q-block" *ngFor="let q of questions; trackBy: trackById" cdkDrag [id]="'question-' + q.id" tabindex="-1">
+              <ng-container *ngTemplateOutlet="questionCard; context: { $implicit: q }"></ng-container>
+            </div>
+          </div>
+          <button type="button" class="cf-parts-cta" (click)="splitIntoParts()">
+            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+            <span>
+              <strong>{{ 'CHECKIN_SPLIT_INTO_PARTS' | translate }}</strong>
+              <small>{{ 'CHECKIN_SPLIT_INTO_PARTS_HINT' | translate }}</small>
+            </span>
+          </button>
+        </ng-container>
+
+        <!-- Parts: one page each for the client -->
+        <ng-template #partsList>
+          <section class="cf-part" *ngFor="let s of sections; index as si; trackBy: trackBySection"
+                   [id]="'part-' + s.id" tabindex="-1" [class.has-error]="hasValidationError('part-' + s.id)">
+            <header class="cf-part__head">
+              <span class="cf-part__badge">{{ 'CHECKIN_PART_NUMBER' | translate:{ number: si + 1, total: sections.length } }}</span>
+              <span class="cf-part__count">{{ 'CHECKIN_PART_QUESTIONS' | translate:{ count: partQuestions(s.id).length } }}</span>
+              <div class="cf-part__tools">
+                <button type="button" class="q-iconbtn" (click)="movePart(si, -1)" [disabled]="si === 0" [attr.aria-label]="'MOVE_UP' | translate"><i class="fa-solid fa-arrow-up"></i></button>
+                <button type="button" class="q-iconbtn" (click)="movePart(si, 1)" [disabled]="si === sections.length - 1" [attr.aria-label]="'MOVE_DOWN' | translate"><i class="fa-solid fa-arrow-down"></i></button>
+                <button type="button" class="q-iconbtn" (click)="removePart(si)" [attr.aria-label]="'DELETE' | translate"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </header>
+            <input class="cf-part__title" type="text" [id]="'part-title-' + s.id" [name]="'ptitle-' + s.id"
+                   [(ngModel)]="s.title" [placeholder]="'CHECKIN_PART_TITLE_PLACEHOLDER' | translate" />
+            <textarea class="cf-part__desc" rows="2" [name]="'pdesc-' + s.id" [(ngModel)]="s.description"
+                      [placeholder]="'CHECKIN_PART_INTRO_PLACEHOLDER' | translate"></textarea>
+
+            <ng-container *ngIf="si > 0 || s.condition">
+              <ng-container *ngTemplateOutlet="conditionEditor; context: { $implicit: s, sources: sourcesBeforePart(s), anchor: 'part-condition-' + s.id, part: true }"></ng-container>
+            </ng-container>
+
+            <div class="q-list cf-part__list" cdkDropList (cdkDropListDropped)="onDropInPart($event, s.id)">
+              <div class="q-block" *ngFor="let q of partQuestions(s.id); trackBy: trackById" cdkDrag [id]="'question-' + q.id" tabindex="-1">
+                <ng-container *ngTemplateOutlet="questionCard; context: { $implicit: q }"></ng-container>
+              </div>
+              <p class="cf-part__empty" *ngIf="partQuestions(s.id).length === 0">{{ 'CHECKIN_PART_EMPTY' | translate }}</p>
+            </div>
+
+            <div class="question-add-anchor cf-part__add">
+              <button class="btn questions-panel__add" type="button" (click)="openTypeDrawer($event, s.id)" [attr.aria-expanded]="showQuestionSidebar && addTarget === s.id">
+                <span aria-hidden="true">＋</span> {{ 'ADD_QUESTION' | translate }}
+              </button>
+              <ng-container *ngTemplateOutlet="questionTypeMenu; context: { target: s.id }"></ng-container>
+            </div>
+
+            <label class="cf-part__end">
+              <span><i class="fa-regular fa-face-smile" aria-hidden="true"></i> {{ 'CHECKIN_PART_END_MESSAGE' | translate }}</span>
+              <input type="text" [name]="'pend-' + s.id" [(ngModel)]="s.endMessage" [placeholder]="'CHECKIN_PART_END_MESSAGE_PLACEHOLDER' | translate" />
+            </label>
+          </section>
+
+          <button type="button" class="cf-parts-cta cf-parts-cta--add" (click)="addPart()">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span><strong>{{ 'CHECKIN_ADD_PART' | translate }}</strong></span>
+          </button>
+        </ng-template>
+      </ng-template>
+      </section>
+
+  </div><!-- /fb-content -->
+
+  <!-- Save bar -->
+  <div class="fb-savebar">
+    <button class="fb-savebtn" type="button" (click)="saveForm()" [disabled]="isSaving || isLoading">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h9l4 4v12a2 2 0 0 1-2 2z" stroke-width="2"/>
+        <path d="M17 21v-8H7v8M7 3v4h8V3" stroke-width="2"/>
+      </svg>
+      {{ (isSaving ? 'SAVING' : isPublished ? 'SAVE_CHANGES' : 'PUBLISH') | translate }}
+    </button>
+  </div>
+
+</div><!-- /fb-root -->
+
+<ng-template #questionCard let-q>
+            <div class="q-card" [class.is-incomplete]="isQuestionIncomplete(q, displayNumber(q) - 1)" [class.has-error]="hasPublishAttempted && isQuestionIncomplete(q, displayNumber(q) - 1)">
               <div class="q-top">
                 <div class="q-left">
-                  <div class="q-block__drag" cdkDragHandle><span></span><span></span></div>
-                  <div class="q-num">{{ i + 1 }}</div>
+                  <button type="button" class="q-drag" cdkDragHandle
+                          [attr.aria-label]="'CHECKIN_DRAG_TO_MOVE' | translate" [attr.data-tip]="'CHECKIN_DRAG_TO_MOVE' | translate">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
+                      <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
+                      <circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/>
+                    </svg>
+                  </button>
+                  <div class="q-num">{{ displayNumber(q) }}</div>
                   <span class="q-badge">{{ uiTypeLabel(q.type) | translate }}</span>
-                  <span class="q-status" *ngIf="isQuestionIncomplete(q, i)">{{ 'INCOMPLETE' | translate }}</span>
+                  <span class="q-status" *ngIf="isQuestionIncomplete(q, displayNumber(q) - 1)">{{ 'INCOMPLETE' | translate }}</span>
+                  <span class="q-cond-badge" *ngIf="q.condition"><i class="fa-solid fa-code-branch" aria-hidden="true"></i> {{ 'CHECKIN_CONDITIONAL' | translate }}</span>
+                  <span class="q-dep-badge" *ngIf="dependentsOf(q).length"
+                        [title]="'CHECKIN_USED_BY_HINT' | translate:{ names: dependentNames(dependentsOf(q)) }">
+                    <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+                    {{ 'CHECKIN_USED_BY' | translate:{ names: dependentNames(dependentsOf(q)) } }}
+                  </span>
                 </div>
                 <div class="q-right">
                   <label class="q-toggle">
@@ -151,7 +290,7 @@
                       <span class="q-toggle__thumb"></span>
                     </span>
                   </label>
-                  <button type="button" class="q-iconbtn" (click)="removeQuestion(i)" [attr.aria-label]="'DELETE' | translate">
+                  <button type="button" class="q-iconbtn" (click)="removeQuestion(q.id)" [attr.aria-label]="'DELETE' | translate">
                     <i class="fa-solid fa-trash"></i>
                   </button>
                 </div>
@@ -185,7 +324,7 @@
                            [(ngModel)]="q.options![oi]"
                            [ngModelOptions]="{ standalone: true }"
                            [placeholder]="'NEW_OPTION' | translate" />
-                    <button type="button" class="q-opt__remove" (click)="q.options!.splice(oi, 1)" [attr.aria-label]="'REMOVE' | translate">✕</button>
+                    <button type="button" class="q-opt__remove" (click)="removeOption(q, oi)" [attr.aria-label]="'REMOVE' | translate">✕</button>
                   </div>
                   <button type="button" class="q-link" [id]="'question-add-option-' + q.id" (click)="addOption(q)">+ {{ 'ADD_ANOTHER_OPTION' | translate }}</button>
                 </ng-container>
@@ -223,116 +362,70 @@
                   <input class="q-opt__input" type="text" [placeholder]="'TEXT_ANSWER_PLACEHOLDER' | translate" disabled />
                 </ng-container>
               </div>
-            </div>
-          </div>
-        </div>
-      </ng-template>
-      </section>
-    </ng-container>
 
-    <!-- ══════════════════════════════════════════
-         TAB : SCHEDULE
-    ══════════════════════════════════════════ -->
-    <ng-container *ngIf="activeTab === 'schedule'">
-      <div class="sched form-card">
-
-        <!-- Reminder Frequency -->
-        <section class="sched-section">
-          <h2 class="sched-label">{{ 'REMINDER_FREQUENCY' | translate }}</h2>
-          <p class="sched-help">{{ 'REMINDER_FREQUENCY_HINT' | translate }}</p>
-          <div class="sched-freq-grid">
-            <button
-              type="button"
-              class="sched-pill"
-              *ngFor="let f of scheduleFrequencyOptions"
-              [class.is-active]="scheduleFrequency === f.id"
-              (click)="setScheduleFrequency(f.id)"
-            >{{ f.label | translate }}</button>
-          </div>
-          <p class="sched-info" *ngIf="scheduleFrequency === 'daily'">
-            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-            {{ 'DAILY_ALL_DAYS_HINT' | translate }}
-          </p>
-        </section>
-
-        <!-- Which Weeks (biweekly) -->
-        <section class="sched-section" *ngIf="scheduleFrequency === 'biweekly'">
-          <h2 class="sched-label">{{ 'WHICH_WEEKS' | translate }}</h2>
-          <div class="sched-radio-grid">
-            <button type="button" class="sched-radio-card" [class.is-active]="biweeklyWeekOption === '1-3'" (click)="setBiweeklyWeek('1-3')">
-              <span class="sched-radio-dot"></span><span>{{ 'WEEK_ONE_THREE' | translate }}</span>
-            </button>
-            <button type="button" class="sched-radio-card" [class.is-active]="biweeklyWeekOption === '2-4'" (click)="setBiweeklyWeek('2-4')">
-              <span class="sched-radio-dot"></span><span>{{ 'WEEK_TWO_FOUR' | translate }}</span>
-            </button>
-          </div>
-        </section>
-
-        <!-- Day of Month -->
-        <section class="sched-section" *ngIf="scheduleFrequency === 'monthly'">
-          <h2 class="sched-label">{{ 'DAY_OF_MONTH' | translate }}</h2>
-          <div class="sched-select-wrap">
-            <select
-              id="schedule-monthly-day"
-              class="sched-select"
-              [class.input-error]="hasValidationError('schedule-monthly-day')"
-              name="monthlyDay"
-              [(ngModel)]="monthlyDay"
-            >
-              <option [ngValue]="null" disabled>{{ 'SELECT_DAY_OF_MONTH' | translate }}</option>
-              <option *ngFor="let d of monthDays" [ngValue]="d">{{ ordinal(d) }}</option>
-            </select>
-          </div>
-        </section>
-
-        <!-- Select Days / Day of Week -->
-        <section id="schedule-days" class="sched-section" tabindex="-1" [class.section-error]="hasValidationError('schedule-days')" *ngIf="scheduleFrequency === 'weekly' || scheduleFrequency === 'biweekly'">
-          <h2 class="sched-label">{{ daySectionTitle | translate }}</h2>
-          <div class="sched-days-grid">
-            <button
-              type="button"
-              class="sched-day"
-              *ngFor="let d of scheduleWeekDays; trackBy: trackByDay"
-              [class.is-active]="isDayActive(d)"
-              (click)="onDayClick(d)"
-            >{{ ('WEEKDAY_' + d.toUpperCase()) | translate }}</button>
-          </div>
-        </section>
-
-        <!-- Send Time + End Date -->
-        <section class="sched-section" *ngIf="scheduleFrequency">
-          <div class="sched-time-row">
-            <div class="sched-field">
-              <h2 class="sched-label">{{ 'SEND_TIME' | translate }}</h2>
-              <div class="sched-input-wrap">
-                <i class="fa-regular fa-clock sched-input-icon"></i>
-                <input id="schedule-send-time" type="time" class="sched-input" [class.input-error]="hasValidationError('schedule-send-time')" name="scheduleTime"
-                       [(ngModel)]="scheduleTime"  />
+              <div class="q-section q-meta" *ngIf="sections.length > 1 || displayNumber(q) > 1 || q.condition">
+                <label class="q-move" *ngIf="sections.length > 1">
+                  <span>{{ 'CHECKIN_QUESTION_PART' | translate }}</span>
+                  <select [ngModel]="q.sectionId" (ngModelChange)="moveQuestionToPart(q, $event)" [ngModelOptions]="{ standalone: true }">
+                    <option *ngFor="let p of sections; index as pi" [ngValue]="p.id">{{ pi + 1 }}. {{ p.title || ('CHECKIN_PART_DEFAULT_TITLE' | translate:{ number: pi + 1 }) }}</option>
+                  </select>
+                </label>
+                <ng-container *ngTemplateOutlet="conditionEditor; context: { $implicit: q, sources: sourcesBefore(q), anchor: 'question-condition-' + q.id, part: false }"></ng-container>
               </div>
             </div>
-          </div>
-        </section>
+</ng-template>
 
-      </div>
-    </ng-container>
-
-  </div><!-- /fb-content -->
-
-  <!-- Save bar -->
-  <div class="fb-savebar">
-    <button class="fb-savebtn" type="button" (click)="saveForm()" [disabled]="isSaving || isLoading">
-      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h9l4 4v12a2 2 0 0 1-2 2z" stroke-width="2"/>
-        <path d="M17 21v-8H7v8M7 3v4h8V3" stroke-width="2"/>
-      </svg>
-      {{ (isSaving ? 'SAVING' : 'PUBLISH') | translate }}
+<!-- "Show only if..." for a question or a whole part -->
+<ng-template #conditionEditor let-holder let-sources="sources" let-anchor="anchor" let-part="part">
+  <div class="cf-cond" [id]="anchor" tabindex="-1">
+    <button type="button" class="q-link cf-cond__add" *ngIf="!holder.condition && sources.length" (click)="startCondition(holder, sources)">
+      <i class="fa-solid fa-code-branch" aria-hidden="true"></i>
+      {{ (part ? 'CHECKIN_PART_ADD_CONDITION' : 'CHECKIN_ADD_CONDITION') | translate }}
     </button>
+    <p class="cf-cond__none" *ngIf="!holder.condition && !sources.length">
+      <i class="fa-solid fa-code-branch" aria-hidden="true"></i>
+      <span>
+        <strong>{{ (part ? 'CHECKIN_PART_ADD_CONDITION' : 'CHECKIN_ADD_CONDITION') | translate }}</strong>
+        {{ 'CHECKIN_CONDITION_NEEDS_SOURCE' | translate }}
+      </span>
+    </p>
+    <div class="cf-cond__box" *ngIf="holder.condition"
+         [class.is-misplaced]="isConditionMisplaced(holder, sources)"
+         [class.input-error]="hasValidationError(anchor) || (part && hasValidationError('part-' + holder.id))">
+      <div class="cf-cond__row">
+        <span class="cf-cond__label">{{ (part ? 'CHECKIN_PART_SHOW_IF' : 'CHECKIN_SHOW_IF') | translate }}</span>
+        <select class="cf-cond__select" [ngModel]="holder.condition.questionId" (ngModelChange)="setConditionSource(holder, $event)" [ngModelOptions]="{ standalone: true }">
+          <option [ngValue]="null" disabled>{{ 'CHECKIN_CONDITION_PICK_QUESTION' | translate }}</option>
+          <option *ngIf="isConditionMisplaced(holder, sources) && sourceOf(holder) as old" [ngValue]="old.id" disabled>{{ displayNumber(old) }}. {{ old.text || ('QUESTION' | translate) }}</option>
+          <option *ngFor="let src of sources" [ngValue]="src.id">{{ displayNumber(src) }}. {{ src.text || ('QUESTION' | translate) }}</option>
+        </select>
+        <button type="button" class="cf-cond__remove" (click)="clearCondition(holder)" [attr.aria-label]="'CHECKIN_REMOVE_CONDITION' | translate">✕</button>
+      </div>
+      <p class="cf-cond__warn" *ngIf="isConditionMisplaced(holder, sources) && sourceOf(holder) as old">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        {{ 'CHECKIN_CONDITION_SOURCE_AFTER' | translate:{ number: displayNumber(old) } }}
+      </p>
+      <div class="cf-cond__row" *ngIf="sourceOf(holder) as src">
+        <span class="cf-cond__label">{{ (src.type === 'yes-no' ? 'CHECKIN_CONDITION_IS' : 'CHECKIN_CONDITION_IS_ONE_OF') | translate }}</span>
+        <div class="cf-cond__answers">
+          <ng-container *ngIf="src.type === 'yes-no'">
+            <button type="button" class="cf-pill" [class.is-active]="holder.condition.yes === true" (click)="setConditionYes(holder, true)">{{ 'YES' | translate }}</button>
+            <button type="button" class="cf-pill" [class.is-active]="holder.condition.yes === false" (click)="setConditionYes(holder, false)">{{ 'NO' | translate }}</button>
+          </ng-container>
+          <ng-container *ngIf="src.type === 'multiple-choice'">
+            <button type="button" class="cf-pill" *ngFor="let opt of (src.options ?? []); index as oi"
+                    [class.is-active]="isConditionOption(holder, src, oi)" (click)="toggleConditionOption(holder, src, oi)">
+              {{ opt || (('OPTION' | translate) + ' ' + (oi + 1)) }}
+            </button>
+          </ng-container>
+        </div>
+      </div>
+    </div>
   </div>
+</ng-template>
 
-</div><!-- /fb-root -->
-
-<ng-template #questionTypeMenu>
-  <div class="question-type-menu" *ngIf="showQuestionSidebar" [class.question-type-menu--above]="questionMenuOpensAbove" [style.max-height.px]="questionMenuMaxHeight" role="menu" [attr.aria-label]="'ADD_QUESTION' | translate" (click)="$event.stopPropagation()">
+<ng-template #questionTypeMenu let-target="target">
+  <div class="question-type-menu" *ngIf="showQuestionSidebar && addTarget === (target ?? null)"[class.question-type-menu--above]="questionMenuOpensAbove" [style.max-height.px]="questionMenuMaxHeight" role="menu" [attr.aria-label]="'ADD_QUESTION' | translate" (click)="$event.stopPropagation()">
     <button class="question-type-item" type="button" role="menuitem" (click)="addQuestion('input-text')">
       <span class="question-type-icon question-type-icon--text" aria-hidden="true">
         <svg viewBox="0 0 24 24" focusable="false">
@@ -411,6 +504,14 @@
     </button>
   </div>
 </ng-template>
+
+<!-- A move put a condition before its question: say so and offer to undo -->
+<div class="cf-move-notice" *ngIf="moveNotice" role="status">
+  <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+  <span>{{ 'CHECKIN_MOVE_BROKE_CONDITION' | translate:{ names: moveNotice.names } }}</span>
+  <button type="button" class="cf-move-notice__undo" (click)="undoMove()">{{ 'CHECKIN_UNDO_MOVE' | translate }}</button>
+  <button type="button" class="cf-move-notice__close" (click)="closeMoveNotice()" [attr.aria-label]="'CLOSE' | translate">✕</button>
+</div>
 
 <!-- Global publish validation -->
 <div class="validation-modal" *ngIf="showValidationSummary" role="dialog" aria-modal="true" [attr.aria-label]="'CHECKIN_NOT_READY_TITLE' | translate">
@@ -519,7 +620,7 @@
 
         <div class="client-preview-date">
           <i class="fa-regular fa-calendar"></i>
-          <span>{{ 'ASSIGNED_ON' | translate }} : 03/05/2026</span>
+          <span>{{ 'ASSIGNED_ON' | translate }} : {{ today | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
 
@@ -535,10 +636,15 @@
         class="client-preview-question"
         *ngFor="let q of questions; index as i; trackBy: trackById"
       >
+        <div class="client-preview-part" *ngIf="partStartingAt(q) as p">
+          <strong>{{ p.title || ('CHECKIN_PART_DEFAULT_TITLE' | translate:{ number: sections.indexOf(p) + 1 }) }}</strong>
+          <small *ngIf="p.condition">{{ conditionSummary(p) }}</small>
+        </div>
         <div class="client-preview-question-label">
           {{ i + 1 }}. {{ q.text || (('QUESTION' | translate) + ' ' + (i + 1)) }}
           <span *ngIf="q.isRequired">*</span>
         </div>
+        <div class="client-preview-cond" *ngIf="q.condition">{{ conditionSummary(q) }}</div>
 
         <div class="client-preview-answer" [ngSwitch]="q.type">
           <ng-container *ngSwitchCase="'multiple-choice'">

@@ -12,10 +12,9 @@ import { ChatUnreadService } from 'app/service/chat-unread.service';
 import { ClientTasksService, TaskCalendarItem } from 'app/service/client-tasks.service';
 import { CoachPublicProfile, CoachSettingsService } from 'app/service/coach-settings.service';
 import { DocumentService } from 'app/service/document.service';
-import { ProgramScheduleService } from 'app/service/program-schedule.service';
-import { PauseView, addDaysIso, parseIso, todayIso } from '@shared/models/program-schedule';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { AssignmentsApiService, FormAssignment } from 'app/components/forms/services/assignments-api.service';
+import { CoachFeedbackCardComponent } from 'app/components/forms/coach-feedback-card/coach-feedback-card.component';
 import { ClientTaskRowComponent } from '../shared/client-task-row.component';
 import { CoachProfileSheetComponent } from '../shared/coach-profile-sheet.component';
 import { NutritionMacrosSummaryComponent } from '../shared/nutrition-macros-summary.component';
@@ -42,7 +41,7 @@ let HOME_SNAPSHOT: {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FeatherModule, ClientTaskRowComponent, CoachProfileSheetComponent, NutritionMacrosSummaryComponent],
+  imports: [CommonModule, FeatherModule, ClientTaskRowComponent, CoachProfileSheetComponent, NutritionMacrosSummaryComponent, CoachFeedbackCardComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss',
 })
@@ -55,14 +54,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   todayWorkoutItem: PlanDayItem | null = null;
   todayNutritionItem: PlanDayItem | null = null;
   todayCheckIn: FormAssignment | null = null;
+  /** Sent check-ins whose coach comment is not read yet, newest first (« Votre coach a répondu »). */
+  unreadFeedback: FormAssignment[] = [];
   coach: HomeCoach | null = null;
   todayHabits: TaskCalendarItem[] = [];
   todayTasks: TaskCalendarItem[] = [];
   toggling = new Set<string>();
   unreadMessages = 0;
 
-  /** A pause of the follow-up going on or to come (backlog-programmes.md DS-03). */
-  pause: PauseView | null = null;
   coachProfile: CoachPublicProfile | null = null;
   coachPhotoUrl = '';
   coachPhotoFailed = false;
@@ -88,22 +87,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     private documents: DocumentService,
     private assignments: AssignmentsApiService,
     private theme: ClientThemeService,
-    private schedule: ProgramScheduleService,
   ) {}
-
-  /** « Pause jusqu'au … » instead of empty days (DS-03); a pause to come is announced. */
-  get pauseLabel(): string {
-    const pause = this.pause;
-    if (!pause) return '';
-    const day = (iso: string) => parseIso(iso).toLocaleDateString(this.locale, { weekday: 'long', day: 'numeric', month: 'long' });
-    const resume = day(addDaysIso(pause.toDate, 1));
-    if (pause.fromDate <= todayIso()) {
-      return this.fr ? `Votre suivi est en pause jusqu'au ${day(pause.toDate)} : reprise le ${resume}.`
-        : `Your follow-up is paused until ${day(pause.toDate)}: it resumes on ${resume}.`;
-    }
-    return this.fr ? `Pause prévue du ${day(pause.fromDate)} au ${day(pause.toDate)} : reprise le ${resume}.`
-      : `Pause planned from ${day(pause.fromDate)} to ${day(pause.toDate)}: it resumes on ${resume}.`;
-  }
 
   get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
   private get locale(): string { return this.fr ? 'fr-FR' : 'en-US'; }
@@ -145,11 +129,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
     // Tasks are requested in parallel but applied after the main dashboard: a slow task endpoint must never
     // keep Home on a spinner, and a failure leaves the rest usable.
-    // The pause is read on its own: a failure never keeps Home from showing.
-    this.loadSubscriptions.add(this.schedule.currentPause(this.clientId).pipe(catchError(() => of(null)))
-      .subscribe(pause => (this.pause = pause)));
     const tasks$ = this.tasksApi.calendar(this.clientId, dateKey(today), dateKey(today), true).pipe(
       timeout(10_000), map(response => response.items || []), catchError(() => of([] as TaskCalendarItem[])));
+
+    // Like the tasks: after the dashboard, a failure keeps what was shown.
+    const feedback$ = this.assignments.pageMyAssignments(0, 10, 'reviewedAt', 'DESC', undefined, true, ['SUBMITTED', 'REVIEWED']).pipe(
+      timeout(10_000),
+      map(page => (page?.content || []).filter(item => !!String(item.coachFeedback || '').trim() && !item.feedbackSeenAt)),
+      catchError(() => of(null)));
 
     const workout$ = this.workoutService.getWorkoutPlansByClient(this.clientId).pipe(
       map(plans => findPlanDay(plans as any[], 'workoutDays', today)));
@@ -180,6 +167,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           if (request !== this.loadRequest) return;
           this.splitTasks(items);
           this.saveSnapshot();
+        }));
+        this.loadSubscriptions.add(feedback$.subscribe(items => {
+          if (request !== this.loadRequest || !items) return;
+          this.unreadFeedback = items;
         }));
       },
       error: error => {
@@ -364,6 +355,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   openTask(task: TaskCalendarItem): void { void openClientTask(this.router, task); }
   seeAllTasks(): void { void this.router.navigate(['/tasks']); }
+
+  /** The client read the comment: the card goes at once, the server keeps the date. */
+  feedbackSeen(item: FormAssignment): void {
+    this.unreadFeedback = this.unreadFeedback.filter(other => other.id !== item.id);
+    this.assignments.markFeedbackSeen(item.id).subscribe({ error: () => {} });
+  }
 
   openCheckIn(): void {
     void this.router.navigate(['/assignments/me'], { queryParams: { assignmentId: this.todayCheckIn?.id || null } });
