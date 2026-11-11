@@ -22,15 +22,31 @@
         class="search-input"
       />
     </div>
+
+    <div class="kind-filter" role="group" [attr.aria-label]="'MEALS_FILTER_LABEL' | translate">
+      <button
+        *ngFor="let option of kinds"
+        type="button"
+        class="kind-filter__option"
+        [class.is-active]="kind === option.value"
+        [attr.aria-pressed]="kind === option.value"
+        (click)="setKind(option.value)"
+      >
+        <i-feather *ngIf="option.value === 'recipe'" name="book-open"></i-feather>
+        <i-feather *ngIf="option.value === 'meal'" name="shopping-bag"></i-feather>
+        {{ option.label | translate }}
+      </button>
+    </div>
   </div>
 
   <div class="plans-state" *ngIf="!meals?.length && !loading">
-    {{ 'NO_MEALS_FOUND' | translate }}
+    {{ (kind === 'recipe' ? 'NO_RECIPES_FOUND' : kind === 'meal' ? 'NO_FOOD_MEALS_FOUND' : 'NO_MEALS_FOUND') | translate }}
   </div>
 
   <div class="meals-table" *ngIf="meals?.length">
     <div class="table-header">
       <div class="col-title">{{ 'TITLE' | translate }}</div>
+      <div class="col-type">{{ 'TYPE' | translate }}</div>
       <div class="col-updated">{{ 'LAST_UPDATED_ON' | translate }}</div>
       <div class="col-foods">{{ 'FOODS' | translate }}</div>
       <div class="col-macros">{{ 'MACROS' | translate }}</div>
@@ -39,16 +55,32 @@
 
     <div class="table-row" *ngFor="let m of meals" [class.table-row--pending]="m.pending" [attr.aria-busy]="m.pending || null">
       <div class="col-title">
+        <span class="meal-thumb" [class.meal-thumb--recipe]="isRecipe(m)" aria-hidden="true">
+          {{ (m.name || '?').charAt(0).toUpperCase() }}
+          <img *ngIf="mealImage(m) as image" [src]="image" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+        </span>
         <div class="meal-name">{{ m.name }}</div>
+      </div>
+
+      <div class="col-type">
+        <span class="kind-badge" [class.kind-badge--recipe]="isRecipe(m)">
+          <i-feather [name]="isRecipe(m) ? 'book-open' : 'shopping-bag'"></i-feather>
+          {{ (isRecipe(m) ? 'MEAL_KIND_RECIPE' : 'MEAL_KIND_FOODS') | translate }}
+        </span>
+        <span class="kind-tag" *ngIf="m.macrosOnly">{{ 'MEAL_KIND_MACROS_ONLY' | translate }}</span>
+        <span class="kind-tag kind-tag--draft" *ngIf="m.draft">{{ 'MEAL_KIND_DRAFT' | translate }}</span>
       </div>
 
       <div class="col-updated">
         {{ m.updatedAt || m.lastModifiedDate ? formatDate(m.updatedAt || m.lastModifiedDate) : '-' }}
       </div>
 
-      <div class="col-foods">
-        {{ m.foods?.length || 0 }} {{ ((m.foods?.length || 0) === 1 ? 'FOOD_LOWERCASE' : 'FOODS_LOWERCASE') | translate }}
+      <div class="col-foods" *ngIf="m.macrosOnly; else foodCount">
+        <span class="no-foods">—</span>
       </div>
+      <ng-template #foodCount><div class="col-foods">
+        {{ m.foods?.length || 0 }} {{ ((m.foods?.length || 0) === 1 ? 'FOOD_LOWERCASE' : 'FOODS_LOWERCASE') | translate }}
+      </div></ng-template>
 
       <div class="col-macros">
         <ng-container *ngIf="m.foods?.length; else noMacros">

@@ -18,10 +18,12 @@ import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
  * the coach first sees what is paid (plan, amount, method or saved card) and confirms; opening the link never charges
  * the card by itself. CE checks that the invoice belongs to the connected coach.
  */
+import { PaymentIncidentNoticeComponent } from 'app/components/payment-incident-notice/payment-incident-notice.component';
+
 @Component({
   selector: 'app-pay-invoice',
   standalone: true,
-  imports: [CommonModule, TranslateModule, FeatherModule],
+  imports: [CommonModule, TranslateModule, FeatherModule, PaymentIncidentNoticeComponent],
   template: `
     <section class="pay-invoice">
       <div class="card" *ngIf="error; else ready" role="alert">
@@ -35,7 +37,8 @@ import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
           <h1>{{ 'MY_SUB_INVOICE' | translate }}<ng-container *ngIf="invoice.planName"> · {{ invoice.planName }}</ng-container></h1>
           <p class="label">{{ 'CHECKOUT_TOTAL' | translate }}</p>
           <p class="amount">{{ amount }}</p>
-          <button type="button" class="btn-primary" (click)="pay()">
+          <app-payment-incident-notice></app-payment-incident-notice>
+          <button type="button" class="btn-primary" (click)="pay()" [disabled]="states.paymentsPaused">
             {{ (savedCard ? 'MY_SUB_PAY_WITH_CARD' : method === 'STRIPE' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
           </button>
           <p class="secure"><i-feather name="lock"></i-feather>{{ (method === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
@@ -78,7 +81,7 @@ export class PayInvoiceComponent implements OnInit {
   paying = false;
 
   constructor(private route: ActivatedRoute, private router: Router, private billing: CoachBillingService,
-              private states: CoachSubscriptionStateService) {}
+              public states: CoachSubscriptionStateService) {}
 
   get amount(): string {
     return formatAmount(this.invoice?.amount, this.invoice?.currency);
@@ -119,7 +122,7 @@ export class PayInvoiceComponent implements OnInit {
 
   /** Only on the coach's click: the payment page opens, or the saved card is charged. */
   pay(): void {
-    if (!this.invoice || this.paying) {
+    if (!this.invoice || this.paying || this.states.paymentsPaused) {
       return;
     }
     this.paying = true;

@@ -22,6 +22,11 @@
         <ng-container *ngIf="!saving && hasSavedSite && dirty">{{ 'UNSAVED_CHANGES' | translate }}</ng-container>
         <ng-container *ngIf="!saving && hasSavedSite && !dirty">{{ (published ? 'WB_STATE_PUBLISHED' : 'WB_STATE_OFFLINE') | translate }}</ng-container>
       </span>
+      <button type="button" class="wb-button wb-button--ai" (click)="openAi()" [disabled]="loading"
+              [title]="aiQuota && aiQuota.limit !== null ? ((aiQuota.trial ? 'AI_QUOTA_LEFT_TRIAL' : 'AI_QUOTA_LEFT') | translate: { remaining: aiQuota.remaining, limit: aiQuota.limit }) : ''">
+        <span aria-hidden="true">✨</span><span>{{ 'AI_SITE_BUTTON' | translate }}</span>
+        <small class="wb-ai-count" *ngIf="aiQuota && aiQuota.limit !== null">{{ aiQuota.remaining }}/{{ aiQuota.limit }}</small>
+      </button>
       <button type="button" class="wb-button" (click)="openPreview()">
         <i-feather name="eye"></i-feather><span>{{ 'VIEW_PREVIEW' | translate }}</span>
       </button>
@@ -36,6 +41,15 @@
   </header>
 
   <app-branding-lock-banner *ngIf="brandingLocked"></app-branding-lock-banner>
+
+  <div class="wb-alert wb-alert--info" *ngIf="aiApplied" role="status">
+    <span aria-hidden="true">✨</span>
+    <span>{{ (brandingLocked ? 'AI_SITE_PREVIEW_ONLY' : 'AI_SITE_APPLIED') | translate }}</span>
+    <a *ngIf="brandingLocked" routerLink="/subscription/change-plan">{{ 'AI_SEE_PLANS' | translate }}</a>
+    <button type="button" [attr.aria-label]="'CLOSE' | translate" (click)="aiApplied = false"><i-feather name="x"></i-feather></button>
+  </div>
+
+  <app-website-ai-dialog [hasTexts]="aiHasTexts" [quota]="aiQuota" [language]="siteLanguage" (drafted)="applyAiDraft($event)"></app-website-ai-dialog>
 
   <div class="wb-alert wb-alert--error" *ngIf="saveError" role="alert">
     <i-feather name="alert-circle"></i-feather><span>{{ saveError }}</span>

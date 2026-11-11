@@ -149,3 +149,6 @@ p { margin: 0; }
   .invoice-row { flex-direction: column; align-items: flex-start; }
   .invoice-side { justify-content: flex-start; }
 }
+
+/* AFF-28: invoice reduced by the referral credit */
+.credit-line { color: light-dark(#1d6f8f, #70bcdf); font-size: 12px; white-space: nowrap; }

@@ -18,6 +18,7 @@ describe('First steps checklist', () => {
     discover: [
       { key: 'OPEN_CLIENT', done: true, optional: false },
       { key: 'VIEW_PROGRAM', done: false, optional: false },
+      { key: 'AI_PROGRAM', done: false, optional: false },
       { key: 'REPLY_MESSAGE', done: false, optional: false },
       { key: 'REVIEW_CHECKIN', done: false, optional: false },
     ],
@@ -47,7 +48,7 @@ describe('First steps checklist', () => {
 
   it('counts the discovery steps and the required real steps, not the optional website', () => {
     const component = fixture.componentInstance;
-    expect(component.steps.length).toBe(8);
+    expect(component.steps.length).toBe(9);
     expect(component.doneCount).toBe(1);
     expect(component.exampleName).toBe('Sami');
     expect(fixture.nativeElement.querySelector('.first-steps')).not.toBeNull();
@@ -60,6 +61,18 @@ describe('First steps checklist', () => {
     fixture.componentInstance.openDiscover('VIEW_PROGRAM');
     expect(guide.visit).toHaveBeenCalledWith('VIEW_PROGRAM');
     expect(router.navigate).toHaveBeenCalledWith(['/clients/profil-client', 'sami'], { queryParams: { tab: 'workouts' } });
+  });
+
+  it('IA-51: opens the AI program of the example client, free while not used (the server records it)', () => {
+    const router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
+    fixture.componentInstance.openDiscover('AI_PROGRAM');
+    expect(guide.visit).not.toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/clients/profil-client', 'sami'], { queryParams: { tab: 'workouts', openAssign: 'ai-example' } });
+
+    fixture.componentInstance.status!.discover.find((s) => s.key === 'AI_PROGRAM')!.done = true;
+    fixture.componentInstance.openDiscover('AI_PROGRAM');
+    expect(router.navigate).toHaveBeenCalledWith(['/clients/profil-client', 'sami'], { queryParams: { tab: 'workouts', openAssign: 'ai' } });
   });
 
   it('removes the example client after confirmation and tells the dashboard', () => {

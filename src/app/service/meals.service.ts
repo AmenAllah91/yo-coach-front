@@ -15,7 +15,11 @@ export interface MealTemplateDto {
   foods: any[];
   template?: boolean;
   draft?: boolean;
+  macrosOnly?: boolean;
 }
+
+/** Filter of the meals page: every meal, recipes only, or meals with foods only. */
+export type MealKindFilter = 'all' | 'recipe' | 'meal';
 
 @Injectable({ providedIn: 'root' })
 export class MealsService {
@@ -26,9 +30,10 @@ export class MealsService {
 
   constructor(private http: HttpClient) {}
 
-  getMeals(page = 0, size = 10, search?: string): Observable<any> {
+  getMeals(page = 0, size = 10, search?: string, kind: MealKindFilter = 'all'): Observable<any> {
     const params: Record<string, string | number> = { page, size };
     if (search?.trim()) params['search'] = search.trim();
+    if (kind !== 'all') params['recipe'] = String(kind === 'recipe');
     return this.http.get<any>(this.base, { params });
   }
 

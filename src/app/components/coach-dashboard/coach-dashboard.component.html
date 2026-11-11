@@ -82,14 +82,25 @@
       </ng-container>
     </button>
 
-    <button type="button" class="kpi" (click)="openCheckIns()">
-      <span class="kpi-label">{{ 'CDASH.KPI.CHECK_INS' | translate }}</span>
-      <i-feather class="kpi-icon" name="clipboard"></i-feather>
+    <a class="kpi" routerLink="/clients" [title]="'CDASH.KPI.ADHERENCE_RULE' | translate">
+      <span class="kpi-label">{{ 'CDASH.KPI.ADHERENCE' | translate }}</span>
+      <i-feather class="kpi-icon" name="trending-up"></i-feather>
       <ng-container *ngIf="summaryStatus === 'ready' && summary; else kpiPending">
-        <span class="kpi-value">{{ checkInsPending }}</span>
-        <span class="kpi-sub">{{ 'CDASH.KPI.LATE' | translate: { count: summary.checkIns.overdue } }}</span>
+        <ng-container *ngIf="adherenceRate !== null; else noAdherence">
+          <span class="kpi-value" [attr.data-level]="adherenceLevel">{{ adherenceRate }} %</span>
+          <span class="kpi-sub">
+            {{ 'CDASH.KPI.ADHERENCE_DETAIL' | translate: { done: summary.adherence?.done, planned: summary.adherence?.planned } }}
+            <ng-container *ngIf="adherenceTrend as trend">
+              · <span class="kpi-trend" [attr.data-trend]="trend.key">{{ trend.key | translate: { points: trend.points } }}</span>
+            </ng-container>
+          </span>
+        </ng-container>
+        <ng-template #noAdherence>
+          <span class="kpi-value">—</span>
+          <span class="kpi-sub">{{ 'CDASH.KPI.ADHERENCE_NONE' | translate }}</span>
+        </ng-template>
       </ng-container>
-    </button>
+    </a>
 
     <a class="kpi" routerLink="/chat">
       <span class="kpi-label">{{ 'CDASH.KPI.UNREAD_MESSAGES' | translate }}</span>
@@ -133,7 +144,7 @@
             <span class="todo-text">
               <span class="todo-title">{{ 'CDASH.ALERT.' + type + '.TITLE' | translate }}</span>
               <span class="todo-hint">
-                {{ (type === 'CHECK_INS_TO_REVIEW' ? 'CDASH.N_CHECK_INS' : 'CDASH.N_CLIENTS') | translate: { count: alertCount(type) } }}
+                {{ countKey(type) | translate: { count: alertCount(type) } }}
                 · {{ 'CDASH.ALERT.' + type + '.SHORT' | translate }}
               </span>
             </span>

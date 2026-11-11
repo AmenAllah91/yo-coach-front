@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import {
   OnboardingRequest,
   OnboardingResponse,
+  ReferralCodeCheck,
   SubscriptionPlanDto
 } from '../models/subscription-onboarding.model';
 
@@ -24,6 +25,14 @@ export class SubscriptionOnboardingService {
 
   onboard(request: OnboardingRequest): Observable<OnboardingResponse> {
     return this.http.post<OnboardingResponse>(`${this.publicUrl}/onboarding`, request, {
+      headers: { 'X-Skip-Toast': 'true' }
+    });
+  }
+
+  /** AFF-10: checks a referral code; an error of the server means "not checked", never "invalid". */
+  checkReferralCode(code: string): Observable<ReferralCodeCheck> {
+    return this.http.get<ReferralCodeCheck>(`${this.publicUrl}/referral/code`, {
+      params: { code },
       headers: { 'X-Skip-Toast': 'true' }
     });
   }

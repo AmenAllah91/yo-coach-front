@@ -31,6 +31,8 @@
           <em *ngIf="line.lockedInTrial">({{ 'REGISTER_FEATURE_AFTER_TRIAL' | translate }})</em>
         </li>
       </ul>
+      <!-- Plan features (2026-11-11): what the plan really gives (YoSales) -->
+      <app-plan-feature-list [plan]="selectedPlan"></app-plan-feature-list>
     </div>
 
     <div *ngIf="planLoadError" class="alert alert-danger text-center mt-2">
@@ -88,6 +90,26 @@
         <div *ngIf="signupForm.get('confirmPassword')?.invalid && (signupForm.get('confirmPassword')?.dirty || signupForm.get('confirmPassword')?.touched)" class="text-danger">
           {{ getFieldError('confirmPassword') }}
         </div>
+      </div>
+
+      <div *ngIf="!isClientSignup" class="form-group referral-field">
+        <label for="referralCode" class="referral-label">{{ 'REFERRAL_CODE_LABEL' | translate }}</label>
+        <div class="referral-input">
+          <input type="text" id="referralCode" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false"
+                 class="form-control" [placeholder]="'REFERRAL_CODE_PLACEHOLDER' | translate" [value]="referralCode"
+                 (input)="onReferralInput($any($event.target).value)" (blur)="checkReferralCode()"
+                 aria-describedby="referralCodeHelp referralCodeStatus">
+          <button *ngIf="referralCode" type="button" class="referral-remove" (click)="removeReferral()"
+                  [attr.aria-label]="'REFERRAL_CODE_REMOVE' | translate">×</button>
+        </div>
+        <div id="referralCodeStatus" aria-live="polite">
+          <small *ngIf="referralStatus === 'checking'" class="referral-status">{{ 'REFERRAL_CODE_CHECKING' | translate }}</small>
+          <small *ngIf="referralStatus === 'valid'" class="referral-status referral-valid">✓ {{ 'REFERRAL_CODE_VALID' | translate:{ name: referrerName } }}</small>
+          <small *ngIf="referralStatus === 'invalid'" class="referral-status text-danger">{{ 'REFERRAL_CODE_INVALID' | translate }}</small>
+          <small *ngIf="referralStatus === 'unavailable'" class="referral-status text-danger">{{ 'REFERRAL_CODE_UNAVAILABLE' | translate }}</small>
+          <small *ngIf="referralStatus === 'unverified'" class="referral-status">{{ 'REFERRAL_CODE_UNVERIFIED' | translate }}</small>
+        </div>
+        <small id="referralCodeHelp" class="referral-help">{{ 'REFERRAL_CODE_HELP' | translate }}</small>
       </div>
 
       <button

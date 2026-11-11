@@ -16,8 +16,21 @@ export interface CoachSubscriptionState {
   planId?: number | null;
   planName?: string | null;
   billingCycle?: 'MONTHLY' | 'YEARLY' | string | null;
+  /**
+   * Free plan (2026-11-10): status ACTIVE on a plan priced 0: no end date, nothing to pay, limited by maxActiveClients.
+   * A paid plan is chosen on the payment screen (checkout), like after a trial.
+   */
+  freePlan?: boolean;
   maxActiveClients?: number | null;
   brandingAllowed: boolean;
+  /** IA-23 (added by CE): website / app colors and logo allowed, with the yes / no of the plan. Absent = brandingAllowed. */
+  websiteAllowed?: boolean | null;
+  themeAllowed?: boolean | null;
+  /**
+   * Plan features (2026-11-11, added by CE): every feature of the plan set in YoSales, with the answer of the server
+   * (allowed false = locked). Empty or absent when the product has no catalog.
+   */
+  features?: CoachFeature[] | null;
   /** Active clients of the coach, demo client excluded (added by CE, SUB-22). */
   activeClients?: number | null;
   openInvoiceId?: number | null;
@@ -26,6 +39,10 @@ export interface CoachSubscriptionState {
   accessUntil?: string | null;
   /** Last day to pay the open invoice (yyyy-MM-dd, coach time zone). SUB-30. */
   openInvoiceDueDate?: string | null;
+  /** The admin switched the payment incident on: payment buttons are paused, nobody is cut meanwhile. */
+  paymentIncident?: boolean;
+  /** No automatic cut-off before this instant (admin deferral, or extra days after a payment incident). */
+  cutoffDeferredUntil?: string | null;
   pendingPlanChange?: { planId: number; planName: string; effectiveAt: string } | null;
   /** SUB-39: upgrade waiting for payment (the plan changes once it is paid; expires after 3 days). */
   pendingUpgrade?: { invoiceId: number; planId: number; planName: string; amount: number; expiresAt: string } | null;
@@ -50,6 +67,15 @@ export interface CoachSubscriptionState {
   card?: SavedCardView | null;
   /** SUB-62: the invoices are charged on the saved card on their due date (automatic renewal). */
   autoCharge?: boolean;
+  /** AFF-21: referral credit, usable now and waiting (with the first date it becomes usable). */
+  referralCreditAvailable?: number | null;
+  referralCreditPending?: number | null;
+  referralCreditPendingAvailableAt?: string | null;
+  referralCreditCurrency?: string | null;
+  /** AFF-21: the credit is deducted from the next invoices (switched on in YoSales). */
+  referralCreditDeduction?: boolean;
+  /** 2026-11-11: the referral program is on in YoSales; false = the "Referral" menu is hidden (null = unknown). */
+  referralProgramAvailable?: boolean | null;
 }
 
 /** SUB-62: what the coach sees of the card saved at Stripe (never the card number). */
@@ -101,4 +127,17 @@ export function indicativeUsd(amountTnd: number | null | undefined, state: Coach
     return null;
   }
   return Math.max(1, Math.round(amountTnd / rate));
+}
+
+/** Plan features (2026-11-11): one feature of the plan of the coach (codes in CE config/FeatureCodes.java). */
+export interface CoachFeature {
+  code: string;
+  /** ON_OFF or QUANTITY. */
+  kind?: string | null;
+  labelFr?: string | null;
+  labelEn?: string | null;
+  labelAr?: string | null;
+  allowed: boolean;
+  /** QUANTITY: allowed in the period (null = no limit). */
+  limit?: number | null;
 }

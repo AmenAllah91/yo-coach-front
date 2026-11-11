@@ -1,7 +1,7 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CommonModule } from '@angular/common';
-import { RouterLink, provideRouter } from '@angular/router';
+import { Router, RouterLink, provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
 import { allIcons } from 'angular-feather/icons';
@@ -21,8 +21,12 @@ function summary(partial: Partial<DashboardSummary> = {}): DashboardSummary {
     clientsToWatch: { count: 4, noProgram: 1, expiredPrograms: 2, inactive: 1, overdueCheckIns: 1 },
     checkIns: { toReview: 2, overdue: 1 },
     todoClients: 9,
-    alerts: { EXPIRED_PROGRAMS: 2, NO_PROGRAM: 1, CHECK_INS_TO_REVIEW: 2, ENDING_SOON: 0, INACTIVE: 1, NO_NUTRITION: 5, CHECK_INS_OVERDUE: 1 },
+    alerts: {
+      EXPIRED_PROGRAMS: 2, NO_PROGRAM: 1, CHECK_INS_TO_REVIEW: 2, ENDING_SOON: 0, INACTIVE: 1, NO_NUTRITION: 5,
+      JOIN_REQUESTS: 3, NEW_LEADS: 0, CHECK_INS_OVERDUE: 1,
+    },
     preferences: { hiddenWidgets: [] },
+    adherence: { done: 62, planned: 80, rate: 78, previousRate: 73 },
     ...partial,
   };
 }
@@ -73,7 +77,7 @@ describe('CoachDashboardComponent', () => {
     expect(text()).toContain('CDASH.WELCOME');
     expect(fixture.nativeElement.querySelectorAll('.kpi').length).toBe(4);
     const counts = Array.from(fixture.nativeElement.querySelectorAll('.todo-count')).map((el: any) => el.textContent.trim());
-    expect(counts).toEqual(['2', '1', '2', '0', '1', '5']);
+    expect(counts).toEqual(['2', '1', '2', '0', '1', '5', '3', '0']);
     expect(component.checkInsPending).toBe(3);
     expect(component.watchDetail).toEqual({ key: 'CDASH.KPI.W_EXPIRED', count: 2 });
     expect(component.unreadConversations).toBe(2);
@@ -98,7 +102,7 @@ describe('CoachDashboardComponent', () => {
     create(summary({ preferences: { hiddenWidgets: ['MESSAGES', 'ALERT_NO_NUTRITION'] } }));
     expect(fixture.nativeElement.querySelector('app-messages-widget')).toBeNull();
     expect(component.visibleAlertTypes).not.toContain('NO_NUTRITION');
-    expect(fixture.nativeElement.querySelectorAll('.todo-item').length).toBe(5);
+    expect(fixture.nativeElement.querySelectorAll('.todo-item').length).toBe(7);
   });
 
   it('saves a preference and restores the previous one when the save fails', () => {
@@ -123,5 +127,33 @@ describe('CoachDashboardComponent', () => {
     component.summary = summary({ checkIns: { toReview: 0, overdue: 3 } });
     component.openCheckIns();
     expect(component.drawerType).toBe('CHECK_INS_OVERDUE');
+  });
+
+  it('shows the workout adherence of the last 7 days with its trend', () => {
+    create(summary());
+    expect(component.adherenceRate).toBe(78);
+    expect(component.adherenceLevel).toBe('good');
+    expect(component.adherenceTrend).toEqual({ key: 'CDASH.KPI.TREND_UP', points: 5 });
+    expect(text()).toContain('78 %');
+    expect(text()).not.toContain('CDASH.KPI.CHECK_INS');
+
+    create(summary({ adherence: { done: 0, planned: 0, rate: null, previousRate: null } }));
+    expect(component.adherenceTrend).toBeNull();
+    expect(text()).toContain('CDASH.KPI.ADHERENCE_NONE');
+
+    create(summary({ adherence: undefined }));
+    expect(text()).toContain('CDASH.KPI.ADHERENCE_NONE');
+  });
+
+  it('opens the requests tab and the prospects page instead of a drawer', () => {
+    create(summary());
+    const router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
+    component.openDrawer('JOIN_REQUESTS');
+    expect(router.navigate).toHaveBeenCalledWith(['/clients'], { queryParams: { tab: 'requests' } });
+    component.openDrawer('NEW_LEADS');
+    expect(router.navigate).toHaveBeenCalledWith(['/websites/leads'], { queryParams: undefined });
+    expect(component.drawerType).toBeNull();
+    expect(component.countKey('JOIN_REQUESTS')).toBe('CDASH.N_REQUESTS');
   });
 });

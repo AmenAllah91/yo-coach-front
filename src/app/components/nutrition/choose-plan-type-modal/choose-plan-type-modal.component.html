@@ -112,6 +112,9 @@
       <button class="btn-secondary" type="button" (click)="closeDurationModal()">
         {{ 'CANCEL' | translate }}
       </button>
+      <button class="btn-secondary nutrition-ai-button" type="button" *ngIf="selectedPlanType === 'full'" (click)="openNutritionAi()">
+        ✨ {{ 'AI_WORKOUT_CARD_BUTTON' | translate }}<app-ai-quota code="ai.nutrition" variant="badge"></app-ai-quota>
+      </button>
       <button
         class="btn-primary nutrition-duration-submit"
         type="button"
@@ -123,3 +126,5 @@
     </div>
   </div>
 </div>
+
+<app-nutrition-ai-dialog [language]="aiLanguage" (drafted)="openNutritionAiDraft($event)" (closed)="onNutritionAiClosed()"></app-nutrition-ai-dialog>

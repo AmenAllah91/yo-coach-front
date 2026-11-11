@@ -18,6 +18,21 @@ describe('SidebarComponent', () => {
   });
 });
 
+describe('SidebarComponent referral menu (2026-11-11)', () => {
+  const hidden = (path: string, referralProgramAvailable: boolean | null | undefined, noState = false): boolean =>
+    SidebarComponent.prototype.isHidden.call(
+      { subscriptionState: noState ? null : { referralProgramAvailable } },
+      { path } as any);
+
+  it('hides "Referral" only when YoSales says the program is off', () => {
+    expect(hidden('/referral', false)).toBeTrue();
+    expect(hidden('/referral', true)).toBeFalse();
+    expect(hidden('/referral', null)).toBeFalse();      // unknown: shown
+    expect(hidden('/referral', undefined, true)).toBeFalse(); // no state yet: shown
+    expect(hidden('/clients', false)).toBeFalse();      // the other entries never
+  });
+});
+
 describe('SidebarComponent trial days (SUB-21)', () => {
   const keyOf = (trialDaysLeft: number | null): string =>
     Object.getOwnPropertyDescriptor(SidebarComponent.prototype, 'trialDaysLeftKey')!.get!.call({ trialDaysLeft });

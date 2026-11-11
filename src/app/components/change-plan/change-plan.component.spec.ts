@@ -46,7 +46,9 @@ describe('ChangePlanComponent (SUB-46)', () => {
 
   beforeEach(() => {
     billing = jasmine.createSpyObj('CoachBillingService', ['getPlanChangeOptions', 'requestUpgrade', 'switchToYearly',
-      'requestDowngrade', 'switchToMonthly', 'cancelScheduledChange', 'cancelPendingRequest', 'initiateInvoicePayment']);
+      'requestDowngrade', 'switchToMonthly', 'cancelScheduledChange', 'cancelPendingRequest', 'initiateInvoicePayment',
+      'getPlans']);
+    billing.getPlans.and.returnValue(of([])); // plan features (2026-11-11): no catalog here
     stateService = jasmine.createSpyObj('CoachSubscriptionStateService', ['refresh']);
     stateService.refresh.and.returnValue(of({ status: 'ACTIVE', timeZone: 'Africa/Tunis', readOnly: false, brandingAllowed: true }));
     router = jasmine.createSpyObj('Router', ['navigate']);

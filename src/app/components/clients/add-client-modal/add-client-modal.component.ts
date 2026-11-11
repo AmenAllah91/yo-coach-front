@@ -1,4 +1,6 @@
 import {Component, Input, Output, EventEmitter, OnChanges} from '@angular/core';
+import { CoachSubscriptionStateService, FEATURE, featureLocked } from '../../../service/coach-subscription-state.service';
+import { CHANGE_PLAN_PATH } from '../../change-plan/change-plan.path';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -30,6 +32,8 @@ export class AddClientModalComponent implements OnChanges {
   @Output() onClose  = new EventEmitter<void>();
   @Output() onCreate = new EventEmitter<{ email: string }>();
   mode: 'email' | 'link' = 'email';
+  /** Plan-change screen (padlock of the sign-up link). */
+  readonly changePlanPath = CHANGE_PLAN_PATH;
   joinLink: JoinLink | null = null;
   joinLinkLoading = false;
   joinLinkError = false;
@@ -56,7 +60,13 @@ export class AddClientModalComponent implements OnChanges {
     private translate: TranslateService,
     private toastService: ToastService,
     private joinRequests: JoinRequestService,
+    private subscriptionState: CoachSubscriptionStateService,
   ) {
+  }
+
+  /** Plan features (2026-11-11): the plan does not include the sign-up link (padlock, its buttons are off). */
+  get joinLinkLocked(): boolean {
+    return featureLocked(this.subscriptionState.snapshot, FEATURE.JOIN_LINK);
   }
 
   ngOnChanges(): void {

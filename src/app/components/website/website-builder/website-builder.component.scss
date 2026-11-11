@@ -139,6 +139,10 @@ $soft: light-dark(#f5f8fb, #161a1e);
 }
 
 .wb-alert--error { background: light-dark(#fff1f1, #3c2829); border: 1px solid light-dark(#f8cdd2, #5f3d41); color: light-dark(#b42335, #ff8989); }
+/* IA-21: AI website button and its counter */
+.wb-button--ai { border-color: $brand; color: light-dark(#11709a, #69bbe8); font-weight: 600; }
+.wb-ai-count { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 999px; border: 1px solid $line; color: $muted; }
+.wb-alert a { color: inherit; font-weight: 600; text-decoration: underline; }
 .wb-alert--info { background: light-dark(#eef8fd, #1e313a); border: 1px solid light-dark(#cdeaf7, #334c56); color: light-dark(#11709a, #69bbe8); }
 .wb-alert--success { background: light-dark(#ecfbf3, #1b3428); border: 1px solid light-dark(#bfead3, #2a513e); color: light-dark(#127a4c, #6cc694); }
 .wb-alert--warn { background: light-dark(#fff7e8, #382b12); border: 1px solid light-dark(#f4dfb3, #57451d); color: light-dark(#8a5a00, #daa65f); }

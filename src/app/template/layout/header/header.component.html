@@ -9,6 +9,11 @@
 
     <!-- Right side navigation -->
     <div class="header-actions">
+    @if(referralCredit) {
+      <a class="referral-credit me-3" routerLink="/referral" [title]="'HEADER_REFERRAL_CREDIT' | translate:{ amount: referralCredit }">
+        <i-feather name="gift"></i-feather><span>{{ referralCredit }}</span>
+      </a>
+    }
     <li class="dropdown dropdown-list-toggle list-unstyled me-3" ngbDropdown>
       <a class="nav-link nav-link-lg lang-toggle remove-caret d-flex align-items-center" ngbDropdownToggle>
         @if(flagvalue)

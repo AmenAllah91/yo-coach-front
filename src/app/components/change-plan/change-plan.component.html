@@ -35,7 +35,8 @@
       <p>{{ 'CHANGE_PLAN_PENDING_TEXT' | translate: { plan: p.planName, amount: amount(p.amount), date: day(p.expiresAt) } }}</p>
       <p *ngIf="p.paymentInProgress" class="muted">{{ 'CHANGE_PLAN_PENDING_IN_PROGRESS' | translate }}</p>
       <div class="actions">
-        <button type="button" class="btn-primary" [disabled]="busy || p.paymentInProgress" (click)="payPending()">
+        <app-payment-incident-notice></app-payment-incident-notice>
+        <button type="button" class="btn-primary" [disabled]="busy || p.paymentInProgress || stateService.paymentsPaused" (click)="payPending()">
           {{ 'CHANGE_PLAN_PAY_AMOUNT' | translate: { amount: amount(p.amount) } }}
         </button>
         <button type="button" class="btn-danger-link" [disabled]="busy || p.paymentInProgress" (click)="cancelPending()">
@@ -82,8 +83,8 @@
           </span>
         </span>
         <span class="plan-price">
-          <strong>{{ money(plan.price) }}</strong>
-          <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
+          <strong>{{ plan.price === 0 ? ('PLAN_FREE' | translate) : money(plan.price) }}</strong>
+          <small *ngIf="plan.price !== 0">{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
         </span>
       </button>
       <p *ngIf="!visiblePlans.length" class="empty">{{ 'CHECKOUT_NO_PLANS' | translate }}</p>
@@ -93,13 +94,17 @@
     <div *ngIf="selected as plan" class="confirm card" role="region" [attr.aria-label]="'CHANGE_PLAN_CONFIRM_TITLE' | translate">
       <h2>{{ 'CHANGE_PLAN_CONFIRM_TITLE' | translate: { plan: plan.planName } }}</h2>
       <p *ngIf="lineOf(plan) as line">{{ line.key | translate: line.params }}</p>
+      <!-- Plan features (2026-11-11): what the coach gains or loses with this plan -->
+      <app-plan-feature-list *ngIf="catalogPlan(plan.planId) as target" [plan]="target"
+        [compareTo]="currentCatalogPlan"></app-plan-feature-list>
       <p *ngIf="plan.kind === 'DOWNGRADE' || plan.kind === 'TO_MONTHLY'" class="muted">{{ 'CHANGE_PLAN_NO_REFUND' | translate }}</p>
       <p *ngIf="plan.planTooBig as big" class="hint">
         {{ (big.suggestedPlan ? 'CHANGE_PLAN_TOO_BIG_SUGGESTED' : 'CHANGE_PLAN_TOO_BIG')
             | translate: { min: big.minClients, count: big.activeClients, plan: big.suggestedPlan?.planName } }}
       </p>
       <p *ngFor="let code of plan.couponsNotKept" class="hint">{{ 'CHANGE_PLAN_COUPON_NOT_KEPT' | translate: { code: code } }}</p>
-      <button type="button" class="btn-pay" [disabled]="busy" (click)="confirm()">
+      <app-payment-incident-notice></app-payment-incident-notice>
+      <button type="button" class="btn-pay" [disabled]="busy || stateService.paymentsPaused" (click)="confirm()">
         <span *ngIf="busy" class="spinner small"></span>
         {{ paysNow(plan)
             ? ('CHANGE_PLAN_CONFIRM_AND_PAY' | translate: { amount: amount(plan.amountNow) })

@@ -54,7 +54,14 @@ export interface CoachSettingsConfig {
     programEndingSoon: boolean;
   };
   publicProfile: CoachPublicProfile;
+  /** Sent in the chat, in the coach's name, when a new client finishes the onboarding. "{prenom}": first name. */
+  welcomeMessage: { enabled: boolean; text: string };
 }
+
+/** Text proposed in Settings; also used by the server when the coach leaves the text blank. */
+export const DEFAULT_WELCOME_MESSAGE =
+  'Bienvenue {prenom} ! 🎉 Ravi de t’accompagner. Je regarde tes réponses et je reviens vers toi très vite 💪';
+export const WELCOME_MESSAGE_MAX_LENGTH = 1000;
 
 export interface CoachPublicProfile {
   professionalTitle: string;
@@ -256,6 +263,7 @@ export class CoachSettingsService {
         introductionVisible: true, expertiseVisible: true,
         practicalDetailsVisible: true, socialLinksVisible: true,
       },
+      welcomeMessage: { enabled: false, text: '' },
     };
   }
 
@@ -415,6 +423,10 @@ export class CoachSettingsService {
         specialties: [...(config.publicProfile?.specialties || [])],
         certifications: [...(config.publicProfile?.certifications || [])],
         languages: [...(config.publicProfile?.languages || [])],
+      },
+      welcomeMessage: {
+        enabled: config.welcomeMessage?.enabled === true,
+        text: config.welcomeMessage?.text || '',
       },
     };
   }

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { PlanFeatureListComponent } from 'app/components/plan-feature-list/plan-feature-list.component';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
@@ -14,6 +15,8 @@ export interface LandingPlan {
   ctaLabel: string;
   highlighted: boolean;
   features: string[];
+  /** Plan features (2026-11-11): the plan as YoSales sends it, for the ✓ / ✗ of its features. */
+  source?: import('app/models/subscription-onboarding.model').SubscriptionPlanDto;
   info: {
     label: string;
     value: string;
@@ -23,7 +26,7 @@ export interface LandingPlan {
 @Component({
   selector: 'app-plan-card',
   standalone: true,
-  imports: [CommonModule, MatIcon],
+  imports: [CommonModule, MatIcon, PlanFeatureListComponent],
   templateUrl: './plan-card.component.html',
   styleUrl: './plan-card.component.scss'
 })

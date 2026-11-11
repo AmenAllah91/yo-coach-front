@@ -27,6 +27,10 @@
         <i-feather name="info"></i-feather>
         <span>{{ 'CHECKOUT_TRIAL_ENDS_TODAY' | translate }}</span>
       </div>
+      <div *ngIf="isFreePlan" class="notice" role="note">
+        <i-feather name="info"></i-feather>
+        <span>{{ 'CHECKOUT_FROM_FREE_PLAN' | translate }}</span>
+      </div>
 
       <div *ngIf="showCycleToggle" class="cycle-toggle" role="radiogroup" [attr.aria-label]="'CHECKOUT_BILLING_CYCLE' | translate">
         <button type="button" role="radio" [attr.aria-checked]="cycle === 'MONTHLY'" [class.active]="cycle === 'MONTHLY'"
@@ -66,13 +70,16 @@
             </span>
           </span>
           <span class="plan-price">
-            <strong>{{ money(planPrice(plan)) }}</strong>
+            <strong>{{ isFree(plan) ? ('PLAN_FREE' | translate) : money(planPrice(plan)) }}</strong>
             <small *ngIf="usd(plan.price) as d" class="usd-approx">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
-            <small>{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
+            <small *ngIf="!isFree(plan)">{{ (plan.billingCycle === 'YEARLY' ? 'CHECKOUT_PER_YEAR' : 'CHECKOUT_PER_MONTH') | translate }}</small>
           </span>
         </button>
         <p *ngIf="!visiblePlans.length" class="empty">{{ 'CHECKOUT_NO_PLANS' | translate }}</p>
       </div>
+
+      <!-- Plan features (2026-11-11): what the chosen plan gives (YoSales) -->
+      <app-plan-feature-list *ngIf="selectedPlan" [plan]="selectedPlan" class="checkout-features"></app-plan-feature-list>
 
       <div class="summary" *ngIf="selectedPlan as plan">
         <div class="summary-line">
@@ -123,7 +130,8 @@
 
       <p *ngIf="payError" class="pay-error" role="alert">{{ payError | translate }}</p>
 
-      <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying" (click)="pay()">
+      <app-payment-incident-notice></app-payment-incident-notice>
+      <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying || paymentsPaused" (click)="pay()">
         <span *ngIf="paying" class="spinner small"></span>
         {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : savedCard ? 'MY_SUB_PAY_WITH_CARD' : paymentMethod === 'STRIPE' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
       </button>

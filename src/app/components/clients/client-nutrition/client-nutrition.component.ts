@@ -628,8 +628,9 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   mealNote(meal: any): string { return String(this.mealLog(meal)?.note ?? meal?.note ?? '').trim(); }
   hasPhoto(meal: any): boolean { return !!String(this.mealLog(meal)?.photoPath ?? meal?.photoPath ?? '').trim() || this.mealPhotoUrls.has(meal.id); }
 
+  /** A photo alone no longer makes a recipe: any meal can have one. */
   isRecipe(meal: any): boolean {
-    return !!String(meal?.coverImage || '').trim() || Number(meal?.totalTimeMinutes || 0) > 0
+    return meal?.template === true || Number(meal?.totalTimeMinutes || 0) > 0
       || this.directions(meal).length > 0 || (meal?.tags || []).length > 0;
   }
   directions(meal: any): string[] { return (meal?.directions || []).map((step: any) => String(step ?? '').trim()).filter(Boolean); }
@@ -643,9 +644,12 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     return chips;
   }
 
+  /** Meal described by its macros only: its single line is the macros typed by the coach, not a food. */
+  macrosOnly(meal: any): boolean { return meal?.macrosOnly === true; }
+
   foodsLabel(meal: any): string {
     const n = (meal?.foods || []).length;
-    if (!n) return '';
+    if (!n || this.macrosOnly(meal)) return '';
     return ` · ${this.fr ? `${n} aliment${n > 1 ? 's' : ''}` : `${n} food${n > 1 ? 's' : ''}`}`;
   }
 
@@ -694,7 +698,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     for (const meal of this.day?.meals || []) {
       const cover = String(meal?.coverImage || '').trim();
       if (!cover || this.coverUrls.has(cover)) continue;
-      if (cover.startsWith('http') && !cover.includes('X-Amz')) { this.coverUrls.set(cover, cover); continue; }
+      // Photo saved by the meal editor as an image data URL: shown as it is.
+      if (cover.startsWith('data:image/') || (cover.startsWith('http') && !cover.includes('X-Amz'))) { this.coverUrls.set(cover, cover); continue; }
       this.subscriptions.add(this.documents.refreshStoredFileUrl(cover).pipe(catchError(() => of(cover.startsWith('http') ? cover : ''))).subscribe(url => {
         if (url) this.coverUrls.set(cover, String(url).trim());
       }));

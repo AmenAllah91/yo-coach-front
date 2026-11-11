@@ -1,0 +1,121 @@
+<dialog #dialog class="ai-dialog" aria-labelledby="workout-ai-title" (cancel)="cancel($event)">
+  <form (ngSubmit)="submit()">
+    <header class="ai-dialog__head">
+      <h2 id="workout-ai-title">✨ {{ (clientName ? 'AI_WORKOUT_TITLE_CLIENT' : 'AI_WORKOUT_TITLE') | translate: { client: clientName } }}</h2>
+      <button type="button" class="ai-close" (click)="close()" [disabled]="loading" [attr.aria-label]="'CLOSE' | translate"><i-feather name="x"></i-feather></button>
+    </header>
+
+    <p class="ai-free" *ngIf="free" role="status">🎁 {{ 'AI_WORKOUT_EXAMPLE_FREE' | translate }}</p>
+    <app-ai-quota *ngIf="!free" code="ai.workout" [quota]="quota" (leave)="close()"></app-ai-quota>
+
+    <ng-container *ngIf="!loading">
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_GOAL' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let g of goals" class="ai-chip" [class.is-on]="answers.goal === g">
+            <input type="radio" name="goal" [value]="g" [(ngModel)]="answers.goal">{{ ('AI_WORKOUT_GOAL_' + g) | translate }}
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_LEVEL' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let l of levels" class="ai-chip" [class.is-on]="answers.level === l">
+            <input type="radio" name="level" [value]="l" [(ngModel)]="answers.level">{{ ('AI_WORKOUT_LEVEL_' + l) | translate }}
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="ai-grid">
+        <label>{{ 'AI_WORKOUT_DAYS' | translate }}
+          <select class="ai-input" name="days" [(ngModel)]="answers.daysPerWeek">
+            <option *ngFor="let d of dayOptions" [ngValue]="d">{{ d }}</option>
+          </select>
+        </label>
+        <label>{{ 'AI_WORKOUT_MINUTES' | translate }}
+          <select class="ai-input" name="minutes" [(ngModel)]="answers.sessionMinutes">
+            <option *ngFor="let m of minuteOptions" [ngValue]="m">{{ m }} min</option>
+          </select>
+        </label>
+      </div>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_EQUIPMENT' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let e of equipments" class="ai-chip" [class.is-on]="answers.equipment === e">
+            <input type="radio" name="equipment" [value]="e" [(ngModel)]="answers.equipment">{{ ('AI_WORKOUT_EQUIPMENT_' + e) | translate }}
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_PHASES' | translate }} <small class="ai-weeks">{{ 'AI_WORKOUT_TOTAL_WEEKS' | translate: { weeks: totalWeeks, max: maxWeeks } }}</small></legend>
+        <div class="ai-phase" *ngFor="let p of answers.phases; let i = index">
+          <div class="ai-phase__head">
+            <strong>{{ 'AI_WORKOUT_PHASE' | translate: { n: i + 1 } }}</strong>
+            <button type="button" class="ai-link" *ngIf="answers.phases.length > 1" (click)="removePhase(i)">{{ 'AI_WORKOUT_REMOVE_PHASE' | translate }}</button>
+          </div>
+          <div class="ai-grid ai-grid--3">
+            <label>{{ 'AI_WORKOUT_WEEKS' | translate }}<input class="ai-input" type="number" min="1" [max]="maxWeeks" step="1" [name]="'weeks' + i" [(ngModel)]="p.weeks"></label>
+            <label>{{ 'AI_WORKOUT_SPLIT' | translate }}
+              <select class="ai-input" [name]="'split' + i" [(ngModel)]="p.split">
+                <option *ngFor="let s of splits" [ngValue]="s">{{ ('AI_WORKOUT_SPLIT_' + s) | translate }}</option>
+              </select>
+            </label>
+            <label>{{ 'AI_WORKOUT_FOCUS' | translate }}
+              <select class="ai-input" [name]="'focus' + i" [(ngModel)]="p.focus">
+                <option *ngFor="let f of focuses" [ngValue]="f">{{ ('AI_WORKOUT_FOCUS_' + f) | translate }}</option>
+              </select>
+            </label>
+          </div>
+          <input *ngIf="p.split === 'OTHER'" class="ai-input" maxlength="300" [name]="'splitOther' + i" [(ngModel)]="p.splitOther" [placeholder]="'AI_WORKOUT_SPLIT_OTHER_HINT' | translate">
+          <p class="ai-error" *ngIf="!fits(p)" role="alert">{{ 'AI_WORKOUT_SPLIT_DAYS' | translate: { split: ('AI_WORKOUT_SPLIT_' + p.split | translate), days: splitDays(p.split).join(' / ') } }}</p>
+        </div>
+        <p class="ai-error" *ngIf="totalWeeks > maxWeeks" role="alert">{{ 'AI_WORKOUT_TOO_MANY_WEEKS' | translate: { max: maxWeeks } }}</p>
+        <button type="button" class="ai-link" (click)="addPhase()" *ngIf="answers.phases.length < 3 && totalWeeks < maxWeeks">+ {{ 'AI_WORKOUT_ADD_PHASE' | translate }}</button>
+        <label class="ai-check"><input type="checkbox" name="deload" [(ngModel)]="answers.deload">{{ 'AI_WORKOUT_DELOAD' | translate }}</label>
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_INJURIES' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let inj of injuryOptions" class="ai-chip" [class.is-on]="answers.injuries.includes(inj)">
+            <input type="checkbox" [name]="'injury' + inj" [checked]="answers.injuries.includes(inj)" (change)="toggleInjury(inj)">{{ ('AI_WORKOUT_INJURY_' + inj) | translate }}
+          </label>
+        </div>
+        <input class="ai-input" name="injuryOther" maxlength="300" [(ngModel)]="answers.injuryOther" [placeholder]="'AI_WORKOUT_INJURY_OTHER_HINT' | translate">
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_CARE' | translate }}</legend>
+        <label class="ai-check"><input type="checkbox" name="minor" [(ngModel)]="answers.minor">{{ 'AI_WORKOUT_MINOR' | translate }}</label>
+        <label class="ai-check"><input type="checkbox" name="pregnancy" [(ngModel)]="answers.pregnancy">{{ 'AI_WORKOUT_PREGNANCY' | translate }}</label>
+        <label class="ai-check"><input type="checkbox" name="condition" [(ngModel)]="answers.medicalCondition">{{ 'AI_WORKOUT_CONDITION' | translate }}</label>
+      </fieldset>
+
+      <details class="ai-more">
+        <summary>{{ 'AI_WORKOUT_CLIENT_DETAILS' | translate }}</summary>
+        <div class="ai-grid ai-grid--3">
+          <label>{{ 'AI_WORKOUT_AGE' | translate }}<input class="ai-input" type="number" name="age" min="10" max="100" step="1" [(ngModel)]="answers.age"></label>
+          <label>{{ 'AI_WORKOUT_GENDER' | translate }}
+            <select class="ai-input" name="gender" [(ngModel)]="answers.gender">
+              <option [ngValue]="null">—</option>
+              <option ngValue="FEMALE">{{ 'AI_WORKOUT_GENDER_FEMALE' | translate }}</option>
+              <option ngValue="MALE">{{ 'AI_WORKOUT_GENDER_MALE' | translate }}</option>
+            </select>
+          </label>
+          <label>{{ 'AI_WORKOUT_WEIGHT' | translate }}<input class="ai-input" type="number" name="weight" min="25" max="300" step="1" [(ngModel)]="answers.weightKg"></label>
+        </div>
+      </details>
+    </ng-container>
+
+    <div class="ai-loading" *ngIf="loading" role="status"><span class="ai-spinner"></span><span>{{ 'AI_WORKOUT_WRITING' | translate }}</span></div>
+    <p class="ai-error" *ngIf="error" role="alert">{{ error | translate }}</p>
+
+    <footer class="ai-actions">
+      <button type="button" class="ai-btn" (click)="close()" [disabled]="loading">{{ 'CANCEL' | translate }}</button>
+      <button type="submit" class="ai-btn ai-btn--primary" [disabled]="!valid || exhausted || loading">{{ 'AI_WORKOUT_GENERATE' | translate }}</button>
+    </footer>
+  </form>
+</dialog>

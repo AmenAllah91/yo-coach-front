@@ -178,7 +178,7 @@
             <strong>{{ exercise.name || exercise.exerciseRef?.name || ('EXERCISE' | translate) }}</strong>
             <small *ngIf="(exercise.type || exercise.exerciseRef?.type) || exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">
               <ng-container *ngIf="exercise.type || exercise.exerciseRef?.type">{{ ('EXERCISE_TYPE_' + ((exercise.type || exercise.exerciseRef?.type) | uppercase)) | translate }}</ng-container>
-              <em *ngIf="exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">{{ exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle }}</em>
+              <em *ngIf="exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle">{{ 'EXERCISE_MUSCLE_' + (exercise.primaryMuscle || exercise.muscle || exercise.exerciseRef?.muscle) | translate }}</em>
             </small>
           </span>
           <span class="activity-exercise-state" [attr.data-state]="exerciseActivityState(activity, exercise, exerciseIndex)">

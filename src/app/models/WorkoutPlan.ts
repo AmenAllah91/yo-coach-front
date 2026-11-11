@@ -20,9 +20,17 @@ export enum MuscleGroup {
   CHEST = 'CHEST',
   BACK = 'BACK',
   SHOULDERS = 'SHOULDERS',
-  LEGS = 'LEGS',
+  BICEPS = 'BICEPS',
+  TRICEPS = 'TRICEPS',
+  FOREARMS = 'FOREARMS',
+  QUADRICEPS = 'QUADRICEPS',
+  HAMSTRINGS = 'HAMSTRINGS',
+  GLUTES = 'GLUTES',
+  CALVES = 'CALVES',
+  CORE = 'CORE',
+  /** Old broad groups, kept for the exercises already filed there. */
   ARMS = 'ARMS',
-  CORE = 'CORE'
+  LEGS = 'LEGS'
 }
 
 export enum Equipment {
@@ -31,6 +39,9 @@ export enum Equipment {
   BARBELL = 'BARBELL',
   MACHINE = 'MACHINE',
   KETTLEBELL = 'KETTLEBELL',
+  CABLE = 'CABLE',
+  BAND = 'BAND',
+  PULL_UP_BAR = 'PULL_UP_BAR',
   BODYWEIGHT = 'BODYWEIGHT'
 }
 

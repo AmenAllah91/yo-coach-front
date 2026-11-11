@@ -2558,3 +2558,9 @@ textarea.np-input,.np-textarea{min-height:108px!important;height:auto!important;
     min-width: 720px;
   }
 }
+
+/* IA-43 / IA-53: AI meal plan banner (white card, brand color, the state said by a symbol) */
+.np-ai { border: 1px solid light-dark(#e1e8f0, #33393f); border-left: 3px solid #44b4df; border-radius: 8px; padding: 10px 14px;
+  margin: 0 0 14px; font-size: 13px; background: light-dark(#fff, #1d2125);
+  p { margin: 0; } p + p { margin-top: 6px; } }
+.np-ai__warn span[aria-hidden] { color: #d99100; }

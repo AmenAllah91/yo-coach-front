@@ -30,6 +30,11 @@ import { LEAVE_UNSAVED, LeavesUnsavedChanges, SavedContent } from '@config/guard
 type BuilderStep = 'choice' | 'foods' | 'recipe';
 type NutritionView = 'whole' | 'serving';
 type MacroKey = 'calories' | 'protein' | 'carbs' | 'fat';
+/** foods: macros computed from the foods. macros: the coach types them (a photo and its macros are enough). */
+type NutritionSource = 'foods' | 'macros';
+type QuickMacros = Record<MacroKey, number | null>;
+/** Unit of the single line that carries typed macros: one serving of the meal. */
+const MACROS_LINE_UNIT = 'portion';
 
 interface IngredientRow {
   id: string;
@@ -80,6 +85,17 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   searchingFoods = false;
 
   nutritionView: NutritionView = 'whole';
+  nutritionSource: NutritionSource = 'foods';
+  /** Typed macros of one serving (the whole meal when it has one serving). */
+  quickMacros: QuickMacros = this.emptyMacros();
+  /** The coach chose to type the calories instead of the value computed from the macros. */
+  editingCalories = false;
+  readonly macroRows: { key: 'protein' | 'carbs' | 'fat'; label: string }[] = [
+    { key: 'protein', label: 'PROTEIN' },
+    { key: 'carbs', label: 'CARBS' },
+    { key: 'fat', label: 'FAT' },
+  ];
+  coverDragOver = false;
   saving = false;
   saveError = '';
   imageError = '';
@@ -151,14 +167,14 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   }
 
   get modalTitle(): string {
-    if (this.step === 'choice') return this.translate.instant('CHOOSE_NUTRITION_PLAN_TYPE');
+    if (this.step === 'choice') return this.translate.instant('MEAL_CHOICE_TITLE');
     if (this.isRecipe) return this.translate.instant(this.isEditing ? 'EDIT_MEAL_RECIPE' : 'ADD_MEAL_RECIPE');
     return this.translate.instant(this.isEditing ? 'EDIT_MEAL' : 'CREATE_MEAL');
   }
 
   get modalSubtitle(): string {
     if (this.step === 'choice') {
-      return this.translate.instant('CHOOSE_NUTRITION_PLAN_TYPE_SUBTITLE');
+      return this.translate.instant('MEAL_CHOICE_SUBTITLE');
     }
     if (this.isRecipe) return this.translate.instant('MEAL_RECIPE_SUBTITLE');
     return this.translate.instant('MEAL_WITH_FOODS_SUBTITLE');
@@ -171,6 +187,96 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   get nameError(): string {
     return !this.name.trim() ? 'TITLE_REQUIRED'
       : this.name.trim().length > 100 ? 'MEAL_TITLE_MAX_LENGTH' : '';
+  }
+
+  get macrosMode(): boolean {
+    return this.nutritionSource === 'macros';
+  }
+
+  /** Number of servings the typed macros are multiplied by (a meal with foods has one). */
+  get servingCount(): number {
+    return this.isRecipe ? Math.max(1, Number(this.servings) || 1) : 1;
+  }
+
+  /** Calories from the macros (4 kcal/g of protein and carbs, 9 kcal/g of fat): used when the coach leaves kcal empty. */
+  get computedCalories(): number {
+    const { protein, carbs, fat } = this.quickMacros;
+    return Math.round((Number(protein) || 0) * 4 + (Number(carbs) || 0) * 4 + (Number(fat) || 0) * 9);
+  }
+
+  get caloriesTyped(): boolean {
+    return this.editingCalories || this.quickMacros.calories != null;
+  }
+
+  /** Typed calories start from the computed value; the field gets the focus. */
+  editCalories(): void {
+    if (this.saving) return;
+    this.editingCalories = true;
+    if (this.quickMacros.calories == null) this.quickMacros.calories = this.computedCalories;
+    setTimeout(() => this.host?.nativeElement.querySelector<HTMLInputElement>('#qm-kcal')?.select());
+  }
+
+  resetCalories(): void {
+    if (this.saving) return;
+    this.editingCalories = false;
+    this.quickMacros.calories = null;
+  }
+
+  /** Share of a macro in the calories coming from the macros (protein and carbs 4 kcal/g, fat 9 kcal/g). */
+  macroShare(key: 'protein' | 'carbs' | 'fat'): number {
+    const kcal = (k: 'protein' | 'carbs' | 'fat') => Math.max(0, Number(this.quickMacros[k]) || 0) * (k === 'fat' ? 9 : 4);
+    const total = kcal('protein') + kcal('carbs') + kcal('fat');
+    return total > 0 ? Math.round((kcal(key) * 100) / total) : 0;
+  }
+
+  get macrosError(): string {
+    const keys: MacroKey[] = ['calories', 'protein', 'carbs', 'fat'];
+    if (keys.some((key) => this.numericError(this.quickMacros[key]))) return 'MEAL_NUMBER_NON_NEGATIVE';
+    return keys.some((key) => Number(this.quickMacros[key]) > 0) ? '' : 'MEAL_MACROS_REQUIRED';
+  }
+
+  /**
+   * Switching to typed macros starts from what the foods add up to; the foods stay in memory (not saved)
+   * so switching back keeps them.
+   */
+  setNutritionSource(source: NutritionSource): void {
+    if (this.saving || source === this.nutritionSource) return;
+    this.clearServerErrors();
+    this.nutritionSource = source;
+    const typed = (['calories', 'protein', 'carbs', 'fat'] as MacroKey[]).some((key) => this.quickMacros[key] != null);
+    if (source === 'macros' && !typed && this.ingredients.length) {
+      const perServing = (key: MacroKey) => Math.round((this.foodsTotal(key) / this.servingCount) * 10) / 10;
+      this.quickMacros = {
+        protein: perServing('protein'),
+        carbs: perServing('carbs'),
+        fat: perServing('fat'),
+        calories: null,
+      };
+      const calories = Math.round(this.foodsTotal('calories') / this.servingCount);
+      if (calories !== this.computedCalories) this.quickMacros.calories = calories;
+    }
+  }
+
+  setMealType(value: string): void {
+    if (this.saving) return;
+    this.clearServerErrors();
+    this.mealType = value;
+  }
+
+  changeServings(delta: number): void {
+    if (this.saving) return;
+    const current = Number(this.servings);
+    this.servings = Math.max(1, Math.min(99, Math.round((Number.isFinite(current) && current >= 1 ? current : 1) + delta)));
+  }
+
+  /** Enter on a step adds the next one (or moves to it), so the coach types the recipe without the mouse. */
+  onDirectionEnter(index: number, event: Event): void {
+    event.preventDefault();
+    if (index === this.directions.length - 1) this.addStep();
+    setTimeout(() => {
+      const inputs = this.host?.nativeElement.querySelectorAll<HTMLInputElement>('.direction-row input');
+      inputs?.[index + 1]?.focus();
+    });
   }
 
   get mealTypeError(): string {
@@ -215,10 +321,14 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
 
   private validFields(draft: boolean): boolean {
     if (this.imageReading || this.imageError || Object.keys(this.fieldErrors).length) return false;
-    if ((!draft && (this.nameError || this.mealTypeError || !this.ingredients.length))
+    if ((!draft && (this.nameError || this.mealTypeError || (!this.macrosMode && !this.ingredients.length)))
       || this.name.trim().length > 100) return false;
     if (this.isRecipe && ((!draft || this.servings != null) && this.servingsError
       || this.numericError(this.totalTimeMinutes))) return false;
+    if (this.macrosMode) {
+      const error = this.macrosError;
+      return !error || (draft && error === 'MEAL_MACROS_REQUIRED');
+    }
     return this.ingredients.every(item => !this.duplicateIngredient(item)
       && (draft || (!!item.name.trim() && !!item.unit.trim()))
       && ((draft && item.quantity == null) || !this.quantityError(item.quantity))
@@ -273,6 +383,8 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
       totalTimeMinutes: this.totalTimeMinutes,
       coverImage: this.coverImage,
       directions: this.directions,
+      nutritionSource: this.nutritionSource,
+      quickMacros: this.macrosMode ? this.quickMacros : null,
       ingredients: this.ingredients.map((row) => row.manual
         ? { name: row.name, quantity: row.quantity, unit: row.unit, calories: row.calories, protein: row.protein, carbs: row.carbs, fat: row.fat }
         : { food: row.foodRef?.id ?? null, quantity: row.quantity, unit: row.unit, serving: row.servingId ?? null }),
@@ -425,22 +537,32 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   }
 
   onCoverImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) this.readCover(file);
+  }
+
+  /** A photo dropped on the photo area. */
+  onCoverDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.coverDragOver = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) this.readCover(file);
+  }
+
+  private readCover(file: File): void {
     if (this.saving) return;
     this.clearServerErrors();
     this.imageError = '';
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
 
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
       this.imageError = this.translate.instant('IMAGE_FORMAT_ERROR');
-      input.value = '';
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       this.imageError = this.translate.instant('COVER_IMAGE_SIZE_ERROR');
-      input.value = '';
       return;
     }
 
@@ -470,7 +592,6 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
       this.imageError = this.translate.instant('IMAGE_READ_ERROR');
     };
     reader.readAsDataURL(file);
-    input.value = '';
   }
 
   removeCoverImage(): void {
@@ -492,15 +613,22 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   }
 
   nutritionTotal(key: MacroKey): number {
-    const total = this.ingredients.reduce(
-      (sum, ingredient) => sum + this.ingredientTotal(ingredient, key),
-      0,
-    );
+    const total = this.macrosMode ? this.typedTotal(key) : this.foodsTotal(key);
 
     if (this.isRecipe && this.nutritionView === 'serving') {
       return total / Math.max(1, Number(this.servings) || 1);
     }
     return total;
+  }
+
+  private foodsTotal(key: MacroKey): number {
+    return this.ingredients.reduce((sum, ingredient) => sum + this.ingredientTotal(ingredient, key), 0);
+  }
+
+  /** Typed macros for the whole meal (every serving); empty kcal are computed from the macros. */
+  private typedTotal(key: MacroKey): number {
+    const value = key === 'calories' && this.quickMacros.calories == null ? this.computedCalories : Number(this.quickMacros[key]) || 0;
+    return value * this.servingCount;
   }
 
   save(asDraft = false): void {
@@ -546,7 +674,7 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     setTimeout(() => {
       const root = this.host?.nativeElement;
       const target = root?.querySelector<HTMLElement>(
-        '.field-control--invalid, .foods-control--invalid, .is-invalid, .inline-error, .ingredient-validation, small[class*="error"]',
+        '.field-control--invalid, .is-invalid, .inline-error, .ingredient-validation, small[class*="error"]',
       );
       target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) target.focus({ preventScroll: true });
@@ -573,13 +701,14 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
       totalTimeMinutes: this.isRecipe && this.totalTimeMinutes != null
         ? Math.max(0, Number(this.totalTimeMinutes) || 0)
         : null,
-      coverImage: this.isRecipe ? this.coverImage : null,
+      coverImage: this.coverImage,
       directions: this.isRecipe
         ? this.directions.map((step) => step.trim()).filter(Boolean)
         : [],
       template: this.isRecipe,
       draft: this.isRecipe ? asDraft : false,
-      foods: this.ingredients.map((ingredient) => ({
+      macrosOnly: this.macrosMode,
+      foods: this.macrosMode ? this.macrosLines(asDraft) : this.ingredients.map((ingredient) => ({
         id: ingredient.id,
         name: ingredient.name.trim(),
         quantity: ingredient.quantity == null ? null
@@ -598,6 +727,27 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     };
   }
 
+  /**
+   * Typed macros travel as one manual line holding the whole meal (every serving): plans add, scale and total
+   * it like any meal. An empty draft keeps no line.
+   */
+  private macrosLines(asDraft: boolean): any[] {
+    const keys: MacroKey[] = ['calories', 'protein', 'carbs', 'fat'];
+    if (asDraft && keys.every((key) => this.quickMacros[key] == null)) return [];
+    const total = (key: MacroKey) => Math.round(this.typedTotal(key) * 10) / 10;
+    return [{
+      id: this.newId(),
+      name: this.name.trim() || this.translate.instant('MEAL_MACROS_LINE'),
+      quantity: this.servingCount,
+      unit: MACROS_LINE_UNIT,
+      manual: true,
+      calories: Math.round(this.typedTotal('calories')),
+      protein: total('protein'),
+      carbohydrates: total('carbs'),
+      fat: total('fat'),
+    }];
+  }
+
   private loadMeal(meal: any): void {
     this.reset();
     this.nutritionService.prefetchPickerFoods();
@@ -612,6 +762,21 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     this.directions = Array.isArray(meal?.directions) && meal.directions.length
       ? [...meal.directions]
       : [''];
+    const typedLine = meal?.macrosOnly && (meal?.foods || []).length <= 1 ? meal?.foods?.[0] : undefined;
+    if (meal?.macrosOnly && (typedLine === undefined || typedLine?.manual)) {
+      this.nutritionSource = 'macros';
+      const perServing = (value: unknown) => value == null ? null : Math.round((Number(value) / this.servingCount) * 10) / 10;
+      this.quickMacros = {
+        calories: typedLine?.calories == null ? null : Math.round(Number(typedLine.calories) / this.servingCount),
+        protein: perServing(typedLine?.protein),
+        carbs: perServing(typedLine?.carbohydrates ?? typedLine?.carbs),
+        fat: perServing(typedLine?.fat),
+      };
+      // Saved calories equal to the macros (give or take rounding) were computed: they stay computed.
+      if (this.quickMacros.calories != null && Math.abs(this.quickMacros.calories - this.computedCalories) <= 1) this.quickMacros.calories = null;
+      this.savedContent.remember(this.content());
+      return;
+    }
     this.ingredients = (meal?.foods || []).map((food: any) => {
       const ref = food?.foodRef;
       const manual = Boolean(food?.manual) || !ref;
@@ -747,6 +912,10 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     this.foods = [];
     this.searchingFoods = false;
     this.nutritionView = 'whole';
+    this.nutritionSource = 'foods';
+    this.quickMacros = this.emptyMacros();
+    this.editingCalories = false;
+    this.coverDragOver = false;
     this.saving = false;
     this.saveError = '';
     this.imageError = '';
@@ -758,6 +927,10 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     this.draggedIngredientIndex = null;
     this.draggedDirectionIndex = null;
     this.savedContent.remember(this.content());
+  }
+
+  private emptyMacros(): QuickMacros {
+    return { calories: null, protein: null, carbs: null, fat: null };
   }
 
   private nutrient(source: any, ...keys: string[]): number {

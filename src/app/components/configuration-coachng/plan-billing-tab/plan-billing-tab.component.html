@@ -13,8 +13,8 @@
     <div class="plan-content">
       <div>
         <p class="plan-name">
-          <span *ngIf="state.billingCycle">{{ (state.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</span>
-          <span class="status-badge" [ngClass]="'status-' + status.toLowerCase()">{{ ('SUB_STATUS_' + status) | translate }}</span>
+          <span *ngIf="state.billingCycle && !isFreePlan">{{ (state.billingCycle === 'YEARLY' ? 'CHECKOUT_YEARLY' : 'CHECKOUT_MONTHLY') | translate }}</span>
+          <span class="status-badge" [ngClass]="'status-' + status.toLowerCase()">{{ statusLabelKey | translate }}</span>
         </p>
         <strong class="plan-price">{{ state.planName || '—' }}</strong>
         <p *ngIf="dateLine as line" class="muted-text">{{ line.key | translate: { date: line.date, card: cardLabel } }}</p>
@@ -39,13 +39,16 @@
     <div *ngIf="hasPlanActions" class="card-footer-actions">
       <button *ngIf="canCancel" type="button" class="danger-link" [disabled]="busy" (click)="cancel()">{{ 'MY_SUB_CANCEL' | translate }}</button>
       <div class="footer-buttons">
-        <button *ngIf="isTrial" type="button" class="btn btn--accent" (click)="reactivate()">{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</button>
+        <button *ngIf="canUpgradeToPaid" type="button" class="btn btn--accent" (click)="reactivate()">{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</button>
         <button *ngIf="isReadOnly" type="button" class="btn btn--accent" (click)="reactivate()">{{ 'BANNER_REACTIVATE' | translate }}</button>
         <button *ngIf="canChangePlan" type="button" class="btn btn--accent" [disabled]="busy" (click)="changePlan()">{{ 'MY_SUB_CHANGE_PLAN' | translate }}</button>
         <button *ngIf="canResume" type="button" class="btn btn--accent" [disabled]="busy" (click)="resume()">{{ 'MY_SUB_RESUME' | translate }}</button>
       </div>
     </div>
   </div>
+
+  <!-- AFF-28: referral credit -->
+  <app-referral-credit-card [state]="state"></app-referral-credit-card>
 
   <!-- SUB-62: card saved at Stripe -->
   <ng-container *ngIf="paidByCard">
@@ -93,9 +96,10 @@
           </small>
         </div>
         <div class="invoice-side">
+          <small *ngIf="creditLine(invoice) as c" class="credit-line">{{ 'MY_SUB_INVOICE_WITH_CREDIT' | translate: c }}</small>
           <strong class="amount">{{ money(invoice.amount, invoice.currency) }}</strong>
           <small *ngIf="usd(invoice.amount, invoice.currency) as d" class="usd-approx" [title]="'USD_CHARGED_IN_TND' | translate">{{ 'USD_APPROX' | translate: { amount: d } }}</small>
-          <span class="invoice-status" [ngClass]="'invoice-' + (invoice.status || '').toLowerCase()">{{ statusKey(invoice.status) | translate }}</span>
+          <span class="invoice-status" [ngClass]="'invoice-' + (invoice.status || '').toLowerCase()">{{ invoiceStatusKey(invoice) | translate }}</span>
           <button *ngIf="isPayable(invoice)" type="button" class="btn btn--accent btn--small" [disabled]="payingInvoiceId != null" (click)="pay(invoice)">
             {{ (payingInvoiceId === invoice.id ? 'CHECKOUT_REDIRECTING' : state.autoCharge && state.card ? 'MY_SUB_PAY_WITH_CARD' : 'BANNER_PAY') | translate: { card: cardLabel } }}
           </button>

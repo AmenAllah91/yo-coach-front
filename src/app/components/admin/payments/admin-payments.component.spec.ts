@@ -13,7 +13,8 @@ describe('Admin payments flow',()=>{
   const row={coachId:'coach-1',coachName:'Coach One',email:'one@example.test',payment:{id:42,invoiceId:21,amount:6.667,currency:'TND',planId:1,planName:'Pro',billingCycle:'YEARLY',method:'FLOUCI',date:'2026-10-02T09:00:00Z',dateKind:'SETTLED',status:'SUCCESS'}};
   const page=(rows:any[])=>({content:rows,totalElements:rows.length,page:0,size:10,methods:['FLOUCI'],currencies:['TND']});
   beforeEach(()=>{TestBed.configureTestingModule({imports:[AdminPaymentsComponent,HttpClientTestingModule,TranslateModule.forRoot(),FeatherModule.pick(allIcons)],providers:[provideRouter([])]});http=TestBed.inject(HttpTestingController);});
-  afterEach(()=>http.verify());
+  // The payment incident card at the top of the page reads its own state.
+  afterEach(()=>{http.match(r=>r.url.endsWith('/api/admin/payment-incident')).forEach(r=>r.flush({active:false,current:null,cutoffsPausedUntil:null,history:[]}));http.verify();});
   it('loads actual fields, preserves three decimal amount and opens coach detail',()=>{
     const f=TestBed.createComponent(AdminPaymentsComponent);f.detectChanges();http.expectOne(r=>r.url===url).flush(page([row]));f.detectChanges();
     const text=f.nativeElement.textContent;for(const expected of ['Coach One','6.667','TND','Pro','COACH_CYCLE_YEARLY','FLOUCI','ADMIN_PAYMENT_SUCCESS','ADMIN_PAYMENT_DATE_SETTLED']) expect(text).toContain(expected);

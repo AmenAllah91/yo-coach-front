@@ -44,6 +44,39 @@ describe('Admin YoSales subscriptions and plans',()=>{
     c.form.toUnits=20;c.form.trialMaxClients=0;c.save();http.expectNone(r=>r.method==='PUT');c.form.trialMaxClients=8;c.form.price=25;c.save();
     const req=http.expectOne(`${url}/plans/1`);expect(req.request.method).toBe('PUT');expect(req.request.body.trialMaxClients).toBe(8);expect(req.request.body.toUnits).toBe(20);expect(req.request.body.pricingModel).toBe('FLAT_FEE');req.flush(c.form);http.expectOne(`${url}/plans`).flush([c.form]);
   });
+  it('edits the quotas of a plan (IA-01): wrong codes, duplicates and negative limits are blocked, empty limit = unlimited',()=>{
+    const withQuota={...plan,quotas:[{code:'ai.workout',labelFr:'Programmes IA',labelEn:null,labelAr:null,monthlyLimit:10,trialLimit:2}]};
+    const f=startPlans();const c=f.componentInstance;c.edit(withQuota);
+    c.form.quotas![0].monthlyLimit=3;expect(withQuota.quotas[0].monthlyLimit).withContext('the edited copy, not the loaded plan').toBe(10);
+    f.detectChanges();expect(f.nativeElement.querySelectorAll('.quota-row').length).toBe(1);
+    c.addQuota();expect(c.form.quotas![1]).toEqual(jasmine.objectContaining({monthlyLimit:0,trialLimit:0}));
+    c.form.quotas![1].code='AI.Workout';c.form.quotas![1].labelFr='Doublon';c.save();http.expectNone(r=>r.method==='PUT');
+    c.form.quotas![1].code='ai website';c.save();http.expectNone(r=>r.method==='PUT');
+    c.form.quotas![1].code=' AI.Website ';c.form.quotas![1].trialLimit=-1;c.save();http.expectNone(r=>r.method==='PUT');
+    c.form.quotas![1].trialLimit=1;c.form.quotas![1].monthlyLimit=null;c.form.quotas![1].labelEn='  ';c.save();
+    const req=http.expectOne(`${url}/plans/1`);
+    expect(req.request.body.quotas.slice(0,2).map((q:any)=>[q.code,q.monthlyLimit,q.trialLimit]))
+      .withContext('no yes / no set before: the rule of before is written (paid yes, trial no)')
+      .toEqual([['feature.website',null,0],['feature.branding',null,0]]);
+    expect(req.request.body.quotas.slice(2)).toEqual([{code:'ai.workout',labelFr:'Programmes IA',labelEn:null,labelAr:null,monthlyLimit:3,trialLimit:2},
+      {code:'ai.website',labelFr:'Doublon',labelEn:null,labelAr:null,monthlyLimit:null,trialLimit:1}]);
+    req.flush(c.form);http.expectOne(`${url}/plans`).flush([c.form]);
+    c.edit(withQuota);c.removeQuota(0);expect(c.form.quotas).toEqual([]);expect(withQuota.quotas.length).toBe(1);
+  });
+  it('shows the website and branding of a plan as yes / no boxes and saves them as generic lines (IA-23)',()=>{
+    const essentiel={...plan,quotas:[{code:'feature.website',labelFr:'Site du coach',labelEn:null,labelAr:null,monthlyLimit:0,trialLimit:0},
+      {code:'ai.workout',labelFr:'Programmes IA',labelEn:null,labelAr:null,monthlyLimit:3,trialLimit:2}]};
+    const f=startPlans();const c=f.componentInstance;c.edit(essentiel);
+    expect(c.features.website).toEqual({paid:false,trial:false});
+    expect(c.features.branding).withContext('no line: the rule of before').toEqual({paid:true,trial:false});
+    expect(c.form.quotas!.map(q=>q.code)).withContext('the boxes are not editable rows').toEqual(['ai.workout']);
+    f.detectChanges();expect(f.nativeElement.querySelectorAll('.feature-grid input[type=checkbox]').length).toBe(4);
+    c.features.branding.paid=false;c.features.website.trial=true;c.save();
+    const req=http.expectOne(`${url}/plans/1`);
+    expect(req.request.body.quotas.map((q:any)=>[q.code,q.monthlyLimit,q.trialLimit])).toEqual([
+      ['feature.website',0,null],['feature.branding',0,0],['ai.workout',3,2]]);
+    req.flush(c.form);http.expectOne(`${url}/plans`).flush([c.form]);
+  });
   it('confirms deactivate/reactivate without deleting or changing plan properties',()=>{
     const f=startPlans();const c=f.componentInstance;c.toggle(plan);http.expectNone(r=>r.method==='PATCH');c.close();http.expectNone(r=>r.method==='PATCH');
     c.toggle(plan);c.save();let req=http.expectOne(`${url}/plans/1/active`);expect(req.request.body).toEqual({active:false});req.flush({...plan,active:false});http.expectOne(`${url}/plans`).flush([{...plan,active:false}]);

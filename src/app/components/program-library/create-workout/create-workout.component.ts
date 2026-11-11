@@ -33,6 +33,7 @@ import { WorkoutService } from 'app/service/workout.service';
 import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, SavedContent, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
+import { WorkoutAiDraft } from 'app/service/workout-ai.service';
 
 /** Filled in by the display (photos, videos of the library exercise): not a change of the coach. */
 const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'photoUrl', 'videoUrl', 'videoLink']);
@@ -458,6 +459,10 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
         name: requestedName || this.facade.plan.name,
         isWorkoutPlanTemplate: this.isVisibleToOthers,
       });
+      const aiDraft = history.state?.aiDraft as WorkoutAiDraft | undefined;
+      if (aiDraft?.plan) {
+        this.applyAiDraft(aiDraft);
+      }
       if (this.clientId) {
         // The start chosen in the creation window (A2).
         this.startDate = this.route.snapshot.queryParamMap.get('startDate') || this.startDate;
@@ -465,7 +470,12 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
       } else if (history.state?.autoCreate && requestedName) {
         this.createInBackground();
       }
-      this.savedContent.rememberAfterDisplay(() => this.content());
+      if (aiDraft?.plan) {
+        // IA-54: an AI draft is not saved yet: leaving the page asks first, like any unsaved change.
+        this.savedContent.remember('');
+      } else {
+        this.savedContent.rememberAfterDisplay(() => this.content());
+      }
     }
 
     if (this.clientId) {
@@ -477,6 +487,26 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
     // The exercises are only needed when the panel opens: fetch them once the page is shown, in the background.
     this.scheduleExercisePrefetch();
+  }
+
+  /** IA-33 / IA-53: the program comes from the AI, not saved yet (banner and health warnings above it). */
+  aiDraftShown = false;
+  aiWarnings: string[] = [];
+
+  /** IA-33: puts the AI draft in the editor, as a new program (the first « Enregistrer » creates it). */
+  private applyAiDraft(draft: WorkoutAiDraft): void {
+    // Not handed over again on a reload of this page (the draft was never saved).
+    history.replaceState({ ...history.state, aiDraft: null }, '');
+    this.facade.applyPlanForEdit({
+      ...draft.plan,
+      id: undefined,
+      client: this.facade.plan.client,
+      coach: this.facade.plan.coach,
+      isWorkoutPlanTemplate: this.isVisibleToOthers,
+    });
+    this.durationWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 7) / 7));
+    this.aiDraftShown = true;
+    this.aiWarnings = draft.warnings || [];
   }
 
   /**
@@ -1344,6 +1374,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     this.savingDraft = false;
     this.savedAt = new Date();
     this.savedContent.remember(sent);
+    this.aiDraftShown = false; // the AI program is saved: the coach's own now (the health warnings stay shown)
   }
 
   private persistDraft(navigateAfterSave: boolean) {

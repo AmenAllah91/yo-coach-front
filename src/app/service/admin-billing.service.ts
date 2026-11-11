@@ -5,6 +5,13 @@ export interface SalesPlan {
   id: number | null; productId?: number; currency?: string; planCode: string; name: string; description: string;
   price: number; billingCycle: string; pricingModel: string; fromUnits: number; toUnits: number;
   freeTrialDays: number; trialMaxClients: number | null; extraFeePerUnit: number; active: boolean; archived?: boolean;
+  /** IA-01: quotas set in YoSales (free codes: ai.workout, ai.nutrition, ai.website). Absent = keep the current ones. */
+  quotas?: SalesPlanQuota[] | null;
+}
+/** IA-01: null limit = no limit, 0 = not allowed. */
+export interface SalesPlanQuota {
+  code: string; labelFr: string; labelEn?: string | null; labelAr?: string | null;
+  monthlyLimit: number | null; trialLimit: number | null;
 }
 export interface SubscriptionEntry {
   coachId: string; coachName: string; email: string; accountStatus: string;

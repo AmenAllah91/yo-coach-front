@@ -247,7 +247,7 @@
           </select>
           <select class="filter-select" [(ngModel)]="selectedEquipment" (change)="onExerciseFilterChange()">
             <option value="">{{ 'EQUIPMENT' | translate }}</option>
-            <option *ngFor="let equipment of enums?.equipment" [value]="equipment">{{ equipment }}</option>
+            <option *ngFor="let equipment of enums?.equipment" [value]="equipment">{{ 'EXERCISE_EQUIPMENT_' + equipment | translate }}</option>
           </select>
         </div>
 

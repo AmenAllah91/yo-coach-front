@@ -12,7 +12,8 @@ import { Subject, takeUntil } from 'rxjs';
 import { UsersService } from 'app/service/users.service';
 import { DocumentService } from 'app/service/document.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
-import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
+import { CoachSubscriptionStateService, FEATURE, featureLocked } from 'app/service/coach-subscription-state.service';
+import { CoachSubscriptionState } from 'app/models/coach-subscription-state.model';
 
 const DESKTOP_BREAKPOINT = 1024;
 const PINNED_STORAGE_KEY = 'sidebarPinned';
@@ -22,7 +23,17 @@ export const CHECKOUT_PATH = '/subscription/checkout';
 /** Screen showing one invoice and its amount, paid after a confirmation (SUB-36): /billing/pay?invoiceId=... */
 export const PAY_INVOICE_PATH = '/billing/pay';
 /** Paid branding pages (SUB-27): a lock is shown on them during the trial (decision SUB-03). */
-const BRANDING_PATHS = ['/theme', '/websites/create'];
+const WEBSITE_PATH = '/websites/create';
+const BRANDING_PATHS = ['/theme', WEBSITE_PATH];
+/** Plan features (2026-11-11): the menu entries a plan can lock, and their code. */
+const PATH_FEATURES: Record<string, string> = {
+  [WEBSITE_PATH]: FEATURE.WEBSITE,
+  '/theme': FEATURE.BRANDING,
+  '/forms': FEATURE.CHECKINS,
+  '/tasks': FEATURE.TASKS,
+  '/grow/contact-form': FEATURE.CONTACT_FORM,
+  '/referral': FEATURE.REFERRAL,
+};
 
 @Component({
   selector: 'app-sidebar',
@@ -55,8 +66,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   userRoleKey = 'CLIENT';
   /** Days of free trial left, null when the coach is not in a trial (button hidden). */
   trialDaysLeft: number | null = null;
+  /** Free plan (2026-11-10): "2/3 clients" under the upgrade button; null when the coach is not on the free plan. */
+  freePlanUsage: { count: number; max: number | null } | null = null;
   readonly checkoutPath = CHECKOUT_PATH;
   brandingLocked = false;
+  websiteLocked = false;
   private destroy$ = new Subject<void>();
   @Output() sidebarToggle = new EventEmitter<boolean>();
 
@@ -111,12 +125,42 @@ export class SidebarComponent implements OnInit, OnDestroy {
       .subscribe((state) => {
         this.trialDaysLeft =
           state?.status === 'TRIAL' && state.trialDaysLeft != null ? Math.max(0, state.trialDaysLeft) : null;
-        this.brandingLocked = !!state && !state.brandingAllowed;
+        this.freePlanUsage = state?.freePlan
+          ? { count: state.activeClients ?? 0, max: state.maxActiveClients ?? null }
+          : null;
+        this.brandingLocked = featureLocked(state, 'theme');
+        this.websiteLocked = featureLocked(state, 'website');
+        this.subscriptionState = state;
       });
   }
 
+  /** IA-23: the site and the app colors are locked separately (yes / no of the plan). */
   isBrandingLocked(item: RouteInfo): boolean {
-    return this.brandingLocked && BRANDING_PATHS.includes(item.path);
+    if (!BRANDING_PATHS.includes(item.path)) return false;
+    return item.path === WEBSITE_PATH ? this.websiteLocked : this.brandingLocked;
+  }
+
+  /** Last subscription state read (plan features of the menu). */
+  private subscriptionState: CoachSubscriptionState | null = null;
+
+  /** Plan features (2026-11-11): padlock on a menu entry whose feature the plan does not include. */
+  isLocked(item: RouteInfo): boolean {
+    if (BRANDING_PATHS.includes(item.path)) return this.isBrandingLocked(item);
+    const code = PATH_FEATURES[item.path];
+    return !!code && featureLocked(this.subscriptionState, code);
+  }
+
+  /**
+   * 2026-11-11: the "Referral" entry is hidden while the referral program is off in YoSales (false). Unknown (no state,
+   * older server) = shown; the referral page then says when the program is unavailable.
+   */
+  isHidden(item: RouteInfo): boolean {
+    return item.path === '/referral' && this.subscriptionState?.referralProgramAvailable === false;
+  }
+
+  /** Tooltip of the padlock: "paid feature" for the branding, "not in your plan" for the others. */
+  lockLabel(item: RouteInfo): string {
+    return BRANDING_PATHS.includes(item.path) ? 'BRANDING_PAID_FEATURE' : 'PLAN_FEATURE_LOCKED';
   }
 
   /** YoSales counts today: 1 = today is the last day, 0 = the trial is over. */

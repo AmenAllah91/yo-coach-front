@@ -101,6 +101,11 @@ export class NutritionDraftState {
     if (edited) this.savedContent.rememberAfterDisplay(() => nutritionContent(edited()));
   }
 
+  /** IA-54: a new plan filled by the AI: nothing saved yet, so leaving the builder asks first. */
+  forgetContent(): void {
+    this.savedContent.remember('');
+  }
+
   hasUnsavedChanges(): boolean {
     return !this.readOnly && !!this.editedPlan && this.savedContent.changed(nutritionContent(this.editedPlan()));
   }

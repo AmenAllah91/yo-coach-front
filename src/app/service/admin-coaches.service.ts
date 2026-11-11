@@ -37,6 +37,9 @@ export interface AdminCoach {
     readOnly?: boolean;
     timeZone?: string;
     openInvoiceId?: number | null;
+    /** No automatic cut-off before this instant (admin deferral or extra days after a payment incident). */
+    cutoffDeferredUntil?: string | null;
+    paymentIncident?: boolean;
   } | null;
 }
 export interface CoachPage {
@@ -55,7 +58,8 @@ export interface CoachInvoice {
 }
 export type CoachAccountAction = 'ACTIVATE' | 'BLOCK' | 'UNBLOCK' | 'DISABLE';
 export interface SubscriptionAdminEvent {id:number;subscriptionId:number;action:string;actor:string;reason:string;occurredAt:string;
-  oldPlanId:number;oldPlanName:string;newPlanId:number;newPlanName:string;oldTrialEnd:string|null;newTrialEnd:string|null;status:string;}
+  oldPlanId:number;oldPlanName:string;newPlanId:number;newPlanName:string;oldTrialEnd:string|null;newTrialEnd:string|null;status:string;
+  oldDeferredUntil?:string|null;newDeferredUntil?:string|null;}
 export interface CoachAccountEvent {
   action: CoachAccountAction; previousStatus: string; status: string; reason: string | null;
   note: string | null; occurredAt: string; actor: string | null;

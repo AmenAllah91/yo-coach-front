@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { PlanFeatureListComponent } from 'app/components/plan-feature-list/plan-feature-list.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
@@ -27,10 +28,12 @@ const PAYABLE_STATUSES = ['TRIAL', 'EXPIRED', 'CANCELLED', 'PENDING'];
  * the active clients are greyed, and "Pay with Flouci" creates the invoice (checkout) then opens the Flouci page.
  * SUB-45: the amount shown is the one YoSales will bill (promo codes included), and the coach can enter a promo code.
  */
+import { PaymentIncidentNoticeComponent } from 'app/components/payment-incident-notice/payment-incident-notice.component';
+
 @Component({
   selector: 'app-subscription-checkout',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule, FeatherModule],
+  imports: [CommonModule, RouterModule, TranslateModule, FeatherModule, PaymentIncidentNoticeComponent, PlanFeatureListComponent],
   templateUrl: './subscription-checkout.component.html',
   styleUrl: './subscription-checkout.component.scss',
 })
@@ -81,7 +84,12 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
           return;
         }
         this.state = state;
-        this.plans = [...plans].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+        // Free plan (2026-11-10): offered only to an account that never paid and is not already on it (YoSales
+        // refuses it otherwise).
+        const freeOffered = !state.freePlan && !state.currentPeriodStart && !state.currentPeriodEnd;
+        this.plans = plans
+          .filter((p) => !this.isFree(p) || freeOffered)
+          .sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
         const current = this.plans.find((p) => p.id === state.planId);
         this.cycle = current?.billingCycle ?? (this.hasCycle('MONTHLY') ? 'MONTHLY' : 'YEARLY');
         this.selectedPlanId = current && !this.isTooSmall(current) ? current.id : null;
@@ -181,7 +189,17 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
   }
 
   get canPay(): boolean {
-    return !!this.state?.status && PAYABLE_STATUSES.includes(this.state.status);
+    // Free plan (2026-11-10): ACTIVE on the free plan chooses its first paid plan here too.
+    return !!this.state?.freePlan || (!!this.state?.status && PAYABLE_STATUSES.includes(this.state.status));
+  }
+
+  get isFreePlan(): boolean {
+    return !!this.state?.freePlan;
+  }
+
+  /** Free plan (2026-11-10): a plan priced 0 (flag of YoSales, else its price). */
+  isFree(plan: SubscriptionPlanDto): boolean {
+    return plan.free ?? plan.price === 0;
   }
 
   get isTrial(): boolean {
@@ -234,9 +252,13 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
     return plan.id === this.state?.planId;
   }
 
+  get paymentsPaused(): boolean {
+    return this.stateService.paymentsPaused;
+  }
+
   pay(): void {
     const plan = this.selectedPlan;
-    if (!plan || this.paying || !this.canPay) return;
+    if (!plan || this.paying || !this.canPay || this.stateService.paymentsPaused) return;
     this.paying = true;
     this.payError = '';
     this.billingService
@@ -299,6 +321,8 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
 
   private selectDefaultIfNeeded(): void {
     if (this.selectedPlanId != null) return;
-    this.selectedPlanId = this.visiblePlans.find((p) => !this.isTooSmall(p))?.id ?? null;
+    // A paid plan first: the free plan is never the default choice of the payment screen.
+    const fitting = this.visiblePlans.filter((p) => !this.isTooSmall(p));
+    this.selectedPlanId = (fitting.find((p) => !this.isFree(p)) ?? fitting[0])?.id ?? null;
   }
 }

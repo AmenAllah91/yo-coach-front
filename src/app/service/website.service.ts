@@ -150,6 +150,26 @@ export interface CoachWebsitePayload {
 
   published: boolean;
 }
+/** IA-20: the coach's answers for the AI website (fixed codes, a few short texts, nothing personal). */
+export interface WebsiteAiDraftRequest {
+  specialty: 'WEIGHT_LOSS' | 'MUSCLE' | 'FITNESS' | 'SPORT' | 'NUTRITION' | 'YOGA_PILATES' | 'OTHER';
+  specialtyOther?: string | null;
+  audience: ('WOMEN' | 'MEN' | 'EVERYONE' | 'BEGINNERS' | 'ATHLETES')[];
+  location: 'ONLINE' | 'GYM' | 'BOTH';
+  city?: string | null;
+  style: 'SERIOUS' | 'FRIENDLY' | 'MOTIVATING' | 'PREMIUM';
+  language: 'fr' | 'en' | 'ar';
+  yearsExperience?: number | null;
+  clientsCoached?: number | null;
+  prices?: string | null;
+}
+/** IA-20: what the AI proposes. Never photos, testimonials, certificates, results, social links or domain. */
+export interface WebsiteAiDraft {
+  title: string; slogan: string; bio: string;
+  services: { title: string; description: string; price: string }[];
+  ctaLabel: string; descriptionBlocks: string[]; preset: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -175,6 +195,11 @@ export class WebsiteService {
   resolvePublicWebsite(host: string): Observable<any> {
     const params = new HttpParams({ fromObject: { host } });
     return this.http.get(`${this.resourceUrl}/public/resolve`, { params });
+  }
+
+  /** IA-20: texts and design proposed by the AI (a draft: nothing is saved). Counted in the ai.website quota. */
+  draftWithAi(answers: WebsiteAiDraftRequest): Observable<WebsiteAiDraft> {
+    return this.http.post<WebsiteAiDraft>(`${this.resourceUrl}/me/ai-draft`, answers, { headers: { 'X-Skip-Loader': 'true' } });
   }
 
   verifyCustomDomain(): Observable<CustomDomainCheck> {

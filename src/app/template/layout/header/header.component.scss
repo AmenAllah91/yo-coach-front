@@ -1005,3 +1005,9 @@
     visibility: visible;
   }
 }
+
+/* AFF-22: referral credit of the coach */
+.referral-credit { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: light-dark(#e8f7fd, #19333c);
+  color: light-dark(#1d6f8f, #70bcdf); font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.referral-credit i-feather { width: 15px; height: 15px; }
+@media (max-width: 575px) { .referral-credit span { display: none; } }

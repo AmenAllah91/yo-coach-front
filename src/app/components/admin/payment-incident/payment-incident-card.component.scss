@@ -1,0 +1,22 @@
+:host { display: block; margin-bottom: 24px; }
+.incident-card { padding: 18px 20px; background: light-dark(white, #1d2125); border: 1px solid light-dark(#e2e8f0, #34393f); border-radius: 12px; }
+.incident-card.on { background: light-dark(#fef2f2, #3c2829); border-color: light-dark(#fbcaca, #623b3c); }
+.incident-head { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.incident-icon { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; color: light-dark(#109ac5, #40b7e3); }
+.on .incident-icon { color: light-dark(#b42318, #ff8b7d); }
+.incident-title { flex: 1 1 320px; min-width: 0; h2 { margin: 0 0 6px; font-size: 16px; font-weight: 600; } p { margin: 0 0 4px; font-size: 13px; color: light-dark(#334155, #d1d7e0); } }
+.reason { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+.hint { color: light-dark(#64748b, #a5abb4) !important; font-size: 12px !important; }
+.incident-actions { display: flex; gap: 8px; }
+.incident-form { display: grid; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed light-dark(#dce5ef, #333a42); label { font-size: 12px; color: light-dark(#64748b, #a5abb4); } }
+textarea, input { width: 100%; max-width: 560px; border: 1px solid light-dark(#dce5ef, #333a42); border-radius: 8px; background: light-dark(white, #1d2125); padding: 10px 12px; font: inherit; font-size: 13px; color: light-dark(#334155, #d1d7e0); }
+input[type='number'] { max-width: 120px; }
+.form-actions { display: flex; gap: 10px; }
+.primary-btn, .danger-btn, .secondary-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 9px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; &:disabled { opacity: .5; cursor: default; } }
+.primary-btn { border: 0; background: #109ac5; color: #fff; }
+.danger-btn { border: 0; background: #dc2626; color: #fff; }
+.secondary-btn { border: 1px solid light-dark(#d9e2ec, #343b42); background: light-dark(white, #1d2125); color: light-dark(#334155, #d1d7e0); }
+.link { padding: 0; border: 0; background: none; color: light-dark(#0284c7, #4eb5fb); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.history-toggle { margin-top: 12px; }
+.incident-history { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: light-dark(#334155, #d1d7e0); li { margin-bottom: 6px; } small { display: block; color: light-dark(#64748b, #a5abb4); overflow-wrap: anywhere; } }
+.incident-error { margin: 10px 0 0; color: light-dark(#a6352c, #ff8b7d); font-size: 13px; }

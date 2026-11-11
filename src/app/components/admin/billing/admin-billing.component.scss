@@ -7,3 +7,17 @@
 .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .form-grid > label, .form-grid input, .form-grid select, .form-grid textarea { min-width: 0; max-width: 100%; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: minmax(0, 1fr); } }
+/* IA-01: quotas of the plan */
+.quotas { border: 1px solid light-dark(#e2e8f0, #34393f); border-radius: 8px; padding: 14px; margin: 0; min-width: 0;
+  legend { font-size: 13px; font-weight: 600; padding: 0 6px; color: light-dark(#020c20, #e9eff9); }
+  .quotas-hint { font-size: 12px; color: light-dark(#64748b, #a5abb4); margin: 0 0 12px; } }
+.quota-row { display: grid; grid-template-columns: 1.2fr 1.4fr 1.4fr .8fr .8fr auto; gap: 10px; align-items: end; margin-bottom: 12px;
+  label { display: grid; gap: 6px; font-size: 12px; min-width: 0; color: light-dark(#64748b, #a5abb4); }
+  input { width: 100%; min-width: 0; }
+  .quota-remove { padding: 8px; line-height: 0; } }
+/* IA-23: yes / no of the plan for the website and the branding */
+.feature-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px 14px; align-items: center; font-size: 13px;
+  .feature-head { font-size: 12px; color: light-dark(#64748b, #a5abb4); }
+  label.check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: inherit; input { width: 18px; min-height: 18px; } } }
+.plan-features { margin-bottom: 4px; }
+@media (max-width: 600px) { .quota-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); .quota-remove { justify-self: start; } } }

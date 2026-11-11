@@ -16,6 +16,8 @@ export interface CoachInvoice {
   baseAmount?: number | null;
   addonAmount?: number | null;
   discountAmount?: number | null;
+  /** AFF-28: referral credit used on this invoice (amount = what is left to pay). */
+  referralCreditAmount?: number | null;
   planSnapshot?: string | null;
   events?: CoachInvoiceEvent[];
 }

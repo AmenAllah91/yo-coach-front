@@ -1,5 +1,10 @@
 import { SubscriptionNoticeComponent } from './subscription-notice.component';
 import { SubscriptionNoticeService } from 'app/service/subscription-notice.service';
+import { of } from 'rxjs';
+
+/** No subscription state read, French app (plan features, 2026-11-11). */
+const STATES = { snapshot: null, refresh: () => of(null) } as any;
+const TRANSLATE = { currentLang: 'fr' } as any;
 
 describe('SubscriptionNoticeComponent (SUB-29)', () => {
   const view = SubscriptionNoticeComponent.viewOf;
@@ -10,6 +15,18 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
     expect(v.titleParams).toEqual({ count: 5 });
     expect(v.textKey).toBe('NOTICE_LIMIT_TRIAL_TEXT');
     expect(v.actionPath).toBe('/subscription/checkout');
+  });
+
+  it('free plan (2026-11-10): the limit and the locked branding lead to the payment screen, with their own texts', () => {
+    const limit = view({ code: 'CLIENT_LIMIT_REACHED', reason: 'FREE_PLAN', limit: 3, current: 3 });
+    expect(limit.titleParams).toEqual({ count: 3 });
+    expect(limit.textKey).toBe('NOTICE_LIMIT_FREE_PLAN_TEXT');
+    expect(limit.actionKey).toBe('UPGRADE_TO_PAID_PLAN');
+    expect(limit.actionPath).toBe('/subscription/checkout');
+
+    const branding = view({ code: 'FEATURE_LOCKED', feature: 'WEBSITE', reason: 'FREE_PLAN' });
+    expect(branding.textKey).toBe('NOTICE_BRANDING_FREE_PLAN_TEXT');
+    expect(branding.actionPath).toBe('/subscription/checkout');
   });
 
   it('plan limit with a suggested plan: "Upgrade to plan Y for Z TND"', () => {
@@ -72,7 +89,7 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
     const router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.returnValue(Promise.resolve(true));
     const notices = new SubscriptionNoticeService();
-    const c = new SubscriptionNoticeComponent(notices, router);
+    const c = new SubscriptionNoticeComponent(notices, router, STATES, TRANSLATE);
     c.ngOnInit();
 
     notices.publishIfSubscriptionRefusal({ code: 'CLIENT_LIMIT_REACHED', reason: 'TRIAL', limit: 5, current: 5 });
@@ -88,7 +105,7 @@ describe('SubscriptionNoticeComponent (SUB-29)', () => {
     const router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.returnValue(Promise.resolve(true));
     const notices = new SubscriptionNoticeService();
-    const c = new SubscriptionNoticeComponent(notices, router);
+    const c = new SubscriptionNoticeComponent(notices, router, STATES, TRANSLATE);
     c.ngOnInit();
 
     notices.publishIfSubscriptionRefusal({ code: 'CLIENT_LIMIT_REACHED', reason: 'PLAN', limit: 20, current: 20,

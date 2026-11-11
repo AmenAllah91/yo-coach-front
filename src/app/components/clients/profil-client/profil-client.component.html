@@ -700,6 +700,8 @@
       *ngIf="activeTab === 'checkins'"
       [class.active]="true"
     >
+      <app-signup-answers [clientId]="clientId"></app-signup-answers>
+
       <div class="checkins-header">
         <nav class="checkins-subtabs">
           <button
@@ -1476,6 +1478,9 @@
 
     <div class="client-workout-create-footer" *ngIf="scheduleConfirm !== 'WORKOUT_CREATE'">
       <button type="button" class="client-workout-create-cancel" (click)="closeClientWorkoutCreateModal()">{{ 'CANCEL' | translate }}</button>
+      <button type="button" class="client-workout-create-cancel client-workout-create-ai" (click)="openClientWorkoutAi()" [disabled]="!clientWorkoutStartDate">
+        ✨ {{ 'AI_WORKOUT_CARD_BUTTON' | translate }}<app-ai-quota code="ai.workout" variant="badge"></app-ai-quota>
+      </button>
       <button
         type="button"
         class="client-workout-create-submit"
@@ -1851,3 +1856,5 @@
   (closeModal)="closeAssignFlow()"
   (backClick)="backToAssignModal()"
 ></app-form-selection-modal>
+
+<app-workout-ai-dialog [language]="aiLanguage" [clientName]="fullName" (drafted)="openClientWorkoutAiDraft($event)"></app-workout-ai-dialog>

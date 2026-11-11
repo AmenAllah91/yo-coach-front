@@ -1,5 +1,5 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { firstValueFrom, Observable, of, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
 import { DeleteModalComponent } from './delete-modal/delete-modal.component';
 import { ToastService } from 'app/service/toast.service';
+import { WorkoutAiDialogComponent } from './workout-ai-dialog/workout-ai-dialog.component';
+import { AiQuotaComponent } from 'app/components/ai-quota/ai-quota.component';
+import { WorkoutAiDraft, workoutDraftWeeks } from 'app/service/workout-ai.service';
 
 @Component({
   selector: 'app-program-library',
@@ -35,6 +38,8 @@ import { ToastService } from 'app/service/toast.service';
     TranslateModule,
     ProgramDaysBadgeComponent,
     DeleteModalComponent,
+    WorkoutAiDialogComponent,
+    AiQuotaComponent,
   ],
   templateUrl: './program-library.component.html',
   styleUrls: [
@@ -455,6 +460,26 @@ export class ProgramLibraryComponent implements OnInit {
 
   createProgram() {
     this.openWorkoutCreateModal();
+  }
+
+  /** IA-33: the AI program (questions in a dialog, then the editor opens with the draft, nothing saved). */
+  @ViewChild(WorkoutAiDialogComponent) workoutAi?: WorkoutAiDialogComponent;
+
+  get aiLanguage(): 'fr' | 'en' | 'ar' {
+    const lang = (this.translate.currentLang || 'fr').slice(0, 2);
+    return lang === 'en' || lang === 'ar' ? lang : 'fr';
+  }
+
+  openWorkoutAi(): void {
+    this.showCreateTypeModal = false;
+    this.workoutAi?.open();
+  }
+
+  openWorkoutAiDraft(draft: WorkoutAiDraft): void {
+    void this.router.navigate(['/workout/create-workout'], {
+      queryParams: { durationWeeks: workoutDraftWeeks(draft), ...(this.activeTab === 'templates' ? { template: '1' } : {}) },
+      state: { aiDraft: draft },
+    });
   }
 
   closeCreateTypeModal() {

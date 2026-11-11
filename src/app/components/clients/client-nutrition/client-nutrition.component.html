@@ -259,14 +259,16 @@
               <span><strong>{{ macros(meal).fat }}g</strong><small>{{ t('Fat', 'Lipides') }}</small></span>
             </div>
 
-            <div *ngIf="isRecipe(meal)" class="recipe-head">
+            <div *ngIf="isRecipe(meal) || coverUrl(meal)" class="recipe-head">
               <img *ngIf="coverUrl(meal)" [src]="coverUrl(meal)" alt="" class="recipe-cover" />
-              <div *ngIf="recipeChips(meal).length" class="recipe-chips">
+              <div *ngIf="isRecipe(meal) && recipeChips(meal).length" class="recipe-chips">
                 <span *ngFor="let chip of recipeChips(meal)"><i-feather [name]="chip.icon"></i-feather>{{ chip.text }}</span>
               </div>
             </div>
 
-            <ng-container *ngIf="isFullMealPlan && meal.foods?.length">
+            <p *ngIf="macrosOnly(meal)" class="macros-only-note"><i-feather name="info"></i-feather>{{ t('Values set by your coach for this meal.', 'Valeurs fixées par votre coach pour ce repas.') }}</p>
+
+            <ng-container *ngIf="isFullMealPlan && meal.foods?.length && !macrosOnly(meal)">
               <p *ngIf="isRecipe(meal)" class="yc-overline recipe-label">{{ t('Ingredients', 'Ingrédients') }}</p>
               <div *ngFor="let food of meal.foods; let f = index" class="food-row">
                 <span class="food-row__image">
@@ -277,7 +279,7 @@
                   <span class="food-row__name"><strong>{{ capitalize(food.name || food.foodRef?.name) }}</strong>  ·  {{ quantity(food.quantity) }} {{ foodUnit(food) }}</span>
                   <span class="food-row__macros"><strong>{{ number(foodMacros(food).calories) }} kcal</strong>   P {{ number(foodMacros(food).protein) }}g · C {{ number(foodMacros(food).carbs) }}g · F {{ number(foodMacros(food).fat) }}g</span>
                 </span>
-                <button *ngIf="!previewMode" type="button" class="swap-btn" [disabled]="loadingSwapFoodId === food.id || replacingFoodId === food.id" (click)="openSwap(meal, food)">
+                <button *ngIf="!previewMode && !food.manual" type="button" class="swap-btn" [disabled]="loadingSwapFoodId === food.id || replacingFoodId === food.id" (click)="openSwap(meal, food)">
                   <span *ngIf="loadingSwapFoodId === food.id || replacingFoodId === food.id" class="yc-spinner"></span>
                   <ng-container *ngIf="loadingSwapFoodId !== food.id && replacingFoodId !== food.id"><i-feather name="repeat"></i-feather>{{ t('Swap', 'Changer') }}</ng-container>
                 </button>

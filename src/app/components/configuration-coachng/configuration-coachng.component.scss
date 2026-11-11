@@ -1307,3 +1307,19 @@ $lg: 768px;
     color: var(--yc-text-hint);
   }
 }
+
+/* Automatic messages › welcome message */
+.welcome-card { display: flex; flex-direction: column; gap: .6rem; padding: 1.1rem 1.2rem; }
+.welcome-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+  h3 { margin: 0; font-size: .95rem; }
+  p { margin: .25rem 0 0; } }
+.welcome-card__label { margin: .4rem 0 0; font-size: .8125rem; font-weight: 600; }
+.welcome-card__text { width: 100%; min-height: 96px; padding: .7rem .8rem; border: 1px solid light-dark(#dbe4ee, #3a4047);
+  border-radius: 10px; background: light-dark(#fff, #23272c); color: inherit; font: inherit; font-size: .875rem; line-height: 1.5; resize: vertical; }
+.welcome-card__tools { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.welcome-card__count { font-size: .75rem; color: light-dark(#58708e, #a9afb7); font-variant-numeric: tabular-nums;
+  &--over { color: light-dark(#d92d20, #ff8271); font-weight: 600; } }
+.welcome-preview { padding: .9rem; border-radius: 12px; background: light-dark(#f4f7fa, #1d2125); }
+.welcome-preview__bubble { display: inline-block; max-width: 85%; padding: .6rem .85rem; border-radius: 14px 14px 14px 4px;
+  background: light-dark(#fff, #2c3238); box-shadow: 0 1px 2px rgba(0, 0, 0, .06); font-size: .875rem; line-height: 1.45; white-space: pre-wrap; }
+

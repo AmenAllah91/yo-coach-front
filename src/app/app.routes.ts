@@ -63,6 +63,7 @@ export const APP_ROUTE: Route[] = [
       {path:'admin/payments',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/payments/admin-payments.component').then(m=>m.AdminPaymentsComponent)},
       {path:'admin/foods',redirectTo:'nutrition/custom-foods',pathMatch:'full'},
       {path:'admin/history',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/history/admin-history.component').then(m=>m.AdminHistoryComponent)},
+      {path:'admin/announcements',canActivate:[adminGuard],loadComponent:()=>import('./components/admin/announcements/admin-announcements.component').then(m=>m.AdminAnnouncementsComponent)},
       {
         path: 'admin/coaches', canActivate: [coachDiagnosticsGuard],
         loadComponent: () => import('./components/admin/coaches/admin-coaches.component').then(m => m.AdminCoachesComponent),
@@ -250,6 +251,11 @@ export const APP_ROUTE: Route[] = [
         // SUB-37: "My subscription".
         path: 'subscription',
         loadComponent: () => import('./components/my-subscription/my-subscription.component').then(m => m.MySubscriptionComponent),
+      },
+      {
+        // AFF-22 to AFF-27: referral page of the coach.
+        path: 'referral',
+        loadComponent: () => import('./components/referral/referral.component').then(m => m.ReferralComponent),
       },
       {
         // SUB-36: "Pay my invoice" link of the billing emails.

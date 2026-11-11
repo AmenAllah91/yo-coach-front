@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { SubscriptionOnboardingService } from '../../../service/subscription-onboarding.service';
 import { PlansLandingPageComponent } from './plans-landing-page.component';
@@ -29,7 +30,7 @@ describe('PlansLandingPageComponent', () => {
     ]));
 
     await TestBed.configureTestingModule({
-      imports: [PlansLandingPageComponent, RouterTestingModule],
+      imports: [PlansLandingPageComponent, RouterTestingModule, TranslateModule.forRoot()],
       providers: [
         { provide: SubscriptionOnboardingService, useValue: onboardingService }
       ]

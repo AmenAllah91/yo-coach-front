@@ -35,26 +35,39 @@ export class AdminCoachesComponent implements OnInit {
   actionBusy = false;
   actionError = '';
   actionSuccess = false;
-  billingAction: 'ASSIGN_PLAN'|'EXTEND_TRIAL'|null = null;
-  billingBusy=false; billingError=''; billingSuccess=false; billingReason=''; newPlanId=''; extendDays=7;
+  billingAction: 'ASSIGN_PLAN'|'EXTEND_TRIAL'|'DEFER_CUTOFF'|null = null;
+  billingBusy=false; billingError=''; billingSuccess=false; billingReason=''; newPlanId=''; extendDays=7; deferDays=7;
+  readonly deferChoices=[3,7,14,30];
   billingPlans:SalesPlan[]=[]; billingPlansLoading=false; billingPlansError=false;
   subscriptionEvents:SubscriptionAdminEvent[]=[]; historyLoading=false; historyError=false;
   private billingSnapshot:AdminCoach['subscription']=null;
   private historyRevision=0;
   @ViewChild('billingDialog',{static:true}) billingDialog!:ElementRef<HTMLDialogElement>;
   get canExtend() {return this.coach?.billingAvailable&&this.coach.subscription?.status==='TRIAL'&&!!this.coach.subscription.trialEndsAt&&!this.coach.subscription.currentPeriodStart;}
+  /** Payment problem: the coach keeps the access N days, the invoice stays to pay (YoSales DEFER_CUTOFF). */
+  get canDefer() {const s=this.coach?.subscription;return !!this.coach?.billingAvailable&&!!s?.subscriptionId
+    &&(['TRIAL','ACTIVE','PAST_DUE'].includes(s.status||'')||s.status==='EXPIRED'&&!!s.currentPeriodStart);}
+  /** Last day of access after the deferral (today + N, coach time zone). */
+  get newDeferDay() {
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone:this.billingSnapshot?.timeZone||'Africa/Tunis',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date());
+    const val=(key:string)=>Number(parts.find(p=>p.type===key)?.value);
+    return new Date(Date.UTC(val('year'),val('month')-1,val('day')+this.deferDays)).toISOString().slice(0,10);
+  }
   get selectedNewPlan() {return this.billingPlans.find(p=>String(p.id)===this.newPlanId);}
   get validBillingAction() {return !!this.billingAction&&!this.billingBusy&&this.billingError!=='COACH_BILLING_CONFLICT'&&!!this.billingReason.trim()&&this.billingReason.length<=1000
-    &&(this.billingAction==='EXTEND_TRIAL'?[7,15,30].includes(this.extendDays):!!this.selectedNewPlan&&this.selectedNewPlan.id!==this.billingSnapshot?.planId);}
+    &&(this.billingAction==='EXTEND_TRIAL'?[7,15,30].includes(this.extendDays)
+      :this.billingAction==='DEFER_CUTOFF'?this.deferChoices.includes(this.deferDays)
+      :!!this.selectedNewPlan&&this.selectedNewPlan.id!==this.billingSnapshot?.planId);}
   get newTrialDay() {
     if(!this.billingSnapshot?.trialEndsAt)return '';
     const parts=new Intl.DateTimeFormat('en-US',{timeZone:this.billingSnapshot.timeZone||'Africa/Tunis',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(this.billingSnapshot.trialEndsAt));
     const val=(key:string)=>Number(parts.find(p=>p.type===key)?.value);
     return new Date(Date.UTC(val('year'),val('month')-1,val('day')+this.extendDays)).toISOString().slice(0,10);
   }
-  openBillingAction(action:'ASSIGN_PLAN'|'EXTEND_TRIAL') {
-    if(this.actionBusy||this.billingBusy||!this.coach?.billingAvailable||!this.coach.subscription?.subscriptionId||action==='EXTEND_TRIAL'&&!this.canExtend)return;
-    this.billingSnapshot={...this.coach.subscription};this.billingAction=action;this.billingError='';this.billingSuccess=false;this.billingReason='';this.newPlanId='';this.extendDays=7;
+  openBillingAction(action:'ASSIGN_PLAN'|'EXTEND_TRIAL'|'DEFER_CUTOFF') {
+    if(this.actionBusy||this.billingBusy||!this.coach?.billingAvailable||!this.coach.subscription?.subscriptionId||action==='EXTEND_TRIAL'&&!this.canExtend
+      ||action==='DEFER_CUTOFF'&&!this.canDefer)return;
+    this.billingSnapshot={...this.coach.subscription};this.billingAction=action;this.billingError='';this.billingSuccess=false;this.billingReason='';this.newPlanId='';this.extendDays=7;this.deferDays=7;
     this.billingDialog.nativeElement.showModal();
     if(action==='ASSIGN_PLAN') {this.billingPlans=[];this.billingPlansLoading=true;this.billingPlansError=false;
       this.billingApi.plans().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:plans=>{this.billingPlans=plans.filter(p=>p.active!==false);this.billingPlansLoading=false;},error:()=>{this.billingPlansLoading=false;this.billingPlansError=true;}});}
@@ -64,10 +77,12 @@ export class AdminCoachesComponent implements OnInit {
     if(!this.validBillingAction||!this.coach||!this.billingSnapshot)return;
     const s=this.billingSnapshot;this.billingBusy=true;this.billingError='';
     this.service.subscriptionChange(this.coach.id,this.billingAction!,{subscriptionId:s.subscriptionId,expectedPlanId:s.planId,expectedStatus:s.status,
-      expectedTrialEnd:s.trialEndsAt,reason:this.billingReason.trim(),newPlanId:this.billingAction==='ASSIGN_PLAN'?Number(this.newPlanId):null,days:this.billingAction==='EXTEND_TRIAL'?this.extendDays:null})
+      expectedTrialEnd:s.trialEndsAt,reason:this.billingReason.trim(),newPlanId:this.billingAction==='ASSIGN_PLAN'?Number(this.newPlanId):null,days:this.billingAction==='EXTEND_TRIAL'?this.extendDays:this.billingAction==='DEFER_CUTOFF'?this.deferDays:null})
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:()=>{this.billingBusy=false;this.closeBillingAction();this.billingSuccess=true;this.reload$.next();},
-        error:e=>{this.billingBusy=false;this.billingError=e.status===409?'COACH_BILLING_CONFLICT':e.status===400?'COACH_BILLING_INVALID':'COACH_BILLING_ACTION_ERROR';}});
+        error:e=>{this.billingBusy=false;this.billingError=this.billingAction==='DEFER_CUTOFF'&&e.status===409&&!/refresh/i.test(e?.error?.message||'')?'COACH_DEFER_NOT_POSSIBLE'
+          :e.status===409?'COACH_BILLING_CONFLICT':e.status===400?'COACH_BILLING_INVALID':'COACH_BILLING_ACTION_ERROR';}});
   }
+  billingTitle(action:string|null) {return action==='ASSIGN_PLAN'?'COACH_ASSIGN_PLAN':action==='DEFER_CUTOFF'?'COACH_DEFER_CUTOFF':'COACH_EXTEND_TRIAL';}
   selectSection(tab:string) {this.section=tab;if(tab==='history')this.loadSubscriptionHistory();}
   loadSubscriptionHistory() {
     if(!this.coach)return;this.historyLoading=true;this.historyError=false;

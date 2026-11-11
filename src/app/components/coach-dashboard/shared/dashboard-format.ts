@@ -67,6 +67,8 @@ export const ALERT_ICONS: Record<DashboardAlertType, string> = {
   ENDING_SOON: 'clock',
   INACTIVE: 'user-minus',
   NO_NUTRITION: 'coffee',
+  JOIN_REQUESTS: 'user-plus',
+  NEW_LEADS: 'inbox',
   CHECK_INS_OVERDUE: 'alert-circle',
 };
 

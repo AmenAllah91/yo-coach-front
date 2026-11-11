@@ -61,6 +61,10 @@ import {
   workoutActivityStatusLabel,
 } from './client-activity/client-activity';
 import { clientObjectiveLabel } from '../../../models/client-objective';
+import { AiQuotaComponent } from 'app/components/ai-quota/ai-quota.component';
+import { WorkoutAiDialogComponent, workoutPrefillFromClient } from '../../program-library/workout-ai-dialog/workout-ai-dialog.component';
+import { WorkoutAiDraft, workoutDraftWeeks } from '../../../service/workout-ai.service';
+import { SignupAnswersComponent } from './signup-answers/signup-answers.component';
 
 type TabId =
   | 'dashboard'
@@ -148,6 +152,8 @@ type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'check
     ClientNavPanelComponent,
     ClientTasksTabComponent,
     MyTasksComponent,
+    WorkoutAiDialogComponent,
+    AiQuotaComponent,
     MyAssignmentsComponent,
     CheckinCardComponent,
     FeatherModule,
@@ -156,6 +162,7 @@ type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'check
     AssignConfirmComponent,
     ClientProfilePanelComponent,
     ClientActivityDetailComponent,
+    SignupAnswersComponent,
   ],
   templateUrl: './profil-client.component.html',
   styleUrls: ['./profil-client.component.scss', './client-activity/client-activity.scss'],
@@ -196,6 +203,8 @@ export class ProfilClientComponent {
 
   @ViewChild(WorkoutsClientTabComponent) workoutsTab: WorkoutsClientTabComponent;
   @ViewChild(NutritionClientTabComponent) nutritionTab: NutritionClientTabComponent;
+  /** IA-33: AI program for this client (questions prefilled from the profile). */
+  @ViewChild(WorkoutAiDialogComponent) workoutAi?: WorkoutAiDialogComponent;
 
   activeTab: TabId = 'dashboard';
   /**
@@ -1133,7 +1142,16 @@ export class ProfilClientComponent {
         this.preselectFormId = preselectFormId;
       }
 
-      if (openAssign || openProgramAssign || preselectFormId) {
+      // IA-51: "First steps" guide: create the example client's program with the AI (free once).
+      const openAi = params['openAssign'] === 'ai' || params['openAssign'] === 'ai-example';
+      if (openAi) {
+        Promise.resolve().then(() => {
+          this.openClientWorkoutCreateModal();
+          this.aiForExample = params['openAssign'] === 'ai-example';
+        });
+      }
+
+      if (openAssign || openProgramAssign || openAi || preselectFormId) {
         this.router.navigate([], {
           relativeTo: this.route,
           queryParams: { openAssign: null },
@@ -2344,8 +2362,34 @@ export class ProfilClientComponent {
     this.clientWorkoutProgramName = '';
     this.clientWorkoutDurationWeeks = 4;
     this.clientWorkoutStartDate = this.assignPresetStart || ''; // else the schedule picks today or the continuity (A2)
+    this.aiForExample = false;
     this.resetScheduleState();
     this.showClientWorkoutCreateModal = true;
+  }
+
+  get aiLanguage(): 'fr' | 'en' | 'ar' {
+    const lang = (this.translate.currentLang || 'fr').slice(0, 2);
+    return lang === 'en' || lang === 'ar' ? lang : 'fr';
+  }
+
+  /** IA-33: from the creation window: same start date, questions prefilled from the client's profile. */
+  openClientWorkoutAi(): void {
+    this.aiWorkoutStartDate = this.clientWorkoutStartDate;
+    const exampleClient = this.aiForExample;
+    this.closeClientWorkoutCreateModal();
+    this.workoutAi?.open({ ...workoutPrefillFromClient(this.client), exampleClient });
+  }
+  private aiWorkoutStartDate = '';
+  /** IA-51: opened from the "First steps" guide for the example client (its first AI program is free). */
+  aiForExample = false;
+
+  /** The editor opens with the draft for this client (nothing saved until the coach saves it). */
+  openClientWorkoutAiDraft(draft: WorkoutAiDraft): void {
+    void this.router.navigate(['/clients/create-workout', this.clientId], {
+      queryParams: { startDate: this.aiWorkoutStartDate || this.clientWorkoutStartDate, durationWeeks: workoutDraftWeeks(draft),
+        returnUrl: this.router.url.split('?')[0] + '?tab=workouts' },
+      state: { aiDraft: draft },
+    });
   }
 
   closeClientWorkoutCreateModal(): void {

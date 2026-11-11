@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { PlanFeatureListComponent } from 'app/components/plan-feature-list/plan-feature-list.component';
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,6 +16,7 @@ import {
 import { RegisterService } from '../../../service/register.service';
 import { SubscriptionOnboardingService } from '../../../service/subscription-onboarding.service';
 import { AuthService } from '../../../config/auth.service';
+import { forgetReferralCode, normalizeReferralCode, rememberReferralCode, storedReferralCode } from '../../../service/referral-code';
 
 /**
  * Refusal codes of the sign-up (CE, YoSales) with their text, read before the generic 409 / 429 handling.
@@ -28,7 +30,7 @@ const REGISTER_ERROR_KEYS: Record<string, string> = {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule,TranslateModule,RouterLink],
+  imports: [CommonModule,ReactiveFormsModule,TranslateModule,RouterLink,PlanFeatureListComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -45,6 +47,12 @@ export class RegisterComponent implements OnInit {
   /** Coach's sign-up link (no email): the client account asks to join once created. */
   joinToken: string | null = null;
   isSubmitting = false;
+  /** AFF-10: referral code of the coach sign-up (from the link, or typed). Never blocks the sign-up. */
+  referralCode = '';
+  referralSource: 'LINK' | 'CODE' = 'CODE';
+  referralStatus: 'idle' | 'checking' | 'valid' | 'invalid' | 'unavailable' | 'unverified' = 'idle';
+  referrerName = '';
+  private referralCheckId = 0;
   showPassword = false;
   showConfirmPassword = false;
 
@@ -71,6 +79,9 @@ export class RegisterComponent implements OnInit {
     }, { validators: this.passwordMatchValidator });
     this.invitationToken = this.route.snapshot.queryParamMap.get('invitationToken');
     this.joinToken = this.route.snapshot.queryParamMap.get('joinToken');
+    if (!this.isClientSignup) {
+      this.prefillReferralCode();
+    }
     const planId = Number(this.route.snapshot.queryParamMap.get('planId'));
     if (!this.isClientSignup && Number.isInteger(planId) && planId > 0) {
       this.planId = planId;
@@ -88,6 +99,72 @@ export class RegisterComponent implements OnInit {
       text: planFeatureText(f, lang),
       lockedInTrial: f.includedInTrial === false
     }));
+  }
+
+  /** The code of the link (kept for the detour by the plans page), else the one kept in this browser. */
+  private prefillReferralCode(): void {
+    const fromLink = normalizeReferralCode(this.route.snapshot.queryParamMap.get('ref'));
+    if (fromLink) {
+      rememberReferralCode(fromLink);
+    }
+    const code = fromLink ?? storedReferralCode();
+    if (code) {
+      this.referralCode = code;
+      this.referralSource = 'LINK';
+      this.checkReferralCode();
+    }
+  }
+
+  /** A typed code replaces the code of the link. */
+  onReferralInput(value: string): void {
+    this.referralCode = (value ?? '').slice(0, 20);
+    this.referralSource = 'CODE';
+    this.referralStatus = 'idle';
+    this.referrerName = '';
+    this.referralCheckId++;
+  }
+
+  checkReferralCode(): void {
+    const raw = this.referralCode.trim();
+    if (!raw) {
+      this.referralStatus = 'idle';
+      return;
+    }
+    const code = normalizeReferralCode(raw);
+    if (!code) {
+      this.referralStatus = 'invalid';
+      return;
+    }
+    this.referralCode = code;
+    const id = ++this.referralCheckId;
+    this.referralStatus = 'checking';
+    this.onboardingService.checkReferralCode(code).subscribe({
+      next: (answer) => {
+        if (id !== this.referralCheckId) return; // the code changed meanwhile
+        this.referrerName = [answer?.firstName, answer?.initial].filter(Boolean).join(' ');
+        this.referralStatus = answer?.status === 'VALID' ? 'valid'
+          : answer?.status === 'INVALID' ? 'invalid'
+          : answer?.status === 'UNAVAILABLE' ? 'unavailable' : 'unverified';
+      },
+      error: () => {
+        if (id === this.referralCheckId) this.referralStatus = 'unverified';
+      }
+    });
+  }
+
+  removeReferral(): void {
+    this.referralCode = '';
+    this.referralSource = 'CODE';
+    this.referralStatus = 'idle';
+    this.referrerName = '';
+    this.referralCheckId++;
+    forgetReferralCode();
+  }
+
+  /** The code goes with the sign-up even when it could not be checked: YoSales decides, the sign-up never waits. */
+  private referralPayload(): { referralCode?: string; referralSource?: 'LINK' | 'CODE' } {
+    const code = normalizeReferralCode(this.referralCode);
+    return code ? { referralCode: code, referralSource: this.referralSource } : {};
   }
 
   passwordMatchValidator(formGroup: AbstractControl): ValidationErrors | null {
@@ -139,7 +216,12 @@ export class RegisterComponent implements OnInit {
     this.isSubmitting = true;
     this.accountExists = false;
     const registration$: Observable<void | OnboardingResponse> = isCoachRegistration
-      ? this.onboardingService.onboard({ user, planId: this.planId!, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+      ? this.onboardingService.onboard({
+        user,
+        planId: this.planId!,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        ...this.referralPayload()
+      })
       : this.registerService.registerUser(user);
 
     registration$.pipe(

@@ -8,8 +8,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, Subject, debounceTime, distinctUntilChanged, switchMap, tap, catchError, of } from 'rxjs';
 import { AdminPaymentsService, PaymentPage, PaymentFilters } from '../../../service/admin-payments.service';
 
+import { PaymentIncidentCardComponent } from '../payment-incident/payment-incident-card.component';
 @Component({selector:'app-admin-payments',standalone:true,
-  imports:[CommonModule,FormsModule,RouterLink,TranslateModule,FeatherModule],
+  imports:[CommonModule,FormsModule,RouterLink,TranslateModule,FeatherModule,PaymentIncidentCardComponent],
   templateUrl:'./admin-payments.component.html',styleUrl:'./admin-payments.component.scss'})
 export class AdminPaymentsComponent implements OnInit {
   filters:PaymentFilters=this.emptyFilters();

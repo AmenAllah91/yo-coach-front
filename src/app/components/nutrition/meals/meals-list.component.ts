@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
-import { MealsService } from 'app/service/meals.service';
+import { MealKindFilter, MealsService } from 'app/service/meals.service';
 import { DeleteMealModalComponent } from './delete-meal-modal/delete-meal-modal.component';
 import { AddMealModalComponent } from './add-meal-modal.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -32,6 +32,13 @@ export class MealsListComponent implements OnInit, OnDestroy, LeavesUnsavedChang
   @ViewChild(AddMealModalComponent) private mealEditor?: AddMealModalComponent;
   meals: any[] = [];
   search = '';
+  /** Recipes and meals with foods share the page: the coach can show one kind only. */
+  kind: MealKindFilter = 'all';
+  readonly kinds: { value: MealKindFilter; label: string }[] = [
+    { value: 'all', label: 'MEALS_FILTER_ALL' },
+    { value: 'recipe', label: 'MEALS_FILTER_RECIPES' },
+    { value: 'meal', label: 'MEALS_FILTER_MEALS' },
+  ];
   activeMealMenuId: string | null = null;
   loading = false;
 
@@ -94,7 +101,7 @@ export class MealsListComponent implements OnInit, OnDestroy, LeavesUnsavedChang
     if (meal?.id) {
       const index = this.meals.findIndex((item) => item.id === meal.id);
       if (index >= 0) this.meals[index] = { ...this.meals[index], ...meal };
-      else if (this.currentPage === 0) {
+      else if (this.currentPage === 0 && this.matchesKind(meal)) {
         this.meals = [meal, ...this.meals].slice(0, this.pageSize);
         this.totalElements++;
       }
@@ -105,7 +112,7 @@ export class MealsListComponent implements OnInit, OnDestroy, LeavesUnsavedChang
   /** quiet: refresh after a change, the list stays on screen (no skeleton). */
   load(quiet = false): void {
     this.loading = !quiet;
-    this.mealsService.getMeals(this.currentPage, this.pageSize, this.search).subscribe({
+    this.mealsService.getMeals(this.currentPage, this.pageSize, this.search, this.kind).subscribe({
       next: (response: any) => {
         this.meals = Array.isArray(response) ? response : response?.content || [];
         this.totalElements = Array.isArray(response)
@@ -128,6 +135,27 @@ export class MealsListComponent implements OnInit, OnDestroy, LeavesUnsavedChang
   onSearch(): void {
     this.currentPage = 0;
     this.load();
+  }
+
+  setKind(kind: MealKindFilter): void {
+    if (kind === this.kind) return;
+    this.kind = kind;
+    this.currentPage = 0;
+    this.load();
+  }
+
+  isRecipe(meal: any): boolean {
+    return meal?.template === true;
+  }
+
+  private matchesKind(meal: any): boolean {
+    return this.kind === 'all' || this.isRecipe(meal) === (this.kind === 'recipe');
+  }
+
+  /** The meal photo, else the photo of its first food; the row shows an initial otherwise. */
+  mealImage(meal: any): string | null {
+    const food = (meal?.foods || []).find((item: any) => item?.foodRef?.imageUrl);
+    return meal?.coverImage || food?.foodRef?.imageUrl || null;
   }
 
   onPageChange(page: number): void {

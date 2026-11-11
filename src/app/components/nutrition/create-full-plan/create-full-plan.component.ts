@@ -24,6 +24,7 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { MealsService } from 'app/service/meals.service';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
+import { NutritionAiDraft } from 'app/service/nutrition-ai.service';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
 import { MealTimeFieldComponent } from '../meal-time-field/meal-time-field.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -259,12 +260,38 @@ export class CreateFullPlanComponent implements OnInit, LeavesUnsavedChanges {
     if (!this.route.snapshot.paramMap.get('id') && !this.route.snapshot.queryParamMap.get('draftId')) {
       this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
       this.resizeDraftDays(this.durationWeeks, false);
+      const aiDraft = history.state?.aiDraft as NutritionAiDraft | undefined;
+      if (aiDraft?.plan?.mealDays?.length) {
+        this.applyAiDraft(aiDraft);
+      }
       this.selectedDay = this.days[0] || null;
       this.clientMode.refreshDates(this.days);
+      if (aiDraft?.plan?.mealDays?.length) {
+        // IA-54: an AI draft is not saved yet: leaving the page asks first, like any unsaved change.
+        this.draft.forgetContent();
+        return;
+      }
       this.draft.rememberContent();
       if (this.planName.trim()) this.savePlan();
     }
 }
+
+  /** IA-43 / IA-53: the plan comes from the AI, not saved yet (banner and warnings above it). */
+  aiDraftShown = false;
+  aiWarnings: string[] = [];
+
+  /** IA-43: the AI days replace the empty ones; the first « Enregistrer » creates the plan. */
+  private applyAiDraft(draft: NutritionAiDraft): void {
+    // Not handed over again on a reload of this page (the draft was never saved).
+    history.replaceState({ ...history.state, aiDraft: null }, '');
+    this.planName = draft.plan.name || this.planName;
+    this.planDescription = draft.plan.details || '';
+    this.days = draft.plan.mealDays;
+    this.days.forEach((day) => this.ensureMealUiDefaults(day));
+    this.durationWeeks = this.normalizeDurationWeeks(Math.ceil(this.days.length / 7));
+    this.aiDraftShown = true;
+    this.aiWarnings = draft.warnings || [];
+  }
 
   hasUnsavedChanges(): boolean {
     return this.draft.hasUnsavedChanges();
@@ -703,7 +730,6 @@ export class CreateFullPlanComponent implements OnInit, LeavesUnsavedChanges {
   isRecipeMeal(meal: Meal): boolean {
     return Boolean(
       meal?.template
-      || meal?.coverImage
       || Number(meal?.totalTimeMinutes) > 0
       || (meal?.directions || []).length,
     );

@@ -31,7 +31,7 @@
     <ng-scrollbar [style.height]="listMaxHeight" visibility="hover">
       <ul class="nav-list">
         <ng-container *ngFor="let item of sidebarItems; trackBy: trackByItem">
-          <li class="nav-item" [class.active]="item.isActive" [class.has-active-child]="hasActiveChild(item)">
+          <li *ngIf="!isHidden(item)" class="nav-item" [class.active]="item.isActive" [class.has-active-child]="hasActiveChild(item)">
             <!-- Group Title -->
             <ng-container *ngIf="item.groupTitle">
               <div class="nav-group-title">
@@ -50,7 +50,7 @@
                 <i-feather [name]="item.icon" class="nav-icon"></i-feather>
                 <span class="nav-label">{{ item.title | translate }}</span>
 
-                <i-feather *ngIf="isBrandingLocked(item)" name="lock" class="nav-lock" [attr.aria-label]="'BRANDING_PAID_FEATURE' | translate"></i-feather>
+                <i-feather *ngIf="isLocked(item)" name="lock" class="nav-lock" [attr.aria-label]="lockLabel(item) | translate"></i-feather>
                 <ng-container *ngIf="item.badge">
                   <span class="nav-badge">
                     {{ item.badge }}
@@ -91,7 +91,7 @@
                       (click)="activateSubmenu(item, subItem)">
                       <i-feather [name]="subItem.icon" class="submenu-icon"></i-feather>
                       <span class="submenu-label">{{ subItem.title | translate }}</span>
-                      <i-feather *ngIf="isBrandingLocked(subItem)" name="lock" class="nav-lock" [attr.aria-label]="'BRANDING_PAID_FEATURE' | translate"></i-feather>
+                      <i-feather *ngIf="isLocked(subItem)" name="lock" class="nav-lock" [attr.aria-label]="lockLabel(subItem) | translate"></i-feather>
                     </a>
                   </li>
                 </ul>
@@ -103,8 +103,8 @@
     </ng-scrollbar>
   </div>
 
-  <!-- SUB-21: only during the free trial. -->
-  <div class="sidebar-upgrade" *ngIf="trialDaysLeft !== null">
+  <!-- SUB-21: during the free trial; free plan (2026-11-10): also on the free plan. -->
+  <div class="sidebar-upgrade" *ngIf="trialDaysLeft !== null || freePlanUsage">
     <a
       class="upgrade-cta"
       [routerLink]="checkoutPath"
@@ -113,7 +113,8 @@
       <i-feather name="zap" class="upgrade-icon"></i-feather>
       <span class="upgrade-copy">
         <strong>{{ 'UPGRADE_TO_PAID_PLAN' | translate }}</strong>
-        <small>{{ trialDaysLeftKey | translate: { count: trialDaysLeft } }}</small>
+        <small *ngIf="trialDaysLeft !== null">{{ trialDaysLeftKey | translate: { count: trialDaysLeft } }}</small>
+        <small *ngIf="trialDaysLeft === null && freePlanUsage as usage">{{ (usage.max != null ? 'FREE_PLAN_USAGE' : 'FREE_PLAN_LABEL') | translate: usage }}</small>
       </span>
     </a>
   </div>

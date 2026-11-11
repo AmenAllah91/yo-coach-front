@@ -1,4 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { SubscriptionPlanDto } from 'app/models/subscription-onboarding.model';
+import { PlanFeatureListComponent } from 'app/components/plan-feature-list/plan-feature-list.component';
 import { cardLabel, planChangePaidAhead } from 'app/models/coach-subscription-state.model';
 import { formatAmount } from 'app/models/subscription-onboarding.model';
 import { CommonModule } from '@angular/common';
@@ -35,10 +37,12 @@ const BLOCKED_TEXTS = ['PAY_FIRST', 'UPGRADE_USE_CHECKOUT', 'PLAN_CHANGE_NOT_ALL
  * start of the current period), yearly -> monthly (at the end of the year). The coach confirms before any payment.
  * {@code ?planId=} preselects a plan (suggested plan of the client-limit notice, SUB-29).
  */
+import { PaymentIncidentNoticeComponent } from 'app/components/payment-incident-notice/payment-incident-notice.component';
+
 @Component({
   selector: 'app-change-plan',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule, FeatherModule],
+  imports: [CommonModule, RouterModule, TranslateModule, FeatherModule, PaymentIncidentNoticeComponent, PlanFeatureListComponent],
   templateUrl: './change-plan.component.html',
   styleUrl: './change-plan.component.scss',
 })
@@ -69,7 +73,7 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
 
   constructor(
     private billing: CoachBillingService,
-    private stateService: CoachSubscriptionStateService,
+    public stateService: CoachSubscriptionStateService,
     private route: ActivatedRoute,
     private router: Router,
   ) {}
@@ -88,6 +92,9 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   load(): void {
     this.loading = true;
     this.loadError = false;
+    // Plan features (2026-11-11): the plans of YoSales, to show what the coach gains or loses.
+    this.billing.getPlans().pipe(catchError(() => of([])), takeUntil(this.destroy$))
+      .subscribe((plans) => (this.catalogPlans = plans ?? []));
     forkJoin({
       options: this.billing.getPlanChangeOptions().pipe(catchError(() => of(null))),
       state: this.stateService.refresh(),
@@ -119,6 +126,19 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   get showCycleToggle(): boolean {
     const plans = this.options?.plans ?? [];
     return plans.some((p) => p.billingCycle === 'MONTHLY') && plans.some((p) => p.billingCycle === 'YEARLY');
+  }
+
+  /** Plan features (2026-11-11): the plans as YoSales sends them (features of each plan). */
+  catalogPlans: SubscriptionPlanDto[] = [];
+
+  /** The plan of YoSales behind an option (null when unknown). */
+  catalogPlan(planId: number | null | undefined): SubscriptionPlanDto | null {
+    return this.catalogPlans.find((p) => p.id === planId) ?? null;
+  }
+
+  /** The current plan of the coach, as YoSales sends it. */
+  get currentCatalogPlan(): SubscriptionPlanDto | null {
+    return this.catalogPlan(this.options?.plans.find((p) => p.kind === 'CURRENT')?.planId);
   }
 
   get selected(): PlanChangeOption | null {
@@ -186,7 +206,7 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
 
   confirm(): void {
     const plan = this.selected;
-    if (!plan || !plan.allowed || this.busy) return;
+    if (!plan || !plan.allowed || this.busy || this.stateService.paymentsPaused) return;
     this.busy = true;
     this.error = '';
     this.success = null;
@@ -211,7 +231,7 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
   /** Pays the change waiting for payment (Flouci, chosen by the system). */
   payPending(): void {
     const pending = this.options?.pendingRequest;
-    if (!pending || this.busy || pending.paymentInProgress) return;
+    if (!pending || this.busy || pending.paymentInProgress || this.stateService.paymentsPaused) return;
     this.busy = true;
     this.error = '';
     this.pay(pending.invoiceId);

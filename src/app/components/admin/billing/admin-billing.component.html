@@ -26,9 +26,9 @@
     <ng-container *ngIf="plansMode">
       <p class="notice">{{'BILLING_CYCLE_NOTE'|translate}}</p>
       <div class="toolbar"><label>{{'BILLING_SEARCH_PLAN'|translate}}<input type="search" [(ngModel)]="planSearch"></label><label>{{'BILLING_PLAN_STATUS'|translate}}<select [(ngModel)]="planActive"><option value="">{{'COACH_ALL'|translate}}</option><option value="ACTIVE">{{'COACH_ACCOUNT_ACTIVE'|translate}}</option><option value="INACTIVE">{{'BILLING_INACTIVE'|translate}}</option></select></label><label>{{'BILLING_CYCLE'|translate}}<select [(ngModel)]="planCycle"><option value="">{{'COACH_ALL'|translate}}</option><option value="MONTHLY">{{'COACH_CYCLE_MONTHLY'|translate}}</option><option value="YEARLY">{{'COACH_CYCLE_YEARLY'|translate}}</option></select></label></div>
-      <div class="coaches-table-wrap" *ngIf="!loading&&!plansError"><table><thead><tr><th>{{'BILLING_PLAN_NAME'|translate}}</th><th>{{'BILLING_MONTHLY_PRICE'|translate}}</th><th>{{'BILLING_YEARLY_PRICE'|translate}}</th><th>maxClients</th><th>{{'BILLING_PLAN_TRIAL'|translate}}</th><th>{{'BILLING_PLAN_STATUS'|translate}}</th><th>{{'BILLING_ACTIONS'|translate}}</th></tr></thead><tbody>
-        <tr *ngFor="let p of visiblePlans"><td><strong>{{p.name}}</strong><small>{{p.planCode}}</small><small>{{p.description}}</small><small>{{p.pricingModel}}</small></td><td>{{p.billingCycle==='MONTHLY'?((p.price|number:'1.2-2')+' '+(p.currency||'')):'—'}}</td><td>{{p.billingCycle==='YEARLY'?((p.price|number:'1.2-2')+' '+(p.currency||'')):'—'}}</td><td>{{p.toUnits==null||p.toUnits===2147483647?('COACH_UNLIMITED'|translate):p.toUnits}}</td><td>{{p.freeTrialDays||0}} {{'BILLING_DAYS'|translate}}<small *ngIf="p.freeTrialDays">{{p.trialMaxClients}} {{'COACH_CLIENTS'|translate}}</small></td><td>{{(p.active===false?'BILLING_INACTIVE':'COACH_ACCOUNT_ACTIVE')|translate}}</td><td><button class="secondary-btn" type="button" (click)="edit(p)">{{'BILLING_EDIT'|translate}}</button> <button class="secondary-btn" type="button" (click)="toggle(p)">{{(p.active===false?'BILLING_ENABLE':'BILLING_DISABLE')|translate}}</button></td></tr>
-        <tr *ngIf="!visiblePlans.length"><td colspan="7">{{'BILLING_NO_PLANS'|translate}}</td></tr></tbody></table></div>
+      <div class="coaches-table-wrap" *ngIf="!loading&&!plansError"><table><thead><tr><th>{{'BILLING_PLAN_NAME'|translate}}</th><th>{{'BILLING_MONTHLY_PRICE'|translate}}</th><th>{{'BILLING_YEARLY_PRICE'|translate}}</th><th>maxClients</th><th>{{'BILLING_PLAN_TRIAL'|translate}}</th><th>{{'BILLING_QUOTAS'|translate}}</th><th>{{'BILLING_PLAN_STATUS'|translate}}</th><th>{{'BILLING_ACTIONS'|translate}}</th></tr></thead><tbody>
+        <tr *ngFor="let p of visiblePlans"><td><strong>{{p.name}}</strong><small>{{p.planCode}}</small><small>{{p.description}}</small><small>{{p.pricingModel}}</small></td><td>{{p.billingCycle==='MONTHLY'?((p.price|number:'1.2-2')+' '+(p.currency||'')):'—'}}</td><td>{{p.billingCycle==='YEARLY'?((p.price|number:'1.2-2')+' '+(p.currency||'')):'—'}}</td><td>{{p.toUnits==null||p.toUnits===2147483647?('COACH_UNLIMITED'|translate):p.toUnits}}</td><td>{{p.freeTrialDays||0}} {{'BILLING_DAYS'|translate}}<small *ngIf="p.freeTrialDays">{{p.trialMaxClients}} {{'COACH_CLIENTS'|translate}}</small></td><td><small *ngFor="let f of featureLines">{{('BILLING_FEATURE_'+f.key.toUpperCase())|translate}} : {{(featureLabel(p,f.key,'paid')?'BILLING_YES':'BILLING_NO')|translate}} / {{(featureLabel(p,f.key,'trial')?'BILLING_YES':'BILLING_NO')|translate}}</small><small *ngFor="let q of otherQuotas(p)">{{q.labelFr}} : {{q.monthlyLimit ?? '∞'}} / {{q.trialLimit ?? '∞'}}</small></td><td>{{(p.active===false?'BILLING_INACTIVE':'COACH_ACCOUNT_ACTIVE')|translate}}</td><td><button class="secondary-btn" type="button" (click)="edit(p)">{{'BILLING_EDIT'|translate}}</button> <button class="secondary-btn" type="button" (click)="toggle(p)">{{(p.active===false?'BILLING_ENABLE':'BILLING_DISABLE')|translate}}</button></td></tr>
+        <tr *ngIf="!visiblePlans.length"><td colspan="8">{{'BILLING_NO_PLANS'|translate}}</td></tr></tbody></table></div>
     </ng-container>
   </div>
 </main>
@@ -40,7 +40,7 @@
       <label>{{'BILLING_PLAN_NAME'|translate}}<input name="name" [(ngModel)]="form.name" required maxlength="255"></label>
       <label>{{'BILLING_PLAN_CODE'|translate}}<input name="code" [(ngModel)]="form.planCode" required maxlength="255"></label>
       <label>{{'BILLING_CYCLE'|translate}}<select name="cycle" [(ngModel)]="form.billingCycle"><option value="MONTHLY">{{'COACH_CYCLE_MONTHLY'|translate}}</option><option value="YEARLY">{{'COACH_CYCLE_YEARLY'|translate}}</option></select></label>
-      <label>{{(form.billingCycle==='MONTHLY'?'BILLING_MONTHLY_PRICE':'BILLING_YEARLY_PRICE')|translate}}<input name="price" type="number" min="0" step="0.01" [(ngModel)]="form.price" required></label>
+      <label>{{(form.billingCycle==='MONTHLY'?'BILLING_MONTHLY_PRICE':'BILLING_YEARLY_PRICE')|translate}}<input name="price" type="number" min="0" step="0.01" [(ngModel)]="form.price" required><small *ngIf="form.price===0" class="hint">{{'BILLING_FREE_PLAN_HINT'|translate}}</small></label>
       <label>{{'BILLING_PRICING_MODEL'|translate}}<select name="pricing" [(ngModel)]="form.pricingModel"><option *ngFor="let p of pricing" [value]="p">{{p}}</option></select></label>
       <label>{{'BILLING_FROM_CLIENTS'|translate}}<input name="from" type="number" min="0" step="1" [(ngModel)]="form.fromUnits" required></label>
       <label class="check"><input name="unlimited" type="checkbox" [(ngModel)]="unlimited">{{'COACH_UNLIMITED'|translate}}</label>
@@ -50,6 +50,30 @@
       <label>{{'BILLING_EXTRA_FEE'|translate}}<input name="extra" type="number" min="0" step="0.01" [(ngModel)]="form.extraFeePerUnit" required></label>
       <label class="check"><input name="active" type="checkbox" [(ngModel)]="form.active">{{'COACH_ACCOUNT_ACTIVE'|translate}}</label>
       <label class="wide">{{'BILLING_DESCRIPTION'|translate}}<textarea name="description" [(ngModel)]="form.description" maxlength="255"></textarea></label>
+      <fieldset class="wide quotas plan-features">
+        <legend>{{'BILLING_FEATURES'|translate}}</legend>
+        <div class="feature-grid">
+          <span></span><span class="feature-head">{{'BILLING_FEATURE_PAID'|translate}}</span><span class="feature-head">{{'BILLING_FEATURE_TRIAL'|translate}}</span>
+          <ng-container *ngFor="let f of featureLines">
+            <span>{{('BILLING_FEATURE_'+f.key.toUpperCase())|translate}}</span>
+            <label class="check"><input type="checkbox" [name]="'featurePaid'+f.key" [(ngModel)]="features[f.key].paid" [attr.aria-label]="('BILLING_FEATURE_'+f.key.toUpperCase()|translate)+' · '+('BILLING_FEATURE_PAID'|translate)">{{(features[f.key].paid?'BILLING_YES':'BILLING_NO')|translate}}</label>
+            <label class="check"><input type="checkbox" [name]="'featureTrial'+f.key" [(ngModel)]="features[f.key].trial" [attr.aria-label]="('BILLING_FEATURE_'+f.key.toUpperCase()|translate)+' · '+('BILLING_FEATURE_TRIAL'|translate)">{{(features[f.key].trial?'BILLING_YES':'BILLING_NO')|translate}}</label>
+          </ng-container>
+        </div>
+      </fieldset>
+      <fieldset class="wide quotas">
+        <legend>{{'BILLING_QUOTAS'|translate}}</legend>
+        <p class="quotas-hint">{{'BILLING_QUOTAS_HINT'|translate}}</p>
+        <div class="quota-row" *ngFor="let q of form.quotas; let i = index">
+          <label>{{'BILLING_QUOTA_CODE'|translate}}<input [name]="'quotaCode'+i" [(ngModel)]="q.code" required maxlength="64" placeholder="ai.workout" autocapitalize="off" spellcheck="false"></label>
+          <label>{{'BILLING_QUOTA_LABEL_FR'|translate}}<input [name]="'quotaFr'+i" [(ngModel)]="q.labelFr" required maxlength="100"></label>
+          <label>{{'BILLING_QUOTA_LABEL_EN'|translate}}<input [name]="'quotaEn'+i" [(ngModel)]="q.labelEn" maxlength="100"></label>
+          <label>{{'BILLING_QUOTA_MONTHLY'|translate}}<input [name]="'quotaMonthly'+i" type="number" min="0" max="1000000" step="1" [(ngModel)]="q.monthlyLimit" [placeholder]="'BILLING_QUOTA_NO_LIMIT'|translate"></label>
+          <label>{{'BILLING_QUOTA_TRIAL'|translate}}<input [name]="'quotaTrial'+i" type="number" min="0" max="1000000" step="1" [(ngModel)]="q.trialLimit" [placeholder]="'BILLING_QUOTA_NO_LIMIT'|translate"></label>
+          <button type="button" class="secondary-btn quota-remove" (click)="removeQuota(i)" [attr.aria-label]="'BILLING_QUOTA_REMOVE'|translate" [title]="'BILLING_QUOTA_REMOVE'|translate"><i-feather name="trash-2"></i-feather></button>
+        </div>
+        <button type="button" class="secondary-btn" (click)="addQuota()" [disabled]="(form.quotas?.length||0)>=30">+ {{'BILLING_QUOTA_ADD'|translate}}</button>
+      </fieldset>
     </div><p>{{'BILLING_SAVE_NOTE'|translate}}</p></ng-template>
     <p *ngIf="saveError" role="alert" class="notice error">{{saveError|translate}}</p>
     <div class="dialog-actions"><button class="secondary-btn" type="button" (click)="close()" [disabled]="busy">{{'BILLING_CANCEL'|translate}}</button><button class="secondary-btn confirm-action" type="submit" [disabled]="busy||(!togglePlan&&(!valid||editor.invalid))">{{(busy?'COACH_ACTION_SAVING':'COACH_ACTION_CONFIRM_BUTTON')|translate}}</button></div>

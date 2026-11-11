@@ -183,6 +183,12 @@
           <p>{{ 'NORMAL_WORKOUT_PLAN_DESCRIPTION' | translate }}</p>
           <button class="type-action" (click)="createNormalWorkout()">{{ 'CREATE_NORMAL_WORKOUT' | translate }}</button>
         </div>
+        <div class="workout-type-card workout-type-card--ai">
+          <h4>✨ {{ 'AI_WORKOUT_CARD_TITLE' | translate }}</h4>
+          <p>{{ 'AI_WORKOUT_CARD_TEXT' | translate }}</p>
+          <app-ai-quota code="ai.workout" variant="line"></app-ai-quota>
+          <button class="type-action" (click)="openWorkoutAi()">{{ 'AI_WORKOUT_CARD_BUTTON' | translate }}</button>
+        </div>
         <div class="workout-type-card" *ngIf="workoutFileEnabled">
           <h4>{{ 'FILE_WORKOUT_PLAN' | translate }}</h4>
           <p>{{ 'FILE_WORKOUT_PLAN_DESCRIPTION' | translate }}</p>
@@ -313,3 +319,5 @@
   </div>
 </div>
 
+
+<app-workout-ai-dialog [language]="aiLanguage" (drafted)="openWorkoutAiDraft($event)"></app-workout-ai-dialog>

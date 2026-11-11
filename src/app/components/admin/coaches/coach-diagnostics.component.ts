@@ -15,7 +15,7 @@ const UNAVAILABLE_ACTIONS = ['OFFER_ACCESS', 'REVOKE_ACCESS'];
 export class CoachDiagnosticsComponent implements OnInit {
   @Input({required:true}) coachId='';
   @Output() accountAction=new EventEmitter<CoachAccountAction>();
-  @Output() billingAction=new EventEmitter<'ASSIGN_PLAN'|'EXTEND_TRIAL'>();
+  @Output() billingAction=new EventEmitter<'ASSIGN_PLAN'|'EXTEND_TRIAL'|'DEFER_CUTOFF'>();
   @Output() openHistory=new EventEmitter<void>();
   @Output() changed=new EventEmitter<void>();
   @ViewChild('confirmDialog',{static:true}) dialog!:ElementRef<HTMLDialogElement>;

@@ -16,6 +16,8 @@ import { ClientProfileCacheService } from '../service/client-profile-cache.servi
 import { CoachInvitation, InvitationService } from '../service/invitation.service';
 import { ToastService } from '../service/toast.service';
 import { CoachJoinRequest, CoachJoinRequests, JoinRequestService } from '../service/join-request.service';
+import { CoachDashboardService } from '../service/coach-dashboard.service';
+import { DashboardClientStats } from '../models/coach-dashboard.model';
 
 interface StatusCountResponse {
   active: number;
@@ -52,6 +54,8 @@ export class ClientsComponent implements OnInit {
   clientToDelete: Client | null = null;
   isLoading = false;
   openDropdownId: string | null = null;
+  /** Last activity and 4-week adherence by client id (filled after the page of clients). */
+  clientStats = new Map<string, DashboardClientStats>();
 
   showStatusModal = false;
   statusModalClient: Client | null = null;
@@ -87,6 +91,7 @@ export class ClientsComponent implements OnInit {
     private invitationService: InvitationService,
     private toastService: ToastService,
     private joinRequestService: JoinRequestService,
+    private coachDashboard: CoachDashboardService,
     private route: ActivatedRoute,
   ) {}
 
@@ -335,8 +340,6 @@ export class ClientsComponent implements OnInit {
             this.clients = clientsData.map((client: Client) => ({
                 ...client,
                 clientStatus: this.normalizeStatus(client.clientStatus),
-                workoutDates: client.workoutDates || this.generateRandomWorkoutDates(),
-                program: this.getClientProgram(client) || this.getRandomProgram(),
             }));
 
               if (response.totalPages !== undefined) {
@@ -351,6 +354,7 @@ export class ClientsComponent implements OnInit {
 
             this.applyFilters();
             this.enrichClientPhotos(this.clients);
+            this.loadClientStats(this.clients);
             this.isLoading = false;
           },
           error: (error) => {
@@ -744,44 +748,50 @@ export class ClientsComponent implements OnInit {
     this.gender = 'MALE';
   }
 
-  generateRandomWorkoutDates(): string[] {
-    const dates = [];
+  /** Real columns of the list: one request for the page shown; a failure only leaves the columns empty. */
+  private loadClientStats(clients: Client[]): void {
+    const ids = clients.map((client) => client.id).filter((id): id is string => !!id);
+    if (!ids.length) return;
+    this.coachDashboard.getClientStats(ids).subscribe({
+      next: (stats) => {
+        const next = new Map(this.clientStats);
+        stats.forEach((stat) => next.set(stat.clientId, stat));
+        this.clientStats = next;
+      },
+      error: () => undefined,
+    });
+  }
+
+  statsOf(client: Client): DashboardClientStats | undefined {
+    return client.id ? this.clientStats.get(client.id) : undefined;
+  }
+
+  /** Red under 50 %, orange under 75 %, green from 75 % (same thresholds as the dashboard card). */
+  adherenceLevel(stats: DashboardClientStats | undefined): 'low' | 'mid' | 'good' | 'none' {
+    if (stats?.rate == null) return 'none';
+    return stats.rate < 50 ? 'low' : stats.rate < 75 ? 'mid' : 'good';
+  }
+
+  /** "Today", "Yesterday", "3 d ago" or "Never", by calendar day. */
+  lastActivityLabel(stats: DashboardClientStats | undefined): string {
+    if (!stats) return '';
+    if (!stats.lastActivityAt) return this.translate.instant('LAST_ACTIVITY_NEVER');
+    const last = new Date(stats.lastActivityAt);
     const today = new Date();
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - (6 - i));
-
-      if (Math.random() > 0.4) {
-        dates.push(date.toISOString().split('T')[0]);
-      }
-    }
-
-    return dates;
+    const days = Math.round(
+      (new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+        - new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime()) / 86_400_000,
+    );
+    if (days <= 0) return this.translate.instant('LAST_ACTIVITY_TODAY');
+    if (days === 1) return this.translate.instant('LAST_ACTIVITY_YESTERDAY');
+    return this.translate.instant('LAST_ACTIVITY_DAYS', { count: days });
   }
 
-  hasWorkoutOnDay(client: Client, dayOffset: number): boolean {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - dayOffset));
-    const dateStr = date.toISOString().split('T')[0];
-
-    return client.workoutDates?.includes(dateStr) || false;
-  }
-
-  getDayName(dayOffset: number): string {
-    const days = ['SATURDAY_SHORT', 'SUNDAY_SHORT', 'MONDAY_SHORT', 'TUESDAY_SHORT', 'WEDNESDAY_SHORT', 'THURSDAY_SHORT', 'FRIDAY_SHORT'];
-    return this.translate.instant(days[dayOffset]);
-  }
-
-  getDayNumber(dayOffset: number): number {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - dayOffset));
-    return date.getDate();
-  }
-
-  getRandomProgram(): string {
-    const programs = ['Push Pull', 'Full Body', 'Upper Lower', 'PPL Split'];
-    return programs[Math.floor(Math.random() * programs.length)];
+  /** Inactive for 7 days or more (the dashboard's "inactive" threshold). */
+  lastActivityLate(stats: DashboardClientStats | undefined): boolean {
+    if (!stats) return false;
+    if (!stats.lastActivityAt) return true;
+    return Date.now() - new Date(stats.lastActivityAt).getTime() >= 7 * 86_400_000;
   }
 
   getClientProgram(client: any): string {

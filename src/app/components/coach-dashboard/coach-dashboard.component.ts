@@ -10,6 +10,7 @@ import { CoachDashboardService } from '../../service/coach-dashboard.service';
 import { CoachSettingsService } from '../../service/coach-settings.service';
 import { ChatUnreadService } from '../../service/chat-unread.service';
 import {
+  ALERT_PAGES,
   DASHBOARD_WIDGETS,
   DashboardAlertType,
   DashboardSummary,
@@ -187,6 +188,41 @@ export class CoachDashboardComponent implements OnInit {
     return (this.summary?.checkIns.toReview || 0) + (this.summary?.checkIns.overdue || 0);
   }
 
+  /** Workouts done out of planned, last 7 days; null rate: nothing planned. */
+  get adherenceRate(): number | null {
+    return this.summary?.adherence?.rate ?? null;
+  }
+
+  /** Red under 50 %, orange under 75 %, green from 75 %. */
+  get adherenceLevel(): 'low' | 'mid' | 'good' | null {
+    const rate = this.adherenceRate;
+    if (rate === null) return null;
+    return rate < 50 ? 'low' : rate < 75 ? 'mid' : 'good';
+  }
+
+  /** Points gained or lost against the 7 days before (null: nothing to compare). */
+  get adherenceTrend(): { key: string; points: number } | null {
+    const adherence = this.summary?.adherence;
+    if (adherence?.rate == null || adherence.previousRate == null) return null;
+    const points = adherence.rate - adherence.previousRate;
+    if (points === 0) return { key: 'CDASH.KPI.TREND_SAME', points: 0 };
+    return { key: points > 0 ? 'CDASH.KPI.TREND_UP' : 'CDASH.KPI.TREND_DOWN', points: Math.abs(points) };
+  }
+
+  /** "N clients", "N check-ins", "N requests" or "N prospects" under a "To do" category. */
+  countKey(type: DashboardAlertType): string {
+    switch (type) {
+      case 'CHECK_INS_TO_REVIEW':
+        return 'CDASH.N_CHECK_INS';
+      case 'JOIN_REQUESTS':
+        return 'CDASH.N_REQUESTS';
+      case 'NEW_LEADS':
+        return 'CDASH.N_LEADS';
+      default:
+        return 'CDASH.N_CLIENTS';
+    }
+  }
+
   alertCount(type: DashboardAlertType): number {
     return this.summary?.alerts?.[type] ?? 0;
   }
@@ -204,6 +240,12 @@ export class CoachDashboardComponent implements OnInit {
   }
 
   openDrawer(type: DashboardAlertType): void {
+    // Requests and prospects are accepted / handled on their own page.
+    const page = ALERT_PAGES[type];
+    if (page) {
+      void this.router.navigate([page.path], { queryParams: page.queryParams });
+      return;
+    }
     this.drawerType = type;
   }
 

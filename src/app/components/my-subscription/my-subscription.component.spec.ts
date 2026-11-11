@@ -47,6 +47,35 @@ describe('MySubscriptionComponent (SUB-37)', () => {
     expect(c.formatDay('2026-11-10')).toBe('10/11/2026');
   });
 
+  it('free plan (2026-11-10): "Free", no date, upgrade to a paid plan; nothing to cancel nor to change', async () => {
+    billing.getInvoices.and.returnValue(of([]));
+    const c = create({ status: 'ACTIVE', freePlan: true, readOnly: false, brandingAllowed: false, planName: 'Free',
+      billingCycle: 'MONTHLY', currentPeriodEnd: null, accessUntil: null, timeZone: 'Africa/Tunis',
+      cancelAtPeriodEnd: false, maxActiveClients: 3, activeClients: 2 });
+
+    expect(c.isFreePlan).toBeTrue();
+    expect(c.statusLabelKey).toBe('SUB_STATUS_FREE');
+    expect(c.dateLine).toEqual({ key: 'MY_SUB_FREE_NO_END', date: '' });
+    expect(c.canUpgradeToPaid).toBeTrue();
+    expect(c.canChangePlan).toBeFalse();
+    expect(c.canCancel).toBeFalse();
+    expect(c.isReadOnly).toBeFalse();
+
+    await c.cancel();
+    expect(billing.cancelSubscription).not.toHaveBeenCalled();
+    c.reactivate();
+    expect(router.navigate).toHaveBeenCalledWith(['/subscription/checkout']);
+  });
+
+  it('a paying coach keeps the status badge, the plan change and the cancellation', () => {
+    const c = create(active);
+
+    expect(c.statusLabelKey).toBe('SUB_STATUS_ACTIVE');
+    expect(c.canUpgradeToPaid).toBeFalse();
+    expect(c.canChangePlan).toBeTrue();
+    expect(c.canCancel).toBeTrue();
+  });
+
   it('pays an open invoice from the page (Flouci)', () => {
     billing.initiateInvoicePayment.and.returnValue(of({ redirectUrl: 'https://flouci.example/pay/90' }));
     const c = create(active);
@@ -203,5 +232,18 @@ describe('MySubscriptionComponent (SUB-37)', () => {
       c.changeCard();
       expect(redirect).toHaveBeenCalledWith('https://checkout.stripe.test/setup');
     });
+  });
+
+  it('shows the referral credit of an invoice and "paid by credit" when it paid all of it (AFF-28)', () => {
+    const c = create(active);
+    const reduced = { ...invoices[0], amount: 62.3, referralCreditAmount: 26.7 } as any;
+    const covered = { ...invoices[1], amount: 0, referralCreditAmount: 89, status: 'PAID' } as any;
+
+    expect(c.creditLine(reduced)).toEqual({ total: c.money(89, 'TND'), credit: c.money(26.7, 'TND') });
+    expect(c.creditLine(invoices[0] as any)).toBeNull();
+    expect(c.invoiceStatusKey(reduced)).toBe('INVOICE_STATUS_UNPAID');
+    expect(c.isPayable(reduced)).toBeTrue();
+    expect(c.invoiceStatusKey(covered)).toBe('INVOICE_STATUS_PAID_BY_CREDIT');
+    expect(c.isPayable(covered)).toBeFalse();
   });
 });

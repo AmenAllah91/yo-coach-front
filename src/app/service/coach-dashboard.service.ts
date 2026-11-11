@@ -7,6 +7,7 @@ import {
   ClientActivityPage,
   DashboardAlertItem,
   DashboardAlertType,
+  DashboardClientStats,
   DashboardConversation,
   DashboardPage,
   DashboardPreferences,
@@ -45,6 +46,13 @@ export class CoachDashboardService {
     let params = new HttpParams();
     ids.forEach((id) => (params = params.append('ids', id)));
     return this.http.get<DashboardConversation[]>(`${this.baseUrl}/conversations`, { params, headers: this.widgetHeaders });
+  }
+
+  /** Client list columns for the clients shown (the coach's own only, at most 100). */
+  getClientStats(ids: string[]): Observable<DashboardClientStats[]> {
+    let params = new HttpParams();
+    ids.forEach((id) => (params = params.append('ids', id)));
+    return this.http.get<DashboardClientStats[]>(`${this.baseUrl}/client-stats`, { params, headers: this.widgetHeaders });
   }
 
   savePreferences(preferences: DashboardPreferences): Observable<DashboardPreferences> {

@@ -129,6 +129,14 @@
       </div>
 
       <ng-container *ngIf="!planLoading && !planLoadError">
+      <!-- IA-33 / IA-53: an AI program, not saved yet, and the cases that need care. -->
+      <div class="np-ai" *ngIf="aiDraftShown || aiWarnings.length" role="status">
+        <p *ngIf="aiDraftShown"><span aria-hidden="true">✨</span> {{ 'AI_WORKOUT_APPLIED' | translate }}</p>
+        <p *ngIf="aiWarnings.length" class="np-ai__warn">
+          <span aria-hidden="true">⚠</span> {{ 'AI_WORKOUT_HEALTH' | translate }}
+          <ng-container *ngFor="let w of aiWarnings"> · {{ ('AI_WORKOUT_WARNING_' + w) | translate }}</ng-container>
+        </p>
+      </div>
       <!-- A finished or stopped client program (A9): read-only, « Dupliquer » to reuse it. -->
       <div class="np-locked" *ngIf="readOnly" role="status">
         <i-feather name="lock" class="np-locked__icon"></i-feather>
@@ -815,9 +823,16 @@
                 <option value="CHEST">{{ 'EXERCISE_MUSCLE_CHEST' | translate }}</option>
                 <option value="BACK">{{ 'EXERCISE_MUSCLE_BACK' | translate }}</option>
                 <option value="SHOULDERS">{{ 'EXERCISE_MUSCLE_SHOULDERS' | translate }}</option>
+                <option value="BICEPS">{{ 'EXERCISE_MUSCLE_BICEPS' | translate }}</option>
+                <option value="TRICEPS">{{ 'EXERCISE_MUSCLE_TRICEPS' | translate }}</option>
+                <option value="FOREARMS">{{ 'EXERCISE_MUSCLE_FOREARMS' | translate }}</option>
+                <option value="QUADRICEPS">{{ 'EXERCISE_MUSCLE_QUADRICEPS' | translate }}</option>
+                <option value="HAMSTRINGS">{{ 'EXERCISE_MUSCLE_HAMSTRINGS' | translate }}</option>
+                <option value="GLUTES">{{ 'EXERCISE_MUSCLE_GLUTES' | translate }}</option>
+                <option value="CALVES">{{ 'EXERCISE_MUSCLE_CALVES' | translate }}</option>
+                <option value="CORE">{{ 'EXERCISE_MUSCLE_CORE' | translate }}</option>
                 <option value="ARMS">{{ 'EXERCISE_MUSCLE_ARMS' | translate }}</option>
                 <option value="LEGS">{{ 'EXERCISE_MUSCLE_LEGS' | translate }}</option>
-                <option value="CORE">{{ 'EXERCISE_MUSCLE_CORE' | translate }}</option>
               </select>
 
               <svg class="wkselect__chev" viewBox="0 0 24 24">
@@ -837,8 +852,11 @@
                 <option value="">{{ 'EQUIPMENT' | translate }}</option>
                 <option value="BARBELL">{{ 'EXERCISE_EQUIPMENT_BARBELL' | translate }}</option>
                 <option value="DUMBBELL">{{ 'EXERCISE_EQUIPMENT_DUMBBELL' | translate }}</option>
+                <option value="KETTLEBELL">{{ 'EXERCISE_EQUIPMENT_KETTLEBELL' | translate }}</option>
                 <option value="CABLE">{{ 'EXERCISE_EQUIPMENT_CABLE' | translate }}</option>
                 <option value="MACHINE">{{ 'EXERCISE_EQUIPMENT_MACHINE' | translate }}</option>
+                <option value="BAND">{{ 'EXERCISE_EQUIPMENT_BAND' | translate }}</option>
+                <option value="PULL_UP_BAR">{{ 'EXERCISE_EQUIPMENT_PULL_UP_BAR' | translate }}</option>
                 <option value="BODYWEIGHT">{{ 'EXERCISE_EQUIPMENT_BODYWEIGHT' | translate }}</option>
               </select>
 
@@ -909,7 +927,7 @@
                 <div class="wkdrawer__sub">
                   {{ ex.type || "Exercise" }}
                   <ng-container *ngIf="ex.muscle || ex.exerciseRef?.muscle">
-                    · {{ ex.muscle || ex.exerciseRef?.muscle }}
+                    · {{ 'EXERCISE_MUSCLE_' + (ex.muscle || ex.exerciseRef?.muscle) | translate }}
                   </ng-container>
                 </div>
               </div>

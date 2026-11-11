@@ -435,6 +435,20 @@
   padding: 14px 14px 0;
 }
 
+.macros-only-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: light-dark(#f1f3f7, #14181c);
+  color: var(--yc-text-secondary);
+  font-size: 13px;
+
+  i-feather { flex: 0 0 auto; width: 15px; height: 15px; }
+}
+
 .recipe-cover {
   width: 100%;
   height: 150px;

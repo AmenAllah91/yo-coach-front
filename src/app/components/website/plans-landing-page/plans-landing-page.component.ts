@@ -102,7 +102,9 @@ export class PlansLandingPageComponent implements OnInit {
   }
 
   private toLandingPlan(plan: SubscriptionPlanDto, index: number): LandingPlan {
-    const hasTrial = (plan.freeTrialDays ?? 0) > 0;
+    // Free plan (2026-11-10): price 0, no trial (it is free for ever), limited by its number of clients.
+    const free = plan.free ?? plan.price === 0;
+    const hasTrial = !free && (plan.freeTrialDays ?? 0) > 0;
     const unitRange = this.getUnitRange(plan);
     const features = [
       plan.description,
@@ -114,19 +116,20 @@ export class PlansLandingPageComponent implements OnInit {
     return {
       id: plan.id,
       name: plan.name,
-      subtitle: plan.billingCycle === 'YEARLY' ? 'Billed yearly' : 'Billed monthly',
-      price: `${new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 2 }).format(plan.price)} DT`,
-      period: plan.billingCycle === 'YEARLY' ? '/ year' : '/ month',
+      subtitle: free ? 'No time limit, no card' : plan.billingCycle === 'YEARLY' ? 'Billed yearly' : 'Billed monthly',
+      price: free ? 'Free' : `${new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 2 }).format(plan.price)} DT`,
+      period: free ? '' : plan.billingCycle === 'YEARLY' ? '/ year' : '/ month',
       description: plan.description || 'A YoCoach subscription plan built for coaching businesses.',
       badge: hasTrial ? `${plan.freeTrialDays} days free` : undefined,
       icon: this.getPlanIcon(index),
-      ctaLabel: hasTrial ? 'Start free trial' : `Choose ${plan.name}`,
+      ctaLabel: free ? 'Start for free' : hasTrial ? 'Start free trial' : `Choose ${plan.name}`,
       highlighted: hasTrial,
       info: [
-        { label: 'Billing', value: plan.billingCycle === 'YEARLY' ? 'Yearly' : 'Monthly' },
+        { label: 'Billing', value: free ? 'None' : plan.billingCycle === 'YEARLY' ? 'Yearly' : 'Monthly' },
         { label: 'Plan code', value: plan.planCode }
       ],
-      features: features.length ? features : ['YoCoach platform access']
+      features: features.length ? features : ['YoCoach platform access'],
+      source: plan
     };
   }
 

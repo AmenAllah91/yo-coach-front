@@ -193,7 +193,10 @@
     <div class="clients-table" *ngIf="!showInvited && !showRequests">
       <div class="table-header">
         <div class="col-client">{{ 'CLIENT' | translate }}</div>
-        <div class="col-workouts">{{ 'WORKOUTS_LAST_7_DAYS' | translate }}</div>
+        <div class="col-workouts client-stats-head">
+          <span>{{ 'CLIENT_ADHERENCE' | translate }}</span>
+          <span>{{ 'LAST_ACTIVITY' | translate }}</span>
+        </div>
         <div class="col-status">{{ 'STATUS' | translate }}</div>
         <div class="col-actions"></div>
       </div>
@@ -222,15 +225,15 @@
           </div>
 
           <div class="col-workouts">
-            <div class="workout-calendar">
-              <div
-                class="workout-day"
-                *ngFor="let day of [0,1,2,3,4,5,6]"
-                [class.has-workout]="hasWorkoutOnDay(client, day)">
-                <div class="day-name">{{ getDayName(day) }}</div>
-                <div class="day-number">{{ getDayNumber(day) }}</div>
-              </div>
+            <div class="client-stats" *ngIf="statsOf(client) as stats; else statsPending">
+              <span class="stat-adherence" [attr.data-level]="adherenceLevel(stats)"
+                    [title]="stats.planned ? ('CLIENT_ADHERENCE_DETAIL' | translate: { done: stats.done, planned: stats.planned }) : ('CLIENT_ADHERENCE_NONE' | translate)">
+                <ng-container *ngIf="stats.rate !== null; else noRate">{{ stats.rate }} %</ng-container>
+                <ng-template #noRate>—</ng-template>
+              </span>
+              <span class="stat-last" [class.stat-last--late]="lastActivityLate(stats)">{{ lastActivityLabel(stats) }}</span>
             </div>
+            <ng-template #statsPending><div class="client-stats client-stats--pending" aria-hidden="true"></div></ng-template>
           </div>
 
           <div class="col-status">

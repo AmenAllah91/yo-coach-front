@@ -76,12 +76,18 @@ export class FirstStepsComponent implements OnInit {
   openDiscover(step: CoachGuideDiscoverStep): void {
     const clientId = this.status?.example.clientId;
     if (!clientId) return;
-    if (step !== 'REPLY_MESSAGE') {
+    // REPLY_MESSAGE and AI_PROGRAM are read by the server (a message sent, the AI program generated).
+    if (step !== 'REPLY_MESSAGE' && step !== 'AI_PROGRAM') {
       this.guide.visit(step).subscribe({ next: (status) => (this.status = status), error: () => undefined });
     }
     switch (step) {
       case 'OPEN_CLIENT': void this.router.navigate(['/clients/profil-client', clientId]); break;
       case 'VIEW_PROGRAM': void this.router.navigate(['/clients/profil-client', clientId], { queryParams: { tab: 'workouts' } }); break;
+      case 'AI_PROGRAM': // IA-51: the profile opens the creation window; the first AI program is free (D2)
+        void this.router.navigate(['/clients/profil-client', clientId], {
+          queryParams: { tab: 'workouts', openAssign: this.status?.discover.find((s) => s.key === step)?.done ? 'ai' : 'ai-example' },
+        });
+        break;
       case 'REVIEW_CHECKIN': void this.router.navigate(['/clients/profil-client', clientId], { queryParams: { tab: 'checkins' } }); break;
       case 'REPLY_MESSAGE': void this.router.navigate(['/chat'], { queryParams: { clientId } }); break;
     }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -13,6 +13,10 @@ import { CoachSettingsService } from '../../../service/coach-settings.service';
 import { BrandingLockBannerComponent } from 'app/components/branding-lock-banner/branding-lock-banner.component';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { toWebsiteVideoEmbedUrl } from '../models/website-video';
+import { WebsiteAiDialogComponent } from '../website-ai-dialog/website-ai-dialog.component';
+import { hasWebsiteTexts, mergeWebsiteAiDraft } from '../models/website-ai';
+import { WebsiteAiDraft } from '../../../service/website.service';
+import { AiQuotaService, AiQuotaStatus, quotaOf } from 'app/service/ai-quota.service';
 import {
   ButtonStyle, EMPTY_SOCIAL_LINKS, FontPairing, HeroBackground, HeroLayout, Radius, SECTION_KEYS, SectionKey, SiteColors,
   SiteMode, SocialLinks, StatItem, THEME_PRESETS, ThemePreset, WebsiteDesign, ensureWebsiteFontsLoaded, normalizeDesign,
@@ -111,7 +115,7 @@ const DOMAIN_PATTERN = /^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)
 @Component({
   selector: 'app-yo-coach-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, RouterModule, TranslateModule, BrandingLockBannerComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, RouterModule, TranslateModule, BrandingLockBannerComponent, WebsiteAiDialogComponent],
   templateUrl: './website-builder.component.html',
   styleUrls: ['./website-builder.component.scss']
 })
@@ -127,7 +131,61 @@ export class WebsiteBuilderComponent implements OnInit {
     private coachSettingsService: CoachSettingsService,
     private subscriptionState: CoachSubscriptionStateService,
     private translate: TranslateService,
+    private aiQuotas: AiQuotaService,
   ) {}
+
+  /** IA-21: the AI website (questions in a dialog, draft put in the builder, nothing saved). */
+  @ViewChild(WebsiteAiDialogComponent) aiDialog?: WebsiteAiDialogComponent;
+  aiQuota: AiQuotaStatus | null = null;
+  /** The texts on screen come from the AI and are not saved yet (banner). */
+  aiApplied = false;
+
+  get aiHasTexts(): boolean {
+    return hasWebsiteTexts({ profile: this.profile, services: this.services, cta: this.cta, descriptionBlocks: this.descriptionBlocks });
+  }
+
+  get siteLanguage(): 'fr' | 'en' | 'ar' {
+    const lang = (this.translate.currentLang || 'fr').slice(0, 2);
+    return lang === 'en' || lang === 'ar' ? lang : 'fr';
+  }
+
+  openAi(): void { this.aiDialog?.open(); }
+
+  /**
+   * IA-21: the AI texts replace the coach's texts (photos, name, testimonials, social links... are kept). The design
+   * preset is applied; a coach who already saved a site keeps their colors (only the layout, fonts and shapes change).
+   */
+  applyAiDraft(draft: WebsiteAiDraft): void {
+    const merged = mergeWebsiteAiDraft(
+      { profile: this.profile, services: this.services, cta: this.cta, descriptionBlocks: this.descriptionBlocks },
+      draft, () => this.generateId());
+    this.profile = merged.profile;
+    this.services = merged.services;
+    this.cta = merged.cta;
+    this.descriptionBlocks = merged.descriptionBlocks;
+    const preset = this.presets.find((p) => p.key === draft.preset);
+    if (preset) {
+      if (this.hasSavedSite) {
+        this.selectedPresetKey = preset.key;
+        this.design = { ...this.design, ...preset.design };
+        ensureWebsiteFontsLoaded(this.design.font);
+      } else {
+        this.applyPreset(preset);
+      }
+    }
+    this.aiApplied = true;
+    this.activeSection = 'profile';
+    if (this.aiQuota && this.aiQuota.limit !== null) {
+      this.aiQuota = { ...this.aiQuota, used: this.aiQuota.used + 1, remaining: Math.max(0, (this.aiQuota.remaining ?? 0) - 1) };
+    }
+  }
+
+  private loadAiQuota(): void {
+    this.aiQuotas.overview().subscribe({
+      next: (overview) => (this.aiQuota = quotaOf(overview, 'ai.website')),
+      error: () => (this.aiQuota = null), // the server still checks the quota when generating
+    });
+  }
 
   /** SUB-27/29: the whole website is a paid feature. Visible, but nothing can be changed during the trial. */
   brandingLocked = false;
@@ -238,8 +296,10 @@ export class WebsiteBuilderComponent implements OnInit {
   copiedValue = '';
 
   ngOnInit(): void {
-    this.subscriptionState.brandingLocked().subscribe((locked) => (this.brandingLocked = locked));
+    // IA-23: the website has its own yes / no in the plan (no longer the same lock as the app colors).
+    this.subscriptionState.websiteLocked().subscribe((locked) => (this.brandingLocked = locked));
     this.loadWebsiteOrUserData();
+    this.loadAiQuota();
   }
 
   goBack(): void { window.history.back(); }
@@ -671,6 +731,7 @@ export class WebsiteBuilderComponent implements OnInit {
         if (!this.savedCustomDomain) this.domainCheck = null;
         this.savedSnapshot = this.snapshot();
         this.savedRecently = true;
+        this.aiApplied = false; // the AI texts are now the coach's saved texts
         clearTimeout(this.savedTimer);
         this.savedTimer = setTimeout(() => (this.savedRecently = false), 3000);
       },

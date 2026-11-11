@@ -15,6 +15,10 @@
   <app-sidebar #sidebar (sidebarToggle)="handleSidebarToggle($event)"></app-sidebar>
 
   <div class="content">
+    <!-- Admin announcements for the coaches (planned update, incident...). -->
+    <app-announcement-banner></app-announcement-banner>
+    <!-- Admin announcements for the coaches (planned update, incident...). -->
+    <app-announcement-banner></app-announcement-banner>
     <!-- SUB-30: trial ending, late payment, read-only account. -->
     <app-subscription-banner></app-subscription-banner>
     <router-outlet></router-outlet>

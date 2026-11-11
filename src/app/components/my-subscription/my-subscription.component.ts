@@ -15,6 +15,7 @@ import { CoachSubscriptionState, cardExpiry, cardLabel, indicativeUsd } from 'ap
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
 import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 import { CancelSubscriptionDialogComponent } from './cancel-subscription-dialog/cancel-subscription-dialog.component';
+import { ReferralCreditCardComponent } from 'app/components/referral/referral-credit-card/referral-credit-card.component';
 
 /** Invoices the coach can still pay. */
 const PAYABLE = ['UNPAID', 'OVERDUE', 'PENDING'];
@@ -32,7 +33,7 @@ export const INVOICES_PER_PAGE = 5;
 @Component({
   selector: 'app-my-subscription',
   standalone: true,
-  imports: [CommonModule, TranslateModule, FeatherModule, CancelSubscriptionDialogComponent],
+  imports: [CommonModule, TranslateModule, FeatherModule, CancelSubscriptionDialogComponent, ReferralCreditCardComponent],
   templateUrl: './my-subscription.component.html',
   styleUrl: './my-subscription.component.scss',
 })
@@ -201,7 +202,7 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   }
 
   get canCancel(): boolean {
-    return CANCELLABLE.includes(this.status) && !this.state?.cancelAtPeriodEnd;
+    return CANCELLABLE.includes(this.status) && !this.state?.cancelAtPeriodEnd && !this.isFreePlan;
   }
 
   get canResume(): boolean {
@@ -216,6 +217,21 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     return this.status === 'TRIAL';
   }
 
+  /** Free plan (2026-11-10): active on a plan priced 0: no date, nothing to cancel; the paid plan is chosen at the checkout. */
+  get isFreePlan(): boolean {
+    return !!this.state?.freePlan;
+  }
+
+  /** "Upgrade to a paid plan": during the trial and on the free plan (both lead to the payment screen). */
+  get canUpgradeToPaid(): boolean {
+    return this.isTrial || this.isFreePlan;
+  }
+
+  /** The badge says "Free" on the free plan, the status otherwise. */
+  get statusLabelKey(): string {
+    return this.isFreePlan ? 'SUB_STATUS_FREE' : 'SUB_STATUS_' + this.status;
+  }
+
   /** The main date line of the summary, already translated with its date. */
   get dateLine(): { key: string; date: string } | null {
     const s = this.state;
@@ -223,6 +239,9 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     const zone = s.timeZone || undefined;
     if (s.cancelAtPeriodEnd && s.accessUntil) {
       return { key: 'MY_SUB_ACCESS_UNTIL', date: MySubscriptionComponent.lastDay(s.accessUntil, zone) };
+    }
+    if (s.freePlan) {
+      return { key: 'MY_SUB_FREE_NO_END', date: '' };
     }
     switch (s.status) {
       case 'TRIAL':
@@ -256,6 +275,19 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
 
   statusKey(invoiceStatus: string | null | undefined): string {
     return 'INVOICE_STATUS_' + (invoiceStatus || 'UNKNOWN').toUpperCase();
+  }
+
+  /** AFF-28: an invoice entirely paid by the referral credit says so. */
+  invoiceStatusKey(invoice: CoachInvoice): string {
+    const paidByCredit = (invoice.status || '').toUpperCase() === 'PAID' && (invoice.referralCreditAmount ?? 0) > 0 && (invoice.amount ?? 0) <= 0;
+    return paidByCredit ? 'INVOICE_STATUS_PAID_BY_CREDIT' : this.statusKey(invoice.status);
+  }
+
+  /** AFF-28: "Total 89,000 DT · referral credit −26,700 DT" for an invoice reduced by the credit (null otherwise). */
+  creditLine(invoice: CoachInvoice): { total: string; credit: string } | null {
+    const credit = invoice.referralCreditAmount ?? 0;
+    if (credit <= 0) return null;
+    return { total: this.money((invoice.amount ?? 0) + credit, invoice.currency), credit: this.money(credit, invoice.currency) };
   }
 
   pay(invoice: CoachInvoice): void {
@@ -319,7 +351,7 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
 
   /** SUB-46: a paying coach changes plan (upgrade, downgrade, monthly / yearly). */
   get canChangePlan(): boolean {
-    return this.status === 'ACTIVE';
+    return this.status === 'ACTIVE' && !this.isFreePlan;
   }
 
   changePlan(planId?: number): void {

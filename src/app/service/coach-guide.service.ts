@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '@env/environment';
 
 export type CoachGuideChoice = 'EXAMPLE' | 'SCRATCH';
-export type CoachGuideDiscoverStep = 'OPEN_CLIENT' | 'VIEW_PROGRAM' | 'REPLY_MESSAGE' | 'REVIEW_CHECKIN';
+export type CoachGuideDiscoverStep = 'OPEN_CLIENT' | 'VIEW_PROGRAM' | 'AI_PROGRAM' | 'REPLY_MESSAGE' | 'REVIEW_CHECKIN';
 export type CoachGuideStartStep = 'PROFILE' | 'BRANDING' | 'WEBSITE' | 'PROGRAM' | 'INVITE';
 
 export interface CoachGuideStep<K extends string> {

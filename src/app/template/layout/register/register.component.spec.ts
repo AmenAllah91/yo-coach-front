@@ -29,7 +29,9 @@ describe('RegisterComponent', () => {
     registerService = jasmine.createSpyObj('RegisterService', ['registerUser']);
     authService = jasmine.createSpyObj('AuthService', ['login']);
     authService.login.and.returnValue(Promise.resolve());
-    onboardingService = jasmine.createSpyObj('SubscriptionOnboardingService', ['onboard', 'getPlans']);
+    onboardingService = jasmine.createSpyObj('SubscriptionOnboardingService', ['onboard', 'getPlans', 'checkReferralCode']);
+    onboardingService.checkReferralCode.and.returnValue(of({ status: 'VALID', firstName: 'Khalil', initial: 'B.' }));
+    localStorage.removeItem('yocoach.referral');
     onboardingService.getPlans.and.returnValue(of([]));
     router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.returnValue(Promise.resolve(true));
@@ -243,6 +245,82 @@ describe('RegisterComponent', () => {
         .toBe('USER_ALREADY_EXISTS');
       expect(submitWith({ status: 409, error: { code: 'SUBSCRIPTION_ALREADY_RUNNING' } }).generalError)
         .toBe('UNEXPECTED_ERROR_RETRY');
+    });
+  });
+
+  describe('referral code of a coach sign-up (AFF-10)', () => {
+    const coach = {
+      username: 'coach', firstName: 'Yo', lastName: 'Coach', email: 'coach@example.com',
+      password: 'Letters 123!', confirmPassword: 'Letters 123!'
+    };
+    afterEach(() => localStorage.removeItem('yocoach.referral'));
+
+    it('fills the code of the link, checks it and sends it with the sign-up', () => {
+      onboardingService.onboard.and.returnValue(of({}));
+      const c = create({ planId: '42', ref: 'khalil-7f3k' });
+      expect(c.referralCode).toBe('KHALIL-7F3K');
+      expect(c.referralStatus).toBe('valid');
+      expect(c.referrerName).toBe('Khalil B.');
+      c.signupForm.patchValue(coach);
+      c.onSubmit();
+      expect(onboardingService.onboard.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
+        planId: 42, referralCode: 'KHALIL-7F3K', referralSource: 'LINK'
+      }));
+    });
+
+    it('keeps the code of the link through the detour by the plans page', () => {
+      create({ ref: 'KHALIL-7F3K' });
+      expect(router.navigate).toHaveBeenCalledWith(['/plans-landing'], { replaceUrl: true });
+      expect(create({ planId: '42' }).referralCode).toBe('KHALIL-7F3K');
+    });
+
+    it('a typed code replaces the code of the link', () => {
+      onboardingService.onboard.and.returnValue(of({}));
+      const c = create({ planId: '42', ref: 'KHALIL-7F3K' });
+      c.onReferralInput('amel-2b9c');
+      c.checkReferralCode();
+      expect(onboardingService.checkReferralCode).toHaveBeenCalledWith('AMEL-2B9C');
+      c.signupForm.patchValue(coach);
+      c.onSubmit();
+      expect(onboardingService.onboard.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
+        referralCode: 'AMEL-2B9C', referralSource: 'CODE'
+      }));
+    });
+
+    it('an invalid or unchecked code never blocks the sign-up', () => {
+      onboardingService.onboard.and.returnValue(of({}));
+      onboardingService.checkReferralCode.and.returnValue(of({ status: 'INVALID' }));
+      const c = create({ planId: '42', ref: 'NOBODY-1234' });
+      expect(c.referralStatus).toBe('invalid');
+      c.onReferralInput('a b');
+      c.checkReferralCode();
+      expect(c.referralStatus).toBe('invalid');
+      c.signupForm.patchValue(coach);
+      expect(c.signupForm.valid).toBeTrue();
+      c.onSubmit();
+      expect(onboardingService.onboard).toHaveBeenCalled();
+      expect(onboardingService.onboard.calls.mostRecent().args[0].referralCode).toBeUndefined();
+
+      onboardingService.checkReferralCode.and.returnValue(throwError(() => ({ status: 503 })));
+      c.onReferralInput('KHALIL-7F3K');
+      c.checkReferralCode();
+      expect(c.referralStatus).toBe('unverified');
+    });
+
+    it('a removed code is not sent and is forgotten', () => {
+      onboardingService.onboard.and.returnValue(of({}));
+      const c = create({ planId: '42', ref: 'KHALIL-7F3K' });
+      c.removeReferral();
+      c.signupForm.patchValue(coach);
+      c.onSubmit();
+      expect(onboardingService.onboard.calls.mostRecent().args[0].referralCode).toBeUndefined();
+      expect(create({ planId: '42' }).referralCode).toBe('');
+    });
+
+    it('an invited client never sees nor sends a referral code', () => {
+      const c = create({ invitationToken: 'tok', ref: 'KHALIL-7F3K' });
+      expect(c.referralCode).toBe('');
+      expect(onboardingService.checkReferralCode).not.toHaveBeenCalled();
     });
   });
 });

@@ -89,6 +89,14 @@
 
 <main class="np-main">
       <!-- A finished or stopped client plan (A9): read-only, « Dupliquer » to reuse it. -->
+      <!-- IA-43 / IA-53: a meal plan proposed by the AI, not saved yet, and the cases that need care. -->
+      <div class="np-ai" *ngIf="(aiDraftShown && hasUnsavedChanges()) || aiWarnings.length" role="status">
+        <p *ngIf="aiDraftShown && hasUnsavedChanges()"><span aria-hidden="true">✨</span> {{ 'AI_NUTRITION_APPLIED' | translate }}</p>
+        <p *ngIf="aiWarnings.length" class="np-ai__warn">
+          <span aria-hidden="true">⚠</span> {{ 'AI_WORKOUT_HEALTH' | translate }}
+          <ng-container *ngFor="let w of aiWarnings"> · {{ ('AI_WORKOUT_WARNING_' + w) | translate }}</ng-container>
+        </p>
+      </div>
       <app-locked-program-banner *ngIf="draft.readOnly" class="np-locked-banner" [stoppedAt]="draft.stoppedAt" [busy]="clientMode.duplicating" (duplicate)="duplicateLocked()"></app-locked-program-banner>
       <!-- A longer client plan that reaches the next one (P9): banner now, « Décaler » / « Retirer » at the save. -->
       <app-program-overflow

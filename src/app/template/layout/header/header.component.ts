@@ -26,6 +26,8 @@ import {getTimeAgo} from "../../../models/notification";
 import {Subject, timer} from "rxjs";
 import {takeUntil} from "rxjs/operators";
 import {ThemeMode, ThemeModeService} from "../../../core/service/theme-mode.service";
+import {CoachSubscriptionStateService} from "../../../service/coach-subscription-state.service";
+import {formatMoney} from "../../../service/referral.service";
 
 @Component({
   selector: 'app-header',
@@ -75,6 +77,7 @@ export class HeaderComponent implements OnInit, OnDestroy, AfterViewInit {
     private chatService: ChatService,
     private coachSettingsService: CoachSettingsService,
     public themeMode: ThemeModeService,
+    private subscriptionState: CoachSubscriptionStateService,
   ) {
 const lang = localStorage.getItem('lang') || 'fr';
 this.translate.use(lang);}
@@ -95,6 +98,8 @@ this.translate.use(lang);}
   notificationsEnabled = true;
   private notificationPreferences: any = null;
   private isCoach = false;
+  /** AFF-22: referral credit of the coach shown in the header ("" when none). */
+  referralCredit = '';
   private readonly destroy$ = new Subject<void>();
 
 
@@ -121,6 +126,12 @@ this.translate.use(lang);}
     this.authService.extractRoles().then((roles) => {
       this.isCoach = roles.includes('ROLE_COACH');
       if (!this.isCoach) return;
+      this.subscriptionState.states$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((state) => {
+          const amount = Number(state?.referralCreditAvailable ?? 0);
+          this.referralCredit = amount > 0 ? formatMoney(amount, state?.referralCreditCurrency ?? 'TND') : '';
+        });
       this.coachSettingsService.configChanges$
         .pipe(takeUntil(this.destroy$))
         .subscribe((config) => this.applyNotificationSetting(config.notifications));
@@ -391,7 +402,8 @@ this.translate.use(lang);}
       PROGRAM_ASSIGNED: 'clipboard', PROGRAM_UPDATED: 'edit-3', WORKOUT_DUE_TODAY: 'activity',
       CHECK_IN_DUE: 'check-square', WORKOUT_OVERDUE: 'alert-circle',
       NUTRITION_DAY_OVERDUE: 'calendar', CHECK_IN_OVERDUE: 'alert-circle', CHECK_IN_REVIEWED: 'message-circle',
-      JOIN_REQUEST_RECEIVED: 'user-plus', JOIN_REQUEST_ACCEPTED: 'user-check', JOIN_SLOT_AVAILABLE: 'unlock'
+      JOIN_REQUEST_RECEIVED: 'user-plus', JOIN_REQUEST_ACCEPTED: 'user-check', JOIN_SLOT_AVAILABLE: 'unlock',
+      REFERRAL_UPDATE: 'gift'
     };
     return icons[type] || 'bell';
   }

@@ -7,6 +7,8 @@ import {
   CoachSettingsService,
   DemoWorkspaceStatus,
   normalizeDemoWorkspaceStatus,
+  DEFAULT_WELCOME_MESSAGE,
+  WELCOME_MESSAGE_MAX_LENGTH,
 } from 'app/service/coach-settings.service';
 import { LanguageService } from 'app/service/language.service';
 import { AuthService } from 'app/config/auth.service';
@@ -27,7 +29,7 @@ import { CoachSubscriptionStateService } from 'app/service/coach-subscription-st
   styleUrl: './configuration-coachng.component.scss',
 })
 export class ConfigurationCoachngComponent implements OnInit {
-  activeTab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'preferences' = 'account';
+  activeTab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'automaticMessages' | 'preferences' = 'account';
   isClient = false;
 
   profile = {
@@ -337,7 +339,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   onSave(): void {
-    if (this.saving || !this.hasConfigChanges || this.publicProfileHasErrors || this.preferencesHaveErrors) return;
+    if (this.saving || !this.hasConfigChanges || this.publicProfileHasErrors || this.preferencesHaveErrors || this.welcomeTooLong) return;
     const p = this.config.publicProfile;
     for (const key of ['professionalTitle', 'bio', 'experience', 'location', 'coachingType', 'instagramUrl', 'websiteUrl'] as const) {
       p[key] = (p[key] || '').trim();
@@ -349,6 +351,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     console.log('[COACH SETTINGS] Saving...', this.config);
 
     const payload = this.clone(this.config);
+    payload.welcomeMessage.text = payload.welcomeMessage.text.trim();
     if (!payload.nutrition.autoCreateMeals && this.preferenceNumberError(payload.nutrition.defaultMeals, 1, 10)) {
       payload.nutrition.defaultMeals = this.savedConfig.nutrition.defaultMeals;
     }
@@ -545,10 +548,41 @@ export class ConfigurationCoachngComponent implements OnInit {
     return this.clientRows.find(row => row.tab === this.activeTab)?.title || this.ct('Settings', 'Paramètres');
   }
 
-  setActiveTab(tab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'preferences'): void {
+  setActiveTab(tab: 'account' | 'publicProfile' | 'password' | 'plan' | 'notifications' | 'automaticMessages' | 'preferences'): void {
     this.activeTab = tab;
     this.passwordError = '';
     this.passwordSuccess = '';
+  }
+
+  // ── Automatic messages: welcome message ──
+  readonly welcomeMaxLength = WELCOME_MESSAGE_MAX_LENGTH;
+
+  /** Turning it on with an empty text proposes the default one (the coach edits it before saving). */
+  toggleWelcome(): void {
+    const welcome = this.config.welcomeMessage;
+    welcome.enabled = !welcome.enabled;
+    if (welcome.enabled && !welcome.text.trim()) welcome.text = DEFAULT_WELCOME_MESSAGE;
+  }
+
+  insertFirstName(field: HTMLTextAreaElement): void {
+    const welcome = this.config.welcomeMessage;
+    const start = field.selectionStart ?? welcome.text.length;
+    const end = field.selectionEnd ?? start;
+    welcome.text = (welcome.text.slice(0, start) + '{prenom}' + welcome.text.slice(end)).slice(0, this.welcomeMaxLength);
+    setTimeout(() => {
+      field.focus();
+      field.setSelectionRange(start + 8, start + 8);
+    });
+  }
+
+  /** What the client will read, with an example first name. */
+  get welcomePreview(): string {
+    const text = this.config.welcomeMessage.text.trim() || DEFAULT_WELCOME_MESSAGE;
+    return text.replace(/\{pr[eé]nom\}/g, 'Sami');
+  }
+
+  get welcomeTooLong(): boolean {
+    return this.config.welcomeMessage.text.length > this.welcomeMaxLength;
   }
 
   get hasConfigChanges(): boolean {

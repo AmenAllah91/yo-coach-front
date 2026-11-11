@@ -124,6 +124,74 @@ describe('Meals create and edit validation', () => {
     expect(component.canSave).toBeTrue(); expect(component.coverImageName).toBe('cover.png');
     select(); component.removeCoverImage(); reader.onload(); expect(component.coverImage).toBeNull();
   });
+
+  it('saves a meal from typed macros only, as one manual line with computed kcal', () => {
+    service.createMeal.and.returnValue(of({}));
+    component.choose('foods'); component.ingredients = [];
+    component.setNutritionSource('macros');
+    expect(component.canSave).toBeFalse();
+    expect(component.macrosError).toBe('MEAL_MACROS_REQUIRED');
+    component.quickMacros.protein = 30; component.quickMacros.carbs = 40; component.quickMacros.fat = 10;
+    expect(component.canSave).toBeTrue();
+    expect(component.nutritionTotal('calories')).toBe(370);
+    component.save();
+    const payload = service.createMeal.calls.mostRecent().args[0];
+    expect(payload.macrosOnly).toBeTrue();
+    expect(payload.foods).toEqual([jasmine.objectContaining({
+      name: 'Lunch', manual: true, quantity: 1, unit: 'portion', calories: 370, protein: 30, carbohydrates: 40, fat: 10,
+    })]);
+  });
+
+  it('types recipe macros per serving and stores the whole recipe, then reopens them per serving', () => {
+    service.saveTemplate.and.returnValue(of({}));
+    component.servings = 4;
+    component.setNutritionSource('macros');
+    // Prefilled from the foods already added (one rice line without values): calories stay computed.
+    expect(component.quickMacros).toEqual({ calories: null, protein: 0, carbs: 0, fat: 0 });
+    component.quickMacros = { calories: 500, protein: 25, carbs: 60, fat: 15 };
+    component.save();
+    const line = service.saveTemplate.calls.mostRecent().args[0].foods[0];
+    expect(line).toEqual(jasmine.objectContaining({ quantity: 4, calories: 2000, protein: 100, carbohydrates: 240, fat: 60 }));
+
+    component.isVisible = true;
+    component.meal = { id: 'r1', name: 'Bowl', template: true, mealType: 'LUNCH', servings: 4, macrosOnly: true, foods: [{ ...line }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    expect(component.macrosMode).toBeTrue();
+    expect(component.ingredients).toEqual([]);
+    expect(component.quickMacros).toEqual({ calories: 500, protein: 25, carbs: 60, fat: 15 });
+    expect(component.hasUnsavedChanges()).toBeFalse();
+  });
+
+  it('computes calories and macro shares until the coach types the calories, and recalculates on demand', () => {
+    component.setNutritionSource('macros');
+    component.quickMacros = { calories: null, protein: 30, carbs: 40, fat: 10 };
+    expect(component.caloriesTyped).toBeFalse();
+    expect([component.macroShare('protein'), component.macroShare('carbs'), component.macroShare('fat')]).toEqual([32, 43, 24]);
+    component.editCalories();
+    expect(component.caloriesTyped).toBeTrue();
+    expect(component.quickMacros.calories).toBe(370);
+    component.quickMacros.calories = 400;
+    expect(component.nutritionTotal('calories')).toBe(400);
+    component.resetCalories();
+    expect(component.caloriesTyped).toBeFalse();
+    expect(component.nutritionTotal('calories')).toBe(370);
+  });
+
+  it('reopens calories that match the macros as computed', () => {
+    component.isVisible = true;
+    component.meal = { id: 'm2', name: 'Plate', mealType: 'LUNCH', macrosOnly: true,
+      foods: [{ manual: true, name: 'Plate', quantity: 1, unit: 'portion', calories: 370, protein: 30, carbohydrates: 40, fat: 10 }] };
+    component.ngOnChanges({ meal: new SimpleChange(null, component.meal, false) });
+    expect(component.caloriesTyped).toBeFalse();
+    expect(component.hasUnsavedChanges()).toBeFalse();
+  });
+
+  it('keeps the foods when switching back from typed macros', () => {
+    component.setNutritionSource('macros');
+    component.setNutritionSource('foods');
+    expect(component.ingredients.length).toBe(1);
+    expect(component.canSave).toBeTrue();
+  });
 });
 
 describe('Meal ingredient servings', () => {
@@ -275,7 +343,7 @@ describe('Meals validation messages after interaction', () => {
     expect(fixture.nativeElement.textContent).not.toContain('TITLE_REQUIRED');
     // Save stays clickable: an incomplete meal shows what to fix instead of a disabled button.
     expect(fixture.nativeElement.querySelector('.button--primary').disabled).toBeFalse();
-    fixture.nativeElement.querySelector('.foods-field--title input').dispatchEvent(new Event('blur'));
+    fixture.nativeElement.querySelector('.field--name input').dispatchEvent(new Event('blur'));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('TITLE_REQUIRED');
   });

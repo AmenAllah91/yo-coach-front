@@ -7,6 +7,46 @@ import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { CoachSubscriptionState } from '../models/coach-subscription-state.model';
 
+/** Plan features (2026-11-11): the codes of CE (config/FeatureCodes.java) used by the coach app. */
+export const FEATURE = {
+  WEBSITE: 'feature.website',
+  BRANDING: 'feature.branding',
+  CUSTOM_DOMAIN: 'feature.custom_domain',
+  JOIN_LINK: 'feature.join_link',
+  CONTACT_FORM: 'feature.contact_form',
+  CHECKINS: 'feature.checkins',
+  TASKS: 'feature.tasks',
+  VIDEO_CALL: 'feature.video_call',
+  REFERRAL: 'feature.referral',
+} as const;
+
+/**
+ * Is a feature locked for this state? 'website' / 'theme' (IA-23) or a code of the plan features (2026-11-11).
+ * The list of the plan (features) decides; without it, the website and the branding keep their rule of before
+ * (websiteAllowed / themeAllowed, else brandingAllowed) and any other feature is open (the server checks anyway).
+ * No state (unknown) = not locked (SUB-24 policy).
+ */
+export function featureLocked(state: CoachSubscriptionState | null | undefined, feature: string): boolean {
+  if (!state) return false;
+  const code = feature === 'website' ? FEATURE.WEBSITE : feature === 'theme' ? FEATURE.BRANDING : feature;
+  if (code === FEATURE.WEBSITE || code === FEATURE.BRANDING) {
+    // CE already merged the plan's answer into websiteAllowed / themeAllowed.
+    const allowed = code === FEATURE.WEBSITE ? state.websiteAllowed : state.themeAllowed;
+    return !(allowed ?? state.brandingAllowed);
+  }
+  const line = (state.features ?? []).find((f) => f.code === code);
+  return line ? !line.allowed : false;
+}
+
+/** Name of a feature of the plan in the language of the app (French by default), or null when unknown. */
+export function featureLabel(state: CoachSubscriptionState | null | undefined, code: string | null | undefined,
+                             lang: string | null | undefined): string | null {
+  const line = (state?.features ?? []).find((f) => f.code === code);
+  if (!line) return null;
+  const byLang = lang === 'en' ? line.labelEn : lang === 'ar' ? line.labelAr : null;
+  return byLang || line.labelFr || null;
+}
+
 /** Back on the window, the state is read again when the last read is older than this (at most once a minute). */
 export const STATE_MAX_AGE_MS = 60000;
 
@@ -27,6 +67,11 @@ export class CoachSubscriptionStateService implements OnDestroy {
 
   /** Last state read in this session (undefined: none yet), shown at once while a fresh one is asked. */
   snapshot: CoachSubscriptionState | null | undefined;
+  /** The admin switched the payment incident on: the payment buttons wait (the access continues). */
+  get paymentsPaused(): boolean {
+    return !!this.snapshot?.paymentIncident;
+  }
+
   /** A screen asked for the state (a coach): only then is it read again on return to the window. */
   private asked = false;
   /** Time of the last read started (Date.now()), so the window events never ask more than once a minute. */
@@ -90,9 +135,17 @@ export class CoachSubscriptionStateService implements OnDestroy {
     return this.getState();
   }
 
-  /** SUB-29: custom branding is locked (trial or blocked). Unknown state = not locked (SUB-24 policy). */
+  /**
+   * SUB-29: app colors and logo are locked (trial, blocked, or not in the plan: IA-23). Unknown state = not locked
+   * (SUB-24 policy).
+   */
   brandingLocked(): Observable<boolean> {
-    return this.getState().pipe(map((state) => !!state && !state.brandingAllowed));
+    return this.getState().pipe(map((state) => featureLocked(state, 'theme')));
+  }
+
+  /** IA-23: the coach website is locked (trial, blocked, or not in the plan). */
+  websiteLocked(): Observable<boolean> {
+    return this.getState().pipe(map((state) => featureLocked(state, 'website')));
   }
 
   clear(): void {

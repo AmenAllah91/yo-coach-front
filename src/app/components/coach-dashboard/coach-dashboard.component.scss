@@ -108,6 +108,9 @@
   font-variant-numeric: tabular-nums; color: $ink;
 
   &--danger { color: light-dark(#dc2f2f, #ff8175); }
+  &[data-level='low'] { color: light-dark(#dc2f2f, #ff8175); }
+  &[data-level='mid'] { color: light-dark(#b45309, #fbbf24); }
+  &[data-level='good'] { color: light-dark(#15803d, #4ade80); }
 
   &--pending span {
     display: block; width: 42px; height: 22px; border-radius: 6px; background: light-dark(#eef2f6, #14171b);
@@ -119,6 +122,11 @@
   margin-top: 3px; font-size: 11.5px; color: $muted; line-height: 1.4;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   &--error { color: $danger; }
+}
+
+.kpi-trend {
+  &[data-trend='CDASH.KPI.TREND_UP'] { color: light-dark(#15803d, #4ade80); }
+  &[data-trend='CDASH.KPI.TREND_DOWN'] { color: light-dark(#dc2f2f, #ff8175); }
 }
 
 // ---------------------------------------------------------------- layout

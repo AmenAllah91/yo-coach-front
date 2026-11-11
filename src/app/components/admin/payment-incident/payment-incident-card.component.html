@@ -1,0 +1,61 @@
+<section class="incident-card" [class.on]="state?.active" [attr.aria-busy]="loading" aria-labelledby="payment-incident-title">
+  <div class="incident-head">
+    <i-feather [name]="state?.active ? 'alert-octagon' : 'shield'" class="incident-icon"></i-feather>
+    <div class="incident-title">
+      <h2 id="payment-incident-title">{{ 'PAYMENT_INCIDENT_TITLE' | translate }}</h2>
+      <p *ngIf="loading">{{ 'LOADING' | translate }}</p>
+      <p *ngIf="error" role="alert">{{ 'PAYMENT_INCIDENT_ERR_LOAD' | translate }} <button type="button" class="link" (click)="load()">{{ 'COACH_RETRY' | translate }}</button></p>
+      <ng-container *ngIf="state as s">
+        <p *ngIf="s.active && s.current as c">
+          <strong>{{ 'PAYMENT_INCIDENT_ON' | translate }}</strong> · {{ 'PAYMENT_INCIDENT_SINCE' | translate }} {{ c.startedAt | date: 'dd/MM/yyyy HH:mm' }}
+          <span class="reason">« {{ c.reason }} »</span>
+        </p>
+        <p *ngIf="!s.active">
+          {{ 'PAYMENT_INCIDENT_OFF' | translate }}
+          <span *ngIf="pausedUntilFuture as until"> · {{ 'PAYMENT_INCIDENT_PAUSED_UNTIL' | translate }} <strong>{{ until | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
+        </p>
+        <p class="hint">{{ 'PAYMENT_INCIDENT_HINT' | translate }}</p>
+      </ng-container>
+    </div>
+    <div class="incident-actions" *ngIf="state as s">
+      <button *ngIf="!s.active && form !== 'start'" type="button" class="danger-btn" (click)="openStart()">{{ 'PAYMENT_INCIDENT_START' | translate }}</button>
+      <button *ngIf="s.active && form !== 'end'" type="button" class="primary-btn" (click)="openEnd()">{{ 'PAYMENT_INCIDENT_END' | translate }}</button>
+    </div>
+  </div>
+
+  <div *ngIf="form === 'start'" class="incident-form">
+    <label for="incident-reason">{{ 'PAYMENT_INCIDENT_REASON' | translate }}</label>
+    <textarea id="incident-reason" rows="2" maxlength="1000" [(ngModel)]="reason" [disabled]="busy" [placeholder]="'PAYMENT_INCIDENT_REASON_PLACEHOLDER' | translate"></textarea>
+    <p class="hint">{{ 'PAYMENT_INCIDENT_START_EFFECT' | translate }}</p>
+    <div class="form-actions">
+      <button type="button" class="secondary-btn" (click)="cancel()" [disabled]="busy">{{ 'CANCEL' | translate }}</button>
+      <button type="button" class="danger-btn" (click)="start()" [disabled]="!validStart || busy">{{ (busy ? 'LOADING' : 'PAYMENT_INCIDENT_START') | translate }}</button>
+    </div>
+  </div>
+
+  <div *ngIf="form === 'end'" class="incident-form">
+    <label for="incident-days">{{ 'PAYMENT_INCIDENT_EXTRA_DAYS' | translate }}</label>
+    <input id="incident-days" type="number" min="0" [max]="maxExtraDays" step="1" [(ngModel)]="extraDays" [disabled]="busy">
+    <p class="hint">{{ 'PAYMENT_INCIDENT_END_EFFECT' | translate: { days: extraDays } }}</p>
+    <div class="form-actions">
+      <button type="button" class="secondary-btn" (click)="cancel()" [disabled]="busy">{{ 'CANCEL' | translate }}</button>
+      <button type="button" class="primary-btn" (click)="end()" [disabled]="!validEnd || busy">{{ (busy ? 'LOADING' : 'PAYMENT_INCIDENT_END') | translate }}</button>
+    </div>
+  </div>
+
+  <p *ngIf="actionError" class="incident-error" role="alert">{{ actionError | translate }}</p>
+
+  <ng-container *ngIf="state?.history?.length">
+    <button type="button" class="link history-toggle" (click)="showHistory = !showHistory" [attr.aria-expanded]="showHistory">
+      {{ 'PAYMENT_INCIDENT_HISTORY' | translate }} ({{ state?.history?.length }})
+    </button>
+    <ul *ngIf="showHistory" class="incident-history">
+      <li *ngFor="let i of state?.history">
+        <strong>{{ i.startedAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+        → {{ i.endedAt ? (i.endedAt | date: 'dd/MM/yyyy HH:mm') : ('PAYMENT_INCIDENT_ON' | translate) }}
+        <span *ngIf="i.extraDays !== null"> · +{{ i.extraDays }} {{ 'BILLING_DAYS' | translate }}</span>
+        <small>{{ i.reason }}</small>
+      </li>
+    </ul>
+  </ng-container>
+</section>

@@ -14,6 +14,7 @@
     <button type="button" [class.active]="activeTab === 'password'" (click)="setActiveTab('password')">{{ 'PASSWORD' | translate }}</button>
     <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'plan'" (click)="setActiveTab('plan')">{{ 'PLAN_AND_BILLING' | translate }}</button>
     <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">{{ 'NOTIFICATIONS' | translate }}</button>
+    <button type="button" *ngIf="!isClient" [class.active]="activeTab === 'automaticMessages'" (click)="setActiveTab('automaticMessages')">{{ 'AUTO_MESSAGES' | translate }}</button>
     <button type="button" [class.active]="activeTab === 'preferences'" (click)="setActiveTab('preferences')">{{ 'PREFERENCES' | translate }}</button>
   </nav>
   </ng-container>
@@ -194,6 +195,49 @@
           </button>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="settings-tab-panel" *ngIf="activeTab === 'automaticMessages' && !isClient">
+    <div class="tab-heading">
+      <div>
+        <h2>{{ 'AUTO_MESSAGES' | translate }}</h2>
+        <p class="muted-text">{{ 'AUTO_MESSAGES_SUBTITLE' | translate }}</p>
+      </div>
+      <div class="cs-header__actions">
+        <span class="unsaved-label" *ngIf="hasConfigChanges">{{ 'UNSAVED_CHANGES' | translate }}</span>
+        <button class="btn btn--outline" type="button" [disabled]="saving || !hasConfigChanges" (click)="onCancel()">{{ 'CANCEL' | translate }}</button>
+        <button class="btn btn--save-dark" type="button" [disabled]="saving || !hasConfigChanges || welcomeTooLong" (click)="onSave()">{{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
+      </div>
+    </div>
+
+    <div class="settings-card welcome-card">
+      <div class="welcome-card__head">
+        <div>
+          <h3>{{ 'WELCOME_MESSAGE' | translate }}</h3>
+          <p class="muted-text">{{ 'WELCOME_MESSAGE_HINT' | translate }}</p>
+        </div>
+        <button class="toggle" type="button" role="switch" [attr.aria-checked]="config.welcomeMessage.enabled"
+                [attr.aria-label]="'WELCOME_MESSAGE' | translate"
+                [class.toggle--on]="config.welcomeMessage.enabled" (click)="toggleWelcome()">
+          <span class="toggle__thumb" [class.toggle__thumb--on]="config.welcomeMessage.enabled"></span>
+        </button>
+      </div>
+
+      <ng-container *ngIf="config.welcomeMessage.enabled">
+        <label class="welcome-card__label" for="welcomeText">{{ 'WELCOME_MESSAGE_TEXT' | translate }}</label>
+        <textarea id="welcomeText" #welcomeField rows="4" class="welcome-card__text" [(ngModel)]="config.welcomeMessage.text"
+                  [attr.maxlength]="welcomeMaxLength" [placeholder]="'WELCOME_MESSAGE_PLACEHOLDER' | translate"></textarea>
+        <div class="welcome-card__tools">
+          <button type="button" class="btn btn--outline btn--sm" (click)="insertFirstName(welcomeField)">+ {{ 'WELCOME_INSERT_FIRST_NAME' | translate }}</button>
+          <span class="welcome-card__count" [class.welcome-card__count--over]="welcomeTooLong">{{ config.welcomeMessage.text.length }} / {{ welcomeMaxLength }}</span>
+        </div>
+
+        <p class="welcome-card__label">{{ 'WELCOME_MESSAGE_PREVIEW' | translate }}</p>
+        <div class="welcome-preview">
+          <span class="welcome-preview__bubble">{{ welcomePreview }}</span>
+        </div>
+      </ng-container>
     </div>
   </section>
 

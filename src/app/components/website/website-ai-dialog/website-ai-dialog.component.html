@@ -1,0 +1,93 @@
+<dialog #dialog class="ai-dialog" aria-labelledby="ai-dialog-title" (cancel)="cancel($event)">
+  <form (ngSubmit)="submit()" #form="ngForm">
+    <header class="ai-dialog__head">
+      <h2 id="ai-dialog-title">✨ {{ 'AI_SITE_TITLE' | translate }}</h2>
+      <button type="button" class="ai-close" (click)="close()" [disabled]="step === 'loading'" [attr.aria-label]="'CLOSE' | translate">
+        <i-feather name="x"></i-feather>
+      </button>
+    </header>
+
+    <app-ai-quota code="ai.website" [quota]="quota" (leave)="close()"></app-ai-quota>
+
+    <ng-container *ngIf="step === 'form'">
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_SITE_SPECIALTY' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let s of specialties" class="ai-chip" [class.is-on]="answers.specialty === s">
+            <input type="radio" name="specialty" [value]="s" [(ngModel)]="answers.specialty">{{ ('AI_SITE_SPECIALTY_' + s) | translate }}
+          </label>
+        </div>
+        <input *ngIf="answers.specialty === 'OTHER'" name="specialtyOther" class="ai-input" maxlength="300"
+               [(ngModel)]="answers.specialtyOther" [placeholder]="'AI_SITE_SPECIALTY_OTHER_HINT' | translate" required>
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_SITE_AUDIENCE' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let a of audiences" class="ai-chip" [class.is-on]="answers.audience.includes(a)">
+            <input type="checkbox" [name]="'audience' + a" [checked]="answers.audience.includes(a)" (change)="toggleAudience(a)">{{ ('AI_SITE_AUDIENCE_' + a) | translate }}
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_SITE_LOCATION' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let l of locations" class="ai-chip" [class.is-on]="answers.location === l">
+            <input type="radio" name="location" [value]="l" [(ngModel)]="answers.location">{{ ('AI_SITE_LOCATION_' + l) | translate }}
+          </label>
+        </div>
+        <input *ngIf="answers.location !== 'ONLINE'" name="city" class="ai-input" maxlength="80"
+               [(ngModel)]="answers.city" [placeholder]="'AI_SITE_CITY_HINT' | translate">
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_SITE_STYLE' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let s of styles" class="ai-chip" [class.is-on]="answers.style === s">
+            <input type="radio" name="style" [value]="s" [(ngModel)]="answers.style">{{ ('AI_SITE_STYLE_' + s) | translate }}
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_SITE_LANGUAGE' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let l of languages" class="ai-chip" [class.is-on]="answers.language === l">
+            <input type="radio" name="language" [value]="l" [(ngModel)]="answers.language">{{ ('AI_SITE_LANGUAGE_' + l) | translate }}
+          </label>
+        </div>
+      </fieldset>
+
+      <details class="ai-more">
+        <summary>{{ 'AI_SITE_OPTIONAL' | translate }}</summary>
+        <div class="ai-grid">
+          <label>{{ 'AI_SITE_YEARS' | translate }}<input class="ai-input" type="number" name="years" min="0" max="60" step="1" [(ngModel)]="answers.yearsExperience"></label>
+          <label>{{ 'AI_SITE_CLIENTS' | translate }}<input class="ai-input" type="number" name="clients" min="0" max="100000" step="1" [(ngModel)]="answers.clientsCoached"></label>
+          <label class="wide">{{ 'AI_SITE_PRICES' | translate }}<input class="ai-input" name="prices" maxlength="300" [(ngModel)]="answers.prices" [placeholder]="'AI_SITE_PRICES_HINT' | translate"></label>
+        </div>
+        <p class="ai-hint">{{ 'AI_SITE_NO_INVENTION' | translate }}</p>
+      </details>
+    </ng-container>
+
+    <div class="ai-confirm" *ngIf="step === 'confirm'" role="alert">
+      <i-feather name="alert-triangle"></i-feather>
+      <p>{{ 'AI_SITE_REPLACE' | translate }}</p>
+    </div>
+
+    <div class="ai-loading" *ngIf="step === 'loading'" role="status">
+      <span class="ai-spinner"></span><span>{{ 'AI_SITE_WRITING' | translate }}</span>
+    </div>
+
+    <p class="ai-error" *ngIf="error" role="alert">{{ error | translate }}</p>
+
+    <footer class="ai-actions">
+      <button type="button" class="ai-btn" (click)="step === 'confirm' ? (step = 'form') : close()" [disabled]="step === 'loading'">
+        {{ (step === 'confirm' ? 'BACK' : 'CANCEL') | translate }}
+      </button>
+      <button type="submit" class="ai-btn ai-btn--primary" [disabled]="!valid || exhausted || step === 'loading'">
+        {{ (step === 'confirm' ? 'AI_SITE_REPLACE_OK' : 'AI_SITE_GENERATE') | translate }}
+      </button>
+    </footer>
+  </form>
+</dialog>

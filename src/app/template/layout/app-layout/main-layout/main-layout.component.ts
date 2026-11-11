@@ -9,6 +9,7 @@ import { LanguageService } from 'app/service/language.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { SubscriptionNoticeComponent } from 'app/components/subscription-notice/subscription-notice.component';
 import { SubscriptionBannerComponent } from 'app/components/subscription-banner/subscription-banner.component';
+import { AnnouncementBannerComponent } from 'app/components/announcement-banner/announcement-banner.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
@@ -24,6 +25,7 @@ import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confir
     TranslateModule,
     SubscriptionNoticeComponent,
     SubscriptionBannerComponent,
+    AnnouncementBannerComponent,
     ConfirmDialogComponent,
   ],
 })

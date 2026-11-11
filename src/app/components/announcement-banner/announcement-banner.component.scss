@@ -1,0 +1,10 @@
+// Same shape as the subscription banner (SUB-30), placed just above it.
+.announcement { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 16px 0; padding: 10px 14px; border: 1px solid transparent; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+.announcement[data-level='INFO'] { background: light-dark(#eaf7fb, #1c3239); border-color: light-dark(#cfeaf3, #2e3c40); color: light-dark(#1d6f8f, #70bcdf); }
+.announcement[data-level='WARNING'] { background: light-dark(#fff8eb, #362c17); border-color: light-dark(#f3d9a4, #594414); color: light-dark(#7a4b00, #dda86c); }
+.announcement[data-level='URGENT'] { background: light-dark(#fef2f2, #3c2829); border-color: light-dark(#fbcaca, #623b3c); color: light-dark(#991b1b, #ffa096); }
+.announcement-icon { flex: 0 0 18px; width: 18px; height: 18px; }
+.announcement-text { flex: 1 1 220px; min-width: 0; margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.announcement-link { display: inline-flex; align-items: center; gap: 4px; color: inherit; font-weight: 700; text-decoration: underline; white-space: nowrap; i-feather { width: 13px; height: 13px; } }
+.announcement-pager { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.announcement-pager button, .announcement-close { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; i-feather { width: 16px; height: 16px; } &:hover { background: light-dark(rgba(15, 23, 42, .06), rgba(255, 255, 255, .08)); } &:focus-visible { outline: 2px solid #39aeef; outline-offset: 2px; } }

@@ -9,6 +9,8 @@ import { SubscriptionNotice, SubscriptionNoticeService } from 'app/service/subsc
 import { CHANGE_PLAN_PATH } from 'app/components/change-plan/change-plan.path';
 import { CHECKOUT_PATH } from 'app/template/layout/sidebar/sidebar.component';
 import { formatAmount } from 'app/models/subscription-onboarding.model';
+import { CoachSubscriptionStateService, featureLabel } from 'app/service/coach-subscription-state.service';
+import { TranslateService } from '@ngx-translate/core';
 
 export interface NoticeView {
   icon: string;
@@ -37,10 +39,24 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
   view: NoticeView | null = null;
   private destroy$ = new Subject<void>();
 
-  constructor(private notices: SubscriptionNoticeService, private router: Router) {}
+  constructor(private notices: SubscriptionNoticeService, private router: Router,
+              private states: CoachSubscriptionStateService, private translate: TranslateService) {}
 
   ngOnInit(): void {
-    this.notices.notices$.pipe(takeUntil(this.destroy$)).subscribe((notice) => (this.view = SubscriptionNoticeComponent.viewOf(notice)));
+    this.notices.notices$.pipe(takeUntil(this.destroy$)).subscribe((notice) => {
+      // Plan features (2026-11-11): the name of the locked feature, from the plan the coach sees.
+      const label = notice.code === 'FEATURE_LOCKED'
+        ? featureLabel(this.states.snapshot, notice.feature, this.translate.currentLang) : null;
+      this.view = SubscriptionNoticeComponent.viewOf(label ? { ...notice, featureLabel: label } : notice);
+      const state = this.states.snapshot;
+      if (this.view.actionPath === CHANGE_PLAN_PATH && notice.code === 'FEATURE_LOCKED'
+          && (state?.freePlan || state?.status === 'TRIAL')) {
+        this.view = { ...this.view, actionPath: CHECKOUT_PATH }; // the first paid plan is chosen on the payment screen
+      }
+      if (notice.code === 'FEATURE_LOCKED') {
+        this.states.refresh().subscribe(); // the padlocks follow the answer of the server
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -63,6 +79,11 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** The website and the app colors keep their own messages (paid branding). */
+  static isBranding(feature: string | null | undefined): boolean {
+    return !feature || ['WEBSITE', 'MOBILE_THEME', 'feature.website', 'feature.branding'].includes(feature);
+  }
+
   static viewOf(notice: SubscriptionNotice): NoticeView {
     const blocked: NoticeView = {
       icon: 'lock',
@@ -74,11 +95,23 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
     if (notice.code === 'SUBSCRIPTION_READ_ONLY' || notice.reason === 'READ_ONLY') {
       return blocked;
     }
+    if (notice.code === 'FEATURE_LOCKED' && !SubscriptionNoticeComponent.isBranding(notice.feature)) {
+      // Plan features (2026-11-11): any other feature the plan does not include.
+      return {
+        icon: 'lock',
+        titleKey: notice.featureLabel ? 'NOTICE_FEATURE_NAMED_TITLE' : 'NOTICE_FEATURE_TITLE',
+        titleParams: { name: notice.featureLabel ?? '' },
+        textKey: 'NOTICE_FEATURE_PLAN_TEXT',
+        actionKey: 'NOTICE_CHOOSE_PLAN',
+        actionPath: CHANGE_PLAN_PATH,
+      };
+    }
     if (notice.code === 'FEATURE_LOCKED') {
       return {
         icon: 'lock',
         titleKey: 'NOTICE_BRANDING_TITLE',
-        textKey: 'NOTICE_BRANDING_TEXT',
+        // Free plan (2026-11-10): not "after your free trial", there is none.
+        textKey: notice.reason === 'FREE_PLAN' ? 'NOTICE_BRANDING_FREE_PLAN_TEXT' : 'NOTICE_BRANDING_TEXT',
         actionKey: 'NOTICE_UNLOCK_BRANDING',
         actionPath: CHECKOUT_PATH,
       };
@@ -90,6 +123,16 @@ export class SubscriptionNoticeComponent implements OnInit, OnDestroy {
         icon: 'users',
         ...title,
         textKey: 'NOTICE_LIMIT_TRIAL_TEXT',
+        actionKey: 'UPGRADE_TO_PAID_PLAN',
+        actionPath: CHECKOUT_PATH,
+      };
+    }
+    if (notice.reason === 'FREE_PLAN') {
+      // Free plan (2026-11-10): the first paid plan is chosen on the payment screen, like after a trial.
+      return {
+        icon: 'users',
+        ...title,
+        textKey: 'NOTICE_LIMIT_FREE_PLAN_TEXT',
         actionKey: 'UPGRADE_TO_PAID_PLAN',
         actionPath: CHECKOUT_PATH,
       };

@@ -5,6 +5,7 @@ import {
   EventEmitter,
   OnChanges,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,10 +16,14 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 export type NutritionPlanChoice = 'full' | 'macro-total' | 'macro-each';
 
+import { NutritionAiDialogComponent } from '../nutrition-ai-dialog/nutrition-ai-dialog.component';
+import { AiQuotaComponent } from 'app/components/ai-quota/ai-quota.component';
+import { NutritionAiDraft } from 'app/service/nutrition-ai.service';
+
 @Component({
   selector: 'app-choose-plan-type-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, NutritionAiDialogComponent, AiQuotaComponent],
   templateUrl: './choose-plan-type-modal.component.html',
   styleUrls: ['./choose-plan-type-modal.component.scss'],
 })
@@ -106,11 +111,48 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   }
 
   get shouldShowMainModal(): boolean {
-    return this.isVisible && !this.showDurationModal;
+    return this.isVisible && !this.showDurationModal && !this.aiOpen;
   }
 
   get shouldShowDurationModal(): boolean {
-    return this.isVisible && this.showDurationModal && !!this.selectedPlanType;
+    return this.isVisible && this.showDurationModal && !!this.selectedPlanType && !this.aiOpen;
+  }
+
+  /** IA-43: the AI meal plan, from the details of a full meal plan (same duration, same client and dates). */
+  @ViewChild(NutritionAiDialogComponent) nutritionAi?: NutritionAiDialogComponent;
+  aiOpen = false;
+  private aiDone = false;
+
+  get aiLanguage(): 'fr' | 'en' | 'ar' {
+    const lang = (this.translate.currentLang || 'fr').slice(0, 2);
+    return lang === 'en' || lang === 'ar' ? lang : 'fr';
+  }
+
+  openNutritionAi(): void {
+    this.aiOpen = true;
+    this.aiDone = false;
+    this.nutritionAi?.open({ weeks: this.normalizedDurationWeeks, clientId: this.isAssign ? this.idClient : null });
+  }
+
+  /** The editor opens with the draft (nothing saved until the coach saves it). */
+  openNutritionAiDraft(draft: NutritionAiDraft): void {
+    this.aiDone = true;
+    const queryParams: any = {
+      type: 'each',
+      assignAfterCreate: this.assignAfterCreate,
+      durationWeeks: draft.plan.durationWeeks || this.normalizedDurationWeeks,
+    };
+    this.addPresetSchedule(queryParams);
+    if (this.returnUrl) queryParams.returnUrl = this.returnUrl;
+    const route = this.isAssign ? [`/clients/create-full-plan/${this.idClient}`] : ['/nutrition/create-full-plan'];
+    this.aiOpen = false;
+    this.closeModal();
+    void this.router.navigate(route, { queryParams, state: { aiDraft: draft } });
+  }
+
+  onNutritionAiClosed(): void {
+    if (this.aiDone) return;
+    this.aiOpen = false; // back to the details window
   }
 
   closeModal(): void {

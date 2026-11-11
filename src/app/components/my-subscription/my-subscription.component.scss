@@ -74,3 +74,6 @@ button:disabled { opacity: 0.6; cursor: default; }
 .app-pagination .page-btn:hover:not(:disabled) { background: light-dark(#f1f7ff, #242f3d); border-color: #8ec5ff; }
 .app-pagination .page-btn.active { background: #44b4df; border-color: #44b4df; color: #fff; }
 .app-pagination .page-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* AFF-28: invoice reduced by the referral credit */
+.credit-line { color: light-dark(#1d6f8f, #70bcdf); font-size: 12px; white-space: nowrap; }

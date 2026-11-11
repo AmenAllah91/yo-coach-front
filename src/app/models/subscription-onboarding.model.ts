@@ -6,6 +6,8 @@ export interface SubscriptionPlanDto {
   name: string;
   description?: string | null;
   price: number;
+  /** Free plan (2026-11-10): price 0, active at once, no trial, limited by toUnits (set by YoSales). */
+  free?: boolean | null;
   /** SUB-59: price in whole US dollars (null = not offered in dollars). */
   priceUsd?: number | null;
   pricingModel: 'FLAT_FEE' | 'STAIR_STEP' | 'FEATURE_BASED';
@@ -21,6 +23,76 @@ export interface SubscriptionPlanDto {
   archived?: boolean | null;
   /** SUB-57: what the plan brings, in display order (YoSales is the only source). */
   features?: SubscriptionPlanFeatureDto[] | null;
+  /** Plan features (2026-11-11): what the plan gives for each feature of the catalog of YoSales (read only). */
+  featureValues?: PlanFeatureValueDto[] | null;
+}
+
+/** Plan features (2026-11-11): null = yes / no limit, 0 = no, n = n per month (n for the whole trial). */
+export interface PlanFeatureValueDto {
+  code: string;
+  kind?: 'ON_OFF' | 'QUANTITY' | null;
+  labelFr?: string | null;
+  labelEn?: string | null;
+  labelAr?: string | null;
+  paid?: number | null;
+  trial?: number | null;
+  /** false = hidden from the comparison of the plans. */
+  shownToBuyers?: boolean | null;
+}
+
+/**
+ * Plan features (2026-11-11): one line of a plan, from the catalog of YoSales. included = the plan gives it;
+ * afterTrial = once paid, not during the trial; excluded = not in this plan. amount = per month (quantity), null for a
+ * yes / no or no limit (unlimited true).
+ */
+export interface PlanFeatureLine {
+  code: string;
+  name: string;
+  state: 'included' | 'afterTrial' | 'excluded';
+  amount: number | null;
+  unlimited: boolean;
+}
+
+const featureGives = (v: number | null | undefined) => v == null || v > 0;
+
+export function planFeatureLines(plan: SubscriptionPlanDto | null | undefined, lang: string): PlanFeatureLine[] {
+  if (!plan) return [];
+  const free = plan.free ?? plan.price === 0;
+  const hasTrial = !free && (plan.freeTrialDays ?? 0) > 0;
+  return (plan.featureValues ?? [])
+    .filter((f) => !!f.code && f.shownToBuyers !== false)
+    .map((f) => {
+      const name = ((lang === 'en' ? f.labelEn : lang === 'ar' ? f.labelAr : f.labelFr) ?? '').trim()
+        || (f.labelFr ?? '').trim() || f.code;
+      const quantity = f.kind === 'QUANTITY';
+      return {
+        code: f.code,
+        name,
+        state: !featureGives(f.paid) ? 'excluded' : hasTrial && !featureGives(f.trial) ? 'afterTrial' : 'included',
+        amount: quantity && f.paid != null && f.paid > 0 ? f.paid : null,
+        unlimited: quantity && f.paid == null,
+      } as PlanFeatureLine;
+    });
+}
+
+/**
+ * Plan features (2026-11-11): what changes from one plan to another (paid values). gained / lost: yes-no features;
+ * changed: quantities that go up or down.
+ */
+export function planFeatureChanges(from: SubscriptionPlanDto | null | undefined, to: SubscriptionPlanDto | null | undefined,
+                                   lang: string): { gained: PlanFeatureLine[]; lost: PlanFeatureLine[]; changed: { line: PlanFeatureLine; before: PlanFeatureLine }[] } {
+  const before = new Map(planFeatureLines(from, lang).map((l) => [l.code, l]));
+  const out = { gained: [] as PlanFeatureLine[], lost: [] as PlanFeatureLine[], changed: [] as { line: PlanFeatureLine; before: PlanFeatureLine }[] };
+  if (!from || !to) return out;
+  for (const line of planFeatureLines(to, lang)) {
+    const old = before.get(line.code);
+    const had = !!old && old.state !== 'excluded';
+    const has = line.state !== 'excluded';
+    if (has && !had) out.gained.push(line);
+    else if (!has && had) out.lost.push(line);
+    else if (has && had && (line.amount !== old!.amount || line.unlimited !== old!.unlimited)) out.changed.push({ line, before: old! });
+  }
+  return out;
 }
 
 /** SUB-57: one feature of a plan, with its texts in the languages of the app. */
@@ -70,6 +142,17 @@ export interface OnboardingRequest {
   planId: number;
   /** IANA time zone of the browser (e.g. America/Montreal): trial and periods end at midnight there. */
   timeZone?: string;
+  /** AFF-10: code of the coach who referred this one; never blocks the sign-up. */
+  referralCode?: string;
+  /** LINK when the code came with the link, CODE when typed. */
+  referralSource?: 'LINK' | 'CODE';
+}
+
+/** AFF-10: what the sign-up page may know about a referral code (first name and initial only). */
+export interface ReferralCodeCheck {
+  status: 'VALID' | 'INVALID' | 'UNAVAILABLE' | 'UNVERIFIED';
+  firstName?: string;
+  initial?: string;
 }
 
 export interface OnboardingResponse {

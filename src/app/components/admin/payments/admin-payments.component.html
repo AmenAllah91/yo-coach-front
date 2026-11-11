@@ -5,6 +5,7 @@
     <div class="header-actions"><button type="button" class="secondary-btn" (click)="refresh()" [disabled]="loading"><i-feather name="refresh-cw"></i-feather>{{'ADMIN_REFRESH'|translate}}</button></div>
   </header>
   <div class="content">
+    <app-payment-incident-card></app-payment-incident-card>
     <div class="toolbar">
       <div class="search"><i-feather name="search"></i-feather><input type="search" [ngModel]="filters.search" (ngModelChange)="search($event)" [placeholder]="'ADMIN_PAYMENTS_SEARCH'|translate" [attr.aria-label]="'ADMIN_PAYMENTS_SEARCH'|translate"></div>
       <label>{{'STATUS_LABEL'|translate}}<select [(ngModel)]="filters.status" (change)="apply()"><option value="">{{'COACH_ALL'|translate}}</option><option *ngFor="let s of statuses" [value]="s">{{('ADMIN_PAYMENT_'+s)|translate}}</option></select></label>

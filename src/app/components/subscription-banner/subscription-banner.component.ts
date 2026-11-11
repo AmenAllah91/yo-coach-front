@@ -19,9 +19,10 @@ export interface BannerView {
   icon: string;
   textKey: string;
   textParams?: Record<string, unknown>;
-  actionKey: string;
+  /** No button when absent (payment incident: nothing to do, the access continues). */
+  actionKey?: string;
   /** 'pay' = page of the open invoice (amount, then confirmation); 'checkout' = payment screen. */
-  action: 'pay' | 'checkout';
+  action?: 'pay' | 'checkout';
 }
 
 /**
@@ -72,7 +73,7 @@ export class SubscriptionBannerComponent implements OnInit, OnDestroy {
 
   act(): void {
     const view = this.view;
-    if (!view) return;
+    if (!view || !view.action) return;
     const invoiceId = this.state?.openInvoiceId;
     if (view.action === 'pay' && invoiceId) {
       // Late payment: the invoice page shows the amount and the method (or saved card) and pays only after the
@@ -85,11 +86,26 @@ export class SubscriptionBannerComponent implements OnInit, OnDestroy {
 
   static viewOf(state: CoachSubscriptionState | null): BannerView | null {
     if (!state) return null;
+    // Payment incident (admin switch): paying is impossible for now, nobody is cut; no button to press.
+    if (state.paymentIncident && state.status && (state.status !== 'ACTIVE' || state.openInvoiceId)) {
+      return { tone: 'info', icon: 'info', textKey: 'BANNER_PAYMENT_INCIDENT' };
+    }
     switch (state.status) {
       case 'TRIAL': {
         // YoSales counts today: 1 = today is the last day (the "Last day" email goes out at 1), 0 = the trial is over.
         const days = state.trialDaysLeft;
         if (days == null || days > TRIAL_BANNER_DAYS) return null;
+        if (days <= 0 && state.cutoffDeferredUntil) {
+          // Trial over but the cut-off was put off (admin deferral / after an incident): access until that day.
+          return {
+            tone: 'warning',
+            icon: 'clock',
+            textKey: 'BANNER_ACCESS_KEPT_UNTIL',
+            textParams: { date: SubscriptionBannerComponent.lastDayOf(state.cutoffDeferredUntil, state.timeZone) },
+            actionKey: 'NOTICE_CHOOSE_PLAN',
+            action: 'checkout',
+          };
+        }
         if (days <= 0) {
           return { tone: 'danger', icon: 'lock', textKey: 'BANNER_TRIAL_OVER', actionKey: 'NOTICE_CHOOSE_PLAN', action: 'checkout' };
         }
@@ -127,6 +143,20 @@ export class SubscriptionBannerComponent implements OnInit, OnDestroy {
         return state.readOnly
           ? { tone: 'danger', icon: 'lock', textKey: 'BANNER_NO_SUBSCRIPTION', actionKey: 'NOTICE_CHOOSE_PLAN', action: 'checkout' }
           : null;
+    }
+  }
+
+  /**
+   * Last day of access before an instant that is the first one without access (midnight, coach zone): the day
+   * before, as dd/MM/yyyy.
+   */
+  static lastDayOf(firstInstantWithout: string, timeZone?: string | null): string {
+    const at = new Date(new Date(firstInstantWithout).getTime() - 1000);
+    if (isNaN(at.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat('fr-FR', { timeZone: timeZone || 'Africa/Tunis', day: '2-digit', month: '2-digit', year: 'numeric' }).format(at);
+    } catch {
+      return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(at);
     }
   }
 

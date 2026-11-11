@@ -1,0 +1,477 @@
+<div class="referral">
+  <!-- Header -->
+  <section class="card head">
+    <div class="head-main">
+      <span class="head-icon"><i-feather name="gift"></i-feather></span>
+      <div>
+        <h1>{{ 'REFERRAL_PAGE.TITLE' | translate }}</h1>
+        <p class="muted">{{ (isCash ? 'REFERRAL_PAGE.SUBTITLE_CASH' : 'REFERRAL_PAGE.SUBTITLE') | translate }}</p>
+      </div>
+    </div>
+    <button *ngIf="state?.activated && state?.availability === 'OK'" type="button" class="btn-primary" (click)="open('INVITE')">
+      <i-feather name="user-plus"></i-feather> {{ 'REFERRAL_PAGE.INVITE_COACH' | translate }}
+    </button>
+  </section>
+
+  <div *ngIf="loading" class="state-box"><span class="spinner" aria-hidden="true"></span></div>
+  <div *ngIf="!loading && loadError" class="card state-box">
+    <p>{{ 'REFERRAL_PAGE.LOAD_ERROR' | translate }}</p>
+    <button type="button" class="btn-secondary" (click)="load()">{{ 'REFERRAL_PAGE.RETRY' | translate }}</button>
+  </div>
+
+  <ng-container *ngIf="!loading && state">
+    <!-- Not available -->
+    <div *ngIf="!state.activated && !state.programAvailable" class="card state-box">
+      <i-feather name="gift"></i-feather>
+      <p>{{ 'REFERRAL_PAGE.PROGRAM_UNAVAILABLE' | translate }}</p>
+    </div>
+
+    <!-- Before activation (AFF-23) -->
+    <ng-container *ngIf="!state.activated && state.programAvailable">
+      <section class="card">
+        <h2>{{ 'REFERRAL_PAGE.HOW_TITLE' | translate }}</h2>
+        <ol class="steps">
+          <li><span class="step-number">1</span><div><strong>{{ 'REFERRAL_PAGE.STEP1_TITLE' | translate }}</strong>
+            <p class="muted">{{ 'REFERRAL_PAGE.STEP1_TEXT' | translate }}</p></div></li>
+          <li><span class="step-number">2</span><div><strong>{{ 'REFERRAL_PAGE.STEP2_TITLE' | translate }}</strong>
+            <p class="muted">{{ 'REFERRAL_PAGE.STEP2_TEXT' | translate }}</p></div></li>
+          <li><span class="step-number">3</span><div><strong>{{ 'REFERRAL_PAGE.STEP3_TITLE' | translate:{ reward: rewardText, duration: durationText } }}</strong>
+            <p class="muted">{{ 'REFERRAL_PAGE.STEP3_TEXT' | translate }}</p></div></li>
+        </ol>
+        <div class="example" *ngIf="state.terms?.rewardMode === 'PERCENT'">
+          {{ 'REFERRAL_PAGE.EXAMPLE' | translate:{ amount: exampleAmount, duration: durationText } }}
+        </div>
+        <ul class="conditions muted">
+          <li>{{ 'REFERRAL_PAGE.COND_NEW_COACH' | translate }}</li>
+          <li>{{ 'REFERRAL_PAGE.COND_VALIDATION' | translate:{ days: state.terms?.validationDays } }}</li>
+          <li>{{ 'REFERRAL_PAGE.COND_LINK' | translate:{ days: state.trackingDays } }}</li>
+          <li *ngIf="!isCash">{{ 'REFERRAL_PAGE.COND_NO_CASH' | translate }}</li>
+        </ul>
+        <label class="accept">
+          <input type="checkbox" [(ngModel)]="accepted" [disabled]="!rules?.currentVersion" />
+          <span>{{ 'REFERRAL_PAGE.ACCEPT' | translate }}
+            <button type="button" class="link" (click)="open('RULES')">{{ 'REFERRAL_PAGE.READ_RULES' | translate:{ version: rules?.currentVersion } }}</button></span>
+        </label>
+        <div class="actions">
+          <button type="button" class="btn-primary" [disabled]="!accepted || activating" (click)="activate()">
+            {{ (activating ? 'REFERRAL_PAGE.ACTIVATING' : 'REFERRAL_PAGE.ACTIVATE') | translate }}
+          </button>
+          <a *ngIf="activationError && state.availability === 'COACH_READ_ONLY'" routerLink="/subscription" class="link">{{ 'REFERRAL_PAGE.REACTIVATE_SUBSCRIPTION' | translate }}</a>
+        </div>
+        <p class="error" *ngIf="activationError" role="alert">{{ activationError }}</p>
+      </section>
+    </ng-container>
+
+    <!-- After activation -->
+    <ng-container *ngIf="state.activated">
+      <div class="banner" *ngIf="state.mustAcceptTerms" role="status">
+        <span>{{ 'REFERRAL_PAGE.NEW_RULES' | translate }}</span>
+        <button type="button" class="btn-secondary" (click)="open('RULES')">{{ 'REFERRAL_PAGE.READ_AND_ACCEPT' | translate }}</button>
+      </div>
+      <div class="banner warn" *ngIf="blockedReason && !state.mustAcceptTerms" role="status">
+        <span>{{ blockedReason | translate }}</span>
+        <a *ngIf="state.availability === 'COACH_READ_ONLY'" routerLink="/subscription" class="link">{{ 'REFERRAL_PAGE.REACTIVATE_SUBSCRIPTION' | translate }}</a>
+      </div>
+
+      <div class="banner warn" *ngIf="isCash && needsAccount" role="status">
+        <span>{{ partner?.file?.account?.status === 'REFUSED'
+          ? ('REFERRAL_PAGE.BANNER_REFUSED' | translate:{ reason: partner?.file?.account?.reason })
+          : ('REFERRAL_PAGE.BANNER_ACCOUNT' | translate) }}</span>
+        <button type="button" class="btn-primary" (click)="open('ACCOUNT')">{{ 'REFERRAL_PAGE.ADD_ACCOUNT' | translate }}</button>
+      </div>
+
+      <nav class="tabs" role="tablist">
+        <button type="button" role="tab" [class.active]="tab === 'OVERVIEW'" [attr.aria-selected]="tab === 'OVERVIEW'" (click)="selectTab('OVERVIEW')">{{ 'REFERRAL_PAGE.TAB_OVERVIEW' | translate }}</button>
+        <button type="button" role="tab" [class.active]="tab === 'REFERRALS'" [attr.aria-selected]="tab === 'REFERRALS'" (click)="selectTab('REFERRALS')">{{ 'REFERRAL_PAGE.TAB_REFERRALS' | translate }}</button>
+        <button type="button" role="tab" [class.active]="tab === 'EARNINGS'" [attr.aria-selected]="tab === 'EARNINGS'" (click)="selectTab('EARNINGS')">{{ 'REFERRAL_PAGE.TAB_EARNINGS' | translate }}</button>
+        <button *ngIf="isCash" type="button" role="tab" [class.active]="tab === 'PAYOUTS'" [attr.aria-selected]="tab === 'PAYOUTS'" (click)="selectTab('PAYOUTS')">{{ 'REFERRAL_PAGE.TAB_PAYOUTS' | translate }}</button>
+      </nav>
+
+      <!-- Overview (AFF-24) -->
+      <ng-container *ngIf="tab === 'OVERVIEW'">
+        <div class="two-columns">
+          <section class="card link-card">
+            <h2>{{ 'REFERRAL_PAGE.LINK_TITLE' | translate }}</h2>
+            <p class="muted">{{ 'REFERRAL_PAGE.LINK_TEXT' | translate:{ days: state.trackingDays } }}</p>
+            <div class="link-row">
+              <div class="link-box"><i-feather name="link"></i-feather><span>{{ shortLink }}</span></div>
+              <button type="button" class="btn-primary" (click)="copy('LINK')">
+                <i-feather name="copy"></i-feather> {{ (copied === 'LINK' ? 'REFERRAL_PAGE.COPIED' : 'REFERRAL_PAGE.COPY_LINK') | translate }}
+              </button>
+            </div>
+            <div class="code-row">
+              <span class="muted">{{ 'REFERRAL_PAGE.CODE' | translate }}</span>
+              <code class="code-chip">{{ state.code }}</code>
+              <button type="button" class="link" (click)="copy('CODE')"><i-feather name="copy"></i-feather>
+                {{ (copied === 'CODE' ? 'REFERRAL_PAGE.COPIED' : 'REFERRAL_PAGE.COPY_CODE') | translate }}</button>
+            </div>
+            <div class="link-actions">
+              <button type="button" class="btn-secondary" (click)="open('SHARE')"><i-feather name="share-2"></i-feather> {{ 'REFERRAL_PAGE.SHARE' | translate }}</button>
+              <button type="button" class="btn-secondary" (click)="open('QR')"><i-feather name="grid"></i-feather> {{ 'REFERRAL_PAGE.QR' | translate }}</button>
+              <button *ngIf="state.canChangeCode" type="button" class="link" (click)="open('CODE')"><i-feather name="edit-2"></i-feather> {{ 'REFERRAL_PAGE.CUSTOM_CODE' | translate }}</button>
+            </div>
+          </section>
+
+          <section class="card credit-card">
+            <div class="card-title">
+              <h2>{{ (isCash ? 'REFERRAL_PAGE.YOUR_EARNINGS' : 'REFERRAL_PAGE.YOUR_CREDIT') | translate }}</h2>
+              <button type="button" class="link" (click)="selectTab('EARNINGS')">{{ 'REFERRAL_PAGE.SEE_EARNINGS' | translate }}</button>
+            </div>
+            <ng-container *ngIf="!isCash">
+              <span class="label">{{ 'REFERRAL_PAGE.AVAILABLE' | translate }}</span>
+              <strong class="big-amount">{{ money(positive(state.credit?.available)) }}</strong>
+              <small class="muted" *ngIf="(state.credit?.available ?? 0) < 0">{{ 'REFERRAL_PAGE.TAKEN_BACK_LATER' | translate:{ amount: money(-(state.credit?.available ?? 0)) } }}</small>
+              <div class="line"><span>{{ 'REFERRAL_PAGE.PENDING' | translate }}
+                <small *ngIf="state.credit?.nextAvailableAt">{{ 'REFERRAL_PAGE.AVAILABLE_ON' | translate:{ date: (state.credit?.nextAvailableAt | date:'dd/MM/yyyy') } }}</small></span>
+                <strong>{{ money(state.credit?.pending) }}</strong></div>
+              <div class="line" *ngIf="credit"><span>{{ 'REFERRAL_PAGE.ALREADY_USED' | translate }}</span><strong>{{ money(credit.used) }}</strong></div>
+              <div class="info">{{ ((credit?.deductionEnabled) ? 'REFERRAL_PAGE.DEDUCTED_NEXT' : 'REFERRAL_PAGE.DEDUCTED_LATER') | translate }}</div>
+              <small class="muted">{{ 'REFERRAL_PAGE.NOT_CASH' | translate }}</small>
+            </ng-container>
+            <ng-container *ngIf="isCash">
+              <ng-container *ngIf="partner as p; else cashText">
+                <span class="label">{{ 'REFERRAL_PAGE.TO_PAY' | translate }}</span>
+                <strong class="big-amount">{{ money(p.money.toPay) }}</strong>
+                <div class="bar" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="progress"></span></div>
+                <small class="muted">{{ p.money.missingToThreshold > 0
+                  ? ('REFERRAL_PAGE.MISSING_TO_THRESHOLD' | translate:{ amount: money(p.money.missingToThreshold), threshold: money(p.money.threshold), date: (p.money.nextPayoutDay | date:'dd/MM/yyyy') })
+                  : ('REFERRAL_PAGE.THRESHOLD_REACHED' | translate:{ date: (p.money.nextPayoutDay | date:'dd/MM/yyyy') }) }}</small>
+                <div class="line"><span>{{ 'REFERRAL_PAGE.PENDING' | translate }}</span><strong>{{ money(p.money.pending) }}</strong></div>
+                <div class="line"><span>{{ 'REFERRAL_PAGE.ALREADY_PAID' | translate }}</span><strong>{{ money(p.money.paid) }}</strong></div>
+              </ng-container>
+              <ng-template #cashText><p class="muted">{{ 'REFERRAL_PAGE.CASH_TEXT' | translate }}</p></ng-template>
+            </ng-container>
+          </section>
+        </div>
+
+        <section class="card counters">
+          <div><span class="label">{{ 'REFERRAL_PAGE.CLICKS' | translate }}</span><strong>{{ state.counters.clicks }}</strong><small>{{ 'REFERRAL_PAGE.CLICKS_SUB' | translate }}</small></div>
+          <div><span class="label">{{ 'REFERRAL_PAGE.SIGNED_UP' | translate }}</span><strong>{{ state.counters.signedUp }}</strong><small>{{ 'REFERRAL_PAGE.SIGNED_UP_SUB' | translate }}</small></div>
+          <div><span class="label">{{ 'REFERRAL_PAGE.IN_TRIAL' | translate }}</span><strong>{{ state.counters.inTrial }}</strong><small>{{ 'REFERRAL_PAGE.IN_TRIAL_SUB' | translate }}</small></div>
+          <div><span class="label">{{ 'REFERRAL_PAGE.CUSTOMERS' | translate }}</span><strong class="accent">{{ state.counters.customers }}</strong>
+            <small>{{ (isCash ? 'REFERRAL_PAGE.CUSTOMERS_SUB_CASH' : 'REFERRAL_PAGE.CUSTOMERS_SUB') | translate }}</small></div>
+        </section>
+
+        <section class="card" *ngIf="isCash && partner as p">
+          <h2>{{ 'REFERRAL_PAGE.FILE_TITLE' | translate }}</h2>
+          <p class="muted">{{ 'REFERRAL_PAGE.FILE_TEXT' | translate }}</p>
+          <ul class="checks">
+            <li><span class="check-dot" [class.ok]="p.file.contractSignedAt">{{ p.file.contractSignedAt ? '✓' : '' }}</span>
+              <span>{{ (p.file.contractSignedAt ? 'REFERRAL_PAGE.CONTRACT' : 'REFERRAL_PAGE.CONTRACT_MISSING') | translate }}</span></li>
+            <li><span class="check-dot" [class.ok]="p.file.identityVerifiedAt">{{ p.file.identityVerifiedAt ? '✓' : '' }}</span>
+              <span>{{ (p.file.identityVerifiedAt ? 'REFERRAL_PAGE.IDENTITY' : 'REFERRAL_PAGE.IDENTITY_MISSING') | translate }}</span></li>
+            <li><span class="check-dot" [class.ok]="p.file.account?.status === 'VERIFIED'" [class.wait]="p.file.account?.status === 'CHECKING'"
+                      [class.bad]="p.file.account?.status === 'REFUSED'">{{ p.file.account?.status === 'VERIFIED' ? '✓' : p.file.account ? '…' : '' }}</span>
+              <span>{{ p.file.account ? ('REFERRAL_PAGE.ACCOUNT_LINE' | translate:{ masked: p.file.account.masked }) : ('REFERRAL_PAGE.ACCOUNT_MISSING' | translate) }}
+                <small *ngIf="p.file.account" class="muted">{{ 'REFERRAL_PAGE.ACCOUNT_' + p.file.account.status | translate }}</small></span>
+              <button type="button" class="link push" (click)="open('ACCOUNT')">{{ (p.file.account ? 'REFERRAL_PAGE.CHANGE' : 'REFERRAL_PAGE.ADD') | translate }}</button></li>
+          </ul>
+        </section>
+
+        <div class="two-columns even">
+          <section class="card list-card">
+            <div class="card-title"><h2>{{ 'REFERRAL_PAGE.LATEST_REFERRALS' | translate }}</h2>
+              <button type="button" class="link" (click)="selectTab('REFERRALS')">{{ 'REFERRAL_PAGE.SEE_ALL' | translate }}</button></div>
+            <ul class="rows">
+              <li *ngFor="let r of latestReferrals" (click)="openDetail(r)" [class.clickable]="r.kind === 'REFERRAL'">
+                <span class="avatar">{{ initials(r) }}</span>
+                <span class="row-main"><strong>{{ name(r) }}</strong>
+                  <small *ngIf="r.signedUpAt">{{ (r.kind === 'INVITATION' ? 'REFERRAL_PAGE.INVITED_ON' : 'REFERRAL_PAGE.SIGNED_UP_ON') | translate:{ date: (r.signedUpAt | date:'dd/MM/yyyy') } }}</small></span>
+                <span class="pill" [ngClass]="statusClass(r.status)">{{ 'REFERRAL_PAGE.STATUS_' + r.status | translate }}</span>
+              </li>
+              <li *ngIf="!latestReferrals.length" class="empty">
+                <span>{{ 'REFERRAL_PAGE.NO_REFERRAL' | translate }}</span>
+                <button *ngIf="state.availability === 'OK'" type="button" class="link" (click)="open('INVITE')">{{ 'REFERRAL_PAGE.INVITE_COACH' | translate }}</button>
+              </li>
+            </ul>
+          </section>
+          <section class="card list-card">
+            <div class="card-title"><h2>{{ 'REFERRAL_PAGE.LATEST_EARNINGS' | translate }}</h2>
+              <button type="button" class="link" (click)="selectTab('EARNINGS')">{{ 'REFERRAL_PAGE.SEE_ALL' | translate }}</button></div>
+            <ul class="rows">
+              <li *ngFor="let e of latestEarnings">
+                <span class="row-main"><strong>{{ name({ firstName: e.referredFirstName, initial: e.referredInitial }) }}</strong>
+                  <small>{{ e.date | date:'MMMM yyyy':undefined:locale }}</small></span>
+                <span class="pill" [ngClass]="earningClass(e)">{{ earningLabel(e) }}<ng-container *ngIf="e.status === 'PENDING' && e.availableAt"> · {{ e.availableAt | date:'dd/MM/yyyy' }}</ng-container></span>
+                <strong class="amount" [class.negative]="e.amount < 0" [class.struck]="e.status === 'CANCELLED'">{{ money(e.amount, true) }}</strong>
+              </li>
+              <li *ngIf="!latestEarnings.length" class="empty"><span>{{ 'REFERRAL_PAGE.NO_EARNING' | translate }}</span></li>
+            </ul>
+          </section>
+        </div>
+      </ng-container>
+
+      <!-- Referrals (AFF-26) -->
+      <section *ngIf="tab === 'REFERRALS'" class="card table-card">
+        <div class="table-head">
+          <div>
+            <h2>{{ 'REFERRAL_PAGE.TAB_REFERRALS' | translate }}</h2>
+            <p class="muted"><i-feather name="shield"></i-feather> {{ 'REFERRAL_PAGE.PRIVACY' | translate }}</p>
+            <button type="button" class="link" (click)="open('MISSING')"><i-feather name="help-circle"></i-feather> {{ 'REFERRAL_PAGE.MISSING_LINK' | translate }}</button>
+          </div>
+          <div class="filters">
+            <input type="search" [(ngModel)]="search" [placeholder]="'REFERRAL_PAGE.SEARCH' | translate" class="input" />
+            <select [(ngModel)]="statusFilter" (ngModelChange)="loadReferrals(0)" class="input">
+              <option value="">{{ 'REFERRAL_PAGE.ALL_STATUSES' | translate }}</option>
+              <option *ngFor="let s of statuses" [value]="s">{{ 'REFERRAL_PAGE.STATUS_' + s | translate }}</option>
+            </select>
+          </div>
+        </div>
+        <div *ngIf="referralsLoading" class="state-box"><span class="spinner"></span></div>
+        <div *ngIf="referralsError" class="state-box"><p>{{ 'REFERRAL_PAGE.LOAD_ERROR' | translate }}</p>
+          <button type="button" class="btn-secondary" (click)="loadReferrals(referralsPage)">{{ 'REFERRAL_PAGE.RETRY' | translate }}</button></div>
+        <div class="table-wrap" *ngIf="!referralsLoading && !referralsError">
+          <table>
+            <thead><tr><th>{{ 'REFERRAL_PAGE.COL_REFERRAL' | translate }}</th><th>{{ 'REFERRAL_PAGE.COL_STATUS' | translate }}</th>
+              <th>{{ 'REFERRAL_PAGE.COL_SIGNED_UP' | translate }}</th><th>{{ 'REFERRAL_PAGE.COL_UNTIL' | translate }}</th>
+              <th class="num">{{ 'REFERRAL_PAGE.COL_EARNED' | translate }}</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let r of shownReferrals" (click)="openDetail(r)" [class.clickable]="r.kind === 'REFERRAL'">
+                <td><span class="who"><span class="avatar">{{ initials(r) }}</span><strong>{{ name(r) }}</strong></span></td>
+                <td><span class="pill" [ngClass]="statusClass(r.status)">{{ 'REFERRAL_PAGE.STATUS_' + r.status | translate }}</span></td>
+                <td>{{ r.kind === 'REFERRAL' ? (r.signedUpAt | date:'dd/MM/yyyy') : '—' }}</td>
+                <td>{{ r.commissionsUntil ? (r.commissionsUntil | date:'dd/MM/yyyy') : '—' }}</td>
+                <td class="num"><strong>{{ money(r.earned) }}</strong></td>
+              </tr>
+              <tr *ngIf="!shownReferrals.length"><td colspan="5" class="empty">{{ 'REFERRAL_PAGE.NO_REFERRAL' | translate }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pager" *ngIf="referralsTotal > pageSize">
+          <small class="muted">{{ 'REFERRAL_PAGE.PAGE_OF' | translate:{ page: referralsPage + 1, pages: referralPages, total: referralsTotal } }}</small>
+          <button type="button" class="btn-secondary" [disabled]="referralsPage === 0" (click)="loadReferrals(referralsPage - 1)" [attr.aria-label]="'REFERRAL_PAGE.PREVIOUS' | translate">‹</button>
+          <button type="button" class="btn-secondary" [disabled]="referralsPage + 1 >= referralPages" (click)="loadReferrals(referralsPage + 1)" [attr.aria-label]="'REFERRAL_PAGE.NEXT' | translate">›</button>
+        </div>
+      </section>
+
+      <!-- Earnings (AFF-27) -->
+      <ng-container *ngIf="tab === 'EARNINGS'">
+        <section class="card counters three" *ngIf="!isCash && credit">
+          <div><span class="label">{{ 'REFERRAL_PAGE.AVAILABLE' | translate }}</span><strong class="big-amount">{{ money(positive(credit.available)) }}</strong>
+            <small *ngIf="credit.available >= 0">{{ (credit.deductionEnabled ? 'REFERRAL_PAGE.DEDUCTED_NEXT' : 'REFERRAL_PAGE.DEDUCTED_LATER') | translate }}</small>
+            <small *ngIf="credit.available < 0">{{ 'REFERRAL_PAGE.TAKEN_BACK_LATER' | translate:{ amount: money(-credit.available) } }}</small></div>
+          <div><span class="label">{{ 'REFERRAL_PAGE.PENDING' | translate }}</span><strong>{{ money(credit.pending) }}</strong>
+            <small *ngIf="credit.nextAvailableAt">{{ 'REFERRAL_PAGE.AVAILABLE_ON' | translate:{ date: (credit.nextAvailableAt | date:'dd/MM/yyyy') } }}</small></div>
+          <div><span class="label">{{ 'REFERRAL_PAGE.USED' | translate }}</span><strong>{{ money(credit.used) }}</strong>
+            <small>{{ 'REFERRAL_PAGE.USED_SUB' | translate }}</small></div>
+        </section>
+        <div class="banner warn" *ngIf="expiresSoon" role="status">
+          <i-feather name="clock"></i-feather>
+          <span>{{ 'REFERRAL_PAGE.EXPIRES' | translate:{ amount: money(credit?.available), date: (credit?.expiresAt | date:'dd/MM/yyyy') } }}</span>
+        </div>
+
+        <section class="card table-card">
+          <div class="table-head"><div><h2>{{ 'REFERRAL_PAGE.HISTORY' | translate }}</h2>
+            <p class="muted">{{ 'REFERRAL_PAGE.HISTORY_SUB' | translate:{ days: state.terms?.validationDays ?? 30 } }}</p></div></div>
+          <div *ngIf="earningsLoading" class="state-box"><span class="spinner"></span></div>
+          <div *ngIf="earningsError" class="state-box"><p>{{ 'REFERRAL_PAGE.LOAD_ERROR' | translate }}</p>
+            <button type="button" class="btn-secondary" (click)="loadEarnings(earningsPage)">{{ 'REFERRAL_PAGE.RETRY' | translate }}</button></div>
+          <div class="table-wrap" *ngIf="!earningsLoading && !earningsError">
+            <table>
+              <thead><tr><th>{{ 'REFERRAL_PAGE.COL_REFERRAL' | translate }}</th><th>{{ 'REFERRAL_PAGE.COL_MONTH' | translate }}</th>
+                <th class="num">{{ 'REFERRAL_PAGE.COL_AMOUNT' | translate }}</th><th>{{ 'REFERRAL_PAGE.COL_STATUS' | translate }}</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let e of earnings">
+                  <td><strong>{{ name({ firstName: e.referredFirstName, initial: e.referredInitial }) }}</strong></td>
+                  <td>{{ e.date | date:'MMMM yyyy':undefined:locale }}</td>
+                  <td class="num"><strong [class.negative]="e.amount < 0" [class.struck]="e.status === 'CANCELLED'">{{ money(e.amount, true) }}</strong></td>
+                  <td><span class="pill" [ngClass]="earningClass(e)">{{ earningLabel(e) }}<ng-container *ngIf="e.status === 'PENDING' && e.availableAt"> · {{ e.availableAt | date:'dd/MM/yyyy' }}</ng-container></span></td>
+                </tr>
+                <tr *ngIf="!earnings.length"><td colspan="4" class="empty">{{ 'REFERRAL_PAGE.NO_EARNING' | translate }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pager" *ngIf="earningsTotal > pageSize">
+            <small class="muted">{{ 'REFERRAL_PAGE.PAGE_OF' | translate:{ page: earningsPage + 1, pages: earningPages, total: earningsTotal } }}</small>
+            <button type="button" class="btn-secondary" [disabled]="earningsPage === 0" (click)="loadEarnings(earningsPage - 1)">‹</button>
+            <button type="button" class="btn-secondary" [disabled]="earningsPage + 1 >= earningPages" (click)="loadEarnings(earningsPage + 1)">›</button>
+          </div>
+        </section>
+
+        <section class="card table-card" *ngIf="!isCash && movements.length">
+          <div class="table-head"><div><h2>{{ 'REFERRAL_PAGE.CREDIT_USE' | translate }}</h2></div></div>
+          <div class="table-wrap">
+            <table>
+              <tbody>
+                <tr *ngFor="let m of movements">
+                  <td>{{ m.createdAt | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ movementLabel(m) }}</td>
+                  <td class="num"><strong [class.negative]="m.amount < 0">{{ money(m.amount, true) }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+
+  <!-- Payouts of a collaborator (AFF-41) -->
+  <ng-container *ngIf="state?.activated && tab === 'PAYOUTS'">
+    <section class="card table-card">
+      <div class="table-head"><div><h2>{{ 'REFERRAL_PAGE.PAYOUTS_TITLE' | translate }}</h2>
+        <p class="muted">{{ 'REFERRAL_PAGE.PAYOUTS_TEXT' | translate:{ threshold: money(partner?.money?.threshold) } }}</p></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>{{ 'REFERRAL_PAGE.COL_MONTH' | translate }}</th><th class="num">{{ 'REFERRAL_PAGE.COL_AMOUNT' | translate }}</th>
+            <th class="num">{{ 'REFERRAL_PAGE.COL_WITHHOLDING' | translate }}</th><th class="num">{{ 'REFERRAL_PAGE.COL_PAID' | translate }}</th>
+            <th>{{ 'REFERRAL_PAGE.COL_STATUS' | translate }}</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of payouts">
+              <td>{{ p.period + '-01' | date:'MMMM yyyy':undefined:locale }}</td>
+              <td class="num">{{ money(p.total) }}</td>
+              <td class="num">{{ p.withholding ? money(p.withholding) : '—' }}</td>
+              <td class="num"><strong>{{ p.status === 'PAID' ? money(p.netPaid ?? p.total) : '—' }}</strong>
+                <small *ngIf="p.accountMasked" class="sub">{{ p.accountMasked }}<ng-container *ngIf="p.reference"> · {{ p.reference }}</ng-container></small></td>
+              <td><span class="pill" [ngClass]="p.status === 'PAID' ? 'ok' : p.status === 'FAILED' ? 'bad' : 'wait'">
+                {{ p.status === 'PAID' ? ('REFERRAL_PAGE.PAYOUT_PAID' | translate:{ date: (p.paidOn | date:'dd/MM/yyyy') }) : ('REFERRAL_PAGE.PAYOUT_' + p.status | translate) }}</span></td>
+            </tr>
+            <tr *ngIf="!payouts.length"><td colspan="5" class="empty">{{ 'REFERRAL_PAGE.NO_PAYOUT' | translate }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-title"><h2>{{ 'REFERRAL_PAGE.STATEMENT_TITLE' | translate }}</h2>
+        <select [(ngModel)]="month" (ngModelChange)="loadStatement()" class="input month-select">
+          <option *ngFor="let m of months" [value]="m">{{ m + '-01' | date:'MMMM yyyy':undefined:locale }}</option>
+        </select></div>
+      <ng-container *ngIf="statement as st">
+        <div class="line"><span>{{ 'REFERRAL_PAGE.ST_VALIDATED' | translate }}</span><strong>{{ money(st.validated) }}</strong></div>
+        <div class="line"><span>{{ 'REFERRAL_PAGE.ST_TAKEN_BACK' | translate }}</span><strong [class.negative]="st.takenBack < 0">{{ money(st.takenBack) }}</strong></div>
+        <div class="line"><span>{{ 'REFERRAL_PAGE.ST_PAID' | translate }}</span><strong>{{ money(st.paid) }}</strong></div>
+        <div class="line"><span>{{ 'REFERRAL_PAGE.ST_LEFT' | translate }}</span><strong>{{ money(st.balanceAfter) }}</strong></div>
+      </ng-container>
+    </section>
+  </ng-container>
+
+  <!-- Dialogs -->
+  <div class="overlay" *ngIf="dialog" (click)="close()">
+    <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <button type="button" class="close" (click)="close()" [attr.aria-label]="'REFERRAL_PAGE.CLOSE' | translate">×</button>
+
+      <!-- Rules -->
+      <ng-container *ngIf="dialog === 'RULES'">
+        <h2>{{ 'REFERRAL_PAGE.RULES_TITLE' | translate:{ version: rules?.currentVersion } }}</h2>
+        <small class="muted" *ngIf="rules?.publishedAt">{{ 'REFERRAL_PAGE.RULES_DATE' | translate:{ date: (rules?.publishedAt | date:'dd/MM/yyyy') } }}</small>
+        <div class="rules-text">{{ rules?.text }}</div>
+        <ng-container *ngIf="state?.activated && state?.mustAcceptTerms">
+          <label class="accept"><input type="checkbox" [(ngModel)]="accepted" /> {{ 'REFERRAL_PAGE.ACCEPT_SHORT' | translate }}</label>
+          <div class="actions"><button type="button" class="btn-primary" [disabled]="!accepted || activating" (click)="activate()">{{ 'REFERRAL_PAGE.ACCEPT_BUTTON' | translate }}</button></div>
+          <p class="error" *ngIf="activationError">{{ activationError }}</p>
+        </ng-container>
+      </ng-container>
+
+      <!-- Invite (AFF-25) -->
+      <ng-container *ngIf="dialog === 'INVITE'">
+        <h2>{{ 'REFERRAL_PAGE.INVITE_COACH' | translate }}</h2>
+        <p class="muted">{{ 'REFERRAL_PAGE.INVITE_TEXT' | translate:{ limit: state?.dailyInvitationLimit } }}</p>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.INVITE_EMAILS' | translate }}</span>
+          <textarea [(ngModel)]="inviteEmails" rows="3" class="input" placeholder="coach@exemple.com, autre@exemple.com"></textarea></label>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.INVITE_MESSAGE' | translate }}</span>
+          <textarea [(ngModel)]="inviteMessage" rows="4" maxlength="1000" class="input"></textarea></label>
+        <div class="actions">
+          <button type="button" class="btn-primary" [disabled]="!inviteAddresses.length || inviteSending" (click)="sendInvitations()">
+            {{ (inviteSending ? 'REFERRAL_PAGE.SENDING' : 'REFERRAL_PAGE.SEND') | translate }} <span *ngIf="inviteAddresses.length">({{ inviteAddresses.length }})</span>
+          </button>
+        </div>
+        <p class="success" *ngIf="inviteResult" role="status">{{ inviteResult }}</p>
+        <p class="error" *ngIf="inviteError" role="alert">{{ inviteError }}</p>
+      </ng-container>
+
+      <!-- Share -->
+      <ng-container *ngIf="dialog === 'SHARE'">
+        <h2>{{ 'REFERRAL_PAGE.SHARE' | translate }}</h2>
+        <div class="share-grid">
+          <a [href]="shareUrl('WHATSAPP')" target="_blank" rel="noopener" class="btn-secondary"><i-feather name="message-circle"></i-feather> WhatsApp</a>
+          <a [href]="shareUrl('FACEBOOK')" target="_blank" rel="noopener" class="btn-secondary"><i-feather name="facebook"></i-feather> Facebook</a>
+          <a [href]="shareUrl('LINKEDIN')" target="_blank" rel="noopener" class="btn-secondary"><i-feather name="linkedin"></i-feather> LinkedIn</a>
+          <a [href]="shareUrl('EMAIL')" class="btn-secondary"><i-feather name="mail"></i-feather> {{ 'REFERRAL_PAGE.EMAIL' | translate }}</a>
+          <button type="button" class="btn-secondary" (click)="copy('LINK')"><i-feather name="copy"></i-feather>
+            {{ (copied === 'LINK' ? 'REFERRAL_PAGE.COPIED' : 'REFERRAL_PAGE.COPY_LINK') | translate }}</button>
+        </div>
+      </ng-container>
+
+      <!-- QR code -->
+      <ng-container *ngIf="dialog === 'QR'">
+        <h2>{{ 'REFERRAL_PAGE.QR' | translate }}</h2>
+        <p class="muted">{{ 'REFERRAL_PAGE.QR_TEXT' | translate }}</p>
+        <div class="qr"><img *ngIf="qrDataUrl" [src]="qrDataUrl" [alt]="'REFERRAL_PAGE.QR' | translate" /></div>
+        <p class="center"><code class="code-chip">{{ state?.code }}</code></p>
+        <div class="actions center">
+          <a *ngIf="qrDataUrl" [href]="qrDataUrl" [attr.download]="'yocoach-' + state?.code + '.png'" class="btn-primary"><i-feather name="download"></i-feather> {{ 'REFERRAL_PAGE.DOWNLOAD' | translate }}</a>
+          <button type="button" class="btn-secondary" (click)="printQr()"><i-feather name="printer"></i-feather> {{ 'REFERRAL_PAGE.PRINT' | translate }}</button>
+        </div>
+      </ng-container>
+
+      <!-- Own code -->
+      <ng-container *ngIf="dialog === 'CODE'">
+        <h2>{{ 'REFERRAL_PAGE.CUSTOM_CODE' | translate }}</h2>
+        <p class="muted">{{ 'REFERRAL_PAGE.CUSTOM_CODE_TEXT' | translate }}</p>
+        <div class="link-row">
+          <input [(ngModel)]="newCode" (ngModelChange)="codeCheck = null" maxlength="20" class="input code-input" placeholder="COACH-KHALIL" />
+          <button type="button" class="btn-secondary" [disabled]="!newCode.trim()" (click)="checkCode()">{{ 'REFERRAL_PAGE.CHECK' | translate }}</button>
+        </div>
+        <p *ngIf="codeCheck === 'CHECKING'" class="muted">{{ 'REFERRAL_PAGE.CHECKING' | translate }}</p>
+        <p *ngIf="codeCheck === 'AVAILABLE'" class="success">{{ 'REFERRAL_PAGE.CODE_AVAILABLE' | translate }}</p>
+        <p *ngIf="codeCheck === 'TAKEN'" class="error">{{ 'REFERRAL_PAGE.CODE_TAKEN' | translate }}</p>
+        <p *ngIf="codeCheck === 'RESERVED'" class="error">{{ 'REFERRAL_PAGE.CODE_RESERVED' | translate }}</p>
+        <p *ngIf="codeCheck === 'INVALID_FORMAT'" class="error">{{ 'REFERRAL_PAGE.CODE_FORMAT' | translate }}</p>
+        <div class="actions"><button type="button" class="btn-primary" [disabled]="codeCheck !== 'AVAILABLE'" (click)="saveCode()">{{ 'REFERRAL_PAGE.SAVE_CODE' | translate }}</button></div>
+        <p class="error" *ngIf="codeError">{{ codeError }}</p>
+      </ng-container>
+
+      <!-- Missing referred coach (AFF-12) -->
+      <ng-container *ngIf="dialog === 'MISSING'">
+        <h2>{{ 'REFERRAL_PAGE.MISSING_TITLE' | translate }}</h2>
+        <p class="muted">{{ 'REFERRAL_PAGE.MISSING_TEXT' | translate }}</p>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.MISSING_EMAIL_LABEL' | translate }}</span>
+          <input type="email" [(ngModel)]="missingEmail" maxlength="254" class="input" placeholder="coach@exemple.com" /></label>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.MISSING_DAY_LABEL' | translate }}</span>
+          <input type="date" [(ngModel)]="missingDay" [min]="missingMin" [max]="missingMax" class="input" /></label>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.MISSING_NOTE_LABEL' | translate }}</span>
+          <input [(ngModel)]="missingNote" maxlength="500" class="input" /></label>
+        <div class="actions">
+          <button type="button" class="btn-primary" [disabled]="missingSending || !missingEmail.trim() || !missingDay" (click)="sendMissing()">
+            {{ (missingSending ? 'REFERRAL_PAGE.SENDING' : 'REFERRAL_PAGE.SEND') | translate }}</button>
+        </div>
+        <p class="success" *ngIf="missingResult" role="status">{{ missingResult }}</p>
+        <p class="error" *ngIf="missingError" role="alert">{{ missingError }}</p>
+      </ng-container>
+
+      <!-- Bank account of a collaborator (AFF-41) -->
+      <ng-container *ngIf="dialog === 'ACCOUNT'">
+        <h2>{{ 'REFERRAL_PAGE.ACCOUNT_TITLE' | translate }}</h2>
+        <p class="muted">{{ 'REFERRAL_PAGE.ACCOUNT_TEXT' | translate }}</p>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.HOLDER' | translate }}</span><input [(ngModel)]="holder" maxlength="150" class="input" /></label>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.BANK' | translate }}</span>
+          <input [(ngModel)]="bankName" maxlength="100" class="input" placeholder="BIAT, STB, Attijari…" /></label>
+        <label class="field"><span>{{ 'REFERRAL_PAGE.IBAN' | translate }}</span>
+          <input [(ngModel)]="iban" maxlength="40" class="input mono" placeholder="0800 0000 0000 0000 0000" autocomplete="off" />
+          <small *ngIf="partner?.file?.account" class="muted">{{ 'REFERRAL_PAGE.IBAN_HINT' | translate }}</small>
+          <small *ngIf="iban && !ibanValid" class="error">{{ 'REFERRAL_PAGE.ACCOUNT_INVALID' | translate }}</small></label>
+        <div class="actions">
+          <button type="button" class="btn-primary" [disabled]="accountSaving || holder.trim().length < 3 || !ibanValid" (click)="saveAccount()">
+            {{ (accountSaving ? 'REFERRAL_PAGE.SAVING' : 'REFERRAL_PAGE.SAVE') | translate }}</button>
+        </div>
+        <p class="error" *ngIf="accountError" role="alert">{{ accountError }}</p>
+      </ng-container>
+
+      <!-- Detail of a referred coach -->
+      <ng-container *ngIf="dialog === 'DETAIL' && detail">
+        <div class="who big"><span class="avatar">{{ initials(detail.referral) }}</span>
+          <div><h2>{{ name(detail.referral) }}</h2>
+            <span class="pill" [ngClass]="statusClass(detail.referral.status)">{{ 'REFERRAL_PAGE.STATUS_' + detail.referral.status | translate }}</span></div></div>
+        <ol class="timeline">
+          <li *ngFor="let t of detail.timeline">
+            <span class="dot" [ngClass]="t.type === 'TAKEN_BACK' ? 'bad' : 'ok'"></span>
+            <div><strong>{{ 'REFERRAL_PAGE.TIMELINE_' + t.type | translate }}</strong>
+              <small>{{ t.at | date:'dd/MM/yyyy' }}</small></div>
+            <strong *ngIf="t.amount !== null" class="amount" [class.negative]="(t.amount ?? 0) < 0">{{ money(t.amount, true) }}</strong>
+          </li>
+        </ol>
+        <p class="total">{{ 'REFERRAL_PAGE.TOTAL_EARNED' | translate }} <strong>{{ money(detail.referral.earned) }}</strong></p>
+      </ng-container>
+    </div>
+  </div>
+</div>

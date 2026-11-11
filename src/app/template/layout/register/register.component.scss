@@ -135,3 +135,54 @@ button:disabled {
     }
   }
 }
+
+/* AFF-10: referral code of a coach sign-up (optional) */
+.referral-field {
+  text-align: left;
+}
+
+.referral-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  color: light-dark(#495057, #c4cad0);
+}
+
+.referral-input {
+  position: relative;
+
+  input {
+    padding-right: 40px;
+  }
+
+  input:not(:placeholder-shown) {
+    text-transform: uppercase;
+  }
+}
+
+.referral-remove {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: light-dark(#6c757d, #a3abb2);
+  cursor: pointer;
+}
+
+.referral-status,
+.referral-help {
+  display: block;
+  margin-top: 4px;
+}
+
+.referral-valid {
+  color: light-dark(#198754, #4ade80);
+}
+
+.referral-help {
+  color: light-dark(#6c757d, #a3abb2);
+}

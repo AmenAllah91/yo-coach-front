@@ -7,9 +7,11 @@ export type DashboardAlertType =
   | 'ENDING_SOON'
   | 'INACTIVE'
   | 'NO_NUTRITION'
+  | 'JOIN_REQUESTS'
+  | 'NEW_LEADS'
   | 'CHECK_INS_OVERDUE';
 
-/** The six categories of the "To do" section, in display order (two columns). */
+/** The categories of the "To do" section, in display order (two columns). */
 export const TODO_ALERT_TYPES: DashboardAlertType[] = [
   'EXPIRED_PROGRAMS',
   'NO_PROGRAM',
@@ -17,7 +19,15 @@ export const TODO_ALERT_TYPES: DashboardAlertType[] = [
   'ENDING_SOON',
   'INACTIVE',
   'NO_NUTRITION',
+  'JOIN_REQUESTS',
+  'NEW_LEADS',
 ];
+
+/** Categories handled on their own page (no drawer): requests tab of the client list, website prospects. */
+export const ALERT_PAGES: Partial<Record<DashboardAlertType, { path: string; queryParams?: Record<string, string> }>> = {
+  JOIN_REQUESTS: { path: '/clients', queryParams: { tab: 'requests' } },
+  NEW_LEADS: { path: '/websites/leads' },
+};
 
 export type DashboardWidgetKey = 'KPIS' | 'TODO' | 'ACTIVITIES' | 'CHECK_INS' | 'MESSAGES';
 
@@ -42,6 +52,25 @@ export interface DashboardSummary {
   todoClients: number;
   alerts: Partial<Record<DashboardAlertType, number>>;
   preferences: DashboardPreferences;
+  /** Workouts done out of planned, last 7 days (absent from an older server). */
+  adherence?: DashboardAdherence;
+}
+
+/** {@code rate} / {@code previousRate}: percentages, null when nothing was planned. */
+export interface DashboardAdherence {
+  done: number;
+  planned: number;
+  rate: number | null;
+  previousRate: number | null;
+}
+
+/** Columns of the client list: last activity and adherence over the last 4 weeks. */
+export interface DashboardClientStats {
+  clientId: string;
+  lastActivityAt: string | null;
+  done: number;
+  planned: number;
+  rate: number | null;
 }
 
 export interface DashboardAlertItem {

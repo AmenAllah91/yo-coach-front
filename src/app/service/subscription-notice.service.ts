@@ -13,8 +13,10 @@ export interface SubscriptionNotice {
   reason?: string | null;
   limit?: number | null;
   current?: number | null;
-  /** FEATURE_LOCKED: WEBSITE | MOBILE_THEME. */
+  /** FEATURE_LOCKED: WEBSITE | MOBILE_THEME, or a code of the plan features (feature.join_link...). */
   feature?: string | null;
+  /** Set by the app (not CE): name of that feature in the plan, shown in the message. */
+  featureLabel?: string | null;
   /** CLIENT_LIMIT_REACHED with reason PLAN: smallest bigger plan (SUB-40); proratedCost = amount to pay now. Null when none fits. */
   /** currency: the one of the subscription, for both amounts (payment audit D6). */
   suggestedPlan?: { planId?: number; planName?: string; price?: number; proratedCost?: number | null; currency?: string | null } | null;

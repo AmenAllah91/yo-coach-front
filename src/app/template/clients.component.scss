@@ -1781,3 +1781,36 @@
     .request-btn { flex: 1; }
   }
 }
+
+/* Client list columns: 4-week adherence and last activity (two sub-columns of the former 7-day column). */
+.client-stats-head,
+.client-stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+}
+
+.client-stats { min-height: 28px; font-size: 13px; }
+
+.stat-adherence {
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: light-dark(#f1f5f9, #2a3140);
+  color: light-dark(#475569, #c3cad6);
+
+  &[data-level='low'] { background: light-dark(#fee2e2, #4c2426); color: light-dark(#b91c1c, #ffa096); }
+  &[data-level='mid'] { background: light-dark(#fef3c7, #3d3108); color: light-dark(#92400e, #fbbf24); }
+  &[data-level='good'] { background: light-dark(#dcfce7, #1f3427); color: light-dark(#15803d, #4ade80); }
+}
+
+.stat-last {
+  color: light-dark(#334155, #d1d7e0);
+  white-space: nowrap;
+
+  &--late { color: light-dark(#b91c1c, #ffa096); font-weight: 600; }
+}
+

@@ -1,0 +1,119 @@
+<main class="page-container" [attr.aria-busy]="loading">
+  <header class="page-header">
+    <button type="button" class="app-page-back" (click)="back()" [attr.aria-label]="'BACK' | translate"><i-feather name="arrow-left"></i-feather></button>
+    <div class="header-content">
+      <h1>{{ 'ADMIN_ANNOUNCEMENTS' | translate }}</h1>
+      <p>{{ 'ADMIN_ANNOUNCEMENTS_SUBTITLE' | translate }}</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="secondary-btn" [disabled]="loading" (click)="refresh()"><i-feather name="refresh-cw"></i-feather>{{ 'ADMIN_REFRESH' | translate }}</button>
+      <button type="button" class="primary-btn" (click)="openNew()" [disabled]="editingId === ''"><i-feather name="plus"></i-feather>{{ 'ANNOUNCEMENT_NEW' | translate }}</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <!-- Form (new or change) -->
+    <section *ngIf="editingId !== null" class="form-card" [attr.aria-label]="'ANNOUNCEMENT_FORM' | translate">
+      <h2>{{ (editingId ? 'ANNOUNCEMENT_EDIT' : 'ANNOUNCEMENT_NEW') | translate }}</h2>
+
+      <fieldset class="levels">
+        <legend>{{ 'ANNOUNCEMENT_LEVEL' | translate }}</legend>
+        <label *ngFor="let l of levels" class="level-choice" [attr.data-level]="l" [class.selected]="form.level === l">
+          <input type="radio" name="level" [value]="l" [(ngModel)]="form.level">
+          <strong>{{ ('ANNOUNCEMENT_LEVEL_' + l) | translate }}</strong>
+          <small>{{ ('ANNOUNCEMENT_LEVEL_' + l + '_HINT') | translate }}</small>
+        </label>
+      </fieldset>
+
+      <label class="field">
+        <span>{{ 'ANNOUNCEMENT_MESSAGE_FR' | translate }} *</span>
+        <textarea rows="2" [maxlength]="max" [(ngModel)]="form.messageFr" [placeholder]="'ANNOUNCEMENT_MESSAGE_PLACEHOLDER' | translate"></textarea>
+        <small class="count">{{ form.messageFr.length }}/{{ max }}</small>
+      </label>
+      <div class="two-cols">
+        <label class="field">
+          <span>{{ 'ANNOUNCEMENT_MESSAGE_EN' | translate }}</span>
+          <textarea rows="2" [maxlength]="max" [(ngModel)]="form.messageEn"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'ANNOUNCEMENT_MESSAGE_AR' | translate }}</span>
+          <textarea rows="2" dir="rtl" [maxlength]="max" [(ngModel)]="form.messageAr"></textarea>
+        </label>
+      </div>
+      <small class="hint">{{ 'ANNOUNCEMENT_LANG_HINT' | translate }}</small>
+
+      <label class="field">
+        <span>{{ 'ANNOUNCEMENT_LINK' | translate }}</span>
+        <input type="text" [(ngModel)]="form.linkUrl" placeholder="/my-subscription  ·  https://...">
+        <small class="hint">{{ 'ANNOUNCEMENT_LINK_HINT' | translate }}</small>
+      </label>
+
+      <div class="two-cols">
+        <label class="field">
+          <span>{{ 'ANNOUNCEMENT_START' | translate }}</span>
+          <input type="datetime-local" [(ngModel)]="form.startAt">
+          <small class="hint">{{ 'ANNOUNCEMENT_START_HINT' | translate }}</small>
+        </label>
+        <label class="field">
+          <span>{{ 'ANNOUNCEMENT_END' | translate }}</span>
+          <input type="datetime-local" [(ngModel)]="form.endAt">
+          <small class="hint">{{ 'ANNOUNCEMENT_END_HINT' | translate }}</small>
+        </label>
+      </div>
+
+      <fieldset class="target">
+        <legend>{{ 'ANNOUNCEMENT_TARGET' | translate }}</legend>
+        <label><input type="radio" name="target" value="ALL" [(ngModel)]="form.target"> {{ 'ANNOUNCEMENT_TARGET_ALL' | translate }}</label>
+        <label><input type="radio" name="target" value="ONE" [(ngModel)]="form.target"> {{ 'ANNOUNCEMENT_TARGET_ONE' | translate }}</label>
+        <input *ngIf="form.target === 'ONE'" type="email" [(ngModel)]="form.coachEmail" [placeholder]="'ANNOUNCEMENT_COACH_EMAIL' | translate" [attr.aria-label]="'ANNOUNCEMENT_COACH_EMAIL' | translate">
+      </fieldset>
+
+      <div class="preview">
+        <span class="preview-title">{{ 'ANNOUNCEMENT_PREVIEW' | translate }}</span>
+        <app-announcement-banner [preview]="preview"></app-announcement-banner>
+      </div>
+
+      <p *ngIf="formError" class="notice error" role="alert">{{ formError }}</p>
+      <div class="form-actions">
+        <button type="button" class="secondary-btn" (click)="cancel()">{{ 'CANCEL' | translate }}</button>
+        <button type="button" class="primary-btn" (click)="save()" [disabled]="saving">{{ (saving ? 'LOADING' : 'ANNOUNCEMENT_SAVE') | translate }}</button>
+      </div>
+    </section>
+
+    <p *ngIf="loading" role="status" class="notice">{{ 'LOADING' | translate }}</p>
+    <p *ngIf="error" role="alert" class="notice error">{{ 'ANNOUNCEMENT_ERR_LOAD' | translate }} <button type="button" (click)="refresh()">{{ 'COACH_RETRY' | translate }}</button></p>
+
+    <div *ngIf="!loading && !error" class="coaches-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'ANNOUNCEMENT_STATUS' | translate }}</th>
+            <th>{{ 'ANNOUNCEMENT_LEVEL' | translate }}</th>
+            <th>{{ 'ANNOUNCEMENT_MESSAGE' | translate }}</th>
+            <th>{{ 'ANNOUNCEMENT_TARGET' | translate }}</th>
+            <th>{{ 'ANNOUNCEMENT_DATES' | translate }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="!items.length"><td colspan="6" class="empty">{{ 'ANNOUNCEMENT_EMPTY' | translate }}</td></tr>
+          <tr *ngFor="let a of items" [class.ended]="status(a) === 'ENDED'">
+            <td><span class="status" [attr.data-status]="status(a)">{{ ('ANNOUNCEMENT_STATUS_' + status(a)) | translate }}</span></td>
+            <td><span class="level-pill" [attr.data-level]="a.level">{{ ('ANNOUNCEMENT_LEVEL_' + a.level) | translate }}</span></td>
+            <td class="message"><span dir="auto">{{ a.messageFr }}</span><small *ngIf="a.linkUrl">{{ a.linkUrl }}</small></td>
+            <td>{{ a.coachId ? (a.coachEmail || a.coachId) : ('ANNOUNCEMENT_TARGET_ALL' | translate) }}</td>
+            <td class="dates">
+              <span>{{ a.startAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+              <small>→ {{ a.endAt ? (a.endAt | date: 'dd/MM/yyyy HH:mm') : ('ANNOUNCEMENT_NO_END' | translate) }}</small>
+            </td>
+            <td class="row-actions">
+              <button type="button" class="secondary-btn" (click)="edit(a)">{{ 'ANNOUNCEMENT_EDIT_SHORT' | translate }}</button>
+              <button *ngIf="status(a) === 'RUNNING'" type="button" class="secondary-btn" (click)="stop(a)">{{ 'ANNOUNCEMENT_STOP' | translate }}</button>
+              <button type="button" class="secondary-btn danger" (click)="remove(a)" [attr.aria-label]="'ANNOUNCEMENT_DELETE' | translate"><i-feather name="trash-2"></i-feather></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>

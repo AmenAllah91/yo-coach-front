@@ -1,0 +1,12 @@
+/* IA-34: phases of the AI program (the rest comes from the AI website dialog styles) */
+.ai-weeks { font-weight: 400; color: light-dark(#5f7392, #a6acb4); margin-inline-start: 6px; }
+.ai-phase { border: 1px solid light-dark(#e1e8f0, #33393f); border-radius: 8px; padding: 12px; margin-bottom: 10px;
+  .ai-grid { margin-top: 8px; } }
+.ai-phase__head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.ai-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ai-link { border: 0; background: transparent; color: #44b4df; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+.ai-check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 8px; input { width: 18px; height: 18px; } }
+@media (max-width: 600px) { .ai-grid--3 { grid-template-columns: 1fr; } }
+/* IA-43: four targets in a row (nutrition dialog) */
+.ai-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 600px) { .ai-grid--4 { grid-template-columns: 1fr 1fr; } }

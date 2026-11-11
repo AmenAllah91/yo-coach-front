@@ -1,0 +1,97 @@
+<dialog #dialog class="ai-dialog" aria-labelledby="nutrition-ai-title" (cancel)="cancel($event)" (close)="closed.emit()">
+  <form (ngSubmit)="submit()">
+    <header class="ai-dialog__head">
+      <h2 id="nutrition-ai-title">✨ {{ 'AI_NUTRITION_TITLE' | translate }}</h2>
+      <button type="button" class="ai-close" (click)="close()" [disabled]="step === 'loading' || computing" [attr.aria-label]="'CLOSE' | translate"><i-feather name="x"></i-feather></button>
+    </header>
+
+    <app-ai-quota code="ai.nutrition" [quota]="quota" (leave)="close()"></app-ai-quota>
+
+    <!-- Step 1: the client's needs (the server computes, no AI) -->
+    <ng-container *ngIf="step === 'profile'">
+      <p class="ai-hint">{{ 'AI_NUTRITION_STEP1' | translate }}</p>
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_NUTRITION_GOAL' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let g of goals" class="ai-chip" [class.is-on]="profile.goal === g">
+            <input type="radio" name="goal" [value]="g" [(ngModel)]="profile.goal">{{ ('AI_NUTRITION_GOAL_' + g) | translate }}
+          </label>
+        </div>
+      </fieldset>
+      <div class="ai-grid ai-grid--3">
+        <label>{{ 'AI_WORKOUT_GENDER' | translate }}
+          <select class="ai-input" name="gender" [(ngModel)]="profile.gender" required>
+            <option [ngValue]="null">—</option>
+            <option ngValue="FEMALE">{{ 'AI_WORKOUT_GENDER_FEMALE' | translate }}</option>
+            <option ngValue="MALE">{{ 'AI_WORKOUT_GENDER_MALE' | translate }}</option>
+          </select>
+        </label>
+        <label>{{ 'AI_WORKOUT_AGE' | translate }}<input class="ai-input" type="number" name="age" min="10" max="100" step="1" [(ngModel)]="profile.age" required></label>
+        <label>{{ 'AI_WORKOUT_WEIGHT' | translate }}<input class="ai-input" type="number" name="weight" min="25" max="300" step="1" [(ngModel)]="profile.weightKg" required></label>
+        <label>{{ 'AI_NUTRITION_HEIGHT' | translate }}<input class="ai-input" type="number" name="height" min="100" max="250" step="1" [(ngModel)]="profile.heightCm" required></label>
+        <label class="wide">{{ 'AI_NUTRITION_ACTIVITY' | translate }}
+          <select class="ai-input" name="activity" [(ngModel)]="profile.activity">
+            <option *ngFor="let a of activities" [ngValue]="a">{{ ('AI_NUTRITION_ACTIVITY_' + a) | translate }}</option>
+          </select>
+        </label>
+      </div>
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_WORKOUT_CARE' | translate }}</legend>
+        <label class="ai-check"><input type="checkbox" name="minor" [(ngModel)]="profile.minor">{{ 'AI_WORKOUT_MINOR' | translate }}</label>
+        <label class="ai-check"><input type="checkbox" name="pregnancy" [(ngModel)]="profile.pregnancy">{{ 'AI_WORKOUT_PREGNANCY' | translate }}</label>
+        <label class="ai-check"><input type="checkbox" name="condition" [(ngModel)]="medicalCondition">{{ 'AI_WORKOUT_CONDITION' | translate }}</label>
+      </fieldset>
+    </ng-container>
+
+    <!-- Step 2: targets (changeable) and meals -->
+    <ng-container *ngIf="step === 'meals'">
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_NUTRITION_TARGETS' | translate }}</legend>
+        <div class="ai-grid ai-grid--4">
+          <label>{{ 'AI_NUTRITION_KCAL' | translate }}<input class="ai-input" type="number" name="kcal" min="1000" max="6000" step="10" [(ngModel)]="answers.calories"></label>
+          <label>{{ 'AI_NUTRITION_PROTEIN' | translate }}<input class="ai-input" type="number" name="protein" min="20" max="400" step="5" [(ngModel)]="answers.proteinG"></label>
+          <label>{{ 'AI_NUTRITION_CARBS' | translate }}<input class="ai-input" type="number" name="carbs" min="0" max="900" step="5" [(ngModel)]="answers.carbsG"></label>
+          <label>{{ 'AI_NUTRITION_FAT' | translate }}<input class="ai-input" type="number" name="fat" min="20" max="300" step="5" [(ngModel)]="answers.fatG"></label>
+        </div>
+        <p class="ai-hint">{{ 'AI_NUTRITION_MACROS_KCAL' | translate: { kcal: caloriesFromMacros } }}</p>
+      </fieldset>
+      <div class="ai-grid">
+        <label>{{ 'AI_NUTRITION_MEALS' | translate }}
+          <select class="ai-input" name="meals" [(ngModel)]="answers.mealsPerDay">
+            <option *ngFor="let m of mealOptions" [ngValue]="m">{{ m }}</option>
+          </select>
+        </label>
+        <label>{{ 'AI_WORKOUT_WEEKS' | translate }}<input class="ai-input" type="number" name="weeks" min="1" max="12" step="1" [(ngModel)]="answers.weeks"></label>
+      </div>
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_NUTRITION_DIET' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let d of diets" class="ai-chip" [class.is-on]="answers.diet === d">
+            <input type="radio" name="diet" [value]="d" [(ngModel)]="answers.diet">{{ ('AI_NUTRITION_DIET_' + d) | translate }}
+          </label>
+        </div>
+      </fieldset>
+      <fieldset class="ai-field">
+        <legend>{{ 'AI_NUTRITION_ALLERGIES' | translate }}</legend>
+        <div class="ai-chips">
+          <label *ngFor="let al of allergyOptions" class="ai-chip" [class.is-on]="answers.allergies.includes(al)">
+            <input type="checkbox" [name]="'allergy' + al" [checked]="answers.allergies.includes(al)" (change)="toggleAllergy(al)">{{ ('AI_NUTRITION_ALLERGY_' + al) | translate }}
+          </label>
+        </div>
+        <input class="ai-input" name="avoid" maxlength="300" [(ngModel)]="answers.avoid" [placeholder]="'AI_NUTRITION_AVOID_HINT' | translate">
+        <p class="ai-hint">{{ 'AI_NUTRITION_NAMES_ONLY' | translate }}</p>
+      </fieldset>
+    </ng-container>
+
+    <div class="ai-loading" *ngIf="step === 'loading' || computing" role="status"><span class="ai-spinner"></span>
+      <span>{{ (computing ? 'AI_NUTRITION_COMPUTING' : 'AI_NUTRITION_WRITING') | translate }}</span></div>
+    <p class="ai-error" *ngIf="error" role="alert">{{ error | translate }}</p>
+
+    <footer class="ai-actions">
+      <button type="button" class="ai-btn" *ngIf="step === 'meals'" (click)="step = 'profile'">{{ 'BACK' | translate }}</button>
+      <button type="button" class="ai-btn" *ngIf="step !== 'meals'" (click)="close()" [disabled]="step === 'loading' || computing">{{ 'CANCEL' | translate }}</button>
+      <button type="submit" class="ai-btn ai-btn--primary" *ngIf="step === 'profile'" [disabled]="!profileValid || computing">{{ 'AI_NUTRITION_NEXT' | translate }}</button>
+      <button type="submit" class="ai-btn ai-btn--primary" *ngIf="step !== 'profile'" [disabled]="!mealsValid || exhausted || step === 'loading'">{{ 'AI_NUTRITION_GENERATE' | translate }}</button>
+    </footer>
+  </form>
+</dialog>
